@@ -8,6 +8,10 @@
 
 /* Begin PBXBuildFile section */
 		905445A92DFFA1D300171202 /* BlazeDB.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9054459D2DFFA1D300171202 /* BlazeDB.framework */; };
+		90B808A52E04B2B40046B268 /* SwiftCBOR in Frameworks */ = {isa = PBXBuildFile; productRef = 90B808A42E04B2B40046B268 /* SwiftCBOR */; };
+		90B808A72E04B2C90046B268 /* CryptoSwift in Frameworks */ = {isa = PBXBuildFile; productRef = 90B808A62E04B2C90046B268 /* CryptoSwift */; };
+		90B808AD2E04B72F0046B268 /* BlazeDB.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9054459D2DFFA1D300171202 /* BlazeDB.framework */; };
+		90B808AE2E04B72F0046B268 /* BlazeDB.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 9054459D2DFFA1D300171202 /* BlazeDB.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -18,11 +22,42 @@
 			remoteGlobalIDString = 9054459C2DFFA1D300171202;
 			remoteInfo = BlazeDB;
 		};
+		906CA3862E04A3070096482D /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 905445942DFFA1D300171202 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 9054459C2DFFA1D300171202;
+			remoteInfo = BlazeDB;
+		};
 /* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		906CA37D2E04A2C00096482D /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 12;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		90B808AF2E04B72F0046B268 /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				90B808AE2E04B72F0046B268 /* BlazeDB.framework in Embed Frameworks */,
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		9054459D2DFFA1D300171202 /* BlazeDB.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = BlazeDB.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		905445A82DFFA1D300171202 /* BlazeDBTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = BlazeDBTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		906CA37F2E04A2C00096482D /* BlazeShell */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = BlazeShell; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -36,6 +71,11 @@
 			path = BlazeDBTests;
 			sourceTree = "<group>";
 		};
+		906CA3802E04A2C00096482D /* BlazeShell */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = BlazeShell;
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -43,6 +83,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				90B808A52E04B2B40046B268 /* SwiftCBOR in Frameworks */,
+				90B808A72E04B2C90046B268 /* CryptoSwift in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -54,6 +96,14 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		906CA37C2E04A2C00096482D /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				90B808AD2E04B72F0046B268 /* BlazeDB.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -62,6 +112,8 @@
 			children = (
 				9054459F2DFFA1D300171202 /* BlazeDB */,
 				905445AC2DFFA1D300171202 /* BlazeDBTests */,
+				906CA3802E04A2C00096482D /* BlazeShell */,
+				908E40E52DFFCF43008D1B90 /* Frameworks */,
 				9054459E2DFFA1D300171202 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -71,8 +123,16 @@
 			children = (
 				9054459D2DFFA1D300171202 /* BlazeDB.framework */,
 				905445A82DFFA1D300171202 /* BlazeDBTests.xctest */,
+				906CA37F2E04A2C00096482D /* BlazeShell */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		908E40E52DFFCF43008D1B90 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -106,6 +166,9 @@
 			);
 			name = BlazeDB;
 			packageProductDependencies = (
+				90B808A42E04B2B40046B268 /* SwiftCBOR */,
+				90B808A62E04B2C90046B268 /* CryptoSwift */,
+				90B808A82E04B3100046B268 /* AnyCodable */,
 			);
 			productName = BlazeDB;
 			productReference = 9054459D2DFFA1D300171202 /* BlazeDB.framework */;
@@ -134,6 +197,30 @@
 			productReference = 905445A82DFFA1D300171202 /* BlazeDBTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
+		906CA37E2E04A2C00096482D /* BlazeShell */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 906CA3832E04A2C00096482D /* Build configuration list for PBXNativeTarget "BlazeShell" */;
+			buildPhases = (
+				906CA37B2E04A2C00096482D /* Sources */,
+				906CA37C2E04A2C00096482D /* Frameworks */,
+				906CA37D2E04A2C00096482D /* CopyFiles */,
+				90B808AF2E04B72F0046B268 /* Embed Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				906CA3872E04A3070096482D /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				906CA3802E04A2C00096482D /* BlazeShell */,
+			);
+			name = BlazeShell;
+			packageProductDependencies = (
+			);
+			productName = BlazeShell;
+			productReference = 906CA37F2E04A2C00096482D /* BlazeShell */;
+			productType = "com.apple.product-type.tool";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -150,6 +237,9 @@
 					905445A72DFFA1D300171202 = {
 						CreatedOnToolsVersion = 16.3;
 					};
+					906CA37E2E04A2C00096482D = {
+						CreatedOnToolsVersion = 16.3;
+					};
 				};
 			};
 			buildConfigurationList = 905445972DFFA1D300171202 /* Build configuration list for PBXProject "BlazeDB" */;
@@ -161,6 +251,11 @@
 			);
 			mainGroup = 905445932DFFA1D300171202;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				908E40962DFFB93D008D1B90 /* XCRemoteSwiftPackageReference "CryptoSwift" */,
+				908E40A22DFFBB79008D1B90 /* XCRemoteSwiftPackageReference "SwiftCBOR" */,
+				908E40E02DFFCE03008D1B90 /* XCRemoteSwiftPackageReference "swift-argument-parser" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 9054459E2DFFA1D300171202 /* Products */;
 			projectDirPath = "";
@@ -168,6 +263,7 @@
 			targets = (
 				9054459C2DFFA1D300171202 /* BlazeDB */,
 				905445A72DFFA1D300171202 /* BlazeDBTests */,
+				906CA37E2E04A2C00096482D /* BlazeShell */,
 			);
 		};
 /* End PBXProject section */
@@ -204,6 +300,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		906CA37B2E04A2C00096482D /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -211,6 +314,11 @@
 			isa = PBXTargetDependency;
 			target = 9054459C2DFFA1D300171202 /* BlazeDB */;
 			targetProxy = 905445AA2DFFA1D300171202 /* PBXContainerItemProxy */;
+		};
+		906CA3872E04A3070096482D /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 9054459C2DFFA1D300171202 /* BlazeDB */;
+			targetProxy = 906CA3862E04A3070096482D /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -344,10 +452,11 @@
 		905445B22DFFA1D300171202 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				BUILD_LIBRARY_FOR_DISTRIBUTION = YES;
+				BUILD_LIBRARY_FOR_DISTRIBUTION = NO;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = 4FN6U9B2Q9;
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
@@ -377,10 +486,11 @@
 		905445B32DFFA1D300171202 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				BUILD_LIBRARY_FOR_DISTRIBUTION = YES;
+				BUILD_LIBRARY_FOR_DISTRIBUTION = NO;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = 4FN6U9B2Q9;
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
@@ -437,6 +547,30 @@
 			};
 			name = Release;
 		};
+		906CA3842E04A2C00096482D /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				DEAD_CODE_STRIPPING = YES;
+				DEVELOPMENT_TEAM = 4FN6U9B2Q9;
+				ENABLE_HARDENED_RUNTIME = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		906CA3852E04A2C00096482D /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				DEAD_CODE_STRIPPING = YES;
+				DEVELOPMENT_TEAM = 4FN6U9B2Q9;
+				ENABLE_HARDENED_RUNTIME = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -467,7 +601,60 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
+		906CA3832E04A2C00096482D /* Build configuration list for PBXNativeTarget "BlazeShell" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				906CA3842E04A2C00096482D /* Debug */,
+				906CA3852E04A2C00096482D /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		908E40962DFFB93D008D1B90 /* XCRemoteSwiftPackageReference "CryptoSwift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/krzyzanowskim/CryptoSwift";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.8.4;
+			};
+		};
+		908E40A22DFFBB79008D1B90 /* XCRemoteSwiftPackageReference "SwiftCBOR" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/myfreeweb/SwiftCBOR";
+			requirement = {
+				branch = master;
+				kind = branch;
+			};
+		};
+		908E40E02DFFCE03008D1B90 /* XCRemoteSwiftPackageReference "swift-argument-parser" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/apple/swift-argument-parser.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.5.1;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		90B808A42E04B2B40046B268 /* SwiftCBOR */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 908E40A22DFFBB79008D1B90 /* XCRemoteSwiftPackageReference "SwiftCBOR" */;
+			productName = SwiftCBOR;
+		};
+		90B808A62E04B2C90046B268 /* CryptoSwift */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 908E40962DFFB93D008D1B90 /* XCRemoteSwiftPackageReference "CryptoSwift" */;
+			productName = CryptoSwift;
+		};
+		90B808A82E04B3100046B268 /* AnyCodable */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = AnyCodable;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 905445942DFFA1D300171202 /* Project object */;
 }

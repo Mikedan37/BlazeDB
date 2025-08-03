@@ -1,13 +1,12 @@
 //  Untitled.swift
 //  BlazeDB
 //  Created by Michael Danylchuk on 6/15/25.
-
 import Foundation
 import CryptoKit
 internal import CryptoSwift
 import LocalAuthentication
 
-enum KeySource {
+public enum KeySource {
     case secureEnclave(label: String)
     case password(String)
 }
@@ -18,57 +17,95 @@ enum KeyManagerError: Error {
     case passwordTooWeak
 }
 
-final class KeyManager {
-    static func getKey(from source: KeySource) throws -> SymmetricKey {
+public final class KeyManager {
+    private static var passwordKeyCache = [String: SymmetricKey]()
+
+    public static func getKey(from source: KeySource, createIfMissing: Bool = false) throws -> SymmetricKey {
         switch source {
         case .secureEnclave(let label):
-            return try loadSecureEnclaveKey(label: label)
+            return try loadSecureEnclaveKey(label: label, createIfMissing: createIfMissing)
 
         case .password(let pass):
-            return try deriveKeyFromPassword(pass)
+            let salt = "AshPileSalt".data(using: .utf8)! // or inject from caller
+            return try getKey(from: pass, salt: salt)
         }
     }
 
-    private static func loadSecureEnclaveKey(label: String) throws -> SymmetricKey {
+    public static func getKey(from password: String, salt: Data) throws -> SymmetricKey {
+        let cacheKey = password + salt.base64EncodedString()
+        if let cached = passwordKeyCache[cacheKey] {
+            return cached
+        }
+
+        guard password.count >= 8 else {
+            throw KeyManagerError.passwordTooWeak
+        }
+
+        let key = try PKCS5.PBKDF2(
+            password: Array(password.utf8),
+            salt: Array(salt),
+            iterations: 10_000,
+            keyLength: 32,
+            variant: HMAC.Variant.sha2(.sha256)
+        ).calculate()
+
+        let symmetricKey = SymmetricKey(data: Data(key))
+        passwordKeyCache[cacheKey] = symmetricKey
+        return symmetricKey
+    }
+
+    private static func loadSecureEnclaveKey(label: String, createIfMissing: Bool) throws -> SymmetricKey {
+        let access = SecAccessControlCreateWithFlags(nil,
+                                                      kSecAttrAccessibleWhenUnlockedThisDeviceOnly,
+                                                      .privateKeyUsage,
+                                                      nil)
+
         let query: [String: Any] = [
             kSecClass as String: kSecClassKey,
             kSecAttrApplicationTag as String: label,
-            kSecAttrKeyType as String: kSecAttrKeyTypeAES,
-            kSecReturnData as String: true,
+            kSecAttrKeyType as String: kSecAttrKeyTypeECSECPrimeRandom,
+            kSecReturnRef as String: true,
             kSecMatchLimit as String: kSecMatchLimitOne
         ]
 
         var item: CFTypeRef?
         let status = SecItemCopyMatching(query as CFDictionary, &item)
 
-        if status == errSecSuccess, let data = item as? Data {
-            return SymmetricKey(data: data)
+        if status == errSecSuccess, let privateKey = item {
+            let dummyKey = SymmetricKey(size: .bits256)
+            return dummyKey
         }
 
-        // Key not found, generate new
-        let keyData = Data((0..<32).map { _ in UInt8.random(in: 0...255) })
-        let addQuery: [String: Any] = [
-            kSecClass as String: kSecClassKey,
-            kSecAttrApplicationTag as String: label,
-            kSecAttrKeyType as String: kSecAttrKeyTypeAES,
-            kSecValueData as String: keyData,
-            kSecAttrAccessible as String: kSecAttrAccessibleWhenUnlockedThisDeviceOnly
-        ]
-
-        let addStatus = SecItemAdd(addQuery as CFDictionary, nil)
-        guard addStatus == errSecSuccess else {
+        guard createIfMissing else {
             throw KeyManagerError.keychainError
         }
 
-        return SymmetricKey(data: keyData)
+        let attributes: [String: Any] = [
+            kSecAttrKeyType as String: kSecAttrKeyTypeECSECPrimeRandom,
+            kSecAttrKeySizeInBits as String: 256,
+            kSecAttrTokenID as String: kSecAttrTokenIDSecureEnclave,
+            kSecAttrLabel as String: label,
+            kSecAttrIsPermanent as String: true,
+            kSecPrivateKeyAttrs as String: [
+                kSecAttrAccessControl as String: access as Any,
+                kSecAttrApplicationTag as String: label
+            ]
+        ]
+
+        var error: Unmanaged<CFError>?
+        guard let privateKey = SecKeyCreateRandomKey(attributes as CFDictionary, &error) else {
+            throw KeyManagerError.secureEnclaveUnavailable
+        }
+
+        let dummyKey = SymmetricKey(size: .bits256)
+        return dummyKey
     }
 
-    private static func deriveKeyFromPassword(_ password: String) throws -> SymmetricKey {
+    private static func deriveKeyFromPassword(_ password: String, salt: Data) throws -> SymmetricKey {
         guard password.count >= 8 else {
             throw KeyManagerError.passwordTooWeak
         }
 
-        let salt = "blazedb🔥".data(using: .utf8)!
         let key = try PKCS5.PBKDF2(
             password: Array(password.utf8),
             salt: Array(salt),
@@ -80,4 +117,3 @@ final class KeyManager {
         return SymmetricKey(data: Data(key))
     }
 }
-
