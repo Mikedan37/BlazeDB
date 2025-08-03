@@ -1,0 +1,2 @@
+Apple Swift version 6.1 (swiftlang-6.1.0.109.103 clang-1700.0.13.2)
+Target: arm64-apple-macosx15.0

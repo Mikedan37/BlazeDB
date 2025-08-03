@@ -1,0 +1,4 @@
+module CryptoSwift {
+    header "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/CryptoSwift.build/CryptoSwift-Swift.h"
+    requires objc
+}

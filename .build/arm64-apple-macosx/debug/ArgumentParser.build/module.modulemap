@@ -1,0 +1,4 @@
+module ArgumentParser {
+    header "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/ArgumentParser.build/ArgumentParser-Swift.h"
+    requires objc
+}

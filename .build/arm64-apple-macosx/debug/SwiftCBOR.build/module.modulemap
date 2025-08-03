@@ -1,0 +1,4 @@
+module SwiftCBOR {
+    header "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/SwiftCBOR.build/SwiftCBOR-Swift.h"
+    requires objc
+}

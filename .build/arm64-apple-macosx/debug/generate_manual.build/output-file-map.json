@@ -1,0 +1,179 @@
+{
+  "": {
+    "swift-dependencies": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/generate_manual.build/master.swiftdeps"
+  },
+  "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/checkouts/swift-argument-parser/Tools/generate-manual/AuthorArgument.swift": {
+    "dependencies": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/generate_manual.build/AuthorArgument.d",
+    "object": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/generate_manual.build/AuthorArgument.swift.o",
+    "swiftmodule": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/generate_manual.build/AuthorArgument~partial.swiftmodule",
+    "swift-dependencies": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/generate_manual.build/AuthorArgument.swiftdeps"
+  },
+  "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/checkouts/swift-argument-parser/Tools/generate-manual/DSL/ArgumentSynopsis.swift": {
+    "dependencies": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/generate_manual.build/ArgumentSynopsis.d",
+    "object": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/generate_manual.build/ArgumentSynopsis.swift.o",
+    "swiftmodule": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/generate_manual.build/ArgumentSynopsis~partial.swiftmodule",
+    "swift-dependencies": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/generate_manual.build/ArgumentSynopsis.swiftdeps"
+  },
+  "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/checkouts/swift-argument-parser/Tools/generate-manual/DSL/Author.swift": {
+    "dependencies": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/generate_manual.build/Author.d",
+    "object": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/generate_manual.build/Author.swift.o",
+    "swiftmodule": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/generate_manual.build/Author~partial.swiftmodule",
+    "swift-dependencies": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/generate_manual.build/Author.swiftdeps"
+  },
+  "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/checkouts/swift-argument-parser/Tools/generate-manual/DSL/Authors.swift": {
+    "dependencies": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/generate_manual.build/Authors.d",
+    "object": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/generate_manual.build/Authors.swift.o",
+    "swiftmodule": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/generate_manual.build/Authors~partial.swiftmodule",
+    "swift-dependencies": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/generate_manual.build/Authors.swiftdeps"
+  },
+  "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/checkouts/swift-argument-parser/Tools/generate-manual/DSL/Core/Container.swift": {
+    "dependencies": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/generate_manual.build/Container.d",
+    "object": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/generate_manual.build/Container.swift.o",
+    "swiftmodule": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/generate_manual.build/Container~partial.swiftmodule",
+    "swift-dependencies": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/generate_manual.build/Container.swiftdeps"
+  },
+  "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/checkouts/swift-argument-parser/Tools/generate-manual/DSL/Core/Empty.swift": {
+    "dependencies": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/generate_manual.build/Empty.d",
+    "object": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/generate_manual.build/Empty.swift.o",
+    "swiftmodule": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/generate_manual.build/Empty~partial.swiftmodule",
+    "swift-dependencies": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/generate_manual.build/Empty.swiftdeps"
+  },
+  "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/checkouts/swift-argument-parser/Tools/generate-manual/DSL/Core/ForEach.swift": {
+    "dependencies": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/generate_manual.build/ForEach.d",
+    "object": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/generate_manual.build/ForEach.swift.o",
+    "swiftmodule": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/generate_manual.build/ForEach~partial.swiftmodule",
+    "swift-dependencies": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/generate_manual.build/ForEach.swiftdeps"
+  },
+  "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/checkouts/swift-argument-parser/Tools/generate-manual/DSL/Core/MDocASTNodeWrapper.swift": {
+    "dependencies": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/generate_manual.build/MDocASTNodeWrapper.d",
+    "object": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/generate_manual.build/MDocASTNodeWrapper.swift.o",
+    "swiftmodule": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/generate_manual.build/MDocASTNodeWrapper~partial.swiftmodule",
+    "swift-dependencies": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/generate_manual.build/MDocASTNodeWrapper.swiftdeps"
+  },
+  "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/checkouts/swift-argument-parser/Tools/generate-manual/DSL/Core/MDocBuilder.swift": {
+    "dependencies": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/generate_manual.build/MDocBuilder.d",
+    "object": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/generate_manual.build/MDocBuilder.swift.o",
+    "swiftmodule": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/generate_manual.build/MDocBuilder~partial.swiftmodule",
+    "swift-dependencies": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/generate_manual.build/MDocBuilder.swiftdeps"
+  },
+  "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/checkouts/swift-argument-parser/Tools/generate-manual/DSL/Core/MDocComponent.swift": {
+    "dependencies": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/generate_manual.build/MDocComponent.d",
+    "object": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/generate_manual.build/MDocComponent.swift.o",
+    "swiftmodule": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/generate_manual.build/MDocComponent~partial.swiftmodule",
+    "swift-dependencies": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/generate_manual.build/MDocComponent.swiftdeps"
+  },
+  "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/checkouts/swift-argument-parser/Tools/generate-manual/DSL/Document.swift": {
+    "dependencies": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/generate_manual.build/Document.d",
+    "object": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/generate_manual.build/Document.swift.o",
+    "swiftmodule": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/generate_manual.build/Document~partial.swiftmodule",
+    "swift-dependencies": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/generate_manual.build/Document.swiftdeps"
+  },
+  "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/checkouts/swift-argument-parser/Tools/generate-manual/DSL/DocumentDate.swift": {
+    "dependencies": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/generate_manual.build/DocumentDate.d",
+    "object": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/generate_manual.build/DocumentDate.swift.o",
+    "swiftmodule": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/generate_manual.build/DocumentDate~partial.swiftmodule",
+    "swift-dependencies": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/generate_manual.build/DocumentDate.swiftdeps"
+  },
+  "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/checkouts/swift-argument-parser/Tools/generate-manual/DSL/Exit.swift": {
+    "dependencies": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/generate_manual.build/Exit.d",
+    "object": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/generate_manual.build/Exit.swift.o",
+    "swiftmodule": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/generate_manual.build/Exit~partial.swiftmodule",
+    "swift-dependencies": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/generate_manual.build/Exit.swiftdeps"
+  },
+  "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/checkouts/swift-argument-parser/Tools/generate-manual/DSL/List.swift": {
+    "dependencies": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/generate_manual.build/List.d",
+    "object": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/generate_manual.build/List.swift.o",
+    "swiftmodule": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/generate_manual.build/List~partial.swiftmodule",
+    "swift-dependencies": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/generate_manual.build/List.swiftdeps"
+  },
+  "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/checkouts/swift-argument-parser/Tools/generate-manual/DSL/MultiPageDescription.swift": {
+    "dependencies": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/generate_manual.build/MultiPageDescription.d",
+    "object": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/generate_manual.build/MultiPageDescription.swift.o",
+    "swiftmodule": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/generate_manual.build/MultiPageDescription~partial.swiftmodule",
+    "swift-dependencies": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/generate_manual.build/MultiPageDescription.swiftdeps"
+  },
+  "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/checkouts/swift-argument-parser/Tools/generate-manual/DSL/Name.swift": {
+    "dependencies": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/generate_manual.build/Name.d",
+    "object": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/generate_manual.build/Name.swift.o",
+    "swiftmodule": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/generate_manual.build/Name~partial.swiftmodule",
+    "swift-dependencies": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/generate_manual.build/Name.swiftdeps"
+  },
+  "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/checkouts/swift-argument-parser/Tools/generate-manual/DSL/Preamble.swift": {
+    "dependencies": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/generate_manual.build/Preamble.d",
+    "object": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/generate_manual.build/Preamble.swift.o",
+    "swiftmodule": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/generate_manual.build/Preamble~partial.swiftmodule",
+    "swift-dependencies": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/generate_manual.build/Preamble.swiftdeps"
+  },
+  "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/checkouts/swift-argument-parser/Tools/generate-manual/DSL/Section.swift": {
+    "dependencies": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/generate_manual.build/Section.d",
+    "object": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/generate_manual.build/Section.swift.o",
+    "swiftmodule": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/generate_manual.build/Section~partial.swiftmodule",
+    "swift-dependencies": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/generate_manual.build/Section.swiftdeps"
+  },
+  "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/checkouts/swift-argument-parser/Tools/generate-manual/DSL/SeeAlso.swift": {
+    "dependencies": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/generate_manual.build/SeeAlso.d",
+    "object": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/generate_manual.build/SeeAlso.swift.o",
+    "swiftmodule": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/generate_manual.build/SeeAlso~partial.swiftmodule",
+    "swift-dependencies": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/generate_manual.build/SeeAlso.swiftdeps"
+  },
+  "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/checkouts/swift-argument-parser/Tools/generate-manual/DSL/SinglePageDescription.swift": {
+    "dependencies": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/generate_manual.build/SinglePageDescription.d",
+    "object": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/generate_manual.build/SinglePageDescription.swift.o",
+    "swiftmodule": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/generate_manual.build/SinglePageDescription~partial.swiftmodule",
+    "swift-dependencies": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/generate_manual.build/SinglePageDescription.swiftdeps"
+  },
+  "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/checkouts/swift-argument-parser/Tools/generate-manual/DSL/Synopsis.swift": {
+    "dependencies": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/generate_manual.build/Synopsis.d",
+    "object": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/generate_manual.build/Synopsis.swift.o",
+    "swiftmodule": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/generate_manual.build/Synopsis~partial.swiftmodule",
+    "swift-dependencies": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/generate_manual.build/Synopsis.swiftdeps"
+  },
+  "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/checkouts/swift-argument-parser/Tools/generate-manual/Extensions/ArgumentParser+MDoc.swift": {
+    "dependencies": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/generate_manual.build/ArgumentParser+MDoc.d",
+    "object": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/generate_manual.build/ArgumentParser+MDoc.swift.o",
+    "swiftmodule": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/generate_manual.build/ArgumentParser+MDoc~partial.swiftmodule",
+    "swift-dependencies": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/generate_manual.build/ArgumentParser+MDoc.swiftdeps"
+  },
+  "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/checkouts/swift-argument-parser/Tools/generate-manual/Extensions/Date+ExpressibleByArgument.swift": {
+    "dependencies": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/generate_manual.build/Date+ExpressibleByArgument.d",
+    "object": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/generate_manual.build/Date+ExpressibleByArgument.swift.o",
+    "swiftmodule": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/generate_manual.build/Date+ExpressibleByArgument~partial.swiftmodule",
+    "swift-dependencies": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/generate_manual.build/Date+ExpressibleByArgument.swiftdeps"
+  },
+  "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/checkouts/swift-argument-parser/Tools/generate-manual/Extensions/Process+SimpleAPI.swift": {
+    "dependencies": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/generate_manual.build/Process+SimpleAPI.d",
+    "object": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/generate_manual.build/Process+SimpleAPI.swift.o",
+    "swiftmodule": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/generate_manual.build/Process+SimpleAPI~partial.swiftmodule",
+    "swift-dependencies": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/generate_manual.build/Process+SimpleAPI.swiftdeps"
+  },
+  "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/checkouts/swift-argument-parser/Tools/generate-manual/GenerateManual.swift": {
+    "dependencies": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/generate_manual.build/GenerateManual.d",
+    "object": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/generate_manual.build/GenerateManual.swift.o",
+    "swiftmodule": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/generate_manual.build/GenerateManual~partial.swiftmodule",
+    "swift-dependencies": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/generate_manual.build/GenerateManual.swiftdeps"
+  },
+  "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/checkouts/swift-argument-parser/Tools/generate-manual/MDoc/MDocASTNode.swift": {
+    "dependencies": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/generate_manual.build/MDocASTNode.d",
+    "object": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/generate_manual.build/MDocASTNode.swift.o",
+    "swiftmodule": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/generate_manual.build/MDocASTNode~partial.swiftmodule",
+    "swift-dependencies": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/generate_manual.build/MDocASTNode.swiftdeps"
+  },
+  "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/checkouts/swift-argument-parser/Tools/generate-manual/MDoc/MDocMacro.swift": {
+    "dependencies": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/generate_manual.build/MDocMacro.d",
+    "object": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/generate_manual.build/MDocMacro.swift.o",
+    "swiftmodule": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/generate_manual.build/MDocMacro~partial.swiftmodule",
+    "swift-dependencies": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/generate_manual.build/MDocMacro.swiftdeps"
+  },
+  "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/checkouts/swift-argument-parser/Tools/generate-manual/MDoc/MDocSerializationContext.swift": {
+    "dependencies": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/generate_manual.build/MDocSerializationContext.d",
+    "object": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/generate_manual.build/MDocSerializationContext.swift.o",
+    "swiftmodule": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/generate_manual.build/MDocSerializationContext~partial.swiftmodule",
+    "swift-dependencies": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/generate_manual.build/MDocSerializationContext.swiftdeps"
+  },
+  "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/checkouts/swift-argument-parser/Tools/generate-manual/MDoc/String+Escaping.swift": {
+    "dependencies": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/generate_manual.build/String+Escaping.d",
+    "object": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/generate_manual.build/String+Escaping.swift.o",
+    "swiftmodule": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/generate_manual.build/String+Escaping~partial.swiftmodule",
+    "swift-dependencies": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/generate_manual.build/String+Escaping.swiftdeps"
+  }
+}

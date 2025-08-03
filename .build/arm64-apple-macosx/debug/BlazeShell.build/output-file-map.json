@@ -1,0 +1,11 @@
+{
+  "": {
+    "swift-dependencies": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/BlazeShell.build/master.swiftdeps"
+  },
+  "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/BlazeShell/main.swift": {
+    "dependencies": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/BlazeShell.build/main.d",
+    "object": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/BlazeShell.build/main.swift.o",
+    "swiftmodule": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/BlazeShell.build/main~partial.swiftmodule",
+    "swift-dependencies": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/BlazeShell.build/main.swiftdeps"
+  }
+}

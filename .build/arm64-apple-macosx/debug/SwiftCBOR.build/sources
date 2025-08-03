@@ -1,0 +1,17 @@
+/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/checkouts/SwiftCBOR/Sources/AnyCodingKey.swift
+/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/checkouts/SwiftCBOR/Sources/CBOR.swift
+/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/checkouts/SwiftCBOR/Sources/CBORDecoder.swift
+/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/checkouts/SwiftCBOR/Sources/CBOREncodable.swift
+/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/checkouts/SwiftCBOR/Sources/CBOREncoder.swift
+/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/checkouts/SwiftCBOR/Sources/CBORInputStream.swift
+/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/checkouts/SwiftCBOR/Sources/CBOROptions.swift
+/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/checkouts/SwiftCBOR/Sources/Decoder/CodableCBORDecoder.swift
+/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/checkouts/SwiftCBOR/Sources/Decoder/KeyedDecodingContainer.swift
+/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/checkouts/SwiftCBOR/Sources/Decoder/SingleValueDecodingContainer.swift
+/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/checkouts/SwiftCBOR/Sources/Decoder/UnkeyedDecodingContainer.swift
+/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/checkouts/SwiftCBOR/Sources/Encoder/CodableCBOREncoder.swift
+/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/checkouts/SwiftCBOR/Sources/Encoder/KeyedEncodingContainer.swift
+/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/checkouts/SwiftCBOR/Sources/Encoder/SingleValueEncodingContainer.swift
+/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/checkouts/SwiftCBOR/Sources/Encoder/UnkeyedEncodingContainer.swift
+/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/checkouts/SwiftCBOR/Sources/FixedWidthInteger+Bytes.swift
+/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/checkouts/SwiftCBOR/Sources/Util.swift

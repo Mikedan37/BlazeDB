@@ -1,0 +1,89 @@
+{
+  "": {
+    "swift-dependencies": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/BlazeDB.build/master.swiftdeps"
+  },
+  "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/BlazeDB/Core/BlazeCollection.swift": {
+    "dependencies": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/BlazeDB.build/BlazeCollection.d",
+    "object": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/BlazeDB.build/BlazeCollection.swift.o",
+    "swiftmodule": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/BlazeDB.build/BlazeCollection~partial.swiftmodule",
+    "swift-dependencies": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/BlazeDB.build/BlazeCollection.swiftdeps"
+  },
+  "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/BlazeDB/Core/BlazeRecord.swift": {
+    "dependencies": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/BlazeDB.build/BlazeRecord.d",
+    "object": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/BlazeDB.build/BlazeRecord.swift.o",
+    "swiftmodule": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/BlazeDB.build/BlazeRecord~partial.swiftmodule",
+    "swift-dependencies": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/BlazeDB.build/BlazeRecord.swiftdeps"
+  },
+  "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/BlazeDB/Core/Commit.swift": {
+    "dependencies": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/BlazeDB.build/Commit.d",
+    "object": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/BlazeDB.build/Commit.swift.o",
+    "swiftmodule": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/BlazeDB.build/Commit~partial.swiftmodule",
+    "swift-dependencies": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/BlazeDB.build/Commit.swiftdeps"
+  },
+  "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/BlazeDB/Core/DynamicCollection.swift": {
+    "dependencies": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/BlazeDB.build/DynamicCollection.d",
+    "object": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/BlazeDB.build/DynamicCollection.swift.o",
+    "swiftmodule": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/BlazeDB.build/DynamicCollection~partial.swiftmodule",
+    "swift-dependencies": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/BlazeDB.build/DynamicCollection.swiftdeps"
+  },
+  "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/BlazeDB/Crypto/KeyManager.swift": {
+    "dependencies": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/BlazeDB.build/KeyManager.d",
+    "object": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/BlazeDB.build/KeyManager.swift.o",
+    "swiftmodule": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/BlazeDB.build/KeyManager~partial.swiftmodule",
+    "swift-dependencies": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/BlazeDB.build/KeyManager.swiftdeps"
+  },
+  "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/BlazeDB/Exports/BlazeDBClient.swift": {
+    "dependencies": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/BlazeDB.build/BlazeDBClient.d",
+    "object": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/BlazeDB.build/BlazeDBClient.swift.o",
+    "swiftmodule": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/BlazeDB.build/BlazeDBClient~partial.swiftmodule",
+    "swift-dependencies": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/BlazeDB.build/BlazeDBClient.swiftdeps"
+  },
+  "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/BlazeDB/Exports/BlazeTypes.swift": {
+    "dependencies": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/BlazeDB.build/BlazeTypes.d",
+    "object": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/BlazeDB.build/BlazeTypes.swift.o",
+    "swiftmodule": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/BlazeDB.build/BlazeTypes~partial.swiftmodule",
+    "swift-dependencies": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/BlazeDB.build/BlazeTypes.swiftdeps"
+  },
+  "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/BlazeDB/Query/BlazeQuery.swift": {
+    "dependencies": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/BlazeDB.build/BlazeQuery.d",
+    "object": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/BlazeDB.build/BlazeQuery.swift.o",
+    "swiftmodule": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/BlazeDB.build/BlazeQuery~partial.swiftmodule",
+    "swift-dependencies": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/BlazeDB.build/BlazeQuery.swiftdeps"
+  },
+  "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/BlazeDB/Storage/PageStore.swift": {
+    "dependencies": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/BlazeDB.build/PageStore.d",
+    "object": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/BlazeDB.build/PageStore.swift.o",
+    "swiftmodule": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/BlazeDB.build/PageStore~partial.swiftmodule",
+    "swift-dependencies": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/BlazeDB.build/PageStore.swiftdeps"
+  },
+  "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/BlazeDB/Storage/StorageLayout.swift": {
+    "dependencies": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/BlazeDB.build/StorageLayout.d",
+    "object": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/BlazeDB.build/StorageLayout.swift.o",
+    "swiftmodule": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/BlazeDB.build/StorageLayout~partial.swiftmodule",
+    "swift-dependencies": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/BlazeDB.build/StorageLayout.swiftdeps"
+  },
+  "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/BlazeDB/Transactions/BlazeTransaction.swift": {
+    "dependencies": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/BlazeDB.build/BlazeTransaction.d",
+    "object": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/BlazeDB.build/BlazeTransaction.swift.o",
+    "swiftmodule": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/BlazeDB.build/BlazeTransaction~partial.swiftmodule",
+    "swift-dependencies": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/BlazeDB.build/BlazeTransaction.swiftdeps"
+  },
+  "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/BlazeDB/Transactions/TransactionContext.swift": {
+    "dependencies": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/BlazeDB.build/TransactionContext.d",
+    "object": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/BlazeDB.build/TransactionContext.swift.o",
+    "swiftmodule": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/BlazeDB.build/TransactionContext~partial.swiftmodule",
+    "swift-dependencies": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/BlazeDB.build/TransactionContext.swiftdeps"
+  },
+  "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/BlazeDB/Transactions/TransactionLog.swift": {
+    "dependencies": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/BlazeDB.build/TransactionLog.d",
+    "object": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/BlazeDB.build/TransactionLog.swift.o",
+    "swiftmodule": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/BlazeDB.build/TransactionLog~partial.swiftmodule",
+    "swift-dependencies": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/BlazeDB.build/TransactionLog.swiftdeps"
+  },
+  "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/BlazeDB/Utils/CBORCoder.swift": {
+    "dependencies": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/BlazeDB.build/CBORCoder.d",
+    "object": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/BlazeDB.build/CBORCoder.swift.o",
+    "swiftmodule": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/BlazeDB.build/CBORCoder~partial.swiftmodule",
+    "swift-dependencies": "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/BlazeDB.build/CBORCoder.swiftdeps"
+  }
+}

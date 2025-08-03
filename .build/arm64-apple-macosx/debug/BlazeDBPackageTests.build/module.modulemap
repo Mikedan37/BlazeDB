@@ -1,0 +1,4 @@
+module BlazeDBPackageTests {
+    header "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/BlazeDBPackageTests.build/BlazeDBPackageTests-Swift.h"
+    requires objc
+}
