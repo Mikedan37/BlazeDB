@@ -1,4 +1,0 @@
-module BlazeDB {
-    header "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/.build/arm64-apple-macosx/debug/BlazeDB.build/BlazeDB-Swift.h"
-    requires objc
-}
