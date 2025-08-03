@@ -1,14 +1,7 @@
-# Swift Package Manager
-.build/
-.swiftpm/
-
-# Xcode
-*.xcuserdatad/
-*.xcworkspace/
-*.xcodeproj/xcuserdata/
-
-# Dependencies
-Package.resolved
-
-# Other
 .DS_Store
+.swiftpm
+.build
+*.xcworkspace
+xcuserdata/
+DerivedData/
+
