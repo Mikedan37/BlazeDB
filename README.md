@@ -155,15 +155,6 @@ Index metadata is versioned to allow seamless upgrades in future schema or forma
 
 ---
 
-## 🧪 Testing Performance
-
-You can benchmark BlazeDB’s index-backed queries using `BlazeDBTests.IndexScanPerformanceTests`.
-
-Tests include:
-- Single-field index lookups.
-- Compound index lookups.
-- Performance profiling on 10,000+ entries.
-
 ### Test Coverage
 
 The BlazeDB test suite covers:
@@ -172,8 +163,6 @@ The BlazeDB test suite covers:
 - Migration simulation
 - Crash and recovery durability
 - Multi-DB switching
-
-You can find examples in `BlazeDBTests/`.
 
 ---
 
