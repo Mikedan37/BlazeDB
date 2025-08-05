@@ -3,7 +3,6 @@ A blazing-fast, lightweight, and secure embedded Swift database with support for
 
 ## 🔥 Key Features
 - Dynamic schema support with runtime-typed fields.
-- AES-GCM encryption with Secure Enclave support.
 - Secondary and compound index support.
 - Fully concurrent writes and reads.
 - Fast indexed queries and raw dumps.
@@ -190,10 +189,10 @@ Transaction recovery and journaling is automatic. No manual transaction start/co
 
 ---
 
-## 🔐 Encryption
+## 🔐 Encryption (Work in Progress)
 
 - All data is AES-GCM encrypted at rest.
-- Key is derived via password or stored in Secure Enclave if configured.
+- Key is derived via password, biometrics or stored in Secure Enclave if configured.
 
 ---
 
