@@ -285,3 +285,7 @@ This allows developers to proactively export recoverable DB snapshots.
 ### Recovery Tests
 
 BlazeDB's test suite includes crash simulations and recovery verification. These confirm data durability even in crash-prone situations.
+
+## DISCLAIMER:
+This is a personal open-source project that I built and architected for educational purposes and to use as a DataBase for custom tooling on my mac
+
