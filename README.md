@@ -2,7 +2,7 @@
 A blazing-fast, lightweight, and secure embedded Swift database with support for secondary indexes, dynamic schemas, and encrypted storage.
 
 ![SwiftPM Compatible](https://img.shields.io/badge/SwiftPM-Compatible-green.svg)
-![Platforms](https://img.shields.io/badge/platforms-macOS%20|%20iOS-lightgrey.svg)
+![Platforms](https://img.shields.io/badge/platforms-macOS%20|%20iOS-red.svg)
 ![Platforms](https://img.shields.io/badge/platforms-iOS%20|%20iOS-lightgrey.svg)
 ![Version](https://img.shields.io/badge/version-0.1.0-orange.svg)
 
