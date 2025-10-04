@@ -2,7 +2,37 @@
 //  BlazeDB
 //  Created by Michael Danylchuk on 6/15/25.
 import Foundation
-// import CryptoKit
+
+private extension FileHandle {
+    func compatSeek(toOffset offset: UInt64) throws {
+        if #available(iOS 13.4, macOS 10.15.4, *) {
+            try self.seek(toOffset: offset)
+        } else {
+            self.seek(toFileOffset: offset)
+        }
+    }
+    func compatRead(upToCount count: Int) throws -> Data {
+        if #available(iOS 13.4, macOS 10.15.4, *) {
+            return try self.read(upToCount: count) ?? Data()
+        } else {
+            return self.readData(ofLength: count)
+        }
+    }
+    func compatWrite(_ data: Data) throws {
+        if #available(iOS 13.4, macOS 10.15.4, *) {
+            try self.write(contentsOf: data)
+        } else {
+            self.write(data)
+        }
+    }
+    func compatClose() {
+        if #available(iOS 13.4, macOS 10.15.4, *) {
+            try? self.close()
+        } else {
+            self.closeFile()
+        }
+    }
+}
 
 public final class PageStore {
     public let fileURL: URL
@@ -35,9 +65,9 @@ public final class PageStore {
     public func deletePage(index: Int) throws {
         try queue.sync(flags: .barrier) {
             let offset = UInt64(index * pageSize)
-            try fileHandle.seek(toOffset: offset)
+            try fileHandle.compatSeek(toOffset: offset)
             let zeroed = Data(repeating: 0, count: pageSize)
-            try fileHandle.write(contentsOf: zeroed)
+            try fileHandle.compatWrite(zeroed)
         }
     }
     
@@ -59,16 +89,16 @@ public final class PageStore {
             }
 
             let offset = UInt64(index * pageSize)
-            try fileHandle.seek(toOffset: offset)
-            try fileHandle.write(contentsOf: buffer)
+            try fileHandle.compatSeek(toOffset: offset)
+            try fileHandle.compatWrite(buffer)
         }
     }
 
     public func readPage(index: Int) throws -> Data {
         return try queue.sync {
             let offset = UInt64(index * pageSize)
-            try fileHandle.seek(toOffset: offset)
-            let data = try fileHandle.read(upToCount: pageSize) ?? Data()
+            try fileHandle.compatSeek(toOffset: offset)
+            let data = try fileHandle.compatRead(upToCount: pageSize)
 
             print("📖 Reading plaintext page at index \(index)")
             print("📏 Data size: \(data.count)")
@@ -89,25 +119,25 @@ public final class PageStore {
     // Returns (totalPages, orphanedPages, estimatedSize)
     public func getStorageStats() throws -> (totalPages: Int, orphanedPages: Int, estimatedSize: Int) {
         return try queue.sync {
-            // Get file size
-            let fileSize = try FileManager.default.attributesOfItem(atPath: fileHandle.availableData.base64EncodedString()).reduce(0) { $0 + (($1.value as? Int) ?? 0) }
-            let totalPages = Int(fileSize / pageSize)
+            // Correctly fetch file size from the fileURL
+            let attrs = try FileManager.default.attributesOfItem(atPath: fileURL.path)
+            let fileSizeNum = (attrs[.size] as? NSNumber)?.intValue ?? 0
+            let totalPages = max(0, fileSizeNum / pageSize)
 
             var orphanedPages = 0
-            let expectedHeader = "BZDB".data(using: .utf8)! + [0x01]
+            let expectedHeader = ("BZDB".data(using: .utf8) ?? Data()) + Data([0x01])
             for i in 0..<totalPages {
-                try fileHandle.seek(toOffset: UInt64(i * pageSize))
-                let header = try fileHandle.read(upToCount: 5) ?? Data()
+                try fileHandle.compatSeek(toOffset: UInt64(i * pageSize))
+                let header = try fileHandle.compatRead(upToCount: 5)
                 if header != expectedHeader {
                     orphanedPages += 1
                 }
             }
-
-            return (totalPages, orphanedPages, fileSize)
+            return (totalPages, orphanedPages, fileSizeNum)
         }
     }
 
     deinit {
-        try? fileHandle.close()
+        fileHandle.compatClose()
     }
 }
