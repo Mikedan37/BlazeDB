@@ -171,11 +171,24 @@ public func encode(to encoder: Encoder) throws {
 }
 static func fromFields(_ document: [String: BlazeDocumentField], fields: [String]) -> CompoundIndexKey {
     let values = fields.map { field in
-        // Try to get the value, otherwise empty string
-        if let val = document[field]?.value as? AnyHashable {
-            return val
-        } else {
+        guard let docField = document[field] else {
             return "" as AnyHashable // fallback to empty string if not found
+        }
+        switch docField {
+        case .string(let v):
+            return v as AnyHashable
+        case .int(let v):
+            return v as AnyHashable
+        case .double(let v):
+            return v as AnyHashable
+        case .bool(let v):
+            return v as AnyHashable
+        case .date(let v):
+            return v as AnyHashable
+        case .uuid(let v):
+            return v as AnyHashable
+        case .array, .dictionary:
+            return "" as AnyHashable // fallback for unsupported types
         }
     }
     return CompoundIndexKey(values)
@@ -199,44 +212,161 @@ private let project: String
 private let queue = DispatchQueue(label: "com.yourorg.blazedb.dynamiccollection", attributes: .concurrent)
 private let encryptionKey: SymmetricKey
 
-/// Publicly expose the metaURL as `meta`
-public var meta: URL {
-    return metaURL
-}
+    /// Publicly expose the metaURL
+    public var metaURLPath: URL {
+        return metaURL
+    }
 
 /// Publicly expose the store's fileURL
 public var fileURL: URL {
     return store.fileURL
 }
 
-public init(store: PageStore, metaURL: URL, project: String, encryptionKey: SymmetricKey) throws {
-    self.store = store
-    self.metaURL = metaURL
-    self.project = project
-    self.encryptionKey = encryptionKey
-    let layoutExists = FileManager.default.fileExists(atPath: metaURL.path)
+    public init(store: PageStore, metaURL: URL, project: String, encryptionKey: SymmetricKey) throws {
+        self.store = store
+        self.metaURL = metaURL
+        self.project = project
+        self.encryptionKey = encryptionKey
+        let layoutExists = FileManager.default.fileExists(atPath: metaURL.path)
 
-    if layoutExists {
-        do {
-            let layout = try StorageLayout.load(from: metaURL)
-            self.indexMap = layout.indexMap
-            self.nextPageIndex = layout.nextPageIndex
-            self.secondaryIndexes = layout.toRuntimeIndexes()
-        } catch {
-            print("❌ Failed to load layout from disk. Deleting corrupted file and starting fresh. Error: \(error)")
-            try? FileManager.default.removeItem(at: metaURL)
+        if layoutExists {
+            do {
+                let layout = try StorageLayout.load(from: metaURL)
+                self.indexMap = layout.indexMap
+                self.nextPageIndex = layout.nextPageIndex
+                self.secondaryIndexes = layout.toRuntimeIndexes()
+                // --- Begin: Ensure persisted secondary index data is restored correctly ---
+                // Load full secondary index data from .indexes file if present
+                let indexFile = metaURL.appendingPathExtension("indexes")
+                if let data = try? Data(contentsOf: indexFile),
+                   let decoded = try? JSONDecoder().decode([String: [CompoundIndexKey: [UUID]]].self, from: data) {
+                    // Merge loaded indexes into self.secondaryIndexes
+                    self.secondaryIndexes = decoded.mapValues { $0.mapValues(Set.init) }
+                    print("♻️ Restored persisted secondary indexes from .indexes file (\(self.secondaryIndexes.count) indexes).")
+                } else if !layout.secondaryIndexes.isEmpty {
+                    var merged = self.secondaryIndexes
+                    var restoredEntryCount = 0
+                    for (compoundKey, persisted) in layout.secondaryIndexes {
+                        var restored: [CompoundIndexKey: Set<UUID>] = [:]
+                        for (key, uuids) in persisted {
+                            if var existing = restored[key] {
+                                existing.formUnion(uuids)
+                                restored[key] = existing
+                            } else {
+                                restored[key] = Set(uuids)
+                            }
+                            restoredEntryCount += uuids.count
+                        }
+                        if var current = merged[compoundKey] {
+                            for (k, set) in restored {
+                                if var existing = current[k] {
+                                    existing.formUnion(set)
+                                    current[k] = existing
+                                } else {
+                                    current[k] = set
+                                }
+                            }
+                            merged[compoundKey] = current
+                        } else {
+                            merged[compoundKey] = restored
+                        }
+                    }
+                    self.secondaryIndexes = merged
+                    print("♻️ Restored persisted secondary indexes from layout (\(merged.count) indexes, ~\(restoredEntryCount) uuids).")
+                } else {
+                    print("⚠️ No persisted secondary indexes found in layout or .indexes; using definitions only.")
+                }
+                // --- End: Ensure persisted secondary index data is restored correctly ---
+                // --- Begin: Conditionally rebuild missing/empty secondary indexes ---
+                var didRebuildAny = false
+                for (compoundKey, fields) in layout.secondaryIndexDefinitions {
+                    let needsRebuild: Bool = {
+                        guard let inner = self.secondaryIndexes[compoundKey] else { return true }
+                        return inner.isEmpty
+                    }()
+                    if needsRebuild {
+                        var indexEntries: [CompoundIndexKey: Set<UUID>] = [:]
+                        for id in self.indexMap.keys {
+                            if let record = try? self._fetchNoSync(id: id) {
+                                let doc = record.storage
+                                let rawKey = CompoundIndexKey.fromFields(doc, fields: fields)
+                                let normalizedComponents = rawKey.components.map { component -> AnyBlazeCodable in
+                                    switch component {
+                                    case .string(let s): return AnyBlazeCodable(s)
+                                    case .int(let i): return AnyBlazeCodable(i)
+                                    case .double(let d): return AnyBlazeCodable(d)
+                                    case .bool(let b): return AnyBlazeCodable(b)
+                                    case .date(let d): return AnyBlazeCodable(d)
+                                    case .uuid(let u): return AnyBlazeCodable(u)
+                                    default: return AnyBlazeCodable(String(describing: component))
+                                    }
+                                }
+                                let indexKey = CompoundIndexKey(normalizedComponents)
+                                var set = indexEntries[indexKey] ?? Set<UUID>()
+                                set.insert(id)
+                                indexEntries[indexKey] = set
+                            }
+                        }
+                        self.secondaryIndexes[compoundKey] = indexEntries
+                        didRebuildAny = true
+                    }
+                }
+                if didRebuildAny {
+                    try saveLayout()
+                }
+                // --- End: Conditional rebuild ---
+            } catch {
+                print("❌ Failed to load layout from disk. Deleting corrupted file and starting fresh. Error: \(error)")
+                try? FileManager.default.removeItem(at: metaURL)
+                self.indexMap = [:]
+                self.nextPageIndex = 0
+                self.secondaryIndexes = [:]
+                try saveLayout()
+            }
+        } else {
+            print("🆕 No layout found. Starting fresh.")
             self.indexMap = [:]
             self.nextPageIndex = 0
             self.secondaryIndexes = [:]
             try saveLayout()
         }
-    } else {
-        print("🆕 No layout found. Starting fresh.")
-        self.indexMap = [:]
-        self.nextPageIndex = 0
-        self.secondaryIndexes = [:]
-        try saveLayout()
     }
+
+/// Initializes a DynamicCollection using a preloaded StorageLayout.
+init(store: PageStore, layout: StorageLayout, metaURL: URL, project: String, encryptionKey: SymmetricKey) {
+    self.store = store
+    self.metaURL = metaURL
+    self.project = project
+    self.encryptionKey = encryptionKey
+    self.indexMap = layout.indexMap
+    self.nextPageIndex = layout.nextPageIndex
+    // Start with persisted runtime indexes
+    self.secondaryIndexes = layout.toRuntimeIndexes()
+    // --- Begin: Rebuild missing or empty secondary indexes after reload ---
+    var didRebuildAny = false
+    for (compoundKey, fields) in layout.secondaryIndexDefinitions {
+        let needsRebuild: Bool = {
+            guard let inner = self.secondaryIndexes[compoundKey] else { return true }
+            return inner.isEmpty
+        }()
+        if needsRebuild {
+            print("♻️ Rebuilding missing compound index '\(compoundKey)' ...")
+            var rebuilt: [CompoundIndexKey: Set<UUID>] = [:]
+            for id in self.indexMap.keys {
+                if let record = try? self._fetchNoSync(id: id) {
+                    let doc = record.storage
+                    let key = CompoundIndexKey.fromFields(doc, fields: fields)
+                    rebuilt[key, default: []].insert(id)
+                }
+            }
+            self.secondaryIndexes[compoundKey] = rebuilt
+            didRebuildAny = true
+        }
+    }
+    if didRebuildAny {
+        try? self.saveLayout()
+    }
+    // --- End: Rebuild missing or empty secondary indexes ---
 }
 
 /// Creates a secondary index for a set of fields. Supports compound indexes (multi-field).
@@ -250,6 +380,10 @@ public func createIndex(on fields: [String]) throws {
         if secondaryIndexes[key] == nil {
             secondaryIndexes[key] = [:]
         }
+        // Persist the definition into the layout
+        var layout = (try? StorageLayout.load(from: metaURL)) ?? StorageLayout(indexMap: indexMap, nextPageIndex: nextPageIndex, secondaryIndexes: secondaryIndexes)
+        layout.secondaryIndexDefinitions[key] = fields
+        try? layout.save(to: metaURL)
     }
 }
 public func createIndex(on field: String) throws {
@@ -260,24 +394,66 @@ public func createIndex(on field: String) throws {
 // For every index in `secondaryIndexes`, the key is split into fields, and the correct compound index key is generated.
 public func insert(_ data: BlazeDataRecord) throws -> UUID {
     return try queue.sync(flags: .barrier) {
-        let id = UUID()
-        print("🪪 Inserting record with ID: \(id)")
-        var document: [String: BlazeDocumentField] = [:]
-        for (key, value) in data.storage {
-            document[key] = value
+        var document = data.storage
+        let id: UUID
+        if let providedID = document["id"]?.uuidValue {
+            id = providedID
+        } else if let stringID = document["id"]?.stringValue, let parsed = UUID(uuidString: stringID) {
+            id = parsed
+        } else {
+            id = UUID()
+            document["id"] = .uuid(id)
         }
-        document["id"] = .uuid(id)
+        print("🪪 Inserting record with ID: \(id)")
         document["createdAt"] = .date(Date())
         document["project"] = .string(project)
         let encoded = try JSONEncoder().encode(document)
         try store.writePage(index: nextPageIndex, plaintext: encoded)
         indexMap[id] = nextPageIndex
-        // For each index (including compound), update the index with the correct key.
+
+        // Debug print: compound index building
         for (compound, _) in secondaryIndexes {
             let fields = compound.components(separatedBy: "+")
-            let indexKey = CompoundIndexKey.fromFields(document, fields: fields)
-            secondaryIndexes[compound, default: [:]][indexKey, default: []].insert(id)
+            let keyPreview = fields.compactMap { document[$0] }.map { "\($0)" }.joined(separator: ", ")
+            print("📇 Building compound index \(compound) with values [\(keyPreview)] for id \(id)")
         }
+
+        // Update all configured secondary indexes in memory immediately
+        for (compound, _) in secondaryIndexes {
+            let fields = compound.components(separatedBy: "+")
+            guard fields.allSatisfy({ document[$0] != nil }) else {
+                print("⚠️ Skipping index \(compound) for id \(id) — missing one or more fields.")
+                continue
+            }
+            let rawKey = CompoundIndexKey.fromFields(document, fields: fields)
+            let normalizedComponents = rawKey.components.map { component -> AnyBlazeCodable in
+                switch component {
+                case .string(let s): return AnyBlazeCodable(s)
+                case .int(let i): return AnyBlazeCodable(i)
+                case .double(let d): return AnyBlazeCodable(d)
+                case .bool(let b): return AnyBlazeCodable(b)
+                case .date(let d): return AnyBlazeCodable(d)
+                case .uuid(let u): return AnyBlazeCodable(u)
+                default: return AnyBlazeCodable(String(describing: component))
+                }
+            }
+            let indexKey = CompoundIndexKey(normalizedComponents)
+            var inner = secondaryIndexes[compound] ?? [:]
+            var set = inner[indexKey] ?? Set<UUID>()
+            set.insert(id)
+            inner[indexKey] = set
+            secondaryIndexes[compound] = inner
+        }
+
+        // Optionally persist secondary index definitions and data to disk
+        if let layout = try? StorageLayout.load(from: metaURL) {
+            var updatedLayout = layout
+            updatedLayout.secondaryIndexes = secondaryIndexes.mapValues { inner in
+                inner.mapValues { Array($0) }
+            }
+            try? updatedLayout.save(to: metaURL)
+        }
+
         nextPageIndex += 1
         try saveLayout()
         return id
@@ -298,6 +474,10 @@ private func _fetchNoSync(id: UUID) throws -> BlazeDataRecord? {
     guard let index = indexMap[id] else { return nil }
     do {
         let data = try store.readPage(index: index)
+        guard let data = data else {
+            print("⚠️ No data found for page index \(index)")
+            return nil
+        }
         // Treat empty or zero-filled data as "not found"
         let trimmedData = data.prefix { $0 != 0 }
         if trimmedData.isEmpty { return nil }
@@ -338,32 +518,7 @@ public func fetchAll(byProject project: String) throws -> [BlazeDataRecord] {
 
 public func update(id: UUID, with data: BlazeDataRecord) throws {
     try queue.sync(flags: .barrier) {
-        guard let pageIndex = indexMap[id] else {
-            throw NSError(domain: "DynamicCollection", code: 404, userInfo: [NSLocalizedDescriptionKey: "Record not found"])
-        }
-        // Remove old keys from all indexes
-        if let oldDoc = try? _fetchNoSync(id: id)?.storage {
-            for (compound, _) in secondaryIndexes {
-                let fields = compound.components(separatedBy: "+")
-                let oldKey = CompoundIndexKey.fromFields(oldDoc, fields: fields)
-                secondaryIndexes[compound]?[oldKey]?.remove(id)
-                if let set = secondaryIndexes[compound]?[oldKey], set.isEmpty {
-                    secondaryIndexes[compound]?.removeValue(forKey: oldKey)
-                }
-            }
-        }
-        var document = data.storage
-        document["id"] = .string(id.uuidString)
-        document["updatedAt"] = .string(Date().description)
-        // Add to all indexes
-        for (compound, _) in secondaryIndexes {
-            let fields = compound.components(separatedBy: "+")
-            let indexKey = CompoundIndexKey.fromFields(document, fields: fields)
-            secondaryIndexes[compound, default: [:]][indexKey, default: []].insert(id)
-        }
-        let encoded = try JSONEncoder().encode(document)
-        try store.writePage(index: pageIndex, plaintext: encoded)
-        try saveLayout()
+        try _updateNoSync(id: id, with: data)
     }
 }
 
@@ -430,22 +585,36 @@ public func fetchAllSorted(by key: String, ascending: Bool = true) throws -> [Bl
     }
 }
 
-public func delete(id: UUID) throws {
-    try queue.sync(flags: .barrier) {
-        guard let _ = indexMap[id] else { return }
-        // Remove from all indexes (AGGRESSIVE CLEANUP)
-        if let oldDoc = try? _fetchNoSync(id: id)?.storage {
-            for (compound, _) in secondaryIndexes {
-                let fields = compound.components(separatedBy: "+")
-                let oldKey = CompoundIndexKey.fromFields(oldDoc, fields: fields)
-                secondaryIndexes[compound]?[oldKey]?.remove(id)
-                if let set = secondaryIndexes[compound]?[oldKey], set.isEmpty {
-                    secondaryIndexes[compound]?.removeValue(forKey: oldKey)
+private func _deleteNoSync(id: UUID) throws {
+    guard let _ = indexMap[id] else { return }
+
+    // Remove from all indexes (persisting mutations)
+    if let record = try? _fetchNoSync(id: id) {
+        let oldDoc = record.storage
+        for (compound, _) in secondaryIndexes {
+            let fields = compound.components(separatedBy: "+")
+            let oldKey = CompoundIndexKey.fromFields(oldDoc, fields: fields)
+            if var inner = secondaryIndexes[compound] {
+                if var set = inner[oldKey] {
+                    set.remove(id)
+                    if set.isEmpty {
+                        inner.removeValue(forKey: oldKey)
+                    } else {
+                        inner[oldKey] = set
+                    }
+                    secondaryIndexes[compound] = inner
                 }
             }
         }
-        indexMap[id] = nil
-        try saveLayout()
+    }
+
+    indexMap[id] = nil
+    try saveLayout()
+}
+
+public func delete(id: UUID) throws {
+    try queue.sync(flags: .barrier) {
+        try _deleteNoSync(id: id)
     }
 }
 
@@ -459,21 +628,38 @@ public func destroy() throws {
         secondaryIndexes = [:]
     }
 }
-/// Fetches all records matching a compound (multi-field) index.
+
+/// Fetch records using a compound index defined on multiple fields.
 /// - Parameters:
 ///   - fields: List of fields that were indexed together (order matters).
 ///   - values: List of values to match (order and count must match fields).
 /// - Returns: Records matching all indexed fields and values.
 /// - Example: fetch(byIndexedFields: ["status", "priority"], values: ["inProgress", 5])
-/// - Note: Compound index lookups require both the fields and values in the same order as the index was created.
-/// - Assertion: If fields.count != values.count, the lookup will not match any records.
 public func fetch(byIndexedFields fields: [String], values: [AnyHashable]) throws -> [BlazeDataRecord] {
+    precondition(fields.count == values.count, "Fields and values must align")
     let compoundKey = fields.joined(separator: "+")
-    let indexKey = CompoundIndexKey(values)
+
+    // Normalize values into AnyBlazeCodable (consistent with insert logic)
+    let normalizedComponents: [AnyBlazeCodable] = values.map { value in
+        switch value {
+        case let s as String: return AnyBlazeCodable(s)
+        case let i as Int: return AnyBlazeCodable(i)
+        case let d as Double: return AnyBlazeCodable(d)
+        case let b as Bool: return AnyBlazeCodable(b)
+        case let date as Date: return AnyBlazeCodable(date)
+        case let uuid as UUID: return AnyBlazeCodable(uuid)
+        default: return AnyBlazeCodable(String(describing: value))
+        }
+    }
+
+    let indexKey = CompoundIndexKey(normalizedComponents)
+
     return try queue.sync {
         guard let uuids = secondaryIndexes[compoundKey]?[indexKey], !uuids.isEmpty else {
+            print("⚠️ No matches for compoundKey \(compoundKey) with key \(indexKey)")
             return []
         }
+        print("✅ Found \(uuids.count) matches for compoundKey \(compoundKey) with key \(indexKey)")
         return try uuids.compactMap { try _fetchNoSync(id: $0) }
     }
 }
@@ -484,12 +670,16 @@ public func persist() throws {
     }
 }
 
-private func saveLayout() throws {
+internal func saveLayout() throws {
     // Save the current layout, including secondaryIndexes
     let layout = StorageLayout(indexMap: indexMap, nextPageIndex: nextPageIndex, secondaryIndexes: secondaryIndexes)
     print("📝 Saving layout: indexMap count = \(indexMap.count), nextPageIndex = \(nextPageIndex), secondaryIndexes count = \(secondaryIndexes.count)")
     do {
         try layout.save(to: metaURL)
+        // Also persist the full secondaryIndexes mapping to a separate .indexes file
+        let indexFile = metaURL.appendingPathExtension("indexes")
+        let data = try JSONEncoder().encode(secondaryIndexes.mapValues { $0.mapValues(Array.init) })
+        try data.write(to: indexFile)
     } catch {
         print("❌ Failed to save layout: \(error)")
         throw error
@@ -509,28 +699,70 @@ public func rawDump() throws -> [Int: Data] {
 /// Soft-deletes a record by marking it as deleted.
 public func softDelete(id: UUID) throws {
     try queue.sync(flags: .barrier) {
-        // Use _fetchNoSync to avoid nested sync
-        guard var record = try _fetchNoSync(id: id) else { return }
+        guard let record = try _fetchNoSync(id: id) else { return }
         var storage = record.storage
         storage["isDeleted"] = .bool(true)
-        try update(id: id, with: BlazeDataRecord(storage))
+        try _updateNoSync(id: id, with: BlazeDataRecord(storage))
     }
 }
 
 /// Permanently removes all soft-deleted records from disk.
 public func purge() throws {
     try queue.sync(flags: .barrier) {
-        // Use fetchAll (which now uses _fetchNoSync internally, so this is fine)
-        let toDelete = try fetchAll().compactMap { record -> UUID? in
-            if let isDeleted = record.storage["isDeleted"]?.value as? Bool, isDeleted {
-                return record.storage["id"]?.value as? UUID
+        let allIDs = Array(indexMap.keys)
+        for id in allIDs {
+            if let record = try? _fetchNoSync(id: id),
+               let isDeleted = record.storage["isDeleted"]?.boolValue, isDeleted {
+                try? _deleteNoSync(id: id)
             }
-            return nil
-        }
-        for id in toDelete {
-            try delete(id: id)
         }
     }
+}
+
+private func _updateNoSync(id: UUID, with data: BlazeDataRecord) throws {
+    guard let pageIndex = indexMap[id] else {
+        throw NSError(domain: "DynamicCollection", code: 404, userInfo: [NSLocalizedDescriptionKey: "Record not found"])
+    }
+
+    // Remove old keys
+    if let record = try? _fetchNoSync(id: id) {
+        let oldDoc = record.storage
+        for (compound, _) in secondaryIndexes {
+            let fields = compound.components(separatedBy: "+")
+            let oldKey = CompoundIndexKey.fromFields(oldDoc, fields: fields)
+            if var inner = secondaryIndexes[compound] {
+                if var set = inner[oldKey] {
+                    set.remove(id)
+                    if set.isEmpty {
+                        inner.removeValue(forKey: oldKey)
+                    } else {
+                        inner[oldKey] = set
+                    }
+                    secondaryIndexes[compound] = inner
+                }
+            }
+        }
+    }
+
+    // Apply new data
+    var document = data.storage
+    document["id"] = .uuid(id)
+    document["updatedAt"] = .date(Date())
+
+    // Add to indexes
+    for (compound, _) in secondaryIndexes {
+        let fields = compound.components(separatedBy: "+")
+        let indexKey = CompoundIndexKey.fromFields(document, fields: fields)
+        var inner = secondaryIndexes[compound] ?? [:]
+        var set = inner[indexKey] ?? Set<UUID>()
+        set.insert(id)
+        inner[indexKey] = set
+        secondaryIndexes[compound] = inner
+    }
+
+    let encoded = try JSONEncoder().encode(document)
+    try store.writePage(index: pageIndex, plaintext: encoded)
+    try saveLayout()
 }
 
 public func query() -> BlazeQueryContext {
@@ -540,16 +772,16 @@ public func query() -> BlazeQueryContext {
 
 // MARK: - MetaStore Conformance
 extension DynamicCollection: MetaStore {
-public func fetchMeta() throws -> [String: BlazeDocumentField] {
-    let layout = try StorageLayout.load(from: meta)
-    return layout.metaData
-}
+    public func fetchMeta() throws -> [String: BlazeDocumentField] {
+        let layout = try StorageLayout.load(from: metaURLPath)
+        return layout.metaData
+    }
 
-public func updateMeta(_ newMeta: [String: BlazeDocumentField]) throws {
-    var layout = try StorageLayout.load(from: meta)
-    layout.metaData = newMeta
-    try layout.save(to: meta)
-}
+    public func updateMeta(_ newMeta: [String: BlazeDocumentField]) throws {
+        var layout = try StorageLayout.load(from: metaURLPath)
+        layout.metaData = newMeta
+        try layout.save(to: metaURLPath)
+    }
 }
 
 public struct BlazeQueryContext {

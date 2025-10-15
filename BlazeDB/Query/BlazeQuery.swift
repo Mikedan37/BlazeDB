@@ -2,6 +2,7 @@
 //  BlazeDB
 //  Created by Michael Danylchuk on 6/15/25.
 import Foundation
+import ArgumentParser
 
 public typealias BlazeFilter<T> = (T) -> Bool
 
@@ -119,5 +120,19 @@ public struct BlazeDynamicWhereBuilder {
     @discardableResult
     public func equals(_ value: String) -> BlazeQuery<[String: BlazeDocumentField]> {
         return BlazeQuery(field: field, equals: value)
+    }
+}
+
+public extension BlazeQuery {
+    /// Alias for `filter`, reads better in query DSLs.
+    func evaluate(_ predicate: @escaping (T) -> Bool) -> Self {
+        return self.filter(predicate)
+    }
+
+    /// Convenience predicate to hand to `Collection.filter` and friends.
+    var matches: (T) -> Bool {
+        return { element in
+            !self.apply(to: [element]).isEmpty
+        }
     }
 }

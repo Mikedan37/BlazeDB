@@ -16,7 +16,11 @@ final class BlazeDBCrashSimTests: XCTestCase {
         if FileManager.default.fileExists(atPath: testFileURL.path) {
             try FileManager.default.removeItem(at: testFileURL)
         }
-        dbClient = try BlazeDBClient(fileURL: testFileURL, password: "test123")
+        dbClient = try BlazeDBClient(
+            name: "CrashSimTestDB",
+            fileURL: testFileURL,
+            password: "test12345"
+        )
     }
 
     override func tearDownWithError() throws {

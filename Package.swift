@@ -27,7 +27,8 @@ let package = Package(
             name: "BlazeDB",
             dependencies: [
                 "CryptoSwift",
-                .product(name: "SwiftCBOR", package: "SwiftCBOR")
+                .product(name: "SwiftCBOR", package: "SwiftCBOR"),
+                .product(name: "ArgumentParser", package: "swift-argument-parser")
             ],
             path: "BlazeDB",
             exclude: ["BlazeDB.docc"],

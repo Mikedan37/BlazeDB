@@ -11,7 +11,7 @@ import XCTest
 
 final class BlazeCollectionTests: XCTestCase {
     var tempURL: URL!
-    var store: PageStore!
+    var store: BlazeDB.PageStore!
     var collection: BlazeCollection<Commit>!
 
     override func setUpWithError() throws {
@@ -19,7 +19,7 @@ final class BlazeCollectionTests: XCTestCase {
             .appendingPathComponent(UUID().uuidString + ".blz")
         
         let key = try KeyManager.getKey(from: .password("secure-test"))
-        store = try PageStore(fileURL: tempURL)
+        store = try BlazeDB.PageStore(fileURL: tempURL, key: key)
 
         let metaURL = tempURL.deletingPathExtension().appendingPathExtension("meta")
         collection = try BlazeCollection(store: store, metaURL: metaURL, key: key)

@@ -1,0 +1,29 @@
+{
+  "configurations" : [
+    {
+      "id" : "8ABAE6AD-5206-4CAB-BD02-D6F6680C2BC7",
+      "name" : "Test Scheme Action",
+      "options" : {
+
+      }
+    }
+  ],
+  "defaultOptions" : {
+    "performanceAntipatternCheckerEnabled" : true,
+    "targetForVariableExpansion" : {
+      "containerPath" : "container:",
+      "identifier" : "BlazeShell",
+      "name" : "BlazeShell"
+    }
+  },
+  "testTargets" : [
+    {
+      "target" : {
+        "containerPath" : "container:",
+        "identifier" : "BlazeDBTests",
+        "name" : "BlazeDBTests"
+      }
+    }
+  ],
+  "version" : 1
+}

@@ -5,7 +5,7 @@ A blazing-fast, lightweight, and secure embedded Swift database with support for
 ![Platforms](https://img.shields.io/badge/platforms-macOS%20|%20iOS-red.svg)
 ![Version](https://img.shields.io/badge/version-0.1.0-orange.svg)
 
-## 🔥 Key Features
+## Key Features
 - Dynamic schema support with runtime-typed fields.
 - Secondary and compound index support.
 - Fully concurrent writes and reads.
@@ -16,13 +16,13 @@ A blazing-fast, lightweight, and secure embedded Swift database with support for
 
 ---
 
-## 📦 Installation
+## Installation
 
 BlazeDB is distributed as a Swift Package. Add it to your `Package.swift` or via Xcode’s Swift Package Manager integration.
 
 ---
 
-## 🧱 Usage
+## Usage
 
 ### Initialization
 
@@ -117,7 +117,7 @@ try db.purge()                  // permanently removes soft-deleted
 
 ---
 
-## 🔍 Secondary Indexes
+## Secondary Indexes
 
 ### Creating an Index
 
@@ -133,7 +133,7 @@ let bugs = try collection.fetch(byIndexedField: "status", value: "open")
 
 ---
 
-## 🔗 Compound Indexes
+## Compound Indexes
 
 ### Creating a Compound Index
 
@@ -149,7 +149,7 @@ let criticalOpen = try collection.fetch(byCompoundIndex: ["status", "severity"],
 
 ---
 
-## 🧠 Persistent Index Storage
+## Persistent Index Storage
 
 BlazeDB automatically stores all secondary and compound indexes to disk alongside the database file. On cold start, these indexes are reloaded instantly—without requiring a full scan of existing records.
 
@@ -170,7 +170,7 @@ The BlazeDB test suite covers:
 
 ---
 
-## 🔁 Transaction & Journaling Support
+## Transaction & Journaling Support
 
 BlazeDB uses a transaction log to ensure your writes are crash-safe and atomic.
 
@@ -182,21 +182,21 @@ Transaction recovery and journaling is automatic. No manual transaction start/co
 
 ---
 
-## 🔐 Encryption (Work in Progress)
+## Encryption (Work in Progress)
 
 - All data is AES-GCM encrypted at rest.
 - Key is derived via password, biometrics or stored in Secure Enclave if configured.
 
 ---
 
-## 📁 Project Isolation
+## Project Isolation
 
 Each record is scoped to a "project" (auto-set via UserDefaults).
 Allows contextual separation for multi-project use cases.
 
 ---
 
-## 🧬 Migrations
+## Migrations
 
 BlazeDB includes a built-in migration system to support smooth upgrades of database schemas without data loss.
 
@@ -234,7 +234,7 @@ BlazeDB includes tests that simulate version bumps and validate that data remain
 
 ---
 
-## 🛠️ Roadmap
+## Roadmap
 
 - [x] Index creation, lookup, and update on save/delete
 - [x] Compound index creation and scanning
@@ -249,7 +249,7 @@ BlazeDB includes tests that simulate version bumps and validate that data remain
 
 ---
 
-## ♻️ Recovery & Backup
+## Recovery & Backup
 
 BlazeDB includes support for crash recovery, automatic backups, and testing failure scenarios.
 

@@ -7,37 +7,64 @@ import XCTest
 
 final class BlazeDBRecoveryTests: XCTestCase {
     
+    /// Convenience to isolate crash flag so it doesn’t leak across tests
+    private let crashEnvKey = "BLAZEDB_CRASH_BEFORE_UPDATE"
+    
+    override func tearDown() {
+        // Always clear the crash flag after each test
+        unsetenv(crashEnvKey)
+        super.tearDown()
+    }
+    
     func testRecoveryAfterCrashSimulation() throws {
         // 1. Setup a temp DB file
         let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent("crashy.blazedb")
-        try? FileManager.default.removeItem(at: tempURL) // Clean slate
-
+        try? FileManager.default.removeItem(at: tempURL) // clean slate
+        
         // 2. Insert a record normally
-        let db = try BlazeDBClient(fileURL: tempURL, password: "password")
+        let db = try BlazeDBClient(
+            name: "RecoveryTestDB",
+            fileURL: tempURL,
+            password: "password"
+        )
+        
         let id = try db.insert(BlazeDataRecord([
             "title": .string("Recovery Test"),
             "createdAt": .date(.now),
             "status": .string("open")
         ]))
-
+        
         print("✅ Inserted initial record: \(id)")
-
+        
         // 3. Simulate app crash before update
-        setenv("BLAZEDB_CRASH_BEFORE_UPDATE", "1", 1)
+        setenv(crashEnvKey, "1", 1)
         do {
-            _ = try BlazeDBClient(fileURL: tempURL, password: "password").update(id: id, with: BlazeDataRecord([
+            let crashy = try BlazeDBClient(
+                name: "RecoveryTestDB",
+                fileURL: tempURL,
+                password: "password"
+            )
+            _ = try crashy.update(id: id, with: BlazeDataRecord([
                 "title": .string("Updated Title")
             ]))
-            XCTFail("Expected crash but didn’t get one")
+            XCTFail("Expected simulated crash but update completed")
         } catch {
-            print("💥 Expected crash simulated")
+            print("💥 Simulated crash occurred as expected")
         }
-
+        
         // 4. Reopen DB *without* crash mode and verify record is still valid
-        unsetenv("BLAZEDB_CRASH_BEFORE_UPDATE")
-        let recovered = try BlazeDBClient(fileURL: tempURL, password: "password")
+        unsetenv(crashEnvKey)
+        let recovered = try BlazeDBClient(
+            name: "RecoveryTestDB",
+            fileURL: tempURL,
+            password: "password"
+        )
+        
         let fetched = try recovered.fetch(id: id)
         XCTAssertNotNil(fetched, "Record should still be recoverable after crash")
+        XCTAssertEqual(fetched?.storage["title"], .string("Recovery Test"),
+                       "Title should not have been updated due to crash")
+        
         print("✅ Recovery check passed")
     }
 }

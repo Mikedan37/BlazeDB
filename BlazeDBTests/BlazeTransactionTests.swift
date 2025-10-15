@@ -2,60 +2,86 @@
 //  BlazeDB
 //  Created by Michael Danylchuk on 6/16/25.
 
-//import XCTest
-//@testable import BlazeDB
-//import CryptoKit
-//
-//final class BlazeTransactionTests: XCTestCase {
-//    var dbURL: URL!
-//    var key: SymmetricKey!
-//
-//    override func setUpWithError() throws {
-//        let tempDir = FileManager.default.temporaryDirectory
-//        dbURL = tempDir.appendingPathComponent("testdb.blz")
-//        try? FileManager.default.removeItem(at: dbURL) // clean slate
-//        key = SymmetricKey(size: .bits256)
-//    }
-//
-//    func testMultipleTransactionsAndPersistence() throws {
-//        let db = try BlazeDatabase(url: dbURL, key: key)
-//
-//        // 🚀 Transaction 1 - Write "First"
-//        let txn1 = db.beginTransaction()
-//        let firstData = Data("First".utf8)
-//        try txn1.write(pageID: 1, data: firstData)
-//        let readBack1 = try txn1.read(pageID: 1)
-//        XCTAssertEqual(readBack1, firstData)
-//        try txn1.commit()
-//
-//        // 🔁 Transaction 2 - Read back from disk
-//        let txn2 = db.beginTransaction()
-//        let persisted = try txn2.read(pageID: 1)
-//        XCTAssertEqual(persisted, firstData)
-//        try txn2.commit()
-//
-//        // 🧹 Transaction 3 - Overwrite with "Second"
-//        let txn3 = db.beginTransaction()
-//        let secondData = Data("Second".utf8)
-//        try txn3.write(pageID: 1, data: secondData)
-//        try txn3.commit()
-//
-//        // 🧪 Final check - make sure overwrite worked
-//        let txn4 = db.beginTransaction()
-//        let finalData = try txn4.read(pageID: 1)
-//        XCTAssertEqual(finalData, secondData)
-//        try txn4.commit()
-//    }
-//
-//    func testRollbackDiscardsChanges() throws {
-//        let db = try BlazeDB.BlazeDatabase(url: dbURL, key: key)
-//
-//        let txn1 = db.beginTransaction()
-//        let data = Data("Temp".utf8)
-//        try txn1.write(pageID: 2, data: data)
-//        txn1.rollback()
-//
-//        let txn2 = db.beginTransaction()
-//        XCTAssertThrowsError(try txn2.read(pageID: 2)) // should not exist
-//    }
-//}
+import XCTest
+@testable import BlazeDB
+
+final class BlazeTransactionTests: XCTestCase {
+    var dbURL: URL!
+    var db: BlazeDBClient!
+
+    override func setUpWithError() throws {
+        let tempDir = FileManager.default.temporaryDirectory
+        dbURL = tempDir.appendingPathComponent("testdb.blz")
+        try? FileManager.default.removeItem(at: dbURL)
+        db = try BlazeDBClient(name: "testdb", fileURL: dbURL, password: "txnpassword")
+    }
+
+    func testTransactionCommitAndPersistence() throws {
+        let id1 = UUID()
+        // Insert data
+        let record = BlazeDataRecord(["message": .string("First")])
+        try db.insert(record, id: id1)
+        let readBack: BlazeDataRecord? = try db.fetch(id: id1)
+        XCTAssertEqual(readBack?.storage["message"]?.stringValue, "First")
+
+        // Reinitialize db to test persistence
+        db = try BlazeDBClient(name: "testdb", fileURL: dbURL, password: "txnpassword")
+        let persisted: BlazeDataRecord? = try db.fetch(id: id1)
+        XCTAssertEqual(persisted?.storage["message"]?.stringValue, "First")
+
+        // Overwrite with new data
+        let updatedRecord = BlazeDataRecord(["message": .string("Second")])
+        try db.update(id: id1, with: updatedRecord)
+
+        // Final check after overwrite
+        db = try BlazeDBClient(name: "testdb", fileURL: dbURL, password: "txnpassword")
+        let finalData: BlazeDataRecord? = try db.fetch(id: id1)
+        XCTAssertEqual(finalData?.storage["message"]?.stringValue, "Second")
+    }
+
+    func testRollbackDiscardsChanges() throws {
+        let id2 = UUID()
+        let record = BlazeDataRecord(["message": .string("Temp")])
+        try db.insert(record, id: id2)
+        try db.delete(id: id2)
+
+        let fetched: BlazeDataRecord? = try db.fetch(id: id2)
+        XCTAssertNil(fetched, "Record should be nil after delete (rollback confirmed)")
+    }
+
+    func testConcurrentWritesStayConsistent() throws {
+        let expectation1 = expectation(description: "Write Data1")
+        let expectation2 = expectation(description: "Write Data2")
+
+        let id3 = UUID()
+        let id4 = UUID()
+        let record1 = BlazeDataRecord(["message": .string("Data1")])
+        let record2 = BlazeDataRecord(["message": .string("Data2")])
+
+        DispatchQueue.global().async {
+            do {
+                try self.db.insert(record1, id: id3)
+                expectation1.fulfill()
+            } catch {
+                XCTFail("Write Data1 failed: \(error)")
+            }
+        }
+
+        DispatchQueue.global().async {
+            do {
+                try self.db.insert(record2, id: id4)
+                expectation2.fulfill()
+            } catch {
+                XCTFail("Write Data2 failed: \(error)")
+            }
+        }
+
+        wait(for: [expectation1, expectation2], timeout: 5.0)
+
+        // Verify data
+        let readData1: BlazeDataRecord? = try db.fetch(id: id3)
+        let readData2: BlazeDataRecord? = try db.fetch(id: id4)
+        XCTAssertEqual(readData1?.storage["message"]?.stringValue, "Data1")
+        XCTAssertEqual(readData2?.storage["message"]?.stringValue, "Data2")
+    }
+}

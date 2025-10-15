@@ -1,6 +1,7 @@
 //  PageStoreTests.swift
 //  BlazeDB
 //  Created by Michael Danylchuk on 6/15/25.
+
 import XCTest
 @testable import BlazeDB
 import CryptoKit
@@ -9,13 +10,13 @@ final class PageStoreTests: XCTestCase {
 
     var tempURL: URL!
     var key: SymmetricKey!
-    var store: PageStore!
+    var store: BlazeDB.PageStore!
 
     override func setUpWithError() throws {
         let tempDir = FileManager.default.temporaryDirectory
         tempURL = tempDir.appendingPathComponent("test.blz")
         key = SymmetricKey(size: .bits256)
-        store = try PageStore(fileURL: tempURL)
+        store = try BlazeDB.PageStore(fileURL: tempURL, key: key)
     }
 
     override func tearDownWithError() throws {
@@ -31,9 +32,8 @@ final class PageStoreTests: XCTestCase {
     }
 
     func testInvalidRead() throws {
-        XCTAssertThrowsError(try store.readPage(index: 99)) { error in
-            print("Expected error for empty page: \(error)")
-        }
+        let result = try store.readPage(index: 99)
+        XCTAssertNil(result, "Reading a non-existent page should return nil")
     }
 
     func testPageTooLargeThrows() throws {

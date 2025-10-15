@@ -51,10 +51,11 @@ public final class BlazeCollection<Record: BlazeRecord> {
             return try fetchAll().filter(filter)
         }
     }
+    
     func fetch(id: UUID) throws -> Record? {
         try queue.sync {
             guard let index = indexMap[id] else { return nil }
-            let data = try store.readPage(index: index)
+            guard let data = try store.readPage(index: index) else { return nil }
             if data.allSatisfy({ $0 == 0 }) || data.isEmpty { return nil }
             let trimmed = data.prefix { $0 != 0 }
             guard !trimmed.isEmpty else { return nil }
@@ -67,7 +68,7 @@ public final class BlazeCollection<Record: BlazeRecord> {
             return try indexMap
                 .sorted(by: { $0.value < $1.value })
                 .compactMap { (_, index) in
-                    let data = try store.readPage(index: index)
+                    guard let data = try store.readPage(index: index) else { return nil }
                     guard !data.isEmpty && !isDataAllZero(data) else { return nil } // Don't decode empty or all-zero data!
                     let trimmed = data.prefix { $0 != 0 }
                     guard !trimmed.isEmpty else { return nil }
@@ -99,11 +100,24 @@ public final class BlazeCollection<Record: BlazeRecord> {
     }
     
     private func saveLayout() throws {
-        let layout = StorageLayout(
+        // Prepare full layout for persistence
+        var layout = StorageLayout(
             indexMap: indexMap,
             nextPageIndex: nextPageIndex,
             secondaryIndexes: [:]
         )
+
+        // Include any secondary index data if available in the store
+        // Use reflection to check for secondaryIndexes in PageStore
+        if let pageStore = store as? PageStore,
+           let mirror = Mirror(reflecting: pageStore).children.first(where: { $0.label == "secondaryIndexes" }),
+           let secondaryIndexes = mirror.value as? [String: [CompoundIndexKey: Set<UUID>]] {
+            layout.secondaryIndexes = secondaryIndexes.mapValues { inner in
+                inner.mapValues { Array($0) }
+            }
+        }
+
+        print("📝 Saving layout: indexMap count = \(indexMap.count), nextPageIndex = \(nextPageIndex), secondaryIndexes count = \(layout.secondaryIndexes.count)")
         try layout.save(to: metaURL)
     }
     

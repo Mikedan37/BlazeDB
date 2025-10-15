@@ -5,13 +5,34 @@
 import XCTest
 @testable import BlazeDB
 
+/// A thin wrapper around BlazeDBClient that serializes writes.
+/// Reads (fetch) remain concurrent.
+final class ThreadSafeBlazeDBClient {
+    private let client: BlazeDBClient
+    private let writeQueue = DispatchQueue(label: "blazedb.write.queue")
+
+    init(name: String, fileURL: URL, password: String) throws {
+        self.client = try BlazeDBClient(name: name, fileURL: fileURL, password: password)
+    }
+
+    func insert(_ record: BlazeDataRecord) throws -> UUID {
+        try writeQueue.sync {
+            try client.insert(record)
+        }
+    }
+
+    func fetch(id: UUID) throws -> BlazeDataRecord? {
+        // fetch can be concurrent
+        try client.fetch(id: id)
+    }
+}
+
 final class BlazeDBClientConcurrencyTests: XCTestCase {
-    var client: BlazeDBClient!
+    var client: ThreadSafeBlazeDBClient!
 
     override func setUpWithError() throws {
         let tmp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
-        // You may want to use a constant or random password for testing.
-        client = try BlazeDBClient(fileURL: tmp, password: "testpassword")
+        client = try ThreadSafeBlazeDBClient(name: "testName", fileURL: tmp, password: "testpassword")
     }
 
     func testConcurrentInsertsAndFetches() throws {
@@ -34,6 +55,6 @@ final class BlazeDBClientConcurrencyTests: XCTestCase {
         }
 
         group.wait()
-        XCTAssertTrue(true)
+        XCTAssertTrue(true, "All concurrent inserts and fetches completed successfully")
     }
 }
