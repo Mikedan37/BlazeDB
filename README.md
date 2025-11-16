@@ -8,7 +8,7 @@ A blazing-fast, schema-less embedded database that combines MongoDB's flexibilit
 ![Coverage](https://img.shields.io/badge/coverage-97%25-brightgreen)
 ![Performance](https://img.shields.io/badge/performance-40%2B%20metrics-yellow)
 ![Swift](https://img.shields.io/badge/swift-5.9-orange)
-![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20iOS-lightgrey)
+![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20iOS%20%7C%20Linux-lightgrey)
 ![SwiftPM Compatible](https://img.shields.io/badge/SwiftPM-Compatible-green.svg)
 ![Version](https://img.shields.io/badge/version-1.0.0-brightgreen.svg)
 ![Status](https://img.shields.io/badge/status-Production%20Ready-success.svg)
@@ -1413,6 +1413,40 @@ We track 40+ metrics including:
 // - Values: variable-length encoded
 ```
 
+### **When is BlazeBinary Used?**
+
+BlazeBinary is used in two contexts:
+
+**1. Local File Storage (On-Disk Format)**
+- All database files (`.blazedb`) store records in BlazeBinary format
+- When you call `insert()`, `update()`, or `delete()`, records are encoded to BlazeBinary before writing to disk
+- When you call `fetch()` or `query()`, records are decoded from BlazeBinary when reading from disk
+- This provides faster I/O and smaller file sizes compared to JSON storage
+
+**2. Network Sync (Over TCP/Unix Sockets)**
+- When syncing between databases, operations are encoded to BlazeBinary before transmission
+- The receiving database decodes BlazeBinary operations and applies them locally
+- Optional LZ4 compression can be applied for network transfers (3-5x faster than gzip)
+- This provides 4-6x faster sync compared to JSON-based protocols
+
+**Encoding/Decoding Flow:**
+```
+Local Write:
+  BlazeDataRecord → BlazeBinary Encoder → Disk (.blazedb file)
+
+Local Read:
+  Disk (.blazedb file) → BlazeBinary Decoder → BlazeDataRecord
+
+Network Sync:
+  Local Operation → BlazeBinary Encoder → [Optional LZ4] → Network → BlazeBinary Decoder → Remote Operation
+```
+
+**Performance Benefits:**
+- **File writes:** 48% faster encoding than JSON serialization
+- **File reads:** 48% faster decoding than JSON deserialization
+- **Network sync:** 4-6x faster end-to-end latency vs JSON protocols
+- **Storage:** 53% smaller files, reducing disk I/O and storage costs
+
 ### **Sync Transport Layers**
 
 BlazeDB supports **3 transport layers** for different use cases:
@@ -1471,7 +1505,7 @@ let engine = try await db.sync(
 
 ### **BlazeServer - Standalone Server Mode**
 
-**NEW:** BlazeDB can run as a standalone server! Perfect for Raspberry Pi, Docker, or cloud deployments.
+**NEW:** BlazeDB can run as a standalone server! Perfect for Raspberry Pi, Docker, Linux servers, or cloud deployments. BlazeDB supports macOS, iOS, and Linux platforms.
 
 **Quick Start:**
 ```bash

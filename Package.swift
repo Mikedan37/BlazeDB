@@ -5,7 +5,8 @@ let package = Package(
     name: "BlazeDB",
     platforms: [
         .macOS(.v12),
-        .iOS(.v15)
+        .iOS(.v15),
+        .linux
     ],
     products: [
         .library(
