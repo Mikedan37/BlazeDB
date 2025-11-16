@@ -1449,7 +1449,14 @@ Network Sync:
 
 ### **BlazeBinary Protocol Format**
 
-For developers building integrations, here's the complete BlazeBinary format specification:
+For developers building integrations, here's the complete BlazeBinary format specification.
+
+**Quick Reference:**
+- **Record Format:** Header (8 bytes) + Fields (variable) + CRC32 (4 bytes, optional)
+- **Field Key:** Common field = 1 byte ID, Custom field = 0xFF + length + UTF-8
+- **Field Value:** Type byte (0x01-0x09) + type-specific data
+- **Operation Format:** Operation ID + Timestamp + Node ID + Type + Collection + Record ID + Changes + Dependencies
+- **Network Frame:** Frame header (8 bytes) + Payload + CRC32 (4 bytes)
 
 #### **Record Format (File Storage)**
 
@@ -1478,39 +1485,39 @@ For developers building integrations, here's the complete BlazeBinary format spe
 Each field consists of a key encoding followed by a value encoding:
 
 **Key Encoding:**
-- **Common Field (1 byte):** Field ID `0x01-0x7F` for common fields like "id", "title", "status", etc.
+- **Common Field (1 byte):** Field ID `0x01-0x7F` for common fields (see table below)
 - **Custom Field (variable):** `0xFF` marker + 2-byte length + UTF-8 string
+
+**Common Field IDs (0x01-0x7F):**
+| ID | Field Name | ID | Field Name | ID | Field Name |
+|----|------------|----|------------|----|------------|
+| 0x01 | "id" | 0x02 | "createdAt" | 0x03 | "updatedAt" |
+| 0x04 | "userId" | 0x05 | "teamId" | 0x06 | "title" |
+| 0x07 | "description" | 0x08 | "status" | 0x09 | "priority" |
+| 0x0A | "assignedTo" | 0x0B | "tags" | 0x0C | "completedAt" |
+| 0x0D | "dueDate" | ... | ... | 0x7F | (last common field) |
+
+**Custom fields** (any field not in the common list) use: `[0xFF][Length: UInt16 BE][UTF-8 field name]`
 
 **Value Encoding (Type-Specific):**
 
-```
-Type 0x01: String
-  [0x01][Length: UInt32 BE][UTF-8 data]
+| Type | Byte | Format | Size |
+|------|------|--------|------|
+| String | 0x01 | `[0x01][Length: UInt32 BE][UTF-8 data]` | 5 + N bytes |
+| Int | 0x02 | `[0x02][Value: Int64 BE]` | 9 bytes |
+| Double | 0x03 | `[0x03][Value: Double BE]` | 9 bytes |
+| Bool | 0x04 | `[0x04][Value: 0x00 or 0x01]` | 2 bytes |
+| UUID | 0x05 | `[0x05][16 bytes binary UUID]` | 17 bytes |
+| Date | 0x06 | `[0x06][Timestamp: Double BE]` | 9 bytes |
+| Data | 0x07 | `[0x07][Length: UInt32 BE][Raw bytes]` | 5 + N bytes |
+| Array | 0x08 | `[0x08][Count: UInt16 BE][Item1][Item2]...[ItemN]` | 3 + sum(Items) |
+| Dictionary | 0x09 | `[0x09][Count: UInt16 BE][Key1][Val1][Key2][Val2]...[KeyN][ValN]` | 3 + sum(Pairs) |
 
-Type 0x02: Int
-  [0x02][Value: Int64 BE]
-
-Type 0x03: Double
-  [0x03][Value: Double BE]
-
-Type 0x04: Bool
-  [0x04][Value: 0x00 or 0x01]
-
-Type 0x05: UUID
-  [0x05][16 bytes binary UUID]
-
-Type 0x06: Date
-  [0x06][Timestamp: Double BE (seconds since 1970)]
-
-Type 0x07: Data
-  [0x07][Length: UInt32 BE][Raw bytes]
-
-Type 0x08: Array
-  [0x08][Count: UInt16 BE][Item1][Item2]...[ItemN]
-
-Type 0x09: Dictionary
-  [0x09][Count: UInt16 BE][Key1][Val1][Key2][Val2]...[KeyN][ValN]
-```
+**Notes:**
+- All multi-byte integers are **big-endian (BE)**
+- String and Data lengths are **UInt32** (supports up to 4GB)
+- Array and Dictionary counts are **UInt16** (supports up to 65,535 elements)
+- Nested structures (Array/Dictionary) are fully supported
 
 #### **Operation Format (Network Sync)**
 
@@ -1526,11 +1533,7 @@ For syncing operations over the network:
 │ Node ID: UUID (16 bytes)                │
 ├─────────────────────────────────────────┤
 │ Operation Type: UInt8 (1 byte)          │
-│   • 0x01 = insert                       │
-│   • 0x02 = update                       │
-│   • 0x03 = delete                       │
-│   • 0x04 = createIndex                  │
-│   • 0x05 = dropIndex                    │
+│   See Operation Types table below       │
 ├─────────────────────────────────────────┤
 │ Collection Name:                       │
 │   [Length: UInt8][UTF-8 string]        │
@@ -1544,6 +1547,15 @@ For syncing operations over the network:
 │   [Count: UInt8][UUID1][UUID2]...[UUIDN]│
 └─────────────────────────────────────────┘
 ```
+
+**Operation Types:**
+| Byte | Operation | Description |
+|------|-----------|-------------|
+| 0x01 | insert | Insert a new record |
+| 0x02 | update | Update an existing record |
+| 0x03 | delete | Delete a record |
+| 0x04 | createIndex | Create an index on a field |
+| 0x05 | dropIndex | Drop an index |
 
 #### **Example: Encoding a Record**
 
@@ -1584,10 +1596,7 @@ For TCP/WebSocket transport, operations are wrapped in a frame:
 │ Magic: "BLAZE" (5 bytes)                │
 │ Version: 0x01 (1 byte)                  │
 │ Message Type: UInt8 (1 byte)            │
-│   • 0x01 = Handshake                    │
-│   • 0x02 = SyncState                     │
-│   • 0x03 = PushOperations                │
-│   • 0x04 = Query                         │
+│   See Message Types table below         │
 │ Length: UInt32 BE (4 bytes)             │
 ├─────────────────────────────────────────┤
 │ Payload (BlazeBinary encoded)           │
@@ -1595,6 +1604,14 @@ For TCP/WebSocket transport, operations are wrapped in a frame:
 │ CRC32 Checksum (4 bytes)                │
 └─────────────────────────────────────────┘
 ```
+
+**Message Types:**
+| Byte | Message Type | Description |
+|------|--------------|-------------|
+| 0x01 | Handshake | Initial connection handshake |
+| 0x02 | SyncState | Synchronization state exchange |
+| 0x03 | PushOperations | Push operations to remote node |
+| 0x04 | Query | Execute query on remote node |
 
 **See:** `Docs/Architecture/BLAZEBINARY_PROTOCOL.md` for complete specification and examples.
 
