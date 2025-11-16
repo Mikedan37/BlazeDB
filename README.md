@@ -1447,6 +1447,157 @@ Network Sync:
 - **Network sync:** 4-6x faster end-to-end latency vs JSON protocols
 - **Storage:** 53% smaller files, reducing disk I/O and storage costs
 
+### **BlazeBinary Protocol Format**
+
+For developers building integrations, here's the complete BlazeBinary format specification:
+
+#### **Record Format (File Storage)**
+
+```
+┌─────────────────────────────────────────┐
+│ Header (8 bytes)                       │
+├─────────────────────────────────────────┤
+│ Magic: "BLAZE" (5 bytes)                │
+│ Version: 0x01 or 0x02 (1 byte)         │
+│   • 0x01 = No CRC32                    │
+│   • 0x02 = With CRC32 checksum         │
+│ Field Count: UInt16 (2 bytes, BE)      │
+├─────────────────────────────────────────┤
+│ Fields (variable length)                │
+│   [Field 1]                             │
+│   [Field 2]                             │
+│   ...                                   │
+│   [Field N]                             │
+├─────────────────────────────────────────┤
+│ CRC32 Checksum (4 bytes, optional)      │
+└─────────────────────────────────────────┘
+```
+
+#### **Field Encoding**
+
+Each field consists of a key encoding followed by a value encoding:
+
+**Key Encoding:**
+- **Common Field (1 byte):** Field ID `0x01-0x7F` for common fields like "id", "title", "status", etc.
+- **Custom Field (variable):** `0xFF` marker + 2-byte length + UTF-8 string
+
+**Value Encoding (Type-Specific):**
+
+```
+Type 0x01: String
+  [0x01][Length: UInt32 BE][UTF-8 data]
+
+Type 0x02: Int
+  [0x02][Value: Int64 BE]
+
+Type 0x03: Double
+  [0x03][Value: Double BE]
+
+Type 0x04: Bool
+  [0x04][Value: 0x00 or 0x01]
+
+Type 0x05: UUID
+  [0x05][16 bytes binary UUID]
+
+Type 0x06: Date
+  [0x06][Timestamp: Double BE (seconds since 1970)]
+
+Type 0x07: Data
+  [0x07][Length: UInt32 BE][Raw bytes]
+
+Type 0x08: Array
+  [0x08][Count: UInt16 BE][Item1][Item2]...[ItemN]
+
+Type 0x09: Dictionary
+  [0x09][Count: UInt16 BE][Key1][Val1][Key2][Val2]...[KeyN][ValN]
+```
+
+#### **Operation Format (Network Sync)**
+
+For syncing operations over the network:
+
+```
+┌─────────────────────────────────────────┐
+│ Operation ID: UUID (16 bytes)          │
+├─────────────────────────────────────────┤
+│ Timestamp Counter: UInt64 (8 bytes, BE)│
+│ Timestamp NodeID: UUID (16 bytes)       │
+├─────────────────────────────────────────┤
+│ Node ID: UUID (16 bytes)                │
+├─────────────────────────────────────────┤
+│ Operation Type: UInt8 (1 byte)          │
+│   • 0x01 = insert                       │
+│   • 0x02 = update                       │
+│   • 0x03 = delete                       │
+│   • 0x04 = createIndex                  │
+│   • 0x05 = dropIndex                    │
+├─────────────────────────────────────────┤
+│ Collection Name:                       │
+│   [Length: UInt8][UTF-8 string]        │
+├─────────────────────────────────────────┤
+│ Record ID: UUID (16 bytes)              │
+├─────────────────────────────────────────┤
+│ Changes: BlazeBinary Record             │
+│   [Length: UInt32 BE][Record data]      │
+├─────────────────────────────────────────┤
+│ Dependencies:                           │
+│   [Count: UInt8][UUID1][UUID2]...[UUIDN]│
+└─────────────────────────────────────────┘
+```
+
+#### **Example: Encoding a Record**
+
+**Input:**
+```swift
+BlazeDataRecord([
+    "id": .uuid(UUID("550e8400-e29b-41d4-a716-446655440000")),
+    "title": .string("Fix login bug"),
+    "priority": .int(5),
+    "status": .string("open")
+])
+```
+
+**BlazeBinary Output:**
+```
+[BLAZE][0x01][0x0004]                    // Header: 4 fields
+[0x01]                                    // Common field: "id"
+  [0x05][55 0E 84 00 E2 9B 41 D4 A7 16 44 66 55 44 00 00]  // UUID (17 bytes)
+[0x06]                                    // Common field: "title"
+  [0x01][0x0000000F][Fix login bug]       // String (20 bytes)
+[0x09]                                    // Common field: "priority"
+  [0x02][00 00 00 00 00 00 00 05]         // Int (9 bytes)
+[0x08]                                    // Common field: "status"
+  [0x01][0x00000004][open]                // String (9 bytes)
+Total: 8 + 1 + 17 + 1 + 20 + 1 + 9 + 1 + 9 = 67 bytes
+```
+
+**JSON Equivalent:** ~156 bytes (53% larger!)
+
+#### **Network Message Framing**
+
+For TCP/WebSocket transport, operations are wrapped in a frame:
+
+```
+┌─────────────────────────────────────────┐
+│ Frame Header (8 bytes)                  │
+├─────────────────────────────────────────┤
+│ Magic: "BLAZE" (5 bytes)                │
+│ Version: 0x01 (1 byte)                  │
+│ Message Type: UInt8 (1 byte)            │
+│   • 0x01 = Handshake                    │
+│   • 0x02 = SyncState                     │
+│   • 0x03 = PushOperations                │
+│   • 0x04 = Query                         │
+│ Length: UInt32 BE (4 bytes)             │
+├─────────────────────────────────────────┤
+│ Payload (BlazeBinary encoded)           │
+├─────────────────────────────────────────┤
+│ CRC32 Checksum (4 bytes)                │
+└─────────────────────────────────────────┘
+```
+
+**See:** `Docs/Architecture/BLAZEBINARY_PROTOCOL.md` for complete specification and examples.
+
 ### **Sync Transport Layers**
 
 BlazeDB supports **3 transport layers** for different use cases:
