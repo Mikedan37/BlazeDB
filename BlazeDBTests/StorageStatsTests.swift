@@ -200,4 +200,36 @@ final class StorageStatsTests: XCTestCase {
         let stats = try store.getStorageStats()
         XCTAssertGreaterThanOrEqual(stats.totalPages, writers * writesPer)
     }
+    
+    func testStorageStatsOnLargeFiles() throws {
+        let count = ProcessInfo.processInfo.environment["RUN_HEAVY_STRESS"] == "1" ? 5000 : 500
+        let fileURL = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".db")
+        
+        defer {
+            try? FileManager.default.removeItem(at: fileURL)
+            try? FileManager.default.removeItem(at: fileURL.deletingPathExtension().appendingPathExtension("meta"))
+        }
+        
+        let db = try BlazeDBClient(name: "LargeFileStats", fileURL: fileURL, password: "test-password")
+        
+        for i in 0..<count {
+            _ = try db.insert(BlazeDataRecord([
+                "index": .int(i),
+                "data": .string(String(repeating: "X", count: 200))
+            ]))
+        }
+        
+        if let collection = db.collection as? DynamicCollection {
+            try collection.persist()
+        }
+        
+        let startTime = Date()
+        let collection = db.collection as! DynamicCollection
+        let stats = try collection.store.getStorageStats()
+        let duration = Date().timeIntervalSince(startTime)
+        
+        XCTAssertEqual(stats.totalPages, count)
+        XCTAssertEqual(stats.orphanedPages, 0)
+        XCTAssertLessThan(duration, 5.0, "Stats should be fast even on large files")
+    }
 }

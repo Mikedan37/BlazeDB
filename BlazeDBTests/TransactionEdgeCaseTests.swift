@@ -131,16 +131,18 @@ final class TransactionEdgeCaseTests: XCTestCase {
         try tx.rollback()
         print("[TEST] Rollback complete")
 
-        // Fresh view must still see baselines.
+        // Fresh view must still see baselines (rollback should restore original data).
         let check = BlazeTransaction(store: store)
         let dataA = try check.read(pageID: a)
         print("[TEST] After rollback, read page \(a): \(String(data: dataA, encoding: .utf8) ?? "<binary>")")
         let dataB = try check.read(pageID: b)
         print("[TEST] After rollback, read page \(b): \(String(data: dataB, encoding: .utf8) ?? "<binary>")")
 
-        XCTAssertTrue(dataA.isEmpty, "Page \(a) should be empty after rollback — rollback deletes staged writes")
-        XCTAssertTrue(dataB.isEmpty, "Page \(b) should be empty after rollback — rollback deletes staged writes")
-        // After rollback, dataA and dataB are empty; do not attempt to decode or assert baseline.
+        // ✅ Rollback should restore baseline values
+        let recA = try JSONDecoder().decode(BlazeDataRecord.self, from: dataA)
+        let recB = try JSONDecoder().decode(BlazeDataRecord.self, from: dataB)
+        XCTAssertEqual(recA.asString, "baselineA", "Page \(a) should be restored to baseline after rollback")
+        XCTAssertEqual(recB.asString, "baselineB", "Page \(b) should be restored to baseline after rollback")
         try check.commit()
     }
 
@@ -159,10 +161,11 @@ final class TransactionEdgeCaseTests: XCTestCase {
         try tx.delete(pageID: pageID)
         try tx.rollback()
 
-        // After rollback, the page should be empty (rollback deletes staged deletes permanently).
+        // After rollback, the original record should be restored.
         let check = BlazeTransaction(store: store)
         let data = try check.read(pageID: pageID)
-        XCTAssertTrue(data.isEmpty, "Page \(pageID) should be empty after rollback — rollback deletes staged deletes permanently")
+        let restored = try JSONDecoder().decode(BlazeDataRecord.self, from: data)
+        XCTAssertEqual(restored.asString, "keep", "Page \(pageID) should be restored after rollback of delete")
         try check.commit()
     }
 
@@ -223,12 +226,12 @@ final class TransactionEdgeCaseTests: XCTestCase {
         print("[TEST] Completed rollback idempotence test")
 
         // ---- DEBUG NOTES ----
-        // Now we verify that no data was persisted.
+        // Now we verify that no data was persisted (page was new, so rollback should delete it).
         // If this fails, the rollback didn't properly revert the in-memory write buffer or WAL.
         // ----------------------
         let check = BlazeTransaction(store: store)
         let data = try check.read(pageID: pageID)
-        XCTAssertTrue(data.isEmpty, "Record should not exist after rollback")
+        XCTAssertTrue(data.isEmpty, "Record should not exist after rollback of new page")
         try check.commit()
     }
 

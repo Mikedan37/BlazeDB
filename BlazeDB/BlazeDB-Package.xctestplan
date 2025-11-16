@@ -23,6 +23,13 @@
         "identifier" : "BlazeDBTests",
         "name" : "BlazeDBTests"
       }
+    },
+    {
+      "target" : {
+        "containerPath" : "container:",
+        "identifier" : "BlazeDBIntegrationTests",
+        "name" : "BlazeDBIntegrationTests"
+      }
     }
   ],
   "version" : 1

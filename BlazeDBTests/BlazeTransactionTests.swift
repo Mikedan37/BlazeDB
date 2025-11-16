@@ -24,6 +24,11 @@ final class BlazeTransactionTests: XCTestCase {
         let readBack: BlazeDataRecord? = try db.fetch(id: id1)
         XCTAssertEqual(readBack?.storage["message"]?.stringValue, "First")
 
+        // Flush metadata before reopening (only 1 record, < 100 threshold)
+        if let collection = db.collection as? DynamicCollection {
+            try collection.persist()
+        }
+
         // Reinitialize db to test persistence
         db = try BlazeDBClient(name: "testdb", fileURL: dbURL, password: "txnpassword")
         let persisted: BlazeDataRecord? = try db.fetch(id: id1)
@@ -32,6 +37,11 @@ final class BlazeTransactionTests: XCTestCase {
         // Overwrite with new data
         let updatedRecord = BlazeDataRecord(["message": .string("Second")])
         try db.update(id: id1, with: updatedRecord)
+
+        // Flush metadata again before final check
+        if let collection = db.collection as? DynamicCollection {
+            try collection.persist()
+        }
 
         // Final check after overwrite
         db = try BlazeDBClient(name: "testdb", fileURL: dbURL, password: "txnpassword")

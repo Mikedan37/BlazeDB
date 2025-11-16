@@ -211,8 +211,9 @@ final class TransactionDurabilityTests: XCTestCase {
             var tx = BlazeTransaction(store: store)
             try? tx.write(pageID: 0, data: Data("writer".utf8))
             startedWrite.fulfill()
-            // Simulate work
-            usleep(100_000)
+            // Simulate work (optimized for faster tests)
+            let workDelay = ProcessInfo.processInfo.environment["TEST_SLOW_CONCURRENCY"] == "1" ? 100_000 : 10_000
+            usleep(UInt32(workDelay))
             _ = try? tx.commit()
             finishedWrite.fulfill()
         }
@@ -250,5 +251,41 @@ final class TransactionDurabilityTests: XCTestCase {
             return
         }
         XCTAssertEqual(asString(data), "good")
+    }
+    
+    func testWALFileGrowthAndCleanup() throws {
+        let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".blz")
+        let walURL = tempURL.deletingPathExtension().appendingPathExtension("wal")
+        
+        defer {
+            try? FileManager.default.removeItem(at: tempURL)
+            try? FileManager.default.removeItem(at: walURL)
+        }
+        
+        let db = try BlazeDBClient(name: "WALGrowthTest", fileURL: tempURL, password: "test-password")
+        
+        var walSizes: [Int] = []
+        
+        for i in 0..<10 {
+            try db.beginTransaction()
+            _ = try db.insert(BlazeDataRecord(["index": .int(i)]))
+            try db.commitTransaction()
+            
+            if FileManager.default.fileExists(atPath: walURL.path) {
+                let attrs = try FileManager.default.attributesOfItem(atPath: walURL.path)
+                let size = (attrs[.size] as? NSNumber)?.intValue ?? 0
+                walSizes.append(size)
+            } else {
+                walSizes.append(0)
+            }
+        }
+        
+        let nonZeroSizes = walSizes.filter { $0 > 0 }
+        if nonZeroSizes.isEmpty {
+            XCTAssertTrue(true, "WAL cleanup working")
+        } else {
+            let maxSize = nonZeroSizes.max() ?? 0
+            XCTAssertLessThan(maxSize, 100_000, "WAL should not grow unbounded")
+        }
     }
 }

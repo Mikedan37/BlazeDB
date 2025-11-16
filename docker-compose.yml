@@ -1,0 +1,19 @@
+version: "3.9"
+
+services:
+  blazedb-server:
+    build: .
+    container_name: blazedb-server
+    ports:
+      - "${BLAZEDB_PORT:-9090}:9090"
+    environment:
+      # Override these from your environment or .env file as needed
+      - BLAZEDB_DB_NAME=${BLAZEDB_DB_NAME:-ServerMainDB}
+      - BLAZEDB_PASSWORD=${BLAZEDB_PASSWORD:-change-me}
+      - BLAZEDB_PROJECT=${BLAZEDB_PROJECT:-BlazeServer}
+      - BLAZEDB_PORT=9090
+      - BLAZEDB_AUTH_TOKEN=${BLAZEDB_AUTH_TOKEN:-}
+      - BLAZEDB_SHARED_SECRET=${BLAZEDB_SHARED_SECRET:-}
+    restart: unless-stopped
+
+

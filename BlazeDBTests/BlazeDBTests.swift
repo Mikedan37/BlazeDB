@@ -34,6 +34,109 @@ final class BlazeDBClientTests: XCTestCase {
         let record = try client.fetch(id: id)
         XCTAssertEqual(record?.storage["content"], .some(.string("Hello, Blaze!")))
     }
+    
+    // MARK: - Performance Tests
+    
+    /// Measure insert performance for single records
+    func testPerformance_SingleInsert() throws {
+        measure {
+            do {
+                _ = try client.insert(BlazeDataRecord([
+                    "type": .string("note"),
+                    "content": .string("Performance test"),
+                    "timestamp": .date(Date())
+                ]))
+            } catch {
+                XCTFail("Insert failed: \(error)")
+            }
+        }
+    }
+    
+    /// Measure fetch performance by ID
+    func testPerformance_FetchByID() throws {
+        // Setup: Insert test record
+        let id = try client.insert(BlazeDataRecord([
+            "content": .string("Test data")
+        ]))
+        
+        measure {
+            do {
+                _ = try client.fetch(id: id)
+            } catch {
+                XCTFail("Fetch failed: \(error)")
+            }
+        }
+    }
+    
+    /// Measure update performance
+    func testPerformance_Update() throws {
+        // Setup: Insert test record
+        let id = try client.insert(BlazeDataRecord([
+            "content": .string("Original")
+        ]))
+        
+        measure {
+            do {
+                try client.update(id: id, with: BlazeDataRecord([
+                    "content": .string("Updated")
+                ]))
+            } catch {
+                XCTFail("Update failed: \(error)")
+            }
+        }
+    }
+    
+    /// Measure delete performance
+    func testPerformance_Delete() throws {
+        measure {
+            do {
+                // Insert and delete in one measure block
+                let id = try client.insert(BlazeDataRecord([
+                    "content": .string("To delete")
+                ]))
+                try client.delete(id: id)
+            } catch {
+                XCTFail("Delete failed: \(error)")
+            }
+        }
+    }
+    
+    /// Measure batch insert performance (100 records)
+    func testPerformance_BatchInsert100() throws {
+        measure {
+            do {
+                let records = (0..<100).map { i in
+                    BlazeDataRecord([
+                        "index": .int(i),
+                        "data": .string("Record \(i)")
+                    ])
+                }
+                _ = try client.insertMany(records)
+            } catch {
+                XCTFail("Batch insert failed: \(error)")
+            }
+        }
+    }
+    
+    /// Measure fetchAll performance with 100 records
+    func testPerformance_FetchAll100() throws {
+        // Setup: Insert 100 records
+        let records = (0..<100).map { i in
+            BlazeDataRecord([
+                "index": .int(i),
+                "data": .string("Record \(i)")
+            ])
+        }
+        _ = try client.insertMany(records)
+        
+        measure {
+            do {
+                _ = try client.fetchAll()
+            } catch {
+                XCTFail("FetchAll failed: \(error)")
+            }
+        }
+    }
 
     func testSoftDeleteAndPurge() throws {
         let id = UUID()
@@ -83,6 +186,9 @@ final class BlazeDBClientTests: XCTestCase {
             "status": .string("open")
         ])
         _ = try collection.insert(record)
+        
+        // Flush metadata before restart (only 1 record, < 100 threshold)
+        try collection.persist()
 
         // simulate restart
         let reopenedStore = try BlazeDB.PageStore(fileURL: dbURL, key: key)
@@ -119,6 +225,9 @@ final class BlazeDBClientTests: XCTestCase {
             "priority": .string("high")
         ])
         _ = try collection.insert(record)
+        
+        // Flush metadata before restart (only 1 record, < 100 threshold)
+        try collection.persist()
 
         let reopenedStore = try BlazeDB.PageStore(fileURL: dbURL, key: key)
         let reloaded = try DynamicCollection(
@@ -136,6 +245,24 @@ final class BlazeDBClientTests: XCTestCase {
         XCTAssertEqual(results.first?.storage["priority"], .some(.string("high")))
     }
 
+    func testCheckIntegrityReturnValues() throws {
+        let dbURL = tempDBURL()
+        let db = try BlazeDBClient(name: "IntegrityTest", fileURL: dbURL, password: "test-password")
+        
+        _ = try db.insert(BlazeDataRecord(["valid": .string("data")]))
+        
+        if let collection = db.collection as? DynamicCollection {
+            try collection.persist()
+        }
+        
+        let report = db.checkDatabaseIntegrity()
+        
+        XCTAssertTrue(report.ok, "Integrity check should pass for valid database")
+        XCTAssertTrue(report.issues.isEmpty, "Should have no issues for valid database")
+        
+        try? FileManager.default.removeItem(at: dbURL)
+    }
+    
     private func tempDBURL() -> URL {
         let dir = FileManager.default.temporaryDirectory
         return dir.appendingPathComponent(UUID().uuidString + ".blaze")

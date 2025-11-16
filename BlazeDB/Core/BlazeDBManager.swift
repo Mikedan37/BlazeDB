@@ -26,10 +26,14 @@ public var mountedDatabases: [String: DynamicCollection] = [:]
     public func mountDatabase(named name: String, fileURL: URL, password: String) throws -> DynamicCollection {
         let key = Self.keyFromPassword(password)
         let metaURL = fileURL.deletingPathExtension().appendingPathExtension("meta")
-        let store = try PageStore(fileURL: fileURL)
-        let log = TransactionLog(logFileURL: metaURL)
-        try log.recover(into: store, from: metaURL)
-        print("🧱 Recovered journal for \(name)")
+        let store = try PageStore(fileURL: fileURL, key: key)
+        
+        // Use correct transaction log URL (txn_log.json, not .meta)
+        let txnLogURL = fileURL.deletingLastPathComponent().appendingPathComponent("txn_log.json")
+        let log = TransactionLog(logFileURL: txnLogURL)
+        try log.recover(into: store, from: txnLogURL)
+        BlazeLogger.info("Recovered journal for \(name)")
+        
         let collection = try DynamicCollection(store: store, metaURL: metaURL, project: name, encryptionKey: key)
         mountedDatabases[name] = collection
         currentKey = key
@@ -106,10 +110,14 @@ public var mountedDatabases: [String: DynamicCollection] = [:]
         guard let fileURL = dbFileURLs[name], let metaURL = dbMetaURLs[name], let key = currentKey else {
             throw NSError(domain: "BlazeDBManager", code: 404, userInfo: [NSLocalizedDescriptionKey: "Database file or meta URL or encryption key not found"])
         }
-        let store = try PageStore(fileURL: fileURL)
-        let log = TransactionLog(logFileURL: metaURL)
-        try log.recover(into: store, from: metaURL)
-        print("🧱 Recovered journal for \(name)")
+        let store = try PageStore(fileURL: fileURL, key: key)
+        
+        // Use correct transaction log URL (txn_log.json, not .meta)
+        let txnLogURL = fileURL.deletingLastPathComponent().appendingPathComponent("txn_log.json")
+        let log = TransactionLog(logFileURL: txnLogURL)
+        try log.recover(into: store, from: txnLogURL)
+        BlazeLogger.info("Recovered journal for \(name)")
+        
         let collection = try DynamicCollection(store: store, metaURL: metaURL, project: name, encryptionKey: key)
         mountedDatabases[name] = collection
     }
@@ -132,12 +140,12 @@ public var mountedDatabases: [String: DynamicCollection] = [:]
     public func recoverAllTransactions() throws {
         for (name, collection) in mountedDatabases {
             guard let metaURL = dbMetaURLs[name] else {
-                print("⚠️ Missing meta URL for \(name); skipping recovery")
+                BlazeLogger.warn("Missing meta URL for \(name); skipping recovery")
                 continue
             }
             let log = TransactionLog(logFileURL: metaURL)
             try log.recover(into: collection.store, from: metaURL)
-            print("🧱 Recovered journal for \(name)")
+            BlazeLogger.info("Recovered journal for \(name)")
         }
     }
     
@@ -149,7 +157,7 @@ public var mountedDatabases: [String: DynamicCollection] = [:]
             }
             // No-op if not flushable
         }
-        print("💾 Flushed all mounted DBs")
+        BlazeLogger.debug("Flushed all mounted DBs")
     }
 }
 

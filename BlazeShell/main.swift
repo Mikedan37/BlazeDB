@@ -134,6 +134,51 @@ if args.contains("--manager") {
     exit(0)
 }
 
+// ========================================
+// TEMP: Create test database for Visualizer
+// (CHECK THIS FIRST, before usage guard!)
+// ========================================
+if args.contains("--create-test") {
+    print("📦 Creating test database for BlazeDBVisualizer...")
+    
+    let testDB = try BlazeDBClient(
+        name: "test_visualizer",
+        fileURL: URL(fileURLWithPath: "/Users/mdanylchuk/Desktop/test.blazedb"),
+        password: "test1234"  // ✅ 8 characters minimum!
+    )
+    
+    print("✏️  Adding 50 test records...")
+    
+    for i in 0..<50 {
+        _ = try testDB.insert(BlazeDataRecord([
+            "id": .int(i),
+            "name": .string("Test Item \(i)"),
+            "email": .string("test\(i)@example.com"),
+            "age": .int(20 + (i % 50)),
+            "active": .bool(i % 2 == 0),
+            "score": .double(Double(i) * 1.5),
+            "created": .date(Date())
+        ]))
+    }
+    
+    try testDB.persist()
+    
+    print("")
+    print("✅ SUCCESS! Created test.blazedb on Desktop!")
+    print("📍 Location: /Users/mdanylchuk/Desktop/test.blazedb")
+    print("🔑 Password: test1234")
+    print("📊 Records: 50")
+    print("")
+    print("Now:")
+    print("1. Switch scheme to 'BlazeDBVisualizer'")
+    print("2. Run it (⌘R)")
+    print("3. You'll see 'test_visualizer' in the list!")
+    print("4. Click it and unlock with password: test1234")
+    print("5. Watch the live dashboard! 🔥")
+    
+    exit(0)
+}
+
 guard args.count >= 3 else {
     print("Usage: BlazeShell <db-path> <password>")
     exit(1)

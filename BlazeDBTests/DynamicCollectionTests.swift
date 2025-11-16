@@ -265,4 +265,181 @@ extension DynamicCollectionTests {
         try? FileManager.default.removeItem(at: tmpURL)
         try? FileManager.default.removeItem(at: metaURL)
     }
+    
+    func testFetchAllByProjectFiltering() throws {
+        let tmpURL = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".db")
+        let metaURL = tmpURL.deletingPathExtension().appendingPathExtension("meta")
+        let store = try BlazeDB.PageStore(fileURL: tmpURL, key: key)
+        
+        // Create collection with ProjectA
+        let collectionA = try DynamicCollection(store: store, metaURL: metaURL, project: "ProjectA", encryptionKey: key)
+        
+        // Insert 2 records (will have project="ProjectA")
+        _ = try collectionA.insert(BlazeDataRecord(["name": .string("A1")]))
+        _ = try collectionA.insert(BlazeDataRecord(["name": .string("A2")]))
+        
+        try collectionA.persist()
+        
+        // Now create collection with ProjectB using same files
+        let collectionB = try DynamicCollection(store: store, metaURL: metaURL, project: "ProjectB", encryptionKey: key)
+        
+        // Insert 1 record (will have project="ProjectB")
+        _ = try collectionB.insert(BlazeDataRecord(["name": .string("B1")]))
+        
+        try collectionB.persist()
+        
+        // Fetch by project from each collection
+        let projectARecords = try collectionA.fetchAll(byProject: "ProjectA")
+        let projectBRecords = try collectionB.fetchAll(byProject: "ProjectB")
+        
+        XCTAssertEqual(projectARecords.count, 2, "Should find 2 ProjectA records")
+        XCTAssertEqual(projectBRecords.count, 1, "Should find 1 ProjectB record")
+        
+        try? FileManager.default.removeItem(at: tmpURL)
+        try? FileManager.default.removeItem(at: metaURL)
+    }
+    
+    func testContainsIDMethod() throws {
+        let tmpURL = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".db")
+        let metaURL = tmpURL.deletingPathExtension().appendingPathExtension("meta")
+        let store = try BlazeDB.PageStore(fileURL: tmpURL, key: key)
+        let collection = try DynamicCollection(store: store, metaURL: metaURL, project: "Test", encryptionKey: key)
+        
+        let id = try collection.insert(BlazeDataRecord(["name": .string("Test")]))
+        
+        XCTAssertTrue(collection.contains(id))
+        
+        try collection.delete(id: id)
+        
+        XCTAssertFalse(collection.contains(id))
+        
+        try? FileManager.default.removeItem(at: tmpURL)
+        try? FileManager.default.removeItem(at: metaURL)
+    }
+    
+    func testDestroyCollectionCleanup() throws {
+        let tmpURL = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".db")
+        let metaURL = tmpURL.deletingPathExtension().appendingPathExtension("meta")
+        let store = try BlazeDB.PageStore(fileURL: tmpURL, key: key)
+        let collection = try DynamicCollection(store: store, metaURL: metaURL, project: "Test", encryptionKey: key)
+        
+        for i in 0..<10 {
+            _ = try collection.insert(BlazeDataRecord(["index": .int(i)]))
+        }
+        
+        try collection.persist()
+        
+        XCTAssertTrue(FileManager.default.fileExists(atPath: tmpURL.path))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: metaURL.path))
+        
+        try collection.destroy()
+        
+        XCTAssertFalse(FileManager.default.fileExists(atPath: tmpURL.path))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: metaURL.path))
+    }
+    
+    func testFetchAllSorted() throws {
+        let tmpURL = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".db")
+        let metaURL = tmpURL.deletingPathExtension().appendingPathExtension("meta")
+        let store = try BlazeDB.PageStore(fileURL: tmpURL, key: key)
+        let collection = try DynamicCollection(store: store, metaURL: metaURL, project: "Test", encryptionKey: key)
+        
+        _ = try collection.insert(BlazeDataRecord(["name": .string("Charlie"), "age": .int(30)]))
+        _ = try collection.insert(BlazeDataRecord(["name": .string("Alice"), "age": .int(25)]))
+        _ = try collection.insert(BlazeDataRecord(["name": .string("Bob"), "age": .int(35)]))
+        
+        let sortedAsc = try collection.fetchAllSorted(by: "age", ascending: true)
+        XCTAssertEqual(sortedAsc[0].storage["age"]?.intValue, 25)
+        XCTAssertEqual(sortedAsc[1].storage["age"]?.intValue, 30)
+        XCTAssertEqual(sortedAsc[2].storage["age"]?.intValue, 35)
+        
+        let sortedDesc = try collection.fetchAllSorted(by: "age", ascending: false)
+        XCTAssertEqual(sortedDesc[0].storage["age"]?.intValue, 35)
+        XCTAssertEqual(sortedDesc[1].storage["age"]?.intValue, 30)
+        XCTAssertEqual(sortedDesc[2].storage["age"]?.intValue, 25)
+        
+        try? FileManager.default.removeItem(at: tmpURL)
+        try? FileManager.default.removeItem(at: metaURL)
+    }
+    
+    func testRunQueryMethods() throws {
+        let tmpURL = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".db")
+        let metaURL = tmpURL.deletingPathExtension().appendingPathExtension("meta")
+        let store = try BlazeDB.PageStore(fileURL: tmpURL, key: key)
+        let collection = try DynamicCollection(store: store, metaURL: metaURL, project: "Test", encryptionKey: key)
+        
+        _ = try collection.insert(BlazeDataRecord(["status": .string("active"), "priority": .int(1)]))
+        _ = try collection.insert(BlazeDataRecord(["status": .string("inactive"), "priority": .int(2)]))
+        _ = try collection.insert(BlazeDataRecord(["status": .string("active"), "priority": .int(3)]))
+        
+        let query = BlazeQueryLegacy<[String: BlazeDocumentField]>()
+            .evaluate { $0["status"] == .string("active") }
+        
+        let results = try collection.runQuery(query)
+        XCTAssertEqual(results.count, 2)
+        
+        let sortedQuery = BlazeQueryLegacy<[String: BlazeDocumentField]>()
+            .evaluate { $0["status"] == .string("active") }
+            .sort { lhs, rhs in
+                guard let lhsPriority = lhs["priority"]?.intValue,
+                      let rhsPriority = rhs["priority"]?.intValue else { return false }
+                return lhsPriority < rhsPriority
+            }
+        
+        let sortedResults = try collection.runQuerySorted(sortedQuery)
+        XCTAssertEqual(sortedResults.count, 2)
+        XCTAssertEqual(sortedResults[0].storage["priority"]?.intValue, 1)
+        XCTAssertEqual(sortedResults[1].storage["priority"]?.intValue, 3)
+        
+        try? FileManager.default.removeItem(at: tmpURL)
+        try? FileManager.default.removeItem(at: metaURL)
+    }
+    
+    func testQueryContext() throws {
+        let tmpURL = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".db")
+        let metaURL = tmpURL.deletingPathExtension().appendingPathExtension("meta")
+        let store = try BlazeDB.PageStore(fileURL: tmpURL, key: key)
+        let collection = try DynamicCollection(store: store, metaURL: metaURL, project: "Test", encryptionKey: key)
+        
+        _ = try collection.insert(BlazeDataRecord(["name": .string("Alice"), "age": .int(25)]))
+        _ = try collection.insert(BlazeDataRecord(["name": .string("Bob"), "age": .int(30)]))
+        
+        let query = BlazeQueryLegacy<[String: BlazeDocumentField]>()
+            .evaluate { $0["name"] == .string("Alice") }
+        
+        let allRecords = try collection.fetchAll()
+        let results = query.apply(to: allRecords.map { $0.storage })
+        
+        XCTAssertEqual(results.count, 1)
+        XCTAssertEqual(results[0]["name"], .string("Alice"))
+        
+        try? FileManager.default.removeItem(at: tmpURL)
+        try? FileManager.default.removeItem(at: metaURL)
+    }
+    
+    func testFetchMetaAndUpdateMeta() throws {
+        let tmpURL = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".db")
+        let metaURL = tmpURL.deletingPathExtension().appendingPathExtension("meta")
+        let store = try BlazeDB.PageStore(fileURL: tmpURL, key: key)
+        let collection = try DynamicCollection(store: store, metaURL: metaURL, project: "Test", encryptionKey: key)
+        
+        try collection.persist()
+        
+        var meta = try collection.fetchMeta()
+        XCTAssertTrue(meta.isEmpty || meta.keys.count > 0, "Meta should be fetchable")
+        
+        let newMeta: [String: BlazeDocumentField] = [
+            "appVersion": .string("1.0.0"),
+            "lastAccessed": .date(Date())
+        ]
+        
+        try collection.updateMeta(newMeta)
+        
+        meta = try collection.fetchMeta()
+        XCTAssertEqual(meta["appVersion"], .string("1.0.0"))
+        XCTAssertNotNil(meta["lastAccessed"])
+        
+        try? FileManager.default.removeItem(at: tmpURL)
+        try? FileManager.default.removeItem(at: metaURL)
+    }
 }

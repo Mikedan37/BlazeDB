@@ -40,4 +40,52 @@ final class KeyManagerTests: XCTestCase {
             }
         }
     }
+    
+    func testCustomSaltKeyDerivation() throws {
+        let password = "test-password-123"
+        let salt1 = "CustomSalt1".data(using: .utf8)!
+        let salt2 = "CustomSalt2".data(using: .utf8)!
+        
+        let key1 = try KeyManager.getKey(from: password, salt: salt1)
+        let key2 = try KeyManager.getKey(from: password, salt: salt2)
+        
+        let key1Data = key1.withUnsafeBytes { Data($0) }
+        let key2Data = key2.withUnsafeBytes { Data($0) }
+        
+        XCTAssertNotEqual(key1Data, key2Data, "Different salts should produce different keys")
+    }
+    
+    func testKeyCacheWorks() throws {
+        let password = "cached-password-123"
+        let salt = "TestSalt".data(using: .utf8)!
+        
+        let startTime1 = Date()
+        let key1 = try KeyManager.getKey(from: password, salt: salt)
+        let duration1 = Date().timeIntervalSince(startTime1)
+        
+        let startTime2 = Date()
+        let key2 = try KeyManager.getKey(from: password, salt: salt)
+        let duration2 = Date().timeIntervalSince(startTime2)
+        
+        let key1Data = key1.withUnsafeBytes { Data($0) }
+        let key2Data = key2.withUnsafeBytes { Data($0) }
+        
+        XCTAssertEqual(key1Data, key2Data, "Cached key should be identical")
+        XCTAssertLessThan(duration2, duration1 / 10, "Cached key should be much faster")
+    }
+    
+    func testMultiplePasswordsSimultaneous() throws {
+        var keys: [Data] = []
+        
+        for i in 0..<10 {
+            let password = "password-\(i)-test1234"
+            let salt = "Salt\(i)".data(using: .utf8)!
+            let key = try KeyManager.getKey(from: password, salt: salt)
+            let keyData = key.withUnsafeBytes { Data($0) }
+            keys.append(keyData)
+        }
+        
+        let uniqueKeys = Set(keys)
+        XCTAssertEqual(uniqueKeys.count, 10, "All 10 keys should be unique")
+    }
 }

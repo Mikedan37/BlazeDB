@@ -1,0 +1,6 @@
+# API
+
+Canonical API docs:
+- API_REFERENCE.md
+- COMPLETE_PROJECT_DOCUMENTATION.md
+

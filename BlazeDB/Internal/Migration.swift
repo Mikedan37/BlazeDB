@@ -32,9 +32,17 @@ extension BlazeDBClient {
 
     /// 🛡️ Backup DB file before applying migration
     private func backupBeforeMigration(version: Int) throws {
-        let backupURL = fileURL.deletingLastPathComponent()
-            .appendingPathComponent("backup_v\(version).blazedb")
+        let dir = fileURL.deletingLastPathComponent()
+        let backupURL = dir.appendingPathComponent("backup_v\(version)_\(UUID().uuidString).blazedb")
+        let backupMetaURL = dir.appendingPathComponent("backup_v\(version)_\(UUID().uuidString).meta")
+        
+        // Copy database file
         try FileManager.default.copyItem(at: fileURL, to: backupURL)
+        
+        // Copy meta file if it exists
+        if FileManager.default.fileExists(atPath: metaURL.path) {
+            try? FileManager.default.copyItem(at: metaURL, to: backupMetaURL)
+        }
     }
 
     /// ⚙️ Automatically reconciles field additions/removals
@@ -42,8 +50,9 @@ extension BlazeDBClient {
         let allRecords = try fetchAll()
         var updated = 0
 
-        for (id, record) in allRecords {
-            var migrated = record
+        for record in allRecords {
+            guard let id = record.storage["id"]?.uuidValue else { continue }
+            var migrated = record.storage
 
             // Example: Add new field if missing
             if migrated["createdAt"] == nil {
@@ -55,12 +64,12 @@ extension BlazeDBClient {
             //     migrated["newField"] = .string("migrated")
             // }
 
-            if migrated != record {
-                try update(id: id, with: migrated)
+            if migrated != record.storage {
+                try update(id: id, with: BlazeDataRecord(migrated))
                 updated += 1
             }
         }
 
-        print("🔁 Migration updated \(updated) records")
+        BlazeLogger.info("Migration updated \(updated) records")
     }
 }

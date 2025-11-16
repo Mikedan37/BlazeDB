@@ -34,6 +34,11 @@ final class BlazeDBRecoveryTests: XCTestCase {
             "status": .string("open")
         ]))
         
+        // Flush metadata (only 1 record, < 100 threshold)
+        if let collection = db.collection as? DynamicCollection {
+            try collection.persist()
+        }
+        
         print("✅ Inserted initial record: \(id)")
         
         // 3. Simulate app crash before update

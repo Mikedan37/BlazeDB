@@ -1,0 +1,8 @@
+# Architecture
+
+Canonical architecture docs:
+- ARCHITECTURE.md
+- DISTRIBUTED_ARCHITECTURE.md
+- SERVER_CLIENT_ARCHITECTURE.md
+- SYNC_TOPOLOGY.md
+
