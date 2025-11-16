@@ -16,22 +16,22 @@ A blazing-fast, schema-less embedded database that combines MongoDB's flexibilit
 
 ---
 
-## 🎉 What's New
+## What's New
 
-### **Distributed Sync & BlazeBinary Protocol** 🔥
+### Distributed Sync & BlazeBinary Protocol
 - **BlazeBinary encoding** - 53% smaller than JSON, 48% faster encoding/decoding
 - **3 transport layers** - In-memory (<1ms), Unix sockets (~0.5ms), TCP (~5ms)
 - **E2E encryption** - AES-256-GCM with secure handshake (ECDH P-256)
 - **Standalone server** - Run BlazeDB as a server on Raspberry Pi, Docker, or cloud
 - **TCP auto-discovery** - No Bonjour required, works on all platforms
 
-### **Convenience API** ✨
+### Convenience API
 - **Name-based database creation** - No file paths needed
 - **Auto-discovery** - Find databases by name
 - **Database registry** - Manage multiple databases easily
 - **Default location** - `~/Library/Application Support/BlazeDB/`
 
-### **Complete Documentation** 📚
+### Complete Documentation
 - **Organized docs** - All documentation in category folders
 - **API reference** - Complete reference with usage comments
 - **Sync examples** - 10+ copy-paste examples for all transport layers
@@ -41,7 +41,7 @@ A blazing-fast, schema-less embedded database that combines MongoDB's flexibilit
 
 ---
 
-## 🚀 Quick Start (5 Minutes)
+## Quick Start
 
 ### Install
 
@@ -79,7 +79,7 @@ let bug = BlazeDataRecord([
     "status": .string("open")
 ])
 let id = try db.insert(bug)
-print("✅ Inserted with ID: \(id)")
+print("Inserted with ID: \(id)")
 
 // 3. Query data
 let openBugs = try db.query()
@@ -87,7 +87,7 @@ let openBugs = try db.query()
     .where("priority", greaterThan: .int(3))
     .orderBy("priority", descending: true)
     .all()
-print("📊 Found \(openBugs.count) high-priority bugs")
+print("Found \(openBugs.count) high-priority bugs")
 
 // 4. Use in SwiftUI (auto-updating!)
 struct BugListView: View {
@@ -102,11 +102,11 @@ struct BugListView: View {
 }
 ```
 
-**That's it! 🎉** You now have a production-ready database with ACID transactions, encryption, crash recovery, and more.
+That's it! You now have a production-ready database with ACID transactions, encryption, crash recovery, and more.
 
 ---
 
-## 📦 Migration from Other Databases
+## Migration from Other Databases
 
 ### SQLite → BlazeDB
 
@@ -161,26 +161,26 @@ See `Tools/DataImporter.swift` for details.
 ---
 
 ## Key Features
-- 🔥 **Direct Codable Support** - Use ANY Codable struct, zero conversion! (NEW in v2.5!) 🎉
-- 🎯 **Type-Safe KeyPath Queries** - Autocomplete + compile-time checking (NEW in v2.5!) ✨
-- 🧪 **Built-In Data Seeding** - Factories, fixtures, snapshots for testing (NEW in v2.5!) 🌱
-- 🔥 **10/10 Developer Experience** - Clean DSL, no boilerplate, SwiftUI-first
-- ⚡ **Zero type wrapping** - Auto-converts types, no more `.string()` everywhere
-- 🎯 **Fluent API** - Chain operations, builder patterns, modern Swift
-- 🔥 **Zero migrations** - Add fields anytime, no schema changes
-- ⚡ **Full aggregations** - COUNT, SUM, AVG, MIN, MAX, GROUP BY, HAVING
-- 🚀 **Optimized JOINs** - Batch fetching, 250x faster than N+1
-- 🔍 **Inverted index search** - 50-1000x faster full-text search
-- 💎 **Query caching** - 100x faster repeated queries
-- 📦 **Batch operations** - insertMany, updateMany, deleteMany (10x faster)
-- 🏦 **ACID transactions** - Bank-grade reliability
-- 📝 **Comprehensive logging** - 5 levels, performance metrics
-- 🧪 **970+ comprehensive tests** - 907 unit + 20+ integration tests, 97% coverage, **LEGENDARY suite**
-- 🪶 **Zero dependencies** - Except SwiftCBOR
+- **Direct Codable Support** - Use ANY Codable struct, zero conversion! (NEW in v2.5!)
+- **Type-Safe KeyPath Queries** - Autocomplete + compile-time checking (NEW in v2.5!)
+- **Built-In Data Seeding** - Factories, fixtures, snapshots for testing (NEW in v2.5!)
+- **10/10 Developer Experience** - Clean DSL, no boilerplate, SwiftUI-first
+- **Zero type wrapping** - Auto-converts types, no more `.string()` everywhere
+- **Fluent API** - Chain operations, builder patterns, modern Swift
+- **Zero migrations** - Add fields anytime, no schema changes
+- **Full aggregations** - COUNT, SUM, AVG, MIN, MAX, GROUP BY, HAVING
+- **Optimized JOINs** - Batch fetching, 250x faster than N+1
+- **Inverted index search** - 50-1000x faster full-text search
+- **Query caching** - 100x faster repeated queries
+- **Batch operations** - insertMany, updateMany, deleteMany (10x faster)
+- **ACID transactions** - Bank-grade reliability
+- **Comprehensive logging** - 5 levels, performance metrics
+- **970+ comprehensive tests** - 907 unit + 20+ integration tests, 97% coverage
+- **Zero dependencies** - Except SwiftCBOR
 
 ---
 
-## 🎉 NEW in v2.4: 10/10 Developer Experience!
+## NEW in v2.4: 10/10 Developer Experience
 
 **Before (Rough):**
 ```swift
@@ -227,11 +227,11 @@ let openBugs = try db.find { $0.string("status") == "open" }
 
 ---
 
-## 🎉 NEW in v2.5: Perfect DX - Codable + KeyPaths + Seeding!
+## NEW in v2.5: Perfect DX - Codable + KeyPaths + Seeding
 
 **The final transformation - BlazeDB is now PERFECT:**
 
-### **1. Direct Codable Support** 🔥
+### 1. Direct Codable Support
 
 **Use ANY Codable struct - zero conversion needed!**
 
@@ -246,7 +246,7 @@ struct Bug: Codable, Identifiable {
 
 // Use it directly - NO CONVERSION!
 let bug = Bug(id: UUID(), title: "Login broken", priority: 5, status: "open")
-try db.insert(bug)  // Just works! ✨
+try db.insert(bug)  // Just works!
 
 let fetched = try db.fetch(Bug.self, id: bug.id)
 print(fetched.title)  // Direct access! No .stringValue!
@@ -257,27 +257,27 @@ let bugs: [Bug] = try db.query(Bug.self)
 ```
 
 **Benefits:**
-- ✅ Zero boilerplate (no BlazeDocument, no manual conversion)
-- ✅ Use existing Codable models
-- ✅ Autocomplete on all properties
-- ✅ Type-safe throughout
-- ✅ Works with SwiftUI models
-- ✅ Mix with dynamic records (best of both!)
+- Zero boilerplate (no BlazeDocument, no manual conversion)
+- Use existing Codable models
+- Autocomplete on all properties
+- Type-safe throughout
+- Works with SwiftUI models
+- Mix with dynamic records (best of both worlds)
 
 ---
 
-### **2. Type-Safe KeyPath Queries** 🎯
+### 2. Type-Safe KeyPath Queries
 
 **Autocomplete + compile-time checking - no more typos!**
 
 ```swift
 // Type in Xcode: db.query(Bug.self).where(\.
-// Xcode suggests: ✅ title ✅ priority ✅ status
+// Xcode suggests: title, priority, status
 
 let bugs = try db.query(Bug.self)
-    .where(\.status, equals: "open")        // Autocomplete! ✨
-    .where(\.priority, greaterThan: 5)      // Type-checked! ✨
-    .orderBy(\.createdAt, descending: true)  // No typos! ✨
+    .where(\.status, equals: "open")        // Autocomplete!
+    .where(\.priority, greaterThan: 5)      // Type-checked!
+    .orderBy(\.createdAt, descending: true)  // No typos!
     .all()
 
 // Typos caught at compile time:
@@ -285,14 +285,14 @@ let bugs = try db.query(Bug.self)
 ```
 
 **Benefits:**
-- ✅ Autocomplete in Xcode (type `\.` and see all fields!)
-- ✅ Compile-time checking (typos = errors, not runtime crashes)
-- ✅ Safe refactoring (rename field → updates all queries)
-- ✅ Better performance (compile-time optimization)
+- Autocomplete in Xcode (type `\.` and see all fields!)
+- Compile-time checking (typos = errors, not runtime crashes)
+- Safe refactoring (rename field → updates all queries)
+- Better performance (compile-time optimization)
 
 ---
 
-### **3. Built-In Data Seeding** 🌱
+### 3. Built-In Data Seeding
 
 **Testing made ridiculously easy!**
 
@@ -325,11 +325,11 @@ let bugs = try db.loadFixtures(Bug.self, from: fixturesURL)
 ```
 
 **Benefits:**
-- ✅ Test data in seconds (not hours)
-- ✅ Realistic random data generators
-- ✅ Reusable factories
-- ✅ Snapshots for clean test state
-- ✅ JSON fixtures for team collaboration
+- Test data in seconds (not hours)
+- Realistic random data generators
+- Reusable factories
+- Snapshots for clean test state
+- JSON fixtures for team collaboration
 
 ---
 
@@ -412,7 +412,7 @@ BlazeLogger.handler = { message, level in
 
 BlazeDB offers **two initialization patterns** to match your coding style:
 
-#### 🎯 **Option 1: Failable Initializer (Simple & Clean)**
+#### Option 1: Failable Initializer (Simple & Clean)
 
 Perfect for quick setup and production code. No try-catch boilerplate needed:
 
@@ -422,7 +422,7 @@ let url = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
 
 // Failable initializer - returns nil on failure
 guard let db = BlazeDBClient(name: "MyApp", at: url, password: "secure-password-123") else {
-    print("❌ Failed to initialize database - check logs")
+    print("Failed to initialize database - check logs")
     return
 }
 
@@ -431,12 +431,12 @@ let id = try db.insert(BlazeDataRecord(["title": .string("Hello")]))
 ```
 
 **Benefits:**
-- ✅ Clean, readable code with `guard let`
-- ✅ Errors automatically logged with details
-- ✅ No try-catch boilerplate for initialization
-- ✅ Perfect for production apps
+- Clean, readable code with `guard let`
+- Errors automatically logged with details
+- No try-catch boilerplate for initialization
+- Perfect for production apps
 
-#### 🔍 **Option 2: Throwing Initializer (Detailed Error Info)**
+#### Option 2: Throwing Initializer (Detailed Error Info)
 
 Perfect when you need to handle specific errors differently:
 
@@ -448,28 +448,28 @@ do {
     let db = try BlazeDBClient(
         name: "MyApp",
         fileURL: url, 
-        password: "secure-password-123"  // ⚠️ Must be 8+ characters
+        password: "secure-password-123"  // Must be 8+ characters
     )
-    print("✅ Database initialized successfully")
+    print("Database initialized successfully")
     
     // Use db...
 } catch BlazeDBError.transactionFailed(let msg) where msg.contains("Password") {
-    print("❌ Weak password: \(msg)")
+    print("Weak password: \(msg)")
     // Prompt user for stronger password
 } catch BlazeDBError.migrationFailed(let msg) {
-    print("❌ Migration failed: \(msg)")
+    print("Migration failed: \(msg)")
     // Handle migration failure
 } catch {
-    print("❌ Database error: \(error)")
+    print("Database error: \(error)")
     // Generic error handling
 }
 ```
 
 **Benefits:**
-- ✅ Catch and handle specific error types
-- ✅ Full error details for debugging
-- ✅ Fine-grained error recovery
-- ✅ Perfect for critical systems
+- Catch and handle specific error types
+- Full error details for debugging
+- Fine-grained error recovery
+- Perfect for critical systems
 
 ### Error Handling
 
@@ -489,7 +489,7 @@ BlazeLogger.enableDebugMode()  // See detailed initialization logs
 let db = try BlazeDBClient(...)
 ```
 
-### 🔥 NEW: Unified API (v2.0)
+### NEW: Unified API (v2.0)
 
 **ONE execute method for everything** - no more confusion!
 
@@ -521,13 +521,13 @@ let groups = try result.grouped  // Extract groups
 ```
 
 **Why this is better:**
-- ✅ ONE execute method instead of 6
-- ✅ Smart type detection
-- ✅ Clean, consistent API
-- ✅ Type-safe result extraction
-- ✅ No more "which execute method?" confusion
+- ONE execute method instead of 6
+- Smart type detection
+- Clean, consistent API
+- Type-safe result extraction
+- No more "which execute method?" confusion
 
-### ⚡ NEW: Async/Await Support (v2.0)
+### NEW: Async/Await Support (v2.0)
 
 **All operations are now async** - perfect for SwiftUI and modern Swift!
 
@@ -593,13 +593,13 @@ struct BugListView: View {
 }
 ```
 
-### 🔥 NEW: SwiftUI Property Wrapper (v2.1)
+### NEW: SwiftUI Property Wrapper (v2.1)
 
 **The EASIEST way to use BlazeDB in SwiftUI** - auto-updating, zero boilerplate!
 
 ```swift
 struct BugListView: View {
-    // That's it! No @State, no .task, no manual fetching! 🔥
+    // That's it! No @State, no .task, no manual fetching!
     @BlazeQuery(
         db: myDatabase,
         where: "status", equals: .string("open"),
@@ -618,12 +618,12 @@ struct BugListView: View {
 ```
 
 **Why this is SICK:**
-- ✅ Auto-updates when data changes
-- ✅ No manual state management
-- ✅ Pull-to-refresh built-in
-- ✅ Loading states included
-- ✅ Error handling included
-- ✅ Auto-refresh support
+- Auto-updates when data changes
+- No manual state management
+- Pull-to-refresh built-in
+- Loading states included
+- Error handling included
+- Auto-refresh support
 
 **More examples:**
 
@@ -691,7 +691,7 @@ let urgentBugs = $openBugs.filtered { bug in
 
 **Works with tabs, navigation, search, and more!** See `Examples/SwiftUIExample.swift` for complete examples.
 
-### 💎 NEW: Type Safety (v2.2) - OPTIONAL!
+### NEW: Type Safety (v2.2) - OPTIONAL
 
 **Compile-time safety for your models** - catch typos before they run!
 
@@ -723,15 +723,15 @@ struct Bug: BlazeDocument {
 
 // Use it (compile-time safe!)
 let bug = Bug(title: "Fix login", priority: 1, status: "open")
-try await db.insert(bug)  // Type-safe! ✅
+try await db.insert(bug)  // Type-safe!
 
 let fetched = try await db.fetch(Bug.self, id: id)
-print(fetched?.title)      // Direct access! ✅
-print(fetched?.priority)   // No .intValue! ✅
+print(fetched?.title)      // Direct access!
+print(fetched?.priority)   // No .intValue!
 
 // Update with type safety
 var updated = fetched!
-updated.priority = 10  // Type-checked! ✅
+updated.priority = 10  // Type-checked!
 try await db.update(updated)
 ```
 
@@ -748,7 +748,7 @@ let settings = BlazeDataRecord([
 ])
 try await db.insert(settings)
 
-// Same database, both work! 🔥
+// Same database, both work!
 ```
 
 **Type-Safe SwiftUI:**
@@ -759,25 +759,25 @@ struct BugListView: View {
         type: Bug.self,
         where: "status", equals: .string("open")
     )
-    var bugs: [Bug]  // Type-safe! ✅
+    var bugs: [Bug]  // Type-safe!
     
     var body: some View {
         List(bugs) { bug in
-            Text(bug.title)  // Direct access, no .stringValue! ✅
-            Text("P\(bug.priority)")  // Already Int! ✅
+            Text(bug.title)  // Direct access, no .stringValue!
+            Text("P\(bug.priority)")  // Already Int!
         }
     }
 }
 ```
 
 **Benefits:**
-- ✅ Catches typos at compile time (`bug.titl` → error!)
-- ✅ Autocomplete in Xcode (type `bug.` and see all fields)
-- ✅ 57% less code (no optional unwrapping)
-- ✅ Safe refactoring (rename field → Xcode shows all uses)
-- ✅ Wrong types = compile errors (can't set string to int field)
-- ✅ 100% backward compatible (opt-in, not mandatory)
-- ✅ Still supports dynamic fields (best of both worlds!)
+- Catches typos at compile time (`bug.titl` → error!)
+- Autocomplete in Xcode (type `bug.` and see all fields)
+- 57% less code (no optional unwrapping)
+- Safe refactoring (rename field → Xcode shows all uses)
+- Wrong types = compile errors (can't set string to int field)
+- 100% backward compatible (opt-in, not mandatory)
+- Still supports dynamic fields (best of both worlds!)
 
 **See:**
 - `Examples/TypeSafeModels.swift` - Template models
@@ -938,7 +938,7 @@ let bugs = try db.query()
     .executeWithCache(ttl: 60)  // Cache for 60 seconds
 
 // Subsequent calls within 60s: 0.5ms (from cache)
-// 100x faster! 🚀
+// 100x faster!
 
 // Cache aggregations too
 let stats = try db.query()
@@ -995,7 +995,7 @@ let statuses = try db.distinct(field: "status")
 
 ### Queries
 
-**New: Query Builder (Chainable API)** 🔥
+**New: Query Builder (Chainable API)**
 
 ```swift
 // Simple query
@@ -1222,14 +1222,14 @@ let result2 = try await db.query().search("login", in: ["title"]).execute()
 #### Performance
 
 **Without Index (Full Scan):**
-- 1,000 records: ~50ms ✅
-- 10,000 records: ~500ms ⚠️
-- 100,000 records: ~5 seconds ❌
+- 1,000 records: ~50ms
+- 10,000 records: ~500ms
+- 100,000 records: ~5 seconds
 
 **With Inverted Index:**
-- 1,000 records: ~0.6ms ⚡ (80x faster)
-- 10,000 records: ~1ms ⚡ (500x faster)
-- 100,000 records: ~5ms ⚡ (1000x faster!)
+- 1,000 records: ~0.6ms (80x faster)
+- 10,000 records: ~1ms (500x faster)
+- 100,000 records: ~5ms (1000x faster!)
 
 **Memory Overhead:**
 - ~0.5-1% of database size
@@ -1281,11 +1281,11 @@ print("Found \(bugs.count) bugs in 5ms")
 
 ---
 
-## Testing - LEGENDARY Suite 🏆
+## Testing
 
 BlazeDB has a **world-class testing suite** that puts it in the **TOP 1%** of Swift projects:
 
-### 📊 **Test Suite Stats:**
+### Test Suite Stats
 
 - **907 unit tests** - covering all features at 97% code coverage
 - **20+ integration scenarios** - real-world workflows from dev to production
@@ -1293,7 +1293,7 @@ BlazeDB has a **world-class testing suite** that puts it in the **TOP 1%** of Sw
 - **5 failure scenarios** - crash recovery and corruption handling
 - **100% pass rate** - bulletproof quality
 
-### 🚀 **Quick Start:**
+### Quick Start
 
 ```bash
 # Fast feedback (30s)
@@ -1312,34 +1312,34 @@ BlazeDB has a **world-class testing suite** that puts it in the **TOP 1%** of Sw
 ./scripts/test.sh all
 ```
 
-### 🎯 **What We Test:**
+### What We Test
 
 **Unit Tests:**
-- ✅ All CRUD operations
-- ✅ ACID transactions
-- ✅ Queries, filters, JOINs
-- ✅ Aggregations (COUNT, SUM, AVG, MIN, MAX, GROUP BY)
-- ✅ Full-text search with InvertedIndex
-- ✅ Indexes (single & compound)
-- ✅ Type safety & Codable integration
-- ✅ SwiftUI bindings (`@BlazeQuery`)
-- ✅ Concurrency & thread safety
-- ✅ Memory management & leaks
-- ✅ Error handling & recovery
+- All CRUD operations
+- ACID transactions
+- Queries, filters, JOINs
+- Aggregations (COUNT, SUM, AVG, MIN, MAX, GROUP BY)
+- Full-text search with InvertedIndex
+- Indexes (single & compound)
+- Type safety & Codable integration
+- SwiftUI bindings (`@BlazeQuery`)
+- Concurrency & thread safety
+- Memory management & leaks
+- Error handling & recovery
 
 **Integration Tests:**
-- ✅ Complete bug tracker lifecycle (init → crash → recovery)
-- ✅ Feature combinations (transaction + search, JOIN + aggregation)
-- ✅ User workflows (notes app, e-commerce, team collaboration)
-- ✅ Failure scenarios (crashes, corruption, conflicts)
-- ✅ Performance under load
+- Complete bug tracker lifecycle (init → crash → recovery)
+- Feature combinations (transaction + search, JOIN + aggregation)
+- User workflows (notes app, e-commerce, team collaboration)
+- Failure scenarios (crashes, corruption, conflicts)
+- Performance under load
 
 **Sanitizer Tests:**
-- ✅ Thread Sanitizer (race conditions, deadlocks)
-- ✅ Address Sanitizer (memory errors, leaks)
-- ✅ Undefined Behavior Sanitizer
+- Thread Sanitizer (race conditions, deadlocks)
+- Address Sanitizer (memory errors, leaks)
+- Undefined Behavior Sanitizer
 
-### ⚡ **Performance Metrics:**
+### Performance Metrics
 
 We track 40+ metrics including:
 - Insert/fetch/update/delete latency
@@ -1358,11 +1358,11 @@ We track 40+ metrics including:
 ### 🤖 **Automation:**
 
 **CI/CD (GitHub Actions):**
-- ✅ Tests on every PR
-- ✅ Coverage reports (Codecov)
-- ✅ Performance tracking
-- ✅ Nightly stress tests
-- ✅ Automated releases
+- Tests on every PR
+- Coverage reports (Codecov)
+- Performance tracking
+- Nightly stress tests
+- Automated releases
 
 **Local Automation:**
 - Pre-commit hooks for fast validation
@@ -1383,7 +1383,7 @@ We track 40+ metrics including:
 
 ---
 
-## 🔄 Distributed Sync & BlazeBinary Protocol
+## Distributed Sync & BlazeBinary Protocol
 
 **BlazeDB includes a complete distributed sync system** that lets databases synchronize across devices, apps, and networks using the **BlazeBinary protocol** - a custom binary format optimized for speed and efficiency.
 
