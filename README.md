@@ -106,6 +106,118 @@ That's it! You now have a production-ready database with ACID transactions, encr
 
 ---
 
+## Tools
+
+BlazeDB includes a complete suite of tools for development, management, and deployment:
+
+### **BlazeShell - Command-Line Interface**
+
+Interactive REPL for database operations from the terminal.
+
+**Usage:**
+```bash
+# Basic mode
+BlazeShell /path/to/database.blazedb password
+
+# Manager mode (multiple databases)
+BlazeShell --manager
+
+# Create test database
+BlazeShell --create-test
+```
+
+**Commands:**
+- `insert <json>` - Insert record from JSON
+- `fetch <uuid>` - Fetch record by ID
+- `fetchAll` - Fetch all records
+- `update <uuid> <json>` - Update record
+- `delete <uuid>` - Delete record
+- `softDelete <uuid>` - Soft delete record
+
+**See:** `Docs/Tools/BLAZESHELL_DOCUMENTATION.md` for complete CLI reference.
+
+---
+
+### **BlazeDBVisualizer - Database Management Suite**
+
+macOS application for monitoring, managing, and visualizing BlazeDB databases.
+
+**Features:**
+- **8 Tabs:** Overview, Data, Queries, Schema, Performance, Security, Sync, Telemetry
+- **Real-time Monitoring** - Live metrics, health status, auto-refresh
+- **Data Management** - Browse, search, edit records inline, bulk operations
+- **Visual Query Builder** - Build queries without code
+- **Performance Charts** - Track metrics over time
+- **Security Dashboard** - View policies, test permissions, audit logs
+- **Menu Bar Integration** - Quick access from menu bar
+
+**Usage:**
+1. Launch BlazeDBVisualizer app
+2. Auto-discovers databases in `~/Library/Application Support/BlazeDB/`
+3. Click database → Enter password → Unlock
+4. Use tabs to monitor, edit, query, and manage
+
+**See:** `Docs/Tools/BLAZEDBVISUALIZER_DOCUMENTATION.md` for complete guide.
+
+---
+
+### **BlazeStudio - Visual Schema Designer**
+
+Visual block-based editor for designing database schemas and generating Swift code.
+
+**Features:**
+- **Drag-and-Drop Blocks** - Visual schema design
+- **Relationship Mapping** - Connect entities visually
+- **Code Generation** - Export to Swift/BlazeDB code
+- **Query Builder** - Build queries visually
+- **Real-time Preview** - See results as you build
+
+**Workflow:**
+1. Create Class blocks for entities
+2. Add fields and define types
+3. Connect blocks to define relationships
+4. Export to Swift code
+5. Use generated code in your app
+
+**See:** `Docs/Tools/BLAZESTUDIO_DOCUMENTATION.md` for complete guide.
+
+---
+
+### **BlazeServer - Standalone Server**
+
+Executable that runs BlazeDB as a network server for remote clients.
+
+**Usage:**
+```bash
+# Direct run
+BLAZEDB_DB_NAME=ServerMainDB \
+BLAZEDB_PASSWORD="secret" \
+BLAZEDB_PORT=9090 \
+swift run BlazeServer
+
+# Docker
+docker compose up
+```
+
+**Configuration (Environment Variables):**
+- `BLAZEDB_DB_NAME` - Database name (default: "ServerMainDB")
+- `BLAZEDB_PASSWORD` - Database password
+- `BLAZEDB_PORT` - TCP port (default: 9090)
+- `BLAZEDB_AUTH_TOKEN` - Optional auth token
+- `BLAZEDB_SHARED_SECRET` - Optional shared secret for encryption
+
+**What it does:**
+- Opens database using convenience API
+- Listens on TCP port for BlazeBinary connections
+- Accepts multiple concurrent clients
+- Handles E2E encryption and sync automatically
+
+**Perfect for:** Raspberry Pi, Docker, cloud deployments, multi-device sync.
+
+**See:** `BlazeServer/main.swift` and `Dockerfile` for implementation details.
+
+---
+
 ## Migration from Other Databases
 
 ### SQLite → BlazeDB
