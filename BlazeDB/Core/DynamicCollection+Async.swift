@@ -12,8 +12,8 @@ import Foundation
 
 // MARK: - Query Cache
 
-/// Caches query results for faster repeated queries
-private actor QueryCache {
+/// Caches query results for faster repeated queries (actor-based for async safety)
+private actor AsyncQueryCache {
     private var cache: [String: (results: [BlazeDataRecord], timestamp: Date)] = [:]
     private let maxCacheSize: Int
     private let cacheTTL: TimeInterval
@@ -83,12 +83,21 @@ private actor OperationPool {
     }
     
     func release() {
-        activeOperations -= 1
-        
-        // Wake up next waiting operation
-        if !waitingOperations.isEmpty {
-            let continuation = waitingOperations.removeFirst()
-            continuation.resume()
+        // CRITICAL: Prevent underflow - ensure activeOperations never goes negative
+        // This can happen if release() is called more times than acquire() (e.g., error paths)
+        if activeOperations > 0 {
+            activeOperations -= 1
+            
+            // CRITICAL: Only wake up waiting operations when a slot is actually freed
+            // Waking up operations without freeing a slot causes resource exhaustion
+            // and incorrect concurrency behavior
+            if !waitingOperations.isEmpty {
+                let continuation = waitingOperations.removeFirst()
+                continuation.resume()
+            }
+        } else {
+            BlazeLogger.warn("⚠️ OperationPool.release() called when activeOperations is already 0 (possible double-release)")
+            // Don't wake up waiting operations - no slot was freed
         }
     }
     
@@ -103,11 +112,11 @@ extension DynamicCollection {
     
     // MARK: - Async Infrastructure
     
-    private static var queryCaches: [ObjectIdentifier: QueryCache] = [:]
+    private static var queryCaches: [ObjectIdentifier: AsyncQueryCache] = [:]
     private static var operationPools: [ObjectIdentifier: OperationPool] = [:]
     private static let cacheLock = NSLock()
     
-    private var queryCache: QueryCache {
+    private var queryCache: AsyncQueryCache {
         let id = ObjectIdentifier(self)
         Self.cacheLock.lock()
         defer { Self.cacheLock.unlock() }
@@ -116,7 +125,7 @@ extension DynamicCollection {
             return cache
         }
         
-        let cache = QueryCache(maxCacheSize: 1000, cacheTTL: 60.0)
+        let cache = AsyncQueryCache(maxCacheSize: 1000, cacheTTL: 60.0)
         Self.queryCaches[id] = cache
         return cache
     }
@@ -140,27 +149,47 @@ extension DynamicCollection {
     /// Insert a record asynchronously (non-blocking)
     public func insertAsync(_ data: BlazeDataRecord) async throws -> UUID {
         await operationPool.acquire()
-        defer { await operationPool.release() }
-        
-        return try await Task.detached(priority: .userInitiated) { [weak self] in
-            guard let self = self else {
-                throw BlazeDBError.transactionFailed("Collection deallocated")
-            }
-            return try self.insert(data)
-        }.value
+        // CRITICAL: Ensure release is called before returning, not in a background Task
+        // Wrapping release() in a Task doesn't guarantee it completes before function returns
+        // This causes resource leaks where pool slots are never released
+        // Use do-catch pattern to ensure release happens before return
+        do {
+            let result = try await Task.detached(priority: .userInitiated) { [weak self] in
+                guard let self = self else {
+                    throw BlazeDBError.transactionFailed("Collection deallocated")
+                }
+                return try self.insert(data)
+            }.value
+            // CRITICAL: Release before returning to ensure pool slot is freed immediately
+            await operationPool.release()
+            return result
+        } catch {
+            // CRITICAL: Release on error to prevent resource leak
+            await operationPool.release()
+            throw error
+        }
     }
     
     /// Insert multiple records asynchronously (non-blocking, parallel)
     public func insertBatchAsync(_ records: [BlazeDataRecord]) async throws -> [UUID] {
         await operationPool.acquire()
-        defer { await operationPool.release() }
-        
-        return try await Task.detached(priority: .userInitiated) { [weak self] in
-            guard let self = self else {
-                throw BlazeDBError.transactionFailed("Collection deallocated")
-            }
-            return try self.insertBatch(records)
-        }.value
+        // CRITICAL: Ensure release is called before returning, not in a background Task
+        // Use do-catch pattern to ensure release happens before return
+        do {
+            let result = try await Task.detached(priority: .userInitiated) { [weak self] in
+                guard let self = self else {
+                    throw BlazeDBError.transactionFailed("Collection deallocated")
+                }
+                return try self.insertBatch(records)
+            }.value
+            // CRITICAL: Release before returning to ensure pool slot is freed immediately
+            await operationPool.release()
+            return result
+        } catch {
+            // CRITICAL: Release on error to prevent resource leak
+            await operationPool.release()
+            throw error
+        }
     }
     
     // MARK: - Async Fetch
@@ -168,40 +197,89 @@ extension DynamicCollection {
     /// Fetch a record by ID asynchronously (non-blocking)
     public func fetchAsync(id: UUID) async throws -> BlazeDataRecord? {
         await operationPool.acquire()
-        defer { await operationPool.release() }
-        
-        return try await Task.detached(priority: .userInitiated) { [weak self] in
-            guard let self = self else {
-                throw BlazeDBError.transactionFailed("Collection deallocated")
-            }
-            return try self.fetch(id: id)
-        }.value
+        // CRITICAL: Ensure release is called before returning, not in a background Task
+        // Use do-catch pattern to ensure release happens before return
+        do {
+            let result = try await Task.detached(priority: .userInitiated) { [weak self] in
+                guard let self = self else {
+                    throw BlazeDBError.transactionFailed("Collection deallocated")
+                }
+                return try self.fetch(id: id)
+            }.value
+            // CRITICAL: Release before returning to ensure pool slot is freed immediately
+            await operationPool.release()
+            return result
+        } catch {
+            // CRITICAL: Release on error to prevent resource leak
+            await operationPool.release()
+            throw error
+        }
     }
     
     /// Fetch all records asynchronously (non-blocking)
     public func fetchAllAsync() async throws -> [BlazeDataRecord] {
         await operationPool.acquire()
-        defer { await operationPool.release() }
-        
-        return try await Task.detached(priority: .userInitiated) { [weak self] in
-            guard let self = self else {
-                throw BlazeDBError.transactionFailed("Collection deallocated")
-            }
-            return try self.fetchAll()
-        }.value
+        // CRITICAL: Ensure release is called before returning, not in a background Task
+        // Use do-catch pattern to ensure release happens before return
+        do {
+            let result = try await Task.detached(priority: .userInitiated) { [weak self] in
+                guard let self = self else {
+                    throw BlazeDBError.transactionFailed("Collection deallocated")
+                }
+                return try self.fetchAll()
+            }.value
+            // CRITICAL: Release before returning to ensure pool slot is freed immediately
+            await operationPool.release()
+            return result
+        } catch {
+            // CRITICAL: Release on error to prevent resource leak
+            await operationPool.release()
+            throw error
+        }
+    }
+    
+    /// Fetch all record IDs asynchronously (non-blocking, much faster than fetchAllAsync)
+    public func fetchAllIDsAsync() async throws -> [UUID] {
+        await operationPool.acquire()
+        // CRITICAL: Ensure release is called before returning, not in a background Task
+        // Use do-catch pattern to ensure release happens before return
+        do {
+            let result = try await Task.detached(priority: .userInitiated) { [weak self] in
+                guard let self = self else {
+                    throw BlazeDBError.transactionFailed("Collection deallocated")
+                }
+                return try self.fetchAllIDs()
+            }.value
+            // CRITICAL: Release before returning to ensure pool slot is freed immediately
+            await operationPool.release()
+            return result
+        } catch {
+            // CRITICAL: Release on error to prevent resource leak
+            await operationPool.release()
+            throw error
+        }
     }
     
     /// Fetch a page of records asynchronously (non-blocking)
     public func fetchPageAsync(offset: Int, limit: Int) async throws -> [BlazeDataRecord] {
         await operationPool.acquire()
-        defer { await operationPool.release() }
-        
-        return try await Task.detached(priority: .userInitiated) { [weak self] in
-            guard let self = self else {
-                throw BlazeDBError.transactionFailed("Collection deallocated")
-            }
-            return try self.fetchPage(offset: offset, limit: limit)
-        }.value
+        // CRITICAL: Ensure release is called before returning, not in a background Task
+        // Use do-catch pattern to ensure release happens before return
+        do {
+            let result = try await Task.detached(priority: .userInitiated) { [weak self] in
+                guard let self = self else {
+                    throw BlazeDBError.transactionFailed("Collection deallocated")
+                }
+                return try self.fetchPage(offset: offset, limit: limit)
+            }.value
+            // CRITICAL: Release before returning to ensure pool slot is freed immediately
+            await operationPool.release()
+            return result
+        } catch {
+            // CRITICAL: Release on error to prevent resource leak
+            await operationPool.release()
+            throw error
+        }
     }
     
     // MARK: - Async Update
@@ -209,17 +287,25 @@ extension DynamicCollection {
     /// Update a record asynchronously (non-blocking)
     public func updateAsync(id: UUID, with data: BlazeDataRecord) async throws {
         await operationPool.acquire()
-        defer { await operationPool.release() }
-        
-        // Invalidate cache for this record
-        await queryCache.invalidate(pattern: id.uuidString)
-        
-        return try await Task.detached(priority: .userInitiated) { [weak self] in
-            guard let self = self else {
-                throw BlazeDBError.transactionFailed("Collection deallocated")
-            }
-            try self.update(id: id, with: data)
-        }.value
+        // CRITICAL: Ensure release is called before returning, not in a background Task
+        // Use do-catch pattern to ensure release happens before return
+        do {
+            // Invalidate entire query cache since we can't know which queries might be affected
+            await queryCache.invalidate()
+            
+            try await Task.detached(priority: .userInitiated) { [weak self] in
+                guard let self = self else {
+                    throw BlazeDBError.transactionFailed("Collection deallocated")
+                }
+                try self.update(id: id, with: data)
+            }.value
+            // CRITICAL: Release before returning to ensure pool slot is freed immediately
+            await operationPool.release()
+        } catch {
+            // CRITICAL: Release on error to prevent resource leak
+            await operationPool.release()
+            throw error
+        }
     }
     
     // MARK: - Async Delete
@@ -227,17 +313,25 @@ extension DynamicCollection {
     /// Delete a record asynchronously (non-blocking)
     public func deleteAsync(id: UUID) async throws {
         await operationPool.acquire()
-        defer { await operationPool.release() }
-        
-        // Invalidate cache for this record
-        await queryCache.invalidate(pattern: id.uuidString)
-        
-        return try await Task.detached(priority: .userInitiated) { [weak self] in
-            guard let self = self else {
-                throw BlazeDBError.transactionFailed("Collection deallocated")
-            }
-            try self.delete(id: id)
-        }.value
+        // CRITICAL: Ensure release is called before returning, not in a background Task
+        // Use do-catch pattern to ensure release happens before return
+        do {
+            // Invalidate entire query cache since we can't know which queries might be affected
+            await queryCache.invalidate()
+            
+            try await Task.detached(priority: .userInitiated) { [weak self] in
+                guard let self = self else {
+                    throw BlazeDBError.transactionFailed("Collection deallocated")
+                }
+                try self.delete(id: id)
+            }.value
+            // CRITICAL: Release before returning to ensure pool slot is freed immediately
+            await operationPool.release()
+        } catch {
+            // CRITICAL: Release on error to prevent resource leak
+            await operationPool.release()
+            throw error
+        }
     }
     
     // MARK: - Async Query with Caching
@@ -252,62 +346,72 @@ extension DynamicCollection {
         useCache: Bool = true
     ) async throws -> [BlazeDataRecord] {
         await operationPool.acquire()
-        defer { await operationPool.release() }
-        
-        // Generate cache key
-        let valueStr: String
-        if let value = value {
-            valueStr = value.serializedString()
-        } else {
-            valueStr = "none"
+        // CRITICAL: Ensure release is called before returning, not in a background Task
+        // Use do-catch pattern to ensure release happens before return
+        do {
+            // Generate cache key
+            let valueStr: String
+            if let value = value {
+                valueStr = value.serializedString()
+            } else {
+                valueStr = "none"
+            }
+            let cacheKey = "query:\(field ?? "all"):\(valueStr):\(orderBy ?? "none"):\(descending):\(limit ?? -1)"
+            
+            // Check cache
+            if useCache, let cached = await queryCache.get(key: cacheKey) {
+                // CRITICAL: Release before returning cached result
+                await operationPool.release()
+                return cached
+            }
+            
+            // Execute query
+            let results = try await Task.detached(priority: .userInitiated) { [weak self] in
+                guard let self = self else {
+                    throw BlazeDBError.transactionFailed("Collection deallocated")
+                }
+                
+                let queryBuilder: QueryBuilder = self.query()
+                var query = queryBuilder
+                
+                if let field = field, let value = value {
+                    query = query.where(field, equals: value)
+                }
+                
+                if let orderBy = orderBy {
+                    query = query.orderBy(orderBy, descending: descending)
+                }
+                
+                if let limit = limit {
+                    query = query.limit(limit)
+                }
+                
+                let result = try query.execute()
+                // Extract records from QueryResult
+                switch result {
+                case .records(let records):
+                    return records
+                case .joined(let joined):
+                    return joined.map { $0.left }
+                case .aggregation, .grouped, .search:
+                    // Aggregations and search not supported in simple queryAsync
+                    throw BlazeDBError.invalidQuery(reason: "Aggregation/search queries not supported in queryAsync. Use query().execute() directly.")
+                }
+            }.value
+            
+            // Cache results
+            if useCache {
+                await queryCache.set(key: cacheKey, results: results)
+            }
+            
+            // CRITICAL: Release before returning to ensure pool slot is freed immediately
+            await operationPool.release()
+            return results
+        } catch {
+            // CRITICAL: Release on error to prevent resource leak
+            await operationPool.release()
+            throw error
         }
-        let cacheKey = "query:\(field ?? "all"):\(valueStr):\(orderBy ?? "none"):\(descending):\(limit ?? -1)"
-        
-        // Check cache
-        if useCache, let cached = await queryCache.get(key: cacheKey) {
-            return cached
-        }
-        
-        // Execute query
-        let results = try await Task.detached(priority: .userInitiated) { [weak self] in
-            guard let self = self else {
-                throw BlazeDBError.transactionFailed("Collection deallocated")
-            }
-            
-            let queryBuilder = self.query()
-            var query = queryBuilder
-            
-            if let field = field, let value = value {
-                query = query.where(field, equals: value)
-            }
-            
-            if let orderBy = orderBy {
-                query = query.orderBy(orderBy, descending: descending)
-            }
-            
-            if let limit = limit {
-                query = query.limit(limit)
-            }
-            
-            let result = try query.execute()
-            // Extract records from QueryResult
-            switch result {
-            case .records(let records):
-                return records
-            case .joined(let joined):
-                return joined.map { $0.left }
-            case .aggregation, .grouped, .search:
-                // Aggregations and search not supported in simple queryAsync
-                throw BlazeDBError.invalidQuery(reason: "Aggregation/search queries not supported in queryAsync. Use query().execute() directly.")
-            }
-        }.value
-        
-        // Cache results
-        if useCache {
-            await queryCache.set(key: cacheKey, results: results)
-        }
-        
-        return results
     }
     
     // MARK: - Cache Management
@@ -320,6 +424,37 @@ extension DynamicCollection {
     /// Get current operation pool load
     public func getOperationPoolLoad() async -> Int {
         await operationPool.currentLoad
+    }
+    
+    // MARK: - Static Cleanup (for testing)
+    
+    /// Clean up async resources for a specific DynamicCollection instance
+    /// Called from deinit to prevent memory leaks
+    internal static func cleanupAsyncResources(for id: ObjectIdentifier) {
+        cacheLock.lock()
+        defer { cacheLock.unlock() }
+        
+        // Remove query cache (allows actor to be deallocated)
+        queryCaches.removeValue(forKey: id)
+        
+        // Remove operation pool (allows actor to be deallocated)
+        operationPools.removeValue(forKey: id)
+        
+        BlazeLogger.debug("🧹 Cleaned up async resources for DynamicCollection \(id)")
+    }
+    
+    /// Clear all async query caches and operation pools (for test isolation)
+    /// This should be called in test tearDown to prevent test interference
+    /// Note: This clears the dictionaries, which will cause caches to be recreated on next use
+    public static func clearAllAsyncCaches() {
+        cacheLock.lock()
+        defer { cacheLock.unlock() }
+        
+        // Clear all query caches (removing from dictionary allows them to be deallocated)
+        queryCaches.removeAll()
+        
+        // Clear all operation pools (they don't need explicit cleanup, but we clear the dictionary)
+        operationPools.removeAll()
     }
 }
 

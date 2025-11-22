@@ -43,8 +43,9 @@ final class DistributedSecurityTests: XCTestCase {
         
         // Server requires auth token
         let server = try BlazeServer(
-            database: db1,
             port: 8080,
+            database: db1,
+            databaseName: "db1",
             authToken: authToken
         )
         
@@ -68,8 +69,9 @@ final class DistributedSecurityTests: XCTestCase {
         
         // Server requires auth token
         let server = try? BlazeServer(
-            database: db1,
             port: 8080,
+            database: db1,
+            databaseName: "db1",
             authToken: serverToken
         )
         
@@ -92,8 +94,9 @@ final class DistributedSecurityTests: XCTestCase {
         
         // Server requires auth token
         let server = try? BlazeServer(
-            database: db1,
             port: 8080,
+            database: db1,
+            databaseName: "db1",
             authToken: serverToken
         )
         
@@ -513,14 +516,16 @@ final class DistributedSecurityTests: XCTestCase {
         
         // Create server with connection limit
         let server1 = try BlazeServer(
-            database: db1,
             port: 8080,
+            database: db1,
+            databaseName: "db1",
             maxConnections: maxConnections
         )
         
         let server2 = try BlazeServer(
-            database: db2,
             port: 8081,
+            database: db2,
+            databaseName: "db2",
             maxConnections: maxConnections
         )
         
