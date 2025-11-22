@@ -18,6 +18,8 @@ extension BlazeDocumentField {
         case .data(let v): return "<Data: \(v.count) bytes>"
         case .array(let arr): return "[\(arr.map { $0.serializedString() }.joined(separator: ", "))]"
         case .dictionary(let dict): return "{\(dict.map { "\($0): \($1.serializedString())" }.joined(separator: ", "))}"
+        case .vector(let vec): return "<Vector: \(vec.count) dimensions>"
+        case .null: return "null"
         }
     }
 }
@@ -156,7 +158,7 @@ public enum BlazeCorruptionError: Error {
 
 // MARK: - BlazeDBClient
 
-public final class BlazeDBClient {
+public final class BlazeDBClient: @unchecked Sendable {
     internal var collection: DynamicCollection
     public let name: String
     private static var cachedKey: SymmetricKey?
@@ -164,8 +166,10 @@ public final class BlazeDBClient {
     private let transactionLogLock = NSLock()  // 🔒 Dedicated lock for WAL writes
     
     /// Clear the cached encryption key (useful for testing)
+    /// Also clears KeyManager's password key cache to ensure fresh key derivation
     public static func clearCachedKey() {
         cachedKey = nil
+        KeyManager.clearPasswordKeyCache()
     }
     private var inSafeWrite = false
     
@@ -203,6 +207,23 @@ public final class BlazeDBClient {
     /// let db = try BlazeDBClient(name: "MyApp", fileURL: dbURL, password: "secure123")
     /// ```
     public init(name: String, fileURL: URL, password: String, project: String = "Default") throws {
+        // CRITICAL: Validate database name to prevent path traversal attacks
+        // Database names should not contain path traversal characters or null bytes
+        guard !name.contains("../") && !name.contains("..\\") && !name.contains("\0") else {
+            throw BlazeDBError.invalidInput(reason: "Invalid database name: contains path traversal characters or null bytes")
+        }
+        guard !name.isEmpty && name.count <= 255 else {
+            throw BlazeDBError.invalidInput(reason: "Invalid database name: must be non-empty and <= 255 characters")
+        }
+        
+        // CRITICAL: Validate project name to prevent path traversal attacks
+        guard !project.contains("../") && !project.contains("..\\") && !project.contains("\0") else {
+            throw BlazeDBError.invalidInput(reason: "Invalid project name: contains path traversal characters or null bytes")
+        }
+        guard !project.isEmpty && project.count <= 255 else {
+            throw BlazeDBError.invalidInput(reason: "Invalid project name: must be non-empty and <= 255 characters")
+        }
+        
         BlazeLogger.info("🔷 Initializing BlazeDB: '\(name)' at \(fileURL.path)")
         
         self.name = name
@@ -239,17 +260,54 @@ public final class BlazeDBClient {
         }
         self.encryptionKey = key
 
+        // CRASH SAFETY: Recover from incomplete VACUUM BEFORE initializing collection
+        // This must happen before DynamicCollection tries to load the layout file
+        do {
+            try BlazeDBClient.recoverFromVacuumCrashIfNeeded(dataURL: fileURL, metaURL: metaURL)
+            BlazeLogger.debug("✅ VACUUM recovery check complete")
+        } catch {
+            BlazeLogger.error("⚠️ VACUUM recovery check failed: \(error.localizedDescription)")
+            // Don't fail initialization if recovery check fails - continue anyway
+        }
+        
         // Init store + collection
         do {
+            // Verify files don't exist before initialization
+            let mainExists = FileManager.default.fileExists(atPath: fileURL.path)
+            let metaExists = FileManager.default.fileExists(atPath: metaURL.path)
+            print("🔷 [INIT] BlazeDBClient.init: Before PageStore init")
+            print("🔷 [INIT]   Main file exists: \(mainExists)")
+            print("🔷 [INIT]   Meta file exists: \(metaExists)")
+            BlazeLogger.debug("🔷 [INIT] Before PageStore init: main=\(mainExists), meta=\(metaExists)")
+            
+            // Note: We don't remove existing meta files here - they should be loaded by DynamicCollection
+            // Test cleanup helpers handle aggressive cleanup in test scenarios
+            
+            print("🔷 [INIT] Creating PageStore...")
             let store = try PageStore(fileURL: fileURL, key: key)
+            print("🔷 [INIT] ✅ PageStore created")
+            
+            // Check again after PageStore init
+            let metaExistsAfter = FileManager.default.fileExists(atPath: metaURL.path)
+            print("🔷 [INIT] After PageStore init: meta=\(metaExistsAfter)")
+            BlazeLogger.debug("🔷 [INIT] After PageStore init: meta=\(metaExistsAfter)")
+            
+            print("🔷 [INIT] Creating DynamicCollection...")
             self.collection = try DynamicCollection(store: store,
                                                     metaURL: metaURL,
                                                     project: self.project,
-                                                    encryptionKey: key)
-            BlazeLogger.debug("✅ PageStore and collection initialized")
+                                                    encryptionKey: key,
+                                                    password: password)  // Pass password for KDF auto-detection
+            BlazeLogger.debug("✅ DynamicCollection created")
         } catch {
             let errorMsg = "❌ Failed to initialize storage: \(error.localizedDescription)"
             BlazeLogger.error(errorMsg)
+            if let nsError = error as NSError? {
+                BlazeLogger.error("❌ Error domain: \(nsError.domain), code: \(nsError.code)")
+                if !nsError.userInfo.isEmpty {
+                    BlazeLogger.error("❌ Error userInfo: \(nsError.userInfo)")
+                }
+            }
             throw BlazeDBError.transactionFailed(errorMsg)
         }
 
@@ -260,7 +318,8 @@ public final class BlazeDBClient {
         } catch {
             let errorMsg = "❌ Migration failed: \(error.localizedDescription)"
             BlazeLogger.error(errorMsg)
-            throw BlazeDBError.migrationFailed(errorMsg)
+            // Pass the underlying error for better debugging
+            throw BlazeDBError.migrationFailed(errorMsg, underlyingError: error)
         }
         
         do {
@@ -276,6 +335,9 @@ public final class BlazeDBClient {
         }
         
         BlazeLogger.info("✅ BlazeDB '\(name)' initialized successfully")
+        
+        // Reload triggers from storage
+        reloadTriggers()
         
         // SECURITY AUDIT: Auto-enable CRC32 for unencrypted databases
         if password.isEmpty {
@@ -330,6 +392,11 @@ public final class BlazeDBClient {
     
     /// Automatically flushes unsaved changes when the database is deallocated
     deinit {
+        // CRITICAL: Clean up auto vacuum timer to prevent memory leak
+        // When BlazeDBClient is deallocated, the timer must be invalidated and removed from static dictionary
+        // Otherwise, the timer will remain in memory indefinitely
+        cleanupAutoVacuumTimer()
+        
         do {
             try persist()
             BlazeLogger.debug("✅ Auto-flushed unsaved changes in deinit for '\(name)'")
@@ -352,7 +419,7 @@ public final class BlazeDBClient {
         fileURL.deletingLastPathComponent().appendingPathComponent("txn_in_progress.meta")
     }
 
-    private func appendToTransactionLog(_ operation: String, payload: [String: BlazeDocumentField]) {
+    internal func appendToTransactionLog(_ operation: String, payload: [String: BlazeDocumentField]) {  // Internal for AsyncOptimized extension access
         guard FileManager.default.fileExists(atPath: transactionBackupURL.path) else {
             // Silently skip - this is expected for non-transactional operations
             return
@@ -472,16 +539,37 @@ public final class BlazeDBClient {
             
             // Validate against schema (if defined)
             try validateAgainstSchema(record)
+            
+            // Execute BEFORE INSERT triggers
+            var modifiedRecord: BlazeDataRecord? = record
+            try triggerManager.executeTriggers(for: .beforeInsert, record: record, modifiedRecord: &modifiedRecord)
+            // Execute enhanced triggers
+            try executeEnhancedTriggers(for: .beforeInsert, record: record, modifiedRecord: &modifiedRecord, collection: collection, collectionName: name)
+            let recordToInsert = modifiedRecord ?? record
+            
+            // Validate foreign keys
+            try validateForeignKeys(in: recordToInsert)
+            
+            // Validate check constraints
+            try validateCheckConstraints(in: recordToInsert)
+            
+            // Validate unique constraints
+            try validateUniqueConstraints(in: recordToInsert)
 
-            try performSafeWrite { _ = try collection.insert(record) }
-            appendToTransactionLog("insert", payload: record.storage)
+            try performSafeWrite { _ = try collection.insert(recordToInsert) }
+            appendToTransactionLog("insert", payload: recordToInsert.storage)
+            
+            // Execute AFTER INSERT triggers
+            try triggerManager.executeTriggers(for: .afterInsert, record: recordToInsert, modifiedRecord: &modifiedRecord)
+            // Execute enhanced triggers
+            try executeEnhancedTriggers(for: .afterInsert, record: recordToInsert, modifiedRecord: &modifiedRecord, collection: collection, collectionName: name)
             
             // Notify change observers (for sync)
             notifyInsert(id: id)
             
-            // Track telemetry
-            let duration = Date().timeIntervalSince(startTime) * 1000
-            telemetry.record(operation: "insert", duration: duration, success: true, recordCount: 1)
+            // Track telemetry (if enabled)
+            let insertDuration = Date().timeIntervalSince(startTime) * 1000 // Convert to ms
+            telemetry.record(operation: "insert", duration: insertDuration, success: true, recordCount: 1)
             
             return id
         } catch {
@@ -523,7 +611,7 @@ public final class BlazeDBClient {
                 ids = try collection.insertBatch(records)
                 
                 // Log to transaction log
-                for (index, id) in ids.enumerated() {
+                for (index, _) in ids.enumerated() {
                     if index < records.count {
                         appendToTransactionLog("insert", payload: records[index].storage)
                     }
@@ -578,6 +666,57 @@ public final class BlazeDBClient {
         return updateCount
     }
     
+    /// Delete multiple records by IDs (optimized batch delete)
+    ///
+    /// Much faster than calling delete() in a loop because it:
+    /// - Batches all page deletions in a single sync block
+    /// - Saves metadata only once at the end
+    /// - Syncs to disk only once at the end
+    ///
+    /// - Parameter ids: Array of UUIDs to delete
+    /// - Returns: Number of records actually deleted
+    ///
+    /// ## Example
+    /// ```swift
+    /// let idsToDelete = [id1, id2, id3]
+    /// let deleted = try db.deleteMany(ids: idsToDelete)
+    /// print("Deleted \(deleted) records")
+    /// ```
+    public func deleteMany(ids: [UUID]) throws -> Int {
+        let startTime = Date()
+        
+        do {
+            var deletedCount = 0
+            try performSafeWrite {
+                // Use optimized batch delete (much faster!)
+                try collection.deleteBatch(ids)
+                deletedCount = ids.count
+                
+                // Log to transaction log
+                for id in ids {
+                    appendToTransactionLog("delete", payload: ["id": .uuid(id)])
+                }
+            }
+            
+            BlazeLogger.info("Deleted \(deletedCount) records in optimized batch")
+            
+            // Notify change observers (for sync) - batch notification
+            let changes = ids.map { DatabaseChange(type: .delete($0), collectionName: name) }
+            notifyBatchChanges(changes)
+            
+            // Track telemetry
+            let duration = Date().timeIntervalSince(startTime) * 1000
+            telemetry.record(operation: "deleteMany", duration: duration, success: true, recordCount: deletedCount)
+            
+            return deletedCount
+        } catch {
+            // Track telemetry for failure
+            let duration = Date().timeIntervalSince(startTime) * 1000
+            telemetry.record(operation: "deleteMany", duration: duration, success: false, recordCount: 0, error: error)
+            throw error
+        }
+    }
+    
     /// Delete multiple records matching a predicate
     /// - Parameter where: Predicate to match records
     /// - Returns: Number of records deleted
@@ -608,11 +747,14 @@ public final class BlazeDBClient {
     /// - Returns: True if inserted, false if updated
     @discardableResult
     public func upsert(id: UUID, data: BlazeDataRecord) throws -> Bool {
-        if let _ = try fetch(id: id) {
+        do {
+            _ = try fetch(id: id)
+            // Record exists - update it
             try update(id: id, with: data)
             BlazeLogger.debug("Upsert: Updated existing record \(id)")
             return false
-        } else {
+        } catch BlazeDBError.recordNotFound {
+            // Record doesn't exist - insert it
             try insert(data, id: id)
             BlazeLogger.debug("Upsert: Inserted new record \(id)")
             return true
@@ -732,6 +874,26 @@ public final class BlazeDBClient {
     /// try db.update(id: someUUID, with: record)
     /// ```
     public func update(id: UUID, with data: BlazeDataRecord) throws {
+        // Get existing record for triggers
+        guard let existingRecord = try collection.fetch(id: id) else {
+            throw BlazeDBError.recordNotFound(id: id)
+        }
+        
+        // Execute BEFORE UPDATE triggers
+        var modifiedRecord: BlazeDataRecord? = data
+        try triggerManager.executeTriggers(for: .beforeUpdate, record: existingRecord, modifiedRecord: &modifiedRecord)
+        // Execute enhanced triggers
+        try executeEnhancedTriggers(for: .beforeUpdate, record: existingRecord, modifiedRecord: &modifiedRecord, collection: collection, collectionName: name)
+        let recordToUpdate = modifiedRecord ?? data
+        
+        // Validate foreign keys
+        try validateForeignKeys(in: recordToUpdate)
+        
+        // Validate check constraints
+        try validateCheckConstraints(in: recordToUpdate)
+        
+        // Validate unique constraints (exclude current record)
+        try validateUniqueConstraints(in: recordToUpdate, excludeId: id)
         let startTime = Date()
         
         do {
@@ -743,17 +905,24 @@ public final class BlazeDBClient {
             }
             
             // Validate against schema (if defined)
-            try validateAgainstSchema(data)
+            try validateAgainstSchema(recordToUpdate)
             
-            try performSafeWrite { try collection.update(id: id, with: data) }
-            appendToTransactionLog("update", payload: data.storage)
+            try performSafeWrite { try collection.update(id: id, with: recordToUpdate) }
+            appendToTransactionLog("update", payload: recordToUpdate.storage)
+            
+            // Execute AFTER UPDATE triggers
+            try triggerManager.executeTriggers(for: .afterUpdate, record: recordToUpdate, modifiedRecord: &modifiedRecord)
+            // Execute enhanced triggers - pass both old and new records
+            // For afterUpdate, record is the old record, modifiedRecord is the new record
+            var newRecord: BlazeDataRecord? = recordToUpdate
+            try executeEnhancedTriggers(for: .afterUpdate, record: existingRecord, modifiedRecord: &newRecord, collection: collection, collectionName: name)
             
             // Notify change observers (for sync)
             notifyUpdate(id: id)
             
-            // Track telemetry
-            let duration = Date().timeIntervalSince(startTime) * 1000
-            telemetry.record(operation: "update", duration: duration, success: true, recordCount: 1)
+            // Track telemetry (if enabled)
+            let updateDuration = Date().timeIntervalSince(startTime) * 1000 // Convert to ms
+            telemetry.record(operation: "update", duration: updateDuration, success: true, recordCount: 1)
         } catch {
             // Track telemetry for failure
             let duration = Date().timeIntervalSince(startTime) * 1000
@@ -800,8 +969,35 @@ public final class BlazeDBClient {
         let startTime = Date()
         
         do {
-            try performSafeWrite { try collection.delete(id: id) }
+            // Get existing record for triggers and foreign keys
+            // Delete is idempotent: if record doesn't exist, return silently
+            guard let existingRecord = try collection.fetch(id: id) else {
+                // Record doesn't exist - delete is idempotent, so just return
+                let duration = Date().timeIntervalSince(startTime) * 1000
+                telemetry.record(operation: "delete", duration: duration, success: true, recordCount: 0)
+                return
+            }
+            
+            // Execute BEFORE DELETE triggers
+            var modifiedRecord: BlazeDataRecord? = existingRecord
+            try triggerManager.executeTriggers(for: .beforeDelete, record: existingRecord, modifiedRecord: &modifiedRecord)
+            // Execute enhanced triggers
+            try executeEnhancedTriggers(for: .beforeDelete, record: existingRecord, modifiedRecord: &modifiedRecord, collection: collection, collectionName: name)
+            
+            // Handle foreign key constraints (CASCADE, SET NULL, RESTRICT)
+            try foreignKeyManager.handleDelete(existingRecord)
+            
+            // OPTIMIZATION: Pass record to avoid double-fetch in collection.delete()
+            try performSafeWrite { 
+                // Pass the record to avoid re-fetching in _deleteNoSync
+                try collection.delete(id: id, record: existingRecord)
+            }
             appendToTransactionLog("delete", payload: ["id": .string(id.uuidString)])
+            
+            // Execute AFTER DELETE triggers
+            try triggerManager.executeTriggers(for: .afterDelete, record: existingRecord, modifiedRecord: &modifiedRecord)
+            // Execute enhanced triggers
+            try executeEnhancedTriggers(for: .afterDelete, record: existingRecord, modifiedRecord: &modifiedRecord, collection: collection, collectionName: name)
             
             // Notify change observers (for sync)
             notifyDelete(id: id)
@@ -968,14 +1164,26 @@ public final class BlazeDBClient {
             try? FileManager.default.removeItem(at: backupMetaURL)
         } catch {
             BlazeLogger.error("Rolling back to backup due to error: \(error)")
+            var rollbackSucceeded = false
+            
             // Restore DB
-            try? FileManager.default.removeItem(at: fileURL)
-            try? FileManager.default.copyItem(at: backupURL, to: fileURL)
-
-            // Restore meta
-            if FileManager.default.fileExists(atPath: backupMetaURL.path) {
-                try? FileManager.default.removeItem(at: metaURL)
-                try? FileManager.default.copyItem(at: backupMetaURL, to: metaURL)
+            do {
+                if FileManager.default.fileExists(atPath: backupURL.path) {
+                    try FileManager.default.removeItem(at: fileURL)
+                    try FileManager.default.copyItem(at: backupURL, to: fileURL)
+                }
+                
+                // Restore meta
+                if FileManager.default.fileExists(atPath: backupMetaURL.path) {
+                    try FileManager.default.removeItem(at: metaURL)
+                    try FileManager.default.copyItem(at: backupMetaURL, to: metaURL)
+                }
+                
+                rollbackSucceeded = true
+            } catch let rollbackError {
+                BlazeLogger.error("❌ CRITICAL: Failed to restore from backup: \(rollbackError)")
+                BlazeLogger.error("❌ Backup files may still exist: \(backupURL.lastPathComponent), \(backupMetaURL.lastPathComponent)")
+                // Continue to try reloadFromDisk even if rollback failed
             }
 
             // Reload in-memory state to match restored files
@@ -985,7 +1193,7 @@ public final class BlazeDBClient {
                 BlazeLogger.warn("Meta layout invalid after rollback, regenerating fresh layout...")
                 let store = try PageStore(fileURL: fileURL, key: encryptionKey)
                 let freshLayout = try StorageLayout.rebuild(from: store)
-                self.collection = try DynamicCollection(
+                self.collection = DynamicCollection(
                     store: store,
                     layout: freshLayout,
                     metaURL: metaURL,
@@ -993,11 +1201,18 @@ public final class BlazeDBClient {
                     encryptionKey: encryptionKey
                 )
             }
+            
+            // Clean up backup files after rollback (best effort)
+            if rollbackSucceeded {
+                try? FileManager.default.removeItem(at: backupURL)
+                try? FileManager.default.removeItem(at: backupMetaURL)
+            }
+            
             throw error
         }
     }
 
-    private func reloadFromDisk() throws {
+    internal func reloadFromDisk() throws {
         BlazeLogger.info("Reloading database from disk after rollback...")
 
         // Reopen the PageStore from the restored file
@@ -1006,31 +1221,37 @@ public final class BlazeDBClient {
         // Try to load a valid layout from the meta file; if that fails, rebuild from pages
         do {
             if FileManager.default.fileExists(atPath: metaURL.path) {
-                // Prefer explicit load of StorageLayout to validate the meta contents
-                let layout = try StorageLayout.load(from: metaURL)
-                self.collection = try DynamicCollection(
+                // Use loadSecure to handle HMAC-signed metadata files
+                BlazeLogger.debug("Attempting to load layout from meta file: \(metaURL.path)")
+                let layout = try StorageLayout.loadSecure(from: metaURL, signingKey: encryptionKey)
+                BlazeLogger.debug("Successfully loaded layout: \(layout.indexMap.count) records in indexMap")
+                self.collection = DynamicCollection(
                     store: store,
                     layout: layout,
                     metaURL: metaURL,
                     project: project,
                     encryptionKey: encryptionKey
                 )
+                BlazeLogger.info("✅ Successfully reloaded collection from disk")
                 return
+            } else {
+                BlazeLogger.warn("Meta file does not exist at: \(metaURL.path)")
             }
-        } catch {
-            BlazeLogger.warn("Failed to load layout from meta, will rebuild: \(error)")
+        } catch let loadError {
+            BlazeLogger.warn("Failed to load layout from meta, will rebuild: \(loadError)")
+            throw loadError  // Re-throw to trigger rebuild fallback
         }
 
         // Fallback: rebuild a fresh layout by scanning the store, then persist it to meta
         let rebuilt = try StorageLayout.rebuild(from: store)
         do {
-            // Persist the rebuilt layout so future opens are fast
-            try rebuilt.save(to: metaURL)
+            // Persist the rebuilt layout so future opens are fast (use saveSecure for consistency)
+            try rebuilt.saveSecure(to: metaURL, signingKey: encryptionKey)
         } catch {
             // If saving fails, continue with in-memory layout
             BlazeLogger.warn("Failed to save rebuilt layout to meta: \(error)")
         }
-        self.collection = try DynamicCollection(
+        self.collection = DynamicCollection(
             store: store,
             layout: rebuilt,
             metaURL: metaURL,
@@ -1064,6 +1285,24 @@ public final class BlazeDBClient {
         if FileManager.default.fileExists(atPath: transactionBackupURL.path) {
             throw BlazeDBError.transactionFailed("Transaction already in progress")
         }
+        
+        // CRITICAL: Persist all in-memory changes before creating backup
+        // This ensures the backup includes all committed data
+        try persist()
+        
+        // Ensure store is fully synced before backup
+        try collection.store.synchronize()
+        
+        // Ensure files are fully synced before backup
+        if let fileHandle = FileHandle(forWritingAtPath: fileURL.path) {
+            fileHandle.synchronizeFile()
+            fileHandle.closeFile()
+        }
+        if let metaHandle = FileHandle(forWritingAtPath: metaURL.path) {
+            metaHandle.synchronizeFile()
+            metaHandle.closeFile()
+        }
+        
         try FileManager.default.copyItem(at: fileURL, to: transactionBackupURL)
         // Also backup meta file if it exists
         if FileManager.default.fileExists(atPath: metaURL.path) {
@@ -1126,6 +1365,26 @@ public final class BlazeDBClient {
     /// ```
     public func rollbackTransaction() throws {
         if FileManager.default.fileExists(atPath: transactionBackupURL.path) {
+            // NOTE: We don't clear the key cache here because we're using the same encryptionKey
+            // instance variable that was set during init. Clearing the cache could cause
+            // key derivation issues if the key needs to be re-derived.
+            // The encryptionKey instance variable should be consistent throughout the object's lifetime.
+            
+            // Extract index definitions from backup BEFORE restoring (backup will be deleted later)
+            var preservedIndexDefinitions: [String: [String]] = [:]
+            if FileManager.default.fileExists(atPath: transactionMetaBackupURL.path) {
+                do {
+                    let backupData = try Data(contentsOf: transactionMetaBackupURL)
+                    let decoder = JSONDecoder()
+                    if let secureLayout = try? decoder.decode(StorageLayout.SecureLayout.self, from: backupData) {
+                        preservedIndexDefinitions = secureLayout.layout.secondaryIndexDefinitions
+                        BlazeLogger.info("✅ Preserved \(preservedIndexDefinitions.count) index definitions from backup")
+                    }
+                } catch {
+                    BlazeLogger.warn("⚠️ Could not extract index definitions from backup: \(error)")
+                }
+            }
+            
             try FileManager.default.removeItem(at: fileURL)
             try FileManager.default.copyItem(at: transactionBackupURL, to: fileURL)
             if FileManager.default.fileExists(atPath: transactionMetaBackupURL.path) {
@@ -1133,23 +1392,98 @@ public final class BlazeDBClient {
                 try? FileManager.default.removeItem(at: metaURL)
                 try FileManager.default.copyItem(at: transactionMetaBackupURL, to: metaURL)
             }
+            
+            // Ensure restored files are fully synced before loading
+            if let fileHandle = FileHandle(forWritingAtPath: fileURL.path) {
+                fileHandle.synchronizeFile()
+                fileHandle.closeFile()
+            }
+            if let metaHandle = FileHandle(forWritingAtPath: metaURL.path) {
+                metaHandle.synchronizeFile()
+                metaHandle.closeFile()
+            }
+            
+            // Small delay to ensure file system has fully synced
+            Thread.sleep(forTimeInterval: 0.05)
+            
             try FileManager.default.removeItem(at: transactionBackupURL)
             if FileManager.default.fileExists(atPath: transactionMetaBackupURL.path) {
                 try? FileManager.default.removeItem(at: transactionMetaBackupURL)
             }
             do {
+                // CRITICAL: Store reference to old collection to reset its unsavedChanges
+                // This prevents the old instance from saving on deinit and overwriting the restored file
+                let oldCollection = self.collection
+                
                 try reloadFromDisk()
-            } catch {
-                BlazeLogger.warn("Meta layout invalid after rollback, regenerating fresh layout...")
+                
+                // Reset unsavedChanges on old collection to prevent it from saving on deinit
+                // The old collection will be deallocated, but we don't want it to overwrite the restored file
+                oldCollection.unsavedChanges = 0
+                
+                // Clear caches after rollback to ensure fresh data is read
+                collection.clearFetchAllCache()
+                RecordCache.shared.clear()
+                BlazeLogger.info("✅ Rollback completed successfully - layout reloaded from backup")
+            } catch let reloadError {
+                BlazeLogger.warn("⚠️ Meta layout invalid after rollback, regenerating fresh layout... Error: \(reloadError)")
+                
+                // Try to rebuild from the restored data file using the proper rebuild logic
+                // that decodes BlazeBinary records (not the simple StorageLayout.rebuild)
                 let store = try PageStore(fileURL: fileURL, key: encryptionKey)
-                let freshLayout = try StorageLayout.rebuild(from: store)
-                self.collection = try DynamicCollection(
+                // Create a new DynamicCollection which will rebuild the layout properly
+                // by decoding BlazeBinary records to extract IDs
+                let tempCollection = try DynamicCollection(
                     store: store,
-                    layout: freshLayout,
                     metaURL: metaURL,
                     project: project,
                     encryptionKey: encryptionKey
                 )
+                
+                // Restore the preserved index definitions
+                if !preservedIndexDefinitions.isEmpty {
+                    tempCollection.secondaryIndexDefinitions = preservedIndexDefinitions
+                    // Rebuild the indexes from the data (using same normalization as createIndex)
+                    for (indexKey, fields) in preservedIndexDefinitions {
+                        BlazeLogger.info("Rebuilding index '\(indexKey)' on fields: \(fields.joined(separator: ", "))")
+                        var rebuilt: [CompoundIndexKey: Set<UUID>] = [:]
+                        for id in tempCollection.indexMap.keys {
+                            if let record = try? tempCollection._fetchNoSync(id: id) {
+                                let doc = record.storage
+                                // Use same normalization logic as createIndex() to ensure key format matches
+                                let rawKey = CompoundIndexKey.fromFields(doc, fields: fields)
+                                let normalizedComponents = rawKey.components.map { component -> AnyBlazeCodable in
+                                    switch component {
+                                    case .string(let s): return AnyBlazeCodable(s)
+                                    case .int(let i): return AnyBlazeCodable(i)
+                                    case .double(let d): return AnyBlazeCodable(d)
+                                    case .bool(let b): return AnyBlazeCodable(b)
+                                    case .date(let d): return AnyBlazeCodable(d)
+                                    case .uuid(let u): return AnyBlazeCodable(u)
+                                    case .data(let data): return AnyBlazeCodable(data)
+                                    }
+                                }
+                                let normalizedKey = CompoundIndexKey(normalizedComponents)
+                                rebuilt[normalizedKey, default: []].insert(id)
+                            }
+                        }
+                        tempCollection.secondaryIndexes[indexKey] = rebuilt
+                    }
+                    // Save the layout with the restored index definitions
+                    try tempCollection.saveLayout()
+                    BlazeLogger.info("✅ Rebuilt and saved indexes after rollback")
+                }
+                
+                // CRITICAL: Reset unsavedChanges on old collection before replacing it
+                // This prevents the old instance from saving on deinit and overwriting the rebuilt file
+                let oldCollection = self.collection
+                oldCollection.unsavedChanges = 0
+                
+                self.collection = tempCollection
+                // Clear caches after rebuild
+                collection.clearFetchAllCache()
+                RecordCache.shared.clear()
+                BlazeLogger.info("✅ Rollback completed - layout rebuilt from data file")
             }
         } else {
             throw BlazeDBError.transactionFailed("No transaction to roll back")
@@ -1225,8 +1559,8 @@ extension BlazeDBClient {
     /// }
     /// ```
     public func performSecurityAudit() -> SecurityAuditReport {
-        let hasRBAC = (collection as? DynamicCollection)?.secondaryIndexes.isEmpty == false
-        let hasRLS = securityContext != nil
+        let hasRBAC = collection.secondaryIndexes.isEmpty == false
+        let hasRLS = rls.getContext() != nil
         
         return SecurityAuditor.audit(
             isEncrypted: !password.isEmpty,
@@ -1290,3 +1624,495 @@ extension StorageLayout {
         return StorageLayout(indexMap: indexMap, nextPageIndex: nextPageIndex, compoundIndexes: [:])
     }
 }
+
+// MARK: - Ordering Index Support (Optional)
+
+extension BlazeDBClient {
+    /// Enable fractional ordering support for this database
+    /// 
+    /// This is completely optional and off by default. When enabled, records can be
+    /// ordered using a fractional index field (like Notion/Linear).
+    ///
+    /// - Parameter fieldName: Field name for ordering index (default: "orderingIndex")
+    /// - Throws: BlazeDBError if enabling fails
+    ///
+    /// Example:
+    /// ```swift
+    /// try db.enableOrdering()
+    /// // Now records can use orderingIndex field for natural ordering
+    /// ```
+    public func enableOrdering(fieldName: String = "orderingIndex") throws {
+        BlazeLogger.info("BlazeDBClient.enableOrdering: enabling ordering with field '\(fieldName)'")
+        try collection.enableOrdering(fieldName: fieldName)
+        BlazeLogger.info("BlazeDBClient.enableOrdering: ordering enabled successfully")
+    }
+    
+    /// Check if ordering is enabled
+    /// - Returns: true if ordering is enabled, false otherwise
+    public func isOrderingEnabled() -> Bool {
+        let enabled = collection.supportsOrdering()
+        BlazeLogger.trace("BlazeDBClient.isOrderingEnabled: \(enabled)")
+        return enabled
+    }
+    
+    /// Move a record before another record (only modifies orderingIndex)
+    /// 
+    /// Requires ordering to be enabled. Calculates a fractional index between
+    /// the target record and the record before it.
+    ///
+    /// - Parameters:
+    ///   - recordId: ID of record to move
+    ///   - beforeId: ID of record to move before
+    /// - Throws: BlazeDBError if ordering not enabled or records not found
+    public func moveBefore(recordId: UUID, beforeId: UUID) throws {
+        BlazeLogger.info("BlazeDBClient.moveBefore: moving record \(recordId) before \(beforeId)")
+        
+        guard collection.supportsOrdering() else {
+            BlazeLogger.error("BlazeDBClient.moveBefore: ordering not enabled")
+            throw BlazeDBError.transactionFailed("Ordering not enabled. Call enableOrdering() first.")
+        }
+        
+        let fieldName = collection.orderingFieldName()
+        BlazeLogger.debug("BlazeDBClient.moveBefore: using field '\(fieldName)'")
+        
+        // Get target record
+        guard let targetRecord = try collection.fetch(id: beforeId) else {
+            throw BlazeDBError.recordNotFound(id: beforeId)
+        }
+        let targetIndex = OrderingIndex.getIndex(from: targetRecord, fieldName: fieldName)
+        
+        // Get record before target (if exists)
+        let allRecords = try collection.fetchAll()
+        let sortedRecords = allRecords.sorted { (left, right) -> Bool in
+            let leftIndex = OrderingIndex.getIndex(from: left, fieldName: fieldName)
+            let rightIndex = OrderingIndex.getIndex(from: right, fieldName: fieldName)
+            if leftIndex == nil && rightIndex == nil { return false }
+            if leftIndex == nil { return false }
+            if rightIndex == nil { return true }
+            return leftIndex! < rightIndex!
+        }
+        
+        guard let targetPosition = sortedRecords.firstIndex(where: { $0.storage["id"]?.uuidValue == beforeId }) else {
+            throw BlazeDBError.recordNotFound(id: beforeId)
+        }
+        
+        let beforeIndex: Double? = targetPosition > 0 ? OrderingIndex.getIndex(from: sortedRecords[targetPosition - 1], fieldName: fieldName) : nil
+        
+        // Calculate new index
+        let newIndex = OrderingIndex.between(beforeIndex, targetIndex)
+        BlazeLogger.debug("BlazeDBClient.moveBefore: calculated index \(newIndex) between \(beforeIndex?.description ?? "nil") and \(targetIndex?.description ?? "nil")")
+        
+        // Update record
+        guard var record = try collection.fetch(id: recordId) else {
+            BlazeLogger.error("BlazeDBClient.moveBefore: record \(recordId) not found")
+            throw BlazeDBError.recordNotFound(id: recordId)
+        }
+        record = OrderingIndex.setIndex(newIndex, on: record, fieldName: fieldName)
+        
+        // Record telemetry
+        let startTime = Date()
+        try update(id: recordId, with: record)
+        let duration = Date().timeIntervalSince(startTime) * 1000
+        telemetry.record(operation: "moveBefore", duration: duration, success: true, recordCount: 1)
+        
+        // Invalidate cache
+        OrderingIndexCache.shared.invalidate(fieldName: fieldName)
+        
+        BlazeLogger.info("BlazeDBClient.moveBefore: successfully moved record \(recordId) to index \(newIndex)")
+    }
+    
+    /// Move a record after another record (only modifies orderingIndex)
+    /// 
+    /// Requires ordering to be enabled. Calculates a fractional index between
+    /// the target record and the record after it.
+    ///
+    /// - Parameters:
+    ///   - recordId: ID of record to move
+    ///   - afterId: ID of record to move after
+    /// - Throws: BlazeDBError if ordering not enabled or records not found
+    public func moveAfter(recordId: UUID, afterId: UUID) throws {
+        BlazeLogger.info("BlazeDBClient.moveAfter: moving record \(recordId) after \(afterId)")
+        
+        guard collection.supportsOrdering() else {
+            BlazeLogger.error("BlazeDBClient.moveAfter: ordering not enabled")
+            throw BlazeDBError.transactionFailed("Ordering not enabled. Call enableOrdering() first.")
+        }
+        
+        let fieldName = collection.orderingFieldName()
+        BlazeLogger.debug("BlazeDBClient.moveAfter: using field '\(fieldName)'")
+        
+        // Get target record
+        guard let targetRecord = try collection.fetch(id: afterId) else {
+            throw BlazeDBError.recordNotFound(id: afterId)
+        }
+        let targetIndex = OrderingIndex.getIndex(from: targetRecord, fieldName: fieldName)
+        
+        // Get record after target (if exists)
+        let allRecords = try collection.fetchAll()
+        let sortedRecords = allRecords.sorted { (left, right) -> Bool in
+            let leftIndex = OrderingIndex.getIndex(from: left, fieldName: fieldName)
+            let rightIndex = OrderingIndex.getIndex(from: right, fieldName: fieldName)
+            if leftIndex == nil && rightIndex == nil { return false }
+            if leftIndex == nil { return false }
+            if rightIndex == nil { return true }
+            return leftIndex! < rightIndex!
+        }
+        
+        guard let targetPosition = sortedRecords.firstIndex(where: { $0.storage["id"]?.uuidValue == afterId }) else {
+            throw BlazeDBError.recordNotFound(id: afterId)
+        }
+        
+        let afterIndex: Double? = targetPosition < sortedRecords.count - 1 ? OrderingIndex.getIndex(from: sortedRecords[targetPosition + 1], fieldName: fieldName) : nil
+        
+        // Calculate new index
+        let newIndex = OrderingIndex.between(targetIndex, afterIndex)
+        BlazeLogger.debug("BlazeDBClient.moveAfter: calculated index \(newIndex) between \(targetIndex?.description ?? "nil") and \(afterIndex?.description ?? "nil")")
+        
+        // Update record
+        guard var record = try collection.fetch(id: recordId) else {
+            BlazeLogger.error("BlazeDBClient.moveAfter: record \(recordId) not found")
+            throw BlazeDBError.recordNotFound(id: recordId)
+        }
+        record = OrderingIndex.setIndex(newIndex, on: record, fieldName: fieldName)
+        
+        // Record telemetry
+        let startTime = Date()
+        try update(id: recordId, with: record)
+        let duration = Date().timeIntervalSince(startTime) * 1000
+        telemetry.record(operation: "moveAfter", duration: duration, success: true, recordCount: 1)
+        
+        // Invalidate cache
+        OrderingIndexCache.shared.invalidate(fieldName: fieldName)
+        
+        BlazeLogger.info("BlazeDBClient.moveAfter: successfully moved record \(recordId) to index \(newIndex)")
+    }
+    
+    /// Set a specific ordering index for a record
+    /// 
+    /// Requires ordering to be enabled. Directly sets the ordering index value.
+    ///
+    /// - Parameters:
+    ///   - recordId: ID of record to update
+    ///   - index: Ordering index value
+    /// - Throws: BlazeDBError if ordering not enabled or record not found
+    public func moveToIndex(recordId: UUID, index: Double) throws {
+        BlazeLogger.info("BlazeDBClient.moveToIndex: setting record \(recordId) to index \(index)")
+        
+        guard collection.supportsOrdering() else {
+            BlazeLogger.error("BlazeDBClient.moveToIndex: ordering not enabled")
+            throw BlazeDBError.transactionFailed("Ordering not enabled. Call enableOrdering() first.")
+        }
+        
+        let fieldName = collection.orderingFieldName()
+        BlazeLogger.debug("BlazeDBClient.moveToIndex: using field '\(fieldName)'")
+        
+        guard var record = try collection.fetch(id: recordId) else {
+            BlazeLogger.error("BlazeDBClient.moveToIndex: record \(recordId) not found")
+            throw BlazeDBError.recordNotFound(id: recordId)
+        }
+        
+        record = OrderingIndex.setIndex(index, on: record, fieldName: fieldName)
+        
+        // Record telemetry
+        let startTime = Date()
+        try update(id: recordId, with: record)
+        let duration = Date().timeIntervalSince(startTime) * 1000
+        telemetry.record(operation: "moveToIndex", duration: duration, success: true, recordCount: 1)
+        
+        // Invalidate cache
+        OrderingIndexCache.shared.invalidate(fieldName: fieldName)
+        
+        BlazeLogger.info("BlazeDBClient.moveToIndex: successfully set record \(recordId) to index \(index)")
+    }
+    
+    // MARK: - Advanced Ordering Features
+    
+    /// Move a record up N positions (relative move)
+    /// 
+    /// Requires ordering to be enabled. Moves record up by N positions in the sorted order.
+    ///
+    /// - Parameters:
+    ///   - recordId: ID of record to move
+    ///   - positions: Number of positions to move up (default: 1)
+    /// - Throws: BlazeDBError if ordering not enabled or record not found
+    public func moveUp(recordId: UUID, positions: Int = 1) throws {
+        BlazeLogger.info("BlazeDBClient.moveUp: moving record \(recordId) up \(positions) positions")
+        
+        guard collection.supportsOrdering() else {
+            BlazeLogger.error("BlazeDBClient.moveUp: ordering not enabled")
+            throw BlazeDBError.transactionFailed("Ordering not enabled. Call enableOrdering() first.")
+        }
+        
+        let fieldName = collection.orderingFieldName()
+        let startTime = Date()
+        
+        guard var record = try collection.fetch(id: recordId) else {
+            BlazeLogger.error("BlazeDBClient.moveUp: record \(recordId) not found")
+            throw BlazeDBError.recordNotFound(id: recordId)
+        }
+        
+        let newIndex: Double
+        if let currentIndex = OrderingIndex.getIndex(from: record, fieldName: fieldName) {
+            newIndex = OrderingIndex.moveUp(from: currentIndex, positions: positions)
+        } else {
+            BlazeLogger.warn("BlazeDBClient.moveUp: record \(recordId) has no ordering index, using default")
+            newIndex = OrderingIndex.default - Double(positions)
+        }
+        record = OrderingIndex.setIndex(newIndex, on: record, fieldName: fieldName)
+        
+        try update(id: recordId, with: record)
+        let duration = Date().timeIntervalSince(startTime) * 1000
+        telemetry.record(operation: "moveUp", duration: duration, success: true, recordCount: 1)
+        
+        // Invalidate cache
+        OrderingIndexCache.shared.invalidate(fieldName: fieldName)
+        
+        BlazeLogger.info("BlazeDBClient.moveUp: successfully moved record \(recordId) up \(positions) positions")
+    }
+    
+    /// Move a record down N positions (relative move)
+    /// 
+    /// Requires ordering to be enabled. Moves record down by N positions in the sorted order.
+    ///
+    /// - Parameters:
+    ///   - recordId: ID of record to move
+    ///   - positions: Number of positions to move down (default: 1)
+    /// - Throws: BlazeDBError if ordering not enabled or record not found
+    public func moveDown(recordId: UUID, positions: Int = 1) throws {
+        BlazeLogger.info("BlazeDBClient.moveDown: moving record \(recordId) down \(positions) positions")
+        
+        guard collection.supportsOrdering() else {
+            BlazeLogger.error("BlazeDBClient.moveDown: ordering not enabled")
+            throw BlazeDBError.transactionFailed("Ordering not enabled. Call enableOrdering() first.")
+        }
+        
+        let fieldName = collection.orderingFieldName()
+        let startTime = Date()
+        
+        guard var record = try collection.fetch(id: recordId) else {
+            BlazeLogger.error("BlazeDBClient.moveDown: record \(recordId) not found")
+            throw BlazeDBError.recordNotFound(id: recordId)
+        }
+        
+        let newIndex: Double
+        if let currentIndex = OrderingIndex.getIndex(from: record, fieldName: fieldName) {
+            newIndex = OrderingIndex.moveDown(from: currentIndex, positions: positions)
+        } else {
+            BlazeLogger.warn("BlazeDBClient.moveDown: record \(recordId) has no ordering index, using default")
+            newIndex = OrderingIndex.default + Double(positions)
+        }
+        record = OrderingIndex.setIndex(newIndex, on: record, fieldName: fieldName)
+        
+        try update(id: recordId, with: record)
+        let duration = Date().timeIntervalSince(startTime) * 1000
+        telemetry.record(operation: "moveDown", duration: duration, success: true, recordCount: 1)
+        
+        // Invalidate cache
+        OrderingIndexCache.shared.invalidate(fieldName: fieldName)
+        
+        BlazeLogger.info("BlazeDBClient.moveDown: successfully moved record \(recordId) down \(positions) positions")
+    }
+    
+    /// Bulk reorder multiple records at once
+    /// 
+    /// Requires ordering to be enabled. Efficiently updates multiple records' ordering indices.
+    ///
+    /// - Parameter operations: Array of reorder operations
+    /// - Returns: Result with success/failure counts
+    /// - Throws: BlazeDBError if ordering not enabled
+    public func bulkReorder(_ operations: [BulkReorderOperation]) throws -> BulkReorderResult {
+        BlazeLogger.info("BlazeDBClient.bulkReorder: reordering \(operations.count) records")
+        
+        guard collection.supportsOrdering() else {
+            BlazeLogger.error("BlazeDBClient.bulkReorder: ordering not enabled")
+            throw BlazeDBError.transactionFailed("Ordering not enabled. Call enableOrdering() first.")
+        }
+        
+        let fieldName = collection.orderingFieldName()
+        let startTime = Date()
+        
+        var successful = 0
+        var failed = 0
+        var errors: [(UUID, Error)] = []
+        
+        // Perform bulk update
+        for operation in operations {
+            do {
+                guard var record = try collection.fetch(id: operation.recordId) else {
+                    let error = BlazeDBError.recordNotFound(id: operation.recordId)
+                    errors.append((operation.recordId, error))
+                    failed += 1
+                    continue
+                }
+                
+                record = OrderingIndex.setIndex(operation.newIndex, on: record, fieldName: fieldName)
+                try update(id: operation.recordId, with: record)
+                successful += 1
+            } catch {
+                errors.append((operation.recordId, error))
+                failed += 1
+                BlazeLogger.warn("BlazeDBClient.bulkReorder: failed to reorder \(operation.recordId): \(error)")
+            }
+        }
+        
+        let duration = Date().timeIntervalSince(startTime) * 1000
+        telemetry.record(operation: "bulkReorder", duration: duration, success: failed == 0, recordCount: successful)
+        
+        // Invalidate cache
+        OrderingIndexCache.shared.invalidate(fieldName: fieldName)
+        
+        BlazeLogger.info("BlazeDBClient.bulkReorder: completed - \(successful) successful, \(failed) failed")
+        
+        return BulkReorderResult(successful: successful, failed: failed, errors: errors)
+    }
+    
+    /// Enable ordering with category support (multiple ordering fields)
+    /// 
+    /// When enabled, each category can have its own ordering index field.
+    /// For example, if categoryField is "status", records with status="todo" will use
+    /// "orderingIndex_todo", and records with status="done" will use "orderingIndex_done".
+    ///
+    /// - Parameters:
+    ///   - fieldName: Base ordering field name (default: "orderingIndex")
+    ///   - categoryField: Field name for category grouping (e.g., "status", "category")
+    /// - Throws: BlazeDBError if enabling fails
+    public func enableOrderingWithCategories(
+        fieldName: String = "orderingIndex",
+        categoryField: String
+    ) throws {
+        BlazeLogger.info("BlazeDBClient.enableOrderingWithCategories: enabling with category field '\(categoryField)'")
+        
+        var meta = try collection.fetchMeta()
+        meta["supportsOrdering"] = .bool(true)
+        meta["orderingFieldName"] = .string(fieldName)
+        meta["orderingCategoryField"] = .string(categoryField)
+        meta["supportsMultipleOrdering"] = .bool(true)
+        
+        try collection.updateMeta(meta)
+        BlazeLogger.info("BlazeDBClient.enableOrderingWithCategories: enabled with category field '\(categoryField)'")
+    }
+    
+    /// Move a record within its category
+    /// 
+    /// Requires category-based ordering to be enabled.
+    ///
+    /// - Parameters:
+    ///   - recordId: ID of record to move
+    ///   - categoryValue: Category value (e.g., "todo", "done")
+    ///   - beforeId: ID of record to move before (optional)
+    ///   - afterId: ID of record to move after (optional)
+    /// - Throws: BlazeDBError if category ordering not enabled or records not found
+    public func moveInCategory(
+        recordId: UUID,
+        categoryValue: String,
+        beforeId: UUID? = nil,
+        afterId: UUID? = nil
+    ) throws {
+        BlazeLogger.info("BlazeDBClient.moveInCategory: moving record \(recordId) in category '\(categoryValue)'")
+        
+        guard collection.supportsOrdering() else {
+            throw BlazeDBError.transactionFailed("Ordering not enabled. Call enableOrdering() first.")
+        }
+        
+        // Check if category ordering is enabled (not just regular ordering)
+        guard collection.supportsMultipleOrdering(), let categoryField = collection.orderingCategoryField() else {
+            throw BlazeDBError.transactionFailed("Category ordering not enabled. Call enableOrderingWithCategories() first.")
+        }
+        
+        let fieldName = collection.orderingFieldName()
+        let startTime = Date()
+        
+        BlazeLogger.debug("BlazeDBClient.moveInCategory: using categoryField='\(categoryField)', fieldName='\(fieldName)'")
+        
+        // Get all records in the category
+        let allRecords = try collection.fetchAll()
+        let categoryRecords = allRecords.filter { record in
+            record.storage[categoryField]?.stringValue == categoryValue
+        }
+        
+        let sortedCategoryRecords = categoryRecords.sorted { (left, right) -> Bool in
+            let leftIndex = OrderingIndex.getIndex(from: left, categoryField: categoryField, categoryValue: categoryValue, fieldName: fieldName)
+            let rightIndex = OrderingIndex.getIndex(from: right, categoryField: categoryField, categoryValue: categoryValue, fieldName: fieldName)
+            if leftIndex == nil && rightIndex == nil { return false }
+            if leftIndex == nil { return false }
+            if rightIndex == nil { return true }
+            return leftIndex! < rightIndex!
+        }
+        
+        guard let targetId = beforeId ?? afterId else {
+            throw BlazeDBError.invalidQuery(reason: "Either beforeId or afterId must be provided")
+        }
+        
+        guard let targetRecord = sortedCategoryRecords.first(where: { $0.storage["id"]?.uuidValue == targetId }) else {
+            throw BlazeDBError.recordNotFound(id: targetId)
+        }
+        
+        let targetIndex = OrderingIndex.getIndex(from: targetRecord, categoryField: categoryField, categoryValue: categoryValue, fieldName: fieldName)
+        
+        let beforeIndex: Double?
+        let afterIndex: Double?
+        
+        if let beforeId = beforeId {
+            guard let targetPos = sortedCategoryRecords.firstIndex(where: { $0.storage["id"]?.uuidValue == beforeId }) else {
+                throw BlazeDBError.recordNotFound(id: beforeId)
+            }
+            beforeIndex = targetPos > 0 ? OrderingIndex.getIndex(from: sortedCategoryRecords[targetPos - 1], categoryField: categoryField, categoryValue: categoryValue, fieldName: fieldName) : nil
+            afterIndex = targetIndex
+        } else {
+            // CRITICAL: Throw proper error instead of crashing with fatalError()
+            // This should never happen due to guard at line 2023, but handle gracefully
+            guard let afterId = afterId else {
+                BlazeLogger.error("❌ insertOrdered: Both beforeId and afterId are nil (should be caught by earlier guard)")
+                throw BlazeDBError.invalidQuery(reason: "Internal error: Both beforeId and afterId are nil. This indicates a programming error.")
+            }
+            guard let targetPos = sortedCategoryRecords.firstIndex(where: { $0.storage["id"]?.uuidValue == afterId }) else {
+                throw BlazeDBError.recordNotFound(id: afterId)
+            }
+            beforeIndex = targetIndex
+            afterIndex = targetPos < sortedCategoryRecords.count - 1 ? OrderingIndex.getIndex(from: sortedCategoryRecords[targetPos + 1], categoryField: categoryField, categoryValue: categoryValue, fieldName: fieldName) : nil
+        }
+        
+        let newIndex = OrderingIndex.between(beforeIndex, afterIndex)
+        
+        guard var record = try collection.fetch(id: recordId) else {
+            throw BlazeDBError.recordNotFound(id: recordId)
+        }
+        
+        record = OrderingIndex.setIndex(newIndex, on: record, categoryField: categoryField, categoryValue: categoryValue, fieldName: fieldName)
+        try update(id: recordId, with: record)
+        
+        let duration = Date().timeIntervalSince(startTime) * 1000
+        telemetry.record(operation: "moveInCategory", duration: duration, success: true, recordCount: 1)
+        
+        BlazeLogger.info("BlazeDBClient.moveInCategory: successfully moved record \(recordId) in category '\(categoryValue)'")
+    }
+}
+
+// MARK: - Category Ordering Support
+
+extension DynamicCollection {
+    /// Get the category field name for ordering
+    internal func orderingCategoryField() -> String? {
+        do {
+            let meta = try fetchMeta()
+            return meta["orderingCategoryField"]?.stringValue
+        } catch {
+            return nil
+        }
+    }
+    
+    /// Check if multiple ordering (per category) is supported
+    internal func supportsMultipleOrdering() -> Bool {
+        do {
+            let meta = try fetchMeta()
+            return meta["supportsMultipleOrdering"]?.boolValue ?? false
+        } catch {
+            return false
+        }
+    }
+}
+
+// MARK: - Graph Query Extension
+// Note: Full implementation is in BlazeDB/Query/GraphQuery.swift
+// The graph() methods are defined in GraphQuery.swift extension
+
