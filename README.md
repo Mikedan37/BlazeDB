@@ -225,15 +225,11 @@ graph LR
 - Overflow pages linked via 4-byte pointers
 - Pages allocated sequentially with reuse via garbage collection
 
-### BlazeBinary Encoding
+### BlazeBinary Protocol
 
-BlazeDB uses a custom binary encoding format called BlazeBinary. This format provides:
+BlazeDB uses a custom binary encoding format called BlazeBinary. This format provides approximately 53% size reduction and 48% faster encoding/decoding compared to JSON.
 
-- **Size reduction:** Approximately 53% smaller than equivalent JSON representations
-- **Encoding speed:** Approximately 48% faster encoding and decoding compared to JSON
-- **Field name compression:** Top 127 most common field names encoded as single bytes
-- **Type safety:** Type tags ensure correct decoding
-- **Integrity:** CRC32 checksums detect corruption
+#### Protocol Overview
 
 *Conceptual diagram of encoding pipeline*
 
@@ -281,6 +277,246 @@ graph LR
     class O1,O2 output
     class N1,N2 network
 ```
+
+#### Record Format Structure
+
+BlazeBinary records use a fixed header followed by variable-length fields:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ HEADER (8 bytes, aligned)                                    │
+├─────────────────────────────────────────────────────────────┤
+│ Offset  Size  Type     Description                           │
+│ 0       5     char[5]  Magic: "BLAZE" (0x42 0x4C 0x41...)   │
+│ 5       1     uint8    Version: 0x01 (v1) or 0x02 (v2)     │
+│ 6       2     uint16   Field count (big-endian)             │
+├─────────────────────────────────────────────────────────────┤
+│ FIELD_1 (variable length)                                    │
+│   [KEY_ENCODING][VALUE_ENCODING]                            │
+├─────────────────────────────────────────────────────────────┤
+│ FIELD_2 (variable length)                                    │
+│   [KEY_ENCODING][VALUE_ENCODING]                            │
+├─────────────────────────────────────────────────────────────┤
+│ ...                                                          │
+├─────────────────────────────────────────────────────────────┤
+│ FIELD_N (variable length)                                    │
+│   [KEY_ENCODING][VALUE_ENCODING]                            │
+├─────────────────────────────────────────────────────────────┤
+│ CRC32 (4 bytes, v2 only, big-endian)                        │
+│   Only present if version == 0x02                           │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**Header Details:**
+- **Magic Bytes:** "BLAZE" (0x42 0x4C 0x41 0x5A 0x45) validates format
+- **Version:** 0x01 (v1, no CRC) or 0x02 (v2, with CRC32)
+- **Field Count:** UInt16 big-endian, pre-allocates dictionary capacity
+
+#### Field Encoding
+
+Each field consists of a key encoding followed by a value encoding.
+
+**Key Encoding (Two Variants):**
+
+**Variant A: Common Field (1 byte)**
+```
+┌─────────────────────────────────────┐
+│ 1 byte: Field ID (0x01-0x7F)        │
+└─────────────────────────────────────┘
+```
+
+Top 127 most common field names (e.g., "id", "createdAt", "title") are encoded as single bytes. This provides significant space savings for frequently used fields.
+
+**Variant B: Custom Field (3+N bytes)**
+```
+┌─────────────────────────────────────┐
+│ 1 byte: Marker (0xFF)               │
+│ 2 bytes: Key length (big-endian)     │
+│ N bytes: UTF-8 key string            │
+└─────────────────────────────────────┘
+```
+
+Fields not in the common dictionary use the 0xFF marker followed by length and UTF-8 string. Supports unlimited custom fields.
+
+**Example:**
+- "id" → 0x01 (1 byte total)
+- "myCustomField" → 0xFF + 0x000D + "myCustomField" (16 bytes total)
+
+#### Type System
+
+BlazeBinary uses a type tag system with optimizations for common cases:
+
+**Base Types:**
+- `0x01`: String (full, 4-byte length + UTF-8)
+- `0x02`: Int (full, 8 bytes big-endian)
+- `0x03`: Double (8 bytes bitPattern big-endian)
+- `0x04`: Bool (1 byte: 0x01 true, 0x00 false)
+- `0x05`: UUID (16 bytes binary)
+- `0x06`: Date (8 bytes TimeInterval big-endian)
+- `0x07`: Data (4-byte length + N bytes)
+- `0x08`: Array (2-byte count + recursive items)
+- `0x09`: Dictionary (2-byte count + sorted key-value pairs)
+- `0x0A`: Vector (4-byte count + N*4 bytes Float32)
+- `0x0B`: Null (0 bytes)
+
+**Optimizations:**
+- `0x11`: Empty String (1 byte total)
+- `0x12`: Small Int (0-255, 2 bytes total vs 9 for full int)
+- `0x18`: Empty Array (1 byte total)
+- `0x19`: Empty Dictionary (1 byte total)
+- `0x20-0x2F`: Inline String (type + length in 1 byte, length ≤15)
+
+#### Value Encoding Examples
+
+**String Encoding:**
+
+Empty string:
+```
+[0x11]  (1 byte total)
+```
+
+Inline string (≤15 bytes):
+```
+[0x20 | length] [UTF-8 bytes]
+Example: "Hello" (5 bytes) → [0x25] [0x48 0x65 0x6C 0x6C 0x6F]
+```
+
+Full string (>15 bytes):
+```
+[0x01] [length:4 bytes BE] [UTF-8 bytes]
+Example: "Hello, world!" → [0x01] [0x0000000D] [0x48 0x65 0x6C 0x6C 0x6F 0x2C 0x20 0x77 0x6F 0x72 0x6C 0x64 0x21]
+```
+
+**Integer Encoding:**
+
+Small int (0-255):
+```
+[0x12] [value:1 byte]
+Example: 42 → [0x12] [0x2A]
+```
+
+Full int:
+```
+[0x02] [value:8 bytes BE]
+Example: 1000 → [0x02] [0x00 0x00 0x00 0x00 0x00 0x00 0x03 0xE8]
+```
+
+**Array Encoding:**
+
+Empty array:
+```
+[0x18]  (1 byte total)
+```
+
+Non-empty array:
+```
+[0x08] [count:2 bytes BE] [item1] [item2] ... [itemN]
+```
+
+**Dictionary Encoding:**
+
+Empty dictionary:
+```
+[0x19]  (1 byte total)
+```
+
+Non-empty dictionary:
+```
+[0x09] [count:2 bytes BE] [key1][value1] [key2][value2] ... [keyN][valueN]
+```
+
+Keys are sorted for deterministic encoding.
+
+#### Complete Record Example
+
+**Input:**
+```swift
+BlazeDataRecord([
+    "id": .uuid(UUID(...)),
+    "title": .string("Hello"),
+    "count": .int(42),
+    "active": .bool(true)
+])
+```
+
+**Binary Encoding (hexadecimal):**
+```
+42 4C 41 5A 45 02 00 04    // Header: "BLAZE" + v2 + 4 fields
+01                          // Field 1 key: "id" (common field 0x01)
+05 [16 bytes UUID]          // Field 1 value: UUID type + 16 bytes
+06                          // Field 2 key: "title" (common field 0x06)
+25 48 65 6C 6C 6F          // Field 2 value: Inline string "Hello" (0x25 = 0x20|5)
+2F                          // Field 3 key: "count" (common field 0x2F)
+12 2A                       // Field 3 value: Small int 42 (0x12 + 0x2A)
+23                          // Field 4 key: "active" (common field 0x23)
+04 01                       // Field 4 value: Bool true (0x04 + 0x01)
+[CRC32: 4 bytes]            // CRC32 checksum (v2 only)
+```
+
+**Size Comparison:**
+- JSON: ~120 bytes
+- BlazeBinary: ~40 bytes (67% smaller)
+
+#### Network Frame Structure
+
+For network sync, BlazeBinary records are wrapped in frames:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ FRAME HEADER (5 bytes)                                      │
+├─────────────────────────────────────────────────────────────┤
+│ 1 byte: Frame Type (0x01-0x06)                              │
+│ 4 bytes: Payload Length (big-endian UInt32)                 │
+├─────────────────────────────────────────────────────────────┤
+│ PAYLOAD (variable length)                                   │
+│   Encrypted with AES-256-GCM (if handshaked)                │
+│   Or plaintext (during handshake)                           │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**Frame Types:**
+- `0x01`: handshake
+- `0x02`: handshakeAck
+- `0x03`: verify
+- `0x04`: handshakeComplete
+- `0x05`: encryptedData
+- `0x06`: operation
+
+#### Protocol Characteristics
+
+**Endianness:**
+- All multi-byte integers are big-endian (network byte order)
+- Ensures cross-platform compatibility
+
+**Deterministic Encoding:**
+- Fields sorted by key before encoding
+- Dictionary keys sorted before encoding
+- Identical records produce identical binary output
+
+**Corruption Detection:**
+- Magic bytes validate format
+- Version byte validates compatibility
+- CRC32 checksum (v2) detects data corruption (99.9% detection rate)
+- Length validation prevents buffer overflows
+
+**Performance Optimizations:**
+- Pre-allocated buffers reduce memory allocations
+- Common field compression (1 byte vs 3+N bytes)
+- Small int optimization (2 bytes vs 9 bytes)
+- Inline strings (1 byte overhead for ≤15 bytes)
+- ARM-optimized codec with SIMD support
+
+**Limits:**
+- String max: 100MB
+- Data max: 100MB
+- Array max: 100,000 items
+- Dictionary max: 100,000 items
+- Vector max: 1,000,000 elements
+
+**Test Coverage:**
+- 116 BlazeBinary tests validate encoding correctness, compatibility, and corruption detection
+- Byte-level verification ensures exact encoding matches specification
+- Corruption recovery tests validate graceful failure handling
 
 ---
 
@@ -454,6 +690,169 @@ graph TB
 - Wrong password fails immediately (constant-time comparison prevents timing attacks)
 - Authentication tags prevent tampering
 - 11 security test files validate encryption correctness, round-trip integrity, and security invariants
+
+---
+
+## Threat Model
+
+BlazeDB's threat model identifies attack vectors, threat actors, and security controls. This analysis is based on code-driven assessment of actual security implementations.
+
+### Threat Actors & Attack Surfaces
+
+*Conceptual diagram of threat landscape*
+
+```mermaid
+graph TB
+    subgraph External["External Network Attackers"]
+        E1["MITM<br/>Traffic Interception"]
+        E2["Replay<br/>Operation Replay"]
+        E3["DoS<br/>Resource Exhaustion"]
+        E4["Injection<br/>Malicious Operations"]
+    end
+    
+    subgraph Insider["Malicious Insiders"]
+        I1["RLS Bypass<br/>Policy Violation"]
+        I2["Privilege Escalation<br/>Permission Manipulation"]
+        I3["Data Exfiltration<br/>Unauthorized Access"]
+    end
+    
+    subgraph Physical["Compromised Devices"]
+        P1["Physical Access<br/>Device Theft"]
+        P2["Memory Dumps<br/>Key Extraction"]
+        P3["Metadata Tampering<br/>Index Corruption"]
+    end
+    
+    subgraph Controls["Security Controls"]
+        C1["AES-256-GCM<br/>Encryption"]
+        C2["ECDH + HMAC<br/>Authentication"]
+        C3["RLS Policies<br/>Access Control"]
+        C4["Rate Limiting<br/>DoS Protection"]
+        C5["Secure Enclave<br/>Hardware Keys"]
+    end
+    
+    E1 --> C1
+    E1 --> C2
+    E2 --> C4
+    E3 --> C4
+    E4 --> C2
+    
+    I1 --> C3
+    I2 --> C3
+    I3 --> C3
+    
+    P1 --> C1
+    P1 --> C5
+    P2 --> C5
+    P3 --> C2
+    
+    classDef threat fill:#e74c3c,stroke:#c0392b,stroke-width:2px,color:#fff
+    classDef control fill:#2ecc71,stroke:#27ae60,stroke-width:2px,color:#fff
+    
+    class E1,E2,E3,E4,I1,I2,I3,P1,P2,P3 threat
+    class C1,C2,C3,C4,C5 control
+```
+
+### Network Attack Vectors
+
+**Man-in-the-Middle (MITM):**
+- **Threat:** Attacker intercepts network traffic between client and server
+- **Mitigation:** ECDH P-256 key exchange + AES-256-GCM encryption provides end-to-end encryption
+- **Status:** Implemented with perfect forward secrecy (ephemeral keys)
+- **Gap:** Certificate pinning stubbed (not fully implemented)
+
+**Replay Attacks:**
+- **Threat:** Attacker captures and replays operations
+- **Mitigation:** 16-byte operation nonces, 60-second timestamp validation, operation ID tracking
+- **Status:** Fully implemented with 10K operation ID cache
+
+**Denial of Service:**
+- **Threat:** Attacker floods server with operations
+- **Mitigation:** Rate limiting (1000 ops/min per user), operation pooling (max 100 concurrent), batch size limits (10K-50K ops)
+- **Status:** Implemented but not enforced in all sync paths
+
+### Storage Attack Vectors
+
+**Physical Access / Device Theft:**
+- **Threat:** Attacker steals device and extracts database files
+- **Mitigation:** AES-256-GCM per-page encryption, Argon2id key derivation, Secure Enclave integration (iOS/macOS)
+- **Status:** Fully implemented; Secure Enclave provides hardware-backed key protection
+
+**Metadata Tampering:**
+- **Threat:** Attacker modifies index map or metadata files
+- **Mitigation:** HMAC-SHA256 signatures on metadata, integrity checks on load, CRC32 checksums
+- **Status:** HMAC signatures implemented; automatic rebuild on corruption
+
+**Memory Dumps:**
+- **Threat:** Attacker gains root access and dumps process memory
+- **Mitigation:** Secure Enclave stores keys outside app memory, forward secrecy limits exposure window
+- **Status:** Secure Enclave available on iOS/macOS; explicit memory clearing not implemented
+
+### Access Control Attack Vectors
+
+**RLS Policy Bypass:**
+- **Threat:** Attacker attempts to read protected records
+- **Mitigation:** Policy engine evaluates policies on every operation, query integration applies RLS filters
+- **Status:** Fully implemented with permissive/restrictive logic
+
+**Privilege Escalation:**
+- **Threat:** Attacker with limited permissions modifies policies or permissions
+- **Mitigation:** Authorization checks validate permissions per operation, admin flag separates admin permissions
+- **Status:** Authorization implemented; policy modification protection not explicit
+
+### Input Validation Attack Vectors
+
+**Path Traversal:**
+- **Threat:** Attacker uses "../../etc/passwd" as database name
+- **Mitigation:** Path validation rejects traversal characters, null byte protection
+- **Status:** Fully implemented
+
+**Memory Exhaustion:**
+- **Threat:** Attacker inserts 100MB record to exhaust memory
+- **Mitigation:** 100MB max record size, overflow page support, batch size limits
+- **Status:** Fully implemented
+
+**Injection Attacks:**
+- **Threat:** Attacker injects malicious query payload
+- **Mitigation:** Type-safe query builder (no string concatenation), schema validation, input sanitization
+- **Status:** Fully implemented; type safety prevents SQL injection
+
+### Security Control Matrix
+
+| Control | Implementation | Status | Risk Level |
+|---------|---------------|--------|------------|
+| **At-Rest Encryption** | AES-256-GCM per page | ✅ Implemented | 🟢 LOW |
+| **In-Transit Encryption** | ECDH + AES-256-GCM | ✅ Implemented | 🟢 LOW |
+| **Key Derivation** | Argon2id | ✅ Implemented | 🟢 LOW |
+| **Perfect Forward Secrecy** | Ephemeral ECDH keys | ✅ Implemented | 🟢 LOW |
+| **Secure Enclave** | Hardware-backed keys | ✅ Implemented (iOS/macOS) | 🟢 LOW |
+| **Replay Protection** | Nonces + timestamps | ✅ Implemented | 🟢 LOW |
+| **Rate Limiting** | 1000 ops/min per user | ⚠️ Not enforced everywhere | 🟡 MEDIUM |
+| **RLS Policies** | Policy engine | ✅ Implemented | 🟢 LOW |
+| **HMAC Signatures** | Metadata signatures | ✅ Implemented | 🟢 LOW |
+| **Certificate Pinning** | TLS certificate validation | ⚠️ Stubbed | 🟡 MEDIUM |
+| **Operation Signatures** | Optional HMAC | ⚠️ Optional | 🟡 MEDIUM |
+
+### Risk Assessment Summary
+
+**Critical Risks (Fix Immediately):**
+- Rate limiting not enforced in all sync paths
+- Operation signatures optional (should be mandatory)
+- Certificate pinning stubbed (not fully implemented)
+
+**High Risks (Fix Within 1 Week):**
+- Policy modification not protected (require admin)
+- Explicit memory clearing not implemented
+- Connection-level rate limiting not implemented
+
+**Medium Risks (Fix Within 1 Month):**
+- Audit logging limited coverage
+- IP-based rate limiting not implemented
+- Circuit breaker not implemented
+
+**Test Coverage:**
+- 11 security test files validate encryption, authentication, and access control
+- 7 persistence/recovery test files validate crash recovery and corruption handling
+- Distributed security tests validate network attack mitigations
 
 ---
 
