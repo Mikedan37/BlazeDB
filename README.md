@@ -298,48 +298,48 @@ BlazeDB uses a page-based storage architecture with write-ahead logging:
 
 ```mermaid
 graph TB
-    subgraph "Application Layer"
-        A1[BlazeDBClient<br/>Public API]
-        A2[BlazeShell<br/>CLI Tool]
-        A3[BlazeStudio<br/>GUI Tool]
-        A4[SwiftUI Integration<br/>@BlazeQuery]
+    subgraph AppLayer["Application Layer"]
+        A1["BlazeDBClient<br/>Public API"]
+        A2["BlazeShell<br/>CLI Tool"]
+        A3["BlazeStudio<br/>GUI Tool"]
+        A4["SwiftUI Integration<br/>@BlazeQuery"]
     end
     
-    subgraph "Query & Index Layer"
-        Q1[QueryBuilder<br/>Fluent DSL]
-        Q2[QueryOptimizer<br/>Index Selection]
-        Q3[QueryPlanner<br/>Execution Plan]
-        I1[Secondary Indexes]
-        I2[Full-Text Search]
-        I3[Spatial Index]
-        I4[Vector Index]
+    subgraph QueryLayer["Query & Index Layer"]
+        Q1["QueryBuilder<br/>Fluent DSL"]
+        Q2["QueryOptimizer<br/>Index Selection"]
+        Q3["QueryPlanner<br/>Execution Plan"]
+        I1["Secondary Indexes"]
+        I2["Full-Text Search"]
+        I3["Spatial Index"]
+        I4["Vector Index"]
     end
     
-    subgraph "MVCC & Concurrency Layer"
-        M1[VersionManager<br/>Multi-Version Storage]
-        M2[MVCCTransaction<br/>Snapshot Isolation]
-        M3[ConflictResolution<br/>Lost Update Prevention]
-        M4[PageGarbageCollector<br/>Version Cleanup]
+    subgraph MVCCLayer["MVCC & Concurrency Layer"]
+        M1["VersionManager<br/>Multi-Version Storage"]
+        M2["MVCCTransaction<br/>Snapshot Isolation"]
+        M3["ConflictResolution<br/>Lost Update Prevention"]
+        M4["PageGarbageCollector<br/>Version Cleanup"]
     end
     
-    subgraph "Storage Layer"
-        S1[PageStore<br/>4KB Pages]
-        S2[WriteAheadLog<br/>WAL for Durability]
-        S3[StorageLayout<br/>Metadata Management]
-        S4[Overflow Pages<br/>Large Records]
+    subgraph StorageLayer["Storage Layer"]
+        S1["PageStore<br/>4KB Pages"]
+        S2["WriteAheadLog<br/>WAL for Durability"]
+        S3["StorageLayout<br/>Metadata Management"]
+        S4["Overflow Pages<br/>Large Records"]
     end
     
-    subgraph "Encryption Layer"
-        E1[AES-256-GCM<br/>Per-Page Encryption]
-        E2[KeyManager<br/>Argon2id + HKDF]
-        E3[Secure Enclave<br/>iOS/macOS]
+    subgraph EncryptLayer["Encryption Layer"]
+        E1["AES-256-GCM<br/>Per-Page Encryption"]
+        E2["KeyManager<br/>Argon2id + HKDF"]
+        E3["Secure Enclave<br/>iOS/macOS"]
     end
     
-    subgraph "Network Layer"
-        N1[In-Memory Queue<br/>&lt;0.1ms]
-        N2[Unix Domain Socket<br/>~0.5ms]
-        N3[TCP Relay<br/>~5ms]
-        N4[BlazeBinary Protocol<br/>53% smaller]
+    subgraph NetworkLayer["Network Layer"]
+        N1["In-Memory Queue<br/>&lt;0.1ms"]
+        N2["Unix Domain Socket<br/>~0.5ms"]
+        N3["TCP Relay<br/>~5ms"]
+        N4["BlazeBinary Protocol<br/>53% smaller"]
     end
     
     A1 --> Q1
@@ -373,35 +373,42 @@ graph TB
     A1 --> N3
     N3 --> N4
     
-    style A1 fill:#4a90e2
-    style Q1 fill:#50c878
-    style M1 fill:#ff6b6b
-    style S1 fill:#f39c12
-    style E1 fill:#9b59b6
-    style N1 fill:#1abc9c
+    classDef appLayer fill:#3498db,stroke:#2980b9,stroke-width:3px,color:#fff
+    classDef queryLayer fill:#2ecc71,stroke:#27ae60,stroke-width:3px,color:#fff
+    classDef mvccLayer fill:#e74c3c,stroke:#c0392b,stroke-width:3px,color:#fff
+    classDef storageLayer fill:#f39c12,stroke:#e67e22,stroke-width:3px,color:#fff
+    classDef cryptoLayer fill:#9b59b6,stroke:#8e44ad,stroke-width:3px,color:#fff
+    classDef networkLayer fill:#1abc9c,stroke:#16a085,stroke-width:3px,color:#fff
+    
+    class A1,A2,A3,A4 appLayer
+    class Q1,Q2,Q3,I1,I2,I3,I4 queryLayer
+    class M1,M2,M3,M4 mvccLayer
+    class S1,S2,S3,S4 storageLayer
+    class E1,E2,E3 cryptoLayer
+    class N1,N2,N3,N4 networkLayer
 ```
 
 ### Storage Architecture
 
 ```mermaid
 graph LR
-    subgraph "Page Structure (4KB)"
-        P1[Header<br/>Magic + Version<br/>8 bytes]
-        P2[BlazeBinary Data<br/>Variable Length]
-        P3[Overflow Pointer<br/>4 bytes if needed]
-        P4[Padding<br/>Zero-filled]
+    subgraph PageStruct["Page Structure (4KB)"]
+        P1["Header<br/>Magic + Version<br/>8 bytes"]
+        P2["BlazeBinary Data<br/>Variable Length"]
+        P3["Overflow Pointer<br/>4 bytes if needed"]
+        P4["Padding<br/>Zero-filled"]
     end
     
-    subgraph "File Layout"
-        F1[.blazedb<br/>Data Pages]
-        F2[.meta<br/>Index Map]
-        F3[.wal<br/>Write-Ahead Log]
+    subgraph FileLayout["File Layout"]
+        F1[".blazedb<br/>Data Pages"]
+        F2[".meta<br/>Index Map"]
+        F3[".wal<br/>Write-Ahead Log"]
     end
     
-    subgraph "Page Allocation"
-        PA1[Main Page<br/>Record Start]
-        PA2[Overflow Page 1<br/>Continuation]
-        PA3[Overflow Page 2<br/>Continuation]
+    subgraph PageAlloc["Page Allocation"]
+        PA1["Main Page<br/>Record Start"]
+        PA2["Overflow Page 1<br/>Continuation"]
+        PA3["Overflow Page 2<br/>Continuation"]
     end
     
     P1 --> P2
@@ -412,14 +419,22 @@ graph LR
     F1 --> F2
     F1 --> F3
     
-    PA1 -->|Overflow Chain| PA2
-    PA2 -->|Overflow Chain| PA3
+    PA1 -->|"Overflow Chain"| PA2
+    PA2 -->|"Overflow Chain"| PA3
     
-    style P1 fill:#3498db
-    style P2 fill:#2ecc71
-    style F1 fill:#e74c3c
-    style F2 fill:#f39c12
-    style F3 fill:#9b59b6
+    classDef header fill:#3498db,stroke:#2980b9,stroke-width:2px,color:#fff
+    classDef data fill:#2ecc71,stroke:#27ae60,stroke-width:2px,color:#fff
+    classDef file fill:#e74c3c,stroke:#c0392b,stroke-width:2px,color:#fff
+    classDef meta fill:#f39c12,stroke:#e67e22,stroke-width:2px,color:#fff
+    classDef wal fill:#9b59b6,stroke:#8e44ad,stroke-width:2px,color:#fff
+    classDef page fill:#1abc9c,stroke:#16a085,stroke-width:2px,color:#fff
+    
+    class P1 header
+    class P2 data
+    class F1 file
+    class F2 meta
+    class F3 wal
+    class PA1,PA2,PA3 page
 ```
 
 ### Transaction Flow with WAL
@@ -456,27 +471,27 @@ sequenceDiagram
 
 ```mermaid
 graph TB
-    subgraph "Transaction T1 (Read)"
-        T1[Snapshot Version<br/>V=100]
-        T1R1[Read Record A<br/>Version 95]
-        T1R2[Read Record B<br/>Version 98]
+    subgraph T1Group["Transaction T1 (Read)"]
+        T1["Snapshot Version<br/>V=100"]
+        T1R1["Read Record A<br/>Version 95"]
+        T1R2["Read Record B<br/>Version 98"]
     end
     
-    subgraph "Transaction T2 (Write)"
-        T2[Snapshot Version<br/>V=100]
-        T2W1[Write Record A<br/>Creates Version 101]
-        T2C[Commit<br/>Version 101 visible]
+    subgraph T2Group["Transaction T2 (Write)"]
+        T2["Snapshot Version<br/>V=100"]
+        T2W1["Write Record A<br/>Creates Version 101"]
+        T2C["Commit<br/>Version 101 visible"]
     end
     
-    subgraph "Transaction T3 (Read)"
-        T3[Snapshot Version<br/>V=102]
-        T3R1[Read Record A<br/>Version 101]
-        T3R2[Read Record B<br/>Version 98]
+    subgraph T3Group["Transaction T3 (Read)"]
+        T3["Snapshot Version<br/>V=102"]
+        T3R1["Read Record A<br/>Version 101"]
+        T3R2["Read Record B<br/>Version 98"]
     end
     
-    subgraph "Version Storage"
-        VS[VersionManager<br/>Maintains All Versions]
-        GC[Garbage Collector<br/>Removes Old Versions]
+    subgraph VersionStore["Version Storage"]
+        VS["VersionManager<br/>Maintains All Versions"]
+        GC["Garbage Collector<br/>Removes Old Versions"]
     end
     
     T1 --> T1R1
@@ -494,36 +509,41 @@ graph TB
     
     VS --> GC
     
-    style T1 fill:#3498db
-    style T2 fill:#e74c3c
-    style T3 fill:#2ecc71
-    style VS fill:#f39c12
+    classDef readTxn fill:#3498db,stroke:#2980b9,stroke-width:2px,color:#fff
+    classDef writeTxn fill:#e74c3c,stroke:#c0392b,stroke-width:2px,color:#fff
+    classDef readTxn2 fill:#2ecc71,stroke:#27ae60,stroke-width:2px,color:#fff
+    classDef version fill:#f39c12,stroke:#e67e22,stroke-width:2px,color:#fff
+    
+    class T1,T1R1,T1R2 readTxn
+    class T2,T2W1,T2C writeTxn
+    class T3,T3R1,T3R2 readTxn2
+    class VS,GC version
 ```
 
 ### BlazeBinary Protocol Encoding
 
 ```mermaid
 graph LR
-    subgraph "Input Data"
-        D1[Swift Dictionary<br/>String: Any]
-        D2[Codable Struct]
+    subgraph Input["Input Data"]
+        D1["Swift Dictionary<br/>String: Any"]
+        D2["Codable Struct"]
     end
     
-    subgraph "BlazeBinary Encoder"
-        E1[Field Name<br/>Compression<br/>Top 127 = 1 byte]
-        E2[Type Tag<br/>1 byte]
-        E3[Value Encoding<br/>Variable Length]
-        E4[Bit Packing<br/>Optimization]
+    subgraph Encoder["BlazeBinary Encoder"]
+        E1["Field Name<br/>Compression<br/>Top 127 = 1 byte"]
+        E2["Type Tag<br/>1 byte"]
+        E3["Value Encoding<br/>Variable Length"]
+        E4["Bit Packing<br/>Optimization"]
     end
     
-    subgraph "Output"
-        O1[Binary Data<br/>53% smaller<br/>than JSON]
-        O2[CRC32 Checksum<br/>Integrity Check]
+    subgraph Output["Output"]
+        O1["Binary Data<br/>53% smaller<br/>than JSON"]
+        O2["CRC32 Checksum<br/>Integrity Check"]
     end
     
-    subgraph "Network Sync"
-        N1[Optional LZ4<br/>Compression]
-        N2[Encrypted<br/>AES-256-GCM]
+    subgraph Network["Network Sync"]
+        N1["Optional LZ4<br/>Compression"]
+        N2["Encrypted<br/>AES-256-GCM"]
     end
     
     D1 --> E1
@@ -536,41 +556,46 @@ graph LR
     O2 --> N1
     N1 --> N2
     
-    style D1 fill:#3498db
-    style E1 fill:#2ecc71
-    style O1 fill:#e74c3c
-    style N2 fill:#9b59b6
+    classDef input fill:#3498db,stroke:#2980b9,stroke-width:2px,color:#fff
+    classDef encoder fill:#2ecc71,stroke:#27ae60,stroke-width:2px,color:#fff
+    classDef output fill:#e74c3c,stroke:#c0392b,stroke-width:2px,color:#fff
+    classDef network fill:#9b59b6,stroke:#8e44ad,stroke-width:2px,color:#fff
+    
+    class D1,D2 input
+    class E1,E2,E3,E4 encoder
+    class O1,O2 output
+    class N1,N2 network
 ```
 
 ### Query Execution Flow
 
 ```mermaid
 graph TB
-    Q[QueryBuilder<br/>.where().orderBy().limit()]
+    Q["QueryBuilder<br/>where/orderBy/limit"]
     
-    subgraph "Query Planning"
-        QP[QueryPlanner<br/>Analyze Query]
-        QO[QueryOptimizer<br/>Select Indexes]
-        EP[Execution Plan<br/>Optimized Path]
+    subgraph Planning["Query Planning"]
+        QP["QueryPlanner<br/>Analyze Query"]
+        QO["QueryOptimizer<br/>Select Indexes"]
+        EP["Execution Plan<br/>Optimized Path"]
     end
     
-    subgraph "Index Selection"
-        PI[Primary Index<br/>UUID Lookup]
-        SI[Secondary Index<br/>Field Lookup]
-        CI[Compound Index<br/>Multi-Field]
-        FT[Full-Text Index<br/>Inverted Index]
+    subgraph Indexes["Index Selection"]
+        PI["Primary Index<br/>UUID Lookup"]
+        SI["Secondary Index<br/>Field Lookup"]
+        CI["Compound Index<br/>Multi-Field"]
+        FT["Full-Text Index<br/>Inverted Index"]
     end
     
-    subgraph "Execution"
-        EX1[Index Scan<br/>Fast Path]
-        EX2[Full Scan<br/>Fallback]
-        EX3[Filter<br/>In-Memory]
-        EX4[Sort<br/>Result Ordering]
+    subgraph Execution["Execution"]
+        EX1["Index Scan<br/>Fast Path"]
+        EX2["Full Scan<br/>Fallback"]
+        EX3["Filter<br/>In-Memory"]
+        EX4["Sort<br/>Result Ordering"]
     end
     
-    subgraph "Result"
-        R1[BlazeDataRecord[]<br/>Results]
-        R2[QueryCache<br/>10-100x Faster]
+    subgraph Result["Result"]
+        R1["BlazeDataRecord[]<br/>Results"]
+        R2["QueryCache<br/>10-100x Faster"]
     end
     
     Q --> QP
@@ -593,39 +618,46 @@ graph TB
     EX4 --> R1
     R1 --> R2
     
-    style Q fill:#3498db
-    style QO fill:#2ecc71
-    style EX1 fill:#e74c3c
-    style R2 fill:#f39c12
+    classDef query fill:#3498db,stroke:#2980b9,stroke-width:3px,color:#fff
+    classDef planning fill:#2ecc71,stroke:#27ae60,stroke-width:2px,color:#fff
+    classDef index fill:#f39c12,stroke:#e67e22,stroke-width:2px,color:#fff
+    classDef exec fill:#e74c3c,stroke:#c0392b,stroke-width:2px,color:#fff
+    classDef result fill:#9b59b6,stroke:#8e44ad,stroke-width:2px,color:#fff
+    
+    class Q query
+    class QP,QO,EP planning
+    class PI,SI,CI,FT index
+    class EX1,EX2,EX3,EX4 exec
+    class R1,R2 result
 ```
 
 ### Distributed Sync Architecture
 
 ```mermaid
 graph TB
-    subgraph "Node A"
-        A1[BlazeDBClient]
-        A2[SyncEngine]
-        A3[OperationLog]
+    subgraph NodeA["Node A"]
+        A1["BlazeDBClient"]
+        A2["SyncEngine"]
+        A3["OperationLog"]
     end
     
-    subgraph "Transport Layer"
-        T1[In-Memory<br/>&lt;0.1ms<br/>1M+ ops/sec]
-        T2[Unix Socket<br/>~0.5ms<br/>5-20K ops/sec]
-        T3[TCP Relay<br/>~5ms<br/>200-500 ops/sec]
+    subgraph Transport["Transport Layer"]
+        T1["In-Memory<br/>&lt;0.1ms<br/>1M+ ops/sec"]
+        T2["Unix Socket<br/>~0.5ms<br/>5-20K ops/sec"]
+        T3["TCP Relay<br/>~5ms<br/>200-500 ops/sec"]
     end
     
-    subgraph "Node B"
-        B1[BlazeDBClient]
-        B2[SyncEngine]
-        B3[OperationLog]
+    subgraph NodeB["Node B"]
+        B1["BlazeDBClient"]
+        B2["SyncEngine"]
+        B3["OperationLog"]
     end
     
-    subgraph "Protocol"
-        P1[BlazeBinary<br/>Encoding]
-        P2[LZ4 Compression<br/>3-5x faster]
-        P3[AES-256-GCM<br/>E2E Encryption]
-        P4[ECDH P-256<br/>Key Exchange]
+    subgraph Protocol["Protocol"]
+        P1["BlazeBinary<br/>Encoding"]
+        P2["LZ4 Compression<br/>3-5x faster"]
+        P3["AES-256-GCM<br/>E2E Encryption"]
+        P4["ECDH P-256<br/>Key Exchange"]
     end
     
     A1 --> A2
@@ -646,43 +678,48 @@ graph TB
     B3 --> B2
     B2 --> B1
     
-    style A1 fill:#3498db
-    style T1 fill:#2ecc71
-    style P3 fill:#9b59b6
-    style B1 fill:#e74c3c
+    classDef node fill:#3498db,stroke:#2980b9,stroke-width:2px,color:#fff
+    classDef transport fill:#2ecc71,stroke:#27ae60,stroke-width:2px,color:#fff
+    classDef protocol fill:#9b59b6,stroke:#8e44ad,stroke-width:2px,color:#fff
+    classDef nodeB fill:#e74c3c,stroke:#c0392b,stroke-width:2px,color:#fff
+    
+    class A1,A2,A3 node
+    class T1,T2,T3 transport
+    class P1,P2,P3,P4 protocol
+    class B1,B2,B3 nodeB
 ```
 
 ### Encryption & Security Layers
 
 ```mermaid
 graph TB
-    subgraph "Input"
-        I1[Plaintext Data<br/>BlazeDataRecord]
+    subgraph Input["Input"]
+        I1["Plaintext Data<br/>BlazeDataRecord"]
     end
     
-    subgraph "Key Derivation"
-        K1[User Password]
-        K2[Argon2id<br/>Password Hashing]
-        K3[HKDF<br/>Key Expansion]
-        K4[Encryption Key<br/>256-bit]
+    subgraph KeyDeriv["Key Derivation"]
+        K1["User Password"]
+        K2["Argon2id<br/>Password Hashing"]
+        K3["HKDF<br/>Key Expansion"]
+        K4["Encryption Key<br/>256-bit"]
     end
     
-    subgraph "Encryption"
-        E1[Generate Nonce<br/>Unique per Page]
-        E2[AES-256-GCM<br/>Encrypt]
-        E3[Authentication Tag<br/>Tamper Detection]
+    subgraph Encryption["Encryption"]
+        E1["Generate Nonce<br/>Unique per Page"]
+        E2["AES-256-GCM<br/>Encrypt"]
+        E3["Authentication Tag<br/>Tamper Detection"]
     end
     
-    subgraph "Storage"
-        S1[Encrypted Page<br/>4KB]
-        S2[Secure Enclave<br/>iOS/macOS Optional]
+    subgraph Storage["Storage"]
+        S1["Encrypted Page<br/>4KB"]
+        S2["Secure Enclave<br/>iOS/macOS Optional"]
     end
     
-    subgraph "Decryption"
-        D1[Read Encrypted Page]
-        D2[Verify Tag]
-        D3[AES-256-GCM<br/>Decrypt]
-        D4[Plaintext Data]
+    subgraph Decryption["Decryption"]
+        D1["Read Encrypted Page"]
+        D2["Verify Tag"]
+        D3["AES-256-GCM<br/>Decrypt"]
+        D4["Plaintext Data"]
     end
     
     I1 --> K1
@@ -705,11 +742,17 @@ graph TB
     K4 --> D3
     D3 --> D4
     
-    style I1 fill:#3498db
-    style K2 fill:#2ecc71
-    style E2 fill:#e74c3c
-    style S2 fill:#9b59b6
-    style D4 fill:#f39c12
+    classDef input fill:#3498db,stroke:#2980b9,stroke-width:2px,color:#fff
+    classDef key fill:#2ecc71,stroke:#27ae60,stroke-width:2px,color:#fff
+    classDef encrypt fill:#e74c3c,stroke:#c0392b,stroke-width:2px,color:#fff
+    classDef storage fill:#9b59b6,stroke:#8e44ad,stroke-width:2px,color:#fff
+    classDef decrypt fill:#f39c12,stroke:#e67e22,stroke-width:2px,color:#fff
+    
+    class I1 input
+    class K1,K2,K3,K4 key
+    class E1,E2,E3 encrypt
+    class S1,S2 storage
+    class D1,D2,D3,D4 decrypt
 ```
 
 For detailed architecture documentation, see:
