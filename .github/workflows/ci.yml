@@ -54,7 +54,7 @@ jobs:
         
     - name: Archive Test Results
       if: always()
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: test-results
         path: |
@@ -87,7 +87,7 @@ jobs:
         # TODO: Add automated regression detection
         
     - name: Upload Performance Data
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: performance-baselines
         path: |
@@ -114,7 +114,7 @@ jobs:
       
     - name: Archive Chaos Test Results
       if: always()
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: chaos-test-results
         path: .build/debug/*.xctest
@@ -142,7 +142,7 @@ jobs:
       
     - name: Archive Advanced Test Results
       if: always()
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: advanced-test-results
         path: .build/debug/*.xctest
@@ -214,7 +214,7 @@ jobs:
         
     - name: Archive Stress Test Results
       if: always()
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: stress-test-results
         path: .build/debug/*.xctest
@@ -269,7 +269,7 @@ jobs:
         swift test --filter BaselinePerformanceTests
         
     - name: Upload Nightly Results
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: nightly-test-results
         path: |
@@ -299,7 +299,7 @@ jobs:
       run: swift test -c release --filter BaselinePerformanceTests
       
     - name: Archive Release Binary
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: blazedb-release
         path: .build/release/
