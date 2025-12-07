@@ -13,6 +13,7 @@ public var mountedDatabases: [String: DynamicCollection] = [:]
     public var currentName: String?
     private var dbFileURLs: [String: URL] = [:]
     private var dbMetaURLs: [String: URL] = [:]
+    private var dbPasswords: [String: String] = [:]  // Store passwords per database for reload/migration
     
     /// Public accessor for the current database (for CLI/UI/testing)
     public var current: DynamicCollection? {
@@ -24,18 +25,37 @@ public var mountedDatabases: [String: DynamicCollection] = [:]
     /// Mount a DB from the given file path.
     @discardableResult
     public func mountDatabase(named name: String, fileURL: URL, password: String) throws -> DynamicCollection {
+        // CRITICAL: Validate database name to prevent path traversal attacks
+        // Database names should not contain path traversal characters or null bytes
+        guard !name.contains("../") && !name.contains("..\\") && !name.contains("\0") else {
+            throw NSError(domain: "BlazeDBManager", code: 4001, userInfo: [
+                NSLocalizedDescriptionKey: "Invalid database name: contains path traversal characters or null bytes"
+            ])
+        }
+        guard !name.isEmpty && name.count <= 255 else {
+            throw NSError(domain: "BlazeDBManager", code: 4002, userInfo: [
+                NSLocalizedDescriptionKey: "Invalid database name: must be non-empty and <= 255 characters"
+            ])
+        }
+        
         let key = Self.keyFromPassword(password)
         let metaURL = fileURL.deletingPathExtension().appendingPathExtension("meta")
-        let store = try PageStore(fileURL: fileURL)
-        let log = TransactionLog(logFileURL: metaURL)
-        try log.recover(into: store, from: metaURL)
-        print("🧱 Recovered journal for \(name)")
-        let collection = try DynamicCollection(store: store, metaURL: metaURL, project: name, encryptionKey: key)
+        let store = try PageStore(fileURL: fileURL, key: key)
+        
+        // Use correct transaction log URL (txn_log.json, not .meta)
+        let txnLogURL = fileURL.deletingLastPathComponent().appendingPathComponent("txn_log.json")
+        let log = TransactionLog(logFileURL: txnLogURL)
+        try log.recover(into: store, from: txnLogURL)
+        BlazeLogger.info("Recovered journal for \(name)")
+        
+        // CRITICAL: Pass password to DynamicCollection so migration can access password-protected layouts
+        let collection = try DynamicCollection(store: store, metaURL: metaURL, project: name, encryptionKey: key, password: password)
         mountedDatabases[name] = collection
         currentKey = key
         currentName = name
         dbFileURLs[name] = fileURL
         dbMetaURLs[name] = metaURL
+        dbPasswords[name] = password  // Store password for reloadDatabase()
         return collection
     }
 
@@ -106,11 +126,19 @@ public var mountedDatabases: [String: DynamicCollection] = [:]
         guard let fileURL = dbFileURLs[name], let metaURL = dbMetaURLs[name], let key = currentKey else {
             throw NSError(domain: "BlazeDBManager", code: 404, userInfo: [NSLocalizedDescriptionKey: "Database file or meta URL or encryption key not found"])
         }
-        let store = try PageStore(fileURL: fileURL)
-        let log = TransactionLog(logFileURL: metaURL)
-        try log.recover(into: store, from: metaURL)
-        print("🧱 Recovered journal for \(name)")
-        let collection = try DynamicCollection(store: store, metaURL: metaURL, project: name, encryptionKey: key)
+        // CRITICAL: Retrieve stored password for password-protected databases
+        // Without password, migration will fail when trying to access encrypted layouts
+        let password = dbPasswords[name]
+        let store = try PageStore(fileURL: fileURL, key: key)
+        
+        // Use correct transaction log URL (txn_log.json, not .meta)
+        let txnLogURL = fileURL.deletingLastPathComponent().appendingPathComponent("txn_log.json")
+        let log = TransactionLog(logFileURL: txnLogURL)
+        try log.recover(into: store, from: txnLogURL)
+        BlazeLogger.info("Recovered journal for \(name)")
+        
+        // CRITICAL: Pass password to DynamicCollection so migration can access password-protected layouts
+        let collection = try DynamicCollection(store: store, metaURL: metaURL, project: name, encryptionKey: key, password: password)
         mountedDatabases[name] = collection
     }
     /// Unmounts all mounted databases, performing cleanup and resetting manager state.
@@ -126,18 +154,22 @@ public var mountedDatabases: [String: DynamicCollection] = [:]
         currentKey = nil
         dbFileURLs.removeAll()
         dbMetaURLs.removeAll()
+        dbPasswords.removeAll()  // Clear stored passwords
     }
     
     /// Recover all transactions for all mounted databases.
     public func recoverAllTransactions() throws {
         for (name, collection) in mountedDatabases {
-            guard let metaURL = dbMetaURLs[name] else {
-                print("⚠️ Missing meta URL for \(name); skipping recovery")
+            guard let fileURL = dbFileURLs[name] else {
+                BlazeLogger.warn("Missing file URL for \(name); skipping recovery")
                 continue
             }
-            let log = TransactionLog(logFileURL: metaURL)
-            try log.recover(into: collection.store, from: metaURL)
-            print("🧱 Recovered journal for \(name)")
+            // CRITICAL: Use correct transaction log URL (txn_log.json, not .meta)
+            // This matches mountDatabase() and reloadDatabase() behavior
+            let txnLogURL = fileURL.deletingLastPathComponent().appendingPathComponent("txn_log.json")
+            let log = TransactionLog(logFileURL: txnLogURL)
+            try log.recover(into: collection.store, from: txnLogURL)
+            BlazeLogger.info("Recovered journal for \(name)")
         }
     }
     
@@ -149,7 +181,7 @@ public var mountedDatabases: [String: DynamicCollection] = [:]
             }
             // No-op if not flushable
         }
-        print("💾 Flushed all mounted DBs")
+        BlazeLogger.debug("Flushed all mounted DBs")
     }
 }
 

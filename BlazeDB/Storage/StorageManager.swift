@@ -28,10 +28,10 @@ public final class StorageManager {
 
         for id in garbage {
             try? collection.delete(id: id)
-            print("🧹 Deleted orphaned record: \(id)")
+            BlazeLogger.debug("Deleted orphaned record: \(id)")
         }
 
-        print("🧼 Cleanup complete. Removed \(garbage.count) unused records.")
+        BlazeLogger.info("Cleanup complete. Removed \(garbage.count) unused records.")
     }
 
     /// Returns disk usage of the database file in bytes.
@@ -43,10 +43,10 @@ public final class StorageManager {
     public func logLayoutStatus() {
         do {
             let count = try collection.fetchAll().count
-            print("📊 Record count: \(count)")
-            print("📁 Disk size: \(databaseDiskUsage()) bytes")
+            BlazeLogger.debug("Record count: \(count)")
+            BlazeLogger.info("Disk size: \(databaseDiskUsage()) bytes")
         } catch {
-            print("⚠️ Failed to fetch layout: \(error)")
+            BlazeLogger.warn("Failed to fetch layout: \(error)")
         }
     }
 
@@ -69,27 +69,17 @@ public final class StorageManager {
         do {
             let records = try collection.fetchAll()
             for record in records {
-                let encoded = try BlazeEncoder().encode(record)
+                let encoded = try BlazeEncoder.encode(record)
                 if encoded.count > threshold {
                     if case let .string(idStr) = record.storage["id"], let id = UUID(uuidString: idStr) {
-                        print("⚠️ Large record (\(encoded.count) bytes): \(id)")
+                        BlazeLogger.warn("Large record (\(encoded.count) bytes): \(id)")
                     } else {
-                        print("⚠️ Large record (\(encoded.count) bytes): Unknown ID")
+                        BlazeLogger.warn("Large record (\(encoded.count) bytes): Unknown ID")
                     }
                 }
             }
         } catch {
-            print("🚨 Failed to check record sizes: \(error)")
+            BlazeLogger.error("Failed to check record sizes: \(error)")
         }
-    }
-}
-
-public struct BlazeEncoder {
-    private let encoder = JSONEncoder()
-
-    public init() {}
-
-    public func encode<T: Encodable>(_ value: T) throws -> Data {
-        try encoder.encode(value)
     }
 }

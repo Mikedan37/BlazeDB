@@ -11,6 +11,7 @@ public enum AnyBlazeCodable: Codable, Hashable {
     case bool(Bool)
     case date(Date)
     case uuid(UUID)
+    case data(Data)
 
     var value: AnyHashable {
         switch self {
@@ -20,6 +21,7 @@ public enum AnyBlazeCodable: Codable, Hashable {
         case .bool(let v): return v
         case .date(let v): return v
         case .uuid(let v): return v
+        case .data(let v): return v as AnyHashable
         }
     }
 
@@ -87,6 +89,8 @@ public enum AnyBlazeCodable: Codable, Hashable {
             self = .date(v)
         case let v as UUID:
             self = .uuid(v)
+        case let v as Data:
+            self = .data(v)
         default:
             // Do not crash tests; coerce to string for unsupported types
             assertionFailure("Unsupported AnyHashable base type: \(type(of: raw)); coercing to .string")
@@ -108,6 +112,8 @@ public enum AnyBlazeCodable: Codable, Hashable {
             self = .date(v)
         } else if let v = try? container.decode(UUID.self) {
             self = .uuid(v)
+        } else if let v = try? container.decode(Data.self) {
+            self = .data(v)
         } else {
             throw DecodingError.dataCorruptedError(in: container, debugDescription: "Invalid type for AnyBlazeCodable")
         }
@@ -122,6 +128,7 @@ public enum AnyBlazeCodable: Codable, Hashable {
         case .bool(let v): try container.encode(v)
         case .date(let v): try container.encode(v)
         case .uuid(let v): try container.encode(v)
+        case .data(let v): try container.encode(v)
         }
     }
 }
@@ -132,18 +139,30 @@ struct StorageLayout: Codable {
     // CHANGE: Now uses CompoundIndexKey for single/compound indexes
     var secondaryIndexes: [String: [CompoundIndexKey: [UUID]]]
     var version: Int
+    var encodingFormat: String = "blazeBinary"  // ✅ BlazeBinary is the default format!
     var metaData: [String: BlazeDocumentField] = [:]
     var fieldTypes: [String: String] = [:] // field name to type name
     var secondaryIndexDefinitions: [String: [String]] // persisted index definitions
+    
+    // NEW: Full-text search index (optional)
+    var searchIndex: InvertedIndex?
+    var searchIndexedFields: [String] = [] // Fields that are indexed for search
+    
+    // NEW: Page reuse for garbage collection (v3.0)
+    var deletedPages: [Int] = []  // Array for ordered reuse (FIFO)
 
     enum CodingKeys: String, CodingKey {
         case indexMap
         case nextPageIndex
         case secondaryIndexes
         case version
+        case encodingFormat
         case metaData
         case fieldTypes
         case secondaryIndexDefinitions
+        case searchIndex
+        case searchIndexedFields
+        case deletedPages
     }
 
     // Convert from runtime [String: [AnyHashable: Set<UUID>]]
@@ -163,13 +182,22 @@ struct StorageLayout: Codable {
             acc[indexName] = merged
         }
         self.version = 1
+        self.encodingFormat = "blazeBinary"  // ✅ Set correct format
         self.secondaryIndexDefinitions = [:]
+        self.deletedPages = []  // ✅ Initialize deletedPages
     }
 
     // Convert from runtime [String: [CompoundIndexKey: Set<UUID>]]
-    init(indexMap: [UUID: Int], nextPageIndex: Int, compoundIndexes: [String: [CompoundIndexKey: Set<UUID>]]) {
+    init(
+        indexMap: [UUID: Int], 
+        nextPageIndex: Int, 
+        compoundIndexes: [String: [CompoundIndexKey: Set<UUID>]],
+        searchIndex: InvertedIndex? = nil,
+        searchIndexedFields: [String] = []
+    ) {
         self.indexMap = indexMap
         self.nextPageIndex = nextPageIndex
+        self.encodingFormat = "blazeBinary"  // ✅ Set correct format
         self.secondaryIndexes = compoundIndexes.reduce(into: [:]) { acc, pair in
             let (indexName, inner) = pair
             var merged: [CompoundIndexKey: [UUID]] = [:]
@@ -182,6 +210,9 @@ struct StorageLayout: Codable {
         }
         self.version = 1
         self.secondaryIndexDefinitions = [:]
+        self.searchIndex = searchIndex
+        self.searchIndexedFields = searchIndexedFields
+        self.deletedPages = []  // ✅ Initialize deletedPages
     }
 
     init(from decoder: Decoder) throws {
@@ -191,9 +222,13 @@ struct StorageLayout: Codable {
         nextPageIndex = try container.decodeIfPresent(Int.self, forKey: .nextPageIndex) ?? 0
         secondaryIndexes = try container.decodeIfPresent([String: [CompoundIndexKey: [UUID]]].self, forKey: .secondaryIndexes) ?? [:]
         version = try container.decodeIfPresent(Int.self, forKey: .version) ?? 1
+        encodingFormat = try container.decodeIfPresent(String.self, forKey: .encodingFormat) ?? "blazeBinary"  // ✅ Default to blazeBinary
         metaData = try container.decodeIfPresent([String: BlazeDocumentField].self, forKey: .metaData) ?? [:]
         fieldTypes = try container.decodeIfPresent([String: String].self, forKey: .fieldTypes) ?? [:]
         secondaryIndexDefinitions = try container.decodeIfPresent([String: [String]].self, forKey: .secondaryIndexDefinitions) ?? [:]
+        searchIndex = try container.decodeIfPresent(InvertedIndex.self, forKey: .searchIndex)
+        searchIndexedFields = try container.decodeIfPresent([String].self, forKey: .searchIndexedFields) ?? []
+        deletedPages = try container.decodeIfPresent([Int].self, forKey: .deletedPages) ?? []  // ✅ Decode deletedPages
     }
 
     func encode(to encoder: Encoder) throws {
@@ -202,9 +237,13 @@ struct StorageLayout: Codable {
         try container.encode(nextPageIndex, forKey: .nextPageIndex)
         try container.encode(secondaryIndexes, forKey: .secondaryIndexes)
         try container.encode(version, forKey: .version)
+        try container.encode(encodingFormat, forKey: .encodingFormat)  // ✅ Encode it!
         try container.encode(metaData, forKey: .metaData)
         try container.encode(fieldTypes, forKey: .fieldTypes)
         try container.encode(secondaryIndexDefinitions, forKey: .secondaryIndexDefinitions)
+        try container.encodeIfPresent(searchIndex, forKey: .searchIndex)
+        try container.encode(searchIndexedFields, forKey: .searchIndexedFields)
+        try container.encode(deletedPages, forKey: .deletedPages)  // ✅ Encode deletedPages
     }
 
     // For migration: converts to [String: [AnyHashable: Set<UUID>]] if needed (for legacy)
@@ -235,19 +274,32 @@ struct StorageLayout: Codable {
             let data = try Data(contentsOf: url)
             let decoder = JSONDecoder()
             decoder.dateDecodingStrategy = .iso8601
-            return try decoder.decode(StorageLayout.self, from: data)
+            let layout = try decoder.decode(StorageLayout.self, from: data)
+            return layout
         } catch {
-            print("⚠️ Corrupted layout at \(url). Rebuilding default layout. Error: \(error)")
-            return StorageLayout.empty() // your own “safe defaults”
+            // Check if file simply doesn't exist (new database) vs actual corruption
+            if !FileManager.default.fileExists(atPath: url.path) {
+                BlazeLogger.debug("Initializing new database (no layout file found at \(url.lastPathComponent))")
+            } else {
+                BlazeLogger.warn("Corrupted layout at \(url.lastPathComponent). Rebuilding default layout. Error: \(error)")
+            }
+            return StorageLayout.empty() // Return safe defaults
         }
     }
 
     func save(to url: URL) throws {
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601
+        // DON'T use .prettyPrinted - causes size variations
         let data = try encoder.encode(self)
-        print("💾 Saving layout JSON size:", data.count)
-        try data.write(to: url)
+        BlazeLogger.debug("Saving layout JSON size: \(data.count)")
+        
+        // Use atomic write with data protection to prevent corruption
+        // .atomic writes to temp file first, then renames (safe from crashes)
+        // .completeFileProtection ensures data is flushed before returning
+        try data.write(to: url, options: [.atomic, .completeFileProtection])
+        
+        BlazeLogger.debug("Atomically saved layout to \(url.lastPathComponent)")
     }
 
     static func upgradeIfNeeded(from url: URL) throws -> StorageLayout {
@@ -305,9 +357,12 @@ extension StorageLayout {
             nextPageIndex: 0,
             secondaryIndexes: [:],
             version: 1,
+            encodingFormat: "blazeBinary",  // ✅ Set correct format
             metaData: [:],
             fieldTypes: [:],
-            secondaryIndexDefinitions: [:]
+            secondaryIndexDefinitions: [:],
+            searchIndex: nil,
+            searchIndexedFields: []
         )
     }
 }
@@ -318,16 +373,23 @@ extension StorageLayout {
         nextPageIndex: Int = 0,
         secondaryIndexes: [String: [CompoundIndexKey: [UUID]]] = [:],
         version: Int = 1,
+        encodingFormat: String = "blazeBinary",  // ✅ Set correct format
         metaData: [String: BlazeDocumentField] = [:],
         fieldTypes: [String: String] = [:],
-        secondaryIndexDefinitions: [String: [String]] = [:]
+        secondaryIndexDefinitions: [String: [String]] = [:],
+        searchIndex: InvertedIndex? = nil,
+        searchIndexedFields: [String] = []
     ) {
         self.indexMap = indexMap
         self.nextPageIndex = nextPageIndex
         self.secondaryIndexes = secondaryIndexes
         self.version = version
+        self.encodingFormat = encodingFormat
         self.metaData = metaData
         self.fieldTypes = fieldTypes
         self.secondaryIndexDefinitions = secondaryIndexDefinitions
+        self.searchIndex = searchIndex
+        self.searchIndexedFields = searchIndexedFields
+        self.deletedPages = []  // ✅ Initialize deletedPages
     }
 }

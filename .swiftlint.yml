@@ -1,0 +1,77 @@
+# SwiftLint Configuration for BlazeDB
+# Enforces code quality and consistency
+
+# Paths to include
+included:
+  - BlazeDB
+  - BlazeDBTests
+  - BlazeDBIntegrationTests
+
+# Paths to exclude
+excluded:
+  - .build
+  - Pods
+  - BlazeDBVisualizer
+  - BlazeStudio
+
+# Disabled rules
+disabled_rules:
+  - line_length  # Allow longer lines for descriptive test names
+  - type_body_length  # Allow large test classes
+  - file_length  # Allow comprehensive test files
+  - function_body_length  # Allow long integration tests
+
+# Opt-in rules
+opt_in_rules:
+  - empty_count
+  - explicit_init
+  - fatal_error_message
+  - force_unwrapping  # Warn on force unwraps
+  - implicitly_unwrapped_optional
+  - multiline_parameters
+  - overridden_super_call
+  - redundant_nil_coalescing
+  - sorted_imports
+  - unneeded_parentheses_in_closure_argument
+  - vertical_whitespace_between_cases
+
+# Custom rules
+force_unwrapping:
+  severity: warning  # Warn but don't fail (acceptable in tests)
+
+# Warnings to errors
+force_cast: error
+force_try: warning  # Allow in tests
+
+# Identifier naming
+identifier_name:
+  min_length: 1  # Allow short names like 'i', 'db'
+  max_length: 50
+  excluded:
+    - id
+    - db
+    - tx
+    - URL
+
+# Type naming
+type_name:
+  min_length: 3
+  max_length: 50
+  excluded:
+    - ID
+
+# Cyclomatic complexity
+cyclomatic_complexity:
+  warning: 15
+  error: 25
+
+# Nesting
+nesting:
+  type_level: 2
+  statement_level: 5
+
+# Trailing whitespace
+trailing_whitespace:
+  ignores_empty_lines: true
+  ignores_comments: false
+

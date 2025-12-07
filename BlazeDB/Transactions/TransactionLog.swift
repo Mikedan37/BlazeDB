@@ -11,9 +11,9 @@ struct TransactionLog {
     enum Operation: Codable {
         case write(pageID: Int, data: Data)
         case delete(pageID: Int)
-        case begin(txID: Int)
-        case commit(txID: Int)
-        case abort(txID: Int)
+        case begin(txID: String)  // 🔧 Use String (UUID string) instead of Int hash
+        case commit(txID: String)
+        case abort(txID: String)
 
         private enum CodingKeys: String, CodingKey {
             case type, pageID, data, txID
@@ -32,13 +32,13 @@ struct TransactionLog {
                 let pageID = try c.decode(Int.self, forKey: .pageID)
                 self = .delete(pageID: pageID)
             case .begin:
-                let txID = try c.decode(Int.self, forKey: .txID)
+                let txID = try c.decode(String.self, forKey: .txID)
                 self = .begin(txID: txID)
             case .commit:
-                let txID = try c.decode(Int.self, forKey: .txID)
+                let txID = try c.decode(String.self, forKey: .txID)
                 self = .commit(txID: txID)
             case .abort:
-                let txID = try c.decode(Int.self, forKey: .txID)
+                let txID = try c.decode(String.self, forKey: .txID)
                 self = .abort(txID: txID)
             }
         }
@@ -157,15 +157,15 @@ struct TransactionLog {
     }
 
     // Convenience methods for transaction control
-    func begin(txID: Int) throws {
+    func begin(txID: String) throws {
         try self.append(.begin(txID: txID))
     }
 
-    func commit(txID: Int) throws {
+    func commit(txID: String) throws {
         try self.append(.commit(txID: txID))
     }
 
-    func abort(txID: Int) throws {
+    func abort(txID: String) throws {
         try self.append(.abort(txID: txID))
     }
 
@@ -178,10 +178,10 @@ struct TransactionLog {
     func recover(into store: PageStore, from url: URL) throws {
         let ops = TransactionLog.readAll(from: url)
 
-        var buffers: [Int: [Operation]] = [Int: [Operation]]()
-        var committed = Set<Int>()
-        var aborted = Set<Int>()
-        var current: Int? = nil
+        var buffers: [String: [Operation]] = [String: [Operation]]()
+        var committed = Set<String>()
+        var aborted = Set<String>()
+        var current: String? = nil
 
         for op in ops {
             switch op {
@@ -237,15 +237,10 @@ struct TransactionLog {
             for op in txOps {
                 switch op {
                 case .write(let pageID, _):
-                    // Log cleanup action
-                    print("Cleaning uncommitted write on page \(pageID) from transaction \(txID)")
-                    // Delete the page or zero it out to clean uncommitted data
+                    // Clean uncommitted write
                     try store.deletePage(index: pageID)
-                case .delete(let pageID):
-                    // Log cleanup action
-                    print("Cleaning uncommitted delete on page \(pageID) from transaction \(txID)")
-                    // To clean uncommitted delete, could attempt to restore or just ignore
-                    // Here, just log and do nothing
+                case .delete:
+                    // Clean uncommitted delete - no action needed
                     break
                 default:
                     break
@@ -298,9 +293,9 @@ struct TransactionLog {
 
 // MARK: - Test Compatibility Extensions
 extension TransactionLog {
-    // UUID compatibility for tests
+    // UUID compatibility for tests (use UUID string for uniqueness)
     func appendBegin(txID: UUID) throws {
-        try self.append(.begin(txID: txID.hashValue))
+        try self.append(.begin(txID: txID.uuidString))
     }
 
     func appendWrite(pageID: Int, data: Data) throws {
@@ -308,24 +303,24 @@ extension TransactionLog {
     }
 
     func appendCommit(txID: UUID) throws {
-        try self.append(.commit(txID: txID.hashValue))
+        try self.append(.commit(txID: txID.uuidString))
     }
 
     func appendAbort(txID: UUID) throws {
-        try self.append(.abort(txID: txID.hashValue))
+        try self.append(.abort(txID: txID.uuidString))
     }
 
     func appendBegin(txID: UUID, logURL: URL) throws {
-        try self.append(.begin(txID: txID.hashValue), to: logURL)
+        try self.append(.begin(txID: txID.uuidString), to: logURL)
     }
     func appendWrite(pageID: Int, data: Data, logURL: URL) throws {
         try self.append(.write(pageID: pageID, data: data), to: logURL)
     }
     func appendCommit(txID: UUID, logURL: URL) throws {
-        try self.append(.commit(txID: txID.hashValue), to: logURL)
+        try self.append(.commit(txID: txID.uuidString), to: logURL)
     }
     func appendAbort(txID: UUID, logURL: URL) throws {
-        try self.append(.abort(txID: txID.hashValue), to: logURL)
+        try self.append(.abort(txID: txID.uuidString), to: logURL)
     }
 
     // LogURL-compatible recover shim

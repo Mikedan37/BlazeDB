@@ -2,8 +2,12 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<!-- Sandbox DISABLED for development (database management tool needs filesystem access) -->
+	<!-- Re-enable for App Store submission -->
 	<key>com.apple.security.app-sandbox</key>
-	<true/>
+	<false/>
+	
+	<!-- File Access Permissions -->
 	<key>com.apple.security.assets.movies.read-only</key>
 	<true/>
 	<key>com.apple.security.assets.music.read-only</key>
@@ -14,5 +18,23 @@
 	<true/>
 	<key>com.apple.security.files.user-selected.read-only</key>
 	<true/>
+	<key>com.apple.security.files.user-selected.read-write</key>
+	<true/>
+	
+	<!-- Allow read access to home directory for database discovery -->
+	<key>com.apple.security.temporary-exception.files.home-relative-path.read-only</key>
+	<array>
+		<string>/</string>
+	</array>
+	
+	<!-- Keychain Access (for password storage) -->
+	<key>keychain-access-groups</key>
+	<array>
+		<string>$(AppIdentifierPrefix)com.blazedb.visualizer</string>
+	</array>
+	
+	<!-- Face ID / Touch ID Usage -->
+	<!-- Note: LocalAuthentication doesn't require special entitlements, -->
+	<!-- but we need to add NSFaceIDUsageDescription to Info.plist -->
 </dict>
 </plist>

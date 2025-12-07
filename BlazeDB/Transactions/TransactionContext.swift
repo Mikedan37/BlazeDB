@@ -6,6 +6,7 @@ import Foundation
 final class TransactionContext {
     private var log = TransactionLog()
     private var stagedPages: [Int: Data] = [:] // New: read/write cache
+    private var baselinePages: [Int: Data] = [:] // 🔄 Baseline state for rollback
     private let store: PageStore
 
     init(store: PageStore) {
@@ -13,70 +14,82 @@ final class TransactionContext {
     }
 
     func write(pageID: Int, data: Data) {
-        print("[CTX-TRACE] 📝 Staging write for pageID \(pageID) (\(data.count) bytes)")
+        // Save baseline before first write to this page
+        if baselinePages[pageID] == nil {
+            if let existing = try? store.readPage(index: pageID) {
+                baselinePages[pageID] = existing
+            } else {
+                // Page doesn't exist yet - mark as "new" with empty data
+                baselinePages[pageID] = Data()
+            }
+        }
+        
         stagedPages[pageID] = data
         log.recordWrite(pageID: pageID, data: data)
-        print("[CTX-TRACE] ✅ Recorded staged write in log for page \(pageID)")
     }
 
     func read(pageID: Int) throws -> Data {
         if let staged = stagedPages[pageID] {
-            print("[CTX-TRACE] 📖 Read from stagedPages for pageID \(pageID) (\(staged.count) bytes)")
             if staged.count == 0 {
-                print("[CTX-TRACE] ⚠️ Attempted to read rolled-back or deleted page (pageID \(pageID)) from stagedPages.")
                 throw NSError(domain: "TransactionContext", code: 2001, userInfo: [NSLocalizedDescriptionKey: "Attempted to read rolled-back or deleted page"])
             }
             return staged
         } else {
-            let data = try store.readPage(index: pageID) ?? Data()
-            print("[CTX-TRACE] 📖 Read from store for pageID \(pageID) (\(data.count) bytes)")
-            if data.count == 0 {
-                print("[CTX-TRACE] ⚠️ Attempted to read rolled-back or deleted page (pageID \(pageID)) from store.")
-                return Data() // Previously threw an error
-            }
-            return data
+            return try store.readPage(index: pageID) ?? Data()
         }
     }
 
     func delete(pageID: Int) {
+        // Save baseline before delete
+        if baselinePages[pageID] == nil {
+            if let existing = try? store.readPage(index: pageID) {
+                baselinePages[pageID] = existing
+            } else {
+                baselinePages[pageID] = Data()
+            }
+        }
+        
         stagedPages[pageID] = Data()
         log.recordDelete(pageID: pageID)
     }
 
     func commit() throws {
-        print("[CTX-TRACE] 💾 Committing \(stagedPages.count) staged pages...")
         try log.flush(to: store)
-        print("[CTX-TRACE] ✅ Commit completed — all staged writes flushed to store.")
         stagedPages.removeAll()
+        baselinePages.removeAll()
     }
 
     func rollback() {
-        print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-        print("[CTX-TRACE] 🚨 Entering rollback()")
-        print("[CTX-TRACE] Staged pages count before rollback: \(stagedPages.count)")
+        guard !stagedPages.isEmpty else {
+            return
+        }
 
-        if stagedPages.isEmpty {
-            print("[CTX-TRACE] ⚠️ No staged pages to rollback.")
-        } else {
-            for (pageID, data) in stagedPages {
-                print("[CTX-TRACE] 🔄 Reverting staged page \(pageID) (\(data.count) bytes)")
+        // Restore baseline state for all modified pages
+        for (pageID, _) in stagedPages {
+            if let baseline = baselinePages[pageID] {
                 do {
-                    try store.deletePage(index: pageID)
-                    print("[CTX-TRACE] ✅ Deleted page \(pageID) from store.")
+                    if baseline.isEmpty {
+                        // Page was new - delete it
+                        try store.deletePage(index: pageID)
+                    } else {
+                        // Page existed - restore original data
+                        try store.writePage(index: pageID, plaintext: baseline)
+                    }
                 } catch {
-                    print("[CTX-TRACE] ⚠️ Failed to delete page \(pageID): \(error)")
+                    BlazeLogger.warn("Failed to restore page \(pageID): \(error)")
                 }
+            } else {
+                BlazeLogger.warn("No baseline found for page \(pageID)")
             }
         }
 
         stagedPages.removeAll()
-        print("[CTX-TRACE] ✅ Cleared stagedPages. Context rollback complete.")
-        print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+        baselinePages.removeAll()
     }
-#if DEBUG
+    #if DEBUG
     func flushStagedWritesForTesting() throws {
-        print("[CTX-DEBUG] 💾 Flushing staged writes manually (for testing)...")
+        BlazeLogger.debug("Flushing staged writes manually (for testing)")
         try log.flush(to: store)
     }
-#endif
+    #endif
 }
