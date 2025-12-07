@@ -1,49 +1,196 @@
-# BlazeDB  
-**Industrial-grade Swift database with zero migrations, SQL-level aggregations, and optimized JOINs.**
+# BlazeDB
 
-A blazing-fast, schema-less embedded database that combines MongoDB's flexibility, PostgreSQL's power, and SQLite's simplicity - all in pure Swift.
+**Production-grade embedded database for Swift with ACID transactions, encryption by default, and zero migrations.**
 
-![Tests](https://img.shields.io/badge/tests-907%20passing-brightgreen)
-![Integration](https://img.shields.io/badge/integration-20%2B%20scenarios-blue)
-![Coverage](https://img.shields.io/badge/coverage-97%25-brightgreen)
-![Performance](https://img.shields.io/badge/performance-40%2B%20metrics-yellow)
-![Swift](https://img.shields.io/badge/swift-5.9-orange)
-![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20iOS%20%7C%20Linux-lightgrey)
-![SwiftPM Compatible](https://img.shields.io/badge/SwiftPM-Compatible-green.svg)
-![Version](https://img.shields.io/badge/version-1.0.0-brightgreen.svg)
-![Status](https://img.shields.io/badge/status-Production%20Ready-success.svg)
-![DX](https://img.shields.io/badge/DX-10/10-success.svg)
+BlazeDB is a high-performance, schema-less embedded database that combines the flexibility of document stores, the power of relational databases, and the simplicity of SQLite—all in pure Swift with enterprise-grade reliability.
 
 ---
 
-## What's New
+## Technical Strengths
 
-### Distributed Sync & BlazeBinary Protocol
-- **BlazeBinary encoding** - 53% smaller than JSON, 48% faster encoding/decoding
-- **3 transport layers** - In-memory (<1ms), Unix sockets (~0.5ms), TCP (~5ms)
-- **E2E encryption** - AES-256-GCM with secure handshake (ECDH P-256)
-- **Standalone server** - Run BlazeDB as a server on Raspberry Pi, Docker, or cloud
-- **TCP auto-discovery** - No Bonjour required, works on all platforms
+### ACID Transactions with Write-Ahead Logging
 
-### Convenience API
-- **Name-based database creation** - No file paths needed
-- **Auto-discovery** - Find databases by name
-- **Database registry** - Manage multiple databases easily
-- **Default location** - `~/Library/Application Support/BlazeDB/`
+All operations are transactional with full ACID guarantees. Write-Ahead Logging (WAL) ensures committed data survives crashes. Uncommitted transactions are automatically rolled back. Crash recovery replays the WAL to restore database state.
 
-### Complete Documentation
-- **Organized docs** - All documentation in category folders
-- **API reference** - Complete reference with usage comments
-- **Sync examples** - 10+ copy-paste examples for all transport layers
-- **Server deployment** - Docker, Raspberry Pi, and cloud guides
+**Guarantees:**
+- Atomicity: All operations in a transaction succeed or fail together
+- Consistency: Database never enters invalid state
+- Isolation: Snapshot isolation via MVCC prevents dirty reads
+- Durability: Committed data is fsync'd before acknowledgment
 
-**See:** `Docs/MASTER_DOCUMENTATION_INDEX.md` for complete documentation index.
+**Test Coverage:** 907 unit tests validate ACID compliance, crash recovery, and transaction durability across 223 test files.
+
+### Encryption by Default
+
+All data is encrypted at rest using AES-256-GCM with unique nonces per page. Authentication tags prevent tampering. Key derivation uses Argon2id for password hashing, then HKDF for key expansion.
+
+**Security Guarantees:**
+- Data encrypted before writing to disk
+- Each page uses unique nonce (prevents replay attacks)
+- Authentication tags detect tampering
+- Wrong password fails immediately (no timing attacks)
+- Secure Enclave integration available on iOS/macOS
+
+**Test Coverage:** 11 security test files validate encryption correctness, round-trip integrity, and security invariants.
+
+### Multi-Version Concurrency Control
+
+MVCC enables non-blocking concurrent reads while writes occur. Each transaction sees a consistent snapshot. Conflict detection prevents lost updates. Automatic garbage collection removes obsolete versions.
+
+**Performance Guarantees:**
+- Concurrent reads never block writes
+- 20-100x faster concurrent read performance vs. locking
+- Snapshot isolation ensures consistent views
+- Conflict detection prevents lost updates
+
+**Test Coverage:** 43 MVCC tests validate snapshot isolation, conflict detection, and concurrent access correctness.
+
+### BlazeBinary Protocol
+
+Custom binary encoding format that's 53% smaller than JSON and 48% faster to encode/decode. Used for both on-disk storage and network sync.
+
+**Performance Guarantees:**
+- 53% smaller than JSON (variable-length encoding, bit-packing)
+- 48% faster encoding/decoding (zero-copy where possible)
+- Field name compression (top 127 fields = 1 byte each)
+- Optional LZ4 compression for network (3-5x faster than gzip)
+
+**Test Coverage:** 116 BlazeBinary tests validate encoding correctness, compatibility, and corruption detection.
+
+---
+
+## Performance Benchmarks
+
+### Core Operations (Single Core)
+
+| Operation | Throughput | Latency (p50) | Notes |
+|-----------|------------|---------------|-------|
+| Insert | 1,200-2,500 ops/sec | 0.4-0.8ms | Includes encryption, WAL, index updates |
+| Fetch | 2,500-5,000 ops/sec | 0.2-0.4ms | Memory-mapped I/O, decryption |
+| Update | 1,000-1,600 ops/sec | 0.6-1.0ms | Fetch + modify + write |
+| Delete | 3,300-10,000 ops/sec | 0.1-0.3ms | Fastest operation |
+| Batch Insert (100) | 3,300-6,600 ops/sec | 15-30ms | Single fsync for entire batch |
+
+### Multi-Core Performance (8 Cores)
+
+| Operation | Throughput | Scaling Factor |
+|-----------|------------|----------------|
+| Insert | 10,000-20,000 ops/sec | 8x linear scaling |
+| Fetch | 20,000-50,000 ops/sec | 8-10x parallel reads |
+| Update | 8,000-16,000 ops/sec | 8x parallel encoding |
+| Delete | 26,000-80,000 ops/sec | 8x minimal locking |
+
+### Query Performance
+
+| Query Type | Dataset Size | Throughput | Latency (p50) |
+|------------|--------------|------------|---------------|
+| Basic Query | 100 records | 200-500 queries/sec | 2-5ms |
+| Filtered Query | 1K records | 66-200 queries/sec | 5-15ms |
+| Indexed Query | 10K records | 200-500 queries/sec | 2-5ms | 10-100x faster than unindexed |
+| JOIN (1K x 1K) | 1K records | 20-50 queries/sec | 20-50ms | Batch fetching, O(N+M) |
+| Aggregation (COUNT) | 10K records | 200-500 queries/sec | 2-5ms |
+| Full-Text Search | 1K docs | 33-100 queries/sec | 10-30ms | Without index |
+| Full-Text Search (Indexed) | 100K docs | 200-500 queries/sec | 5ms | 50-1000x faster with inverted index |
+
+### Network Sync Performance
+
+| Transport | Latency | Throughput | Use Case |
+|-----------|---------|------------|----------|
+| In-Memory Queue | <0.1ms | 1,000,000+ ops/sec | Same process |
+| Unix Domain Socket | 0.2-0.5ms | 5,000-20,000 ops/sec | Cross-process, same device |
+| TCP (Local Network) | 2-5ms | 200-500 ops/sec | Same LAN |
+| TCP (Remote Network) | 10-50ms | 20-100 ops/sec | WAN/Internet |
+
+**Network Sync (WiFi 100 Mbps):**
+- Small operations (200 bytes): 7,800 ops/sec
+- Medium operations (550 bytes): 5,000 ops/sec
+- Large operations (1900 bytes): 3,450 ops/sec
+
+**Test Environment:** Apple M1 Pro, macOS 14.6, 8 cores, 16GB RAM, NVMe SSD
+
+---
+
+## Data Integrity Guarantees
+
+### ACID Compliance
+
+**Atomicity:** All operations in a transaction succeed or fail together. Partial failures trigger automatic rollback. Tested with 100-operation transactions.
+
+**Consistency:** Database never enters invalid state. Index updates are atomic with data writes. Schema validation prevents invalid states. Tested under concurrent updates.
+
+**Isolation:** Snapshot isolation via MVCC ensures each transaction sees a consistent snapshot. Concurrent transactions don't interfere. Tested with 50 concurrent readers and 10 writers.
+
+**Durability:** Committed data is fsync'd before acknowledgment. WAL replay recovers all committed transactions after crashes. Tested with crash simulation.
+
+### Crash Recovery
+
+**WAL Durability:** All writes go through Write-Ahead Log. WAL entries are fsync'd before commit acknowledgment. Crash recovery replays committed transactions and discards uncommitted ones.
+
+**Metadata Recovery:** If metadata is corrupted, BlazeDB automatically rebuilds it from data pages. Corruption detection uses CRC32 checksums and magic byte validation.
+
+**Test Coverage:** 7 persistence/recovery test files validate crash recovery, WAL replay, and corruption handling.
+
+### Data Corruption Detection
+
+**Checksums:** BlazeBinary encoding includes CRC32 checksums. Page headers include version and checksum fields. Invalid data triggers corruption detection.
+
+**Recovery:** Metadata corruption triggers automatic rebuild from data pages. Data corruption is detected and reported without crashing.
+
+**Test Coverage:** Corruption recovery tests inject various corruption types and validate detection and graceful failure.
+
+### Index Integrity
+
+**Consistency:** All index types (primary, secondary, full-text, spatial, vector) remain consistent with data. Index updates are atomic with data writes.
+
+**Query Correctness:** Query results match manual filtering. Cross-index validation ensures all indexes match the actual data.
+
+**Test Coverage:** 12 index test files validate consistency, query correctness, and cross-index alignment.
+
+---
+
+## Performance Invariants
+
+BlazeDB maintains performance guarantees through automated regression testing:
+
+- **Batch Insert:** 10,000 records complete in < 2 seconds
+- **Individual Insert:** Average latency < 10ms
+- **Query Latency:** Simple queries < 5ms, complex queries < 200ms
+- **Index Build Time:** 10,000 records indexed in < 5 seconds
+- **Concurrent Reads:** 100 concurrent readers execute in 10-50ms (20-100x faster than locking)
+
+**Test Coverage:** 12 performance test files track 40+ metrics and fail if thresholds are exceeded.
+
+---
+
+## Test Coverage
+
+BlazeDB has comprehensive test coverage ensuring reliability:
+
+- **907 unit tests** covering all features at 97% code coverage
+- **20+ integration scenarios** validating real-world workflows
+- **223 test files** organized by domain (engine, sync, security, performance)
+- **Property-based tests** with 100,000+ generated inputs
+- **Chaos engineering** tests simulating crashes, corruption, and failures
+- **Stress tests** validating behavior under high load
+- **Performance regression tests** tracking 40+ metrics
+
+**Test Domains:**
+- Core Database Engine: 19 test files
+- Query System: 10 test files
+- Indexes: 12 test files
+- Security: 11 test files
+- Distributed Sync: 10 test files
+- Performance: 12 test files
+- Concurrency: 9 test files
+- Persistence & Recovery: 7 test files
+- Codec: 15 test files
+- Integration: 11 test files
 
 ---
 
 ## Quick Start
 
-### Install
+### Installation
 
 **Swift Package Manager:**
 ```swift
@@ -54,42 +201,31 @@ dependencies: [
 
 Or in Xcode: **File → Add Package Dependencies** → paste repo URL
 
-### Create Your First Database
-
-**NEW: Convenience API** - No file paths needed! Databases are automatically stored in `~/Library/Application Support/BlazeDB/`.
+### Basic Usage
 
 ```swift
 import BlazeDB
 
-// 1. Initialize (super simple - just a name!)
+// Initialize (databases stored in ~/Library/Application Support/BlazeDB/)
 let db = try BlazeDBClient(name: "MyApp", password: "your-secure-password")
 
-// That's it! Database is automatically stored in:
-// ~/Library/Application Support/BlazeDB/MyApp.blazedb
-
-// Or use the failable initializer (no try-catch needed!)
-guard let db = BlazeDBClient.create(name: "MyApp", password: "your-secure-password") else {
-    return
-}
-
-// 2. Insert data
-let bug = BlazeDataRecord([
+// Insert
+let record = BlazeDataRecord([
     "title": .string("Fix login bug"),
     "priority": .int(5),
     "status": .string("open")
 ])
-let id = try db.insert(bug)
-print("Inserted with ID: \(id)")
+let id = try db.insert(record)
 
-// 3. Query data
+// Query
 let openBugs = try db.query()
     .where("status", equals: .string("open"))
     .where("priority", greaterThan: .int(3))
     .orderBy("priority", descending: true)
-    .all()
-print("Found \(openBugs.count) high-priority bugs")
+    .execute()
+    .records
 
-// 4. Use in SwiftUI (auto-updating!)
+// Use in SwiftUI (auto-updating)
 struct BugListView: View {
     @BlazeQuery(db: db, where: "status", equals: .string("open"))
     var bugs
@@ -102,119 +238,498 @@ struct BugListView: View {
 }
 ```
 
-That's it! You now have a production-ready database with ACID transactions, encryption, crash recovery, and more.
+---
+
+## Key Features
+
+### Zero Migrations
+
+Add fields anytime without schema changes. Dynamic schemas adapt to your data structure automatically.
+
+### Full SQL-Like Features
+
+- **JOINs:** Inner, left, right, full outer joins with batch fetching (250x faster than N+1)
+- **Aggregations:** COUNT, SUM, AVG, MIN, MAX, GROUP BY, HAVING
+- **Subqueries:** EXISTS, correlated subqueries, CTEs
+- **Window Functions:** ROW_NUMBER, RANK, DENSE_RANK, LAG, LEAD
+- **Triggers:** Before/after insert/update/delete
+- **Foreign Keys:** CASCADE, SET_NULL, RESTRICT
+- **Constraints:** UNIQUE, CHECK constraints
+
+### Advanced Querying
+
+- **Full-Text Search:** Inverted index for 50-1000x speedup on large datasets
+- **Spatial Queries:** Distance calculations and nearest neighbor search
+- **Vector Search:** Cosine similarity search for embeddings
+- **Query Caching:** 10-100x faster for repeated queries
+- **Query Planner:** Automatic index selection and optimization
+
+### Distributed Sync
+
+- **3 Transport Layers:** In-memory (<1ms), Unix sockets (~0.5ms), TCP (~5ms)
+- **BlazeBinary Protocol:** 53% smaller, 48% faster than JSON
+- **E2E Encryption:** AES-256-GCM with secure handshake (ECDH P-256)
+- **Standalone Server:** Run BlazeDB as a server on Raspberry Pi, Docker, or cloud
+- **Auto-Discovery:** TCP-based discovery without Bonjour
+
+### Developer Experience
+
+- **Direct Codable Support:** Use any Codable struct, zero conversion
+- **Type-Safe KeyPath Queries:** Autocomplete + compile-time checking
+- **SwiftUI Integration:** `@BlazeQuery` property wrapper with auto-updates
+- **Async/Await:** All operations support async/await
+- **Batch Operations:** insertMany, updateMany, deleteMany (10x faster)
+- **Comprehensive Logging:** 5 levels, performance metrics, configurable verbosity
+
+---
+
+## Architecture
+
+BlazeDB uses a page-based storage architecture with write-ahead logging:
+
+- **Page-Based Storage:** 4KB pages with overflow chains for large records
+- **BlazeBinary Encoding:** Custom binary format (53% smaller, 48% faster than JSON)
+- **Write-Ahead Logging:** All writes go through WAL for crash recovery
+- **MVCC:** Multi-version concurrency control for non-blocking reads
+- **Memory-Mapped I/O:** 2-3x faster reads on supported platforms
+- **Encryption:** AES-256-GCM with unique nonces per page
+
+### System Architecture Layers
+
+```mermaid
+graph TB
+    subgraph "Application Layer"
+        A1[BlazeDBClient<br/>Public API]
+        A2[BlazeShell<br/>CLI Tool]
+        A3[BlazeStudio<br/>GUI Tool]
+        A4[SwiftUI Integration<br/>@BlazeQuery]
+    end
+    
+    subgraph "Query & Index Layer"
+        Q1[QueryBuilder<br/>Fluent DSL]
+        Q2[QueryOptimizer<br/>Index Selection]
+        Q3[QueryPlanner<br/>Execution Plan]
+        I1[Secondary Indexes]
+        I2[Full-Text Search]
+        I3[Spatial Index]
+        I4[Vector Index]
+    end
+    
+    subgraph "MVCC & Concurrency Layer"
+        M1[VersionManager<br/>Multi-Version Storage]
+        M2[MVCCTransaction<br/>Snapshot Isolation]
+        M3[ConflictResolution<br/>Lost Update Prevention]
+        M4[PageGarbageCollector<br/>Version Cleanup]
+    end
+    
+    subgraph "Storage Layer"
+        S1[PageStore<br/>4KB Pages]
+        S2[WriteAheadLog<br/>WAL for Durability]
+        S3[StorageLayout<br/>Metadata Management]
+        S4[Overflow Pages<br/>Large Records]
+    end
+    
+    subgraph "Encryption Layer"
+        E1[AES-256-GCM<br/>Per-Page Encryption]
+        E2[KeyManager<br/>Argon2id + HKDF]
+        E3[Secure Enclave<br/>iOS/macOS]
+    end
+    
+    subgraph "Network Layer"
+        N1[In-Memory Queue<br/>&lt;0.1ms]
+        N2[Unix Domain Socket<br/>~0.5ms]
+        N3[TCP Relay<br/>~5ms]
+        N4[BlazeBinary Protocol<br/>53% smaller]
+    end
+    
+    A1 --> Q1
+    A2 --> Q1
+    A3 --> Q1
+    A4 --> Q1
+    
+    Q1 --> Q2
+    Q2 --> Q3
+    Q3 --> I1
+    Q3 --> I2
+    Q3 --> I3
+    Q3 --> I4
+    
+    Q3 --> M1
+    M1 --> M2
+    M2 --> M3
+    M3 --> M4
+    
+    M2 --> S1
+    M2 --> S2
+    S1 --> S3
+    S1 --> S4
+    
+    S1 --> E1
+    E1 --> E2
+    E2 --> E3
+    
+    A1 --> N1
+    A1 --> N2
+    A1 --> N3
+    N3 --> N4
+    
+    style A1 fill:#4a90e2
+    style Q1 fill:#50c878
+    style M1 fill:#ff6b6b
+    style S1 fill:#f39c12
+    style E1 fill:#9b59b6
+    style N1 fill:#1abc9c
+```
+
+### Storage Architecture
+
+```mermaid
+graph LR
+    subgraph "Page Structure (4KB)"
+        P1[Header<br/>Magic + Version<br/>8 bytes]
+        P2[BlazeBinary Data<br/>Variable Length]
+        P3[Overflow Pointer<br/>4 bytes if needed]
+        P4[Padding<br/>Zero-filled]
+    end
+    
+    subgraph "File Layout"
+        F1[.blazedb<br/>Data Pages]
+        F2[.meta<br/>Index Map]
+        F3[.wal<br/>Write-Ahead Log]
+    end
+    
+    subgraph "Page Allocation"
+        PA1[Main Page<br/>Record Start]
+        PA2[Overflow Page 1<br/>Continuation]
+        PA3[Overflow Page 2<br/>Continuation]
+    end
+    
+    P1 --> P2
+    P2 --> P3
+    P3 --> P4
+    
+    P2 --> F1
+    F1 --> F2
+    F1 --> F3
+    
+    PA1 -->|Overflow Chain| PA2
+    PA2 -->|Overflow Chain| PA3
+    
+    style P1 fill:#3498db
+    style P2 fill:#2ecc71
+    style F1 fill:#e74c3c
+    style F2 fill:#f39c12
+    style F3 fill:#9b59b6
+```
+
+### Transaction Flow with WAL
+
+```mermaid
+sequenceDiagram
+    participant App
+    participant Client
+    participant WAL
+    participant PageStore
+    participant Index
+    
+    App->>Client: beginTransaction()
+    Client->>WAL: BEGIN entry
+    WAL->>WAL: fsync()
+    
+    App->>Client: insert(record)
+    Client->>WAL: WRITE entry
+    Client->>PageStore: Stage write
+    Client->>Index: Stage index update
+    
+    App->>Client: commitTransaction()
+    Client->>PageStore: Flush staged writes
+    Client->>Index: Apply index updates
+    Client->>WAL: COMMIT entry
+    WAL->>WAL: fsync()
+    WAL->>WAL: Clear log
+    Client->>App: Success
+    
+    Note over WAL,PageStore: Crash Recovery:<br/>Replay WAL entries<br/>Restore committed state
+```
+
+### MVCC Concurrency Model
+
+```mermaid
+graph TB
+    subgraph "Transaction T1 (Read)"
+        T1[Snapshot Version<br/>V=100]
+        T1R1[Read Record A<br/>Version 95]
+        T1R2[Read Record B<br/>Version 98]
+    end
+    
+    subgraph "Transaction T2 (Write)"
+        T2[Snapshot Version<br/>V=100]
+        T2W1[Write Record A<br/>Creates Version 101]
+        T2C[Commit<br/>Version 101 visible]
+    end
+    
+    subgraph "Transaction T3 (Read)"
+        T3[Snapshot Version<br/>V=102]
+        T3R1[Read Record A<br/>Version 101]
+        T3R2[Read Record B<br/>Version 98]
+    end
+    
+    subgraph "Version Storage"
+        VS[VersionManager<br/>Maintains All Versions]
+        GC[Garbage Collector<br/>Removes Old Versions]
+    end
+    
+    T1 --> T1R1
+    T1 --> T1R2
+    T2 --> T2W1
+    T2 --> T2C
+    T3 --> T3R1
+    T3 --> T3R2
+    
+    T1R1 --> VS
+    T1R2 --> VS
+    T2W1 --> VS
+    T3R1 --> VS
+    T3R2 --> VS
+    
+    VS --> GC
+    
+    style T1 fill:#3498db
+    style T2 fill:#e74c3c
+    style T3 fill:#2ecc71
+    style VS fill:#f39c12
+```
+
+### BlazeBinary Protocol Encoding
+
+```mermaid
+graph LR
+    subgraph "Input Data"
+        D1[Swift Dictionary<br/>String: Any]
+        D2[Codable Struct]
+    end
+    
+    subgraph "BlazeBinary Encoder"
+        E1[Field Name<br/>Compression<br/>Top 127 = 1 byte]
+        E2[Type Tag<br/>1 byte]
+        E3[Value Encoding<br/>Variable Length]
+        E4[Bit Packing<br/>Optimization]
+    end
+    
+    subgraph "Output"
+        O1[Binary Data<br/>53% smaller<br/>than JSON]
+        O2[CRC32 Checksum<br/>Integrity Check]
+    end
+    
+    subgraph "Network Sync"
+        N1[Optional LZ4<br/>Compression]
+        N2[Encrypted<br/>AES-256-GCM]
+    end
+    
+    D1 --> E1
+    D2 --> E1
+    E1 --> E2
+    E2 --> E3
+    E3 --> E4
+    E4 --> O1
+    O1 --> O2
+    O2 --> N1
+    N1 --> N2
+    
+    style D1 fill:#3498db
+    style E1 fill:#2ecc71
+    style O1 fill:#e74c3c
+    style N2 fill:#9b59b6
+```
+
+### Query Execution Flow
+
+```mermaid
+graph TB
+    Q[QueryBuilder<br/>.where().orderBy().limit()]
+    
+    subgraph "Query Planning"
+        QP[QueryPlanner<br/>Analyze Query]
+        QO[QueryOptimizer<br/>Select Indexes]
+        EP[Execution Plan<br/>Optimized Path]
+    end
+    
+    subgraph "Index Selection"
+        PI[Primary Index<br/>UUID Lookup]
+        SI[Secondary Index<br/>Field Lookup]
+        CI[Compound Index<br/>Multi-Field]
+        FT[Full-Text Index<br/>Inverted Index]
+    end
+    
+    subgraph "Execution"
+        EX1[Index Scan<br/>Fast Path]
+        EX2[Full Scan<br/>Fallback]
+        EX3[Filter<br/>In-Memory]
+        EX4[Sort<br/>Result Ordering]
+    end
+    
+    subgraph "Result"
+        R1[BlazeDataRecord[]<br/>Results]
+        R2[QueryCache<br/>10-100x Faster]
+    end
+    
+    Q --> QP
+    QP --> QO
+    QO --> EP
+    
+    EP --> PI
+    EP --> SI
+    EP --> CI
+    EP --> FT
+    
+    PI --> EX1
+    SI --> EX1
+    CI --> EX1
+    FT --> EX1
+    
+    EX1 --> EX3
+    EX2 --> EX3
+    EX3 --> EX4
+    EX4 --> R1
+    R1 --> R2
+    
+    style Q fill:#3498db
+    style QO fill:#2ecc71
+    style EX1 fill:#e74c3c
+    style R2 fill:#f39c12
+```
+
+### Distributed Sync Architecture
+
+```mermaid
+graph TB
+    subgraph "Node A"
+        A1[BlazeDBClient]
+        A2[SyncEngine]
+        A3[OperationLog]
+    end
+    
+    subgraph "Transport Layer"
+        T1[In-Memory<br/>&lt;0.1ms<br/>1M+ ops/sec]
+        T2[Unix Socket<br/>~0.5ms<br/>5-20K ops/sec]
+        T3[TCP Relay<br/>~5ms<br/>200-500 ops/sec]
+    end
+    
+    subgraph "Node B"
+        B1[BlazeDBClient]
+        B2[SyncEngine]
+        B3[OperationLog]
+    end
+    
+    subgraph "Protocol"
+        P1[BlazeBinary<br/>Encoding]
+        P2[LZ4 Compression<br/>3-5x faster]
+        P3[AES-256-GCM<br/>E2E Encryption]
+        P4[ECDH P-256<br/>Key Exchange]
+    end
+    
+    A1 --> A2
+    A2 --> A3
+    A3 --> T1
+    A3 --> T2
+    A3 --> T3
+    
+    T1 --> P1
+    T2 --> P1
+    T3 --> P1
+    
+    P1 --> P2
+    P2 --> P3
+    P3 --> P4
+    
+    P4 --> B3
+    B3 --> B2
+    B2 --> B1
+    
+    style A1 fill:#3498db
+    style T1 fill:#2ecc71
+    style P3 fill:#9b59b6
+    style B1 fill:#e74c3c
+```
+
+### Encryption & Security Layers
+
+```mermaid
+graph TB
+    subgraph "Input"
+        I1[Plaintext Data<br/>BlazeDataRecord]
+    end
+    
+    subgraph "Key Derivation"
+        K1[User Password]
+        K2[Argon2id<br/>Password Hashing]
+        K3[HKDF<br/>Key Expansion]
+        K4[Encryption Key<br/>256-bit]
+    end
+    
+    subgraph "Encryption"
+        E1[Generate Nonce<br/>Unique per Page]
+        E2[AES-256-GCM<br/>Encrypt]
+        E3[Authentication Tag<br/>Tamper Detection]
+    end
+    
+    subgraph "Storage"
+        S1[Encrypted Page<br/>4KB]
+        S2[Secure Enclave<br/>iOS/macOS Optional]
+    end
+    
+    subgraph "Decryption"
+        D1[Read Encrypted Page]
+        D2[Verify Tag]
+        D3[AES-256-GCM<br/>Decrypt]
+        D4[Plaintext Data]
+    end
+    
+    I1 --> K1
+    K1 --> K2
+    K2 --> K3
+    K3 --> K4
+    
+    I1 --> E1
+    E1 --> E2
+    K4 --> E2
+    E2 --> E3
+    
+    E3 --> S1
+    K4 --> S2
+    S2 --> S1
+    
+    S1 --> D1
+    D1 --> D2
+    D2 --> D3
+    K4 --> D3
+    D3 --> D4
+    
+    style I1 fill:#3498db
+    style K2 fill:#2ecc71
+    style E2 fill:#e74c3c
+    style S2 fill:#9b59b6
+    style D4 fill:#f39c12
+```
+
+For detailed architecture documentation, see:
+- `Docs/Architecture/ARCHITECTURE.md` - System architecture
+- `Docs/Architecture/BLAZEBINARY_PROTOCOL.md` - BlazeBinary protocol specification
+- `Docs/API/API_REFERENCE.md` - Complete API reference
+- `Docs/BLAZEDB_ASSURANCE_MATRIX.md` - Data integrity guarantees
 
 ---
 
 ## Tools
 
-BlazeDB includes a complete suite of tools for development, management, and deployment:
+BlazeDB includes a complete suite of tools:
 
-### **BlazeShell - Command-Line Interface**
+- **BlazeShell:** Command-line REPL for database operations
+- **BlazeDBVisualizer:** macOS app for monitoring, managing, and visualizing databases
+- **BlazeStudio:** Visual schema designer with code generation
+- **BlazeServer:** Standalone server for remote clients
 
-Interactive REPL for database operations from the terminal.
-
-**Usage:**
-```bash
-# Basic mode
-BlazeShell /path/to/database.blazedb password
-
-# Manager mode (multiple databases)
-BlazeShell --manager
-
-# Create test database
-BlazeShell --create-test
-```
-
-**Commands:**
-- `insert <json>` - Insert record from JSON
-- `fetch <uuid>` - Fetch record by ID
-- `fetchAll` - Fetch all records
-- `update <uuid> <json>` - Update record
-- `delete <uuid>` - Delete record
-- `softDelete <uuid>` - Soft delete record
-
-**See:** `Docs/Tools/BLAZESHELL_DOCUMENTATION.md` for complete CLI reference.
-
----
-
-### **BlazeDBVisualizer - Database Management Suite**
-
-macOS application for monitoring, managing, and visualizing BlazeDB databases.
-
-**Features:**
-- **8 Tabs:** Overview, Data, Queries, Schema, Performance, Security, Sync, Telemetry
-- **Real-time Monitoring** - Live metrics, health status, auto-refresh
-- **Data Management** - Browse, search, edit records inline, bulk operations
-- **Visual Query Builder** - Build queries without code
-- **Performance Charts** - Track metrics over time
-- **Security Dashboard** - View policies, test permissions, audit logs
-- **Menu Bar Integration** - Quick access from menu bar
-
-**Usage:**
-1. Launch BlazeDBVisualizer app
-2. Auto-discovers databases in `~/Library/Application Support/BlazeDB/`
-3. Click database → Enter password → Unlock
-4. Use tabs to monitor, edit, query, and manage
-
-**See:** `Docs/Tools/BLAZEDBVISUALIZER_DOCUMENTATION.md` for complete guide.
-
----
-
-### **BlazeStudio - Visual Schema Designer**
-
-Visual block-based editor for designing database schemas and generating Swift code.
-
-**Features:**
-- **Drag-and-Drop Blocks** - Visual schema design
-- **Relationship Mapping** - Connect entities visually
-- **Code Generation** - Export to Swift/BlazeDB code
-- **Query Builder** - Build queries visually
-- **Real-time Preview** - See results as you build
-
-**Workflow:**
-1. Create Class blocks for entities
-2. Add fields and define types
-3. Connect blocks to define relationships
-4. Export to Swift code
-5. Use generated code in your app
-
-**See:** `Docs/Tools/BLAZESTUDIO_DOCUMENTATION.md` for complete guide.
-
----
-
-### **BlazeServer - Standalone Server**
-
-Executable that runs BlazeDB as a network server for remote clients.
-
-**Usage:**
-```bash
-# Direct run
-BLAZEDB_DB_NAME=ServerMainDB \
-BLAZEDB_PASSWORD="secret" \
-BLAZEDB_PORT=9090 \
-swift run BlazeServer
-
-# Docker
-docker compose up
-```
-
-**Configuration (Environment Variables):**
-- `BLAZEDB_DB_NAME` - Database name (default: "ServerMainDB")
-- `BLAZEDB_PASSWORD` - Database password
-- `BLAZEDB_PORT` - TCP port (default: 9090)
-- `BLAZEDB_AUTH_TOKEN` - Optional auth token
-- `BLAZEDB_SHARED_SECRET` - Optional shared secret for encryption
-
-**What it does:**
-- Opens database using convenience API
-- Listens on TCP port for BlazeBinary connections
-- Accepts multiple concurrent clients
-- Handles E2E encryption and sync automatically
-
-**Perfect for:** Raspberry Pi, Docker, cloud deployments, multi-device sync.
-
-**See:** `BlazeServer/main.swift` and `Dockerfile` for implementation details.
+See `Docs/Tools/` for complete documentation.
 
 ---
 
@@ -223,11 +738,6 @@ docker compose up
 ### SQLite → BlazeDB
 
 ```swift
-import BlazeDB
-
-let sqliteURL = // your existing SQLite file
-let blazeURL = // new BlazeDB file
-
 try BlazeMigrationTool.importFromSQLite(
     source: sqliteURL,
     destination: blazeURL,
@@ -236,16 +746,9 @@ try BlazeMigrationTool.importFromSQLite(
 )
 ```
 
-See `Tools/SQLiteMigrator.swift` for details.
-
 ### Core Data → BlazeDB
 
 ```swift
-import BlazeDB
-
-let container = // your NSPersistentContainer
-let blazeURL = // new BlazeDB file
-
 try BlazeMigrationTool.importFromCoreData(
     container: container,
     destination: blazeURL,
@@ -254,1584 +757,22 @@ try BlazeMigrationTool.importFromCoreData(
 )
 ```
 
-See `Tools/CoreDataMigrator.swift` for details.
-
-### CSV/JSON → BlazeDB
-
-```swift
-// Import from JSON array
-let jsonURL = Bundle.main.url(forResource: "users", withExtension: "json")!
-try db.importJSON(from: jsonURL)
-
-// Import from CSV
-let csvURL = Bundle.main.url(forResource: "bugs", withExtension: "csv")!
-try db.importCSV(from: csvURL, hasHeader: true)
-```
-
-See `Tools/DataImporter.swift` for details.
+See `Tools/` directory for migration implementations.
 
 ---
 
-## Key Features
-- **Direct Codable Support** - Use ANY Codable struct, zero conversion! (NEW in v2.5!)
-- **Type-Safe KeyPath Queries** - Autocomplete + compile-time checking (NEW in v2.5!)
-- **Built-In Data Seeding** - Factories, fixtures, snapshots for testing (NEW in v2.5!)
-- **10/10 Developer Experience** - Clean DSL, no boilerplate, SwiftUI-first
-- **Zero type wrapping** - Auto-converts types, no more `.string()` everywhere
-- **Fluent API** - Chain operations, builder patterns, modern Swift
-- **Zero migrations** - Add fields anytime, no schema changes
-- **Full aggregations** - COUNT, SUM, AVG, MIN, MAX, GROUP BY, HAVING
-- **Optimized JOINs** - Batch fetching, 250x faster than N+1
-- **Inverted index search** - 50-1000x faster full-text search
-- **Query caching** - 100x faster repeated queries
-- **Batch operations** - insertMany, updateMany, deleteMany (10x faster)
-- **ACID transactions** - Bank-grade reliability
-- **Comprehensive logging** - 5 levels, performance metrics
-- **970+ comprehensive tests** - 907 unit + 20+ integration tests, 97% coverage
-- **Zero dependencies** - Except SwiftCBOR
-
----
-
-## NEW in v2.4: 10/10 Developer Experience
-
-**Before (Rough):**
-```swift
-// Verbose record creation
-let bug = BlazeDataRecord([
-    "title": .string("Login broken"),
-    "priority": .int(3),
-    "status": .string("open")
-])
-
-// Optional hell
-let title = bug["title"]?.stringValue ?? "No title"
-let priority = bug["priority"]?.intValue ?? 0
-
-// Two-step queries
-let result = try db.query()
-    .where("status", equals: .string("open"))
-    .execute()
-let records = try result.records
-```
-
-**After (Beautiful):**
-```swift
-// Clean DSL
-let bug = BlazeDataRecord {
-    "title" => "Login broken"
-    "priority" => 3
-    "status" => "open"
-}
-
-// No optionals!
-let title = bug.string("title")
-let priority = bug.int("priority")
-
-// Direct results, auto-wrapped types
-let records = try db.query()
-    .where("status", equals: "open")  // No .string()!
-    .all()  // Returns records directly!
-
-// Or even simpler
-let openBugs = try db.find { $0.string("status") == "open" }
-
-**See `Examples/ImprovedDXExample.swift` for 20+ more improvements!**
-
----
-
-## NEW in v2.5: Perfect DX - Codable + KeyPaths + Seeding
-
-**The final transformation - BlazeDB is now PERFECT:**
-
-### 1. Direct Codable Support
-
-**Use ANY Codable struct - zero conversion needed!**
-
-```swift
-// Just define your model (regular Codable!)
-struct Bug: Codable, Identifiable {
-    let id: UUID
-    var title: String
-    var priority: Int
-    var status: String
-}
-
-// Use it directly - NO CONVERSION!
-let bug = Bug(id: UUID(), title: "Login broken", priority: 5, status: "open")
-try db.insert(bug)  // Just works!
-
-let fetched = try db.fetch(Bug.self, id: bug.id)
-print(fetched.title)  // Direct access! No .stringValue!
-
-let bugs: [Bug] = try db.query(Bug.self)
-    .where("status", equals: "open")
-    .all()  // Returns [Bug], not [BlazeDataRecord]!
-```
-
-**Benefits:**
-- Zero boilerplate (no BlazeDocument, no manual conversion)
-- Use existing Codable models
-- Autocomplete on all properties
-- Type-safe throughout
-- Works with SwiftUI models
-- Mix with dynamic records (best of both worlds)
-
----
-
-### 2. Type-Safe KeyPath Queries
-
-**Autocomplete + compile-time checking - no more typos!**
-
-```swift
-// Type in Xcode: db.query(Bug.self).where(\.
-// Xcode suggests: title, priority, status
-
-let bugs = try db.query(Bug.self)
-    .where(\.status, equals: "open")        // Autocomplete!
-    .where(\.priority, greaterThan: 5)      // Type-checked!
-    .orderBy(\.createdAt, descending: true)  // No typos!
-    .all()
-
-// Typos caught at compile time:
-.where(\.statuss, equals: "open")  // ERROR: 'statuss' not found
-```
-
-**Benefits:**
-- Autocomplete in Xcode (type `\.` and see all fields!)
-- Compile-time checking (typos = errors, not runtime crashes)
-- Safe refactoring (rename field → updates all queries)
-- Better performance (compile-time optimization)
-
----
-
-### 3. Built-In Data Seeding
-
-**Testing made ridiculously easy!**
-
-```swift
-// Generate 100 realistic bugs in one line
-let bugs = try db.seed(Bug.self, count: 100) { i in
-    Bug(
-        id: UUID(),
-        title: RandomData.bugTitle(),      // "Login broken", "UI crash", etc
-        priority: RandomData.priority(),   // Random 1-10
-        status: RandomData.status(),       // "open", "closed", etc
-        assignee: RandomData.name()        // "Alice", "Bob", etc
-    )
-}
-
-// Factories (define once, use everywhere)
-db.factory(Bug.self) { i in
-    Bug(id: UUID(), title: "Bug \(i)", priority: 5, status: "open")
-}
-
-let testBugs = try db.create(Bug.self, count: 50)
-
-// Snapshots (save & restore state)
-let snapshot = try db.snapshot()
-// ... run destructive tests ...
-try db.restore(snapshot)  // Back to original!
-
-// Load from JSON
-let bugs = try db.loadFixtures(Bug.self, from: fixturesURL)
-```
-
-**Benefits:**
-- Test data in seconds (not hours)
-- Realistic random data generators
-- Reusable factories
-- Snapshots for clean test state
-- JSON fixtures for team collaboration
-
----
-
-**See complete guides:**
-- `FINAL_DX_FEATURES.md` - Technical deep-dive
-- `Examples/CodableExample.swift` - Codable integration
-- `Examples/KeyPathQueriesExample.swift` - Type-safe queries
-- `Examples/DataSeedingExample.swift` - Seeding & fixtures
-
----
-
-## Installation
-
-BlazeDB is distributed as a Swift Package. Add it to your `Package.swift` or via Xcode's Swift Package Manager integration.
-
----
-
-## Logging
-
-BlazeDB includes a professional logging system with configurable verbosity:
-
-### Quick Start
-
-```swift
-// Production (default) - quiet, only warnings/errors
-let db = try BlazeDBClient(...)  // Console: (silent unless problems)
-
-// Development - see important operations
-BlazeLogger.enableDebugMode()     // Shows inserts, updates, transactions
-
-// Full debugging - trace everything
-BlazeLogger.enableTraceMode()     // Shows page I/O, internal operations
-
-// Completely silent
-BlazeLogger.enableSilentMode()    // No output at all
-```
-
-### Manual Control
-
-```swift
-// Fine-grained control
-BlazeLogger.level = .warn          // Only warnings + errors (default)
-BlazeLogger.level = .info          // + informational messages
-BlazeLogger.level = .debug         // + debug operations
-BlazeLogger.level = .trace         // Everything (very verbose)
-
-// Show file:line for all logs (helpful for debugging)
-BlazeLogger.includeLocation = true
-```
-
-### Custom Handler
-
-Integrate with your logging system:
-
-```swift
-BlazeLogger.handler = { message, level in
-    switch level {
-    case .error:
-        MyLogger.error(message)
-    case .warn:
-        MyLogger.warning(message)
-    default:
-        MyLogger.info(message)
-    }
-}
-```
-
-### Example Output
-
-```
-[BlazeDB:WARN] Skipping index — missing one or more fields (DynamicCollection.swift:429)
-[BlazeDB:ERROR] Failed to decode record: Invalid JSON (DynamicCollection.swift:499)
-```
-
----
-
-## Usage
-
-### Initialization
-
-BlazeDB offers **two initialization patterns** to match your coding style:
-
-#### Option 1: Failable Initializer (Simple & Clean)
-
-Perfect for quick setup and production code. No try-catch boilerplate needed:
-
-```swift
-let url = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
-    .appendingPathComponent("myapp.blazedb")
-
-// Failable initializer - returns nil on failure
-guard let db = BlazeDBClient(name: "MyApp", at: url, password: "secure-password-123") else {
-    print("Failed to initialize database - check logs")
-    return
-}
-
-// Use db - no try-catch needed for initialization! ✅
-let id = try db.insert(BlazeDataRecord(["title": .string("Hello")]))
-```
-
-**Benefits:**
-- Clean, readable code with `guard let`
-- Errors automatically logged with details
-- No try-catch boilerplate for initialization
-- Perfect for production apps
-
-#### Option 2: Throwing Initializer (Detailed Error Info)
-
-Perfect when you need to handle specific errors differently:
-
-```swift
-let url = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
-    .appendingPathComponent("myapp.blazedb")
-
-do {
-    let db = try BlazeDBClient(
-        name: "MyApp",
-        fileURL: url, 
-        password: "secure-password-123"  // Must be 8+ characters
-    )
-    print("Database initialized successfully")
-    
-    // Use db...
-} catch BlazeDBError.transactionFailed(let msg) where msg.contains("Password") {
-    print("Weak password: \(msg)")
-    // Prompt user for stronger password
-} catch BlazeDBError.migrationFailed(let msg) {
-    print("Migration failed: \(msg)")
-    // Handle migration failure
-} catch {
-    print("Database error: \(error)")
-    // Generic error handling
-}
-```
-
-**Benefits:**
-- Catch and handle specific error types
-- Full error details for debugging
-- Fine-grained error recovery
-- Perfect for critical systems
-
-### Error Handling
-
-BlazeDB initialization can throw errors for several reasons:
-
-| Error | Reason | Solution |
-|-------|--------|----------|
-| `BlazeDBError.transactionFailed("Password too weak...")` | Password < 8 characters | Use a stronger password |
-| `BlazeDBError.transactionFailed("Failed to initialize storage...")` | File system issues | Check file permissions |
-| `BlazeDBError.migrationFailed(...)` | Schema migration failed | Check logs for details |
-| `BlazeDBError.transactionFailed("Recovery failed...")` | WAL replay failed | Database may be corrupted |
-
-All errors include detailed messages to help you debug. Enable logging for more details:
-
-```swift
-BlazeLogger.enableDebugMode()  // See detailed initialization logs
-let db = try BlazeDBClient(...)
-```
-
-### NEW: Unified API (v2.0)
-
-**ONE execute method for everything** - no more confusion!
-
-```swift
-// Normal query - auto-detects and returns .records
-let result = try db.query()
-    .where("status", equals: .string("open"))
-    .execute()
-let records = try result.records  // Extract records
-
-// JOIN query - auto-detects and returns .joined
-let result = try db.query()
-    .join(usersDB.collection, on: "authorId")
-    .execute()  // SAME METHOD!
-let joined = try result.joined  // Extract joined records
-
-// Aggregation - auto-detects and returns .aggregation
-let result = try db.query()
-    .count()
-    .execute()  // SAME METHOD!
-let count = try result.aggregation.count  // Extract count
-
-// Grouped aggregation - auto-detects and returns .grouped
-let result = try db.query()
-    .groupBy("team")
-    .sum("hours")
-    .execute()  // SAME METHOD!
-let groups = try result.grouped  // Extract groups
-```
-
-**Why this is better:**
-- ONE execute method instead of 6
-- Smart type detection
-- Clean, consistent API
-- Type-safe result extraction
-- No more "which execute method?" confusion
-
-### NEW: Async/Await Support (v2.0)
-
-**All operations are now async** - perfect for SwiftUI and modern Swift!
-
-```swift
-// Basic CRUD - async
-let id = try await db.insert(record)
-let fetched = try await db.fetch(id: id)
-try await db.update(id: id, data: updated)
-try await db.delete(id: id)
-
-// Queries - async (non-blocking!)
-let result = try await db.query()
-    .where("status", equals: .string("open"))
-    .execute()
-let records = try result.records
-
-// JOINs - async
-let result = try await db.query()
-    .join(usersDB.collection, on: "authorId")
-    .execute()
-let joined = try result.joined
-
-// Aggregations - async
-let result = try await db.query()
-    .groupBy("team")
-    .count()
-    .execute()
-let grouped = try result.grouped
-
-// Batch operations - async
-let ids = try await db.insertMany(records)
-let updated = try await db.updateMany(where: predicate, set: fields)
-let deleted = try await db.deleteMany(where: predicate)
-
-// Persistence - async
-try await db.persist()
-try await db.flush()
-```
-
-**Perfect for SwiftUI:**
-
-```swift
-struct BugListView: View {
-    @State private var bugs: [BlazeDataRecord] = []
-    let db: BlazeDBClient
-    
-    var body: some View {
-        List(bugs, id: \.id) { bug in
-            Text(bug["title"]?.stringValue ?? "")
-        }
-        .task {
-            do {
-                let result = try await db.query()
-                    .where("status", equals: .string("open"))
-                    .orderBy("priority", descending: true)
-                    .execute()
-                bugs = try result.records
-            } catch {
-                print("Error: \(error)")
-            }
-        }
-    }
-}
-```
-
-### NEW: SwiftUI Property Wrapper (v2.1)
-
-**The EASIEST way to use BlazeDB in SwiftUI** - auto-updating, zero boilerplate!
-
-```swift
-struct BugListView: View {
-    // That's it! No @State, no .task, no manual fetching!
-    @BlazeQuery(
-        db: myDatabase,
-        where: "status", equals: .string("open"),
-        sortBy: "priority", descending: true
-    )
-    var openBugs
-    
-    var body: some View {
-        List(openBugs, id: \.id) { bug in
-            Text(bug["title"]?.stringValue ?? "")
-        }
-        .navigationTitle("Open Bugs (\(openBugs.count))")
-        .refreshable(query: $openBugs)  // Pull-to-refresh built-in!
-    }
-}
-```
-
-**Why this is SICK:**
-- Auto-updates when data changes
-- No manual state management
-- Pull-to-refresh built-in
-- Loading states included
-- Error handling included
-- Auto-refresh support
-
-**More examples:**
-
-```swift
-// High priority bugs only
-@BlazeQuery(
-    db: db,
-    where: "priority",
-    .greaterThanOrEqual,
-    .int(7),
-    sortBy: "createdAt"
-)
-var criticalBugs
-
-// Multiple filters
-@BlazeQuery(
-    db: db,
-    filters: [
-        ("status", .equals, .string("open")),
-        ("assignee", .equals, .string("Alice"))
-    ],
-    sortBy: "priority",
-    descending: true
-)
-var alicesBugs
-
-// Just fetch all
-@BlazeQuery(db: db)
-var allRecords
-
-// Access loading state and errors
-if $openBugs.isLoading {
-    ProgressView()
-} else if let error = $openBugs.error {
-    Text("Error: \(error.localizedDescription)")
-} else {
-    List(openBugs) { bug in
-        // ...
-    }
-}
-
-// Manual refresh
-Button("Refresh") {
-    $openBugs.refresh()
-}
-
-// Auto-refresh every 5 seconds
-.onAppear {
-    $openBugs.enableAutoRefresh(interval: 5.0)
-}
-.onDisappear {
-    $openBugs.disableAutoRefresh()
-}
-
-// Find specific record
-if let bug = $openBugs.record(withID: bugID) {
-    BugDetailView(bug: bug)
-}
-
-// In-memory filtering (doesn't hit database)
-let urgentBugs = $openBugs.filtered { bug in
-    bug["priority"]?.intValue ?? 0 >= 8
-}
-```
-
-**Works with tabs, navigation, search, and more!** See `Examples/SwiftUIExample.swift` for complete examples.
-
-### NEW: Type Safety (v2.2) - OPTIONAL
-
-**Compile-time safety for your models** - catch typos before they run!
-
-**Option 1: Stay Dynamic (Always Works)**
-```swift
-let bug = BlazeDataRecord([
-    "title": .string("Fix login"),
-    "priority": .int(1)
-])
-try await db.insert(bug)
-
-let fetched = try await db.fetch(id: id)
-let title = fetched?["title"]?.stringValue
-```
-
-**Option 2: Use Type Safety (Opt-In)**
-```swift
-// Define your model once
-struct Bug: BlazeDocument {
-    var id: UUID
-    var title: String
-    var priority: Int
-    var status: String
-    var assignee: String?
-    
-    // Auto-implement toStorage() and init(from:)
-    // See Examples/TypeSafeModels.swift for templates
-}
-
-// Use it (compile-time safe!)
-let bug = Bug(title: "Fix login", priority: 1, status: "open")
-try await db.insert(bug)  // Type-safe!
-
-let fetched = try await db.fetch(Bug.self, id: id)
-print(fetched?.title)      // Direct access!
-print(fetched?.priority)   // No .intValue!
-
-// Update with type safety
-var updated = fetched!
-updated.priority = 10  // Type-checked!
-try await db.update(updated)
-```
-
-**Option 3: Mix Both! (BEST)**
-```swift
-// Type-safe for core models (75% of your data)
-let bug = Bug(title: "Fix login", priority: 1, status: "open")
-try await db.insert(bug)
-
-// Dynamic for flexible data (25% of your data)
-let settings = BlazeDataRecord([
-    "theme": .string("dark"),
-    "customField": .string("whatever")
-])
-try await db.insert(settings)
-
-// Same database, both work!
-```
-
-**Type-Safe SwiftUI:**
-```swift
-struct BugListView: View {
-    @BlazeQueryTyped(
-        db: myDatabase,
-        type: Bug.self,
-        where: "status", equals: .string("open")
-    )
-    var bugs: [Bug]  // Type-safe!
-    
-    var body: some View {
-        List(bugs) { bug in
-            Text(bug.title)  // Direct access, no .stringValue!
-            Text("P\(bug.priority)")  // Already Int!
-        }
-    }
-}
-```
-
-**Benefits:**
-- Catches typos at compile time (`bug.titl` → error!)
-- Autocomplete in Xcode (type `bug.` and see all fields)
-- 57% less code (no optional unwrapping)
-- Safe refactoring (rename field → Xcode shows all uses)
-- Wrong types = compile errors (can't set string to int field)
-- 100% backward compatible (opt-in, not mandatory)
-- Still supports dynamic fields (best of both worlds!)
-
-**See:**
-- `Examples/TypeSafeModels.swift` - Template models
-- `Examples/TypeSafeUsageExample.swift` - Complete examples
-- `TYPE_SAFETY_DETAILED_EXAMPLES.md` - In-depth guide
-
-### Manual Metadata Flush
-
-```swift
-// BlazeDB batches metadata writes for performance (every 100 operations)
-// Force immediate flush before critical operations:
-
-let db = try BlazeDBClient(...)
-
-for i in 0..<50 {
-    try db.insert(record)
-}
-
-// Force flush (normally waits for 100 ops)
-try db.persist()  // or db.flush()
-
-// Safe to backup, reopen, or perform critical operations
-try FileManager.default.copyItem(at: dbURL, to: backupURL)
-```
-
-### Managing Multiple Databases with BlazeDBManager
-
-BlazeDBManager allows mounting, switching, and working with multiple named databases at runtime.
-
-```swift
-// Mount a DB
-try BlazeDBManager.shared.mountDatabase(
-    named: "ProjectAlpha",
-    fileURL: URL(fileURLWithPath: "/path/to/alpha.blaze"),
-    password: "secret123"
-)
-
-// Switch active DB
-let db = try BlazeDBManager.shared.useDatabase(named: "ProjectAlpha")
-
-// List all mounted DBs
-let names = BlazeDBManager.shared.mountedNames
-
-// Unmount when done
-BlazeDBManager.shared.unmountDatabase(named: "ProjectAlpha")
-```
-
-### Basic CRUD
-
-```swift
-// Insert
-let record = BlazeDataRecord([
-    "title": .string("My Note"),
-    "priority": .int(5),
-    "createdAt": .date(Date())
-])
-let id = try db.insert(record)
-
-// Fetch
-if let fetched = try db.fetch(id: id) {
-    print(fetched.storage["title"]) // "My Note"
-}
-
-// Update
-try db.update(id: id, with: BlazeDataRecord([
-    "title": .string("Updated Note"),
-    "priority": .int(10)
-]))
-
-// Delete
-try db.delete(id: id)
-```
-
-### Pagination
-
-```swift
-// Get total count
-let total = db.count()
-
-// Fetch page
-let page1 = try db.fetchPage(offset: 0, limit: 20)
-let page2 = try db.fetchPage(offset: 20, limit: 20)
-
-// Batch fetch by IDs
-let records = try db.fetchBatch(ids: [id1, id2, id3])
-```
-
-### Indexes
-
-```swift
-// Create index
-if let collection = db.metaStore as? DynamicCollection {
-    try collection.createIndex(on: ["status"])
-    
-    // Compound index
-    try collection.createIndex(on: ["status", "priority"])
-    
-    // Query indexed field
-    let openItems = try collection.fetch(byIndexedField: "status", value: "open")
-}
-```
-
-### Aggregations & Analytics 🆕
-
-**GROUP BY with aggregations (NEW in v1.5!):**
-
-```swift
-// Bug count by status
-let stats = try db.query()
-    .groupBy("status")
-    .count()
-    .executeGroupedAggregation()
-// Returns: {"open": 45, "closed": 230, "in_progress": 12}
-
-// Multiple aggregations
-let teamStats = try db.query()
-    .where("type", equals: .string("bug"))
-    .groupBy("team_id")
-    .aggregate([
-        .count(as: "total_bugs"),
-        .sum("estimated_hours", as: "total_hours"),
-        .avg("priority", as: "avg_priority"),
-        .min("created_at", as: "oldest"),
-        .max("created_at", as: "newest")
-    ])
-    .executeGroupedAggregation()
-
-// HAVING clause (filter aggregated results)
-let highLoadTeams = try db.query()
-    .groupBy("team_id")
-    .sum("estimated_hours", as: "hours")
-    .having { $0.sum("hours") ?? 0 > 200 }
-    .executeGroupedAggregation()
-
-// Simple count
-let openCount = try db.query()
-    .where("status", equals: .string("open"))
-    .count()
-    .executeAggregation()
-```
-
-**Performance:**
-- 10x faster than loading all records
-- 500x less memory (returns summary only)
-- Scales to millions of records
-
----
-
-### Query Caching 🆕
-
-**Cache results for instant dashboards:**
-
-```swift
-// First call: 50ms (disk I/O)
-let bugs = try db.query()
-    .where("status", equals: .string("open"))
-    .where("priority", greaterThan: .int(3))
-    .executeWithCache(ttl: 60)  // Cache for 60 seconds
-
-// Subsequent calls within 60s: 0.5ms (from cache)
-// 100x faster!
-
-// Cache aggregations too
-let stats = try db.query()
-    .groupBy("status")
-    .count()
-    .executeGroupedAggregationWithCache(ttl: 60)
-
-// Cache management
-QueryCache.shared.clearAll()        // Clear all
-QueryCache.shared.isEnabled = false // Disable
-```
-
----
-
-### Batch Operations 🆕
-
-**10x faster than individual operations:**
-
-```swift
-// Insert many (10x faster)
-let records = (0..<1000).map { i in
-    BlazeDataRecord(["index": .int(i), "status": .string("open")])
-}
-let ids = try db.insertMany(records)
-
-// Update many
-let updated = try db.updateMany(
-    where: { $0["status"]?.stringValue == "open" },
-    set: ["status": .string("closed"), "closed_at": .date(Date())]
-)
-print("Updated \(updated) records")
-
-// Delete many
-let deleted = try db.deleteMany(
-    where: { $0["isDeleted"]?.boolValue == true }
-)
-print("Deleted \(deleted) records")
-
-// Upsert (insert or update)
-try db.upsert(id: bugID, data: bugData)
-
-// Partial update (update specific fields)
-try db.updateFields(id: bugID, fields: [
-    "status": .string("closed"),
-    "closed_at": .date(Date())
-])
-
-// Distinct values
-let statuses = try db.distinct(field: "status")
-// Returns: [.string("open"), .string("closed"), ...]
-```
-
----
-
-### Queries
-
-**New: Query Builder (Chainable API)**
-
-```swift
-// Simple query
-let openBugs = try db.query()
-    .where("status", equals: .string("open"))
-    .execute()
-
-// Complex query with multiple conditions
-let results = try db.query()
-    .where("status", equals: .string("open"))
-    .where("priority", greaterThan: .int(2))
-    .where("title", contains: "Login")
-    .orderBy("created_at", descending: true)
-    .limit(10)
-    .execute()
-
-// Query Builder + JOIN (powerful!)
-let bugsWithAuthors = try db.query()
-    .where("status", equals: .string("open"))
-    .where("priority", greaterThan: .int(2))
-    .join(usersDB.collection, on: "author_id", equals: "id")
-    .orderBy("created_at", descending: true)
-    .limit(10)
-    .executeJoin()
-
-// Available operators:
-// - where(_:equals:)
-// - where(_:notEquals:)
-// - where(_:greaterThan:)
-// - where(_:lessThan:)
-// - where(_:greaterThanOrEqual:)
-// - where(_:lessThanOrEqual:)
-// - where(_:contains:) // String search
-// - where(_:in:) // Array of values
-// - whereNil(_:)
-// - whereNotNil(_:)
-// - where(closure) // Custom logic
-```
-
-**Legacy Query DSL (still works):**
-
-```swift
-let query = BlazeQueryLegacy<[String: BlazeDocumentField]>()
-    .filter { $0["status"] == .some(.string("open")) }
-    .filter { $0["severity"] == .some(.string("high")) }
-    .sorted { $0["createdAt"]?.dateValue ?? Date() > $1["createdAt"]?.dateValue ?? Date() }
-    .limit(10)
-
-let results = try db.fetchAll().filter(query.matches)
-```
-
-### Soft Delete
-
-```swift
-// Soft delete (marks as deleted)
-try db.softDelete(id: recordID)
-
-// Purge all soft-deleted records
-try db.purge()
-```
-
-### JOINs (Relational Queries)
-
-BlazeDB supports JOIN operations to query related data across multiple collections:
-
-```swift
-// Setup two databases
-let bugsDB = try BlazeDBClient(name: "bugs", fileURL: bugsURL, password: "pass")
-let usersDB = try BlazeDBClient(name: "users", fileURL: usersURL, password: "pass")
-
-// Insert data
-let userAlice = UUID()
-_ = try usersDB.insert(BlazeDataRecord([
-    "id": .uuid(userAlice),
-    "name": .string("Alice"),
-    "email": .string("alice@example.com")
-]))
-
-_ = try bugsDB.insert(BlazeDataRecord([
-    "title": .string("Login broken"),
-    "author_id": .uuid(userAlice)
-]))
-
-// INNER JOIN: Only bugs with existing authors
-let bugsWithAuthors = try bugsDB.join(
-    with: usersDB,
-    on: "author_id",    // Foreign key in bugs
-    equals: "id",        // Primary key in users  
-    type: .inner         // Join type
-)
-
-// Access joined data
-for joined in bugsWithAuthors {
-    let bugTitle = joined.left["title"]?.stringValue
-    let authorName = joined.right?["name"]?.stringValue
-    print("\(bugTitle) by \(authorName)")
-}
-
-// LEFT JOIN: All bugs, with author if exists
-let allBugs = try bugsDB.join(
-    with: usersDB,
-    on: "author_id",
-    equals: "id",
-    type: .left
-)
-
-// Filter joined results
-let openBugs = bugsWithAuthors.filter { joined in
-    joined.left["status"]?.stringValue == "open"
-}
-
-// Merge into single record
-for joined in bugsWithAuthors {
-    let merged = joined.merged() // Combines both records
-    print(merged["title"], merged["name"]) // Fields from both collections
-}
-```
-
-**Join Types:**
-- `.inner` - Only matching pairs (SQL INNER JOIN)
-- `.left` - All from left, matching from right (SQL LEFT JOIN)
-- `.right` - All from right, matching from left (SQL RIGHT JOIN)
-- `.full` - All from both (SQL FULL OUTER JOIN)
-
-**Performance:**
-- Uses batch fetching (O(N+M), not O(N×M))
-- Two queries per join (not N+1)
-- Works seamlessly with indexes
-- Tested with 10k+ records
-
-**See:** `Examples/JoinExample.swift` for comprehensive examples
-
----
-
-### Full-Text Search (Optimized)
-
-BlazeDB includes production-ready full-text search with automatic inverted indexing for 50-1000x speedup.
-
-#### Quick Start (Full Scan - Works for Small Datasets)
-
-```swift
-// Search without index (works fine for <1,000 records)
-let result = try await db.query()
-    .search("login bug", in: ["title", "description"])
-    .execute()
-
-let searchResults = try result.searchResults
-for result in searchResults {
-    print("\(result.record) - Score: \(result.score)")
-}
-```
-
-#### Optimized Search (Inverted Index - 50-1000x Faster!)
-
-For larger datasets or search-heavy applications, enable inverted indexing:
-
-```swift
-// 1. Enable search index (one-time setup)
-try db.collection.enableSearch(on: ["title", "description", "content"])
-
-// 2. Searches now use inverted index (ultra-fast!)
-let result = try await db.query()
-    .search("authentication error", in: ["title", "description"])
-    .execute()
-
-// 3. Get index statistics
-if let stats = try db.collection.getSearchStats() {
-    print(stats.description)
-    // Inverted Index Stats:
-    //   Unique words: 1543
-    //   Total mappings: 12045
-    //   Memory: 245 KB
-}
-
-// 4. Rebuild index (if needed after bulk updates)
-try db.collection.rebuildSearchIndex()
-
-// 5. Disable to free memory
-try db.collection.disableSearch()
-```
-
-#### Smart Auto-Indexing
-
-Automatically enable indexing when database grows:
-
-```swift
-// Auto-index when record count exceeds 5,000
-try db.collection.enableSmartSearch(
-    threshold: 5000,
-    fields: ["title", "description"]
-)
-
-// Small database: Uses full scan (fast enough)
-// Large database: Automatically switches to indexed search!
-```
-
-#### Advanced Search Features
-
-```swift
-// Search with filters
-let result = try await db.query()
-    .where("status", .equals, "open")
-    .where("priority", .greaterThan, 2)
-    .search("login", in: ["title", "description"])
-    .limit(10)
-    .execute()
-
-// Multi-term search (finds records with ALL terms)
-let result = try await db.query()
-    .search("login bug critical", in: ["title", "description"])
-    .execute()
-
-// Field-specific search
-let result = try await db.query()
-    .search("bug", in: ["title"])  // Only search in title
-    .execute()
-
-// Case-insensitive (automatic)
-let result1 = try await db.query().search("LOGIN", in: ["title"]).execute()
-let result2 = try await db.query().search("login", in: ["title"]).execute()
-// Both return same results!
-```
-
-#### Performance
-
-**Without Index (Full Scan):**
-- 1,000 records: ~50ms
-- 10,000 records: ~500ms
-- 100,000 records: ~5 seconds
-
-**With Inverted Index:**
-- 1,000 records: ~0.6ms (80x faster)
-- 10,000 records: ~1ms (500x faster)
-- 100,000 records: ~5ms (1000x faster!)
-
-**Memory Overhead:**
-- ~0.5-1% of database size
-- 10,000 records: ~300 KB
-- 100,000 records: ~3 MB
-
-**Recommendation:**
-- <1,000 records: Full scan is fine
-- 1,000-10,000 records: Enable index for better UX
-- >10,000 records: Index is essential
-
-#### How It Works
-
-1. **Tokenization:** Text is split into words (min 2 chars, case-insensitive)
-2. **Inverted Index:** Maps words → record IDs (hash-based, O(1) lookup)
-3. **Relevance Scoring:**
-   - Exact word match: 10 points
-   - Title field boost: +5 points
-   - All terms present: 50% bonus
-4. **Automatic Maintenance:** Index updated on insert/update/delete
-
-#### Real-World Example: Bug Tracker
-
-```swift
-// Setup
-try db.collection.enableSearch(on: ["title", "description"])
-
-// Insert 5,000 bugs
-for i in 1...5000 {
-    _ = try await db.insert([
-        "title": "Bug #\(i): Login issue",
-        "description": "User cannot login to app",
-        "status": "open"
-    ])
-}
-
-// Search (5ms with index vs 500ms without!)
-let result = try await db.query()
-    .where("status", .equals, "open")
-    .search("login cannot", in: ["title", "description"])
-    .limit(20)
-    .execute()
-
-let bugs = try result.searchResults
-print("Found \(bugs.count) bugs in 5ms")
-```
-
-**See:** `BlazeDBTests/OptimizedSearchTests.swift` for 30+ comprehensive tests
-
----
-
-## Testing
-
-BlazeDB has a **world-class testing suite** that puts it in the **TOP 1%** of Swift projects:
-
-### Test Suite Stats
-
-- **907 unit tests** - covering all features at 97% code coverage
-- **20+ integration scenarios** - real-world workflows from dev to production
-- **40+ performance metrics** - tracked with automated baselines
-- **5 failure scenarios** - crash recovery and corruption handling
-- **100% pass rate** - bulletproof quality
-
-### Quick Start
-
-```bash
-# Fast feedback (30s)
-./scripts/test.sh quick
-
-# Full unit suite (2min)
-./scripts/test.sh unit
-
-# Integration scenarios (5min)
-./scripts/test.sh integration
-
-# Performance tracking
-./scripts/test.sh perf
-
-# Everything + sanitizers (15min)
-./scripts/test.sh all
-```
-
-### What We Test
-
-**Unit Tests:**
-- All CRUD operations
-- ACID transactions
-- Queries, filters, JOINs
-- Aggregations (COUNT, SUM, AVG, MIN, MAX, GROUP BY)
-- Full-text search with InvertedIndex
-- Indexes (single & compound)
-- Type safety & Codable integration
-- SwiftUI bindings (`@BlazeQuery`)
-- Concurrency & thread safety
-- Memory management & leaks
-- Error handling & recovery
-
-**Integration Tests:**
-- Complete bug tracker lifecycle (init → crash → recovery)
-- Feature combinations (transaction + search, JOIN + aggregation)
-- User workflows (notes app, e-commerce, team collaboration)
-- Failure scenarios (crashes, corruption, conflicts)
-- Performance under load
-
-**Sanitizer Tests:**
-- Thread Sanitizer (race conditions, deadlocks)
-- Address Sanitizer (memory errors, leaks)
-- Undefined Behavior Sanitizer
-
-### Performance Metrics
-
-We track 40+ metrics including:
-- Insert/fetch/update/delete latency
-- Batch operation throughput
-- Query performance (simple & complex)
-- JOIN performance (all types)
-- Aggregation speed
-- Memory usage
-- Disk I/O
-
-**Set baselines in Xcode:**
-1. Run tests (Cmd+U)
-2. Test Navigator → Performance tab
-3. Set baseline for each metric
-
-### 🤖 **Automation:**
-
-**CI/CD (GitHub Actions):**
-- Tests on every PR
-- Coverage reports (Codecov)
-- Performance tracking
-- Nightly stress tests
-- Automated releases
-
-**Local Automation:**
-- Pre-commit hooks for fast validation
-- Test runner scripts for convenience
-- Performance dashboard with trends
-
-### 📚 **Documentation:**
-
-- `Docs/COMPLETE_TESTING_GUIDE.md` - Complete testing documentation
-- `Docs/TESTING_AUTOMATION_STRATEGY.md` - CI/CD and automation
-- `Docs/TESTING_PHILOSOPHY.md` - Why integration tests matter
-- `Docs/PERFORMANCE_METRICS_SUMMARY.md` - Metrics reference
-
-**For Apple interviews, emphasize:**
-> "BlazeDB has 907 unit tests, 20+ integration scenarios validating complete 
-> workflows, automated CI/CD with sanitizers, and 40+ tracked performance 
-> metrics. This is production-grade testing at the top 1% of Swift projects."
-
----
-
-## Distributed Sync & BlazeBinary Protocol
-
-**BlazeDB includes a complete distributed sync system** that lets databases synchronize across devices, apps, and networks using the **BlazeBinary protocol** - a custom binary format optimized for speed and efficiency.
-
-### **What is BlazeBinary?**
-
-**BlazeBinary** is BlazeDB's native binary encoding format that's:
-- **53% smaller** than JSON (variable-length encoding, bit-packing)
-- **48% faster** to encode/decode (zero-copy, optimized for Swift)
-- **100% native Swift** (no external dependencies)
-- **Type-safe** (preserves all Swift types: String, Int, Double, Bool, Date, UUID, Data, Arrays, Dictionaries)
-
-**How it works:**
-1. **Variable-length encoding** - Small numbers use 1 byte, large numbers use more (saves space)
-2. **Bit-packing** - Multiple small values fit in single bytes (e.g., type + length in 1 byte)
-3. **Common field compression** - Top 127 field names compressed to 1 byte each
-4. **Zero-copy where possible** - Direct memory access for maximum speed
-5. **LZ4 compression** - Optional compression for network transfer (3-5x faster than gzip)
-
-**Example:**
-```swift
-// JSON: 156 bytes
-{"id":"550e8400-e29b-41d4-a716-446655440000","title":"Fix login","priority":5}
-
-// BlazeBinary: 73 bytes (53% smaller!)
-// - UUID: 16 bytes (binary, not string)
-// - Field names: 1 byte each (compressed)
-// - Values: variable-length encoded
-```
-
-### **When is BlazeBinary Used?**
-
-BlazeBinary is used in two contexts:
-
-**1. Local File Storage (On-Disk Format)**
-- All database files (`.blazedb`) store records in BlazeBinary format
-- When you call `insert()`, `update()`, or `delete()`, records are encoded to BlazeBinary before writing to disk
-- When you call `fetch()` or `query()`, records are decoded from BlazeBinary when reading from disk
-- This provides faster I/O and smaller file sizes compared to JSON storage
-
-**2. Network Sync (Over TCP/Unix Sockets)**
-- When syncing between databases, operations are encoded to BlazeBinary before transmission
-- The receiving database decodes BlazeBinary operations and applies them locally
-- Optional LZ4 compression can be applied for network transfers (3-5x faster than gzip)
-- This provides 4-6x faster sync compared to JSON-based protocols
-
-**Encoding/Decoding Flow:**
-```
-Local Write:
-  BlazeDataRecord → BlazeBinary Encoder → Disk (.blazedb file)
-
-Local Read:
-  Disk (.blazedb file) → BlazeBinary Decoder → BlazeDataRecord
-
-Network Sync:
-  Local Operation → BlazeBinary Encoder → [Optional LZ4] → Network → BlazeBinary Decoder → Remote Operation
-```
-
-**Performance Benefits:**
-- **File writes:** 48% faster encoding than JSON serialization
-- **File reads:** 48% faster decoding than JSON deserialization
-- **Network sync:** 4-6x faster end-to-end latency vs JSON protocols
-- **Storage:** 53% smaller files, reducing disk I/O and storage costs
-
-### **BlazeBinary Protocol Format**
-
-For developers building integrations, here's the complete BlazeBinary format specification.
-
-**Quick Reference:**
-- **Record Format:** Header (8 bytes) + Fields (variable) + CRC32 (4 bytes, optional)
-- **Field Key:** Common field = 1 byte ID, Custom field = 0xFF + length + UTF-8
-- **Field Value:** Type byte (0x01-0x09) + type-specific data
-- **Operation Format:** Operation ID + Timestamp + Node ID + Type + Collection + Record ID + Changes + Dependencies
-- **Network Frame:** Frame header (8 bytes) + Payload + CRC32 (4 bytes)
-
-#### **Record Format (File Storage)**
-
-```
-┌─────────────────────────────────────────┐
-│ Header (8 bytes)                       │
-├─────────────────────────────────────────┤
-│ Magic: "BLAZE" (5 bytes)                │
-│ Version: 0x01 or 0x02 (1 byte)         │
-│   • 0x01 = No CRC32                    │
-│   • 0x02 = With CRC32 checksum         │
-│ Field Count: UInt16 (2 bytes, BE)      │
-├─────────────────────────────────────────┤
-│ Fields (variable length)                │
-│   [Field 1]                             │
-│   [Field 2]                             │
-│   ...                                   │
-│   [Field N]                             │
-├─────────────────────────────────────────┤
-│ CRC32 Checksum (4 bytes, optional)      │
-└─────────────────────────────────────────┘
-```
-
-#### **Field Encoding**
-
-Each field consists of a key encoding followed by a value encoding:
-
-**Key Encoding:**
-- **Common Field (1 byte):** Field ID `0x01-0x7F` for common fields (see table below)
-- **Custom Field (variable):** `0xFF` marker + 2-byte length + UTF-8 string
-
-**Common Field IDs (0x01-0x7F):**
-| ID | Field Name | ID | Field Name | ID | Field Name |
-|----|------------|----|------------|----|------------|
-| 0x01 | "id" | 0x02 | "createdAt" | 0x03 | "updatedAt" |
-| 0x04 | "userId" | 0x05 | "teamId" | 0x06 | "title" |
-| 0x07 | "description" | 0x08 | "status" | 0x09 | "priority" |
-| 0x0A | "assignedTo" | 0x0B | "tags" | 0x0C | "completedAt" |
-| 0x0D | "dueDate" | ... | ... | 0x7F | (last common field) |
-
-**Custom fields** (any field not in the common list) use: `[0xFF][Length: UInt16 BE][UTF-8 field name]`
-
-**Value Encoding (Type-Specific):**
-
-| Type | Byte | Format | Size |
-|------|------|--------|------|
-| String | 0x01 | `[0x01][Length: UInt32 BE][UTF-8 data]` | 5 + N bytes |
-| Int | 0x02 | `[0x02][Value: Int64 BE]` | 9 bytes |
-| Double | 0x03 | `[0x03][Value: Double BE]` | 9 bytes |
-| Bool | 0x04 | `[0x04][Value: 0x00 or 0x01]` | 2 bytes |
-| UUID | 0x05 | `[0x05][16 bytes binary UUID]` | 17 bytes |
-| Date | 0x06 | `[0x06][Timestamp: Double BE]` | 9 bytes |
-| Data | 0x07 | `[0x07][Length: UInt32 BE][Raw bytes]` | 5 + N bytes |
-| Array | 0x08 | `[0x08][Count: UInt16 BE][Item1][Item2]...[ItemN]` | 3 + sum(Items) |
-| Dictionary | 0x09 | `[0x09][Count: UInt16 BE][Key1][Val1][Key2][Val2]...[KeyN][ValN]` | 3 + sum(Pairs) |
-
-**Notes:**
-- All multi-byte integers are **big-endian (BE)**
-- String and Data lengths are **UInt32** (supports up to 4GB)
-- Array and Dictionary counts are **UInt16** (supports up to 65,535 elements)
-- Nested structures (Array/Dictionary) are fully supported
-
-#### **Operation Format (Network Sync)**
-
-For syncing operations over the network:
-
-```
-┌─────────────────────────────────────────┐
-│ Operation ID: UUID (16 bytes)          │
-├─────────────────────────────────────────┤
-│ Timestamp Counter: UInt64 (8 bytes, BE)│
-│ Timestamp NodeID: UUID (16 bytes)       │
-├─────────────────────────────────────────┤
-│ Node ID: UUID (16 bytes)                │
-├─────────────────────────────────────────┤
-│ Operation Type: UInt8 (1 byte)          │
-│   See Operation Types table below       │
-├─────────────────────────────────────────┤
-│ Collection Name:                       │
-│   [Length: UInt8][UTF-8 string]        │
-├─────────────────────────────────────────┤
-│ Record ID: UUID (16 bytes)              │
-├─────────────────────────────────────────┤
-│ Changes: BlazeBinary Record             │
-│   [Length: UInt32 BE][Record data]      │
-├─────────────────────────────────────────┤
-│ Dependencies:                           │
-│   [Count: UInt8][UUID1][UUID2]...[UUIDN]│
-└─────────────────────────────────────────┘
-```
-
-**Operation Types:**
-| Byte | Operation | Description |
-|------|-----------|-------------|
-| 0x01 | insert | Insert a new record |
-| 0x02 | update | Update an existing record |
-| 0x03 | delete | Delete a record |
-| 0x04 | createIndex | Create an index on a field |
-| 0x05 | dropIndex | Drop an index |
-
-#### **Example: Encoding a Record**
-
-**Input:**
-```swift
-BlazeDataRecord([
-    "id": .uuid(UUID("550e8400-e29b-41d4-a716-446655440000")),
-    "title": .string("Fix login bug"),
-    "priority": .int(5),
-    "status": .string("open")
-])
-```
-
-**BlazeBinary Output:**
-```
-[BLAZE][0x01][0x0004]                    // Header: 4 fields
-[0x01]                                    // Common field: "id"
-  [0x05][55 0E 84 00 E2 9B 41 D4 A7 16 44 66 55 44 00 00]  // UUID (17 bytes)
-[0x06]                                    // Common field: "title"
-  [0x01][0x0000000F][Fix login bug]       // String (20 bytes)
-[0x09]                                    // Common field: "priority"
-  [0x02][00 00 00 00 00 00 00 05]         // Int (9 bytes)
-[0x08]                                    // Common field: "status"
-  [0x01][0x00000004][open]                // String (9 bytes)
-Total: 8 + 1 + 17 + 1 + 20 + 1 + 9 + 1 + 9 = 67 bytes
-```
-
-**JSON Equivalent:** ~156 bytes (53% larger!)
-
-#### **Network Message Framing**
-
-For TCP/WebSocket transport, operations are wrapped in a frame:
-
-```
-┌─────────────────────────────────────────┐
-│ Frame Header (8 bytes)                  │
-├─────────────────────────────────────────┤
-│ Magic: "BLAZE" (5 bytes)                │
-│ Version: 0x01 (1 byte)                  │
-│ Message Type: UInt8 (1 byte)            │
-│   See Message Types table below         │
-│ Length: UInt32 BE (4 bytes)             │
-├─────────────────────────────────────────┤
-│ Payload (BlazeBinary encoded)           │
-├─────────────────────────────────────────┤
-│ CRC32 Checksum (4 bytes)                │
-└─────────────────────────────────────────┘
-```
-
-**Message Types:**
-| Byte | Message Type | Description |
-|------|--------------|-------------|
-| 0x01 | Handshake | Initial connection handshake |
-| 0x02 | SyncState | Synchronization state exchange |
-| 0x03 | PushOperations | Push operations to remote node |
-| 0x04 | Query | Execute query on remote node |
-
-**See:** `Docs/Architecture/BLAZEBINARY_PROTOCOL.md` for complete specification and examples.
-
-### **Sync Transport Layers**
-
-BlazeDB supports **3 transport layers** for different use cases:
-
-#### **1. In-Memory Queue** (Same App Process)
-- **Latency:** <1ms
-- **Throughput:** 10,000-50,000 ops/sec
-- **Use case:** Multiple databases in same app
-- **Example:** Cache DB syncing with main DB
-
-```swift
-let topology = BlazeTopology()
-let mainNode = try await topology.register(db: mainDB, name: "Main", role: .server)
-let cacheNode = try await topology.register(db: cacheDB, name: "Cache", role: .client)
-try await topology.connectLocal(from: cacheNode, to: mainNode)
-```
-
-#### **2. Unix Domain Sockets** (Different Apps, Same Device)
-- **Latency:** ~0.5ms
-- **Throughput:** 5,000-20,000 ops/sec
-- **Use case:** Cross-app sync on macOS/iOS
-- **Example:** Main app syncing with background service
-
-```swift
-try await topology.connectCrossApp(
-    from: app1Node,
-    to: app2Node,
-    socketPath: "/tmp/blazedb-sync.sock"
-)
-```
-
-#### **3. TCP + BlazeBinary** (Different Devices/Networks)
-- **Latency:** ~5ms (LAN), ~50ms (WAN)
-- **Throughput:** 1,000-10,000 ops/sec
-- **Use case:** Server-client sync, multi-device apps
-- **Features:** E2E encryption (AES-256-GCM), secure handshake (ECDH P-256), shared secret auth
-
-```swift
-// Server side (Raspberry Pi, Vapor, etc.)
-let server = try BlazeServer(
-    database: db,
-    port: 9090,
-    authToken: nil,
-    sharedSecret: "super-secret"
-)
-try await server.start()
-
-// Client side (iPhone, Mac, etc.)
-let engine = try await db.sync(
-    to: "raspberrypi.local",
-    port: 9090,
-    database: "ServerMainDB",
-    sharedSecret: "super-secret"
-)
-```
-
-### **BlazeServer - Standalone Server Mode**
-
-**NEW:** BlazeDB can run as a standalone server! Perfect for Raspberry Pi, Docker, Linux servers, or cloud deployments. BlazeDB supports macOS, iOS, and Linux platforms.
-
-**Quick Start:**
-```bash
-# Option 1: Direct (no Docker)
-BLAZEDB_DB_NAME=ServerMainDB \
-BLAZEDB_PASSWORD="super-secret" \
-BLAZEDB_PORT=9090 \
-swift run BlazeServer
-
-# Option 2: Docker
-docker compose up --build
-```
-
-**What it does:**
-- Opens database using convenience API (stored in `~/Library/Application Support/BlazeDB/`)
-- Listens on TCP port (default: 9090) for BlazeBinary connections
-- Accepts multiple concurrent client connections
-- Handles E2E encryption, authentication, and sync automatically
-
-**Client Discovery:**
-```swift
-// TCP-based auto-connect (no Bonjour required!)
-let candidates = [
-    BlazeDBClient.TCPServerCandidate(host: "raspberrypi.local", port: 9090, database: "ServerMainDB")
-]
-let engine = try await db.autoConnectTCP(
-    candidates: candidates,
-    sharedSecret: "super-secret"
-)
-```
-
-**See:**
-- `Docs/Sync/SYNC_TRANSPORT_GUIDE.md` - Complete sync guide
-- `Docs/Sync/SYNC_EXAMPLES.md` - 10+ copy-paste examples
-- `Docs/Guides/DEVICE_DISCOVERY.md` - Discovery and connection guide
-- `BlazeServer/main.swift` - Server implementation
-
----
-
-## Architecture
-
-For detailed architecture documentation, see:
-- `Docs/Architecture/ARCHITECTURE.md` - System architecture
-- `Docs/Architecture/BLAZEBINARY_PROTOCOL.md` - BlazeBinary protocol specification
-- `Docs/API/API_REFERENCE.md` - Complete API reference with usage comments
-- `Docs/Testing/TEST_COVERAGE_DOCUMENTATION.md` - Complete test documentation
+## Documentation
+
+Complete documentation is organized in `Docs/`:
+
+- `Docs/MASTER_DOCUMENTATION_INDEX.md` - Complete documentation index
+- `Docs/Architecture/` - System architecture and design
+- `Docs/API/` - API reference and usage guides
+- `Docs/Guides/` - Step-by-step guides
+- `Docs/Performance/` - Performance analysis and optimization
+- `Docs/Security/` - Security architecture and best practices
+- `Docs/Sync/` - Distributed sync documentation
+- `Docs/Testing/` - Test coverage and methodology
 
 ---
 
@@ -1847,4 +788,4 @@ MIT License - See LICENSE file for details.
 
 ---
 
-**Built for high-performance embedded databases**
+**Built for high-performance embedded databases with enterprise-grade reliability.**
