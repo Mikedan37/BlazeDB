@@ -2,13 +2,19 @@
 
 **Embedded database for Swift with ACID transactions, encryption, and schema-less storage.**
 
-BlazeDB is a page-based embedded database I built for predictable performance and operational simplicity. It gives you ACID transaction guarantees, multi-version concurrency control, and per-page encryption using AES-256-GCM. Everything runs in-process with zero external dependencies.
-
 ---
 
-## What This Is
+## Executive Summary
 
-BlazeDB implements a page-based storage engine with write-ahead logging, MVCC, and a custom binary encoding format I call BlazeBinary. I optimized it primarily for Apple platforms (macOS and iOS), though it runs on Linux too. The design targets local, encrypted storage use cases where you need something more capable than SQLite but don't want the complexity of a full database server.
+BlazeDB is a page-based embedded database designed for predictable performance and operational simplicity. It provides ACID transaction guarantees, multi-version concurrency control, and per-page encryption using AES-256-GCM. The system runs entirely in-process with zero external dependencies.
+
+**What problem it solves:** BlazeDB addresses the need for a local-first, encrypted storage engine that offers better performance predictability than SQLite, more flexibility than Core Data, and stronger encryption guarantees than most embedded databases. It targets use cases requiring sub-millisecond query latency, deterministic behavior, and strong data protection.
+
+**Why it exists:** Existing embedded databases either lacked encryption by default, had unpredictable performance characteristics, or required complex migrations. BlazeDB was built to provide a single solution that combines encryption, performance, and operational simplicity.
+
+**Who it's for:** Developers building macOS/iOS applications requiring encrypted local storage, AI agents needing persistent memory, developer tooling requiring embedded state, and secure applications with strict data integrity requirements.
+
+**What guarantees it provides:** ACID compliance, encryption at rest, snapshot isolation via MVCC, crash recovery through write-ahead logging, deterministic encoding, and transparent corruption detection. Performance invariants are maintained through automated regression testing.
 
 **Current Version:** 2.5.0-alpha  
 **Platform Support:** macOS 12+, iOS 15+, Linux  
@@ -16,39 +22,138 @@ BlazeDB implements a page-based storage engine with write-ahead logging, MVCC, a
 
 ---
 
-## Design Goals
+## Why This Exists (Origins & Motivation)
 
-When I started building this, I had a few priorities that shaped the architecture:
+The initial motivation came from needing predictable, encrypted, local-first storage for agent workloads. SQLite's performance characteristics varied too much under concurrent load, Core Data's migration complexity was prohibitive, and Realm's licensing model didn't fit the use case. None of these systems provided encryption by default, and adding it as an afterthought introduced significant overhead.
 
-1. **ACID Compliance:** Every operation is transactional. No exceptions. I needed full atomicity, consistency, isolation, and durability guarantees because I was tired of dealing with data corruption in other embedded databases.
+A custom storage engine made sense because the constraints were specific: sub-millisecond query latency, deterministic encoding for content-addressable storage, per-page encryption without compromising performance, and schema flexibility without migration complexity. These requirements didn't align well with existing systems.
 
-2. **Encryption by Default:** All data gets encrypted at rest using AES-256-GCM with unique nonces per page. This wasn't optional—I wanted encryption to be the default, not an afterthought.
+The custom binary format (BlazeBinary) emerged from benchmarking JSON, CBOR, and MessagePack. Swift's type system enabled optimizations that generic formats couldn't provide—common field compression, inline string encoding, and deterministic key sorting. The result is approximately 53% smaller than JSON and roughly 48% faster to encode/decode.
 
-3. **Schema Flexibility:** Dynamic schemas that adapt to your data structure without migrations. I went with this because I kept hitting migration hell in other systems.
-
-4. **Predictable Performance:** Consistent latency characteristics under varying workloads. Early testing showed that unpredictable spikes were killing user experience, so I focused heavily on this.
-
-5. **Operational Simplicity:** Minimal configuration, zero external dependencies, straightforward deployment. I wanted something you could drop into a project and have working in minutes.
+Key constraints that shaped the architecture: latency requirements demanded careful attention to hot paths, encryption needed to be per-page to enable efficient garbage collection, concurrency required MVCC to avoid read-write contention, and determinism was necessary for reproducible builds and content-addressable storage. These constraints led to a layered architecture with clear separation of concerns, making the system easier to debug and optimize.
 
 ---
 
-## What It's Not
+## Table of Contents
 
-BlazeDB isn't intended for every use case. Here's what it's not:
+- [Executive Summary](#executive-summary)
+- [Why This Exists (Origins & Motivation)](#why-this-exists-origins--motivation)
+- [How to Read This Document](#how-to-read-this-document)
+- [Design Goals](#design-goals)
+- [Engineering Philosophy](#engineering-philosophy)
+- [Limitations & Tradeoffs](#limitations--tradeoffs)
+- [Stability & Maturity](#stability--maturity)
+- [Architecture](#architecture)
+  - [System Architecture Layers](#system-architecture-layers)
+- [Prior Art & Influences](#prior-art--influences)
+- [Why Not SQLite / Core Data / Realm / LMDB?](#why-not-sqlite--core-data--realm--lmdb)
+- [Storage Engine](#storage-engine)
+  - [Page Structure](#page-structure)
+- [BlazeBinary Protocol](#blazebinary-protocol)
+  - [Protocol Overview](#protocol-overview)
+  - [High-Level Characteristics](#high-level-characteristics)
+- [Concurrency Model](#concurrency-model)
+  - [MVCC Architecture](#mvcc-architecture)
+- [Security Model](#security-model)
+  - [Encryption Architecture](#encryption-architecture)
+- [Threat Model](#threat-model)
+  - [Threat Actors & Attack Surfaces](#threat-actors--attack-surfaces)
+  - [Security Control Matrix](#security-control-matrix)
+- [Cryptographic Architecture](#cryptographic-architecture)
+  - [Data at Rest: Local Encryption Pipeline](#data-at-rest-local-encryption-pipeline)
+  - [Data in Transit: Sync & Protocol Encryption](#data-in-transit-sync--protocol-encryption)
+  - [Putting It Together](#putting-it-together)
+- [Transaction Model](#transaction-model)
+  - [Write-Ahead Logging](#write-ahead-logging)
+- [Query System](#query-system)
+  - [Query Execution](#query-execution)
+- [Performance Characteristics](#performance-characteristics)
+  - [Core Operations](#core-operations)
+  - [Multi-Core Performance](#multi-core-performance)
+  - [Query Performance](#query-performance)
+  - [Network Sync Performance](#network-sync-performance)
+  - [Performance Invariants](#performance-invariants)
+- [Benchmark Methodology](#benchmark-methodology)
+- [Testing & Validation](#testing--validation)
+  - [Fault Injection & Crash Testing](#fault-injection--crash-testing)
+  - [Data Integrity Guarantees](#data-integrity-guarantees)
+- [Recommended Use Cases](#recommended-use-cases)
+- [API & Integration](#api--integration)
+  - [Installation](#installation)
+  - [Basic Usage](#basic-usage)
+  - [Distributed Sync](#distributed-sync)
+- [Future Work](#future-work)
+- [Versioning & Stability](#versioning--stability)
+- [Documentation](#documentation)
+- [Tools](#tools)
+- [Migration from Other Databases](#migration-from-other-databases)
+- [Contributing](#contributing)
+- [License](#license)
+- [Appendix](#appendix)
+  - [BlazeBinary Protocol Specification](#blazebinary-protocol-specification)
+  - [Record Format Structure](#record-format-structure)
+  - [Field Encoding Details](#field-encoding-details)
+  - [Type System Reference](#type-system-reference)
+  - [Value Encoding Examples](#value-encoding-examples)
+  - [Network Frame Structure](#network-frame-structure)
 
-- **Not a distributed cluster database:** It's a single primary database with optional sync capabilities. I didn't implement distributed consensus, automatic sharding, or multi-master replication. That's a different problem space.
+---
 
-- **Not for petabyte-scale datasets:** I optimized for datasets that fit on a single device. If you're doing large-scale analytics, you'll want something else.
+## How to Read This Document
 
-- **Platform optimization:** I primarily optimized for Apple platforms (macOS and iOS). Linux support exists, but performance characteristics may differ. I tested extensively on Apple Silicon, and that's where it shines.
+This README is structured as a technical whitepaper. Readers can skip to sections relevant to their needs: architects may focus on Architecture and Prior Art, implementers on Storage Engine and BlazeBinary, security engineers on Security Model, Threat Model, and Cryptographic Architecture, and performance engineers on Performance Characteristics and Benchmark Methodology. The Appendix contains detailed protocol specifications for those implementing clients or debugging encoding issues.
 
-- **Query planner limitations:** The query planner uses rule-based heuristics. I haven't built a cost-based optimizer yet—that's on the roadmap, but the current approach works well for most queries.
+---
 
-- **MVCC garbage collection:** Long-running read transactions can delay garbage collection of obsolete versions. This can increase storage requirements, but in practice it hasn't been an issue for typical workloads.
+## Design Goals
 
-- **No automatic sharding:** If your dataset exceeds device storage capacity, you'll need to manually partition it. I kept this simple intentionally.
+When building BlazeDB, these priorities shaped the architecture:
 
-These limitations are intentional. By not trying to solve everything, I could optimize for the use cases that matter most.
+1. **ACID Compliance:** Every operation is transactional. Full atomicity, consistency, isolation, and durability guarantees were non-negotiable.
+
+2. **Encryption by Default:** All data encrypted at rest using AES-256-GCM with unique nonces per page. Encryption is the default, not an optional feature.
+
+3. **Schema Flexibility:** Dynamic schemas adapt to data structure without migrations. This avoids the complexity and downtime associated with schema evolution.
+
+4. **Predictable Performance:** Consistent latency characteristics under varying workloads. Early testing showed unpredictable spikes degraded user experience, so this received significant attention.
+
+5. **Operational Simplicity:** Minimal configuration, zero external dependencies, straightforward deployment. The goal was something you could integrate and have working quickly.
+
+---
+
+## Engineering Philosophy
+
+BlazeDB prioritizes predictability over theoretical optimality. The system is designed to behave consistently under load, with performance characteristics that are easy to reason about. This means choosing simpler algorithms that perform well in practice over complex optimizations that only help in edge cases.
+
+Determinism and debuggability are core principles. Encoding is deterministic (identical records produce identical binary), transactions are isolated via MVCC snapshots, and corruption detection fails fast with clear error messages. This makes debugging production issues significantly easier.
+
+Fail-fast error handling means invalid operations are rejected immediately rather than silently corrupting data. Type-safe query builders prevent injection attacks, schema validation prevents invalid states, and corruption detection triggers automatic recovery.
+
+Transparent corruption recovery ensures that when corruption is detected, the system attempts automatic recovery (metadata rebuild from data pages) before failing. This has proven valuable in practice, recovering from issues that would have required manual intervention in other systems.
+
+---
+
+## Limitations & Tradeoffs
+
+BlazeDB makes explicit tradeoffs to optimize for its target use cases:
+
+**Query Planner:** Uses rule-based heuristics rather than a cost-based optimizer. This works well for common patterns but may not choose optimal plans for complex queries. A cost-based optimizer is planned but not yet implemented.
+
+**Distributed Consensus:** No distributed consensus, automatic sharding, or multi-master replication. BlazeDB is a single primary database with optional sync capabilities. This is intentional—distributed consensus is a different problem space.
+
+**Platform Optimization:** Primarily optimized for Apple Silicon. Linux support exists but performance characteristics may differ. Best performance requires Apple Silicon hardware.
+
+**MVCC Storage Overhead:** Multi-version concurrency control can increase storage requirements, especially with long-running read transactions that delay garbage collection. In practice, this hasn't been an issue for typical workloads, but it's a tradeoff to be aware of.
+
+**WAL fsync Costs:** Write-ahead logging requires fsync operations for durability, which adds latency. Batch operations amortize this cost, but individual writes pay the fsync penalty. This is the price of durability guarantees.
+
+**Swift Runtime Dependency:** Heavy use of Swift means BlazeDB isn't portable to low-level runtimes (C, Rust, etc.). This limits deployment options but enables deep integration with Swift's type system and runtime.
+
+**GC Delays:** Long-running read transactions can delay garbage collection of obsolete versions, potentially increasing storage requirements. Automatic collection runs periodically, but manual triggers are available if needed.
+
+**No Automatic Sharding:** Manual partitioning is required for datasets exceeding device storage capacity. This keeps the system simple but requires application-level partitioning logic.
+
+These limitations are intentional design decisions that allow BlazeDB to optimize for its target use cases.
 
 ---
 
@@ -56,20 +161,20 @@ These limitations are intentional. By not trying to solve everything, I could op
 
 **Current Status:** 2.5.0-alpha
 
-The on-disk format is stable. Databases created with version 2.5.0 can be opened by future versions. I maintain forward compatibility through version markers and migration paths—I learned the hard way that breaking existing databases is a bad idea.
+The on-disk format is stable. Databases created with version 2.5.0 can be opened by future versions. Forward compatibility is maintained through version markers and migration paths.
 
-Public APIs may evolve during the alpha period. When I make breaking changes, I document them in release notes. Once we hit 1.0.0, semantic versioning will govern API compatibility.
+Public APIs may evolve during the alpha period. Breaking changes are documented in release notes. Once stable (1.0.0), semantic versioning will govern API compatibility.
 
 **Compatibility Guarantees:**
-- Forward upgrade path: You can upgrade databases to newer versions without data loss
+- Forward upgrade path: Databases can be upgraded to newer versions without data loss
 - No forced deletion: Existing databases are never automatically deleted or modified without explicit user action
-- Migration support: Format migrations are automatic and transparent—you won't notice them
+- Migration support: Format migrations are automatic and transparent
 
 ---
 
 ## Architecture
 
-The architecture is layered with clear separation of concerns. I found this structure made debugging much easier, especially when tracking down performance issues.
+The architecture is layered with clear separation of concerns. This structure makes debugging easier, especially when tracking down performance issues.
 
 ### System Architecture Layers
 
@@ -169,9 +274,56 @@ graph TB
 
 ---
 
+## Prior Art & Influences
+
+BlazeDB draws inspiration from several well-established systems while making different tradeoffs:
+
+**SQLite:** The pager architecture and WAL discipline influenced BlazeDB's storage layer. SQLite's approach to crash recovery through WAL replay is sound, and BlazeDB adopts similar principles. However, BlazeDB uses MVCC for concurrency rather than SQLite's locking model, and encryption is built-in rather than optional.
+
+**LMDB:** The MVCC discipline and focus on deterministic reads influenced BlazeDB's concurrency model. LMDB's copy-on-write B+tree approach is elegant, but BlazeDB uses a page-based approach with overflow chains for better encryption granularity. LMDB's memory-mapped I/O philosophy aligns with BlazeDB's performance goals.
+
+**FoundationDB:** The layer separation and consistency mindset influenced BlazeDB's architecture. FoundationDB's approach to separating storage, transaction, and query layers is sound engineering, and BlazeDB adopts similar separation. However, BlazeDB targets local-first use cases rather than distributed systems.
+
+**RocksDB:** WAL tuning and compaction ideas influenced BlazeDB's durability and garbage collection strategies. RocksDB's approach to write amplification and compaction is well-studied, though BlazeDB uses simpler GC strategies optimized for MVCC version management.
+
+**Apple Data Protection:** The key model and Secure Enclave design philosophy influenced BlazeDB's encryption architecture. Apple's approach to hardware-backed key storage is the gold standard, and BlazeDB integrates with Secure Enclave when available.
+
+**What BlazeDB borrows:** Page-based storage (SQLite), MVCC concurrency (LMDB), layer separation (FoundationDB), WAL discipline (RocksDB), Secure Enclave integration (Apple).
+
+**What BlazeDB innovates:** Per-page encryption with efficient GC, deterministic binary encoding optimized for Swift, rule-based query planner with automatic index selection, transparent corruption recovery with metadata rebuild.
+
+---
+
+## Why Not SQLite / Core Data / Realm / LMDB?
+
+| Feature | BlazeDB | SQLite | Core Data | Realm | LMDB |
+|---------|---------|--------|----------|-------|------|
+| **Encryption** | AES-256-GCM per page (default) | Optional extension | No | Optional | No |
+| **Schema** | Dynamic, no migrations | Static, requires migrations | Static, complex migrations | Static, migrations | Schema-less |
+| **Concurrency** | MVCC snapshot isolation | File-level locking | Context-based | MVCC | MVCC |
+| **Performance** | Predictable, optimized for Apple Silicon | Variable under load | Variable, object graph overhead | Fast, but licensing | Very fast, memory-mapped |
+| **Query Language** | Fluent Swift API | SQL | NSPredicate | Fluent API | Key-value only |
+| **Platform** | macOS/iOS/Linux (Swift) | Universal (C) | macOS/iOS only | Cross-platform | Universal (C) |
+| **Dependencies** | Zero | Zero | Foundation | Realm runtime | Zero |
+| **License** | MIT | Public Domain | Apple | Commercial/MIT | OpenLDAP |
+| **Best For** | Encrypted local storage, AI agents | General-purpose embedded DB | Apple ecosystem apps | Mobile apps | High-performance key-value |
+| **Limitations** | Rule-based planner, no distributed consensus | File-level locking, no encryption by default | Complex migrations, Apple-only | Licensing, object model overhead | Key-value only, no query language |
+
+**When to choose BlazeDB:** You need encryption by default, schema flexibility without migrations, predictable performance on Apple platforms, and a Swift-native API.
+
+**When to choose SQLite:** You need universal portability, SQL queries, or don't need encryption.
+
+**When to choose Core Data:** You're building Apple-only apps and need deep integration with Cocoa frameworks.
+
+**When to choose Realm:** You're building mobile apps and can accept the licensing model.
+
+**When to choose LMDB:** You need maximum performance for key-value workloads and don't need encryption or query language.
+
+---
+
 ## Storage Engine
 
-I went with a page-based storage architecture using 4KB pages. This size works well with modern SSDs and gives good cache locality. Records that exceed page capacity use overflow chains—I initially tried variable-length pages, but the complexity wasn't worth it.
+BlazeDB uses a page-based storage architecture with 4KB pages. This size works well with modern SSDs and provides good cache locality. Records exceeding page capacity use overflow chains.
 
 ### Page Structure
 
@@ -226,19 +378,21 @@ graph LR
 
 **File Organization:**
 - `.blazedb`: Data pages containing encrypted records
-- `.meta`: Index map and metadata (I keep this separate so corruption in one doesn't kill the other)
+- `.meta`: Index map and metadata (separated to prevent single-point-of-failure corruption)
 - `.wal`: Write-ahead log for crash recovery
 
 **Page Allocation:**
-- Main page stores the record start
-- Overflow pages linked via 4-byte pointers (I tried 8-byte pointers but 4 bytes is enough and saves space)
+- Main page stores record start
+- Overflow pages linked via 4-byte pointers
 - Pages allocated sequentially with reuse via garbage collection
 
-### BlazeBinary Protocol
+---
 
-I built a custom binary encoding format called BlazeBinary because JSON was too slow and too large for my use case. After benchmarking against CBOR and MessagePack, I found I could do better with a format tailored to Swift's type system. The result is about 53% smaller than JSON and roughly 48% faster to encode/decode.
+## BlazeBinary Protocol
 
-#### Protocol Overview
+BlazeDB uses a custom binary encoding format called BlazeBinary. After benchmarking against JSON, CBOR, and MessagePack, a format tailored to Swift's type system provided better performance. The result is approximately 53% smaller than JSON and roughly 48% faster to encode/decode.
+
+### Protocol Overview
 
 *Conceptual diagram of encoding pipeline*
 
@@ -287,254 +441,27 @@ graph LR
     class N1,N2 network
 ```
 
-#### Record Format Structure
+### High-Level Characteristics
 
-BlazeBinary records use a fixed 8-byte header followed by variable-length fields. I aligned the header to 8 bytes because it makes direct CPU reads faster—this hits the hot path, so every cycle counts.
+**Endianness:** All multi-byte integers are big-endian (network byte order) for cross-platform compatibility.
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│ HEADER (8 bytes, aligned)                                    │
-├─────────────────────────────────────────────────────────────┤
-│ Offset  Size  Type     Description                           │
-│ 0       5     char[5]  Magic: "BLAZE" (0x42 0x4C 0x41...)   │
-│ 5       1     uint8    Version: 0x01 (v1) or 0x02 (v2)     │
-│ 6       2     uint16   Field count (big-endian)             │
-├─────────────────────────────────────────────────────────────┤
-│ FIELD_1 (variable length)                                    │
-│   [KEY_ENCODING][VALUE_ENCODING]                            │
-├─────────────────────────────────────────────────────────────┤
-│ FIELD_2 (variable length)                                    │
-│   [KEY_ENCODING][VALUE_ENCODING]                            │
-├─────────────────────────────────────────────────────────────┤
-│ ...                                                          │
-├─────────────────────────────────────────────────────────────┤
-│ FIELD_N (variable length)                                    │
-│   [KEY_ENCODING][VALUE_ENCODING]                            │
-├─────────────────────────────────────────────────────────────┤
-│ CRC32 (4 bytes, v2 only, big-endian)                        │
-│   Only present if version == 0x02                           │
-└─────────────────────────────────────────────────────────────┘
-```
+**Deterministic Encoding:** Fields sorted by key before encoding, dictionary keys sorted. Identical records produce identical binary output, enabling content-addressable storage and deterministic testing.
 
-**Header Details:**
-- **Magic Bytes:** "BLAZE" (0x42 0x4C 0x41 0x5A 0x45) lets me quickly validate the format. I check this first thing on decode.
-- **Version:** 0x01 (v1, no CRC) or 0x02 (v2, with CRC32). I added CRC32 in v2 after seeing some corruption cases in testing.
-- **Field Count:** UInt16 big-endian. I pre-allocate the dictionary with this capacity—it's a small optimization but helps with large records.
+**Corruption Detection:** Magic bytes validate format, version byte validates compatibility, CRC32 checksum (v2) detects data corruption with approximately 99.9% detection rate, length validation prevents buffer overflows.
 
-#### Field Encoding
+**Performance Optimizations:** Pre-allocated buffers reduce memory allocations, common field compression (1 byte vs 3+N bytes), small int optimization (2 bytes vs 9 bytes), inline strings (1 byte overhead for ≤15 bytes), ARM-optimized codec with SIMD support.
 
-Each field has a key encoding followed by a value encoding. I spent a lot of time optimizing this because field names are repeated constantly.
+**Limits:** String max 100MB, Data max 100MB, Array max 100,000 items, Dictionary max 100,000 items, Vector max 1,000,000 elements. These limits are conservative and prevent malicious inputs.
 
-**Key Encoding (Two Variants):**
+**Test Coverage:** 116 BlazeBinary tests validate encoding correctness, compatibility, and corruption detection. Byte-level verification ensures exact encoding matches specification.
 
-**Variant A: Common Field (1 byte)**
-```
-┌─────────────────────────────────────┐
-│ 1 byte: Field ID (0x01-0x7F)        │
-└─────────────────────────────────────┘
-```
-
-I maintain a dictionary of the top 127 most common field names (like "id", "createdAt", "title"). These get encoded as a single byte instead of the full string. In practice, this saves a ton of space because most records use these common fields.
-
-**Variant B: Custom Field (3+N bytes)**
-```
-┌─────────────────────────────────────┐
-│ 1 byte: Marker (0xFF)               │
-│ 2 bytes: Key length (big-endian)     │
-│ N bytes: UTF-8 key string            │
-└─────────────────────────────────────┘
-```
-
-Fields not in my common dictionary use the 0xFF marker. I support unlimited custom fields this way—the common field optimization is just that, an optimization.
-
-**Example:**
-- "id" → 0x01 (1 byte total)
-- "myCustomField" → 0xFF + 0x000D + "myCustomField" (16 bytes total)
-
-#### Type System
-
-The type tag system has optimizations for common cases. I added these after profiling showed certain patterns were dominating encoding time.
-
-**Base Types:**
-- `0x01`: String (full, 4-byte length + UTF-8)
-- `0x02`: Int (full, 8 bytes big-endian)
-- `0x03`: Double (8 bytes bitPattern big-endian)
-- `0x04`: Bool (1 byte: 0x01 true, 0x00 false)
-- `0x05`: UUID (16 bytes binary)
-- `0x06`: Date (8 bytes TimeInterval big-endian)
-- `0x07`: Data (4-byte length + N bytes)
-- `0x08`: Array (2-byte count + recursive items)
-- `0x09`: Dictionary (2-byte count + sorted key-value pairs)
-- `0x0A`: Vector (4-byte count + N*4 bytes Float32)
-- `0x0B`: Null (0 bytes)
-
-**Optimizations:**
-- `0x11`: Empty String (1 byte total) — I see a lot of empty strings in real data
-- `0x12`: Small Int (0-255, 2 bytes total vs 9 for full int) — most integers are small
-- `0x18`: Empty Array (1 byte total)
-- `0x19`: Empty Dictionary (1 byte total)
-- `0x20-0x2F`: Inline String (type + length in 1 byte, length ≤15) — short strings are common
-
-These optimizations came from analyzing real workloads. The inline string optimization alone saves about 15% on typical records.
-
-#### Value Encoding Examples
-
-**String Encoding:**
-
-Empty string:
-```
-[0x11]  (1 byte total)
-```
-
-Inline string (≤15 bytes):
-```
-[0x20 | length] [UTF-8 bytes]
-Example: "Hello" (5 bytes) → [0x25] [0x48 0x65 0x6C 0x6C 0x6F]
-```
-
-Full string (>15 bytes):
-```
-[0x01] [length:4 bytes BE] [UTF-8 bytes]
-Example: "Hello, world!" → [0x01] [0x0000000D] [0x48 0x65 0x6C 0x6C 0x6F 0x2C 0x20 0x77 0x6F 0x72 0x6C 0x64 0x21]
-```
-
-**Integer Encoding:**
-
-Small int (0-255):
-```
-[0x12] [value:1 byte]
-Example: 42 → [0x12] [0x2A]
-```
-
-Full int:
-```
-[0x02] [value:8 bytes BE]
-Example: 1000 → [0x02] [0x00 0x00 0x00 0x00 0x00 0x00 0x03 0xE8]
-```
-
-**Array Encoding:**
-
-Empty array:
-```
-[0x18]  (1 byte total)
-```
-
-Non-empty array:
-```
-[0x08] [count:2 bytes BE] [item1] [item2] ... [itemN]
-```
-
-**Dictionary Encoding:**
-
-Empty dictionary:
-```
-[0x19]  (1 byte total)
-```
-
-Non-empty dictionary:
-```
-[0x09] [count:2 bytes BE] [key1][value1] [key2][value2] ... [keyN][valueN]
-```
-
-I sort keys before encoding for deterministic output. This makes testing easier and enables some optimizations.
-
-#### Complete Record Example
-
-**Input:**
-```swift
-BlazeDataRecord([
-    "id": .uuid(UUID(...)),
-    "title": .string("Hello"),
-    "count": .int(42),
-    "active": .bool(true)
-])
-```
-
-**Binary Encoding (hexadecimal):**
-```
-42 4C 41 5A 45 02 00 04    // Header: "BLAZE" + v2 + 4 fields
-01                          // Field 1 key: "id" (common field 0x01)
-05 [16 bytes UUID]          // Field 1 value: UUID type + 16 bytes
-06                          // Field 2 key: "title" (common field 0x06)
-25 48 65 6C 6C 6F          // Field 2 value: Inline string "Hello" (0x25 = 0x20|5)
-2F                          // Field 3 key: "count" (common field 0x2F)
-12 2A                       // Field 3 value: Small int 42 (0x12 + 0x2A)
-23                          // Field 4 key: "active" (common field 0x23)
-04 01                       // Field 4 value: Bool true (0x04 + 0x01)
-[CRC32: 4 bytes]            // CRC32 checksum (v2 only)
-```
-
-**Size Comparison:**
-- JSON: ~120 bytes
-- BlazeBinary: ~40 bytes (67% smaller)
-
-In practice, the savings are even better on larger records because the common field compression really shines.
-
-#### Network Frame Structure
-
-For network sync, I wrap BlazeBinary records in frames. This gives me framing without relying on the transport layer:
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│ FRAME HEADER (5 bytes)                                      │
-├─────────────────────────────────────────────────────────────┤
-│ 1 byte: Frame Type (0x01-0x06)                              │
-│ 4 bytes: Payload Length (big-endian UInt32)                 │
-├─────────────────────────────────────────────────────────────┤
-│ PAYLOAD (variable length)                                   │
-│   Encrypted with AES-256-GCM (if handshaked)                │
-│   Or plaintext (during handshake)                           │
-└─────────────────────────────────────────────────────────────┘
-```
-
-**Frame Types:**
-- `0x01`: handshake
-- `0x02`: handshakeAck
-- `0x03`: verify
-- `0x04`: handshakeComplete
-- `0x05`: encryptedData
-- `0x06`: operation
-
-#### Protocol Characteristics
-
-**Endianness:**
-All multi-byte integers are big-endian (network byte order). I chose this for cross-platform compatibility—it's a bit slower on little-endian systems, but the consistency is worth it.
-
-**Deterministic Encoding:**
-Fields are sorted by key before encoding, and dictionary keys are sorted too. Identical records produce identical binary output. This makes testing deterministic and enables some optimizations like content-addressable storage.
-
-**Corruption Detection:**
-- Magic bytes validate format (catches most corruption immediately)
-- Version byte validates compatibility
-- CRC32 checksum (v2) detects data corruption with about 99.9% detection rate
-- Length validation prevents buffer overflows
-
-I added CRC32 after seeing some edge cases where corruption wasn't caught early enough. It adds 4 bytes per record, but the safety is worth it.
-
-**Performance Optimizations:**
-- Pre-allocated buffers reduce memory allocations (this was a big win)
-- Common field compression (1 byte vs 3+N bytes)
-- Small int optimization (2 bytes vs 9 bytes)
-- Inline strings (1 byte overhead for ≤15 bytes)
-- ARM-optimized codec with SIMD support (I wrote separate code paths for ARM)
-
-**Limits:**
-- String max: 100MB (I could go higher, but this prevents memory exhaustion)
-- Data max: 100MB
-- Array max: 100,000 items
-- Dictionary max: 100,000 items
-- Vector max: 1,000,000 elements
-
-These limits are conservative. I've never hit them in practice, but they prevent malicious inputs from causing problems.
-
-**Test Coverage:**
-I have 116 BlazeBinary tests that validate encoding correctness, compatibility, and corruption detection. Byte-level verification ensures the encoding matches the spec exactly. Corruption recovery tests validate graceful failure handling.
+See [Appendix](#appendix) for detailed protocol specifications.
 
 ---
 
 ## Concurrency Model
 
-I implemented multi-version concurrency control (MVCC) to provide snapshot isolation. This was one of the harder parts to get right—the version management and garbage collection took a lot of iteration.
+BlazeDB implements multi-version concurrency control (MVCC) to provide snapshot isolation. Version management and garbage collection required significant iteration to get right.
 
 ### MVCC Architecture
 
@@ -592,21 +519,19 @@ graph TB
 ```
 
 **Snapshot Isolation:**
-Each transaction sees a consistent snapshot of the database at transaction start. Reads never block writes, which was a key requirement. Writes create new versions, and old versions remain accessible to concurrent readers until garbage collection. Conflict detection prevents lost updates.
+Each transaction sees a consistent snapshot of the database at transaction start. Reads never block writes. Writes create new versions; old versions remain accessible to concurrent readers until garbage collection. Conflict detection prevents lost updates.
 
 **Performance Characteristics:**
-I've observed 20–100× improvements over naive locking under read-heavy synthetic workloads. Concurrent reads scale linearly with available cores, which is exactly what I wanted. Write performance depends on conflict rate and garbage collection frequency—in low-conflict scenarios, it's very fast.
+Observed 20–100× improvements over naive locking under read-heavy synthetic workloads. Concurrent reads scale linearly with available cores. Write performance depends on conflict rate and garbage collection frequency—in low-conflict scenarios, performance is strong.
 
 **Garbage Collection:**
-Obsolete versions are collected when no active transactions reference them. Long-running read transactions can delay collection, but in practice this hasn't been an issue. Automatic collection runs periodically, and you can trigger it manually if needed.
-
-The GC was tricky to implement correctly. I had to track which transactions are still active and which versions they might reference. Getting this wrong causes data loss, so I tested it extensively.
+Obsolete versions are collected when no active transactions reference them. Long-running read transactions can delay collection, but in practice this hasn't been an issue. Automatic collection runs periodically; manual triggers available.
 
 ---
 
 ## Security Model
 
-All data is encrypted at rest using AES-256-GCM. I made this the default because I don't trust the filesystem to protect sensitive data.
+All data is encrypted at rest using AES-256-GCM. Encryption is the default, not optional.
 
 ### Encryption Architecture
 
@@ -677,15 +602,15 @@ graph TB
 ```
 
 **Key Derivation:**
-I hash the user password using Argon2id (memory-hard function) to prevent fast brute force attacks. Then HKDF expands the derived key material to a 256-bit encryption key. Key material is never stored on disk—if you lose the password, the data is gone. This is by design.
+User password hashed using Argon2id (memory-hard function) to prevent fast brute force attacks. HKDF expands derived key material to 256-bit encryption key. Key material never stored on disk—if password is lost, data is unrecoverable. This is by design.
 
 **Encryption:**
-AES-256-GCM provides authenticated encryption. Each page uses a unique nonce to ensure cryptographic safety. The authentication tags detect tampering—if someone modifies an encrypted page, decryption will fail. Replay prevention is enforced by rejecting stale or duplicated ciphertexts at the record or page level.
+AES-256-GCM provides authenticated encryption. Each page uses a unique nonce to ensure cryptographic safety. Authentication tags detect tampering—modified encrypted pages fail decryption. Replay prevention enforced by rejecting stale or duplicated ciphertexts at record or page level.
 
-I went with GCM mode because it's fast and provides authentication in one pass. The per-page nonces ensure that even if two pages have identical plaintext, the ciphertext will be different.
+GCM mode chosen for speed and single-pass authentication. Per-page nonces ensure identical plaintext produces different ciphertext.
 
 **Secure Enclave Integration:**
-On iOS/macOS, I optionally integrate with Secure Enclave. This stores key material in hardware, outside the app's memory space. It's a significant security improvement when available. When Secure Enclave isn't available, it falls back to standard key derivation.
+On iOS/macOS, optional integration with Secure Enclave stores key material in hardware, outside app memory space. Significant security improvement when available. Falls back to standard key derivation when Secure Enclave unavailable.
 
 **Security Guarantees:**
 - Data encrypted before writing to disk
@@ -697,7 +622,7 @@ On iOS/macOS, I optionally integrate with Secure Enclave. This stores key materi
 
 ## Threat Model
 
-I did a thorough threat model analysis based on the actual code. Here's what I found:
+Threat model analysis based on actual code implementation:
 
 ### Threat Actors & Attack Surfaces
 
@@ -754,46 +679,24 @@ graph TB
     class C1,C2,C3,C4,C5 control
 ```
 
-### Network Attack Vectors
+**Network Attack Vectors:**
+- **MITM:** ECDH P-256 key exchange + AES-256-GCM encryption provides end-to-end encryption. Perfect forward secrecy with ephemeral keys. Gap: Certificate pinning stubbed (not fully implemented).
+- **Replay Attacks:** 16-byte operation nonces, 60-second timestamp validation, operation ID tracking. Fully implemented with 10K operation ID cache.
+- **Denial of Service:** Rate limiting (1000 ops/min per user), operation pooling (max 100 concurrent), batch size limits (10K-50K ops). Gap: Rate limiting not enforced in all sync paths.
 
-**Man-in-the-Middle (MITM):**
-ECDH P-256 key exchange plus AES-256-GCM encryption provides end-to-end encryption. I implemented perfect forward secrecy with ephemeral keys, so even if someone captures traffic, they can't decrypt it later. The gap here is certificate pinning—I stubbed it out but haven't fully implemented it yet. It's on my TODO list.
+**Storage Attack Vectors:**
+- **Physical Access / Device Theft:** AES-256-GCM per-page encryption, Argon2id key derivation, Secure Enclave integration (iOS/macOS). Secure Enclave provides hardware-backed key protection.
+- **Metadata Tampering:** HMAC-SHA256 signatures on metadata, integrity checks on load, CRC32 checksums. Automatic rebuild on corruption implemented.
+- **Memory Dumps:** Secure Enclave stores keys outside app memory, forward secrecy limits exposure window. Gap: Explicit memory clearing not implemented.
 
-**Replay Attacks:**
-I use 16-byte operation nonces, 60-second timestamp validation, and operation ID tracking. This is fully implemented with a 10K operation ID cache. In practice, this has worked well—I haven't seen any replay attacks get through.
+**Access Control Attack Vectors:**
+- **RLS Policy Bypass:** Policy engine evaluates policies on every operation, query integration applies RLS filters. Fully implemented with permissive/restrictive logic.
+- **Privilege Escalation:** Authorization checks validate permissions per operation, admin flag separates admin permissions. Gap: Policy modification not explicitly protected.
 
-**Denial of Service:**
-Rate limiting (1000 ops/min per user), operation pooling (max 100 concurrent), and batch size limits (10K-50K ops) help here. The issue is that rate limiting isn't enforced in all sync paths yet. I need to fix this.
-
-### Storage Attack Vectors
-
-**Physical Access / Device Theft:**
-AES-256-GCM per-page encryption, Argon2id key derivation, and Secure Enclave integration (iOS/macOS) protect against this. Secure Enclave provides hardware-backed key protection, which is the strongest defense here.
-
-**Metadata Tampering:**
-HMAC-SHA256 signatures on metadata, integrity checks on load, and CRC32 checksums detect tampering. I implemented automatic rebuild on corruption, which has saved me in testing.
-
-**Memory Dumps:**
-Secure Enclave stores keys outside app memory, and forward secrecy limits the exposure window. The gap is explicit memory clearing—I haven't implemented this yet, so keys might remain in memory after use. This is a known issue.
-
-### Access Control Attack Vectors
-
-**RLS Policy Bypass:**
-The policy engine evaluates policies on every operation, and query integration applies RLS filters. This is fully implemented with permissive/restrictive logic. I've tested it extensively and it works well.
-
-**Privilege Escalation:**
-Authorization checks validate permissions per operation, and an admin flag separates admin permissions. The gap is that policy modification isn't explicitly protected—I should require admin for this.
-
-### Input Validation Attack Vectors
-
-**Path Traversal:**
-Path validation rejects traversal characters, and null byte protection prevents injection. This is fully implemented and tested.
-
-**Memory Exhaustion:**
-100MB max record size, overflow page support, and batch size limits prevent this. I've tested with malicious inputs and it holds up.
-
-**Injection Attacks:**
-Type-safe query builder (no string concatenation), schema validation, and input sanitization prevent injection. The type safety prevents SQL injection entirely—this was a key design decision.
+**Input Validation Attack Vectors:**
+- **Path Traversal:** Path validation rejects traversal characters, null byte protection. Fully implemented.
+- **Memory Exhaustion:** 100MB max record size, overflow page support, batch size limits. Tested with malicious inputs.
+- **Injection Attacks:** Type-safe query builder (no string concatenation), schema validation, input sanitization. Type safety prevents SQL injection entirely.
 
 ### Security Control Matrix
 
@@ -811,7 +714,7 @@ Type-safe query builder (no string concatenation), schema validation, and input 
 | **Certificate Pinning** | TLS certificate validation | ⚠️ Stubbed | 🟡 MEDIUM |
 | **Operation Signatures** | Optional HMAC | ⚠️ Optional | 🟡 MEDIUM |
 
-### Risk Assessment Summary
+**Risk Assessment Summary:**
 
 **Critical Risks (Fix Immediately):**
 - Rate limiting not enforced in all sync paths
@@ -829,13 +732,257 @@ Type-safe query builder (no string concatenation), schema validation, and input 
 - Circuit breaker not implemented
 
 **Test Coverage:**
-I have 11 security test files that validate encryption, authentication, and access control. 7 persistence/recovery test files validate crash recovery and corruption handling. Distributed security tests validate network attack mitigations.
+11 security test files validate encryption, authentication, and access control. 7 persistence/recovery test files validate crash recovery and corruption handling. Distributed security tests validate network attack mitigations.
+
+---
+
+## Cryptographic Architecture
+
+BlazeDB implements two parallel cryptographic pipelines with distinct key lifecycles and threat models. The first pipeline protects data at rest—local database files encrypted on disk using page-level AES-256-GCM. The second pipeline protects data in transit—network sync operations encrypted over secure channels established via ephemeral ECDH key exchange. Both pipelines use well-established primitives: Argon2id for password-based key derivation, HKDF for key expansion and separation, AES-256-GCM for authenticated encryption, and ECDH P-256 for shared secret establishment. On Apple platforms, Secure Enclave provides hardware-backed protection for long-lived storage keys, but not for ephemeral session secrets.
+
+This separation follows standard secure storage and secure channel patterns. Data at rest keys are derived from user passwords and persist across sessions; data in transit keys are ephemeral, generated per-session, and provide perfect forward secrecy. The design ensures that compromise of one pipeline does not automatically compromise the other, and that different threat surfaces (physical access vs. network interception) are addressed with appropriate cryptographic controls.
+
+### Data at Rest: Local Encryption Pipeline
+
+Local database encryption protects stored data from physical access, device theft, and filesystem-level attacks. The pipeline begins with user-provided credentials (password or application secret) and produces encrypted pages written to disk.
+
+**Key Derivation Flow:**
+
+1. **User Input:** User password or application-provided secret serves as the initial entropy source. This secret is never stored on disk in any form.
+
+2. **Per-Database Salt:** Each database instance uses a unique salt generated at creation time. The salt is stored in the database metadata file (`.meta`) in plaintext—this is safe because salts are public values that prevent rainbow table attacks but do not weaken encryption if exposed.
+
+3. **Argon2id KDF:** The password and salt are fed into Argon2id, a memory-hard key derivation function. Argon2id parameters are tuned to balance security (resistance to GPU/ASIC attacks) with acceptable unlock latency. The output is a strong key material stream, typically 256 bits or more.
+
+4. **HKDF Expansion:** HKDF (HMAC-based Key Derivation Function) expands the Argon2id output into separate keys:
+   - `db_enc_key` (256 bits): Primary encryption key for AES-256-GCM page encryption
+   - `db_auth_key` (256 bits): Reserved for future authentication operations or metadata signing
+   - Additional keys can be derived as needed using different HKDF info parameters
+
+5. **Secure Enclave Storage (Optional):** On iOS/macOS, the derived `db_enc_key` can be wrapped using Secure Enclave and stored in the Keychain. The wrapper key remains in hardware, never exposed to application memory. On unlock, the wrapped key is unwrapped by Secure Enclave, used for decryption, and ideally cleared from memory after use (explicit clearing is a known gap). When Secure Enclave is unavailable, keys remain in application memory with standard OS memory protection.
+
+**Page Encryption Flow:**
+
+1. **Plaintext Input:** Each 4KB page contains BlazeBinary-encoded record data, page headers, and overflow pointers.
+
+2. **Nonce Generation:** A unique nonce is generated for each page write. Nonces are derived from page index, transaction version, and a random component to ensure uniqueness. Nonce reuse would break GCM security, so this is critical.
+
+3. **AES-256-GCM Encryption:** The plaintext page, nonce, and `db_enc_key` are fed into AES-256-GCM. GCM mode provides authenticated encryption in a single pass, producing both ciphertext and an authentication tag.
+
+4. **Storage:** The encrypted page (ciphertext + 16-byte GCM tag) is written to the `.blazedb` data file or `.wal` write-ahead log. The nonce is stored alongside the ciphertext (typically in page metadata or derived deterministically from page index).
+
+**Decryption and Verification:**
+
+1. **Key Retrieval:** On database open, the user provides the password. Argon2id + HKDF derive `db_enc_key` (or unwrap from Secure Enclave if hardware-backed).
+
+2. **Page Read:** Encrypted page is read from disk along with its associated nonce.
+
+3. **GCM Decryption:** AES-256-GCM decryption is performed using `db_enc_key`, nonce, ciphertext, and tag.
+
+4. **Tag Verification:** GCM automatically verifies the authentication tag during decryption. If the tag does not match (indicating corruption or tampering), decryption fails immediately with a clear error. This provides integrity protection—modified pages cannot be decrypted.
+
+5. **Failure Behavior:** Tag mismatches trigger automatic corruption detection. The system attempts metadata rebuild from data pages if possible, or fails with a clear error message if corruption is unrecoverable.
+
+```mermaid
+graph TB
+    subgraph KeyDerivation["Key Derivation (Data at Rest)"]
+        P["User Password<br/>or App Secret"]
+        S["Per-Database Salt<br/>(stored in .meta)"]
+        A["Argon2id<br/>Memory-Hard KDF<br/>tuned parameters"]
+        H["HKDF-Extract/Expand<br/>info: 'db_enc_key'<br/>info: 'db_auth_key'"]
+        KE["db_enc_key<br/>(256-bit)"]
+        KA["db_auth_key<br/>(256-bit, reserved)"]
+    end
+    
+    subgraph StorageCrypto["Page Encryption (AES-256-GCM)"]
+        PL["Plaintext Page<br/>(4 KB BlazeBinary)"]
+        N["Nonce<br/>Unique per write<br/>(page index + version + random)"]
+        AE["AES-256-GCM Encrypt<br/>key: db_enc_key"]
+        CT["Ciphertext Page<br/>(4 KB)"]
+        TAG["GCM Auth Tag<br/>(16 bytes)"]
+        DISK[".blazedb / .wal Files<br/>(encrypted pages on disk)"]
+    end
+    
+    subgraph Hardware["Hardware Protection (Optional)"]
+        SEP["Secure Enclave<br/>Key Wrapper<br/>(iOS/macOS)"]
+        KC["Keychain / OS Key Store<br/>(wrapped key storage)"]
+        UM["Unwrap on Unlock<br/>(hardware-backed)"]
+    end
+    
+    P --> A
+    S --> A
+    A --> H
+    H --> KE
+    H --> KA
+    KE --> SEP
+    SEP --> KC
+    KC --> UM
+    UM --> AE
+    KE --> AE
+    PL --> AE
+    N --> AE
+    AE --> CT
+    AE --> TAG
+    CT --> DISK
+    TAG --> DISK
+    
+    classDef keyDeriv fill:#3498db,stroke:#2980b9,stroke-width:2px,color:#fff
+    classDef storage fill:#2ecc71,stroke:#27ae60,stroke-width:2px,color:#fff
+    classDef hardware fill:#9b59b6,stroke:#8e44ad,stroke-width:2px,color:#fff
+    
+    class P,S,A,H,KE,KA keyDeriv
+    class PL,N,AE,CT,TAG,DISK storage
+    class SEP,KC,UM hardware
+```
+
+**Security Properties:**
+
+- **Confidentiality:** Plaintext pages are never written to disk. All data is encrypted before I/O operations.
+- **Integrity:** GCM authentication tags detect any modification to encrypted pages. Tampered pages fail decryption.
+- **Damage Isolation:** Per-page encryption means corruption or tampering of one page does not affect others. The 4KB page size balances security granularity with performance overhead.
+- **Nonce Uniqueness:** Unique nonces per page write ensure that identical plaintext pages produce different ciphertext, preventing pattern analysis attacks.
+- **Key Separation:** HKDF-derived keys are cryptographically separated. Compromise of `db_auth_key` (if used) does not reveal `db_enc_key`.
+- **Hardware Protection:** Secure Enclave integration (when available) protects keys from memory dumps and software-level key extraction attacks.
+
+### Data in Transit: Sync & Protocol Encryption
+
+Network sync encryption protects data during transmission between BlazeDB nodes. This pipeline is separate from data-at-rest encryption and uses ephemeral keys that provide perfect forward secrecy.
+
+**Handshake and Key Establishment:**
+
+1. **Ephemeral Key Generation:** Each peer (client/server or node A/node B) generates a fresh ECDH P-256 keypair for each session:
+   - Private key `a` (or `b`) is a random 256-bit scalar
+   - Public key `A = a·G` (or `B = b·G`) where `G` is the P-256 generator point
+
+2. **Public Key Exchange:** Peers exchange public keys over the transport layer (TCP, Unix socket, or in-memory queue). Public keys are sent in plaintext during the handshake phase.
+
+3. **Shared Secret Computation:** Both peers compute the same shared secret `S = a·B = b·A = ab·G` using their private key and the peer's public key. This is the ECDH key agreement.
+
+4. **Session Key Derivation:** HKDF is applied to the shared secret with session-specific context:
+   - HKDF-Extract: `salt = session_id || timestamp || random` (prevents replay of old handshakes)
+   - HKDF-Expand: Derives `sess_enc_key` and `sess_auth_key` using different info parameters
+   - These session keys are 256 bits each and are used only for the current session
+
+5. **Key Lifecycle:** Session keys are ephemeral—they exist only in memory for the duration of the connection. They are never written to disk and are cleared from memory when the session ends. This provides perfect forward secrecy: compromise of long-term storage keys does not reveal past session traffic.
+
+**Frame Encryption:**
+
+1. **Plaintext Frame:** Protocol frames contain BlazeBinary-encoded operations, batch updates, or query results. Frame structure includes type, length, and payload.
+
+2. **Frame Nonce:** Each frame uses a unique nonce, typically a counter or combination of session ID and frame sequence number. Nonce uniqueness is critical for GCM security.
+
+3. **AES-256-GCM Encryption:** The plaintext frame, nonce, and `sess_enc_key` are encrypted using AES-256-GCM, producing ciphertext and authentication tag.
+
+4. **Additional Authentication:** Some frames include additional authenticated data (AAD) such as frame type or operation metadata. GCM authenticates both ciphertext and AAD, ensuring frame integrity and preventing type confusion attacks.
+
+5. **Transmission:** Encrypted frames (ciphertext + tag) are sent over the transport layer. The receiving peer decrypts and verifies the tag before processing.
+
+**Authentication and Replay Protection:**
+
+- **Operation Nonces:** Each operation includes a 16-byte nonce to prevent replay attacks within the session.
+- **Timestamp Validation:** Operations include timestamps validated against a 60-second window to reject stale operations.
+- **Operation ID Tracking:** A cache of recent operation IDs (typically 10,000 entries) prevents duplicate processing of the same operation.
+- **HMAC (Optional):** Some deployments use HMAC-SHA256 over operation payloads for additional authentication, though this is optional and not always enabled.
+
+```mermaid
+graph TB
+    subgraph EphemeralKeys["ECDH Handshake"]
+        A_priv["Client Private Key a<br/>(random 256-bit scalar)"]
+        A_pub["Client Public A = a·G<br/>(P-256 point)"]
+        B_priv["Server Private Key b<br/>(random 256-bit scalar)"]
+        B_pub["Server Public B = b·G<br/>(P-256 point)"]
+        Shared["Shared Secret S = ab·G<br/>(ECDH agreement)"]
+    end
+    
+    subgraph SessionDeriv["Session Key Derivation (HKDF)"]
+        SALT["Session Salt<br/>(session_id || timestamp || random)"]
+        HEX["HKDF-Extract<br/>(salt, S)"]
+        HEXP["HKDF-Expand<br/>info: 'sess_enc_key'<br/>→ sess_enc_key (256-bit)"]
+        HEXP2["HKDF-Expand<br/>info: 'sess_auth_key'<br/>→ sess_auth_key (256-bit)"]
+    end
+    
+    subgraph FrameCrypto["Frame Encryption (AES-256-GCM)"]
+        FPL["Plaintext Frame<br/>(operations, BlazeBinary)"]
+        FPL_AAD["AAD<br/>(frame type, metadata)"]
+        FN["Frame Nonce<br/>(counter or seq_id)"]
+        FAE["AES-256-GCM Encrypt<br/>key: sess_enc_key"]
+        FCT["Encrypted Frame<br/>(ciphertext)"]
+        FTAG["GCM Tag<br/>(16 bytes)"]
+        WIRE["Transport Layer<br/>(TCP / Unix Socket / In-Memory)"]
+    end
+    
+    subgraph ReplayProt["Replay Protection"]
+        OP_NONCE["Operation Nonce<br/>(16 bytes per op)"]
+        TS["Timestamp<br/>(60s window)"]
+        OP_ID["Operation ID Cache<br/>(10K entries)"]
+    end
+    
+    A_priv --> A_pub
+    B_priv --> B_pub
+    A_pub --> Shared
+    B_pub --> Shared
+    Shared --> HEX
+    SALT --> HEX
+    HEX --> HEXP
+    HEX --> HEXP2
+    HEXP --> FAE
+    FPL --> FAE
+    FPL_AAD --> FAE
+    FN --> FAE
+    FAE --> FCT
+    FAE --> FTAG
+    FCT --> WIRE
+    FTAG --> WIRE
+    OP_NONCE --> FPL
+    TS --> FPL
+    OP_ID --> FPL
+    
+    classDef handshake fill:#3498db,stroke:#2980b9,stroke-width:2px,color:#fff
+    classDef session fill:#2ecc71,stroke:#27ae60,stroke-width:2px,color:#fff
+    classDef frame fill:#e74c3c,stroke:#c0392b,stroke-width:2px,color:#fff
+    classDef replay fill:#f39c12,stroke:#e67e22,stroke-width:2px,color:#fff
+    
+    class A_priv,A_pub,B_priv,B_pub,Shared handshake
+    class SALT,HEX,HEXP,HEXP2 session
+    class FPL,FPL_AAD,FN,FAE,FCT,FTAG,WIRE frame
+    class OP_NONCE,TS,OP_ID replay
+```
+
+**Security Properties:**
+
+- **Perfect Forward Secrecy:** Ephemeral ECDH keys ensure that compromise of long-term secrets does not reveal past session traffic. Each session uses fresh keys.
+- **End-to-End Encryption:** Data is encrypted before transmission and decrypted only by the intended recipient. Intermediate nodes (if any) cannot decrypt traffic.
+- **Integrity Protection:** GCM tags ensure frames are not modified in transit. AAD prevents type confusion attacks.
+- **Replay Resistance:** Operation nonces, timestamps, and ID tracking prevent replay attacks within and across sessions.
+- **MITM Resistance:** ECDH key exchange (when combined with proper authentication, such as shared secrets or certificate pinning) prevents man-in-the-middle attacks. Note: Certificate pinning is currently stubbed and not fully implemented.
+- **Key Separation:** Session encryption keys are separate from data-at-rest keys. Compromise of one does not reveal the other.
+
+### Putting It Together
+
+BlazeDB uses two independent cryptographic pipelines with distinct key lifecycles and threat models. The data-at-rest pipeline protects local storage using long-lived keys derived from user passwords, while the data-in-transit pipeline protects network sync using ephemeral keys generated per session. Both pipelines rely on the same cryptographic primitives (Argon2id, HKDF, AES-256-GCM, ECDH P-256) but apply them in different contexts with different security properties.
+
+Secure Enclave integration fits into the data-at-rest pipeline, protecting long-lived storage keys from memory extraction attacks. It does not protect ephemeral session keys, which are already short-lived and cleared from memory. This design aligns with modern secure storage patterns (similar to Apple Data Protection) and secure channel patterns (similar to TLS 1.3's ephemeral key exchange).
+
+**Key Separation and Lifecycle:**
+
+- **Data at Rest Keys:** Derived from passwords, persist across sessions, optionally stored in Secure Enclave, used for page encryption/decryption.
+- **Data in Transit Keys:** Generated ephemerally per session, never stored on disk, exist only in memory during connection, provide perfect forward secrecy.
+- **No Cross-Contamination:** Compromise of storage keys does not reveal session keys, and vice versa. Each pipeline is cryptographically isolated.
+
+**Threat Surface Coverage:**
+
+- **Physical Access / Device Theft:** Mitigated by data-at-rest encryption with hardware-backed keys (Secure Enclave).
+- **Network Interception / MITM:** Mitigated by data-in-transit encryption with ephemeral ECDH and perfect forward secrecy.
+- **Replay Attacks:** Mitigated by operation nonces, timestamps, and ID tracking in the sync protocol.
+- **Memory Dumps:** Mitigated by Secure Enclave (for storage keys) and ephemeral session keys (for sync keys).
+
+This dual-pipeline architecture provides defense in depth: even if one pipeline is compromised, the other remains secure. The design follows established patterns from modern cryptographic systems and provides strong security guarantees for both local storage and distributed sync use cases.
 
 ---
 
 ## Transaction Model
 
-ACID transaction guarantees with write-ahead logging. This was non-negotiable—I needed to ensure data integrity even if the process crashes mid-write.
+ACID transaction guarantees with write-ahead logging. Durability was non-negotiable—data integrity must survive process crashes.
 
 ### Write-Ahead Logging
 
@@ -870,27 +1017,27 @@ sequenceDiagram
 ```
 
 **WAL Behavior:**
-All writes go through the write-ahead log before the page store. WAL entries are fsync'd before commit acknowledgment—this is the durability guarantee. After commits, the WAL is truncated or checkpointed when safe, according to configured durability thresholds. WAL replay recovers all committed transactions after crashes.
+All writes go through write-ahead log before page store. WAL entries are fsync'd before commit acknowledgment—this is the durability guarantee. After commits, WAL is truncated or checkpointed when safe, according to configured durability thresholds. WAL replay recovers all committed transactions after crashes.
 
-I learned the hard way that you can't just fsync the WAL and call it done. The checkpoint/truncate logic matters a lot for performance. Too aggressive and you lose durability; too conservative and performance suffers.
+Checkpoint/truncate logic balances durability and performance. Too aggressive loses durability; too conservative hurts performance.
 
 **ACID Properties:**
 
-**Atomicity:** All operations in a transaction succeed or fail together. Partial failures trigger automatic rollback. I tested this with 100-operation transactions to make sure it works under stress.
+**Atomicity:** All operations in a transaction succeed or fail together. Partial failures trigger automatic rollback. Tested with 100-operation transactions under stress.
 
-**Consistency:** The database never enters an invalid state. Index updates are atomic with data writes. Schema validation prevents invalid states. I tested this under concurrent updates and it holds up.
+**Consistency:** Database never enters invalid state. Index updates are atomic with data writes. Schema validation prevents invalid states. Tested under concurrent updates.
 
-**Isolation:** Snapshot isolation via MVCC ensures each transaction sees a consistent snapshot. Concurrent transactions don't interfere. I tested with 50 concurrent readers and 10 writers, and it works as expected.
+**Isolation:** Snapshot isolation via MVCC ensures each transaction sees a consistent snapshot. Concurrent transactions don't interfere. Tested with 50 concurrent readers and 10 writers.
 
-**Durability:** Committed data is fsync'd before acknowledgment. WAL replay recovers all committed transactions after crashes. I tested this with crash simulation—pulling the plug mid-transaction, corrupting the WAL, etc.
+**Durability:** Committed data is fsync'd before acknowledgment. WAL replay recovers all committed transactions after crashes. Tested with crash simulation—power loss, WAL corruption, etc.
 
-**Test Coverage:** 907 unit tests validate ACID compliance, crash recovery, and transaction durability across 223 test files. This is one area where I didn't skimp on testing.
+**Test Coverage:** 907 unit tests validate ACID compliance, crash recovery, and transaction durability across 223 test files.
 
 ---
 
 ## Query System
 
-The query system uses a fluent API with automatic index selection. I built this because I wanted something that felt natural in Swift while still being fast.
+Query system uses a fluent API with automatic index selection. Built to feel natural in Swift while maintaining performance.
 
 ### Query Execution
 
@@ -959,26 +1106,26 @@ graph TB
 ```
 
 **Query Planner:**
-The query planner uses rule-based heuristics to select indexes. I haven't built a cost-based optimizer yet—that's on the roadmap. The current approach works well for most queries, automatically selecting indexes for common patterns. When no index is available, it falls back to a full scan.
+Uses rule-based heuristics to select indexes. Cost-based optimizer planned but not yet implemented. Current approach works well for most queries, automatically selecting indexes for common patterns. Falls back to full scan when no index available.
 
 **Index Types:**
-- **Primary Index:** UUID-based record lookup (this is always available)
-- **Secondary Index:** Single-field or compound indexes (you create these as needed)
-- **Full-Text Index:** Inverted index for text search (I built this because I needed it for a project)
+- **Primary Index:** UUID-based record lookup (always available)
+- **Secondary Index:** Single-field or compound indexes (created as needed)
+- **Full-Text Index:** Inverted index for text search
 - **Spatial Index:** Geospatial queries and distance calculations
 - **Vector Index:** Cosine similarity for embeddings (useful for AI workloads)
 
 **Query Features:**
-Filtering, sorting, limiting, JOINs (inner, left, right, full outer), aggregations (COUNT, SUM, AVG, MIN, MAX, GROUP BY, HAVING), subqueries, window functions, and query caching for repeated queries.
+Filtering, sorting, limiting, JOINs (inner, left, right, full outer), aggregations (COUNT, SUM, AVG, MIN, MAX, GROUP BY, HAVING), subqueries, window functions, query caching for repeated queries.
 
 **Full-Text Search:**
-I implemented an inverted index because I needed fast text search. It gives 50–1000× improvements relative to unindexed full scans on large corpora. Index build time scales with corpus size, but once built, queries are very fast.
+Inverted index implementation provides 50–1000× improvements relative to unindexed full scans on large corpora. Index build time scales with corpus size, but once built, queries are very fast.
 
 ---
 
 ## Performance Characteristics
 
-I benchmarked this on an Apple M4 Pro (36 GB RAM) running macOS 15 / OS 26. The benchmarks use synthetic but realistic workloads. Your actual performance will vary with dataset shape and workload patterns.
+Performance measurements conducted on Apple M4 Pro (36 GB RAM) running macOS 15 / OS 26. Benchmarks use synthetic but realistic workloads. Actual performance varies with dataset shape and workload patterns.
 
 ### Core Operations
 
@@ -999,7 +1146,7 @@ I benchmarked this on an Apple M4 Pro (36 GB RAM) running macOS 15 / OS 26. The 
 | Update | 8,000–16,000 ops/sec | 8× parallel encoding |
 | Delete | 26,000–80,000 ops/sec | 8× minimal locking |
 
-The multi-core scaling is good because MVCC lets reads happen in parallel without blocking. Writes still need some coordination, but it's minimal.
+Multi-core scaling is strong because MVCC enables parallel reads without blocking. Writes require minimal coordination.
 
 ### Query Performance
 
@@ -1027,17 +1174,17 @@ The multi-core scaling is good because MVCC lets reads happen in parallel withou
 - Medium operations (550 bytes): 5,000 ops/sec
 - Large operations (1900 bytes): 3,450 ops/sec
 
-The in-memory queue is essentially free—it's just pointer passing. Unix sockets are fast too, but TCP adds significant latency. I optimized the BlazeBinary encoding to minimize payload size, which helps a lot over the network.
+In-memory queue is essentially free (pointer passing). Unix sockets are fast. TCP adds significant latency. BlazeBinary encoding minimizes payload size, which helps over networks.
 
 ### Performance Invariants
 
-I maintain performance guarantees through automated regression testing:
+Performance guarantees maintained through automated regression testing:
 
 - **Batch Insert:** 10,000 records complete in < 2 seconds
 - **Individual Insert:** Average latency < 10ms
 - **Query Latency:** Simple queries < 5ms, complex queries < 200ms
 - **Index Build Time:** 10,000 records indexed in < 5 seconds
-- **Concurrent Reads:** 100 concurrent readers execute in 10–50ms (20–100× faster than locking)
+- **Concurrent Reads:** 100 concurrent readers execute in 10–50ms (20–100× faster than locking observed under synthetic workloads)
 
 12 performance test files track 40+ metrics and fail if thresholds are exceeded. This catches regressions early.
 
@@ -1045,10 +1192,10 @@ I maintain performance guarantees through automated regression testing:
 
 ## Benchmark Methodology
 
-Here's how I run the benchmarks:
+Benchmark methodology:
 
 **Synthetic Data Generation:**
-Records generated with variable field counts (3–15 fields). Field types: String, Int, Double, Bool, Date, Data, UUID. String lengths: 10–500 characters. Integer ranges: 0–1,000,000. I use realistic distribution patterns (normal, uniform, skewed) because uniform random data doesn't reflect real workloads.
+Records generated with variable field counts (3–15 fields). Field types: String, Int, Double, Bool, Date, Data, UUID. String lengths: 10–500 characters. Integer ranges: 0–1,000,000. Realistic distribution patterns (normal, uniform, skewed) used because uniform random data doesn't reflect real workloads.
 
 **Cache Behavior:**
 - Cold cache: Database opened fresh, no warm-up
@@ -1064,7 +1211,7 @@ Records generated with variable field counts (3–15 fields). Field types: Strin
 **Workload Patterns:**
 - Sequential: Operations on sequential record IDs
 - Random: Operations on randomly selected record IDs
-- Mixed: 70% reads, 30% writes (this reflects most real workloads)
+- Mixed: 70% reads, 30% writes (reflects most real workloads)
 
 **Durability:**
 - WAL durability mode: Full fsync on commit (default)
@@ -1072,13 +1219,13 @@ Records generated with variable field counts (3–15 fields). Field types: Strin
 - Performance mode: Deferred fsync (not recommended for production)
 
 **Measurement:**
-Each benchmark runs 10 iterations. I report median (p50) latency. Throughput is calculated as operations per second. I remove outliers (top and bottom 10%) to get cleaner numbers.
+Each benchmark runs 10 iterations. Median (p50) latency reported. Throughput calculated as operations per second. Outliers removed (top and bottom 10%) for cleaner numbers.
 
 ---
 
 ## Testing & Validation
 
-I have comprehensive test coverage:
+Comprehensive test coverage:
 
 - **907 unit tests** covering all features at 97% code coverage
 - **20+ integration scenarios** validating real-world workflows
@@ -1102,16 +1249,16 @@ I have comprehensive test coverage:
 
 ### Fault Injection & Crash Testing
 
-I test the following fault scenarios:
+Fault scenarios tested:
 
 **Power Loss Simulation:**
-Simulated power loss between WAL fsync and page flush. This validates that WAL replay recovers committed transactions. I also test partial writes and incomplete transactions.
+Simulated power loss between WAL fsync and page flush. Validates WAL replay recovers committed transactions. Also tests partial writes and incomplete transactions.
 
 **Corruption Scenarios:**
-Simulated torn or partial page writes, metadata corruption (index map, page headers), and overflow chain corruption. This validates corruption detection and graceful failure. The corruption detection has caught real bugs in testing.
+Simulated torn or partial page writes, metadata corruption (index map, page headers), overflow chain corruption. Validates corruption detection and graceful failure. Corruption detection has caught real bugs in testing.
 
 **Recovery Testing:**
-WAL replay verification after simulated crashes, metadata rebuild from data pages, dangling index detection and correction, and incomplete flush recovery. The metadata rebuild feature has saved me multiple times during development.
+WAL replay verification after simulated crashes, metadata rebuild from data pages, dangling index detection and correction, incomplete flush recovery. Metadata rebuild feature has proven valuable during development.
 
 7 persistence/recovery test files validate crash recovery, WAL replay, and corruption handling.
 
@@ -1124,13 +1271,13 @@ WAL replay verification after simulated crashes, metadata rebuild from data page
 - Durability: Committed data is fsync'd before acknowledgment
 
 **Crash Recovery:**
-WAL durability means all writes go through the Write-Ahead Log. WAL entries are fsync'd before commit acknowledgment. Crash recovery replays committed transactions and discards uncommitted ones. If metadata is corrupted, BlazeDB automatically rebuilds it from data pages—this feature has been a lifesaver.
+WAL durability means all writes go through Write-Ahead Log. WAL entries are fsync'd before commit acknowledgment. Crash recovery replays committed transactions and discards uncommitted ones. If metadata is corrupted, BlazeDB automatically rebuilds it from data pages.
 
 **Data Corruption Detection:**
 BlazeBinary encoding includes CRC32 checksums. Page headers include version and checksum fields. Invalid data triggers corruption detection. Metadata corruption triggers automatic rebuild from data pages.
 
 **Index Integrity:**
-All index types remain consistent with data. Index updates are atomic with data writes. Query results match manual filtering. Cross-index validation ensures all indexes match the actual data.
+All index types remain consistent with data. Index updates are atomic with data writes. Query results match manual filtering. Cross-index validation ensures all indexes match actual data.
 
 12 index test files validate consistency, query correctness, and cross-index alignment.
 
@@ -1141,16 +1288,16 @@ All index types remain consistent with data. Index updates are atomic with data 
 BlazeDB works well for:
 
 **Encrypted Local Storage:**
-macOS/iOS applications requiring encrypted local data storage, applications with sensitive user data requiring at-rest encryption, and offline-first applications with local data persistence.
+macOS/iOS applications requiring encrypted local data storage, applications with sensitive user data requiring at-rest encryption, offline-first applications with local data persistence.
 
 **Developer Tooling:**
-Tools requiring embedded, durable state, development environments needing high-throughput document stores, and local analytics engines and data processing pipelines.
+Tools requiring embedded, durable state, development environments needing high-throughput document stores, local analytics engines and data processing pipelines.
 
 **AI Agents & Automation:**
-AI agents requiring persistent memory and execution history, automation tools needing structured local storage, and applications requiring semantic search and vector similarity.
+AI agents requiring persistent memory and execution history, automation tools needing structured local storage, applications requiring semantic search and vector similarity.
 
 **Secure Applications:**
-Applications requiring at-rest encryption with minimal overhead, systems needing ACID guarantees for local data, and applications with strict data integrity requirements.
+Applications requiring at-rest encryption with minimal overhead, systems needing ACID guarantees for local data, applications with strict data integrity requirements.
 
 BlazeDB is not suitable for:
 - Distributed cluster databases
@@ -1282,22 +1429,22 @@ BlazeBinary encoding is 53% smaller than JSON. Optional LZ4 compression is 3–5
 
 ## Future Work
 
-Things I want to add:
+Planned improvements:
 
 **Query Optimizer:**
-Cost-based query optimizer, statistics collection for better index selection, and query plan caching. The current rule-based approach works, but a cost model would be better.
+Cost-based query optimizer, statistics collection for better index selection, query plan caching. Current rule-based approach works, but cost model would be better.
 
 **Distributed Features:**
-Multi-master replication (experimental), automatic conflict resolution strategies, and distributed transaction coordination. This is complex, so I'm taking it slow.
+Multi-master replication (experimental), automatic conflict resolution strategies, distributed transaction coordination. Complex area, proceeding carefully.
 
 **Performance:**
-Parallel index builds, incremental index updates, and query result streaming. These are optimizations that would help with large datasets.
+Parallel index builds, incremental index updates, query result streaming. Optimizations that would help with large datasets.
 
 **Platform:**
-Enhanced Linux performance, Windows support (experimental), and additional Secure Enclave integration. Linux works but isn't as optimized as Apple platforms.
+Enhanced Linux performance, Windows support (experimental), additional Secure Enclave integration. Linux works but isn't as optimized as Apple platforms.
 
 **API:**
-GraphQL query interface, REST API for remote access, and additional migration tools. These would make integration easier.
+GraphQL query interface, REST API for remote access, additional migration tools. Would make integration easier.
 
 ---
 
@@ -1312,13 +1459,13 @@ Semantic versioning (MAJOR.MINOR.PATCH). Alpha releases mean APIs may change. Be
 Forward upgrade path means databases can be upgraded to newer versions. No forced deletion means existing databases are never automatically deleted. Migration support means format migrations are automatic and transparent.
 
 **Support:**
-Complete API reference and architecture docs are available. GitHub Issues for bug reports and feature requests. Contributions are welcome.
+Complete API reference and architecture docs available. GitHub Issues for bug reports and feature requests. Contributions welcome.
 
 ---
 
 ## Documentation
 
-Complete documentation is organized in `Docs/`:
+Complete documentation organized in `Docs/`:
 
 - `Docs/MASTER_DOCUMENTATION_INDEX.md` - Complete documentation index
 - `Docs/Architecture/` - System architecture and design
@@ -1381,3 +1528,213 @@ BlazeDB is part of Project Blaze. Contributions welcome!
 ## License
 
 MIT License - See LICENSE file for details.
+
+---
+
+## Appendix
+
+### BlazeBinary Protocol Specification
+
+Detailed protocol specifications for implementers and debuggers.
+
+### Record Format Structure
+
+BlazeBinary records use a fixed 8-byte header followed by variable-length fields. Header aligned to 8 bytes for efficient CPU reads.
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ HEADER (8 bytes, aligned)                                    │
+├─────────────────────────────────────────────────────────────┤
+│ Offset  Size  Type     Description                           │
+│ 0       5     char[5]  Magic: "BLAZE" (0x42 0x4C 0x41...)   │
+│ 5       1     uint8    Version: 0x01 (v1) or 0x02 (v2)     │
+│ 6       2     uint16   Field count (big-endian)             │
+├─────────────────────────────────────────────────────────────┤
+│ FIELD_1 (variable length)                                    │
+│   [KEY_ENCODING][VALUE_ENCODING]                            │
+├─────────────────────────────────────────────────────────────┤
+│ FIELD_2 (variable length)                                    │
+│   [KEY_ENCODING][VALUE_ENCODING]                            │
+├─────────────────────────────────────────────────────────────┤
+│ ...                                                          │
+├─────────────────────────────────────────────────────────────┤
+│ FIELD_N (variable length)                                    │
+│   [KEY_ENCODING][VALUE_ENCODING]                            │
+├─────────────────────────────────────────────────────────────┤
+│ CRC32 (4 bytes, v2 only, big-endian)                        │
+│   Only present if version == 0x02                           │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**Header Details:**
+- **Magic Bytes:** "BLAZE" (0x42 0x4C 0x41 0x5A 0x45) for format validation
+- **Version:** 0x01 (v1, no CRC) or 0x02 (v2, with CRC32)
+- **Field Count:** UInt16 big-endian, pre-allocates dictionary capacity
+
+### Field Encoding Details
+
+Each field has a key encoding followed by a value encoding.
+
+**Key Encoding (Two Variants):**
+
+**Variant A: Common Field (1 byte)**
+```
+┌─────────────────────────────────────┐
+│ 1 byte: Field ID (0x01-0x7F)        │
+└─────────────────────────────────────┘
+```
+
+Top 127 most common field names (e.g., "id", "createdAt", "title") encoded as single byte.
+
+**Variant B: Custom Field (3+N bytes)**
+```
+┌─────────────────────────────────────┐
+│ 1 byte: Marker (0xFF)               │
+│ 2 bytes: Key length (big-endian)     │
+│ N bytes: UTF-8 key string            │
+└─────────────────────────────────────┘
+```
+
+Fields not in common dictionary use 0xFF marker.
+
+**Example:**
+- "id" → 0x01 (1 byte total)
+- "myCustomField" → 0xFF + 0x000D + "myCustomField" (16 bytes total)
+
+### Type System Reference
+
+**Base Types:**
+- `0x01`: String (full, 4-byte length + UTF-8)
+- `0x02`: Int (full, 8 bytes big-endian)
+- `0x03`: Double (8 bytes bitPattern big-endian)
+- `0x04`: Bool (1 byte: 0x01 true, 0x00 false)
+- `0x05`: UUID (16 bytes binary)
+- `0x06`: Date (8 bytes TimeInterval big-endian)
+- `0x07`: Data (4-byte length + N bytes)
+- `0x08`: Array (2-byte count + recursive items)
+- `0x09`: Dictionary (2-byte count + sorted key-value pairs)
+- `0x0A`: Vector (4-byte count + N*4 bytes Float32)
+- `0x0B`: Null (0 bytes)
+
+**Optimizations:**
+- `0x11`: Empty String (1 byte total)
+- `0x12`: Small Int (0-255, 2 bytes total vs 9 for full int)
+- `0x18`: Empty Array (1 byte total)
+- `0x19`: Empty Dictionary (1 byte total)
+- `0x20-0x2F`: Inline String (type + length in 1 byte, length ≤15)
+
+### Value Encoding Examples
+
+**String Encoding:**
+
+Empty string:
+```
+[0x11]  (1 byte total)
+```
+
+Inline string (≤15 bytes):
+```
+[0x20 | length] [UTF-8 bytes]
+Example: "Hello" (5 bytes) → [0x25] [0x48 0x65 0x6C 0x6C 0x6F]
+```
+
+Full string (>15 bytes):
+```
+[0x01] [length:4 bytes BE] [UTF-8 bytes]
+Example: "Hello, world!" → [0x01] [0x0000000D] [0x48 0x65 0x6C 0x6C 0x6F 0x2C 0x20 0x77 0x6F 0x72 0x6C 0x64 0x21]
+```
+
+**Integer Encoding:**
+
+Small int (0-255):
+```
+[0x12] [value:1 byte]
+Example: 42 → [0x12] [0x2A]
+```
+
+Full int:
+```
+[0x02] [value:8 bytes BE]
+Example: 1000 → [0x02] [0x00 0x00 0x00 0x00 0x00 0x00 0x03 0xE8]
+```
+
+**Array Encoding:**
+
+Empty array:
+```
+[0x18]  (1 byte total)
+```
+
+Non-empty array:
+```
+[0x08] [count:2 bytes BE] [item1] [item2] ... [itemN]
+```
+
+**Dictionary Encoding:**
+
+Empty dictionary:
+```
+[0x19]  (1 byte total)
+```
+
+Non-empty dictionary:
+```
+[0x09] [count:2 bytes BE] [key1][value1] [key2][value2] ... [keyN][valueN]
+```
+
+Keys sorted before encoding for deterministic output.
+
+**Complete Record Example:**
+
+**Input:**
+```swift
+BlazeDataRecord([
+    "id": .uuid(UUID(...)),
+    "title": .string("Hello"),
+    "count": .int(42),
+    "active": .bool(true)
+])
+```
+
+**Binary Encoding (hexadecimal):**
+```
+42 4C 41 5A 45 02 00 04    // Header: "BLAZE" + v2 + 4 fields
+01                          // Field 1 key: "id" (common field 0x01)
+05 [16 bytes UUID]          // Field 1 value: UUID type + 16 bytes
+06                          // Field 2 key: "title" (common field 0x06)
+25 48 65 6C 6C 6F          // Field 2 value: Inline string "Hello" (0x25 = 0x20|5)
+2F                          // Field 3 key: "count" (common field 0x2F)
+12 2A                       // Field 3 value: Small int 42 (0x12 + 0x2A)
+23                          // Field 4 key: "active" (common field 0x23)
+04 01                       // Field 4 value: Bool true (0x04 + 0x01)
+[CRC32: 4 bytes]            // CRC32 checksum (v2 only)
+```
+
+**Size Comparison:**
+- JSON: ~120 bytes
+- BlazeBinary: ~40 bytes (67% smaller)
+
+### Network Frame Structure
+
+For network sync, BlazeBinary records are wrapped in frames:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ FRAME HEADER (5 bytes)                                      │
+├─────────────────────────────────────────────────────────────┤
+│ 1 byte: Frame Type (0x01-0x06)                              │
+│ 4 bytes: Payload Length (big-endian UInt32)                 │
+├─────────────────────────────────────────────────────────────┤
+│ PAYLOAD (variable length)                                   │
+│   Encrypted with AES-256-GCM (if handshaked)                │
+│   Or plaintext (during handshake)                           │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**Frame Types:**
+- `0x01`: handshake
+- `0x02`: handshakeAck
+- `0x03`: verify
+- `0x04`: handshakeComplete
+- `0x05`: encryptedData
+- `0x06`: operation
