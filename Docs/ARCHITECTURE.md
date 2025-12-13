@@ -42,12 +42,12 @@ BlazeDB uses 4KB fixed-size pages with the following layout:
 
 ### File Layout
 
-```
-bugs.blaze              - Main data file (4KB pages)
-bugs.meta               - Layout metadata (JSON)
-bugs.meta.indexes       - Secondary index data (JSON)
-txn_log.json           - Transaction log (WAL)
-```
+Each database collection uses the following files:
+
+- `<collection>.blaze` - Main data file (4KB pages)
+- `<collection>.meta` - Layout metadata (JSON)
+- `<collection>.meta.indexes` - Secondary index data (JSON)
+- `txn_log.json` - Transaction log (WAL)
 
 ### Metadata Format
 
