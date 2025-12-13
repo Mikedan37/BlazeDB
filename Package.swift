@@ -5,8 +5,8 @@ let package = Package(
     name: "BlazeDB",
     platforms: [
         .macOS(.v12),
-        .iOS(.v15),
-        .linux
+        .iOS(.v15)
+        // Linux support available but not declared in platforms array
     ],
     products: [
         .library(
@@ -17,7 +17,10 @@ let package = Package(
             targets: ["BlazeShell"]),
         .executable(
             name: "BlazeServer",
-            targets: ["BlazeServer"])
+            targets: ["BlazeServer"]),
+        .executable(
+            name: "BasicExample",
+            targets: ["BasicExample"])
     ],
     dependencies: [
         // ZERO external dependencies! 🔥
@@ -49,6 +52,11 @@ let package = Package(
             name: "BlazeDBIntegrationTests",
             dependencies: ["BlazeDB"],
             path: "BlazeDBIntegrationTests"
+        ),
+        .executableTarget(
+            name: "BasicExample",
+            dependencies: ["BlazeDB"],
+            path: "Examples/BasicExample"
         )
     ]
 )

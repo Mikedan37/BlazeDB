@@ -1757,7 +1757,7 @@ public final class DynamicCollection {
                                 from: metaURL,
                                 signingKey: encryptionKey,
                                 password: password,
-                                salt: "AshPileSalt".data(using: .utf8)!
+                                salt: DynamicCollection.defaultSalt
                             )
                         } catch {
                             layout = try StorageLayout.load(from: metaURL)

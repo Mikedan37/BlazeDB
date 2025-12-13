@@ -244,7 +244,9 @@ public enum BlazeBinaryEncoder {
                 // Recursively encode key-value pairs (sorted for determinism)
                 for (key, value) in dict.sorted(by: { $0.key < $1.key }) {
                     // Encode key as string
-                    let keyData = key.data(using: .utf8)!
+                    guard let keyData = key.data(using: .utf8) else {
+                        throw BlazeBinaryError.encodingFailed("Failed to encode dictionary key '\(key)'")
+                    }
                     var keyLen = UInt16(keyData.count).bigEndian
                     data.append(Data(bytes: &keyLen, count: 2))
                     data.append(keyData)

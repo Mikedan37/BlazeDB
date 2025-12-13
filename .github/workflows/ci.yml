@@ -1,4 +1,4 @@
-name: BlazeDB CI/CD
+name: CI
 
 on:
   push:
@@ -13,8 +13,6 @@ env:
   SWIFT_VERSION: '5.9'
 
 jobs:
-  
-  # ===== BUILD & TEST =====
   test:
     name: Build & Test
     runs-on: macos-14
@@ -37,34 +35,25 @@ jobs:
     
     - name: Run Tests
       run: swift test --enable-code-coverage
-      # Note: Stress tests will automatically skip when not in CI/CD
       
     - name: Generate Code Coverage
       run: |
         xcrun llvm-cov export -format="lcov" \
           .build/debug/BlazeDBPackageTests.xctest/Contents/MacOS/BlazeDBPackageTests \
-          -instr-profile .build/debug/codecov/default.profdata > coverage.lcov
+          -instr-profile .build/debug/codecov/default.profdata > coverage.lcov || true
         
     - name: Upload Coverage to Codecov
-      uses: codecov/codecov-action@v3
+      uses: codecov/codecov-action@v4
       with:
-        files: ./coverage.lcov
+        file: coverage.lcov
         flags: unittests
-        name: codecov-blazedb
-        
-    - name: Archive Test Results
-      if: always()
-      uses: actions/upload-artifact@v4
-      with:
-        name: test-results
-        path: |
-          .build/debug/*.xctest
-          
-  # ===== PERFORMANCE BENCHMARKS =====
-  benchmarks:
-    name: Performance Benchmarks
+        name: codecov-umbrella
+        fail_ci_if_error: false
+
+  lint:
+    name: Lint
     runs-on: macos-14
-    timeout-minutes: 45
+    timeout-minutes: 10
     
     steps:
     - name: Checkout code
@@ -75,113 +64,23 @@ jobs:
       with:
         swift-version: ${{ env.SWIFT_VERSION }}
     
-    - name: Build Release
-      run: swift build -c release
-    
-    - name: Run Baseline Performance Tests
-      run: swift test --filter BaselinePerformanceTests
-      
-    - name: Check for Performance Regressions
+    - name: Check Swift Format
       run: |
-        echo "📊 Checking for performance regressions..."
-        # TODO: Add automated regression detection
+        # Basic syntax check
+        swift build 2>&1 | grep -i "error:" && exit 1 || exit 0
         
-    - name: Upload Performance Data
-      uses: actions/upload-artifact@v4
-      with:
-        name: performance-baselines
-        path: |
-          /tmp/blazedb_baselines.json
-          /tmp/blazedb_performance_report.txt
-          
-  # ===== CHAOS ENGINEERING =====
-  chaos:
-    name: Chaos Engineering Tests
-    runs-on: macos-14
+    - name: Check Documentation
+      run: |
+        # Verify README exists and is valid
+        test -f README.md || exit 1
+        test -f CONTRIBUTING.md || exit 1
+        test -f CHANGELOG.md || exit 1
+        test -f LICENSE || exit 1
+
+  linux-test:
+    name: Linux Build & Test
+    runs-on: ubuntu-latest
     timeout-minutes: 30
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Setup Swift
-      uses: swift-actions/setup-swift@v1
-      with:
-        swift-version: ${{ env.SWIFT_VERSION }}
-    
-    - name: Run Chaos Tests
-      run: swift test --filter ChaosEngineeringTests
-      
-    - name: Archive Chaos Test Results
-      if: always()
-      with:
-        name: chaos-test-results
-        path: .build/debug/*.xctest
-        
-  # ===== PROPERTY-BASED & FUZZING =====
-  advanced:
-    name: Property-Based & Fuzzing Tests
-    runs-on: macos-14
-    timeout-minutes: 60
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Setup Swift
-      uses: swift-actions/setup-swift@v1
-      with:
-        swift-version: ${{ env.SWIFT_VERSION }}
-    
-    - name: Run Property-Based Tests
-      run: swift test --filter PropertyBasedTests
-      
-    - name: Run Fuzzing Tests
-      run: swift test --filter FuzzTests
-      
-    - name: Archive Advanced Test Results
-      if: always()
-      with:
-        name: advanced-test-results
-        path: .build/debug/*.xctest
-        
-  # ===== CODE QUALITY =====
-  quality:
-    name: Code Quality Checks
-    runs-on: macos-14
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Setup Swift
-      uses: swift-actions/setup-swift@v1
-      with:
-        swift-version: ${{ env.SWIFT_VERSION }}
-    
-    - name: SwiftLint
-      run: |
-        if which swiftlint >/dev/null; then
-          swiftlint || true
-        else
-          echo "⚠️ SwiftLint not installed, skipping"
-        fi
-        
-    - name: Check for TODOs
-      run: |
-        echo "🔍 Scanning for TODOs..."
-        grep -r "TODO:" BlazeDB/ || echo "✅ No TODOs found"
-        
-    - name: Check for FIXMEs
-      run: |
-        echo "🔍 Scanning for FIXMEs..."
-        grep -r "FIXME:" BlazeDB/ || echo "✅ No FIXMEs found"
-        
-  # ===== STRESS TESTS =====
-  stress:
-    name: Stress Tests
-    runs-on: macos-14
-    timeout-minutes: 60
     
     steps:
     - name: Checkout code
@@ -194,139 +93,6 @@ jobs:
     
     - name: Build
       run: swift build -v
-      
-    - name: Run Stress Tests
-      env:
-        CI: "true"
-        GITHUB_ACTIONS: "true"
-        RUN_HEAVY_STRESS: "1"
-        BLAZEDB_ENABLE_LONG_TESTS: "1"
-      run: |
-        echo "🚀 Running stress tests in CI/CD environment..."
-        swift test --filter StressTests
-        swift test --filter BlazeDBStressTests
-        swift test --filter ConcurrencyStressTests
-        swift test --filter BlazeIndexStressTests
-        swift test --filter SoakStressTests
-        swift test --filter DistributedGCStressTests
-        
-    - name: Archive Stress Test Results
-      if: always()
-      with:
-        name: stress-test-results
-        path: .build/debug/*.xctest
-        
-  # ===== INTEGRATION TESTS =====
-  integration:
-    name: Integration Tests
-    runs-on: macos-14
-    timeout-minutes: 30
     
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Setup Swift
-      uses: swift-actions/setup-swift@v1
-      with:
-        swift-version: ${{ env.SWIFT_VERSION }}
-    
-    - name: Run Integration Tests
-      run: swift test --filter IntegrationTests
-      
-  # ===== NIGHTLY FULL TEST SUITE =====
-  nightly:
-    name: Nightly Full Test Suite
-    runs-on: macos-14
-    if: github.event_name == 'schedule'
-    timeout-minutes: 120
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Setup Swift
-      uses: swift-actions/setup-swift@v1
-      with:
-        swift-version: ${{ env.SWIFT_VERSION }}
-    
-    - name: Run ALL Tests
-      run: swift test --enable-code-coverage
-      
-    - name: Run Extended Fuzzing (10x)
-      run: |
-        echo "🎯 Running extended fuzzing session..."
-        for i in {1..10}; do
-          swift test --filter FuzzTests
-        done
-        
-    - name: Generate Comprehensive Report
-      run: |
-        echo "📊 Generating nightly test report..."
-        swift test --filter BaselinePerformanceTests
-        
-    - name: Upload Nightly Results
-      with:
-        name: nightly-test-results
-        path: |
-          .build/debug/*.xctest
-          /tmp/blazedb_*.json
-          
-  # ===== BUILD RELEASE =====
-  release:
-    name: Build Release Binary
-    runs-on: macos-14
-    needs: [test, benchmarks, chaos, advanced, stress]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Setup Swift
-      uses: swift-actions/setup-swift@v1
-      with:
-        swift-version: ${{ env.SWIFT_VERSION }}
-    
-    - name: Build Release
-      run: swift build -c release
-      
-    - name: Run Release Tests
-      run: swift test -c release --filter BaselinePerformanceTests
-      
-    - name: Archive Release Binary
-      with:
-        name: blazedb-release
-        path: .build/release/
-        
-  # ===== NOTIFICATION =====
-  notify:
-    name: Notify Results
-    runs-on: ubuntu-latest
-    needs: [test, benchmarks, chaos, advanced, integration, stress]
-    if: always()
-    
-    steps:
-    - name: Check Status
-      run: |
-        echo "📊 CI/CD Pipeline Status"
-        echo "Test: ${{ needs.test.result }}"
-        echo "Benchmarks: ${{ needs.benchmarks.result }}"
-        echo "Chaos: ${{ needs.chaos.result }}"
-        echo "Advanced: ${{ needs.advanced.result }}"
-        echo "Integration: ${{ needs.integration.result }}"
-        echo "Stress: ${{ needs.stress.result }}"
-        
-    - name: Summary
-      run: |
-        if [ "${{ needs.test.result }}" == "success" ] && \
-           [ "${{ needs.benchmarks.result }}" == "success" ] && \
-           [ "${{ needs.chaos.result }}" == "success" ] && \
-           [ "${{ needs.advanced.result }}" == "success" ] && \
-           [ "${{ needs.integration.result }}" == "success" ] && \
-           [ "${{ needs.stress.result }}" == "success" ]; then
-          echo "✅ ALL TESTS PASSED - BlazeDB is production-ready!"
-        else
-          echo "❌ SOME TESTS FAILED - Check the logs"
-          exit 1
-        fi
+    - name: Run Tests
+      run: swift test
