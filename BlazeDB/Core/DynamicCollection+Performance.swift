@@ -135,7 +135,7 @@ extension DynamicCollection {
         for (index, record) in records.enumerated() {
             group.enter()
             queue.async {
-                defer { group.leave()
+                defer { group.leave() }
                 
                 do {
                     let result = try transform(record)

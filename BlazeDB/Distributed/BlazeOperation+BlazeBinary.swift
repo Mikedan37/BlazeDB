@@ -36,7 +36,9 @@ extension BlazeOperation {
         data.append(typeByte)
         
         // Collection name (1 byte length + UTF-8 bytes)
-        let collectionBytes = op.collectionName.data(using: .utf8)!
+        guard let collectionBytes = op.collectionName.data(using: .utf8) else {
+            throw BlazeDBError.invalidData(reason: "Failed to encode collection name: \(op.collectionName)")
+        }
         data.append(UInt8(collectionBytes.count))
         data.append(collectionBytes)
         

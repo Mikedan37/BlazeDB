@@ -17,7 +17,7 @@ BlazeDB encrypts all data at rest by default using AES-256-GCM with per-page gra
 All data is encrypted at rest using AES-256-GCM with unique nonces per page:
 
 - **Algorithm**: AES-256-GCM
-- **Key Derivation**: Argon2id (100,000 iterations) + HKDF
+- **Key Derivation**: PBKDF2 (10,000 iterations) by default; Argon2id available as alternative
 - **Key Size**: 256 bits
 - **Authentication**: GCM auth tag (prevents tampering)
 - **Nonce**: Unique per page (prevents replay attacks)
@@ -25,15 +25,24 @@ All data is encrypted at rest using AES-256-GCM with unique nonces per page:
 ### Key Management
 
 ```swift
-// Key derivation from user password
-let key = try KeyManager.deriveKey(
+// Key derivation from user password (PBKDF2 default)
+let key = try KeyManager.getKey(
+    from: .password(password),
+    createIfMissing: false
+)
+
+// Alternative: Argon2id for enhanced security
+let argon2Key = try KeyManager.getKeyArgon2(
     from: password,
     salt: databaseSalt,
-    iterations: 100_000
+    parameters: .default
 )
 
 // Secure Enclave integration (iOS/macOS)
-let secureKey = try SecureEnclave.store(key)
+let secureKey = try KeyManager.getKey(
+    from: .secureEnclave(label: "com.app.blazedb"),
+    createIfMissing: true
+)
 ```
 
 **Secure Enclave**: Hardware-backed key storage on iOS/macOS devices. Keys never leave the Secure Enclave.
@@ -73,7 +82,7 @@ Records are encoded to BlazeBinary, assembled into 4KB pages, encrypted with AES
 
 ### Data at Rest: Local Encryption Pipeline
 
-User passwords are processed through Argon2id (100,000 iterations) to derive a master key. HKDF derives per-page keys from the master key. Each 4KB page is encrypted with AES-256-GCM using its derived key and a unique nonce.
+User passwords are processed through PBKDF2 (10,000 iterations) by default to derive a master key. Argon2id is available as an alternative for enhanced security. HKDF derives per-page keys from the master key. Each 4KB page is encrypted with AES-256-GCM using its derived key and a unique nonce.
 
 ### Data in Transit: Sync & Protocol Encryption
 

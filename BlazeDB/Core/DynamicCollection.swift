@@ -5,6 +5,16 @@
 import Foundation
 import CryptoKit
 
+// MARK: - Constants
+
+private extension DynamicCollection {
+    /// Default salt for key derivation (ASCII string, UTF-8 encoding guaranteed)
+    static var defaultSalt: Data {
+        // "AshPileSalt" is ASCII, so UTF-8 encoding cannot fail
+        return Data("AshPileSalt".utf8)
+    }
+}
+
 /// DynamicCollection: A fully dynamic, schema-less collection type backed by CBOR pages.
 ///
 /// Supports:
@@ -153,7 +163,6 @@ public final class DynamicCollection {
                 // If password is provided, try alternative KDF methods if signature verification fails
                 print("📋 [INIT] Attempting to load secure layout with signature verification...")
                 BlazeLogger.debug("📋 [INIT] Attempting to load secure layout...")
-                let salt = "AshPileSalt".data(using: .utf8)!
                 let layout = try StorageLayout.loadSecure(
                     from: metaURL,
                     signingKey: encryptionKey,
@@ -936,7 +945,7 @@ public final class DynamicCollection {
                             from: metaURL,
                             signingKey: encryptionKey,
                             password: password,
-                            salt: "AshPileSalt".data(using: .utf8)!
+                            salt: Self.defaultSalt
                         )
                     } catch {
                         layout = try StorageLayout.load(from: metaURL)
@@ -1078,7 +1087,7 @@ public final class DynamicCollection {
                         from: metaURL,
                         signingKey: encryptionKey,
                         password: password,
-                        salt: "AshPileSalt".data(using: .utf8)!
+                        salt: Self.defaultSalt
                     )
                 } catch {
                     layout = try StorageLayout.load(from: metaURL)
@@ -1312,6 +1321,8 @@ public final class DynamicCollection {
                             if attempt < maxDecodeAttempts {
                                 let delay = Double(attempt) * 0.002
                                 BlazeLogger.warn("⚠️ [FETCH] Decode attempt \(attempt) failed for record \(id.uuidString.prefix(8)) (page \(firstPageIndex)): \(message). Retrying in \(String(format: "%.3f", delay))s")
+                                // NOTE: Thread.sleep is intentional. This synchronous retry loop
+                                // requires blocking waits. Converting to async would require API changes.
                                 Thread.sleep(forTimeInterval: delay)
                                 continue
                             }
@@ -1605,7 +1616,7 @@ public final class DynamicCollection {
                         from: metaURL,
                         signingKey: encryptionKey,
                         password: password,
-                        salt: "AshPileSalt".data(using: .utf8)!
+                        salt: Self.defaultSalt
                     )
                 } catch {
                     layout = try StorageLayout.load(from: metaURL)
@@ -1964,7 +1975,7 @@ public final class DynamicCollection {
                         from: metaURL,
                         signingKey: encryptionKey,
                         password: password,
-                        salt: "AshPileSalt".data(using: .utf8)!
+                        salt: Self.defaultSalt
                     ) {
                         existingDeletedPages = existingLayout.deletedPages
                         existingMetaData = existingLayout.metaData

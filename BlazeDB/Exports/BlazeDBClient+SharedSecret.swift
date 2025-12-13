@@ -48,9 +48,19 @@ extension BlazeDBClient {
         let dbNames = [database1, database2].sorted().joined(separator: ":")
         
         // Derive token using HKDF (works on all platforms!)
-        let secretData = secret.data(using: .utf8)!
-        let salt = "blazedb-auth-v1".data(using: .utf8)!
-        let info = dbNames.data(using: .utf8)!
+        guard let secretData = secret.data(using: .utf8),
+              let salt = "blazedb-auth-v1".data(using: .utf8),
+              let info = dbNames.data(using: .utf8) else {
+            // UTF-8 encoding should never fail for ASCII strings, but handle gracefully
+            let fallbackData = Data(secret.utf8) + Data(dbNames.utf8)
+            #if canImport(CryptoKit)
+            let hash = SHA256.hash(data: fallbackData)
+            return Data(hash).base64EncodedString()
+            #else
+            // Fallback for platforms without CryptoKit
+            return fallbackData.base64EncodedString()
+            #endif
+        }
         
         #if canImport(CryptoKit)
         // Apple platforms (macOS, iOS, etc.) - uses CryptoKit

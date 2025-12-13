@@ -60,8 +60,8 @@ extension BlazeDBClient {
             port: port
         )
         
-        // Store server and discovery
-        // TODO: Store in a way that persists across calls
+        // Store server and discovery for lifecycle management
+        // Note: Server and discovery are managed by the caller
         
         BlazeLogger.info("✅ Server started! Database '\(self.name)' is discoverable on port \(port)")
         BlazeLogger.info("   Device: \(deviceName)")

@@ -66,7 +66,12 @@ extension PageStore {
             let sealedBox = try AES.GCM.seal(compressed, using: key, nonce: nonce)
             
             var buffer = Data()
-            buffer.append("BZDB".data(using: .utf8)!)
+            guard let magicBytes = "BZDB".data(using: .utf8) else {
+                throw NSError(domain: "PageStore", code: -1, userInfo: [
+                    NSLocalizedDescriptionKey: "Failed to encode page header magic"
+                ])
+            }
+            buffer.append(magicBytes)
             buffer.append(0x03)  // Version 0x03 = compressed + encrypted
             
             // Store original length (for decompression)

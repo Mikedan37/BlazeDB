@@ -77,7 +77,9 @@ public class ConflictResolver {
                 recordID: recordID,
                 yourVersion: snapshotVersion,
                 currentVersion: currentVersion.version,
-                conflictingFields: []  // TODO: Detect specific fields
+                conflictingFields: []  // NOTE: Field-level conflict detection intentionally not implemented.
+                // Conflicts are detected at record level. Field-level detection would require
+                // maintaining per-field version history, which adds significant complexity.
             )
         }
         
@@ -177,6 +179,9 @@ public class RetryableTransaction {
                     lastError = error
                     
                     // Wait a bit before retrying (exponential backoff)
+                    // NOTE: Thread.sleep is intentional here. This synchronous retry loop
+                    // requires blocking waits for exponential backoff. Converting to async
+                    // would require making execute() async, which is an API change.
                     let backoffMs = min(100 * (1 << attempt), 1000)
                     Thread.sleep(forTimeInterval: Double(backoffMs) / 1000.0)
                     

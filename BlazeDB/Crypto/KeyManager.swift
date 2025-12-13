@@ -25,7 +25,9 @@ public final class KeyManager {
             return try loadSecureEnclaveKey(label: label, createIfMissing: createIfMissing)
 
         case .password(let pass):
-            let salt = "AshPileSalt".data(using: .utf8)! // or inject from caller
+            guard let salt = "AshPileSalt".data(using: .utf8) else {
+                throw KeyManagerError.keychainError
+            }
             return try getKey(from: pass, salt: salt)
         }
     }

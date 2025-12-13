@@ -133,6 +133,10 @@ private func convertToJSON(_ field: BlazeDocumentField) throws -> Any {
             jsonDict[key] = try convertToJSON(value)
         }
         return jsonDict
+    case .vector(let vector):
+        return vector.map { $0 }
+    case .null:
+        return NSNull()
     }
 }
 
@@ -225,7 +229,7 @@ extension BlazeDBClient {
     /// Update async
     public func update<T: BlazeStorable>(_ object: T) async throws {
         let record = try object.toBlazeRecord()
-        try await self.update(id: object.id, with: record)
+        try await self.update(id: object.id, data: record)
     }
     
     /// Update many Codable objects

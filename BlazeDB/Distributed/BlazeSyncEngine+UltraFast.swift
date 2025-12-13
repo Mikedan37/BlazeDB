@@ -9,6 +9,9 @@
 //
 
 import Foundation
+#if canImport(Accelerate)
+import Accelerate
+#endif
 
 extension BlazeSyncEngine {
     // MARK: - Ultra-Fast Configuration
@@ -50,8 +53,6 @@ extension BlazeSyncEngine {
     // MARK: - SIMD Operations (if available)
     
     #if canImport(Accelerate)
-    import Accelerate
-    
     /// SIMD-accelerated batch validation
     private func validateBatchSIMD(_ operations: [BlazeOperation]) -> [Bool] {
         // Use SIMD for parallel validation checks

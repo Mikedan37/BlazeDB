@@ -51,7 +51,7 @@ extension DynamicCollection {
                     from: metaURL,
                     signingKey: encryptionKey,
                     password: password,
-                    salt: "AshPileSalt".data(using: .utf8)!
+                    salt: DynamicCollection.defaultSalt
                 )
             } catch {
                 layout = try StorageLayout.load(from: metaURL)
@@ -465,7 +465,7 @@ extension DynamicCollection {
             BlazeLogger.debug("📦 [INSERT] Batch: Phase 3 - Updating search index...")
             let searchStart = Date()
             // CRITICAL: Use loadSecure to maintain signature consistency
-            if let layout = try? StorageLayout.loadSecure(from: metaURL, signingKey: encryptionKey, password: password, salt: "AshPileSalt".data(using: .utf8)!),
+            if let layout = try? StorageLayout.loadSecure(from: metaURL, signingKey: encryptionKey, password: password, salt: DynamicCollection.defaultSalt),
                let index = layout.searchIndex,
                !layout.searchIndexedFields.isEmpty {
                 // Batch index all records at once

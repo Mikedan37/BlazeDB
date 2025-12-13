@@ -56,7 +56,10 @@ public enum BlazeBinaryEncoder {
         data.reserveCapacity(estimatedSize)  // Pre-allocate to avoid reallocations!
         
         // HEADER (8 bytes, aligned)
-        data.append("BLAZE".data(using: .utf8)!)  // 5 bytes: Magic
+        guard let magicBytes = "BLAZE".data(using: .utf8) else {
+            throw BlazeDBError.invalidData(reason: "Failed to encode magic header")
+        }
+        data.append(magicBytes)  // 5 bytes: Magic
         data.append(includeCRC ? 0x02 : 0x01)     // 1 byte: Version (v1=no CRC, v2=with CRC)
         
         // Field count (2 bytes, big-endian)
@@ -113,14 +116,18 @@ public enum BlazeBinaryEncoder {
             // Custom field: marker + length + name
             // ✅ Supports ANY field name, ANY length!
             data.append(0xFF)  // Marker: Custom field follows
-            let keyData = key.data(using: .utf8)!
+            guard let keyData = key.data(using: .utf8) else {
+                throw BlazeDBError.invalidData(reason: "Failed to encode field name: \(key)")
+            }
             
             // Support field names up to 65,535 bytes (realistically unlimited!)
             guard keyData.count <= UInt16.max else {
                 BlazeLogger.error("Field name too long: \(key.prefix(50))... (\(keyData.count) bytes)")
                 // Truncate to max size
                 let truncated = String(key.prefix(1000))
-                let truncatedData = truncated.data(using: .utf8)!
+                guard let truncatedData = truncated.data(using: .utf8) else {
+                    throw BlazeDBError.invalidData(reason: "Failed to encode truncated field name")
+                }
                 var keyLen = UInt16(truncatedData.count).bigEndian
                 data.append(Data(bytes: &keyLen, count: 2))
                 data.append(truncatedData)
@@ -144,7 +151,9 @@ public enum BlazeBinaryEncoder {
             } else {
                 // ✅ FIX: Use UTF-8 BYTE count, not character count!
                 // "🔥" = 1 character but 4 bytes in UTF-8!
-                let utf8Data = s.data(using: .utf8)!
+                guard let utf8Data = s.data(using: .utf8) else {
+                    throw BlazeDBError.invalidData(reason: "Failed to encode string value")
+                }
                 let byteCount = utf8Data.count
                 
                 if byteCount <= 15 {
@@ -210,6 +219,19 @@ public enum BlazeBinaryEncoder {
                     encodeValue(item, into: &data)
                 }
             }
+            
+        case .vector(let vec):
+            data.append(TypeTag.vector.rawValue)
+            var vecCount = UInt32(vec.count).bigEndian
+            data.append(Data(bytes: &vecCount, count: 4))
+            // Encode each Float as 4 bytes (big-endian)
+            for float in vec {
+                var bits = float.bitPattern.bigEndian
+                data.append(Data(bytes: &bits, count: 4))
+            }
+            
+        case .null:
+            data.append(TypeTag.null.rawValue)
             
         case .dictionary(let dict):
             if dict.isEmpty {

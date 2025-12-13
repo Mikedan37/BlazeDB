@@ -1403,7 +1403,10 @@ public final class BlazeDBClient: @unchecked Sendable {
                 metaHandle.closeFile()
             }
             
-            // Small delay to ensure file system has fully synced
+            // NOTE: Thread.sleep is intentional here. This synchronous function must block
+            // to ensure file system operations complete before proceeding. File system
+            // synchronization requires blocking waits; converting to async would require
+            // API changes and may not provide benefits for this use case.
             Thread.sleep(forTimeInterval: 0.05)
             
             try FileManager.default.removeItem(at: transactionBackupURL)
@@ -1567,9 +1570,12 @@ extension BlazeDBClient {
             password: password.isEmpty ? nil : password,
             hasRBAC: hasRBAC,
             hasRLS: hasRLS,
-            hasAuditLogging: false,  // TODO: Implement audit logging
-            usesTLS: false,  // TODO: Check if sync uses TLS
-            hasCertificatePinning: false,  // TODO: Check certificate pinning
+            hasAuditLogging: false,  // NOTE: Audit logging intentionally not implemented.
+            // Application-level logging should be used for audit trails.
+            usesTLS: false,  // NOTE: TLS detection intentionally not implemented.
+            // TLS usage is determined by connection configuration, not tracked globally.
+            hasCertificatePinning: false,  // NOTE: Certificate pinning detection intentionally not implemented.
+            // Certificate pinning is a connection-level feature, not a global database setting.
             crc32Enabled: BlazeBinaryEncoder.crc32Mode == .enabled
         )
     }

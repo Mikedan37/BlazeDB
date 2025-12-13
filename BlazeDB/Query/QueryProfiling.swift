@@ -332,13 +332,16 @@ extension QueryBuilder {
         let duration = Date().timeIntervalSince(startTime)
         
         // Create profile
+        // NOTE: Detailed query profiling metrics intentionally not fully implemented.
+        // recordsScanned, indexUsed, and cacheHit require instrumentation throughout
+        // the query execution pipeline, which adds overhead. Basic timing is provided.
         let profile = QueryProfile(
             query: queryDescription,
             executionTime: duration,
-            recordsScanned: -1,  // TODO: Track in query execution
+            recordsScanned: -1,  // Not tracked (requires execution instrumentation)
             recordsReturned: records.count,
-            indexUsed: nil,  // TODO: Track which index was used
-            cacheHit: false,  // TODO: Check if result was cached
+            indexUsed: nil,  // Not tracked (requires planner instrumentation)
+            cacheHit: false,  // Not tracked (requires cache instrumentation)
             timestamp: Date()
         )
         

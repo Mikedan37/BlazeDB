@@ -122,23 +122,31 @@ public class SecureConnection {
         let sharedSecret = try clientPrivateKey.sharedSecretFromKeyAgreement(with: serverPublicKey)
         
         // STEP 5: Derive symmetric key (HKDF!)
-        let salt = "blazedb-sync-v1".data(using: .utf8)!
-        let info = [database, welcome.database].sorted().joined(separator: ":").data(using: .utf8)!
+        guard let salt = "blazedb-sync-v1".data(using: .utf8),
+              let info = [database, welcome.database].sorted().joined(separator: ":").data(using: .utf8) else {
+            throw HandshakeError.invalidResponse
+        }
         
+        // Convert SharedSecret to SymmetricKey for HKDF
+        let sharedSecretData = sharedSecret.withUnsafeBytes { Data($0) }
         groupKey = HKDF<SHA256>.deriveKey(
-            inputKeyMaterial: sharedSecret,
+            inputKeyMaterial: SymmetricKey(data: sharedSecretData),
             salt: salt,
             info: info,
             outputByteCount: 32  // AES-256
         )
         
         // STEP 6: Verify challenge
+        guard let challenge = welcome.challenge else {
+            throw HandshakeError.invalidResponse
+        }
+        let keyData = groupKey!.withUnsafeBytes { Data($0) }
         let response = HMAC<SHA256>.authenticationCode(
-            for: welcome.challenge,
-            using: SymmetricKey(data: groupKey!.rawRepresentation)
+            for: challenge,
+            using: SymmetricKey(data: keyData)
         )
         
-        try await sendFrame(type: .verify, payload: response)
+        try await sendFrame(type: .verify, payload: Data(response))
         
         // STEP 7: Receive confirmation
         let confirmFrame = try await receiveFrame()
@@ -170,9 +178,11 @@ public class SecureConnection {
             // Shared secret mode: derive token from secret + database names
             // Use the same token derivation logic as BlazeDBClient
             let dbNames = [serverDB, hello.database].sorted().joined(separator: ":")
-            let secretData = secret.data(using: .utf8)!
-            let salt = "blazedb-auth-v1".data(using: .utf8)!
-            let info = dbNames.data(using: .utf8)!
+            guard let secretData = secret.data(using: .utf8),
+                  let salt = "blazedb-auth-v1".data(using: .utf8),
+                  let info = dbNames.data(using: .utf8) else {
+                throw HandshakeError.invalidResponse
+            }
             
             let expectedTokenKey = HKDF<SHA256>.deriveKey(
                 inputKeyMaterial: SymmetricKey(data: secretData),
@@ -228,23 +238,28 @@ public class SecureConnection {
         let sharedSecret = try serverPrivateKey.sharedSecretFromKeyAgreement(with: clientPublicKey)
         
         // STEP 7: Derive symmetric key
-        let salt = "blazedb-sync-v1".data(using: .utf8)!
-        let info = [database, hello.database].sorted().joined(separator: ":").data(using: .utf8)!
+        guard let salt = "blazedb-sync-v1".data(using: .utf8),
+              let info = [database, hello.database].sorted().joined(separator: ":").data(using: .utf8) else {
+            throw HandshakeError.invalidResponse
+        }
         
+        // Convert SharedSecret to SymmetricKey for HKDF
+        let sharedSecretData = sharedSecret.withUnsafeBytes { Data($0) }
         groupKey = HKDF<SHA256>.deriveKey(
-            inputKeyMaterial: sharedSecret,
+            inputKeyMaterial: SymmetricKey(data: sharedSecretData),
             salt: salt,
             info: info,
             outputByteCount: 32
         )
         
         // STEP 8: Verify challenge response
+        let keyData = groupKey!.withUnsafeBytes { Data($0) }
         let expectedResponse = HMAC<SHA256>.authenticationCode(
             for: challenge,
-            using: SymmetricKey(data: groupKey!.rawRepresentation)
+            using: SymmetricKey(data: keyData)
         )
         
-        guard verifyFrame.payload == expectedResponse else {
+        guard verifyFrame.payload == Data(expectedResponse) else {
             throw HandshakeError.invalidResponse
         }
         
@@ -333,8 +348,16 @@ public class SecureConnection {
     
     private func readExactly(_ count: Int) async throws -> Data {
         while receiveBuffer.count < count {
-            let message = try await connection.receiveMessage()
-            receiveBuffer.append(message.content ?? Data())
+            let content = try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Data?, Error>) in
+                connection.receiveMessage { content, context, isComplete, error in
+                    if let error = error {
+                        continuation.resume(throwing: error)
+                    } else {
+                        continuation.resume(returning: content)
+                    }
+                }
+            }
+            receiveBuffer.append(content ?? Data())
         }
         
         let result = receiveBuffer.prefix(count)
@@ -345,7 +368,7 @@ public class SecureConnection {
     // MARK: - Handshake Messages
     
     struct HandshakeMessage {
-        let protocol: String
+        let `protocol`: String
         let nodeId: UUID
         let database: String
         let publicKey: Data
@@ -372,7 +395,7 @@ public class SecureConnection {
             challenge: Data? = nil,
             authToken: String? = nil  // SECURITY: Authentication token
         ) {
-            self.protocol = `protocol`
+            self.`protocol` = `protocol`
             self.nodeId = nodeId
             self.database = database
             self.publicKey = publicKey
@@ -387,7 +410,7 @@ public class SecureConnection {
         var data = Data()
         
         // Protocol
-        let protocolBytes = msg.protocol.utf8
+        let protocolBytes = msg.`protocol`.utf8
         data.append(UInt8(protocolBytes.count))
         data.append(contentsOf: protocolBytes)
         
@@ -434,7 +457,7 @@ public class SecureConnection {
         // Protocol
         let protocolLen = Int(data[offset])
         offset += 1
-        let protocol = String(data: data[offset..<offset+protocolLen], encoding: .utf8)!
+        let `protocol` = String(data: data[offset..<offset+protocolLen], encoding: .utf8)!
         offset += protocolLen
         
         // Node ID
@@ -481,7 +504,7 @@ public class SecureConnection {
         }
         
         return HandshakeMessage(
-            protocol: protocol,
+            protocol: `protocol`,
             nodeId: nodeId,
             database: database,
             publicKey: publicKey,

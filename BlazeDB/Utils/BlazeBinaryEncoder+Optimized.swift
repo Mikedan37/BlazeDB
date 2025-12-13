@@ -53,7 +53,10 @@ extension BlazeBinaryEncoder {
         let includeCRC = (crc32Mode == .enabled)
         
         // HEADER (8 bytes, aligned)
-        data.append("BLAZE".data(using: .utf8)!)  // 5 bytes: Magic
+        guard let magicBytes = "BLAZE".data(using: .utf8) else {
+            throw BlazeDBError.invalidData(reason: "Failed to encode magic header")
+        }
+        data.append(magicBytes)  // 5 bytes: Magic
         data.append(includeCRC ? 0x02 : 0x01)     // 1 byte: Version
         
         // Field count (2 bytes, big-endian)

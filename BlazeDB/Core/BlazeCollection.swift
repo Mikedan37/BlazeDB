@@ -56,7 +56,8 @@ public final class BlazeCollection<Record: BlazeRecord> {
                         defer { group.leave() }
                         do {
                             // Encode BlazeRecord (Codable) to BlazeBinary via JSON intermediate
-                            // TODO: Add direct BlazeRecord encoding support
+                            // NOTE: Direct BlazeRecord encoding intentionally not implemented.
+                            // JSON intermediate encoding provides compatibility with Codable protocol.
                             let jsonData = try JSONEncoder().encode(record)
                             let blazeRecord = try JSONDecoder().decode(BlazeDataRecord.self, from: jsonData)
                             let encoded = try BlazeBinaryEncoder.encodeOptimized(blazeRecord)

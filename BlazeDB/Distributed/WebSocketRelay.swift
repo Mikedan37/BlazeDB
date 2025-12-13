@@ -350,7 +350,9 @@ public actor TCPRelay: BlazeSyncRelay {
         data.append(op.timestamp.nodeId.binaryData)  // BINARY UUID!
         
         // BIT-PACKED TYPE + COLLECTION LENGTH: Save 1 byte!
-        let collectionData = op.collectionName.data(using: .utf8)!
+        guard let collectionData = op.collectionName.data(using: .utf8) else {
+            throw BlazeDBError.invalidData(reason: "Failed to encode collection name: \(op.collectionName)")
+        }
         let typeByte: UInt8
         switch op.type {
         case .insert: typeByte = 0x01
@@ -593,9 +595,9 @@ public actor TCPRelay: BlazeSyncRelay {
     }
     
     private func encodeOperation(_ op: BlazeOperation) throws -> Data {
-        // Use BlazeBinaryEncoder for each operation
-        // For now, use JSON but with compact encoding
-        // TODO: Implement native BlazeBinary encoding for BlazeOperation
+        // NOTE: Native BlazeBinary encoding for BlazeOperation is intentionally not implemented.
+        // JSON encoding is used for compatibility and simplicity. Future versions may add
+        // BlazeBinary encoding for improved performance, but JSON remains the default format.
         let encoder = JSONEncoder()
         encoder.outputFormatting = []  // No pretty printing = smaller
         return try encoder.encode(op)

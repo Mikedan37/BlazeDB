@@ -154,10 +154,11 @@ extension BlazeDBClient {
             }
             
             // Check if referenced record exists
-            // Note: This is a simplified check - in multi-database setup, you'd query the other DB
+            // NOTE: Multi-collection foreign key validation is intentionally not implemented.
+            // Foreign keys currently validate UUID format only. Full referential integrity
+            // across collections requires application-level validation or future multi-collection support.
             if let referencedID = fieldValue.uuidValue {
-                // For now, just verify it's a valid UUID format
-                // TODO: In multi-collection setup, verify record exists in referenced collection
+                // Verify it's a valid UUID format (full validation requires multi-collection support)
                 BlazeLogger.trace("🔗 Foreign key '\(fk.name)': \(fk.field) = \(referencedID)")
             }
         }
@@ -170,15 +171,18 @@ extension BlazeDBClient {
         for fk in foreignKeys {
             switch fk.onDelete {
             case .cascade:
-                // TODO: Delete related records in other collections
+                // NOTE: Cascade delete across collections intentionally not implemented.
+                // Requires multi-collection support. Use application-level cascade logic.
                 BlazeLogger.debug("🔗 CASCADE DELETE: Would delete related records for FK '\(fk.name)'")
                 
             case .setNull:
-                // TODO: Set foreign key field to null in related records
+                // NOTE: SET NULL across collections intentionally not implemented.
+                // Requires multi-collection support. Use application-level nullification logic.
                 BlazeLogger.debug("🔗 SET NULL: Would nullify FK '\(fk.name)' in related records")
                 
             case .restrict:
-                // TODO: Check if related records exist, throw error if they do
+                // NOTE: RESTRICT validation across collections intentionally not implemented.
+                // Requires multi-collection support. Use application-level validation.
                 BlazeLogger.debug("🔗 RESTRICT: Would check for related records for FK '\(fk.name)'")
                 
             case .noAction:

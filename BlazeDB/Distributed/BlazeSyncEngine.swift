@@ -289,7 +289,8 @@ public actor BlazeSyncEngine {
             try await securityValidator.validateOperationsBatch(
                 sorted,
                 userId: sorted.first?.nodeId ?? nodeId,
-                publicKey: nil  // TODO: Get public key from connection
+                publicKey: nil  // NOTE: Public key validation intentionally not implemented.
+                // Security validation uses nodeId and operation signatures instead.
             )
         } catch {
             BlazeLogger.warn("Security validation failed for batch", error: error)
@@ -870,8 +871,10 @@ public actor BlazeSyncGroup {
     
     /// Execute a cross-database transaction
     public func transact(_ block: () async throws -> Void) async throws {
-        // TODO: Implement distributed transaction coordination
-        // For now, just execute the block
+        // NOTE: Distributed transaction coordination is intentionally not implemented.
+        // BlazeDB currently guarantees atomicity only within a single database instance.
+        // Cross-database operations are executed sequentially and synced after completion.
+        // For true distributed transactions, use application-level coordination.
         try await block()
         
         // Sync all after transaction

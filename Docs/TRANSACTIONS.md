@@ -11,10 +11,10 @@
 All operations in a transaction succeed or fail together. Partial failures trigger automatic rollback.
 
 ```swift
-try await db.beginTransaction()
-try await db.insert(record1)
-try await db.insert(record2)
-try await db.commitTransaction()  // Both succeed or both fail
+try db.beginTransaction()
+try db.insert(record1)
+try db.insert(record2)
+try db.commitTransaction()  // Both succeed or both fail
 ```
 
 ### Consistency
@@ -76,17 +76,20 @@ Committed transactions survive crashes:
 
 ### WAL Structure
 
+The WAL file (`txn_log.json`) uses newline-delimited JSON format. Each entry is a JSON object:
+
+```json
+{"type":"begin","txID":"550e8400-e29b-41d4-a716-446655440000"}
+{"type":"write","pageID":0,"data":"<base64-encoded-data>"}
+{"type":"commit","txID":"550e8400-e29b-41d4-a716-446655440000"}
 ```
-┌─────────────────────────────────────┐
-│ WAL Entry                            │
-├─────────────────────────────────────┤
-│ Transaction ID: UUID                 │
-│ Operation: BEGIN/WRITE/COMMIT/ABORT  │
-│ Page Index: Int                      │
-│ Data: BlazeBinary                    │
-│ Timestamp: Date                      │
-└─────────────────────────────────────┘
-```
+
+**Entry Types:**
+- `begin(txID: String)` - Transaction start
+- `write(pageID: Int, data: Data)` - Page write operation
+- `delete(pageID: Int)` - Page deletion
+- `commit(txID: String)` - Transaction commit
+- `abort(txID: String)` - Transaction rollback
 
 ### Durability Guarantee
 
@@ -178,14 +181,14 @@ Automatic detection and recovery:
 Nested transactions via savepoints:
 
 ```swift
-try await db.beginTransaction()
-try await db.insert(record1)
+try db.beginTransaction()
+try db.insert(record1)
 
-let savepoint = try await db.createSavepoint()
-try await db.insert(record2)
-try await db.rollback(to: savepoint)  // Only record2 rolled back
+try db.savepoint("sp1")
+try db.insert(record2)
+try db.rollbackToSavepoint("sp1")  // Only record2 rolled back
 
-try await db.commitTransaction()  // record1 committed
+try db.commitTransaction()  // record1 committed
 ```
 
 ---

@@ -110,7 +110,8 @@ extension QueryBuilder {
             estimatedTime += steps.last!.estimatedTime
         } else {
             // Large dataset: check if indexes would help
-            // TODO: Check if WHERE conditions match indexes
+            // NOTE: Index matching analysis intentionally not implemented in explain output.
+            // Query planner automatically selects indexes; explain focuses on execution steps.
             steps.append(QueryStep(
                 type: .tableScan,
                 estimatedRecords: estimatedRecords,

@@ -337,7 +337,9 @@ public actor UnixDomainSocketRelay: BlazeSyncRelay {
         
         // Each collection (1 byte length + UTF-8)
         for collection in request.collections {
-            let bytes = collection.data(using: .utf8)!
+            guard let bytes = collection.data(using: .utf8) else {
+                throw BlazeDBError.invalidData(reason: "Failed to encode collection name: \(collection)")
+            }
             data.append(UInt8(bytes.count))
             data.append(bytes)
         }

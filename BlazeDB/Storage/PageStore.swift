@@ -162,7 +162,12 @@ public final class PageStore {
         // Build encrypted page format:
         // [BZDB][0x02][length][nonce][tag][ciphertext][padding]
         var buffer = Data()
-        buffer.append("BZDB".data(using: .utf8)!)  // 4 bytes: header magic
+        guard let magicBytes = "BZDB".data(using: .utf8) else {
+            throw NSError(domain: "PageStore", code: -1, userInfo: [
+                NSLocalizedDescriptionKey: "Failed to encode page header magic"
+            ])
+        }
+        buffer.append(magicBytes)  // 4 bytes: header magic
         buffer.append(0x02)                        // 1 byte: version 0x02 = encrypted
         
         // 4 bytes: original plaintext length (UInt32, big-endian)

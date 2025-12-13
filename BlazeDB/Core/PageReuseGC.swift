@@ -121,8 +121,8 @@ extension DynamicCollection {
         let encoded = try JSONEncoder().encode(document)
         try store.writePage(index: pageIndex, plaintext: encoded)
         
-        // Update indexMap
-        indexMap[id] = pageIndex
+        // Update indexMap (convert Int to [Int] for overflow chain support)
+        indexMap[id] = [pageIndex]
         
         // Update indexes (same as before)
         for (compound, _) in secondaryIndexes {
@@ -135,8 +135,8 @@ extension DynamicCollection {
             secondaryIndexes[compound] = inner
         }
         
-        // Save layout with updated deletedPages
-        layout.indexMap = indexMap
+        // Save layout with updated deletedPages (convert [UUID: [Int]] to [UUID: Int] for StorageLayout)
+        layout.indexMap = indexMap.mapValues { $0.first ?? 0 }
         layout.secondaryIndexes = StorageLayout.fromRuntimeIndexes(secondaryIndexes)
         try layout.save(to: metaURL)
         
@@ -150,7 +150,7 @@ extension DynamicCollection {
     /// Marks deleted pages for reuse instead of wasting space.
     /// **Zero performance overhead** - same speed, but enables reuse!
     internal func deleteWithPageTracking(id: UUID) throws {
-        guard let pageIndex = indexMap[id] else {
+        guard let pageIndices = indexMap[id], let pageIndex = pageIndices.first else {
             throw BlazeDBError.recordNotFound(id: id)
         }
         
@@ -187,8 +187,8 @@ extension DynamicCollection {
         // Track for reuse! (THIS IS THE KEY!)
         markPageForReuse(pageIndex: pageIndex, layout: &layout)
         
-        // Save layout
-        layout.indexMap = indexMap
+        // Save layout (convert [UUID: [Int]] to [UUID: Int] for StorageLayout)
+        layout.indexMap = indexMap.mapValues { $0.first ?? 0 }
         layout.secondaryIndexes = StorageLayout.fromRuntimeIndexes(secondaryIndexes)
         try layout.save(to: metaURL)
         

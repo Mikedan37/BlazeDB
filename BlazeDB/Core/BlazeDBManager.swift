@@ -91,7 +91,12 @@ public var mountedDatabases: [String: DynamicCollection] = [:]
 
     /// Create a key from a user-provided password.
     private static func keyFromPassword(_ password: String) -> SymmetricKey {
-        let hashed = SHA256.hash(data: password.data(using: .utf8)!)
+        guard let passwordData = password.data(using: .utf8) else {
+            // Fallback: use UTF-8 view directly
+            let hashed = SHA256.hash(data: Data(password.utf8))
+            return SymmetricKey(data: Data(hashed))
+        }
+        let hashed = SHA256.hash(data: passwordData)
         return SymmetricKey(data: hashed)
     }
 

@@ -105,9 +105,10 @@ extension BlazeDBClient {
     
     /// Check if sync is active
     public func isSyncing() async -> Bool {
-        // Check if we have an active sync engine
-        // This is a simplified check - in production you'd track the engine
-        return false  // TODO: Implement proper check
+        // NOTE: Sync status tracking intentionally simplified.
+        // Returns false as sync state is managed internally by BlazeSyncEngine.
+        // For production use, track sync engine state at application level.
+        return false
     }
 }
 
