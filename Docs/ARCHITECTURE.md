@@ -12,15 +12,17 @@ BlazeDB uses a layered architecture to separate storage, concurrency, query exec
 
 ## System Layers
 
-BlazeDB uses a layered architecture with clear separation of concerns:
+BlazeDB implements a layered architecture that enforces clear separation of concerns. Each layer has a well-defined responsibility and communicates only with adjacent layers.
 
-- **Application Layer**: BlazeDBClient (Public API), SwiftUI Integration, CLI Tools
-- **Query Layer**: Query Builder, Optimizer, Planner, Indexes
-- **MVCC Layer**: Version Manager, Transactions, Garbage Collection
-- **Storage Layer**: PageStore (4KB pages), WriteAheadLog, StorageLayout, Overflow Pages
-- **Encryption Layer**: AES-256-GCM per-page encryption, KeyManager, Secure Enclave
+| Layer | Components | Responsibility |
+|-------|------------|----------------|
+| **Application** | BlazeDBClient, SwiftUI Integration, CLI Tools | Public API and user-facing interfaces |
+| **Query** | Query Builder, Optimizer, Planner, Indexes | Query parsing, optimization, and execution planning |
+| **MVCC** | Version Manager, Transactions, Garbage Collection | Concurrency control and transaction isolation |
+| **Storage** | PageStore, WriteAheadLog, StorageLayout, Overflow Pages | Page-based I/O and metadata management |
+| **Encryption** | AES-256-GCM, KeyManager, Secure Enclave | Per-page encryption and key management |
 
-Each layer communicates only with adjacent layers. The storage layer handles all I/O, encryption is applied at the page level, and MVCC provides concurrency control above storage.
+The storage layer handles all I/O operations. Encryption is applied at the page level, enabling efficient garbage collection. MVCC provides concurrency control above the storage layer, allowing concurrent readers and writers without blocking.
 
 ---
 
@@ -28,34 +30,37 @@ Each layer communicates only with adjacent layers. The storage layer handles all
 
 ### Page Structure
 
-BlazeDB uses 4KB fixed-size pages with the following layout:
+BlazeDB uses 4KB fixed-size pages for predictable I/O performance. Each page follows a consistent layout:
 
-| Offset | Size | Content |
-|--------|------|---------|
-| 0-3 | 4 bytes | "BZDB" magic header |
-| 4 | 1 byte | Version (0x01) |
-| 5-8 | 4 bytes | Payload length (UInt32, big-endian) |
-| 9-N | variable | BlazeBinary payload |
-| N+1-4095 | remainder | Zero padding |
+| Offset | Size | Content | Description |
+|--------|------|---------|-------------|
+| 0-3 | 4 bytes | `"BZDB"` | Magic header for format identification |
+| 4 | 1 byte | `0x01` | Page format version |
+| 5-8 | 4 bytes | `UInt32` | Payload length (big-endian) |
+| 9-N | variable | BlazeBinary | Encoded record data |
+| N+1-4095 | remainder | `0x00` | Zero padding to page boundary |
 
-**Max payload:** 4087 bytes (4096 - 9 byte overhead)
+**Maximum payload size:** 4087 bytes (4096 - 9 byte header overhead)
 
 ### File Layout
 
-Each database collection uses the following files:
+Each database collection is stored as a set of files in the database directory:
 
-- `<collection>.blaze` - Main data file (4KB pages)
-- `<collection>.meta` - Layout metadata (JSON)
-- `<collection>.meta.indexes` - Secondary index data (JSON)
-- `txn_log.json` - Transaction log (WAL)
+| File | Format | Purpose |
+|------|--------|---------|
+| `<collection>.blaze` | Binary | Main data file containing 4KB pages |
+| `<collection>.meta` | JSON | Layout metadata and page index mappings |
+| `<collection>.meta.indexes` | JSON | Secondary index definitions and data |
+| `txn_log.json` | JSON | Write-ahead log for transaction durability |
 
 ### Metadata Format
 
-The `.meta` file stores:
-- UUID → page index mapping
-- Secondary index definitions
-- Schema version information
-- Field type metadata
+The `<collection>.meta` file contains JSON-encoded metadata:
+
+- **Index Map**: UUID to page index mappings for record lookup
+- **Secondary Indexes**: Index definitions and key-to-UUID mappings
+- **Schema Version**: Version number for migration compatibility
+- **Field Types**: Type information for schema validation
 
 ---
 
@@ -92,19 +97,23 @@ func write(id: UUID, data: Data, txID: UUID) {
 }
 ```
 
-### Characteristics
+### Performance Characteristics
 
-- Multiple concurrent readers AND writers
-- Write throughput: ~10,000-50,000 ops/sec
-- Read throughput: ~50,000+ ops/sec
-- No read-write blocking
+| Metric | Value |
+|--------|-------|
+| Concurrent readers | Unlimited |
+| Concurrent writers | Unlimited |
+| Write throughput | 10,000-50,000 ops/sec |
+| Read throughput | 50,000+ ops/sec |
+| Read-write blocking | None |
 
 ### Garbage Collection
 
-Obsolete versions are collected automatically:
-- Long-running read transactions delay GC
-- Automatic collection runs periodically
-- Manual triggers available if needed
+Obsolete page versions are automatically collected to reclaim storage:
+
+- **Automatic Collection**: Runs periodically based on version age and transaction visibility
+- **Long-Running Transactions**: Read transactions delay GC of versions they may access
+- **Manual Triggers**: Applications can trigger collection when needed
 
 ---
 
@@ -112,77 +121,110 @@ Obsolete versions are collected automatically:
 
 ### Query Planner
 
-Uses rule-based heuristics (cost-based optimizer planned):
+The query planner uses rule-based heuristics to optimize query execution. A cost-based optimizer is planned for future releases.
 
-1. **Index Selection**: Analyzes WHERE clauses to select optimal index
-2. **Join Planning**: Determines join order and algorithm
-3. **Filter Pushdown**: Applies filters as early as possible
-4. **Projection**: Selects only required fields
+**Optimization Steps:**
+
+1. **Index Selection**: Analyzes WHERE clauses to identify and select the most efficient index
+2. **Join Planning**: Determines optimal join order and algorithm (nested loop, hash join)
+3. **Filter Pushdown**: Applies filters as early as possible to reduce data movement
+4. **Projection**: Selects only required fields to minimize memory usage
 
 ### Index Types
 
-- **Secondary Indexes**: Hash-based lookups for equality
-- **Compound Indexes**: Multi-field indexes for complex queries
-- **Full-Text Search**: Inverted index for text queries
-- **Spatial Index**: R-tree for geospatial queries
-- **Vector Index**: Approximate nearest neighbor search
+BlazeDB supports multiple index types optimized for different query patterns:
+
+| Index Type | Structure | Use Case |
+|------------|-----------|----------|
+| **Secondary** | Hash table | Equality lookups (`WHERE field = value`) |
+| **Compound** | Multi-field hash | Complex equality queries on multiple fields |
+| **Full-Text** | Inverted index | Text search with relevance scoring |
+| **Spatial** | R-tree | Geospatial queries (distance, containment) |
+| **Vector** | Approximate nearest neighbor | Similarity search for embeddings |
 
 ### Execution Flow
 
-Query execution follows this pipeline:
+Query execution follows a five-stage pipeline:
 
-1. **Parser**: Converts query DSL to abstract syntax tree (AST)
-2. **Optimizer**: Analyzes AST, selects indexes, determines join order
-3. **Planner**: Creates execution plan with filter pushdown and projection
-4. **Executor**: Executes plan, accesses pages through storage layer
-5. **Results**: Returns filtered and projected records
+1. **Parser**: Converts the fluent query DSL into an abstract syntax tree (AST)
+2. **Optimizer**: Analyzes the AST, selects optimal indexes, and determines join order
+3. **Planner**: Creates an execution plan with filter pushdown and field projection
+4. **Executor**: Executes the plan by accessing pages through the storage layer
+5. **Results**: Returns filtered and projected records to the application
 
-The optimizer uses rule-based heuristics to select the most efficient index for WHERE clauses. The planner applies filters as early as possible to reduce data movement.
+The optimizer uses rule-based heuristics to select the most efficient index for WHERE clauses. The planner applies filters as early as possible in the pipeline to minimize data movement between stages.
 
 ---
 
 ## Concurrency Model
 
-### Current Implementation
+### GCD-Based Implementation
 
-GCD concurrent queue with barriers:
-- Multiple concurrent readers
-- Single writer at a time (bottleneck)
-- Write throughput: ~2,000-5,000 ops/sec
-- Read throughput: ~10,000+ ops/sec
+The current implementation uses Grand Central Dispatch (GCD) concurrent queues with barriers:
+
+| Aspect | Behavior |
+|--------|----------|
+| Readers | Multiple concurrent readers supported |
+| Writers | Single writer at a time (serialized) |
+| Write throughput | 2,000-5,000 operations/second |
+| Read throughput | 10,000+ operations/second |
+| Blocking | Writers block other writers; readers never block |
 
 ### MVCC Implementation
 
-- Multiple concurrent readers AND writers
-- Snapshot isolation per transaction
-- No read-write blocking
-- Write throughput: ~10,000-50,000 ops/sec
+The MVCC implementation provides true concurrent access:
+
+| Aspect | Behavior |
+|--------|----------|
+| Readers | Unlimited concurrent readers |
+| Writers | Unlimited concurrent writers |
+| Isolation | Snapshot isolation per transaction |
+| Blocking | No read-write blocking |
+| Write throughput | 10,000-50,000 operations/second |
 
 ---
 
 ## Design Decisions
 
-### Why Page-Based Storage?
+### Page-Based Storage
 
-- Simple to implement
-- Predictable performance (fixed-size I/O)
-- Easy to reason about
-- Tradeoff: Internal fragmentation (wasted space)
+**Rationale:** Fixed-size 4KB pages provide predictable I/O performance and simplify implementation.
 
-### Why BlazeBinary over JSON?
+**Benefits:**
+- Predictable performance characteristics (fixed-size I/O operations)
+- Simple implementation and debugging
+- Easy to reason about memory layout and access patterns
 
-- 53% smaller than JSON
-- 48% faster encode/decode
-- Deterministic encoding
-- Field name compression
-- Tradeoff: Less human-readable for debugging
+**Tradeoffs:**
+- Internal fragmentation when records don't fill pages completely
+- Large records require overflow pages (implemented)
 
-### Why MVCC over Locking?
+### BlazeBinary Format
 
-- No read-write blocking
-- Better concurrency
-- Snapshot isolation
-- Tradeoff: Storage overhead for versions
+**Rationale:** Custom binary format optimized for Swift types and BlazeDB's use cases.
+
+**Benefits:**
+- 53% smaller than JSON (reduced storage and network overhead)
+- 48% faster encode/decode operations
+- Deterministic encoding (identical records produce identical binary)
+- Field name compression (unique optimization)
+
+**Tradeoffs:**
+- Less human-readable than JSON for debugging
+- Requires custom tooling for inspection
+
+### MVCC over Locking
+
+**Rationale:** Multi-version concurrency control eliminates read-write contention.
+
+**Benefits:**
+- No read-write blocking (readers never wait for writers)
+- Superior concurrency characteristics
+- Snapshot isolation provides consistent views
+
+**Tradeoffs:**
+- Storage overhead for maintaining multiple versions
+- Garbage collection required to reclaim obsolete versions
 
 ---
 
