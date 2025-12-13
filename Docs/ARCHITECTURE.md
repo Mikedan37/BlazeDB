@@ -14,44 +14,24 @@ BlazeDB uses a layered architecture to separate storage, concurrency, query exec
 
 BlazeDB uses a layered architecture with clear separation of concerns:
 
-```
-┌─────────────────────────────────────────────────────┐
-│  Application Layer                                   │
-│  - BlazeDBClient (Public API)                       │
-│  - SwiftUI Integration (@BlazeQuery)                │
-│  - CLI Tools (BlazeShell, BlazeStudio)             │
-└──────────────┬──────────────────────────────────────┘
-               │
-┌──────────────▼──────────────────────────────────────┐
-│  Query Layer                                        │
-│  - Query Builder (Fluent DSL)                       │
-│  - Query Optimizer (Index Selection)                │
-│  - Query Planner (Execution Plan)                   │
-│  - Secondary Indexes, Full-Text Search              │
-└──────────────┬──────────────────────────────────────┘
-               │
-┌──────────────▼──────────────────────────────────────┐
-│  MVCC Layer                                         │
-│  - Version Manager (Multi-Version Storage)          │
-│  - MVCC Transaction (Snapshot Isolation)            │
-│  - Conflict Resolution                              │
-│  - Page Garbage Collector                           │
-└──────────────┬──────────────────────────────────────┘
-               │
-┌──────────────▼──────────────────────────────────────┐
-│  Storage Layer                                       │
-│  - PageStore (4KB Pages)                            │
-│  - WriteAheadLog (WAL for Durability)               │
-│  - StorageLayout (Metadata Management)               │
-│  - Overflow Pages (Large Records)                   │
-└──────────────┬──────────────────────────────────────┘
-               │
-┌──────────────▼──────────────────────────────────────┐
-│  Encryption Layer                                    │
-│  - AES-256-GCM (Per-Page Encryption)                │
-│  - KeyManager (Argon2id + HKDF)                    │
-│  - Secure Enclave (iOS/macOS)                        │
-└─────────────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+    App[Application Layer<br/>BlazeDBClient, SwiftUI, CLI Tools]
+    Query[Query Layer<br/>Query Builder, Optimizer, Planner, Indexes]
+    MVCC[MVCC Layer<br/>Version Manager, Transactions, GC]
+    Storage[Storage Layer<br/>PageStore, WAL, StorageLayout, Overflow]
+    Crypto[Encryption Layer<br/>AES-256-GCM, KeyManager, Secure Enclave]
+    
+    App --> Query
+    Query --> MVCC
+    MVCC --> Storage
+    Storage --> Crypto
+    
+    style App fill:#3498db,stroke:#2980b9,color:#fff
+    style Query fill:#2ecc71,stroke:#27ae60,color:#fff
+    style MVCC fill:#e74c3c,stroke:#c0392b,color:#fff
+    style Storage fill:#f39c12,stroke:#e67e22,color:#fff
+    style Crypto fill:#9b59b6,stroke:#8e44ad,color:#fff
 ```
 
 ---
@@ -62,17 +42,30 @@ BlazeDB uses a layered architecture with clear separation of concerns:
 
 BlazeDB uses 4KB fixed-size pages:
 
+```mermaid
+graph LR
+    subgraph Page["4KB Page (4096 bytes)"]
+        Magic["Byte 0-3<br/>'BZDB'<br/>Magic Header"]
+        Version["Byte 4<br/>0x01<br/>Version"]
+        Length["Byte 5-8<br/>UInt32<br/>Payload Length"]
+        Payload["Byte 9-N<br/>BlazeBinary<br/>Payload"]
+        Padding["Byte N+1-4095<br/>Zero Padding"]
+    end
+    
+    Magic --> Version
+    Version --> Length
+    Length --> Payload
+    Payload --> Padding
+    
+    style Page fill:#ecf0f1,stroke:#34495e
+    style Magic fill:#3498db,stroke:#2980b9,color:#fff
+    style Version fill:#2ecc71,stroke:#27ae60,color:#fff
+    style Length fill:#e74c3c,stroke:#c0392b,color:#fff
+    style Payload fill:#f39c12,stroke:#e67e22,color:#fff
+    style Padding fill:#95a5a6,stroke:#7f8c8d,color:#fff
 ```
-┌────────────────────────────────────────────────────┐
-│ Byte 0-3:   "BZDB" (magic header)                 │
-│ Byte 4:     0x01 (version)                        │
-│ Byte 5-8:   UInt32 (payload length, big-endian)   │
-│ Byte 9-N:   BlazeBinary payload                   │
-│ Byte N+1-4095: Zero padding                       │
-└────────────────────────────────────────────────────┘
 
-Max payload: 4087 bytes (4096 - 9 byte overhead)
-```
+**Max payload:** 4087 bytes (4096 - 9 byte overhead)
 
 ### File Layout
 
@@ -163,11 +156,24 @@ Uses rule-based heuristics (cost-based optimizer planned):
 
 ### Execution Flow
 
-```
-Query → Parser → Optimizer → Planner → Executor → Results
-         ↓          ↓          ↓         ↓
-      AST      Index      Execution   Page
-              Selection    Plan      Access
+```mermaid
+flowchart LR
+    Query[Query] --> Parser[Parser]
+    Parser --> AST[AST]
+    Parser --> Optimizer[Optimizer]
+    Optimizer --> Index[Index Selection]
+    Optimizer --> Planner[Planner]
+    Planner --> Plan[Execution Plan]
+    Planner --> Executor[Executor]
+    Executor --> Page[Page Access]
+    Executor --> Results[Results]
+    
+    style Query fill:#3498db,stroke:#2980b9,color:#fff
+    style Parser fill:#2ecc71,stroke:#27ae60,color:#fff
+    style Optimizer fill:#e74c3c,stroke:#c0392b,color:#fff
+    style Planner fill:#f39c12,stroke:#e67e22,color:#fff
+    style Executor fill:#9b59b6,stroke:#8e44ad,color:#fff
+    style Results fill:#1abc9c,stroke:#16a085,color:#fff
 ```
 
 ---
