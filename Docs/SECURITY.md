@@ -1,0 +1,198 @@
+# BlazeDB Security
+
+**Encryption model, threat model, and cryptographic pipelines.**
+
+---
+
+## Design Intent
+
+BlazeDB encrypts all data at rest by default using AES-256-GCM with per-page granularity. The system assumes encryption is mandatory, not optional, and integrates key management with the storage layer. This design enables efficient garbage collection of encrypted pages and hardware-backed key storage where available.
+
+---
+
+## Encryption Model
+
+### Per-Page Encryption
+
+All data is encrypted at rest using AES-256-GCM with unique nonces per page:
+
+- **Algorithm**: AES-256-GCM
+- **Key Derivation**: Argon2id (100,000 iterations) + HKDF
+- **Key Size**: 256 bits
+- **Authentication**: GCM auth tag (prevents tampering)
+- **Nonce**: Unique per page (prevents replay attacks)
+
+### Key Management
+
+```swift
+// Key derivation from user password
+let key = try KeyManager.deriveKey(
+    from: password,
+    salt: databaseSalt,
+    iterations: 100_000
+)
+
+// Secure Enclave integration (iOS/macOS)
+let secureKey = try SecureEnclave.store(key)
+```
+
+**Secure Enclave**: Hardware-backed key storage on iOS/macOS devices. Keys never leave the Secure Enclave.
+
+### Encryption Pipeline
+
+1. **Record Encoding**: Record → BlazeBinary
+2. **Page Assembly**: BlazeBinary → 4KB page
+3. **Encryption**: Page + nonce → AES-256-GCM → Encrypted page
+4. **Storage**: Encrypted page → Disk
+
+---
+
+## Threat Model
+
+### Threat Actors
+
+1. **Physical Access**: Attacker has device access
+   - Mitigation: Encryption at rest, Secure Enclave
+
+2. **Network Interception**: Attacker intercepts sync traffic
+   - Mitigation: TLS/SSL, ECDH key exchange, end-to-end encryption
+
+3. **Malicious Application**: Compromised app process
+   - Mitigation: Row-level security, policy evaluation
+
+4. **Storage Corruption**: Accidental or malicious data corruption
+   - Mitigation: CRC32 checksums, corruption detection, automatic recovery
+
+### Attack Surfaces
+
+- **Local Storage**: Encrypted pages prevent plaintext access
+- **Network Sync**: TLS + E2E encryption prevent interception
+- **Query Interface**: RLS policies filter unauthorized data
+- **Key Storage**: Secure Enclave prevents key extraction
+
+---
+
+## Cryptographic Architecture
+
+### Data at Rest: Local Encryption Pipeline
+
+```
+User Password
+    ↓
+Argon2id (100k iterations)
+    ↓
+Master Key (256 bits)
+    ↓
+HKDF (per-page key derivation)
+    ↓
+AES-256-GCM Encryption
+    ↓
+Encrypted Page
+```
+
+### Data in Transit: Sync & Protocol Encryption
+
+```
+Operation Data
+    ↓
+BlazeBinary Encoding
+    ↓
+ECDH Key Exchange (P-256)
+    ↓
+AES-256-GCM Encryption (shared key)
+    ↓
+TLS/SSL Transport
+    ↓
+Secure Transmission
+```
+
+### Perfect Forward Secrecy
+
+ECDH key exchange provides perfect forward secrecy:
+- Each session uses a new key pair
+- Compromised long-term keys don't affect past sessions
+- Keys are ephemeral and discarded after use
+
+---
+
+## Row-Level Security (RLS)
+
+### Policy Engine
+
+Fine-grained access control at the record level:
+
+```swift
+let policy = SecurityPolicy(
+    name: "view_team_bugs",
+    type: .restrictive,
+    operation: .select
+) { record, context in
+    guard let teamID = record.storage["teamID"]?.uuidValue else { return false }
+    return context.teamIDs.contains(teamID)
+}
+```
+
+### Policy Types
+
+- **Restrictive**: All policies must pass (AND logic)
+- **Permissive**: Any policy can pass (OR logic)
+
+### Security Context
+
+```swift
+struct SecurityContext {
+    let userID: UUID
+    let teamIDs: [UUID]
+    let roles: Set<String>
+    let customClaims: [String: Any]
+}
+```
+
+---
+
+## Security Control Matrix
+
+| Threat | Control | Status |
+|--------|---------|--------|
+| Physical access | Encryption at rest | ✅ Implemented |
+| Key extraction | Secure Enclave | ✅ Implemented |
+| Network interception | TLS/SSL | ⚠️ Required |
+| E2E encryption | ECDH + AES-256-GCM | ✅ Implemented |
+| Unauthorized access | Row-level security | ✅ Implemented |
+| Data tampering | GCM auth tag | ✅ Implemented |
+| Corruption | CRC32 + detection | ✅ Implemented |
+
+---
+
+## Secure Enclave Integration
+
+### iOS/macOS
+
+Hardware-backed key storage:
+- Keys never leave Secure Enclave
+- Protected by device passcode/biometrics
+- No software access to keys
+
+### Linux
+
+Software-based key storage:
+- Keys stored in encrypted keychain
+- Protected by OS-level encryption
+- Fallback to password-based derivation
+
+---
+
+## Best Practices
+
+1. **Use Strong Passwords**: Minimum 12 characters, mixed case, numbers, symbols
+2. **Enable Secure Enclave**: Use hardware-backed keys on supported devices
+3. **Use TLS**: Always use TLS/SSL for network sync
+4. **Implement RLS**: Use row-level security for multi-tenant applications
+5. **Regular Backups**: Encrypted backups preserve security guarantees
+6. **Key Rotation**: Rotate keys periodically for long-lived databases
+
+---
+
+For architecture details, see [ARCHITECTURE.md](ARCHITECTURE.md).  
+For protocol security, see [PROTOCOL.md](PROTOCOL.md).
+
