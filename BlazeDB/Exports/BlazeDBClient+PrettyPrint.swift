@@ -320,6 +320,10 @@ extension BlazeDocumentField {
                 return "{}"
             }
             return "{\(dict.count) keys}"
+        case .vector(let vec):
+            return "<Vector: \(vec.count) dimensions>"
+        case .null:
+            return "null"
         }
     }
     
