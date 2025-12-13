@@ -40,7 +40,7 @@ BlazeDB uses 4KB fixed-size pages for predictable I/O performance. Each page fol
 | 9-N | variable | BlazeBinary | Encoded record data |
 | N+1-4095 | remainder | `0x00` | Zero padding to page boundary |
 
-**Maximum payload size:** 4087 bytes (4096 - 9 byte header overhead)
+**Maximum payload size:** ~4046 bytes (4096 - 50 bytes overhead: 9-byte header + 12-byte nonce + 16-byte auth tag + padding)
 
 ### File Layout
 
@@ -71,27 +71,31 @@ The `<collection>.meta` file contains JSON-encoded metadata:
 MVCC enables snapshot isolation: readers see a consistent snapshot while writers create new versions without blocking.
 
 ```swift
-struct VersionedPage {
-    let version: Int
-    let data: Data
-    let xmin: UUID  // Transaction that created this
-    let xmax: UUID? // Transaction that deleted this
+struct RecordVersion {
+    let recordID: UUID
+    let version: UInt64
+    let pageNumber: Int
+    let createdByTransaction: UInt64
+    let deletedByTransaction: UInt64
 }
 
 // Readers see snapshot
-func read(id: UUID, snapshot: Snapshot) -> Data? {
+func read(id: UUID, snapshotVersion: UInt64) -> Data? {
     return versions[id]?
-        .filter { snapshot.isVisible($0) }
-        .last?.data
+        .filter { $0.isVisibleTo(snapshotVersion: snapshotVersion) }
+        .last
+        .flatMap { pageStore.read(pageNumber: $0.pageNumber) }
 }
 
 // Writers create new version (don't block)
-func write(id: UUID, data: Data, txID: UUID) {
-    let newVersion = VersionedPage(
-        version: nextVersion(id),
-        data: data,
-        xmin: txID,
-        xmax: nil
+func write(id: UUID, data: Data, txID: UInt64) {
+    let pageNumber = pageStore.write(data)
+    let newVersion = RecordVersion(
+        recordID: id,
+        version: nextVersion(),
+        pageNumber: pageNumber,
+        createdByTransaction: txID,
+        deletedByTransaction: 0
     )
     versions[id]?.append(newVersion)
 }
