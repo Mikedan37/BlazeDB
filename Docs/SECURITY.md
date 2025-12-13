@@ -40,10 +40,7 @@ let secureKey = try SecureEnclave.store(key)
 
 ### Encryption Pipeline
 
-1. **Record Encoding**: Record → BlazeBinary
-2. **Page Assembly**: BlazeBinary → 4KB page
-3. **Encryption**: Page + nonce → AES-256-GCM → Encrypted page
-4. **Storage**: Encrypted page → Disk
+Records are encoded to BlazeBinary, assembled into 4KB pages, encrypted with AES-256-GCM using a unique nonce per page, then written to disk. Each page is encrypted independently, enabling efficient garbage collection.
 
 ---
 
@@ -76,35 +73,11 @@ let secureKey = try SecureEnclave.store(key)
 
 ### Data at Rest: Local Encryption Pipeline
 
-```
-User Password
-    ↓
-Argon2id (100k iterations)
-    ↓
-Master Key (256 bits)
-    ↓
-HKDF (per-page key derivation)
-    ↓
-AES-256-GCM Encryption
-    ↓
-Encrypted Page
-```
+User passwords are processed through Argon2id (100,000 iterations) to derive a master key. HKDF derives per-page keys from the master key. Each 4KB page is encrypted with AES-256-GCM using its derived key and a unique nonce.
 
 ### Data in Transit: Sync & Protocol Encryption
 
-```
-Operation Data
-    ↓
-BlazeBinary Encoding
-    ↓
-ECDH Key Exchange (P-256)
-    ↓
-AES-256-GCM Encryption (shared key)
-    ↓
-TLS/SSL Transport
-    ↓
-Secure Transmission
-```
+Operations are encoded to BlazeBinary, then encrypted with AES-256-GCM using a shared key established via ECDH P-256 key exchange. The encrypted payload is transmitted over TLS/SSL. Each session uses ephemeral keys for perfect forward secrecy.
 
 ### Perfect Forward Secrecy
 
