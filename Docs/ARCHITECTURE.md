@@ -48,7 +48,7 @@ Each database collection is stored as a set of files in the database directory:
 
 | File | Format | Purpose |
 |------|--------|---------|
-| `<collection>.blaze` | Binary | Main data file containing 4KB pages |
+| `<collection>.blaze` | BlazeBinary | Main data file containing 4KB pages with BlazeBinary-encoded records |
 | `<collection>.meta` | JSON | Layout metadata and page index mappings |
 | `<collection>.meta.indexes` | JSON | Secondary index definitions and data |
 | `txn_log.json` | JSON | Write-ahead log for transaction durability |
