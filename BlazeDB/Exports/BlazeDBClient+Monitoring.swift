@@ -365,6 +365,8 @@ extension BlazeDBClient {
                 case .data: typeName = "data"
                 case .array: typeName = "array"
                 case .dictionary: typeName = "dictionary"
+                case .vector: typeName = "vector"
+                case .null: typeName = "null"
                 }
                 
                 // Store type (or mark as "mixed" if types vary)

@@ -288,6 +288,8 @@ extension BlazeDocumentField {
         case .data: return "Data"
         case .array: return "Array"
         case .dictionary: return "Dictionary"
+        case .vector: return "Vector"
+        case .null: return "Null"
         }
     }
     
