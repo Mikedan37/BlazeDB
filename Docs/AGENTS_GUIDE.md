@@ -336,13 +336,12 @@ let records = [
 ]
 try db.insertMany(records)
 
-// Batch insert (typed models - convert to records first)
+// Batch insert (typed models - direct support!)
 let bugs = [
     Bug(title: "Bug 1", priority: 1, status: "open"),
     Bug(title: "Bug 2", priority: 2, status: "open")
 ]
-let bugRecords = try bugs.map { try $0.toStorage() }
-try db.insertMany(bugRecords)
+try db.insertMany(bugs)  // Automatically converts to records
 ```
 
 #### Async API
@@ -617,7 +616,7 @@ let bugs = try db.query(Bug.self)
 let result = try db.query()
     .where("status", equals: .string("open"))
     .execute()
-let bugs = try result.records(as: Bug.self)
+let bugs = try result.records(as: Bug.self)  // Converts to [Bug]
 ```
 
 ---
