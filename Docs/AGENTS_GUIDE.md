@@ -7,6 +7,26 @@
 
 ---
 
+## Rules for AI Agents Using This Guide
+
+This guide is a reference, not a mandate. When implementing BlazeDB:
+
+- **Prefer minimal viable integration.** Implement only what is explicitly requested.
+- **Do not introduce BlazeDB features not explicitly requested.** Never enable Distributed Sync, MVCC, RLS, Vector Search, or Spatial features unless the user explicitly asks for them.
+- **Follow the host project's architecture.** If this guide conflicts with existing project patterns, the project's architecture takes precedence.
+- **Correctness over completeness.** A working minimal implementation is preferable to a feature-complete implementation that introduces unnecessary complexity.
+- **Stop before doing something clever.** If you are unsure whether a feature should be implemented, do not implement it.
+
+---
+
+## Versioning & API Stability
+
+- This guide targets BlazeDB 2.5.x.
+- APIs may evolve. If code generated from this guide conflicts with compiler errors or library updates, the compiler wins.
+- Do not assume undocumented APIs exist. Only use methods and patterns documented in this guide or the official BlazeDB API.
+
+---
+
 ## Table of Contents
 
 1. [Installation](#installation)
@@ -51,7 +71,7 @@ import BlazeDB
 
 ## Database Initialization
 
-### Pattern 1: Simple (Recommended for Most Cases)
+### Pattern 1: Default Location (Recommended for Most Cases)
 
 ```swift
 // Creates database in ~/Library/Application Support/BlazeDB/
@@ -156,6 +176,8 @@ let count = record["count"]?.intValue ?? 0
 ```
 
 ### Approach 2: Type-Safe (Recommended)
+
+**Design Intent:** Type-safe models provide compile-time safety and eliminate runtime field access errors.
 
 ```swift
 // Define model
@@ -623,6 +645,8 @@ let bugs = try result.records(as: Bug.self)  // Converts to [Bug]
 
 ## SwiftUI Integration
 
+**Design Intent:** Property wrappers provide automatic reactivity and eliminate manual state management for database queries.
+
 ### Basic @BlazeQuery
 
 ```swift
@@ -725,6 +749,8 @@ struct CreateBugView: View {
 
 ## Transactions
 
+**Design Intent:** Transactions ensure atomicity for multi-step operations and prevent partial updates.
+
 ### Basic Transaction
 
 ```swift
@@ -797,6 +823,8 @@ do {
 ---
 
 ## Indexes
+
+**Design Intent:** Indexes are explicit and must be created before use. This prevents accidental full scans and makes performance characteristics visible.
 
 ### Create Index
 
@@ -878,7 +906,7 @@ let clientDB = try BlazeDBClient(
     password: "client-password"
 )
 
-// Connect to server (simple API)
+// Connect to server
 try await clientDB.sync(
     to: "localhost",
     port: 8080,
@@ -1312,10 +1340,11 @@ let results = try db.query()
     .execute()
     .records
 
-// Transaction
-try db.transaction {
-    try db.insert(record1)
-    try db.insert(record2)
+// Transaction (async)
+try await db.performTransaction { txn in
+    try txn.insert(record1)
+    try txn.insert(record2)
+    try txn.commit()
 }
 
 // Index
@@ -1325,6 +1354,22 @@ try db.createIndex(on: "status")
 @BlazeQuery(db: db, where: "status", equals: .string("open"))
 var records
 ```
+
+---
+
+---
+
+## Out of Scope for AI Implementations
+
+Do not implement the following unless explicitly requested:
+
+- **Schema migrations.** BlazeDB is schema-less. Do not create migration systems unless the user explicitly requests them.
+- **Performance tuning beyond basic indexing.** Do not optimize queries, add caching layers, or implement custom performance enhancements unless requested.
+- **Security policy invention.** Do not create custom RLS policies, encryption schemes, or security architectures unless explicitly requested.
+- **Database re-encryption or password rotation.** These are manual operations and should not be automated by AI agents.
+- **Rewriting existing persistence layers.** Do not replace Core Data, SQLite, or other persistence systems unless the user explicitly requests migration to BlazeDB.
+
+If a feature is not documented in this guide and the user has not requested it, do not implement it.
 
 ---
 
