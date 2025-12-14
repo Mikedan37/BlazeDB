@@ -329,12 +329,20 @@ let bug = Bug(
 )
 try db.insert(bug)  // Returns UUID
 
-// Batch insert
+// Batch insert (dynamic records)
+let records = [
+    BlazeDataRecord(["name": .string("Alice")]),
+    BlazeDataRecord(["name": .string("Bob")])
+]
+try db.insertMany(records)
+
+// Batch insert (typed models - convert to records first)
 let bugs = [
     Bug(title: "Bug 1", priority: 1, status: "open"),
     Bug(title: "Bug 2", priority: 2, status: "open")
 ]
-try db.insertMany(bugs)
+let bugRecords = try bugs.map { try $0.toStorage() }
+try db.insertMany(bugRecords)
 ```
 
 #### Async API
@@ -375,7 +383,7 @@ if let bug = try db.fetch(Bug.self, id: bugID) {
 }
 
 // Fetch all as typed
-let allBugs = try db.fetchAll(as: Bug.self)
+let allBugs = try db.fetchAll(Bug.self)
 
 // Async
 if let bug = try await db.fetch(Bug.self, id: bugID) {
@@ -763,14 +771,27 @@ try db.rollbackToSavepoint("checkpoint1")
 try db.commitTransaction()
 ```
 
-### Transaction with Closure (Recommended)
+### Transaction with Closure (Async)
 
 ```swift
-try db.transaction {
+// Async transaction (recommended)
+try await db.performTransaction { txn in
+    let id = try txn.insert(record1)
+    try txn.update(id: id2, data: record2)
+    try txn.delete(id: id3)
+    try txn.commit()
+    // Automatically rolls back on error
+}
+
+// Sync transaction (manual)
+try db.beginTransaction()
+do {
     try db.insert(record1)
     try db.insert(record2)
-    try db.update(id: id3, with: record3)
-    // Automatically commits on success, rolls back on error
+    try db.commitTransaction()
+} catch {
+    try? db.rollbackTransaction()
+    throw error
 }
 ```
 
@@ -784,14 +805,17 @@ try db.transaction {
 // Single field index
 try db.createIndex(on: "status")
 
-// Compound index
-try db.createIndex(on: ["status", "priority"])
+// Compound index (multiple fields)
+try db.createCompoundIndex(on: ["status", "priority"])
 
-// Full-text search index
-try db.createFullTextIndex(on: "title")
+// Full-text search index (for text search)
+try db.collection.enableSearch(on: ["title", "description"])
 
-// Vector index (for vector search)
-try db.createVectorIndex(on: "embedding", dimensions: 384)
+// Vector index (for vector/semantic search)
+try db.enableVectorIndex(fieldName: "embedding")
+
+// Spatial index (for location/geospatial queries)
+try db.enableSpatialIndex(on: "latitude", lonField: "longitude")
 ```
 
 ### Query with Index
@@ -804,11 +828,23 @@ let results = try db.query()
     .records
 ```
 
-### Check Indexes
+### Check Index Status
 
 ```swift
-let indexes = db.listIndexes()
-print("Available indexes: \(indexes)")
+// Check if spatial index is enabled
+if db.isSpatialIndexEnabled() {
+    print("Spatial index is active")
+}
+
+// Get vector index stats
+if let stats = db.getVectorIndexStats() {
+    print("Vector index: \(stats.totalVectors) vectors")
+}
+
+// Get spatial index stats
+if let stats = db.getSpatialIndexStats() {
+    print("Spatial index: \(stats.totalRecords) records")
+}
 ```
 
 ---
@@ -843,14 +879,20 @@ let clientDB = try BlazeDBClient(
     password: "client-password"
 )
 
-// Connect to server
+// Connect to server (simple API)
 try await clientDB.sync(
-    to: RemoteNode(
-        host: "localhost",
-        port: 8080,
-        authToken: "secret-token-123",
-        useTLS: false
-    )
+    to: "localhost",
+    port: 8080,
+    database: "ServerDB",  // Optional, defaults to clientDB.name
+    useTLS: false,
+    authToken: "secret-token-123"
+)
+
+// Or sync with another local database
+try await clientDB.sync(
+    with: otherDB,
+    mode: .bidirectional,
+    role: .client
 )
 ```
 
@@ -906,22 +948,24 @@ let results = try db.query()
 ### Vector Search
 
 ```swift
-// Create vector index
-try db.createVectorIndex(on: "embedding", dimensions: 384)
+// Enable vector index
+try db.enableVectorIndex(fieldName: "embedding")
 
 // Insert with vector
 let record = BlazeDataRecord([
     "title": .string("Document"),
-    "embedding": .vector([0.1, 0.2, 0.3, ...])  // 384 dimensions
+    "embedding": .vector([0.1, 0.2, 0.3, ...])  // Vector of Float values
 ])
 try db.insert(record)
 
 // Vector similarity search
+let queryVector = VectorEmbedding([0.15, 0.25, 0.35, ...])
 let results = try db.query()
-    .vectorSearch(
+    .vectorNearest(
         field: "embedding",
-        query: [0.15, 0.25, 0.35, ...],  // Query vector
-        limit: 10
+        to: queryVector,
+        limit: 10,
+        threshold: 0.7  // Minimum similarity (0.0 to 1.0)
     )
     .execute()
     .records
@@ -930,26 +974,23 @@ let results = try db.query()
 ### Spatial Queries
 
 ```swift
-// Create spatial index
-try db.createSpatialIndex(on: "location")
+// Enable spatial index
+try db.enableSpatialIndex(on: "latitude", lonField: "longitude")
 
 // Insert with location
 let record = BlazeDataRecord([
     "name": .string("Restaurant"),
-    "location": .dictionary([
-        "latitude": .double(37.7749),
-        "longitude": .double(-122.4194)
-    ])
+    "latitude": .double(37.7749),
+    "longitude": .double(-122.4194)
 ])
 try db.insert(record)
 
 // Find nearby locations
 let results = try db.query()
-    .near(
-        field: "location",
+    .withinRadius(
         latitude: 37.7749,
         longitude: -122.4194,
-        radius: 1000  // meters
+        radiusMeters: 1000  // meters
     )
     .execute()
     .records
