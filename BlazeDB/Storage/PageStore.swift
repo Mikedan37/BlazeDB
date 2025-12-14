@@ -114,7 +114,8 @@ public final class PageStore {
             
             guard isLockConflict else {
                 // System error (not a lock conflict) - close handle and throw
-                let errorMsg = String(cString: strerror(errnoValue))
+                // Log the system error for debugging
+                let _ = String(cString: strerror(errnoValue))  // Capture errno before close
                 fileHandle.compatClose()
                 throw BlazeDBError.permissionDenied(
                     operation: "acquire file lock",
