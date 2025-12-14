@@ -1357,8 +1357,6 @@ var records
 
 ---
 
----
-
 ## Out of Scope for AI Implementations
 
 Do not implement the following unless explicitly requested:
