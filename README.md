@@ -104,6 +104,7 @@ struct ItemListView: View {
 - Require maximum raw performance for simple key-value (LMDB)
 - Building non-Swift applications (Realm, WatermelonDB)
 - Need battle-tested stability for critical systems (SQLite)
+- Need multi-process concurrent access (BlazeDB enforces exclusive process-level locking)
 
 ---
 

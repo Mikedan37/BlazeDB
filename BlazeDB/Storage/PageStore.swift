@@ -4,6 +4,12 @@
 import Foundation
 import CryptoKit
 
+#if canImport(Darwin)
+import Darwin
+#elseif canImport(Glibc)
+import Glibc
+#endif
+
 // Import logger for centralized logging
 #if canImport(BlazeDB)
 // Internal use
@@ -56,6 +62,7 @@ public final class PageStore {
     private let pageSize = 4096
     private let queue = DispatchQueue(label: "com.yourorg.blazedb.pagestore", attributes: .concurrent)
     private let pageCache = PageCache(maxSize: 1000)  // Cache up to 1000 pages (~4MB)
+    private var isLocked: Bool = false  // Track lock state for cleanup
 
     public init(fileURL: URL, key: SymmetricKey) throws {
         self.fileURL = fileURL
@@ -77,7 +84,54 @@ public final class PageStore {
 
         self.fileHandle = try FileHandle(forUpdating: fileURL)
         
-        BlazeLogger.debug("🔐 PageStore initialized with \(bitCount)-bit encryption")
+        // CRITICAL: Acquire exclusive file lock to prevent multi-process corruption
+        try acquireExclusiveLock()
+        
+        BlazeLogger.debug("🔐 PageStore initialized with \(bitCount)-bit encryption and exclusive file lock")
+    }
+    
+    // MARK: - File Locking
+    
+    /// Acquire exclusive file lock using POSIX flock()
+    /// This prevents multiple processes from writing to the same database file simultaneously.
+    /// Lock is automatically released when the file descriptor is closed (process exit or deinit).
+    private func acquireExclusiveLock() throws {
+        #if canImport(Darwin) || canImport(Glibc)
+        let fd = fileHandle.fileDescriptor
+        let result = flock(fd, LOCK_EX | LOCK_NB)
+        
+        if result != 0 {
+            // Lock acquisition failed - another process holds the lock
+            // Close the file handle since we failed to acquire lock
+            fileHandle.compatClose()
+            
+            throw BlazeDBError.databaseLocked(
+                operation: "open database",
+                timeout: nil,
+                path: fileURL
+            )
+        }
+        
+        isLocked = true
+        BlazeLogger.debug("🔒 Acquired exclusive file lock on \(fileURL.lastPathComponent)")
+        #else
+        // Platform doesn't support flock() - log warning but continue
+        // This should not happen on supported platforms (macOS, iOS, Linux)
+        BlazeLogger.warn("⚠️ File locking not available on this platform - multi-process safety not guaranteed")
+        isLocked = false
+        #endif
+    }
+    
+    /// Release file lock (called automatically on deinit, but can be called explicitly)
+    private func releaseLock() {
+        guard isLocked else { return }
+        
+        #if canImport(Darwin) || canImport(Glibc)
+        let fd = fileHandle.fileDescriptor
+        flock(fd, LOCK_UN)
+        isLocked = false
+        BlazeLogger.debug("🔓 Released file lock on \(fileURL.lastPathComponent)")
+        #endif
     }
     
     public func deletePage(index: Int) throws {
@@ -383,6 +437,9 @@ public final class PageStore {
     }
     
     deinit {
+        // Release file lock before closing file handle
+        releaseLock()
+        
         // Ensure final flush before closing
         try? fileHandle.compatSynchronize()
         fileHandle.compatClose()

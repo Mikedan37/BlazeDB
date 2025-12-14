@@ -24,6 +24,8 @@ BlazeDB implements a layered architecture that enforces clear separation of conc
 
 The storage layer handles all I/O operations. Encryption is applied at the page level, enabling efficient garbage collection. MVCC provides concurrency control above the storage layer, allowing concurrent readers and writers without blocking.
 
+**Multi-Process Safety:** BlazeDB enforces exclusive file locking at the OS level using POSIX `flock()`. Only one process can open a database file for writing at a time. Attempting to open the same database from multiple processes will fail with `BlazeDBError.databaseLocked`. This prevents data corruption from concurrent file-level writes.
+
 ---
 
 ## Storage Engine

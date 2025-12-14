@@ -515,6 +515,8 @@ extension BlazeDocumentField {
         case .data(let v): return v.base64EncodedString()
         case .array(let v): return v.map { $0.exportValue }
         case .dictionary(let v): return v.mapValues { $0.exportValue }
+        case .vector(let v): return v
+        case .null: return NSNull()
         }
     }
 }

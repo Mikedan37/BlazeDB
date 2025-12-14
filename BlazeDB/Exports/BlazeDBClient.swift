@@ -53,10 +53,11 @@ public enum BlazeDBError: Error, LocalizedError, CustomStringConvertible {
     case invalidField(name: String, expectedType: String, actualType: String)
     case diskFull(availableSpace: Int64? = nil)
     case permissionDenied(operation: String, path: String? = nil)
-    case databaseLocked(operation: String, timeout: TimeInterval? = nil)
+    case databaseLocked(operation: String, timeout: TimeInterval? = nil, path: URL? = nil)
     case corruptedData(location: String, reason: String)
     case passwordTooWeak(requirements: String)
     case invalidData(reason: String)
+    case invalidInput(reason: String)
     
     // MARK: - LocalizedError Implementation
     
@@ -126,12 +127,15 @@ public enum BlazeDBError: Error, LocalizedError, CustomStringConvertible {
             msg += ". Check file permissions and app sandbox entitlements."
             return msg
             
-        case .databaseLocked(let operation, let timeout):
+        case .databaseLocked(let operation, let timeout, let path):
             var msg = "Database is locked for operation: \(operation)"
+            if let path = path {
+                msg += " at path: \(path.path)"
+            }
             if let timeout = timeout {
                 msg += " (timeout: \(timeout)s)"
             }
-            msg += ". Another process may be using the database. Wait and retry."
+            msg += ". Another process is using the database. Close other instances and try again."
             return msg
             
         case .corruptedData(let location, let reason):
@@ -142,6 +146,9 @@ public enum BlazeDBError: Error, LocalizedError, CustomStringConvertible {
             
         case .invalidData(let reason):
             return "Invalid data: \(reason). Check input data format and types."
+            
+        case .invalidInput(let reason):
+            return "Invalid input: \(reason). Check your input parameters."
         }
     }
     

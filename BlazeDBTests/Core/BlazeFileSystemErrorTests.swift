@@ -123,29 +123,106 @@ final class BlazeFileSystemErrorTests: XCTestCase {
     
     // MARK: - File Lock Tests
     
-    /// Test handling of concurrent file access
-    func testConcurrentFileAccess() throws {
-        print("📊 Testing concurrent file access...")
+    /// Test that exclusive file locking prevents concurrent access
+    /// This test verifies that the second process fails with databaseLocked error
+    func testExclusiveFileLocking() throws {
+        print("📊 Testing exclusive file locking...")
         
+        // First instance opens database and acquires lock
         let db1 = try BlazeDBClient(name: "DB1", fileURL: tempURL, password: "test1234")
         
-        print("  First database opened")
+        print("  First database opened and lock acquired")
         
-        // Try to open same file again
-        print("🔍 Opening same file with second instance...")
+        // Insert a record to verify first instance works
+        _ = try db1.insert(BlazeDataRecord(["source": .string("db1")]))
+        
+        // Try to open same file with second instance - should fail
+        print("🔍 Attempting to open same file with second instance...")
         
         do {
             let db2 = try BlazeDBClient(name: "DB2", fileURL: tempURL, password: "test1234")
             
-            // Both instances can write (concurrent access)
-            _ = try db1.insert(BlazeDataRecord(["source": .string("db1")]))
-            _ = try db2.insert(BlazeDataRecord(["source": .string("db2")]))
-            
-            print("✅ Concurrent access allowed (both instances can write)")
-            print("⚠️  Note: This may lead to corruption without proper locking")
+            // If we get here, locking failed - this is a test failure
+            XCTFail("Second instance should not be able to open locked database")
+            db2 = nil
+        } catch BlazeDBError.databaseLocked(let operation, _, let path) {
+            // Expected: second instance should fail with databaseLocked error
+            print("✅ Lock enforcement working: \(operation)")
+            if let path = path {
+                print("   Locked path: \(path.path)")
+            }
+            XCTAssertEqual(operation, "open database")
         } catch {
-            print("✅ Concurrent access prevented: \(error)")
+            XCTFail("Expected databaseLocked error, got: \(error)")
         }
+        
+        // First instance should still work
+        let count = try db1.count()
+        XCTAssertEqual(count, 1, "First instance should still have access")
+        print("✅ First instance still functional: \(count) records")
+    }
+    
+    /// Test that lock is released when database is closed
+    func testLockReleaseOnClose() throws {
+        print("📊 Testing lock release on close...")
+        
+        // Open and close first instance
+        var db1: BlazeDBClient? = try BlazeDBClient(name: "DB1", fileURL: tempURL, password: "test1234")
+        _ = try db1!.insert(BlazeDataRecord(["source": .string("db1")]))
+        
+        print("  First instance created and inserted record")
+        
+        // Close first instance (lock should be released)
+        db1 = nil
+        
+        // Small delay to ensure file handle is closed and lock released
+        Thread.sleep(forTimeInterval: 0.1)
+        
+        print("  First instance closed, attempting to open second instance...")
+        
+        // Second instance should now be able to open
+        let db2 = try BlazeDBClient(name: "DB2", fileURL: tempURL, password: "test1234")
+        
+        // Should be able to read data from first instance
+        let records = try db2.fetchAll()
+        XCTAssertEqual(records.count, 1, "Should see record from first instance")
+        print("✅ Lock released: second instance can open database")
+        
+        // Should be able to write
+        _ = try db2.insert(BlazeDataRecord(["source": .string("db2")]))
+        let count = try db2.count()
+        XCTAssertEqual(count, 2, "Should have 2 records")
+        print("✅ Second instance can write: \(count) records")
+    }
+    
+    /// Test that same process cannot open database twice (reentrancy check)
+    func testSingleProcessReentrancy() throws {
+        print("📊 Testing single-process reentrancy...")
+        
+        // First instance
+        let db1 = try BlazeDBClient(name: "DB1", fileURL: tempURL, password: "test1234")
+        _ = try db1.insert(BlazeDataRecord(["source": .string("db1")]))
+        
+        print("  First instance opened")
+        
+        // Try to open same file again in same process
+        do {
+            let db2 = try BlazeDBClient(name: "DB2", fileURL: tempURL, password: "test1234")
+            
+            // Should fail - same file descriptor or lock conflict
+            XCTFail("Second instance in same process should not be able to open locked database")
+            db2 = nil
+        } catch BlazeDBError.databaseLocked {
+            // Expected
+            print("✅ Reentrancy prevented: second instance in same process failed")
+        } catch {
+            // May also fail with other errors (file handle conflict, etc.)
+            print("✅ Reentrancy prevented: \(error)")
+        }
+        
+        // First instance should still work
+        let count = try db1.count()
+        XCTAssertEqual(count, 1, "First instance should still have access")
     }
     
     // MARK: - Resource Limit Tests
