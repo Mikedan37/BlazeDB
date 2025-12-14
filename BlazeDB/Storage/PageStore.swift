@@ -95,13 +95,34 @@ public final class PageStore {
     /// Acquire exclusive file lock using POSIX flock()
     /// This prevents multiple processes from writing to the same database file simultaneously.
     /// Lock is automatically released when the file descriptor is closed (process exit or deinit).
+    /// 
+    /// - Throws: BlazeDBError.databaseLocked if lock cannot be acquired (another process holds it)
+    /// - Throws: BlazeDBError.permissionDenied if system error occurs (not a lock conflict)
+    /// - Precondition: fileHandle must be initialized before calling this method
+    /// - Postcondition: If this method returns, isLocked is true and lock is held
     private func acquireExclusiveLock() throws {
         #if canImport(Darwin) || canImport(Glibc)
         let fd = fileHandle.fileDescriptor
         let result = flock(fd, LOCK_EX | LOCK_NB)
         
         if result != 0 {
-            // Lock acquisition failed - another process holds the lock
+            // Lock acquisition failed
+            let errnoValue = errno
+            // Verify this is actually a lock conflict (EWOULDBLOCK/EAGAIN), not a system error
+            // EWOULDBLOCK and EAGAIN are the same value on most systems, but we check both for portability
+            let isLockConflict = (errnoValue == EWOULDBLOCK) || (errnoValue == EAGAIN)
+            
+            guard isLockConflict else {
+                // System error (not a lock conflict) - close handle and throw
+                let errorMsg = String(cString: strerror(errnoValue))
+                fileHandle.compatClose()
+                throw BlazeDBError.permissionDenied(
+                    operation: "acquire file lock",
+                    path: fileURL.path
+                )
+            }
+            
+            // Lock conflict - another process holds the lock
             // Close the file handle since we failed to acquire lock
             fileHandle.compatClose()
             
@@ -123,12 +144,19 @@ public final class PageStore {
     }
     
     /// Release file lock (called automatically on deinit, but can be called explicitly)
+    /// Lock is automatically released by OS when file descriptor is closed, but we
+    /// explicitly release it here for clarity and immediate release.
     private func releaseLock() {
         guard isLocked else { return }
         
         #if canImport(Darwin) || canImport(Glibc)
         let fd = fileHandle.fileDescriptor
-        flock(fd, LOCK_UN)
+        let result = flock(fd, LOCK_UN)
+        if result != 0 {
+            // Log but don't throw - deinit cannot throw
+            // Lock will be released by OS when file descriptor closes
+            BlazeLogger.warn("⚠️ Failed to release file lock: \(String(cString: strerror(errno)))")
+        }
         isLocked = false
         BlazeLogger.debug("🔓 Released file lock on \(fileURL.lastPathComponent)")
         #endif
