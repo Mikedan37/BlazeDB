@@ -10,7 +10,6 @@
 
 import Foundation
 import Security
-import LocalAuthentication
 #if canImport(CryptoKit)
 import CryptoKit
 #else
@@ -24,14 +23,23 @@ public final class SecureEnclaveKeyManager {
     
     private let keyTag: String
     private let accessControl: SecAccessControl
+    private let unlockProvider: KeyUnlockProvider
     
     /// Initialize with key tag and access control
+    /// - Parameters:
+    ///   - keyTag: Unique tag for this key
+    ///   - requireBiometry: If true, requires biometric authentication
+    ///   - requireDeviceUnlock: If true, requires device to be unlocked
+    ///   - unlockProvider: Optional custom unlock provider (defaults to platform-appropriate provider)
     public init(
         keyTag: String,
         requireBiometry: Bool = true,
-        requireDeviceUnlock: Bool = true
+        requireDeviceUnlock: Bool = true,
+        unlockProvider: KeyUnlockProvider? = nil
     ) throws {
         self.keyTag = keyTag
+        // Use provided provider or default to platform-appropriate one
+        self.unlockProvider = unlockProvider ?? DefaultKeyUnlockProvider()
         
         // Create access control
         var flags: SecAccessControlCreateFlags = []
@@ -143,10 +151,33 @@ public final class SecureEnclaveKeyManager {
     }
     
     /// Check if Secure Enclave is available
+    /// Uses the unlock provider to determine availability
     public static func isAvailable() -> Bool {
-        // Check if device supports Secure Enclave
+        #if canImport(Security)
+        // On Apple platforms, check if Secure Enclave hardware is available
+        // On other platforms, Secure Enclave is not available
         #if os(iOS) || os(macOS)
-        return LAContext().canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, error: nil)
+        // Use default provider to check availability
+        let provider = DefaultKeyUnlockProvider()
+        return provider.isAvailable()
+        #else
+        return false
+        #endif
+        #else
+        return false
+        #endif
+    }
+    
+    /// Check if Secure Enclave is available using a specific unlock provider
+    /// - Parameter unlockProvider: The unlock provider to use for availability check
+    /// - Returns: true if Secure Enclave is available, false otherwise
+    public static func isAvailable(using unlockProvider: KeyUnlockProvider) -> Bool {
+        #if canImport(Security)
+        #if os(iOS) || os(macOS)
+        return unlockProvider.isAvailable()
+        #else
+        return false
+        #endif
         #else
         return false
         #endif

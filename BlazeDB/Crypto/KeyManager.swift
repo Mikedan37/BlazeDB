@@ -7,7 +7,6 @@ import CryptoKit
 #else
 import Crypto
 #endif
-import LocalAuthentication
 
 public enum KeySource {
     case secureEnclave(label: String)
