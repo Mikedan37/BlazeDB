@@ -1,4 +1,4 @@
-// swift-tools-version:5.9
+// swift-tools-version:6.0
 import PackageDescription
 
 let package = Package(
@@ -6,7 +6,8 @@ let package = Package(
     platforms: [
         .macOS(.v12),
         .iOS(.v15)
-        // Linux support available but not declared in platforms array
+        // Linux support available (aarch64 on Orange Pi 5 Ultra)
+        // Note: Linux platform is implicit when not specified
     ],
     products: [
         .library(
@@ -23,13 +24,24 @@ let package = Package(
             targets: ["BasicExample"])
     ],
     dependencies: [
-        // ZERO external dependencies! 🔥
-        // BlazeBinary: Custom format, 53% smaller, 48% faster, 100% native Swift!
+        // BlazeTransport: Transport layer for distributed sync
+        // BlazeBinary comes transitively through BlazeTransport
+        .package(
+            url: "git@github.com:Mikedan37/BlazeTransport.git",
+            branch: "main"  // Branch-based resolution only
+        ),
+        // BlazeFSM: Pinned to Linux-safe commit to unblock SwiftPM resolution
+        .package(
+            url: "git@github.com:Mikedan37/BlazeFSM.git",
+            revision: "58b292a27928d211eef12090cafcbf12b31d69c6"
+        )
     ],
     targets: [
         .target(
             name: "BlazeDB",
-            dependencies: [],  // ✅ ZERO dependencies! Pure Swift!
+            dependencies: [
+                .product(name: "BlazeTransport", package: "BlazeTransport")
+            ],
             path: "BlazeDB",
             exclude: ["BlazeDB.docc"]
         ),
