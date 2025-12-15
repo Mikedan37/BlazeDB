@@ -25,10 +25,10 @@ let package = Package(
     ],
     dependencies: [
         // BlazeTransport: Transport layer for distributed sync
-        // Pinned to linux-aarch64-stable commit for Swift 6 Linux builds
+        // Pinned to linux-aarch64-stable-v2 for reproducible Linux builds
         .package(
             url: "git@github.com:Mikedan37/BlazeTransport.git",
-            revision: "0fcd33f384c0ece415d6d2464107bfdc8943d718"
+            revision: "30bb376c19e62f6ac379c2a781993976102a8663"
         ),
         // BlazeFSM: Pinned to Linux-safe commit to unblock SwiftPM resolution
         .package(
