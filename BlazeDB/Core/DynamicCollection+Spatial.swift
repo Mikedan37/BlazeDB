@@ -9,7 +9,9 @@
 //
 
 import Foundation
+#if canImport(ObjectiveC)
 import ObjectiveC
+#endif
 
 // MARK: - Spatial Index Management
 
@@ -18,24 +20,45 @@ extension DynamicCollection {
     /// Cached spatial index to avoid reloading from disk on every save
     internal var cachedSpatialIndex: SpatialIndex? {
         get {
+            #if canImport(ObjectiveC)
             return objc_getAssociatedObject(self, &AssociatedKeys.cachedSpatialIndex) as? SpatialIndex
+            #else
+            return AssociatedObjects.get(self, key: &AssociatedKeys.cachedSpatialIndex)
+            #endif
         }
         set {
+            #if canImport(ObjectiveC)
             objc_setAssociatedObject(self, &AssociatedKeys.cachedSpatialIndex, newValue, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
+            #else
+            AssociatedObjects.set(self, key: &AssociatedKeys.cachedSpatialIndex, value: newValue)
+            #endif
         }
     }
     
     internal var cachedSpatialIndexedFields: (latField: String, lonField: String)? {
         get {
+            #if canImport(ObjectiveC)
             if let lat = objc_getAssociatedObject(self, &AssociatedKeys.cachedSpatialLatField) as? String,
                let lon = objc_getAssociatedObject(self, &AssociatedKeys.cachedSpatialLonField) as? String {
                 return (lat, lon)
             }
             return nil
+            #else
+            if let lat: String = AssociatedObjects.getValue(self, key: &AssociatedKeys.cachedSpatialLatField),
+               let lon: String = AssociatedObjects.getValue(self, key: &AssociatedKeys.cachedSpatialLonField) {
+                return (lat, lon)
+            }
+            return nil
+            #endif
         }
         set {
+            #if canImport(ObjectiveC)
             objc_setAssociatedObject(self, &AssociatedKeys.cachedSpatialLatField, newValue?.latField, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
             objc_setAssociatedObject(self, &AssociatedKeys.cachedSpatialLonField, newValue?.lonField, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
+            #else
+            AssociatedObjects.setValue(self, key: &AssociatedKeys.cachedSpatialLatField, value: newValue?.latField)
+            AssociatedObjects.setValue(self, key: &AssociatedKeys.cachedSpatialLonField, value: newValue?.lonField)
+            #endif
         }
     }
     

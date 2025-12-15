@@ -14,10 +14,18 @@ extension QueryBuilder {
     /// Internal: Vector query state (for planner)
     internal var vectorQueryState: (field: String, embedding: VectorEmbedding, limit: Int, threshold: Float)? {
         get {
+            #if canImport(ObjectiveC)
             return objc_getAssociatedObject(self, &QueryBuilder.vectorQueryKey) as? (String, VectorEmbedding, Int, Float)
+            #else
+            return AssociatedObjects.getValue(self, key: &QueryBuilder.vectorQueryKey)
+            #endif
         }
         set {
+            #if canImport(ObjectiveC)
             objc_setAssociatedObject(self, &QueryBuilder.vectorQueryKey, newValue, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
+            #else
+            AssociatedObjects.setValue(self, key: &QueryBuilder.vectorQueryKey, value: newValue)
+            #endif
         }
     }
     

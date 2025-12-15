@@ -123,12 +123,21 @@ extension BlazeDBClient {
     private static var uniqueConstraintManagerKey: UInt8 = 0
     
     private var uniqueConstraintManager: UniqueConstraintManager {
+        #if canImport(ObjectiveC)
         if let manager = objc_getAssociatedObject(self, &Self.uniqueConstraintManagerKey) as? UniqueConstraintManager {
             return manager
         }
         let manager = UniqueConstraintManager()
         objc_setAssociatedObject(self, &Self.uniqueConstraintManagerKey, manager, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
         return manager
+        #else
+        if let manager: UniqueConstraintManager = AssociatedObjects.get(self, key: &Self.uniqueConstraintManagerKey) {
+            return manager
+        }
+        let manager = UniqueConstraintManager()
+        AssociatedObjects.set(self, key: &Self.uniqueConstraintManagerKey, value: manager)
+        return manager
+        #endif
     }
     
     /// Create unique index (enforces uniqueness)

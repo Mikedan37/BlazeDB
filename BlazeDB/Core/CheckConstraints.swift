@@ -110,12 +110,21 @@ extension BlazeDBClient {
     private static var checkConstraintManagerKey: UInt8 = 0
     
     private var checkConstraintManager: CheckConstraintManager {
+        #if canImport(ObjectiveC)
         if let manager = objc_getAssociatedObject(self, &Self.checkConstraintManagerKey) as? CheckConstraintManager {
             return manager
         }
         let manager = CheckConstraintManager()
         objc_setAssociatedObject(self, &Self.checkConstraintManagerKey, manager, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
         return manager
+        #else
+        if let manager: CheckConstraintManager = AssociatedObjects.get(self, key: &Self.checkConstraintManagerKey) {
+            return manager
+        }
+        let manager = CheckConstraintManager()
+        AssociatedObjects.set(self, key: &Self.checkConstraintManagerKey, value: manager)
+        return manager
+        #endif
     }
     
     /// Add a check constraint

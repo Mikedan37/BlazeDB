@@ -334,10 +334,18 @@ extension QueryBuilder {
     /// Storage for computed fields (ordered array to preserve evaluation order)
     internal var computedFields: [(String, MathExpression)]? {
         get {
+            #if canImport(ObjectiveC)
             return objc_getAssociatedObject(self, &ComputedFieldsKeys.computedFields) as? [(String, MathExpression)]
+            #else
+            return AssociatedObjects.getValue(self, key: &ComputedFieldsKeys.computedFields)
+            #endif
         }
         set {
+            #if canImport(ObjectiveC)
             objc_setAssociatedObject(self, &ComputedFieldsKeys.computedFields, newValue, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
+            #else
+            AssociatedObjects.setValue(self, key: &ComputedFieldsKeys.computedFields, value: newValue)
+            #endif
         }
     }
     

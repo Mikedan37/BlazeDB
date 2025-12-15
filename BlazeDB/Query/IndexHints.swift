@@ -71,19 +71,35 @@ extension QueryBuilder {
 extension QueryBuilder {
     internal var indexHints: [IndexHint]? {
         get {
+            #if canImport(ObjectiveC)
             return objc_getAssociatedObject(self, &AssociatedKeys.indexHints) as? [IndexHint]
+            #else
+            return AssociatedObjects.getValue(self, key: &AssociatedKeys.indexHints)
+            #endif
         }
         set {
+            #if canImport(ObjectiveC)
             objc_setAssociatedObject(self, &AssociatedKeys.indexHints, newValue, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
+            #else
+            AssociatedObjects.setValue(self, key: &AssociatedKeys.indexHints, value: newValue)
+            #endif
         }
     }
     
     internal var forceIndexSelection: Bool {
         get {
+            #if canImport(ObjectiveC)
             return (objc_getAssociatedObject(self, &AssociatedKeys.forceIndexSelection) as? Bool) ?? false
+            #else
+            return AssociatedObjects.getValue(self, key: &AssociatedKeys.forceIndexSelection) ?? false
+            #endif
         }
         set {
+            #if canImport(ObjectiveC)
             objc_setAssociatedObject(self, &AssociatedKeys.forceIndexSelection, newValue, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
+            #else
+            AssociatedObjects.setValue(self, key: &AssociatedKeys.forceIndexSelection, value: newValue)
+            #endif
         }
     }
 }

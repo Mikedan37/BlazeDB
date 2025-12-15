@@ -45,12 +45,21 @@ extension BlazeDBClient {
     private static var lastBackupTimeKey: UInt8 = 0
     
     private var startTime: Date {
+        #if canImport(ObjectiveC)
         if let time = objc_getAssociatedObject(self, &Self.startTimeKey) as? Date {
             return time
         }
         let time = Date()
         objc_setAssociatedObject(self, &Self.startTimeKey, time, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
         return time
+        #else
+        if let time: Date = AssociatedObjects.getValue(self, key: &Self.startTimeKey) {
+            return time
+        }
+        let time = Date()
+        AssociatedObjects.setValue(self, key: &Self.startTimeKey, value: time)
+        return time
+        #endif
     }
     
     /// Get health status
@@ -97,15 +106,20 @@ extension BlazeDBClient {
     }
     
     private func getLastBackupTime() -> Date? {
+        #if canImport(ObjectiveC)
         return objc_getAssociatedObject(self, &Self.lastBackupTimeKey) as? Date
+        #else
+        return AssociatedObjects.getValue(self, key: &Self.lastBackupTimeKey)
+        #endif
     }
     
     internal func setLastBackupTime(_ date: Date) {
+        #if canImport(ObjectiveC)
         objc_setAssociatedObject(self, &Self.lastBackupTimeKey, date, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
+        #else
+        AssociatedObjects.setValue(self, key: &Self.lastBackupTimeKey, value: date)
+        #endif
     }
 }
 
-#if canImport(ObjectiveC)
-import ObjectiveC
-#endif
 

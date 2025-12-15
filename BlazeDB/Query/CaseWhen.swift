@@ -122,10 +122,18 @@ extension QueryBuilder {
 extension QueryBuilder {
     internal var caseWhenExpressions: [String: CaseWhenExpression]? {
         get {
+            #if canImport(ObjectiveC)
             return objc_getAssociatedObject(self, &AssociatedKeys.caseWhen) as? [String: CaseWhenExpression]
+            #else
+            return AssociatedObjects.getValue(self, key: &AssociatedKeys.caseWhen)
+            #endif
         }
         set {
+            #if canImport(ObjectiveC)
             objc_setAssociatedObject(self, &AssociatedKeys.caseWhen, newValue, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
+            #else
+            AssociatedObjects.setValue(self, key: &AssociatedKeys.caseWhen, value: newValue)
+            #endif
         }
     }
 }

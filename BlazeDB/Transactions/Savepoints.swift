@@ -95,12 +95,21 @@ extension BlazeDBClient {
     private static let savepointManagerKey: UInt8 = 0
     
     private var savepointManager: SavepointManager {
+        #if canImport(ObjectiveC)
         if let manager = objc_getAssociatedObject(self, &Self.savepointManagerKey) as? SavepointManager {
             return manager
         }
         let manager = SavepointManager()
         objc_setAssociatedObject(self, &Self.savepointManagerKey, manager, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
         return manager
+        #else
+        if let manager: SavepointManager = AssociatedObjects.get(self, key: &Self.savepointManagerKey) {
+            return manager
+        }
+        let manager = SavepointManager()
+        AssociatedObjects.set(self, key: &Self.savepointManagerKey, value: manager)
+        return manager
+        #endif
     }
     
     /// Create a savepoint in current transaction

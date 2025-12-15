@@ -8,7 +8,9 @@
 //
 
 import Foundation
+#if canImport(ObjectiveC)
 import ObjectiveC
+#endif
 
 extension DynamicCollection {
     
@@ -20,20 +22,36 @@ extension DynamicCollection {
     /// Cached vector index (lazy-loaded from StorageLayout)
     public var vectorIndex: VectorIndex? {
         get {
+            #if canImport(ObjectiveC)
             return objc_getAssociatedObject(self, &Self.cachedVectorIndexKey) as? VectorIndex
+            #else
+            return AssociatedObjects.get(self, key: &Self.cachedVectorIndexKey)
+            #endif
         }
         set {
+            #if canImport(ObjectiveC)
             objc_setAssociatedObject(self, &Self.cachedVectorIndexKey, newValue, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
+            #else
+            AssociatedObjects.set(self, key: &Self.cachedVectorIndexKey, value: newValue)
+            #endif
         }
     }
     
     /// Cached vector indexed field name
     internal var cachedVectorIndexedField: String? {
         get {
+            #if canImport(ObjectiveC)
             return objc_getAssociatedObject(self, &Self.cachedVectorIndexedFieldKey) as? String
+            #else
+            return AssociatedObjects.getValue(self, key: &Self.cachedVectorIndexedFieldKey)
+            #endif
         }
         set {
+            #if canImport(ObjectiveC)
             objc_setAssociatedObject(self, &Self.cachedVectorIndexedFieldKey, newValue, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
+            #else
+            AssociatedObjects.setValue(self, key: &Self.cachedVectorIndexedFieldKey, value: newValue)
+            #endif
         }
     }
     
