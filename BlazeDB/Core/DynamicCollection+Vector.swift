@@ -8,50 +8,17 @@
 //
 
 import Foundation
-#if canImport(ObjectiveC)
-import ObjectiveC
-#endif
 
 extension DynamicCollection {
     
     // MARK: - Vector Index Properties
+    // Note: vectorIndex and cachedVectorIndexedField are now stored properties on DynamicCollection
+    // This removes the need for Objective-C runtime associated objects
     
-    private static var cachedVectorIndexKey: UInt8 = 0
-    private static var cachedVectorIndexedFieldKey: UInt8 = 1
-    
-    /// Cached vector index (lazy-loaded from StorageLayout)
+    /// Public accessor for vector index (delegates to stored property)
     public var vectorIndex: VectorIndex? {
-        get {
-            #if canImport(ObjectiveC)
-            return objc_getAssociatedObject(self, &Self.cachedVectorIndexKey) as? VectorIndex
-            #else
-            return AssociatedObjects.get(self, key: &Self.cachedVectorIndexKey)
-            #endif
-        }
-        set {
-            #if canImport(ObjectiveC)
-            objc_setAssociatedObject(self, &Self.cachedVectorIndexKey, newValue, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
-            #else
-            AssociatedObjects.set(self, key: &Self.cachedVectorIndexKey, value: newValue)
-            #endif
-        }
-    }
-    
-    /// Cached vector indexed field name
-    internal var cachedVectorIndexedField: String? {
-        get {
-            #if canImport(ObjectiveC)
-            return objc_getAssociatedObject(self, &Self.cachedVectorIndexedFieldKey) as? String
-            #else
-            return AssociatedObjects.getValue(self, key: &Self.cachedVectorIndexedFieldKey)
-            #endif
-        }
-        set {
-            #if canImport(ObjectiveC)
-            objc_setAssociatedObject(self, &Self.cachedVectorIndexedFieldKey, newValue, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
-            #else
-            AssociatedObjects.setValue(self, key: &Self.cachedVectorIndexedFieldKey, value: newValue)
-            #endif
+        return queue.sync {
+            return self._vectorIndex  // Accesses the stored property
         }
     }
     
@@ -62,8 +29,8 @@ extension DynamicCollection {
     public func enableVectorIndex(fieldName: String) throws {
         try queue.sync(flags: .barrier) {
             // Create or get existing index
-            let index = vectorIndex ?? VectorIndex()
-            vectorIndex = index
+            let index = _vectorIndex ?? VectorIndex()
+            _vectorIndex = index
             cachedVectorIndexedField = fieldName
             
             // Rebuild index from existing records
@@ -94,7 +61,7 @@ extension DynamicCollection {
     /// Disable vector index
     public func disableVectorIndex() throws {
         try queue.sync(flags: .barrier) {
-            vectorIndex = nil
+            _vectorIndex = nil
             cachedVectorIndexedField = nil
             try saveVectorIndexToLayout()
             BlazeLogger.info("Vector index disabled")
@@ -109,7 +76,7 @@ extension DynamicCollection {
         
         try queue.sync(flags: .barrier) {
             let index = VectorIndex()
-            vectorIndex = index
+            _vectorIndex = index
             
             var indexedCount = 0
             for (id, pageIndices) in indexMap {
@@ -137,7 +104,7 @@ extension DynamicCollection {
     /// Get vector index statistics
     public func getVectorIndexStats() -> VectorIndexStats? {
         return queue.sync {
-            return vectorIndex?.getStats()
+            return _vectorIndex?.getStats()
         }
     }
     
@@ -183,7 +150,7 @@ extension DynamicCollection {
     }
     
     internal func updateVectorIndexOnInsert(_ record: BlazeDataRecord) {
-        guard let index = vectorIndex,
+        guard let index = _vectorIndex,
               let fieldName = cachedVectorIndexedField,
               let recordID = record.storage["id"]?.uuidValue,
               let vector = extractVector(from: record, fieldName: fieldName) else {
@@ -194,7 +161,7 @@ extension DynamicCollection {
     }
     
     internal func updateVectorIndexOnUpdate(_ record: BlazeDataRecord) {
-        guard let index = vectorIndex,
+        guard let index = _vectorIndex,
               let fieldName = cachedVectorIndexedField,
               let recordID = record.storage["id"]?.uuidValue else {
             return
@@ -208,7 +175,7 @@ extension DynamicCollection {
     }
     
     internal func updateVectorIndexOnDelete(_ id: UUID) {
-        guard let index = vectorIndex else { return }
+        guard let index = _vectorIndex else { return }
         index.remove(id)
         BlazeLogger.trace("Removed record \(id) from vector index")
     }

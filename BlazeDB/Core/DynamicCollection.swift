@@ -62,6 +62,16 @@ public final class DynamicCollection {
     internal var cachedSearchIndex: InvertedIndex?
     internal var cachedSearchIndexedFields: [String] = []
     
+    // Cached vector index (pure Swift, no Objective-C runtime)
+    // Stored directly on DynamicCollection instance - thread-safe via queue synchronization
+    internal var _vectorIndex: VectorIndex?
+    internal var cachedVectorIndexedField: String?
+    
+    // Cached spatial index (pure Swift, no Objective-C runtime)
+    // Stored directly on DynamicCollection instance - thread-safe via queue synchronization
+    internal var cachedSpatialIndex: SpatialIndex?
+    internal var cachedSpatialIndexedFields: (latField: String, lonField: String)?
+    
     // Store encodingFormat in memory to avoid loading from disk during saveLayout()
     // This prevents signature verification failures during concurrent operations
     internal var encodingFormat: String = "blazeBinary"
