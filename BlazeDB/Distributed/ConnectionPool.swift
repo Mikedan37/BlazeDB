@@ -9,7 +9,6 @@
 //
 
 import Foundation
-import Network
 
 /// Pooled connection with metadata
 public struct PooledConnection {
