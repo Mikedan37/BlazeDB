@@ -4,7 +4,7 @@ import PackageDescription
 let package = Package(
     name: "BlazeDB",
     platforms: [
-        .macOS(.v12),
+        .macOS(.v14),  // Required by BlazeTransport
         .iOS(.v15)
         // Linux support available (aarch64 on Orange Pi 5 Ultra)
         // Note: Linux platform is implicit when not specified
@@ -25,10 +25,10 @@ let package = Package(
     ],
     dependencies: [
         // BlazeTransport: Transport layer for distributed sync
-        // BlazeBinary comes transitively through BlazeTransport
+        // Pinned to linux-aarch64-stable commit for Swift 6 Linux builds
         .package(
             url: "git@github.com:Mikedan37/BlazeTransport.git",
-            branch: "main"  // Branch-based resolution only
+            revision: "0fcd33f384c0ece415d6d2464107bfdc8943d718"
         ),
         // BlazeFSM: Pinned to Linux-safe commit to unblock SwiftPM resolution
         .package(
