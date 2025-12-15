@@ -414,13 +414,13 @@ public enum BlazeBinaryDecoder {
                 throw BlazeBinaryError.invalidFormat("Data too short for vector: need \(vecCount * 4) bytes")
             }
             
-            var vector: [Float] = []
+            var vector: [Double] = []  // BlazeDocumentField.vector uses [Double]
             vector.reserveCapacity(vecCount)
             
             for _ in 0..<vecCount {
                 let bits = try readUInt32(from: data, at: currentOffset)
                 let float = Float(bitPattern: UInt32(bigEndian: bits))
-                vector.append(float)
+                vector.append(Double(float))  // Convert Float to Double for BlazeDocumentField.vector([Double])
                 currentOffset += 4
             }
             

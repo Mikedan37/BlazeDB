@@ -1,5 +1,5 @@
 {
-  "originHash" : "9296bca96f6a818bdfc50ab80b8c965f93ea826feff1b05dff2cd0cf3c5d3328",
+  "originHash" : "4f1d9f5fa6ec8853a6f677ed1062131b3b8b1f78fae1de057de6e60fd82d0d2c",
   "pins" : [
     {
       "identity" : "blazebinary",
@@ -23,7 +23,7 @@
       "kind" : "remoteSourceControl",
       "location" : "git@github.com:Mikedan37/BlazeTransport.git",
       "state" : {
-        "revision" : "30bb376c19e62f6ac379c2a781993976102a8663"
+        "revision" : "eef8c2e179fff80ad5afe019b5113625ec9cb609"
       }
     },
     {

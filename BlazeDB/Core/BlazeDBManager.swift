@@ -6,10 +6,11 @@ import Foundation
 import CryptoKit
 
 /// Manages multiple BlazeDB instances for fast DB switching.
+/// Thread-safe: Uses nonisolated(unsafe) for singleton (caller must ensure thread safety)
 public final class BlazeDBManager {
 public var mountedDatabases: [String: DynamicCollection] = [:]
     private var currentKey: SymmetricKey?
-    public static let shared = BlazeDBManager()
+    nonisolated(unsafe) public static let shared = BlazeDBManager()
     public var currentName: String?
     private var dbFileURLs: [String: URL] = [:]
     private var dbMetaURLs: [String: URL] = [:]

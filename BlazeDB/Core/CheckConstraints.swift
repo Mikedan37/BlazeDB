@@ -107,7 +107,7 @@ public class CheckConstraintManager {
 // MARK: - BlazeDBClient Check Constraints Extension
 
 extension BlazeDBClient {
-    private static var checkConstraintManagerKey: UInt8 = 0
+    private static let checkConstraintManagerKey: UInt8 = 0
     
     private var checkConstraintManager: CheckConstraintManager {
         if let manager = objc_getAssociatedObject(self, &Self.checkConstraintManagerKey) as? CheckConstraintManager {

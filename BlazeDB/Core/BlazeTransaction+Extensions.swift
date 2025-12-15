@@ -269,7 +269,7 @@ extension BlazeDBError {
             return "Not enough disk space available"
         case .permissionDenied(let operation, _):
             return "Permission denied for operation: \(operation)"
-        case .databaseLocked(let operation, _):
+        case .databaseLocked(let operation, _, _):
             return "Database is locked for operation: \(operation)"
         case .corruptedData(let location, let reason):
             return "Data corrupted at \(location): \(reason)"
@@ -277,6 +277,8 @@ extension BlazeDBError {
             return "Password too weak. Requirements: \(requirements)"
         case .invalidData(let reason):
             return "Invalid data: \(reason)"
+        case .invalidInput(let reason):
+            return "Invalid input: \(reason)"
         }
     }
 }

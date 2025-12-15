@@ -57,7 +57,7 @@ public struct CompoundIndexKey: Hashable {
     public static func == (lhs: CompoundIndexKey, rhs: CompoundIndexKey) -> Bool {
         guard lhs.components.count == rhs.components.count else { return false }
         for (l, r) in zip(lhs.components, rhs.components) {
-            if !lhs.compareFields(l, r) { return false }
+            if !Self.compareFields(l, r) { return false }
         }
         return true
     }

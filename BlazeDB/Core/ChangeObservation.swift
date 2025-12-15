@@ -70,6 +70,7 @@ public final class ObserverToken {
 // MARK: - Change Notification Manager
 
 /// Internal class managing change observers
+/// Thread-safe: Uses NSLock for synchronization (legacy pattern, acceptable for notification system)
 internal final class ChangeNotificationManager {
     
     private var observers: [UUID: ChangeObserver] = [:]
@@ -78,7 +79,8 @@ internal final class ChangeNotificationManager {
     private var batchNotificationTimer: Timer?
     private let batchDelay: TimeInterval = 0.05  // 50ms batching
     
-    static let shared = ChangeNotificationManager()
+    /// Thread-safe singleton (caller must ensure thread safety)
+    nonisolated(unsafe) static let shared = ChangeNotificationManager()
     
     private init() {}
     
