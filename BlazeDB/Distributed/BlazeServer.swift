@@ -6,59 +6,59 @@
 //
 
 import Foundation
-import Network
 
 /// Server that accepts remote BlazeDB connections
+/// Platform-neutral wrapper around ServerTransportProvider
 public actor BlazeServer {
     private let port: UInt16
     private let database: BlazeDBClient
     private let databaseName: String
     private let authToken: String?
     private let sharedSecret: String?
-    private var listener: NWListener?
+    private let transportProvider: ServerTransportProvider
     private var isRunning = false
     private var connections: [UUID: SecureConnection] = [:]
     private var syncEngines: [UUID: BlazeSyncEngine] = [:]
     
+    /// Initialize with a custom transport provider
+    /// - Parameters:
+    ///   - port: Port number to listen on
+    ///   - database: Database client instance
+    ///   - databaseName: Name of the database
+    ///   - authToken: Optional authentication token
+    ///   - sharedSecret: Optional shared secret for authentication
+    ///   - transportProvider: Transport provider to use (defaults to platform-appropriate provider)
     public init(
         port: UInt16 = 8080,
         database: BlazeDBClient,
         databaseName: String,
         authToken: String? = nil,
-        sharedSecret: String? = nil
+        sharedSecret: String? = nil,
+        transportProvider: ServerTransportProvider? = nil
     ) {
         self.port = port
         self.database = database
         self.databaseName = databaseName
         self.authToken = authToken
         self.sharedSecret = sharedSecret
+        self.transportProvider = transportProvider ?? DefaultServerTransportProvider()
     }
     
     /// Start listening for connections
     public func start() async throws {
         guard !isRunning else { return }
         
-        // Create TCP listener
-        let tcpOptions = NWProtocolTCP.Options()
-        tcpOptions.enableKeepalive = true
-        tcpOptions.keepaliveIdle = 30
-        
-        let tlsOptions = NWProtocolTLS.Options()
-        let parameters = NWParameters(tls: tlsOptions, tcp: tcpOptions)
-        
-        let listener = try NWListener(using: parameters, on: NWEndpoint.Port(rawValue: port)!)
-        
-        // Handle new connections
-        listener.newConnectionHandler = { [weak self] connection in
-            guard let self = self else { return }
-            Task {
-                await self.handleConnection(connection)
-            }
+        // Check if transport is available
+        guard transportProvider.isAvailable() else {
+            throw ServerTransportError.notAvailable
         }
         
-        // Start listening
-        listener.start(queue: .global())
-        self.listener = listener
+        // Start server using transport provider
+        try await transportProvider.startServer(port: port) { [weak self] serverConnection in
+            guard let self = self else { return }
+            await self.handleConnection(serverConnection)
+        }
+        
         self.isRunning = true
         
         BlazeLogger.info("BlazeServer listening on port \(port) (database: \(databaseName), auth: \(authToken != nil ? "enabled" : "disabled"))")
@@ -68,8 +68,7 @@ public actor BlazeServer {
     public func stop() async {
         guard isRunning else { return }
         
-        listener?.cancel()
-        listener = nil
+        await transportProvider.stopServer()
         isRunning = false
         
         // Stop all sync engines
@@ -83,24 +82,32 @@ public actor BlazeServer {
     }
     
     /// Handle incoming connection
-    private func handleConnection(_ connection: NWConnection) async {
+    private func handleConnection(_ serverConnection: ServerConnection) async {
         let connectionId = UUID()
         
         BlazeLogger.debug("New connection: \(connectionId)")
         
         // Start connection
-        connection.start(queue: .global())
+        await serverConnection.start()
         
         // Wait for connection to be ready
-        let state = await connection.state
-        guard case .ready = state else {
+        guard await serverConnection.waitForReady() else {
             BlazeLogger.error("Connection \(connectionId) failed to establish")
+            serverConnection.cancel()
+            return
+        }
+        
+        #if canImport(Network)
+        // On Apple platforms, extract NWConnection for SecureConnection
+        guard let nwConnection = serverConnection.getNWConnection() else {
+            BlazeLogger.error("Connection \(connectionId): Unable to get NWConnection")
+            serverConnection.cancel()
             return
         }
         
         // Create secure connection wrapper
         let secureConnection = SecureConnection(
-            connection: connection,
+            connection: nwConnection,
             nodeId: connectionId,
             database: databaseName,
             authToken: nil  // Server doesn't need auth token
@@ -133,8 +140,13 @@ public actor BlazeServer {
             
         } catch {
             BlazeLogger.error("Handshake failed for \(connectionId)", error: error)
-            connection.cancel()
+            serverConnection.cancel()
         }
+        #else
+        // On Linux/headless platforms, SecureConnection is not available
+        BlazeLogger.warn("Connection \(connectionId): SecureConnection not available on this platform")
+        serverConnection.cancel()
+        #endif
     }
     
     /// Get active connection count
