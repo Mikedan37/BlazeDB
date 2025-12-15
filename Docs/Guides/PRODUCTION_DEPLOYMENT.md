@@ -27,9 +27,100 @@ This guide covers deployment best practices for production use.
 
 ## Server Deployment
 
+### Programmatic Setup
+
+#### High-Level API (Recommended)
+
+```swift
+import BlazeDB
+
+@main
+struct ServerMain {
+    static func main() async throws {
+        let config = BlazeDBServerConfig(
+            databaseName: "ServerMainDB",
+            password: "secure-password-123",
+            project: "Production",
+            port: 9090,
+            authToken: "secret-token-123",  // Optional: require auth
+            sharedSecret: nil  // Optional: for token derivation
+        )
+        
+        let server = try await BlazeDBServer.start(config)
+        print("Server started on port 9090")
+        
+        // Keep server running
+        RunLoop.main.run()
+    }
+}
+```
+
+#### Low-Level API
+
+```swift
+// Create database
+let serverDB = try BlazeDBClient(
+    name: "ServerDB",
+    fileURL: serverURL,
+    password: "server-password"
+)
+
+// Create server
+let server = BlazeServer(
+    port: 9090,
+    database: serverDB,
+    databaseName: "ServerDB",
+    authToken: "secret-token-123",  // Optional
+    sharedSecret: nil  // Optional
+)
+
+// Start server
+try await server.start()
+
+// Stop server (when needed)
+await server.stop()
+```
+
 ### Docker Deployment
 
-BlazeDB server can be deployed using Docker:
+#### Using Docker Compose
+
+Create a `docker-compose.yml`:
+
+```yaml
+version: "3.9"
+
+services:
+  blazedb-server:
+    build: .
+    container_name: blazedb-server
+    ports:
+      - "9090:9090"
+    environment:
+      - BLAZEDB_DB_NAME=ServerMainDB
+      - BLAZEDB_PASSWORD=secure-password-123
+      - BLAZEDB_PROJECT=Production
+      - BLAZEDB_PORT=9090
+      - BLAZEDB_AUTH_TOKEN=secret-token-123  # Optional
+      - BLAZEDB_SHARED_SECRET=  # Optional
+    restart: unless-stopped
+    volumes:
+      - ./data:/root/Library/Application Support/BlazeDB  # Persist database
+```
+
+Start with:
+```bash
+# Build and start
+docker-compose up -d
+
+# View logs
+docker-compose logs -f
+
+# Stop
+docker-compose down
+```
+
+#### Using Docker Directly
 
 ```bash
 # Build Docker image
@@ -37,35 +128,21 @@ docker build -t blazedb-server .
 
 # Run server
 docker run -d \
-  -p 8080:8080 \
-  -v /data/blazedb:/data \
-  -e BLAZEDB_PORT=8080 \
-  -e BLAZEDB_DATA_DIR=/data \
+  --name blazedb-server \
+  -p 9090:9090 \
+  -e BLAZEDB_DB_NAME=ServerMainDB \
+  -e BLAZEDB_PASSWORD=secure-password-123 \
+  -e BLAZEDB_PROJECT=Production \
+  -e BLAZEDB_PORT=9090 \
+  -e BLAZEDB_AUTH_TOKEN=secret-token-123 \
+  -v $(pwd)/data:/root/Library/Application\ Support/BlazeDB \
   blazedb-server
-```
 
-### Docker Compose
+# View logs
+docker logs -f blazedb-server
 
-Use `docker-compose.yml` for easier management:
-
-```yaml
-version: '3.8'
-services:
-  blazedb:
-    build: .
-    ports:
-      - "8080:8080"
-    volumes:
-      - ./data:/data
-    environment:
-      - BLAZEDB_PORT=8080
-      - BLAZEDB_DATA_DIR=/data
-    restart: unless-stopped
-```
-
-Start with:
-```bash
-docker-compose up -d
+# Stop
+docker stop blazedb-server
 ```
 
 ### Systemd Service (Linux)
@@ -81,7 +158,12 @@ After=network.target
 Type=simple
 User=blazedb
 WorkingDirectory=/opt/blazedb
-ExecStart=/opt/blazedb/blazedb-server
+ExecStart=/opt/blazedb/BlazeServer
+Environment="BLAZEDB_DB_NAME=ServerMainDB"
+Environment="BLAZEDB_PASSWORD=secure-password-123"
+Environment="BLAZEDB_PROJECT=Production"
+Environment="BLAZEDB_PORT=9090"
+Environment="BLAZEDB_AUTH_TOKEN=secret-token-123"
 Restart=always
 RestartSec=10
 
@@ -93,16 +175,21 @@ Enable and start:
 ```bash
 sudo systemctl enable blazedb
 sudo systemctl start blazedb
+
+# View logs
+sudo journalctl -u blazedb -f
 ```
 
 ### Environment Variables
 
 Configure via environment variables:
 
-- `BLAZEDB_PORT` - Server port (default: 8080)
-- `BLAZEDB_DATA_DIR` - Database storage directory
-- `BLAZEDB_LOG_LEVEL` - Logging level (debug, info, warn, error)
-- `BLAZEDB_MAX_CONNECTIONS` - Maximum client connections
+- `BLAZEDB_DB_NAME` - Database name (default: "ServerMainDB")
+- `BLAZEDB_PASSWORD` - Encryption password (default: "change-me")
+- `BLAZEDB_PROJECT` - Project namespace (default: "BlazeServer")
+- `BLAZEDB_PORT` - TCP port (default: 9090)
+- `BLAZEDB_AUTH_TOKEN` - Optional auth token for clients
+- `BLAZEDB_SHARED_SECRET` - Optional shared secret for token derivation
 
 ## Client Configuration
 
@@ -392,7 +479,7 @@ let topology = BlazeTopology()
 // Connect to server
 try await topology.connectTCP(
     host: "server.example.com",
-    port: 8080,
+    port: 9090,
     sharedSecret: "secret"
 )
 

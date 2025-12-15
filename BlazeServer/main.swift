@@ -40,11 +40,15 @@ struct BlazeServerMain {
         
         do {
             _ = try await BlazeDBServer.start(config)
-            BlazeLogger.info("BlazeServer started (db=\(databaseName), port=\(port))")
+            BlazeLogger.info("✅ BlazeServer started successfully")
+            BlazeLogger.info("📡 Listening on port \(port)")
+            BlazeLogger.info("💾 Database: \(databaseName)")
+            BlazeLogger.info("🔐 Authentication: \(authToken != nil ? "enabled" : "disabled")")
+            BlazeLogger.info("🚀 Server ready to accept connections")
             // Keep the process alive indefinitely.
             RunLoop.main.run()
         } catch {
-            BlazeLogger.error("Failed to start BlazeServer", error: error)
+            BlazeLogger.error("❌ Failed to start BlazeServer", error: error)
             exit(1)
         }
     }

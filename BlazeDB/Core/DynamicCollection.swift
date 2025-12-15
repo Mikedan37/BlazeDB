@@ -282,7 +282,9 @@ public final class DynamicCollection {
                                         case .date(let d): return AnyBlazeCodable(d)
                                         case .uuid(let u): return AnyBlazeCodable(u)
                                         case .data(let data): return AnyBlazeCodable(data)
-                                        }
+                            case .vector(let v): return AnyBlazeCodable(v)
+                            case .null: return AnyBlazeCodable(Optional<Int>.none as Any)
+                            }
                                     }
                                     let indexKey = CompoundIndexKey(normalizedComponents)
                                     var set = indexEntries[indexKey] ?? Set<UUID>()
@@ -599,6 +601,8 @@ public final class DynamicCollection {
                                             case .date(let d): return AnyBlazeCodable(d)
                                             case .uuid(let u): return AnyBlazeCodable(u)
                                             case .data(let data): return AnyBlazeCodable(data)
+                                            case .vector(let v): return AnyBlazeCodable(v)
+                                            case .null: return AnyBlazeCodable(Optional<Int>.none as Any)
                                             }
                                         }
                                         let normalizedKey = CompoundIndexKey(normalizedComponents)
@@ -665,7 +669,9 @@ public final class DynamicCollection {
                                                 case .date(let d): return AnyBlazeCodable(d)
                                                 case .uuid(let u): return AnyBlazeCodable(u)
                                                 case .data(let data): return AnyBlazeCodable(data)
-                                                }
+                            case .vector(let v): return AnyBlazeCodable(v)
+                            case .null: return AnyBlazeCodable(Optional<Int>.none as Any)
+                            }
                                             }
                                             let normalizedKey = CompoundIndexKey(normalizedComponents)
                                             rebuilt[normalizedKey, default: []].insert(id)
@@ -865,6 +871,8 @@ public final class DynamicCollection {
                             case .date(let d): return AnyBlazeCodable(d)
                             case .uuid(let u): return AnyBlazeCodable(u)
                             case .data(let data): return AnyBlazeCodable(data)
+                            case .vector(let v): return AnyBlazeCodable(v)
+                            case .null: return AnyBlazeCodable(Optional<Int>.none as Any)
                             }
                         }
                         let indexKey = CompoundIndexKey(normalizedComponents)
@@ -1024,6 +1032,8 @@ public final class DynamicCollection {
                             case .date(let d): return AnyBlazeCodable(d)
                             case .uuid(let u): return AnyBlazeCodable(u)
                             case .data(let data): return AnyBlazeCodable(data)
+                            case .vector(let v): return AnyBlazeCodable(v)
+                            case .null: return AnyBlazeCodable(Optional<Int>.none as Any)
                             }
                         }
                         let indexKey = CompoundIndexKey(normalizedComponents)
@@ -1154,7 +1164,9 @@ public final class DynamicCollection {
                         case .date(let d): return AnyBlazeCodable(d)
                         case .uuid(let u): return AnyBlazeCodable(u)
                         case .data(let data): return AnyBlazeCodable(data)
-                        }
+                                            case .vector(let v): return AnyBlazeCodable(v)
+                                            case .null: return AnyBlazeCodable(Optional<Int>.none as Any)
+                                        }
                     }
                     let indexKey = CompoundIndexKey(normalizedComponents)
                     var inner = secondaryIndexes[compound] ?? [:]
@@ -1428,6 +1440,8 @@ public final class DynamicCollection {
                             case .date(let d): return AnyBlazeCodable(d)
                             case .uuid(let u): return AnyBlazeCodable(u)
                             case .data(let data): return AnyBlazeCodable(data)
+                            case .vector(let v): return AnyBlazeCodable(v)
+                            case .null: return AnyBlazeCodable(Optional<Int>.none as Any)
                             }
                         }
                         let normalizedOldKey = CompoundIndexKey(normalizedOldComponents)
@@ -1461,6 +1475,8 @@ public final class DynamicCollection {
                             case .date(let d): return AnyBlazeCodable(d)
                             case .uuid(let u): return AnyBlazeCodable(u)
                             case .data(let data): return AnyBlazeCodable(data)
+                            case .vector(let v): return AnyBlazeCodable(v)
+                            case .null: return AnyBlazeCodable(Optional<Int>.none as Any)
                             }
                         }
                         let indexKey = CompoundIndexKey(normalizedComponents)
@@ -1914,7 +1930,9 @@ public final class DynamicCollection {
                 case .date(let d): return AnyBlazeCodable(d)
                 case .uuid(let u): return AnyBlazeCodable(u)
                 case .data(let data): return AnyBlazeCodable(data)
-                }
+                                            case .vector(let v): return AnyBlazeCodable(v)
+                                            case .null: return AnyBlazeCodable(Optional<Int>.none as Any)
+                                        }
             }
             let indexKey = CompoundIndexKey(normalizedComponents)
             
@@ -2170,6 +2188,8 @@ public final class DynamicCollection {
                             case .date(let d): return AnyBlazeCodable(d)
                             case .uuid(let u): return AnyBlazeCodable(u)
                             case .data(let data): return AnyBlazeCodable(data)
+                            case .vector(let v): return AnyBlazeCodable(v)
+                            case .null: return AnyBlazeCodable(Optional<Int>.none as Any)
                             }
                         }
                         let normalizedOldKey = CompoundIndexKey(normalizedOldComponents)
@@ -2206,7 +2226,9 @@ public final class DynamicCollection {
                         case .date(let d): return AnyBlazeCodable(d)
                         case .uuid(let u): return AnyBlazeCodable(u)
                         case .data(let data): return AnyBlazeCodable(data)
-                        }
+                                            case .vector(let v): return AnyBlazeCodable(v)
+                                            case .null: return AnyBlazeCodable(Optional<Int>.none as Any)
+                                        }
                     }
                     let indexKey = CompoundIndexKey(normalizedComponents)
                     var inner = secondaryIndexes[compound] ?? [:]
@@ -2423,7 +2445,9 @@ public final class DynamicCollection {
                         case .date(let d): return AnyBlazeCodable(d)
                         case .uuid(let u): return AnyBlazeCodable(u)
                         case .data(let data): return AnyBlazeCodable(data)
-                        }
+                                            case .vector(let v): return AnyBlazeCodable(v)
+                                            case .null: return AnyBlazeCodable(Optional<Int>.none as Any)
+                                        }
                     }
                     let indexKey = CompoundIndexKey(normalizedComponents)
                     

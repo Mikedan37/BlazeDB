@@ -92,7 +92,7 @@ public class SavepointManager {
 // MARK: - BlazeDBClient Savepoints Extension
 
 extension BlazeDBClient {
-    private static var savepointManagerKey: UInt8 = 0
+    private static let savepointManagerKey: UInt8 = 0
     
     private var savepointManager: SavepointManager {
         if let manager = objc_getAssociatedObject(self, &Self.savepointManagerKey) as? SavepointManager {

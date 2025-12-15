@@ -64,7 +64,80 @@ extension BlazeDBClient {
     
     // MARK: - Backup Operations
     
-    /// Create a full backup of the database
+    /// Create a full backup of the database (synchronous)
+    ///
+    /// Creates a complete copy of the database file and all associated metadata.
+    /// The backup is encrypted with the same key as the source database.
+    ///
+    /// **Safety:** Requires exclusive database access. The database must be open and
+    /// have exclusive file lock. Backup will fail if another process has the database open.
+    ///
+    /// - Parameter url: Destination URL for the backup
+    /// - Returns: Statistics about the backup operation
+    /// - Throws: BlazeDBError if backup fails (e.g., database locked, disk full, permission denied)
+    ///
+    /// ## Example
+    /// ```swift
+    /// let backupURL = FileManager.default.temporaryDirectory
+    ///     .appendingPathComponent("backup.blazedb")
+    /// let stats = try db.backup(to: backupURL)
+    /// print("Backed up \(stats.recordCount) records")
+    /// ```
+    public func backup(to url: URL) throws -> BackupStats {
+        BlazeLogger.info("Starting backup to \(url.path)")
+        let startTime = Date()
+        
+        // Ensure all pending changes are persisted before backup
+        try persist()
+        
+        // Count records for stats
+        let recordCount = try count()
+        
+        // Remove existing backup if it exists (overwrite behavior)
+        if FileManager.default.fileExists(atPath: url.path) {
+            try FileManager.default.removeItem(at: url)
+        }
+        
+        // Copy database file
+        try FileManager.default.copyItem(at: fileURL, to: url)
+        
+        // Copy metadata
+        let backupMetaURL = url.deletingPathExtension().appendingPathExtension("meta")
+        if FileManager.default.fileExists(atPath: metaURL.path) {
+            if FileManager.default.fileExists(atPath: backupMetaURL.path) {
+                try FileManager.default.removeItem(at: backupMetaURL)
+            }
+            try FileManager.default.copyItem(at: metaURL, to: backupMetaURL)
+        }
+        
+        // Copy indexes if they exist
+        let indexesURL = metaURL.deletingPathExtension().appendingPathExtension("indexes")
+        let backupIndexesURL = backupMetaURL.deletingPathExtension().appendingPathExtension("indexes")
+        if FileManager.default.fileExists(atPath: indexesURL.path) {
+            if FileManager.default.fileExists(atPath: backupIndexesURL.path) {
+                try FileManager.default.removeItem(at: backupIndexesURL)
+            }
+            try FileManager.default.copyItem(at: indexesURL, to: backupIndexesURL)
+        }
+        
+        // Get file size
+        let attributes = try FileManager.default.attributesOfItem(atPath: url.path)
+        let fileSize = attributes[.size] as? Int64 ?? 0
+        
+        let duration = Date().timeIntervalSince(startTime)
+        
+        let stats = BackupStats(
+            recordCount: recordCount,
+            fileSize: fileSize,
+            duration: duration,
+            timestamp: Date()
+        )
+        
+        BlazeLogger.info("Backup complete: \(recordCount) records, \(fileSize / 1024 / 1024) MB, \(String(format: "%.2f", duration))s")
+        return stats
+    }
+    
+    /// Create a full backup of the database (async - convenience wrapper)
     ///
     /// Creates a complete copy of the database file and all associated metadata.
     /// The backup is encrypted with the same key as the source database.
@@ -81,59 +154,88 @@ extension BlazeDBClient {
     /// print(stats.description)
     /// ```
     public func backup(to url: URL) async throws -> BackupStats {
-        BlazeLogger.info("🔄 Starting backup to \(url.path)")
-        let startTime = Date()
-        
-        return try await withCheckedThrowingContinuation { continuation in
-            DispatchQueue.global(qos: .utility).async {
-                do {
-                    // Flush all pending changes
-                    try self.persist()
-                    
-                    // Count records for stats
-                    let recordCount = try self.count()
-                    
-                    // Note: Queue barrier already provides write synchronization
-                    
-                    // Copy database file
-                    try FileManager.default.copyItem(at: self.fileURL, to: url)
-                    
-                    // Copy metadata
-                    let backupMetaURL = url.deletingPathExtension().appendingPathExtension("meta")
-                    try FileManager.default.copyItem(at: self.metaURL, to: backupMetaURL)
-                    
-                    // Copy indexes if they exist
-                    let indexesURL = self.metaURL.deletingPathExtension().appendingPathExtension("indexes")
-                    let backupIndexesURL = backupMetaURL.deletingPathExtension().appendingPathExtension("indexes")
-                    if FileManager.default.fileExists(atPath: indexesURL.path) {
-                        try FileManager.default.copyItem(at: indexesURL, to: backupIndexesURL)
-                    }
-                    
-                    // Get file size
-                    let attributes = try FileManager.default.attributesOfItem(atPath: url.path)
-                    let fileSize = attributes[.size] as? Int64 ?? 0
-                    
-                    let duration = Date().timeIntervalSince(startTime)
-                    
-                    let stats = BackupStats(
-                        recordCount: recordCount,
-                        fileSize: fileSize,
-                        duration: duration,
-                        timestamp: Date()
-                    )
-                    
-                    BlazeLogger.info("✅ Backup complete: \(recordCount) records, \(fileSize / 1024 / 1024) MB, \(String(format: "%.2f", duration))s")
-                    
-                    continuation.resume(returning: stats)
-                } catch {
-                    BlazeLogger.error("❌ Backup failed: \(error)")
-                    continuation.resume(throwing: error)
-                }
-            }
-        }
+        // Delegate to synchronous version
+        return try backup(to: url)
     }
     
-    /// Restore database from a backup
+    /// Restore database from a backup (synchronous)
+    ///
+    /// Replaces the current database with a backup file.
+    /// **WARNING:** This destroys current data! Use with caution.
+    ///
+    /// **Safety:** Requires exclusive database access. The database must be open and
+    /// have exclusive file lock. Restore will fail if another process has the database open.
+    /// The backup file must exist and be readable. The backup must use the same encryption
+    /// key as the current database.
+    ///
+    /// - Parameter url: URL of the backup file
+    /// - Throws: BlazeDBError if restore fails (e.g., backup not found, wrong encryption key, database locked)
+    ///
+    /// ## Example
+    /// ```swift
+    /// try db.restore(from: backupURL)
+    /// print("Database restored from backup")
+    /// ```
+    public func restore(from url: URL) throws {
+        BlazeLogger.warn("RESTORE: This will replace current database!")
+        
+        // Verify backup file exists
+        guard FileManager.default.fileExists(atPath: url.path) else {
+            throw BlazeDBError.recordNotFound(
+                id: nil,
+                collection: nil,
+                suggestion: "Backup file not found at \(url.path)"
+            )
+        }
+        
+        // Verify backup metadata exists
+        let backupMetaURL = url.deletingPathExtension().appendingPathExtension("meta")
+        guard FileManager.default.fileExists(atPath: backupMetaURL.path) else {
+            throw BlazeDBError.corruptedData(
+                location: "backup metadata",
+                reason: "Backup metadata file not found at \(backupMetaURL.path). Backup may be incomplete."
+            )
+        }
+        
+        // Persist any pending changes before restore
+        try persist()
+        
+        // Remove current files
+        if FileManager.default.fileExists(atPath: fileURL.path) {
+            try FileManager.default.removeItem(at: fileURL)
+        }
+        if FileManager.default.fileExists(atPath: metaURL.path) {
+            try FileManager.default.removeItem(at: metaURL)
+        }
+        
+        let indexesURL = metaURL.deletingPathExtension().appendingPathExtension("indexes")
+        if FileManager.default.fileExists(atPath: indexesURL.path) {
+            try? FileManager.default.removeItem(at: indexesURL)
+        }
+        
+        // Copy backup files
+        try FileManager.default.copyItem(at: url, to: fileURL)
+        try FileManager.default.copyItem(at: backupMetaURL, to: metaURL)
+        
+        let backupIndexesURL = backupMetaURL.deletingPathExtension().appendingPathExtension("indexes")
+        if FileManager.default.fileExists(atPath: backupIndexesURL.path) {
+            try FileManager.default.copyItem(at: backupIndexesURL, to: indexesURL)
+        }
+        
+        // Reload collection with restored files
+        // This will use the same encryption key, so backup must have been created with same key
+        let newStore = try PageStore(fileURL: fileURL, key: encryptionKey)
+        collection = try DynamicCollection(
+            store: newStore,
+            metaURL: metaURL,
+            project: project,
+            encryptionKey: encryptionKey
+        )
+        
+        BlazeLogger.info("Database restored from backup")
+    }
+    
+    /// Restore database from a backup (async - convenience wrapper)
     ///
     /// Replaces the current database with a backup file.
     /// **WARNING:** This destroys current data! Use with caution.
@@ -147,48 +249,8 @@ extension BlazeDBClient {
     /// print("Database restored from backup")
     /// ```
     public func restore(from url: URL) async throws {
-        BlazeLogger.warn("⚠️  RESTORE: This will replace current database!")
-        
-        return try await withCheckedThrowingContinuation { continuation in
-            DispatchQueue.global(qos: .utility).async {
-                do {
-                    // Note: Queue barrier already provides write synchronization
-                    
-                    // Remove current files
-                    try? FileManager.default.removeItem(at: self.fileURL)
-                    try? FileManager.default.removeItem(at: self.metaURL)
-                    
-                    let indexesURL = self.metaURL.deletingPathExtension().appendingPathExtension("indexes")
-                    try? FileManager.default.removeItem(at: indexesURL)
-                    
-                    // Copy backup files
-                    try FileManager.default.copyItem(at: url, to: self.fileURL)
-                    
-                    let backupMetaURL = url.deletingPathExtension().appendingPathExtension("meta")
-                    try FileManager.default.copyItem(at: backupMetaURL, to: self.metaURL)
-                    
-                    let backupIndexesURL = backupMetaURL.deletingPathExtension().appendingPathExtension("indexes")
-                    if FileManager.default.fileExists(atPath: backupIndexesURL.path) {
-                        try FileManager.default.copyItem(at: backupIndexesURL, to: indexesURL)
-                    }
-                    
-                    // Reload collection
-                    let newStore = try PageStore(fileURL: self.fileURL, key: self.encryptionKey)
-                    self.collection = try DynamicCollection(
-                        store: newStore,
-                        metaURL: self.metaURL,
-                        project: self.project,
-                        encryptionKey: self.encryptionKey
-                    )
-                    
-                    BlazeLogger.info("✅ Database restored from backup")
-                    continuation.resume()
-                } catch {
-                    BlazeLogger.error("❌ Restore failed: \(error)")
-                    continuation.resume(throwing: error)
-                }
-            }
-        }
+        // Delegate to synchronous version
+        try restore(from: url)
     }
     
     // MARK: - Export Operations

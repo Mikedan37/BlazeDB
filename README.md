@@ -29,6 +29,7 @@ BlazeDB combines MVCC concurrency control, write-ahead logging, operation-log sy
 - **MVCC** - Snapshot isolation with concurrent readers and writers
 - **Swift-Native API** - Fluent query builder with automatic index selection
 - **Predictable Performance** - Sub-millisecond queries, linear scaling
+- **Backup & Restore** - Full database backup with metadata preservation
 - **Distributed Sync** - Multi-node synchronization with ECDH key exchange
 - **SwiftUI Integration** - `@BlazeQuery` property wrapper
 - **Zero Dependencies** - Pure Swift
@@ -87,6 +88,15 @@ struct ItemListView: View {
         }
     }
 }
+
+// Backup and restore
+let backupURL = FileManager.default.temporaryDirectory
+    .appendingPathComponent("backup.blazedb")
+let stats = try db.backup(to: backupURL)
+print("Backed up \(stats.recordCount) records")
+
+// Restore from backup (destroys current data)
+try db.restore(from: backupURL)
 ```
 
 ---
@@ -116,6 +126,8 @@ struct ItemListView: View {
 - **[Transactions](Docs/TRANSACTIONS.md)** - WAL, ACID guarantees, crash recovery
 - **[Protocol](Docs/PROTOCOL.md)** - BlazeBinary format, encoding rules, determinism
 - **[Why Not SQLite](Docs/WHY_NOT_SQLITE.md)** - Comparisons and tradeoffs
+- **[Compression Design](Docs/COMPRESSION_DESIGN.md)** - Compression strategy (optional, opt-in)
+- **[Snapshot Sync Design](Docs/SNAPSHOT_SYNC_DESIGN.md)** - Snapshot-based initial sync (design only, not implemented)
 
 See the [documentation index](Docs/MASTER_DOCUMENTATION_INDEX.md) for API reference, guides, and examples.
 

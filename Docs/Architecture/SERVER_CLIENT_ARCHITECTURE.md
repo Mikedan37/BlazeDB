@@ -155,17 +155,48 @@ Use Case: Mobile app with offline support
 ## 📊 **CONFIGURATION:**
 
 ### **Server Setup:**
+
+#### High-Level API (Recommended)
+```swift
+import BlazeDB
+
+@main
+struct ServerMain {
+    static func main() async throws {
+        let config = BlazeDBServerConfig(
+            databaseName: "ServerMainDB",
+            password: "secure-password-123",
+            project: "Production",
+            port: 9090,
+            authToken: "secret-token-123",  // Optional
+            sharedSecret: nil  // Optional
+        )
+        
+        let server = try await BlazeDBServer.start(config)
+        print("Server started on port 9090")
+        RunLoop.main.run()
+    }
+}
+```
+
+#### Low-Level API
 ```swift
 // 1. Create server database
 let serverDB = try BlazeDBClient(name: "Server", at: serverURL, password: "password")
 
-// 2. Enable sync as SERVER
-let serverEngine = try await serverDB.enableSync(
-    relay: serverRelay,
-    role: .server  // SERVER: Has priority!
+// 2. Create server
+let server = BlazeServer(
+    port: 9090,
+    database: serverDB,
+    databaseName: "Server",
+    authToken: "secret-token-123",  // Optional
+    sharedSecret: nil  // Optional
 )
 
-// 3. Server can now accept client connections
+// 3. Start server
+try await server.start()
+
+// Server can now accept client connections
 ```
 
 ### **Client Setup:**
@@ -213,13 +244,13 @@ let client2NodeId = try await topology.register(
 // Connect clients to server
 try await topology.connectRemote(
     nodeId: client1NodeId,
-    remote: RemoteNode(host: "server.example.com", port: 8080, database: "Server"),
+    remote: RemoteNode(host: "server.example.com", port: 9090, database: "Server"),
     policy: SyncPolicy()
 )
 
 try await topology.connectRemote(
     nodeId: client2NodeId,
-    remote: RemoteNode(host: "server.example.com", port: 8080, database: "Server"),
+    remote: RemoteNode(host: "server.example.com", port: 9090, database: "Server"),
     policy: SyncPolicy()
 )
 ```

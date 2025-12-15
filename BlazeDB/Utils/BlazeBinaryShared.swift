@@ -99,6 +99,8 @@ enum TypeTag: UInt8 {
     case data = 0x07
     case array = 0x08
     case dictionary = 0x09
+    case vector = 0x0A
+    case null = 0x0B
     
     // Optimizations:
     case emptyString = 0x11
@@ -127,6 +129,7 @@ enum BlazeBinaryError: Error, LocalizedError {
     case invalidFormat(String)
     case unsupportedVersion(UInt8)
     case corruptedData(String)
+    case encodingFailed(String)
     
     var errorDescription: String? {
         switch self {
@@ -136,6 +139,8 @@ enum BlazeBinaryError: Error, LocalizedError {
             return "Unsupported BlazeBinary version: 0x\(String(version, radix: 16))"
         case .corruptedData(let msg):
             return "Corrupted BlazeBinary data: \(msg)"
+        case .encodingFailed(let msg):
+            return "BlazeBinary encoding failed: \(msg)"
         }
     }
 }

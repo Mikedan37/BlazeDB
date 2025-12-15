@@ -418,7 +418,7 @@ public final class BlazeDBClient: @unchecked Sendable {
         fileURL.deletingLastPathComponent().appendingPathComponent("txn_log.json")
     }
 
-    private var transactionBackupURL: URL {
+    internal var transactionBackupURL: URL {
         fileURL.deletingLastPathComponent().appendingPathComponent("txn_in_progress.blazedb")
     }
 
@@ -1471,6 +1471,8 @@ public final class BlazeDBClient: @unchecked Sendable {
                                     case .date(let d): return AnyBlazeCodable(d)
                                     case .uuid(let u): return AnyBlazeCodable(u)
                                     case .data(let data): return AnyBlazeCodable(data)
+                                    case .vector(let v): return AnyBlazeCodable(v)
+                                    case .null: return AnyBlazeCodable(Optional<Int>.none as Any)
                                     }
                                 }
                                 let normalizedKey = CompoundIndexKey(normalizedComponents)

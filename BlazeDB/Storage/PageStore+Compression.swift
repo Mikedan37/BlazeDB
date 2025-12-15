@@ -147,18 +147,20 @@ extension PageStore {
     // MARK: - Compression Helpers
     
     private func compressData(_ data: Data, algorithm: compression_algorithm) throws -> Data {
-        let bufferSize = data.count
-        let destBuffer = UnsafeMutablePointer<UInt8>.allocate(capacity: bufferSize)
-        defer { destBuffer.deallocate() }
+        // Use safe Swift patterns (no unsafe pointers)
+        let sourceBuffer = Array(data)
+        let destBufferSize = data.count
+        var destBuffer = [UInt8](repeating: 0, count: destBufferSize)
         
-        let compressedSize = data.withUnsafeBytes { source in
-            compression_encode_buffer(
-                destBuffer, bufferSize,
-                source.bindMemory(to: UInt8.self).baseAddress!, data.count,
-                nil, 0,
-                algorithm
-            )
-        }
+        let compressedSize = compression_encode_buffer(
+            &destBuffer,
+            destBufferSize,
+            sourceBuffer,
+            sourceBuffer.count,
+            nil,
+            0,
+            algorithm
+        )
         
         guard compressedSize > 0 else {
             throw NSError(domain: "PageStore", code: 1, userInfo: [
@@ -166,29 +168,32 @@ extension PageStore {
             ])
         }
         
-        return Data(bytes: destBuffer, count: compressedSize)
+        return Data(destBuffer.prefix(compressedSize))
     }
     
     private func decompressData(_ data: Data, originalSize: Int, algorithm: compression_algorithm) throws -> Data {
-        let destBuffer = UnsafeMutablePointer<UInt8>.allocate(capacity: originalSize)
-        defer { destBuffer.deallocate() }
+        // Use safe Swift patterns (no unsafe pointers)
+        let sourceBuffer = Array(data)
+        var destBuffer = [UInt8](repeating: 0, count: originalSize)
         
-        let decompressedSize = data.withUnsafeBytes { source in
-            compression_decode_buffer(
-                destBuffer, originalSize,
-                source.bindMemory(to: UInt8.self).baseAddress!, data.count,
-                nil, 0,
-                algorithm
+        let decompressedSize = compression_decode_buffer(
+            &destBuffer,
+            originalSize,
+            sourceBuffer,
+            sourceBuffer.count,
+            nil,
+            0,
+            algorithm
+        )
+        
+        guard decompressedSize == originalSize else {
+            throw BlazeDBError.corruptedData(
+                location: "compressed page",
+                reason: "Decompression failed: expected \(originalSize) bytes, got \(decompressedSize)"
             )
         }
         
-        guard decompressedSize == originalSize else {
-            throw NSError(domain: "PageStore", code: 2, userInfo: [
-                NSLocalizedDescriptionKey: "Decompression failed"
-            ])
-        }
-        
-        return Data(bytes: destBuffer, count: decompressedSize)
+        return Data(destBuffer)
     }
 }
 

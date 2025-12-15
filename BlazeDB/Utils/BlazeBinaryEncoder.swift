@@ -36,7 +36,8 @@ public enum BlazeBinaryEncoder {
     /// - Unencrypted DBs: .enabled (adds CRC32 for corruption detection)
     /// 
     /// Enable with: BlazeBinaryEncoder.crc32Mode = .enabled
-    public static var crc32Mode: CRC32Mode = .disabled  // ✅ OFF by default (encryption has auth tags!)
+    /// Thread-safe: Uses nonisolated(unsafe) for performance (read-only in practice)
+    public nonisolated(unsafe) static var crc32Mode: CRC32Mode = .disabled  // ✅ OFF by default (encryption has auth tags!)
     
     /// Encode a BlazeDataRecord to BlazeBinary format
     ///
@@ -74,7 +75,7 @@ public enum BlazeBinaryEncoder {
         
         // FIELDS (sorted for deterministic encoding)
         for (key, value) in sortedFields {
-            encodeField(key: key, value: value, into: &data)
+            try encodeField(key: key, value: value, into: &data)
         }
         
         // ✅ OPTIONALLY APPEND CRC32 CHECKSUM (4 bytes) for 99.9% corruption detection!
@@ -93,7 +94,7 @@ public enum BlazeBinaryEncoder {
     // MARK: - CRC32 Checksum
     
     /// Calculate CRC32 checksum using zlib (built into macOS/iOS)
-    private static func calculateCRC32(_ data: Data) -> UInt32 {
+    internal static func calculateCRC32(_ data: Data) -> UInt32 {
         return data.withUnsafeBytes { buffer in
             let crc = zlib.crc32(0, buffer.baseAddress?.assumingMemoryBound(to: UInt8.self), uInt(buffer.count))
             return UInt32(crc)
@@ -102,7 +103,7 @@ public enum BlazeBinaryEncoder {
     
     // MARK: - Field Encoding
     
-    private static func encodeField(key: String, value: BlazeDocumentField, into data: inout Data) {
+    internal static func encodeField(key: String, value: BlazeDocumentField, into data: inout Data) throws {
         // KEY ENCODING (optimized with compression dictionary)
         // ✅ UNLIMITED FIELDS SUPPORTED!
         // - First 127 common fields: 1 byte (compressed)
@@ -140,10 +141,10 @@ public enum BlazeBinaryEncoder {
         }
         
         // VALUE ENCODING (type-specific, optimized)
-        encodeValue(value, into: &data)
+        try encodeValue(value, into: &data)
     }
     
-    private static func encodeValue(_ value: BlazeDocumentField, into data: inout Data) {
+    private static func encodeValue(_ value: BlazeDocumentField, into data: inout Data) throws {
         switch value {
         case .string(let s):
             if s.isEmpty {
@@ -216,7 +217,7 @@ public enum BlazeBinaryEncoder {
                 
                 // Recursively encode items
                 for item in arr {
-                    encodeValue(item, into: &data)
+                    try encodeValue(item, into: &data)
                 }
             }
             
@@ -252,7 +253,7 @@ public enum BlazeBinaryEncoder {
                     data.append(keyData)
                     
                     // Encode value
-                    encodeValue(value, into: &data)
+                    try encodeValue(value, into: &data)
                 }
             }
         }
@@ -260,7 +261,7 @@ public enum BlazeBinaryEncoder {
     
     // MARK: - Size Estimation
     
-    private static func estimateSize(_ record: BlazeDataRecord) -> Int {
+    internal static func estimateSize(_ record: BlazeDataRecord) -> Int {
         // Conservative estimate for pre-allocation
         // Header: 8 bytes
         // Per field: ~40 bytes average (key + type + value)

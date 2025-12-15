@@ -233,6 +233,8 @@ extension BlazeDataRecord {
             case .array(let a): "[\(a.count) items]"
             case .data(let d): "<\(d.count) bytes>"
             case .dictionary(let dict): "{\(dict.count) fields}"
+            case .vector(let v): "[\(v.count) floats]"
+            case .null: "null"
             }
             lines.append("  \(key): \(valueString)")
         }

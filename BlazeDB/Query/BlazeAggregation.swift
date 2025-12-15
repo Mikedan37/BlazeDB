@@ -225,6 +225,8 @@ internal struct AggregationEngine {
             return "data:" + v.base64EncodedString()
         case .array: return "array"
         case .dictionary: return "dict"
+        case .vector(let v): return "vector[\(v.count)]"
+        case .null: return "null"
         }
     }
 }

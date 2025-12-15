@@ -9,10 +9,10 @@
 import Foundation
 
 /// Collects and stores performance metrics
-public final class MetricsCollector {
+/// Thread-safe via actor isolation
+public actor MetricsCollector {
     private var config: TelemetryConfiguration
     private var metricsDB: BlazeDBClient?
-    private let lock = NSLock()
     private var cleanupTask: Task<Void, Never>?
     
     /// Random number generator for sampling
@@ -30,9 +30,6 @@ public final class MetricsCollector {
     
     /// Enable telemetry
     func enable(samplingRate: Double = 0.01) throws {
-        lock.lock()
-        defer { lock.unlock() }
-        
         config.enabled = true
         config.samplingRate = samplingRate
         
@@ -303,9 +300,7 @@ public final class MetricsCollector {
             return 0
         }
         
-        lock.lock()
         let retentionDays = config.retentionDays
-        lock.unlock()
         
         let cutoff = Date().addingTimeInterval(-Double(retentionDays) * 86400)
         

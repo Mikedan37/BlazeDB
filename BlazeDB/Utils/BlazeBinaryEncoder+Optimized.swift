@@ -12,36 +12,44 @@ import Foundation
 extension BlazeBinaryEncoder {
     
     /// Memory pool for reusable Data buffers (reduces allocations)
-    private static let bufferPool = NSLock()
-    private static var pooledBuffers: [Data] = []
-    private static let maxPoolSize = 10
-    
-    /// Get a pooled buffer or create new one
-    private static func getPooledBuffer(capacity: Int) -> Data {
-        bufferPool.lock()
-        defer { bufferPool.unlock() }
+    /// Thread-safe via actor isolation
+    private actor BufferPool {
+        private var pooledBuffers: [Data] = []
+        private let maxPoolSize = 10
         
-        // Try to find a buffer of appropriate size
-        if let index = pooledBuffers.firstIndex(where: { $0.capacity >= capacity }) {
-            let buffer = pooledBuffers.remove(at: index)
-            buffer.resetBytes(in: 0..<buffer.count)  // Clear but keep capacity
+        func getBuffer(capacity: Int) -> Data {
+            // Try to find a buffer of appropriate size
+            if let index = pooledBuffers.firstIndex(where: { $0.count >= capacity }) {
+                let buffer = pooledBuffers.remove(at: index)
+                return buffer
+            }
+            
+            // Create new buffer with exact capacity
+            var buffer = Data()
+            buffer.reserveCapacity(capacity)
             return buffer
         }
         
-        // Create new buffer with exact capacity
+        func returnBuffer(_ buffer: Data) {
+            guard pooledBuffers.count < maxPoolSize else { return }
+            pooledBuffers.append(buffer)
+        }
+    }
+    
+    private static let bufferPool = BufferPool()
+    
+    /// Get a pooled buffer or create new one
+    /// Note: Buffer pooling disabled for Swift 6 concurrency safety
+    /// This is acceptable as it's a performance optimization, not correctness requirement
+    private static func getPooledBuffer(capacity: Int) -> Data {
         var buffer = Data()
         buffer.reserveCapacity(capacity)
         return buffer
     }
     
-    /// Return buffer to pool
+    /// Return buffer to pool (no-op for Swift 6 concurrency safety)
     private static func returnToPool(_ buffer: Data) {
-        bufferPool.lock()
-        defer { bufferPool.unlock() }
-        
-        if pooledBuffers.count < maxPoolSize {
-            pooledBuffers.append(buffer)
-        }
+        // Buffer pooling disabled in synchronous context
     }
     
     /// Ultra-optimized encode with zero-copy and memory pooling
@@ -69,7 +77,7 @@ extension BlazeBinaryEncoder {
         
         // FIELDS (sorted for deterministic encoding)
         for (key, value) in sortedFields {
-            encodeField(key: key, value: value, into: &data)
+            try encodeField(key: key, value: value, into: &data)
         }
         
         // ✅ OPTIONALLY APPEND CRC32 CHECKSUM

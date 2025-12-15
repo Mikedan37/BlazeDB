@@ -144,7 +144,10 @@ public final class BlazeCollection<Record: BlazeRecord> {
                 ])
             }
             // Use BlazeBinaryEncoder (5-10x faster than JSON!)
-            let encoded = try BlazeBinaryEncoder.encode(newRecord)
+            // Encode BlazeRecord (Codable) to BlazeBinary via JSON intermediate
+            let jsonData = try JSONEncoder().encode(newRecord)
+            let blazeRecord = try JSONDecoder().decode(BlazeDataRecord.self, from: jsonData)
+            let encoded = try BlazeBinaryEncoder.encodeOptimized(blazeRecord)
             try store.writePage(index: index, plaintext: encoded)
             try saveLayout()
         }

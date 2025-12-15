@@ -878,24 +878,134 @@ if let stats = db.getSpatialIndexStats() {
 
 ## Distributed Sync
 
-### Setup Server
+### Setup Server (Programmatic)
+
+**Design Intent:** Server mode enables remote clients to sync with a central database. The server has priority in conflict resolution.
+
+#### Method 1: High-Level API (Recommended)
 
 ```swift
+import BlazeDB
+
+@main
+struct ServerMain {
+    static func main() async throws {
+        let config = BlazeDBServerConfig(
+            databaseName: "ServerMainDB",
+            password: "secure-password-123",
+            project: "Production",
+            port: 9090,
+            authToken: "secret-token-123",  // Optional: require auth
+            sharedSecret: nil  // Optional: for token derivation
+        )
+        
+        let server = try await BlazeDBServer.start(config)
+        print("Server started on port 9090")
+        
+        // Keep server running
+        RunLoop.main.run()
+    }
+}
+```
+
+#### Method 2: Low-Level API
+
+```swift
+// Create database
 let serverDB = try BlazeDBClient(
     name: "ServerDB",
     fileURL: serverURL,
     password: "server-password"
 )
 
-let server = try BlazeServer(
-    database: "ServerDB",
-    port: 8080,
-    localDB: serverDB,
-    authToken: "secret-token-123"
+// Create server
+let server = BlazeServer(
+    port: 9090,
+    database: serverDB,
+    databaseName: "ServerDB",
+    authToken: "secret-token-123",  // Optional
+    sharedSecret: nil  // Optional
 )
 
+// Start server
 try await server.start()
+
+// Stop server (when needed)
+await server.stop()
 ```
+
+### Setup Server (Docker)
+
+#### Using Docker Compose
+
+Create a `docker-compose.yml`:
+
+```yaml
+version: "3.9"
+
+services:
+  blazedb-server:
+    build: .
+    container_name: blazedb-server
+    ports:
+      - "9090:9090"
+    environment:
+      - BLAZEDB_DB_NAME=ServerMainDB
+      - BLAZEDB_PASSWORD=secure-password-123
+      - BLAZEDB_PROJECT=Production
+      - BLAZEDB_PORT=9090
+      - BLAZEDB_AUTH_TOKEN=secret-token-123  # Optional
+      - BLAZEDB_SHARED_SECRET=  # Optional
+    restart: unless-stopped
+    volumes:
+      - ./data:/root/Library/Application Support/BlazeDB  # Persist database
+```
+
+Start the server:
+
+```bash
+# Build and start
+docker-compose up -d
+
+# View logs
+docker-compose logs -f
+
+# Stop
+docker-compose down
+```
+
+#### Using Docker Directly
+
+```bash
+# Build image
+docker build -t blazedb-server .
+
+# Run container
+docker run -d \
+  --name blazedb-server \
+  -p 9090:9090 \
+  -e BLAZEDB_DB_NAME=ServerMainDB \
+  -e BLAZEDB_PASSWORD=secure-password-123 \
+  -e BLAZEDB_PROJECT=Production \
+  -e BLAZEDB_AUTH_TOKEN=secret-token-123 \
+  -v $(pwd)/data:/root/Library/Application\ Support/BlazeDB \
+  blazedb-server
+
+# View logs
+docker logs -f blazedb-server
+
+# Stop
+docker stop blazedb-server
+```
+
+#### Environment Variables
+
+- `BLAZEDB_DB_NAME` - Database name (default: "ServerMainDB")
+- `BLAZEDB_PASSWORD` - Encryption password (default: "change-me")
+- `BLAZEDB_PROJECT` - Project namespace (default: "BlazeServer")
+- `BLAZEDB_PORT` - TCP port (default: 9090)
+- `BLAZEDB_AUTH_TOKEN` - Optional auth token for clients
+- `BLAZEDB_SHARED_SECRET` - Optional shared secret for token derivation
 
 ### Setup Client
 
@@ -909,7 +1019,7 @@ let clientDB = try BlazeDBClient(
 // Connect to server
 try await clientDB.sync(
     to: "localhost",
-    port: 8080,
+    port: 9090,
     database: "ServerDB",  // Optional, defaults to clientDB.name
     useTLS: false,
     authToken: "secret-token-123"
@@ -1021,6 +1131,43 @@ let results = try db.query()
     )
     .execute()
     .records
+```
+
+### Backup and Restore
+
+**Design Intent:** Backup creates a complete copy of the database and metadata for disaster recovery. Restore replaces the current database with a backup, destroying existing data.
+
+```swift
+// Create a backup
+let backupURL = FileManager.default.temporaryDirectory
+    .appendingPathComponent("backup-\(Date().timeIntervalSince1970).blazedb")
+
+let stats = try db.backup(to: backupURL)
+print("Backed up \(stats.recordCount) records, \(stats.fileSize / 1024 / 1024) MB")
+
+// Restore from backup (WARNING: destroys current data)
+try db.restore(from: backupURL)
+print("Database restored from backup")
+```
+
+**Safety Notes:**
+- Backup requires exclusive database access (database must be open with exclusive file lock)
+- Restore destroys all current data - use with caution
+- Backup preserves encryption - restore requires the same encryption key
+- Backup includes database file, metadata, and indexes
+
+**Error Handling:**
+```swift
+do {
+    let stats = try db.backup(to: backupURL)
+    print("Backup successful: \(stats.recordCount) records")
+} catch BlazeDBError.databaseLocked {
+    print("Database is locked by another process")
+} catch BlazeDBError.diskFull {
+    print("Insufficient disk space for backup")
+} catch {
+    print("Backup failed: \(error)")
+}
 ```
 
 ---

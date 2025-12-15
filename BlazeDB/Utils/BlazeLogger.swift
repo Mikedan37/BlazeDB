@@ -19,10 +19,11 @@ public enum BlazeLogLevel: Int, Comparable {
 }
 
 /// Centralized logging for BlazeDB
+/// Thread-safe via nonisolated(unsafe) for performance (logging must be callable from anywhere)
 public final class BlazeLogger {
     /// Global log level - set this to control verbosity
     /// Default is .warn (quiet unless problems) - set to .debug or .trace for development
-    public static var level: BlazeLogLevel = {
+    public nonisolated(unsafe) static var level: BlazeLogLevel = {
         #if DEBUG
         // Auto-detect test environment and silence
         if NSClassFromString("XCTestCase") != nil {
@@ -33,19 +34,19 @@ public final class BlazeLogger {
     }()
     
     /// Custom log handler - override for custom logging systems
-    public static var handler: ((String, BlazeLogLevel) -> Void)?
+    public nonisolated(unsafe) static var handler: ((String, BlazeLogLevel) -> Void)?
     
     /// Include file:line location in logs (default: only for warn/error)
     /// Set to true to always include location for debugging
-    public static var includeLocation: Bool = false
+    public nonisolated(unsafe) static var includeLocation: Bool = false
     
     /// Capture stack traces for error/warn logs (default: OFF for performance)
     /// ⚠️ WARNING: Stack capture adds ~1-2ms overhead per log call!
     /// Enable only for debugging critical issues in development.
-    public static var captureStackTraces: Bool = false
+    public nonisolated(unsafe) static var captureStackTraces: Bool = false
     
     /// Maximum stack frames to include in logs (default: 5)
-    public static var maxStackFrames: Int = 5
+    public nonisolated(unsafe) static var maxStackFrames: Int = 5
     
     // MARK: - Convenience Methods
     

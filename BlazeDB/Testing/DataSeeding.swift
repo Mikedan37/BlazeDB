@@ -257,8 +257,10 @@ extension BlazeDBClient {
 
 // MARK: - Factory Registry
 
+/// Thread-safe factory registry using MainActor isolation
+@MainActor
 internal class FactoryRegistry {
-    static let shared = FactoryRegistry()
+    nonisolated(unsafe) static let shared = FactoryRegistry()
     
     private var factories: [String: Any] = [:]
     

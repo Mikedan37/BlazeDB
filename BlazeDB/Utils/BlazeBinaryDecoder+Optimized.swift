@@ -12,7 +12,8 @@ import Foundation
 extension BlazeBinaryDecoder {
     
     /// Cached ISO8601DateFormatter (created once, reused forever)
-    private static let cachedDateFormatter: ISO8601DateFormatter = {
+    /// Thread-safe: ISO8601DateFormatter is immutable after creation
+    nonisolated(unsafe) private static let cachedDateFormatter: ISO8601DateFormatter = {
         let formatter = ISO8601DateFormatter()
         formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
         return formatter

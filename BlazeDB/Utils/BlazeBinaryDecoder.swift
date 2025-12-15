@@ -22,7 +22,7 @@ public enum BlazeBinaryDecoder {
     // MARK: - Alignment-Safe Helpers
     
     /// Read UInt16 from unaligned offset (big-endian)
-    private static func readUInt16(from data: Data, at offset: Int) throws -> UInt16 {
+    internal static func readUInt16(from data: Data, at offset: Int) throws -> UInt16 {
         guard offset >= 0 && offset + 2 <= data.count else {
             throw BlazeBinaryError.invalidFormat("Data too short: need 2 bytes at offset \(offset), have \(data.count)")
         }
@@ -32,7 +32,7 @@ public enum BlazeBinaryDecoder {
     }
     
     /// Read UInt32 from unaligned offset (big-endian)
-    private static func readUInt32(from data: Data, at offset: Int) throws -> UInt32 {
+    internal static func readUInt32(from data: Data, at offset: Int) throws -> UInt32 {
         guard offset + 4 <= data.count else {
             throw BlazeBinaryError.invalidFormat("Data too short: need 4 bytes at offset \(offset), have \(data.count)")
         }
@@ -79,7 +79,7 @@ public enum BlazeBinaryDecoder {
     // MARK: - CRC32 Checksum
     
     /// Calculate CRC32 checksum using zlib (built into macOS/iOS)
-    private static func calculateCRC32(_ data: Data) -> UInt32 {
+    internal static func calculateCRC32(_ data: Data) -> UInt32 {
         return data.withUnsafeBytes { buffer in
             let crc = zlib.crc32(0, buffer.baseAddress?.assumingMemoryBound(to: UInt8.self), uInt(buffer.count))
             return UInt32(crc)
@@ -171,7 +171,7 @@ public enum BlazeBinaryDecoder {
     
     // MARK: - Field Decoding
     
-    private static func decodeField(from data: Data, at offset: Int) throws -> (key: String, value: BlazeDocumentField, bytesRead: Int) {
+    internal static func decodeField(from data: Data, at offset: Int) throws -> (key: String, value: BlazeDocumentField, bytesRead: Int) {
         var currentOffset = offset
         
         // DECODE KEY
@@ -401,6 +401,33 @@ public enum BlazeBinaryDecoder {
             
         case .emptyDict:
             return (.dictionary([:]), 1)
+            
+        case .vector:
+            let vecCount = Int(try readUInt32(from: data, at: currentOffset))
+            currentOffset += 4
+            
+            guard vecCount >= 0 && vecCount < 1_000_000 else {
+                throw BlazeBinaryError.invalidFormat("Invalid vector count: \(vecCount)")
+            }
+            
+            guard currentOffset + (vecCount * 4) <= data.count else {
+                throw BlazeBinaryError.invalidFormat("Data too short for vector: need \(vecCount * 4) bytes")
+            }
+            
+            var vector: [Float] = []
+            vector.reserveCapacity(vecCount)
+            
+            for _ in 0..<vecCount {
+                let bits = try readUInt32(from: data, at: currentOffset)
+                let float = Float(bitPattern: UInt32(bigEndian: bits))
+                vector.append(float)
+                currentOffset += 4
+            }
+            
+            return (.vector(vector), currentOffset - offset)
+            
+        case .null:
+            return (.null, 1)
         }
     }
     
@@ -432,6 +459,8 @@ public enum BlazeBinaryDecoder {
         case .double: return 9
         case .bool: return 2
         case .uuid: return 17
+        case .vector(let vec): return 5 + (vec.count * 4)  // 1 byte type + 4 bytes count + 4 bytes per float
+        case .null: return 1
         case .date: return 9
         case .data(let d): return 5 + d.count
         case .array(let arr): return arr.isEmpty ? 1 : (3 + arr.reduce(0) { $0 + estimateValueSize($1) })
