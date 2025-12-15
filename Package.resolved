@@ -1,0 +1,49 @@
+{
+  "originHash" : "9296bca96f6a818bdfc50ab80b8c965f93ea826feff1b05dff2cd0cf3c5d3328",
+  "pins" : [
+    {
+      "identity" : "blazebinary",
+      "kind" : "remoteSourceControl",
+      "location" : "git@github.com:Mikedan37/BlazeBinary.git",
+      "state" : {
+        "branch" : "main",
+        "revision" : "83e5d3600d5a021c280273ac743abffb3274d9c3"
+      }
+    },
+    {
+      "identity" : "blazefsm",
+      "kind" : "remoteSourceControl",
+      "location" : "git@github.com:Mikedan37/BlazeFSM.git",
+      "state" : {
+        "revision" : "58b292a27928d211eef12090cafcbf12b31d69c6"
+      }
+    },
+    {
+      "identity" : "blazetransport",
+      "kind" : "remoteSourceControl",
+      "location" : "git@github.com:Mikedan37/BlazeTransport.git",
+      "state" : {
+        "revision" : "30bb376c19e62f6ac379c2a781993976102a8663"
+      }
+    },
+    {
+      "identity" : "swift-asn1",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/apple/swift-asn1.git",
+      "state" : {
+        "revision" : "810496cf121e525d660cd0ea89a758740476b85f",
+        "version" : "1.5.1"
+      }
+    },
+    {
+      "identity" : "swift-crypto",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/apple/swift-crypto.git",
+      "state" : {
+        "revision" : "95ba0316a9b733e92bb6b071255ff46263bbe7dc",
+        "version" : "3.15.1"
+      }
+    }
+  ],
+  "version" : 3
+}
