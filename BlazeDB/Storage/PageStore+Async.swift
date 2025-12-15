@@ -9,7 +9,6 @@
 //
 
 import Foundation
-import Compression
 
 // MARK: - Write Batch
 

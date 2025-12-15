@@ -6,6 +6,8 @@
 //
 
 import Foundation
+
+#if canImport(Compression)
 import Compression
 
 extension TCPRelay {
@@ -130,4 +132,6 @@ extension TCPRelay {
         return Data(destBuffer.prefix(decompressedSize))
     }
 }
+
+#endif // canImport(Compression)
 

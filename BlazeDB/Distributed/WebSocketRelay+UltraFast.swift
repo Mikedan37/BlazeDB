@@ -9,6 +9,8 @@
 //
 
 import Foundation
+
+#if canImport(Compression)
 import Compression
 
 extension WebSocketRelay {
@@ -188,4 +190,6 @@ extension WebSocketRelay {
         ultraBufferPool.append(buffer)
     }
 }
+
+#endif // canImport(Compression)
 

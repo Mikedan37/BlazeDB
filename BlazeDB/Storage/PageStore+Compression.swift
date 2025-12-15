@@ -9,6 +9,8 @@
 //
 
 import Foundation
+
+#if canImport(Compression)
 import Compression
 
 extension PageStore {
@@ -196,4 +198,6 @@ extension PageStore {
         return Data(destBuffer)
     }
 }
+
+#endif // canImport(Compression)
 

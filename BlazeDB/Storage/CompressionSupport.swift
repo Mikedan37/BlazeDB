@@ -7,6 +7,8 @@
 //
 
 import Foundation
+
+#if canImport(Compression)
 import Compression
 
 // MARK: - Compression Configuration
@@ -173,4 +175,6 @@ extension BlazeDBClient {
         return Self.compressionConfigs[key]
     }
 }
+
+#endif // canImport(Compression)
 

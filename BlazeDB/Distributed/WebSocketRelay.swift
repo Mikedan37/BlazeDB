@@ -6,7 +6,6 @@
 //
 
 import Foundation
-import Compression
 #if canImport(Accelerate)
 import Accelerate
 #endif
