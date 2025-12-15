@@ -11,6 +11,8 @@ import CryptoKit
 #else
 import Crypto
 #endif
+
+#if canImport(Network)
 import Network
 
 /// Secure connection with DH handshake and AES-256-GCM encryption
@@ -536,4 +538,6 @@ enum HandshakeError: Error {
 enum FrameError: Error {
     case invalidType
 }
+
+#endif // canImport(Network)
 

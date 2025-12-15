@@ -7,6 +7,8 @@
 //
 
 import Foundation
+
+#if canImport(Network)
 import Network
 
 /// Unix Domain Socket relay for cross-app sync (same device, different apps)
@@ -422,4 +424,6 @@ private struct PullRequest {
 private struct SubscribeRequest {
     let collections: [String]
 }
+
+#endif // canImport(Network)
 
