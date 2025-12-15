@@ -2,7 +2,15 @@
 //  BlazeDBTests
 //  Created by Michael Danylchuk on 6/15/25.
 import XCTest
+#if canImport(CryptoKit)
+#if canImport(CryptoKit)
 import CryptoKit
+#else
+import Crypto
+#endif
+#else
+import Crypto
+#endif
 @testable import BlazeDB
 
 final class BlazeDBClientTests: XCTestCase {

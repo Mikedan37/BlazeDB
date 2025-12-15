@@ -9,7 +9,11 @@
 //
 
 import Foundation
+#if canImport(CryptoKit)
 import CryptoKit
+#else
+import Crypto
+#endif
 
 /// Argon2id key derivation function
 /// Memory-hard and GPU-resistant, recommended by OWASP and NIST

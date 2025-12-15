@@ -3,7 +3,11 @@
 //  Created by Michael Danylchuk on 6/22/25.
 
 import Foundation
+#if canImport(CryptoKit)
 import CryptoKit
+#else
+import Crypto
+#endif
 
 /// Manages multiple BlazeDB instances for fast DB switching.
 /// Thread-safe: Uses nonisolated(unsafe) for singleton (caller must ensure thread safety)

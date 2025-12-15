@@ -1,5 +1,13 @@
 import Foundation
+#if canImport(CryptoKit)
+#if canImport(CryptoKit)
 import CryptoKit
+#else
+import Crypto
+#endif
+#else
+import Crypto
+#endif
 import XCTest
 @testable import BlazeDB
 

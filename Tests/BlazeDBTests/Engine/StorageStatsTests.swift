@@ -15,7 +15,15 @@
 
 
 import XCTest
+#if canImport(CryptoKit)
+#if canImport(CryptoKit)
 import CryptoKit
+#else
+import Crypto
+#endif
+#else
+import Crypto
+#endif
 @testable import BlazeDB
 
 private typealias DBPageStore = BlazeDB.PageStore

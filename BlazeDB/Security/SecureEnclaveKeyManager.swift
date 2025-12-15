@@ -11,7 +11,11 @@
 import Foundation
 import Security
 import LocalAuthentication
+#if canImport(CryptoKit)
 import CryptoKit
+#else
+import Crypto
+#endif
 
 #if canImport(Security)
 /// Enhanced Secure Enclave key manager

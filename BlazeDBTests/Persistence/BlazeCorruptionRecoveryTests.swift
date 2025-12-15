@@ -3,7 +3,15 @@
 //  Tests database behavior with corrupted data, torn writes, and checksums
 
 import XCTest
+#if canImport(CryptoKit)
+#if canImport(CryptoKit)
 import CryptoKit
+#else
+import Crypto
+#endif
+#else
+import Crypto
+#endif
 @testable import BlazeDB
 
 // Use the real PageStore from BlazeDB module

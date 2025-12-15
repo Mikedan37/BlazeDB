@@ -3,7 +3,15 @@
 //  Tests index performance under high cardinality and large datasets
 
 import XCTest
+#if canImport(CryptoKit)
+#if canImport(CryptoKit)
 import CryptoKit
+#else
+import Crypto
+#endif
+#else
+import Crypto
+#endif
 @testable import BlazeDB
 
 final class BlazeIndexStressTests: XCTestCase {

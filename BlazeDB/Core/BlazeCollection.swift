@@ -2,7 +2,11 @@
 //  BlazeDB
 //  Created by Michael Danylchuk on 6/15/25.
 import Foundation
+#if canImport(CryptoKit)
 import CryptoKit
+#else
+import Crypto
+#endif
 
 public final class BlazeCollection<Record: BlazeRecord> {
     private var indexMap: [UUID: Int] = [:] // maps record ID to page index

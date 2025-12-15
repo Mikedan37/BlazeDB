@@ -10,7 +10,15 @@
 import XCTest
 @testable import BlazeDB
 import Foundation
+#if canImport(CryptoKit)
+#if canImport(CryptoKit)
 import CryptoKit
+#else
+import Crypto
+#endif
+#else
+import Crypto
+#endif
 
 final class DistributedSecurityTests: XCTestCase {
     var tempDir: URL!

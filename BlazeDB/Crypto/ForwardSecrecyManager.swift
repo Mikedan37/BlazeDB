@@ -9,7 +9,11 @@
 //
 
 import Foundation
+#if canImport(CryptoKit)
 import CryptoKit
+#else
+import Crypto
+#endif
 
 /// Manages forward secrecy through key rotation
 /// Rotates encryption keys regularly to limit exposure from key compromise

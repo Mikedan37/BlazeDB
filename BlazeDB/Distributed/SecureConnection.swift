@@ -6,7 +6,11 @@
 //
 
 import Foundation
+#if canImport(CryptoKit)
 import CryptoKit
+#else
+import Crypto
+#endif
 import Network
 
 /// Secure connection with DH handshake and AES-256-GCM encryption

@@ -8,7 +8,11 @@
 //
 
 import Foundation
+#if canImport(CryptoKit)
 import CryptoKit
+#else
+import Crypto
+#endif
 
 /// Validates operations for security (replay protection, signatures, etc.)
 public actor SecurityValidator {

@@ -10,7 +10,11 @@
 
 import Foundation
 #if canImport(CryptoKit)
+#if canImport(CryptoKit)
 import CryptoKit
+#else
+import Crypto
+#endif
 #elseif canImport(Crypto)
 import Crypto
 #else

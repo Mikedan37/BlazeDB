@@ -1,6 +1,14 @@
 import Foundation
 import XCTest
+#if canImport(CryptoKit)
+#if canImport(CryptoKit)
 import CryptoKit
+#else
+import Crypto
+#endif
+#else
+import Crypto
+#endif
 @testable import BlazeDB
 
 /// Use the real PageStore from the BlazeDB module (not the test shim).

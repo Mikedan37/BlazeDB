@@ -3,7 +3,15 @@
 //  Validates memory management and leak prevention
 
 import XCTest
+#if canImport(CryptoKit)
+#if canImport(CryptoKit)
 import CryptoKit
+#else
+import Crypto
+#endif
+#else
+import Crypto
+#endif
 @testable import BlazeDB
 
 final class BlazeDBMemoryTests: XCTestCase {
