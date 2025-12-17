@@ -9,10 +9,10 @@
 //
 
 import Foundation
-import Combine
 
-#if canImport(SwiftUI) && (os(macOS) || os(iOS) || os(watchOS) || os(tvOS))
+#if canImport(SwiftUI) && canImport(Combine) && (os(macOS) || os(iOS) || os(watchOS) || os(tvOS))
 import SwiftUI
+import Combine
 
 // MARK: - BlazeQuery Property Wrapper
 
@@ -376,5 +376,5 @@ extension View {
     }
 }
 
-#endif // canImport(SwiftUI) && (os(macOS) || os(iOS) || os(watchOS) || os(tvOS))
+#endif // canImport(SwiftUI) && canImport(Combine) && (os(macOS) || os(iOS) || os(watchOS) || os(tvOS))
 
