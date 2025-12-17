@@ -92,7 +92,7 @@ public class SavepointManager {
 // MARK: - BlazeDBClient Savepoints Extension
 
 extension BlazeDBClient {
-    private static let savepointManagerKey: UInt8 = 0
+    nonisolated(unsafe) private static var savepointManagerKey: UInt8 = 0
     
     private var savepointManager: SavepointManager {
         #if canImport(ObjectiveC)
