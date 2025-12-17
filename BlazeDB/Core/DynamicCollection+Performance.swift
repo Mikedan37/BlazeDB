@@ -15,7 +15,9 @@ extension DynamicCollection {
     
     /// High-performance parallel fetchAll with caching and prefetching
     /// 10-50x faster than sequential reads!
-    internal func _fetchAllOptimized() throws -> [BlazeDataRecord] {
+    /// Note: This method is defined in DynamicCollection+Optimized.swift
+    /// This is a duplicate - removed to avoid redeclaration error
+    internal func _fetchAllOptimizedPerformance() throws -> [BlazeDataRecord] {
         // OPTIMIZED: Prefetch pages in batches (read-ahead optimization!)
         let pageIndices = Array(indexMap.values).sorted()
         if pageIndices.count > 10 {
