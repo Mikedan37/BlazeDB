@@ -671,7 +671,7 @@ extension DynamicCollection {
                 if !pagesToDelete.isEmpty {
                     // Use public deletePage API instead of accessing private properties
                     for pageIndex in pagesToDelete {
-                        try? store.delete(index: pageIndex)
+                        try? store.deletePage(index: pageIndex)
                     }
                 }
                 
