@@ -296,9 +296,10 @@ public final class DynamicCollection {
                                         case .date(let d): return AnyBlazeCodable(d)
                                         case .uuid(let u): return AnyBlazeCodable(u)
                                         case .data(let data): return AnyBlazeCodable(data)
-                            case .vector(let v): return AnyBlazeCodable(v)
-                            case .null: return AnyBlazeCodable("")
-                            }
+                                        case .vector(let v): return AnyBlazeCodable(v)
+                                        case .null: return AnyBlazeCodable("")
+                                        case .array, .dictionary: return AnyBlazeCodable("")  // Arrays/dicts not supported in compound indexes
+                                        }
                                     }
                                     let indexKey = CompoundIndexKey(normalizedComponents)
                                     var set = indexEntries[indexKey] ?? Set<UUID>()
@@ -607,6 +608,7 @@ public final class DynamicCollection {
                                         // Use same normalization logic as createIndex() to ensure key format matches
                                         let rawKey = CompoundIndexKey.fromFields(doc, fields: fields)
                                         let normalizedComponents = rawKey.components.map { component -> AnyBlazeCodable in
+                                            case .array, .dictionary: return AnyBlazeCodable("")  // Arrays/dicts not supported in compound indexes
                                             switch component {
                                             case .string(let s): return AnyBlazeCodable(s)
                                             case .int(let i): return AnyBlazeCodable(i)
@@ -674,6 +676,7 @@ public final class DynamicCollection {
                                             let doc = record.storage
                                             guard fields.allSatisfy({ doc[$0] != nil }) else { continue }
                                             let rawKey = CompoundIndexKey.fromFields(doc, fields: fields)
+                                            case .array, .dictionary: return AnyBlazeCodable("")  // Arrays/dicts not supported in compound indexes
                                             let normalizedComponents = rawKey.components.map { component -> AnyBlazeCodable in
                                                 switch component {
                                                 case .string(let s): return AnyBlazeCodable(s)
@@ -876,6 +879,7 @@ public final class DynamicCollection {
                         }
                         
                         // Build index key (same logic as insert())
+                                            case .array, .dictionary: return AnyBlazeCodable("")  // Arrays/dicts not supported in compound indexes
                         let rawKey = CompoundIndexKey.fromFields(document, fields: fields)
                         let normalizedComponents = rawKey.components.map { component -> AnyBlazeCodable in
                             switch component {
@@ -1036,6 +1040,7 @@ public final class DynamicCollection {
                         guard fields.allSatisfy({ document[$0] != nil }) else {
                             BlazeLogger.warn("Skipping index \(compound) for id \(id) — missing one or more fields.")
                             continue
+                                            case .array, .dictionary: return AnyBlazeCodable("")  // Arrays/dicts not supported in compound indexes
                         }
                         let rawKey = CompoundIndexKey.fromFields(document, fields: fields)
                         let normalizedComponents = rawKey.components.map { component -> AnyBlazeCodable in
@@ -1103,7 +1108,9 @@ public final class DynamicCollection {
                 // Use BlazeBinaryEncoder for encoding (matches decoder!)
                 // If lazy decoding is enabled, use v3 format with field table
                 #if !BLAZEDB_LINUX_CORE
-                let isLazyEnabled = (try? StorageLayout.loadSecure(from: metaURL, signingKey: encryptionKey).lazyDecodingEnabled) ?? false
+                // Lazy decoding is handled by extensions in gated files
+                // For now, default to false - extensions will enable if needed
+                let isLazyEnabled = false
                 #else
                 let isLazyEnabled = false  // Lazy decoding not available on Linux
                 #endif
@@ -1477,6 +1484,7 @@ public final class DynamicCollection {
                     
                     // Update secondary indexes: remove old entry, add new entry
                     // Remove old keys from indexes
+                                            case .array, .dictionary: return AnyBlazeCodable("")  // Arrays/dicts not supported in compound indexes
                     let oldDoc = current.storage
                     for (compound, _) in secondaryIndexes {
                         let fields = compound.components(separatedBy: "+")
@@ -1511,6 +1519,7 @@ public final class DynamicCollection {
                     
                     // Add new keys to indexes
                     for (compound, _) in secondaryIndexes {
+                                            case .array, .dictionary: return AnyBlazeCodable("")  // Arrays/dicts not supported in compound indexes
                         let fields = compound.components(separatedBy: "+")
                         guard fields.allSatisfy({ merged[$0] != nil }) else {
                             BlazeLogger.warn("Skipping index \(compound) for id \(id) — missing one or more fields.")
@@ -1996,6 +2005,7 @@ public final class DynamicCollection {
             let normalizedComponents = rawKey.components.map { component -> AnyBlazeCodable in
                 switch component {
                 case .string(let s): return AnyBlazeCodable(s)
+                                            case .array, .dictionary: return AnyBlazeCodable("")  // Arrays/dicts not supported in compound indexes
                 case .int(let i): return AnyBlazeCodable(i)
                 case .double(let d): return AnyBlazeCodable(d)
                 case .bool(let b): return AnyBlazeCodable(b)
@@ -2246,6 +2256,7 @@ public final class DynamicCollection {
                     record = nil
                 }
                 if let record = record {
+                                            case .array, .dictionary: return AnyBlazeCodable("")  // Arrays/dicts not supported in compound indexes
                     let oldDoc = record.storage
                     for (compound, _) in secondaryIndexes {
                         let fields = compound.components(separatedBy: "+")
