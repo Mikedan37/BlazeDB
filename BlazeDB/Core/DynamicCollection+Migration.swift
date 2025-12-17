@@ -35,8 +35,8 @@ extension DynamicCollection {
         if FileManager.default.fileExists(atPath: metaURL.path) {
             let layout = try StorageLayout.load(from: metaURL)
             // Convert [UUID: Int] to [UUID: [Int]] for backward compatibility
-                // Convert [UUID: Int] to [UUID: [Int]] for backward compatibility
-                self.indexMap = layout.indexMap.mapValues { [$0] }.mapValues { [$0] }
+            // StorageLayout.indexMap is already [UUID: [Int]], no conversion needed
+            self.indexMap = layout.indexMap.mapValues { [$0] }
             self.nextPageIndex = layout.nextPageIndex
             
             // Reload secondary indexes (always present, may be empty)
