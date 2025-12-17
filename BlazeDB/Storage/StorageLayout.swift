@@ -307,8 +307,23 @@ struct StorageLayout: Codable {
                     existing.formUnion(value)
                     merged[base] = existing
                 } else {
-                    let tupleValue = key.components.map { $0.value }
-                    let base = AnyHashable(tupleValue)
+                    // For multi-component keys, create a tuple-like AnyHashable
+                    // Convert each component to its base value
+                    let tupleValues: [AnyHashable] = key.components.map { component in
+                        switch component {
+                        case .string(let v): return v as AnyHashable
+                        case .int(let v): return v as AnyHashable
+                        case .double(let v): return v as AnyHashable
+                        case .bool(let v): return v as AnyHashable
+                        case .date(let v): return v as AnyHashable
+                        case .uuid(let v): return v as AnyHashable
+                        case .data(let v): return v as AnyHashable
+                        case .vector(let v): return v as AnyHashable
+                        case .null: return "" as AnyHashable
+                        case .array, .dictionary: return "" as AnyHashable
+                        }
+                    }
+                    let base = AnyHashable(tupleValues)
                     var existing = merged[base] ?? []
                     existing.formUnion(value)
                     merged[base] = existing
