@@ -4,9 +4,8 @@ import Foundation
 
 extension DynamicCollection: MetaStore {
     public func fetchMeta() throws -> [String: BlazeDocumentField] {
-        // PERFORMANCE: Use in-memory metaData if available to avoid loading from disk
-        // This improves performance by avoiding expensive signature verification
-        // Load layout to get metaData
+        // PERFORMANCE: Load layout to get metaData
+        // This avoids expensive signature verification by loading from disk
         let layout = try StorageLayout.loadSecure(
             from: metaURLPath,
             signingKey: encryptionKey,
