@@ -120,7 +120,7 @@ public class UniqueConstraintManager {
 // MARK: - BlazeDBClient Unique Constraints Extension
 
 extension BlazeDBClient {
-    private static var uniqueConstraintManagerKey: UInt8 = 0
+    nonisolated(unsafe) private static var uniqueConstraintManagerKey: UInt8 = 0
     
     private var uniqueConstraintManager: UniqueConstraintManager {
         #if canImport(ObjectiveC)

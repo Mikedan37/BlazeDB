@@ -20,7 +20,7 @@ enum KeyManagerError: Error {
 }
 
 public final class KeyManager {
-    private static var passwordKeyCache = [String: SymmetricKey]()
+    nonisolated(unsafe) private static var passwordKeyCache = [String: SymmetricKey]()
 
     public static func getKey(from source: KeySource, createIfMissing: Bool = false) throws -> SymmetricKey {
         switch source {
@@ -90,6 +90,9 @@ public final class KeyManager {
     }
 
     private static func loadSecureEnclaveKey(label: String, createIfMissing: Bool) throws -> SymmetricKey {
+        #if canImport(Security) && (os(macOS) || os(iOS) || os(watchOS) || os(tvOS))
+        import Security
+        
         let access = SecAccessControlCreateWithFlags(nil,
                                                       kSecAttrAccessibleWhenUnlockedThisDeviceOnly,
                                                       .privateKeyUsage,
@@ -134,6 +137,10 @@ public final class KeyManager {
 
         let dummyKey = SymmetricKey(size: .bits256)
         return dummyKey
+        #else
+        // Secure Enclave not available on this platform
+        throw KeyManagerError.secureEnclaveUnavailable
+        #endif
     }
 
     private static func deriveKeyFromPassword(_ password: String, salt: Data) throws -> SymmetricKey {

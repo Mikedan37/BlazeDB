@@ -26,9 +26,9 @@ import Foundation
 /// cache.set(id: recordID, record: decoded)
 /// return decoded
 /// ```
-public final class RecordCache {
+public final class RecordCache: @unchecked Sendable {
     /// Shared singleton instance
-    public static let shared = RecordCache()
+    nonisolated(unsafe) public static let shared = RecordCache()
     
     /// Cache entry with timestamp
     private struct CacheEntry {

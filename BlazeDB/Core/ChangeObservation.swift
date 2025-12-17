@@ -71,7 +71,7 @@ public final class ObserverToken {
 
 /// Internal class managing change observers
 /// Thread-safe: Uses NSLock for synchronization (legacy pattern, acceptable for notification system)
-internal final class ChangeNotificationManager {
+internal final class ChangeNotificationManager: @unchecked Sendable {
     
     private var observers: [UUID: ChangeObserver] = [:]
     private let lock = NSLock()
@@ -114,11 +114,12 @@ internal final class ChangeNotificationManager {
         
         // Schedule batch notification if not already scheduled
         if batchNotificationTimer == nil {
+            let manager = self
             batchNotificationTimer = Timer.scheduledTimer(
                 withTimeInterval: batchDelay,
                 repeats: false
-            ) { [weak self] _ in
-                self?.flushPendingChanges()
+            ) { _ in
+                manager.flushPendingChanges()
             }
         }
         lock.unlock()

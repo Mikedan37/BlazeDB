@@ -136,8 +136,8 @@ public struct DatabaseSchema {
 
 extension BlazeDBClient {
     
-    private static var schemas: [String: DatabaseSchema] = [:]
-    private static let schemaLock = NSLock()
+    nonisolated(unsafe) private static var schemas: [String: DatabaseSchema] = [:]
+    nonisolated(unsafe) private static let schemaLock = NSLock()
     
     /// Define a schema for this database
     ///

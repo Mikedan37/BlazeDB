@@ -107,7 +107,7 @@ public class CheckConstraintManager {
 // MARK: - BlazeDBClient Check Constraints Extension
 
 extension BlazeDBClient {
-    private static var checkConstraintManagerKey: UInt8 = 0
+    nonisolated(unsafe) private static var checkConstraintManagerKey: UInt8 = 0
     
     private var checkConstraintManager: CheckConstraintManager {
         #if canImport(ObjectiveC)

@@ -20,7 +20,7 @@ import Crypto
 public enum Argon2KDF {
     
     /// Default parameters (balanced security/performance)
-    public struct Parameters {
+    public struct Parameters: Sendable {
         /// Memory cost in KB (64MB = 65536 KB)
         public let memoryCost: Int
         

@@ -91,8 +91,8 @@ internal final class ForeignKeyManager {
 
 extension BlazeDBClient {
     
-    private static var foreignKeyManagers: [String: ForeignKeyManager] = [:]
-    private static let fkManagerLock = NSLock()
+    nonisolated(unsafe) private static var foreignKeyManagers: [String: ForeignKeyManager] = [:]
+    nonisolated(unsafe) private static let fkManagerLock = NSLock()
     
     private var foreignKeyManager: ForeignKeyManager {
         let key = "\(name)-\(fileURL.path)"

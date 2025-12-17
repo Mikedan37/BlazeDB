@@ -138,7 +138,7 @@ public enum AnyBlazeCodable: Codable, Hashable {
 }
 
 struct StorageLayout: Codable {
-    var indexMap: [UUID: Int]
+    var indexMap: [UUID: [Int]]  // Changed to support overflow chains
     var nextPageIndex: Int
     // CHANGE: Now uses CompoundIndexKey for single/compound indexes
     var secondaryIndexes: [String: [CompoundIndexKey: [UUID]]]
@@ -170,7 +170,7 @@ struct StorageLayout: Codable {
     }
 
     // Convert from runtime [String: [AnyHashable: Set<UUID>]]
-    init(indexMap: [UUID: Int], nextPageIndex: Int, secondaryIndexes: [String: [AnyHashable: Set<UUID>]]) {
+    init(indexMap: [UUID: [Int]], nextPageIndex: Int, secondaryIndexes: [String: [AnyHashable: Set<UUID>]]) {
         self.indexMap = indexMap
         self.nextPageIndex = nextPageIndex
         self.secondaryIndexes = secondaryIndexes.reduce(into: [:]) { acc, pair in
@@ -193,7 +193,7 @@ struct StorageLayout: Codable {
 
     // Convert from runtime [String: [CompoundIndexKey: Set<UUID>]]
     init(
-        indexMap: [UUID: Int], 
+        indexMap: [UUID: [Int]], 
         nextPageIndex: Int, 
         compoundIndexes: [String: [CompoundIndexKey: Set<UUID>]],
         searchIndex: InvertedIndex? = nil,
@@ -222,7 +222,13 @@ struct StorageLayout: Codable {
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
 
-        indexMap = try container.decodeIfPresent([UUID: Int].self, forKey: .indexMap) ?? [:]
+        // Handle backward compatibility: old format [UUID: Int] vs new format [UUID: [Int]]
+        if let oldFormat = try? container.decodeIfPresent([UUID: Int].self, forKey: .indexMap) {
+            // Convert old format to new format
+            indexMap = oldFormat.mapValues { [$0] }
+        } else {
+            indexMap = try container.decodeIfPresent([UUID: [Int]].self, forKey: .indexMap) ?? [:]
+        }
         nextPageIndex = try container.decodeIfPresent(Int.self, forKey: .nextPageIndex) ?? 0
         secondaryIndexes = try container.decodeIfPresent([String: [CompoundIndexKey: [UUID]]].self, forKey: .secondaryIndexes) ?? [:]
         version = try container.decodeIfPresent(Int.self, forKey: .version) ?? 1
@@ -373,7 +379,7 @@ extension StorageLayout {
 
 extension StorageLayout {
     init(
-        indexMap: [UUID: Int] = [:],
+        indexMap: [UUID: [Int]] = [:],
         nextPageIndex: Int = 0,
         secondaryIndexes: [String: [CompoundIndexKey: [UUID]]] = [:],
         version: Int = 1,

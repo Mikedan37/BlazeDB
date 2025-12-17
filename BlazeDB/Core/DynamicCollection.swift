@@ -29,7 +29,7 @@ private extension DynamicCollection {
 public final class DynamicCollection {
     
     // OPTIMIZED: Cached ISO8601DateFormatter (created once, reused forever)
-    internal static let cachedISO8601Formatter: ISO8601DateFormatter = {
+    nonisolated(unsafe) internal static let cachedISO8601Formatter: ISO8601DateFormatter = {
         let formatter = ISO8601DateFormatter()
         formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
         return formatter
@@ -181,7 +181,7 @@ public final class DynamicCollection {
                     from: metaURL,
                     signingKey: encryptionKey,
                     password: password,
-                    salt: salt
+                    salt: DynamicCollection.defaultSalt
                 )
                 print("📋 [INIT] ✅ Layout loaded and verified successfully")
                 BlazeLogger.debug("📋 [INIT] ✅ Layout loaded successfully")
@@ -754,6 +754,7 @@ public final class DynamicCollection {
             
             // Now we can access computed properties (spatial and vector indexes)
             // Cache spatial index (computed property via extension)
+            #if !BLAZEDB_LINUX_CORE
             self.cachedSpatialIndex = layout.spatialIndex
             self.cachedSpatialIndexedFields = layout.spatialIndexedFields
             
@@ -763,6 +764,7 @@ public final class DynamicCollection {
                 self.cachedVectorIndexedField = vectorFieldName
                 // Rebuild will happen on first use or explicit enable
             }
+            #endif
             // --- Begin: Rebuild missing or empty secondary indexes after reload ---
             var didRebuildAny = false
             for (compoundKey, fields) in layout.secondaryIndexDefinitions {
@@ -996,8 +998,8 @@ public final class DynamicCollection {
                     let record = BlazeDataRecord(document)
                     try tx.write(recordID: id, record: record)
                     
-                    // Get page number from pending writes BEFORE commit (most reliable)
-                    let pageNumber = tx.getPageNumber(for: id)
+                    // Get page number from indexMap (MVCC doesn't expose page numbers directly)
+                    let pageNumber = indexMap[id]?.first
                     
                     let transactionID = tx.transactionID  // Capture transaction ID before commit
                     try tx.commit()
@@ -1059,6 +1061,7 @@ public final class DynamicCollection {
                     }
                     
                     // Update search index if enabled
+                    #if !BLAZEDB_LINUX_CORE
                     try? updateSearchIndexOnInsert(record)
                     
                     // Update spatial index if enabled
@@ -1066,6 +1069,7 @@ public final class DynamicCollection {
                     
                     // Update vector index if enabled
                     updateVectorIndexOnInsert(record)
+                    #endif
                     
                     unsavedChanges += 1
                     print("💾 [FLUSH] MVCC: unsavedChanges=\(unsavedChanges) (threshold: \(metadataFlushThreshold))")
@@ -1099,7 +1103,11 @@ public final class DynamicCollection {
                 document["project"] = .string(project)
                 // Use BlazeBinaryEncoder for encoding (matches decoder!)
                 // If lazy decoding is enabled, use v3 format with field table
+                #if !BLAZEDB_LINUX_CORE
                 let isLazyEnabled = (try? StorageLayout.loadSecure(from: metaURL, signingKey: encryptionKey).lazyDecodingEnabled) ?? false
+                #else
+                let isLazyEnabled = false  // Lazy decoding not available on Linux
+                #endif
                 let encoded = isLazyEnabled
                 ? try BlazeBinaryEncoder.encodeWithFieldTable(BlazeDataRecord(document))
                 : try BlazeBinaryEncoder.encode(BlazeDataRecord(document))
@@ -1203,7 +1211,9 @@ public final class DynamicCollection {
                 unsavedChanges += 1
                 
                 // Clear fetchAll cache after write
+                #if !BLAZEDB_LINUX_CORE
                 clearFetchAllCache()
+                #endif
                 
                 // Batch metadata writes for performance (save every N operations)
                 if unsavedChanges >= metadataFlushThreshold {
@@ -1212,6 +1222,7 @@ public final class DynamicCollection {
                 }
                 
                 // NEW: Update search index if enabled
+                #if !BLAZEDB_LINUX_CORE
                 let record = BlazeDataRecord(document)
                 try? updateSearchIndexOnInsert(record)
                 
@@ -1220,6 +1231,7 @@ public final class DynamicCollection {
                 
                 // NEW: Update vector index if enabled
                 updateVectorIndexOnInsert(record)
+                #endif
                 
                 return id
             }
@@ -1384,15 +1396,41 @@ public final class DynamicCollection {
                 
                 if records.isEmpty && !indexMap.isEmpty {
                     BlazeLogger.warn("⚠️ [FETCHALL] MVCC returned 0 records while indexMap has \(indexMap.count) entries. Falling back to legacy fetch (indexMap-based).")
+                    #if !BLAZEDB_LINUX_CORE
                     return try _fetchAllOptimized()
+                    #else
+                    // On Linux, fall back to basic fetchAll
+                    return try fetchAllBasic()
+                    #endif
                 }
                 
                 return records
             }
             
             // OPTIMIZED: Use parallel fetch for massive speedup!
+            #if !BLAZEDB_LINUX_CORE
             return try _fetchAllOptimized()
+            #else
+            // On Linux, use basic fetchAll
+            return try fetchAllBasic()
+            #endif
         }
+        
+        // Basic fetchAll implementation for Linux (no optimizations)
+        #if BLAZEDB_LINUX_CORE
+        private func fetchAllBasic() throws -> [BlazeDataRecord] {
+            return try queue.sync {
+                var records: [BlazeDataRecord] = []
+                let indexMapSnapshot = indexMap
+                for id in indexMapSnapshot.keys {
+                    if let record = try? _fetchNoSync(id: id) {
+                        records.append(record)
+                    }
+                }
+                return records
+            }
+        }
+        #endif
         
         public func fetchAll(byProject project: String) throws -> [BlazeDataRecord] {
             return queue.sync {
@@ -1505,6 +1543,7 @@ public final class DynamicCollection {
                     RecordCache.shared.remove(id: id)
                     
                     // Update search index if enabled
+                    #if !BLAZEDB_LINUX_CORE
                     try? updateSearchIndexOnUpdate(updatedRecord)
                     
                     // Update spatial index if enabled
@@ -1512,6 +1551,7 @@ public final class DynamicCollection {
                     
                     // Update vector index if enabled
                     updateVectorIndexOnUpdate(updatedRecord)
+                    #endif
                     
                     unsavedChanges += 1
                     if unsavedChanges >= metadataFlushThreshold {
@@ -1543,7 +1583,15 @@ public final class DynamicCollection {
         
         public func filter(_ isMatch: @escaping (BlazeDataRecord) -> Bool) throws -> [BlazeDataRecord] {
             // OPTIMIZED: Use parallel filter for large datasets
+            #if !BLAZEDB_LINUX_CORE
             return try filterOptimized(isMatch)
+            #else
+            // On Linux, use basic filter
+            return try queue.sync {
+                let all = try fetchAllBasic()
+                return all.filter(isMatch)
+            }
+            #endif
         }
         
         /// Runs a BlazeQueryLegacy over all records, returning those for which the query applies.
@@ -1656,6 +1704,7 @@ public final class DynamicCollection {
                     // OPTIMIZATION: Batch delete all pages in a single sync block (not barrier)
                     // Since we're already in DynamicCollection's queue.sync, we use regular sync
                     // to allow concurrent reads. Barrier would block everything unnecessarily.
+                    #if !BLAZEDB_LINUX_CORE
                     // Pre-allocate zeroed data outside the loop for better performance
                     let zeroed = Data(repeating: 0, count: store.pageSize)
                     try store.queue.sync {
@@ -1673,6 +1722,16 @@ public final class DynamicCollection {
                             markPageForReuse(pageIndex: pageIndex, layout: &layout)
                         }
                     }
+                    #else
+                    // Linux: Basic page deletion without cache optimization
+                    for pageIndex in pageIndices {
+                        let zeroed = Data(repeating: 0, count: 4096)  // Fixed page size
+                        let offset = UInt64(pageIndex) * 4096
+                        try store.fileHandle.compatSeek(toOffset: offset)
+                        try store.fileHandle.compatWrite(zeroed)
+                        markPageForReuse(pageIndex: pageIndex, layout: &layout)
+                    }
+                    #endif
                 } catch {
                     // Page deletion failed - rethrow error
                     throw error
@@ -2301,6 +2360,7 @@ public final class DynamicCollection {
                 // This ensures cache is only cleared if the operation is fully persisted
                 // If saveLayout() fails, cache remains valid and operation will rollback
                 RecordCache.shared.remove(id: id)
+                #if !BLAZEDB_LINUX_CORE
                 clearFetchAllCache()
                 
                 // NEW: Update search index if enabled
@@ -2312,6 +2372,7 @@ public final class DynamicCollection {
                 
                 // NEW: Update vector index if enabled
                 updateVectorIndexOnUpdate(updatedRecord)
+                #endif
                 
                 // Clean up old overflow pages ONLY AFTER the new record is safely written.
                 // Skip the first page index because it has already been overwritten with the new record data.

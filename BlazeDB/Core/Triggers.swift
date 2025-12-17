@@ -152,8 +152,8 @@ public class EnhancedTriggerManager {
 // MARK: - BlazeDBClient Triggers Extension
 
 extension BlazeDBClient {
-    private static var triggerManagerKey: UInt8 = 0
-    private static var enhancedTriggerManagerKey: UInt8 = 1
+    nonisolated(unsafe) private static var triggerManagerKey: UInt8 = 0
+    nonisolated(unsafe) private static var enhancedTriggerManagerKey: UInt8 = 1
     
     internal var triggerManager: TriggerManager {
         #if canImport(ObjectiveC)

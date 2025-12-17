@@ -28,7 +28,7 @@ import Foundation
 public final class LazyFieldRecord {
     /// Size threshold for lazy decoding (bytes)
     /// Fields larger than this are decoded on-demand
-    public static var defaultFieldSizeThreshold: Int = 1024  // 1KB default
+    nonisolated(unsafe) public static var defaultFieldSizeThreshold: Int = 1024  // 1KB default
     
     private let encodedData: Data
     private let fieldSizeThreshold: Int
