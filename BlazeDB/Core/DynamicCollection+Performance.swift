@@ -98,11 +98,11 @@ extension DynamicCollection {
     public func fetchAllCached() throws -> [BlazeDataRecord] {
         let dbKey = ObjectIdentifier(self)
         
-        Self.cacheLock.lock()
-        defer { Self.cacheLock.unlock() }
+        Self.cacheLockPerformance.lock()
+        defer { Self.cacheLockPerformance.unlock() }
         
         // Check cache
-        if let (cached, timestamp) = Self.fetchAllCache[dbKey],
+        if let (cached, timestamp) = Self.fetchAllCachePerformance[dbKey],
            Date().timeIntervalSince(timestamp) < Self.cacheTTL {
             return cached
         }
