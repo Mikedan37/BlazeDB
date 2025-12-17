@@ -10,7 +10,9 @@
 //
 
 import Foundation
+#if canImport(zlib)
 import zlib  // For CRC32 (built into macOS/iOS, no external dependency!)
+#endif
 
 // Common definitions are now in BlazeBinaryShared.swift
 // COMMON_FIELDS, TypeTag, BlazeBinaryError, BlazeBinaryHeader
@@ -78,13 +80,47 @@ public enum BlazeBinaryDecoder {
     
     // MARK: - CRC32 Checksum
     
-    /// Calculate CRC32 checksum using zlib (built into macOS/iOS)
+    /// Calculate CRC32 checksum (cross-platform: uses zlib on Apple, pure Swift on Linux)
     internal static func calculateCRC32(_ data: Data) -> UInt32 {
+        #if canImport(zlib)
+        // Use zlib on Apple platforms (hardware-accelerated)
         return data.withUnsafeBytes { buffer in
             let crc = zlib.crc32(0, buffer.baseAddress?.assumingMemoryBound(to: UInt8.self), uInt(buffer.count))
             return UInt32(crc)
         }
+        #else
+        // Pure Swift implementation for Linux (IEEE 802.3 polynomial: 0xEDB88320)
+        return Self.crc32Swift(data)
+        #endif
     }
+    
+    #if !canImport(zlib)
+    /// Pure Swift CRC32 implementation (IEEE 802.3 polynomial)
+    private static func crc32Swift(_ data: Data) -> UInt32 {
+        // Precomputed CRC32 lookup table (IEEE 802.3 polynomial: 0xEDB88320)
+        static let crcTable: [UInt32] = {
+            var table = [UInt32](repeating: 0, count: 256)
+            for i in 0..<256 {
+                var crc = UInt32(i)
+                for _ in 0..<8 {
+                    crc = (crc & 1) != 0 ? (crc >> 1) ^ 0xEDB88320 : (crc >> 1)
+                }
+                table[i] = crc
+            }
+            return table
+        }()
+        
+        var crc: UInt32 = 0xFFFFFFFF
+        data.withUnsafeBytes { buffer in
+            let bytes = buffer.bindMemory(to: UInt8.self)
+            for byte in bytes {
+                let index = Int((crc ^ UInt32(byte)) & 0xFF)
+                crc = (crc >> 8) ^ crcTable[index]
+            }
+        }
+        return crc ^ 0xFFFFFFFF
+    }
+    #endif
     
     /// Decode BlazeBinary data to BlazeDataRecord
     ///
