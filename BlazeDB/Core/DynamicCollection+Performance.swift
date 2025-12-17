@@ -78,8 +78,10 @@ extension DynamicCollection {
         return results.compactMap { (id, record) in
             record
         }.sorted { (lhs, rhs) in
-            guard let lhsIndex = indexMap[lhs.storage["id"]?.uuidValue ?? UUID()],
-                  let rhsIndex = indexMap[rhs.storage["id"]?.uuidValue ?? UUID()] else {
+            guard let lhsIndices = indexMap[lhs.storage["id"]?.uuidValue ?? UUID()],
+                  let rhsIndices = indexMap[rhs.storage["id"]?.uuidValue ?? UUID()],
+                  let lhsIndex = lhsIndices.first,
+                  let rhsIndex = rhsIndices.first else {
                 return false
             }
             return lhsIndex < rhsIndex
@@ -107,7 +109,7 @@ extension DynamicCollection {
         
         // Fetch and cache
         let records = try _fetchAllOptimizedPerformance()
-        Self.fetchAllCache[dbKey] = (records, Date())
+        Self.fetchAllCachePerformance[dbKey] = (records, Date())
         
         return records
     }
