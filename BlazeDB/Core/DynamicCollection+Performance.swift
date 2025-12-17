@@ -19,10 +19,13 @@ extension DynamicCollection {
     /// This is a duplicate - removed to avoid redeclaration error
     internal func _fetchAllOptimizedPerformance() throws -> [BlazeDataRecord] {
         // OPTIMIZED: Prefetch pages in batches (read-ahead optimization!)
-        let pageIndices = Array(indexMap.values).sorted()
+        // Note: prefetchPages may not be available on all platforms
+        // Flatten indexMap.values which is [UUID: [Int]], so values are [Int] arrays
+        let allPageIndices = indexMap.values.flatMap { $0 }
+        let pageIndices = Array(Set(allPageIndices)).sorted()  // Remove duplicates and sort
         if pageIndices.count > 10 {
             // Prefetch next 10 pages while processing current
-            try store.prefetchPages(Array(pageIndices.prefix(10)))
+            try? store.prefetchPages(Array(pageIndices.prefix(10)))  // Use try? to handle missing method
         }
         // MVCC Path: Use MVCC transaction
         if mvccEnabled {
