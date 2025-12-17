@@ -2222,6 +2222,10 @@ public final class DynamicCollection {
             let indexBackup = secondaryIndexes
             let indexMapBackup = indexMapSnapshot  // Backup indexMap for rollback
             
+            // Track allocation outside do-catch so catch block can access them
+            var allocatedPageCount = 0  // Track how many pages we allocate
+            let nextPageIndexBefore = nextPageIndex  // Save starting value for rollback
+            
             do {
                 // Remove old keys (normalize to match how they were stored)
                 // CRITICAL: Log errors instead of silently suppressing them
@@ -2312,9 +2316,6 @@ public final class DynamicCollection {
                 let oldPageIndices = pageIndices
                 
                 // Write the new record (main page overwritten last, after overflow chain is written)
-                // Track allocation outside do-catch so catch block can access them
-                var allocatedPageCount = 0  // Track how many pages we allocate
-                let nextPageIndexBefore = nextPageIndex  // Save starting value for rollback
                 let newPageIndices: [Int]
                 
                 do {
