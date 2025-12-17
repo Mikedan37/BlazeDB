@@ -36,7 +36,7 @@ public struct MVCCGCConfiguration {
 }
 
 /// Automatic garbage collection manager
-public class AutomaticGCManager {
+public class AutomaticGCManager: @unchecked Sendable {
     
     private let versionManager: VersionManager
     private var config: MVCCGCConfiguration

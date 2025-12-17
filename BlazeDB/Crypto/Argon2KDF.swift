@@ -33,7 +33,7 @@ public enum Argon2KDF {
         /// Output key length in bytes
         public let keyLength: Int
         
-        public static let `default` = Parameters(
+        nonisolated(unsafe) public static let `default` = Parameters(
             memoryCost: 65536,  // 64MB (memory-hard)
             timeCost: 3,         // 3 iterations
             parallelism: 4,      // 4 threads
@@ -41,7 +41,7 @@ public enum Argon2KDF {
         )
         
         /// High security parameters (slower but more secure)
-        public static let highSecurity = Parameters(
+        nonisolated(unsafe) public static let highSecurity = Parameters(
             memoryCost: 131072,  // 128MB
             timeCost: 5,         // 5 iterations
             parallelism: 4,      // 4 threads
@@ -49,7 +49,7 @@ public enum Argon2KDF {
         )
         
         /// Fast parameters (less secure, for testing only)
-        public static let fast = Parameters(
+        nonisolated(unsafe) public static let fast = Parameters(
             memoryCost: 16384,   // 16MB
             timeCost: 2,         // 2 iterations
             parallelism: 2,      // 2 threads

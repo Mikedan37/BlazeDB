@@ -84,7 +84,8 @@ public final class DynamicCollection {
     private var layoutSignatureVerified: Bool = true
     
     private func applyLayoutFromStorage(_ layout: StorageLayout) {
-        self.indexMap = layout.indexMap
+        // Convert [UUID: Int] to [UUID: [Int]] for backward compatibility
+        self.indexMap = layout.indexMap.mapValues { [$0] }
         self.nextPageIndex = layout.nextPageIndex
         self.secondaryIndexes = layout.toRuntimeIndexes()
         self.cachedSearchIndex = layout.searchIndex
@@ -741,7 +742,8 @@ public final class DynamicCollection {
             self.encryptionKey = encryptionKey
             self.password = password
             self.versionManager = VersionManager()  // Initialize MVCC
-            self.indexMap = layout.indexMap
+            // Convert [UUID: Int] to [UUID: [Int]] for backward compatibility
+            self.indexMap = layout.indexMap.mapValues { [$0] }
             self.nextPageIndex = layout.nextPageIndex
             // Start with persisted runtime indexes
             self.secondaryIndexes = layout.toRuntimeIndexes()
@@ -2020,7 +2022,9 @@ public final class DynamicCollection {
                 try store.synchronize()
                 
                 // Clear fetchAll cache to ensure fresh reads after persist
+                #if !BLAZEDB_LINUX_CORE
                 clearFetchAllCache()
+                #endif
                 
                 // Then save the metadata
                 try saveLayout()
@@ -2316,6 +2320,9 @@ public final class DynamicCollection {
                 let oldPageIndices = pageIndices
                 
                 // Write the new record (main page overwritten last, after overflow chain is written)
+                // Track allocation outside do-catch so catch block can access them
+                var allocatedPageCount = 0  // Track how many pages we allocate
+                let nextPageIndexBefore = nextPageIndex  // Save starting value for rollback
                 let newPageIndices: [Int]
                 
                 do {
