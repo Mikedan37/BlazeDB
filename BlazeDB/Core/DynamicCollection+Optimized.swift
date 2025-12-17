@@ -15,8 +15,8 @@ extension DynamicCollection {
     
     // MARK: - Fetch All Cache
     
-    private static var fetchAllCache: [ObjectIdentifier: ([BlazeDataRecord], Date)] = [:]
-    private static let cacheLock = NSLock()
+    nonisolated(unsafe) private static var fetchAllCache: [ObjectIdentifier: ([BlazeDataRecord], Date)] = [:]
+    nonisolated(unsafe) private static let cacheLock = NSLock()
     private static let cacheMaxAge: TimeInterval = 5.0  // 5 seconds
     
     /// Clear fetchAll cache (called after writes)
