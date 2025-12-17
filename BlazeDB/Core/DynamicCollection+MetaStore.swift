@@ -45,8 +45,7 @@ extension DynamicCollection: MetaStore {
                     salt: salt
                 )
                 BlazeLogger.info("✅ [FETCHMETA] Retry succeeded")
-                // Update in-memory metaData for future fetches
-                self.metaData = layout.metaData
+                // metaData is stored in StorageLayout, not DynamicCollection
                 return layout.metaData
             } catch {
                 BlazeLogger.error("❌ [FETCHMETA] Retry also failed: \(error)")
