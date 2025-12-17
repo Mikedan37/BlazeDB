@@ -131,4 +131,5 @@ public struct DistributedVersionGCStats {
         """
     }
 }
+#endif // !BLAZEDB_LINUX_CORE
 

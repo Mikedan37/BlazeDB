@@ -7,6 +7,7 @@
 //  Created: 2025-01-XX
 //
 
+#if !BLAZEDB_LINUX_CORE
 import Foundation
 
 /// Configuration for conflict resolution GC
@@ -46,4 +47,5 @@ extension ConflictResolver {
         try cleanupOldConflictVersions()
     }
 }
+#endif // !BLAZEDB_LINUX_CORE
 

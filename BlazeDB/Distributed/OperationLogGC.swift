@@ -7,6 +7,7 @@
 //  Created: 2025-01-XX
 //
 
+#if !BLAZEDB_LINUX_CORE
 import Foundation
 
 /// Configuration for Operation Log GC
@@ -179,4 +180,5 @@ public struct OperationLogStats {
         """
     }
 }
+#endif // !BLAZEDB_LINUX_CORE
 

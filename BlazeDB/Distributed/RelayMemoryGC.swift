@@ -108,4 +108,5 @@ public struct RelayQueueStats {
         """
     }
 }
+#endif // !BLAZEDB_LINUX_CORE
 

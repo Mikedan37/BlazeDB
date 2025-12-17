@@ -5,6 +5,7 @@
 //  Cross-app synchronization coordinator (same device, different apps)
 //
 
+#if !BLAZEDB_LINUX_CORE
 import Foundation
 
 /// Coordinates cross-app synchronization using App Groups
@@ -181,4 +182,5 @@ extension BlazeDBClient {
         case readWrite
     }
 }
+#endif // !BLAZEDB_LINUX_CORE
 

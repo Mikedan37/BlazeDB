@@ -64,7 +64,7 @@ public actor MultiDatabaseGCCoordinator {
                 let removed = db.runGarbageCollection()
                 BlazeLogger.info("Database '\(name)': Removed \(removed) versions")
             } catch {
-                BlazeLogger.warn("Failed to run GC on database '\(name)'", error: error)
+                BlazeLogger.warn("Failed to run GC on database '\(name)': \(error.localizedDescription)")
             }
         }
         

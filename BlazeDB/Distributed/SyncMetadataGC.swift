@@ -7,6 +7,7 @@
 //  Created: 2025-01-XX
 //
 
+#if !BLAZEDB_LINUX_CORE
 import Foundation
 
 /// Configuration for sync metadata GC
@@ -84,4 +85,5 @@ public struct SyncMetadataStats {
         """
     }
 }
+#endif // !BLAZEDB_LINUX_CORE
 

@@ -7,6 +7,7 @@
 //  Created: 2025-01-XX
 //
 
+#if !BLAZEDB_LINUX_CORE
 import Foundation
 
 /// Configuration for Sync State GC
@@ -168,4 +169,5 @@ public struct SyncStateStats {
         """
     }
 }
+#endif // !BLAZEDB_LINUX_CORE
 

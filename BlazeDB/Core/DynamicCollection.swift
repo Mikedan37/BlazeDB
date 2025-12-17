@@ -1770,7 +1770,9 @@ public final class DynamicCollection {
                     }
                     unsavedChanges = 0
                     // Clear fetchAll cache when we save layout (batch operation)
+                    #if !BLAZEDB_LINUX_CORE
                     clearFetchAllCache()
+                    #endif
                 }
                 
                 // OPTIMIZATION: Defer expensive index updates - they can be batched
@@ -2159,8 +2161,10 @@ public final class DynamicCollection {
             // CRITICAL: Clean up static dictionary references to prevent memory leaks
             // When DynamicCollection is deallocated, remove its cache and pool from static dictionaries
             // This allows the actors (AsyncQueryCache and OperationPool) to be deallocated
+            #if !BLAZEDB_LINUX_CORE
             let id = ObjectIdentifier(self)
             DynamicCollection.cleanupAsyncResources(for: id)
+            #endif
         }
         
         /// Dumps the raw CBOR data for each page index in the collection.
