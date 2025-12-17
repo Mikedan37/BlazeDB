@@ -1752,12 +1752,9 @@ public final class DynamicCollection {
                         }
                     }
                     #else
-                    // Linux: Basic page deletion without cache optimization
+                    // Linux: Basic page deletion using public API
                     for pageIndex in pageIndices {
-                        let zeroed = Data(repeating: 0, count: 4096)  // Fixed page size
-                        let offset = UInt64(pageIndex) * 4096
-                        try store.fileHandle.compatSeek(toOffset: offset)
-                        try store.fileHandle.compatWrite(zeroed)
+                        try? store.deletePage(index: pageIndex)
                         markPageForReuse(pageIndex: pageIndex, layout: &layout)
                     }
                     #endif
@@ -2431,9 +2428,10 @@ public final class DynamicCollection {
                     BlazeLogger.warn("⚠️ Restored indexMap due to saveLayout() failure")
                 }
                 // Also rollback nextPageIndex if it was incremented
-                // Note: allocatedPageCount and nextPageIndexBefore are defined in the do block above
-                // They're accessible here because they're in the same scope
-                // (The do-catch shares the same variable scope)
+                if allocatedPageCount > 0 {
+                    nextPageIndex = nextPageIndexBefore
+                    BlazeLogger.warn("⚠️ Rolling back nextPageIndex by \(allocatedPageCount) pages due to update failure")
+                }
                 throw error
             }
         }
