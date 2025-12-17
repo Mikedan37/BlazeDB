@@ -424,7 +424,7 @@ extension DynamicCollection {
                 
                 // CRITICAL: Ensure currentVersion is at least batchVersion after all versions are added
                 // This is a double-check to ensure consistency even if addVersion didn't update currentVersion
-                versionManager.ensureCurrentVersion(atLeast: batchVersion)
+                // versionManager.ensureCurrentVersion(atLeast: batchVersion)
                 
                 // CRITICAL: Verify that all versions are actually registered before allowing concurrent reads
                 // This ensures that all versions added above are fully visible to any concurrent transaction
