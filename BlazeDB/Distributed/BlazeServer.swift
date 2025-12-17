@@ -5,6 +5,7 @@
 //  Server for accepting remote database connections
 //
 
+#if !BLAZEDB_LINUX_CORE
 import Foundation
 
 /// Server that accepts remote BlazeDB connections

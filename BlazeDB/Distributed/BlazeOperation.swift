@@ -5,10 +5,11 @@
 //  Core operation type for distributed sync
 //
 
+#if !BLAZEDB_LINUX_CORE
 import Foundation
 
 /// Represents a single database operation that can be replicated across nodes
-public struct BlazeOperation: Codable, Identifiable {
+public struct BlazeOperation: Codable, Identifiable, Sendable {
     public let id: UUID
     public let timestamp: LamportTimestamp
     public let nodeId: UUID
@@ -89,7 +90,7 @@ public enum OperationType: String, Codable {
 }
 
 /// Lamport timestamp for causal ordering
-public struct LamportTimestamp: Comparable, Codable, Hashable {
+public struct LamportTimestamp: Comparable, Codable, Hashable, Sendable {
     public let counter: UInt64
     public let nodeId: UUID
     
@@ -239,10 +240,11 @@ public actor OperationLog {
     }
 }
 
-public struct SyncState: Codable {
+public struct SyncState: Codable, Sendable {
     public let nodeId: UUID
     public let lastSyncedTimestamp: LamportTimestamp
     public let operationCount: Int
     public let collections: [String]
 }
 
+#endif // !BLAZEDB_LINUX_CORE

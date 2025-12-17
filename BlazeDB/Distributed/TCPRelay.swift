@@ -5,6 +5,7 @@
 //  Relay for remote synchronization over secure TCP connection (raw TCP, not WebSocket)
 //
 
+#if !BLAZEDB_LINUX_CORE
 import Foundation
 
 /// Relay for remote synchronization using secure TCP connection (raw TCP, not WebSocket)

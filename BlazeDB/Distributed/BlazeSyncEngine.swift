@@ -5,6 +5,7 @@
 //  Sync engine for distributed BlazeDB
 //
 
+#if !BLAZEDB_LINUX_CORE
 import Foundation
 
 /// Protocol for sync transport implementations

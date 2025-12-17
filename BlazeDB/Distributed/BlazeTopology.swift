@@ -5,6 +5,7 @@
 //  Multi-database coordinator for local and remote sync
 //
 
+#if !BLAZEDB_LINUX_CORE
 import Foundation
 
 /// Coordinates synchronization between multiple databases (local and remote)

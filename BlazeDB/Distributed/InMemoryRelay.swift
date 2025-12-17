@@ -5,6 +5,7 @@
 //  In-memory relay for local database synchronization (same device)
 //
 
+#if !BLAZEDB_LINUX_CORE
 import Foundation
 
 /// In-memory relay for coordinating databases on the same device (in-memory queue, not Unix Domain Sockets)

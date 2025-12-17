@@ -1,6 +1,7 @@
 //  BlazeCollection.swift
 //  BlazeDB
 //  Created by Michael Danylchuk on 6/15/25.
+#if !BLAZEDB_LINUX_CORE
 import Foundation
 #if canImport(CryptoKit)
 import CryptoKit
@@ -8,6 +9,7 @@ import CryptoKit
 import Crypto
 #endif
 
+/// @deprecated Use DynamicCollection instead
 public final class BlazeCollection<Record: BlazeRecord> {
     private var indexMap: [UUID: Int] = [:] // maps record ID to page index
     private let store: PageStore

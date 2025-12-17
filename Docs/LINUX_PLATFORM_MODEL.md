@@ -33,6 +33,8 @@ This document explains the feature matrix, design rationale, and explicit limita
 | **Parallel Encoding** | ✅ | ❌ | SIMD-accelerated batch operations |
 | **Batch Operations** | ✅ | ❌ | `insertBatch`, `updateBatch`, `deleteBatch` |
 | **Performance Caching** | ✅ | ❌ | Query result caching, fetchAll optimization |
+| **Distributed Sync** | ✅ | ❌ | Multi-database synchronization, peer discovery |
+| **Network Transport** | ✅ | ❌ | SecureConnection, TCPRelay, WebSocketRelay |
 | **Certificate Pinning** | ✅ | ❌ | Network.framework TLS pinning |
 | **Secure Enclave** | ✅ | ❌ | Hardware-backed key storage |
 | **LocalAuthentication** | ✅ | ❌ | Biometric key unlock |
@@ -145,11 +147,13 @@ swift build -c release
 ```
 
 The `BLAZEDB_LINUX_CORE` flag is automatically defined, excluding:
-- All `DynamicCollection+*.swift` extension files (except core)
+- All `DynamicCollection+*.swift` extension files (except core: Metrics, Migration)
+- Entire `Distributed/` directory (sync, networking, discovery)
 - SwiftUI property wrappers
 - Combine integration
 - Advanced indexing (vector, spatial, full-text)
 - Parallel execution paths
+- Deprecated `BlazeCollection.swift`
 
 ### Apple Build
 
@@ -174,7 +178,8 @@ If you're migrating code from Apple platforms to Linux:
 2. **Remove Async APIs**: Replace `insertAsync()` with synchronous `insert()`
 3. **Remove Batch Operations**: Replace `insertBatch()` with loops of `insert()`
 4. **Remove Advanced Indexing**: Vector/spatial/search indexes are not available
-5. **Simplify Concurrency**: Use serial operations instead of parallel execution
+5. **Remove Distributed Sync**: Multi-database sync, peer discovery, and networking are not available
+6. **Simplify Concurrency**: Use serial operations instead of parallel execution
 
 ### Example Migration
 
@@ -232,8 +237,9 @@ The `BLAZEDB_LINUX_CORE` flag is defined in `Package.swift`:
 
 ### Gated Files
 
-The following files are entirely gated on Linux:
+The following files and directories are entirely gated on Linux:
 
+**Core Extensions:**
 - `DynamicCollection+Async.swift` - Async/await operations
 - `DynamicCollection+Optimized.swift` - Caching, parallel filtering
 - `DynamicCollection+Performance.swift` - Parallel reads, aggressive caching
@@ -244,9 +250,25 @@ The following files are entirely gated on Linux:
 - `DynamicCollection+Vector.swift` - Vector similarity indexing
 - `DynamicCollection+Lazy.swift` - Lazy decoding
 - `DynamicCollection+MetaStore.swift` - Metadata caching
+- `DynamicCollection+IndexBatch.swift` - Enhanced batch index updates
+
+**SwiftUI Integration:**
 - `BlazeQuery.swift` - SwiftUI property wrapper
 - `BlazeQueryTyped.swift` - Type-safe SwiftUI wrapper
 - `BlazeQuery+Extensions.swift` - SwiftUI bindings
+
+**Distributed Sync (Entire Directory):**
+- `Distributed/` - All files in this directory (28 files)
+  - `BlazeSyncEngine.swift` - Multi-database synchronization
+  - `BlazeTopology.swift` - Connection topology management
+  - `BlazeServer.swift` - Remote database server
+  - `BlazeDiscovery.swift` - mDNS/Bonjour peer discovery
+  - `SecureConnection.swift` - E2E encrypted connections
+  - `TCPRelay.swift`, `WebSocketRelay.swift` - Transport implementations
+  - All GC, validation, and relay implementations
+
+**Deprecated:**
+- `BlazeCollection.swift` - Legacy collection type (use `DynamicCollection` instead)
 
 ### Core Files (Always Enabled)
 
