@@ -8,6 +8,8 @@
 //  Created by Michael Danylchuk on 7/1/25.
 //
 
+#if !BLAZEDB_LINUX_CORE
+
 import Foundation
 
 // MARK: - Search Index Management
@@ -300,3 +302,5 @@ extension DynamicCollection {
 
 // NOTE: _fetchAllNoSync() and _fetchNoSync() are now in DynamicCollection.swift (main file)
 // to avoid duplication across multiple extensions
+
+#endif // !BLAZEDB_LINUX_CORE

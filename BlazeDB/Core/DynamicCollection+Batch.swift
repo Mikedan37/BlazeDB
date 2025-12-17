@@ -8,6 +8,8 @@
 //  Created by Michael Danylchuk on 7/1/25.
 //
 
+#if !BLAZEDB_LINUX_CORE
+
 import Foundation
 
 // MARK: - Optimized Batch Operations
@@ -715,3 +717,5 @@ extension DynamicCollection {
         }
     }
 }
+
+#endif // !BLAZEDB_LINUX_CORE

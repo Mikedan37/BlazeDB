@@ -43,7 +43,10 @@ let package = Package(
                 .product(name: "BlazeTransport", package: "BlazeTransport")
             ],
             path: "BlazeDB",
-            exclude: ["BlazeDB.docc"]
+            exclude: ["BlazeDB.docc"],
+            swiftSettings: [
+                .define("BLAZEDB_LINUX_CORE", .when(platforms: [.linux]))
+            ]
         ),
         .executableTarget(
             name: "BlazeShell",

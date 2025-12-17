@@ -8,6 +8,8 @@
 //  Created by Michael Danylchuk on 1/15/25.
 //
 
+#if !BLAZEDB_LINUX_CORE
+
 import Foundation
 #if canImport(Accelerate)
 import Accelerate
@@ -99,3 +101,4 @@ extension DynamicCollection {
     }
 }
 
+#endif // !BLAZEDB_LINUX_CORE

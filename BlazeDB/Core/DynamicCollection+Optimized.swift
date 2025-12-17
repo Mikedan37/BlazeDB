@@ -7,6 +7,8 @@
 //  Created by Auto on 1/XX/25.
 //
 
+#if !BLAZEDB_LINUX_CORE
+
 import Foundation
 
 extension DynamicCollection {
@@ -122,3 +124,4 @@ private extension Array {
     }
 }
 
+#endif // !BLAZEDB_LINUX_CORE
