@@ -135,8 +135,8 @@ extension DynamicCollection {
             secondaryIndexes[compound] = inner
         }
         
-        // Save layout with updated deletedPages (convert [UUID: [Int]] to [UUID: Int] for StorageLayout)
-        layout.indexMap = indexMap.mapValues { $0.first ?? 0 }
+        // Save layout with updated deletedPages (StorageLayout now expects [UUID: [Int]])
+        layout.indexMap = indexMap
         layout.secondaryIndexes = StorageLayout.fromRuntimeIndexes(secondaryIndexes)
         try layout.save(to: metaURL)
         
@@ -187,8 +187,8 @@ extension DynamicCollection {
         // Track for reuse! (THIS IS THE KEY!)
         markPageForReuse(pageIndex: pageIndex, layout: &layout)
         
-        // Save layout (convert [UUID: [Int]] to [UUID: Int] for StorageLayout)
-        layout.indexMap = indexMap.mapValues { $0.first ?? 0 }
+        // Save layout (StorageLayout now expects [UUID: [Int]])
+        layout.indexMap = indexMap
         layout.secondaryIndexes = StorageLayout.fromRuntimeIndexes(secondaryIndexes)
         try layout.save(to: metaURL)
         
