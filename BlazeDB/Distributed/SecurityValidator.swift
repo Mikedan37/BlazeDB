@@ -7,6 +7,7 @@
 //  Created by Michael Danylchuk on 1/15/25.
 //
 
+#if !BLAZEDB_LINUX_CORE
 import Foundation
 #if canImport(CryptoKit)
 import CryptoKit
@@ -353,4 +354,5 @@ public enum SecurityError: Error, LocalizedError {
         }
     }
 }
+#endif // !BLAZEDB_LINUX_CORE
 

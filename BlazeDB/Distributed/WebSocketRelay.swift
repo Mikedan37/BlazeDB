@@ -5,6 +5,7 @@
 //  Relay for remote synchronization over secure TCP connection (NOT WebSocket - raw TCP)
 //
 
+#if !BLAZEDB_LINUX_CORE
 import Foundation
 #if canImport(Accelerate)
 import Accelerate
@@ -813,4 +814,5 @@ public actor TCPRelay: BlazeSyncRelay {
         return try JSONEncoder().encode(request)
     }
 }
+#endif // !BLAZEDB_LINUX_CORE
 

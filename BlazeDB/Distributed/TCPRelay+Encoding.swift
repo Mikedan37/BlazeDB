@@ -397,4 +397,5 @@ extension TCPRelay {
         return try JSONEncoder().encode(request)
     }
 }
+#endif // !BLAZEDB_LINUX_CORE
 

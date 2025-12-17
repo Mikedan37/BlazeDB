@@ -5,6 +5,7 @@
 //  Extensions for TCPRelay (UUID binary encoding, parallel map)
 //
 
+#if !BLAZEDB_LINUX_CORE
 import Foundation
 
 // MARK: - UUID Binary Encoding Extension
@@ -57,4 +58,5 @@ extension Array {
         }
     }
 }
+#endif // !BLAZEDB_LINUX_CORE
 
