@@ -450,22 +450,6 @@ public final class PageStore {
 
     /// Delete a page by zeroing it out (marks as deleted, can be reused)
     /// This is a safe operation that doesn't require exclusive access
-    public func deletePage(index: Int) throws {
-        try queue.sync(flags: .barrier) {
-            // Invalidate cache
-            pageCache.remove(index)
-            
-            // Zero out the page
-            let zeroed = Data(repeating: 0, count: pageSize)
-            let offset = UInt64(index * pageSize)
-            try fileHandle.compatSeek(toOffset: offset)
-            try fileHandle.compatWrite(zeroed)
-            try fileHandle.compatSynchronize()
-            
-            BlazeLogger.trace("✅ Deleted page \(index) (zeroed out)")
-        }
-    }
-
     // MARK: - MVCC Support
     
     /// Get the next available page index for MVCC
