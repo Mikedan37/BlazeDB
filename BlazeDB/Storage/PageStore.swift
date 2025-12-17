@@ -63,9 +63,9 @@ public final class PageStore {
     public let fileURL: URL
     private let fileHandle: FileHandle
     private let key: SymmetricKey  // ✅ ENCRYPTION KEY STORED
-    private let pageSize = 4096
+    internal let pageSize = 4096  // Made internal for DynamicCollection access
     private let queue = DispatchQueue(label: "com.yourorg.blazedb.pagestore", attributes: .concurrent)
-    private let pageCache = PageCache(maxSize: 1000)  // Cache up to 1000 pages (~4MB)
+    internal let pageCache = PageCache(maxSize: 1000)  // Made internal for DynamicCollection access
     private var isLocked: Bool = false  // Track lock state for cleanup
 
     public init(fileURL: URL, key: SymmetricKey) throws {
@@ -450,6 +450,24 @@ public final class PageStore {
 
     public func delete(index: Int) throws {
         try deletePage(index: index)
+    }
+    
+    /// Delete a page by zeroing it out (marks as deleted, can be reused)
+    /// This is a safe operation that doesn't require exclusive access
+    public func deletePage(index: Int) throws {
+        try queue.sync(flags: .barrier) {
+            // Invalidate cache
+            pageCache.remove(index)
+            
+            // Zero out the page
+            let zeroed = Data(repeating: 0, count: pageSize)
+            let offset = UInt64(index * pageSize)
+            try fileHandle.compatSeek(toOffset: offset)
+            try fileHandle.compatWrite(zeroed)
+            try fileHandle.compatSynchronize()
+            
+            BlazeLogger.trace("✅ Deleted page \(index) (zeroed out)")
+        }
     }
 
     // MARK: - MVCC Support

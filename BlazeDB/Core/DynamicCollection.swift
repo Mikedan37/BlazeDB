@@ -2045,8 +2045,8 @@ public final class DynamicCollection {
                 inner.mapValues { Array($0).sorted(by: { $0.uuidString < $1.uuidString }) }
             }
             
-            // Convert [UUID: [Int]] to [UUID: Int] for StorageLayout init (takes first page only for compatibility)
-            let legacyIndexMap = indexMap.mapValues { $0.first ?? 0 }
+            // Use indexMap directly (StorageLayout now supports [UUID: [Int]])
+            // No conversion needed - StorageLayout.indexMap is already [UUID: [Int]]
             
             // CRITICAL: Preserve deletedPages and metaData from existing layout on disk
             // This ensures deleted pages are tracked for garbage collection
