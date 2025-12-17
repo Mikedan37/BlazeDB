@@ -91,7 +91,7 @@ extension DynamicCollection {
     /// Optimized fetchAll with result caching
     /// Note: fetchAllCache is defined in DynamicCollection+Optimized.swift
     /// This is a duplicate - removed to avoid redeclaration error
-    nonisolated(unsafe) private static var fetchAllCachePerformance: [UUID: ([BlazeDataRecord], Date)] = [:]
+    nonisolated(unsafe) private static var fetchAllCachePerformance: [ObjectIdentifier: ([BlazeDataRecord], Date)] = [:]
     nonisolated(unsafe) private static let cacheLockPerformance = NSLock()
     private static let cacheTTL: TimeInterval = 1.0  // 1 second cache
     
