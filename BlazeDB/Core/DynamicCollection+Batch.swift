@@ -459,7 +459,10 @@ extension DynamicCollection {
             // Phase 2.5: Clear fetchAll cache (new records were inserted!)
             BlazeLogger.debug("📦 [INSERT] Batch: Phase 2.6 - Clearing fetchAll cache...")
             #if !BLAZEDB_LINUX_CORE
-            // clearFetchAllCache() is defined in DynamicCollection+Optimized (gated)
+            // #if !BLAZEDB_LINUX_CORE
+// clearFetchAllCache() is defined in DynamicCollection+Optimized (gated)
+// Cache will be cleared on next fetchAll call
+#endif is defined in DynamicCollection+Optimized (gated)
             // Cache will be cleared on next fetchAll call
             #endif
             
@@ -709,7 +712,10 @@ extension DynamicCollection {
             for id in idsToDelete {
                 RecordCache.shared.remove(id: id)
             }
-            clearFetchAllCache()
+            #if !BLAZEDB_LINUX_CORE
+// clearFetchAllCache() is defined in DynamicCollection+Optimized (gated)
+// Cache will be cleared on next fetchAll call
+#endif
             
             let duration = Date().timeIntervalSince(startTime)
             BlazeLogger.info("Batch delete complete: \(idsToDelete.count) records in \(String(format: "%.2f", duration * 1000))ms")
