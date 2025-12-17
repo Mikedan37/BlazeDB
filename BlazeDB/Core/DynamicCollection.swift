@@ -743,7 +743,8 @@ public final class DynamicCollection {
             self.password = password
             self.versionManager = VersionManager()  // Initialize MVCC
             // Convert [UUID: Int] to [UUID: [Int]] for backward compatibility
-            self.indexMap = layout.indexMap.mapValues { [$0] }
+            // StorageLayout.indexMap is already [UUID: [Int]], no conversion needed
+        self.indexMap = layout.indexMap
             self.nextPageIndex = layout.nextPageIndex
             // Start with persisted runtime indexes
             self.secondaryIndexes = layout.toRuntimeIndexes()
