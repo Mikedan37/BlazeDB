@@ -1718,46 +1718,11 @@ public final class DynamicCollection {
                     // OPTIMIZATION: Batch delete all pages in a single sync block (not barrier)
                     // Since we're already in DynamicCollection's queue.sync, we use regular sync
                     // to allow concurrent reads. Barrier would block everything unnecessarily.
-                    #if !BLAZEDB_LINUX_CORE
-                    // Pre-allocate zeroed data outside the loop for better performance
-                    // Note: pageSize, queue, and pageCache are private in PageStore
-                    // This optimization is only available when PageStore exposes these properties
-                    // For now, use the public deletePage API
-                    for pageIndex in pageIndices {
-                        try? store.deletePage(index: pageIndex)
-                    }
-                    #else
-                    // On Linux, use basic delete
-                    for pageIndex in pageIndices {
-                        try? store.deletePage(index: pageIndex)
-                    }
-                    #endif
-                    
-                    // Legacy path (if above doesn't work, fall back to this)
-                    #if false
-                    let zeroed = Data(repeating: 0, count: 4096)  // Standard page size
-                    try store.queue.sync {
-                        for pageIndex in pageIndices {
-                            // Invalidate cache on delete
-                            store.pageCache.remove(pageIndex)
-                            
-                            // CRITICAL: Cast to UInt64 before multiplying to prevent integer overflow
-                            let offset = UInt64(pageIndex) * UInt64(store.pageSize)
-                            try store.fileHandle.compatSeek(toOffset: offset)
-                            try store.fileHandle.compatWrite(zeroed)
-                            // NO synchronize() - will be synced in batch
-                            
-                            // Mark page for reuse (CRITICAL for preventing file growth)
-                            markPageForReuse(pageIndex: pageIndex, layout: &layout)
-                        }
-                    }
-                    #else
-                    // Linux: Basic page deletion using public API
+                    // Use public deletePage API (works on both Apple and Linux)
                     for pageIndex in pageIndices {
                         try? store.deletePage(index: pageIndex)
                         markPageForReuse(pageIndex: pageIndex, layout: &layout)
                     }
-                    #endif
                 } catch {
                     // Page deletion failed - rethrow error
                     throw error
