@@ -9,14 +9,15 @@
 //
 
 import Foundation
-import Security
 #if canImport(CryptoKit)
 import CryptoKit
 #else
 import Crypto
 #endif
 
-#if canImport(Security)
+#if canImport(Security) && (os(macOS) || os(iOS) || os(watchOS) || os(tvOS))
+import Security
+
 /// Enhanced Secure Enclave key manager
 /// Stores encryption keys in Secure Enclave (hardware-protected)
 public final class SecureEnclaveKeyManager {
@@ -226,5 +227,5 @@ public enum SecureEnclaveError: Error, LocalizedError {
         }
     }
 }
-#endif
+#endif // canImport(Security) && (os(macOS) || os(iOS) || os(watchOS) || os(tvOS))
 

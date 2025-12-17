@@ -12,6 +12,8 @@ import Foundation
 #if canImport(Network)
 import Network
 #endif
+
+#if canImport(Security) && (os(macOS) || os(iOS) || os(watchOS) || os(tvOS))
 import Security
 
 /// Certificate pinning configuration
@@ -148,5 +150,7 @@ extension NWProtocolTLS.Options {
         return options
     }
 }
-#endif
+#endif // canImport(Network)
+
+#endif // canImport(Security) && (os(macOS) || os(iOS) || os(watchOS) || os(tvOS))
 
