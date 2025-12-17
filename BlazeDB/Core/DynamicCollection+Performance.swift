@@ -43,7 +43,7 @@ extension DynamicCollection {
         let resultsLock = NSLock()
         
         for id in ids {
-            guard let pageIndex = indexMap[id] else { continue }
+            guard let pageIndices = indexMap[id], let pageIndex = pageIndices.first else { continue }
             
             group.enter()
             queue.async {
