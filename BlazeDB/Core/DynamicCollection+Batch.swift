@@ -132,7 +132,7 @@ extension DynamicCollection {
                 
                 // Allocate page (reuses deleted pages if available)
                 // Pass batchAllocatedPages to exclude them from "already in use" checks
-                var currentPageIndex = allocatePage(layout: &layout, excludePages: batchAllocatedPages)
+                var currentPageIndex = allocatePage(layout: &layout)  // excludePages parameter removed
                 
                 // CRITICAL: Check if this page is already in use (either in indexMap or in this batch)
                 // If it is, verify if the conflicting entries are actually stale or valid records
@@ -249,7 +249,7 @@ extension DynamicCollection {
                             layout.deletedPages.append(reusedPage)
                         }
                         // Use allocatePage to get a new page (handles nextPageIndex correctly)
-                        currentPageIndex = allocatePage(layout: &layout, excludePages: batchAllocatedPages)
+                        currentPageIndex = allocatePage(layout: &layout, )
                         BlazeLogger.debug("❌ [INSERT] Batch: Using new page \(currentPageIndex) instead of reused page \(reusedPage)")
                     }
                     // If no valid conflicts, we can continue using the reused page (stale entries were removed)
@@ -284,7 +284,7 @@ extension DynamicCollection {
                     if hasValidFinalConflicts {
                         // Use allocatePage to get a new page (handles nextPageIndex correctly)
                         let oldPageIndex = currentPageIndex
-                        currentPageIndex = allocatePage(layout: &layout, excludePages: batchAllocatedPages)
+                        currentPageIndex = allocatePage(layout: &layout, )
                         BlazeLogger.debug("❌ [INSERT] Batch FINAL CHECK: Using new page \(currentPageIndex) instead of \(oldPageIndex)")
                         batchAllocatedPages.remove(oldPageIndex) // Remove old page from tracking
                         batchAllocatedPages.insert(currentPageIndex) // Add new page

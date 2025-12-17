@@ -448,10 +448,6 @@ public final class PageStore {
     // MARK: - Compatibility aliases for tests
     public var url: URL { fileURL }
 
-    public func delete(index: Int) throws {
-        try deletePage(index: index)
-    }
-    
     /// Delete a page by zeroing it out (marks as deleted, can be reused)
     /// This is a safe operation that doesn't require exclusive access
     public func deletePage(index: Int) throws {
