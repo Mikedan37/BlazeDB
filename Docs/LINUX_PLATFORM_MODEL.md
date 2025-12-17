@@ -279,6 +279,64 @@ For Apple platforms, BlazeDB provides a complete, integrated database solution w
 
 ---
 
+## Contribution Rules
+
+### Adding New Features
+
+When adding new features to BlazeDB, you must declare the platform support:
+
+1. **Core Feature**: Works on all platforms (Apple + Linux)
+   - Must not use Apple-only frameworks
+   - Must not use Swift 6 concurrency patterns that violate Sendable
+   - Must not use static mutable state
+   - Must compile cleanly on Linux
+
+2. **Apple-Only Feature**: Works only on Apple platforms
+   - Wrap entire file/extension with `#if !BLAZEDB_LINUX_CORE`
+   - Document in this file's feature matrix
+   - No Linux stubs or fallbacks
+
+3. **Future Linux Support**: Optional future Linux support
+   - Mark as "Future Linux Support" in feature matrix
+   - Do not gate with `#if !BLAZEDB_LINUX_CORE` if Linux support is planned
+   - Document Linux requirements/limitations
+
+### Gating Rules
+
+- **Never** conditionally compile inside methods
+- **Always** gate entire files or extensions
+- **Never** create Linux stubs or fake implementations
+- **Never** use runtime platform checks (`#if os(Linux)` inside functions)
+
+### Example: Adding a New Feature
+
+**Core Feature (All Platforms):**
+```swift
+// BlazeDB/Core/NewCoreFeature.swift
+// No gating - compiles on all platforms
+extension DynamicCollection {
+    public func newCoreFeature() throws {
+        // Core logic only
+    }
+}
+```
+
+**Apple-Only Feature:**
+```swift
+// BlazeDB/Core/DynamicCollection+AppleFeature.swift
+#if !BLAZEDB_LINUX_CORE
+
+extension DynamicCollection {
+    public func newAppleFeature() async throws {
+        // Apple-specific implementation
+    }
+}
+
+#endif // !BLAZEDB_LINUX_CORE
+```
+
+---
+
 **Last Updated**: 2025-01-XX  
 **BlazeDB Version**: 2.5.x  
 **Swift Version**: 6.0+
