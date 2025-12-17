@@ -455,7 +455,9 @@ extension DynamicCollection {
             
             // Phase 2.5: Clear fetchAll cache (new records were inserted!)
             BlazeLogger.debug("📦 [INSERT] Batch: Phase 2.6 - Clearing fetchAll cache...")
+            #if !BLAZEDB_LINUX_CORE
             clearFetchAllCache()
+            #endif
             
             // Invalidate ordering index cache (new records may change sort order)
             if supportsOrdering() {
