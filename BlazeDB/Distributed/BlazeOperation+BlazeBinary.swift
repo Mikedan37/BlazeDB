@@ -5,6 +5,7 @@
 //  BlazeBinary encoding/decoding for BlazeOperation (faster than JSON!)
 //
 
+#if !BLAZEDB_LINUX_CORE
 import Foundation
 
 extension BlazeOperation {

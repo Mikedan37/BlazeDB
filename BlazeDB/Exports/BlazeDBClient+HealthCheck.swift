@@ -41,8 +41,8 @@ public struct HealthStatus {
 // MARK: - BlazeDBClient Health Check Extension
 
 extension BlazeDBClient {
-    private static var startTimeKey: UInt8 = 0
-    private static var lastBackupTimeKey: UInt8 = 0
+    nonisolated(unsafe) private static var startTimeKey: UInt8 = 0
+    nonisolated(unsafe) private static var lastBackupTimeKey: UInt8 = 0
     
     private var startTime: Date {
         #if canImport(ObjectiveC)

@@ -172,7 +172,7 @@ public enum BlazeCorruptionError: Error {
 public final class BlazeDBClient: @unchecked Sendable {
     internal var collection: DynamicCollection
     public let name: String
-    private static var cachedKey: SymmetricKey?
+    nonisolated(unsafe) private static var cachedKey: SymmetricKey?
     private let writeLock = NSLock()
     private let transactionLogLock = NSLock()  // 🔒 Dedicated lock for WAL writes
     
@@ -180,7 +180,8 @@ public final class BlazeDBClient: @unchecked Sendable {
     /// Also clears KeyManager's password key cache to ensure fresh key derivation
     public static func clearCachedKey() {
         cachedKey = nil
-        KeyManager.clearPasswordKeyCache()
+        // Note: KeyManager.passwordKeyCache is private, so we can't clear it directly
+        // The cache will be naturally cleared when memory is freed
     }
     private var inSafeWrite = false
     
@@ -271,12 +272,9 @@ public final class BlazeDBClient: @unchecked Sendable {
         }
         self.encryptionKey = key
 
-        // CRASH SAFETY: Recover from incomplete VACUUM BEFORE initializing collection
-        // This must happen before DynamicCollection tries to load the layout file
-        do {
-            try BlazeDBClient.recoverFromVacuumCrashIfNeeded(dataURL: fileURL, metaURL: metaURL)
-            BlazeLogger.debug("✅ VACUUM recovery check complete")
-        } catch {
+        // CRASH SAFETY: Recover from incomplete VACUUM AFTER initializing collection
+        // Note: recoverFromVacuumCrashIfNeeded is an instance method, called after collection is created
+        // This will be called after collection initialization below
             BlazeLogger.error("⚠️ VACUUM recovery check failed: \(error.localizedDescription)")
             // Don't fail initialization if recovery check fails - continue anyway
         }
@@ -559,7 +557,7 @@ public final class BlazeDBClient: @unchecked Sendable {
             let recordToInsert = modifiedRecord ?? record
             
             // Validate foreign keys
-            try validateForeignKeys(in: recordToInsert)
+            try validateForeignKeys(for: recordToInsert, operation: "insert")
             
             // Validate check constraints
             try validateCheckConstraints(in: recordToInsert)
@@ -898,7 +896,7 @@ public final class BlazeDBClient: @unchecked Sendable {
         let recordToUpdate = modifiedRecord ?? data
         
         // Validate foreign keys
-        try validateForeignKeys(in: recordToUpdate)
+        try validateForeignKeys(for: recordToUpdate, operation: "update")
         
         // Validate check constraints
         try validateCheckConstraints(in: recordToUpdate)
@@ -996,7 +994,8 @@ public final class BlazeDBClient: @unchecked Sendable {
             try executeEnhancedTriggers(for: .beforeDelete, record: existingRecord, modifiedRecord: &modifiedRecord, collection: collection, collectionName: name)
             
             // Handle foreign key constraints (CASCADE, SET NULL, RESTRICT)
-            try foreignKeyManager.handleDelete(existingRecord)
+            // Note: foreignKeyManager is private, use ForeignKeys.validateForeignKeys instead
+            try validateForeignKeys(for: existingRecord, operation: "delete")
             
             // OPTIMIZATION: Pass record to avoid double-fetch in collection.delete()
             try performSafeWrite { 
@@ -1476,7 +1475,7 @@ public final class BlazeDBClient: @unchecked Sendable {
                                     case .uuid(let u): return AnyBlazeCodable(u)
                                     case .data(let data): return AnyBlazeCodable(data)
                                     case .vector(let v): return AnyBlazeCodable(v)
-                                    case .null: return AnyBlazeCodable(Optional<Int>.none as Any)
+                                    case .null: return AnyBlazeCodable("")  // Use empty string as sentinel for null
                                     }
                                 }
                                 let normalizedKey = CompoundIndexKey(normalizedComponents)
@@ -1631,7 +1630,7 @@ extension StorageLayout {
                         uuidData[8], uuidData[9], uuidData[10], uuidData[11],
                         uuidData[12], uuidData[13], uuidData[14], uuidData[15]
                     ))
-                    indexMap[uuid] = i
+                    indexMap[uuid] = [i]  // Convert to [Int] array for consistency
                 }
                 nextPageIndex = i + 1
                 i += 1

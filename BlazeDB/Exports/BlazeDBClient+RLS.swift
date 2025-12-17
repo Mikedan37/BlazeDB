@@ -199,7 +199,7 @@ public final class RLS {
 
 extension BlazeDBClient {
     
-    private static var rlsManagers: [String: RLS] = [:]
+    nonisolated(unsafe) private static var rlsManagers: [String: RLS] = [:]
     private static let rlsLock = NSLock()
     
     /// RLS manager for this database

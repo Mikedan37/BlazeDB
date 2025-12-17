@@ -200,9 +200,12 @@ extension BlazeDBClient {
         // This allows server to accept connections from any client with same secret
         
         // Create server with shared secret (not a pre-derived token)
+        // Note: databaseName is required by BlazeServer.init
+        // Use a default name if not available
         let server = try BlazeServer(
-            database: self,
             port: port,
+            database: self,
+            databaseName: "BlazeDB",  // Default database name
             authToken: nil,  // No pre-derived token
             sharedSecret: sharedSecret  // Store secret for handshake verification
         )

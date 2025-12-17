@@ -233,8 +233,8 @@ extension BlazeDBClient {
 // MARK: - Database Registry
 
 /// Global registry for tracking databases by name
-public final class DatabaseRegistry {
-    public static let shared = DatabaseRegistry()
+public final class DatabaseRegistry: @unchecked Sendable {
+    nonisolated(unsafe) public static let shared = DatabaseRegistry()
     
     private var databases: [String: BlazeDBClient] = [:]
     private let lock = NSLock()

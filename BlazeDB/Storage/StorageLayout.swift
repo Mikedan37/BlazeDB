@@ -177,7 +177,33 @@ struct StorageLayout: Codable {
             let (indexName, inner) = pair
             var merged: [CompoundIndexKey: [UUID]] = [:]
             for (key, set) in inner {
-                let ckey = CompoundIndexKey(single: key)
+                // Convert AnyHashable to CompoundIndexKey
+                // For single-component keys, extract the value and create a CompoundIndexKey
+                let component: AnyBlazeCodable
+                // Extract base value from AnyHashable
+                let mirror = Mirror(reflecting: key)
+                if let baseValue = mirror.children.first?.value {
+                    if let str = baseValue as? String {
+                        component = .string(str)
+                    } else if let int = baseValue as? Int {
+                        component = .int(int)
+                    } else if let double = baseValue as? Double {
+                        component = .double(double)
+                    } else if let bool = baseValue as? Bool {
+                        component = .bool(bool)
+                    } else if let date = baseValue as? Date {
+                        component = .date(date)
+                    } else if let uuid = baseValue as? UUID {
+                        component = .uuid(uuid)
+                    } else if let data = baseValue as? Data {
+                        component = .data(data)
+                    } else {
+                        component = .string("")  // Fallback for unknown types
+                    }
+                } else {
+                    component = .string("")  // Fallback if extraction fails
+                }
+                let ckey = CompoundIndexKey([component])
                 var arr = merged[ckey] ?? []
                 arr.append(contentsOf: set)
                 // de-duplicate while preserving no particular order
@@ -263,7 +289,20 @@ struct StorageLayout: Codable {
             var merged: [AnyHashable: Set<UUID>] = [:]
             for (key, value) in inner {
                 if key.components.count == 1 {
-                    let base = key.components[0].value
+                    // Convert BlazeDocumentField to AnyHashable for legacy format
+                    let base: AnyHashable
+                    switch key.components[0] {
+                    case .string(let v): base = v
+                    case .int(let v): base = v
+                    case .double(let v): base = v
+                    case .bool(let v): base = v
+                    case .date(let v): base = v
+                    case .uuid(let v): base = v
+                    case .data(let v): base = v as AnyHashable
+                    case .vector(let v): base = v as AnyHashable
+                    case .null: base = "" as AnyHashable
+                    case .array, .dictionary: base = "" as AnyHashable  // Not supported in legacy format
+                    }
                     var existing = merged[base] ?? []
                     existing.formUnion(value)
                     merged[base] = existing

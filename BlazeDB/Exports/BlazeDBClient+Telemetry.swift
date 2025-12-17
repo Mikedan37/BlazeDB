@@ -203,7 +203,7 @@ public final class Telemetry {
 
 extension BlazeDBClient {
     
-    private static var telemetryManagers: [String: Telemetry] = [:]
+    nonisolated(unsafe) private static var telemetryManagers: [String: Telemetry] = [:]
     private static let telemetryLock = NSLock()
     
     /// Telemetry manager for this database
