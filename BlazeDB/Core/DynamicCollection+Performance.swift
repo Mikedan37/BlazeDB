@@ -106,12 +106,8 @@ extension DynamicCollection {
     }
     
     /// Clear fetchAll cache (call after writes)
-    internal func clearFetchAllCache() {
-        let dbKey = ObjectIdentifier(self)
-        Self.cacheLock.lock()
-        Self.fetchAllCache.removeValue(forKey: dbKey)
-        Self.cacheLock.unlock()
-    }
+    /// Note: This method is defined in DynamicCollection+Optimized.swift
+    /// This is a duplicate - removed to avoid redeclaration error
     
     /// Optimized filter with early termination and parallel processing
     public func filterOptimized(_ isMatch: @escaping (BlazeDataRecord) -> Bool) throws -> [BlazeDataRecord] {
