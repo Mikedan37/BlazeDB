@@ -8,6 +8,8 @@
 //
 
 import Foundation
+
+#if canImport(SwiftUI)
 import SwiftUI
 
 // MARK: - Type-Safe BlazeQuery
@@ -295,3 +297,4 @@ extension View {
     }
 }
 
+#endif // canImport(SwiftUI)

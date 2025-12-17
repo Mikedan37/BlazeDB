@@ -1,5 +1,3 @@
-import SwiftUI
-
 // MARK: - SwiftUI Binding Extensions
 
 #if canImport(SwiftUI)

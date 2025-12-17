@@ -9,8 +9,10 @@
 //
 
 import Foundation
-import SwiftUI
 import Combine
+
+#if canImport(SwiftUI)
+import SwiftUI
 
 // MARK: - BlazeQuery Property Wrapper
 
@@ -373,4 +375,6 @@ extension View {
         }
     }
 }
+
+#endif // canImport(SwiftUI)
 
