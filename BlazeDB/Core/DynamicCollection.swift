@@ -84,8 +84,8 @@ public final class DynamicCollection {
     private var layoutSignatureVerified: Bool = true
     
     private func applyLayoutFromStorage(_ layout: StorageLayout) {
-        // Convert [UUID: Int] to [UUID: [Int]] for backward compatibility
-        self.indexMap = layout.indexMap.mapValues { [$0] }
+        // StorageLayout.indexMap is already [UUID: [Int]], no conversion needed
+        self.indexMap = layout.indexMap
         self.nextPageIndex = layout.nextPageIndex
         self.secondaryIndexes = layout.toRuntimeIndexes()
         self.cachedSearchIndex = layout.searchIndex
