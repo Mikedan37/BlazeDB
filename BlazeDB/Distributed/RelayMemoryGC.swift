@@ -7,6 +7,7 @@
 //  Created: 2025-01-XX
 //
 
+#if !BLAZEDB_LINUX_CORE
 import Foundation
 
 /// Configuration for relay memory GC
