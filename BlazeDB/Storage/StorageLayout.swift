@@ -389,7 +389,33 @@ struct StorageLayout: Codable {
                 let (indexName, inner) = pair
                 var merged: [CompoundIndexKey: [UUID]] = [:]
                 for (key, set) in inner {
-                    let ckey = CompoundIndexKey(single: key)
+                    // Convert AnyHashable to CompoundIndexKey
+                    // For single-component keys, extract the value and create a CompoundIndexKey
+                    let component: AnyBlazeCodable
+                    // Extract base value from AnyHashable
+                    let mirror = Mirror(reflecting: key)
+                    if let baseValue = mirror.children.first?.value {
+                        if let str = baseValue as? String {
+                            component = .string(str)
+                        } else if let int = baseValue as? Int {
+                            component = .int(int)
+                        } else if let double = baseValue as? Double {
+                            component = .double(double)
+                        } else if let bool = baseValue as? Bool {
+                            component = .bool(bool)
+                        } else if let date = baseValue as? Date {
+                            component = .date(date)
+                        } else if let uuid = baseValue as? UUID {
+                            component = .uuid(uuid)
+                        } else if let data = baseValue as? Data {
+                            component = .data(data)
+                        } else {
+                            component = .string("")  // Fallback for unknown types
+                        }
+                    } else {
+                        component = .string("")  // Fallback if extraction fails
+                    }
+                    let ckey = CompoundIndexKey([component])
                     var arr = merged[ckey] ?? []
                     arr.append(contentsOf: set)
                     merged[ckey] = Array(Set(arr))
