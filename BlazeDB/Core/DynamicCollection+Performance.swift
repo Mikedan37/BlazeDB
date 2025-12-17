@@ -99,7 +99,7 @@ extension DynamicCollection {
         }
         
         // Fetch and cache
-        let records = try _fetchAllOptimized()
+        let records = try _fetchAllOptimizedPerformance()
         Self.fetchAllCache[dbKey] = (records, Date())
         
         return records
@@ -112,7 +112,7 @@ extension DynamicCollection {
     /// Optimized filter with early termination and parallel processing
     public func filterOptimized(_ isMatch: @escaping (BlazeDataRecord) -> Bool) throws -> [BlazeDataRecord] {
         // Use parallel fetchAll
-        let records = try _fetchAllOptimized()
+        let records = try _fetchAllOptimizedPerformance()
         
         // Parallel filter (for large datasets)
         if records.count > 100 {
