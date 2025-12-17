@@ -324,6 +324,9 @@ extension DynamicCollection {
                         case .date(let d): return AnyBlazeCodable(d)
                         case .uuid(let u): return AnyBlazeCodable(u)
                         case .data(let data): return AnyBlazeCodable(data)
+                        case .vector(let v): return AnyBlazeCodable(v)
+                        case .null: return AnyBlazeCodable("")  // Use empty string as sentinel for null
+                        case .array, .dictionary: return AnyBlazeCodable("")  // Arrays/dicts not supported in compound indexes
                         }
                     }
                     let indexKey = CompoundIndexKey(normalizedComponents)
