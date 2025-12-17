@@ -4,7 +4,7 @@
 
 import Foundation
 
-public struct BlazeDataRecord: Codable, Hashable, Equatable {
+public struct BlazeDataRecord: Codable, Hashable, Equatable, Sendable {
     public var storage: [String: BlazeDocumentField]
 
     public init(_ storage: [String: BlazeDocumentField]) {

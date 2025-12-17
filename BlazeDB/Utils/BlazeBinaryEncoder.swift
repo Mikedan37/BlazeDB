@@ -110,27 +110,27 @@ public enum BlazeBinaryEncoder {
     }
     
     #if !canImport(zlib)
+    /// Precomputed CRC32 lookup table (IEEE 802.3 polynomial: 0xEDB88320)
+    private static let crc32Table: [UInt32] = {
+        var table = [UInt32](repeating: 0, count: 256)
+        for i in 0..<256 {
+            var crc = UInt32(i)
+            for _ in 0..<8 {
+                crc = (crc & 1) != 0 ? (crc >> 1) ^ 0xEDB88320 : (crc >> 1)
+            }
+            table[i] = crc
+        }
+        return table
+    }()
+    
     /// Pure Swift CRC32 implementation (IEEE 802.3 polynomial)
     private static func crc32Swift(_ data: Data) -> UInt32 {
-        // Precomputed CRC32 lookup table (IEEE 802.3 polynomial: 0xEDB88320)
-        static let crcTable: [UInt32] = {
-            var table = [UInt32](repeating: 0, count: 256)
-            for i in 0..<256 {
-                var crc = UInt32(i)
-                for _ in 0..<8 {
-                    crc = (crc & 1) != 0 ? (crc >> 1) ^ 0xEDB88320 : (crc >> 1)
-                }
-                table[i] = crc
-            }
-            return table
-        }()
-        
         var crc: UInt32 = 0xFFFFFFFF
         data.withUnsafeBytes { buffer in
             let bytes = buffer.bindMemory(to: UInt8.self)
             for byte in bytes {
                 let index = Int((crc ^ UInt32(byte)) & 0xFF)
-                crc = (crc >> 8) ^ crcTable[index]
+                crc = (crc >> 8) ^ crc32Table[index]
             }
         }
         return crc ^ 0xFFFFFFFF
