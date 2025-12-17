@@ -114,9 +114,9 @@ extension DynamicCollection {
     
     // MARK: - Async Infrastructure
     
-    private static var queryCaches: [ObjectIdentifier: AsyncQueryCache] = [:]
-    private static var operationPools: [ObjectIdentifier: OperationPool] = [:]
-    private static let cacheLock = NSLock()
+    nonisolated(unsafe) private static var queryCaches: [ObjectIdentifier: AsyncQueryCache] = [:]
+    nonisolated(unsafe) private static var operationPools: [ObjectIdentifier: OperationPool] = [:]
+    nonisolated(unsafe) private static let cacheLock = NSLock()
     
     private var queryCache: AsyncQueryCache {
         let id = ObjectIdentifier(self)

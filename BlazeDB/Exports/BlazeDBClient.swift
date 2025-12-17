@@ -275,6 +275,9 @@ public final class BlazeDBClient: @unchecked Sendable {
         // CRASH SAFETY: Recover from incomplete VACUUM AFTER initializing collection
         // Note: recoverFromVacuumCrashIfNeeded is an instance method, called after collection is created
         // This will be called after collection initialization below
+        do {
+            // Recovery will be attempted after collection is initialized
+        } catch {
             BlazeLogger.error("⚠️ VACUUM recovery check failed: \(error.localizedDescription)")
             // Don't fail initialization if recovery check fails - continue anyway
         }

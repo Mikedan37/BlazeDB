@@ -212,3 +212,4 @@ enum BlazeOperationDecodeError: Error {
 
 // UUID extension is already defined in TCPRelay.swift (binaryData property)
 
+#endif // !BLAZEDB_LINUX_CORE

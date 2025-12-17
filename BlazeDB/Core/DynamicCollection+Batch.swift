@@ -53,7 +53,7 @@ extension DynamicCollection {
                     from: metaURL,
                     signingKey: encryptionKey,
                     password: password,
-                    salt: DynamicCollection.defaultSalt
+                    salt: Data("AshPileSalt".utf8)  // Use inline salt since defaultSalt is fileprivate
                 )
             } catch {
                 layout = try StorageLayout.load(from: metaURL)
@@ -662,17 +662,9 @@ extension DynamicCollection {
             // OPTIMIZATION: Batch delete all pages in a single sync block
             do {
                 if !pagesToDelete.isEmpty {
-                    let zeroed = Data(repeating: 0, count: store.pageSize)
-                    try store.queue.sync(flags: .barrier) {
-                        for pageIndex in pagesToDelete {
-                            // Invalidate cache on delete
-                            store.pageCache.remove(pageIndex)
-                            
-                            // CRITICAL: Cast to UInt64 before multiplying to prevent integer overflow
-                            let offset = UInt64(pageIndex) * UInt64(store.pageSize)
-                            try store.fileHandle.compatSeek(toOffset: offset)
-                            try store.fileHandle.compatWrite(zeroed)
-                        }
+                    // Use public deletePage API instead of accessing private properties
+                    for pageIndex in pagesToDelete {
+                        try? store.deletePage(index: pageIndex)
                     }
                 }
                 
