@@ -2347,9 +2347,10 @@ public final class DynamicCollection {
                 let oldPageIndices = pageIndices
                 
                 // Write the new record (main page overwritten last, after overflow chain is written)
-                let newPageIndices: [Int]
+                // Track allocation outside do-catch so catch block can access them
                 var allocatedPageCount = 0  // Track how many pages we allocate
                 let nextPageIndexBefore = nextPageIndex  // Save starting value for rollback
+                let newPageIndices: [Int]
                 
                 do {
                     newPageIndices = try store.writePageWithOverflow(
