@@ -109,3 +109,5 @@ enum RelayError: Error {
     case decompressionFailed
 }
 
+
+#endif // !BLAZEDB_LINUX_CORE

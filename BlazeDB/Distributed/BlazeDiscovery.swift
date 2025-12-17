@@ -67,3 +67,4 @@ public class BlazeDiscovery: ObservableObject {
     }
 }
 
+#endif // !BLAZEDB_LINUX_CORE

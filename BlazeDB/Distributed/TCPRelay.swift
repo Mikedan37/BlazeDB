@@ -227,3 +227,5 @@ public actor TCPRelay: BlazeSyncRelay {
     }
 }
 
+
+#endif // !BLAZEDB_LINUX_CORE

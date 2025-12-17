@@ -2,7 +2,7 @@ import Foundation
 
 /// Compound index key for multi-field indexes
 /// Used to index records by multiple fields simultaneously
-public struct CompoundIndexKey: Hashable {
+public struct CompoundIndexKey: Hashable, Codable {
     public let components: [BlazeDocumentField]
     
     public init(_ components: [AnyBlazeCodable]) {

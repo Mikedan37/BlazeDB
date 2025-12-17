@@ -271,3 +271,5 @@ public actor ConnectionPool {
     }
 }
 
+
+#endif // !BLAZEDB_LINUX_CORE

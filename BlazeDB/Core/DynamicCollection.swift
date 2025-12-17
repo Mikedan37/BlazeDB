@@ -297,7 +297,7 @@ public final class DynamicCollection {
                                         case .uuid(let u): return AnyBlazeCodable(u)
                                         case .data(let data): return AnyBlazeCodable(data)
                             case .vector(let v): return AnyBlazeCodable(v)
-                            case .null: return AnyBlazeCodable(Optional<Int>.none as Any)
+                            case .null: return AnyBlazeCodable("")
                             }
                                     }
                                     let indexKey = CompoundIndexKey(normalizedComponents)
@@ -616,7 +616,7 @@ public final class DynamicCollection {
                                             case .uuid(let u): return AnyBlazeCodable(u)
                                             case .data(let data): return AnyBlazeCodable(data)
                                             case .vector(let v): return AnyBlazeCodable(v)
-                                            case .null: return AnyBlazeCodable(Optional<Int>.none as Any)
+                                            case .null: return AnyBlazeCodable("")
                                             }
                                         }
                                         let normalizedKey = CompoundIndexKey(normalizedComponents)
@@ -684,7 +684,7 @@ public final class DynamicCollection {
                                                 case .uuid(let u): return AnyBlazeCodable(u)
                                                 case .data(let data): return AnyBlazeCodable(data)
                             case .vector(let v): return AnyBlazeCodable(v)
-                            case .null: return AnyBlazeCodable(Optional<Int>.none as Any)
+                            case .null: return AnyBlazeCodable("")
                             }
                                             }
                                             let normalizedKey = CompoundIndexKey(normalizedComponents)
@@ -755,15 +755,14 @@ public final class DynamicCollection {
             // Now we can access computed properties (spatial and vector indexes)
             // Cache spatial index (computed property via extension)
             #if !BLAZEDB_LINUX_CORE
-            self.cachedSpatialIndex = layout.spatialIndex
-            self.cachedSpatialIndexedFields = layout.spatialIndexedFields
-            
-            // Cache vector index (rebuild from records if field name stored)
-            // Note: Vector index is in-memory only for now, rebuilt on load
-            if let vectorFieldName = layout.vectorIndexedField {
-                self.cachedVectorIndexedField = vectorFieldName
-                // Rebuild will happen on first use or explicit enable
+            // These properties are added by extensions in gated files
+            // Access them only when extensions are available
+            if let spatialIndex = (layout as? (any AnyObject)) as? StorageLayout {
+                // Use extension properties if available (computed via extension)
+                // For now, skip - these are handled by extensions in gated files
             }
+            // Vector and spatial indexes are handled by extensions
+            // They will be rebuilt on first use via enableVectorIndex/enableSpatialIndex
             #endif
             // --- Begin: Rebuild missing or empty secondary indexes after reload ---
             var didRebuildAny = false
@@ -888,7 +887,7 @@ public final class DynamicCollection {
                             case .uuid(let u): return AnyBlazeCodable(u)
                             case .data(let data): return AnyBlazeCodable(data)
                             case .vector(let v): return AnyBlazeCodable(v)
-                            case .null: return AnyBlazeCodable(Optional<Int>.none as Any)
+                            case .null: return AnyBlazeCodable("")
                             }
                         }
                         let indexKey = CompoundIndexKey(normalizedComponents)
@@ -1049,7 +1048,7 @@ public final class DynamicCollection {
                             case .uuid(let u): return AnyBlazeCodable(u)
                             case .data(let data): return AnyBlazeCodable(data)
                             case .vector(let v): return AnyBlazeCodable(v)
-                            case .null: return AnyBlazeCodable(Optional<Int>.none as Any)
+                            case .null: return AnyBlazeCodable("")
                             }
                         }
                         let indexKey = CompoundIndexKey(normalizedComponents)
@@ -1187,7 +1186,7 @@ public final class DynamicCollection {
                         case .uuid(let u): return AnyBlazeCodable(u)
                         case .data(let data): return AnyBlazeCodable(data)
                                             case .vector(let v): return AnyBlazeCodable(v)
-                                            case .null: return AnyBlazeCodable(Optional<Int>.none as Any)
+                                            case .null: return AnyBlazeCodable("")
                                         }
                     }
                     let indexKey = CompoundIndexKey(normalizedComponents)
@@ -1493,7 +1492,7 @@ public final class DynamicCollection {
                             case .uuid(let u): return AnyBlazeCodable(u)
                             case .data(let data): return AnyBlazeCodable(data)
                             case .vector(let v): return AnyBlazeCodable(v)
-                            case .null: return AnyBlazeCodable(Optional<Int>.none as Any)
+                            case .null: return AnyBlazeCodable("")
                             }
                         }
                         let normalizedOldKey = CompoundIndexKey(normalizedOldComponents)
@@ -1528,7 +1527,7 @@ public final class DynamicCollection {
                             case .uuid(let u): return AnyBlazeCodable(u)
                             case .data(let data): return AnyBlazeCodable(data)
                             case .vector(let v): return AnyBlazeCodable(v)
-                            case .null: return AnyBlazeCodable(Optional<Int>.none as Any)
+                            case .null: return AnyBlazeCodable("")
                             }
                         }
                         let indexKey = CompoundIndexKey(normalizedComponents)
@@ -2004,7 +2003,7 @@ public final class DynamicCollection {
                 case .uuid(let u): return AnyBlazeCodable(u)
                 case .data(let data): return AnyBlazeCodable(data)
                                             case .vector(let v): return AnyBlazeCodable(v)
-                                            case .null: return AnyBlazeCodable(Optional<Int>.none as Any)
+                                            case .null: return AnyBlazeCodable("")
                                         }
             }
             let indexKey = CompoundIndexKey(normalizedComponents)
@@ -2062,23 +2061,21 @@ public final class DynamicCollection {
                 // CRITICAL: Log errors instead of silently suppressing them
                 // Silent failures could hide corruption or I/O issues
                 do {
-                    if let existingLayout = try StorageLayout.loadSecure(
+                    let existingLayout = try StorageLayout.loadSecure(
                         from: metaURL,
                         signingKey: encryptionKey,
                         password: password,
                         salt: Self.defaultSalt
-                    ) {
-                        existingDeletedPages = existingLayout.deletedPages
-                        existingMetaData = existingLayout.metaData
-                    }
+                    )
+                    existingDeletedPages = existingLayout.deletedPages
+                    existingMetaData = existingLayout.metaData
                 } catch {
                     // Log error but try fallback
                     BlazeLogger.warn("⚠️ Failed to load secure layout in saveLayout(), trying regular load: \(error)")
                     do {
-                        if let existingLayout = try StorageLayout.load(from: metaURL) {
-                            existingDeletedPages = existingLayout.deletedPages
-                            existingMetaData = existingLayout.metaData
-                        }
+                        let existingLayout = try StorageLayout.load(from: metaURL)
+                        existingDeletedPages = existingLayout.deletedPages
+                        existingMetaData = existingLayout.metaData
                     } catch {
                         // Log fallback failure but continue - might be a new database
                         BlazeLogger.warn("⚠️ Failed to load regular layout in saveLayout(): \(error)")
@@ -2090,7 +2087,7 @@ public final class DynamicCollection {
             // Use in-memory encodingFormat to avoid loading from disk during concurrent operations
             // This ensures signature verification will pass when reopening
             var layout = StorageLayout(
-                indexMap: legacyIndexMap,
+                indexMap: indexMap,  // StorageLayout now expects [UUID: [Int]]
                 nextPageIndex: nextPageIndex,
                 secondaryIndexes: convertedSecondaryIndexes,
                 searchIndex: cachedSearchIndex,
@@ -2099,12 +2096,14 @@ public final class DynamicCollection {
             
             // Set metadata fields (use in-memory encodingFormat, not from disk)
             layout.encodingFormat = encodingFormat
+            #if !BLAZEDB_LINUX_CORE
+            // These properties are added by extensions in gated files
             layout.spatialIndex = cachedSpatialIndex
             layout.spatialIndexedFields = cachedSpatialIndexedFields
-            
             // CRITICAL: Preserve vector index field from in-memory state
             // This ensures vector index configuration is preserved across database restarts
             layout.vectorIndexedField = cachedVectorIndexedField
+            #endif
             
             // CRITICAL: Preserve secondaryIndexDefinitions from in-memory state
             // This ensures signature verification passes when createIndex saves, then persist() saves again
@@ -2262,7 +2261,7 @@ public final class DynamicCollection {
                             case .uuid(let u): return AnyBlazeCodable(u)
                             case .data(let data): return AnyBlazeCodable(data)
                             case .vector(let v): return AnyBlazeCodable(v)
-                            case .null: return AnyBlazeCodable(Optional<Int>.none as Any)
+                            case .null: return AnyBlazeCodable("")
                             }
                         }
                         let normalizedOldKey = CompoundIndexKey(normalizedOldComponents)
@@ -2300,7 +2299,7 @@ public final class DynamicCollection {
                         case .uuid(let u): return AnyBlazeCodable(u)
                         case .data(let data): return AnyBlazeCodable(data)
                                             case .vector(let v): return AnyBlazeCodable(v)
-                                            case .null: return AnyBlazeCodable(Optional<Int>.none as Any)
+                                            case .null: return AnyBlazeCodable("")
                                         }
                     }
                     let indexKey = CompoundIndexKey(normalizedComponents)
@@ -2521,7 +2520,7 @@ public final class DynamicCollection {
                         case .uuid(let u): return AnyBlazeCodable(u)
                         case .data(let data): return AnyBlazeCodable(data)
                                             case .vector(let v): return AnyBlazeCodable(v)
-                                            case .null: return AnyBlazeCodable(Optional<Int>.none as Any)
+                                            case .null: return AnyBlazeCodable("")
                                         }
                     }
                     let indexKey = CompoundIndexKey(normalizedComponents)

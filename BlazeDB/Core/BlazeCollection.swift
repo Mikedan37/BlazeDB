@@ -25,7 +25,8 @@ public final class BlazeCollection<Record: BlazeRecord> {
 
         if FileManager.default.fileExists(atPath: metaURL.path) {
             let layout = try StorageLayout.load(from: metaURL)
-            self.indexMap = layout.indexMap
+            // Convert [UUID: [Int]] to [UUID: Int] (take first page only for legacy compatibility)
+            self.indexMap = layout.indexMap.mapValues { $0.first ?? 0 }
             self.nextPageIndex = layout.nextPageIndex
         }
     }
@@ -161,8 +162,10 @@ public final class BlazeCollection<Record: BlazeRecord> {
     
     private func saveLayout() throws {
         // Prepare full layout for persistence
+        // Convert [UUID: Int] to [UUID: [Int]] for StorageLayout (legacy compatibility)
+        let convertedIndexMap = indexMap.mapValues { [$0] }
         var layout = StorageLayout(
-            indexMap: indexMap,
+            indexMap: convertedIndexMap,
             nextPageIndex: nextPageIndex,
             secondaryIndexes: [:]
         )
@@ -190,3 +193,5 @@ public final class BlazeCollection<Record: BlazeRecord> {
         return true
     }
 }
+
+#endif // !BLAZEDB_LINUX_CORE

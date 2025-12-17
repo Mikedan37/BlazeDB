@@ -89,10 +89,8 @@ public final class KeyManager {
         return derivedKey.prefix(keyLength)
     }
 
+    #if canImport(Security) && (os(macOS) || os(iOS) || os(watchOS) || os(tvOS))
     private static func loadSecureEnclaveKey(label: String, createIfMissing: Bool) throws -> SymmetricKey {
-        #if canImport(Security) && (os(macOS) || os(iOS) || os(watchOS) || os(tvOS))
-        import Security
-        
         let access = SecAccessControlCreateWithFlags(nil,
                                                       kSecAttrAccessibleWhenUnlockedThisDeviceOnly,
                                                       .privateKeyUsage,
@@ -137,11 +135,13 @@ public final class KeyManager {
 
         let dummyKey = SymmetricKey(size: .bits256)
         return dummyKey
-        #else
+    }
+    #else
+    private static func loadSecureEnclaveKey(label: String, createIfMissing: Bool) throws -> SymmetricKey {
         // Secure Enclave not available on this platform
         throw KeyManagerError.secureEnclaveUnavailable
-        #endif
     }
+    #endif
 
     private static func deriveKeyFromPassword(_ password: String, salt: Data) throws -> SymmetricKey {
         guard password.count >= 8 else {

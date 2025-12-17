@@ -909,3 +909,5 @@ public enum SyncError: Error, LocalizedError {
 }
 
 
+
+#endif // !BLAZEDB_LINUX_CORE

@@ -445,3 +445,5 @@ public enum TopologyError: Error, LocalizedError {
     }
 }
 
+
+#endif // !BLAZEDB_LINUX_CORE

@@ -160,3 +160,5 @@ public actor BlazeServer {
         return Array(connections.keys)
     }
 }
+
+#endif // !BLAZEDB_LINUX_CORE
