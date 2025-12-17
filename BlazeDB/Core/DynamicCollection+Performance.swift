@@ -112,7 +112,9 @@ extension DynamicCollection {
     /// This is a duplicate - removed to avoid redeclaration error
     
     /// Optimized filter with early termination and parallel processing
-    public func filterOptimized(_ isMatch: @escaping (BlazeDataRecord) -> Bool) throws -> [BlazeDataRecord] {
+    /// Note: This method is defined in DynamicCollection+Optimized.swift
+    /// This is a duplicate - removed to avoid redeclaration error
+    public func filterOptimizedPerformance(_ isMatch: @escaping (BlazeDataRecord) -> Bool) throws -> [BlazeDataRecord] {
         // Use parallel fetchAll
         let records = try _fetchAllOptimizedPerformance()
         
