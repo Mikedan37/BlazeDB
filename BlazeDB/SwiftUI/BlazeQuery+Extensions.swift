@@ -1,6 +1,6 @@
 // MARK: - SwiftUI Binding Extensions
 
-#if canImport(SwiftUI)
+#if canImport(SwiftUI) && (os(macOS) || os(iOS) || os(watchOS) || os(tvOS))
 import SwiftUI
 
 extension BlazeDataRecord {
@@ -132,5 +132,5 @@ public class ObservableQuery: ObservableObject {
     }
 }
 
-#endif
+#endif // canImport(SwiftUI) && (os(macOS) || os(iOS) || os(watchOS) || os(tvOS))
 

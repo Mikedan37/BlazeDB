@@ -9,7 +9,7 @@
 
 import Foundation
 
-#if canImport(SwiftUI)
+#if canImport(SwiftUI) && (os(macOS) || os(iOS) || os(watchOS) || os(tvOS))
 import SwiftUI
 
 // MARK: - Type-Safe BlazeQuery
@@ -297,4 +297,4 @@ extension View {
     }
 }
 
-#endif // canImport(SwiftUI)
+#endif // canImport(SwiftUI) && (os(macOS) || os(iOS) || os(watchOS) || os(tvOS))
