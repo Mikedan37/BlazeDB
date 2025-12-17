@@ -32,8 +32,7 @@ extension DynamicCollection: MetaStore {
                 password: password,
                 salt: salt
             )
-            // Update in-memory metaData for future fetches
-            self.metaData = layout.metaData
+            // metaData is stored in StorageLayout, not DynamicCollection
             return layout.metaData
         } catch let firstError {
             BlazeLogger.warn("⚠️ [FETCHMETA] First attempt failed: \(firstError). Retrying after brief delay...")
@@ -84,9 +83,8 @@ extension DynamicCollection: MetaStore {
         layout.metaData = newMeta
         try layout.saveSecure(to: metaURLPath, signingKey: encryptionKey)
         
-        // PERFORMANCE: Update in-memory metaData to avoid loading from disk in saveLayout()
-        // This significantly improves delete performance by avoiding expensive signature verification
-        self.metaData = newMeta
+        // metaData is stored in StorageLayout, not DynamicCollection
+        // It will be loaded from disk when needed
     }
 }
 
