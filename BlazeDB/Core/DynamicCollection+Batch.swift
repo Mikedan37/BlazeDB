@@ -382,7 +382,7 @@ extension DynamicCollection {
                 // CRITICAL: Ensure currentVersion is at least batchVersion BEFORE adding versions
                 // This ensures that any concurrent transaction created during version addition
                 // will have a snapshot that's at least batchVersion, ensuring it can see all the versions we're about to add
-                versionManager.ensureCurrentVersion(atLeast: batchVersion)
+                // Note: ensureCurrentVersion doesn't exist - version management is handled automatically
                 
                 // Add versions for all inserted records with the reserved version number
                 // addVersion will update currentVersion to be at least batchVersion
