@@ -5,6 +5,7 @@
 //  Network compression for distributed sync (safe Swift implementation)
 //
 
+#if !BLAZEDB_LINUX_CORE
 import Foundation
 
 #if canImport(Compression)
@@ -134,4 +135,5 @@ extension TCPRelay {
 }
 
 #endif // canImport(Compression)
+#endif // !BLAZEDB_LINUX_CORE
 

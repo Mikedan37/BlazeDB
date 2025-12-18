@@ -105,7 +105,7 @@ extension QueryBuilder {
 }
 
 private struct AssociatedKeys {
-    static var indexHints: UInt8 = 0
-    static var forceIndexSelection: UInt8 = 1
+    nonisolated(unsafe) static var indexHints: UInt8 = 0
+    nonisolated(unsafe) static var forceIndexSelection: UInt8 = 1
 }
 

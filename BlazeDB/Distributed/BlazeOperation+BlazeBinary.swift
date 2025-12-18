@@ -15,15 +15,18 @@ extension BlazeOperation {
         data.reserveCapacity(200)  // Pre-allocate for performance
         
         // Operation ID (16 bytes UUID)
-        data.append(op.id.binaryData)
+        let idBytes = withUnsafeBytes(of: op.id.uuid) { Data($0) }
+        data.append(idBytes)
         
         // Timestamp (8 bytes counter + 16 bytes nodeId)
         var counter = op.timestamp.counter.bigEndian
         data.append(Data(bytes: &counter, count: 8))
-        data.append(op.timestamp.nodeId.binaryData)
+        let timestampNodeIdBytes = withUnsafeBytes(of: op.timestamp.nodeId.uuid) { Data($0) }
+        data.append(timestampNodeIdBytes)
         
         // Node ID (16 bytes UUID)
-        data.append(op.nodeId.binaryData)
+        let nodeIdBytes = withUnsafeBytes(of: op.nodeId.uuid) { Data($0) }
+        data.append(nodeIdBytes)
         
         // Operation type (1 byte)
         let typeByte: UInt8
@@ -44,7 +47,8 @@ extension BlazeOperation {
         data.append(collectionBytes)
         
         // Record ID (16 bytes UUID)
-        data.append(op.recordId.binaryData)
+        let recordIdBytes = withUnsafeBytes(of: op.recordId.uuid) { Data($0) }
+        data.append(recordIdBytes)
         
         // Changes (encode as BlazeDataRecord using BlazeBinary)
         let changesRecord = BlazeDataRecord(op.changes)
@@ -57,7 +61,8 @@ extension BlazeOperation {
         // Dependencies (1 byte count + UUIDs)
         data.append(UInt8(op.dependencies.count))
         for dep in op.dependencies {
-            data.append(dep.binaryData)
+            let depBytes = withUnsafeBytes(of: dep.uuid) { Data($0) }
+            data.append(depBytes)
         }
         
         // Role (1 byte: 0=nil, 1=server, 2=client)
@@ -71,8 +76,9 @@ extension BlazeOperation {
         data.append(op.nonce)
         
         // Expires at (8 bytes timestamp)
-        var expiresTimestamp = op.expiresAt.timeIntervalSince1970.bigEndian
-        data.append(Data(bytes: &expiresTimestamp, count: 8))
+        let expiresTimestamp = op.expiresAt.timeIntervalSince1970
+        var expiresTimestampBytes = expiresTimestamp.bitPattern.bigEndian
+        data.append(Data(bytes: &expiresTimestampBytes, count: 8))
         
         // Signature (1 byte flag + optional 32 bytes)
         if let sig = op.signature {
@@ -91,7 +97,10 @@ extension BlazeOperation {
         
         // Operation ID (16 bytes)
         guard offset + 16 <= data.count else { throw BlazeOperationDecodeError.invalidData }
-        let id = UUID(binaryData: data[offset..<offset+16])
+        let idBytes = data[offset..<offset+16]
+        let id = idBytes.withUnsafeBytes { bytes in
+            UUID(uuid: bytes.load(as: uuid_t.self))
+        }
         offset += 16
         
         // Timestamp counter (8 bytes)
@@ -101,13 +110,19 @@ extension BlazeOperation {
         
         // Timestamp nodeId (16 bytes)
         guard offset + 16 <= data.count else { throw BlazeOperationDecodeError.invalidData }
-        let timestampNodeId = UUID(binaryData: data[offset..<offset+16])
+        let timestampNodeIdBytes = data[offset..<offset+16]
+        let timestampNodeId = timestampNodeIdBytes.withUnsafeBytes { bytes in
+            UUID(uuid: bytes.load(as: uuid_t.self))
+        }
         offset += 16
         let timestamp = LamportTimestamp(counter: counter, nodeId: timestampNodeId)
         
         // Node ID (16 bytes)
         guard offset + 16 <= data.count else { throw BlazeOperationDecodeError.invalidData }
-        let nodeId = UUID(binaryData: data[offset..<offset+16])
+        let nodeIdBytes = data[offset..<offset+16]
+        let nodeId = nodeIdBytes.withUnsafeBytes { bytes in
+            UUID(uuid: bytes.load(as: uuid_t.self))
+        }
         offset += 16
         
         // Operation type (1 byte)
@@ -134,7 +149,10 @@ extension BlazeOperation {
         
         // Record ID (16 bytes)
         guard offset + 16 <= data.count else { throw BlazeOperationDecodeError.invalidData }
-        let recordId = UUID(binaryData: data[offset..<offset+16])
+        let recordIdBytes = data[offset..<offset+16]
+        let recordId = recordIdBytes.withUnsafeBytes { bytes in
+            UUID(uuid: bytes.load(as: uuid_t.self))
+        }
         offset += 16
         
         // Changes (4 bytes length + BlazeBinary data)
@@ -154,7 +172,11 @@ extension BlazeOperation {
         var dependencies: [UUID] = []
         for _ in 0..<depCount {
             guard offset + 16 <= data.count else { throw BlazeOperationDecodeError.invalidData }
-            dependencies.append(UUID(binaryData: data[offset..<offset+16]))
+            let depBytes = data[offset..<offset+16]
+            let dep = depBytes.withUnsafeBytes { bytes in
+                UUID(uuid: bytes.load(as: uuid_t.self))
+            }
+            dependencies.append(dep)
             offset += 16
         }
         
@@ -171,7 +193,8 @@ extension BlazeOperation {
         
         // Expires at (8 bytes)
         guard offset + 8 <= data.count else { throw BlazeOperationDecodeError.invalidData }
-        let expiresTimestamp = data[offset..<offset+8].withUnsafeBytes { $0.load(as: Double.self).bigEndian }
+        let expiresTimestampBits = data[offset..<offset+8].withUnsafeBytes { $0.load(as: UInt64.self).bigEndian }
+        let expiresTimestamp = Double(bitPattern: expiresTimestampBits)
         let expiresAt = Date(timeIntervalSince1970: expiresTimestamp)
         offset += 8
         

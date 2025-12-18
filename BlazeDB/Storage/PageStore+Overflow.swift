@@ -216,6 +216,16 @@ extension PageStore {
         plaintext: Data,
         allocatePage: () throws -> Int
     ) throws -> [Int] {
+        #if os(Linux)
+        // Linux doesn't support flags parameter for sync
+        return try queue.sync {
+            try _writePageWithOverflowLocked(
+                index: index,
+                plaintext: plaintext,
+                allocatePage: allocatePage
+            )
+        }
+        #else
         return try queue.sync(flags: .barrier) {
             try _writePageWithOverflowLocked(
                 index: index,
@@ -223,6 +233,7 @@ extension PageStore {
                 allocatePage: allocatePage
             )
         }
+        #endif
     }
     
     // MARK: - Read with Overflow Support

@@ -429,6 +429,6 @@ extension QueryBuilder {
 }
 
 private struct ComputedFieldsKeys {
-    static var computedFields: UInt8 = 0
+    nonisolated(unsafe) static var computedFields: UInt8 = 0
 }
 

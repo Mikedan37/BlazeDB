@@ -20,7 +20,7 @@ public protocol BlazeSyncRelay {
 }
 
 /// Sync role: Server has priority in conflicts, Client defers to server
-public enum SyncRole: String, Codable {
+public enum SyncRole: String, Codable, Sendable {
     case server      // Server has priority (wins conflicts)
     case client      // Client defers to server (server wins conflicts)
     
@@ -37,7 +37,7 @@ public enum SyncRole: String, Codable {
 
 /// Manages synchronization between local BlazeDB and remote nodes
 public actor BlazeSyncEngine {
-    private let localDB: BlazeDBClient
+    nonisolated(unsafe) private let localDB: BlazeDBClient
     private let relay: BlazeSyncRelay
     private let opLog: OperationLog
     private let nodeId: UUID
@@ -161,7 +161,7 @@ public actor BlazeSyncEngine {
         isRunning = false
         syncTask?.cancel()
         batchTimer?.cancel()
-        changeObserverToken?.cancel()
+        changeObserverToken?.invalidate()
         prefetchTask?.cancel()
         gcTask?.cancel()
         
@@ -294,7 +294,7 @@ public actor BlazeSyncEngine {
                 // Security validation uses nodeId and operation signatures instead.
             )
         } catch {
-            BlazeLogger.warn("Security validation failed for batch", error: error)
+            BlazeLogger.warn("Security validation failed for batch: \(error.localizedDescription)")
             // Fall back to individual validation for better error reporting
             for op in sorted {
                 do {
@@ -303,7 +303,7 @@ public actor BlazeSyncEngine {
                         userId: op.nodeId
                     )
                 } catch {
-                    BlazeLogger.warn("Security validation failed for operation \(op.id)", error: error)
+                    BlazeLogger.warn("Security validation failed for operation \(op.id): \(error.localizedDescription)")
                     continue
                 }
             }

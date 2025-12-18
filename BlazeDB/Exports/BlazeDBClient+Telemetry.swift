@@ -6,6 +6,7 @@
 //  Created by Michael Danylchuk on 11/12/25.
 //
 
+#if !BLAZEDB_LINUX_CORE
 import Foundation
 
 // MARK: - Telemetry Manager
@@ -352,4 +353,4 @@ extension QueryBuilder {
         }
     }
 }
-
+#endif // !BLAZEDB_LINUX_CORE

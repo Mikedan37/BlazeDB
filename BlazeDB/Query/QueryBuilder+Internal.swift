@@ -39,6 +39,6 @@ extension QueryBuilder {
         vectorQueryState = (field, embedding, limit, threshold)
     }
     
-    private static var vectorQueryKey: UInt8 = 0
+    nonisolated(unsafe) private static var vectorQueryKey: UInt8 = 0
 }
 

@@ -202,6 +202,7 @@ extension BlazeDBClient {
     
     /// Track encoding errors in telemetry
     internal func trackEncodingError(_ error: Error, operation: String) {
+        #if !BLAZEDB_LINUX_CORE
         telemetry.record(
             operation: "encoding_error",
             duration: 0,
@@ -209,7 +210,7 @@ extension BlazeDBClient {
             recordCount: 0,
             error: error
         )
-        
+        #endif
         BlazeLogger.error("🔴 Encoding error in \(operation): \(error)")
     }
 }

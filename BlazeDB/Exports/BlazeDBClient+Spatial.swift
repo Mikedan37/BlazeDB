@@ -7,6 +7,7 @@
 //  Created by Auto on 1/XX/25.
 //
 
+#if !BLAZEDB_LINUX_CORE
 import Foundation
 
 // MARK: - Spatial Index Management
@@ -61,4 +62,4 @@ extension BlazeDBClient {
         try collection.rebuildSpatialIndex()
     }
 }
-
+#endif // !BLAZEDB_LINUX_CORE

@@ -8,6 +8,7 @@
 //  Created by Auto on 12/15/25.
 //
 
+#if !BLAZEDB_LINUX_CORE
 import Foundation
 
 /// Protocol for server transport operations (TCP listening, connection handling)
@@ -233,4 +234,6 @@ public enum ServerTransportError: Error, LocalizedError {
         }
     }
 }
+
+#endif // !BLAZEDB_LINUX_CORE
 

@@ -6,6 +6,7 @@
 //  Uses BlazeBinary encoding for maximum performance
 //
 
+#if !BLAZEDB_LINUX_CORE
 import Foundation
 
 #if canImport(Network)
@@ -426,4 +427,5 @@ private struct SubscribeRequest {
 }
 
 #endif // canImport(Network)
+#endif // !BLAZEDB_LINUX_CORE
 

@@ -146,7 +146,11 @@ public final class GraphQuery<T> {
         let policyEngine = client.rls.policyEngine
         
         // OPTIMIZATION 4: Pre-filter policies and cache enabled state (reduces lock contention)
-        let (isEnabled, applicablePolicies) = policyEngine.getApplicablePolicies(operation: PolicyOperation.select)
+        let isEnabled = policyEngine.isEnabled()
+        let allPolicies = policyEngine.getPolicies()
+        let applicablePolicies = allPolicies.filter { policy in
+            policy.operation == PolicyOperation.select || policy.operation == .all
+        }
         
         guard isEnabled && !applicablePolicies.isEmpty else {
             // No policies = allow all (fast path)
@@ -164,13 +168,10 @@ public final class GraphQuery<T> {
         // - Reduces dictionary lookups where possible
         let rlsFilter: (BlazeDataRecord) -> Bool = { record in
             // Fast path: Check policies with pre-filtered list
-            return policyEngine.isAllowedOptimized(
+            return policyEngine.isAllowed(
                 operation: PolicyOperation.select,
                 context: securityContext,
-                record: record,
-                applicablePolicies: applicablePolicies,
-                userID: userID,
-                teamIDSet: teamIDSet
+                record: record
             )
         }
         
@@ -359,7 +360,7 @@ public final class GraphQuery<T> {
     /// Returns: Array of BlazeGraphPoint<X, Y> where:
     /// - X is Date (if date binning) or the field type
     /// - Y is Double (for numeric aggregations) or Int (for count)
-    public func toPoints() throws -> [BlazeGraphPoint<Any, Any>] {
+    public func toPoints() throws -> [BlazeGraphPoint<any Sendable, any Sendable>] {
         guard let xField = xField else {
             throw BlazeDBError.invalidQuery(reason: "X-axis not specified. Call .x() first.", suggestion: "Use .x(field) or .x(field, .day) to set X-axis")
         }
@@ -482,48 +483,48 @@ public final class GraphQuery<T> {
         print("📊 [GRAPHQUERY] Grouped result has \(groupedResult.groups.count) groups")
         
         // Convert grouped results to graph points
-        var points: [BlazeGraphPoint<Any, Any>] = []
+        var points: [BlazeGraphPoint<any Sendable, any Sendable>] = []
         
         for (groupKey, aggregationResult) in groupedResult.groups {
             print("📊 [GRAPHQUERY] Processing group: key=\(groupKey), aggregationResult=\(aggregationResult)")
-            // Extract X value
-            let xValue: Any
+            // Extract X value (must be Sendable)
+            let xValue: any Sendable
             
             if let dateBin = xDateBin {
                 // Date binning: parse ISO8601 date from group key
                 // Group key format: "2025-01-15T00:00:00Z" (truncated date)
                 if let date = parseDateFromGroupKey(groupKey, bin: dateBin) {
-                    xValue = date
+                    xValue = date as Date
                 } else {
                     BlazeLogger.warn("Graph: Failed to parse date from group key: \(groupKey)")
                     continue
                 }
             } else {
-                // Category grouping: use group key as-is
-                xValue = groupKey
+                // Category grouping: use group key as-is (String is Sendable)
+                xValue = groupKey as String
             }
             
-            // Extract Y value
+            // Extract Y value (must be Sendable)
             guard let yField = aggregationResult.values["y_value"] else {
                 print("⚠️ [GRAPHQUERY] Missing y_value in aggregation result. Available keys: \(aggregationResult.values.keys.joined(separator: ", "))")
                 BlazeLogger.warn("Graph: Missing y_value in aggregation result. Available keys: \(aggregationResult.values.keys.joined(separator: ", "))")
                 continue
             }
             
-            let yValue: Any
+            let yValue: any Sendable
             switch yAggregation {
             case .count:
-                yValue = yField.intValue ?? 0
+                yValue = (yField.intValue ?? 0) as Int
             case .sum, .avg:
-                yValue = yField.doubleValue ?? 0.0
+                yValue = (yField.doubleValue ?? 0.0) as Double
             case .min, .max:
                 // Min/max can return various types, but for graphs we'll use double
                 if let double = yField.doubleValue {
-                    yValue = double
+                    yValue = double as Double
                 } else if let int = yField.intValue {
-                    yValue = Double(int)
+                    yValue = Double(int) as Double
                 } else {
-                    yValue = 0.0
+                    yValue = 0.0 as Double
                 }
             }
             
@@ -606,10 +607,10 @@ public final class GraphQuery<T> {
     }
     
     private func applyDateTruncation(
-        points: [BlazeGraphPoint<Any, Any>],
+        points: [BlazeGraphPoint<any Sendable, any Sendable>],
         field: String,
         bin: BlazeDateBin
-    ) throws -> [BlazeGraphPoint<Any, Any>] {
+    ) throws -> [BlazeGraphPoint<any Sendable, any Sendable>] {
         // Re-execute query with proper date truncation
         // For now, we'll truncate dates in-memory from the grouped results
         // In the future, we could add DATE_TRUNC to the query engine
@@ -620,20 +621,20 @@ public final class GraphQuery<T> {
     }
     
     private func applyMovingWindow(
-        points: [BlazeGraphPoint<Any, Any>],
+        points: [BlazeGraphPoint<any Sendable, any Sendable>],
         size: Int,
         type: MovingWindowType
-    ) -> [BlazeGraphPoint<Any, Any>] {
+    ) -> [BlazeGraphPoint<any Sendable, any Sendable>] {
         guard size > 0, !points.isEmpty else { return points }
         
-        var result: [BlazeGraphPoint<Any, Any>] = []
+        var result: [BlazeGraphPoint<any Sendable, any Sendable>] = []
         
         for i in 0..<points.count {
             let windowStart = max(0, i - size + 1)
             let windowEnd = i + 1
             let window = Array(points[windowStart..<windowEnd])
             
-            let windowValue: Any
+            let windowValue: any Sendable
             
             switch type {
             case .average:
@@ -646,7 +647,7 @@ public final class GraphQuery<T> {
                     }
                     return nil
                 }.reduce(0, +)
-                windowValue = sum / Double(window.count)
+                windowValue = (sum / Double(window.count)) as Double
                 
             case .sum:
                 // Calculate sum of Y values in window
@@ -658,7 +659,7 @@ public final class GraphQuery<T> {
                     }
                     return nil
                 }.reduce(0, +)
-                windowValue = sum
+                windowValue = sum as Double
             }
             
             // Keep original X, replace Y with window value
@@ -668,7 +669,7 @@ public final class GraphQuery<T> {
         return result
     }
     
-    private func sortPointsByX(_ points: [BlazeGraphPoint<Any, Any>]) -> [BlazeGraphPoint<Any, Any>] {
+    private func sortPointsByX(_ points: [BlazeGraphPoint<any Sendable, any Sendable>]) -> [BlazeGraphPoint<any Sendable, any Sendable>] {
         return points.sorted { p1, p2 in
             let comparison: Bool
             // Compare X values

@@ -8,6 +8,7 @@
 //  Created by Michael Danylchuk on 7/1/25.
 //
 
+#if !BLAZEDB_LINUX_CORE
 import Foundation
 
 // MARK: - Async Extensions for QueryBuilder
@@ -172,4 +173,6 @@ extension QueryBuilder {
         }
     }
 }
+
+#endif // !BLAZEDB_LINUX_CORE
 

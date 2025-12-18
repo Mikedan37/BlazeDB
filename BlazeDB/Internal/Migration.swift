@@ -21,13 +21,22 @@ extension BlazeDBClient {
 
     /// 🧠 Reads schema version from the DB file or defaults to 0
     private func loadSchemaVersion() throws -> Int {
-        let meta = try metaStore.fetchMeta()
+        #if !BLAZEDB_LINUX_CORE
+        let meta = try collection.fetchMeta()
         return meta["schemaVersion"]?.intValue ?? 0
+        #else
+        // Linux: Schema version not supported, default to 0
+        return 0
+        #endif
     }
 
     /// 💾 Writes the schema version to the meta section
     private func saveSchemaVersion(_ version: Int) throws {
-        try metaStore.updateMeta(["schemaVersion": .int(version)])
+        #if !BLAZEDB_LINUX_CORE
+        try collection.updateMeta(["schemaVersion": .int(version)])
+        #else
+        // Linux: Schema version not supported, no-op
+        #endif
     }
 
     /// 🛡️ Backup DB file before applying migration

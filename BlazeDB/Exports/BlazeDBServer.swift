@@ -6,6 +6,7 @@
 //  over the BlazeBinary protocol on a TCP port.
 //
 
+#if !BLAZEDB_LINUX_CORE
 import Foundation
 
 /// Configuration for running BlazeDB in server mode.
@@ -94,5 +95,5 @@ public enum BlazeDBServer {
         return server
     }
 }
-
+#endif // !BLAZEDB_LINUX_CORE
 

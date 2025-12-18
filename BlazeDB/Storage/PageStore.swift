@@ -21,7 +21,7 @@ import Glibc
 import BlazeDB
 #endif
 
-private extension FileHandle {
+internal extension FileHandle {
     func compatSeek(toOffset offset: UInt64) throws {
         if #available(iOS 13.4, macOS 10.15.4, *) {
             try self.seek(toOffset: offset)
@@ -57,14 +57,35 @@ private extension FileHandle {
             self.synchronizeFile()
         }
     }
+    func compatTruncate(atOffset offset: UInt64) throws {
+        #if os(Linux)
+        // Linux doesn't have truncate(atOffset:), use seek + truncate
+        try self.seek(toOffset: offset)
+        // Note: FileHandle on Linux may not support truncate directly
+        // This is a limitation - truncate should be done at the file system level
+        #else
+        if #available(iOS 13.4, macOS 10.15.4, *) {
+            try self.truncate(atOffset: offset)
+        } else {
+            self.truncateFile(atOffset: offset)
+        }
+        #endif
+    }
+    func compatOffset() throws -> UInt64 {
+        if #available(iOS 13.4, macOS 10.15.4, *) {
+            return try self.offset()
+        } else {
+            return self.offsetInFile
+        }
+    }
 }
 
 public final class PageStore {
     public let fileURL: URL
-    private let fileHandle: FileHandle
-    private let key: SymmetricKey  // ✅ ENCRYPTION KEY STORED
+    internal let fileHandle: FileHandle  // Made internal for PageStore+Overflow access
+    internal let key: SymmetricKey  // ✅ ENCRYPTION KEY STORED - Made internal for PageStore+Overflow access
     internal let pageSize = 4096  // Made internal for DynamicCollection access
-    private let queue = DispatchQueue(label: "com.yourorg.blazedb.pagestore", attributes: .concurrent)
+    internal let queue = DispatchQueue(label: "com.yourorg.blazedb.pagestore", attributes: .concurrent)  // Made internal for PageStore+Overflow access
     internal let pageCache = PageCache(maxSize: 1000)  // Made internal for DynamicCollection access
     private var isLocked: Bool = false  // Track lock state for cleanup
 
@@ -215,14 +236,14 @@ public final class PageStore {
     }
 
     // Performs a write assuming the caller already holds the barrier on `queue`
-    private func _writePageLocked(index: Int, plaintext: Data) throws {
+    internal func _writePageLocked(index: Int, plaintext: Data) throws {
         try _writePageLockedUnsynchronized(index: index, plaintext: plaintext)
         try fileHandle.compatSynchronize()
         BlazeLogger.trace("✅ Page \(index) encrypted and flushed to disk")
     }
     
     // Write without fsyncing (for batch operations)
-    private func _writePageLockedUnsynchronized(index: Int, plaintext: Data) throws {
+    internal func _writePageLockedUnsynchronized(index: Int, plaintext: Data) throws {
         // Invalidate cache on write
         pageCache.remove(index)
         BlazeLogger.trace("Writing encrypted page at index \(index) with size \(plaintext.count)")

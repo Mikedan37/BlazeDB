@@ -8,6 +8,7 @@
 //  Created by Michael Danylchuk on 1/15/25.
 //
 
+#if !BLAZEDB_LINUX_CORE
 import Foundation
 #if canImport(CryptoKit)
 #if canImport(CryptoKit)
@@ -344,4 +345,5 @@ extension BlazeDBClient {
         throw BlazeDBError.connectionFailed("No databases discovered within \(timeout) seconds")
     }
 }
+#endif // !BLAZEDB_LINUX_CORE
 

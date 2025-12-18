@@ -18,7 +18,7 @@ internal final class OrderingIndexCache {
     private let lock = NSLock()
     private let ttl: TimeInterval = 60.0 // Cache for 60 seconds
     
-    static let shared = OrderingIndexCache()
+    nonisolated(unsafe) static let shared = OrderingIndexCache()
     
     private init() {}
     

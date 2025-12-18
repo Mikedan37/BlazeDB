@@ -52,9 +52,11 @@ public class TriggerContext {
     }
     
     /// Rebuild spatial index
+    #if !BLAZEDB_LINUX_CORE
     public func rebuildSpatialIndex() throws {
         try client?.rebuildSpatialIndex()
     }
+    #endif
     
     /// Rebalance ordering index
     public func rebalanceOrderIndex() throws {

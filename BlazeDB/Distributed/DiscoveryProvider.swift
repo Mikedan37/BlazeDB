@@ -8,6 +8,7 @@
 //  Created by Auto on 12/14/25.
 //
 
+#if !BLAZEDB_LINUX_CORE
 import Foundation
 
 /// Discovered BlazeDB database
@@ -225,5 +226,7 @@ public final class NoopDiscoveryProvider: DiscoveryProvider {
 /// Default provider type for non-Apple platforms
 public typealias DefaultDiscoveryProvider = NoopDiscoveryProvider
 
-#endif
+#endif // canImport(Network)
+
+#endif // !BLAZEDB_LINUX_CORE
 

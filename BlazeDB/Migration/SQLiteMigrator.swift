@@ -97,12 +97,14 @@ public struct SQLiteMigrator {
         BlazeLogger.debug("✅ BlazeDB created at \(destination.path)")
         
         // Record telemetry for migration start (if enabled)
+        #if !BLAZEDB_LINUX_CORE
         blazeDB.telemetry.record(
             operation: "migration.sqlite.start",
             duration: 0,
             success: true,
             recordCount: totalRecordsCount
         )
+        #endif
         
         // Import each table
         var totalRecords = 0
@@ -130,6 +132,7 @@ public struct SQLiteMigrator {
         progressMonitor?.complete(recordsProcessed: totalRecords)
         
         // Record telemetry for migration completion
+        #if !BLAZEDB_LINUX_CORE
         let migrationDuration = Date().timeIntervalSince(progressMonitor?.getProgress().startTime ?? Date())
         blazeDB.telemetry.record(
             operation: "migration.sqlite.complete",
@@ -137,6 +140,7 @@ public struct SQLiteMigrator {
             success: true,
             recordCount: totalRecords
         )
+        #endif
         
         BlazeLogger.info("✅ Migration complete: \(totalRecords) records from \(tablesToImport.count) tables")
     }

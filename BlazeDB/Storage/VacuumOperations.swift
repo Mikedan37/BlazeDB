@@ -125,7 +125,7 @@ extension BlazeDBClient {
                     BlazeLogger.debug("Compacting \(allRecords.count) records...")
                     
                     // Write all records to compacted file (sequential, no gaps)
-                    var newIndexMap: [UUID: Int] = [:]
+                    var newIndexMap: [UUID: [Int]] = [:]
                     var newPageIndex = 0
                     
                     for record in allRecords {
@@ -137,7 +137,7 @@ extension BlazeDBClient {
                         // Write to new file
                         try compactedStore.writePage(index: newPageIndex, plaintext: encoded)
                         
-                        newIndexMap[id] = newPageIndex
+                        newIndexMap[id] = [newPageIndex]  // Store as [Int] array for consistency
                         newPageIndex += 1
                     }
                     
@@ -317,6 +317,16 @@ extension BlazeDBClient {
         Self.timerLock.unlock()
         
         BlazeLogger.info("🤖 Auto-VACUUM disabled")
+    }
+    
+    /// Cleanup auto vacuum timer for this database instance
+    internal func cleanupAutoVacuumTimer() {
+        let key = "\(name)-\(fileURL.path)"
+        
+        Self.timerLock.lock()
+        Self.autoVacuumTimers[key]?.invalidate()
+        Self.autoVacuumTimers.removeValue(forKey: key)
+        Self.timerLock.unlock()
     }
 }
 

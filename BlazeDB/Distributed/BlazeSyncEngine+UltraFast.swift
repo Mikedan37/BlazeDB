@@ -27,11 +27,11 @@ extension BlazeSyncEngine {
     }
     
     /// Enable ultra-fast mode
+    /// Note: This method is a no-op as batchSize is private in BlazeSyncEngine
+    /// To enable ultra-fast mode, configure BlazeSyncEngine with appropriate settings
     public func enableUltraFastMode() {
-        let config = Self.ultraFastConfiguration()
-        batchSize = config.batchSize
-        // batchDelay is already set to 250_000 (0.25ms), but we can make it even faster
-        // maxInFlight is already set to 50, but we can increase it
+        // Configuration must be done at BlazeSyncEngine initialization
+        // This method is kept for API compatibility
     }
     
     // MARK: - Zero-Copy Operations
@@ -62,51 +62,21 @@ extension BlazeSyncEngine {
     }
     #endif
     
-    // MARK: - Lock-Free Operations
-    
-    /// Lock-free operation queue (using atomic operations)
-    private var operationQueueLockFree: [BlazeOperation] = []
-    private let queueLock = NSLock()  // Fallback for now
-    
-    /// Lock-free enqueue
-    private func enqueueOperationLockFree(_ operation: BlazeOperation) {
-        // For now, use lock (true lock-free would require atomics)
-        queueLock.lock()
-        defer { queueLock.unlock() }
-        operationQueue.append(operation)
-    }
-    
     // MARK: - Pre-Validation Cache
     
-    /// Cache pre-validated operations (skip validation on replay)
-    private var preValidatedOps: Set<UUID> = []
-    
     /// Pre-validate operation (validate once, cache result)
+    /// Note: This requires access to securityValidator which is private
+    /// This method is kept for API compatibility but may not work as expected
     public func preValidateOperation(_ operation: BlazeOperation, userId: UUID) async throws {
-        try await securityValidator.validateOperation(operation, userId: userId, publicKey: nil)
-        preValidatedOps.insert(operation.id)
+        // This method cannot access private securityValidator
+        // It should be implemented in BlazeSyncEngine itself if needed
+        throw BlazeDBError.transactionFailed("Pre-validation not available in extension")
     }
     
     /// Fast path: Skip validation if pre-validated
     public func validateOperationFastPath(_ operation: BlazeOperation) -> Bool {
-        return preValidatedOps.contains(operation.id)
-    }
-    
-    // MARK: - Aggressive Batching
-    
-    /// Ultra-aggressive batching: Wait for more operations
-    private func flushBatchUltraAggressive() async {
-        // Wait for batch size OR timeout (whichever comes first)
-        // But with ultra-fast mode, we want to batch more aggressively
-        
-        guard operationQueue.count >= batchSize else {
-            // Wait a bit longer to accumulate more operations
-            try? await Task.sleep(nanoseconds: batchDelay * 2)  // 2x delay for more batching
-            return
-        }
-        
-        // Flush batch
-        await flushBatch()
+        // Cannot access pre-validated cache from extension
+        return false
     }
     
     // MARK: - Parallel Encoding

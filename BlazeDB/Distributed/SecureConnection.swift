@@ -5,6 +5,7 @@
 //  Secure connection with Diffie-Hellman handshake and E2E encryption
 //
 
+#if !BLAZEDB_LINUX_CORE
 import Foundation
 #if canImport(CryptoKit)
 import CryptoKit
@@ -540,4 +541,5 @@ enum FrameError: Error {
 }
 
 #endif // canImport(Network)
+#endif // !BLAZEDB_LINUX_CORE
 

@@ -46,14 +46,16 @@ extension QueryBuilder {
                 
                 // Check minimum bound
                 if let min = min {
-                    if !compareIndexValue(keyValue, min, isGreaterThanOrEqual: true) {
+                    let keyField = convertAnyBlazeCodableToField(keyValue)
+                    if !compareFieldsDirect(keyField, min, isGreaterThanOrEqual: true) {
                         inRange = false
                     }
                 }
                 
                 // Check maximum bound
                 if let max = max {
-                    if !compareIndexValue(keyValue, max, isGreaterThanOrEqual: false) {
+                    let keyField = convertAnyBlazeCodableToField(keyValue)
+                    if !compareFieldsDirect(keyField, max, isGreaterThanOrEqual: false) {
                         inRange = false
                     }
                 }
@@ -93,23 +95,17 @@ extension QueryBuilder {
         return self
     }
     
-    /// Helper to compare index value with BlazeDocumentField
-    private func compareIndexValue(_ indexValue: AnyBlazeCodable, _ fieldValue: BlazeDocumentField, isGreaterThanOrEqual: Bool) -> Bool {
-        // Convert AnyBlazeCodable to comparable value
-        let indexField: BlazeDocumentField
-        switch indexValue.value {
-        case let s as String: indexField = .string(s)
-        case let i as Int: indexField = .int(i)
-        case let d as Double: indexField = .double(d)
-        case let b as Bool: indexField = .bool(b)
-        case let date as Date: indexField = .date(date)
-        case let uuid as UUID: indexField = .uuid(uuid)
-        case let data as Data: indexField = .data(data)
-        default: return false
+    /// Helper to convert AnyBlazeCodable to BlazeDocumentField
+    private func convertAnyBlazeCodableToField(_ codable: AnyBlazeCodable) -> BlazeDocumentField {
+        switch codable {
+        case .string(let s): return .string(s)
+        case .int(let i): return .int(i)
+        case .double(let d): return .double(d)
+        case .bool(let b): return .bool(b)
+        case .date(let date): return .date(date)
+        case .uuid(let uuid): return .uuid(uuid)
+        case .data(let data): return .data(data)
         }
-        
-        // Direct comparison logic (duplicated from QueryBuilder for access)
-        return compareFieldsDirect(indexField, fieldValue, isGreaterThanOrEqual: isGreaterThanOrEqual)
     }
     
     /// Direct field comparison for range queries

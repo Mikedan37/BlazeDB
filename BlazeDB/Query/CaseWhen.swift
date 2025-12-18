@@ -139,6 +139,6 @@ extension QueryBuilder {
 }
 
 private struct AssociatedKeys {
-    static var caseWhen: UInt8 = 0
+    nonisolated(unsafe) static var caseWhen: UInt8 = 0
 }
 

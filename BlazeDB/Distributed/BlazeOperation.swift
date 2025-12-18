@@ -56,7 +56,7 @@ public struct BlazeOperation: Codable, Identifiable, Sendable {
     }
 }
 
-public enum OperationType: String, Codable {
+public enum OperationType: String, Codable, Sendable {
     case insert
     case update
     case delete

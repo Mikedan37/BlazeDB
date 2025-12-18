@@ -92,12 +92,14 @@ public struct CoreDataMigrator {
         BlazeLogger.debug("✅ BlazeDB created at \(destination.path)")
         
         // Record telemetry for migration start (if enabled)
+        #if !BLAZEDB_LINUX_CORE
         blazeDB.telemetry.record(
             operation: "migration.coredata.start",
             duration: 0,
             success: true,
             recordCount: totalRecordsCount
         )
+        #endif
         
         // Import each entity
         var totalRecords = 0
@@ -126,6 +128,7 @@ public struct CoreDataMigrator {
         progressMonitor?.complete(recordsProcessed: totalRecords)
         
         // Record telemetry for migration completion
+        #if !BLAZEDB_LINUX_CORE
         let migrationDuration = Date().timeIntervalSince(progressMonitor?.getProgress().startTime ?? Date())
         blazeDB.telemetry.record(
             operation: "migration.coredata.complete",
@@ -133,6 +136,7 @@ public struct CoreDataMigrator {
             success: true,
             recordCount: totalRecords
         )
+        #endif
         
         BlazeLogger.info("✅ Migration complete: \(totalRecords) records from \(entitiesToImport.count) entities")
     }

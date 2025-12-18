@@ -5,6 +5,7 @@
 //  Encoding/decoding logic for TCPRelay
 //
 
+#if !BLAZEDB_LINUX_CORE
 import Foundation
 
 extension TCPRelay {

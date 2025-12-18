@@ -69,7 +69,7 @@ private class PatternCache {
     }
 }
 
-private let patternCache = PatternCache()
+nonisolated(unsafe) private let patternCache = PatternCache()
 
 // MARK: - QueryBuilder LIKE Extension
 

@@ -134,6 +134,7 @@ extension DynamicCollection {
     /// Check if ordering is enabled for this collection
     /// - Returns: true if ordering is supported, false otherwise
     internal func supportsOrdering() -> Bool {
+        #if !BLAZEDB_LINUX_CORE
         // Check metadata flag (default: false)
         do {
             let meta = try fetchMeta()
@@ -144,11 +145,16 @@ extension DynamicCollection {
             BlazeLogger.warn("DynamicCollection.supportsOrdering: failed to fetch metadata: \(error)")
             return false
         }
+        #else
+        // Linux: MetaStore not available, return false
+        return false
+        #endif
     }
     
     /// Get the ordering field name for this collection
     /// - Returns: Field name for ordering index (default: "orderingIndex")
     internal func orderingFieldName() -> String {
+        #if !BLAZEDB_LINUX_CORE
         do {
             let meta = try fetchMeta()
             let fieldName = meta["orderingFieldName"]?.stringValue ?? "orderingIndex"
@@ -158,6 +164,10 @@ extension DynamicCollection {
             BlazeLogger.warn("DynamicCollection.orderingFieldName: failed to fetch metadata: \(error), using default")
             return "orderingIndex"
         }
+        #else
+        // Linux: MetaStore not available, return default
+        return "orderingIndex"
+        #endif
     }
     
     /// Enable ordering support for this collection
@@ -165,11 +175,12 @@ extension DynamicCollection {
     ///   - fieldName: Field name for ordering index (default: "orderingIndex")
     /// - Throws: Error if metadata update fails
     internal func enableOrdering(fieldName: String = "orderingIndex") throws {
+        #if !BLAZEDB_LINUX_CORE
         BlazeLogger.debug("🔧 [ENABLEORDERING] Starting - fieldName: \(fieldName)")
         var meta = try fetchMeta()
         BlazeLogger.debug("🔧 [ENABLEORDERING] Fetched metadata: \(meta.count) keys")
-        meta["supportsOrdering"] = .bool(true)
-        meta["orderingFieldName"] = .string(fieldName)
+        meta["supportsOrdering"] = BlazeDocumentField.bool(true)
+        meta["orderingFieldName"] = BlazeDocumentField.string(fieldName)
         BlazeLogger.debug("🔧 [ENABLEORDERING] Updated metadata, now has: \(meta.count) keys")
         try updateMeta(meta)
         BlazeLogger.info("✅ [ENABLEORDERING] Ordering enabled for collection with field: \(fieldName)")
@@ -181,6 +192,10 @@ extension DynamicCollection {
         if !isEnabled {
             BlazeLogger.error("❌ [ENABLEORDERING] CRITICAL: Metadata was not persisted correctly!")
         }
+        #else
+        // Linux: MetaStore not available, ordering not supported
+        throw BlazeDBError.transactionFailed("Ordering support requires MetaStore (not available on Linux)")
+        #endif
     }
 }
 

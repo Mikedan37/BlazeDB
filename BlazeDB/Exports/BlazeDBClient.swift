@@ -348,8 +348,10 @@ public final class BlazeDBClient: @unchecked Sendable {
         
         BlazeLogger.info("✅ BlazeDB '\(name)' initialized successfully")
         
+        #if !BLAZEDB_LINUX_CORE
         // Reload triggers from storage
         reloadTriggers()
+        #endif
         
         // SECURITY AUDIT: Auto-enable CRC32 for unencrypted databases
         if password.isEmpty {
@@ -579,15 +581,19 @@ public final class BlazeDBClient: @unchecked Sendable {
             // Notify change observers (for sync)
             notifyInsert(id: id)
             
+            #if !BLAZEDB_LINUX_CORE
             // Track telemetry (if enabled)
             let insertDuration = Date().timeIntervalSince(startTime) * 1000 // Convert to ms
             telemetry.record(operation: "insert", duration: insertDuration, success: true, recordCount: 1)
+            #endif
             
             return id
         } catch {
+            #if !BLAZEDB_LINUX_CORE
             // Track telemetry for failure
             let duration = Date().timeIntervalSince(startTime) * 1000
             telemetry.record(operation: "insert", duration: duration, success: false, recordCount: 0, error: error)
+            #endif
             throw error
         }
     }
@@ -619,8 +625,16 @@ public final class BlazeDBClient: @unchecked Sendable {
         do {
             var ids: [UUID] = []
             try performSafeWrite {
+                #if !BLAZEDB_LINUX_CORE
                 // Use optimized batch insert (3-5x faster!)
                 ids = try collection.insertBatch(records)
+                #else
+                // Linux: Fallback to individual inserts
+                for record in records {
+                    let id = try collection.insert(record)
+                    ids.append(id)
+                }
+                #endif
                 
                 // Log to transaction log
                 for (index, _) in ids.enumerated() {
@@ -635,15 +649,19 @@ public final class BlazeDBClient: @unchecked Sendable {
             let changes = ids.map { DatabaseChange(type: .insert($0), collectionName: name) }
             notifyBatchChanges(changes)
             
+            #if !BLAZEDB_LINUX_CORE
             // Track telemetry
             let duration = Date().timeIntervalSince(startTime) * 1000
             telemetry.record(operation: "insertMany", duration: duration, success: true, recordCount: ids.count)
+            #endif
             
             return ids
         } catch {
+            #if !BLAZEDB_LINUX_CORE
             // Track telemetry for failure
             let duration = Date().timeIntervalSince(startTime) * 1000
             telemetry.record(operation: "insertMany", duration: duration, success: false, recordCount: 0, error: error)
+            #endif
             throw error
         }
     }
@@ -700,9 +718,17 @@ public final class BlazeDBClient: @unchecked Sendable {
         do {
             var deletedCount = 0
             try performSafeWrite {
+                #if !BLAZEDB_LINUX_CORE
                 // Use optimized batch delete (much faster!)
                 try collection.deleteBatch(ids)
                 deletedCount = ids.count
+                #else
+                // Linux: Fallback to individual deletes
+                for id in ids {
+                    try collection.delete(id: id)
+                }
+                deletedCount = ids.count
+                #endif
                 
                 // Log to transaction log
                 for id in ids {
@@ -716,15 +742,19 @@ public final class BlazeDBClient: @unchecked Sendable {
             let changes = ids.map { DatabaseChange(type: .delete($0), collectionName: name) }
             notifyBatchChanges(changes)
             
+            #if !BLAZEDB_LINUX_CORE
             // Track telemetry
             let duration = Date().timeIntervalSince(startTime) * 1000
             telemetry.record(operation: "deleteMany", duration: duration, success: true, recordCount: deletedCount)
+            #endif
             
             return deletedCount
         } catch {
+            #if !BLAZEDB_LINUX_CORE
             // Track telemetry for failure
             let duration = Date().timeIntervalSince(startTime) * 1000
             telemetry.record(operation: "deleteMany", duration: duration, success: false, recordCount: 0, error: error)
+            #endif
             throw error
         }
     }
@@ -791,15 +821,19 @@ public final class BlazeDBClient: @unchecked Sendable {
         do {
             let record = try collection.fetch(id: id)
             
+            #if !BLAZEDB_LINUX_CORE
             // Track telemetry
             let duration = Date().timeIntervalSince(startTime) * 1000
             telemetry.record(operation: "fetch", duration: duration, success: true, recordCount: record == nil ? 0 : 1)
+            #endif
             
             return record
         } catch {
+            #if !BLAZEDB_LINUX_CORE
             // Track telemetry for failure
             let duration = Date().timeIntervalSince(startTime) * 1000
             telemetry.record(operation: "fetch", duration: duration, success: false, recordCount: 0, error: error)
+            #endif
             throw error
         }
     }
@@ -822,15 +856,19 @@ public final class BlazeDBClient: @unchecked Sendable {
         do {
             let records = try collection.fetchAll()
             
+            #if !BLAZEDB_LINUX_CORE
             // Track telemetry
             let duration = Date().timeIntervalSince(startTime) * 1000
             telemetry.record(operation: "fetchAll", duration: duration, success: true, recordCount: records.count)
+            #endif
             
             return records
         } catch {
+            #if !BLAZEDB_LINUX_CORE
             // Track telemetry for failure
             let duration = Date().timeIntervalSince(startTime) * 1000
             telemetry.record(operation: "fetchAll", duration: duration, success: false, recordCount: 0, error: error)
+            #endif
             throw error
         }
     }
@@ -932,13 +970,17 @@ public final class BlazeDBClient: @unchecked Sendable {
             // Notify change observers (for sync)
             notifyUpdate(id: id)
             
+            #if !BLAZEDB_LINUX_CORE
             // Track telemetry (if enabled)
             let updateDuration = Date().timeIntervalSince(startTime) * 1000 // Convert to ms
             telemetry.record(operation: "update", duration: updateDuration, success: true, recordCount: 1)
+            #endif
         } catch {
+            #if !BLAZEDB_LINUX_CORE
             // Track telemetry for failure
             let duration = Date().timeIntervalSince(startTime) * 1000
             telemetry.record(operation: "update", duration: duration, success: false, recordCount: 0, error: error)
+            #endif
             throw error
         }
     }
@@ -985,8 +1027,10 @@ public final class BlazeDBClient: @unchecked Sendable {
             // Delete is idempotent: if record doesn't exist, return silently
             guard let existingRecord = try collection.fetch(id: id) else {
                 // Record doesn't exist - delete is idempotent, so just return
+                #if !BLAZEDB_LINUX_CORE
                 let duration = Date().timeIntervalSince(startTime) * 1000
                 telemetry.record(operation: "delete", duration: duration, success: true, recordCount: 0)
+                #endif
                 return
             }
             
@@ -1015,13 +1059,17 @@ public final class BlazeDBClient: @unchecked Sendable {
             // Notify change observers (for sync)
             notifyDelete(id: id)
             
+            #if !BLAZEDB_LINUX_CORE
             // Track telemetry
             let duration = Date().timeIntervalSince(startTime) * 1000
             telemetry.record(operation: "delete", duration: duration, success: true, recordCount: 1)
+            #endif
         } catch {
+            #if !BLAZEDB_LINUX_CORE
             // Track telemetry for failure
             let duration = Date().timeIntervalSince(startTime) * 1000
             telemetry.record(operation: "delete", duration: duration, success: false, recordCount: 0, error: error)
+            #endif
             throw error
         }
     }
@@ -1146,7 +1194,9 @@ public final class BlazeDBClient: @unchecked Sendable {
 
     // MARK: - MetaStore
 
+    #if !BLAZEDB_LINUX_CORE
     internal var metaStore: any MetaStore { collection }
+    #endif
 
     // MARK: - Safe Write / Rollback
 
@@ -1438,7 +1488,9 @@ public final class BlazeDBClient: @unchecked Sendable {
                 oldCollection.unsavedChanges = 0
                 
                 // Clear caches after rollback to ensure fresh data is read
+                #if !BLAZEDB_LINUX_CORE
                 collection.clearFetchAllCache()
+                #endif
                 RecordCache.shared.clear()
                 BlazeLogger.info("✅ Rollback completed successfully - layout reloaded from backup")
             } catch let reloadError {
@@ -1479,6 +1531,8 @@ public final class BlazeDBClient: @unchecked Sendable {
                                     case .data(let data): return AnyBlazeCodable(data)
                                     case .vector(let v): return AnyBlazeCodable(v)
                                     case .null: return AnyBlazeCodable("")  // Use empty string as sentinel for null
+                                    case .array: return AnyBlazeCodable("")  // Arrays not supported in compound indexes
+                                    case .dictionary: return AnyBlazeCodable("")  // Dictionaries not supported in compound indexes
                                     }
                                 }
                                 let normalizedKey = CompoundIndexKey(normalizedComponents)
@@ -1499,7 +1553,9 @@ public final class BlazeDBClient: @unchecked Sendable {
                 
                 self.collection = tempCollection
                 // Clear caches after rebuild
+                #if !BLAZEDB_LINUX_CORE
                 collection.clearFetchAllCache()
+                #endif
                 RecordCache.shared.clear()
                 BlazeLogger.info("✅ Rollback completed - layout rebuilt from data file")
             }
@@ -1618,7 +1674,7 @@ extension FieldDefinition {
 extension StorageLayout {
     static func rebuild(from store: PageStore) throws -> StorageLayout {
         // Walk valid pages from the PageStore and rebuild indexMap/nextPageIndex/etc.
-        var indexMap: [UUID: Int] = [:]
+        var indexMap: [UUID: [Int]] = [:]
         var nextPageIndex = 0
         var i = 0
         while true {
@@ -1642,7 +1698,13 @@ extension StorageLayout {
                 break
             }
         }
-        return StorageLayout(indexMap: indexMap, nextPageIndex: nextPageIndex, compoundIndexes: [:])
+        return StorageLayout(
+            indexMap: indexMap,
+            nextPageIndex: nextPageIndex,
+            compoundIndexes: [:],
+            searchIndex: nil,
+            searchIndexedFields: []
+        )
     }
 }
 
@@ -1734,7 +1796,9 @@ extension BlazeDBClient {
         let startTime = Date()
         try update(id: recordId, with: record)
         let duration = Date().timeIntervalSince(startTime) * 1000
+        #if !BLAZEDB_LINUX_CORE
         telemetry.record(operation: "moveBefore", duration: duration, success: true, recordCount: 1)
+        #endif
         
         // Invalidate cache
         OrderingIndexCache.shared.invalidate(fieldName: fieldName)
@@ -1800,7 +1864,9 @@ extension BlazeDBClient {
         let startTime = Date()
         try update(id: recordId, with: record)
         let duration = Date().timeIntervalSince(startTime) * 1000
+        #if !BLAZEDB_LINUX_CORE
         telemetry.record(operation: "moveAfter", duration: duration, success: true, recordCount: 1)
+        #endif
         
         // Invalidate cache
         OrderingIndexCache.shared.invalidate(fieldName: fieldName)
@@ -1838,7 +1904,9 @@ extension BlazeDBClient {
         let startTime = Date()
         try update(id: recordId, with: record)
         let duration = Date().timeIntervalSince(startTime) * 1000
+        #if !BLAZEDB_LINUX_CORE
         telemetry.record(operation: "moveToIndex", duration: duration, success: true, recordCount: 1)
+        #endif
         
         // Invalidate cache
         OrderingIndexCache.shared.invalidate(fieldName: fieldName)
@@ -1883,7 +1951,9 @@ extension BlazeDBClient {
         
         try update(id: recordId, with: record)
         let duration = Date().timeIntervalSince(startTime) * 1000
+        #if !BLAZEDB_LINUX_CORE
         telemetry.record(operation: "moveUp", duration: duration, success: true, recordCount: 1)
+        #endif
         
         // Invalidate cache
         OrderingIndexCache.shared.invalidate(fieldName: fieldName)
@@ -1926,7 +1996,9 @@ extension BlazeDBClient {
         
         try update(id: recordId, with: record)
         let duration = Date().timeIntervalSince(startTime) * 1000
+        #if !BLAZEDB_LINUX_CORE
         telemetry.record(operation: "moveDown", duration: duration, success: true, recordCount: 1)
+        #endif
         
         // Invalidate cache
         OrderingIndexCache.shared.invalidate(fieldName: fieldName)
@@ -1977,7 +2049,9 @@ extension BlazeDBClient {
         }
         
         let duration = Date().timeIntervalSince(startTime) * 1000
+        #if !BLAZEDB_LINUX_CORE
         telemetry.record(operation: "bulkReorder", duration: duration, success: failed == 0, recordCount: successful)
+        #endif
         
         // Invalidate cache
         OrderingIndexCache.shared.invalidate(fieldName: fieldName)
@@ -2003,6 +2077,7 @@ extension BlazeDBClient {
     ) throws {
         BlazeLogger.info("BlazeDBClient.enableOrderingWithCategories: enabling with category field '\(categoryField)'")
         
+        #if !BLAZEDB_LINUX_CORE
         var meta = try collection.fetchMeta()
         meta["supportsOrdering"] = .bool(true)
         meta["orderingFieldName"] = .string(fieldName)
@@ -2010,6 +2085,7 @@ extension BlazeDBClient {
         meta["supportsMultipleOrdering"] = .bool(true)
         
         try collection.updateMeta(meta)
+        #endif
         BlazeLogger.info("BlazeDBClient.enableOrderingWithCategories: enabled with category field '\(categoryField)'")
     }
     
@@ -2103,7 +2179,9 @@ extension BlazeDBClient {
         try update(id: recordId, with: record)
         
         let duration = Date().timeIntervalSince(startTime) * 1000
+        #if !BLAZEDB_LINUX_CORE
         telemetry.record(operation: "moveInCategory", duration: duration, success: true, recordCount: 1)
+        #endif
         
         BlazeLogger.info("BlazeDBClient.moveInCategory: successfully moved record \(recordId) in category '\(categoryValue)'")
     }
@@ -2114,22 +2192,30 @@ extension BlazeDBClient {
 extension DynamicCollection {
     /// Get the category field name for ordering
     internal func orderingCategoryField() -> String? {
+        #if !BLAZEDB_LINUX_CORE
         do {
             let meta = try fetchMeta()
             return meta["orderingCategoryField"]?.stringValue
         } catch {
             return nil
         }
+        #else
+        return nil
+        #endif
     }
     
     /// Check if multiple ordering (per category) is supported
     internal func supportsMultipleOrdering() -> Bool {
+        #if !BLAZEDB_LINUX_CORE
         do {
             let meta = try fetchMeta()
             return meta["supportsMultipleOrdering"]?.boolValue ?? false
         } catch {
             return false
         }
+        #else
+        return false
+        #endif
     }
 }
 

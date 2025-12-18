@@ -194,7 +194,31 @@ extension QueryBuilder {
         // TRY OPTIMIZED SEARCH FIRST (inverted index)
         // This is 50-1000x faster if index is enabled!
         // searchOptimized() will automatically fall back to manual search if caseSensitive is true
+        #if !BLAZEDB_LINUX_CORE
         var results = try collection.searchOptimized(query: query, in: fields, config: searchConfig)
+        #else
+        var results: [FullTextSearchResult] = []
+        // Fallback to manual search on Linux
+        let allRecords = try collection.fetchAll()
+        for record in allRecords {
+            for field in fields {
+                if let value = record.storage[field]?.stringValue {
+                    let searchValue = searchConfig.caseSensitive ? value : value.lowercased()
+                    let searchQuery = searchConfig.caseSensitive ? query : query.lowercased()
+                    if searchValue.contains(searchQuery) {
+                        // Create a simple search result with score 1.0
+                        let result = FullTextSearchResult(
+                            record: record,
+                            score: 1.0,
+                            matches: [field: [query]]
+                        )
+                        results.append(result)
+                        break
+                    }
+                }
+            }
+        }
+        #endif
         
         // Apply WHERE filters (if any)
         if !filters.isEmpty {

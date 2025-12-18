@@ -7,6 +7,7 @@
 //  Created by Michael Danylchuk on 1/15/25.
 //
 
+#if !BLAZEDB_LINUX_CORE
 import Foundation
 
 extension BlazeDBClient {
@@ -121,3 +122,4 @@ extension BlazeTopology {
 
 // ConnectionMode is defined in BlazeTopology.swift as BlazeTopology.ConnectionMode
 
+#endif // !BLAZEDB_LINUX_CORE
