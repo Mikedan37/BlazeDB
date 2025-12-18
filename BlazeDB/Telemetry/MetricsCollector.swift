@@ -61,9 +61,6 @@ public actor MetricsCollector {
     
     /// Disable telemetry
     func disable() {
-        lock.lock()
-        defer { lock.unlock() }
-        
         config.enabled = false
         cleanupTask?.cancel()
         cleanupTask = nil
@@ -89,12 +86,10 @@ public actor MetricsCollector {
         recordCount: Int? = nil,
         error: Error? = nil
     ) {
-        lock.lock()
         let isEnabled = config.enabled
         let samplingRate = config.samplingRate
         let slowThreshold = config.slowOperationThreshold
         let db = metricsDB
-        lock.unlock()
         
         guard isEnabled else { return }
         

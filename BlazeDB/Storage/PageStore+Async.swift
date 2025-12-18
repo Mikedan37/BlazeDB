@@ -147,7 +147,10 @@ extension PageStore {
     // MARK: - Async Infrastructure
     
     private static var writeBatches: [ObjectIdentifier: WriteBatch] = [:]
-    private static var memoryMappedFiles: [ObjectIdentifier: MemoryMappedFile] = [:]
+    #if !BLAZEDB_LINUX_CORE
+    // MemoryMappedFile is not available on Linux
+    private static var memoryMappedFiles: [ObjectIdentifier: Any] = [:]
+    #endif
     private static let batchLock = NSLock()
     
     private var writeBatch: WriteBatch {

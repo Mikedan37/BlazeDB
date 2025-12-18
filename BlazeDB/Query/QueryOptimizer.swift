@@ -31,7 +31,7 @@ public struct QueryPlan {
     }
 }
 
-/// Optimized query plan (uses QueryPlan)
+/// Optimized query plan (uses QueryPlan from QueryOptimizer)
 public typealias OptimizedQueryPlan = QueryPlan
 
 /// Cost-based query optimizer

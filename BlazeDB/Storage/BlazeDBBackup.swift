@@ -10,13 +10,13 @@ import Foundation
 
 // MARK: - Export/Import Formats
 
-public enum ExportFormat {
+public enum ExportFormat: Sendable {
     case json
     case cbor
     case blazedb  // Native binary format
 }
 
-public enum ImportMode {
+public enum ImportMode: Sendable {
     case append   // Add to existing data
     case replace  // Clear and replace
     case merge    // Update existing, add new
@@ -155,7 +155,7 @@ extension BlazeDBClient {
     /// ```
     public func backup(to url: URL) async throws -> BackupStats {
         // Delegate to synchronous version
-        return try backup(to: url)
+        return try await Task { try backup(to: url) }.value
     }
     
     /// Restore database from a backup (synchronous)
@@ -250,7 +250,7 @@ extension BlazeDBClient {
     /// ```
     public func restore(from url: URL) async throws {
         // Delegate to synchronous version
-        try restore(from: url)
+        try await Task { try restore(from: url) }.value
     }
     
     // MARK: - Export Operations

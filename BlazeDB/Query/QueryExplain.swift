@@ -6,8 +6,8 @@ import Foundation
 
 // MARK: - Query Explain
 
-/// Detailed query execution plan
-public struct QueryPlan: CustomStringConvertible {
+/// Detailed query execution plan (explain output)
+public struct DetailedQueryPlan: CustomStringConvertible {
     public let steps: [QueryStep]
     public let estimatedRecords: Int
     public let usesIndexes: [String]
@@ -86,7 +86,7 @@ public struct QueryStep: CustomStringConvertible {
 extension QueryBuilder {
     /// Generate query execution plan without executing
     /// - Returns: Detailed query plan with estimates
-    public func explain() throws -> QueryPlan {
+    public func explain() throws -> DetailedQueryPlan {
         guard let collection = collection else {
             throw BlazeDBError.transactionFailed("Collection has been deallocated")
         }
@@ -196,7 +196,7 @@ extension QueryBuilder {
             warnings.append("Sorting \(estimatedRecords) records - may be slow")
         }
         
-        return QueryPlan(
+        return DetailedQueryPlan(
             steps: steps,
             estimatedRecords: estimatedRecords,
             usesIndexes: usesIndexes,

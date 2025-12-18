@@ -41,7 +41,7 @@ extension StorageLayout {
             encoder.dateEncodingStrategy = .iso8601  // Ensure consistent date encoding
             
             // Create a deterministically encoded version of the layout
-            let encoded = try layout.encodeDeterministically(encoder: encoder)
+            let encoded = try encoder.encode(layout)
             
             // Generate HMAC signature
             let hmac = HMAC<SHA256>.authenticationCode(
@@ -64,7 +64,7 @@ extension StorageLayout {
                 let encoder = JSONEncoder()
                 encoder.outputFormatting = [.sortedKeys]  // Sort top-level keys
                 encoder.dateEncodingStrategy = .iso8601  // Must match create() method
-                let encoded = try layout.encodeDeterministically(encoder: encoder)
+                let encoded = try encoder.encode(layout)
                 
                 // Compute expected signature
                 let expectedHMAC = HMAC<SHA256>.authenticationCode(
@@ -206,7 +206,7 @@ extension StorageLayout {
                         keyLength: 32
                     )
                     let pbkdf2Key10k = SymmetricKey(data: pbkdf2KeyData10k)
-                    let pbkdf2KeyDataForCompare10k = pbkdf2Key10k.withUnsafeBytes { Data($0) }
+                    let pbkdf2KeyDataForCompare10k = pbkdf2Key10k.withUnsafeBytes { Data(buffer: $0) }
                     BlazeLogger.debug("🔍 PBKDF2 (10k) key data (first 16 bytes): \(pbkdf2KeyDataForCompare10k.prefix(16).map { String(format: "%02x", $0) }.joined())")
                     
                     if secureLayout.verify(using: pbkdf2Key10k) {
@@ -231,7 +231,7 @@ extension StorageLayout {
                         keyLength: 32
                     )
                     let pbkdf2Key100k = SymmetricKey(data: pbkdf2KeyData100k)
-                    let pbkdf2KeyDataForCompare100k = pbkdf2Key100k.withUnsafeBytes { Data($0) }
+                    let pbkdf2KeyDataForCompare100k = pbkdf2Key100k.withUnsafeBytes { Data(buffer: $0) }
                     BlazeLogger.debug("🔍 PBKDF2 (100k) key data (first 16 bytes): \(pbkdf2KeyDataForCompare100k.prefix(16).map { String(format: "%02x", $0) }.joined())")
                     
                     if secureLayout.verify(using: pbkdf2Key100k) {

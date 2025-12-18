@@ -8,6 +8,7 @@
 //  Created by Auto on 1/XX/25.
 //
 
+#if !BLAZEDB_LINUX_CORE
 import Foundation
 
 // MARK: - Geospatial Queries
@@ -276,4 +277,6 @@ extension QueryBuilder {
         return orderByDistance(from: SpatialPoint(latitude: latitude, longitude: longitude))
     }
 }
+
+#endif // !BLAZEDB_LINUX_CORE
 

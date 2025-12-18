@@ -205,7 +205,9 @@ extension BlazeDBClient {
         let oldCollection = self.collection
         
         // Clear caches before restoring to ensure no stale data
+        #if !BLAZEDB_LINUX_CORE
         oldCollection.clearFetchAllCache()
+        #endif
         RecordCache.shared.clear()
         
         // Reset unsavedChanges on old collection BEFORE restoring files to prevent it from saving on deinit
@@ -254,7 +256,11 @@ extension BlazeDBClient {
         Thread.sleep(forTimeInterval: 0.01)
         
         // Clear caches after rollback to ensure fresh data is read
+        #if !BLAZEDB_LINUX_CORE
+        #if !BLAZEDB_LINUX_CORE
         collection.clearFetchAllCache()
+        #endif
+        #endif
         RecordCache.shared.clear()
         // Also clear query cache to ensure queries read fresh data
         QueryCache.shared.clearAll()
@@ -287,7 +293,9 @@ extension BlazeDBClient {
         // CRITICAL: Force a fresh fetchAll to verify the restored state
         // This ensures MVCC is seeing the correct state after rollback
         // Also clear all caches one more time before verification to ensure fresh data
+        #if !BLAZEDB_LINUX_CORE
         collection.clearFetchAllCache()
+        #endif
         RecordCache.shared.clear()
         QueryCache.shared.clearAll()
         
@@ -311,7 +319,9 @@ extension BlazeDBClient {
         
         // CRITICAL: Force one more cache clear and small delay to ensure all state is fully synced
         // This is especially important for nested savepoints where multiple rollbacks might occur
+        #if !BLAZEDB_LINUX_CORE
         collection.clearFetchAllCache()
+        #endif
         RecordCache.shared.clear()
         QueryCache.shared.clearAll()
         

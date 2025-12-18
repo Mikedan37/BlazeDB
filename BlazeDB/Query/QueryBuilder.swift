@@ -18,6 +18,13 @@ public final class QueryBuilder {
     internal var aggregations: [AggregationType] = []
     internal var havingPredicate: ((AggregationResult) -> Bool)?
     
+    #if !BLAZEDB_LINUX_CORE
+    // Advanced query features (spatial, vector, window functions)
+    internal var sortByDistanceCenter: SpatialPoint?
+    internal var windowFunctions: [(function: WindowFunction, alias: String)] = []
+    internal var filterFields: Set<String> = []
+    #endif
+    
     internal init(collection: DynamicCollection) {
         self.collection = collection
     }

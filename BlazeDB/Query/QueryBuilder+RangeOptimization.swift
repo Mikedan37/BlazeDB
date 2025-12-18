@@ -40,13 +40,12 @@ extension QueryBuilder {
             for (key, ids) in index {
                 // Check if key falls within range
                 // For compound indexes, we only check the first component
-                guard let keyValue = key.components.first else { continue }
+                guard let keyField = key.components.first else { continue }
                 
                 var inRange = true
                 
                 // Check minimum bound
                 if let min = min {
-                    let keyField = convertAnyBlazeCodableToField(keyValue)
                     if !compareFieldsDirect(keyField, min, isGreaterThanOrEqual: true) {
                         inRange = false
                     }
@@ -54,7 +53,6 @@ extension QueryBuilder {
                 
                 // Check maximum bound
                 if let max = max {
-                    let keyField = convertAnyBlazeCodableToField(keyValue)
                     if !compareFieldsDirect(keyField, max, isGreaterThanOrEqual: false) {
                         inRange = false
                     }
@@ -93,19 +91,6 @@ extension QueryBuilder {
         }
         
         return self
-    }
-    
-    /// Helper to convert AnyBlazeCodable to BlazeDocumentField
-    private func convertAnyBlazeCodableToField(_ codable: AnyBlazeCodable) -> BlazeDocumentField {
-        switch codable {
-        case .string(let s): return .string(s)
-        case .int(let i): return .int(i)
-        case .double(let d): return .double(d)
-        case .bool(let b): return .bool(b)
-        case .date(let date): return .date(date)
-        case .uuid(let uuid): return .uuid(uuid)
-        case .data(let data): return .data(data)
-        }
     }
     
     /// Direct field comparison for range queries

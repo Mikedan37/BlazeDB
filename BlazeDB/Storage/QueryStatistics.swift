@@ -85,6 +85,7 @@ public class StatisticsCollector {
             }
             
             // Spatial index stats
+            #if !BLAZEDB_LINUX_CORE
             if let spatialIndex = collection.spatialIndex {
                 _ = spatialIndex.getStats()
                 indexStats["spatial"] = IndexStatistics(

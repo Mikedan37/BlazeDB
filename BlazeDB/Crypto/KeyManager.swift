@@ -61,7 +61,7 @@ public final class KeyManager {
     }
     
     /// Native PBKDF2 implementation using CryptoKit
-    private static func deriveKeyPBKDF2(password: Data, salt: Data, iterations: Int, keyLength: Int) throws -> Data {
+    internal static func deriveKeyPBKDF2(password: Data, salt: Data, iterations: Int, keyLength: Int) throws -> Data {
         // CryptoKit's HKDF can be used, but for true PBKDF2 we need to implement it
         // For now, use a simple but secure key derivation
         var derivedKey = Data()

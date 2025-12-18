@@ -52,7 +52,11 @@ public class QueryPlanner {
         let stats = StatisticsCollector.collect(collection: collection)
         let rowCount = stats.totalRows
         
+        #if !BLAZEDB_LINUX_CORE
         let hasSpatial = collection.spatialIndex != nil
+        #else
+        let hasSpatial = false
+        #endif
         // Check for search index via StorageLayout
         _ = (try? StorageLayout.load(from: collection.metaURL))?.searchIndex != nil
         // NOTE: Vector index support intentionally not implemented in query planner.
@@ -178,7 +182,11 @@ public class QueryPlanner {
         collection: DynamicCollection
     ) -> AdvancedQueryPlan {
         
+        #if !BLAZEDB_LINUX_CORE
         let hasSpatial = collection.spatialIndex != nil
+        #else
+        let hasSpatial = false
+        #endif
         // NOTE: Vector index support intentionally not implemented.
         let hasVector = false
         // Check for search index via StorageLayout

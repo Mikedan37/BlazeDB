@@ -8,6 +8,7 @@
 //  Created by Auto on 1/XX/25.
 //
 
+#if !BLAZEDB_LINUX_CORE
 import Foundation
 
 // MARK: - Window Function Types
@@ -501,5 +502,7 @@ extension QueryBuilder {
     }
 }
 
-// Note: windowFunctions property is defined in QueryBuilder.swift
+#endif // !BLAZEDB_LINUX_CORE
+
+// Note: windowFunctions property is defined in QueryBuilder.swift (gated)
 
