@@ -70,9 +70,7 @@ public actor MetricsCollector {
     
     /// Update configuration
     func configure(_ newConfig: TelemetryConfiguration) {
-        lock.lock()
         config = newConfig
-        lock.unlock()
     }
     
     // MARK: - Recording
