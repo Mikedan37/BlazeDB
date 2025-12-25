@@ -88,7 +88,7 @@ extension InMemoryRelay {
     public func getQueueStats() -> RelayQueueStats {
         return RelayQueueStats(
             queueSize: messageQueue.count,
-            uniqueOperations: Set(messageQueue.map(\.id)).count,
+            uniqueOperations: Set(messageQueue.map { $0.id }).count,
             operationsByType: Dictionary(grouping: messageQueue) { $0.type }.mapValues { $0.count }
         )
     }

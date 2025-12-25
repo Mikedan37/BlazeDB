@@ -78,9 +78,9 @@ public final class AppleServerTransportProvider: ServerTransportProvider {
         let listener = try NWListener(using: parameters, on: port)
         
         // Handle new connections
-        listener.newConnectionHandler = { [weak self] connection in
+        listener.newConnectionHandler = { @Sendable [weak self] connection in
             guard let self = self else { return }
-            Task {
+            Task { @Sendable in
                 let serverConnection = AppleServerConnection(connection: connection)
                 await onConnection(serverConnection)
             }
@@ -129,7 +129,7 @@ private final class AppleServerConnection: ServerConnection {
     func waitForReady() async -> Bool {
         // Wait for connection to be ready
         return await withCheckedContinuation { continuation in
-            let stateUpdateHandler: (NWConnection.State) -> Void = { state in
+            let stateUpdateHandler: @Sendable (NWConnection.State) -> Void = { state in
                 switch state {
                 case .ready:
                     continuation.resume(returning: true)

@@ -9,7 +9,7 @@ import Foundation
 /// In-memory cache for query results with TTL support
 public final class QueryCache {
     /// Singleton instance
-    public static let shared = QueryCache()
+    nonisolated(unsafe) public static let shared = QueryCache()
     
     /// Cache entry with expiration
     private struct CacheEntry {

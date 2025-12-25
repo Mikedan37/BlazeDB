@@ -39,7 +39,7 @@ extension UUID {
 // MARK: - Parallel Map Extension
 
 extension Array {
-    func concurrentMap<T>(_ transform: @escaping (Element) async throws -> T) async rethrows -> [T] {
+    func concurrentMap<T: Sendable>(_ transform: @escaping (Element) async throws -> T) async rethrows -> [T] {
         return try await withThrowingTaskGroup(of: T.self) { group in
             for item in self {
                 group.addTask {

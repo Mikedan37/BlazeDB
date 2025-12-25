@@ -12,7 +12,7 @@ import Foundation
 
 // MARK: - Query Plan
 
-public struct DetailedQueryPlan {
+public struct QueryExecutionPlan {
     public let query: String
     public let executionSteps: [ExecutionStep]
     public let estimatedCost: Double
@@ -51,15 +51,15 @@ public struct DetailedQueryPlan {
 extension QueryBuilder {
     
     /// EXPLAIN query - analyze execution plan (detailed version)
-    public func explainDetailed() throws -> DetailedQueryPlan {
-        var steps: [DetailedQueryPlan.ExecutionStep] = []
+    public func explainDetailed() throws -> QueryExecutionPlan {
+        var steps: [QueryExecutionPlan.ExecutionStep] = []
         var totalCost: Double = 0.0
         var estimatedRows: Int = 0
         
         // Step 1: Analyze filters
         if !filters.isEmpty {
             let filterCost = Double(filters.count) * 0.1
-            steps.append(DetailedQueryPlan.ExecutionStep(
+            steps.append(QueryExecutionPlan.ExecutionStep(
                 operation: "Filter",
                 details: "\(filters.count) filter(s) applied",
                 cost: filterCost
@@ -77,7 +77,7 @@ extension QueryBuilder {
             }
             
             if indexUsed != nil {
-                steps.append(DetailedQueryPlan.ExecutionStep(
+                steps.append(QueryExecutionPlan.ExecutionStep(
                     operation: "Index Scan",
                     details: "Using index: \(indexUsed!)",
                     cost: 0.5,
@@ -85,7 +85,7 @@ extension QueryBuilder {
                 ))
                 totalCost += 0.5
             } else {
-                steps.append(DetailedQueryPlan.ExecutionStep(
+                steps.append(QueryExecutionPlan.ExecutionStep(
                     operation: "Full Table Scan",
                     details: "Scanning all records",
                     cost: 10.0
@@ -98,7 +98,7 @@ extension QueryBuilder {
         if !joinOperations.isEmpty {
             for join in joinOperations {
                 let joinCost = Double(joinOperations.count) * 2.0
-                steps.append(DetailedQueryPlan.ExecutionStep(
+                steps.append(QueryExecutionPlan.ExecutionStep(
                     operation: "Join",
                     details: "\(join.type) join on \(join.foreignKey) = \(join.primaryKey)",
                     cost: joinCost
@@ -110,7 +110,7 @@ extension QueryBuilder {
         // Step 4: Analyze sorting
         if !sortOperations.isEmpty {
             let sortCost = Double(sortOperations.count) * 1.5
-            steps.append(DetailedQueryPlan.ExecutionStep(
+            steps.append(QueryExecutionPlan.ExecutionStep(
                 operation: "Sort",
                 details: "Sorting by \(sortOperations.map { $0.field }.joined(separator: ", "))",
                 cost: sortCost
@@ -121,7 +121,7 @@ extension QueryBuilder {
         // Step 5: Analyze aggregations
         if !aggregations.isEmpty {
             let aggCost = Double(aggregations.count) * 1.0
-            steps.append(DetailedQueryPlan.ExecutionStep(
+            steps.append(QueryExecutionPlan.ExecutionStep(
                 operation: "Aggregate",
                 details: "\(aggregations.count) aggregation(s)",
                 cost: aggCost
@@ -135,7 +135,7 @@ extension QueryBuilder {
         
         // Step 7: Analyze limit/offset
         if let limit = limitValue {
-            steps.append(DetailedQueryPlan.ExecutionStep(
+            steps.append(QueryExecutionPlan.ExecutionStep(
                 operation: "Limit",
                 details: "Limiting to \(limit) rows",
                 cost: 0.1
@@ -144,7 +144,7 @@ extension QueryBuilder {
         }
         
         if offsetValue > 0 {
-            steps.append(DetailedQueryPlan.ExecutionStep(
+            steps.append(QueryExecutionPlan.ExecutionStep(
                 operation: "Offset",
                 details: "Skipping \(offsetValue) rows",
                 cost: 0.1
@@ -157,7 +157,7 @@ extension QueryBuilder {
         
         let queryDescription = generateQueryDescription()
         
-        return DetailedQueryPlan(
+        return QueryExecutionPlan(
             query: queryDescription,
             executionSteps: steps,
             estimatedCost: totalCost,
@@ -166,17 +166,17 @@ extension QueryBuilder {
     }
     
     /// EXPLAIN ANALYZE - execute query and return plan with actual stats
-    public func explainAnalyze() throws -> DetailedQueryPlan {
+    public func explainAnalyze() throws -> QueryExecutionPlan {
         let startTime = Date()
-        // Call the DetailedQueryPlan version explicitly
-        let plan: DetailedQueryPlan = try explainDetailed()
+        // Call the QueryExecutionPlan version explicitly
+        let plan: QueryExecutionPlan = try explainDetailed()
         
         // Execute query to get actual stats
         let result = try execute()
         let actualRows = try result.records.count
         let executionTime = Date().timeIntervalSince(startTime)
         
-        return DetailedQueryPlan(
+        return QueryExecutionPlan(
             query: plan.query,
             executionSteps: plan.executionSteps,
             estimatedCost: plan.estimatedCost,

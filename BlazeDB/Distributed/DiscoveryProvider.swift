@@ -112,7 +112,7 @@ public final class AppleDiscoveryProvider: DiscoveryProvider {
             using: .tcp
         )
         
-        browser.stateUpdateHandler = { [weak self] state in
+        browser.stateUpdateHandler = { @Sendable [weak self] state in
             guard let self = self else { return }
             
             switch state {

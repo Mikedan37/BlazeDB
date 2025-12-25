@@ -156,7 +156,7 @@ extension DynamicCollection {
         // This causes resource leaks where pool slots are never released
         // Use do-catch pattern to ensure release happens before return
         do {
-            let result = try await Task.detached(priority: .userInitiated) { [weak self] in
+            let result = try await Task.detached(priority: .userInitiated) { @Sendable [weak self] in
                 guard let self = self else {
                     throw BlazeDBError.transactionFailed("Collection deallocated")
                 }
@@ -178,7 +178,7 @@ extension DynamicCollection {
         // CRITICAL: Ensure release is called before returning, not in a background Task
         // Use do-catch pattern to ensure release happens before return
         do {
-            let result = try await Task.detached(priority: .userInitiated) { [weak self] in
+            let result = try await Task.detached(priority: .userInitiated) { @Sendable [weak self] in
                 guard let self = self else {
                     throw BlazeDBError.transactionFailed("Collection deallocated")
                 }
@@ -202,7 +202,7 @@ extension DynamicCollection {
         // CRITICAL: Ensure release is called before returning, not in a background Task
         // Use do-catch pattern to ensure release happens before return
         do {
-            let result = try await Task.detached(priority: .userInitiated) { [weak self] in
+            let result = try await Task.detached(priority: .userInitiated) { @Sendable [weak self] in
                 guard let self = self else {
                     throw BlazeDBError.transactionFailed("Collection deallocated")
                 }
@@ -224,7 +224,7 @@ extension DynamicCollection {
         // CRITICAL: Ensure release is called before returning, not in a background Task
         // Use do-catch pattern to ensure release happens before return
         do {
-            let result = try await Task.detached(priority: .userInitiated) { [weak self] in
+            let result = try await Task.detached(priority: .userInitiated) { @Sendable [weak self] in
                 guard let self = self else {
                     throw BlazeDBError.transactionFailed("Collection deallocated")
                 }
@@ -246,7 +246,7 @@ extension DynamicCollection {
         // CRITICAL: Ensure release is called before returning, not in a background Task
         // Use do-catch pattern to ensure release happens before return
         do {
-            let result = try await Task.detached(priority: .userInitiated) { [weak self] in
+            let result = try await Task.detached(priority: .userInitiated) { @Sendable [weak self] in
                 guard let self = self else {
                     throw BlazeDBError.transactionFailed("Collection deallocated")
                 }
@@ -268,7 +268,7 @@ extension DynamicCollection {
         // CRITICAL: Ensure release is called before returning, not in a background Task
         // Use do-catch pattern to ensure release happens before return
         do {
-            let result = try await Task.detached(priority: .userInitiated) { [weak self] in
+            let result = try await Task.detached(priority: .userInitiated) { @Sendable [weak self] in
                 guard let self = self else {
                     throw BlazeDBError.transactionFailed("Collection deallocated")
                 }
@@ -295,7 +295,7 @@ extension DynamicCollection {
             // Invalidate entire query cache since we can't know which queries might be affected
             await queryCache.invalidate()
             
-            try await Task.detached(priority: .userInitiated) { [weak self] in
+            try await Task.detached(priority: .userInitiated) { @Sendable [weak self] in
                 guard let self = self else {
                     throw BlazeDBError.transactionFailed("Collection deallocated")
                 }
@@ -321,7 +321,7 @@ extension DynamicCollection {
             // Invalidate entire query cache since we can't know which queries might be affected
             await queryCache.invalidate()
             
-            try await Task.detached(priority: .userInitiated) { [weak self] in
+            try await Task.detached(priority: .userInitiated) { @Sendable [weak self] in
                 guard let self = self else {
                     throw BlazeDBError.transactionFailed("Collection deallocated")
                 }

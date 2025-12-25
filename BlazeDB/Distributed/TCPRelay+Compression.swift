@@ -38,7 +38,6 @@ extension TCPRelay {
                 sourceBuffer,
                 sourceBuffer.count,
                 nil,
-                0,
                 COMPRESSION_LZ4  // Fast compression algorithm
             )
             
@@ -122,7 +121,6 @@ extension TCPRelay {
             sourceBuffer,
             sourceBuffer.count,
             nil,
-            0,
             algorithm
         )
         

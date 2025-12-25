@@ -110,7 +110,7 @@ public struct LamportTimestamp: Comparable, Codable, Hashable, Sendable {
 
 /// Tracks operations for a node
 public actor OperationLog {
-    private var operations: [UUID: BlazeOperation] = [:]
+    internal var operations: [UUID: BlazeOperation] = [:]
     private var currentClock: UInt64 = 0
     private let nodeId: UUID
     private let storageURL: URL

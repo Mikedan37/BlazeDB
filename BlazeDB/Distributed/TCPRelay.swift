@@ -16,14 +16,14 @@ public actor TCPRelay: BlazeSyncRelay {
     private var receiveTask: Task<Void, Error>?
     
     // Memory pooling: Reuse buffers instead of allocating
-    private static var encodeBufferPool: [Data] = []
+    nonisolated(unsafe) private static var encodeBufferPool: [Data] = []
     private static let poolLock = NSLock()
     private static let maxPoolSize = 10
     
     // Smart caching: Cache encoded operations by hash
-    private static var encodedCache: [UInt64: Data] = [:]
-    internal static var cacheHits: Int = 0
-    internal static var cacheMisses: Int = 0
+    nonisolated(unsafe) private static var encodedCache: [UInt64: Data] = [:]
+    nonisolated(unsafe) internal static var cacheHits: Int = 0
+    nonisolated(unsafe) internal static var cacheMisses: Int = 0
     internal static let cacheLock = NSLock()
     private static let maxCacheSize = 10000  // Cache up to 10K operations
     

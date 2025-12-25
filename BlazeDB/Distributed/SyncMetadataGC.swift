@@ -59,9 +59,9 @@ extension BlazeTopology {
         return SyncMetadataStats(
             totalNodes: nodes.count,
             totalConnections: connections.count,
-            localConnections: connections.filter { $0.type == .local }.count,
-            crossAppConnections: connections.filter { $0.type == .crossApp }.count,
-            remoteConnections: connections.filter { $0.type == .remote }.count
+            localConnections: connections.filter { $0.type == BlazeTopology.ConnectionType.local }.count,
+            crossAppConnections: connections.filter { $0.type == BlazeTopology.ConnectionType.crossApp }.count,
+            remoteConnections: connections.filter { $0.type == BlazeTopology.ConnectionType.remote }.count
         )
     }
 }

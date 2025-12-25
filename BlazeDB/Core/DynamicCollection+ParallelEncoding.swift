@@ -24,7 +24,7 @@ extension DynamicCollection {
         return try await withThrowingTaskGroup(of: (Int, Data).self) { group in
             // Encode all records in parallel
             for (index, record) in records.enumerated() {
-                group.addTask { [weak self] in
+                group.addTask { @Sendable [weak self] in
                     guard let self = self else {
                         throw BlazeDBError.transactionFailed("Collection deallocated")
                     }
@@ -92,7 +92,7 @@ extension DynamicCollection {
     public func insertBatchOptimized(_ records: [BlazeDataRecord]) async throws -> [UUID] {
         // For now, use existing insertBatch (already optimized)
         // Parallel encoding is handled at the BlazeBinaryEncoder level
-        return try await Task.detached(priority: .userInitiated) { [weak self] in
+        return try await Task.detached(priority: .userInitiated) { @Sendable [weak self] in
             guard let self = self else {
                 throw BlazeDBError.transactionFailed("Collection deallocated")
             }

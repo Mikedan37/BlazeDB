@@ -95,6 +95,7 @@ public class StatisticsCollector {
                     averageExecutionTime: 0.0
                 )
             }
+            #endif
             
             return CollectionStatistics(
                 totalRows: totalRows,

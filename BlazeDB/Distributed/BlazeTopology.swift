@@ -10,38 +10,54 @@ import Foundation
 
 /// Coordinates synchronization between multiple databases (local and remote)
 public actor BlazeTopology {
-    private var nodes: [UUID: DBNode] = [:]
-    private var connections: [Connection] = []
+    internal var nodes: [UUID: DBNode] = [:]
+    internal var connections: [Connection] = []
     private let topologyId: UUID
     
-    struct DBNode {
-        let nodeId: UUID
-        let database: BlazeDBClient
-        let name: String
-        var syncMode: SyncMode
-        var remoteNode: RemoteNode?
-        var role: SyncRole  // SERVER/CLIENT ROLE
+    public struct DBNode {
+        public let nodeId: UUID
+        public let database: BlazeDBClient
+        public let name: String
+        public var syncMode: SyncMode
+        public var remoteNode: RemoteNode?
+        public var role: SyncRole  // SERVER/CLIENT ROLE
         
-        var path: String {
+        public var path: String {
             // Access fileURL through internal property
             return database.fileURL.path
         }
+        
+        public init(nodeId: UUID, database: BlazeDBClient, name: String, syncMode: SyncMode, remoteNode: RemoteNode?, role: SyncRole) {
+            self.nodeId = nodeId
+            self.database = database
+            self.name = name
+            self.syncMode = syncMode
+            self.remoteNode = remoteNode
+            self.role = role
+        }
     }
     
-    enum SyncMode {
+    public enum SyncMode {
         case localOnly
         case localAndRemote
         case remoteOnly
     }
     
-    struct Connection {
-        let from: UUID
-        let to: UUID
-        let type: ConnectionType
-        let relay: BlazeSyncRelay
+    public struct Connection {
+        public let from: UUID
+        public let to: UUID
+        public let type: ConnectionType
+        public let relay: BlazeSyncRelay
+        
+        public init(from: UUID, to: UUID, type: ConnectionType, relay: BlazeSyncRelay) {
+            self.from = from
+            self.to = to
+            self.type = type
+            self.relay = relay
+        }
     }
     
-    enum ConnectionType {
+    public enum ConnectionType {
         case local      // Same app (in-memory queue)
         case crossApp   // Different apps (Unix Domain Socket)
         case remote     // Different device (TCP)

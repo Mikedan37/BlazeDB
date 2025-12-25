@@ -78,7 +78,7 @@ public actor CrossAppSyncCoordinator {
 
 // MARK: - File Presenter
 
-private class DatabaseFilePresenter: NSFilePresenter {
+private class DatabaseFilePresenter: NSObject, NSFilePresenter {
     let database: BlazeDBClient
     let sharedPath: URL
     let exportPolicy: ExportPolicy
@@ -177,7 +177,7 @@ extension BlazeDBClient {
         )
     }
     
-    enum AccessMode {
+    public enum AccessMode {
         case readOnly
         case readWrite
     }

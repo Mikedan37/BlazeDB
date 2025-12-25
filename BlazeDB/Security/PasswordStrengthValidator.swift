@@ -77,7 +77,7 @@ public struct PasswordStrengthValidator {
         }
         
         /// Recommended requirements for production
-        public static let recommended = Requirements(
+        nonisolated(unsafe) public static let recommended = Requirements(
             minLength: 12,
             requireUppercase: true,
             requireLowercase: true,
@@ -87,7 +87,7 @@ public struct PasswordStrengthValidator {
         )
         
         /// Strict requirements for high-security
-        public static let strict = Requirements(
+        nonisolated(unsafe) public static let strict = Requirements(
             minLength: 16,
             requireUppercase: true,
             requireLowercase: true,

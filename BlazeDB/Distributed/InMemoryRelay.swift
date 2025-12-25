@@ -9,11 +9,12 @@
 import Foundation
 
 /// In-memory relay for coordinating databases on the same device (in-memory queue, not Unix Domain Sockets)
+@preconcurrency
 public actor InMemoryRelay: BlazeSyncRelay {
     private let fromNodeId: UUID
     private let toNodeId: UUID
     private let mode: BlazeTopology.ConnectionMode
-    private var messageQueue: [BlazeOperation] = []
+    internal var messageQueue: [BlazeOperation] = []
     private var operationHandler: (([BlazeOperation]) async -> Void)?
     private var isConnected = false
     // Track sync state per node (for incremental sync)

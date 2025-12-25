@@ -37,7 +37,7 @@ public enum SyncRole: String, Codable, Sendable {
 
 /// Manages synchronization between local BlazeDB and remote nodes
 public actor BlazeSyncEngine {
-    nonisolated(unsafe) private let localDB: BlazeDBClient
+    nonisolated(unsafe) internal let localDB: BlazeDBClient
     private let relay: BlazeSyncRelay
     private let opLog: OperationLog
     private let nodeId: UUID
@@ -74,9 +74,9 @@ public actor BlazeSyncEngine {
     private var pendingOps: [UUID: [BlazeOperation]] = [:]  // Record ID -> operations
     
     // INCREMENTAL SYNC: Track what's been synced to which nodes
-    private var syncedRecords: [UUID: Set<UUID>] = [:]  // Record ID -> Set of node IDs that have it
-    private var recordVersions: [UUID: UInt64] = [:]  // Record ID -> version number (increments on change)
-    private var lastSyncVersions: [UUID: [UUID: UInt64]] = [:]  // Node ID -> Record ID -> Last synced version
+    internal var syncedRecords: [UUID: Set<UUID>] = [:]  // Record ID -> Set of node IDs that have it
+    internal var recordVersions: [UUID: UInt64] = [:]  // Record ID -> version number (increments on change)
+    internal var lastSyncVersions: [UUID: [UUID: UInt64]] = [:]  // Node ID -> Record ID -> Last synced version
     
     // GC Configuration
     private var syncStateGCConfig: SyncStateGCConfig = SyncStateGCConfig()
@@ -703,7 +703,7 @@ public actor BlazeSyncEngine {
     }
     
     /// Save sync state to disk
-    private func saveSyncState() async {
+    internal func saveSyncState() async {
         let syncStateURL = localDB.fileURL
             .deletingLastPathComponent()
             .appendingPathComponent("sync_state.json")

@@ -138,10 +138,14 @@ internal final class ChangeNotificationManager: @unchecked Sendable {
         
         BlazeLogger.trace("Notifying \(currentObservers.count) observers of \(changesToNotify.count) changes")
         
+        // Copy observers to avoid data race
+        let observersCopy = Array(currentObservers.values)
+        let changesCopy = changesToNotify
+        
         // Notify on main thread for UI safety
         DispatchQueue.main.async {
-            for observer in currentObservers.values {
-                observer(changesToNotify)
+            for observer in observersCopy {
+                observer(changesCopy)
             }
         }
     }

@@ -40,7 +40,7 @@ internal struct AnyRLSPolicy {
 /// Global RLS policy registry (optional, additive only)
 /// If no policies are registered, no filtering occurs
 public struct BlazeRLSRegistry {
-    private static var policies: [String: AnyRLSPolicy] = [:]
+    nonisolated(unsafe) private static var policies: [String: AnyRLSPolicy] = [:]
     private static let lock = NSLock()
     
     /// Register an RLS policy for a model type

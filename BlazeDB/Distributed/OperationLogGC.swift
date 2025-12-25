@@ -156,8 +156,8 @@ extension OperationLog {
             totalOperations: operations.count,
             uniqueRecords: operationsByRecord.count,
             operationsByType: operationsByType.mapValues { $0.count },
-            oldestTimestamp: operations.values.map(\.timestamp.counter).min() ?? 0,
-            newestTimestamp: operations.values.map(\.timestamp.counter).max() ?? 0
+            oldestTimestamp: operations.values.map { $0.timestamp.counter }.min() ?? 0,
+            newestTimestamp: operations.values.map { $0.timestamp.counter }.max() ?? 0
         )
     }
 }

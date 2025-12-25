@@ -181,7 +181,7 @@ extension BlazeDBClient {
         where predicate: ((BlazeDataRecord) -> Bool)? = nil
     ) -> AsyncThrowingStream<[BlazeDataRecord], Error> {
         AsyncThrowingStream { continuation in
-            Task {
+            Task { @Sendable in
                 do {
                     var offset = 0
                     while true {

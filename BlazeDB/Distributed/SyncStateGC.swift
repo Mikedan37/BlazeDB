@@ -30,7 +30,7 @@ extension BlazeSyncEngine {
     /// Remove sync state for deleted records
     public func cleanupSyncStateForDeletedRecords() async throws {
         // Get all existing records from database
-        let allRecords = try localDB.fetchAll()
+        let allRecords = try await localDB.fetchAll()
         let existingIDs = Set(allRecords.compactMap { $0.storage["id"]?.uuidValue })
         
         // Remove sync state for records that no longer exist
@@ -128,7 +128,7 @@ extension BlazeSyncEngine {
     /// Run full sync state cleanup
     public func runFullSyncStateCleanup(config: SyncStateGCConfig) async throws {
         // Get existing records
-        let allRecords = try localDB.fetchAll()
+        let allRecords = try await localDB.fetchAll()
         let existingIDs = Set(allRecords.compactMap { $0.storage["id"]?.uuidValue })
         
         // Cleanup deleted records
