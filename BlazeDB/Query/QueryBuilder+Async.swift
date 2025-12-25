@@ -20,25 +20,25 @@ extension QueryBuilder {
     /// Filter records where field equals value (async)
     @discardableResult
     public func `where`(_ field: String, equals value: BlazeDocumentField) async -> QueryBuilder {
-        return await Task { self.where(field, equals: value) }.value
+        return self.where(field, equals: value)
     }
     
     /// Filter records where field does not equal value (async)
     @discardableResult
     public func `where`(_ field: String, notEquals value: BlazeDocumentField) async -> QueryBuilder {
-        return await Task { self.where(field, notEquals: value) }.value
+        return self.where(field, notEquals: value)
     }
     
     /// Filter records where field is greater than value (async)
     @discardableResult
     public func `where`(_ field: String, greaterThan value: BlazeDocumentField) async -> QueryBuilder {
-        return await Task { self.where(field, greaterThan: value) }.value
+        return self.where(field, greaterThan: value)
     }
     
     /// Filter records where field is less than value (async)
     @discardableResult
     public func `where`(_ field: String, lessThan value: BlazeDocumentField) async -> QueryBuilder {
-        return await Task { self.where(field, lessThan: value) }.value
+        return self.where(field, lessThan: value)
     }
     
     // MARK: - Async JOIN
@@ -51,7 +51,7 @@ extension QueryBuilder {
         equals primaryKey: String = "id",
         type: JoinType = .inner
     ) async -> QueryBuilder {
-        return await Task { self.join(other, on: foreignKey, equals: primaryKey, type: type) }.value
+        return self.join(other, on: foreignKey, equals: primaryKey, type: type)
     }
     
     // MARK: - Async Sorting
@@ -59,7 +59,7 @@ extension QueryBuilder {
     /// Order results by field (async)
     @discardableResult
     public func orderBy(_ field: String, descending: Bool = false) async -> QueryBuilder {
-        return await Task { self.orderBy(field, descending: descending) }.value
+        return self.orderBy(field, descending: descending)
     }
     
     // MARK: - Async Execution
