@@ -39,7 +39,7 @@ private class RegexCache {
     }
 }
 
-private let regexCache = RegexCache()
+nonisolated(unsafe) private let regexCache = RegexCache()
 
 // MARK: - QueryBuilder Regex Extension
 
