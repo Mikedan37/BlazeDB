@@ -250,7 +250,7 @@ extension BlazeDBClient {
     
     // MARK: - Auto-VACUUM
     
-    private static var autoVacuumTimers: [String: Timer] = [:]
+    nonisolated(unsafe) private static var autoVacuumTimers: [String: Timer] = [:]
     private static let timerLock = NSLock()
     
     /// Enable automatic VACUUM when waste exceeds threshold

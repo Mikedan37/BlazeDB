@@ -206,7 +206,7 @@ extension StorageLayout {
                         keyLength: 32
                     )
                     let pbkdf2Key10k = SymmetricKey(data: pbkdf2KeyData10k)
-                    let pbkdf2KeyDataForCompare10k = pbkdf2Key10k.withUnsafeBytes { Data(buffer: $0) }
+                    let pbkdf2KeyDataForCompare10k = pbkdf2Key10k.withUnsafeBytes { Data($0) }
                     BlazeLogger.debug("🔍 PBKDF2 (10k) key data (first 16 bytes): \(pbkdf2KeyDataForCompare10k.prefix(16).map { String(format: "%02x", $0) }.joined())")
                     
                     if secureLayout.verify(using: pbkdf2Key10k) {
@@ -231,7 +231,7 @@ extension StorageLayout {
                         keyLength: 32
                     )
                     let pbkdf2Key100k = SymmetricKey(data: pbkdf2KeyData100k)
-                    let pbkdf2KeyDataForCompare100k = pbkdf2Key100k.withUnsafeBytes { Data(buffer: $0) }
+                    let pbkdf2KeyDataForCompare100k = pbkdf2Key100k.withUnsafeBytes { Data($0) }
                     BlazeLogger.debug("🔍 PBKDF2 (100k) key data (first 16 bytes): \(pbkdf2KeyDataForCompare100k.prefix(16).map { String(format: "%02x", $0) }.joined())")
                     
                     if secureLayout.verify(using: pbkdf2Key100k) {

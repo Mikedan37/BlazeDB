@@ -113,7 +113,7 @@ private extension Array {
         var results: [T] = []
         results.reserveCapacity(count)
         
-        DispatchQueue.concurrentPerform(iterations: count) { index in
+        DispatchQueue.concurrentPerform(iterations: count) { @Sendable index in
             let transformed = transform(self[index])
             lock.lock()
             results.append(transformed)

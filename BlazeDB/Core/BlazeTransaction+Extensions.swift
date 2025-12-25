@@ -181,13 +181,15 @@ extension BlazeDBClient {
         where predicate: ((BlazeDataRecord) -> Bool)? = nil
     ) -> AsyncThrowingStream<[BlazeDataRecord], Error> {
         AsyncThrowingStream { continuation in
-            Task { @Sendable in
+            // Capture predicate before Task to avoid Sendable issues
+            let capturedPredicate = predicate
+            Task {
                 do {
                     var offset = 0
                     while true {
                         let batch = try await self.fetchPage(offset: offset, limit: batchSize)
                         
-                        let filtered = if let predicate = predicate {
+                        let filtered = if let predicate = capturedPredicate {
                             batch.filter(predicate)
                         } else {
                             batch

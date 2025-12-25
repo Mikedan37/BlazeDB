@@ -128,7 +128,7 @@ extension BlazeDocumentField {
 
 extension BlazeDBClient {
     
-    private static var compressionConfigs: [String: CompressionConfig] = [:]
+    nonisolated(unsafe) private static var compressionConfigs: [String: CompressionConfig] = [:]
     private static let compressionLock = NSLock()
     
     /// Enable compression for large fields

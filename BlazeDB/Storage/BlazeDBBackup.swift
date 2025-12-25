@@ -24,7 +24,7 @@ public enum ImportMode: Sendable {
 
 // MARK: - Backup Stats
 
-public struct BackupStats {
+public struct BackupStats: Sendable {
     public let recordCount: Int
     public let fileSize: Int64
     public let duration: TimeInterval

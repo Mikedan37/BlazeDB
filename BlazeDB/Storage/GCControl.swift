@@ -72,25 +72,25 @@ public struct GCPolicy {
     }
     
     // Predefined policies
-    public static let conservative = GCPolicy(
+    nonisolated(unsafe) public static let conservative = GCPolicy(
         name: "Conservative",
         description: "Only VACUUM when > 50% wasted",
         shouldVacuum: { $0.wastePercentage > 50 }
     )
     
-    public static let balanced = GCPolicy(
+    nonisolated(unsafe) public static let balanced = GCPolicy(
         name: "Balanced",
         description: "VACUUM when > 30% wasted",
         shouldVacuum: { $0.wastePercentage > 30 }
     )
     
-    public static let aggressive = GCPolicy(
+    nonisolated(unsafe) public static let aggressive = GCPolicy(
         name: "Aggressive",
         description: "VACUUM when > 15% wasted",
         shouldVacuum: { $0.wastePercentage > 15 }
     )
     
-    public static let spaceSaving = GCPolicy(
+    nonisolated(unsafe) public static let spaceSaving = GCPolicy(
         name: "Space Saving",
         description: "VACUUM when > 10 MB wasted OR > 20% wasted",
         shouldVacuum: { $0.wastedSpace > 10_000_000 || $0.wastePercentage > 20 }
@@ -231,7 +231,7 @@ public final class GCManager {
 
 extension BlazeDBClient {
     
-    private static var gcManagers: [String: GCManager] = [:]
+    nonisolated(unsafe) private static var gcManagers: [String: GCManager] = [:]
     private static let gcManagerLock = NSLock()
     
     /// Get or create GC manager for this database
