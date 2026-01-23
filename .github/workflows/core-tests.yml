@@ -28,8 +28,12 @@ jobs:
           swift build --target BlazeDump
           swift build --target BlazeInfo
       
+      - name: Build Tier 1 (Gate) Tests
+        run: swift build --target BlazeDBCoreGateTests
+      
       - name: Run Tier 1 (Gate) Tests
         run: swift test --filter BlazeDBCoreGateTests
+        continue-on-error: false
   
   tier2-tests:
     runs-on: macos-latest
