@@ -8,7 +8,7 @@ echo "=== Running BlazeDB Tier 1 (Gate) Tests ==="
 echo "These tests validate core production safety guarantees."
 echo ""
 
-swift test --target BlazeDBCoreGateTests
+swift test --filter BlazeDBCoreGateTests
 
 echo ""
 echo "=== Tier 1 Tests Complete ==="
