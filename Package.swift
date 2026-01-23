@@ -86,8 +86,7 @@ let package = Package(
                 "Migration/CoreDataMigrator.swift",
                 "Migration/SQLiteMigrator.swift",
                 "Migration/SQLMigrator.swift",
-                // Exclude SwiftUI (not core database functionality)
-                "SwiftUI",
+                // SwiftUI is included conditionally (only on platforms that support it)
                 // Exclude umbrella re-export file
                 "BlazeDBReexport.swift"
             ],

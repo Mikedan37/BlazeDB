@@ -181,11 +181,11 @@ public final class BlazeQueryTypedObserver<T: BlazeDocument>: ObservableObject {
     
     deinit {
         refreshTask?.cancel()
-        // Timer cleanup - access through MainActor.run
+        // Timer cleanup - invalidate on main actor
         if let timer = autoRefreshTimer {
-            // Use nonisolated access since we're in deinit
-            // Timer will be cleaned up when observer is deallocated
-            _ = timer  // Suppress warning, timer will be invalidated on deallocation
+            Task { @MainActor in
+                timer.invalidate()
+            }
         }
     }
     

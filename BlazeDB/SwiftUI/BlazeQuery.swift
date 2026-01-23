@@ -202,11 +202,11 @@ public final class BlazeQueryObserver: ObservableObject {
     
     deinit {
         refreshTask?.cancel()
-        // Timer cleanup - access through MainActor.run
+        // Timer cleanup - invalidate on main actor
         if let timer = autoRefreshTimer {
-            // Use nonisolated access since we're in deinit
-            // Timer will be cleaned up when observer is deallocated
-            _ = timer  // Suppress warning, timer will be invalidated on deallocation
+            Task { @MainActor in
+                timer.invalidate()
+            }
         }
     }
     
@@ -284,10 +284,13 @@ public final class BlazeQueryObserver: ObservableObject {
     
     /// Enable auto-refresh at the specified interval
     /// - Parameter interval: Time interval between refreshes in seconds
+    @MainActor
     public func enableAutoRefresh(interval: TimeInterval = 5.0) {
         autoRefreshTimer?.invalidate()
         autoRefreshTimer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { [weak self] _ in
-            self?.refresh()
+            Task { @MainActor in
+                self?.refresh()
+            }
         }
     }
     
