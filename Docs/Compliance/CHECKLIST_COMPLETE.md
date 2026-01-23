@@ -22,6 +22,8 @@
 - Linux compatibility (`LinuxCompatibilityTests.swift`)
 - Crash recovery (`CrashRecoveryTests.swift`)
 - Error surface (`ErrorSurfaceTests.swift`)
+- Preset methods (`PresetTests.swift`)
+- Guardrails (`GuardrailTests.swift`)
 
 ### Documentation
 - Query performance (`Docs/GettingStarted/QUERY_PERFORMANCE.md`)
@@ -29,6 +31,10 @@
 - Import/export (documented in `PRE_USER_HARDENING.md`)
 - Operational confidence (`Docs/GettingStarted/OPERATIONAL_CONFIDENCE.md`)
 - Concurrency compliance (`Docs/Compliance/CONCURRENCY_COMPLIANCE.md`)
+- Usage by task (`Docs/Guides/USAGE_BY_TASK.md`)
+- Extension points (`Docs/Architecture/EXTENSION_POINTS.md`)
+- Anti-patterns (`Docs/Guides/ANTI_PATTERNS.md`)
+- Server embedding (`Docs/Guides/RUNNING_IN_SERVERS.md`)
 - All documentation links updated in README.md
 
 ### Error Handling
@@ -66,6 +72,16 @@
 - Changelog maintained (`Docs/CHANGELOG.md`)
 - Release posture documented (`Docs/RELEASE_POSTURE.md`)
 
+### Usability & Adoption Hardening
+- Preset methods (`openForCLI()`, `openForDaemon()`, `openForTesting()`)
+- Task-based documentation (`USAGE_BY_TASK.md`)
+- Schema validation guardrails (`openWithSchemaValidation()`)
+- Extension points documented (`EXTENSION_POINTS.md`)
+- Anti-patterns guide (`ANTI_PATTERNS.md`)
+- Server embedding guide (`RUNNING_IN_SERVERS.md`)
+- Tests for presets and guardrails (`PresetTests.swift`, `GuardrailTests.swift`)
+- README updated with clear entry point guidance
+
 ---
 
 ## Summary
@@ -78,7 +94,17 @@ BlazeDB is now:
 - Fully documented and organized
 - Safe (no fatalError, proper error handling)
 - Tested (comprehensive test coverage)
+- Usable (clear entry points, task-based docs, guardrails)
+- Extensible (documented extension points, anti-patterns)
 - Ready for early adopters
+
+**Usability Improvements:**
+- Clear entry points (`openDefault()`, presets for CLI/daemon/testing)
+- Task-based documentation (questions → APIs)
+- Explicit guardrails (schema validation, restore conflicts)
+- Extension guidance (where to extend, what not to touch)
+- Anti-patterns documented (what breaks)
+- Server embedding clarity (Vapor example, non-goals)
 
 **Next Steps:**
 - Real-world usage with early adopters
