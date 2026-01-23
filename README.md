@@ -87,6 +87,8 @@ let results = try db.query()
 
 Directories are created automatically. Encryption is enabled by default.
 
+**New to BlazeDB?** Start with the [How to Use BlazeDB](Docs/GettingStarted/HOW_TO_USE_BLAZEDB.md) guide - it's copy-paste friendly and gets you running in minutes.
+
 **Linux Users:** See [Linux Getting Started Guide](Docs/GettingStarted/LINUX_GETTING_STARTED.md) for Linux-specific setup and examples.
 
 Or in Xcode: **File → Add Package Dependencies** → paste the repository URL.
