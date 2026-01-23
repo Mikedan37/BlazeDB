@@ -1,106 +1,127 @@
 //
 //  QuickStart.swift
-//  BlazeDB Examples
+//  BlazeDB
 //
-//  Quick start guide showing basic BlazeDB usage
-//
-//  Created: 2025-11-13
+//  Fast-start example: Complete workflow in one file
+//  Runs in <90 seconds, demonstrates all major features
 //
 
 import Foundation
 import BlazeDB
 
-/// Quick start example
+// MARK: - Quick Start Example
+
 func quickStartExample() throws {
-    print("🔥 BlazeDB Quick Start Example\n")
+    print("🚀 BlazeDB Quick Start Example\n")
     
-    // 1. Create database (super simple - just a name!)
-    let db = try BlazeDBClient(name: "QuickStart", password: "secure-password-123")
-    // Database automatically stored in: ~/Library/Application Support/BlazeDB/QuickStart.blazedb
+    // 1. Open database (or create if doesn't exist)
+    print("1. Opening database...")
+    let db = try BlazeDB.openOrCreate(name: "quickstart", password: "demo-password-123")
+    print("   ✅ Database opened: \(db.fileURL.path)\n")
     
-    print("✅ Database created\n")
+    // 2. Insert records
+    print("2. Inserting records...")
+    let records = [
+        BlazeDataRecord(["name": .string("Alice"), "age": .int(30), "role": .string("admin")]),
+        BlazeDataRecord(["name": .string("Bob"), "age": .int(25), "role": .string("user")]),
+        BlazeDataRecord(["name": .string("Charlie"), "age": .int(35), "role": .string("admin")])
+    ]
     
-    // 2. Insert a record
-    let userID = try db.insert(BlazeDataRecord([
-        "name": .string("Alice"),
-        "age": .int(30),
-        "email": .string("alice@example.com"),
-        "active": .bool(true)
-    ]))
+    let ids = try db.insertMany(records)
+    print("   ✅ Inserted \(ids.count) records\n")
     
-    print("✅ Inserted user: \(userID)\n")
-    
-    // 3. Fetch the record
-    if let user = try db.fetch(id: userID) {
-        print("📖 Fetched user:")
-        print("   Name: \(user["name"]?.stringValue ?? "unknown")")
-        print("   Age: \(user["age"]?.intValue ?? 0)")
-        print("")
-    }
-    
-    // 4. Update the record
-    try db.update(id: userID, with: BlazeDataRecord([
-        "age": .int(31),
-        "lastLogin": .date(Date())
-    ]))
-    
-    print("✅ Updated user\n")
-    
-    // 5. Query records
-    // Insert more users first
-    try db.insert(BlazeDataRecord([
-        "name": .string("Bob"),
-        "age": .int(25),
-        "active": .bool(true)
-    ]))
-    
-    try db.insert(BlazeDataRecord([
-        "name": .string("Charlie"),
-        "age": .int(35),
-        "active": .bool(false)
-    ]))
-    
-    let activeUsers = try db.query()
-        .where("active", equals: .bool(true))
-        .where("age", greaterThan: .int(20))
+    // 3. Query with filter
+    print("3. Querying records...")
+    let results = try db.query()
+        .where("role", equals: .string("admin"))
+        .orderBy("age", descending: true)
         .execute()
+        .records
     
-    print("📊 Found \(activeUsers.count) active users over 20\n")
-    
-    // 6. Aggregation
-    let stats = try db.query()
-        .where("active", equals: .bool(true))
-        .sum("age", as: "totalAge")
-        .count(as: "userCount")
-        .executeAggregation()
-    
-    if let avgAge = stats.sum("totalAge"), let count = stats.count("userCount") {
-        print("📈 Average age: \(avgAge / Double(count))\n")
+    print("   ✅ Found \(results.count) admins:")
+    for record in results {
+        if let name = record.string("name"), let age = record.int("age") {
+            print("      - \(name), age \(age)")
+        }
     }
+    print()
     
-    // 7. Delete a record
-    try db.delete(id: userID)
-    print("✅ Deleted user\n")
+    // 4. Explain query
+    print("4. Explaining query...")
+    let explanation = try db.query()
+        .where("role", equals: .string("admin"))
+        .explain()
+    print("   \(explanation.description)\n")
     
-    // 8. Persist to disk
-    try db.persist()
-    print("💾 Database persisted to disk\n")
+    // 5. Check health
+    print("5. Checking database health...")
+    let health = try db.health()
+    print("   Status: \(health.status)")
+    if !health.reasons.isEmpty {
+        print("   Reasons:")
+        for reason in health.reasons {
+            print("      - \(reason)")
+        }
+    }
+    print()
     
-    // 9. MVCC: Enable concurrent access (optional)
-    db.setMVCCEnabled(true)
-    print("🚀 MVCC enabled (20-100x faster concurrent reads!)\n")
+    // 6. Get statistics
+    print("6. Database statistics...")
+    let stats = try db.stats()
+    print("   Records: \(stats.recordCount)")
+    print("   Pages: \(stats.pageCount)")
+    print("   Size: \(ByteCountFormatter.string(fromByteCount: Int64(stats.databaseSize), countStyle: .file))")
+    print()
     
-    // 10. Discover databases
-    let databases = try BlazeDBClient.discoverDatabases()
-    print("📦 Found \(databases.count) databases in default location\n")
+    // 7. Export dump
+    print("7. Exporting database dump...")
+    let dumpURL = FileManager.default.temporaryDirectory
+        .appendingPathComponent("quickstart-dump.blazedump")
+    try db.export(to: dumpURL)
+    print("   ✅ Dump created: \(dumpURL.path)\n")
     
-    print("✅ Example complete!")
+    // 8. Verify dump
+    print("8. Verifying dump...")
+    let dumpHeader = try BlazeDBImporter.verify(dumpURL)
+    print("   ✅ Dump verified:")
+    print("      Schema version: \(dumpHeader.schemaVersion)")
+    print("      Record count: \(dumpHeader.recordCount)")
+    print("      Created: \(dumpHeader.createdAt)\n")
+    
+    // 9. Restore to new database
+    print("9. Restoring to new database...")
+    let restoredDB = try BlazeDB.openTemporary(name: "restored", password: "demo-password-123")
+    try BlazeDBImporter.restore(from: dumpURL, to: restoredDB, allowSchemaMismatch: false)
+    
+    let restoredCount = restoredDB.getRecordCount()
+    print("   ✅ Restored \(restoredCount) records\n")
+    
+    // 10. Cleanup
+    print("10. Cleaning up...")
+    try? FileManager.default.removeItem(at: dumpURL)
+    print("   ✅ Cleanup complete\n")
+    
+    print("✨ Quick start complete! All operations succeeded.\n")
+    print("Next steps:")
+    print("  - Read Docs/Guides/USAGE_BY_TASK.md for common tasks")
+    print("  - Check Docs/GettingStarted/QUERY_PERFORMANCE.md for query optimization")
+    print("  - Run 'blazedb doctor' for database diagnostics")
 }
 
-// Run the example
-do {
-    try quickStartExample()
-} catch {
-    print("❌ Error: \(error)")
-}
+// MARK: - Main
 
+if CommandLine.arguments.contains("--run") {
+    do {
+        try quickStartExample()
+    } catch {
+        print("❌ Error: \(error)")
+        if let blazeError = error as? BlazeDBError {
+            print("\n💡 \(blazeError.suggestedMessage)")
+        }
+        exit(1)
+    }
+} else {
+    print("BlazeDB Quick Start Example")
+    print("Run with: swift run QuickStart --run")
+    print("Or add to Package.swift as executable target")
+}
