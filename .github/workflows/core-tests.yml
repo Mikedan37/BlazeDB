@@ -12,7 +12,7 @@ jobs:
     name: Core Tests (Swift 6 Compliant)
     steps:
       - uses: actions/checkout@v3
-      - uses: swift-actions/setup-swift@v1
+      - uses: swift-actions/setup-swift@v2
         with:
           swift-version: "6.0"
       
@@ -43,7 +43,7 @@ jobs:
     continue-on-error: true
     steps:
       - uses: actions/checkout@v3
-      - uses: swift-actions/setup-swift@v1
+      - uses: swift-actions/setup-swift@v2
         with:
           swift-version: "6.0"
       
