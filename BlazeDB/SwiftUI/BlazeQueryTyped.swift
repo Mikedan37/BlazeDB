@@ -158,7 +158,7 @@ public final class BlazeQueryTypedObserver<T: BlazeDocument>: ObservableObject {
     private let limitCount: Int?
     
     private var refreshTask: Task<Void, Never>?
-    private var autoRefreshTimer: Timer?
+    @MainActor private var autoRefreshTimer: Timer?
     
     // MARK: - Initialization
     
@@ -181,12 +181,8 @@ public final class BlazeQueryTypedObserver<T: BlazeDocument>: ObservableObject {
     
     deinit {
         refreshTask?.cancel()
-        // Timer cleanup - invalidate on main actor
-        if let timer = autoRefreshTimer {
-            Task { @MainActor in
-                timer.invalidate()
-            }
-        }
+        // Timer cleanup - autoRefreshTimer is @MainActor, will be cleaned up automatically
+        // No explicit cleanup needed in deinit
     }
     
     // MARK: - Public Methods
@@ -255,14 +251,19 @@ public final class BlazeQueryTypedObserver<T: BlazeDocument>: ObservableObject {
     }
     
     /// Enable auto-refresh at the specified interval
+    /// - Parameter interval: Time interval between refreshes in seconds
+    @MainActor
     public func enableAutoRefresh(interval: TimeInterval = 5.0) {
         autoRefreshTimer?.invalidate()
         autoRefreshTimer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { [weak self] _ in
-            self?.refresh()
+            Task { @MainActor in
+                self?.refresh()
+            }
         }
     }
     
     /// Disable auto-refresh
+    @MainActor
     public func disableAutoRefresh() {
         autoRefreshTimer?.invalidate()
         autoRefreshTimer = nil
