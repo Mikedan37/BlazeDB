@@ -56,6 +56,8 @@ dependencies: [
 
 ### Simplest Usage (Zero Configuration)
 
+**If you don't know which method to use, use `openDefault()`. It's the recommended entry point.**
+
 ```swift
 import BlazeDB
 
@@ -73,6 +75,11 @@ let results = try db.query()
 
 // That's it! No configuration needed.
 ```
+
+**Preset methods for specific use cases:**
+- `openForCLI()` - Command-line tools
+- `openForDaemon()` - Server processes (Vapor, daemons)
+- `openForTesting()` - Tests (uses temporary directory)
 
 **Platform Defaults:**
 - **macOS:** `~/Library/Application Support/BlazeDB/mydb.blazedb`
@@ -201,16 +208,25 @@ print("Pages: \(stats.pageCount), Records: \(stats.recordCount), Indexes: \(stat
 
 ## Documentation
 
+**Start here:**
+- **[Usage by Task](Docs/Guides/USAGE_BY_TASK.md)** - Common tasks and APIs (start here)
+- **[Getting Started](Docs/GettingStarted/)** - Getting started guides
+- **[Linux Guide](Docs/GettingStarted/LINUX_GETTING_STARTED.md)** - Linux-specific setup
+
+**Architecture & Design:**
 - **[Architecture](Docs/Architecture/)** - System layers, storage engine, MVCC, query execution
+- **[Extension Points](Docs/Architecture/EXTENSION_POINTS.md)** - Where to extend BlazeDB
 - **[Security](Docs/Security/)** - Encryption model, threat model, cryptographic pipelines
 - **[Performance](Docs/Performance/)** - Benchmarks, methodology, performance invariants
 - **[Transactions](Docs/Features/TRANSACTIONS.md)** - WAL, ACID guarantees, crash recovery
 - **[Protocol](Docs/Design/PROTOCOL.md)** - BlazeBinary format, encoding rules, determinism
-- **[Why Not SQLite](Docs/GettingStarted/WHY_NOT_SQLITE.md)** - Comparisons and tradeoffs
-- **[Compression Design](Docs/Design/COMPRESSION_DESIGN.md)** - Compression strategy (optional, opt-in)
-- **[Snapshot Sync Design](Docs/Design/SNAPSHOT_SYNC_DESIGN.md)** - Snapshot-based initial sync (design only, not implemented)
 
-See the [documentation index](Docs/MASTER_DOCUMENTATION_INDEX.md) for API reference, guides, and examples.
+**Guides:**
+- **[Running in Servers](Docs/Guides/RUNNING_IN_SERVERS.md)** - Vapor/server integration
+- **[Anti-Patterns](Docs/Guides/ANTI_PATTERNS.md)** - What NOT to do
+- **[Why Not SQLite](Docs/GettingStarted/WHY_NOT_SQLITE.md)** - Comparisons and tradeoffs
+
+See the [documentation index](Docs/MASTER_DOCUMENTATION_INDEX.md) for complete API reference.
 
 ---
 
