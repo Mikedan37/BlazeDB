@@ -85,7 +85,7 @@ final class StorageLayoutTests: XCTestCase {
         let metaURL = tempURL.deletingPathExtension().appendingPathExtension("meta")
         
         let layout = StorageLayout(
-            indexMap: [UUID(): 0],
+            indexMap: [UUID(): [0]],
             nextPageIndex: 1,
             secondaryIndexes: [:]
         )
