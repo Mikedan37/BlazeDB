@@ -12,7 +12,7 @@ import Foundation
 /// High-performance page cache with LRU eviction
 final class PageCache {
     private var cache: [Int: Data] = [:]
-    private var accessOrder: [Int] = []  // LRU tracking
+    internal var accessOrder: [Int] = []  // LRU tracking (internal for optimized extensions)
     private let maxSize: Int
     private let lock = NSLock()
     
@@ -77,33 +77,21 @@ final class PageCache {
     }
     
     func prefetch(_ pageIndices: [Int], reader: (Int) throws -> Data?) throws {
-        // Parallel prefetch for maximum performance!
-        let group = DispatchGroup()
-        let queue = DispatchQueue(label: "com.blazedb.cache.prefetch", attributes: .concurrent)
+        // Serial prefetch for Swift 6 concurrency compliance
         var errors: [Error] = []
-        let errorLock = NSLock()
         
         for index in pageIndices {
             // Skip if already cached
             if get(index) != nil { continue }
             
-            group.enter()
-            queue.async {
-                defer { group.leave() }
-                
-                do {
-                    if let data = try reader(index) {
-                        self.set(index, data: data)
-                    }
-                } catch {
-                    errorLock.lock()
-                    errors.append(error)
-                    errorLock.unlock()
+            do {
+                if let data = try reader(index) {
+                    set(index, data: data)
                 }
+            } catch {
+                errors.append(error)
             }
         }
-        
-        group.wait()
         
         if let firstError = errors.first {
             throw firstError
