@@ -82,7 +82,7 @@ jobs:
   # ═══════════════════════════════════════════════════════════
   release-notes:
     name: 📝 Generate Release Notes
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     needs: validate
     
     steps:
@@ -145,7 +145,7 @@ jobs:
   # ═══════════════════════════════════════════════════════════
   create-release:
     name: 🚀 Create GitHub Release
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     needs: [validate, build, release-notes]
     permissions:
       contents: write
