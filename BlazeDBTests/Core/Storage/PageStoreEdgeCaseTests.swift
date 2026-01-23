@@ -9,7 +9,7 @@ import Crypto
 import Crypto
 #endif
 import XCTest
-@testable import BlazeDB
+@testable import BlazeDBCore
 
 // Use the real PageStore from the BlazeDB module
 private typealias RealPageStore = BlazeDB.PageStore

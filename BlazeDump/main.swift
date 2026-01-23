@@ -7,7 +7,7 @@
 //
 
 import Foundation
-import BlazeDB
+import BlazeDBCore
 
 func dumpDatabase(dbPath: String, dumpPath: String, password: String) {
     do {

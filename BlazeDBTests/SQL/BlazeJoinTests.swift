@@ -4,7 +4,7 @@
 //  Comprehensive tests for JOIN functionality
 
 import XCTest
-@testable import BlazeDB
+@testable import BlazeDBCore
 
 final class BlazeJoinTests: XCTestCase {
     

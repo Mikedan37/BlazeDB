@@ -52,19 +52,21 @@ extension BlazeDBClient {
             // Use true async insert
             let insertedId = try await collection.insertAsync(record)
             
-            // Log to transaction log (async)
-            Task.detached { [weak self] in
-                self?.appendToTransactionLog("insert", payload: record.storage)
-            }
+            // Log to transaction log (synchronously - thread-safe method)
+            appendToTransactionLog("insert", payload: record.storage)
             
             // Track telemetry
+            #if BLAZEDB_DISTRIBUTED
             let duration = Date().timeIntervalSince(startTime) * 1000
             telemetry.record(operation: "insertAsync", duration: duration, success: true, recordCount: 1)
+            #endif
             
             return insertedId
         } catch {
+            #if BLAZEDB_DISTRIBUTED
             let duration = Date().timeIntervalSince(startTime) * 1000
             telemetry.record(operation: "insertAsync", duration: duration, success: false, recordCount: 0, error: error)
+            #endif
             throw error
         }
     }
@@ -77,12 +79,10 @@ extension BlazeDBClient {
             // Use true async batch insert
             let ids = try await collection.insertBatchAsync(records)
             
-            // Log to transaction log (async)
-            Task.detached { [weak self] in
-                for (index, id) in ids.enumerated() {
-                    if index < records.count {
-                        self?.appendToTransactionLog("insert", payload: records[index].storage)
-                    }
+            // Log to transaction log (synchronously - thread-safe method)
+            for (index, id) in ids.enumerated() {
+                if index < records.count {
+                    appendToTransactionLog("insert", payload: records[index].storage)
                 }
             }
             
@@ -164,10 +164,8 @@ extension BlazeDBClient {
             // Use true async update
             try await collection.updateAsync(id: id, with: data)
             
-            // Log to transaction log (async)
-            Task.detached { [weak self] in
-                self?.appendToTransactionLog("update", payload: data.storage)
-            }
+            // Log to transaction log (synchronously - thread-safe method)
+            appendToTransactionLog("update", payload: data.storage)
             
             let duration = Date().timeIntervalSince(startTime) * 1000
             telemetry.record(operation: "updateAsync", duration: duration, success: true, recordCount: 1)
@@ -186,10 +184,8 @@ extension BlazeDBClient {
             // Use true async delete
             try await collection.deleteAsync(id: id)
             
-            // Log to transaction log (async)
-            Task.detached { [weak self] in
-                self?.appendToTransactionLog("delete", payload: ["id": .string(id.uuidString)])
-            }
+            // Log to transaction log (synchronously - thread-safe method)
+            appendToTransactionLog("delete", payload: ["id": .string(id.uuidString)])
             
             let duration = Date().timeIntervalSince(startTime) * 1000
             telemetry.record(operation: "deleteAsync", duration: duration, success: true, recordCount: 1)

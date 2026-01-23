@@ -1,5 +1,5 @@
 import XCTest
-@testable import BlazeDB
+@testable import BlazeDBCore
 
 /// Tests for v2.4 DX improvements - ensures backward compatibility
 final class DXImprovementsTests: XCTestCase {

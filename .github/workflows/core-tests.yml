@@ -16,26 +16,23 @@ jobs:
         with:
           swift-version: "6.0"
       
-      - name: Build Core
-        run: swift build --target BlazeDB
+      - name: Check Frozen Core
+        run: ./Scripts/check-freeze.sh HEAD^
       
-      - name: Run Core Tests
-        run: |
-          # Run tests individually to avoid distributed module build failures
-          # Filter out distributed module errors from output
-          swift test --filter QueryErgonomicsTests 2>&1 | grep -v "Distributed\|Telemetry\|InMemoryRelay\|BlazeTopology\|TCPRelay" || true
-          swift test --filter SchemaMigrationTests 2>&1 | grep -v "Distributed\|Telemetry\|InMemoryRelay\|BlazeTopology\|TCPRelay" || true
-          swift test --filter ImportExportTests 2>&1 | grep -v "Distributed\|Telemetry\|InMemoryRelay\|BlazeTopology\|TCPRelay" || true
-          swift test --filter OperationalConfidenceTests 2>&1 | grep -v "Distributed\|Telemetry\|InMemoryRelay\|BlazeTopology\|TCPRelay" || true
-          swift test --filter LinuxCompatibilityTests 2>&1 | grep -v "Distributed\|Telemetry\|InMemoryRelay\|BlazeTopology\|TCPRelay" || true
-          swift test --filter CrashRecoveryTests 2>&1 | grep -v "Distributed\|Telemetry\|InMemoryRelay\|BlazeTopology\|TCPRelay" || true
-          swift test --filter ErrorSurfaceTests 2>&1 | grep -v "Distributed\|Telemetry\|InMemoryRelay\|BlazeTopology\|TCPRelay" || true
+      - name: Build Core
+        run: swift build --target BlazeDBCore
       
       - name: Build CLI Tools
         run: |
           swift build --target BlazeDoctor
           swift build --target BlazeDump
           swift build --target BlazeInfo
+      
+      - name: Run Core Tests
+        run: swift test --filter BlazeDBCoreTests
+      
+      - name: Run CLI Smoke Tests
+        run: swift test --filter CLISmokeTests
   
   distributed-tests:
     runs-on: macos-latest

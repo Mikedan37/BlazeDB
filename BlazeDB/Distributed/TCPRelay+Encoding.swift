@@ -6,6 +6,9 @@
 //
 
 #if !BLAZEDB_LINUX_CORE
+#if BLAZEDB_DISTRIBUTED
+import BlazeDBCore
+#endif
 import Foundation
 
 extension TCPRelay {
@@ -38,7 +41,7 @@ extension TCPRelay {
         }
         
         // SMART CACHING + PARALLEL ENCODING: Check cache first, then encode in parallel!
-        let encodedOps = try await uniqueOps.concurrentMap { op in
+        let encodedOps = try await uniqueOps.concurrentMap { @Sendable op in
             // Check cache first (smart caching!)
             if let cached = Self.getCachedOperation(op) {
                 Self.incrementCacheHits()

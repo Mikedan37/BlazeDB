@@ -3,7 +3,7 @@
 //  Created by Michael Danylchuk on 6/16/25.
 
 import XCTest
-@testable import BlazeDB
+@testable import BlazeDBCore
 
 final class BlazeTransactionTests: XCTestCase {
     var dbURL: URL!

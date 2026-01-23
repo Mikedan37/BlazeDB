@@ -9,7 +9,7 @@
 //
 
 import XCTest
-@testable import BlazeDB
+@testable import BlazeDBCore
 
 final class StorageManagerEdgeCaseTests: XCTestCase {
     

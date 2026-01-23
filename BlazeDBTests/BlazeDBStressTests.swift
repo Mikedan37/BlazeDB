@@ -12,7 +12,7 @@ import Crypto
 #else
 import Crypto
 #endif
-@testable import BlazeDB
+@testable import BlazeDBCore
 
 final class BlazeDBStressTests: XCTestCase {
     var tempURL: URL!

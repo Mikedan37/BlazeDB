@@ -107,25 +107,8 @@ extension BlazeDBClient {
     public func update<T: BlazeDocument>(_ document: T) throws {
         BlazeLogger.debug("Updating type-safe document of type \(T.self) with id: \(document.id)")
         let storage = try document.toStorage()
-        
-        // Use Task.synchronous pattern to call async method
-        let semaphore = DispatchSemaphore(value: 0)
-        var error: Error?
-        
-        Task {
-            do {
-                try await self.update(id: document.id, data: storage)
-            } catch let e {
-                error = e
-            }
-            semaphore.signal()
-        }
-        
-        semaphore.wait()
-        
-        if let error = error {
-            throw error
-        }
+        // Use the synchronous update method
+        try update(id: document.id, with: storage)
     }
     
     // MARK: - Upsert

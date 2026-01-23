@@ -4,7 +4,7 @@
 
 import Foundation
 import XCTest
-@testable import BlazeDB
+@testable import BlazeDBCore
 
 /// Helper to ensure proper cleanup of test files even if tests crash
 extension XCTestCase {

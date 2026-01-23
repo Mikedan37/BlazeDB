@@ -4,7 +4,7 @@
 //  Bulletproof edge case tests for Query Builder
 
 import XCTest
-@testable import BlazeDB
+@testable import BlazeDBCore
 
 final class QueryBuilderEdgeCaseTests: XCTestCase {
     

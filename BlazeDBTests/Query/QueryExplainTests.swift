@@ -4,7 +4,7 @@
 //  Comprehensive tests for query EXPLAIN and optimization
 
 import XCTest
-@testable import BlazeDB
+@testable import BlazeDBCore
 
 final class QueryExplainTests: XCTestCase {
     

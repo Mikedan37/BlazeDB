@@ -75,6 +75,10 @@ try app.run()
 
 **Important:** One database instance per server process. Do not share database files.
 
+**Single-Writer Enforcement:**
+BlazeDB uses OS-level file locking (`flock`) to prevent multiple processes from opening the same database.
+If you attempt to open a database that is already open in another process, you will receive a `BlazeDBError.databaseLocked` error with clear guidance on how to resolve it.
+
 ---
 
 ## Lifecycle Guidance
@@ -110,15 +114,31 @@ if health.status == .error {
 ### Server Shutdown
 
 ```swift
-// Database automatically flushes on deinit
-// No explicit cleanup needed for normal shutdown
-
-// For graceful shutdown:
+// Explicit close is recommended for deterministic shutdown
 defer {
-    // BlazeDBClient deinit handles cleanup
-    // WAL is flushed, pages are written
+    try? db.close()  // Idempotent - safe to call multiple times
+}
+
+// Database automatically flushes on deinit if close() not called
+// But explicit close() is recommended for server applications
+```
+
+**Signal Handling (SIGTERM/SIGINT):**
+```swift
+// Handle graceful shutdown
+signal(SIGTERM) { _ in
+    // Close database explicitly
+    try? db.close()
+    exit(0)
+}
+
+signal(SIGINT) { _ in
+    try? db.close()
+    exit(0)
 }
 ```
+
+**Note:** Signal handlers should be minimal. For complex cleanup, use `atexit()` or Vapor's lifecycle hooks instead.
 
 ---
 
@@ -203,6 +223,62 @@ Timer.scheduledTimer(withTimeInterval: 60, repeats: true) { _ in
 
 ---
 
+## Systemd Configuration
+
+**Example systemd service file for BlazeDB-based daemon:**
+
+```ini
+[Unit]
+Description=My BlazeDB Server
+After=network.target
+
+[Service]
+Type=simple
+User=blazedb
+WorkingDirectory=/opt/blazedb-server
+ExecStart=/usr/local/bin/my-server
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+# Environment variables
+Environment=DB_PASSWORD=secure-password-from-secrets
+
+[Install]
+WantedBy=multi-user.target
+```
+
+**Important:** Ensure only one instance runs per database file. Systemd will prevent multiple instances if configured correctly.
+
+---
+
+## Docker Deployment
+
+**Single-container deployment:**
+
+```dockerfile
+FROM swift:6.0
+
+WORKDIR /app
+COPY . .
+RUN swift build -c release
+
+# Database volume (one per container)
+VOLUME ["/data"]
+
+ENV DB_PATH=/data/app.blazedb
+ENV DB_PASSWORD=secure-password
+
+CMD [".build/release/MyServer"]
+```
+
+**Warning:** Do NOT share the database volume between multiple containers. Each container must have its own database file.
+
+**Multi-container deployment:** Use external database (PostgreSQL, MySQL) for shared state. Use BlazeDB only for per-container local storage.
+
+---
+
 ## Summary
 
 **BlazeDB in servers:**
@@ -219,6 +295,12 @@ Timer.scheduledTimer(withTimeInterval: 60, repeats: true) { _ in
 - Multi-process deployments
 - Shared database files
 - Multi-tenant applications
+
+**Safety guarantees:**
+- OS-level file locking prevents double-open
+- Explicit `close()` for deterministic shutdown
+- Format version validation prevents incompatible opens
+- Resource limit warnings prevent silent failures
 
 ---
 

@@ -6,7 +6,7 @@
 //
 
 import XCTest
-@testable import BlazeDB
+@testable import BlazeDBCore
 
 /// These tests simulate "mixed-version" behavior by using databases with
 /// different effective schemas and metadata, then syncing them to ensure:

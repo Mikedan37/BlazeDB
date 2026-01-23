@@ -6,7 +6,7 @@
 //
 
 import Foundation
-@testable import BlazeDB
+@testable import BlazeDBCore
 
 // MARK: - Search Helper Extension
 

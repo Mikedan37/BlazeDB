@@ -301,14 +301,6 @@ public final class BlazeDBClient: @unchecked Sendable {
             // Test cleanup helpers handle aggressive cleanup in test scenarios
             
             print("🔷 [INIT] Creating PageStore...")
-            // Validate format version before opening
-            if FileManager.default.fileExists(atPath: metaURL.path) {
-                try validateFormatVersion()
-            } else {
-                // New database - store current format version
-                try storeFormatVersion()
-            }
-            
             let store = try PageStore(fileURL: fileURL, key: key)
             print("🔷 [INIT] ✅ PageStore created")
             
@@ -324,6 +316,14 @@ public final class BlazeDBClient: @unchecked Sendable {
                                                     encryptionKey: key,
                                                     password: password)  // Pass password for KDF auto-detection
             BlazeLogger.debug("✅ DynamicCollection created")
+            
+            // Validate format version after collection is initialized
+            if FileManager.default.fileExists(atPath: metaURL.path) {
+                try validateFormatVersion()
+            } else {
+                // New database - store current format version
+                try storeFormatVersion()
+            }
         } catch {
             let errorMsg = "❌ Failed to initialize storage: \(error.localizedDescription)"
             BlazeLogger.error(errorMsg)

@@ -24,7 +24,7 @@ import Crypto
 #else
 import Crypto
 #endif
-@testable import BlazeDB
+@testable import BlazeDBCore
 
 private typealias DBPageStore = BlazeDB.PageStore
 

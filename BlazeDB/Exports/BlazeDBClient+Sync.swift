@@ -10,6 +10,10 @@
 #if !BLAZEDB_LINUX_CORE
 import Foundation
 
+#if BLAZEDB_DISTRIBUTED
+import BlazeDBCore
+#endif
+
 extension BlazeDBClient {
     
     /// Simple sync with another database (one-liner!)

@@ -98,6 +98,7 @@ extension BlazeDBClient {
     ///
     /// let bugs = try db.create(Bug.self, count: 10)
     /// ```
+    @MainActor
     public func factory<T: BlazeStorable>(
         _ type: T.Type,
         generator: @escaping (Int) -> T
@@ -107,6 +108,7 @@ extension BlazeDBClient {
     
     /// Create objects using registered factory
     @discardableResult
+    @MainActor
     public func create<T: BlazeStorable>(
         _ type: T.Type,
         count: Int = 1
@@ -124,7 +126,7 @@ extension BlazeDBClient {
         _ type: T.Type,
         count: Int = 1
     ) async throws -> [T] {
-        guard let generator = FactoryRegistry.shared.get(type) else {
+        guard let generator = await FactoryRegistry.shared.get(type) else {
             throw BlazeDBError.transactionFailed("No factory registered for \(T.self)")
         }
         
@@ -133,6 +135,7 @@ extension BlazeDBClient {
     
     /// Create single object
     @discardableResult
+    @MainActor
     public func create<T: BlazeStorable>(_ type: T.Type) throws -> T {
         guard let first = try self.create(type, count: 1).first else {
             throw NSError(domain: "DataSeeding", code: 1, userInfo: [NSLocalizedDescriptionKey: "Failed to create test record of type \(type)"])
@@ -266,7 +269,7 @@ extension BlazeDBClient {
 /// Thread-safe factory registry using MainActor isolation
 @MainActor
 internal class FactoryRegistry {
-    nonisolated(unsafe) static let shared = FactoryRegistry()
+    static let shared = FactoryRegistry()
     
     private var factories: [String: Any] = [:]
     
@@ -275,9 +278,9 @@ internal class FactoryRegistry {
         factories[key] = generator
     }
     
-    func get<T: BlazeStorable>(_ type: T.Type) -> ((Int) -> T)? {
+    func get<T: BlazeStorable>(_ type: T.Type) -> (@Sendable (Int) -> T)? {
         let key = String(describing: type)
-        return factories[key] as? (Int) -> T
+        return factories[key] as? @Sendable (Int) -> T
     }
     
     func clear() {

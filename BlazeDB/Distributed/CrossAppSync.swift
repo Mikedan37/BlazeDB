@@ -6,6 +6,9 @@
 //
 
 #if !BLAZEDB_LINUX_CORE
+#if BLAZEDB_DISTRIBUTED
+import BlazeDBCore
+#endif
 import Foundation
 
 /// Coordinates cross-app synchronization using App Groups

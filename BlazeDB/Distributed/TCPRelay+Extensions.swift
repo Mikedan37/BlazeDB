@@ -8,6 +8,10 @@
 #if !BLAZEDB_LINUX_CORE
 import Foundation
 
+#if BLAZEDB_DISTRIBUTED
+import BlazeDBCore
+#endif
+
 // MARK: - UUID Binary Encoding Extension
 
 extension UUID {
@@ -39,10 +43,10 @@ extension UUID {
 // MARK: - Parallel Map Extension
 
 extension Array {
-    func concurrentMap<T: Sendable>(_ transform: @escaping (Element) async throws -> T) async rethrows -> [T] {
+    func concurrentMap<T: Sendable>(_ transform: @escaping @Sendable (Element) async throws -> T) async rethrows -> [T] {
         return try await withThrowingTaskGroup(of: T.self) { group in
             for item in self {
-                group.addTask {
+                group.addTask { @Sendable in
                     try await transform(item)
                 }
             }

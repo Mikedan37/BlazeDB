@@ -9,7 +9,7 @@
 //
 
 import XCTest
-@testable import BlazeDB
+@testable import BlazeDBCore
 import Foundation
 
 final class SearchPerformanceBenchmarks: XCTestCase {

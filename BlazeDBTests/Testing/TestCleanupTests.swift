@@ -3,7 +3,7 @@
 //  Ensures tests properly clean up temporary files
 
 import XCTest
-@testable import BlazeDB
+@testable import BlazeDBCore
 
 final class TestCleanupTests: XCTestCase {
     

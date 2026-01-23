@@ -4,7 +4,7 @@
 //  Comprehensive tests for query caching
 
 import XCTest
-@testable import BlazeDB
+@testable import BlazeDBCore
 
 final class QueryCacheTests: XCTestCase {
     

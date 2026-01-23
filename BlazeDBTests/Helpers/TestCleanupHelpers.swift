@@ -7,7 +7,7 @@
 
 import XCTest
 import Foundation
-@testable import BlazeDB
+@testable import BlazeDBCore
 
 extension XCTestCase {
     /// Properly clean up a BlazeDB instance and all associated files

@@ -2,7 +2,7 @@
 //  BlazeDB
 //  Created by Michael Danylchuk on 6/15/25.
 import XCTest
-@testable import BlazeDB
+@testable import BlazeDBCore
 
 #if canImport(CryptoKit)
 #if canImport(CryptoKit)

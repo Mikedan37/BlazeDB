@@ -6,7 +6,7 @@
 //
 
 import XCTest
-@testable import BlazeDB
+@testable import BlazeDBCore
 
 /// Focused negative tests for:
 /// - RLS denying access when user is not in allowed set

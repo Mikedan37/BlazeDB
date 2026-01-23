@@ -7,7 +7,7 @@
 //
 
 import Foundation
-import BlazeDB
+import BlazeDBCore
 
 struct DoctorReport: Codable {
     let healthy: Bool
@@ -36,15 +36,8 @@ struct DoctorReport: Codable {
 }
 
 func runDoctor(dbPath: String, password: String, jsonOutput: Bool) {
-    var report = DoctorReport(
-        healthy: true,
-        database: "",
-        path: dbPath,
-        checks: [],
-        stats: nil,
-        errors: []
-    )
-    
+    var healthy = true
+    var databaseName = ""
     var checks: [DoctorReport.CheckResult] = []
     var errors: [String] = []
     
@@ -58,7 +51,7 @@ func runDoctor(dbPath: String, password: String, jsonOutput: Bool) {
                 passed: false,
                 message: "Database file not found at path"
             ))
-            report.healthy = false
+            healthy = false
             errors.append("Database file not found")
         } else {
             checks.append(DoctorReport.CheckResult(
@@ -77,20 +70,26 @@ func runDoctor(dbPath: String, password: String, jsonOutput: Bool) {
                 passed: true,
                 message: "Encryption key valid, database opened successfully"
             ))
-            report.database = client.name
+            databaseName = client.name
         } catch {
             checks.append(DoctorReport.CheckResult(
                 name: "Encryption Key",
                 passed: false,
                 message: "Failed to open database: \(error.localizedDescription)"
             ))
-            report.healthy = false
+            healthy = false
             errors.append("Encryption key validation failed: \(error.localizedDescription)")
             
             // Can't continue without valid client
             if jsonOutput {
-                report.checks = checks
-                report.errors = errors
+                let report = DoctorReport(
+                    healthy: healthy,
+                    database: databaseName,
+                    path: dbPath,
+                    checks: checks,
+                    stats: nil,
+                    errors: errors
+                )
                 let encoder = JSONEncoder()
                 encoder.outputFormatting = .prettyPrinted
                 if let data = try? encoder.encode(report),
@@ -110,7 +109,7 @@ func runDoctor(dbPath: String, password: String, jsonOutput: Bool) {
         
         // Check 3: Layout integrity (try to read metadata)
         do {
-            _ = try client.fetchAllIDs()
+            _ = try client.count()
             checks.append(DoctorReport.CheckResult(
                 name: "Layout Integrity",
                 passed: true,
@@ -122,7 +121,7 @@ func runDoctor(dbPath: String, password: String, jsonOutput: Bool) {
                 passed: false,
                 message: "Layout corruption detected: \(error.localizedDescription)"
             ))
-            report.healthy = false
+            healthy = false
             errors.append("Layout integrity check failed: \(error.localizedDescription)")
         }
         
@@ -154,7 +153,7 @@ func runDoctor(dbPath: String, password: String, jsonOutput: Bool) {
                     passed: false,
                     message: "Read/write cycle failed - data mismatch"
                 ))
-                report.healthy = false
+                healthy = false
                 errors.append("Read/write cycle validation failed")
             }
         } catch {
@@ -163,18 +162,19 @@ func runDoctor(dbPath: String, password: String, jsonOutput: Bool) {
                 passed: false,
                 message: "Read/write cycle failed: \(error.localizedDescription)"
             ))
-            report.healthy = false
+            healthy = false
             errors.append("Read/write cycle failed: \(error.localizedDescription)")
         }
         
         // Gather stats (using safe APIs that don't require telemetry)
+        var statsSnapshot: DoctorReport.StatsSnapshot? = nil
         do {
             let stats = try client.stats()
             
             let formatter = ISO8601DateFormatter()
             formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
             
-            report.stats = DoctorReport.StatsSnapshot(
+            statsSnapshot = DoctorReport.StatsSnapshot(
                 pageCount: stats.pageCount,
                 recordCount: stats.recordCount,
                 databaseSize: stats.databaseSize,
@@ -189,8 +189,15 @@ func runDoctor(dbPath: String, password: String, jsonOutput: Bool) {
             errors.append("Could not gather all statistics: \(error.localizedDescription)")
         }
         
-        report.checks = checks
-        report.errors = errors
+        // Build final report
+        let report = DoctorReport(
+            healthy: healthy,
+            database: databaseName,
+            path: dbPath,
+            checks: checks,
+            stats: statsSnapshot,
+            errors: errors
+        )
         
         // Output
         if jsonOutput {
@@ -243,7 +250,10 @@ func runDoctor(dbPath: String, password: String, jsonOutput: Bool) {
                 if !jsonOutput {
                     // Pretty print stats with interpretation
                     print("📊 Statistics:")
-                    print(stats.interpretation)
+                    // Use DatabaseStats interpretation if available
+                    if let dbStats = try? client.stats() {
+                        print(dbStats.interpretation)
+                    }
                     print("  Encrypted: \(stats.isEncrypted ? "Yes" : "No")")
                 }
             }
@@ -269,6 +279,16 @@ func runDoctor(dbPath: String, password: String, jsonOutput: Bool) {
         exit(report.healthy ? 0 : 1)
         
         } catch {
+            // Build error report
+            let report = DoctorReport(
+                healthy: false,
+                database: "",
+                path: dbPath,
+                checks: [],
+                stats: nil,
+                errors: [error.localizedDescription]
+            )
+            
             let errorMsg: String
             let errorGuidance: String
             
@@ -281,13 +301,21 @@ func runDoctor(dbPath: String, password: String, jsonOutput: Bool) {
             }
             
             errors.append(errorMsg)
-            report.errors = errors
-            report.healthy = false
+            
+            // Build error report
+            let errorReport = DoctorReport(
+                healthy: false,
+                database: "",
+                path: dbPath,
+                checks: [],
+                stats: nil,
+                errors: errors
+            )
             
             if jsonOutput {
                 let encoder = JSONEncoder()
                 encoder.outputFormatting = .prettyPrinted
-                if let data = try? encoder.encode(report),
+                if let data = try? encoder.encode(errorReport),
                    let json = String(data: data, encoding: .utf8) {
                     print(json)
                 }

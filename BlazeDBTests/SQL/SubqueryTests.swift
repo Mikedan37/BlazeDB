@@ -4,7 +4,7 @@
 //  Comprehensive tests for subquery functionality
 
 import XCTest
-@testable import BlazeDB
+@testable import BlazeDBCore
 
 final class SubqueryTests: XCTestCase {
     

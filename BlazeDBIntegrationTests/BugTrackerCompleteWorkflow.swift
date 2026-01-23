@@ -7,7 +7,7 @@
 //
 
 import XCTest
-@testable import BlazeDB
+@testable import BlazeDBCore
 
 /// Tests complete bug tracker workflow from initialization to crash recovery
 /// This validates BlazeDB's primary use case: dynamic schema bug tracking

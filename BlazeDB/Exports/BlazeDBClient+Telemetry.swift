@@ -9,6 +9,10 @@
 #if !BLAZEDB_LINUX_CORE
 import Foundation
 
+#if BLAZEDB_DISTRIBUTED
+import BlazeDBCore
+#endif
+
 // MARK: - Telemetry Manager
 
 /// Telemetry manager for a BlazeDBClient

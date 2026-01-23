@@ -4,7 +4,7 @@
 //  Comprehensive tests for full-text search
 
 import XCTest
-@testable import BlazeDB
+@testable import BlazeDBCore
 
 final class FullTextSearchTests: XCTestCase {
     

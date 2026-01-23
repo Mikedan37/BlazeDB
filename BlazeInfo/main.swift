@@ -7,7 +7,7 @@
 //
 
 import Foundation
-import BlazeDB
+import BlazeDBCore
 
 func printDatabaseInfo(dbPath: String, password: String) {
     do {
@@ -16,7 +16,8 @@ func printDatabaseInfo(dbPath: String, password: String) {
         
         print("📊 Database Information")
         print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-        print("Path: \(db.fileURL.path)")
+        // Use the path from the URL passed to open
+        print("Path: \(url.path)")
         print("Name: \(db.name)")
         
         // Get stats

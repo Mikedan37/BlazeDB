@@ -15,9 +15,9 @@ import Glibc
 #endif
 
 // Import logger for centralized logging
-#if canImport(BlazeDB)
-// Internal use
-#else
+#if canImport(BlazeDBCore)
+import BlazeDBCore
+#elseif canImport(BlazeDB)
 import BlazeDB
 #endif
 

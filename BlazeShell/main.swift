@@ -3,7 +3,7 @@
 //  Created by Michael Danylchuk on 6/19/25.
 
 import Foundation
-import BlazeDB
+import BlazeDBCore
 
 func prompt(_ message: String = "> ") -> String? {
     print(message, terminator: "")

@@ -12,26 +12,47 @@ import Foundation
 
 extension BlazeDBClient {
     
-    /// Persist trigger definition to StorageLayout
+    /// Persist trigger definition to StorageLayout metaData
     internal func persistTriggerDefinition(_ definition: TriggerDefinition) throws {
         let layout = try StorageLayout.loadSecure(from: collection.metaURLPath, signingKey: collection.encryptionKey)
         var updatedLayout = layout
-        if !updatedLayout.triggerDefinitions.contains(where: { $0.name == definition.name }) {
-            updatedLayout.triggerDefinitions.append(definition)
+        
+        // Load existing trigger definitions from metaData
+        var triggerDefinitions: [TriggerDefinition] = []
+        if let triggersData = updatedLayout.metaData["_triggers"]?.dataValue,
+           let decoded = try? JSONDecoder().decode([TriggerDefinition].self, from: triggersData) {
+            triggerDefinitions = decoded
+        }
+        
+        // Add new definition if not already present
+        if !triggerDefinitions.contains(where: { $0.name == definition.name }) {
+            triggerDefinitions.append(definition)
+            
+            // Encode and store in metaData
+            let encoded = try JSONEncoder().encode(triggerDefinitions)
+            updatedLayout.metaData["_triggers"] = .data(encoded)
+            
             try updatedLayout.saveSecure(to: collection.metaURLPath, signingKey: collection.encryptionKey)
             BlazeLogger.debug("Persisted trigger definition: \(definition.name)")
         }
     }
     
-    /// Reload triggers from StorageLayout (called on DB open)
+    /// Reload triggers from StorageLayout metaData (called on DB open)
     internal func reloadTriggers() {
         guard let layout = try? StorageLayout.loadSecure(from: collection.metaURLPath, signingKey: collection.encryptionKey) else {
             return
         }
         
+        // Load trigger definitions from metaData
+        var triggerCount = 0
+        if let triggersData = layout.metaData["_triggers"]?.dataValue,
+           let decoded = try? JSONDecoder().decode([TriggerDefinition].self, from: triggersData) {
+            triggerCount = decoded.count
+        }
+        
         // Triggers are metadata only - actual handlers are in Swift code
         // This is just for tracking which triggers exist
-        BlazeLogger.debug("Loaded \(layout.triggerDefinitions.count) trigger definition(s) from storage")
+        BlazeLogger.debug("Loaded \(triggerCount) trigger definition(s) from storage")
     }
     
     /// Hook into onInsert to persist trigger definition

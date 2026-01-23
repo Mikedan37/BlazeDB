@@ -9,7 +9,7 @@
 
 import Foundation
 import XCTest
-@testable import BlazeDB
+@testable import BlazeDBCoreCore
 
 final class LifecycleTests: XCTestCase {
     

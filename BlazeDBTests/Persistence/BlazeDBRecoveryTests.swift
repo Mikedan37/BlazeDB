@@ -3,7 +3,7 @@
 //  Created by Michael Danylchuk on 6/22/25.
 
 import XCTest
-@testable import BlazeDB
+@testable import BlazeDBCore
 
 final class BlazeDBRecoveryTests: XCTestCase {
     

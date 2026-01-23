@@ -25,7 +25,11 @@ public struct CoreDataMigrator {
     /// ```swift
     /// let container = NSPersistentContainer(name: "MyApp")
     /// container.loadPersistentStores { _, error in
-    ///     if let error = error { fatalError("\(error)") }
+    ///     if let error = error {
+    ///         print("Failed to load Core Data stores: \(error)")
+    ///         // Handle error appropriately - don't use fatalError in production
+    ///         return
+    ///     }
     /// }
     ///
     /// try CoreDataMigrator.importFromCoreData(

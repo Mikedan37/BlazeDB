@@ -55,6 +55,11 @@ extension BlazeDBClient {
     /// - Parameter url: File URL to write dump to
     /// - Throws: Error if export fails
     public func export(to url: URL) async throws {
-        try export(to: url)
+        // Call the synchronous version - it's already thread-safe
+        // Use a type-erased closure to force resolution to the sync version
+        let syncExport: (BlazeDBClient, URL) throws -> Void = { db, url in
+            try db.export(to: url)
+        }
+        try syncExport(self, url)
     }
 }

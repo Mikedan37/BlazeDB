@@ -30,7 +30,11 @@ public struct CoreDataMigrator {
     /// ```swift
     /// let container = NSPersistentContainer(name: "MyApp")
     /// container.loadPersistentStores { _, error in
-    ///     if let error = error { fatalError("\(error)") }
+    ///     if let error = error {
+    ///         print("Failed to load Core Data stores: \(error)")
+    ///         // Handle error appropriately - don't use fatalError in production
+    ///         return
+    ///     }
     /// }
     ///
     /// try CoreDataMigrator.importFromCoreData(
@@ -47,13 +51,19 @@ public struct CoreDataMigrator {
         destination: URL,
         password: String,
         entities: [String]? = nil,
-        progressHandler: ((Int, Int) -> Void)? = nil,
-        progressMonitor: MigrationProgressMonitor? = nil
+        progressHandler: ((Int, Int) -> Void)? = nil
+        #if BLAZEDB_DISTRIBUTED
+        , progressMonitor: MigrationProgressMonitor? = nil
+        #else
+        , progressMonitor: Any? = nil
+        #endif
     ) throws {
         BlazeLogger.info("🔄 Starting Core Data migration to \(destination.path)")
         
         // Initialize progress monitor
+        #if BLAZEDB_DISTRIBUTED
         progressMonitor?.reset()
+        #endif
         
         let context = container.viewContext
         
@@ -106,7 +116,9 @@ public struct CoreDataMigrator {
         for (index, entity) in entitiesToImport.enumerated() {
             guard let entityName = entity.name else { continue }
             BlazeLogger.info("📥 Importing entity '\(entityName)' (\(index + 1)/\(entitiesToImport.count))...")
+            #if BLAZEDB_DISTRIBUTED
             progressMonitor?.updateTable(entityName, index: index + 1, recordsProcessed: totalRecords)
+            #endif
             
             let records = try importEntity(
                 entity,
@@ -122,7 +134,9 @@ public struct CoreDataMigrator {
         
         // Persist to disk
         BlazeLogger.debug("💾 Persisting to disk...")
+        #if BLAZEDB_DISTRIBUTED
         progressMonitor?.update(status: .creatingIndexes)
+        #endif
         try blazeDB.persist()
         
         progressMonitor?.complete(recordsProcessed: totalRecords)
@@ -153,9 +167,13 @@ public struct CoreDataMigrator {
     private static func importEntity(
         _ entity: NSEntityDescription,
         from context: NSManagedObjectContext,
-        into blazeDB: BlazeDBClient,
-        progressMonitor: MigrationProgressMonitor? = nil,
-        baseRecordCount: Int = 0
+        into blazeDB: BlazeDBClient
+        #if BLAZEDB_DISTRIBUTED
+        , progressMonitor: MigrationProgressMonitor? = nil
+        #else
+        , progressMonitor: Any? = nil
+        #endif
+        , baseRecordCount: Int = 0
     ) throws -> Int {
         guard let entityName = entity.name else {
             throw MigrationError.coreDataError("Entity has no name")
@@ -232,7 +250,9 @@ public struct CoreDataMigrator {
         // Batch insert for performance
         if !records.isEmpty {
             _ = try blazeDB.insertMany(records)
+            #if BLAZEDB_DISTRIBUTED
             progressMonitor?.update(recordsProcessed: baseRecordCount + records.count)
+            #endif
         }
         
         if nullValueCount > 0 {

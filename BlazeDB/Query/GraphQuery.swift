@@ -772,29 +772,13 @@ public struct GraphQueryBuilder {
         // The graph() function always passes a base query, so components should never be empty
         // Result builders with empty blocks don't compile in Swift, so this guard should never fail
         guard let first = components.first else {
-            // invariant-protected unwrap
-            BlazeLogger.error("❌ Graph query builder: Invariant violated - components array is empty")
-            // Result builders can't throw and must return a value
-            // Since result builders with empty blocks don't compile, this should never happen
-            // Return a query that will fail when executed - the error is logged above
-            // Try to get first component one more time as safe fallback
-            if let fallbackFirst = components.first {
-                return fallbackFirst
-            }
-            // This should never happen - result builders with empty blocks don't compile
-            // But if it does, we must return something - return a query that will fail when executed
-            // The error is logged above to help developers identify the issue
-            // Since we can't create a GraphQuery without a collection and components is empty,
-            // we're stuck. This is an invariant violation that should never happen.
-            // Return the first component if it exists, otherwise create an empty query that will fail safely
-            // The error is logged above to help developers catch the programming error
-            guard let firstComponent = components.first else {
-                // This should never happen, but handle gracefully instead of crashing
-                BlazeLogger.error("GraphQuery.buildBlock: Empty components array - this indicates a programming error")
-                // Return an empty query that will fail safely when executed
-                return GraphQuery<BlazeDataRecord>(collection: "", components: [])
-            }
-            return firstComponent
+            // Invariant violation: result builders with empty blocks don't compile in Swift
+            // This indicates a programming error that should be caught at compile time
+            BlazeLogger.error("GraphQuery.buildBlock: Empty components array - this indicates a programming error. Result builders with empty blocks don't compile in Swift.")
+            // Use preconditionFailure instead of fatalError - it's more appropriate for invariant violations
+            // and can be caught in debug builds. Since we can't create a GraphQuery without a collection,
+            // and components is empty, this is a programming error that must be fixed.
+            preconditionFailure("GraphQuery.buildBlock: Result builder received empty components array. This should never happen as Swift result builders with empty blocks don't compile. This is a programming error that must be fixed.")
         }
         return first
     }

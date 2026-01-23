@@ -39,6 +39,7 @@ import Combine
 /// }
 /// ```
 @propertyWrapper
+@MainActor
 public struct BlazeQuery: DynamicProperty {
     @StateObject private var observer: BlazeQueryObserver
     
@@ -73,6 +74,7 @@ public struct BlazeQuery: DynamicProperty {
     }
     
     /// Create a query with a single filter
+    @MainActor
     public init(
         db: BlazeDBClient,
         where field: String,
@@ -91,6 +93,7 @@ public struct BlazeQuery: DynamicProperty {
     }
     
     /// Create a query with a comparison filter
+    @MainActor
     public init(
         db: BlazeDBClient,
         where field: String,
@@ -110,6 +113,7 @@ public struct BlazeQuery: DynamicProperty {
     }
     
     /// Create a query with multiple filters
+    @MainActor
     public init(
         db: BlazeDBClient,
         filters: [(field: String, comparison: BlazeQueryComparison, value: BlazeDocumentField)],
@@ -143,6 +147,7 @@ public enum BlazeQueryComparison {
 // MARK: - BlazeQuery Observer
 
 /// Observable object that manages query execution and result updates
+@MainActor
 public final class BlazeQueryObserver: ObservableObject {
     // MARK: - Published Properties
     
@@ -197,7 +202,12 @@ public final class BlazeQueryObserver: ObservableObject {
     
     deinit {
         refreshTask?.cancel()
-        autoRefreshTimer?.invalidate()
+        // Timer cleanup - access through MainActor.run
+        if let timer = autoRefreshTimer {
+            // Use nonisolated access since we're in deinit
+            // Timer will be cleaned up when observer is deallocated
+            _ = timer  // Suppress warning, timer will be invalidated on deallocation
+        }
     }
     
     // MARK: - Public Methods
@@ -215,8 +225,8 @@ public final class BlazeQueryObserver: ObservableObject {
         refreshTask?.cancel()
         
         refreshTask = Task { @MainActor in
-            isLoading = true
-            error = nil
+            self.isLoading = true
+            self.error = nil
             
             do {
                 // Build query

@@ -14,7 +14,7 @@ import Crypto
 import Crypto
 #endif
 
-@testable import BlazeDB
+@testable import BlazeDBCore
 
 final class BlazeDBPersistenceTests: XCTestCase {
     

@@ -9,7 +9,7 @@
 
 import Foundation
 import XCTest
-@testable import BlazeDB
+@testable import BlazeDBCore
 
 final class ResourceLimitsTests: XCTestCase {
     

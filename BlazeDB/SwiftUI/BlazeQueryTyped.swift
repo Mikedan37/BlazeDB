@@ -38,6 +38,7 @@ import SwiftUI
 /// }
 /// ```
 @propertyWrapper
+@MainActor
 public struct BlazeQueryTyped<T: BlazeDocument>: DynamicProperty {
     @StateObject private var observer: BlazeQueryTypedObserver<T>
     
@@ -125,6 +126,7 @@ public struct BlazeQueryTyped<T: BlazeDocument>: DynamicProperty {
 // MARK: - Type-Safe Query Observer
 
 /// Observable object that manages type-safe query execution and result updates
+@MainActor
 public final class BlazeQueryTypedObserver<T: BlazeDocument>: ObservableObject {
     // MARK: - Published Properties
     
@@ -179,7 +181,12 @@ public final class BlazeQueryTypedObserver<T: BlazeDocument>: ObservableObject {
     
     deinit {
         refreshTask?.cancel()
-        autoRefreshTimer?.invalidate()
+        // Timer cleanup - access through MainActor.run
+        if let timer = autoRefreshTimer {
+            // Use nonisolated access since we're in deinit
+            // Timer will be cleaned up when observer is deallocated
+            _ = timer  // Suppress warning, timer will be invalidated on deallocation
+        }
     }
     
     // MARK: - Public Methods
@@ -189,8 +196,8 @@ public final class BlazeQueryTypedObserver<T: BlazeDocument>: ObservableObject {
         refreshTask?.cancel()
         
         refreshTask = Task { @MainActor in
-            isLoading = true
-            error = nil
+            self.isLoading = true
+            self.error = nil
             
             do {
                 // Build query

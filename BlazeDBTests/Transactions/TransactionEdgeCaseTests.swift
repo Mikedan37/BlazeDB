@@ -9,7 +9,7 @@ import Crypto
 #else
 import Crypto
 #endif
-@testable import BlazeDB
+@testable import BlazeDBCore
 
 /// Use the real PageStore from the BlazeDB module (not the test shim).
 private typealias RealPageStore = BlazeDB.PageStore

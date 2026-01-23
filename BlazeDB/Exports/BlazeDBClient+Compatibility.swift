@@ -16,7 +16,7 @@ extension BlazeDBClient {
     ///
     /// Format versions are incremented when on-disk layout changes in incompatible ways.
     /// BlazeDB will refuse to open databases with incompatible format versions.
-    public struct FormatVersion {
+    public struct FormatVersion: Sendable {
         /// Major version (incompatible changes)
         public let major: Int
         

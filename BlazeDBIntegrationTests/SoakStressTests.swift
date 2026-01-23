@@ -6,7 +6,7 @@
 //
 
 import XCTest
-@testable import BlazeDB
+@testable import BlazeDBCore
 
 /// Soak-style tests (bounded so they are CI-friendly, but exercise long-running patterns).
 ///

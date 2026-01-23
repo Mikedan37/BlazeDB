@@ -6,7 +6,7 @@
 //
 
 import XCTest
-@testable import BlazeDB
+@testable import BlazeDBCore
 
 /// I/O fault injection tests focused on VACUUM file replacement behavior.
 ///

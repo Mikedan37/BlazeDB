@@ -7,7 +7,7 @@
 
 import XCTest
 
-@testable import BlazeDB
+@testable import BlazeDBCore
 
 final class BlazeCollectionTests: XCTestCase {
     var tempURL: URL!

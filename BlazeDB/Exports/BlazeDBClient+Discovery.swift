@@ -14,6 +14,10 @@ import Foundation
 import Combine
 #endif
 
+#if BLAZEDB_DISTRIBUTED
+import BlazeDBCore
+#endif
+
 extension BlazeDBClient {
     
     // MARK: - Server Side (Advertise & Accept Connections)

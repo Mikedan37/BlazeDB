@@ -4,7 +4,7 @@
 //  Comprehensive tests for aggregation functionality
 
 import XCTest
-@testable import BlazeDB
+@testable import BlazeDBCore
 
 final class AggregationTests: XCTestCase {
     

@@ -6,7 +6,7 @@
 //
 
 import XCTest
-@testable import BlazeDB
+@testable import BlazeDBCore
 #if canImport(CryptoKit)
 #if canImport(CryptoKit)
 import CryptoKit

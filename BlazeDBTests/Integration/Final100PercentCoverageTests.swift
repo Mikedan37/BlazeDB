@@ -18,7 +18,7 @@ import Crypto
 #else
 import Crypto
 #endif
-@testable import BlazeDB
+@testable import BlazeDBCore
 
 final class Final100PercentCoverageTests: XCTestCase {
     var tempURL: URL!

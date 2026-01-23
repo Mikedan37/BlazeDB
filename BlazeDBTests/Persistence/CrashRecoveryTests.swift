@@ -14,7 +14,7 @@ import CryptoKit
 import Crypto
 #endif
 
-@testable import BlazeDB
+@testable import BlazeDBCore
 
 final class CrashRecoveryTests: XCTestCase {
     

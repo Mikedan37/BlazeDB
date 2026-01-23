@@ -4,7 +4,7 @@
 //  Comprehensive tests for batch operations
 
 import XCTest
-@testable import BlazeDB
+@testable import BlazeDBCore
 
 final class BatchOperationTests: XCTestCase {
     

@@ -15,7 +15,7 @@
 //
 
 import XCTest
-@testable import BlazeDB
+@testable import BlazeDBCore
 
 final class TransactionDurabilityTests: XCTestCase {
 

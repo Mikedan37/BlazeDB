@@ -11,7 +11,7 @@ import Crypto
 #else
 import Crypto
 #endif
-@testable import BlazeDB
+@testable import BlazeDBCore
 
 final class DynamicCollectionTests: XCTestCase {
     var key: SymmetricKey!

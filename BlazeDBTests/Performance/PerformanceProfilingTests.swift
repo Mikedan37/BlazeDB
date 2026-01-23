@@ -11,7 +11,7 @@
 //
 
 import XCTest
-@testable import BlazeDB
+@testable import BlazeDBCore
 
 /// Automated performance profiling - finds bottlenecks
 final class PerformanceProfilingTests: XCTestCase {

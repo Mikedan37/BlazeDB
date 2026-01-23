@@ -8,6 +8,10 @@
 #if !BLAZEDB_LINUX_CORE
 import Foundation
 
+#if BLAZEDB_DISTRIBUTED
+import BlazeDBCore
+#endif
+
 /// Server that accepts remote BlazeDB connections
 /// Platform-neutral wrapper around ServerTransportProvider
 public actor BlazeServer {

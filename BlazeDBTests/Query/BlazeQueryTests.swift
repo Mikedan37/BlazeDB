@@ -10,7 +10,7 @@
 
 import XCTest
 import SwiftUI
-@testable import BlazeDB
+@testable import BlazeDBCore
 
 // MARK: - Test Helpers
 // Note: waitForLoad() is now defined in BlazeQueryObserver itself

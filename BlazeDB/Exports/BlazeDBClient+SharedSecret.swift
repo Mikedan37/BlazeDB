@@ -10,6 +10,10 @@
 
 #if !BLAZEDB_LINUX_CORE
 import Foundation
+
+#if BLAZEDB_DISTRIBUTED
+import BlazeDBCore
+#endif
 #if canImport(CryptoKit)
 #if canImport(CryptoKit)
 import CryptoKit

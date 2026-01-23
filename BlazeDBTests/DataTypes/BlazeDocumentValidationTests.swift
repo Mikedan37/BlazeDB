@@ -9,7 +9,7 @@
 //
 
 import XCTest
-@testable import BlazeDB
+@testable import BlazeDBCore
 
 // MARK: - Test Models
 

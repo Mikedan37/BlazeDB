@@ -7,7 +7,7 @@
 //
 
 import XCTest
-@testable import BlazeDB
+@testable import BlazeDBCore
 
 final class BlazeBinaryDirectVerificationTests: XCTestCase {
     

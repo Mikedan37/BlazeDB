@@ -11,7 +11,7 @@ import Crypto
 #else
 import Crypto
 #endif
-@testable import BlazeDB
+@testable import BlazeDBCore
 
 final class StorageLayoutTests: XCTestCase {
     var tempURL: URL!

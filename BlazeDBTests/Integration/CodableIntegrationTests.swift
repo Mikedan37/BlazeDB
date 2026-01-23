@@ -1,5 +1,5 @@
 import XCTest
-@testable import BlazeDB
+@testable import BlazeDBCore
 
 /// Comprehensive tests for Codable integration
 final class CodableIntegrationTests: XCTestCase {

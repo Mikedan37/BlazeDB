@@ -1,5 +1,5 @@
 import XCTest
-@testable import BlazeDB
+@testable import BlazeDBCore
 
 /// Comprehensive tests for data seeding and fixtures
 final class DataSeedingTests: XCTestCase {
