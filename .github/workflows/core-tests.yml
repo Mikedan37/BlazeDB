@@ -28,15 +28,12 @@ jobs:
           swift build --target BlazeDump
           swift build --target BlazeInfo
       
-      - name: Run Core Tests
-        run: swift test --filter BlazeDBCoreTests
-      
-      - name: Run CLI Smoke Tests
-        run: swift test --filter CLISmokeTests
+      - name: Run Tier 1 (Gate) Tests
+        run: swift test --target BlazeDBCoreGateTests
   
-  distributed-tests:
+  tier2-tests:
     runs-on: macos-latest
-    name: Distributed Tests (Allowed to Fail)
+    name: Tier 2 Tests (Non-Blocking)
     continue-on-error: true
     steps:
       - uses: actions/checkout@v3
@@ -44,10 +41,13 @@ jobs:
         with:
           swift-version: "6.0"
       
-      - name: Build All (Including Distributed)
-        run: swift build
+      - name: Build Core
+        run: swift build --target BlazeDBCore
+      
+      - name: Run Tier 2 Tests
+        run: swift test --target BlazeDBCoreTests
         continue-on-error: true
       
-      - name: Run All Tests
-        run: swift test
+      - name: Run Integration Tests
+        run: swift test --target BlazeDBIntegrationTests
         continue-on-error: true

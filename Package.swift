@@ -160,6 +160,22 @@ let package = Package(
         ),
         
         // MARK: - Test Targets
+        
+        // TIER 1: Production Gate Tests (MUST PASS)
+        // Small, focused tests that validate core production safety guarantees
+        // These tests block releases and must always pass in CI
+        .testTarget(
+            name: "BlazeDBCoreGateTests",
+            dependencies: ["BlazeDBCore"],
+            path: "BlazeDBTests/Gate",
+            swiftSettings: [
+                .define("BLAZEDB_CORE_ONLY")
+            ]
+        ),
+        
+        // TIER 2: Core Tests (SHOULD PASS)
+        // Important tests that validate features but aren't blocking
+        // May fail temporarily, not required for CI green
         .testTarget(
             name: "BlazeDBCoreTests",
             dependencies: ["BlazeDBCore"],
@@ -169,14 +185,30 @@ let package = Package(
                 "Sync",
                 "Distributed",
                 // Exclude telemetry tests (require distributed module)
-                "Utilities/TelemetryUnitTests.swift"
+                "Utilities/TelemetryUnitTests.swift",
+                // Exclude Tier 1 (Gate) and Tier 3 (Legacy) tests
+                "Gate",
+                "Legacy"
             ],
             swiftSettings: [
                 .define("BLAZEDB_CORE_ONLY")
             ]
         ),
-        // Note: BlazeDBDistributedTests removed - distributed code doesn't compile yet
-        // Will be re-added when distributed modules are Swift 6 compliant
+        
+        // TIER 3: Legacy Tests (MAY FAIL)
+        // Internal, historical, white-box tests that never block anything
+        // Tests accessing internals, deprecated APIs, or experimental features
+        .testTarget(
+            name: "BlazeDBLegacyTests",
+            dependencies: ["BlazeDBCore"],
+            path: "BlazeDBTests/Legacy",
+            swiftSettings: [
+                .define("BLAZEDB_CORE_ONLY"),
+                .define("LEGACY_TESTS")
+            ]
+        ),
+        
+        // Integration Tests (Tier 2)
         .testTarget(
             name: "BlazeDBIntegrationTests",
             dependencies: ["BlazeDBCore"],

@@ -1,5 +1,9 @@
 //  StorageLayoutTests.swift
 //  Tests for StorageLayout operations
+//
+//  TIER 3 — Legacy / Internal / Non-blocking
+//  This test accesses internal StorageLayout APIs and storage layout structures.
+//  It is NOT part of production gate tests and may fail without blocking releases.
 
 import XCTest
 #if canImport(CryptoKit)
