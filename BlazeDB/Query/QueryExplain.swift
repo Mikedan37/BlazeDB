@@ -107,7 +107,9 @@ extension QueryBuilder {
                 estimatedRecords: estimatedRecords,
                 estimatedTime: Double(estimatedRecords) * 0.00005  // 0.05ms per record
             ))
-            estimatedTime += steps.last!.estimatedTime
+            if let lastStep = steps.last {
+                estimatedTime += lastStep.estimatedTime
+            }
         } else {
             // Large dataset: check if indexes would help
             // NOTE: Index matching analysis intentionally not implemented in explain output.

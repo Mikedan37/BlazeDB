@@ -2214,7 +2214,8 @@ public final class DynamicCollection {
                 // CRITICAL: Throw error if any purge operations failed
                 // This ensures developers know when purge didn't complete successfully
                 if !purgeErrors.isEmpty {
-                    let errorMsg = "Purge failed for \(purgeErrors.count) record(s). First error: \(purgeErrors.first!.localizedDescription)"
+                    let firstError = purgeErrors.first?.localizedDescription ?? "Unknown error"
+                    let errorMsg = "Purge failed for \(purgeErrors.count) record(s). First error: \(firstError)"
                     throw BlazeDBError.transactionFailed(errorMsg)
                 }
             }

@@ -786,10 +786,15 @@ public struct GraphQueryBuilder {
             // The error is logged above to help developers identify the issue
             // Since we can't create a GraphQuery without a collection and components is empty,
             // we're stuck. This is an invariant violation that should never happen.
-            // Return the first component if it exists (it shouldn't), otherwise this will cause a runtime error
+            // Return the first component if it exists, otherwise create an empty query that will fail safely
             // The error is logged above to help developers catch the programming error
-            // invariant-protected unwrap - last resort since result builders can't throw
-            return components.first!
+            guard let firstComponent = components.first else {
+                // This should never happen, but handle gracefully instead of crashing
+                BlazeLogger.error("GraphQuery.buildBlock: Empty components array - this indicates a programming error")
+                // Return an empty query that will fail safely when executed
+                return GraphQuery<BlazeDataRecord>(collection: "", components: [])
+            }
+            return firstComponent
         }
         return first
     }

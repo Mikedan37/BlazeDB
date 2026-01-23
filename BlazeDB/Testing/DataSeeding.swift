@@ -134,13 +134,19 @@ extension BlazeDBClient {
     /// Create single object
     @discardableResult
     public func create<T: BlazeStorable>(_ type: T.Type) throws -> T {
-        try self.create(type, count: 1).first!
+        guard let first = try self.create(type, count: 1).first else {
+            throw NSError(domain: "DataSeeding", code: 1, userInfo: [NSLocalizedDescriptionKey: "Failed to create test record of type \(type)"])
+        }
+        return first
     }
     
     /// Create single async
     @discardableResult
     public func create<T: BlazeStorable>(_ type: T.Type) async throws -> T {
-        try await self.create(type, count: 1).first!
+        guard let first = try await self.create(type, count: 1).first else {
+            throw NSError(domain: "DataSeeding", code: 1, userInfo: [NSLocalizedDescriptionKey: "Failed to create test record of type \(type)"])
+        }
+        return first
     }
     
     // MARK: - Fixtures from JSON

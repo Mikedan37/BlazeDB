@@ -232,11 +232,21 @@ public actor SecurityValidator {
             let invalidOps = unseenOps.filter { !allowedCollections.contains($0.collectionName) }
             
             guard invalidOps.isEmpty else {
-                throw SecurityError.permissionDenied(userId, invalidOps.first!.collectionName)
+                // Safe unwrap: We know invalidOps is not empty from guard above
+                guard let firstInvalid = invalidOps.first else {
+                    BlazeLogger.error("SecurityValidator: invalidOps is not empty but first element is nil")
+                    throw SecurityError.permissionDenied(userId, "unknown")
+                }
+                throw SecurityError.permissionDenied(userId, firstInvalid.collectionName)
             }
         } else {
             // No permissions = deny all
-            throw SecurityError.permissionDenied(userId, unseenOps.first!.collectionName)
+            // Safe unwrap: We know unseenOps is not empty from guard at line 228
+            guard let firstUnseen = unseenOps.first else {
+                BlazeLogger.error("SecurityValidator: unseenOps is not empty but first element is nil")
+                throw SecurityError.permissionDenied(userId, "unknown")
+            }
+            throw SecurityError.permissionDenied(userId, firstUnseen.collectionName)
         }
         
         // Batch add to seen sets (single allocation)
