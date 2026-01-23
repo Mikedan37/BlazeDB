@@ -55,6 +55,12 @@ let package = Package(
         .package(
             url: "git@github.com:Mikedan37/BlazeFSM.git",
             revision: "58b292a27928d211eef12090cafcbf12b31d69c6"
+        ),
+        // SwiftCBOR: Pinned to stable tagged release for SwiftPM compatibility
+        // Required: When consumers pin BlazeDB to a stable version, all transitive dependencies must also be stable
+        .package(
+            url: "https://github.com/myfreeweb/SwiftCBOR.git",
+            exact: "0.6.0"
         )
     ],
     targets: [
