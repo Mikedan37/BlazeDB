@@ -72,9 +72,9 @@ final class GoldenPathIntegrationTests: XCTestCase {
         print("✓ Inserted \(recordCount) records")
         
         // Verify records exist
-        let allIDs = try originalDB.fetchAllIDs()
-        XCTAssertGreaterThanOrEqual(allIDs.count, recordCount, "Should have at least \(recordCount) records")
-        print("✓ Verified \(allIDs.count) records exist")
+        let allRecords = try originalDB.fetchAll()
+        XCTAssertGreaterThanOrEqual(allRecords.count, recordCount, "Should have at least \(recordCount) records")
+        print("✓ Verified \(allRecords.count) records exist")
         
         // STEP 3: Query data
         print("\n=== STEP 3: Query Data ===")
@@ -144,17 +144,17 @@ final class GoldenPathIntegrationTests: XCTestCase {
                                           password: "test-password-123")
         
         // Verify database is empty before restore
-        let idsBeforeRestore = try restoredDB.fetchAllIDs()
-        XCTAssertEqual(idsBeforeRestore.count, 0, "Restored database should be empty before restore")
+        let recordsBeforeRestore = try restoredDB.fetchAll()
+        XCTAssertEqual(recordsBeforeRestore.count, 0, "Restored database should be empty before restore")
         
         // Restore dump
         try BlazeDBImporter.restore(from: dumpPath, to: restoredDB, allowSchemaMismatch: false)
         
         // Verify restore succeeded
-        let idsAfterRestore = try restoredDB.fetchAllIDs()
-        XCTAssertEqual(idsAfterRestore.count, dumpHeader.recordCount, 
+        let recordsAfterRestore = try restoredDB.fetchAll()
+        XCTAssertEqual(recordsAfterRestore.count, dumpHeader.recordCount, 
                       "Restored database should have same record count as dump")
-        print("✓ Restore succeeded: \(countAfterRestore) records restored")
+        print("✓ Restore succeeded: \(recordsAfterRestore.count) records restored")
         
         // STEP 7: Reopen restored database
         print("\n=== STEP 7: Reopen Restored Database ===")

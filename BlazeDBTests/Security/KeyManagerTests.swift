@@ -18,7 +18,7 @@ final class KeyManagerTests: XCTestCase {
     
     let testText = "🔥 Blaze it. Don't lose it.".data(using: .utf8)!
     var tempFile: URL!
-    var store: BlazeDB.PageStore!
+    var store: PageStore!
 
     override func setUpWithError() throws {
         tempFile = FileManager.default.temporaryDirectory
@@ -32,7 +32,7 @@ final class KeyManagerTests: XCTestCase {
 
     func testPasswordKeyEncryptDecrypt() throws {
         let key = try KeyManager.getKey(from: .password("my-secure-password-🔥"))
-        let store = try BlazeDB.PageStore(fileURL: tempFile, key: key)
+        let store = try PageStore(fileURL: tempFile, key: key)
 
         try store.writePage(index: 1, plaintext: testText)
         let readBack = try store.readPage(index: 1)

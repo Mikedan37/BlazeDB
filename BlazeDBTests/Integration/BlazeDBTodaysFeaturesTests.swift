@@ -182,7 +182,7 @@ final class BlazeDBTodaysFeaturesTests: XCTestCase {
     /// Test new 9-byte header format preserves trailing zeros
     func testNewPageFormatPreservesTrailingZeros() throws {
         let key = SymmetricKey(size: .bits256)
-        let store = try BlazeDB.PageStore(fileURL: tempURL, key: key)
+        let store = try PageStore(fileURL: tempURL, key: key)
         
         // Create data ending with zeros
         let data = Data([0x01, 0x02, 0x03, 0x00, 0x00, 0x00])
@@ -197,7 +197,7 @@ final class BlazeDBTodaysFeaturesTests: XCTestCase {
     /// Test payload length field works correctly
     func testPayloadLengthHeaderWorks() throws {
         let key = SymmetricKey(size: .bits256)
-        let store = try BlazeDB.PageStore(fileURL: tempURL, key: key)
+        let store = try PageStore(fileURL: tempURL, key: key)
         
         // Write various sizes
         let sizes = [1, 10, 100, 1000, 4087]  // Max is 4087 (4096 - 9 header bytes)

@@ -18,13 +18,13 @@ final class PageStoreTests: XCTestCase {
 
     var tempURL: URL!
     var key: SymmetricKey!
-    var store: BlazeDB.PageStore!
+    var store: PageStore!
 
     override func setUpWithError() throws {
         let tempDir = FileManager.default.temporaryDirectory
         tempURL = tempDir.appendingPathComponent("test.blz")
         key = SymmetricKey(size: .bits256)
-        store = try BlazeDB.PageStore(fileURL: tempURL, key: key)
+        store = try PageStore(fileURL: tempURL, key: key)
     }
 
     override func tearDownWithError() throws {

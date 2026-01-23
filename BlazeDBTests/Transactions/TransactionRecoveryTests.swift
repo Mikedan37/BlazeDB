@@ -44,7 +44,7 @@ final class TransactionRecoveryTests: XCTestCase {
     }
 
     /// Returns data if a page exists and is readable; otherwise nil.
-    private func tryRead(_ store: BlazeDB.PageStore, index: Int) -> Data? {
+    private func tryRead(_ store: PageStore, index: Int) -> Data? {
         do { return try store.readPage(index: index) } catch { return nil }
     }
 
@@ -68,7 +68,7 @@ final class TransactionRecoveryTests: XCTestCase {
         // Simulate crash: no appendCommit
 
         // "Restart" DB by making a fresh PageStore and invoking recovery.
-        let restartedStore: BlazeDB.PageStore = try .init(fileURL: env.dbURL, key: env.key)
+        let restartedStore: PageStore = try .init(fileURL: env.dbURL, key: env.key)
         print("[TEST] Restarted PageStore initialized at: \(env.dbURL.path)")
         try log.recover(into: restartedStore)
 
@@ -94,7 +94,7 @@ final class TransactionRecoveryTests: XCTestCase {
         try log.appendCommit(txID: txID)
 
         // "Restart" and recover
-        let restartedStore: BlazeDB.PageStore = try .init(fileURL: env.dbURL, key: env.key)
+        let restartedStore: PageStore = try .init(fileURL: env.dbURL, key: env.key)
         try log.recover(into: restartedStore)
 
         // The page should now exist with exact bytes.
@@ -117,7 +117,7 @@ final class TransactionRecoveryTests: XCTestCase {
 
         // First recovery
         print("[TEST] Starting first recovery")
-        var store: BlazeDB.PageStore = try .init(fileURL: env.dbURL, key: env.key)
+        var store: PageStore = try .init(fileURL: env.dbURL, key: env.key)
         try log.recover(into: store)
         let firstRead = try? store.readPage(index: page)
         print("[TEST] After first recovery: page size = \(firstRead?.count ?? -1)")
@@ -153,7 +153,7 @@ final class TransactionRecoveryTests: XCTestCase {
         try log.appendWrite(pageID: pageB, data: dataB)
         // no commit
 
-        let restartedStore: BlazeDB.PageStore = try .init(fileURL: env.dbURL, key: env.key)
+        let restartedStore: PageStore = try .init(fileURL: env.dbURL, key: env.key)
         try log.recover(into: restartedStore)
 
         XCTAssertEqual(try restartedStore.readPage(index: pageA), dataA, "Committed tx must apply")

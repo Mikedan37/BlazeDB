@@ -212,8 +212,8 @@ final class PerformanceOptimizationTests: XCTestCase {
             ])
         }
         
-        let ids = try db.insertMany(records)
-        try db.persist()
+        let ids = try await db.insertMany(records)
+        try await db.persist()
         
         // Measure regular reads
         let regularStart = Date()

@@ -24,7 +24,7 @@ final class DynamicCollectionTests: XCTestCase {
     func testSecondaryIndexFetch() throws {
         let tmpURL = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".db")
         let metaURL = tmpURL.deletingPathExtension().appendingPathExtension("meta")
-        let store = try BlazeDB.PageStore(fileURL: tmpURL, key: key)
+        let store = try PageStore(fileURL: tmpURL, key: key)
         let collection = try DynamicCollection(store: store, metaURL: metaURL, project: "TestProject", encryptionKey: key)
 
         try collection.createIndex(on: "status")
@@ -61,7 +61,7 @@ final class DynamicCollectionTests: XCTestCase {
     func testCompoundIndexFetch() throws {
         let tmpURL = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".db")
         let metaURL = tmpURL.deletingPathExtension().appendingPathExtension("meta")
-        let store = try BlazeDB.PageStore(fileURL: tmpURL, key: key)
+        let store = try PageStore(fileURL: tmpURL, key: key)
         let collection = try DynamicCollection(store: store, metaURL: metaURL, project: "TestProject", encryptionKey: key)
 
         try collection.createIndex(on: ["status", "priority"])
@@ -101,7 +101,7 @@ final class DynamicCollectionTests: XCTestCase {
     func testIndexUpdateOnFieldChange() throws {
         let tmpURL = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".db")
         let metaURL = tmpURL.deletingPathExtension().appendingPathExtension("meta")
-        let store = try BlazeDB.PageStore(fileURL: tmpURL, key: key)
+        let store = try PageStore(fileURL: tmpURL, key: key)
         let collection = try DynamicCollection(store: store, metaURL: metaURL, project: "TestProject", encryptionKey: key)
 
         try collection.createIndex(on: ["status", "priority"])
@@ -136,7 +136,7 @@ final class DynamicCollectionTests: XCTestCase {
     func testMultiFieldIndexQueryPerformance() throws {
         let tmpURL = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".db")
         let metaURL = tmpURL.deletingPathExtension().appendingPathExtension("meta")
-        let store = try BlazeDB.PageStore(fileURL: tmpURL, key: key)
+        let store = try PageStore(fileURL: tmpURL, key: key)
         let collection = try DynamicCollection(store: store, metaURL: metaURL, project: "TestProject", encryptionKey: key)
 
         try collection.createIndex(on: ["type", "severity"])
@@ -180,7 +180,7 @@ extension DynamicCollectionTests {
     func testDuplicateIndexCreationThrows() throws {
         let tmpURL = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".db")
         let metaURL = tmpURL.deletingPathExtension().appendingPathExtension("meta")
-        let store = try BlazeDB.PageStore(fileURL: tmpURL, key: key)
+        let store = try PageStore(fileURL: tmpURL, key: key)
         let collection = try DynamicCollection(store: store, metaURL: metaURL, project: "TestProject", encryptionKey: key)
 
         // Create initial index
@@ -202,7 +202,7 @@ extension DynamicCollectionTests {
     func testFetchOnUnindexedFieldThrows() throws {
         let tmpURL = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".db")
         let metaURL = tmpURL.deletingPathExtension().appendingPathExtension("meta")
-        let store = try BlazeDB.PageStore(fileURL: tmpURL, key: key)
+        let store = try PageStore(fileURL: tmpURL, key: key)
         let collection = try DynamicCollection(store: store, metaURL: metaURL, project: "TestProject", encryptionKey: key)
 
         let record = BlazeDataRecord(["title": .string("Item")])
@@ -216,7 +216,7 @@ extension DynamicCollectionTests {
     func testCorruptedMetaFileRecovery() throws {
         let tmpURL = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".db")
         let metaURL = tmpURL.deletingPathExtension().appendingPathExtension("meta")
-        let store = try BlazeDB.PageStore(fileURL: tmpURL, key: key)
+        let store = try PageStore(fileURL: tmpURL, key: key)
         _ = FileManager.default.createFile(atPath: metaURL.path, contents: Data("corrupted".utf8))
 
         XCTAssertNoThrow(try DynamicCollection(store: store, metaURL: metaURL, project: "TestProject", encryptionKey: key))
@@ -227,7 +227,7 @@ extension DynamicCollectionTests {
     func testFetchByInvalidCompoundIndexThrows() throws {
         let tmpURL = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".db")
         let metaURL = tmpURL.deletingPathExtension().appendingPathExtension("meta")
-        let store = try BlazeDB.PageStore(fileURL: tmpURL, key: key)
+        let store = try PageStore(fileURL: tmpURL, key: key)
         let collection = try DynamicCollection(store: store, metaURL: metaURL, project: "TestProject", encryptionKey: key)
         try collection.createIndex(on: ["a", "b"])
 
@@ -244,7 +244,7 @@ extension DynamicCollectionTests {
     func testDuplicateCompoundIndexKeysAreSupported() throws {
         let tmpURL = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".db")
         let metaURL = tmpURL.deletingPathExtension().appendingPathExtension("meta")
-        let store = try BlazeDB.PageStore(fileURL: tmpURL, key: key)
+        let store = try PageStore(fileURL: tmpURL, key: key)
         let collection = try DynamicCollection(store: store, metaURL: metaURL, project: "TestProject", encryptionKey: key)
 
         try collection.createIndex(on: ["kind", "rank"])
@@ -277,7 +277,7 @@ extension DynamicCollectionTests {
     func testFetchAllByProjectFiltering() throws {
         let tmpURL = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".db")
         let metaURL = tmpURL.deletingPathExtension().appendingPathExtension("meta")
-        let store = try BlazeDB.PageStore(fileURL: tmpURL, key: key)
+        let store = try PageStore(fileURL: tmpURL, key: key)
         
         // Create collection with ProjectA
         let collectionA = try DynamicCollection(store: store, metaURL: metaURL, project: "ProjectA", encryptionKey: key)
@@ -310,7 +310,7 @@ extension DynamicCollectionTests {
     func testContainsIDMethod() throws {
         let tmpURL = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".db")
         let metaURL = tmpURL.deletingPathExtension().appendingPathExtension("meta")
-        let store = try BlazeDB.PageStore(fileURL: tmpURL, key: key)
+        let store = try PageStore(fileURL: tmpURL, key: key)
         let collection = try DynamicCollection(store: store, metaURL: metaURL, project: "Test", encryptionKey: key)
         
         let id = try collection.insert(BlazeDataRecord(["name": .string("Test")]))
@@ -328,7 +328,7 @@ extension DynamicCollectionTests {
     func testDestroyCollectionCleanup() throws {
         let tmpURL = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".db")
         let metaURL = tmpURL.deletingPathExtension().appendingPathExtension("meta")
-        let store = try BlazeDB.PageStore(fileURL: tmpURL, key: key)
+        let store = try PageStore(fileURL: tmpURL, key: key)
         let collection = try DynamicCollection(store: store, metaURL: metaURL, project: "Test", encryptionKey: key)
         
         for i in 0..<10 {
@@ -349,7 +349,7 @@ extension DynamicCollectionTests {
     func testFetchAllSorted() throws {
         let tmpURL = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".db")
         let metaURL = tmpURL.deletingPathExtension().appendingPathExtension("meta")
-        let store = try BlazeDB.PageStore(fileURL: tmpURL, key: key)
+        let store = try PageStore(fileURL: tmpURL, key: key)
         let collection = try DynamicCollection(store: store, metaURL: metaURL, project: "Test", encryptionKey: key)
         
         _ = try collection.insert(BlazeDataRecord(["name": .string("Charlie"), "age": .int(30)]))
@@ -373,7 +373,7 @@ extension DynamicCollectionTests {
     func testRunQueryMethods() throws {
         let tmpURL = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".db")
         let metaURL = tmpURL.deletingPathExtension().appendingPathExtension("meta")
-        let store = try BlazeDB.PageStore(fileURL: tmpURL, key: key)
+        let store = try PageStore(fileURL: tmpURL, key: key)
         let collection = try DynamicCollection(store: store, metaURL: metaURL, project: "Test", encryptionKey: key)
         
         _ = try collection.insert(BlazeDataRecord(["status": .string("active"), "priority": .int(1)]))
@@ -406,7 +406,7 @@ extension DynamicCollectionTests {
     func testQueryContext() throws {
         let tmpURL = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".db")
         let metaURL = tmpURL.deletingPathExtension().appendingPathExtension("meta")
-        let store = try BlazeDB.PageStore(fileURL: tmpURL, key: key)
+        let store = try PageStore(fileURL: tmpURL, key: key)
         let collection = try DynamicCollection(store: store, metaURL: metaURL, project: "Test", encryptionKey: key)
         
         _ = try collection.insert(BlazeDataRecord(["name": .string("Alice"), "age": .int(25)]))
@@ -428,7 +428,7 @@ extension DynamicCollectionTests {
     func testFetchMetaAndUpdateMeta() throws {
         let tmpURL = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".db")
         let metaURL = tmpURL.deletingPathExtension().appendingPathExtension("meta")
-        let store = try BlazeDB.PageStore(fileURL: tmpURL, key: key)
+        let store = try PageStore(fileURL: tmpURL, key: key)
         let collection = try DynamicCollection(store: store, metaURL: metaURL, project: "Test", encryptionKey: key)
         
         try collection.persist()

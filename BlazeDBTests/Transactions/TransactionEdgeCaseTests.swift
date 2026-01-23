@@ -12,7 +12,7 @@ import Crypto
 @testable import BlazeDBCore
 
 /// Use the real PageStore from the BlazeDB module (not the test shim).
-private typealias RealPageStore = BlazeDB.PageStore
+private typealias RealPageStore = PageStore
 
 /// Convenience helpers to build records and extract values used in assertions.
 private extension BlazeDataRecord {

@@ -26,7 +26,7 @@ import Crypto
 #endif
 @testable import BlazeDBCore
 
-private typealias DBPageStore = BlazeDB.PageStore
+private typealias DBPageStore = PageStore
 
 final class StorageStatsTests: XCTestCase {
     // MARK: - Helpers

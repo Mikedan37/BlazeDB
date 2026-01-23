@@ -15,14 +15,14 @@ import Crypto
 
 final class BlazeDBClientTests: XCTestCase {
     var tempURL: URL!
-    var store: BlazeDB.PageStore!
+    var store: PageStore!
     var client: BlazeDBClient!
     var key: SymmetricKey!
 
     override func setUpWithError() throws {
         tempURL = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".blz")
         key = try KeyManager.getKey(from: .password("test-password"))
-        store = try BlazeDB.PageStore(fileURL: tempURL, key: key)
+        store = try PageStore(fileURL: tempURL, key: key)
         client = try BlazeDBClient(name: "test-name", fileURL: tempURL, password: "test-password")
     }
 
@@ -229,7 +229,7 @@ final class BlazeDBClientTests: XCTestCase {
 
     func testSecondaryIndexPersistsAfterRestart() throws {
         let dbURL = tempDBURL()
-        let store = try BlazeDB.PageStore(fileURL: dbURL, key: key)
+        let store = try PageStore(fileURL: dbURL, key: key)
         let metaURL = dbURL.deletingPathExtension().appendingPathExtension("meta")
 
         var collection = try DynamicCollection(
@@ -251,7 +251,7 @@ final class BlazeDBClientTests: XCTestCase {
         try collection.persist()
 
         // simulate restart
-        let reopenedStore = try BlazeDB.PageStore(fileURL: dbURL, key: key)
+        let reopenedStore = try PageStore(fileURL: dbURL, key: key)
         let collectionReloaded = try DynamicCollection(
             store: reopenedStore,
             metaURL: metaURL,
@@ -267,7 +267,7 @@ final class BlazeDBClientTests: XCTestCase {
 
     func testCompoundIndexPersists() throws {
         let dbURL = tempDBURL()
-        let store = try BlazeDB.PageStore(fileURL: dbURL, key: key)
+        let store = try PageStore(fileURL: dbURL, key: key)
         let metaURL = dbURL.deletingPathExtension().appendingPathExtension("meta")
 
         var collection = try DynamicCollection(
@@ -289,7 +289,7 @@ final class BlazeDBClientTests: XCTestCase {
         // Flush metadata before restart (only 1 record, < 100 threshold)
         try collection.persist()
 
-        let reopenedStore = try BlazeDB.PageStore(fileURL: dbURL, key: key)
+        let reopenedStore = try PageStore(fileURL: dbURL, key: key)
         let reloaded = try DynamicCollection(
             store: reopenedStore,
             metaURL: metaURL,

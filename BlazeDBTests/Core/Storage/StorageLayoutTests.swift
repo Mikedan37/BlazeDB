@@ -30,7 +30,7 @@ final class StorageLayoutTests: XCTestCase {
     
     /// Test StorageLayout.rebuild(from:) can reconstruct index from pages
     func testRebuildFromDataPages() throws {
-        let store = try BlazeDB.PageStore(fileURL: tempURL, key: key)
+        let store = try PageStore(fileURL: tempURL, key: key)
         let metaURL = tempURL.deletingPathExtension().appendingPathExtension("meta")
         
         let collection = try DynamicCollection(store: store, metaURL: metaURL, project: "Test", encryptionKey: key)
@@ -59,7 +59,7 @@ final class StorageLayoutTests: XCTestCase {
         let metaURL = tempURL.deletingPathExtension().appendingPathExtension("meta")
         
         let originalLayout = StorageLayout(
-            indexMap: [UUID(): 0, UUID(): 1],
+            indexMap: [UUID(): [0], UUID(): [1]],
             nextPageIndex: 2,
             secondaryIndexes: [:]
         )
@@ -119,7 +119,7 @@ final class StorageLayoutTests: XCTestCase {
         let id2 = UUID()
         
         let layout = StorageLayout(
-            indexMap: [id1: 0, id2: 1],
+            indexMap: [id1: [0], id2: [1]],
             nextPageIndex: 2,
             secondaryIndexes: [
                 "status": [

@@ -41,7 +41,7 @@ final class BlazeDBPersistenceTests: XCTestCase {
         let key = try KeyManager.getKey(from: .password("!Password123"))
         
         // Create a new store and collection
-        var store: BlazeDB.PageStore? = try BlazeDB.PageStore(fileURL: url, key: key)
+        var store: PageStore? = try PageStore(fileURL: url, key: key)
         var collection: DynamicCollection? = try DynamicCollection(
             store: store!,
             metaURL: meta,
@@ -62,7 +62,7 @@ final class BlazeDBPersistenceTests: XCTestCase {
         store = nil
         
         // Reopen the store/collection with the same key
-        var reopenedStore: BlazeDB.PageStore? = try BlazeDB.PageStore(fileURL: url, key: key)
+        var reopenedStore: PageStore? = try PageStore(fileURL: url, key: key)
         var newCollection: DynamicCollection? = try DynamicCollection(
             store: reopenedStore!,
             metaURL: meta,
@@ -97,7 +97,7 @@ final class BlazeDBPersistenceTests: XCTestCase {
         
         let key = try KeyManager.getKey(from: .password("reload-test-key-123"))
         
-        var store: BlazeDB.PageStore? = try BlazeDB.PageStore(fileURL: tmpURL, key: key)
+        var store: PageStore? = try PageStore(fileURL: tmpURL, key: key)
         var collection: DynamicCollection? = try DynamicCollection(store: store!, metaURL: metaURL, project: "ReloadTest", encryptionKey: key)
         
         print("\n📊 BEFORE RELOAD:")
@@ -123,7 +123,7 @@ final class BlazeDBPersistenceTests: XCTestCase {
         
         // Reload from disk
         print("\n📊 RELOADING FROM DISK:")
-        store = try BlazeDB.PageStore(fileURL: tmpURL, key: key)
+        store = try PageStore(fileURL: tmpURL, key: key)
         collection = try DynamicCollection(store: store!, metaURL: metaURL, project: "ReloadTest", encryptionKey: key)
         print("  Collection reloaded")
         print("  Secondary indexes after reload: \(Array(collection!.secondaryIndexes.keys))")

@@ -48,9 +48,9 @@ final class TransactionDurabilityTests: XCTestCase {
         return dir.appendingPathComponent("txlog.blz")
     }
 
-    private func makeStore(at url: URL) throws -> BlazeDB.PageStore {
+    private func makeStore(at url: URL) throws -> PageStore {
         // PageStore accepts a key for API compatibility but ignores it (encryption disabled).
-        return try BlazeDB.PageStore(fileURL: url, key: .init(size: .bits256))
+        return try PageStore(fileURL: url, key: .init(size: .bits256))
     }
 
     private func asString(_ data: Data) -> String { String(data: data, encoding: .utf8) ?? "<nonutf8>" }
@@ -60,7 +60,7 @@ final class TransactionDurabilityTests: XCTestCase {
     func testWALLogContainsEntriesPreCommitAndClearsAfterCommit() throws {
         let dir = tmpDir("wal-presence")
         let url = dbURL(in: dir)
-        let store: BlazeDB.PageStore = try makeStore(at: url)
+        let store: PageStore = try makeStore(at: url)
 
         // Seed page 0 with baseline content.
         try store.write(index: 0, data: Data("baseline".utf8))
@@ -123,7 +123,7 @@ final class TransactionDurabilityTests: XCTestCase {
 
         // 1) Create store and seed page indices 0 & 1 with known values.
         do {
-            let store: BlazeDB.PageStore = try makeStore(at: url)
+            let store: PageStore = try makeStore(at: url)
             try store.write(index: 0, data: Data("A0".utf8))
             try store.write(index: 1, data: Data("B0".utf8))
 
@@ -136,7 +136,7 @@ final class TransactionDurabilityTests: XCTestCase {
         }
 
         // 2) "Restart" by reopening store (fresh instance).
-        let store2: BlazeDB.PageStore = try makeStore(at: url)
+        let store2: PageStore = try makeStore(at: url)
 
         // Read both pages. The durability contract with WAL is: either both new values (replayed) OR both old values (rolled back).
         // The only invalid state is a partial application (one new and one old).
@@ -159,7 +159,7 @@ final class TransactionDurabilityTests: XCTestCase {
     func testConcurrentWritesToSamePageSerializeFinalStateIsConsistent() throws {
         let dir = tmpDir("wal-concurrency-write")
         let url = dbURL(in: dir)
-        let store: BlazeDB.PageStore = try makeStore(at: url)
+        let store: PageStore = try makeStore(at: url)
 
         try store.write(index: 0, data: Data("base".utf8))
 
@@ -200,7 +200,7 @@ final class TransactionDurabilityTests: XCTestCase {
     func testConcurrentReadsAllowedWhileWriterOperates() throws {
         let dir = tmpDir("wal-concurrency-read")
         let url = dbURL(in: dir)
-        let store: BlazeDB.PageStore = try makeStore(at: url)
+        let store: PageStore = try makeStore(at: url)
         try store.write(index: 0, data: Data("start".utf8))
 
         let startedWrite = expectation(description: "writer started")
@@ -235,7 +235,7 @@ final class TransactionDurabilityTests: XCTestCase {
     func testStartupWithCorruptedWALDoesNotBrickDatabase() throws {
         let dir = tmpDir("wal-corrupt")
         let url = dbURL(in: dir)
-        let store: BlazeDB.PageStore = try makeStore(at: url)
+        let store: PageStore = try makeStore(at: url)
 
         // Seed a good page
         try store.write(index: 0, data: Data("good".utf8))
@@ -245,7 +245,7 @@ final class TransactionDurabilityTests: XCTestCase {
         try Data([0x00, 0xFF, 0x13, 0x37, 0x00]).write(to: walURL, options: .atomic)
 
         // Reopen store to trigger any startup recovery logic.
-        let store2: BlazeDB.PageStore = try makeStore(at: url)
+        let store2: PageStore = try makeStore(at: url)
         guard let data = try? store2.read(index: 0) else {
             XCTFail("Expected to read valid page 0 after corrupted WAL recovery")
             return

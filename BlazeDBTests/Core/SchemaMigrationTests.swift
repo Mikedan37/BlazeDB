@@ -50,7 +50,7 @@ final class SchemaMigrationTests: XCTestCase {
             // Add "version" field to all records
             let records = try db.fetchAll()
             for record in records {
-                if let id = record.id {
+                if let id = record.storage["id"]?.uuidValue {
                     var updated = record.storage
                     updated["version"] = .string("1.1")
                     try db.update(id: id, with: BlazeDataRecord(updated))
@@ -62,7 +62,7 @@ final class SchemaMigrationTests: XCTestCase {
             // Remove "version" field
             let records = try db.fetchAll()
             for record in records {
-                if let id = record.id {
+                if let id = record.storage["id"]?.uuidValue {
                     var updated = record.storage
                     updated.removeValue(forKey: "version")
                     try db.update(id: id, with: BlazeDataRecord(updated))
@@ -79,7 +79,7 @@ final class SchemaMigrationTests: XCTestCase {
             // Add "migrated" field
             let records = try db.fetchAll()
             for record in records {
-                if let id = record.id {
+                if let id = record.storage["id"]?.uuidValue {
                     var updated = record.storage
                     updated["migrated"] = .bool(true)
                     try db.update(id: id, with: BlazeDataRecord(updated))
@@ -91,7 +91,7 @@ final class SchemaMigrationTests: XCTestCase {
             // Remove "migrated" field
             let records = try db.fetchAll()
             for record in records {
-                if let id = record.id {
+                if let id = record.storage["id"]?.uuidValue {
                     var updated = record.storage
                     updated.removeValue(forKey: "migrated")
                     try db.update(id: id, with: BlazeDataRecord(updated))

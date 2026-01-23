@@ -20,9 +20,11 @@ let package = Package(
         .executable(
             name: "BlazeShell",
             targets: ["BlazeShell"]),
-        .executable(
-            name: "BlazeServer",
-            targets: ["BlazeServer"]),
+        // BlazeServer commented out - depends on BlazeDBDistributed which doesn't compile
+        // Uncomment when distributed modules are Swift 6 compliant
+        // .executable(
+        //     name: "BlazeServer",
+        //     targets: ["BlazeServer"]),
         .executable(
             name: "BasicExample",
             targets: ["BasicExample"]),
@@ -83,29 +85,30 @@ let package = Package(
         ),
         
         // MARK: - Distributed Target (Swift 6 non-compliant, opt-in)
-        .target(
-            name: "BlazeDBDistributed",
-            dependencies: [
-                "BlazeDBCore",
-                .product(name: "BlazeTransport", package: "BlazeTransport")
-            ],
-            path: "BlazeDB",
-            sources: [
-                // Only include distributed/telemetry directories and related Exports
-                "Distributed",
-                "Telemetry",
-                "Exports/BlazeDBClient+Discovery.swift",
-                "Exports/BlazeDBClient+Sync.swift",
-                "Exports/BlazeDBClient+Telemetry.swift",
-                "Exports/BlazeDBServer.swift",
-                "Exports/BlazeDBClient+SharedSecret.swift"
-                // Note: Migration files excluded - they use conditional compilation that doesn't work in parameter lists
-            ],
-            swiftSettings: [
-                .define("BLAZEDB_DISTRIBUTED"),
-                .define("BLAZEDB_LINUX_CORE", .when(platforms: [.linux]))
-            ]
-        ),
+        // COMMENTED OUT: Distributed modules don't compile under Swift 6 strict concurrency
+        // Uncomment when distributed modules are Swift 6 compliant
+        // To build distributed modules: swift build --target BlazeDBDistributed
+        // .target(
+        //     name: "BlazeDBDistributed",
+        //     dependencies: [
+        //         "BlazeDBCore",
+        //         .product(name: "BlazeTransport", package: "BlazeTransport")
+        //     ],
+        //     path: "BlazeDB",
+        //     sources: [
+        //         "Distributed",
+        //         "Telemetry",
+        //         "Exports/BlazeDBClient+Discovery.swift",
+        //         "Exports/BlazeDBClient+Sync.swift",
+        //         "Exports/BlazeDBClient+Telemetry.swift",
+        //         "Exports/BlazeDBServer.swift",
+        //         "Exports/BlazeDBClient+SharedSecret.swift"
+        //     ],
+        //     swiftSettings: [
+        //         .define("BLAZEDB_DISTRIBUTED"),
+        //         .define("BLAZEDB_LINUX_CORE", .when(platforms: [.linux]))
+        //     ]
+        // ),
         
         // MARK: - Umbrella Target (backward compatibility)
         // NOTE: Commented out - depends on BlazeDBDistributed which doesn't compile under Swift 6
@@ -128,11 +131,13 @@ let package = Package(
             dependencies: ["BlazeDBCore"],
             path: "BlazeShell"
         ),
-        .executableTarget(
-            name: "BlazeServer",
-            dependencies: ["BlazeDBCore", "BlazeDBDistributed"],  // Needs distributed for server functionality
-            path: "BlazeServer"
-        ),
+        // BlazeServer commented out - depends on BlazeDBDistributed which doesn't compile
+        // Uncomment when distributed modules are Swift 6 compliant
+        // .executableTarget(
+        //     name: "BlazeServer",
+        //     dependencies: ["BlazeDBCore", "BlazeDBDistributed"],
+        //     path: "BlazeServer"
+        // ),
         .executableTarget(
             name: "BasicExample",
             dependencies: ["BlazeDBCore"],

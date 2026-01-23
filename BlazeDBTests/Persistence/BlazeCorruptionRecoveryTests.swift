@@ -15,7 +15,7 @@ import Crypto
 @testable import BlazeDBCore
 
 // Use the real PageStore from BlazeDB module
-private typealias RealPageStore = BlazeDB.PageStore
+private typealias RealPageStore = PageStore
 
 final class BlazeCorruptionRecoveryTests: XCTestCase {
     var tempURL: URL!

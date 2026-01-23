@@ -63,7 +63,7 @@ final class BlazeDBMemoryTests: XCTestCase {
         
         autoreleasepool {
             let key = SymmetricKey(size: .bits256)
-            let store = try! BlazeDB.PageStore(fileURL: tempURL, key: key)
+            let store = try! PageStore(fileURL: tempURL, key: key)
             let metaURL = tempURL.deletingPathExtension().appendingPathExtension("meta")
             
             var collection: DynamicCollection? = try! DynamicCollection(
@@ -91,11 +91,11 @@ final class BlazeDBMemoryTests: XCTestCase {
     
     /// Test that page store instances don't leak
     func testPageStoreDeallocation() throws {
-        weak var weakStore: BlazeDB.PageStore?
+        weak var weakStore: PageStore?
         
         autoreleasepool {
             let key = SymmetricKey(size: .bits256)
-            var store: BlazeDB.PageStore? = try! BlazeDB.PageStore(fileURL: tempURL, key: key)
+            var store: PageStore? = try! PageStore(fileURL: tempURL, key: key)
             
             weakStore = store
             XCTAssertNotNil(weakStore, "Store should exist")

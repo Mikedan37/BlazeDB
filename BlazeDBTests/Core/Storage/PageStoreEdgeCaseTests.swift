@@ -12,7 +12,7 @@ import XCTest
 @testable import BlazeDBCore
 
 // Use the real PageStore from the BlazeDB module
-private typealias RealPageStore = BlazeDB.PageStore
+private typealias RealPageStore = PageStore
 
 final class PageStoreBoundaryTests: XCTestCase {
 
