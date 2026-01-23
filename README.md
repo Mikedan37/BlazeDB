@@ -8,8 +8,10 @@ BlazeDB is a Swift database with explicit trust features: query ergonomics, sche
 
 **Embedded database for Swift with ACID transactions, encryption, and schema-less storage.**
 
-[![Swift](https://img.shields.io/badge/Swift-5.9+-orange.svg)](https://swift.org)
+[![Swift](https://img.shields.io/badge/Swift-6.0-orange.svg)](https://swift.org)
 [![Platform](https://img.shields.io/badge/Platform-macOS%20%7C%20iOS%20%7C%20Linux-lightgrey.svg)](https://github.com/Mikedan37/BlazeDB)
+[![CI](https://img.shields.io/badge/CI-Passing-green.svg)](https://github.com/Mikedan37/BlazeDB/actions)
+[![Encryption](https://img.shields.io/badge/Encryption-AES--256--GCM-blue.svg)](Docs/Security/)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 ---
@@ -54,7 +56,14 @@ dependencies: [
 ]
 ```
 
-### Simplest Usage (Zero Configuration)
+### Try It Now (Zero Configuration)
+
+**Run the example:**
+```bash
+swift run HelloBlazeDB
+```
+
+This demonstrates: Open → Insert → Query → Export → Close
 
 **If you don't know which method to use, use `openDefault()`. It's the recommended entry point.**
 
@@ -290,3 +299,9 @@ BlazeDB is released under the MIT License. See [LICENSE](LICENSE) for details.
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+
+**Quick start:**
+- Run `swift run HelloBlazeDB` to see it work
+- Read `Docs/GettingStarted/HOW_TO_USE_BLAZEDB.md` for usage
+- Check `Docs/Status/ADOPTION_READINESS.md` for what BlazeDB is good for
+- See `Docs/Guarantees/SAFETY_MODEL.md` for safety guarantees

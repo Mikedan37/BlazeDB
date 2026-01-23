@@ -36,7 +36,13 @@ let package = Package(
             targets: ["BlazeDump"]),
         .executable(
             name: "BlazeInfo",
-            targets: ["BlazeInfo"])
+            targets: ["BlazeInfo"]),
+        .executable(
+            name: "BlazeDBBenchmarks",
+            targets: ["BlazeDBBenchmarks"]),
+        .executable(
+            name: "HelloBlazeDB",
+            targets: ["HelloBlazeDB"])
     ],
     dependencies: [
         // BlazeTransport: Transport layer for distributed sync
@@ -157,6 +163,16 @@ let package = Package(
             name: "BlazeInfo",
             dependencies: ["BlazeDBCore"],
             path: "BlazeInfo"
+        ),
+        .executableTarget(
+            name: "BlazeDBBenchmarks",
+            dependencies: ["BlazeDBCore"],
+            path: "BlazeDBBenchmarks"
+        ),
+        .executableTarget(
+            name: "HelloBlazeDB",
+            dependencies: ["BlazeDBCore"],
+            path: "Examples/HelloBlazeDB"
         ),
         
         // MARK: - Test Targets

@@ -1,256 +1,230 @@
 # Contributing to BlazeDB
 
-Thank you for your interest in contributing to BlazeDB! This document provides guidelines and instructions for contributing.
+**Thank you for considering contributing to BlazeDB!**
 
-## Code of Conduct
+This guide explains how to add tests, what will be accepted, and what will be rejected.
 
-BlazeDB follows a professional, respectful development environment. We expect all contributors to:
+---
 
-- Be respectful and constructive in discussions
-- Focus on technical merit and evidence
-- Welcome newcomers and help them learn
-- Accept constructive criticism gracefully
+## Test Tiers
 
-## Getting Started
+BlazeDB uses a three-tier test structure:
 
-### Prerequisites
+### Tier 1: Production Gate Tests (`BlazeDBCoreGateTests`)
 
-- Swift 5.9 or later
-- Xcode 15+ (for macOS/iOS development)
-- Linux toolchain (for Linux development)
+**Location:** `BlazeDBTests/Gate/`
 
-### Setting Up the Development Environment
+**What goes here:**
+- Tests that validate core production safety guarantees
+- Tests that MUST pass for any release
+- Tests using only public APIs
+- End-to-end behavior validation
 
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/Mikedan37/BlazeDB.git
-   cd BlazeDB
-   ```
+**Examples:**
+- Database lifecycle (open/close)
+- Crash recovery
+- Export/restore integrity
+- Schema migrations
 
-2. Build the project:
-   ```bash
-   swift build
-   ```
+**Run:**
+```bash
+swift test --filter BlazeDBCoreGateTests
+# or
+./Scripts/test-gate.sh
+```
 
-3. Run tests:
-   ```bash
-   swift test
-   ```
+### Tier 2: Core Tests (`BlazeDBCoreTests`)
 
-4. Open in Xcode (optional):
-   ```bash
-   open BlazeDB.xcodeproj
-   ```
+**Location:** `BlazeDBTests/` (not in Gate or Legacy)
+
+**What goes here:**
+- Tests for important features
+- Tests that should pass but aren't blocking
+- Edge cases and stress tests
+
+**Examples:**
+- Query ergonomics
+- Error messages
+- Platform compatibility
+
+### Tier 3: Legacy Tests (`BlazeDBLegacyTests`)
+
+**Location:** `BlazeDBTests/Legacy/`
+
+**What goes here:**
+- Tests accessing internal APIs
+- Tests using deprecated APIs
+- Performance benchmarks (not correctness)
+
+**Header required:**
+```swift
+// TIER 3 — Legacy / Internal / Non-blocking
+// This test accesses internal APIs and may fail without blocking releases.
+```
+
+---
+
+## Adding New Tests
+
+### Step 1: Determine Tier
+
+**Ask yourself:**
+- Does this test validate production safety? → Tier 1
+- Does this test validate an important feature? → Tier 2
+- Does this test access internals? → Tier 3
+
+**When in doubt, choose Tier 2.**
+
+### Step 2: Write Test
+
+**For Tier 1 tests:**
+- Use only public APIs
+- Test end-to-end behavior
+- No access to internals
+- Must always pass
+
+**For Tier 2 tests:**
+- May test edge cases
+- Should pass but not blocking
+- Can use public APIs freely
+
+**For Tier 3 tests:**
+- Add Tier 3 header comment
+- Document why it's Tier 3
+- May fail without blocking
+
+### Step 3: Add to Package.swift
+
+**If Tier 1:**
+- Add to `BlazeDBCoreGateTests` target sources list
+
+**If Tier 2:**
+- Place in `BlazeDBTests/` (not Gate or Legacy)
+- Will be included automatically
+
+**If Tier 3:**
+- Place in `BlazeDBTests/Legacy/`
+- Will be included automatically
+
+---
+
+## What Will Be Accepted
+
+### Code Changes
+
+- ✅ Bug fixes
+- ✅ Performance improvements (with benchmarks)
+- ✅ API improvements (with migration path)
+- ✅ Documentation improvements
+- ✅ Test additions
+
+### Test Additions
+
+- ✅ Tests for new features
+- ✅ Tests for bug fixes
+- ✅ Tests for edge cases
+- ✅ Performance benchmarks
+
+---
+
+## What Will Be Rejected
+
+### Code Changes
+
+- ❌ Changes to frozen core files (PageStore, WAL, encoding)
+- ❌ Breaking API changes without migration path
+- ❌ Changes that weaken safety guarantees
+- ❌ Changes that add `fatalError` to production code
+- ❌ Changes that add `Task.detached` to core
+
+### Test Additions
+
+- ❌ Tests that require modifying frozen core
+- ❌ Tests that weaken assertions
+- ❌ Tests that use deprecated APIs (unless Tier 3)
+- ❌ Tests that access internals (unless Tier 3)
+
+---
 
 ## Development Workflow
 
-### Branch Strategy
+### 1. Make Changes
 
-- `main`: Stable, production-ready code
-- `develop`: Integration branch for features
-- `feature/*`: Feature branches
-- `fix/*`: Bug fix branches
+```bash
+# Make your changes
+# ...
 
-### Making Changes
+# Run Tier 1 tests (required)
+./Scripts/test-gate.sh
 
-1. Create a feature branch from `main`:
-   ```bash
-   git checkout -b feature/your-feature-name
-   ```
-
-2. Make your changes following the coding standards below
-
-3. Write or update tests for your changes
-
-4. Ensure all tests pass:
-   ```bash
-   swift test
-   ```
-
-5. Update documentation if needed
-
-6. Commit your changes with clear, descriptive messages
-
-7. Push and create a pull request
-
-### Commit Messages
-
-Follow conventional commit format:
-
-```
-type(scope): subject
-
-body (optional)
-
-footer (optional)
+# Run all tests (optional)
+./Scripts/test-all.sh
 ```
 
-Types: `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `chore`, `perf`, `security`
+### 2. Verify Frozen Core
 
-Examples:
-- `feat(query): add support for window functions`
-- `fix(encryption): correct nonce generation for page encryption`
-- `docs(readme): update installation instructions`
+```bash
+# Check that frozen core wasn't modified
+./Scripts/check-freeze.sh HEAD^
+```
 
-## Coding Standards
+### 3. Commit
+
+```bash
+git add -A
+git commit -m "Description of changes"
+```
+
+---
+
+## Code Style
 
 ### Swift Style
 
 - Follow Swift API Design Guidelines
-- Use meaningful names for variables, functions, and types
-- Prefer `let` over `var` when possible
-- Use `guard` for early returns
-- Document public APIs with doc comments
+- Use explicit types when clarity is needed
+- Prefer `guard` over `if let` for early returns
+- Document public APIs
 
-### Code Organization
+### Error Handling
 
-- Keep files focused on a single responsibility
-- Group related functionality in extensions
-- Use `MARK:` comments to organize code sections
-- Place public APIs in `Exports/` directory
+- Use `BlazeDBError` for runtime errors
+- Use `preconditionFailure` for invariant violations (debug only)
+- Never use `fatalError` in production code
 
-### Security
+### Concurrency
 
-- Never commit passwords, keys, or sensitive data
-- Use secure defaults (encryption enabled by default)
-- Document security implications of changes
-- Review cryptographic code carefully
+- Prefer structured concurrency (`Task { }`)
+- Avoid `Task.detached` in core
+- Use `@Sendable` only where Swift requires it
+- Document `@unchecked Sendable` usage
 
-### Performance
-
-- Profile before optimizing
-- Document performance characteristics
-- Consider memory usage and allocation patterns
-- Maintain performance invariants
-
-## Testing
-
-### Test Requirements
-
-- All new features must include tests
-- Bug fixes must include regression tests
-- Tests should be fast, isolated, and deterministic
-- Use descriptive test names that explain what is being tested
-
-### Test Organization
-
-- Unit tests in `BlazeDBTests/`
-- Integration tests in `BlazeDBIntegrationTests/`
-- Performance tests in `BlazeDBTests/Performance/`
-- Security tests in `BlazeDBTests/Security/`
-
-### Running Tests
-
-```bash
-# Run all tests
-swift test
-
-# Run specific test suite
-swift test --filter BlazeDBTests.QueryTests
-
-# Run with verbose output
-swift test --verbose
-```
+---
 
 ## Documentation
 
-### Code Documentation
+### Adding Documentation
 
-- Document all public APIs with doc comments
-- Include parameter descriptions and return values
-- Provide usage examples for complex APIs
-- Document error conditions and edge cases
+- Update relevant docs in `Docs/`
+- Add examples to `Examples/`
+- Update README if adding features
 
-### README Updates
+### Documentation Style
 
-- Update README.md for user-facing changes
-- Add examples for new features
-- Update installation instructions if needed
+- Be explicit, not clever
+- Show examples, not just descriptions
+- Explain "why" not just "how"
 
-### Architecture Documentation
-
-- Document architectural decisions in `Docs/Architecture/`
-- Update diagrams when architecture changes
-- Explain design tradeoffs and constraints
-
-## Pull Request Process
-
-### Before Submitting
-
-1. Ensure all tests pass
-2. Update documentation
-3. Check for code style issues
-4. Review your own changes
-
-### PR Description
-
-Include:
-- Summary of changes
-- Motivation and context
-- Testing performed
-- Breaking changes (if any)
-- Related issues
-
-### Review Process
-
-- All PRs require at least one approval
-- Address review comments promptly
-- Keep PRs focused and reasonably sized
-- Respond to feedback constructively
-
-## Areas for Contribution
-
-### High Priority
-
-- Performance optimizations
-- Security improvements
-- Test coverage expansion
-- Documentation improvements
-- Bug fixes
-
-### Feature Areas
-
-- Query optimizer improvements
-- Additional index types
-- Enhanced sync capabilities
-- Platform-specific optimizations
-- Developer tooling
-
-### Documentation
-
-- API reference improvements
-- Tutorials and guides
-- Architecture documentation
-- Example projects
-
-## Reporting Issues
-
-### Bug Reports
-
-Include:
-- Clear description of the issue
-- Steps to reproduce
-- Expected vs actual behavior
-- Environment details (OS, Swift version, etc.)
-- Relevant code or error messages
-
-### Feature Requests
-
-Include:
-- Use case and motivation
-- Proposed solution (if any)
-- Alternatives considered
-- Impact on existing code
-
-## Security Issues
-
-For security vulnerabilities, please email security@blazedb.dev (or use GitHub Security Advisories) rather than opening a public issue.
+---
 
 ## Questions?
 
-- Open a discussion on GitHub
-- Check existing documentation in `Docs/`
-- Review existing issues and PRs
+- Check `Docs/Status/TEST_STABILIZATION_COMPLETE.md` for test structure
+- Check `Docs/Guarantees/SAFETY_MODEL.md` for safety guarantees
+- Check `Docs/PHASE_1_FREEZE.md` for frozen core details
 
-Thank you for contributing to BlazeDB!
+---
 
+## Thank You
+
+Contributions make BlazeDB better. Thank you for taking the time to contribute!
