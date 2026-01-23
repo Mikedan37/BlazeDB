@@ -7,18 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.1.2] - 2026-01-23
+
+### Fixed
+
+- **SwiftPM Dependency Resolution:** Verified and pinned SwiftCBOR to exact stable version (v0.6.0)
+  - Resolves error: "package 'blazedb' depends on an unstable-version package 'swiftcbor'"
+  - Ensures BlazeDB can be consumed with stable version requirements
+  - All transitive dependencies verified stable
+  - Version bump clears SwiftPM cache metadata
+
+### Technical Details
+
+When consumers pin BlazeDB to a stable version (e.g., `exact: "0.1.0"`), SwiftPM requires all transitive dependencies to also be stable. This patch release:
+- Pins SwiftCBOR with `exact: "0.6.0"` (stable tagged version)
+- Verifies no branch/revision references to SwiftCBOR
+- Ensures only one SwiftCBOR dependency declaration exists
+- Bumps version to clear SwiftPM cache for v0.1.1
+
+---
+
 ## [0.1.1] - 2026-01-23
 
 ### Fixed
 
 - **SwiftPM Dependency Resolution:** Pinned SwiftCBOR to stable tagged release (v0.6.0)
-  - Resolves error: "package 'blazedb' depends on an unstable-version package 'swiftcbor'"
-  - Ensures BlazeDB can be consumed with stable version requirements
-  - All transitive dependencies are now stable
-
-### Technical Details
-
-When consumers pin BlazeDB to a stable version (e.g., `exact: "0.1.0"`), SwiftPM requires all transitive dependencies to also be stable. This patch release pins SwiftCBOR to a tagged version, ensuring reproducible builds and resolving SwiftPM dependency resolution errors.
+  - Initial fix for SwiftPM dependency resolution error
+  - Superseded by v0.1.2 (cache clearing)
 
 ---
 
