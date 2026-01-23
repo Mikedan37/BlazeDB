@@ -256,7 +256,9 @@ class CoreDataMigrationExamples {
         let container = NSPersistentContainer(name: "MyApp")
         container.loadPersistentStores { _, error in
             if let error = error {
-                fatalError("Failed to load: \(error)")
+                // Log error instead of crashing
+                print("❌ Failed to load Core Data store: \(error)")
+                // In production, handle this gracefully - show error to user, use fallback, etc.
             }
         }
         
@@ -276,7 +278,9 @@ class CoreDataMigrationExamples {
         let container = NSPersistentContainer(name: "MyApp")
         container.loadPersistentStores { _, error in
             if let error = error {
-                fatalError("Failed to load: \(error)")
+                // Log error instead of crashing
+                print("❌ Failed to load Core Data store: \(error)")
+                // In production, handle this gracefully - show error to user, use fallback, etc.
             }
         }
         
@@ -298,7 +302,9 @@ class CoreDataMigrationExamples {
         let container = NSPersistentContainer(name: "MyApp")
         container.loadPersistentStores { _, error in
             if let error = error {
-                fatalError("Failed to load: \(error)")
+                // Log error instead of crashing
+                print("❌ Failed to load Core Data store: \(error)")
+                // In production, handle this gracefully - show error to user, use fallback, etc.
             }
         }
         

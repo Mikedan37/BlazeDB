@@ -101,10 +101,19 @@ public struct Field<Value> {
     
     public var wrappedValue: Value {
         get {
-            fatalError("@Field can only be used within a @BlazeDocument struct")
+            // Log error and return default value instead of crashing
+            BlazeLogger.error("@Field can only be used within a @BlazeDocument struct. This indicates a programming error.")
+            if let defaultValue = defaultValue {
+                return defaultValue
+            }
+            // If no default, use preconditionFailure (better than fatalError - can be caught in debug)
+            preconditionFailure("@Field can only be used within a @BlazeDocument struct. Provide a default value or use @BlazeDocument.")
         }
         set {
-            fatalError("@Field can only be used within a @BlazeDocument struct")
+            // Log error instead of crashing
+            BlazeLogger.error("@Field can only be used within a @BlazeDocument struct. Attempted to set value: \(newValue). This indicates a programming error.")
+            // Property setters can't throw, so we log and do nothing
+            // The value won't be stored, but the app won't crash
         }
     }
     

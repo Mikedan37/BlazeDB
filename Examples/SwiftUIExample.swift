@@ -449,7 +449,10 @@ class AppDatabase {
         do {
             db = try BlazeDBClient(fileURL: url, project: "bugs")
         } catch {
-            fatalError("Failed to initialize database: \(error)")
+            // Log error instead of crashing
+            print("❌ Failed to initialize database: \(error)")
+            // In a real SwiftUI app, you might want to show an alert or handle this gracefully
+            // For this example, we'll just log and leave db as nil
         }
     }
 }
