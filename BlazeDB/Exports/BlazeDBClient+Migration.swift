@@ -78,12 +78,18 @@ extension BlazeDBClient {
         )
     }
     
-    /// Validate schema version on open
+    /// Validate schema version matches expected version
     ///
-    /// Called internally during database initialization.
+    /// **Guardrail:** Prevents opening database with incompatible schema.
+    /// Fails loudly if versions don't match.
+    ///
     /// - Parameter expectedVersion: Expected schema version
-    /// - Throws: Error if version mismatch
-    internal func validateSchemaVersion(expectedVersion: SchemaVersion) throws {
+    /// - Throws: Error if schema version mismatch
+    ///
+    /// ## Error Messages
+    /// - Older database: "Database schema version (X.Y) is older than expected (A.B). Migrations required."
+    /// - Newer database: "Database schema version (X.Y) is newer than expected (A.B). Application may be outdated."
+    public func validateSchemaVersion(expectedVersion: SchemaVersion) throws {
         let currentVersion = try getSchemaVersion()
         
         // If no version set, assume legacy (version 0.0)
