@@ -13,6 +13,7 @@ BlazeDB runs inside your app. One process writes at a time. If your app crashes,
 - Encrypted by default
 - Survives crashes (data persists)
 - Fast for local-first apps
+- Runs on macOS, Linux, iOS, tvOS, and watchOS
 
 **What it is NOT:**
 - Not distributed (no clustering)
@@ -54,6 +55,8 @@ print("Found \(results.count) records")
 try db.close()
 ```
 
+**Note:** `BlazeDataRecord` is a lightweight, typed key-value container. BlazeDB stores values with explicit types (`.string`, `.int`, `.bool`, etc.) so queries and migrations remain predictable.
+
 That's it. You have a working database.
 
 ---
@@ -61,7 +64,8 @@ That's it. You have a working database.
 ## 3. Where the Database Lives
 
 **macOS:** `~/Library/Application Support/BlazeDB/{name}.blazedb`  
-**Linux:** `~/.local/share/blazedb/{name}.blazedb`
+**Linux:** `~/.local/share/blazedb/{name}.blazedb`  
+**iOS/tvOS/watchOS:** Inside your app's sandbox (use default location)
 
 **Use default location:**
 ```swift
@@ -83,7 +87,9 @@ print("Database at: \(db.fileURL.path)")
 
 ## 4. Defining and Evolving a Schema
 
-BlazeDB doesn't enforce schemas. Insert records with whatever fields you want.
+BlazeDB is schema-optional. You can start without one and add schema enforcement later when your app grows.
+
+BlazeDB doesn't enforce schemas by default. Insert records with whatever fields you want.
 
 **Basic usage:**
 ```swift
@@ -455,7 +461,7 @@ blazedb info mydb --password "password"
 - Enabled by default
 - Password is required
 - If you lose the password, data is unrecoverable
-- Store passwords securely (environment variables, keychain)
+- In practice, store the password in an environment variable, config file, or OS keychain. This is no different from managing encryption keys in any other secure system.
 
 ---
 
