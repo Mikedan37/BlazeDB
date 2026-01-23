@@ -17,7 +17,7 @@ do {
     let dbPath = FileManager.default.temporaryDirectory
         .appendingPathComponent("hello-blazedb.db")
     
-    let db = try BlazeDBClient(name: "hello", fileURL: dbPath, password: "demo-password")
+    let db = try BlazeDBClient(name: "hello", fileURL: dbPath, password: "Demo-Password-123!")
     print("   ✓ Database opened: \(dbPath.path)\n")
     
     // STEP 2: Insert data
