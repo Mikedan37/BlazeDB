@@ -93,16 +93,16 @@ func benchmarkInsertThroughput(datasetSize: Int) -> (blazedb: Double, sqlite: Do
         
         #if canImport(SQLite3)
         let sqliteURL = tempDir.appendingPathComponent("sqlite_bench.db")
-        var db: OpaquePointer?
+        var sqliteDB: OpaquePointer?
         
-        if sqlite3_open(sqliteURL.path, &db) == SQLITE_OK {
-            sqlite3_exec(db, "CREATE TABLE IF NOT EXISTS records (id TEXT PRIMARY KEY, index_val INTEGER, data TEXT)", nil, nil, nil)
+        if sqlite3_open(sqliteURL.path, &sqliteDB) == SQLITE_OK {
+            sqlite3_exec(sqliteDB, "CREATE TABLE IF NOT EXISTS records (id TEXT PRIMARY KEY, index_val INTEGER, data TEXT)", nil, nil, nil)
             
             let sqliteStart = Date()
             let insertStmt = "INSERT INTO records (id, index_val, data) VALUES (?, ?, ?)"
             var statement: OpaquePointer?
             
-            if sqlite3_prepare_v2(db, insertStmt, -1, &statement, nil) == SQLITE_OK {
+            if sqlite3_prepare_v2(sqliteDB, insertStmt, -1, &statement, nil) == SQLITE_OK {
                 for i in 0..<datasetSize {
                     let id = UUID().uuidString
                     sqlite3_bind_text(statement, 1, id, -1, nil)
@@ -115,7 +115,7 @@ func benchmarkInsertThroughput(datasetSize: Int) -> (blazedb: Double, sqlite: Do
             }
             
             sqlite3_finalize(statement)
-            sqlite3_close(db)
+            sqlite3_close(sqliteDB)
             
             let sqliteDuration = Date().timeIntervalSince(sqliteStart)
             sqliteOpsPerSec = Double(datasetSize) / sqliteDuration
@@ -171,7 +171,7 @@ func benchmarkReadThroughput(datasetSize: Int) -> (blazedb: Double, sqlite: Doub
         try reopenedDB.close()
         
         // SQLite read benchmark (if available)
-        var sqliteOpsPerSec: Double? = nil
+        let sqliteOpsPerSec: Double? = nil
         
         #if canImport(SQLite3)
         // SQLite setup would go here
