@@ -35,25 +35,25 @@ blazedb doctor /path/to/db.blazedb mypassword --json
 
 **Output (Human-readable):**
 ```
-🔍 BlazeDB Doctor - Health Check Report
+ BlazeDB Doctor - Health Check Report
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Database: mydb
 Path: /path/to/db.blazedb
 
-✅ File Exists: Database file found
-✅ Encryption Key: Encryption key valid, database opened successfully
-✅ Layout Integrity: Layout metadata readable and valid
-✅ Read/Write Cycle: Read/write cycle successful
+ File Exists: Database file found
+ Encryption Key: Encryption key valid, database opened successfully
+ Layout Integrity: Layout metadata readable and valid
+ Read/Write Cycle: Read/write cycle successful
 
-🏥 Health Status: OK
+ Health Status: OK
 
-📊 Statistics:
+ Statistics:
   Records: 1,000
   Pages: 100
   Size: 2.5 MB
   Encrypted: Yes
 
-✅ Database is healthy
+ Database is healthy
 ```
 
 **Output (JSON):**
@@ -114,7 +114,7 @@ blazedb dump /path/to/db.blazedb /path/to/backup.blazedump mypassword
 **Output:**
 ```
 Exporting database to /path/to/backup.blazedump...
-✅ Export successful
+ Export successful
 ```
 
 ---
@@ -149,13 +149,13 @@ blazedb restore /path/to/backup.blazedump /path/to/newdb.blazedb mypassword --al
 **Output:**
 ```
 Restoring database from /path/to/backup.blazedump...
-✅ Restore successful
+ Restore successful
 ```
 
 **Errors:**
 ```
-❌ Restore failed: Cannot restore to non-empty database. Database has 10 records.
-   💡 Clear database first or use a new database.
+ Restore failed: Cannot restore to non-empty database. Database has 10 records.
+    Clear database first or use a new database.
 ```
 
 ---
@@ -185,7 +185,7 @@ blazedb verify /path/to/backup.blazedump
 **Output:**
 ```
 Verifying dump file /path/to/backup.blazedump...
-✅ Dump file is valid
+ Dump file is valid
    Format version: 1.0
    Schema version: 1.0
    Database: mydb
@@ -218,7 +218,7 @@ blazedb info /path/to/db.blazedb mypassword
 
 **Output:**
 ```
-📊 Database Information
+ Database Information
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Path: /path/to/db.blazedb
 Name: mydb
@@ -261,13 +261,13 @@ JSON output is designed for scripting and automation. All JSON output goes to st
 
 All CLI tools provide:
 - Clear error messages
-- Actionable suggestions (via `💡` hints)
+- Actionable suggestions (via `` hints)
 - Exit codes for scripting
 
 **Example:**
 ```
-❌ Error: Permission denied for operation: open
-   💡 Check file permissions and app sandbox entitlements. On Linux, ensure directory is writable (chmod 755).
+ Error: Permission denied for operation: open
+    Check file permissions and app sandbox entitlements. On Linux, ensure directory is writable (chmod 755).
 ```
 
 ---

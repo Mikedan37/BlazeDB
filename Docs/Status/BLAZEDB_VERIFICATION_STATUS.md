@@ -46,7 +46,7 @@ The BlazeServer executable is ready with enhanced logging:
 ```swift
 // BlazeServer/main.swift
 BlazeLogger.info(" BlazeServer started successfully")
-BlazeLogger.info("📡 Listening on port \(port)")
+BlazeLogger.info(" Listening on port \(port)")
 BlazeLogger.info(" Database: \(databaseName)")
 BlazeLogger.info(" Authentication: \(authToken != nil ? "enabled" : "disabled")")
 BlazeLogger.info(" Server ready to accept connections")
@@ -79,7 +79,7 @@ swift run BlazeServer
 **Expected Output**:
 ```
  BlazeServer started successfully
-📡 Listening on port 9090
+ Listening on port 9090
  Database: ServerMainDB
  Authentication: disabled
  Server ready to accept connections
@@ -101,7 +101,7 @@ nc -zv localhost 9090
 ```
 **Expected**: Connection successful
 
-## 🐧 Running on Orange Pi 5 Ultra
+##  Running on Orange Pi 5 Ultra
 
 ### Prerequisites
 - Swift 6.x installed on Orange Pi

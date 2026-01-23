@@ -74,7 +74,7 @@ catch let error as BlazeDBError {
     print(error.suggestedMessage)
     // Output:
     // Field 'userId' has invalid type: expected String but got Int.
-    // 💡 Suggestion: Check your data model matches the expected schema. Verify field types.
+    // Suggestion: Check your data model matches the expected schema. Verify field types.
 }
 
 // Field name suggestions
@@ -113,7 +113,7 @@ print(explanation.description)
 //   Filter fields: status
 //   Indexed fields: none
 //   Risk: WARN: Unindexed filter
-//   💡 Filter on 'status' may require full table scan. Consider adding index: db.createIndex(on: "status")
+//   Filter on 'status' may require full table scan. Consider adding index: db.createIndex(on: "status")
 
 // Execute with automatic warnings
 let results = try db.query()
@@ -154,10 +154,10 @@ print(plan.prettyDescription())
 // ─────────────────────────────────────
 //
 // 1. AddEmailField
-//    📝 Adds email field to all user records
+//    Adds email field to all user records
 //    Version: 1.0 → 1.1
 //
-// ✅ No destructive operations detected.
+// No destructive operations detected.
 //
 // Estimated Time: Unknown
 ```
@@ -178,25 +178,25 @@ Records: 1000
 **After:**
 ```bash
 $ blazedb doctor mydb.blazedb pass
-🔍 BlazeDB Doctor - Health Check Report
+ BlazeDB Doctor - Health Check Report
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Database: mydb
 Path: /path/to/mydb.blazedb
 
-✅ File Exists: Database file found
-✅ Encryption Key: Encryption key valid, database opened successfully
-✅ Layout Integrity: Layout metadata readable and valid
-✅ Read/Write Cycle: Read/write cycle successful
+ File Exists: Database file found
+ Encryption Key: Encryption key valid, database opened successfully
+ Layout Integrity: Layout metadata readable and valid
+ Read/Write Cycle: Read/write cycle successful
 
-🏥 Health Status: OK
+ Health Status: OK
 
-📊 Statistics:
+ Statistics:
   Records: 1,000
   Pages: 100
   Size: 2.5 MB
   Encrypted: Yes
 
-✅ Database is healthy
+ Database is healthy
 ```
 
 **Impact:** CLI output is formatted, colorized, and informative.
@@ -208,36 +208,36 @@ Path: /path/to/mydb.blazedb
 ### Compilation
 ```bash
 $ swift build --target BlazeDB
-✅ Build successful (core modules only)
+ Build successful (core modules only)
 
 $ swift build --target BlazeDBTests
-✅ Build successful
+ Build successful
 ```
 
 ### Test Execution
 ```bash
 $ swift test --filter DXHappyPathTests
-✅ testOpenTemporary_WritesAndReads() passed
-✅ testOpenOrCreate_CreatesDirectory() passed
-✅ testInsertMany_InsertsAllRecords() passed
-✅ testWithDatabase_ExecutesBlock() passed
+ testOpenTemporary_WritesAndReads() passed
+ testOpenOrCreate_CreatesDirectory() passed
+ testInsertMany_InsertsAllRecords() passed
+ testWithDatabase_ExecutesBlock() passed
 
 $ swift test --filter DXErrorSuggestionTests
-✅ testUnknownField_ProducesSuggestions() passed
-✅ testSchemaMismatchError_IncludesActionableGuidance() passed
-✅ testRestoreConflictError_IncludesRemediationSteps() passed
-✅ testErrorMessages_AreStable() passed
+ testUnknownField_ProducesSuggestions() passed
+ testSchemaMismatchError_IncludesActionableGuidance() passed
+ testRestoreConflictError_IncludesRemediationSteps() passed
+ testErrorMessages_AreStable() passed
 
 $ swift test --filter DXQueryExplainTests
-✅ testExplain_IncludesCorrectFilterCount() passed
-✅ testExplain_WarnsForUnindexedFilter() passed
-✅ testExecuteWithWarnings_ReturnsSameResultsAsExecute() passed
+ testExplain_IncludesCorrectFilterCount() passed
+ testExplain_WarnsForUnindexedFilter() passed
+ testExecuteWithWarnings_ReturnsSameResultsAsExecute() passed
 
 $ swift test --filter DXMigrationPlanTests
-✅ testPrettyPrint_IncludesVersions() passed
-✅ testPrettyPrint_IncludesMigrationsList() passed
-✅ testPrettyPrint_DestructiveFlagShows() passed
-✅ testPrettyPrint_OutputOrderIsStable() passed
+ testPrettyPrint_IncludesVersions() passed
+ testPrettyPrint_IncludesMigrationsList() passed
+ testPrettyPrint_DestructiveFlagShows() passed
+ testPrettyPrint_OutputOrderIsStable() passed
 ```
 
 ---

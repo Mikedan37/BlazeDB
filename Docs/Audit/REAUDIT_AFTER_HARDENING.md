@@ -46,7 +46,7 @@
    - **Impact:** Clear feature status and limitations
    - **Categories:**
      -  Implemented now (correctness-related)
-     - 📘 Documented as intentional limitation
+     -  Documented as intentional limitation
      - ⏳ Future work with clear rationale
 
 4. **Compilation Errors Fixed**
@@ -290,7 +290,7 @@
 -  **Use in production** - It's ready
 -  **Priority-1 hardening complete** - All critical issues resolved
 -  **Plan Priority 2 items** - Significant improvements
-- 🔮 **Consider Priority 3 items** - Future enhancements
+-  **Consider Priority 3 items** - Future enhancements
 
 ---
 

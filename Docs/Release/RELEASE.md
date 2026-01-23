@@ -83,7 +83,7 @@ The easiest, most powerful embedded database for Swift.
 - **Feature Complete** - Everything you need: queries, JOINs, aggregations, full-text search
 - **Easy Migration** - Tools for SQLite, Core Data, CSV, JSON
 
-## 💎 Key Features
+##  Key Features
 
 -  SwiftUI `@BlazeQuery` property wrapper - auto-updating views
 -  Full async/await support - non-blocking operations
@@ -171,7 +171,7 @@ struct ListView: View {
 - Migration examples
 - Performance guides
 
-## 🔮 Coming Soon
+##  Coming Soon
 
 - Cloud sync (CloudKit integration)
 - Real-time collaboration (CRDT support)
@@ -182,9 +182,9 @@ struct ListView: View {
 
 None - this is the first stable release!
 
-## 🙏 Credits
+##  Credits
 
-Built with ❤ for the Swift community.
+Built with  for the Swift community.
 
 Special thanks to all testers and early adopters.
 

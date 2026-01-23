@@ -6,7 +6,7 @@
 
 ## Current State Assessment
 
-### ✅ What's Already Good
+###  What's Already Good
 
 1. **Clear Entry Points**
    - `openDefault()` is discoverable
@@ -409,19 +409,19 @@ Records: 1000
 #### A. Better Output Formatting
 ```bash
 $ blazedb doctor mydb.blazedb
-✅ Database Health: OK
+ Database Health: OK
 
-📊 Statistics:
+ Statistics:
    Records: 1,000
    Pages: 100
    Size: 2.5 MB
    WAL: 512 KB
 
-🔍 Indexes:
-   ✓ idx_name (name)
-   ✓ idx_email (email, unique)
+ Indexes:
+    idx_name (name)
+    idx_email (email, unique)
 
-💡 Suggestions:
+ Suggestions:
    - Consider adding index on 'status' for faster queries
 ```
 
@@ -434,7 +434,7 @@ $ blazedb doctor --interactive
   3. Schema
   4. Indexes
 > 1
-✅ Health: OK
+ Health: OK
 ```
 
 #### C. JSON Output for Scripting
@@ -456,10 +456,10 @@ $ blazedb doctor --json mydb.blazedb
 ## Implementation Priority
 
 ### Phase 1: High Impact, Low Effort
-1. ✅ Better error context (add query string to errors)
-2. ✅ Query performance warnings (detect slow queries)
-3. ✅ Test helpers (reduce boilerplate)
-4. ✅ CLI output formatting (better UX)
+1.  Better error context (add query string to errors)
+2.  Query performance warnings (detect slow queries)
+3.  Test helpers (reduce boilerplate)
+4.  CLI output formatting (better UX)
 
 ### Phase 2: High Impact, Medium Effort
 1. Progress callbacks for long operations
@@ -506,7 +506,7 @@ if duration > 0.1 {  // >100ms
 ```swift
 // In BlazeDoctor
 func printHealth(_ health: HealthReport) {
-    let icon = health.status == .ok ? "✅" : "⚠️"
+    let icon = health.status == .ok ? "" : "️"
     print("\(icon) Database Health: \(health.status)")
     // ... formatted output
 }

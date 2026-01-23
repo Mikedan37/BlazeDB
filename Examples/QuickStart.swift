@@ -12,12 +12,12 @@ import BlazeDB
 // MARK: - Quick Start Example
 
 func quickStartExample() throws {
-    print("🚀 BlazeDB Quick Start Example\n")
+    print("BlazeDB Quick Start Example\n")
     
     // 1. Open database (or create if doesn't exist)
     print("1. Opening database...")
     let db = try BlazeDB.openOrCreate(name: "quickstart", password: "demo-password-123")
-    print("   ✅ Database opened: \(db.fileURL.path)\n")
+    print("   Database opened: \(db.fileURL.path)\n")
     
     // 2. Insert records
     print("2. Inserting records...")
@@ -28,7 +28,7 @@ func quickStartExample() throws {
     ]
     
     let ids = try db.insertMany(records)
-    print("   ✅ Inserted \(ids.count) records\n")
+    print("   Inserted \(ids.count) records\n")
     
     // 3. Query with filter
     print("3. Querying records...")
@@ -38,7 +38,7 @@ func quickStartExample() throws {
         .execute()
         .records
     
-    print("   ✅ Found \(results.count) admins:")
+    print("   Found \(results.count) admins:")
     for record in results {
         if let name = record.string("name"), let age = record.int("age") {
             print("      - \(name), age \(age)")
@@ -78,12 +78,12 @@ func quickStartExample() throws {
     let dumpURL = FileManager.default.temporaryDirectory
         .appendingPathComponent("quickstart-dump.blazedump")
     try db.export(to: dumpURL)
-    print("   ✅ Dump created: \(dumpURL.path)\n")
+    print("   Dump created: \(dumpURL.path)\n")
     
     // 8. Verify dump
     print("8. Verifying dump...")
     let dumpHeader = try BlazeDBImporter.verify(dumpURL)
-    print("   ✅ Dump verified:")
+    print("   Dump verified:")
     print("      Schema version: \(dumpHeader.schemaVersion)")
     print("      Record count: \(dumpHeader.recordCount)")
     print("      Created: \(dumpHeader.createdAt)\n")
@@ -94,14 +94,14 @@ func quickStartExample() throws {
     try BlazeDBImporter.restore(from: dumpURL, to: restoredDB, allowSchemaMismatch: false)
     
     let restoredCount = restoredDB.getRecordCount()
-    print("   ✅ Restored \(restoredCount) records\n")
+    print("   Restored \(restoredCount) records\n")
     
     // 10. Cleanup
     print("10. Cleaning up...")
     try? FileManager.default.removeItem(at: dumpURL)
-    print("   ✅ Cleanup complete\n")
+    print("   Cleanup complete\n")
     
-    print("✨ Quick start complete! All operations succeeded.\n")
+    print("Quick start complete! All operations succeeded.\n")
     print("Next steps:")
     print("  - Read Docs/Guides/USAGE_BY_TASK.md for common tasks")
     print("  - Check Docs/GettingStarted/QUERY_PERFORMANCE.md for query optimization")
@@ -114,9 +114,9 @@ if CommandLine.arguments.contains("--run") {
     do {
         try quickStartExample()
     } catch {
-        print("❌ Error: \(error)")
+        print("Error: \(error)")
         if let blazeError = error as? BlazeDBError {
-            print("\n💡 \(blazeError.suggestedMessage)")
+            print("\n\(blazeError.suggestedMessage)")
         }
         exit(1)
     }
