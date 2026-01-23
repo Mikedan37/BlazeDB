@@ -13,7 +13,7 @@
 
 ```
 APPLE OFFICIALLY SUPPORTS:
-═══════════════════════════
+
 
  App Groups (shared containers)
  • Multiple apps access same directory
@@ -34,7 +34,7 @@ APPLE OFFICIALLY SUPPORTS:
  • Trigger sync when data changes
 
 EXAMPLES IN THE WILD:
-═════════════════════
+
 • 1Password: Main app + extensions + Safari
 • Fantastical: Main app + widgets + watch
 • Things 3: iPhone + iPad + Mac (Cultured Code's sync)
@@ -48,7 +48,7 @@ APPLE EXPLICITLY SUPPORTS THIS!
 
 ```
 APPLE ALLOWS:
-═════════════
+
 
  CloudKit (Apple's own sync)
  • Official Apple service
@@ -65,7 +65,7 @@ APPLE ALLOWS:
  • No server needed!
 
 RESTRICTIONS:
-════════════
+
  Background execution limits (but: Background Fetch, Silent Push)
  Must use TLS for network ( we do!)
  Can run your own server ( your Pi!)
@@ -78,7 +78,7 @@ VERDICT: FULLY ALLOWED!
 
 ```
 RELEVANT SECTIONS:
-═════════════════
+
 
 2.5.1 Data Collection and Storage
  Must get user permission for data access
@@ -93,7 +93,7 @@ RELEVANT SECTIONS:
  → We do (App Groups)
 
 EXAMPLES APPLE APPROVES:
-═══════════════════════
+
 • Dropbox (file sync)
 • Evernote (note sync)
 • Things (task sync)
@@ -132,7 +132,7 @@ YOUR BLAZEDB SYNC: APPROVED!
  • Smart on cellular
 
 TARGET:
-───────
+
 < 15 bytes frame overhead (vs 210+ for gRPC!)
 ```
 
@@ -157,45 +157,45 @@ TOTAL OVERHEAD: 15 bytes Good!
 ### **ULTRA-OPTIMIZED (Even Better!):**
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│ BLAZEBINARY WEBSOCKET FRAME │
-│ (ULTRA-MINIMIZED!) │
-├─────────────────────────────────────────────────────────┤
-│ │
-│ HEADER (7 bytes): │
-│ ┌──────────┬───────┬──────────┬─────────────────┐ │
-│ │ Magic │ Flags │ Length │ Payload │ │
-│ │ (2 bytes)│(1 byte)│(4 bytes) │ (N bytes) │ │
-│ └──────────┴───────┴──────────┴─────────────────┘ │
-│ │
-│ DETAILS: │
-│ ───────── │
-│ Magic (2 bytes): 0xBF01 │
-│ • BF = BlazeBinary (191) │
-│ • 01 = Protocol version 1 │
-│ • Instant validation │
-│ │
-│ Flags (1 byte): [CEVVTTTT] │
-│ • C = Compressed (1 bit) │
-│ • E = Encrypted (1 bit) │
-│ • VV = Reserved (2 bits) │
-│ • TTTT = Message type (4 bits, 16 types) │
-│ │
-│ Length (4 bytes): Payload length (u32 big-endian) │
-│ • Max: 4GB (way more than needed!) │
-│ • Could use 2 bytes (64KB max) if we want! │
-│ │
-│ Payload (N bytes): Actual data │
-│ • BlazeBinary encoded operation │
-│ • Or handshake message │
-│ • Or control message │
-│ │
-└─────────────────────────────────────────────────────────┘
+
+ BLAZEBINARY WEBSOCKET FRAME 
+ (ULTRA-MINIMIZED!) 
+
+ 
+ HEADER (7 bytes): 
+  
+  Magic  Flags  Length  Payload  
+  (2 bytes)(1 byte)(4 bytes)  (N bytes)  
+  
+ 
+ DETAILS: 
+  
+ Magic (2 bytes): 0xBF01 
+ • BF = BlazeBinary (191) 
+ • 01 = Protocol version 1 
+ • Instant validation 
+ 
+ Flags (1 byte): [CEVVTTTT] 
+ • C = Compressed (1 bit) 
+ • E = Encrypted (1 bit) 
+ • VV = Reserved (2 bits) 
+ • TTTT = Message type (4 bits, 16 types) 
+ 
+ Length (4 bytes): Payload length (u32 big-endian) 
+ • Max: 4GB (way more than needed!) 
+ • Could use 2 bytes (64KB max) if we want! 
+ 
+ Payload (N bytes): Actual data 
+ • BlazeBinary encoded operation 
+ • Or handshake message 
+ • Or control message 
+ 
+
 
 OVERHEAD: 7 BYTES! (was 15, now 7!)
 
 ALTERNATIVE (If < 64KB messages):
-──────────────────────────────────
+
 Use 2-byte length instead of 4:
  Magic (2) + Flags (1) + Length (2) = 5 BYTES!
 
@@ -211,7 +211,7 @@ For typical bug (165 bytes payload):
 
 ```
 TYPE VALUE NAME DESCRIPTION
-════════════════════════════════════════════════════════════
+
 0x0 Handshake Initial connection setup
 0x1 HandshakeAck Handshake acknowledgment
 0x2 Operation Database operation (insert/update/delete)
@@ -240,60 +240,60 @@ TYPE VALUE NAME DESCRIPTION
 
 ```
 CLIENT → SERVER: Handshake
-════════════════════════════
+
 
 Frame:
  Magic: 0xBF01
  Flags: 0x40 (encrypted=0, type=0x0 = Handshake)
  Length: [payload length]
  Payload:
- ┌────────────────────────────────────────────┐
- │ Protocol: "blazedb/1.0" (varint length + string)
- │ Node ID: UUID (16 bytes)
- │ Database: "bugs" (varint length + string)
- │ Public Key: P256 (65 bytes uncompressed)
- │ Capabilities: [bitflags] (1 byte)
- │ • bit 0: E2E encryption
- │ • bit 1: Compression
- │ • bit 2: Selective sync
- │ • bit 3: RLS
- │ • bits 4-7: Reserved
- │ Timestamp: Unix millis (8 bytes, u64)
- └────────────────────────────────────────────┘
+ 
+  Protocol: "blazedb/1.0" (varint length + string)
+  Node ID: UUID (16 bytes)
+  Database: "bugs" (varint length + string)
+  Public Key: P256 (65 bytes uncompressed)
+  Capabilities: [bitflags] (1 byte)
+  • bit 0: E2E encryption
+  • bit 1: Compression
+  • bit 2: Selective sync
+  • bit 3: RLS
+  • bits 4-7: Reserved
+  Timestamp: Unix millis (8 bytes, u64)
+ 
 
 Total: ~120 bytes (once!)
 
 SERVER → CLIENT: HandshakeAck
-══════════════════════════════
+
 
 Frame:
  Magic: 0xBF01
  Flags: 0x41 (encrypted=0, type=0x1 = HandshakeAck)
  Length: [payload length]
  Payload:
- ┌────────────────────────────────────────────┐
- │ Node ID: UUID (16 bytes)
- │ Database: "bugs" (varint length + string)
- │ Public Key: P256 (65 bytes)
- │ Capabilities: [bitflags] (1 byte)
- │ Timestamp: Unix millis (8 bytes)
- │ Challenge: Random (16 bytes) ← for verification
- └────────────────────────────────────────────┘
+ 
+  Node ID: UUID (16 bytes)
+  Database: "bugs" (varint length + string)
+  Public Key: P256 (65 bytes)
+  Capabilities: [bitflags] (1 byte)
+  Timestamp: Unix millis (8 bytes)
+  Challenge: Random (16 bytes) ← for verification
+ 
 
 Total: ~110 bytes (once!)
 
 CLIENT → SERVER: Verify
-═══════════════════════
+
 
 Frame:
  Magic: 0xBF01
  Flags: 0x41 (type=0x1)
  Length: [payload length]
  Payload:
- ┌────────────────────────────────────────────┐
- │ Challenge Response: HMAC-SHA256(challenge, sharedSecret)
- │ (32 bytes)
- └────────────────────────────────────────────┘
+ 
+  Challenge Response: HMAC-SHA256(challenge, sharedSecret)
+  (32 bytes)
+ 
 
 Total: 32 bytes (once!)
 
@@ -305,39 +305,39 @@ Now derive shared key and enable encryption!
 
 ```
 CLIENT → SERVER: Operation (Encrypted)
-═══════════════════════════════════════
+
 
 Frame:
  Magic: 0xBF01
  Flags: 0x52 (encrypted=1, type=0x2 = Operation)
- ││││
- ││└└─ Type: 0x2 (Operation)
- │└─── Reserved: 0
- └──── Encrypted: 1
+ 
+  Type: 0x2 (Operation)
+  Reserved: 0
+  Encrypted: 1
  Length: [encrypted payload length]
  Payload:
- ┌────────────────────────────────────────────┐
- │ ENCRYPTED with AES-256-GCM: │
- │ │
- │ Nonce (12 bytes) ← included in plaintext! │
- │ Ciphertext: │
- │ ┌──────────────────────────────────┐ │
- │ │ Operation Type: u8 (1 byte) │ │
- │ │ 0 = Insert │ │
- │ │ 1 = Update │ │
- │ │ 2 = Delete │ │
- │ │ Collection: varint len + string │ │
- │ │ Record ID: UUID (16 bytes) │ │
- │ │ Timestamp: Lamport (12 bytes) │ │
- │ │ Counter: u64 (8 bytes) │ │
- │ │ Node ID: u32 (4 bytes, hash) │ │
- │ │ Changes: BlazeBinary record │ │
- │ └──────────────────────────────────┘ │
- │ Authentication Tag (16 bytes) │
- └────────────────────────────────────────────┘
+ 
+  ENCRYPTED with AES-256-GCM: 
+  
+  Nonce (12 bytes) ← included in plaintext! 
+  Ciphertext: 
+   
+   Operation Type: u8 (1 byte)  
+   0 = Insert  
+   1 = Update  
+   2 = Delete  
+   Collection: varint len + string  
+   Record ID: UUID (16 bytes)  
+   Timestamp: Lamport (12 bytes)  
+   Counter: u64 (8 bytes)  
+   Node ID: u32 (4 bytes, hash)  
+   Changes: BlazeBinary record  
+   
+  Authentication Tag (16 bytes) 
+ 
 
 Example (Bug Insert):
-─────────────────────
+
 Nonce: 12 bytes
 Plaintext: ~165 bytes (BlazeBinary bug)
 Ciphertext: 165 bytes
@@ -356,30 +356,30 @@ SERVER CAN'T READ PAYLOAD! (E2E!)
 
 ```
 CLIENT → SERVER: Operation (Compressed + Encrypted)
-════════════════════════════════════════════════════
+
 
 Frame:
  Magic: 0xBF01
  Flags: 0xD2 (compressed=1, encrypted=1, type=0x2)
- ││││
- │││└─ Type: 0x2 (Operation)
- ││└── Reserved: 0
- │└─── Encrypted: 1
- └──── Compressed: 1
+ 
+  Type: 0x2 (Operation)
+  Reserved: 0
+  Encrypted: 1
+  Compressed: 1
  Length: [encrypted payload length]
  Payload:
- ┌────────────────────────────────────────────┐
- │ Nonce (12 bytes) │
- │ Ciphertext (COMPRESSED THEN ENCRYPTED): │
- │ ┌──────────────────────────────────┐ │
- │ │ zstd compressed BlazeBinary │ │
- │ │ Typical: 165 → 80 bytes (50%) │ │
- │ └──────────────────────────────────┘ │
- │ Auth Tag (16 bytes) │
- └────────────────────────────────────────────┘
+ 
+  Nonce (12 bytes) 
+  Ciphertext (COMPRESSED THEN ENCRYPTED): 
+   
+   zstd compressed BlazeBinary  
+   Typical: 165 → 80 bytes (50%)  
+   
+  Auth Tag (16 bytes) 
+ 
 
 Example (Bug Insert, Compressed):
-─────────────────────────────────
+
 Nonce: 12 bytes
 Compressed: ~80 bytes (50% compression)
 Auth Tag: 16 bytes
@@ -401,7 +401,7 @@ On cellular: Automatic compression!
 
 ```
 PROTOCOL FRAME PAYLOAD TOTAL SAVINGS vs gRPC
-═══════════════════════════════════════════════════════════════
+
 JSON/REST HTTP 400 600+ BASELINE (worst)
 Protobuf/gRPC ~210 165 375 38% smaller
 BlazeBinary/WS 7 165 172 71% smaller
@@ -417,7 +417,7 @@ WINNER: BlazeBinary WebSocket (compressed)!
 OPERATION: Insert bug, notify other device
 
 JSON/REST:
-──────────
+
 1. HTTP request setup: 50ms
 2. TLS handshake (if new): 100ms
 3. JSON parse: 2ms
@@ -427,7 +427,7 @@ JSON/REST:
 TOTAL: 214ms
 
 gRPC:
-─────
+
 1. HTTP/2 frame: 20ms
 2. Protobuf decode: 0.5ms
 3. Server process: 10ms
@@ -436,7 +436,7 @@ gRPC:
 TOTAL: 51ms
 
 BlazeBinary WebSocket (Your Design):
-─────────────────────────────────────
+
 1. WebSocket send: 5ms (already connected!)
 2. BlazeBinary decode: 0.15ms
 3. Server process: 10ms
@@ -456,7 +456,7 @@ vs REST: 10x FASTER!
 
 ```
 LAYER 1: WebSocket over TLS
-════════════════════════════
+
 • TLS 1.3
 • Protects: Transport (MITM attacks)
 • Overhead: ~29 bytes per TLS record
@@ -464,7 +464,7 @@ LAYER 1: WebSocket over TLS
 • Who: Network attackers CAN'T read
 
 LAYER 2: E2E Encryption (Optional)
-═══════════════════════════════════
+
 • AES-256-GCM (handshake-derived key)
 • Protects: End-to-end (server blind!)
 • Overhead: 28 bytes (nonce + tag)
@@ -472,7 +472,7 @@ LAYER 2: E2E Encryption (Optional)
 • Who: ONLY sender & recipient can read
 
 TOTAL OVERHEAD (both layers):
-═════════════════════════════
+
 Frame: 7 bytes
 E2E: 28 bytes
 TLS: ~29 bytes per record (amortized)
@@ -487,7 +487,7 @@ SAVINGS: 81%!
 
 ```
 DIFFIE-HELLMAN (P256):
-══════════════════════
+
  Perfect Forward Secrecy (PFS)
  • New key per session
  • Past sessions can't be decrypted
@@ -515,9 +515,9 @@ SECURITY LEVEL: NSA Suite B!
 ### **Swift Implementation:**
 
 ```swift
-// ═══════════════════════════════════════════════════════
+// 
 // BLAZEBINARY WEBSOCKET PROTOCOL
-// ═══════════════════════════════════════════════════════
+// 
 
 import Foundation
 import CryptoKit
@@ -904,7 +904,7 @@ RESULT:
 MEASUREMENT: Bug insert (165 bytes payload)
 
 SCENARIO FRAME PAYLOAD TOTAL vs gRPC
-═══════════════════════════════════════════════════════════════
+
 REST JSON ~200 400 600 +60%
 gRPC Protobuf 210 165 375 BASELINE
 BlazeBinary (plain) 7 165 172 -54%
@@ -920,7 +920,7 @@ WINNER: BlazeBinary (E2E + compress)!
 TEST: 1,000 bug inserts/second
 
 PROTOCOL BANDWIDTH CPU BATTERY
-════════════════════════════════════════════════════
+
 REST JSON 600 KB/s HIGH 35%/hr
 gRPC 375 KB/s MEDIUM 25%/hr
 BlazeBinary 115 KB/s LOW 18%/hr
@@ -934,7 +934,7 @@ SAVINGS: 69% bandwidth, 49% battery!
 TEST: Round-trip operation (iPhone → Server → iPad)
 
 PROTOCOL HANDSHAKE OPERATION TOTAL
-═══════════════════════════════════════════════════
+
 REST JSON 150ms 214ms 364ms
 gRPC 80ms 51ms 131ms
 BlazeBinary 50ms 20ms 70ms
@@ -948,7 +948,7 @@ SAVINGS: 47% faster than gRPC!
 
 ```
 YOUR DESIGN ACHIEVES:
-═════════════════════
+
 
  MINIMAL OVERHEAD
  • 7 bytes frame (vs 210 gRPC!)
@@ -975,7 +975,7 @@ YOUR DESIGN ACHIEVES:
  • WebSocket (allowed!)
 
 TOTAL EFFICIENCY:
-════════════════
+
 69% smaller than gRPC
 47% faster than gRPC
 49% less battery than gRPC
@@ -989,7 +989,7 @@ THIS IS THE BEST PROTOCOL!
 
 ```
 Week 1: Implement Protocol
-───────────────────────────
+
  BlazeFrame (encode/decode)
  HandshakeMessage
  BlazeWebSocketConnection
@@ -997,14 +997,14 @@ Week 1: Implement Protocol
  Tests
 
 Week 2: Server
-──────────────
+
  Vapor WebSocket handler
  Multi-DB routing
  Broadcast to subscribers
  Deploy to Pi
 
 Week 3: Integration
-───────────────────
+
  BlazeDBClient integration
  Cross-app sync
  Selective sync

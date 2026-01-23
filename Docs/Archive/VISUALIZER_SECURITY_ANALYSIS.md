@@ -6,28 +6,28 @@
 
 ```
  LOCAL-ONLY APPLICATION (macOS app)
-├─ No network exposure
-├─ No remote access
-├─ Runs on user's machine only
-└─ Uses OS-level security
+ No network exposure
+ No remote access
+ Runs on user's machine only
+ Uses OS-level security
 
  STRONG AUTHENTICATION
-├─ Touch ID / Face ID support
-├─ Password required for encrypted DBs
-├─ Keychain integration (OS-managed)
-└─ No plaintext passwords in memory
+ Touch ID / Face ID support
+ Password required for encrypted DBs
+ Keychain integration (OS-managed)
+ No plaintext passwords in memory
 
  ENCRYPTION SUPPORT
-├─ Reads AES-GCM encrypted databases
-├─ Respects BlazeDB encryption
-├─ Keys stored in macOS Keychain
-└─ Zero-knowledge architecture
+ Reads AES-GCM encrypted databases
+ Respects BlazeDB encryption
+ Keys stored in macOS Keychain
+ Zero-knowledge architecture
 
  SANDBOXING (macOS App Sandbox)
-├─ Limited file system access
-├─ No arbitrary code execution
-├─ Entitlements-based permissions
-└─ OS-enforced isolation
+ Limited file system access
+ No arbitrary code execution
+ Entitlements-based permissions
+ OS-enforced isolation
 ```
 
 ---
@@ -79,7 +79,7 @@
 
 ---
 
-## ️ **Enhanced Security Features (Proposed)**
+##  **Enhanced Security Features (Proposed)**
 
 ### **1. Audit Logging**
 
@@ -158,21 +158,21 @@ struct UserPermissions {
 
 **UI:**
 ```
-┌────────────────────────────────┐
-│ Access Level: Viewer ️ │
-│ │
-│ You can: │
-│ View records │
-│ Export data │
-│ Run queries │
-│ │
-│ You cannot: │
-│ Edit records │
-│ Delete records │
-│ Modify database │
-│ │
-│ Contact admin for more access │
-└────────────────────────────────┘
+
+ Access Level: Viewer  
+ 
+ You can: 
+ View records 
+ Export data 
+ Run queries 
+ 
+ You cannot: 
+ Edit records 
+ Delete records 
+ Modify database 
+ 
+ Contact admin for more access 
+
 ```
 
 ---
@@ -409,7 +409,7 @@ Why it's safe:
 
 ---
 
-### **️ EXPOSE WITH CAUTION:**
+### ** EXPOSE WITH CAUTION:**
 
 #### **Scenario 3: Team Tool (With Editing)**
 ```
@@ -461,10 +461,10 @@ Risk: HIGH
 - Compliance certification (SOC 2, etc.)
 
 Why it's risky:
-️ Production data exposure
-️ Accidental data loss
-️ Compliance violations
-️ Security breaches
+ Production data exposure
+ Accidental data loss
+ Compliance violations
+ Security breaches
 ```
 
 **Required features for production:**
@@ -502,10 +502,10 @@ Risk: HIGH
 - DDoS protection
 
 Why it's risky:
-️ Uncontrolled access
-️ No rate limiting
-️ No network security
-️ Hard to revoke access
+ Uncontrolled access
+ No rate limiting
+ No network security
+ Hard to revoke access
 ```
 
 ---
@@ -519,12 +519,12 @@ Why it's risky:
 | Local-only | | | | |
 | Touch ID | | | | |
 | Keychain | | | | |
-| Audit Logs | ️ (proposed) | | | |
-| RBAC | ️ (proposed) | | | |
-| Auto-backup | | ️ | ️ | |
-| Undo | ️ (proposed) | | | ️ |
-| Read-only mode | | ️ | ️ | |
-| Encryption | (AES-GCM) | ️ | | |
+| Audit Logs |  (proposed) | | | |
+| RBAC |  (proposed) | | | |
+| Auto-backup | |  |  | |
+| Undo |  (proposed) | | |  |
+| Read-only mode | |  |  | |
+| Encryption | (AES-GCM) |  | | |
 
 **Verdict:** BlazeDBVisualizer is **MORE SECURE** than most competitors!
 
@@ -557,10 +557,10 @@ Why it's risky:
 
 4. ** Security Warnings:**
  ```
- ️ WARNING: Do not use on production databases
- ️ This tool is for development/testing only
- ️ Always backup before editing
- ️ Enable audit logging for compliance
+  WARNING: Do not use on production databases
+  This tool is for development/testing only
+  Always backup before editing
+  Enable audit logging for compliance
  ```
 
 5. ** Documentation:**
@@ -576,12 +576,12 @@ Why it's risky:
 1. ** Enhanced Security Package**
  ```
  BlazeDBVisualizer Pro
- ├─ Role-based access control
- ├─ Full audit logging
- ├─ 2FA support
- ├─ SSO integration
- ├─ Compliance reports
- └─ Priority support
+  Role-based access control
+  Full audit logging
+  2FA support
+  SSO integration
+  Compliance reports
+  Priority support
 
  Price: $99/user/year
  ```
@@ -610,17 +610,17 @@ Why it's risky:
 
 ```
  PUBLIC RELEASE (with safety rails)
-├─ Open source on GitHub
-├─ Mac App Store release
-├─ Default read-only mode
-├─ Security warnings in docs
-└─ Community-driven development
+ Open source on GitHub
+ Mac App Store release
+ Default read-only mode
+ Security warnings in docs
+ Community-driven development
 
  ENTERPRISE OPTION (enhanced security)
-├─ RBAC + Audit logging
-├─ Compliance features
-├─ SSO integration
-└─ Professional support
+ RBAC + Audit logging
+ Compliance features
+ SSO integration
+ Professional support
 ```
 
 ---
@@ -650,7 +650,7 @@ Before public release:
 **BlazeDBVisualizer is SAFE to expose as:**
 - Personal dev tool (public release)
 - Team dev tool (with RBAC)
-- ️ Production tool (with heavy security)
+-  Production tool (with heavy security)
 
 **It's MORE SECURE than most competitors thanks to:**
 - Local-only architecture

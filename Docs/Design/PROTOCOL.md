@@ -106,22 +106,22 @@ Identical values produce identical binary:
 ### Message Framing
 
 ```
-┌─────────────────────────────────────┐
-│ Frame Header (8 bytes) │
-├─────────────────────────────────────┤
-│ Magic: "BLAZE" (5 bytes) │
-│ Version: 1 (1 byte) │
-│ MessageType: enum (1 byte) │
-│ Length: payload size (4 bytes) │
-├─────────────────────────────────────┤
-│ Payload (BlazeBinary encoded) │
-│ • Handshake │
-│ • SyncState │
-│ • Operations │
-│ • Query │
-├─────────────────────────────────────┤
-│ CRC32 Checksum (4 bytes) │
-└─────────────────────────────────────┘
+
+ Frame Header (8 bytes) 
+
+ Magic: "BLAZE" (5 bytes) 
+ Version: 1 (1 byte) 
+ MessageType: enum (1 byte) 
+ Length: payload size (4 bytes) 
+
+ Payload (BlazeBinary encoded) 
+ • Handshake 
+ • SyncState 
+ • Operations 
+ • Query 
+
+ CRC32 Checksum (4 bytes) 
+
 ```
 
 ### Message Types

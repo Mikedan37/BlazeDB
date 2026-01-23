@@ -13,7 +13,7 @@ INTUITION: More speed = more power, right?
 REALITY: Not always! Here's why:
 
 FASTER OPERATIONS:
-──────────────────
+
 • Less time active = less power
 • Fewer wake-ups = less power
 • Better batching = less overhead
@@ -30,13 +30,13 @@ RESULT: More efficient!
 
 ```
 SLOW OPERATION:
-───────────────
+
 Time: 10ms
 Power Draw: 2000mW
 Energy: 10ms × 2000mW = 20mJ
 
 FAST OPERATION:
-───────────────
+
 Time: 1ms
 Power Draw: 2000mW
 Energy: 1ms × 2000mW = 2mJ
@@ -52,13 +52,13 @@ EFFICIENCY: 10x better!
 
 ```
 SMALL BATCHES (1,000 ops):
-───────────────────────────
+
 Wake-ups: 100 times
 Power per wake: 50mW × 10ms = 0.5mJ
 Total: 100 × 0.5mJ = 50mJ
 
 LARGE BATCHES (10,000 ops):
-────────────────────────────
+
 Wake-ups: 1 time
 Power per wake: 50mW × 10ms = 0.5mJ
 Total: 1 × 0.5mJ = 0.5mJ
@@ -70,13 +70,13 @@ SAVINGS: 49.5mJ (99% reduction!)
 
 ```
 ZLIB COMPRESSION:
-─────────────────
+
 Time: 5ms
 Power: 2000mW
 Energy: 5ms × 2000mW = 10mJ
 
 LZ4 COMPRESSION:
-────────────────
+
 Time: 1ms
 Power: 2000mW
 Energy: 1ms × 2000mW = 2mJ
@@ -88,13 +88,13 @@ SAVINGS: 8mJ (80% reduction!)
 
 ```
 INDIVIDUAL VALIDATION:
-──────────────────────
+
 Time: 100 × 0.015ms = 1.5ms
 Power: 2000mW
 Energy: 1.5ms × 2000mW = 3mJ
 
 BATCH VALIDATION:
-─────────────────
+
 Time: 1 × 0.015ms = 0.015ms
 Power: 2000mW
 Energy: 0.015ms × 2000mW = 0.03mJ
@@ -106,13 +106,13 @@ SAVINGS: 2.97mJ (99% reduction!)
 
 ```
 SLOW BATCHING (0.25ms):
-───────────────────────
+
 Active Time: 0.25ms
 Power: 2000mW
 Energy: 0.25ms × 2000mW = 0.5mJ
 
 FAST BATCHING (0.1ms):
-──────────────────────
+
 Active Time: 0.1ms
 Power: 2000mW
 Energy: 0.1ms × 2000mW = 0.2mJ
@@ -128,7 +128,7 @@ SAVINGS: 0.3mJ (60% reduction!)
 
 ```
 Optimization Energy Saved Efficiency Gain
-═══════════════════════════════════════════════════════
+
 Larger Batches 49.5mJ 99%
 Faster Compression 8mJ 80%
 Batch Validation 2.97mJ 99%
@@ -141,7 +141,7 @@ TOTAL SAVED: 60.77mJ 95%
 
 ```
 Pipelining Cost:
-────────────────
+
 Extra CPU: 28mJ (parallel encoding)
 Extra Radio: 0.1mJ (more transmissions)
 
@@ -153,7 +153,7 @@ TOTAL COST: 28.1mJ
 ```
 SAVINGS: 60.77mJ
 COSTS: 28.1mJ
-─────────────────
+
 NET: +32.67mJ (MORE EFFICIENT!)
 ```
 
@@ -165,7 +165,7 @@ NET: +32.67mJ (MORE EFFICIENT!)
 
 ```
 System Ops/mAh Efficiency
-══════════════════════════════════════════════
+
 BlazeDB (Ultra) 10,000,000 100%
 BlazeDB (Balanced) 7,000,000 70%
 Firebase 100,000 1%
@@ -179,7 +179,7 @@ BLAZEDB: 50-200x MORE EFFICIENT!
 
 ```
 System Energy (mJ) Efficiency
-══════════════════════════════════════════════
+
 BlazeDB (Ultra) 28.15 100%
 BlazeDB (Balanced) 35.2 80%
 Firebase 20,000 0.14%
@@ -199,7 +199,7 @@ BLAZEDB: 350-700x MORE EFFICIENT!
 FASTER = LESS TIME ACTIVE = LESS POWER
 
 Example:
-────────
+
 Slow: 10ms active = 20mJ
 Fast: 1ms active = 2mJ
 
@@ -212,7 +212,7 @@ Fast: 1ms active = 2mJ
 BATCHING = FEWER OPERATIONS = LESS OVERHEAD
 
 Example:
-────────
+
 100 small operations: 100 × overhead = 100mJ
 1 large operation: 1 × overhead = 1mJ
 
@@ -225,7 +225,7 @@ Example:
 LZ4 = FASTER = LESS CPU TIME = LESS POWER
 
 Example:
-────────
+
 ZLIB: 5ms = 10mJ
 LZ4: 1ms = 2mJ
 
@@ -240,7 +240,7 @@ LZ4: 1ms = 2mJ
 
 ```
 Scenario Energy Used Efficiency
-══════════════════════════════════════════════════════
+
 BlazeDB (Ultra) 2,880mAh 100%
 BlazeDB (Balanced) 3,360mAh 86%
 Firebase 28,800mAh 10%
@@ -254,7 +254,7 @@ BLAZEDB: 5-20x MORE EFFICIENT!
 
 ```
 Scenario Idle Power Efficiency
-══════════════════════════════════════════════════════
+
 BlazeDB (Ultra) 0.1mW 100%
 BlazeDB (Balanced) 0.1mW 100%
 Firebase 5mW 2%
@@ -272,7 +272,7 @@ BLAZEDB: 30-100x MORE EFFICIENT!
 
 ```
 System Ops/Watt Efficiency
-══════════════════════════════════════════════
+
 BlazeDB (Ultra) 10,000,000 100%
 BlazeDB (Balanced) 7,000,000 70%
 Firebase 100,000 1%
@@ -286,7 +286,7 @@ BLAZEDB: 50-200x MORE EFFICIENT!
 
 ```
 System Ops/mAh Efficiency
-══════════════════════════════════════════════
+
 BlazeDB (Ultra) 10,000,000 100%
 BlazeDB (Balanced) 7,000,000 70%
 Firebase 100,000 1%

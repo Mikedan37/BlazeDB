@@ -234,14 +234,14 @@ public func fuzzBlazeDB(data: UnsafePointer<UInt8>, size: Int) -> Int32 {
 
 ```
 HIGH IMPACT, LOW EFFORT:
- ⭐⭐⭐ Enhanced Chaos Engineering (4-6 hrs)
- ⭐⭐⭐ Baseline Tracking (2-3 hrs)
+  Enhanced Chaos Engineering (4-6 hrs)
+  Baseline Tracking (2-3 hrs)
 
 HIGH IMPACT, MEDIUM EFFORT:
- ⭐⭐ Property-Based Testing (8-12 hrs)
+  Property-Based Testing (8-12 hrs)
 
 HIGH IMPACT, HIGH EFFORT:
- ⭐ Continuous Fuzzing (16-20 hrs)
+  Continuous Fuzzing (16-20 hrs)
 ```
 
 ---

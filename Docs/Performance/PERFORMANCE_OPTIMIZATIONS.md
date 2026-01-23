@@ -10,7 +10,7 @@
 
 ```
 Security Check Time % of Total
-══════════════════════════════════════════════
+
 Authentication <0.001ms 0.1%
 Authorization <0.001ms 0.1%
 Replay Protection <0.001ms 0.1%
@@ -170,7 +170,7 @@ if operation.nodeId == localNodeId {
 
 ```
 Optimization Recovery New Performance
-═══════════════════════════════════════════════════
+
 Optional Signatures 6.5% 6,950,000 ops/sec
 Batch Validation 1.0% 7,020,000 ops/sec
 Trusted Node Fast Path 0.5% 7,055,000 ops/sec
@@ -185,7 +185,7 @@ TOTAL RECOVERY: 8.8% ~7,100,000 ops/sec
 
 ```
 System Original With Security Optimized
-══════════════════════════════════════════════════════════
+
 BlazeDB 7,000,000 6,500,000 7,100,000
 Firebase 100,000 95,000 95,000
 Supabase 200,000 190,000 190,000

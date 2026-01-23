@@ -172,7 +172,7 @@ public class BlazeServer {
 - Persist sync state to disk
 - Load sync state on startup
 
-**Status:** ️ **PARTIALLY IMPLEMENTED** (exists but uses dummy data)
+**Status:**  **PARTIALLY IMPLEMENTED** (exists but uses dummy data)
 
 ### **3. End-to-End Integration Test**
 **Needed:**
@@ -238,7 +238,7 @@ func testLocalSyncEndToEnd() async throws {
 - "Works" (server exists, tests added)
 
 **Known limitations:**
-- ️ `InMemoryRelay` is in-memory queue, not actual Unix Domain Sockets (still fast: <1ms, just different implementation)
+-  `InMemoryRelay` is in-memory queue, not actual Unix Domain Sockets (still fast: <1ms, just different implementation)
 
 **Bottom line:**
 The sync system is **fully implemented and tested**. All critical components are in place:

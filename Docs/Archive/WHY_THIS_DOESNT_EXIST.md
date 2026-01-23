@@ -10,7 +10,7 @@
 
 ```
 THE TIMELINE:
-═════════════
+
 
 1970s-1990s: SQLite, PostgreSQL, MySQL
 • Built for servers (not mobile)
@@ -44,7 +44,7 @@ YOU'RE BUILDING AT THE RIGHT TIME!
 
 ```
 BARRIER 1: Swift Wasn't Ready
-─────────────────────────────
+
 • Swift 1.0 (2014): Too unstable
 • Swift 2.0-4.0: Missing features
 • Swift 5.0+: Async/await missing
@@ -54,7 +54,7 @@ BARRIER 1: Swift Wasn't Ready
 YOU HAVE: Modern Swift with async/await!
 
 BARRIER 2: Distributed Systems Complexity
-──────────────────────────────────────────
+
 • CRDTs (Conflict-free Replicated Data Types)
 • Lamport Timestamps
 • Vector Clocks
@@ -65,7 +65,7 @@ These were research topics until recently!
 Now: Well-understood, you can implement them!
 
 BARRIER 3: Performance Requirements
-───────────────────────────────────
+
 • Need: 7M+ ops/sec
 • Need: <1ms latency
 • Need: Efficient encoding
@@ -79,7 +79,7 @@ Now: Modern CPUs can handle it!
 
 ```
 FORCE 1: Vendor Lock-In
-───────────────────────
+
 • Companies want lock-in (revenue)
 • Cloud services = recurring revenue
 • Self-hosted = one-time purchase
@@ -89,7 +89,7 @@ Result: Companies built closed-source solutions
 You: Building open-source = different!
 
 FORCE 2: "Good Enough" Mentality
-─────────────────────────────────
+
 • SQLite works (good enough)
 • Core Data works (good enough)
 • CloudKit works (good enough)
@@ -99,7 +99,7 @@ Result: No one built better solutions
 You: Building something actually better!
 
 FORCE 3: Complexity Fear
-───────────────────────
+
 • Distributed systems = hard
 • Encryption = complex
 • Performance = difficult
@@ -117,7 +117,7 @@ You: Building from scratch = innovation!
 
 ```
 PROBLEM: Backward Compatibility
-────────────────────────────────
+
 • HTTP/1.1 (1997): Still in use
 • JSON (2001): Still standard
 • REST (2000s): Still dominant
@@ -128,7 +128,7 @@ Result: Stuck with old protocols
 You: Building new = no legacy baggage!
 
 PROBLEM: Standards Bodies
-─────────────────────────
+
 • IETF (Internet standards): Slow process
 • W3C (Web standards): Years to approve
 • Industry groups: Compromise = mediocrity
@@ -142,7 +142,7 @@ You: Building independently = fast innovation!
 
 ```
 INTEREST 1: Vendor Lock-In
-───────────────────────────
+
 • Google: Firebase (lock-in)
 • Apple: CloudKit (lock-in)
 • MongoDB: Realm (lock-in)
@@ -153,7 +153,7 @@ Result: Protocols designed for lock-in
 You: Open source = no lock-in!
 
 INTEREST 2: Control
-────────────────────
+
 • Companies want control
 • Open protocols = less control
 • Proprietary = more control
@@ -168,7 +168,7 @@ You: Open source = shared control!
 
 ```
 DEBT 1: Incremental Improvements
-─────────────────────────────────
+
 • HTTP/1.1 → HTTP/2 → HTTP/3
 • Each step: Incremental improvement
 • Never: Complete redesign
@@ -179,7 +179,7 @@ Result: Complex, inefficient protocols
 You: Building from scratch = clean design!
 
 DEBT 2: Compatibility Layers
-─────────────────────────────
+
 • JSON: Text-based (inefficient)
 • REST: HTTP overhead (slow)
 • WebSocket: HTTP upgrade (complex)
@@ -238,7 +238,7 @@ YOU HAVE: Modern best practices!
 ### **SQLite:**
 ```
 WHY IT'S NOT THIS GOOD:
-──────────────────────
+
 • Built in 2000 (23 years ago!)
 • C library (not Swift-native)
 • No distributed sync (not designed for it)
@@ -246,7 +246,7 @@ WHY IT'S NOT THIS GOOD:
 • Single-threaded (not async)
 
 WHY YOU'RE BETTER:
-──────────────────
+
  Swift-native (modern language)
  Built-in distributed sync
  Native encryption
@@ -257,7 +257,7 @@ WHY YOU'RE BETTER:
 ### **Core Data:**
 ```
 WHY IT'S NOT THIS GOOD:
-──────────────────────
+
 • Built in 2005 (18 years ago!)
 • Apple-only (not cross-platform)
 • Complex API (hard to use)
@@ -265,7 +265,7 @@ WHY IT'S NOT THIS GOOD:
 • Slow (not optimized)
 
 WHY YOU'RE BETTER:
-──────────────────
+
  Cross-platform (iOS, macOS, Linux)
  Simple API (easy to use)
  Built-in distributed sync
@@ -276,7 +276,7 @@ WHY YOU'RE BETTER:
 ### **Realm:**
 ```
 WHY IT'S NOT THIS GOOD:
-──────────────────────
+
 • Closed-source (vendor lock-in)
 • Expensive ($1,000+/year)
 • No self-hosted option
@@ -284,7 +284,7 @@ WHY IT'S NOT THIS GOOD:
 • Limited features
 
 WHY YOU'RE BETTER:
-──────────────────
+
  Open source (no lock-in)
  Free (open source)
  Self-hosted option
@@ -295,7 +295,7 @@ WHY YOU'RE BETTER:
 ### **CloudKit:**
 ```
 WHY IT'S NOT THIS GOOD:
-──────────────────────
+
 • Apple-only (vendor lock-in)
 • Slow (network-dependent)
 • No E2E encryption (Apple can read)
@@ -303,7 +303,7 @@ WHY IT'S NOT THIS GOOD:
 • Limited control
 
 WHY YOU'RE BETTER:
-──────────────────
+
  Cross-platform (no lock-in)
  780x faster
  E2E encryption (privacy)
@@ -319,7 +319,7 @@ WHY YOU'RE BETTER:
 
 ```
 WHY IT'S SLOW:
-──────────────
+
 • Text-based (JSON, XML)
 • Request/response (not streaming)
 • HTTP overhead (headers, status codes)
@@ -327,7 +327,7 @@ WHY IT'S SLOW:
 • No batching (one request = one response)
 
 YOUR PROTOCOL:
-──────────────
+
  Binary (BlazeBinary, 67% smaller)
  Streaming (pipelined operations)
  Minimal overhead (5 bytes)
@@ -341,7 +341,7 @@ RESULT: 780x faster!
 
 ```
 WHY IT'S SLOW:
-──────────────
+
 • HTTP upgrade handshake (100ms)
 • Frame overhead (2-14 bytes)
 • Text-based (JSON by default)
@@ -349,7 +349,7 @@ WHY IT'S SLOW:
 • No batching (one message = one frame)
 
 YOUR PROTOCOL:
-──────────────
+
  Direct TCP (no HTTP upgrade)
  Minimal overhead (5 bytes)
  Binary (BlazeBinary)
@@ -363,7 +363,7 @@ RESULT: 23% faster!
 
 ```
 WHY IT'S SLOW:
-──────────────
+
 • HTTP/2 overhead (210 bytes)
 • Protocol Buffers (larger than BlazeBinary)
 • No compression (optional)
@@ -371,7 +371,7 @@ WHY IT'S SLOW:
 • Complex setup
 
 YOUR PROTOCOL:
-──────────────
+
  Minimal overhead (5 bytes)
  BlazeBinary (67% smaller)
  Compression (adaptive)

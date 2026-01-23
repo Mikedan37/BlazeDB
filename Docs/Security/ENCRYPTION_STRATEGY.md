@@ -60,7 +60,7 @@ PERFORMANCE: (Good, small overhead)
 THE KEY ISSUE: How do you share AES-GCM keys?
 
 APPROACH A: Shared Key (Simple but Limited)
-─────────────────────────────────────────────
+
 // All devices share ONE encryption key
 
 // iPhone
@@ -88,7 +88,7 @@ VERDICT:  Not much better than TLS only
 
 
 APPROACH B: Per-User Keys (Better!)
-────────────────────────────────────
+
 // Each user has their own AES-GCM key
 // Server stores key securely (encrypted with master key)
 
@@ -179,65 +179,65 @@ VERDICT: Best for privacy-critical apps (healthcare, legal)
 ### **Use ALL THREE (Defense in Depth):**
 
 ```
-┌─────────────────────────────────────────────────────┐
-│ ENCRYPTION LAYERS │
-├─────────────────────────────────────────────────────┤
-│ │
-│ iPhone: │
-│ ┌─────────────────────────────────────────────┐ │
-│ │ 1. Record (plain text in RAM) │ │
-│ │ "title": "Secret bug" │ │
-│ └──────────────────┬──────────────────────────┘ │
-│ │ │
-│ ▼ │
-│ ┌─────────────────────────────────────────────┐ │
-│ │ 2. BlazeBinary encode │ │
-│ │ Binary format (compact, NOT encrypted) │ │
-│ │ 165 bytes │ │
-│ └──────────────────┬──────────────────────────┘ │
-│ │ │
-│ ▼ │
-│ ┌─────────────────────────────────────────────┐ │
-│ │ 3. LAYER 1: Local Storage │ │
-│ │ AES-256-GCM(binary) │ │
-│ │ Encrypted on iPhone disk │ │
-│ │ Password: Your password │ │
-│ └─────────────────────────────────────────────┘ │
-│ │ │
-│ ▼ │
-│ ┌─────────────────────────────────────────────┐ │
-│ │ 4. LAYER 2: Network Transport │ │
-│ │ TLS 1.3 tunnel (MUST ADD!) │ │
-│ │ Encrypted in transit │ │
-│ │ Certificate: Let's Encrypt │ │
-│ └──────────────────┬──────────────────────────┘ │
-│ │ │
-│ ═══════════════════▼═════════════════════════ │
-│ INTERNET (encrypted tunnel) │
-│ ═══════════════════▼═════════════════════════ │
-│ │ │
-│ Raspberry Pi: ▼ │
-│ ┌─────────────────────────────────────────────┐ │
-│ │ 5. TLS decrypt │ │
-│ │ Binary (plain) in server RAM │ │
-│ │ Server CAN read this │ │
-│ └──────────────────┬──────────────────────────┘ │
-│ │ │
-│ ▼ │
-│ ┌─────────────────────────────────────────────┐ │
-│ │ 6. LAYER 3: Server Storage │ │
-│ │ AES-256-GCM(binary) │ │
-│ │ Encrypted on Pi disk │ │
-│ │ Password: Server password │ │
-│ └─────────────────────────────────────────────┘ │
-│ │
-│ OPTIONAL: Add LAYER 4 (E2E) │
-│ ┌─────────────────────────────────────────────┐ │
-│ │ Encrypt with public keys BEFORE step 2 │ │
-│ │ Server can't decrypt (no private keys!) │ │
-│ └─────────────────────────────────────────────┘ │
-│ │
-└─────────────────────────────────────────────────────┘
+
+ ENCRYPTION LAYERS 
+
+ 
+ iPhone: 
+  
+  1. Record (plain text in RAM)  
+  "title": "Secret bug"  
+  
+  
+  
+  
+  2. BlazeBinary encode  
+  Binary format (compact, NOT encrypted)  
+  165 bytes  
+  
+  
+  
+  
+  3. LAYER 1: Local Storage  
+  AES-256-GCM(binary)  
+  Encrypted on iPhone disk  
+  Password: Your password  
+  
+  
+  
+  
+  4. LAYER 2: Network Transport  
+  TLS 1.3 tunnel (MUST ADD!)  
+  Encrypted in transit  
+  Certificate: Let's Encrypt  
+  
+  
+  
+ INTERNET (encrypted tunnel) 
+  
+  
+ Raspberry Pi:  
+  
+  5. TLS decrypt  
+  Binary (plain) in server RAM  
+  Server CAN read this  
+  
+  
+  
+  
+  6. LAYER 3: Server Storage  
+  AES-256-GCM(binary)  
+  Encrypted on Pi disk  
+  Password: Server password  
+  
+ 
+ OPTIONAL: Add LAYER 4 (E2E) 
+  
+  Encrypt with public keys BEFORE step 2  
+  Server can't decrypt (no private keys!)  
+  
+ 
+
 ```
 
 ---
@@ -250,7 +250,7 @@ VERDICT: Best for privacy-critical apps (healthcare, legal)
 
 ```
 Day 1-2: Raspberry Pi Setup
-─────────────────────────
+
  Install Swift on Pi
  Clone BlazeDB repo
  Build server
@@ -258,20 +258,20 @@ Day 1-2: Raspberry Pi Setup
  Setup systemd service
 
 Day 3-4: TLS Security
-─────────────────────
+
  Get DuckDNS subdomain (free)
  Get Let's Encrypt SSL cert
  Configure TLS in gRPC
  Test encrypted connections
 
 Day 5: JWT Authentication
-──────────────────────────
+
  Implement JWT login
  Add token validation
  Test from iPhone
 
 Day 6-7: Testing & Polish
-─────────────────────────
+
  Test insert/query/sync
  Monitor performance
  Add error handling
@@ -291,21 +291,21 @@ DELIVERABLE:
 
 ```
 Day 8-9: iPhone Client Library
-───────────────────────────────
+
  BlazeGRPCClient wrapper
  Auto-sync on insert/update
  Handle offline/online
  Retry logic
 
 Day 10-11: SwiftUI Integration
-───────────────────────────────
+
  @BlazeQuery works with sync
  Real-time updates
  Sync status indicators
  Conflict UI (if needed)
 
 Day 12-14: Example Apps
-────────────────────────
+
  Todo app with sync
  Notes app with sync
  Test on multiple devices
@@ -322,20 +322,20 @@ DELIVERABLE:
 
 ```
 Day 15-16: Operation Signatures
-────────────────────────────────
+
  HMAC signatures for operations
  Tamper detection
  Replay prevention
 
 Day 17-18: Monitoring & Observability
-──────────────────────────────────────
+
  Prometheus metrics
  Health checks
  Performance dashboards
  Alert system
 
 Day 19-21: BlazeDBVisualizer Integration
-─────────────────────────────────────────
+
  Monitor remote databases
  Visualize sync status
  Query remote DBs
@@ -353,21 +353,21 @@ DELIVERABLE:
 
 ```
 Day 22-24: End-to-End Encryption (Optional)
-────────────────────────────────────────────
+
  Public/private key pairs
  Key exchange protocol
  Encrypt before BlazeBinary
  Server can't read data
 
 Day 25-26: Load Testing
-────────────────────────
+
  100 concurrent users
  10,000 operations/sec
  Memory/CPU profiling
  Optimization
 
 Day 27-28: Documentation & Launch
-──────────────────────────────────
+
  Complete deployment guide
  Security best practices
  Video tutorials
@@ -388,37 +388,37 @@ DELIVERABLE:
 ```swift
 // Combine the best of both worlds!
 
-┌─────────────────────────────────────────────────────────┐
-│ RECOMMENDED ENCRYPTION ARCHITECTURE │
-├─────────────────────────────────────────────────────────┤
-│ │
-│ LAYER 1: TLS (Transport) │
-│ ═══════════════════ │
-│ • Encrypts ALL network traffic │
-│ • Hardware accelerated (fast!) │
-│ • Free (Let's Encrypt) │
-│ • Industry standard │
-│ │
-│ LAYER 2: Per-User AES-GCM (Application) │
-│ ════════════════════════════════════ │
-│ • Each user has unique key │
-│ • Derived from user password │
-│ • Server stores encrypted │
-│ • Can be decrypted by server for queries │
-│ │
-│ LAYER 3: Master Key (Server) │
-│ ═══════════════════════ │
-│ • Server's user keys encrypted with master key │
-│ • Master key stored in secrets manager │
-│ • Rotatable │
-│ │
-│ OPTIONAL LAYER 4: E2E (Maximum Privacy) │
-│ ════════════════════════════════════ │
-│ • Public/private key pairs │
-│ • Server can NEVER decrypt │
-│ • For ultra-sensitive data only │
-│ │
-└─────────────────────────────────────────────────────────┘
+
+ RECOMMENDED ENCRYPTION ARCHITECTURE 
+
+ 
+ LAYER 1: TLS (Transport) 
+  
+ • Encrypts ALL network traffic 
+ • Hardware accelerated (fast!) 
+ • Free (Let's Encrypt) 
+ • Industry standard 
+ 
+ LAYER 2: Per-User AES-GCM (Application) 
+  
+ • Each user has unique key 
+ • Derived from user password 
+ • Server stores encrypted 
+ • Can be decrypted by server for queries 
+ 
+ LAYER 3: Master Key (Server) 
+  
+ • Server's user keys encrypted with master key 
+ • Master key stored in secrets manager 
+ • Rotatable 
+ 
+ OPTIONAL LAYER 4: E2E (Maximum Privacy) 
+  
+ • Public/private key pairs 
+ • Server can NEVER decrypt 
+ • For ultra-sensitive data only 
+ 
+
 ```
 
 ### **Implementation:**

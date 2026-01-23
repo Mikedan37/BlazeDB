@@ -83,45 +83,45 @@
 
 ```
 BlazeDBTests/
-├── Core/ # Core database engine
-│ ├── BlazeDBTests.swift
-│ ├── DynamicCollectionTests.swift
-│ └── Storage/ # Storage layer
-│ ├── PageStoreTests.swift
-│ └── StorageLayoutTests.swift
-├── MVCC/ # Multi-Version Concurrency Control
-│ ├── MVCCFoundationTests.swift
-│ └── MVCCAdvancedTests.swift
-├── Query/ # Query engine
-│ ├── QueryBuilderTests.swift
-│ └── GraphQueryTests.swift
-├── Indexes/ # All index types
-│ ├── IndexConsistencyTests.swift
-│ ├── FullTextSearchTests.swift
-│ └── VectorIndexIntegrationTests.swift
-├── Security/ # Security features
-│ ├── EncryptionSecurityTests.swift
-│ └── RLSAccessManagerTests.swift
-├── Sync/ # Distributed sync
-│ ├── DistributedSyncTests.swift
-│ └── UnixDomainSocketTests.swift
-├── GarbageCollection/ # GC system
-│ ├── PageGCTests.swift
-│ └── VacuumOperationsTests.swift
-├── Performance/ # Performance tests
-│ └── PerformanceBenchmarks.swift
-├── Concurrency/ # Concurrency tests
-│ └── ConcurrencyStressTests.swift
-├── Chaos/ # Chaos testing
-│ └── ChaosEngineTests.swift
-├── Recovery/ # Recovery tests
-│ └── ReplayTests.swift
-├── ModelBased/ # Model-based tests
-│ └── StateModelTests.swift
-└── [30+ component directories]
+ Core/ # Core database engine
+  BlazeDBTests.swift
+  DynamicCollectionTests.swift
+  Storage/ # Storage layer
+  PageStoreTests.swift
+  StorageLayoutTests.swift
+ MVCC/ # Multi-Version Concurrency Control
+  MVCCFoundationTests.swift
+  MVCCAdvancedTests.swift
+ Query/ # Query engine
+  QueryBuilderTests.swift
+  GraphQueryTests.swift
+ Indexes/ # All index types
+  IndexConsistencyTests.swift
+  FullTextSearchTests.swift
+  VectorIndexIntegrationTests.swift
+ Security/ # Security features
+  EncryptionSecurityTests.swift
+  RLSAccessManagerTests.swift
+ Sync/ # Distributed sync
+  DistributedSyncTests.swift
+  UnixDomainSocketTests.swift
+ GarbageCollection/ # GC system
+  PageGCTests.swift
+  VacuumOperationsTests.swift
+ Performance/ # Performance tests
+  PerformanceBenchmarks.swift
+ Concurrency/ # Concurrency tests
+  ConcurrencyStressTests.swift
+ Chaos/ # Chaos testing
+  ChaosEngineTests.swift
+ Recovery/ # Recovery tests
+  ReplayTests.swift
+ ModelBased/ # Model-based tests
+  StateModelTests.swift
+ [30+ component directories]
 
 Docs/Testing/
-└── PRODUCTION_GRADE_TESTING.md
+ PRODUCTION_GRADE_TESTING.md
 ```
 
 **See `TEST_PLAN.md` for complete component-based test plan.**

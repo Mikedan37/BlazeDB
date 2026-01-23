@@ -13,16 +13,16 @@ Transform BlazeDBVisualizer from read-only viewer to **FULL database management 
 **UI/UX:**
 ```
 Current:
-┌─────────────────────────────────┐
-│ name │ age │ email │
-│ Alice │ 25 │ alice@... │ [Read-only]
-└─────────────────────────────────┘
+
+ name  age  email 
+ Alice  25  alice@...  [Read-only]
+
 
 Proposed:
-┌─────────────────────────────────┐
-│ name │ age │ email │
-│ [Alice▊] │ [25] │ alice@... │ [Editable on double-click]
-└─────────────────────────────────┘
+
+ name  age  email 
+ [Alice]  [25]  alice@...  [Editable on double-click]
+
 ```
 
 **Implementation:**
@@ -81,22 +81,22 @@ struct EditableRecordRow: View {
 [+ Add Record] button in toolbar
 
 Opens modal:
-┌───────────────────────────────────┐
-│ Create New Record │
-│ │
-│ Field Name: [________] │
-│ Field Type: [String ▼] │
-│ Value: [________] │
-│ │
-│ [+ Add Field] │
-│ │
-│ Fields: │
-│ • name (string): "Alice" │
-│ • age (int): 25 │
-│ • email (string): "alice@..." │
-│ │
-│ [Cancel] [Create Record] │
-└───────────────────────────────────┘
+
+ Create New Record 
+ 
+ Field Name: [________] 
+ Field Type: [String ] 
+ Value: [________] 
+ 
+ [+ Add Field] 
+ 
+ Fields: 
+ • name (string): "Alice" 
+ • age (int): 25 
+ • email (string): "alice@..." 
+ 
+ [Cancel] [Create Record] 
+
 ```
 
 **Implementation:**
@@ -160,16 +160,16 @@ struct NewRecordSheet: View {
 Select row(s) → Press Delete key
 
 Shows confirmation:
-┌───────────────────────────────────┐
-│ ️ Delete 3 Records? │
-│ │
-│ This action cannot be undone. │
-│ │
-│ Create backup first │
-│ (Recommended) │
-│ │
-│ [Cancel] [Delete] │
-└───────────────────────────────────┘
+
+  Delete 3 Records? 
+ 
+ This action cannot be undone. 
+ 
+ Create backup first 
+ (Recommended) 
+ 
+ [Cancel] [Delete] 
+
 ```
 
 **Safety Rails:**
@@ -188,29 +188,29 @@ Shows confirmation:
 Select multiple rows → Right-click
 
 Context menu:
-┌───────────────────────────────┐
-│ Edit Selected (5 records) │
-│ ️ Delete Selected │
-│ Export Selected │
-│ Copy Selected │
-└───────────────────────────────┘
+
+ Edit Selected (5 records) 
+  Delete Selected 
+ Export Selected 
+ Copy Selected 
+
 
 If "Edit Selected":
-┌───────────────────────────────────┐
-│ Bulk Edit 5 Records │
-│ │
-│ Field: [status ▼] │
-│ Action: [Set to ▼] │
-│ Value: [active] │
-│ │
-│ Preview: │
-│ • Record 1: status = "active" │
-│ • Record 2: status = "active" │
-│ • Record 3: status = "active" │
-│... │
-│ │
-│ [Cancel] [Apply to 5] │
-└───────────────────────────────────┘
+
+ Bulk Edit 5 Records 
+ 
+ Field: [status ] 
+ Action: [Set to ] 
+ Value: [active] 
+ 
+ Preview: 
+ • Record 1: status = "active" 
+ • Record 2: status = "active" 
+ • Record 3: status = "active" 
+... 
+ 
+ [Cancel] [Apply to 5] 
+
 ```
 
 ---
@@ -243,7 +243,7 @@ If "Edit Selected":
 
  // User must explicitly enable editing
  Toggle("Enable Data Editing", isOn: $editingEnabled)
-.help("️ Allows modifying database records")
+.help(" Allows modifying database records")
  ```
 
 4. **Undo System**
@@ -398,7 +398,7 @@ TOTAL: ~145 new tests
 
 2. **Unsaved Changes Warning**
  ```
- ️ You have unsaved changes. Save or discard?
+  You have unsaved changes. Save or discard?
  ```
 
 3. **Undo Toast**
@@ -408,7 +408,7 @@ TOTAL: ~145 new tests
 
 4. **Progress Bar (Bulk Ops)**
  ```
- Updating 1,000 records... ████████░░ 82%
+ Updating 1,000 records...  82%
  ```
 
 ---

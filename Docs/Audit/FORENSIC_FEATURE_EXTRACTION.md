@@ -1688,159 +1688,159 @@
 ## 7. ARCHITECTURAL DIAGRAM (TEXT-BASED)
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│ BLAZEDB ARCHITECTURE │
-└─────────────────────────────────────────────────────────────────┘
 
-┌─────────────────────────────────────────────────────────────────┐
-│ CLIENT API LAYER │
-├─────────────────────────────────────────────────────────────────┤
-│ BlazeDBClient │
-│ - CRUD operations │
-│ - Query DSL │
-│ - Transaction management │
-│ - Sync coordination │
-└────────────────────────┬────────────────────────────────────────┘
- │
-┌────────────────────────▼────────────────────────────────────────┐
-│ CORE ENGINE LAYER │
-├─────────────────────────────────────────────────────────────────┤
-│ DynamicCollection │
-│ - Schema-less document storage │
-│ - Secondary indexes (hash-based) │
-│ - Full-text search (InvertedIndex) │
-│ - Vector/spatial indexes (in-memory) │
-│ - MVCC support (opt-in) │
-│ - Batch operations │
-│ │
-│ ┌──────────────────────────────────────────────────────────┐ │
-│ │ Query Subsystem │ │
-│ │ - QueryBuilder (fluent DSL) │ │
-│ │ - QueryOptimizer (cost-based) │ │
-│ │ - QueryPlanner (execution planning) │ │
-│ │ - Graph queries, CTEs, subqueries │ │
-│ └──────────────────────────────────────────────────────────┘ │
-│ │
-│ ┌──────────────────────────────────────────────────────────┐ │
-│ │ MVCC Subsystem │ │
-│ │ - MVCCTransaction (snapshot isolation) │ │
-│ │ - VersionManager (version tracking) │ │
-│ │ - RecordVersion (version metadata) │ │
-│ │ - ConflictResolution (CRDT-style) │ │
-│ └──────────────────────────────────────────────────────────┘ │
-└────────────────────────┬────────────────────────────────────────┘
- │
-┌────────────────────────▼────────────────────────────────────────┐
-│ STORAGE LAYER │
-├─────────────────────────────────────────────────────────────────┤
-│ PageStore │
-│ - 4KB page-aligned storage │
-│ - AES-GCM encryption per page │
-│ - Page cache (LRU, 1000 pages) │
-│ - Overflow chain support │
-│ │
-│ StorageLayout │
-│ - Metadata storage (.meta file) │
-│ - Index map, secondary indexes │
-│ - Search index, deleted pages │
-│ - Signature verification (HMAC-SHA256) │
-│ │
-│ WriteAheadLog (Actor) │
-│ - WAL entries (page index + data) │
-│ - Batched writes (100 ops or 1s) │
-│ - Checkpointing to PageStore │
-│ - Crash recovery via replay │
-└────────────────────────┬────────────────────────────────────────┘
- │
-┌────────────────────────▼────────────────────────────────────────┐
-│ ENCODING LAYER │
-├─────────────────────────────────────────────────────────────────┤
-│ BlazeBinaryEncoder │
-│ - Custom binary format (53% smaller than JSON) │
-│ - Variable-length encoding │
-│ - Bit-packing optimizations │
-│ - CRC32 checksum (optional) │
-│ - Zero-copy decoding (BlazeBinaryFieldView) │
-│ │
-│ BlazeBinaryDecoder │
-│ - Decodes BlazeBinary format │
-│ - Lazy field extraction │
-│ - Memory-efficient │
-└────────────────────────┬────────────────────────────────────────┘
- │
-┌────────────────────────▼────────────────────────────────────────┐
-│ DISTRIBUTED SYNC LAYER │
-├─────────────────────────────────────────────────────────────────┤
-│ BlazeSyncEngine │
-│ - Incremental op-log sync │
-│ - Per-node sync state tracking │
-│ - Conflict resolution (server/client roles) │
-│ - Adaptive batching (10K ops) │
-│ - Pipelining (multiple batches in flight) │
-│ - Predictive prefetching │
-│ │
-│ OperationLog (Actor) │
-│ - Operation history ([UUID: BlazeOperation]) │
-│ - Lamport timestamp management │
-│ - BlazeBinary persistence │
-│ │
-│ BlazeOperation │
-│ - Atomic operation unit │
-│ - Lamport timestamp (causal ordering) │
-│ - Replay protection (nonce + expiry) │
-│ - Optional signature (HMAC) │
-└────────────────────────┬────────────────────────────────────────┘
- │
-┌────────────────────────▼────────────────────────────────────────┐
-│ NETWORK TRANSPORT LAYER │
-├─────────────────────────────────────────────────────────────────┤
-│ TCPRelay (Actor) │
-│ - TCP transport │
-│ - BlazeBinary encoding │
-│ - Smart caching (encoded operations) │
-│ - Memory pooling (buffer reuse) │
-│ - Parallel encoding │
-│ - Deduplication │
-│ │
-│ UnixDomainSocketRelay (Actor) │
-│ - Unix Domain Socket transport │
-│ - Cross-app sync on same device │
-│ │
-│ InMemoryRelay (Actor) │
-│ - In-memory queue transport │
-│ - Same-process sync │
-└────────────────────────┬────────────────────────────────────────┘
- │
-┌────────────────────────▼────────────────────────────────────────┐
-│ SECURITY LAYER │
-├─────────────────────────────────────────────────────────────────┤
-│ SecureConnection │
-│ - ECDH P-256 handshake (ephemeral keys) │
-│ - HKDF-SHA256 key derivation │
-│ - AES-256-GCM encryption │
-│ - Challenge-response authentication │
-│ - Perfect Forward Secrecy │
-│ │
-│ PolicyEngine │
-│ - Row-Level Security (RLS) │
-│ - Policy evaluation engine │
-│ - Permissive/restrictive policies │
-│ │
-│ PageStore Encryption │
-│ - AES-128/192/256-GCM per page │
-│ - Authentication tags │
-│ - Key in memory only │
-└────────────────────────┬────────────────────────────────────────┘
- │
-┌────────────────────────▼────────────────────────────────────────┐
-│ DISCOVERY LAYER │
-├─────────────────────────────────────────────────────────────────┤
-│ BlazeDiscovery │
-│ - mDNS/Bonjour advertising (server) │
-│ - NWBrowser browsing (client) │
-│ - Zero-configuration networking │
-│ - SwiftUI integration (@Published) │
-└─────────────────────────────────────────────────────────────────┘
+ BLAZEDB ARCHITECTURE 
+
+
+
+ CLIENT API LAYER 
+
+ BlazeDBClient 
+ - CRUD operations 
+ - Query DSL 
+ - Transaction management 
+ - Sync coordination 
+
+ 
+
+ CORE ENGINE LAYER 
+
+ DynamicCollection 
+ - Schema-less document storage 
+ - Secondary indexes (hash-based) 
+ - Full-text search (InvertedIndex) 
+ - Vector/spatial indexes (in-memory) 
+ - MVCC support (opt-in) 
+ - Batch operations 
+ 
+  
+  Query Subsystem  
+  - QueryBuilder (fluent DSL)  
+  - QueryOptimizer (cost-based)  
+  - QueryPlanner (execution planning)  
+  - Graph queries, CTEs, subqueries  
+  
+ 
+  
+  MVCC Subsystem  
+  - MVCCTransaction (snapshot isolation)  
+  - VersionManager (version tracking)  
+  - RecordVersion (version metadata)  
+  - ConflictResolution (CRDT-style)  
+  
+
+ 
+
+ STORAGE LAYER 
+
+ PageStore 
+ - 4KB page-aligned storage 
+ - AES-GCM encryption per page 
+ - Page cache (LRU, 1000 pages) 
+ - Overflow chain support 
+ 
+ StorageLayout 
+ - Metadata storage (.meta file) 
+ - Index map, secondary indexes 
+ - Search index, deleted pages 
+ - Signature verification (HMAC-SHA256) 
+ 
+ WriteAheadLog (Actor) 
+ - WAL entries (page index + data) 
+ - Batched writes (100 ops or 1s) 
+ - Checkpointing to PageStore 
+ - Crash recovery via replay 
+
+ 
+
+ ENCODING LAYER 
+
+ BlazeBinaryEncoder 
+ - Custom binary format (53% smaller than JSON) 
+ - Variable-length encoding 
+ - Bit-packing optimizations 
+ - CRC32 checksum (optional) 
+ - Zero-copy decoding (BlazeBinaryFieldView) 
+ 
+ BlazeBinaryDecoder 
+ - Decodes BlazeBinary format 
+ - Lazy field extraction 
+ - Memory-efficient 
+
+ 
+
+ DISTRIBUTED SYNC LAYER 
+
+ BlazeSyncEngine 
+ - Incremental op-log sync 
+ - Per-node sync state tracking 
+ - Conflict resolution (server/client roles) 
+ - Adaptive batching (10K ops) 
+ - Pipelining (multiple batches in flight) 
+ - Predictive prefetching 
+ 
+ OperationLog (Actor) 
+ - Operation history ([UUID: BlazeOperation]) 
+ - Lamport timestamp management 
+ - BlazeBinary persistence 
+ 
+ BlazeOperation 
+ - Atomic operation unit 
+ - Lamport timestamp (causal ordering) 
+ - Replay protection (nonce + expiry) 
+ - Optional signature (HMAC) 
+
+ 
+
+ NETWORK TRANSPORT LAYER 
+
+ TCPRelay (Actor) 
+ - TCP transport 
+ - BlazeBinary encoding 
+ - Smart caching (encoded operations) 
+ - Memory pooling (buffer reuse) 
+ - Parallel encoding 
+ - Deduplication 
+ 
+ UnixDomainSocketRelay (Actor) 
+ - Unix Domain Socket transport 
+ - Cross-app sync on same device 
+ 
+ InMemoryRelay (Actor) 
+ - In-memory queue transport 
+ - Same-process sync 
+
+ 
+
+ SECURITY LAYER 
+
+ SecureConnection 
+ - ECDH P-256 handshake (ephemeral keys) 
+ - HKDF-SHA256 key derivation 
+ - AES-256-GCM encryption 
+ - Challenge-response authentication 
+ - Perfect Forward Secrecy 
+ 
+ PolicyEngine 
+ - Row-Level Security (RLS) 
+ - Policy evaluation engine 
+ - Permissive/restrictive policies 
+ 
+ PageStore Encryption 
+ - AES-128/192/256-GCM per page 
+ - Authentication tags 
+ - Key in memory only 
+
+ 
+
+ DISCOVERY LAYER 
+
+ BlazeDiscovery 
+ - mDNS/Bonjour advertising (server) 
+ - NWBrowser browsing (client) 
+ - Zero-configuration networking 
+ - SwiftUI integration (@Published) 
+
 ```
 
 ---

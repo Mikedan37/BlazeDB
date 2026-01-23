@@ -20,31 +20,31 @@
 ##  **Architecture Overview**
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│ BlazeDB Distributed │
-├─────────────────────────────────────────────────────────────┤
-│ │
-│ ┌──────────┐ ┌──────────┐ ┌──────────┐ │
-│ │ iPhone │◄────►│ iPad │◄────►│ Mac │ │
-│ │ │ │ │ │ │ │
-│ │ Local │ │ Local │ │ Local │ │
-│ │ BlazeDB │ │ BlazeDB │ │ BlazeDB │ │
-│ └────┬─────┘ └────┬─────┘ └────┬─────┘ │
-│ │ │ │ │
-│ └─────────────────┼─────────────────┘ │
-│ │ │
-│ ▼ │
-│ ┌─────────────────────┐ │
-│ │ BlazeDB Relay │ │
-│ │ (CloudKit/Server) │ │
-│ └─────────────────────┘ │
-│ │ │
-│ ▼ │
-│ ┌─────────────────────┐ │
-│ │ Other Users' │ │
-│ │ Devices │ │
-│ └─────────────────────┘ │
-└─────────────────────────────────────────────────────────────┘
+
+ BlazeDB Distributed 
+
+ 
+    
+  iPhone  iPad  Mac  
+       
+  Local   Local   Local  
+  BlazeDB   BlazeDB   BlazeDB  
+    
+    
+  
+  
+  
+  
+  BlazeDB Relay  
+  (CloudKit/Server)  
+  
+  
+  
+  
+  Other Users'  
+  Devices  
+  
+
 ```
 
 ---
@@ -54,17 +54,17 @@
 ### **Protocol Layers**
 
 ```
-┌─────────────────────────────────┐
-│ Application Layer │ BlazeDB API (CRUD, Queries)
-├─────────────────────────────────┤
-│ CRDT Layer │ Conflict Resolution
-├─────────────────────────────────┤
-│ Operation Log Layer │ OpLog Replication
-├─────────────────────────────────┤
-│ Transport Layer │ WebSocket/gRPC/CloudKit
-├─────────────────────────────────┤
-│ Security Layer │ E2E Encryption
-└─────────────────────────────────┘
+
+ Application Layer  BlazeDB API (CRUD, Queries)
+
+ CRDT Layer  Conflict Resolution
+
+ Operation Log Layer  OpLog Replication
+
+ Transport Layer  WebSocket/gRPC/CloudKit
+
+ Security Layer  E2E Encryption
+
 ```
 
 ### **1. Operation Log (OpLog)**

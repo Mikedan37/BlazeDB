@@ -90,33 +90,33 @@ Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
 ### Architecture
 
 ```
-┌─────────────────┐
-│ AI Tool │
-│ (Cursor/Claude)│
-└────────┬────────┘
- │ JSON-RPC 2.0
- │ (stdin/stdout)
- ▼
-┌─────────────────┐
-│ BlazeMCP │
-│ Server │
-└────────┬────────┘
- │
- │ Tool Execution
- │ (with RLS)
- ▼
-┌─────────────────┐
-│ BlazeDB │
-│ Client │
-└────────┬────────┘
- │
- │ BlazeBinary
- │ (internal)
- ▼
-┌─────────────────┐
-│ Database Files │
-│ (.blazedb,.meta)│
-└────────────────────┘
+
+ AI Tool 
+ (Cursor/Claude)
+
+  JSON-RPC 2.0
+  (stdin/stdout)
+ 
+
+ BlazeMCP 
+ Server 
+
+ 
+  Tool Execution
+  (with RLS)
+ 
+
+ BlazeDB 
+ Client 
+
+ 
+  BlazeBinary
+  (internal)
+ 
+
+ Database Files 
+ (.blazedb,.meta)
+
 ```
 
 ### Protocol Flow

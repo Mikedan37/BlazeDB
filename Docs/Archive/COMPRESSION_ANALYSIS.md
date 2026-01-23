@@ -49,7 +49,7 @@ Network transfer (10 Mbps):
 
 ```
 2G Network (100 Kbps):
-─────────────────────
+
 
 Without compression (165 KB):
 • Transfer time: 13.2 seconds
@@ -97,11 +97,11 @@ With compression:
 VERDICT: 48% less battery! Worth the CPU cost!
 ```
 
-### **Scenario 4: Fast WiFi / Ethernet** ️ **MAYBE SKIP?**
+### **Scenario 4: Fast WiFi / Ethernet**  **MAYBE SKIP?**
 
 ```
 Gigabit Network (1 Gbps):
-─────────────────────────
+
 
 Without compression (165 KB):
 • Transfer time: 1.32ms
@@ -189,26 +189,26 @@ RESULT:
 // Different data compresses differently
 
 Bug Records (text-heavy):
-─────────────────────────
+
 Original JSON: 450 KB
 BlazeBinary: 165 KB (63% reduction)
 + LZ4: 55 KB (88% total reduction!)
 
 Images/Binary Data:
-───────────────────
+
 Original: 500 KB
 BlazeBinary: 500 KB (binary = binary)
-+ LZ4: 490 KB (2% reduction) ️
++ LZ4: 490 KB (2% reduction) 
 VERDICT: Don't compress binary data!
 
 Numeric Data (sensors):
-───────────────────────
+
 Original JSON: 200 KB
 BlazeBinary: 40 KB (80% reduction)
 + LZ4: 15 KB (92.5% total reduction!)
 
 Repeated Data (logs):
-─────────────────────
+
 Original JSON: 1 MB
 BlazeBinary: 300 KB (70% reduction)
 + LZ4: 50 KB (95% total reduction!)
@@ -216,7 +216,7 @@ BlazeBinary: 300 KB (70% reduction)
 RECOMMENDATION:
  Compress text/logs (huge wins!)
  Compress numeric data (big wins)
-️ Skip images/files (minimal wins)
+ Skip images/files (minimal wins)
  Auto-detect data type
 ```
 
@@ -227,59 +227,59 @@ RECOMMENDATION:
 ### **YES! You can integrate EVERYTHING!**
 
 ```swift
-┌─────────────────────────────────────────────────────────────┐
-│ BLAZEDB DISTRIBUTED WITH FULL OBSERVABILITY │
-├─────────────────────────────────────────────────────────────┤
-│ │
-│ CLIENT (iPhone) │
-│ ──────────────── │
-│ ┌─────────────────────────────────────────────────────┐ │
-│ │ BlazeLogger (already have!) │ │
-│ │ • Logs all operations │ │
-│ │ • Error tracking │ │
-│ │ • Performance traces │ │
-│ └──────────────────┬──────────────────────────────────┘ │
-│ │ │
-│ ▼ │
-│ ┌─────────────────────────────────────────────────────┐ │
-│ │ Telemetry (already have!) │ │
-│ │ • Metric events │ │
-│ │ • Operation counts │ │
-│ │ • Timing data │ │
-│ └──────────────────┬──────────────────────────────────┘ │
-│ │ │
-│ │ Send to server! │
-│ │ │
-│ ▼ │
-│ ┌─────────────────────────────────────────────────────┐ │
-│ │ Sync Engine │ │
-│ │ • Sends telemetry with operations │ │
-│ │ • Sends logs for debugging │ │
-│ └──────────────────┬──────────────────────────────────┘ │
-│ │ │
-│ ═══════▼════════ │
-│ gRPC + TLS │
-│ ═══════▼════════ │
-│ │ │
-│ SERVER (Pi) ▼ │
-│ ──────────────────────── │
-│ ┌─────────────────────────────────────────────────────┐ │
-│ │ Aggregates ALL client telemetry! │ │
-│ │ • See all operations across all devices │ │
-│ │ • Track performance globally │ │
-│ │ • Detect errors early │ │
-│ │ • Monitor sync health │ │
-│ └──────────────────┬──────────────────────────────────┘ │
-│ │ │
-│ ▼ │
-│ ┌─────────────────────────────────────────────────────┐ │
-│ │ Prometheus + Grafana │ │
-│ │ • Real-time dashboards │ │
-│ │ • Alert system │ │
-│ │ • Historical trends │ │
-│ └─────────────────────────────────────────────────────┘ │
-│ │
-└─────────────────────────────────────────────────────────────┘
+
+ BLAZEDB DISTRIBUTED WITH FULL OBSERVABILITY 
+
+ 
+ CLIENT (iPhone) 
+  
+  
+  BlazeLogger (already have!)  
+  • Logs all operations  
+  • Error tracking  
+  • Performance traces  
+  
+  
+  
+  
+  Telemetry (already have!)  
+  • Metric events  
+  • Operation counts  
+  • Timing data  
+  
+  
+  Send to server! 
+  
+  
+  
+  Sync Engine  
+  • Sends telemetry with operations  
+  • Sends logs for debugging  
+  
+  
+  
+ gRPC + TLS 
+  
+  
+ SERVER (Pi)  
+  
+  
+  Aggregates ALL client telemetry!  
+  • See all operations across all devices  
+  • Track performance globally  
+  • Detect errors early  
+  • Monitor sync health  
+  
+  
+  
+  
+  Prometheus + Grafana  
+  • Real-time dashboards  
+  • Alert system  
+  • Historical trends  
+  
+ 
+
 ```
 
 ### **Implementation:**
@@ -387,8 +387,8 @@ PROS:
  No latency
 
 CONS:
-️ Server data might be stale
-️ Need sync to see others' changes
+ Server data might be stale
+ Need sync to see others' changes
 ```
 
 ### **Online-First Mode = Server is Primary:**
@@ -437,8 +437,8 @@ PROS:
  Still works offline (fallback)
 
 CONS:
-️ Requires network (but has fallback)
-️ Slightly higher latency (but <50ms)
+ Requires network (but has fallback)
+ Slightly higher latency (but <50ms)
 
 USE CASES:
  Collaborative apps (real-time editing)
@@ -520,114 +520,114 @@ PERFECT for most apps!
 ### **The Architecture:**
 
 ```swift
-┌────────────────────────────────────────────────────────────────┐
-│ BLAZEDB WITH TELEMETRY & SMART COMPRESSION │
-├────────────────────────────────────────────────────────────────┤
-│ │
-│ CLIENT OPERATION: │
-│ ────────────────── │
-│ │
-│ User taps "Save Bug" │
-│ ↓ │
-│ ┌────────────────────────────────────────────────────┐ │
-│ │ 1. Insert into Local BlazeDB │ │
-│ │ Time: 1ms │ │
-│ │ UI updates instantly! │ │
-│ └──────────────────┬─────────────────────────────────┘ │
-│ ↓ │
-│ ┌────────────────────────────────────────────────────┐ │
-│ │ 2. BlazeLogger.info("Inserted bug \(id)") │ │
-│ │ Local logging │ │
-│ └──────────────────┬─────────────────────────────────┘ │
-│ ↓ │
-│ ┌────────────────────────────────────────────────────┐ │
-│ │ 3. Telemetry.record(operation, duration,...) │ │
-│ │ Local metrics │ │
-│ └──────────────────┬─────────────────────────────────┘ │
-│ ↓ │
-│ ┌────────────────────────────────────────────────────┐ │
-│ │ 4. Create BlazeOperation │ │
-│ │ • operation data │ │
-│ │ • telemetry metadata │ │
-│ │ • log context │ │
-│ └──────────────────┬─────────────────────────────────┘ │
-│ ↓ │
-│ ┌────────────────────────────────────────────────────┐ │
-│ │ 5. BlazeBinaryEncoder.encode(operation) │ │
-│ │ Size: 165 bytes │ │
-│ │ Time: 0.15ms │ │
-│ └──────────────────┬─────────────────────────────────┘ │
-│ ↓ │
-│ ┌────────────────────────────────────────────────────┐ │
-│ │ 6. Smart Compression │ │
-│ │ if (cellular || dataSize > 10KB || lowBattery) │ │
-│ │ → LZ4.compress() │ │
-│ │ Size: 55 bytes (67% smaller!) │ │
-│ │ Time: +0.10ms │ │
-│ └──────────────────┬─────────────────────────────────┘ │
-│ ↓ │
-│ ┌────────────────────────────────────────────────────┐ │
-│ │ 7. gRPC Send (TLS encrypted) │ │
-│ │ Latency: 30ms │ │
-│ └────────────────────────────────────────────────────┘ │
-│ │ │
-│ ═════════════▼═══════════════ │
-│ INTERNET (TLS TUNNEL) │
-│ ═════════════▼═══════════════ │
-│ │ │
-│ SERVER (Pi) ↓ │
-│ ──────────────────────── │
-│ ┌────────────────────────────────────────────────────┐ │
-│ │ 8. gRPC Receive │ │
-│ │ Latency: 5ms │ │
-│ └──────────────────┬─────────────────────────────────┘ │
-│ ↓ │
-│ ┌────────────────────────────────────────────────────┐ │
-│ │ 9. Decompress (if needed) │ │
-│ │ Time: 0.08ms │ │
-│ └──────────────────┬─────────────────────────────────┘ │
-│ ↓ │
-│ ┌────────────────────────────────────────────────────┐ │
-│ │ 10. BlazeBinaryDecoder.decode() │ │
-│ │ Time: 0.08ms │ │
-│ └──────────────────┬─────────────────────────────────┘ │
-│ ↓ │
-│ ┌────────────────────────────────────────────────────┐ │
-│ │ 11. Extract Telemetry │ │
-│ │ • Client duration: 1ms │ │
-│ │ • Client platform: iOS │ │
-│ │ • Network type: cellular │ │
-│ │ • Battery: 85% │ │
-│ └──────────────────┬─────────────────────────────────┘ │
-│ ↓ │
-│ ┌────────────────────────────────────────────────────┐ │
-│ │ 12. Record in Prometheus │ │
-│ │ blazedb_operations_total{type="insert"}++ │ │
-│ │ blazedb_duration_ms{op="insert"} = 1ms │ │
-│ │ blazedb_network{type="cellular"}++ │ │
-│ └──────────────────┬─────────────────────────────────┘ │
-│ ↓ │
-│ ┌────────────────────────────────────────────────────┐ │
-│ │ 13. Insert into Server BlazeDB │ │
-│ │ Time: 1ms │ │
-│ └──────────────────┬─────────────────────────────────┘ │
-│ ↓ │
-│ ┌────────────────────────────────────────────────────┐ │
-│ │ 14. Broadcast to other clients │ │
-│ │ • Stream to iPad, Mac, etc. │ │
-│ │ • Include telemetry │ │
-│ └────────────────────────────────────────────────────┘ │
-│ │
-│ VISUALIZE IN GRAFANA: │
-│ ───────────────────────── │
-│ • Operations per second (by device) │
-│ • Average latency (by network type) │
-│ • Error rates │
-│ • Sync lag (max/avg/p99) │
-│ • Battery impact │
-│ • Data usage │
-│ │
-└────────────────────────────────────────────────────────────────┘
+
+ BLAZEDB WITH TELEMETRY & SMART COMPRESSION 
+
+ 
+ CLIENT OPERATION: 
+  
+ 
+ User taps "Save Bug" 
+ ↓ 
+  
+  1. Insert into Local BlazeDB  
+  Time: 1ms  
+  UI updates instantly!  
+  
+ ↓ 
+  
+  2. BlazeLogger.info("Inserted bug \(id)")  
+  Local logging  
+  
+ ↓ 
+  
+  3. Telemetry.record(operation, duration,...)  
+  Local metrics  
+  
+ ↓ 
+  
+  4. Create BlazeOperation  
+  • operation data  
+  • telemetry metadata  
+  • log context  
+  
+ ↓ 
+  
+  5. BlazeBinaryEncoder.encode(operation)  
+  Size: 165 bytes  
+  Time: 0.15ms  
+  
+ ↓ 
+  
+  6. Smart Compression  
+  if (cellular || dataSize > 10KB || lowBattery)  
+  → LZ4.compress()  
+  Size: 55 bytes (67% smaller!)  
+  Time: +0.10ms  
+  
+ ↓ 
+  
+  7. gRPC Send (TLS encrypted)  
+  Latency: 30ms  
+  
+  
+  
+ INTERNET (TLS TUNNEL) 
+  
+  
+ SERVER (Pi) ↓ 
+  
+  
+  8. gRPC Receive  
+  Latency: 5ms  
+  
+ ↓ 
+  
+  9. Decompress (if needed)  
+  Time: 0.08ms  
+  
+ ↓ 
+  
+  10. BlazeBinaryDecoder.decode()  
+  Time: 0.08ms  
+  
+ ↓ 
+  
+  11. Extract Telemetry  
+  • Client duration: 1ms  
+  • Client platform: iOS  
+  • Network type: cellular  
+  • Battery: 85%  
+  
+ ↓ 
+  
+  12. Record in Prometheus  
+  blazedb_operations_total{type="insert"}++  
+  blazedb_duration_ms{op="insert"} = 1ms  
+  blazedb_network{type="cellular"}++  
+  
+ ↓ 
+  
+  13. Insert into Server BlazeDB  
+  Time: 1ms  
+  
+ ↓ 
+  
+  14. Broadcast to other clients  
+  • Stream to iPad, Mac, etc.  
+  • Include telemetry  
+  
+ 
+ VISUALIZE IN GRAFANA: 
+  
+ • Operations per second (by device) 
+ • Average latency (by network type) 
+ • Error rates 
+ • Sync lag (max/avg/p99) 
+ • Battery impact 
+ • Data usage 
+ 
+
 ```
 
 ---
@@ -711,61 +711,61 @@ USE CASES:
 ## **THE COMPLETE SYSTEM: BLAZEDB EVERYWHERE**
 
 ```swift
-┌────────────────────────────────────────────────────────────────┐
-│ BLAZEDB: ACCESSIBLE ANYWHERE │
-├────────────────────────────────────────────────────────────────┤
-│ │
-│ MOBILE (Offline-First) │
-│ ──────────────────────────── │
-│ • Local BlazeDB (primary) │
-│ • Syncs to server (background) │
-│ • Works offline │
-│ • Instant UI updates │
-│ • Telemetry → Server │
-│ │
-│ WEB (Online-First) │
-│ ─────────────────── │
-│ • IndexedDB (cache) │
-│ • Queries server (primary) │
-│ • Fallback to cache if offline │
-│ • Real-time via WebSocket │
-│ │
-│ ️ DESKTOP (Hybrid) │
-│ ────────────────── │
-│ • Local BlazeDB (primary) │
-│ • Syncs to server (bidirectional) │
-│ • Can execute server queries │
-│ • Full functionality offline │
-│ │
-│ SERVER (Raspberry Pi / Cloud) │
-│ ─────────────────────────────── │
-│ • BlazeDB (authoritative) │
-│ • gRPC API (query interface) │
-│ • Aggregates telemetry │
-│ • Logs all operations │
-│ • Executes complex queries │
-│ • Broadcasts changes │
-│ │
-│ MONITORING │
-│ ───────────── │
-│ • BlazeDBVisualizer (visual management) │
-│ • Prometheus (metrics) │
-│ • Grafana (dashboards) │
-│ • Alerts (problems) │
-│ │
-│ FEATURES ENABLED: │
-│ ────────────────── │
-│ Multi-device sync │
-│ Real-time collaboration │
-│ Offline-first OR online-first (your choice!) │
-│ Server-side queries (aggregations, JOINs) │
-│ Global telemetry (all clients) │
-│ Centralized logging (debugging) │
-│ Smart compression (automatic) │
-│ Sync GC (stable memory) │
-│ Access from anywhere │
-│ │
-└────────────────────────────────────────────────────────────────┘
+
+ BLAZEDB: ACCESSIBLE ANYWHERE 
+
+ 
+ MOBILE (Offline-First) 
+  
+ • Local BlazeDB (primary) 
+ • Syncs to server (background) 
+ • Works offline 
+ • Instant UI updates 
+ • Telemetry → Server 
+ 
+ WEB (Online-First) 
+  
+ • IndexedDB (cache) 
+ • Queries server (primary) 
+ • Fallback to cache if offline 
+ • Real-time via WebSocket 
+ 
+  DESKTOP (Hybrid) 
+  
+ • Local BlazeDB (primary) 
+ • Syncs to server (bidirectional) 
+ • Can execute server queries 
+ • Full functionality offline 
+ 
+ SERVER (Raspberry Pi / Cloud) 
+  
+ • BlazeDB (authoritative) 
+ • gRPC API (query interface) 
+ • Aggregates telemetry 
+ • Logs all operations 
+ • Executes complex queries 
+ • Broadcasts changes 
+ 
+ MONITORING 
+  
+ • BlazeDBVisualizer (visual management) 
+ • Prometheus (metrics) 
+ • Grafana (dashboards) 
+ • Alerts (problems) 
+ 
+ FEATURES ENABLED: 
+  
+ Multi-device sync 
+ Real-time collaboration 
+ Offline-first OR online-first (your choice!) 
+ Server-side queries (aggregations, JOINs) 
+ Global telemetry (all clients) 
+ Centralized logging (debugging) 
+ Smart compression (automatic) 
+ Sync GC (stable memory) 
+ Access from anywhere 
+ 
+
 ```
 
 ---
@@ -775,19 +775,19 @@ USE CASES:
 ### **Decision Tree:**
 
 ```
-┌─ Network Type? ──┐
-│ │
-├─ Cellular ───────┼─► COMPRESS (save data/battery)
-│ │
-├─ WiFi ───────────┼─┐
-│ │ │
-│ │ └─ Data Size? ──┐
-│ │ │
-│ │ ├─ >10 KB ──► COMPRESS
-│ │ │
-│ │ └─ <10 KB ──► ️ MAYBE
-│ │
-└─ Ethernet ───────┼─► DON'T COMPRESS (already fast)
+ Network Type? 
+ 
+ Cellular  COMPRESS (save data/battery)
+ 
+ WiFi 
+  
+   Data Size? 
+  
+   >10 KB  COMPRESS
+  
+   <10 KB   MAYBE
+ 
+ Ethernet  DON'T COMPRESS (already fast)
 
 Also consider:
 • Battery < 20%? → COMPRESS (save power on transfer)
@@ -862,14 +862,14 @@ RESULT:
 • 200 deletes
 
 WITHOUT COMPRESSION:
-────────────────────
+
 BlazeBinary: 693 KB
 Transfer (2G, 100 Kbps): 55 seconds
 Battery: 45%
 Cost: 693 KB mobile data
 
 WITH LZ4 COMPRESSION:
-─────────────────────
+
 BlazeBinary: 693 KB
 Compressed: 231 KB (67% smaller!)
 Transfer (2G): 18 seconds (3x faster!)
@@ -888,7 +888,7 @@ Especially on slow networks / limited data plans
 
 ```swift
 // CLIENT SIDE (automatically tracked):
-─────────────────────────────────────
+
 
 Operations:
 • blazedb_operations_total{type, device, network}
@@ -915,7 +915,7 @@ Performance:
 • blazedb_query_duration_ms{type}
 
 // SERVER SIDE (automatically tracked):
-──────────────────────────────────────
+
 
 Operations:
 • blazedb_server_operations_total{type}
@@ -946,48 +946,48 @@ Resources:
 ### **Grafana Dashboard:**
 
 ```
-┌────────────────────────────────────────────────────────┐
-│ BlazeDB Global Dashboard │
-├────────────────────────────────────────────────────────┤
-│ │
-│ Operations (Last Hour) │
-│ ───────────────────────── │
-│ Inserts: 1,234 ██████████████░░░░░░ │
-│ Updates: 2,456 ████████████████████░░ │
-│ Deletes: 123 ██░░░░░░░░░░░░░░░░░░ │
-│ Queries: 5,678 ████████████████████████ │
-│ │
-│ Devices Online │
-│ ────────────────── │
-│ iPhone: 23 │
-│ iPad: 12 │
-│ Mac: 8 │
-│ Web: 15 │
-│ │
-│ Performance │
-│ ───────────── │
-│ Avg Latency: 45ms [████████████████░░░░] p99: 89ms │
-│ Throughput: 234 ops/sec │
-│ Sync Lag: 12ms avg, 45ms max │
-│ │
-│ Network │
-│ ──────────── │
-│ Sent: 12.3 MB (compressed: 4.1 MB, saved 67%) │
-│ Received: 8.7 MB (compressed: 2.9 MB, saved 67%) │
-│ Compression ratio: 3.0:1 │
-│ │
-│ Battery Impact (Average per Device) │
-│ ──────────────────────────────── │
-│ Sync: 1.2% per hour │
-│ Idle: 0.3% per hour │
-│ │
-│ Top Queries │
-│ ───────────── │
-│ 1. bugs WHERE status='open' (234/hour, 12ms avg) │
-│ 2. comments WHERE bugId=X (156/hour, 8ms avg) │
-│ 3. users WHERE team=Y (89/hour, 15ms avg) │
-│ │
-└────────────────────────────────────────────────────────┘
+
+ BlazeDB Global Dashboard 
+
+ 
+ Operations (Last Hour) 
+  
+ Inserts: 1,234  
+ Updates: 2,456  
+ Deletes: 123  
+ Queries: 5,678  
+ 
+ Devices Online 
+  
+ iPhone: 23 
+ iPad: 12 
+ Mac: 8 
+ Web: 15 
+ 
+ Performance 
+  
+ Avg Latency: 45ms [] p99: 89ms 
+ Throughput: 234 ops/sec 
+ Sync Lag: 12ms avg, 45ms max 
+ 
+ Network 
+  
+ Sent: 12.3 MB (compressed: 4.1 MB, saved 67%) 
+ Received: 8.7 MB (compressed: 2.9 MB, saved 67%) 
+ Compression ratio: 3.0:1 
+ 
+ Battery Impact (Average per Device) 
+  
+ Sync: 1.2% per hour 
+ Idle: 0.3% per hour 
+ 
+ Top Queries 
+  
+ 1. bugs WHERE status='open' (234/hour, 12ms avg) 
+ 2. comments WHERE bugId=X (156/hour, 8ms avg) 
+ 3. users WHERE team=Y (89/hour, 15ms avg) 
+ 
+
 ```
 
 ---
@@ -1039,7 +1039,7 @@ USE CASES:
 
 ```
 1. REAL-TIME COLLABORATION
- ──────────────────────
+ 
  • Google Docs-style editing
  • Team bug trackers
  • Shared shopping lists
@@ -1052,7 +1052,7 @@ USE CASES:
  • <50ms latency
 
 2. GLOBAL APPS
- ───────────
+ 
  • Social networks
  • Messaging apps
  • Gaming (player sync)
@@ -1065,7 +1065,7 @@ USE CASES:
  • CDN-like architecture
 
 3. ANALYTICS PLATFORMS
- ────────────────────
+ 
  • Business intelligence
  • User behavior tracking
  • Performance monitoring
@@ -1079,7 +1079,7 @@ USE CASES:
  • Time-travel queries
 
 4. OFFLINE-FIRST APPS
- ──────────────────
+ 
  • Field service
  • Healthcare (EMR)
  • Retail POS
@@ -1093,7 +1093,7 @@ USE CASES:
  • Eventual consistency
 
 5. IOT / EDGE
- ──────────
+ 
  • Smart home
  • Industrial sensors
  • Agriculture
@@ -1107,7 +1107,7 @@ USE CASES:
  • Low power consumption
 
 6. DEVELOPER TOOLS
- ───────────────
+ 
  • Database management (Visualizer)
  • Query testing
  • Performance monitoring
@@ -1172,7 +1172,7 @@ ACCESS BLAZEDB FROM:
 • "Sync lag spikes at 5pm" → Add capacity
 ```
 
-### **3. Remote Administration** ️
+### **3. Remote Administration** 
 
 ```swift
 // Manage databases from anywhere!
@@ -1225,10 +1225,10 @@ RESULT: Optimize each feature independently!
 | Network | Speed | Without Compression | With Compression | Verdict |
 |---------|-------|---------------------|------------------|---------|
 | **2G** | 100 Kbps | 13.2 sec | 4.4 sec | **USE** |
-| **3G** | 1 Mbps | 1.32 sec ️ | 0.44 sec | **USE** |
+| **3G** | 1 Mbps | 1.32 sec  | 0.44 sec | **USE** |
 | **4G** | 10 Mbps | 132ms | 44ms | **USE** |
 | **5G** | 100 Mbps | 13ms | 4ms | **USE** |
-| **WiFi** | 100 Mbps | 13ms | 4ms | **OPTIONAL** ️ |
+| **WiFi** | 100 Mbps | 13ms | 4ms | **OPTIONAL**  |
 | **Ethernet** | 1 Gbps | 1.3ms | 0.4ms | **SKIP** |
 
 **RECOMMENDATION:** Use compression on cellular/slow networks (adaptive)
@@ -1238,50 +1238,50 @@ RESULT: Optimize each feature independently!
 ## **FINAL ARCHITECTURE: THE COMPLETE SYSTEM**
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│ BLAZEDB DISTRIBUTED: COMPLETE SYSTEM │
-├─────────────────────────────────────────────────────────────┤
-│ │
-│ FEATURES ENABLED: │
-│ ═════════════════ │
-│ │
-│ Multi-Device Sync │
-│ • iPhone ↔ iPad ↔ Mac ↔ Web │
-│ • <50ms latency │
-│ • CRDT auto-merge │
-│ │
-│ Query Anywhere │
-│ • Execute on server (fast!) │
-│ • Access from any client │
-│ • BlazeDBVisualizer remote mode │
-│ │
-│ Global Telemetry │
-│ • All devices → Prometheus │
-│ • Grafana dashboards │
-│ • Real-time monitoring │
-│ │
-│ Smart Compression │
-│ • Adaptive (network/battery aware) │
-│ • 3x savings on slow networks │
-│ • Automatic decision │
-│ │
-│ Sync GC │
-│ • Stable memory (<10 MB) │
-│ • Runs forever │
-│ • Auto-compaction │
-│ │
-│ Offline/Online Modes │
-│ • Choose per feature │
-│ • Fallback support │
-│ • Queue operations │
-│ │
-│ Security │
-│ • TLS transport │
-│ • JWT auth │
-│ • AES-256 storage │
-│ • Optional E2E │
-│ │
-└─────────────────────────────────────────────────────────────┘
+
+ BLAZEDB DISTRIBUTED: COMPLETE SYSTEM 
+
+ 
+ FEATURES ENABLED: 
+  
+ 
+ Multi-Device Sync 
+ • iPhone ↔ iPad ↔ Mac ↔ Web 
+ • <50ms latency 
+ • CRDT auto-merge 
+ 
+ Query Anywhere 
+ • Execute on server (fast!) 
+ • Access from any client 
+ • BlazeDBVisualizer remote mode 
+ 
+ Global Telemetry 
+ • All devices → Prometheus 
+ • Grafana dashboards 
+ • Real-time monitoring 
+ 
+ Smart Compression 
+ • Adaptive (network/battery aware) 
+ • 3x savings on slow networks 
+ • Automatic decision 
+ 
+ Sync GC 
+ • Stable memory (<10 MB) 
+ • Runs forever 
+ • Auto-compaction 
+ 
+ Offline/Online Modes 
+ • Choose per feature 
+ • Fallback support 
+ • Queue operations 
+ 
+ Security 
+ • TLS transport 
+ • JWT auth 
+ • AES-256 storage 
+ • Optional E2E 
+ 
+
 ```
 
 ---

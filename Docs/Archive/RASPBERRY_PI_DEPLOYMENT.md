@@ -211,60 +211,60 @@ let client = BlazeDB_BlazeDBAsyncClient(channel: channel)
 ## **COMPLETE SECURITY FLOW (With Your Pi)**
 
 ```
-┌──────────────────────────────────────────────────────────────┐
-│ COMPLETE ENCRYPTED FLOW │
-├──────────────────────────────────────────────────────────────┤
-│ │
-│ IPHONE (San Francisco) │
-│ ═══════════════════════ │
-│ │
-│ 1. Create record (memory) │
-│ "title": "Secret bug" ← Plain text in RAM │
-│ │
-│ 2. Encode with BlazeBinary │
-│ [0x42 0x4C 0x41 0x5A 0x45...] ← Binary, NOT encrypted │
-│ • Compact (165 bytes) │
-│ • Fast (15ms) │
-│ • ️ Still readable if intercepted! │
-│ │
-│ 3. Encrypt with LOCAL key (storage) │
-│ AES-256-GCM(binary) → [encrypted blob] ← Can't read! │
-│ • Stored on iPhone disk │
-│ • Protected by your password │
-│ │
-│ 4. Send to server via gRPC │
-│ BlazeBinary (plain) → TLS tunnel → [encrypted] │
-│ │ │
-│ │ ═══════ INTERNET (TLS TUNNEL) ═══════ │
-│ │ • TLS 1.3 encryption │
-│ │ • Certificate validation │
-│ │ • Perfect forward secrecy │
-│ │ • BlazeBinary data encrypted in transit │
-│ │ │
-│ ▼ │
-│ │
-│ RASPBERRY PI (Your Home) │
-│ ═══════════════════════ │
-│ │
-│ 5. TLS decrypts tunnel │
-│ [encrypted] → TLS → BlazeBinary (plain) │
-│ • Server now has plain binary data │
-│ • Can read and process it │
-│ │
-│ 6. Decode with BlazeBinary │
-│ binary → BlazeDataRecord │
-│ "title": "Secret bug" ← Plain text in server RAM │
-│ • Server can read this! ️ │
-│ │
-│ 7. Insert into Server BlazeDB │
-│ try await serverDB.insert(record) │
-│ │
-│ 8. Encrypt with SERVER key │
-│ AES-256-GCM(binary) → [encrypted blob] ← Can't read! │
-│ • Stored on Pi's SD card │
-│ • Protected by server password │
-│ │
-└──────────────────────────────────────────────────────────────┘
+
+ COMPLETE ENCRYPTED FLOW 
+
+ 
+ IPHONE (San Francisco) 
+  
+ 
+ 1. Create record (memory) 
+ "title": "Secret bug" ← Plain text in RAM 
+ 
+ 2. Encode with BlazeBinary 
+ [0x42 0x4C 0x41 0x5A 0x45...] ← Binary, NOT encrypted 
+ • Compact (165 bytes) 
+ • Fast (15ms) 
+ •  Still readable if intercepted! 
+ 
+ 3. Encrypt with LOCAL key (storage) 
+ AES-256-GCM(binary) → [encrypted blob] ← Can't read! 
+ • Stored on iPhone disk 
+ • Protected by your password 
+ 
+ 4. Send to server via gRPC 
+ BlazeBinary (plain) → TLS tunnel → [encrypted] 
+  
+   INTERNET (TLS TUNNEL)  
+  • TLS 1.3 encryption 
+  • Certificate validation 
+  • Perfect forward secrecy 
+  • BlazeBinary data encrypted in transit 
+  
+  
+ 
+ RASPBERRY PI (Your Home) 
+  
+ 
+ 5. TLS decrypts tunnel 
+ [encrypted] → TLS → BlazeBinary (plain) 
+ • Server now has plain binary data 
+ • Can read and process it 
+ 
+ 6. Decode with BlazeBinary 
+ binary → BlazeDataRecord 
+ "title": "Secret bug" ← Plain text in server RAM 
+ • Server can read this!  
+ 
+ 7. Insert into Server BlazeDB 
+ try await serverDB.insert(record) 
+ 
+ 8. Encrypt with SERVER key 
+ AES-256-GCM(binary) → [encrypted blob] ← Can't read! 
+ • Stored on Pi's SD card 
+ • Protected by server password 
+ 
+
 ```
 
 ---
@@ -276,9 +276,9 @@ let client = BlazeDB_BlazeDBAsyncClient(channel: channel)
  Data in transit (with TLS): TLS 1.3 tunnel
  Data on server disk: AES-256-GCM (server password)
 
-️ Data in iPhone RAM: Plain text (normal)
-️ Data in server RAM: Plain text (normal)
-️ BlazeBinary encoding: Not encrypted (just compact format)
+ Data in iPhone RAM: Plain text (normal)
+ Data in server RAM: Plain text (normal)
+ BlazeBinary encoding: Not encrypted (just compact format)
 ```
 
 ---
@@ -773,7 +773,7 @@ RESULT: Production-ready security!
 - Data encrypted on disk (AES-256)
 - Data plain in memory (normal)
 - BlazeBinary is just compact binary format
-- Need TLS for network security ️
+- Need TLS for network security 
 
 **Q: "I have a Raspberry Pi"**
 **A:** PERFECT! Free hosting!

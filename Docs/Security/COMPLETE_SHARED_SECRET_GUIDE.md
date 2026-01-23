@@ -7,17 +7,17 @@
 ## **THE SAME PACKAGE WORKS EVERYWHERE:**
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│ BLAZEDB PACKAGE (Same Code!) │
-├─────────────────────────────────────────────────────────┤
-│ │
-│ macOS (CryptoKit) │
-│ iOS (CryptoKit) │
-│ Linux / Raspberry Pi (Swift Crypto) │
-│ Vapor Server (Swift Crypto) │
-│ │
-│ Same API, same code, works everywhere! │
-└─────────────────────────────────────────────────────────┘
+
+ BLAZEDB PACKAGE (Same Code!) 
+
+ 
+ macOS (CryptoKit) 
+ iOS (CryptoKit) 
+ Linux / Raspberry Pi (Swift Crypto) 
+ Vapor Server (Swift Crypto) 
+ 
+ Same API, same code, works everywhere! 
+
 ```
 
 ---

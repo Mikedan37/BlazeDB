@@ -10,17 +10,17 @@
 
 ```
 Single Operation:
-─────────────────
+
 Time: 0.5ms (encrypted write)
 Throughput: 2,000 ops/sec per core
 
 Multi-Core (8 cores):
-─────────────────────
+
 Theoretical: 2,000 × 8 = 16,000 ops/sec
 Realistic: 10,000-15,000 ops/sec (60-75% efficiency)
 
 With Batching (10K ops):
-────────────────────────
+
 Batch time: 10,000 × 0.5ms = 5,000ms
 Batch overhead: ~1ms (minimal for local)
 Total: ~5,001ms per batch
@@ -34,7 +34,7 @@ LOCAL: 2,000,000 ops/sec (batched)
 
 ```
 Per Batch (10,000 ops):
-───────────────────────
+
 Local apply: 5,000ms (10K × 0.5ms)
 Encode: ~20ms
 Compress: ~10ms
@@ -61,7 +61,7 @@ NETWORK: 1,000,000 ops/sec (batched)
 
 ```
 Operation Type Throughput Notes
-══════════════════════════════════════════════════════
+
 Local (individual) 10,000-15,000 No network overhead
 Local (batched) 2,000,000 Batching helps!
 Network (batched) 1,000,000 Network overhead
@@ -73,7 +73,7 @@ LOCAL IS FASTER!
 
 ```
 LOCAL OPERATIONS:
-─────────────────
+
 • No network latency
 • No encoding/decoding
 • No compression/decompression
@@ -81,7 +81,7 @@ LOCAL OPERATIONS:
 • Direct file I/O
 
 NETWORK SYNC:
-─────────────
+
 • Network latency: ~10ms
 • Encoding: ~20ms
 • Compression: ~10ms
@@ -113,7 +113,7 @@ LOCAL IS 2x FASTER THAN NETWORK!
 
 ```
 System Local Ops/sec Network Ops/sec
-══════════════════════════════════════════════════════
+
 BlazeDB 10,000-15,000 1,000,000
 Firebase 100-200 100,000
 Supabase 200-400 200,000
@@ -143,14 +143,14 @@ RESULT: 2x faster than network!
 ### **Network Sync:**
 
 ```
-️ Network latency (~10ms)
-️ Encoding overhead (~20ms)
-️ Compression overhead (~10ms)
-️ Encryption overhead (~5ms)
-️ Decoding overhead (~20ms)
-️ Decompression overhead (~10ms)
-️ Decryption overhead (~5ms)
-️ Validation overhead (~5ms)
+ Network latency (~10ms)
+ Encoding overhead (~20ms)
+ Compression overhead (~10ms)
+ Encryption overhead (~5ms)
+ Decoding overhead (~20ms)
+ Decompression overhead (~10ms)
+ Decryption overhead (~5ms)
+ Validation overhead (~5ms)
 
 RESULT: Slower, but still fast!
 ```

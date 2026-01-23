@@ -187,7 +187,7 @@ Risk: Low (can disable if issues)
 
 ### **Feature Flag Benefits**:
 
-1. **Safety** ️
+1. **Safety** 
  - Can disable instantly if bugs found
  - No risky "all or nothing" switch
  - Production rollback is trivial
@@ -213,14 +213,14 @@ Risk: Low (can disable if issues)
 
 ```
 Phase 2 Tasks:
-├─ Foundation Done
-├─ MVCC Insert Path ⏳ Next
-├─ MVCC Fetch Path ⏳ Next
-├─ MVCC Update Path ⏳ Todo
-├─ MVCC Delete Path ⏳ Todo
-├─ Integration Tests ⏳ Todo
-├─ Performance Tests ⏳ Todo
-└─ Enable by Default ⏳ Todo
+ Foundation Done
+ MVCC Insert Path ⏳ Next
+ MVCC Fetch Path ⏳ Next
+ MVCC Update Path ⏳ Todo
+ MVCC Delete Path ⏳ Todo
+ Integration Tests ⏳ Todo
+ Performance Tests ⏳ Todo
+ Enable by Default ⏳ Todo
 
 Completion: 1/8 tasks (12.5%)
 ```

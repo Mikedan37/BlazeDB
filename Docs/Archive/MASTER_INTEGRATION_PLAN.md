@@ -29,29 +29,29 @@ Think: **"Sequel Pro + Activity Monitor + 1Password"** in ONE app!
 ### **Architecture:**
 
 ```
-┌──────────────────────────────────────────────────────┐
-│ BlazeDBVisualizer │
-│ (Database Management Tool) │
-└──────────────────────────────────────────────────────┘
- │
+
+ BlazeDBVisualizer 
+ (Database Management Tool) 
+
+ 
  ↓
- ┌─────────────────────────────────┐
- │ BlazeDB Monitoring API │
- │ (NEW - We just built this!) │
- └─────────────────────────────────┘
- │
+ 
+  BlazeDB Monitoring API 
+  (NEW - We just built this!) 
+ 
+ 
  ↓
- ┌───────────────────────┐
- │ BlazeDB Core │
- │ (Your database!) │
- └───────────────────────┘
- │
- ┌─────────┴─────────┐
+ 
+  BlazeDB Core 
+  (Your database!) 
+ 
+ 
+ 
  ↓ ↓
- ┌──────────────┐ ┌──────────────┐
- │ BlazeStudio │ │ Your Apps │
- │ Databases │ │ Databases │
- └──────────────┘ └──────────────┘
+  
+  BlazeStudio   Your Apps 
+  Databases   Databases 
+  
 ```
 
 **BlazeDBVisualizer can manage EVERYTHING!**
@@ -283,29 +283,29 @@ BlazeDBVisualizer:
 
 ```
 BlazeDBVisualizer/
-├─ App/
-│ ├─ BlazeDBVisualizerApp.swift
-│ ├─ DetailView.swift ← UPGRADE THIS
-│ └─ MenuExtraView.swift
-│
-├─ Model/
-│ ├─ DBRecord.swift ← ENHANCE THIS
-│ └─ ScanService.swift ← UPGRADE THIS
-│
-├─ Services/ ← NEW FOLDER
-│ ├─ PasswordVaultService.swift ← NEW
-│ └─ MonitoringService.swift ← NEW
-│
-├─ Views/
-│ ├─ DBListView.swift ← Keep as-is
-│ ├─ DBRowView.swift ← Keep as-is
-│ ├─ EmptyStateView.swift ← Keep as-is
-│ ├─ PasswordPromptView.swift ← NEW
-│ ├─ MonitoringDashboardView.swift ← NEW
-│ ├─ HealthSectionView.swift ← NEW
-│ └─ SchemaSectionView.swift ← NEW
-│
-└─ BlazeDBVisualizer.entitlements ← ADD KEYCHAIN/FACEID
+ App/
+  BlazeDBVisualizerApp.swift
+  DetailView.swift ← UPGRADE THIS
+  MenuExtraView.swift
+
+ Model/
+  DBRecord.swift ← ENHANCE THIS
+  ScanService.swift ← UPGRADE THIS
+
+ Services/ ← NEW FOLDER
+  PasswordVaultService.swift ← NEW
+  MonitoringService.swift ← NEW
+
+ Views/
+  DBListView.swift ← Keep as-is
+  DBRowView.swift ← Keep as-is
+  EmptyStateView.swift ← Keep as-is
+  PasswordPromptView.swift ← NEW
+  MonitoringDashboardView.swift ← NEW
+  HealthSectionView.swift ← NEW
+  SchemaSectionView.swift ← NEW
+
+ BlazeDBVisualizer.entitlements ← ADD KEYCHAIN/FACEID
 ```
 
 ---
@@ -317,22 +317,22 @@ BlazeDBVisualizer/
 Open BlazeDBVisualizer
  ↓
 See ALL BlazeDB databases on your Mac:
- ├─ BlazeStudio databases (your blocks/projects)
- ├─ Test databases (dev work)
- ├─ App databases (your apps)
- └─ Cache databases (temp data)
+  BlazeStudio databases (your blocks/projects)
+  Test databases (dev work)
+  App databases (your apps)
+  Cache databases (temp data)
 
 Click ANY database
  ↓
 Face ID unlock
  ↓
 BOOM! Real-time dashboard:
- ├─ Live record counts
- ├─ Storage size + graphs
- ├─ Health status
- ├─ Schema browser
- ├─ Performance metrics
- └─ Maintenance buttons
+  Live record counts
+  Storage size + graphs
+  Health status
+  Schema browser
+  Performance metrics
+  Maintenance buttons
 ```
 
 ---

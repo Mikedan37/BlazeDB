@@ -27,11 +27,11 @@
 ### **1. INSERT Performance (1,000 records):**
 
 ```
-BlazeDB: 142ms ████████████████░░░░░░░░░░░░
-SQLite: 156ms █████████████████░░░░░░░░░░░
-GRDB: 168ms ██████████████████░░░░░░░░░░
-Realm: 189ms ████████████████████░░░░░░░░
-Core Data: 234ms █████████████████████████░░░
+BlazeDB: 142ms 
+SQLite: 156ms 
+GRDB: 168ms 
+Realm: 189ms 
+Core Data: 234ms 
 ```
 
 **Winner: BlazeDB (10% faster than SQLite)**
@@ -46,11 +46,11 @@ Core Data: 234ms █████████████████████
 ### **2. QUERY Performance (simple WHERE):**
 
 ```
-BlazeDB: 0.8ms ████░░░░░░░░░░░░░░░░░░░░░░░░
-SQLite: 1.2ms ██████░░░░░░░░░░░░░░░░░░░░░░
-GRDB: 1.4ms ███████░░░░░░░░░░░░░░░░░░░░░
-Realm: 2.1ms ██████████░░░░░░░░░░░░░░░░░░
-Core Data: 3.5ms █████████████████░░░░░░░░░░░
+BlazeDB: 0.8ms 
+SQLite: 1.2ms 
+GRDB: 1.4ms 
+Realm: 2.1ms 
+Core Data: 3.5ms 
 ```
 
 **Winner: BlazeDB (33% faster than SQLite)**
@@ -65,11 +65,11 @@ Core Data: 3.5ms █████████████████░░░░
 ### **3. JOIN Performance (2 tables, 1,000 records each):**
 
 ```
-BlazeDB: 24ms ████████████░░░░░░░░░░░░░░░░
-SQLite: 18ms █████████░░░░░░░░░░░░░░░░░░░
-GRDB: 19ms ██████████░░░░░░░░░░░░░░░░░░
+BlazeDB: 24ms 
+SQLite: 18ms 
+GRDB: 19ms 
 Realm: N/A (No JOINs - requires manual linking)
-Core Data: 45ms ██████████████████████░░░░░░
+Core Data: 45ms 
 ```
 
 **Winner: SQLite (25% faster than BlazeDB)**
@@ -84,11 +84,11 @@ Core Data: 45ms █████████████████████�
 ### **4. FULL-TEXT SEARCH (1,000 documents):**
 
 ```
-BlazeDB: 12ms ████████░░░░░░░░░░░░░░░░░░░░
-SQLite FTS5: 8ms █████░░░░░░░░░░░░░░░░░░░░░░░
+BlazeDB: 12ms 
+SQLite FTS5: 8ms 
 Realm: N/A (No built-in FTS)
 Core Data: N/A (No built-in FTS)
-GRDB+FTS5: 9ms ██████░░░░░░░░░░░░░░░░░░░░░░
+GRDB+FTS5: 9ms 
 ```
 
 **Winner: SQLite FTS5 (33% faster)**
@@ -103,11 +103,11 @@ GRDB+FTS5: 9ms ██████░░░░░░░░░░░░░░░�
 ### **5. TRANSACTION Performance (1,000 operations):**
 
 ```
-BlazeDB: 156ms ████████████████░░░░░░░░░░░░
-SQLite: 134ms █████████████░░░░░░░░░░░░░░░
-GRDB: 145ms ██████████████░░░░░░░░░░░░░░
-Realm: 178ms █████████████████░░░░░░░░░░░
-Core Data: 267ms ███████████████████████████░
+BlazeDB: 156ms 
+SQLite: 134ms 
+GRDB: 145ms 
+Realm: 178ms 
+Core Data: 267ms 
 ```
 
 **Winner: SQLite (14% faster)**
@@ -122,11 +122,11 @@ Core Data: 267ms █████████████████████
 ### **6. FILE SIZE (1,000 records):**
 
 ```
-BlazeDB: 470KB ████████████░░░░░░░░░░░░░░░░
-SQLite: 680KB █████████████████░░░░░░░░░░░
-GRDB: 680KB █████████████████░░░░░░░░░░░
-Realm: 892KB ██████████████████████░░░░░░
-Core Data: 1.2MB ███████████████████████████░
+BlazeDB: 470KB 
+SQLite: 680KB 
+GRDB: 680KB 
+Realm: 892KB 
+Core Data: 1.2MB 
 ```
 
 **Winner: BlazeDB (31% smaller than SQLite!)**
@@ -308,10 +308,10 @@ let users = try! context.fetch(request)
 |----------|------------|------|------------------|
 | **BlazeDB** | Built-in | **AES-256-GCM (field-level)** | **1 parameter** |
 | SQLite | No | N/A (use SQLCipher) | External library |
-| Realm | ️ File-level | AES-256 (file) | 1 parameter |
+| Realm |  File-level | AES-256 (file) | 1 parameter |
 | Core Data | No | N/A (use FileVault) | OS-level only |
 | GRDB | No | N/A (use SQLCipher) | External library |
-| Firebase | ️ Transport | TLS only | Automatic |
+| Firebase |  Transport | TLS only | Automatic |
 
 **Winner: BlazeDB (only field-level encryption)**
 
@@ -433,7 +433,7 @@ let config = Realm.Configuration(
 | **BlazeDB** | Yes | Inner, Left, Right, Full | **DSL** |
 | SQLite | Yes | All types | SQL |
 | Realm | No | Manual linking | N/A |
-| Core Data | ️ Relationships | NSFetchRequest | Complex |
+| Core Data |  Relationships | NSFetchRequest | Complex |
 | GRDB | Yes | All types | SQL |
 | Firebase | No | Manual denormalization | N/A |
 
@@ -493,7 +493,7 @@ let orders = try! context.fetch(request)
 | SQLite | No | N/A | Manual |
 | Realm | Yes | @ObservedResults | Yes |
 | Core Data | Yes | @FetchRequest | Yes |
-| GRDB | ️ Partial | Manual | Manual |
+| GRDB |  Partial | Manual | Manual |
 | Firebase | Yes | @FirestoreQuery | Yes |
 
 **Winner: Tie (BlazeDB, Realm, Core Data, Firebase all good)**
@@ -578,11 +578,11 @@ struct BugsView: View {
 | Database | Telemetry | Query Explain | Debug Tools |
 |----------|-----------|---------------|-------------|
 | **BlazeDB** | **Built-in** | Yes | **Pretty-print, export** |
-| SQLite | ️ EXPLAIN | EXPLAIN QUERY PLAN | Command-line |
-| Realm | ️ Instrumentation | No | Realm Studio |
-| Core Data | ️ Launch args | No | Xcode debugger |
-| GRDB | Manual | ️ Via SQL | Manual |
-| Firebase | Console | ️ Via console | Web dashboard |
+| SQLite |  EXPLAIN | EXPLAIN QUERY PLAN | Command-line |
+| Realm |  Instrumentation | No | Realm Studio |
+| Core Data |  Launch args | No | Xcode debugger |
+| GRDB | Manual |  Via SQL | Manual |
+| Firebase | Console |  Via console | Web dashboard |
 
 **Winner: BlazeDB (only one with built-in telemetry)**
 
@@ -701,10 +701,10 @@ GRDB: Must manually track
 - Full-text search (75% of SQLite FTS5, but acceptable)
 
 ### **BlazeDB Competitive:**
-- ️ INSERT performance (10% faster than SQLite!)
-- ️ QUERY performance (33% faster than SQLite!)
-- ️ SwiftUI integration (on par with Realm/Core Data)
-- ️ Transaction performance (90% of SQLite)
+-  INSERT performance (10% faster than SQLite!)
+-  QUERY performance (33% faster than SQLite!)
+-  SwiftUI integration (on par with Realm/Core Data)
+-  Transaction performance (90% of SQLite)
 
 ---
 
@@ -776,10 +776,10 @@ If BlazeDB proves stable in production:
  Learning projects
 
 ### **Maybe Wait:**
-⏸️ Large production apps (wait 6-12 months)
-⏸️ Apps requiring sync (not implemented yet)
-⏸️ Teams needing commercial support
-⏸️ Regulated industries (healthcare, finance) - needs more audits
+⏸ Large production apps (wait 6-12 months)
+⏸ Apps requiring sync (not implemented yet)
+⏸ Teams needing commercial support
+⏸ Regulated industries (healthcare, finance) - needs more audits
 
 ---
 

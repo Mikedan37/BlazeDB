@@ -10,13 +10,13 @@
 
 ```
 Test Expectations:
-──────────────────
+
 PerformanceOptimizationTests expects: ≥1,000 ops/sec
 BlazeDBStressTests shows: ~1,000-2,000 ops/sec (single inserts)
 BlazeDBStressTests shows: ~2,000-3,333 ops/sec (batch inserts)
 
 REALISTIC CURRENT:
-───────────────────
+
 Single Insert: 0.5-1.0ms → 1,000-2,000 ops/sec
 Batch Insert: 0.3-0.5ms → 2,000-3,333 ops/sec
 Single Fetch: 0.2-0.5ms → 2,000-5,000 ops/sec
@@ -34,12 +34,12 @@ Batch Fetch: 0.1-0.3ms → 3,333-10,000 ops/sec
  - Uses BlazeBinaryEncoder (5-10x faster than JSON)
  - Line 679: `BlazeBinaryEncoder.encode()`
 
-3. File I/O: PARTIALLY optimized ️
+3. File I/O: PARTIALLY optimized 
  - Synchronous writes (blocks thread)
  - `fileHandle.compatSynchronize()` on every write
  - Can be optimized with async I/O
 
-4. Encryption: Minor bottleneck ️
+4. Encryption: Minor bottleneck 
  - AES-GCM per page (~0.05-0.1ms)
  - Hardware accelerated, but still overhead
 ```
@@ -221,9 +221,9 @@ IMPROVEMENT: 1.5-3x faster!
 ### **What Needs Optimization:**
 
 ```
-️ File I/O (synchronous → async)
-️ fsync batching (every write → every N writes)
-️ Parallel encryption (sequential → parallel)
+ File I/O (synchronous → async)
+ fsync batching (every write → every N writes)
+ Parallel encryption (sequential → parallel)
 ```
 
 **Let's implement these fixes! **

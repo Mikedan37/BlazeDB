@@ -95,32 +95,32 @@ Total: ~75ms - 4x faster!
 
 ---
 
-## ️ **ARCHITECTURE**
+##  **ARCHITECTURE**
 
 ```
-┌────────────────────────────────────────────────────────────┐
-│ BlazeDB Full Stack │
-├────────────────────────────────────────────────────────────┤
-│ │
-│ ┌──────────────┐ gRPC ┌──────────────┐ │
-│ │ iPhone │ (Binary) │ Server │ │
-│ │ │◄────────────────────►│ │ │
-│ │ BlazeDB │ BlazeBinary msgs │ BlazeDB │ │
-│ │ Client │ (Your encoder!) │ (Vapor) │ │
-│ └──────────────┘ └──────────────┘ │
-│ │ │ │
-│ ▼ ▼ │
-│ Local Database Server Database │
-│ (iPhone storage) (PostgreSQL/Disk) │
-│ │
-│ Features: │
-│ • Offline-first │
-│ • Auto-sync when online │
-│ • Real-time updates (gRPC streaming) │
-│ • Same code client & server (Swift!) │
-│ • BlazeBinary everywhere (consistent!) │
-│ │
-└────────────────────────────────────────────────────────────┘
+
+ BlazeDB Full Stack 
+
+ 
+  gRPC  
+  iPhone  (Binary)  Server  
+    
+  BlazeDB  BlazeBinary msgs  BlazeDB  
+  Client  (Your encoder!)  (Vapor)  
+   
+   
+   
+ Local Database Server Database 
+ (iPhone storage) (PostgreSQL/Disk) 
+ 
+ Features: 
+ • Offline-first 
+ • Auto-sync when online 
+ • Real-time updates (gRPC streaming) 
+ • Same code client & server (Swift!) 
+ • BlazeBinary everywhere (consistent!) 
+ 
+
 ```
 
 ---

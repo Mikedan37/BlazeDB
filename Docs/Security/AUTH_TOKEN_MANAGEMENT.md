@@ -98,9 +98,9 @@ try await db2.sync(to: "192.168.1.100", port: 8080, authToken: token)
 ### **Complete Implementation:**
 
 ```swift
-// ═══════════════════════════════════════════════════════
+// 
 // AUTH TOKEN MANAGEMENT
-// ═══════════════════════════════════════════════════════
+// 
 
 import Foundation
 import CryptoKit

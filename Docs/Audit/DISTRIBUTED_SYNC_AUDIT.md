@@ -110,110 +110,110 @@
 ### 2.1 Complete Pipeline Map
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│ STAGE 1: LOCAL CHANGE DETECTION │
-└─────────────────────────────────────────────────────────────┘
+
+ STAGE 1: LOCAL CHANGE DETECTION 
+
  IMPLEMENTED: BlazeSyncEngine.handleLocalChanges()
  - Observes database changes via BlazeDBClient.observe()
  - Creates BlazeOperation for each change
  - Tracks record versions for incremental sync
  - Implements delta encoding (only changed fields)
 
-┌─────────────────────────────────────────────────────────────┐
-│ STAGE 2: OPERATION LOGGING │
-└─────────────────────────────────────────────────────────────┘
+
+ STAGE 2: OPERATION LOGGING 
+
  IMPLEMENTED: OperationLog.recordOperation()
  - Stores operation in memory dictionary
  - Increments Lamport clock
  - Persists to disk in BlazeBinary format
  - Tracks operation history
 
-┌─────────────────────────────────────────────────────────────┐
-│ STAGE 3: OPERATION BATCHING │
-└─────────────────────────────────────────────────────────────┘
+
+ STAGE 3: OPERATION BATCHING 
+
  IMPLEMENTED: BlazeSyncEngine.flushBatch()
  - Queues operations (default: 10K ops)
  - Implements operation merging (Insert+Update → Update)
  - Adaptive batching (adjusts based on performance)
  - Pipelining (up to 200 batches in flight)
 
-┌─────────────────────────────────────────────────────────────┐
-│ STAGE 4: OPERATION ENCODING │
-└─────────────────────────────────────────────────────────────┐
+
+ STAGE 4: OPERATION ENCODING 
+
  IMPLEMENTED: TCPRelay.encodeOperations()
  - BlazeBinary encoding (variable-length, bit-packed)
  - Smart caching (caches encoded operations by hash)
  - Parallel encoding (concurrentMap for multiple ops)
  - Deduplication (removes duplicate operations)
 
-┌─────────────────────────────────────────────────────────────┐
-│ STAGE 5: COMPRESSION │
-└─────────────────────────────────────────────────────────────┘
+
+ STAGE 5: COMPRESSION 
+
  STUBBED: TCPRelay.compress()
  - Returns data unchanged
  - Magic bytes checked but ignored
  - No actual compression
 
-┌─────────────────────────────────────────────────────────────┐
-│ STAGE 6: ENCRYPTION │
-└─────────────────────────────────────────────────────────────┘
+
+ STAGE 6: ENCRYPTION 
+
  IMPLEMENTED: SecureConnection.send()
  - AES-256-GCM encryption
  - E2E encryption (server blind)
  - Frame-based protocol (type + length + payload + HMAC)
 
-┌─────────────────────────────────────────────────────────────┐
-│ STAGE 7: NETWORK TRANSPORT │
-└─────────────────────────────────────────────────────────────┘
+
+ STAGE 7: NETWORK TRANSPORT 
+
  IMPLEMENTED: TCPRelay.pushOperations()
  - Raw TCP connection (not WebSocket)
  - SecureConnection wrapper
  - Pipelined sends (no ACK waiting)
 
-┌─────────────────────────────────────────────────────────────┐
-│ STAGE 8: REMOTE RECEIVING │
-└─────────────────────────────────────────────────────────────┘
+
+ STAGE 8: REMOTE RECEIVING 
+
  IMPLEMENTED: TCPRelay.connect() → receiveTask
  - Continuous receive loop
  - Decrypts frames
  - Decodes operations
  - Calls operationHandler
 
-┌─────────────────────────────────────────────────────────────┐
-│ STAGE 9: DECOMPRESSION │
-└─────────────────────────────────────────────────────────────┘
+
+ STAGE 9: DECOMPRESSION 
+
  STUBBED: TCPRelay.decompressIfNeeded()
  - Returns data unchanged
  - Magic bytes checked but ignored
 
-┌─────────────────────────────────────────────────────────────┐
-│ STAGE 10: OPERATION DECODING │
-└─────────────────────────────────────────────────────────────┘
+
+ STAGE 10: OPERATION DECODING 
+
  IMPLEMENTED: TCPRelay.decodeOperations()
  - BlazeBinary decoding
  - Variable-length decoding
  - Handles legacy formats
 
-┌─────────────────────────────────────────────────────────────┐
-│ STAGE 11: SECURITY VALIDATION │
-└─────────────────────────────────────────────────────────────┘
+
+ STAGE 11: SECURITY VALIDATION 
+
  IMPLEMENTED: SecurityValidator.validateOperationsBatch()
  - Replay attack protection (nonce + expiry)
  - Signature verification (HMAC-SHA256)
  - Batch validation (optimized)
 
-┌─────────────────────────────────────────────────────────────┐
-│ STAGE 12: OPERATION APPLICATION │
-└─────────────────────────────────────────────────────────────┘
+
+ STAGE 12: OPERATION APPLICATION 
+
  IMPLEMENTED: BlazeSyncEngine.applyRemoteOperations()
  - Sorts by Lamport timestamp (causal order)
  - Idempotent (skips already-applied operations)
  - CRDT merging (server priority, Last-Write-Wins)
  - Tracks versions for incremental sync
 
-┌─────────────────────────────────────────────────────────────┐
-│ STAGE 13: SYNC STATE TRACKING │
-└─────────────────────────────────────────────────────────────┘
+
+ STAGE 13: SYNC STATE TRACKING 
+
  IMPLEMENTED: BlazeSyncEngine.saveSyncState()
  - Tracks which records synced to which nodes
  - Tracks record versions

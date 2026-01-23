@@ -10,7 +10,7 @@
 
 ```
 WEBSOCKET CONNECTION:
-═════════════════════
+
 
 1. HTTP Upgrade Request:
  GET /sync HTTP/1.1
@@ -32,16 +32,16 @@ WEBSOCKET CONNECTION:
  = ~150 bytes overhead!
 
 3. WebSocket Frame (per message):
- ┌──────┬──────┬──────────┬─────────┐
- │ FIN │ RSV │ Opcode │ Mask │
- │(1bit)│(3bit)│ (4 bits) │ (1 bit) │
- ├──────┴──────┴──────────┴─────────┤
- │ Payload Length (7/16/64 bits) │
- ├──────────────────────────────────┤
- │ Masking Key (4 bytes, if client) │
- ├──────────────────────────────────┤
- │ Payload (N bytes) │
- └──────────────────────────────────┘
+ 
+  FIN  RSV  Opcode  Mask 
+ (1bit)(3bit) (4 bits)  (1 bit) 
+ 
+  Payload Length (7/16/64 bits) 
+ 
+  Masking Key (4 bytes, if client) 
+ 
+  Payload (N bytes) 
+ 
 
  = 2-14 bytes per frame!
 
@@ -49,12 +49,12 @@ WEBSOCKET CONNECTION:
  = ~29 bytes per TLS record!
 
 TOTAL OVERHEAD:
-═══════════════
+
 Initial: 350 bytes (handshake)
 Per message: 2-14 bytes (frame) + 29 bytes (TLS) = 31-43 bytes
 
 FOR YOUR 165-BYTE BUG:
-══════════════════════
+
 WebSocket: 165 + 31 = 196 bytes
 vs Raw TCP: 165 + 7 = 172 bytes
 SAVINGS: 12% (not huge, but...)
@@ -70,7 +70,7 @@ BUT WAIT! There's MORE overhead!
 
 ```
 RAW TCP ADVANTAGES:
-═══════════════════
+
 
  NO HTTP UPGRADE
  • Direct connection
@@ -93,7 +93,7 @@ RAW TCP ADVANTAGES:
  • Batching, pipelining, etc.
 
 LATENCY COMPARISON:
-═══════════════════
+
 WebSocket: 50ms (handshake) + 20ms (message) = 70ms
 Raw TCP: 10ms (handshake) + 5ms (message) = 15ms
 
@@ -108,41 +108,41 @@ Raw TCP: 10ms (handshake) + 5ms (message) = 15ms
 
 ```
 CLIENT → SERVER: Connect
-═════════════════════════
 
-┌─────────────────────────────────────────┐
-│ Magic: 0xBF02 (2 bytes) │
-│ Version: 1 (1 byte) │
-│ Capabilities: [bitflags] (1 byte) │
-│ Node ID: UUID (16 bytes) │
-│ Database: "bugs" (varint + string) │
-│ Public Key: P256 (65 bytes) │
-│ Timestamp: Unix millis (8 bytes) │
-└─────────────────────────────────────────┘
+
+
+ Magic: 0xBF02 (2 bytes) 
+ Version: 1 (1 byte) 
+ Capabilities: [bitflags] (1 byte) 
+ Node ID: UUID (16 bytes) 
+ Database: "bugs" (varint + string) 
+ Public Key: P256 (65 bytes) 
+ Timestamp: Unix millis (8 bytes) 
+
 
 Total: ~95 bytes (vs 200 for WebSocket!)
 
 SERVER → CLIENT: Accept
-═══════════════════════
 
-┌─────────────────────────────────────────┐
-│ Magic: 0xBF02 (2 bytes) │
-│ Status: OK (1 byte) │
-│ Node ID: UUID (16 bytes) │
-│ Database: "bugs" (varint + string) │
-│ Public Key: P256 (65 bytes) │
-│ Challenge: Random (16 bytes) │
-└─────────────────────────────────────────┘
+
+
+ Magic: 0xBF02 (2 bytes) 
+ Status: OK (1 byte) 
+ Node ID: UUID (16 bytes) 
+ Database: "bugs" (varint + string) 
+ Public Key: P256 (65 bytes) 
+ Challenge: Random (16 bytes) 
+
 
 Total: ~100 bytes
 
 CLIENT → SERVER: Verify
-═══════════════════════
 
-┌─────────────────────────────────────────┐
-│ Magic: 0xBF02 (2 bytes) │
-│ Challenge Response: HMAC (32 bytes) │
-└─────────────────────────────────────────┘
+
+
+ Magic: 0xBF02 (2 bytes) 
+ Challenge Response: HMAC (32 bytes) 
+
 
 Total: 34 bytes
 
@@ -154,22 +154,22 @@ SAVINGS: 35%!
 
 ```
 OPERATION MESSAGE:
-══════════════════
 
-┌─────────────────────────────────────────┐
-│ Type: u8 (1 byte) │
-│ 0x01 = Operation │
-│ 0x02 = Query │
-│ 0x03 = Subscribe │
-│ 0x04 = Batch (multiple ops) │
-│ Length: u32 (4 bytes, big-endian) │
-│ Payload: BlazeBinary (N bytes) │
-└─────────────────────────────────────────┘
+
+
+ Type: u8 (1 byte) 
+ 0x01 = Operation 
+ 0x02 = Query 
+ 0x03 = Subscribe 
+ 0x04 = Batch (multiple ops) 
+ Length: u32 (4 bytes, big-endian) 
+ Payload: BlazeBinary (N bytes) 
+
 
 TOTAL OVERHEAD: 5 BYTES! (vs 31-43 WebSocket!)
 
 FOR YOUR 165-BYTE BUG:
-══════════════════════
+
 Raw TCP: 165 + 5 = 170 bytes
 WebSocket: 165 + 31 = 196 bytes
 SAVINGS: 13%!
@@ -184,9 +184,9 @@ BUT WAIT! We can do BETTER!
 ### **1. Direct Memory Mapping:**
 
 ```swift
-// ═══════════════════════════════════════════════════════
+// 
 // ZERO-COPY BLAZEBINARY ENCODING
-// ═══════════════════════════════════════════════════════
+// 
 
 import Foundation
 import Network
@@ -249,7 +249,7 @@ BENEFITS:
  Direct network → decoder
 
 PERFORMANCE:
-────────────
+
 Encoding: 0.1ms (was 0.15ms)
 Decoding: 0.08ms (was 0.15ms)
 Network: 5ms (was 20ms)
@@ -261,9 +261,9 @@ TOTAL: 5.18ms (was 20.3ms)
 ### **2. Batching (Multiple Ops in One Frame):**
 
 ```swift
-// ═══════════════════════════════════════════════════════
+// 
 // BATCH OPERATIONS (MASSIVE SPEEDUP!)
-// ═══════════════════════════════════════════════════════
+// 
 
 class BlazeProtocolConnection {
  var operationQueue: [BlazeOperation] = []
@@ -320,7 +320,7 @@ class BlazeProtocolConnection {
 }
 
 EXAMPLE:
-════════
+
 Insert 100 bugs:
 
 WebSocket (individual):
@@ -376,7 +376,7 @@ BANDWIDTH:
 USE CASE: Same device cross-app sync!
 
 IMPLEMENTATION:
-═══════════════
+
 // Same device: Use Unix Domain Socket!
 let socket = try Socket.create(family:.unix, type:.stream, proto:.unix)
 try socket.connect(to: "/tmp/blazedb-bugs.sock")
@@ -432,9 +432,9 @@ USE CASE: Gaming, real-time (too complex for now)
 ### **Best of All Worlds:**
 
 ```swift
-// ═══════════════════════════════════════════════════════
+// 
 // SMART PROTOCOL SELECTION
-// ═══════════════════════════════════════════════════════
+// 
 
 enum BlazeProtocol {
  case unixDomainSocket // Same device (<1ms!)
@@ -474,7 +474,7 @@ class BlazeConnection {
 }
 
 PERFORMANCE:
-════════════
+
 Same device: <1ms (Unix Domain Socket!)
 Different device: 5ms (Raw TCP!)
 vs WebSocket: 20ms
@@ -489,9 +489,9 @@ vs WebSocket: 20ms
 ### **Optimized BlazeBinary:**
 
 ```swift
-// ═══════════════════════════════════════════════════════
+// 
 // ZERO-COPY BLAZEBINARY ENCODER
-// ═══════════════════════════════════════════════════════
+// 
 
 class BlazeBinaryEncoder {
  // Pre-allocated buffer (reuse!)
@@ -573,7 +573,7 @@ class BlazeBinaryEncoder {
 }
 
 PERFORMANCE:
-════════════
+
 Old encoder: 0.15ms (with allocations)
 New encoder: 0.05ms (zero-copy!)
 
@@ -583,9 +583,9 @@ New encoder: 0.05ms (zero-copy!)
 ### **Optimized Decoder:**
 
 ```swift
-// ═══════════════════════════════════════════════════════
+// 
 // ZERO-COPY BLAZEBINARY DECODER
-// ═══════════════════════════════════════════════════════
+// 
 
 class BlazeBinaryDecoder {
  // Decode directly from network buffer (no copy!)
@@ -681,7 +681,7 @@ class BlazeBinaryDecoder {
 }
 
 PERFORMANCE:
-════════════
+
 Old decoder: 0.15ms (with allocations)
 New decoder: 0.05ms (zero-copy!)
 
@@ -696,7 +696,7 @@ New decoder: 0.05ms (zero-copy!)
 
 ```
 PROTOCOL CONNECTION MESSAGE TOTAL
-═══════════════════════════════════════════════════════
+
 WebSocket (WSS) 50ms 20ms 70ms
 Raw TCP (TLS) 10ms 5ms 15ms
 Unix Domain Socket 0.5ms 0.5ms 1ms
@@ -711,7 +711,7 @@ WINNER: Unix Domain Socket (same device)!
 
 ```
 PROTOCOL OVERHEAD TOTAL vs WebSocket
-═══════════════════════════════════════════════════════
+
 WebSocket 31 bytes 196 B BASELINE
 Raw TCP 5 bytes 170 B -13%
 Raw TCP (batched) 5 bytes 165 B -16%
@@ -724,7 +724,7 @@ WINNER: Unix Domain Socket!
 
 ```
 PROTOCOL BANDWIDTH CPU BATTERY
-═══════════════════════════════════════════════════════
+
 WebSocket 196 KB/s HIGH 25%/hr
 Raw TCP 170 KB/s MEDIUM 20%/hr
 Raw TCP (batched) 165 KB/s LOW 18%/hr
@@ -740,9 +740,9 @@ WINNER: Unix Domain Socket!
 ### **Hybrid Protocol (Best Performance!):**
 
 ```swift
-// ═══════════════════════════════════════════════════════
+// 
 // SMART PROTOCOL SELECTION
-// ═══════════════════════════════════════════════════════
+// 
 
 class BlazeConnection {
  enum Transport {
@@ -794,7 +794,7 @@ AUTOMATIC: Fastest path for each scenario!
 
 ```
 FOR SAME DEVICE (Cross-app sync):
-═════════════════════════════════
+
  Unix Domain Socket
  • <1ms latency
  • 0 bytes overhead
@@ -802,7 +802,7 @@ FOR SAME DEVICE (Cross-app sync):
  • Perfect for local!
 
 FOR DIFFERENT DEVICES:
-══════════════════════
+
  Raw TCP (with TLS)
  • 5ms latency
  • 5 bytes overhead
@@ -810,14 +810,14 @@ FOR DIFFERENT DEVICES:
  • Perfect for remote!
 
 PROTOCOL:
-═════════
+
  Custom binary (5-byte header)
  BlazeBinary payload
  Zero-copy encoding/decoding
  Automatic batching
 
 RESULT:
-═══════
+
 Same device: <1ms (10x faster than WebSocket!)
 Different device: 5ms (4x faster than WebSocket!)
 Bandwidth: 13% less than WebSocket
@@ -832,28 +832,28 @@ THIS IS THE FASTEST POSSIBLE!
 
 ```
 Week 1: Unix Domain Socket (Local)
-───────────────────────────────────
+
  Socket creation
  Path management
  Zero-copy send/receive
  Tests
 
 Week 2: Raw TCP (Remote)
-─────────────────────────
+
  NWConnection setup
  Custom protocol framing
  Batching
  Tests
 
 Week 3: Optimizations
-──────────────────────
+
  Zero-copy encoder/decoder
  Buffer pooling
  Connection pooling
  Tests
 
 Week 4: Integration
-───────────────────
+
  BlazeDBClient integration
  Automatic transport selection
  Fallback logic

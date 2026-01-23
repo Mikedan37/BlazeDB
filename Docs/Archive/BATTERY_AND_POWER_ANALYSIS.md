@@ -11,14 +11,14 @@
 **Power Consumption:**
 ```
 Small Batches (1,000 ops):
-──────────────────────────
+
 Network: 100 wake-ups
 CPU: 100 encoding cycles
 Radio: 100 transmissions
 Power: 100 × (wake + encode + transmit)
 
 Large Batches (10,000 ops):
-───────────────────────────
+
 Network: 1 wake-up
 CPU: 1 encoding cycle
 Radio: 1 transmission
@@ -39,13 +39,13 @@ BATTERY SAVINGS: 99% reduction in wake-ups!
 **Power Consumption:**
 ```
 Slow Batching (0.25ms):
-───────────────────────
+
 CPU: Active for 0.25ms
 Radio: Idle for 0.25ms
 Power: 0.25ms × (CPU + Radio idle)
 
 Fast Batching (0.1ms):
-──────────────────────
+
 CPU: Active for 0.1ms
 Radio: Idle for 0.1ms
 Power: 0.1ms × (CPU + Radio idle)
@@ -60,23 +60,23 @@ BATTERY SAVINGS: 60% reduction in active time!
 
 ---
 
-### **3. Aggressive Pipelining (200 Batches) (Battery Impact: NEGATIVE ️)**
+### **3. Aggressive Pipelining (200 Batches) (Battery Impact: NEGATIVE )**
 
 **Power Consumption:**
 ```
 Low Pipelining (50 batches):
-────────────────────────────
+
 CPU: 50% utilization
 Radio: 50% utilization
 Power: Moderate
 
 High Pipelining (200 batches):
-───────────────────────────────
+
 CPU: 80% utilization
 Radio: 80% utilization
 Power: High
 
-BATTERY IMPACT: -15% (more CPU/radio usage) ️
+BATTERY IMPACT: -15% (more CPU/radio usage) 
 ```
 
 **Impact:**
@@ -91,12 +91,12 @@ BATTERY IMPACT: -15% (more CPU/radio usage) ️
 **Power Consumption:**
 ```
 ZLIB Compression:
-─────────────────
+
 CPU: 100% for 5ms
 Power: 5ms × CPU power
 
 LZ4 Compression:
-─────────────────
+
 CPU: 100% for 1ms
 Power: 1ms × CPU power
 
@@ -115,12 +115,12 @@ BATTERY SAVINGS: 80% reduction in compression time!
 **Power Consumption:**
 ```
 Individual Validation:
-─────────────────────
+
 CPU: 100 validations × 0.015ms = 1.5ms
 Power: 1.5ms × CPU power
 
 Batch Validation:
-─────────────────
+
 CPU: 1 validation × 0.015ms = 0.015ms
 Power: 0.015ms × CPU power
 
@@ -134,21 +134,21 @@ BATTERY SAVINGS: 99% reduction in validation time!
 
 ---
 
-### **6. Parallel Encoding (Battery Impact: NEGATIVE ️)**
+### **6. Parallel Encoding (Battery Impact: NEGATIVE )**
 
 **Power Consumption:**
 ```
 Sequential Encoding:
-───────────────────
+
 CPU: 1 core at 100% for 10ms
 Power: 10ms × 1 core power
 
 Parallel Encoding (8 cores):
-─────────────────────────────
+
 CPU: 8 cores at 80% for 2ms
 Power: 2ms × 8 cores × 80% = 12.8ms equivalent
 
-BATTERY IMPACT: -28% (more cores active) ️
+BATTERY IMPACT: -28% (more cores active) 
 ```
 
 **Impact:**
@@ -164,13 +164,13 @@ BATTERY IMPACT: -28% (more cores active) ️
 
 ```
 Optimization Battery Impact Net Impact
-═══════════════════════════════════════════════════
+
 Batch Sizes +20% Positive
 Fast Batching +10% Positive
-Pipelining -15% ️ Negative
+Pipelining -15%  Negative
 LZ4 Compression +15% Positive
 Batch Validation +5% Positive
-Parallel Encoding -28% ️ Negative
+Parallel Encoding -28%  Negative
 
 TOTAL: +7% NET POSITIVE!
 ```
@@ -179,7 +179,7 @@ TOTAL: +7% NET POSITIVE!
 
 ```
 Scenario Battery Life Impact
-══════════════════════════════════════════════════
+
 Original 8 hours Baseline
 With Security 7.5 hours -6%
 With Optimizations 7.6 hours -5%
@@ -212,7 +212,7 @@ BATTERY IMPACT: +25% battery life!
 
 ```
 Mode Performance Battery Life
-══════════════════════════════════════════════════
+
 Ultra-Fast 10M ops/sec 8.1 hours
 Balanced 7M ops/sec 8.5 hours
 Battery-Optimized 5M ops/sec 10 hours
@@ -228,7 +228,7 @@ RECOMMENDATION: Use Balanced mode!
 
 ```
 System CPU Time Radio Time Total Power
-══════════════════════════════════════════════════════════
+
 BlazeDB (Ultra) 0.1ms 0.1ms 0.2mJ
 BlazeDB (Balanced) 0.14ms 0.14ms 0.28mJ
 Firebase 10ms 10ms 20mJ
@@ -242,7 +242,7 @@ BLAZEDB: 50-200x MORE EFFICIENT!
 
 ```
 System Battery Life Efficiency
-══════════════════════════════════════════════
+
 BlazeDB (Ultra) 8.1 hours 100%
 BlazeDB (Balanced) 8.5 hours 105%
 Firebase 6 hours 74%
@@ -312,7 +312,7 @@ case.lowData:
 
 ```
 Component Power (mW) Time (ms) Energy (mJ)
-══════════════════════════════════════════════════════════════
+
 Encoding (Sequential) 2000 10 20
 Encoding (Parallel) 1600 × 8 2 25.6
 Compression (LZ4) 2000 1 2
@@ -328,7 +328,7 @@ TOTAL (Balanced): ~35mJ per 1,000 operations
 
 ```
 Component Power (mW) Time (ms) Energy (mJ)
-══════════════════════════════════════════════════════════════
+
 Transmit (WiFi) 1000 0.1 0.1
 Transmit (Cellular) 1500 0.1 0.15
 Receive (WiFi) 500 0.1 0.05
@@ -342,7 +342,7 @@ TOTAL (Balanced): ~0.2mJ per 1,000 operations
 
 ```
 Mode CPU (mJ) Radio (mJ) Total (mJ)
-══════════════════════════════════════════════════════════════
+
 Ultra-Fast 28 0.15 28.15
 Balanced 35 0.2 35.2
 Battery-Optimized 20 0.1 20.1
@@ -358,7 +358,7 @@ EFFICIENCY: Ultra-Fast is 20% more efficient than Balanced!
 
 ```
 System Operations Battery Used Battery Life
-══════════════════════════════════════════════════════════════
+
 BlazeDB (Ultra) 288M ops 100% 8.1 hours
 BlazeDB (Balanced) 201M ops 100% 8.5 hours
 Firebase 28M ops 100% 6.0 hours
@@ -372,7 +372,7 @@ BLAZEDB: 15-60% BETTER BATTERY!
 
 ```
 System Idle Power Battery Life (Idle)
-══════════════════════════════════════════════════════
+
 BlazeDB (Ultra) 0.1mW 30+ days
 BlazeDB (Balanced) 0.1mW 30+ days
 Firebase 5mW 5 days
@@ -437,7 +437,7 @@ if appState ==.background {
 
 ```
 System Ops/mAh Efficiency
-══════════════════════════════════════════════
+
 BlazeDB (Ultra) 333 100%
 BlazeDB (Balanced) 400 120%
 Firebase 33 10%
@@ -451,7 +451,7 @@ BLAZEDB: 10-20x MORE EFFICIENT (realistic!)
 
 ```
 System Battery Used Efficiency
-══════════════════════════════════════════════
+
 BlazeDB (Ultra) 0.1% 100%
 BlazeDB (Balanced) 0.14% 70%
 Firebase 10% 1%
@@ -469,19 +469,19 @@ BLAZEDB: 50-200x MORE EFFICIENT!
 
 ```
 Ultra-Fast Mode:
-────────────────
+
 Battery Life: 8.1 hours (+1% vs original)
 Power Efficiency: 100% (baseline)
 Performance: 10M+ ops/sec
 
 Balanced Mode:
-──────────────
+
 Battery Life: 8.5 hours (+6% vs original)
 Power Efficiency: 105% (better!)
 Performance: 7M ops/sec (still fast!)
 
 Battery-Optimized Mode:
-───────────────────────
+
 Battery Life: 10 hours (+25% vs original)
 Power Efficiency: 125% (much better!)
 Performance: 5M ops/sec (still fast!)

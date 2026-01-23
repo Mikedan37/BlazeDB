@@ -20,11 +20,11 @@
 
 **How it looks:**
 ```
-┌─────────────────────────────────────────────────┐
-│ [Monitor] Data [Query Builder] [Visualize] │
-│ ▔▔▔▔▔▔ │
-│ ← Blue pill slides smoothly between tabs! │
-└─────────────────────────────────────────────────┘
+
+ [Monitor] Data [Query Builder] [Visualize] 
+  
+ ← Blue pill slides smoothly between tabs! 
+
 
 Hover: Tab grows 1.05x, blue highlight
 Click: Blue pill slides smoothly with spring
@@ -46,16 +46,16 @@ Click: Blue pill slides smoothly with spring
 When switching tabs:
 
 Old content:
-├─ Fades out (opacity 1.0 → 0)
-├─ Scales down (1.0 → 0.95)
-├─ Moves down (offset +20)
-└─ Takes 0.3s
+ Fades out (opacity 1.0 → 0)
+ Scales down (1.0 → 0.95)
+ Moves down (offset +20)
+ Takes 0.3s
 
 New content:
-├─ Fades in (opacity 0 → 1.0)
-├─ Scales up (0.95 → 1.0)
-├─ Moves up (offset 0)
-└─ Takes 0.5s with 0.1s delay
+ Fades in (opacity 0 → 1.0)
+ Scales up (0.95 → 1.0)
+ Moves up (offset 0)
+ Takes 0.5s with 0.1s delay
 
 Result: Buttery smooth transition!
 ```
@@ -89,7 +89,7 @@ Result: Buttery smooth transition!
 | ACTIVE | Blue | bolt.circle | Large DB (>10k records) |
 | EMPTY | Gray | circle | No records yet |
 | LARGE | Purple | database.fill | >100MB file size |
-| ️ WARNING | Orange | triangle | Needs maintenance |
+|  WARNING | Orange | triangle | Needs maintenance |
 | CRITICAL | Red | x.octagon | Critical issues |
 
 **Smart Detection:**
@@ -117,12 +117,12 @@ Project: "Invoices"
 
 **Shows in UI:**
 ```
-┌─────────────────────────────────────┐
-│ myapp_users │
-│ MyApp Project │ ← Project name!
-│ 1,234 • 5.2 MB │
-│ READY │
-└─────────────────────────────────────┘
+
+ myapp_users 
+ MyApp Project  ← Project name!
+ 1,234 • 5.2 MB 
+ READY 
+
 ```
 
 ---
@@ -132,20 +132,20 @@ Project: "Invoices"
 **Card Animations:**
 ```
 On Appear:
-├─ Each card cascades in
-├─ 0.05s delay between each
-├─ Scale-in with fade
-└─ Beautiful wave effect
+ Each card cascades in
+ 0.05s delay between each
+ Scale-in with fade
+ Beautiful wave effect
 
 On Hover:
-├─ Scale 1.02x
-├─ Glow with status color
-├─ Background darkens slightly
-└─ Smooth spring (0.3s)
+ Scale 1.02x
+ Glow with status color
+ Background darkens slightly
+ Smooth spring (0.3s)
 
 On Click:
-├─ Quick scale feedback
-└─ Opens with smooth transition
+ Quick scale feedback
+ Opens with smooth transition
 ```
 
 ---
@@ -329,7 +329,7 @@ Records: Any
 Status: Consider monitoring performance
 ```
 
-**️ WARNING (Orange):**
+** WARNING (Orange):**
 ```
 Meaning: Needs maintenance
 Issues: Fragmentation, needs VACUUM
@@ -406,7 +406,7 @@ User thinks:
 ### **Before Animations:**
 ```
 Functional:
-Professional: ️
+Professional: 
 Polished:
 Feel: "Developer tool"
 Quality: 7/10
@@ -519,17 +519,17 @@ EVERYTHING IS SMOOTH AS BUTTER!
 
 ```
 BlazeDB Visualizer:
-├─ 15 feature-complete tabs
-├─ 514 automated tests
-├─ Zero compilation errors
-├─ Smooth animations everywhere
-├─ Sexy tab picker with sliding indicator
-├─ Intelligent database status (not UNKNOWN!)
-├─ Hover effects on everything
-├─ Staggered list reveals
-├─ Color-coded status indicators
-├─ Professional polish
-└─ FEELS LIKE A $99 PREMIUM APP!
+ 15 feature-complete tabs
+ 514 automated tests
+ Zero compilation errors
+ Smooth animations everywhere
+ Sexy tab picker with sliding indicator
+ Intelligent database status (not UNKNOWN!)
+ Hover effects on everything
+ Staggered list reveals
+ Color-coded status indicators
+ Professional polish
+ FEELS LIKE A $99 PREMIUM APP!
 ```
 
 ---

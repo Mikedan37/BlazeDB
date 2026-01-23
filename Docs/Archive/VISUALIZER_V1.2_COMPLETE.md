@@ -9,9 +9,9 @@
 ### **5 COMPLETE TABS:**
 
 ```
-┌────────────────────────────────────────────────┐
-│ [Monitor] [Data] [Query] [Charts] [Backup] │
-└────────────────────────────────────────────────┘
+
+ [Monitor] [Data] [Query] [Charts] [Backup] 
+
 ```
 
 ---
@@ -147,12 +147,12 @@ Investigation:
 ### **Charts:**
 ```
 Record Count:
- ┌─────────────────────────┐
- │ ╱╱╱ │
- │ ╱╱ ╲╲ │
- │ ╱╱ ╲╲ │
- │ ╱╱ ╲╲ │
- └─────────────────────────┘
+ 
+   
+    
+    
+    
+ 
  Current: 1,234
  Peak: 1,500
  Average: 1,180
@@ -323,7 +323,7 @@ Backup:
 
  Monitor Tab:
  test.blazedb - HEALTHY
- ️ cache.blazedb - 45% fragmentation
+  cache.blazedb - 45% fragmentation
  users.blazedb - HEALTHY
 
  [Click cache.blazedb]
@@ -373,26 +373,26 @@ macOS Notification:
 ### **New Services (3):**
 ```
 Services/
-├── BackupRestoreService.swift [202 lines]
-├── ExportService.swift [158 lines]
-└── AlertService.swift [198 lines]
+ BackupRestoreService.swift [202 lines]
+ ExportService.swift [158 lines]
+ AlertService.swift [198 lines]
 ```
 
 ### **New Views (5):**
 ```
 Views/
-├── DataViewerView.swift [318 lines]
-├── QueryConsoleView.swift [287 lines]
-├── PerformanceChartsView.swift [243 lines]
-├── BackupRestoreView.swift [256 lines]
-└── MainWindowView.swift [108 lines]
+ DataViewerView.swift [318 lines]
+ QueryConsoleView.swift [287 lines]
+ PerformanceChartsView.swift [243 lines]
+ BackupRestoreView.swift [256 lines]
+ MainWindowView.swift [108 lines]
 ```
 
 ### **Upgraded Views:**
 ```
 Views/
-├── MonitoringDashboardView.swift (UPGRADED! Now has tabs!)
-└── MenuExtraView.swift (UPGRADED! Search + paths!)
+ MonitoringDashboardView.swift (UPGRADED! Now has tabs!)
+ MenuExtraView.swift (UPGRADED! Search + paths!)
 ```
 
 ---
@@ -402,37 +402,37 @@ Views/
 ### **Menu Bar Extra:**
 ```
  (click menu bar icon)
-┌────────────────────────┐
-│ BlazeDB Manager │
-│ 3 databases found │
-├────────────────────────┤
-│ [Search...] │
-├────────────────────────┤
-│ test │
-│ 50 records • 205 KB │
-│ ~/Desktop │
-│ │
-│ users │
-│ 10K records • 44 MB │
-│ ~/Documents │
-├────────────────────────┤
-│ [Dashboard] [Refresh] │
-├────────────────────────┤
-│ Quit │
-└────────────────────────┘
+
+ BlazeDB Manager 
+ 3 databases found 
+
+ [Search...] 
+
+ test 
+ 50 records • 205 KB 
+ ~/Desktop 
+ 
+ users 
+ 10K records • 44 MB 
+ ~/Documents 
+
+ [Dashboard] [Refresh] 
+
+ Quit 
+
 ```
 
 ### **Main Window:**
 ```
-┌──────────────────────────────────────────────────┐
-│ Sidebar │ Detail View │
-├──────────────────────────────────────────────────│
-│ test │ [Monitor][Data][Query][Charts] │
-│ users │ │
-│ cache │ (selected tab content) │
-│ │ │
-│ │ Touch ID → Full Dashboard! │
-└──────────────────────────────────────────────────┘
+
+ Sidebar  Detail View 
+
+ test  [Monitor][Data][Query][Charts] 
+ users  
+ cache  (selected tab content) 
+  
+  Touch ID → Full Dashboard! 
+
 ```
 
 ---
@@ -601,7 +601,7 @@ Create:
 Restore:
 [Select backup]
 [Restore]
-️ Confirm
+ Confirm
  Restored!
 
 Do:
@@ -641,14 +641,14 @@ Example:
 
 ```
 AshPile creates:
-├─ bugs.blazedb
-├─ projects.blazedb
-└─ tasks.blazedb
+ bugs.blazedb
+ projects.blazedb
+ tasks.blazedb
 
 BlazeDBVisualizer shows:
-├─ bugs (1,234) - ~/Developer/AshPile
-├─ projects (45) - ~/Developer/AshPile
-└─ ️ tasks (10,230) - ~/Developer/AshPile (45% fragmented!)
+ bugs (1,234) - ~/Developer/AshPile
+ projects (45) - ~/Developer/AshPile
+  tasks (10,230) - ~/Developer/AshPile (45% fragmented!)
 
 You:
 1. Click tasks.blazedb
@@ -700,7 +700,7 @@ You:
 ### **For Solo Developers:**
 - ⏰ **Save 5+ hours/week** on database maintenance
 - **Debug 10x faster** with data viewer
-- ️ **Zero data loss** with backup/restore
+-  **Zero data loss** with backup/restore
 - **Professional monitoring** (looks impressive!)
 
 ### **For Teams:**
@@ -712,7 +712,7 @@ You:
 ### **For Products:**
 - **Customer support tool** (diagnose issues!)
 - **Capacity planning** (Charts!)
-- ️ **Ops dashboard** (Monitor tab!)
+-  **Ops dashboard** (Monitor tab!)
 - **Disaster recovery** (Backup/Restore!)
 
 ---

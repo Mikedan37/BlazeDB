@@ -64,7 +64,7 @@ struct BugsView: View {
 }
 ```
 
-### **4. Type Safety (Optional)** ️
+### **4. Type Safety (Optional)** 
 ```swift
 struct Bug: BlazeDocument {
  @Field var title: String
@@ -113,7 +113,7 @@ try db.collection("bugs").addForeignKey(
 )
 ```
 
-### **9. Garbage Collection** ️
+### **9. Garbage Collection** 
 ```swift
 // Auto-reclaim disk space
 try db.vacuum() // Manual
@@ -129,7 +129,7 @@ print("Reads: \(metrics.readCount), Avg: \(metrics.avgReadTime)ms")
 
 ---
 
-## ️ **Architecture:**
+##  **Architecture:**
 
 ### **Storage:**
 - **BlazeBinary Format** - Custom binary encoding (53% smaller than JSON, 48% faster!)
@@ -370,7 +370,7 @@ print("Found \(results.count) high-priority bugs!")
 
 ## **Acknowledgments:**
 
-Built with ️ using:
+Built with  using:
 - **Swift** (100% native!)
 - **CryptoKit** (encryption)
 - **Foundation** (file I/O)

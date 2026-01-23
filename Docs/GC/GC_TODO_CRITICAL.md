@@ -261,22 +261,22 @@ NotificationCenter.default.addObserver(
 ## **Current GC Completeness**
 
 ```
-┌─────────────────────────────────────────┐
-│ GC Component Status Priority │
-├─────────────────────────────────────────┤
-│ Version Metadata GC 100% HIGH │
-│ Automatic Triggers 100% HIGH │
-│ Snapshot Tracking 100% HIGH │
-│ Statistics 100% MEDIUM │
-│ Configuration 100% MEDIUM │
-├─────────────────────────────────────────┤
-│ Page-Level GC 0% CRITICAL │
-│ VACUUM Operation 0% CRITICAL │
-│ Page Reuse  50% CRITICAL │
-│ Storage Monitoring 0% IMPORTANT │
-│ Incremental Vacuum 0% NICE │
-│ Memory Pressure 0% NICE │
-└─────────────────────────────────────────┘
+
+ GC Component Status Priority 
+
+ Version Metadata GC 100% HIGH 
+ Automatic Triggers 100% HIGH 
+ Snapshot Tracking 100% HIGH 
+ Statistics 100% MEDIUM 
+ Configuration 100% MEDIUM 
+
+ Page-Level GC 0% CRITICAL 
+ VACUUM Operation 0% CRITICAL 
+ Page Reuse  50% CRITICAL 
+ Storage Monitoring 0% IMPORTANT 
+ Incremental Vacuum 0% NICE 
+ Memory Pressure 0% NICE 
+
 
 Memory GC: 100% (prevents RAM blowup)
 Storage GC: 20%  (file can still grow!)
@@ -532,14 +532,14 @@ Snapshot tracking: 100%
 Auto triggers: 100%
 Configuration: 100%
 Statistics: 100%
-──────────────────────────────────
+
 Memory Protection: 100%
 
 Page GC (disk): 0%
 Page reuse: 50% 
 VACUUM: 0%
 Storage monitoring: 0%
-──────────────────────────────────
+
 Storage Protection: 12%
 
 OVERALL GC: 56% 

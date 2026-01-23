@@ -1542,28 +1542,28 @@ Detailed protocol specifications for implementers and debuggers.
 BlazeBinary records use a fixed 8-byte header followed by variable-length fields. Header aligned to 8 bytes for efficient CPU reads.
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│ HEADER (8 bytes, aligned) │
-├─────────────────────────────────────────────────────────────┤
-│ Offset Size Type Description │
-│ 0 5 char[5] Magic: "BLAZE" (0x42 0x4C 0x41...) │
-│ 5 1 uint8 Version: 0x01 (v1) or 0x02 (v2) │
-│ 6 2 uint16 Field count (big-endian) │
-├─────────────────────────────────────────────────────────────┤
-│ FIELD_1 (variable length) │
-│ [KEY_ENCODING][VALUE_ENCODING] │
-├─────────────────────────────────────────────────────────────┤
-│ FIELD_2 (variable length) │
-│ [KEY_ENCODING][VALUE_ENCODING] │
-├─────────────────────────────────────────────────────────────┤
-│... │
-├─────────────────────────────────────────────────────────────┤
-│ FIELD_N (variable length) │
-│ [KEY_ENCODING][VALUE_ENCODING] │
-├─────────────────────────────────────────────────────────────┤
-│ CRC32 (4 bytes, v2 only, big-endian) │
-│ Only present if version == 0x02 │
-└─────────────────────────────────────────────────────────────┘
+
+ HEADER (8 bytes, aligned) 
+
+ Offset Size Type Description 
+ 0 5 char[5] Magic: "BLAZE" (0x42 0x4C 0x41...) 
+ 5 1 uint8 Version: 0x01 (v1) or 0x02 (v2) 
+ 6 2 uint16 Field count (big-endian) 
+
+ FIELD_1 (variable length) 
+ [KEY_ENCODING][VALUE_ENCODING] 
+
+ FIELD_2 (variable length) 
+ [KEY_ENCODING][VALUE_ENCODING] 
+
+... 
+
+ FIELD_N (variable length) 
+ [KEY_ENCODING][VALUE_ENCODING] 
+
+ CRC32 (4 bytes, v2 only, big-endian) 
+ Only present if version == 0x02 
+
 ```
 
 **Header Details:**
@@ -1579,20 +1579,20 @@ Each field has a key encoding followed by a value encoding.
 
 **Variant A: Common Field (1 byte)**
 ```
-┌─────────────────────────────────────┐
-│ 1 byte: Field ID (0x01-0x7F) │
-└─────────────────────────────────────┘
+
+ 1 byte: Field ID (0x01-0x7F) 
+
 ```
 
 Top 127 most common field names (e.g., "id", "createdAt", "title") encoded as single byte.
 
 **Variant B: Custom Field (3+N bytes)**
 ```
-┌─────────────────────────────────────┐
-│ 1 byte: Marker (0xFF) │
-│ 2 bytes: Key length (big-endian) │
-│ N bytes: UTF-8 key string │
-└─────────────────────────────────────┘
+
+ 1 byte: Marker (0xFF) 
+ 2 bytes: Key length (big-endian) 
+ N bytes: UTF-8 key string 
+
 ```
 
 Fields not in common dictionary use 0xFF marker.
@@ -1719,16 +1719,16 @@ BlazeDataRecord([
 For network sync, BlazeBinary records are wrapped in frames:
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│ FRAME HEADER (5 bytes) │
-├─────────────────────────────────────────────────────────────┤
-│ 1 byte: Frame Type (0x01-0x06) │
-│ 4 bytes: Payload Length (big-endian UInt32) │
-├─────────────────────────────────────────────────────────────┤
-│ PAYLOAD (variable length) │
-│ Encrypted with AES-256-GCM (if handshaked) │
-│ Or plaintext (during handshake) │
-└─────────────────────────────────────────────────────────────┘
+
+ FRAME HEADER (5 bytes) 
+
+ 1 byte: Frame Type (0x01-0x06) 
+ 4 bytes: Payload Length (big-endian UInt32) 
+
+ PAYLOAD (variable length) 
+ Encrypted with AES-256-GCM (if handshaked) 
+ Or plaintext (during handshake) 
+
 ```
 
 **Frame Types:**

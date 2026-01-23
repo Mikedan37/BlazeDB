@@ -25,25 +25,25 @@
 **File:** `BlazeDB/Utils/BlazeBinaryEncoder.swift:52-88`
 
 ```
-┌─────────────────────────────────────────┐
-│ Header (8 bytes, aligned) │
-├─────────────────────────────────────────┤
-│ Magic: "BLAZE" (5 bytes) │
-│ Bytes: 0x42 0x4C 0x41 0x5A 0x45 │
-│ Version: 0x01 or 0x02 (1 byte) │
-│ • 0x01 = No CRC32 │
-│ • 0x02 = With CRC32 checksum │
-│ Field Count: UInt16 (2 bytes, BE) │
-├─────────────────────────────────────────┤
-│ Fields (variable length) │
-│ [Field 1] │
-│ [Field 2] │
-│... │
-│ [Field N] │
-├─────────────────────────────────────────┤
-│ CRC32 (4 bytes, optional, v2 only) │
-│ UInt32 big-endian │
-└─────────────────────────────────────────┘
+
+ Header (8 bytes, aligned) 
+
+ Magic: "BLAZE" (5 bytes) 
+ Bytes: 0x42 0x4C 0x41 0x5A 0x45 
+ Version: 0x01 or 0x02 (1 byte) 
+ • 0x01 = No CRC32 
+ • 0x02 = With CRC32 checksum 
+ Field Count: UInt16 (2 bytes, BE) 
+
+ Fields (variable length) 
+ [Field 1] 
+ [Field 2] 
+... 
+ [Field N] 
+
+ CRC32 (4 bytes, optional, v2 only) 
+ UInt32 big-endian 
+
 ```
 
 **Key Characteristics:**
@@ -264,30 +264,30 @@ Non-empty: 0x09 + UInt16(count, BE) + [key1][value1][key2][value2]...
 
 ```
 1. Estimate Size (line 54)
- └─> estimateSize(record) + CRC32 overhead
- └─> Formula: 8 + (fieldCount * 40) bytes
+ > estimateSize(record) + CRC32 overhead
+ > Formula: 8 + (fieldCount * 40) bytes
 
 2. Pre-allocate Buffer (line 55-56)
- └─> Data.reserveCapacity(estimatedSize)
- └─> Prevents reallocation churn
+ > Data.reserveCapacity(estimatedSize)
+ > Prevents reallocation churn
 
 3. Write Header (line 59-65)
- └─> Magic: "BLAZE" (5 bytes)
- └─> Version: 0x01 or 0x02 (1 byte)
- └─> Field Count: UInt16 BE (2 bytes)
+ > Magic: "BLAZE" (5 bytes)
+ > Version: 0x01 or 0x02 (1 byte)
+ > Field Count: UInt16 BE (2 bytes)
 
 4. Sort Fields (line 70)
- └─> record.storage.sorted(by: { $0.key < $1.key })
- └─> O(n log n) cost for determinism
+ > record.storage.sorted(by: { $0.key < $1.key })
+ > O(n log n) cost for determinism
 
 5. Encode Fields (line 73-75)
- └─> For each (key, value):
- ├─> encodeField(key, value, into: &data)
- └─> Recursive for nested structures
+ > For each (key, value):
+ > encodeField(key, value, into: &data)
+ > Recursive for nested structures
 
 6. Append CRC32 (line 78-81, if enabled)
- └─> calculateCRC32(data)
- └─> Append 4 bytes big-endian
+ > calculateCRC32(data)
+ > Append 4 bytes big-endian
 
 7. Return Data (line 87)
 ```
@@ -304,28 +304,28 @@ Non-empty: 0x09 + UInt16(count, BE) + [key1][value1][key2][value2]...
 
 ```
 1. Validate Header (line 106-119)
- └─> Check minimum 8 bytes
- └─> Verify magic "BLAZE"
- └─> Verify version (0x01 or 0x02)
+ > Check minimum 8 bytes
+ > Verify magic "BLAZE"
+ > Verify version (0x01 or 0x02)
 
 2. Verify CRC32 (line 123-144, if v2)
- └─> Read stored CRC32 from last 4 bytes
- └─> Calculate CRC32 over data[0..<count-4]
- └─> Compare and throw on mismatch
+ > Read stored CRC32 from last 4 bytes
+ > Calculate CRC32 over data[0..<count-4]
+ > Compare and throw on mismatch
 
 3. Read Field Count (line 148)
- └─> readUInt16(data, at: 6)
- └─> Validate: 0-100,000
+ > readUInt16(data, at: 6)
+ > Validate: 0-100,000
 
 4. Pre-allocate Dictionary (line 159)
- └─> Dictionary(minimumCapacity: fieldCount)
- └─> Avoids rehashing during decode
+ > Dictionary(minimumCapacity: fieldCount)
+ > Avoids rehashing during decode
 
 5. Decode Fields (line 162-166)
- └─> For 0..<fieldCount:
- ├─> decodeField(data, at: offset)
- └─> Returns (key, value, bytesRead)
- └─> offset += bytesRead
+ > For 0..<fieldCount:
+ > decodeField(data, at: offset)
+ > Returns (key, value, bytesRead)
+ > offset += bytesRead
 
 6. Return BlazeDataRecord (line 169)
 ```
@@ -496,35 +496,35 @@ internal static func readUInt16(from data: Data, at offset: Int) throws -> UInt1
 
 ```
 1. Invalidate Cache (line 149)
- └─> pageCache.remove(index)
+ > pageCache.remove(index)
 
 2. Generate Nonce (line 154)
- └─> AES.GCM.Nonce() // 12 bytes random
+ > AES.GCM.Nonce() // 12 bytes random
 
 3. Encrypt Plaintext (line 157)
- └─> AES.GCM.seal(plaintext, using: key, nonce: nonce)
- └─> Returns: SealedBox(ciphertext, tag)
+ > AES.GCM.seal(plaintext, using: key, nonce: nonce)
+ > Returns: SealedBox(ciphertext, tag)
 
 4. Build Encrypted Page (line 173-195)
- └─> Format: [BZDB][0x02][length][nonce][tag][ciphertext][padding]
- └─> Header: 4 bytes ("BZDB")
- └─> Version: 1 byte (0x02 = encrypted)
- └─> Length: 4 bytes (UInt32 BE, plaintext length)
- └─> Nonce: 12 bytes
- └─> Tag: 16 bytes (authentication tag)
- └─> Ciphertext: Variable (same length as plaintext)
- └─> Padding: Zeros to pageSize (4096 bytes)
+ > Format: [BZDB][0x02][length][nonce][tag][ciphertext][padding]
+ > Header: 4 bytes ("BZDB")
+ > Version: 1 byte (0x02 = encrypted)
+ > Length: 4 bytes (UInt32 BE, plaintext length)
+ > Nonce: 12 bytes
+ > Tag: 16 bytes (authentication tag)
+ > Ciphertext: Variable (same length as plaintext)
+ > Padding: Zeros to pageSize (4096 bytes)
 
 5. Seek to Offset (line 201)
- └─> offset = index * 4096
- └─> fileHandle.compatSeek(toOffset: offset)
+ > offset = index * 4096
+ > fileHandle.compatSeek(toOffset: offset)
 
 6. Write Buffer (line 202)
- └─> fileHandle.compatWrite(buffer)
+ > fileHandle.compatWrite(buffer)
 
 7. Synchronize (line 142)
- └─> fileHandle.compatSynchronize()
- └─> Forces write to disk
+ > fileHandle.compatSynchronize()
+ > Forces write to disk
 ```
 
 **Synchronization:** `PageStore.swift:64`
@@ -544,40 +544,40 @@ internal static func readUInt16(from data: Data, at offset: Int) throws -> UInt1
 
 ```
 1. Check Cache (line 236-238)
- └─> if let cached = pageCache.get(index) { return cached }
- └─> Cache hit: O(1) return
+ > if let cached = pageCache.get(index) { return cached }
+ > Cache hit: O(1) return
 
 2. Validate File Exists (line 242-245)
- └─> FileManager.default.fileExists(atPath: fileURL.path)
+ > FileManager.default.fileExists(atPath: fileURL.path)
 
 3. Check File Size (line 249-254)
- └─> Verify offset < fileSize
- └─> Prevents reading beyond file
+ > Verify offset < fileSize
+ > Prevents reading beyond file
 
 4. Seek to Offset (line 255)
- └─> fileHandle.compatSeek(toOffset: offset)
+ > fileHandle.compatSeek(toOffset: offset)
 
 5. Read Page (line 256)
- └─> fileHandle.compatRead(upToCount: pageSize)
- └─> Returns: Data (4096 bytes)
+ > fileHandle.compatRead(upToCount: pageSize)
+ > Returns: Data (4096 bytes)
 
 6. Validate Header (line 273-277)
- └─> Check magic bytes: 0x42 0x5A 0x44 0x42 ("BZDB")
+ > Check magic bytes: 0x42 0x5A 0x44 0x42 ("BZDB")
 
 7. Check Version (line 280)
- └─> version = page[4]
- └─> 0x01 = plaintext, 0x02 = encrypted
+ > version = page[4]
+ > 0x01 = plaintext, 0x02 = encrypted
 
 8. Decrypt (if encrypted, line 311-353)
- └─> Extract nonce (bytes 9-20)
- └─> Extract tag (bytes 21-36)
- └─> Extract ciphertext (bytes 37+)
- └─> AES.GCM.open(sealedBox, using: key)
- └─> Returns: plaintext Data
+ > Extract nonce (bytes 9-20)
+ > Extract tag (bytes 21-36)
+ > Extract ciphertext (bytes 37+)
+ > AES.GCM.open(sealedBox, using: key)
+ > Returns: plaintext Data
 
 9. Cache Result (line 350)
- └─> pageCache.set(index, data: decrypted)
- └─> Future reads return instantly
+ > pageCache.set(index, data: decrypted)
+ > Future reads return instantly
 ```
 
 **Cache Strategy:** `PageCache.swift`
@@ -730,21 +730,21 @@ public func synchronize() throws {
 **File:** `SecureConnection.swift:314-339`
 
 ```
-┌─────────────────────────────────────────┐
-│ Frame Header (5 bytes) │
-├─────────────────────────────────────────┤
-│ Type: UInt8 (1 byte) │
-│ 0x01 = handshake │
-│ 0x02 = handshakeAck │
-│ 0x03 = verify │
-│ 0x04 = handshakeComplete │
-│ 0x05 = encryptedData │
-│ 0x06 = operation │
-│ Length: UInt32 (4 bytes, BE) │
-├─────────────────────────────────────────┤
-│ Payload (variable length) │
-│ [Encrypted BlazeBinary data] │
-└─────────────────────────────────────────┘
+
+ Frame Header (5 bytes) 
+
+ Type: UInt8 (1 byte) 
+ 0x01 = handshake 
+ 0x02 = handshakeAck 
+ 0x03 = verify 
+ 0x04 = handshakeComplete 
+ 0x05 = encryptedData 
+ 0x06 = operation 
+ Length: UInt32 (4 bytes, BE) 
+
+ Payload (variable length) 
+ [Encrypted BlazeBinary data] 
+
 ```
 
 **Frame Encoding:** `SecureConnection.swift:314-322`
@@ -811,13 +811,13 @@ frame.append(payload) // Variable
 **TCP Transport:** `SecureConnection.swift:270-296`
 ```
 1. Encrypt with AES-GCM-256
- └─> AES.GCM.seal(data, using: key)
+ > AES.GCM.seal(data, using: key)
 
 2. Wrap in Frame
- └─> Frame(type:.encryptedData, payload: encrypted)
+ > Frame(type:.encryptedData, payload: encrypted)
 
 3. Send via NWConnection
- └─> connection.send(content: frame,...)
+ > connection.send(content: frame,...)
 ```
 
 **WebSocket Transport:** `TCPRelay.swift` (implied)
@@ -1383,11 +1383,11 @@ BlazeDataRecord
 Sort Fields (O(n log n))
  ↓
 For Each Field:
- ├─> Encode Key (1 byte or 3+N bytes)
- └─> Encode Value (type-specific)
- ├─> String: Inline (≤15) or Full
- ├─> Int: Small (≤255) or Full
- └─> Recursive for Arrays/Dicts
+ > Encode Key (1 byte or 3+N bytes)
+ > Encode Value (type-specific)
+ > String: Inline (≤15) or Full
+ > Int: Small (≤255) or Full
+ > Recursive for Arrays/Dicts
  ↓
 Append CRC32 (if enabled)
  ↓

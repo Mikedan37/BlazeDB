@@ -539,33 +539,33 @@ private func sendFrame(type: FrameType, payload: Data) async throws {
 
 ```
 CLIENT SERVER
- │ │
- │───[1] Generate clientPrivateKey ───────┤
- │ │
- │───[2] Hello (clientPublicKey) ─────────>│
- │ │───[1] Receive Hello
- │ │───[2] Authenticate (verify token)
- │ │───[3] Generate serverPrivateKey
- │ │───[4] Generate challenge
- │<──[3] Welcome (serverPublicKey + challenge)───[5] Send Welcome
- │ │
- │───[4] ECDH: sharedSecret ──────────────┤
- │ = ECDH(clientPrivateKey, serverPublicKey) │
- │ │───[6] ECDH: sharedSecret
- │ │ = ECDH(serverPrivateKey, clientPublicKey)
- │ │ (Same result!)
- │───[5] HKDF: groupKey (AES-256) ────────┤
- │ = HKDF(sharedSecret, salt, info) │───[7] HKDF: groupKey (AES-256)
- │ │ = HKDF(sharedSecret, salt, info)
- │ │ (Same result!)
- │───[6] HMAC(challenge, groupKey) ───────>│
- │ Verify (prove key ownership) │───[8] Verify HMAC response
- │ │ (Confirm client has correct key)
- │<──[7] handshakeComplete ────────────────[9] Send confirmation
- │ │
- │───[8] All future data encrypted ───────>│
- │ AES-256-GCM(groupKey) │───[10] All future data encrypted
- │ │ AES-256-GCM(groupKey)
+  
+ [1] Generate clientPrivateKey 
+  
+ [2] Hello (clientPublicKey) >
+  [1] Receive Hello
+  [2] Authenticate (verify token)
+  [3] Generate serverPrivateKey
+  [4] Generate challenge
+ <[3] Welcome (serverPublicKey + challenge)[5] Send Welcome
+  
+ [4] ECDH: sharedSecret 
+  = ECDH(clientPrivateKey, serverPublicKey) 
+  [6] ECDH: sharedSecret
+   = ECDH(serverPrivateKey, clientPublicKey)
+   (Same result!)
+ [5] HKDF: groupKey (AES-256) 
+  = HKDF(sharedSecret, salt, info) [7] HKDF: groupKey (AES-256)
+   = HKDF(sharedSecret, salt, info)
+   (Same result!)
+ [6] HMAC(challenge, groupKey) >
+  Verify (prove key ownership) [8] Verify HMAC response
+   (Confirm client has correct key)
+ <[7] handshakeComplete [9] Send confirmation
+  
+ [8] All future data encrypted >
+  AES-256-GCM(groupKey) [10] All future data encrypted
+   AES-256-GCM(groupKey)
 ```
 
 ---

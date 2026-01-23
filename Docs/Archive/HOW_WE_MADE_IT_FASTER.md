@@ -237,11 +237,11 @@ decoding: 0.02ms (BlazeBinary) - 10x faster!
 ### **What's Left to Optimize:**
 
 ```
-️ BlazeBinary encoder (1.2-1.5x potential)
-️ BlazeBinary decoder (1.1-1.3x potential)
-️ Memory pooling (1.1-1.2x potential)
-️ Parallel encoding (2-4x for batches)
-️ Read-ahead prefetching (1.5-2x potential)
+ BlazeBinary encoder (1.2-1.5x potential)
+ BlazeBinary decoder (1.1-1.3x potential)
+ Memory pooling (1.1-1.2x potential)
+ Parallel encoding (2-4x for batches)
+ Read-ahead prefetching (1.5-2x potential)
 ```
 
 **BlazeDB is already INSANELY FAST, but we can make it even faster! **

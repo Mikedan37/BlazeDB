@@ -15,7 +15,7 @@
  No access control at connection level
 
 ATTACK SCENARIO:
-────────────────
+
 Attacker discovers your Mac via mDNS
 Attacker connects to your database
 Attacker syncs all your data
@@ -121,7 +121,7 @@ FIX TIME: 1 day
  Attacker can replay old operations
 
 ATTACK SCENARIO:
-────────────────
+
 Attacker captures: "transfer $100" operation
 Attacker replays it 100 times
 Result: $10,000 transferred!
@@ -192,7 +192,7 @@ FIX TIME: 4-6 hours
  Attacker can intercept and modify traffic
 
 ATTACK SCENARIO:
-────────────────
+
 Attacker sets up fake server
 Attacker intercepts mDNS advertisement
 iPhone connects to attacker (thinks it's Mac)
@@ -256,7 +256,7 @@ FIX TIME: 1 day
  Attacker can flood server
 
 ATTACK SCENARIO:
-────────────────
+
 Attacker opens 1000 connections
 Attacker sends millions of operations
 Server crashes or becomes unresponsive
@@ -318,7 +318,7 @@ FIX TIME: 2-4 hours
  Attacker can modify operations
 
 ATTACK SCENARIO:
-────────────────
+
 Attacker intercepts: insert(bug, priority=5)
 Attacker modifies: insert(bug, priority=10)
 Server accepts modified operation
@@ -394,7 +394,7 @@ FIX TIME: 1 day
  Users connect to attacker's database
 
 ATTACK SCENARIO:
-────────────────
+
 Attacker advertises: "bugs-db._blazedb._tcp.local"
 iPhone discovers attacker's database
 iPhone connects to attacker
@@ -438,7 +438,7 @@ FIX TIME: 4-6 hours
  Keys can be extracted from memory
 
 ATTACK SCENARIO:
-────────────────
+
 Attacker gains access to device
 Attacker dumps memory
 Attacker extracts private keys
@@ -507,7 +507,7 @@ SECURITY LEVEL:
 
 ---
 
-## ️ **COMPLETE SECURITY CHECKLIST:**
+##  **COMPLETE SECURITY CHECKLIST:**
 
 ### **Phase 1: Critical (Must Fix) **
 
@@ -619,7 +619,7 @@ OVERALL: (Production-ready!)
  • MITM protection
  • Rate limiting
 
-3. ️ Consider Phase 3 (Recommended) - 1 week
+3.  Consider Phase 3 (Recommended) - 1 week
  • Operation signatures
  • mDNS security
  • Secure key storage

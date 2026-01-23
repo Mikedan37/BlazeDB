@@ -8,45 +8,45 @@ All test files have been moved to `Tests/BlazeDBTests/` with a clean, logical st
 
 ```
 Tests/BlazeDBTests/
-├── Codec/ # All BlazeBinary codec tests
-│ ├── CodecValidation.swift
-│ ├── BlazeBinary*.swift (all codec tests)
-│ └──...
-│
-├── Engine/ # Engine integration tests
-│ ├── Core/ # Core engine tests
-│ │ ├── BlazeDBTests.swift
-│ │ ├── DynamicCollectionTests.swift
-│ │ └──...
-│ └── Integration/ # Integration tests
-│ ├── UnifiedAPITests.swift
-│ ├── Query tests
-│ ├── Index tests
-│ └──...
-│
-├── Stress/ # Stress and fuzz tests
-│ ├── Chaos/ # Chaos engineering tests
-│ ├── PropertyBased/ # Property-based tests
-│ └── BlazeDBStressTests.swift
-│
-├── Performance/ # Performance benchmarks
-│ ├── BlazeBinaryARMBenchmarks.swift
-│ ├── BlazeDBEngineBenchmarks.swift
-│ └──...
-│
-├── Fixtures/ # Test fixtures
-│ ├── FixtureLoader.swift
-│ └── FixtureValidationTests.swift
-│
-├── CI/ # CI-specific tests
-│ ├── CIMatrix.swift
-│ └── CodecDualPathTestSuite.swift
-│
-├── Helpers/ # Shared test helpers
-│ └──...
-│
-└── Docs/ # Documentation
- └── *.md files
+ Codec/ # All BlazeBinary codec tests
+  CodecValidation.swift
+  BlazeBinary*.swift (all codec tests)
+ ...
+
+ Engine/ # Engine integration tests
+  Core/ # Core engine tests
+   BlazeDBTests.swift
+   DynamicCollectionTests.swift
+  ...
+  Integration/ # Integration tests
+  UnifiedAPITests.swift
+  Query tests
+  Index tests
+ ...
+
+ Stress/ # Stress and fuzz tests
+  Chaos/ # Chaos engineering tests
+  PropertyBased/ # Property-based tests
+  BlazeDBStressTests.swift
+
+ Performance/ # Performance benchmarks
+  BlazeBinaryARMBenchmarks.swift
+  BlazeDBEngineBenchmarks.swift
+ ...
+
+ Fixtures/ # Test fixtures
+  FixtureLoader.swift
+  FixtureValidationTests.swift
+
+ CI/ # CI-specific tests
+  CIMatrix.swift
+  CodecDualPathTestSuite.swift
+
+ Helpers/ # Shared test helpers
+ ...
+
+ Docs/ # Documentation
+  *.md files
 ```
 
 ## Changes Made

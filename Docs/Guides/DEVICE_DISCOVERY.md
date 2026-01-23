@@ -69,21 +69,21 @@ Mac App
 
 ```
 HOW IT WORKS:
-─────────────
+
 • Mac advertises: "bugs-db._blazedb._tcp.local"
 • iPhone discovers: "bugs-db._blazedb._tcp.local"
 • Automatic IP/port resolution
 • Zero configuration!
 
 IMPLEMENTATION:
-───────────────
+
 • Use NetService (Apple's mDNS/Bonjour)
 • Advertise database on Mac
 • Browse for databases on iPhone
 • Auto-connect when found
 
 BENEFITS:
-─────────
+
  Zero configuration
  Automatic discovery
  Works on local network
@@ -94,13 +94,13 @@ BENEFITS:
 
 ```
 HOW IT WORKS:
-─────────────
+
 • Mac generates QR code with connection info
 • iPhone scans QR code
 • Auto-connects to Mac
 
 QR CODE CONTAINS:
-─────────────────
+
 • Mac's IP address
 • Port number
 • Database name
@@ -108,7 +108,7 @@ QR CODE CONTAINS:
 • Connection token (one-time use)
 
 BENEFITS:
-─────────
+
  Easy pairing
  Secure (one-time token)
  No manual entry
@@ -119,14 +119,14 @@ BENEFITS:
 
 ```
 HOW IT WORKS:
-─────────────
+
 • All devices register with central server
 • Server maintains registry of databases
 • Devices query server for available databases
 • Auto-connect to discovered databases
 
 REGISTRY CONTAINS:
-──────────────────
+
 • Database name
 • Device name
 • IP address / connection info
@@ -134,7 +134,7 @@ REGISTRY CONTAINS:
 • Last seen timestamp
 
 BENEFITS:
-─────────
+
  Works across internet
  Centralized discovery
  Can work with hub-and-spoke
@@ -145,14 +145,14 @@ BENEFITS:
 
 ```
 HOW IT WORKS:
-─────────────
+
 • User enters IP address manually
 • User enters port number
 • User enters database name
 • Connect directly
 
 BENEFITS:
-─────────
+
  Always works
  No dependencies
  Full control
@@ -167,28 +167,28 @@ BENEFITS:
 
 ```
 TIER 1: mDNS/Bonjour (Automatic, Local Network)
-───────────────────────────────────────────────
+
 • Mac advertises database
 • iPhone discovers automatically
 • Zero configuration
 • Works on local WiFi
 
 TIER 2: QR Code (Easy Pairing, Local Network)
-──────────────────────────────────────────────
+
 • Mac shows QR code
 • iPhone scans QR code
 • Auto-connects
 • Works on local network
 
 TIER 3: Server Registry (Internet, Centralized)
-───────────────────────────────────────────────
+
 • Devices register with server
 • Server maintains registry
 • Devices query for databases
 • Works across internet
 
 TIER 4: Manual Entry (Fallback, Always Works)
-──────────────────────────────────────────────
+
 • User enters IP/port manually
 • Direct connection
 • Works everywhere
@@ -202,13 +202,13 @@ TIER 4: Manual Entry (Fallback, Always Works)
 
 ```
 MAC (Server):
-─────────────
+
 1. Start BlazeDB server on port 8080
 2. Advertise via mDNS: "bugs-db._blazedb._tcp.local"
 3. Wait for connections
 
 iOS (Client):
-─────────────
+
 1. Browse for "_blazedb._tcp.local" services
 2. Discover "bugs-db" service
 3. Resolve IP address and port automatically
@@ -223,7 +223,7 @@ RESULT: Zero configuration, automatic discovery!
 
 ```
 MAC (Server):
-─────────────
+
 1. Start BlazeDB server on port 8080
 2. Generate QR code with:
  • IP: 192.168.1.100
@@ -234,7 +234,7 @@ MAC (Server):
 3. Display QR code on screen
 
 iOS (Client):
-─────────────
+
 1. Scan QR code with camera
 2. Extract connection info
 3. Connect to Mac using info from QR code
@@ -249,7 +249,7 @@ RESULT: Easy pairing, secure!
 
 ```
 MAC (Server):
-─────────────
+
 1. Start BlazeDB server on port 8080
 2. Register with central server:
  • Database name: "bugs"
@@ -260,7 +260,7 @@ MAC (Server):
 3. Keep registration alive (heartbeat)
 
 iOS (Client):
-─────────────
+
 1. Query central server for databases
 2. Server returns list:
  • "bugs" on "MacBook Pro" (192.168.1.100:8080)
@@ -277,13 +277,13 @@ RESULT: Works across internet, centralized!
 
 ```
 MAC (Server):
-─────────────
+
 1. Start BlazeDB server on port 8080
 2. Note IP address: 192.168.1.100
 3. Share with user (tell them IP/port)
 
 iOS (Client):
-─────────────
+
 1. User enters:
  • Host: 192.168.1.100
  • Port: 8080
@@ -546,14 +546,14 @@ struct RegisteredDatabase: Codable {
 
 ```
 STEP 1: Mac Advertises
-───────────────────────
+
 Mac App:
 • Starts BlazeDB server on port 8080
 • Advertises via mDNS: "bugs-db._blazedb._tcp.local"
 • Waits for connections
 
 STEP 2: iOS Discovers
-─────────────────────
+
 iOS App:
 • Browses for "_blazedb._tcp.local" services
 • Discovers "bugs-db" service
@@ -561,7 +561,7 @@ iOS App:
 • Shows "MacBook Pro - bugs" in list
 
 STEP 3: User Connects
-─────────────────────
+
 iOS App:
 • User taps "MacBook Pro - bugs"
 • Creates RemoteNode(host: "192.168.1.100", port: 8080)

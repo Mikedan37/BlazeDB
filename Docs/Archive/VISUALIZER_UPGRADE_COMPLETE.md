@@ -153,12 +153,12 @@ struct DBRecord {
  - Field types (name → type mapping)
  - Index count
 
-5. **Maintenance Card** ️
+5. **Maintenance Card** 
  - VACUUM button (with warning icon if needed)
  - GC button (with warning icon if needed)
  - Completion messages
 
-#### **DetailView.swift** (Upgraded) ️
+#### **DetailView.swift** (Upgraded) 
 - **Three States**: Locked → Unlocked → Deleted
 - **Password Prompt Overlay**: Beautiful modal with blur
 - **Monitoring Integration**: Shows dashboard after unlock
@@ -423,42 +423,42 @@ Unlock (requires password)
 ### **New Files:**
 ```
 Services/
-├── PasswordVaultService.swift [178 lines]
-└── MonitoringService.swift [215 lines]
+ PasswordVaultService.swift [178 lines]
+ MonitoringService.swift [215 lines]
 
 Views/
-├── PasswordPromptView.swift [223 lines]
-└── MonitoringDashboardView.swift [578 lines]
+ PasswordPromptView.swift [223 lines]
+ MonitoringDashboardView.swift [578 lines]
 
 Tests/
-├── PasswordVaultServiceTests.swift [248 lines]
-├── MonitoringServiceTests.swift [295 lines]
-├── PasswordUnlockUITests.swift [318 lines]
-└── MonitoringDashboardIntegrationTests.swift [368 lines]
+ PasswordVaultServiceTests.swift [248 lines]
+ MonitoringServiceTests.swift [295 lines]
+ PasswordUnlockUITests.swift [318 lines]
+ MonitoringDashboardIntegrationTests.swift [368 lines]
 ```
 
 ### **Upgraded Files:**
 ```
 Model/
-├── ScanService.swift [169 lines] (was: 69)
-└── DBRecord.swift [116 lines] (was: 70)
+ ScanService.swift [169 lines] (was: 69)
+ DBRecord.swift [116 lines] (was: 70)
 
 App/
-└── DetailView.swift [208 lines] (was: 160)
+ DetailView.swift [208 lines] (was: 160)
 
 Views/
-└── DBListView.swift [129 lines] (was: 66)
+ DBListView.swift [129 lines] (was: 66)
 
 Config/
-└── BlazeDBVisualizer.entitlements [31 lines] (was: 19)
+ BlazeDBVisualizer.entitlements [31 lines] (was: 19)
 ```
 
 ### **Documentation:**
 ```
 Docs/
-├── VISUALIZER_UPGRADE_PLAN.md (planning doc)
-├── BLAZEDB_MANAGER_ARCHITECTURE.md (architecture)
-└── VISUALIZER_UPGRADE_COMPLETE.md (this file!)
+ VISUALIZER_UPGRADE_PLAN.md (planning doc)
+ BLAZEDB_MANAGER_ARCHITECTURE.md (architecture)
+ VISUALIZER_UPGRADE_COMPLETE.md (this file!)
 ```
 
 ---
@@ -538,7 +538,7 @@ We just transformed **BlazeDBVisualizer** from a simple file browser into a **PR
 
 - **Industry-Standard Security** (Keychain + Touch ID)
 - **Real-Time Monitoring** (5-second live updates)
-- ️ **Maintenance Tools** (VACUUM, GC)
+-  **Maintenance Tools** (VACUUM, GC)
 - **Beautiful UI** (Native SwiftUI for macOS)
 - **89 Comprehensive Tests** (Unit + UI + Integration)
 - **Zero Technical Debt**
@@ -558,7 +558,7 @@ We just transformed **BlazeDBVisualizer** from a simple file browser into a **PR
 
 ---
 
-**Built with ️ by AI + Human collaboration**
+**Built with  by AI + Human collaboration**
 **Date: November 13, 2025**
 **Status: COMPLETE **
 

@@ -23,7 +23,7 @@ func testInsertUser() {
 - Tests that Alice with age 30 works
 - What about Bob with age -5?
 - What about empty names?
-- What about Unicode names like "李明"?
+- What about Unicode names like ""?
 - What about 1,000,000 character names?
 - What about null bytes in names?
 
@@ -566,7 +566,7 @@ func testFuzz_RandomStrings() {
 ```swift
 let edgeCases = [
  "‍‍‍", // Family emoji (4 codepoints!)
- "️‍", // Rainbow flag (ZWJ sequence)
+ "‍", // Rainbow flag (ZWJ sequence)
  "مرحبا Hello שלום", // Mixed RTL/LTR
  "e\u{0301}\u{0302}", // Combining accents
  "Test\u{200B}Data", // Zero-width space (invisible)
@@ -584,7 +584,7 @@ let edgeCases = [
 // BUG: Slicing emoji breaks it
 let str = "Hello ‍‍‍ World"
 let broken = str.prefix(10) // Might slice INSIDE emoji
-// Result: Displays as "Hello ‍� World" (corrupted)
+// Result: Displays as "Hello ‍ World" (corrupted)
 ```
 
 **BlazeDB Must Handle This**:
@@ -768,7 +768,7 @@ for payload in injectionPayloads {
  Memory Stress: 1,000 cycles
  Transaction Chaos: 200 batches
  Date Edge Cases: 10 extremes
-────────────────────────────────────────
+
 TOTAL: ~27,000+ malicious inputs
 ```
 

@@ -182,13 +182,13 @@ Use For:
 ### **How It Works:**
 ```
 BlazeDB Database
- ├─ Encrypted with AES-256
- ├─ Password-protected
- └─ Cannot be opened without password
+  Encrypted with AES-256
+  Password-protected
+  Cannot be opened without password
 
 BlazeDBVisualizer:
- ├─ User enters password
- ├─ OR Touch ID unlock
+  User enters password
+  OR Touch ID unlock
  ↓
 BlazeDBClient decrypts database
  ↓
@@ -232,42 +232,42 @@ WITH PASSWORD:
 ### **Menu Bar Extra** (Quick Access):
 ```
  (menu bar icon)
-┌─────────────────────────────┐
-│ BlazeDB Manager │
-│ 3 databases found │
-├─────────────────────────────┤
-│ [Search databases...] │
-├─────────────────────────────┤
-│ test │
-│ 50 records • 205 KB │
-│ ~/Desktop │
-│ │
-│ users │
-│ 10K records • 44 MB │
-│ ~/Documents │
-│ │
-│ ️ cache │
-│ 250K records • 1.2 GB │
-│ ~/Developer │
-├─────────────────────────────┤
-│ [Dashboard] [Refresh] │
-├─────────────────────────────┤
-│ Quit │
-└─────────────────────────────┘
+
+ BlazeDB Manager 
+ 3 databases found 
+
+ [Search databases...] 
+
+ test 
+ 50 records • 205 KB 
+ ~/Desktop 
+ 
+ users 
+ 10K records • 44 MB 
+ ~/Documents 
+ 
+  cache 
+ 250K records • 1.2 GB 
+ ~/Developer 
+
+ [Dashboard] [Refresh] 
+
+ Quit 
+
 ```
 
 ### **Main Window** (Full Features):
 ```
-┌──────────────────────────────────────────────────┐
-│ Database List │ Dashboard │
-├──────────────────────────────────────────────────│
-│ │ [Monitor][Data][Query] │
-│ test │ [Charts][Backup] │
-│ users │ │
-│ ️ cache │ (Tab Content) │
-│ │ │
-│ [Refresh] │ Touch ID → Full Access! │
-└──────────────────────────────────────────────────┘
+
+ Database List  Dashboard 
+
+  [Monitor][Data][Query] 
+ test  [Charts][Backup] 
+ users  
+  cache  (Tab Content) 
+  
+ [Refresh]  Touch ID → Full Access! 
+
 ```
 
 ---
@@ -282,7 +282,7 @@ WITH PASSWORD:
 
  Monitor Tab:
  test - HEALTHY
- ️ cache - 45% fragmentation
+  cache - 45% fragmentation
 
  [Run VACUUM on cache]
  Fragmentation: 3%
@@ -475,7 +475,7 @@ Time Saved Per Week:
  - Query testing: 1 hour
  - Maintenance: 1 hour
  - Backup operations: 0.5 hours
- ─────────────────────────────────
+ 
  Total: 7.5 hours/week
 
 Value:
@@ -524,58 +524,58 @@ Security Model:
 ### **Services (6 files):**
 ```
 Services/
-├── PasswordVaultService.swift [178 lines] - Keychain + Touch ID
-├── MonitoringService.swift [215 lines] - Real-time monitoring
-├── BackupRestoreService.swift [202 lines] - Backup/restore operations
-├── ExportService.swift [158 lines] - CSV/JSON export
-├── AlertService.swift [198 lines] - Auto-notifications
-└── (ScanService upgraded) [169 lines] - Discovery with Monitoring API
+ PasswordVaultService.swift [178 lines] - Keychain + Touch ID
+ MonitoringService.swift [215 lines] - Real-time monitoring
+ BackupRestoreService.swift [202 lines] - Backup/restore operations
+ ExportService.swift [158 lines] - CSV/JSON export
+ AlertService.swift [198 lines] - Auto-notifications
+ (ScanService upgraded) [169 lines] - Discovery with Monitoring API
 ```
 
 ### **Views (10 files):**
 ```
 Views/
-├── MainWindowView.swift [108 lines] - Main app window
-├── DataViewerView.swift [318 lines] - Browse records
-├── QueryConsoleView.swift [287 lines] - Query builder
-├── PerformanceChartsView.swift [243 lines] - Trend charts
-├── BackupRestoreView.swift [256 lines] - Backup/restore UI
-├── MonitoringDashboardView.swift [610 lines] - Live dashboard (upgraded!)
-├── PasswordPromptView.swift [223 lines] - Touch ID unlock
-├── DBListView.swift [129 lines] - Database list (upgraded!)
-└── MenuExtraView.swift [253 lines] - Menu bar dropdown (upgraded!)
-└── DetailView.swift [208 lines] - Detail integration (upgraded!)
+ MainWindowView.swift [108 lines] - Main app window
+ DataViewerView.swift [318 lines] - Browse records
+ QueryConsoleView.swift [287 lines] - Query builder
+ PerformanceChartsView.swift [243 lines] - Trend charts
+ BackupRestoreView.swift [256 lines] - Backup/restore UI
+ MonitoringDashboardView.swift [610 lines] - Live dashboard (upgraded!)
+ PasswordPromptView.swift [223 lines] - Touch ID unlock
+ DBListView.swift [129 lines] - Database list (upgraded!)
+ MenuExtraView.swift [253 lines] - Menu bar dropdown (upgraded!)
+ DetailView.swift [208 lines] - Detail integration (upgraded!)
 ```
 
 ### **Models (2 files):**
 ```
 Model/
-├── DBRecord.swift [116 lines] - Enhanced with health data
-└── ScanService.swift [169 lines] - Discovery service
+ DBRecord.swift [116 lines] - Enhanced with health data
+ ScanService.swift [169 lines] - Discovery service
 ```
 
 ### **Tests (7 files):**
 ```
 BlazeDBVisualizerTests/
-├── PasswordVaultServiceTests.swift [248 lines] - 29 tests
-├── MonitoringServiceTests.swift [295 lines] - 20 tests
-├── BackupRestoreServiceTests.swift [NEW! 275 lines] - 34 tests
-├── ExportServiceTests.swift [NEW! 263 lines] - 32 tests
-└── AlertServiceTests.swift [NEW! 248 lines] - 31 tests
+ PasswordVaultServiceTests.swift [248 lines] - 29 tests
+ MonitoringServiceTests.swift [295 lines] - 20 tests
+ BackupRestoreServiceTests.swift [NEW! 275 lines] - 34 tests
+ ExportServiceTests.swift [NEW! 263 lines] - 32 tests
+ AlertServiceTests.swift [NEW! 248 lines] - 31 tests
 
 BlazeDBVisualizerUITests/
-├── PasswordUnlockUITests.swift [318 lines] - 18 tests
-├── MonitoringDashboardIntegrationTests.swift [368 lines] - 22 tests
-├── DashboardTabsUITests.swift [NEW! 312 lines] - 30 tests
-└── FullWorkflowIntegrationTests.swift [NEW! 285 lines] - 35 tests
+ PasswordUnlockUITests.swift [318 lines] - 18 tests
+ MonitoringDashboardIntegrationTests.swift [368 lines] - 22 tests
+ DashboardTabsUITests.swift [NEW! 312 lines] - 30 tests
+ FullWorkflowIntegrationTests.swift [NEW! 285 lines] - 35 tests
 ```
 
 ### **Documentation (3 files):**
 ```
 Docs/
-├── VISUALIZER_UPGRADE_COMPLETE.md [565 lines] - v1.0 summary
-├── VISUALIZER_V1.2_COMPLETE.md [805 lines] - v1.2 features
-└── BLAZEDB_VISUALIZER_FINAL.md [THIS FILE!] - Complete guide
+ VISUALIZER_UPGRADE_COMPLETE.md [565 lines] - v1.0 summary
+ VISUALIZER_V1.2_COMPLETE.md [805 lines] - v1.2 features
+ BLAZEDB_VISUALIZER_FINAL.md [THIS FILE!] - Complete guide
 ```
 
 ---
@@ -712,7 +712,7 @@ Backup History:
 
 [Select backup]
 [Restore]
- ️ Confirm
+  Confirm
  ↓
  "Restored from pre_migration"
 ```
@@ -725,34 +725,34 @@ Backup History:
 
 ```
 Morning Routine:
- ├─ Open BlazeDBVisualizer
- ├─ Check all database health
- ├─ Run maintenance if needed
- └─ Start coding with clean slate
+  Open BlazeDBVisualizer
+  Check all database health
+  Run maintenance if needed
+  Start coding with clean slate
 
 Development:
- ├─ Monitor tab: Live health updates
- ├─ Data tab: Inspect test data
- ├─ Query tab: Test new queries
- └─ Charts tab: Track performance
+  Monitor tab: Live health updates
+  Data tab: Inspect test data
+  Query tab: Test new queries
+  Charts tab: Track performance
 
 Testing:
- ├─ Backup tab: Save clean state
- ├─ Run destructive tests
- ├─ Restore clean state
- └─ Repeat
+  Backup tab: Save clean state
+  Run destructive tests
+  Restore clean state
+  Repeat
 
 Pre-Deploy:
- ├─ Backup tab: Create snapshot
- ├─ Monitor tab: Check health
- ├─ Charts tab: Verify trends
- └─ Deploy!
+  Backup tab: Create snapshot
+  Monitor tab: Check health
+  Charts tab: Verify trends
+  Deploy!
 
 Production Support:
- ├─ Get customer database
- ├─ Data tab: Search user data
- ├─ Query tab: Find issues
- └─ Export tab: Share results
+  Get customer database
+  Data tab: Search user data
+  Query tab: Find issues
+  Export tab: Share results
 ```
 
 ---
@@ -891,7 +891,7 @@ THIS IS LEGENDARY!
 
 ---
 
-**Built with ️ by Human + AI collaboration**
+**Built with  by Human + AI collaboration**
 **Date: November 14, 2025**
 **Status: LEGENDARY **
 **Test Coverage: 186 tests **

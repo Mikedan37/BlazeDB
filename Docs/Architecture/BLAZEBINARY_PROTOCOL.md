@@ -118,23 +118,23 @@ User comes online after 24 hours offline:
 ### **1. Binary Message Framing**
 
 ```
-┌─────────────────────────────────────┐
-│ Frame Header (8 bytes) │
-├─────────────────────────────────────┤
-│ Magic: "BLAZE" (5 bytes) │
-│ Version: 1 (1 byte) │
-│ MessageType: enum (1 byte) │
-│ Length: payload size (4 bytes) │
-├─────────────────────────────────────┤
-│ Payload (BlazeBinary encoded) │
-│ • Handshake │
-│ • SyncState │
-│ • Operations │
-│ • Query │
-│ • Etc. │
-├─────────────────────────────────────┤
-│ CRC32 Checksum (4 bytes) │
-└─────────────────────────────────────┘
+
+ Frame Header (8 bytes) 
+
+ Magic: "BLAZE" (5 bytes) 
+ Version: 1 (1 byte) 
+ MessageType: enum (1 byte) 
+ Length: payload size (4 bytes) 
+
+ Payload (BlazeBinary encoded) 
+ • Handshake 
+ • SyncState 
+ • Operations 
+ • Query 
+ • Etc. 
+
+ CRC32 Checksum (4 bytes) 
+
 ```
 
 ### **2. Streaming Support**

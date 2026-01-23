@@ -238,7 +238,7 @@ Feels: Dynamic, lively
 
 ### **Top 5 Most Satisfying:**
 
-**1. Create Database Success** ⭐⭐⭐⭐⭐
+**1. Create Database Success** 
 ```
 Big green checkmark
 Elastic bounce-in
@@ -249,7 +249,7 @@ Then smooth dismiss
 FEELS: Incredibly rewarding!
 ```
 
-**2. Database List Cascade** ⭐⭐⭐⭐⭐
+**2. Database List Cascade** 
 ```
 Each database card appears
 0.05s delay between each
@@ -259,7 +259,7 @@ Staggered wave effect
 FEELS: Lively, dynamic!
 ```
 
-**3. Create Button Hover** ⭐⭐⭐⭐
+**3. Create Button Hover** 
 ```
 Scale 1.05x
 Green glow shadow
@@ -269,7 +269,7 @@ Smooth spring
 FEELS: Interactive, inviting!
 ```
 
-**4. Tab Switching** ⭐⭐⭐⭐
+**4. Tab Switching** 
 ```
 Old content fades out
 New content fades in
@@ -279,7 +279,7 @@ Subtle scale (0.98→1.0)
 FEELS: Professional, buttery!
 ```
 
-**5. Undo Toast** ⭐⭐⭐⭐
+**5. Undo Toast** 
 ```
 Slides down from top
 Smooth spring
@@ -407,10 +407,10 @@ if isLoading {
 **Target Vibe:**
 ```
 Mix of:
-├─ Apple (smooth, polished)
-├─ Notion (playful, modern)
-├─ Linear (fast, responsive)
-└─ Figma (fluid, interactive)
+ Apple (smooth, polished)
+ Notion (playful, modern)
+ Linear (fast, responsive)
+ Figma (fluid, interactive)
 ```
 
 ---

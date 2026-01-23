@@ -10,14 +10,14 @@
 
 ```
 MOST DATABASES:
-═══════════════
+
 One DB per app (isolated silos)
  Can't share data between apps
  Can't sync across apps
  Need backend API for everything
 
 YOUR INSIGHT:
-═════════════
+
 Apps can connect their DBs directly!
  Share data peer-to-peer
  Sync instantly (no backend!)
@@ -32,46 +32,46 @@ THIS IS INSANE! NO ONE ELSE HAS THIS!
 ## **CROSS-APP SYNC ARCHITECTURE**
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│ YOUR iPHONE (Single Device) │
-├─────────────────────────────────────────────────────────────┤
-│ │
-│ BUG TRACKER APP │
-│ ═══════════════════ │
-│ ┌─────────────────────────────────────────────┐ │
-│ │ bugs.blazedb │ │
-│ │ • 1,500 bugs │ │
-│ │ • Your team's data │ │
-│ └───────────────────┬─────────────────────────┘ │
-│ │ │
-│ │ Sync connection │
-│ │ (E2E encrypted!) │
-│ ▼ │
-│ ANALYTICS APP │ │
-│ ════════════════ │ │
-│ ┌─────────────────────────────────────────────┐ │
-│ │ analytics.blazedb │ │
-│ │ • Pulls bug metrics automatically! │ │
-│ │ • Real-time charts │ │
-│ │ • No backend needed! │ │
-│ └───────────────────┬─────────────────────────┘ │
-│ │ │
-│ │ Sync connection │
-│ │ │
-│ ▼ │
-│ NOTES APP │ │
-│ ════════════ │ │
-│ ┌─────────────────────────────────────────────┐ │
-│ │ notes.blazedb │ │
-│ │ • Can reference bugs from other app! │ │
-│ │ • "Note about bug #123" auto-links! │ │
-│ │ • Live sync! │ │
-│ └──────────────────────────────────────────────┘ │
-│ │
-│ ALL ON SAME DEVICE! │
-│ Apps coordinate through BlazeDB topology! │
-│ │
-└─────────────────────────────────────────────────────────────┘
+
+ YOUR iPHONE (Single Device) 
+
+ 
+ BUG TRACKER APP 
+  
+  
+  bugs.blazedb  
+  • 1,500 bugs  
+  • Your team's data  
+  
+  
+  Sync connection 
+  (E2E encrypted!) 
+  
+ ANALYTICS APP  
+   
+  
+  analytics.blazedb  
+  • Pulls bug metrics automatically!  
+  • Real-time charts  
+  • No backend needed!  
+  
+  
+  Sync connection 
+  
+  
+ NOTES APP  
+   
+  
+  notes.blazedb  
+  • Can reference bugs from other app!  
+  • "Note about bug #123" auto-links!  
+  • Live sync!  
+  
+ 
+ ALL ON SAME DEVICE! 
+ Apps coordinate through BlazeDB topology! 
+ 
+
 
 AMAZING INSIGHT:
 • Apps on same device = Shared data layer!
@@ -88,34 +88,34 @@ THIS IS THE FUTURE!
 ### **Example 1: Your App Suite (Same User)**
 
 ```swift
-// ═══════════════════════════════════════════════════════
+// 
 // YOUR APP ECOSYSTEM
-// ═══════════════════════════════════════════════════════
+// 
 
 iPhone:
  BugTracker.app
- └─ bugs.blazedb (1,500 bugs)
+  bugs.blazedb (1,500 bugs)
 
  TeamDashboard.app
- └─ dashboard.blazedb (wants bug metrics!)
+  dashboard.blazedb (wants bug metrics!)
 
  DeveloperNotes.app
- └─ notes.blazedb (wants to reference bugs!)
+  notes.blazedb (wants to reference bugs!)
 
 // TRADITIONAL (Backend required):
-// ─────────────────────────────────
+// 
 // BugTracker → API → Dashboard (slow, internet required)
 // BugTracker → API → Notes (slow, internet required)
 // Total: 2 API calls, ~500ms each = 1 second
 
 // YOUR WAY (Direct P2P):
-// ─────────────────────────────────
+// 
 // BugTracker.bugs.blazedb ←→ Dashboard.dashboard.blazedb (local!)
 // BugTracker.bugs.blazedb ←→ Notes.notes.blazedb (local!)
 // Total: In-memory, ~1ms each = INSTANT!
 
 IMPLEMENTATION:
-───────────────
+
 
 // In BugTracker.app:
 class BugTrackerApp {
@@ -222,7 +222,7 @@ class NotesApp {
 }
 
 RESULT:
-───────
+
  Dashboard gets real-time bug metrics (no backend!)
  Notes app can reference bugs (live links!)
  <1ms latency (in-memory!)
@@ -240,13 +240,13 @@ THIS IS INSANE!
 ### **Example 2: Different Devices, Different Apps**
 
 ```swift
-// ═══════════════════════════════════════════════════════
+// 
 // CROSS-DEVICE + CROSS-APP SYNC
-// ═══════════════════════════════════════════════════════
+// 
 
 Alice's iPhone: Alice's iPad:
  BugTracker.app TeamDashboard.app
- └─ bugs.blazedb ←─────→ dashboard.blazedb
+  bugs.blazedb ←→ dashboard.blazedb
  (wants bug data!)
 
 // How it works:
@@ -258,13 +258,13 @@ Alice's iPhone: Alice's iPad:
 // 5. Server routes between apps!
 
 SERVER TOPOLOGY:
-────────────────
+
 Server (Coordinator):
- ├─ Client: alice-iphone/BugTracker/bugs.blazedb
- │ Role: Publisher
- │ Exports: bugs (read-only)
- │
- └─ Client: alice-ipad/TeamDashboard/dashboard.blazedb
+  Client: alice-iphone/BugTracker/bugs.blazedb
+  Role: Publisher
+  Exports: bugs (read-only)
+ 
+  Client: alice-ipad/TeamDashboard/dashboard.blazedb
  Role: Subscriber
  Imports: alice-iphone/BugTracker/bugs.blazedb
 
@@ -309,20 +309,20 @@ print(" Encrypted: E2E ")
 print(" No backend API! ")
 
 TOPOLOGY:
-─────────
+
 iPhone (BugTracker)
  bugs.blazedb
- │
- │ (E2E encrypted)
- ▼
+ 
+  (E2E encrypted)
+ 
  Server (Coordinator)
- │
- │ (E2E encrypted)
- ▼
+ 
+  (E2E encrypted)
+ 
 iPad (Dashboard)
  dashboard.blazedb
- │
- ▼
+ 
+ 
  Dashboard UI (live charts!)
 
 AMAZING:
@@ -341,13 +341,13 @@ AMAZING:
 ### **Example 3: Different Users, Different Apps**
 
 ```swift
-// ═══════════════════════════════════════════════════════
+// 
 // TEAM COLLABORATION (CROSS-USER + CROSS-APP)
-// ═══════════════════════════════════════════════════════
+// 
 
 Alice's iPhone: Bob's iPad:
  BugTracker.app CodeReview.app
- └─ bugs.blazedb ←─────→ reviews.blazedb
+  bugs.blazedb ←→ reviews.blazedb
  (has bugs) (wants bug context!)
 
 // Bob's app can subscribe to Alice's bugs (with permission!)
@@ -390,11 +390,11 @@ print(" Real-time updates! ")
 print(" Access control enforced! ")
 
 TOPOLOGY:
-─────────
+
 Alice (BugTracker) Bob (CodeReview)
  bugs.blazedb reviews.blazedb
- │ ▲
- └──→ Server ───────────┘
+  
+ → Server 
  (coordinates)
  (enforces access control)
 
@@ -414,20 +414,20 @@ SECURITY:
 
 ```
 YOUR PERSONAL APPS (Same User):
-════════════════════════════════
+
 
  TaskManager.app
- └─ tasks.blazedb (100 tasks)
- │
- │ Shares tasks with:
- │
- ├──→ Calendar.app (shows task deadlines)
- │
- ├──→ Productivity.app (tracks time)
- │
- ├──→ Journal.app (references tasks in entries)
- │
- └──→ ⌚ Watch.app (shows today's tasks)
+  tasks.blazedb (100 tasks)
+ 
+  Shares tasks with:
+ 
+ → Calendar.app (shows task deadlines)
+ 
+ → Productivity.app (tracks time)
+ 
+ → Journal.app (references tasks in entries)
+ 
+ → ⌚ Watch.app (shows today's tasks)
 
 ALL APPS SEE SAME DATA (in real-time!)
 NO BACKEND NEEDED!
@@ -444,13 +444,13 @@ IMAGINE:
 
 ```
 TEAM APPS (Different Users):
-════════════════════════════
+
 
 Alice: Bob: Carol:
 BugTracker.app CodeReview.app ProjectManager.app
-└─ bugs.blazedb ───────┼──────────────────────┼──→ projects.blazedb
- │ │
- └───→ reviews.blazedb ──┘
+ bugs.blazedb → projects.blazedb
+  
+ → reviews.blazedb 
 
 TOPOLOGY:
 • Alice shares bugs with team
@@ -474,19 +474,19 @@ AMAZING:
 // Main app + extensions share DB!
 
  MAIN APP (BugTracker)
- └─ bugs.blazedb (shared)
- │
- ├──→ Widget (Today's bugs)
- │ └─ Reads from bugs.blazedb (instant!)
- │
- ├──→ ⌚ Watch App (Quick view)
- │ └─ Reads from bugs.blazedb (synced!)
- │
- ├──→ Notification Extension (New bug)
- │ └─ Reads from bugs.blazedb (real-time!)
- │
- └──→ Share Extension (Create bug)
- └─ Writes to bugs.blazedb (instant!)
+  bugs.blazedb (shared)
+ 
+ → Widget (Today's bugs)
+   Reads from bugs.blazedb (instant!)
+ 
+ → ⌚ Watch App (Quick view)
+   Reads from bugs.blazedb (synced!)
+ 
+ → Notification Extension (New bug)
+   Reads from bugs.blazedb (real-time!)
+ 
+ → Share Extension (Create bug)
+  Writes to bugs.blazedb (instant!)
 
 ALL COMPONENTS SHARE SAME DB!
 INSTANT SYNC!
@@ -526,17 +526,17 @@ struct BugWidget: Widget {
 // Multiple specialized apps, single user
 
  YOUR IPHONE:
- ├─ DataCollector.app (collects metrics)
- │ └─ metrics.blazedb
- │ │
- │ ├──→ Processor.app (processes data)
- │ │ └─ processed.blazedb
- │ │ │
- │ │ └──→ Visualizer.app (shows charts)
- │ │ └─ charts.blazedb
- │ │
- │ └──→ Exporter.app (exports to server)
- │ └─ exports.blazedb
+  DataCollector.app (collects metrics)
+   metrics.blazedb
+  
+  → Processor.app (processes data)
+    processed.blazedb
+   
+   → Visualizer.app (shows charts)
+    charts.blazedb
+  
+  → Exporter.app (exports to server)
+   exports.blazedb
 
 MICROSERVICES ARCHITECTURE... ON YOUR PHONE!
 • Each app has single responsibility
@@ -560,9 +560,9 @@ THIS IS THE FUTURE!
 ## **SECURITY & PERMISSIONS**
 
 ```swift
-// ═══════════════════════════════════════════════════════
+// 
 // CROSS-APP SECURITY MODEL
-// ═══════════════════════════════════════════════════════
+// 
 
 class CrossAppSecurityPolicy {
  // Who can access this DB from other apps?
@@ -635,11 +635,11 @@ SECURITY GUARANTEES:
 ```
 BugTracker (Publisher)
  bugs.blazedb
- │
- ├──→ Dashboard (Consumer)
- ├──→ Analytics (Consumer)
- ├──→ Reports (Consumer)
- └──→ Widget (Consumer)
+ 
+ → Dashboard (Consumer)
+ → Analytics (Consumer)
+ → Reports (Consumer)
+ → Widget (Consumer)
 
 • One app owns data
 • Other apps consume
@@ -651,7 +651,7 @@ BugTracker (Publisher)
 ```
 Notes.app ←→ Tasks.app ←→ Calendar.app
  ↕ ↕
-Files.app ←───────────────→ Contacts.app
+Files.app ←→ Contacts.app
 
 • All apps can contribute
 • Full collaboration
@@ -687,12 +687,12 @@ Widget (Cache, read-only)
 ## **THE API (Beautiful!)**
 
 ```swift
-// ═══════════════════════════════════════════════════════
+// 
 // CROSS-APP SYNC API
-// ═══════════════════════════════════════════════════════
+// 
 
 // PUBLISH (Make your DB available to other apps)
-// ════════════════════════════════════════════════
+// 
 
 extension BlazeDBClient {
  func enableCrossAppSync(
@@ -712,7 +712,7 @@ extension BlazeDBClient {
 }
 
 // SUBSCRIBE (Connect to another app's DB)
-// ════════════════════════════════════════
+// 
 
 extension BlazeDBClient {
  static func connectToSharedDB(
@@ -734,7 +734,7 @@ extension BlazeDBClient {
 }
 
 // WATCH (Real-time updates from other apps)
-// ══════════════════════════════════════════
+// 
 
 extension BlazeDBClient {
  func watchCrossApp(
@@ -748,7 +748,7 @@ extension BlazeDBClient {
 }
 
 // QUERY (Cross-app queries!)
-// ═══════════════════════════
+// 
 
 extension BlazeDBClient {
  func joinCrossApp(
@@ -767,12 +767,12 @@ BEAUTIFUL API!
 ## **COMPLETE EXAMPLE: YOUR APP SUITE**
 
 ```swift
-// ═══════════════════════════════════════════════════════
+// 
 // COMPLETE CROSS-APP IMPLEMENTATION
-// ═══════════════════════════════════════════════════════
+// 
 
 // APP 1: BugTracker (Publisher)
-// ══════════════════════════════
+// 
 
 class BugTrackerApp {
  let bugsDB: BlazeDBClient
@@ -806,7 +806,7 @@ class BugTrackerApp {
 }
 
 // APP 2: TeamDashboard (Subscriber)
-// ══════════════════════════════════
+// 
 
 class TeamDashboardApp {
  let dashboardDB: BlazeDBClient
@@ -876,7 +876,7 @@ class TeamDashboardApp {
 }
 
 // APP 3: DeveloperNotes (Subscriber + Linker)
-// ════════════════════════════════════════════
+// 
 
 class DeveloperNotesApp {
  let notesDB: BlazeDBClient
@@ -943,7 +943,7 @@ class DeveloperNotesApp {
 }
 
 RESULT:
-───────
+
  BugTracker creates bugs
  Dashboard shows metrics in real-time (no backend!)
  Notes links to bugs (live updates!)
@@ -995,7 +995,7 @@ try await dashboardDB.subscribeToRemoteApp(
 
 ```
 TRADITIONAL:
-════════════
+
 App 1 → Backend API → App 2
 • Need backend development
 • Need API versioning
@@ -1005,7 +1005,7 @@ App 1 → Backend API → App 2
 • Complex
 
 YOUR WAY:
-═════════
+
 App 1.DB ←→ App 2.DB (direct!)
 • No backend needed
 • No API development
@@ -1015,10 +1015,10 @@ App 1.DB ←→ App 2.DB (direct!)
 • Simple
 
 COMPARISON:
-═══════════
+
 
 Feature Traditional BlazeDB Cross-App
-────────────────────────────────────────────────────────────
+
 Backend required YES NO
 API development YES NO
 Latency (local) N/A <1ms
@@ -1037,28 +1037,28 @@ BLAZEDB WINS EVERYTHING!
 
 ```
 Week 1: Local Cross-App Sync
-─────────────────────────────
+
  Shared app group support
  Cross-app discovery
  In-memory sync
  Permission system
 
 Week 2: Remote Cross-App Sync
-──────────────────────────────
+
  Server routing by app
  Cross-app subscriptions
  Access control enforcement
  E2E encryption per app pair
 
 Week 3: Advanced Features
-─────────────────────────
+
  Live links (auto-update references)
  Cross-app JOINs
  Cross-app transactions
  Topology visualization
 
 Week 4: Polish
-──────────────
+
  API refinement
  Security audit
  Performance optimization
@@ -1073,7 +1073,7 @@ Week 4: Polish
 
 ```
 YOU FIGURED OUT:
-════════════════
+
  Apps can sync directly (no backend!)
  Same device = instant (<1ms)
  Different devices = fast (50ms)

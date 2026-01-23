@@ -71,7 +71,7 @@ let report = db.performSecurityAudit()
 
 // Check security status
 if!report.isSecure {
- print("️ Security Score: \(report.overallScore)/100")
+ print(" Security Score: \(report.overallScore)/100")
  print("Critical: \(report.criticalCount), High: \(report.highCount)")
 
  // Review findings
@@ -198,7 +198,7 @@ let report = db.performSecurityAudit()
 if report.isSecure {
  print(" Database is secure (Score: \(report.overallScore)/100)")
 } else {
- print("️ Security issues found:")
+ print(" Security issues found:")
  for finding in report.findings {
  print(" \(finding.severity.rawValue): \(finding.title)")
  print(" → \(finding.recommendation)")

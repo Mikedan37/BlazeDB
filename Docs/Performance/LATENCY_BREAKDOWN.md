@@ -9,7 +9,7 @@
 ### **1. Local Sync (<1ms):**
 ```
 Same Device, Same App:
-══════════════════════
+
 
 bugsDB ←→ usersDB (via InMemoryRelay)
 
@@ -28,7 +28,7 @@ This is IN-MEMORY, so it's basically instant!
 ### **2. Cross-App Sync (<1ms):**
 ```
 Same Device, Different Apps:
-════════════════════════════
+
 
 BugTracker.app ←→ Dashboard.app (via App Groups)
 
@@ -47,7 +47,7 @@ This is LOCAL DISK, so it's still very fast!
 ### **3. Remote Sync (~5ms):**
 ```
 Different Devices (Client → Server):
-═════════════════════════════════════
+
 
 iPhone → Raspberry Pi Server
 
@@ -56,7 +56,7 @@ Breakdown:
 • Operation creation: 0.05ms
 • Encoding: 0.1ms (BlazeBinary encode)
 • Encryption: 0.2ms (AES-256-GCM encrypt)
-• TCP send: 5ms (network transmission) ⬅ THIS IS THE 5MS!
+• TCP send: 5ms (network transmission)  THIS IS THE 5MS!
 • Server receive: 0.1ms
 • Server decrypt: 0.2ms
 • Server decode: 0.08ms
@@ -72,7 +72,7 @@ BUT WAIT! That's just CLIENT → SERVER!
 
 ```
 iPhone → Server → iPad:
-═══════════════════════
+
 
 1. iPhone creates bug
  • Local operations: 0.84ms
@@ -93,7 +93,7 @@ iPhone → Server → iPad:
  • Total: ~1ms
 
 TOTAL TIME (iPhone → iPad):
-═══════════════════════════
+
 7ms + 8ms + 7ms + 1ms = ~23ms
 
 BUT! This is the WORST CASE (sequential).
@@ -176,7 +176,7 @@ Raw TCP (our protocol):
 ### **Real-World Impact:**
 ```
 Typical Bug Tracker App:
-════════════════════════
+
 
 User creates bug on iPhone:
 • Local: <1ms (instant feedback!)

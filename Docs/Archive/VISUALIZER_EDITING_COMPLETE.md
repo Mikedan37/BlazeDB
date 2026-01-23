@@ -10,25 +10,25 @@
 
 ```
  Services (800 lines)
-├─ EditingService.swift 463 lines
-└─ AuditLogService.swift 300 lines
+ EditingService.swift 463 lines
+ AuditLogService.swift 300 lines
 
  UI Views (1,000 lines)
-├─ EditableDataViewerView.swift 350 lines
-├─ NewRecordSheet.swift 250 lines
-├─ BulkEditSheet.swift 200 lines
-└─ BackupRestoreView.swift 200 lines (fixed)
+ EditableDataViewerView.swift 350 lines
+ NewRecordSheet.swift 250 lines
+ BulkEditSheet.swift 200 lines
+ BackupRestoreView.swift 200 lines (fixed)
 
  Tests (220+ tests)
-├─ EditingServiceTests.swift 85 tests
-├─ AuditLogServiceTests.swift 40 tests
-├─ EditingIntegrationTests.swift 50 tests
-└─ EditingUITests.swift 45 tests
+ EditingServiceTests.swift 85 tests
+ AuditLogServiceTests.swift 40 tests
+ EditingIntegrationTests.swift 50 tests
+ EditingUITests.swift 45 tests
 
  Documentation (3 files)
-├─ EDITING_IMPLEMENTATION_STATUS.md
-├─ VISUALIZER_EDITING_PROPOSAL.md
-└─ VISUALIZER_SECURITY_ANALYSIS.md
+ EDITING_IMPLEMENTATION_STATUS.md
+ VISUALIZER_EDITING_PROPOSAL.md
+ VISUALIZER_SECURITY_ANALYSIS.md
 ```
 
 ---
@@ -175,47 +175,47 @@
 TOTAL: 220+ COMPREHENSIVE TESTS
 
  Unit Tests (125 tests)
-├─ EditingServiceTests: 85 tests
-│ ├─ Insert operations 5 tests
-│ ├─ Update operations 3 tests
-│ ├─ Delete operations 2 tests
-│ ├─ Bulk operations 5 tests
-│ ├─ Undo functionality 7 tests
-│ ├─ Settings 2 tests
-│ ├─ Error handling 1 test
-│ ├─ Complete workflows 2 tests
-│ └─ Performance 2 tests
-│
-└─ AuditLogServiceTests: 40 tests
- ├─ Basic logging 4 tests
- ├─ Enable/disable 2 tests
- ├─ Search & filter 5 tests
- ├─ Export (JSON/CSV) 4 tests
- ├─ Cleanup 2 tests
- ├─ Metadata 2 tests
- ├─ Performance 3 tests
- └─ Compliance (GDPR) 3 tests
+ EditingServiceTests: 85 tests
+  Insert operations 5 tests
+  Update operations 3 tests
+  Delete operations 2 tests
+  Bulk operations 5 tests
+  Undo functionality 7 tests
+  Settings 2 tests
+  Error handling 1 test
+  Complete workflows 2 tests
+  Performance 2 tests
+
+ AuditLogServiceTests: 40 tests
+  Basic logging 4 tests
+  Enable/disable 2 tests
+  Search & filter 5 tests
+  Export (JSON/CSV) 4 tests
+  Cleanup 2 tests
+  Metadata 2 tests
+  Performance 3 tests
+  Compliance (GDPR) 3 tests
 
  Integration Tests (50 tests)
-└─ EditingIntegrationTests: 50 tests
- ├─ Complete workflows 4 tests
- ├─ Error recovery 2 tests
- ├─ Audit integration 3 tests
- ├─ Performance 2 tests
- ├─ Data integrity 2 tests
- └─ Real-world scenarios 3 tests
+ EditingIntegrationTests: 50 tests
+  Complete workflows 4 tests
+  Error recovery 2 tests
+  Audit integration 3 tests
+  Performance 2 tests
+  Data integrity 2 tests
+  Real-world scenarios 3 tests
 
-️ UI Tests (45 tests)
-└─ EditingUITests: 45 tests
- ├─ Basic editing UI 4 tests
- ├─ New record creation 2 tests
- ├─ Bulk operations 3 tests
- ├─ Undo functionality 2 tests
- ├─ Settings 2 tests
- ├─ Error handling 1 test
- ├─ Audit log viewing 2 tests
- ├─ Performance 2 tests
- └─ Accessibility 2 tests
+ UI Tests (45 tests)
+ EditingUITests: 45 tests
+  Basic editing UI 4 tests
+  New record creation 2 tests
+  Bulk operations 3 tests
+  Undo functionality 2 tests
+  Settings 2 tests
+  Error handling 1 test
+  Audit log viewing 2 tests
+  Performance 2 tests
+  Accessibility 2 tests
 ```
 
 **Coverage:**
@@ -240,16 +240,16 @@ TOTAL: 220+ COMPREHENSIVE TESTS
 | **Platform** | macOS | Multi | macOS | Multi |
 | **UI** | SwiftUI | Electron | Cocoa | Qt |
 | **Inline Editing** | | | | |
-| **Bulk Operations** | 1,000 | | ️ Limited | ️ Limited |
-| **Undo System** | 30s window | | | ️ Basic |
+| **Bulk Operations** | 1,000 | |  Limited |  Limited |
+| **Undo System** | 30s window | | |  Basic |
 | **Audit Logging** | Full | | | |
-| **Auto Backup** | Before edits | ️ Manual | ️ Manual | |
-| **Type Validation** | Smart | | ️ Basic | ️ Basic |
+| **Auto Backup** | Before edits |  Manual |  Manual | |
+| **Type Validation** | Smart | |  Basic |  Basic |
 | **Touch ID** | Unique! | | | |
 | **GDPR Export** | Built-in | | | |
-| **Real-time Monitor** | | ️ Limited | | |
+| **Real-time Monitor** | |  Limited | | |
 | **Performance Charts** | 7-day | | | |
-| **Backup/Restore** | One-click | ️ Manual | ️ Manual | |
+| **Backup/Restore** | One-click |  Manual |  Manual | |
 | **Test Runner** | 907 tests | | | |
 | **Open Source** | | | | |
 | **Test Coverage** | 516 tests | | | |
@@ -369,7 +369,7 @@ TOTAL: 220+ COMPREHENSIVE TESTS
 1. Select record(s) via checkboxes
 2. Click "Delete Selected"
 3. Confirmation: "Delete N records?"
-4. Optional: ️ "Create backup first"
+4. Optional:  "Create backup first"
 5. Click "Delete"
 6. Deleted!
 7. Toast: "Deleted N records" with [Undo] (30s)
@@ -398,17 +398,17 @@ TOTAL: 220+ COMPREHENSIVE TESTS
 
 ### **Data Viewer (Editing Mode)**
 ```
-┌─────────────────────────────────────────────────────────────┐
-│ Data Viewer 907 records │
-│ │
-│ [ Editing] [Search___] [+ Add] [↻] │
-├─────────────────────────────────────────────────────────────┤
-│ │ ID │ Name │ Age │ Email │ Actions │
-├───┼─────────┼────────────┼──────┼────────────────┼─────────┤
-│ │ abc123 │ Alice │ 25 │ alice@test.com │ ️ │
-│ │ def456 │ [Bob▊] │ 30 │ bob@test.com │ ️ │ ← Editing!
-│ │ ghi789 │ Carol │ 28 │ carol@test.com │ ️ │
-└─────────────────────────────────────────────────────────────┘
+
+ Data Viewer 907 records 
+ 
+ [ Editing] [Search___] [+ Add] [↻] 
+
+  ID  Name  Age  Email  Actions 
+
+  abc123  Alice  25  alice@test.com   
+  def456  [Bob]  30  bob@test.com    ← Editing!
+  ghi789  Carol  28  carol@test.com   
+
 
  Updated "Name" to "Bob" [Undo] (28s) [×]
 
@@ -419,49 +419,49 @@ TOTAL: 220+ COMPREHENSIVE TESTS
 
 ### **New Record Sheet**
 ```
-┌───────────────────────────────────────────────┐
-│ Create New Record │
-│ │
-│ Add Field │
-│ ┌─────────────────────────────────────────┐ │
-│ │ [name___] [String ▼] [Alice____] [+] │ │
-│ └─────────────────────────────────────────┘ │
-│ │
-│ Record Preview (3 fields) │
-│ ┌─────────────────────────────────────────┐ │
-│ │ name (String): "Alice" ️│ │
-│ │ age (Integer): "25" ️│ │
-│ │ email (String): "alice@test.com" ️│ │
-│ └─────────────────────────────────────────┘ │
-│ │
-│ [Cancel] [Create] │
-└───────────────────────────────────────────────┘
+
+ Create New Record 
+ 
+ Add Field 
+  
+  [name___] [String ] [Alice____] [+]  
+  
+ 
+ Record Preview (3 fields) 
+  
+  name (String): "Alice"  
+  age (Integer): "25"  
+  email (String): "alice@test.com"  
+  
+ 
+ [Cancel] [Create] 
+
 ```
 
 ---
 
 ### **Bulk Edit Sheet**
 ```
-┌───────────────────────────────────────────────┐
-│ Bulk Edit 5 Records │
-│ │
-│ Select Field │
-│ [status ▼] │
-│ │
-│ New Value (String) │
-│ [inactive_________________] │
-│ │
-│ Preview Changes │
-│ ┌─────────────────────────────────────────┐ │
-│ │ abc123 → status = "inactive" │ │
-│ │ def456 → status = "inactive" │ │
-│ │ ghi789 → status = "inactive" │ │
-│ │ jkl012 → status = "inactive" │ │
-│ │ mno345 → status = "inactive" │ │
-│ └─────────────────────────────────────────┘ │
-│ │
-│ [Cancel] [Apply to 5] │
-└───────────────────────────────────────────────┘
+
+ Bulk Edit 5 Records 
+ 
+ Select Field 
+ [status ] 
+ 
+ New Value (String) 
+ [inactive_________________] 
+ 
+ Preview Changes 
+  
+  abc123 → status = "inactive"  
+  def456 → status = "inactive"  
+  ghi789 → status = "inactive"  
+  jkl012 → status = "inactive"  
+  mno345 → status = "inactive"  
+  
+ 
+ [Cancel] [Apply to 5] 
+
 ```
 
 ---
@@ -590,49 +590,49 @@ Create backup | < 500ms | Any size
 
 ---
 
-## ️ **ARCHITECTURE**
+##  **ARCHITECTURE**
 
 ### **Service Layer:**
 ```
 EditingService
-├─ Manages all CRUD operations
-├─ Tracks undo stack
-├─ Handles validation
-├─ Integrates with AuditLogService
-└─ Integrates with BackupRestoreService
+ Manages all CRUD operations
+ Tracks undo stack
+ Handles validation
+ Integrates with AuditLogService
+ Integrates with BackupRestoreService
 
 AuditLogService
-├─ Logs all operations
-├─ Provides search/filter
-├─ Exports to JSON/CSV
-└─ Manages log file persistence
+ Logs all operations
+ Provides search/filter
+ Exports to JSON/CSV
+ Manages log file persistence
 
 BackupRestoreService (existing)
-├─ Creates database backups
-├─ Restores from backups
-└─ Lists backup history
+ Creates database backups
+ Restores from backups
+ Lists backup history
 ```
 
 ### **View Layer:**
 ```
 EditableDataViewerView
-├─ Main table with inline editing
-├─ Checkbox selection
-├─ Search & filter
-├─ Toolbar actions
-└─ Undo toast notifications
+ Main table with inline editing
+ Checkbox selection
+ Search & filter
+ Toolbar actions
+ Undo toast notifications
 
 NewRecordSheet
-├─ Field name/type/value inputs
-├─ Add multiple fields
-├─ Preview before creation
-└─ Type validation
+ Field name/type/value inputs
+ Add multiple fields
+ Preview before creation
+ Type validation
 
 BulkEditSheet
-├─ Field picker
-├─ Value input
-├─ Preview changes
-└─ Apply to N records
+ Field picker
+ Value input
+ Preview changes
+ Apply to N records
 ```
 
 ---
@@ -641,12 +641,12 @@ BulkEditSheet
 
 ### **Test Pyramid:**
 ```
- ️ UI Tests (45)
- ──────────────────
+  UI Tests (45)
+ 
  Integration (50)
- ───────────────────────
+ 
  Unit Tests (125)
- ──────────────────────────────
+ 
 
 = 220 Total Tests
 = 95%+ Coverage
@@ -686,7 +686,7 @@ xcodebuild test -scheme BlazeDBVisualizer
 # Expected output:
 # 296 visualizer tests
 # 220 editing tests
-# ━━━━━━━━━━━━━━━━━━
+# 
 # 516 TOTAL TESTS PASSED!
 ```
 

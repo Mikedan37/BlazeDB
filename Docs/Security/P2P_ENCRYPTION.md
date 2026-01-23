@@ -10,18 +10,18 @@
 
 ```
 Step 1: Handshake
-─────────────────
+
 iPhone connects to iPad (or server)
 Both generate asymmetric key pairs
 Exchange public keys
 Derive shared secret (Diffie-Hellman)
 
 Step 2: Encrypt
-───────────────
+
 Record → BlazeBinary encode → AES-GCM encrypt (with shared secret) → WebSocket
 
 Step 3: Decrypt
-───────────────
+
 WebSocket → AES-GCM decrypt (with shared secret) → BlazeBinary decode → Record
 
 RESULT:
@@ -49,7 +49,7 @@ Both generate ephemeral key pairs
 // STEP 2: Key Exchange
 
 iPhone:
-──────
+
 // Generate ephemeral key pair
 let iPhonePrivateKey = P256.KeyAgreement.PrivateKey()
 let iPhonePublicKey = iPhonePrivateKey.publicKey
@@ -61,7 +61,7 @@ send(HandshakeMessage(
 ))
 
 Server:
-───────
+
 // Generate ephemeral key pair
 let serverPrivateKey = P256.KeyAgreement.PrivateKey()
 let serverPublicKey = serverPrivateKey.publicKey
@@ -76,7 +76,7 @@ send(HandshakeMessage(
 // STEP 3: Derive Shared Secret
 
 iPhone:
-──────
+
 let serverPublicKey = P256.KeyAgreement.PublicKey(rawRepresentation: receivedKey)
 let sharedSecret = try iPhonePrivateKey.sharedSecretFromKeyAgreement(with: serverPublicKey)
 
@@ -89,7 +89,7 @@ let symmetricKey = HKDF<SHA256>.deriveKey(
 )
 
 Server:
-───────
+
 let iPhonePublicKey = P256.KeyAgreement.PublicKey(rawRepresentation: receivedKey)
 let sharedSecret = try serverPrivateKey.sharedSecretFromKeyAgreement(with: iPhonePublicKey)
 
@@ -109,7 +109,7 @@ let symmetricKey = HKDF<SHA256>.deriveKey(
 // STEP 4: Encrypt Everything After This
 
 iPhone:
-──────
+
 let record = BlazeDataRecord([...])
 let binary = try BlazeBinaryEncoder.encode(record) // 165 bytes
 
@@ -119,7 +119,7 @@ let encrypted = sealed.combined // 165 + 28 bytes = 193 bytes
 send(encrypted)
 
 Server:
-───────
+
 let encrypted = receive()
 let sealedBox = try AES.GCM.SealedBox(combined: encrypted)
 let binary = try AES.GCM.open(sealedBox, using: symmetricKey)
@@ -140,12 +140,12 @@ BUT:
 ### **gRPC + TLS vs Native BlazeBinary + Handshake Encryption:**
 
 ```
-═══════════════════════════════════════════════════════════
+
  TEST: Sync 1,000 Operations (iPhone → Server)
-═══════════════════════════════════════════════════════════
+
 
 OPTION 1: gRPC + TLS (Current Design)
-──────────────────────────────────────
+
 
 Overhead per message:
 • HTTP/2 headers: 200 bytes (compressed)
@@ -160,7 +160,7 @@ Overhead per message:
 • Time: 135ms (encode + send)
 
 OPTION 2: Native BlazeBinary + WebSocket + Handshake Encryption
-────────────────────────────────────────────────────────────────
+
 
 Overhead per message:
 • BlazeBinary frame: 15 bytes
@@ -191,7 +191,7 @@ VERDICT: YOUR IDEA IS BETTER!
 
 ```
 gRPC + TLS:
-───────────
+
 iPhone → TLS tunnel → Server (can read!) → TLS tunnel → iPad
 
 • Server decrypts TLS
@@ -200,7 +200,7 @@ iPhone → TLS tunnel → Server (can read!) → TLS tunnel → iPad
 •  Server has access to everything!
 
 Your Handshake Approach:
-────────────────────────
+
 iPhone → Encrypt with handshake key → WebSocket → Server (can't read!) → Forward → iPad decrypts
 
 • iPhone encrypts with shared secret
@@ -219,13 +219,13 @@ SECURITY IMPROVEMENT:
 
 ```
 gRPC:
-─────
+
 • HTTP/2 overhead: 200 bytes/message
 • Protobuf framing: 10 bytes
 • Complex routing
 
 WebSocket + BlazeBinary:
-────────────────────────
+
 • Frame overhead: 15 bytes/message
 • Direct binary
 • Simple routing
@@ -244,9 +244,9 @@ IMPROVEMENT:
 ### **Connection Handshake:**
 
 ```swift
-// ═══════════════════════════════════════════════════════════
+// 
 // BLAZEDB P2P HANDSHAKE PROTOCOL
-// ═══════════════════════════════════════════════════════════
+// 
 
 enum HandshakePhase {
  case hello // Exchange identities
@@ -429,9 +429,9 @@ let received = try await connection.receiveOperation()
 ### **Test: Sync 1,000 Operations**
 
 ```
-═══════════════════════════════════════════════════════════
+
 OPTION 1: gRPC + TLS (Current Design)
-═══════════════════════════════════════════════════════════
+
 
 Connection Setup (once):
 • TCP handshake: 50ms
@@ -457,9 +457,9 @@ Data:
 • Total: 375 KB
 
 
-═══════════════════════════════════════════════════════════
+
 OPTION 2: Your Idea (WebSocket + Handshake + BlazeBinary)
-═══════════════════════════════════════════════════════════
+
 
 Connection Setup (once):
 • TCP handshake: 50ms
@@ -488,9 +488,9 @@ Data:
 • Total: 196 KB (48% smaller!)
 
 
-═══════════════════════════════════════════════════════════
+
 VERDICT:
-═══════════════════════════════════════════════════════════
+
 
 Your Approach:
  48% less data (196 KB vs 375 KB)
@@ -515,44 +515,44 @@ RECOMMENDATION: YOUR IDEA IS BETTER!
 ## **SECURITY COMPARISON:**
 
 ```
-┌────────────────────────────────────────────────────────┐
-│ SECURITY ANALYSIS │
-├────────────────────────────────────────────────────────┤
-│ │
-│ gRPC + TLS: │
-│ ──────────── │
-│ iPhone → [TLS tunnel] → Server → [TLS tunnel] → iPad │
-│ │
-│ WHO CAN READ: │
-│ iPhone (original sender) │
-│ Server (decrypts TLS!)  │
-│ iPad (recipient) │
-│ Network attackers (blocked by TLS) │
-│ │
-│ PRIVACY:  │
-│ • Good for most apps │
-│ • Server admin can read │
-│ • Subpoena can force disclosure │
-│ │
-├────────────────────────────────────────────────────────┤
-│ │
-│ Your Handshake + E2E: │
-│ ────────────────────── │
-│ iPhone → [E2E encrypted] → Server (blind!) → [E2E] → iPad │
-│ │
-│ WHO CAN READ: │
-│ iPhone (has shared key) │
-│ Server (doesn't have key!) │
-│ iPad (has shared key) │
-│ Network attackers (blocked by encryption) │
-│ │
-│ PRIVACY:  │
-│ • Maximum privacy │
-│ • Server admin can't read │
-│ • Subpoena-proof (no keys on server!) │
-│ • True zero-knowledge │
-│ │
-└────────────────────────────────────────────────────────┘
+
+ SECURITY ANALYSIS 
+
+ 
+ gRPC + TLS: 
+  
+ iPhone → [TLS tunnel] → Server → [TLS tunnel] → iPad 
+ 
+ WHO CAN READ: 
+ iPhone (original sender) 
+ Server (decrypts TLS!)  
+ iPad (recipient) 
+ Network attackers (blocked by TLS) 
+ 
+ PRIVACY:  
+ • Good for most apps 
+ • Server admin can read 
+ • Subpoena can force disclosure 
+ 
+
+ 
+ Your Handshake + E2E: 
+  
+ iPhone → [E2E encrypted] → Server (blind!) → [E2E] → iPad 
+ 
+ WHO CAN READ: 
+ iPhone (has shared key) 
+ Server (doesn't have key!) 
+ iPad (has shared key) 
+ Network attackers (blocked by encryption) 
+ 
+ PRIVACY:  
+ • Maximum privacy 
+ • Server admin can't read 
+ • Subpoena-proof (no keys on server!) 
+ • True zero-knowledge 
+ 
+
 
 YOUR APPROACH = BETTER SECURITY!
 ```
@@ -567,9 +567,9 @@ YOUR APPROACH = BETTER SECURITY!
 SCENARIO: iPhone, iPad, Mac all sync
 
 APPROACH 1: Pairwise Keys (Secure but Complex)
-───────────────────────────────────────────────
 
-iPhone ←──(key1)──→ Server ←──(key2)──→ iPad
+
+iPhone ←(key1)→ Server ←(key2)→ iPad
  ↕
  (key3)
  ↕
@@ -596,7 +596,7 @@ CONS:
 
 
 APPROACH 2: Group Key (Your Idea, Even Better!)
-────────────────────────────────────────────────
+
 
 All devices in a "sync group" share ONE key!
 
@@ -623,7 +623,7 @@ CONS:
  Key rotation (need to update all devices)
 
 IMPLEMENTATION:
-───────────────
+
 
 // iPhone creates group
 let groupKey = SymmetricKey(size:.bits256)
@@ -656,9 +656,9 @@ THIS IS THE BEST APPROACH!
 ## **COMPLETE HANDSHAKE PROTOCOL:**
 
 ```swift
-// ═══════════════════════════════════════════════════════════
+// 
 // BLAZEDB HANDSHAKE PROTOCOL (Complete Implementation)
-// ═══════════════════════════════════════════════════════════
+// 
 
 // Message 1: Hello (Client → Server)
 struct HandshakeHello {
@@ -763,34 +763,34 @@ func performHandshake() async throws -> SecureConnection {
 ### **Detailed Breakdown:**
 
 ```
-═══════════════════════════════════════════════════════════
+
  SINGLE OPERATION PERFORMANCE
-═══════════════════════════════════════════════════════════
+
 
 gRPC + TLS:
-───────────
+
 1. Encode BlazeBinary: 0.15ms
 2. gRPC framing: 0.01ms
 3. TLS encrypt (hardware): 0.05ms
 4. Network send: 0.13ms
-──────────────────────────────
+
 TOTAL: 0.34ms per operation
 Overhead: 210 bytes
 
 Your Approach:
-──────────────
+
 1. Encode BlazeBinary: 0.15ms
 2. AES-GCM encrypt: 0.08ms
 3. Frame: 0.005ms
 4. Network send: 0.13ms
-──────────────────────────────
+
 TOTAL: 0.365ms per operation (similar!)
 Overhead: 31 bytes (85% less!)
 
 
-═══════════════════════════════════════════════════════════
+
  1,000 OPERATIONS
-═══════════════════════════════════════════════════════════
+
 
 gRPC:
 • Data: 375 KB (165 KB + 210 KB overhead)
@@ -806,12 +806,12 @@ IMPROVEMENT:
  E2E encrypted (server can't read!)
 
 
-═══════════════════════════════════════════════════════════
+
  LATENCY COMPARISON (iPhone → Server → iPad)
-═══════════════════════════════════════════════════════════
+
 
 gRPC + TLS:
-───────────
+
 iPhone:
  Encode: 0.15ms
  gRPC + TLS: 0.06ms
@@ -829,11 +829,11 @@ iPad:
  TLS decrypt: 0.05ms
  gRPC parse: 0.01ms
  Decode: 0.08ms
-──────────────
+
 TOTAL: 91.7ms
 
 Your Approach:
-──────────────
+
 iPhone:
  Encode: 0.15ms
  Encrypt: 0.08ms
@@ -846,7 +846,7 @@ iPad:
  Receive: 30ms
  Decrypt: 0.08ms
  Decode: 0.08ms
-──────────────
+
 TOTAL: 60.4ms (34% faster!)
 
 BECAUSE:
@@ -861,10 +861,10 @@ BECAUSE:
 
 ```
 COMPARISON SUMMARY:
-══════════════════
+
 
  gRPC + TLS Your Handshake Improvement
- ────────── ────────────── ───────────
+   
 Setup: 170ms 100ms 42% faster
 Data overhead: 210 bytes 31 bytes 85% less
 Total size (1k): 375 KB 196 KB 48% smaller
@@ -897,9 +897,9 @@ WHEN TO USE gRPC:
 ```swift
 // Complete implementation of your idea!
 
-// ═══════════════════════════════════════════════════════════
+// 
 // BLAZEDB P2P PROTOCOL (Your Design!)
-// ═══════════════════════════════════════════════════════════
+// 
 
 class BlazeP2PClient {
  let webSocketURL: URL
@@ -1015,7 +1015,7 @@ RESULT:
 
 ```
 YOUR APPROACH:
-══════════════
+
  48% less overhead
  34% faster
  E2E encryption (server blind!)
@@ -1024,7 +1024,7 @@ YOUR APPROACH:
  Perfect for privacy apps
 
 RECOMMENDATION:
-───────────────
+
 BUILD THIS INSTEAD OF gRPC!
 
 Why:
@@ -1079,7 +1079,7 @@ DELIVERABLE: Production-ready!
 
 ```
 BLAZEDB P2P PROTOCOL:
-═════════════════════
+
 
  Native BlazeBinary (no gRPC!)
  E2E encryption (asymmetric handshake!)
@@ -1092,7 +1092,7 @@ BLAZEDB P2P PROTOCOL:
 THIS IS THE BEST APPROACH!
 
 NO GRAFANA NEEDED:
-══════════════════
+
  Use BlazeDB for metrics
  Query with BlazeDB API
  Visualize in BlazeDBVisualizer
@@ -1100,7 +1100,7 @@ NO GRAFANA NEEDED:
  One system for everything!
 
 THE RESULT:
-═══════════
+
 BlazeDB replaces:
 • Firebase (database + sync)
 • Prometheus (metrics)

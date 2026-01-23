@@ -506,7 +506,7 @@ if duration > 0.1 {  // >100ms
 ```swift
 // In BlazeDoctor
 func printHealth(_ health: HealthReport) {
-    let icon = health.status == .ok ? "" : "️"
+    let icon = health.status == .ok ? "" : ""
     print("\(icon) Database Health: \(health.status)")
     // ... formatted output
 }

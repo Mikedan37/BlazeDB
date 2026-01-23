@@ -243,7 +243,7 @@ Speedup: 2-5x faster user experience
 
 ---
 
-## ️ **Garbage Collection**
+##  **Garbage Collection**
 
 ### **Status**: **Fully Implemented**
 
@@ -274,7 +274,7 @@ Trigger GC when:
 ## **Phase 2 Progress: 100%!**
 
 ```
-[████████████████████████] 8/8 tasks
+[] 8/8 tasks
 
  Foundation setup
  MVCC Insert

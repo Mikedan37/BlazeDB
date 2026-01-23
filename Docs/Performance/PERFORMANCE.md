@@ -124,11 +124,11 @@ Automated regression testing ensures:
 ### Insert Performance (1,000 records)
 
 ```
-BlazeDB: 142ms ████████████████░░░░░░░░░░░░
-SQLite: 156ms █████████████████░░░░░░░░░░░
-GRDB: 168ms ██████████████████░░░░░░░░░░
-Realm: 189ms ████████████████████░░░░░░░░
-Core Data: 234ms █████████████████████████░░░
+BlazeDB: 142ms 
+SQLite: 156ms 
+GRDB: 168ms 
+Realm: 189ms 
+Core Data: 234ms 
 ```
 
 **BlazeDB: 10% faster than SQLite**
@@ -136,9 +136,9 @@ Core Data: 234ms █████████████████████
 ### Query Performance (indexed WHERE)
 
 ```
-BlazeDB: 0.8ms ████░░░░░░░░░░░░░░░░░░░░░░
-SQLite: 1.2ms ██████░░░░░░░░░░░░░░░░░░░░░
-GRDB: 1.4ms ███████░░░░░░░░░░░░░░░░░░░░
+BlazeDB: 0.8ms 
+SQLite: 1.2ms 
+GRDB: 1.4ms 
 ```
 
 **BlazeDB: 33% faster than SQLite**

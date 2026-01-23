@@ -10,18 +10,18 @@
 
 ```
 Current Flow:
-─────────────
+
 insert() → JSONEncoder.encode() → PageStore.writePage()
 fetch() → PageStore.readPage() → JSONDecoder.decode()
 
 Problem:
-────────
+
 • JSON encoding: ~0.2-0.5ms per record
 • JSON decoding: ~0.2-0.5ms per record
 • Total: ~0.4-1.0ms per operation (40-50% of total time!)
 
 Solution:
-─────────
+
  Use BlazeBinary encoding (already implemented!)
  BlazeBinary is 5-10x faster than JSON
  BlazeBinary is 30-40% smaller
@@ -33,18 +33,18 @@ Impact: 5-10x faster encoding/decoding!
 
 ```
 Current Flow:
-─────────────
+
 PageStore.writePage() → FileHandle.write() (synchronous)
 PageStore.readPage() → FileHandle.read() (synchronous)
 
 Problem:
-────────
+
 • Synchronous I/O blocks thread
 • Can't parallelize operations
 • Disk I/O: ~0.1-0.3ms per page
 
 Solution:
-─────────
+
  Async File I/O (already implemented!)
  Use DispatchQueue.async for writes
  Use async/await for reads
@@ -57,17 +57,17 @@ Impact: 2-3x faster I/O!
 
 ```
 Current Flow:
-─────────────
+
 insert() → update indexMap → saveLayout() → write to disk
 
 Problem:
-────────
+
 • saveLayout() writes entire index to disk on EVERY insert
 • Disk write: ~0.1-0.2ms per save
 • For 1000 inserts: 1000 disk writes = 100-200ms wasted!
 
 Solution:
-─────────
+
  Batch index updates (save every N operations)
  Use write-ahead log for index changes
  Lazy persistence (save on persist() call)
@@ -79,17 +79,17 @@ Impact: 10-100x faster for batch operations!
 
 ```
 Current Flow:
-─────────────
+
 writePage() → AES-GCM encrypt (4KB page)
 readPage() → AES-GCM decrypt (4KB page)
 
 Problem:
-────────
+
 • AES-GCM: ~0.05-0.1ms per page
 • Hardware acceleration helps, but still overhead
 
 Solution:
-─────────
+
  Already using hardware acceleration
  Batch encryption (encrypt multiple pages at once)
  Use AES-NI if available
@@ -101,16 +101,16 @@ Impact: 1.2-1.5x faster encryption!
 
 ```
 Current Flow:
-─────────────
+
 Every operation allocates new Data buffers
 
 Problem:
-────────
+
 • Memory allocation: ~0.01-0.05ms per operation
 • GC pressure from frequent allocations
 
 Solution:
-─────────
+
  Memory pooling (reuse buffers)
  Pre-allocate buffers
  Use stack allocation where possible
@@ -126,7 +126,7 @@ Impact: 1.1-1.2x faster!
 
 ```
 Operation Type Time (ms) Throughput
-══════════════════════════════════════════════
+
 Insert (single) 0.5-1.0ms 1,000-2,000 ops/sec
 Insert (batch) 0.3-0.5ms 2,000-3,333 ops/sec
 Fetch (single) 0.2-0.5ms 2,000-5,000 ops/sec
@@ -140,7 +140,7 @@ REALISTIC: 2,000-10,000 ops/sec (batched)
 
 ```
 Operation Type Time (ms) Throughput
-══════════════════════════════════════════════
+
 Insert (single) 0.2-0.4ms 2,500-5,000 ops/sec
 Insert (batch) 0.1-0.2ms 5,000-10,000 ops/sec
 Fetch (single) 0.1-0.2ms 5,000-10,000 ops/sec

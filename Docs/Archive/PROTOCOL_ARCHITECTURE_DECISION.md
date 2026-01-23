@@ -22,31 +22,31 @@ Result: Best of both worlds - same code, maximum performance!
 ### **Protocol Abstraction (BlazeSyncRelay):**
 
 ```
-┌─────────────────────────────────────────┐
-│ BlazeSyncEngine (sync logic) │
-│ • Same code for all scenarios │
-│ • Uses BlazeSyncRelay interface │
-└─────────────────────────────────────────┘
+
+ BlazeSyncEngine (sync logic) 
+ • Same code for all scenarios 
+ • Uses BlazeSyncRelay interface 
+
  ↓
-┌─────────────────────────────────────────┐
-│ BlazeSyncRelay (protocol interface) │
-│ • connect() │
-│ • pushOperations() │
-│ • pullOperations() │
-│ • onOperationReceived() │
-└─────────────────────────────────────────┘
+
+ BlazeSyncRelay (protocol interface) 
+ • connect() 
+ • pushOperations() 
+ • pullOperations() 
+ • onOperationReceived() 
+
  ↓
- ┌─────────┴─────────┐
+ 
  ↓ ↓
-┌──────────┐ ┌──────────────┐
-│ Network │ │ Same Device │
-│ Relay │ │ Relay │
-└──────────┘ └──────────────┘
+ 
+ Network   Same Device 
+ Relay   Relay 
+ 
  ↓ ↓
-┌──────────┐ ┌──────────────┐
-│ Raw TCP │ │ Unix Domain │
-│ │ │ Sockets │
-└──────────┘ └──────────────┘
+ 
+ Raw TCP   Unix Domain 
+   Sockets 
+ 
 ```
 
 ### **Key Insight:**
@@ -83,26 +83,26 @@ let relay = WebSocketRelay(connection: secureConnection)
 ### **Transport Stack:**
 
 ```
-┌─────────────────────────────────────────┐
-│ BlazeBinary Protocol (encoding) │
-│ • Same format for all scenarios │
-└─────────────────────────────────────────┘
+
+ BlazeBinary Protocol (encoding) 
+ • Same format for all scenarios 
+
  ↓
-┌─────────────────────────────────────────┐
-│ SecureConnection (E2E encryption) │
-│ • AES-256-GCM │
-│ • ECDH P-256 handshake │
-└─────────────────────────────────────────┘
+
+ SecureConnection (E2E encryption) 
+ • AES-256-GCM 
+ • ECDH P-256 handshake 
+
  ↓
-┌─────────────────────────────────────────┐
-│ Raw TCP (NWConnection) │
-│ • Direct socket connection │
-│ • Optional TLS (transport security) │
-└─────────────────────────────────────────┘
+
+ Raw TCP (NWConnection) 
+ • Direct socket connection 
+ • Optional TLS (transport security) 
+
  ↓
-┌─────────────────────────────────────────┐
-│ Internet / Local Network │
-└─────────────────────────────────────────┘
+
+ Internet / Local Network 
+
 ```
 
 ### **Performance:**
@@ -129,23 +129,23 @@ let relay = InMemoryRelay(mode:.bidirectional)
 ### **Transport Stack:**
 
 ```
-┌─────────────────────────────────────────┐
-│ BlazeBinary Protocol (encoding) │
-│ • SAME format as network! │
-└─────────────────────────────────────────┘
+
+ BlazeBinary Protocol (encoding) 
+ • SAME format as network! 
+
  ↓
-┌─────────────────────────────────────────┐
-│ InMemoryRelay (in-process) │
-│ • Direct memory sharing │
-│ • Or: Unix Domain Sockets │
-└─────────────────────────────────────────┘
+
+ InMemoryRelay (in-process) 
+ • Direct memory sharing 
+ • Or: Unix Domain Sockets 
+
  ↓
-┌─────────────────────────────────────────┐
-│ App Groups (shared directory) │
-│ • Shared container │
-│ • File-based messaging │
-│ • Or: Unix Domain Sockets (faster!) │
-└─────────────────────────────────────────┘
+
+ App Groups (shared directory) 
+ • Shared container 
+ • File-based messaging 
+ • Or: Unix Domain Sockets (faster!) 
+
 ```
 
 ### **Performance:**
@@ -164,26 +164,26 @@ Bandwidth: Limited by memory speed (10+ GB/s)
 ### **Recommended Approach:**
 
 ```
-┌─────────────────────────────────────────┐
-│ BlazeBinary Protocol (UNIFIED) │
-│ • Same encoding format everywhere │
-│ • Same operation format │
-│ • Same compression │
-└─────────────────────────────────────────┘
+
+ BlazeBinary Protocol (UNIFIED) 
+ • Same encoding format everywhere 
+ • Same operation format 
+ • Same compression 
+
  ↓
- ┌─────────┴─────────┐
+ 
  ↓ ↓
-┌──────────┐ ┌──────────────┐
-│ Network │ │ Same Device │
-│ Transport│ │ Transport │
-└──────────┘ └──────────────┘
+ 
+ Network   Same Device 
+ Transport  Transport 
+ 
  ↓ ↓
-┌──────────┐ ┌──────────────┐
-│ Raw TCP │ │ Unix Domain │
-│ + TLS │ │ Sockets │
-│ │ │ (or shared │
-│ │ │ memory) │
-└──────────┘ └──────────────┘
+ 
+ Raw TCP   Unix Domain 
+ + TLS   Sockets 
+   (or shared 
+   memory) 
+ 
 ```
 
 ### **Why This Works:**
@@ -306,35 +306,35 @@ class InMemoryRelay: BlazeSyncRelay {
 ### **Three-Tier Transport System:**
 
 ```
-┌─────────────────────────────────────────┐
-│ TIER 1: SAME DEVICE (Fastest) │
-│ ─────────────────────────────────────── │
-│ Transport: Shared Memory / App Groups │
-│ Protocol: BlazeBinary (in-memory) │
-│ Throughput: 100,000,000+ ops/sec │
-│ Latency: <0.1ms │
-│ Use: Cross-app sync on same device │
-└─────────────────────────────────────────┘
+
+ TIER 1: SAME DEVICE (Fastest) 
+  
+ Transport: Shared Memory / App Groups 
+ Protocol: BlazeBinary (in-memory) 
+ Throughput: 100,000,000+ ops/sec 
+ Latency: <0.1ms 
+ Use: Cross-app sync on same device 
+
  ↓ (if not available)
-┌─────────────────────────────────────────┐
-│ TIER 2: SAME DEVICE (Very Fast) │
-│ ─────────────────────────────────────── │
-│ Transport: Unix Domain Sockets │
-│ Protocol: BlazeBinary (over socket) │
-│ Throughput: 50,000,000+ ops/sec │
-│ Latency: <1ms │
-│ Use: Cross-app sync (fallback) │
-└─────────────────────────────────────────┘
+
+ TIER 2: SAME DEVICE (Very Fast) 
+  
+ Transport: Unix Domain Sockets 
+ Protocol: BlazeBinary (over socket) 
+ Throughput: 50,000,000+ ops/sec 
+ Latency: <1ms 
+ Use: Cross-app sync (fallback) 
+
  ↓ (if different device)
-┌─────────────────────────────────────────┐
-│ TIER 3: NETWORK (Fast) │
-│ ─────────────────────────────────────── │
-│ Transport: Raw TCP │
-│ Protocol: BlazeBinary (over TCP) │
-│ Throughput: 7,800,000 ops/sec │
-│ Latency: 5-100ms │
-│ Use: Device-to-server, device-to-device │
-└─────────────────────────────────────────┘
+
+ TIER 3: NETWORK (Fast) 
+  
+ Transport: Raw TCP 
+ Protocol: BlazeBinary (over TCP) 
+ Throughput: 7,800,000 ops/sec 
+ Latency: 5-100ms 
+ Use: Device-to-server, device-to-device 
+
 ```
 
 ### **Automatic Selection:**
@@ -364,21 +364,21 @@ func connect(from: UUID, to: UUID) async throws {
 
 ```
 SCENARIO 1: iPhone App ↔ Mac App (Same Device)
-───────────────────────────────────────────────
+
 Protocol: BlazeBinary (same format)
 Transport: Unix Domain Sockets
 Throughput: 50,000,000 ops/sec
 Latency: <1ms
 
 SCENARIO 2: iPhone App ↔ Server (Network)
-──────────────────────────────────────────
+
 Protocol: BlazeBinary (same format!)
 Transport: Raw TCP
 Throughput: 7,800,000 ops/sec
 Latency: 50-100ms
 
 SCENARIO 3: iPhone App ↔ iPhone App (Same Device)
-──────────────────────────────────────────────────
+
 Protocol: BlazeBinary (same format!)
 Transport: Shared Memory (App Groups)
 Throughput: 100,000,000+ ops/sec

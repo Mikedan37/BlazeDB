@@ -32,39 +32,39 @@
 ##  **Architecture**
 
 ```
-┌────────────────────────────────────────────────────────────────┐
-│ BlazeDB Relay Network │
-├────────────────────────────────────────────────────────────────┤
-│ │
-│ ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────┐ │
-│ │ iPhone │ │ iPad │ │ Mac │ │ Android │ │
-│ │ │ │ │ │ │ │ │ │
-│ │ BlazeDB │ │ BlazeDB │ │ BlazeDB │ │ BlazeDB │ │
-│ │ Client │ │ Client │ │ Client │ │ Client │ │
-│ └────┬────┘ └────┬────┘ └────┬────┘ └────┬────┘ │
-│ │ │ │ │ │
-│ └──────────────┼──────────────┼──────────────┘ │
-│ │ │ │
-│ WebSocket (Binary) │ │
-│ │ │ │
-│ ┌───────▼──────────────▼───────┐ │
-│ │ BlazeDB Relay Server │ │
-│ │ (Swift on Server) │ │
-│ │ │ │
-│ │ ┌──────────────────────┐ │ │
-│ │ │ BlazeDB Instance │ │ │
-│ │ │ (Server-side DB) │ │ │
-│ │ └──────────────────────┘ │ │
-│ │ │ │
-│ │ Features: │ │
-│ │ • Operation log │ │
-│ │ • CRDT merge │ │
-│ │ • Real-time broadcast │ │
-│ │ • Query execution │ │
-│ │ • Conflict resolution │ │
-│ └───────────────────────────────┘ │
-│ │
-└────────────────────────────────────────────────────────────────┘
+
+ BlazeDB Relay Network 
+
+ 
+     
+  iPhone   iPad   Mac   Android  
+         
+  BlazeDB   BlazeDB   BlazeDB   BlazeDB  
+  Client   Client   Client   Client  
+     
+     
+  
+   
+ WebSocket (Binary)  
+   
+  
+  BlazeDB Relay Server  
+  (Swift on Server)  
+   
+    
+   BlazeDB Instance   
+   (Server-side DB)   
+    
+   
+  Features:  
+  • Operation log  
+  • CRDT merge  
+  • Real-time broadcast  
+  • Query execution  
+  • Conflict resolution  
+  
+ 
+
 ```
 
 ---

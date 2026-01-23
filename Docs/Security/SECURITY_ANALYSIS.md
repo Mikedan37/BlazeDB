@@ -228,59 +228,59 @@ STATUS: OPTIONAL (for privacy-critical apps)
 ## **SECURITY LAYERS (Defense in Depth)**
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│ SECURITY LAYERS │
-├─────────────────────────────────────────────────────────┤
-│ │
-│ Layer 7: Application │
-│ ┌────────────────────────────────────────────────┐ │
-│ │ • Row-Level Security (RLS) │ │
-│ │ • User permissions │ │
-│ │ • Audit logging │ │
-│ └────────────────────────────────────────────────┘ │
-│ │
-│ Layer 6: End-to-End Encryption (Optional) │
-│ ┌────────────────────────────────────────────────┐ │
-│ │ • Public key encryption  TO ADD │ │
-│ │ • Server can't read data │ │
-│ └────────────────────────────────────────────────┘ │
-│ │
-│ Layer 5: Authentication │
-│ ┌────────────────────────────────────────────────┐ │
-│ │ • JWT tokens  TO ADD │ │
-│ │ • API keys  TO ADD │ │
-│ │ • OAuth 2.0 OPTIONAL │ │
-│ └────────────────────────────────────────────────┘ │
-│ │
-│ Layer 4: Transport Encryption │
-│ ┌────────────────────────────────────────────────┐ │
-│ │ • TLS 1.3  TO ADD │ │
-│ │ • Certificate validation  TO ADD │ │
-│ │ • Perfect forward secrecy (with TLS) │ │
-│ └────────────────────────────────────────────────┘ │
-│ │
-│ Layer 3: Data Integrity │
-│ ┌────────────────────────────────────────────────┐ │
-│ │ • BlazeBinary CRC32 │ │
-│ │ • HMAC signatures  TO ADD │ │
-│ │ • Operation signatures  TO ADD │ │
-│ └────────────────────────────────────────────────┘ │
-│ │
-│ Layer 2: Local Storage │
-│ ┌────────────────────────────────────────────────┐ │
-│ │ • AES-256-GCM encryption │ │
-│ │ • Secure key storage (Keychain) │ │
-│ │ • File permissions │ │
-│ └────────────────────────────────────────────────┘ │
-│ │
-│ Layer 1: Platform │
-│ ┌────────────────────────────────────────────────┐ │
-│ │ • iOS sandbox │ │
-│ │ • macOS entitlements │ │
-│ │ • OS-level security │ │
-│ └────────────────────────────────────────────────┘ │
-│ │
-└─────────────────────────────────────────────────────────┘
+
+ SECURITY LAYERS 
+
+ 
+ Layer 7: Application 
+  
+  • Row-Level Security (RLS)  
+  • User permissions  
+  • Audit logging  
+  
+ 
+ Layer 6: End-to-End Encryption (Optional) 
+  
+  • Public key encryption  TO ADD  
+  • Server can't read data  
+  
+ 
+ Layer 5: Authentication 
+  
+  • JWT tokens  TO ADD  
+  • API keys  TO ADD  
+  • OAuth 2.0 OPTIONAL  
+  
+ 
+ Layer 4: Transport Encryption 
+  
+  • TLS 1.3  TO ADD  
+  • Certificate validation  TO ADD  
+  • Perfect forward secrecy (with TLS)  
+  
+ 
+ Layer 3: Data Integrity 
+  
+  • BlazeBinary CRC32  
+  • HMAC signatures  TO ADD  
+  • Operation signatures  TO ADD  
+  
+ 
+ Layer 2: Local Storage 
+  
+  • AES-256-GCM encryption  
+  • Secure key storage (Keychain)  
+  • File permissions  
+  
+ 
+ Layer 1: Platform 
+  
+  • iOS sandbox  
+  • macOS entitlements  
+  • OS-level security  
+  
+ 
+
 ```
 
 ---

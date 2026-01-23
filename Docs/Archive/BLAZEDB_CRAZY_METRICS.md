@@ -309,22 +309,22 @@ Reliability: 10/10
 
 ```
 Speed (ops/sec):
-BlazeDB: ████████████████████ 1,000,000
-gRPC: ██████████ 500,000
-WebSocket: ████ 200,000
-Firebase: ██ 100,000
+BlazeDB:  1,000,000
+gRPC:  500,000
+WebSocket:  200,000
+Firebase:  100,000
 
 Efficiency (bytes/op):
-BlazeDB: ██ 35
-gRPC: ████ 80
-WebSocket: ███████ 150
-Firebase: ██████████ 250
+BlazeDB:  35
+gRPC:  80
+WebSocket:  150
+Firebase:  250
 
 Battery Life (days):
-BlazeDB: ████████████████████ 13-39
-gRPC: █████ 5.3
-WebSocket: ██ 2.7
-Firebase: █ 0.9
+BlazeDB:  13-39
+gRPC:  5.3
+WebSocket:  2.7
+Firebase:  0.9
 ```
 
 **BlazeDB DOMINATES in every category! **

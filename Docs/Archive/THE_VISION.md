@@ -122,56 +122,56 @@ USE CASES:
 ## **THE COMPLETE STACK**
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│ BlazeDB Platform │
-├─────────────────────────────────────────────────────────────┤
-│ │
-│ CLIENT LAYER │
-│ ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐ │
-│ │ iPhone │ │ iPad │ │ Android │ │ Web │ │
-│ │ │ │ │ │ │ │ │ │
-│ │ BlazeDB │ │ BlazeDB │ │ BlazeDB │ │ BlazeDB │ │
-│ │ + gRPC │ │ + gRPC │ │ + gRPC │ │ + gRPC │ │
-│ └────┬─────┘ └────┬─────┘ └────┬─────┘ └────┬─────┘ │
-│ │ │ │ │ │
-│ └─────────────┴─────────────┴─────────────┘ │
-│ │ │
-│ ▼ │
-│ ┌─────────────────────────────────────────────────────┐ │
-│ │ gRPC + BlazeBinary Protocol │ │
-│ │ (60% more efficient than JSON) │ │
-│ └─────────────────────────────────────────────────────┘ │
-│ │ │
-│ ▼ │
-│ SERVER LAYER (Vapor + Swift) │
-│ ┌─────────────────────────────────────────────────────┐ │
-│ │ BlazeDB gRPC Service │ │
-│ │ • Handles all clients │ │
-│ │ • Runs BlazeDB server-side │ │
-│ │ • Executes queries │ │
-│ │ • Coordinates sync │ │
-│ │ • Real-time streaming │ │
-│ └─────────────────────────────────────────────────────┘ │
-│ │ │
-│ ▼ │
-│ ┌─────────────────────────────────────────────────────┐ │
-│ │ Server BlazeDB Instance │ │
-│ │ • Same code as client! │ │
-│ │ • Same queries! │ │
-│ │ • Same operations! │ │
-│ │ • Persistent storage │ │
-│ └─────────────────────────────────────────────────────┘ │
-│ │
-│ MANAGEMENT LAYER │
-│ ┌─────────────────────────────────────────────────────┐ │
-│ │ BlazeDB Visualizer │ │
-│ │ • Monitors local + remote DBs │ │
-│ │ • Visual queries │ │
-│ │ • Access control │ │
-│ │ • Performance monitoring │ │
-│ └─────────────────────────────────────────────────────┘ │
-│ │
-└─────────────────────────────────────────────────────────────┘
+
+ BlazeDB Platform 
+
+ 
+ CLIENT LAYER 
+     
+  iPhone   iPad   Android   Web  
+         
+  BlazeDB   BlazeDB   BlazeDB   BlazeDB  
+  + gRPC   + gRPC   + gRPC   + gRPC  
+     
+     
+  
+  
+  
+  
+  gRPC + BlazeBinary Protocol  
+  (60% more efficient than JSON)  
+  
+  
+  
+ SERVER LAYER (Vapor + Swift) 
+  
+  BlazeDB gRPC Service  
+  • Handles all clients  
+  • Runs BlazeDB server-side  
+  • Executes queries  
+  • Coordinates sync  
+  • Real-time streaming  
+  
+  
+  
+  
+  Server BlazeDB Instance  
+  • Same code as client!  
+  • Same queries!  
+  • Same operations!  
+  • Persistent storage  
+  
+ 
+ MANAGEMENT LAYER 
+  
+  BlazeDB Visualizer  
+  • Monitors local + remote DBs  
+  • Visual queries  
+  • Access control  
+  • Performance monitoring  
+  
+ 
+
 ```
 
 ---
@@ -435,12 +435,12 @@ PROFIT: ~$89k/month (90% margin!)
 |---------|----------|-------|----------|-------------|
 | **Protocol** | REST/JSON | Binary | REST/JSON | **gRPC + BlazeBinary** |
 | **Efficiency** | 1x | 1.5x | 1x | **2.5x** |
-| **Offline** | ️ Limited | | ️ Limited | **Native** |
-| **Real-Time** | ️ Polling | | | **<50ms** |
+| **Offline** |  Limited | |  Limited | **Native** |
+| **Real-Time** |  Polling | | | **<50ms** |
 | **Self-Host** | | | | |
-| **Server-Side Queries** | ️ Limited | | | **Full BlazeDB** |
-| **Type-Safe** | | ️ | | **KeyPaths** |
-| **SwiftUI** | | ️ | | **@BlazeQuery** |
+| **Server-Side Queries** |  Limited | | | **Full BlazeDB** |
+| **Type-Safe** | |  | | **KeyPaths** |
+| **SwiftUI** | |  | | **@BlazeQuery** |
 | **Conflicts** | Manual | Automatic | Manual | **CRDT** |
 | **Open Source** | | | | |
 | **Same Code Client/Server** | | | | **Unique!** |

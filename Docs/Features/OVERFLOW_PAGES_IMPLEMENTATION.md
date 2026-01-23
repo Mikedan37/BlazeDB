@@ -22,19 +22,19 @@
 ### **Overflow Page Format**
 
 ```
-┌─────────────────────────────────────┐
-│ Overflow Page (4096 bytes) │
-├─────────────────────────────────────┤
-│ Magic: "OVER" (4 bytes) │
-│ Version: 0x03 (1 byte) │
-│ Reserved: 0x00 (3 bytes) │
-│ Next Page Index: UInt32 (4 bytes) │ ← Chain pointer
-│ Data Length: UInt32 (4 bytes) │
-│ Nonce: 12 bytes │
-│ Tag: 16 bytes │
-│ Ciphertext: Variable │
-│ Padding: To 4096 bytes │
-└─────────────────────────────────────┘
+
+ Overflow Page (4096 bytes) 
+
+ Magic: "OVER" (4 bytes) 
+ Version: 0x03 (1 byte) 
+ Reserved: 0x00 (3 bytes) 
+ Next Page Index: UInt32 (4 bytes)  ← Chain pointer
+ Data Length: UInt32 (4 bytes) 
+ Nonce: 12 bytes 
+ Tag: 16 bytes 
+ Ciphertext: Variable 
+ Padding: To 4096 bytes 
+
 ```
 
 ### **Write Flow**

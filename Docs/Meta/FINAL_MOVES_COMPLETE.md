@@ -8,14 +8,14 @@ All test files have been reorganized into the proper directory structure under `
 
 ```
 Tests/BlazeDBTests/
-├── Codec/ # All BlazeBinary codec tests
-├── Engine/ # All engine-level integration tests
-├── Stress/ # All stress and chaos tests
-├── Performance/ # All performance and benchmark tests
-├── Fixtures/ # All fixture files
-├── CI/ # All CI test suites
-├── Docs/ # All documentation files
-└── Helpers/ # All helper utilities
+ Codec/ # All BlazeBinary codec tests
+ Engine/ # All engine-level integration tests
+ Stress/ # All stress and chaos tests
+ Performance/ # All performance and benchmark tests
+ Fixtures/ # All fixture files
+ CI/ # All CI test suites
+ Docs/ # All documentation files
+ Helpers/ # All helper utilities
 ```
 
 ## Files Moved

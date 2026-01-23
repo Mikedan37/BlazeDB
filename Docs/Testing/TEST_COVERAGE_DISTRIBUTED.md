@@ -8,31 +8,31 @@
 
 ```
 BlazeDBTests/
-├── TopologyTests.swift NEW
-│ • Node registration
-│ • Local connections
-│ • Topology graph
-│ • Error cases
-│
-├── InMemoryRelayTests.swift NEW
-│ • Connect/disconnect
-│ • Push/pull operations
-│ • Read-only mode
-│ • Operation handler
-│ • Sync state exchange
-│
-├── SecureConnectionTests.swift NEW
-│ • Handshake message encoding
-│ • Key derivation (DH + HKDF)
-│ • Encryption/decryption
-│ • Challenge-response
-│
-├── CrossAppSyncTests.swift NEW
-│ • Export policy
-│ • Field filtering
-│ • Read-only mode
-│
-└── DistributedSyncTests.swift NEW
+ TopologyTests.swift NEW
+ • Node registration
+ • Local connections
+ • Topology graph
+ • Error cases
+
+ InMemoryRelayTests.swift NEW
+ • Connect/disconnect
+ • Push/pull operations
+ • Read-only mode
+ • Operation handler
+ • Sync state exchange
+
+ SecureConnectionTests.swift NEW
+ • Handshake message encoding
+ • Key derivation (DH + HKDF)
+ • Encryption/decryption
+ • Challenge-response
+
+ CrossAppSyncTests.swift NEW
+ • Export policy
+ • Field filtering
+ • Read-only mode
+
+ DistributedSyncTests.swift NEW
  • Local sync integration
  • Sync policy
  • Remote node
@@ -93,7 +93,7 @@ TOTAL: 5 NEW TEST FILES!
 
 ```
 DISTRIBUTED TESTS: 22 tests
-═════════════════════════════
+
 
 Topology: 6 tests
 InMemoryRelay: 5 tests
@@ -110,7 +110,7 @@ TOTAL: 22 NEW TESTS!
 
 ```
 COMPONENT TESTS COVERAGE
-════════════════════════════════════════
+
 BlazeTopology 6 Good
 InMemoryRelay 5 Good
 SecureConnection 4 Good

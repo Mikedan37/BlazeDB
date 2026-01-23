@@ -1,4 +1,4 @@
-# ️ **Monitoring API Security Guide**
+#  **Monitoring API Security Guide**
 
 ## **What's Safe to Expose**
 
@@ -265,5 +265,5 @@ Export metrics for Grafana:
 
 ---
 
-**You now have SECURE, PRODUCTION-READY monitoring!** ️
+**You now have SECURE, PRODUCTION-READY monitoring!** 
 

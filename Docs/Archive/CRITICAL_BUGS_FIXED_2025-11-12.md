@@ -202,7 +202,7 @@ internal func updateSearchIndexOnInsert(_ record: BlazeDataRecord) throws {
 
 ---
 
-## ️ Files Modified
+##  Files Modified
 
 ### **Core Fixes:**
 1. `BlazeDB/Storage/PageStore.swift`

@@ -8,40 +8,40 @@
 
 ```
 BlazeDB/Distributed/
-├── BlazeOperation.swift Core operation type
-│ • Insert/Update/Delete operations
-│ • Lamport timestamps
-│ • Operation log
-│
-├── BlazeSyncEngine.swift Sync engine
-│ • Push/pull operations
-│ • CRDT merge
-│ • Periodic sync
-│ • Operation log integration
-│
-├── BlazeTopology.swift Multi-DB coordinator
-│ • Register databases
-│ • Local connections
-│ • Remote connections
-│ • Topology graph
-│
-├── InMemoryRelay.swift Local sync
-│ • Unix Domain Socket ready
-│ • <1ms latency
-│ • Message queues
-│
-├── SecureConnection.swift Secure handshake
-│ • Diffie-Hellman (P256)
-│ • HKDF key derivation
-│ • AES-256-GCM encryption
-│ • Challenge-response
-│
-├── WebSocketRelay.swift Remote relay
-│ • Secure TCP connection
-│ • Operation push/pull
-│ • Subscriptions
-│
-└── CrossAppSync.swift Cross-app sync
+ BlazeOperation.swift Core operation type
+ • Insert/Update/Delete operations
+ • Lamport timestamps
+ • Operation log
+
+ BlazeSyncEngine.swift Sync engine
+ • Push/pull operations
+ • CRDT merge
+ • Periodic sync
+ • Operation log integration
+
+ BlazeTopology.swift Multi-DB coordinator
+ • Register databases
+ • Local connections
+ • Remote connections
+ • Topology graph
+
+ InMemoryRelay.swift Local sync
+ • Unix Domain Socket ready
+ • <1ms latency
+ • Message queues
+
+ SecureConnection.swift Secure handshake
+ • Diffie-Hellman (P256)
+ • HKDF key derivation
+ • AES-256-GCM encryption
+ • Challenge-response
+
+ WebSocketRelay.swift Remote relay
+ • Secure TCP connection
+ • Operation push/pull
+ • Subscriptions
+
+ CrossAppSync.swift Cross-app sync
  • App Groups support
  • File coordination
  • Export policies
@@ -138,7 +138,7 @@ try await bugsDB.enableSync(
 
 ```
 CLIENT-SIDE: 100% COMPLETE
-═══════════════════════════════
+
  All 7 components implemented
  Zero compilation errors
  All imports correct
@@ -147,7 +147,7 @@ CLIENT-SIDE: 100% COMPLETE
  Ready for server (when built)
 
 SERVER-SIDE: ⏳ DEFERRED
-═════════════════════════
+
 ⏳ Vapor server (later)
 ⏳ WebSocket handlers (later)
 ⏳ Database routing (later)

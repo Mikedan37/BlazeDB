@@ -217,7 +217,7 @@ VERDICT: (Elegant and fast!)
 
 ```
 Security Check Time Impact
-═══════════════════════════════════════════
+
 Authentication <0.001ms (Negligible)
 Authorization <0.001ms (Negligible)
 Replay Protection <0.001ms (Negligible)
@@ -399,7 +399,7 @@ if user.hasPermission("read", "bugs") {
 
 ```
 System Without Security With Security Loss
-══════════════════════════════════════════════════════════════
+
 BlazeDB 7,000,000 6,500,000 7%
 Firebase 100,000 95,000 5%
 Supabase 200,000 190,000 5%
@@ -412,7 +412,7 @@ VERDICT: BlazeDB still 34x faster than Firebase!
 
 ```
 System Without Security With Security Increase
-═══════════════════════════════════════════════════════════════
+
 BlazeDB 0.14ms 0.15ms 0.01ms
 Firebase 10ms 10.5ms 0.5ms
 Supabase 5ms 5.2ms 0.2ms
@@ -425,7 +425,7 @@ VERDICT: BlazeDB still 70x faster than Firebase!
 
 ```
 Security Feature Memory per Operation Memory per User
-══════════════════════════════════════════════════════════════
+
 Authentication 0 bytes 0 bytes
 Authorization 0 bytes ~100 bytes
 Replay Protection ~24 bytes 0 bytes

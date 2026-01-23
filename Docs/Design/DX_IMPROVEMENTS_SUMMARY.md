@@ -145,13 +145,13 @@ let plan = try db.planMigration(targetVersion: v1_1, migrations: [AddEmailField(
 print(plan.prettyDescription())
 // Output:
 // Migration Plan
-// ═══════════════
+// 
 //
 // Current Version: 1.0
 // Target Version:  1.1
 //
 // Migrations to Apply (1):
-// ─────────────────────────────────────
+// 
 //
 // 1. AddEmailField
 //    Adds email field to all user records
@@ -179,7 +179,7 @@ Records: 1000
 ```bash
 $ blazedb doctor mydb.blazedb pass
  BlazeDB Doctor - Health Check Report
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
 Database: mydb
 Path: /path/to/mydb.blazedb
 

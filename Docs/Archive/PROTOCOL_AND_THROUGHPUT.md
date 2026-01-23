@@ -8,56 +8,56 @@
 
 ### **Layer Stack:**
 ```
-┌─────────────────────────────────────────────────────────┐
-│ APPLICATION LAYER │
-│ • BlazeDBClient (insert, update, delete) │
-│ • BlazeSyncEngine (sync coordination) │
-└─────────────────────────────────────────────────────────┘
+
+ APPLICATION LAYER 
+ • BlazeDBClient (insert, update, delete) 
+ • BlazeSyncEngine (sync coordination) 
+
  ↓
-┌─────────────────────────────────────────────────────────┐
-│ OPERATION LAYER │
-│ • BlazeOperation (insert, update, delete) │
-│ • OperationLog (local operation tracking) │
-│ • LamportTimestamp (causal ordering) │
-└─────────────────────────────────────────────────────────┘
+
+ OPERATION LAYER 
+ • BlazeOperation (insert, update, delete) 
+ • OperationLog (local operation tracking) 
+ • LamportTimestamp (causal ordering) 
+
  ↓
-┌─────────────────────────────────────────────────────────┐
-│ ENCODING LAYER (BlazeBinary) │
-│ • Native binary encoding (NOT JSON!) │
-│ • Variable-length encoding (saves bytes) │
-│ • Bit-packing (type + length in 1 byte) │
-│ • Parallel encoding (4-8x faster) │
-│ • Smart caching (reuse encoded operations) │
-└─────────────────────────────────────────────────────────┘
+
+ ENCODING LAYER (BlazeBinary) 
+ • Native binary encoding (NOT JSON!) 
+ • Variable-length encoding (saves bytes) 
+ • Bit-packing (type + length in 1 byte) 
+ • Parallel encoding (4-8x faster) 
+ • Smart caching (reuse encoded operations) 
+
  ↓
-┌─────────────────────────────────────────────────────────┐
-│ COMPRESSION LAYER │
-│ • Adaptive compression (LZ4/ZLIB/LZMA) │
-│ • Dictionary compression (learns patterns) │
-│ • Memory pooling (reuse buffers) │
-│ • 50-70% size reduction │
-└─────────────────────────────────────────────────────────┘
+
+ COMPRESSION LAYER 
+ • Adaptive compression (LZ4/ZLIB/LZMA) 
+ • Dictionary compression (learns patterns) 
+ • Memory pooling (reuse buffers) 
+ • 50-70% size reduction 
+
  ↓
-┌─────────────────────────────────────────────────────────┐
-│ ENCRYPTION LAYER (E2E) │
-│ • ECDH P-256 key exchange │
-│ • HKDF key derivation │
-│ • AES-256-GCM encryption │
-│ • Challenge-response verification │
-└─────────────────────────────────────────────────────────┘
+
+ ENCRYPTION LAYER (E2E) 
+ • ECDH P-256 key exchange 
+ • HKDF key derivation 
+ • AES-256-GCM encryption 
+ • Challenge-response verification 
+
  ↓
-┌─────────────────────────────────────────────────────────┐
-│ TRANSPORT LAYER │
-│ • WebSocket (ws:// or wss://) │
-│ • SecureConnection (handles encryption) │
-│ • BlazeSyncRelay (protocol abstraction) │
-└─────────────────────────────────────────────────────────┘
+
+ TRANSPORT LAYER 
+ • WebSocket (ws:// or wss://) 
+ • SecureConnection (handles encryption) 
+ • BlazeSyncRelay (protocol abstraction) 
+
  ↓
-┌─────────────────────────────────────────────────────────┐
-│ NETWORK LAYER │
-│ • TCP/IP │
-│ • TLS (if wss://) │
-└─────────────────────────────────────────────────────────┘
+
+ NETWORK LAYER 
+ • TCP/IP 
+ • TLS (if wss://) 
+
 ```
 
 ---

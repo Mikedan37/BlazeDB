@@ -46,32 +46,32 @@ Committed transactions survive crashes:
 
 ```
 1. BEGIN
- ├─> Create transaction context
- ├─> Initialize WAL entry
- └─> Save baseline state for rollback
+ > Create transaction context
+ > Initialize WAL entry
+ > Save baseline state for rollback
 
 2. WRITE(pageID, data)
- ├─> Check transaction state (must be OPEN)
- ├─> Save baseline if first write to this page
- ├─> Stage write in memory
- └─> Record in WAL
+ > Check transaction state (must be OPEN)
+ > Save baseline if first write to this page
+ > Stage write in memory
+ > Record in WAL
 
 3. COMMIT
- ├─> Flush staged writes to PageStore
- ├─> Update indexes
- ├─> Persist layout to.meta
- ├─> Write COMMIT to WAL
- ├─> fsync WAL (durability guarantee)
- ├─> Clear WAL
- ├─> Clear baselines
- └─> Mark transaction COMMITTED
+ > Flush staged writes to PageStore
+ > Update indexes
+ > Persist layout to.meta
+ > Write COMMIT to WAL
+ > fsync WAL (durability guarantee)
+ > Clear WAL
+ > Clear baselines
+ > Mark transaction COMMITTED
 
 4. ROLLBACK (if error)
- ├─> Restore baseline for each page
- ├─> Delete new pages
- ├─> Clear staged writes
- ├─> Write ABORT to WAL
- └─> Mark transaction ROLLED_BACK
+ > Restore baseline for each page
+ > Delete new pages
+ > Clear staged writes
+ > Write ABORT to WAL
+ > Mark transaction ROLLED_BACK
 ```
 
 ### WAL Structure
@@ -109,12 +109,12 @@ On startup:
 ```
 1. Check for WAL file
 2. If exists:
- ├─> Parse all operations
- ├─> Group by transaction ID
- ├─> Find COMMITTED transactions
- ├─> Replay committed writes
- ├─> Discard uncommitted writes
- └─> Clear WAL
+ > Parse all operations
+ > Group by transaction ID
+ > Find COMMITTED transactions
+ > Replay committed writes
+ > Discard uncommitted writes
+ > Clear WAL
 3. Load.meta file
 4. Rebuild indexes if needed
 ```

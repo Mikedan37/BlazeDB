@@ -200,7 +200,7 @@ TOTAL TESTS: 220+
 
  Unit Tests: 125 tests (EditingService + AuditLogService)
  Integration Tests: 50 tests (Full workflows + real DB)
-️ UI Tests: 45 tests (User interactions)
+ UI Tests: 45 tests (User interactions)
 
 COVERAGE:
  All CRUD operations
@@ -236,15 +236,15 @@ COVERAGE:
 
 **UI Layout:**
 ```
-┌────────────────────────────────────────┐
-│ Data Viewer [+ Add] │
-├────────────────────────────────────────┤
-│ ID │ Name │ Age │ Email │
-├───────┼───────────┼──────┼─────────────┤
-│ abc │ [Alice▊] │ 25 │ alice@... │ ← Double-click to edit
-│ def │ Bob │ 30 │ bob@... │
-│ ghi │ Carol │ 28 │ carol@... │
-└────────────────────────────────────────┘
+
+ Data Viewer [+ Add] 
+
+ ID  Name  Age  Email 
+
+ abc  [Alice]  25  alice@...  ← Double-click to edit
+ def  Bob  30  bob@... 
+ ghi  Carol  28  carol@... 
+
 
 [Undo: Updated "Name" (28s left)] [×]
 ```
@@ -265,23 +265,23 @@ COVERAGE:
 
 **UI Layout:**
 ```
-┌───────────────────────────────────┐
-│ Create New Record │
-│ │
-│ ┌─────────────────────────────┐ │
-│ │ Field Name: [name____] │ │
-│ │ Field Type: [String ▼] │ │
-│ │ Value: [Alice___] │ │
-│ │ [+ Add Field] │ │
-│ └─────────────────────────────┘ │
-│ │
-│ Fields Preview: │
-│ • name (string): "Alice" │
-│ • age (int): 25 │
-│ • email (string): "alice@..." │
-│ │
-│ [Cancel] [Create Record] │
-└───────────────────────────────────┘
+
+ Create New Record 
+ 
+  
+  Field Name: [name____]  
+  Field Type: [String ]  
+  Value: [Alice___]  
+  [+ Add Field]  
+  
+ 
+ Fields Preview: 
+ • name (string): "Alice" 
+ • age (int): 25 
+ • email (string): "alice@..." 
+ 
+ [Cancel] [Create Record] 
+
 ```
 
 ---
@@ -299,23 +299,23 @@ COVERAGE:
 
 **UI Layout:**
 ```
-┌───────────────────────────────────┐
-│ ️ Delete 5 Records? │
-│ │
-│ This action cannot be undone, │
-│ but you can undo within 30s. │
-│ │
-│ ️ Create backup first │
-│ (Recommended) │
-│ │
-│ Records to delete: │
-│ • Alice (alice@test.com) │
-│ • Bob (bob@test.com) │
-│ • Carol (carol@test.com) │
-│ •...and 2 more │
-│ │
-│ [Cancel] [Delete] │
-└───────────────────────────────────┘
+
+  Delete 5 Records? 
+ 
+ This action cannot be undone, 
+ but you can undo within 30s. 
+ 
+  Create backup first 
+ (Recommended) 
+ 
+ Records to delete: 
+ • Alice (alice@test.com) 
+ • Bob (bob@test.com) 
+ • Carol (carol@test.com) 
+ •...and 2 more 
+ 
+ [Cancel] [Delete] 
+
 ```
 
 ---
@@ -334,31 +334,31 @@ COVERAGE:
 
 **UI Layout:**
 ```
-┌────────────────────────────────────────┐
-│ Data Viewer [Select All] [×] │
-├────────────────────────────────────────┤
-│ ️ ID │ Name │ Status │
-├───┼──────┼───────┼─────────────────────┤
-│ ️ abc │ Alice │ active │
-│ ️ def │ Bob │ active │
-│ ghi │ Carol │ inactive │
-└────────────────────────────────────────┘
+
+ Data Viewer [Select All] [×] 
+
+  ID  Name  Status 
+
+  abc  Alice  active 
+  def  Bob  active 
+ ghi  Carol  inactive 
+
 
 2 selected: [Update Selected] [Delete Selected]
 
 On "Update Selected":
-┌───────────────────────────────────┐
-│ Bulk Edit 2 Records │
-│ │
-│ Field: [status ▼] │
-│ Value: [inactive] │
-│ │
-│ Preview: │
-│ • Alice: status = "inactive" │
-│ • Bob: status = "inactive" │
-│ │
-│ [Cancel] [Apply to 2] │
-└───────────────────────────────────┘
+
+ Bulk Edit 2 Records 
+ 
+ Field: [status ] 
+ Value: [inactive] 
+ 
+ Preview: 
+ • Alice: status = "inactive" 
+ • Bob: status = "inactive" 
+ 
+ [Cancel] [Apply to 2] 
+
 ```
 
 ---
@@ -458,14 +458,14 @@ Day 5: Documentation & examples
 | Feature | BlazeDBVisualizer | TablePlus | Sequel Pro | DB Browser |
 |---------|-------------------|-----------|------------|------------|
 | **Inline Editing** | | | | |
-| **Bulk Operations** | | | ️ Limited | ️ Limited |
-| **Undo Support** | 30s window | | | ️ Limited |
+| **Bulk Operations** | | |  Limited |  Limited |
+| **Undo Support** | 30s window | | |  Limited |
 | **Audit Logging** | Full | | | |
-| **Auto Backup** | Before edits | ️ Manual | ️ Manual | |
-| **Type Validation** | | | ️ Basic | ️ Basic |
+| **Auto Backup** | Before edits |  Manual |  Manual | |
+| **Type Validation** | | |  Basic |  Basic |
 | **GDPR Compliance** | Audit export | | | |
 | **Touch ID** | | | | |
-| **Native macOS** | SwiftUI | ️ Electron | | ️ Qt |
+| **Native macOS** | SwiftUI |  Electron | |  Qt |
 | **Open Source** | | ($99) | | |
 
 **BlazeDBVisualizer will be THE MOST SECURE, AUDITABLE, OPEN-SOURCE DATABASE TOOL! **
@@ -525,8 +525,8 @@ Day 5: Documentation & examples
  Final integration & polish
 
 ### **Estimated Time:**
-⏱️ 2-3 weeks to completion
-⏱️ 100% production-ready
+⏱ 2-3 weeks to completion
+⏱ 100% production-ready
 
 ---
 

@@ -266,7 +266,7 @@ testUltimate_TheFinalBoss_IfThisPassesItsFlawless() // DEFEATED!
 
 ## **FINAL STATUS:**
 
-### **BlazeBinary Encoder/Decoder: BULLETPROOF!** ️
+### **BlazeBinary Encoder/Decoder: BULLETPROOF!** 
 
 **Evidence:**
 - 116+ comprehensive tests (all passing!)
@@ -335,7 +335,7 @@ swift test --filter BlazeBinary
 
 **No concerns. No corruption. No failures.**
 
-**BlazeBinary is BULLETPROOF!** ️
+**BlazeBinary is BULLETPROOF!** 
 
 ---
 

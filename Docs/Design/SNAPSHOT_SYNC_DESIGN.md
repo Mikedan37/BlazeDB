@@ -65,22 +65,22 @@ A snapshot contains:
 
 ```
 Snapshot File Structure:
-┌─────────────────────────────────────┐
-│ Header (64 bytes) │
-│ - Magic: "BZSN" (4 bytes) │
-│ - Version: UInt32 (1) │
-│ - Timestamp: LamportTimestamp │
-│ - Record Count: UInt64 │
-│ - Checksum: UInt64 │
-│ - Compression: UInt8 (0=none, 1=LZ4)│
-│ - Reserved: 31 bytes │
-└─────────────────────────────────────┘
-┌─────────────────────────────────────┐
-│ Compressed Snapshot Data │
-│ - Records (BlazeBinary format) │
-│ - Index Definitions (JSON) │
-│ - Metadata (JSON) │
-└─────────────────────────────────────┘
+
+ Header (64 bytes) 
+ - Magic: "BZSN" (4 bytes) 
+ - Version: UInt32 (1) 
+ - Timestamp: LamportTimestamp 
+ - Record Count: UInt64 
+ - Checksum: UInt64 
+ - Compression: UInt8 (0=none, 1=LZ4)
+ - Reserved: 31 bytes 
+
+
+ Compressed Snapshot Data 
+ - Records (BlazeBinary format) 
+ - Index Definitions (JSON) 
+ - Metadata (JSON) 
+
 ```
 
 ---
@@ -120,45 +120,45 @@ Snapshots are created automatically when:
 ### Initial Sync Flow
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│ 1. Client connects to server │
-└─────────────────────────────────────────────────────────┘
+
+ 1. Client connects to server 
+
  ↓
-┌─────────────────────────────────────────────────────────┐
-│ 2. Exchange sync state │
-│ - Client: lastSyncedTimestamp = 0 (new device) │
-│ - Server: lastSyncedTimestamp = T, hasSnapshot = Y │
-└─────────────────────────────────────────────────────────┘
+
+ 2. Exchange sync state 
+ - Client: lastSyncedTimestamp = 0 (new device) 
+ - Server: lastSyncedTimestamp = T, hasSnapshot = Y 
+
  ↓
-┌─────────────────────────────────────────────────────────┐
-│ 3. Server determines sync strategy │
-│ IF client.lastSyncedTimestamp == 0: │
-│ → Use snapshot (fast bootstrap) │
-│ ELSE IF client.lastSyncedTimestamp < snapshot.timestamp:│
-│ → Use snapshot + operations since snapshot │
-│ ELSE: │
-│ → Use op-log only (incremental sync) │
-└─────────────────────────────────────────────────────────┘
+
+ 3. Server determines sync strategy 
+ IF client.lastSyncedTimestamp == 0: 
+ → Use snapshot (fast bootstrap) 
+ ELSE IF client.lastSyncedTimestamp < snapshot.timestamp:
+ → Use snapshot + operations since snapshot 
+ ELSE: 
+ → Use op-log only (incremental sync) 
+
  ↓
-┌─────────────────────────────────────────────────────────┐
-│ 4a. Snapshot Transfer (if needed) │
-│ - Download snapshot file │
-│ - Validate checksum │
-│ - Decompress │
-│ - Load into database │
-└─────────────────────────────────────────────────────────┘
+
+ 4a. Snapshot Transfer (if needed) 
+ - Download snapshot file 
+ - Validate checksum 
+ - Decompress 
+ - Load into database 
+
  ↓
-┌─────────────────────────────────────────────────────────┐
-│ 4b. Operation Replay (if needed) │
-│ - Pull operations since snapshot.timestamp │
-│ - Apply operations in order │
-│ - Update sync state │
-└─────────────────────────────────────────────────────────┘
+
+ 4b. Operation Replay (if needed) 
+ - Pull operations since snapshot.timestamp 
+ - Apply operations in order 
+ - Update sync state 
+
  ↓
-┌─────────────────────────────────────────────────────────┐
-│ 5. Continue incremental sync │
-│ - Real-time operation exchange │
-└─────────────────────────────────────────────────────────┘
+
+ 5. Continue incremental sync 
+ - Real-time operation exchange 
+
 ```
 
 ### Sync Strategy Selection

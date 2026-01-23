@@ -252,14 +252,14 @@ SIMD: enabled // Vectorized operations
 
 ```
 Scenario Operations/Second
-════════════════════════════════════════════
+
 Original 7,000,000
 With Security 6,500,000
 With Optimizations 7,100,000
 With Ultra-Fast 10,000,000+
 
 VS. COMPETITORS:
-────────────────
+
 Firebase 100,000
 Supabase 200,000
 Realm 50,000
@@ -271,7 +271,7 @@ BLAZEDB: 50-100x FASTER!
 
 ```
 Scenario MB/sec Efficiency
-════════════════════════════════════════════
+
 Original 500 100%
 With Compression 300 60%
 With Delta Encoding 120 24%
@@ -284,14 +284,14 @@ BANDWIDTH SAVINGS: 80%!
 
 ```
 Scenario Latency
-════════════════════════════════════
+
 Original 0.14ms
 With Security 0.15ms
 With Optimizations 0.14ms
 With Ultra-Fast 0.10ms
 
 VS. COMPETITORS:
-────────────────
+
 Firebase 10ms
 Supabase 5ms
 Realm 20ms

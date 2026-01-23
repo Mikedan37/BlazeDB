@@ -19,14 +19,14 @@ Your App → BlazeDB (backend)
 Your Admin Panel → Visualizer (ready-made!)
 
 What You Get:
-├─ Database
-├─ Admin dashboard (15 tabs!)
-├─ User management (RBAC)
-├─ Data editing (inline)
-├─ Analytics (charts)
-├─ Monitoring (real-time)
-├─ Backups (automated)
-└─ Search (full-text)
+ Database
+ Admin dashboard (15 tabs!)
+ User management (RBAC)
+ Data editing (inline)
+ Analytics (charts)
+ Monitoring (real-time)
+ Backups (automated)
+ Search (full-text)
 
 Skip 3 Months of Development!
 ```
@@ -48,18 +48,18 @@ Building native app, need local database better than Core Data
 ### **The Solution:**
 ```
 Embed BlazeDB in your app:
-├─ Fast local storage
-├─ Encryption built-in
-├─ Easy queries (no NSPredicate hell!)
-├─ Automatic backups
-└─ iCloud sync ready
+ Fast local storage
+ Encryption built-in
+ Easy queries (no NSPredicate hell!)
+ Automatic backups
+ iCloud sync ready
 
 Development:
-├─ Use Visualizer to inspect data
-├─ Debug user issues
-├─ Test queries visually
-├─ Monitor performance
-└─ Generate test data
+ Use Visualizer to inspect data
+ Debug user issues
+ Test queries visually
+ Monitor performance
+ Generate test data
 ```
 
 **Real Example:**
@@ -88,12 +88,12 @@ Non-technical staff can:
  No code required!
 
 Use Cases:
-├─ Employee directory
-├─ Inventory management
-├─ Project tracking
-├─ Customer data
-├─ Asset management
-└─ Any spreadsheet replacement
+ Employee directory
+ Inventory management
+ Project tracking
+ Customer data
+ Asset management
+ Any spreadsheet replacement
 ```
 
 **Real Example:**
@@ -147,11 +147,11 @@ Financial data needs security + compliance
 ### **The Solution:**
 ```
 Financial App Database:
-├─ Transactions (encrypted)
-├─ Accounts (role-based access)
-├─ Budgets (visualization)
-├─ Invoices (search)
-└─ Reports (charts)
+ Transactions (encrypted)
+ Accounts (role-based access)
+ Budgets (visualization)
+ Invoices (search)
+ Reports (charts)
 
 Security:
  AES-256 encryption
@@ -184,17 +184,17 @@ Schools need student data management
 ### **The Solution:**
 ```
 School Database:
-├─ Students
-├─ Courses
-├─ Grades
-├─ Attendance
-└─ Assignments
+ Students
+ Courses
+ Grades
+ Attendance
+ Assignments
 
 Visualizer for:
-├─ Teachers (edit grades)
-├─ Admin (view all)
-├─ Students (view own data via RLS!)
-├─ Parents (view child's data)
+ Teachers (edit grades)
+ Admin (view all)
+ Students (view own data via RLS!)
+ Parents (view child's data)
 
 Analytics:
  Grade distributions (charts)
@@ -220,12 +220,12 @@ Games need player data, saves, leaderboards
 ### **The Solution:**
 ```
 Game Database:
-├─ Player profiles
-├─ Save games
-├─ Leaderboards
-├─ Achievements
-├─ Inventory
-└─ Match history
+ Player profiles
+ Save games
+ Leaderboards
+ Achievements
+ Inventory
+ Match history
 
 Visualizer for Dev:
  Edit player data (testing)
@@ -258,11 +258,11 @@ Online store needs products, orders, customers
 ### **The Solution:**
 ```
 Store Database:
-├─ Products (with search!)
-├─ Customers (with RBAC)
-├─ Orders (with tracking)
-├─ Inventory (real-time)
-└─ Reviews (full-text search)
+ Products (with search!)
+ Customers (with RBAC)
+ Orders (with tracking)
+ Inventory (real-time)
+ Reviews (full-text search)
 
 Admin Panel (Visualizer):
  Edit products inline
@@ -296,12 +296,12 @@ Blog/website needs CMS
 ### **The Solution:**
 ```
 Content Database:
-├─ Posts (with full-text search!)
-├─ Pages
-├─ Media (metadata)
-├─ Comments
-├─ Users (RBAC: admin/editor/author/viewer)
-└─ Tags
+ Posts (with full-text search!)
+ Pages
+ Media (metadata)
+ Comments
+ Users (RBAC: admin/editor/author/viewer)
+ Tags
 
 CMS Interface (Visualizer):
  Write/edit posts inline
@@ -322,7 +322,7 @@ CMS Interface (Visualizer):
 
 ---
 
-## 10. ️ **PROJECT MANAGEMENT TOOL**
+## 10.  **PROJECT MANAGEMENT TOOL**
 
 ### **The Problem:**
 Team needs project tracking
@@ -330,12 +330,12 @@ Team needs project tracking
 ### **The Solution:**
 ```
 Project Database:
-├─ Projects
-├─ Tasks
-├─ Team members (RBAC)
-├─ Comments
-├─ Time tracking
-└─ Files (metadata)
+ Projects
+ Tasks
+ Team members (RBAC)
+ Comments
+ Time tracking
+ Files (metadata)
 
 Visualizer = Project Dashboard:
  Kanban boards (visual queries!)
@@ -364,11 +364,11 @@ Scientists need to manage research data
 ### **The Solution:**
 ```
 Research Database:
-├─ Experiments
-├─ Samples
-├─ Measurements
-├─ Analysis results
-└─ Publications
+ Experiments
+ Samples
+ Measurements
+ Analysis results
+ Publications
 
 Research Features:
  Store experiment data
@@ -397,12 +397,12 @@ Sales team needs customer management
 ### **The Solution:**
 ```
 CRM Database:
-├─ Contacts
-├─ Companies
-├─ Deals
-├─ Activities
-├─ Notes (full-text search!)
-└─ Tasks
+ Contacts
+ Companies
+ Deals
+ Activities
+ Notes (full-text search!)
+ Tasks
 
 Visualizer = CRM Interface:
  Edit contacts inline
@@ -779,12 +779,12 @@ Features:
  Everything visual!
 
 Target Market:
-├─ No-code enthusiasts
-├─ Makers/indie hackers
-├─ Small business owners
-├─ Product managers
-├─ Designers who code
-└─ Students
+ No-code enthusiasts
+ Makers/indie hackers
+ Small business owners
+ Product managers
+ Designers who code
+ Students
 
 Competition:
 vs. Airtable ($240/year) → Yours: $49 one-time
@@ -803,15 +803,15 @@ vs. Google Sheets (free) → Yours: More powerful
 **Resume:**
 ```
 "Built complete database platform from scratch"
-├─ Custom binary format (48% faster than JSON)
-├─ MVCC concurrency control
-├─ AES-256 encryption
-├─ Transaction system with WAL
-├─ Crash recovery
-├─ Enterprise RBAC
-├─ 15-tab visual management platform
-├─ 514 automated tests
-└─ Production-ready code
+ Custom binary format (48% faster than JSON)
+ MVCC concurrency control
+ AES-256 encryption
+ Transaction system with WAL
+ Crash recovery
+ Enterprise RBAC
+ 15-tab visual management platform
+ 514 automated tests
+ Production-ready code
 ```
 
 **Interview:**
@@ -868,12 +868,12 @@ Description:
 - Beautiful native macOS UI
 
 Potential:
-├─ 1,000+ GitHub stars
-├─ HN front page
-├─ Twitter viral
-├─ Consulting opportunities
-├─ Job offers
-└─ Community building
+ 1,000+ GitHub stars
+ HN front page
+ Twitter viral
+ Consulting opportunities
+ Job offers
+ Community building
 ```
 
 **Value:** Reputation, network, opportunities

@@ -5,45 +5,45 @@
 ### ** Services (2 files, 800 lines)**
 ```
 EditingService.swift 463 lines
- ├─ insertRecord()
- ├─ updateRecord()
- ├─ updateField()
- ├─ deleteRecord()
- ├─ bulkUpdateField()
- ├─ bulkDelete()
- └─ undo()
+  insertRecord()
+  updateRecord()
+  updateField()
+  deleteRecord()
+  bulkUpdateField()
+  bulkDelete()
+  undo()
 
 AuditLogService.swift 300 lines
- ├─ log()
- ├─ search()
- ├─ export()
- └─ GDPR/HIPAA compliant
+  log()
+  search()
+  export()
+  GDPR/HIPAA compliant
 ```
 
 ### ** Views (4 files, 1,000 lines)**
 ```
 EditableDataViewerView.swift 350 lines
- ├─ Double-click to edit
- ├─ Checkboxes for selection
- ├─ Add/delete/bulk operations
- └─ Undo toast notifications
+  Double-click to edit
+  Checkboxes for selection
+  Add/delete/bulk operations
+  Undo toast notifications
 
 NewRecordSheet.swift 250 lines
- ├─ Field name/type/value inputs
- ├─ Add multiple fields
- ├─ Preview before creation
- └─ Type validation
+  Field name/type/value inputs
+  Add multiple fields
+  Preview before creation
+  Type validation
 
 BulkEditSheet.swift 200 lines
- ├─ Field picker
- ├─ Value input with validation
- ├─ Preview changes
- └─ Apply to N records
+  Field picker
+  Value input with validation
+  Preview changes
+  Apply to N records
 
 BackupRestoreView.swift 200 lines (fixed)
- ├─ Scrollable layout
- ├─ Beautiful cards
- └─ Consistent with other tabs
+  Scrollable layout
+  Beautiful cards
+  Consistent with other tabs
 ```
 
 ### ** Tests (4 files, 220+ tests)**
@@ -298,32 +298,32 @@ xcodebuild test -scheme BlazeDBVisualizer
 ### **Started with:**
 ```
 BlazeDBVisualizer v1.0
-├─ Read-only database viewer
-├─ Basic monitoring
-├─ 296 tests
-└─ 6 tabs (view-only)
+ Read-only database viewer
+ Basic monitoring
+ 296 tests
+ 6 tabs (view-only)
 ```
 
 ### **Now we have:**
 ```
 BlazeDBVisualizer v2.0 - THE ULTIMATE DATABASE TOOL
-├─ FULL database editor
-├─ Real-time monitoring
-├─ 516 tests (296 + 220 new)
-├─ 6 tabs (fully interactive!)
-│
-├─ UNIQUE FEATURES:
-│ ├─ 30-second undo window (NO OTHER TOOL HAS!)
-│ ├─ Auto-backups before edits
-│ ├─ GDPR/HIPAA audit logging
-│ ├─ Touch ID integration
-│ └─ 907 tests runnable from UI
-│
-└─ ENTERPRISE-READY:
- ├─ Compliance features
- ├─ Audit trail
- ├─ Security hardened
- └─ Production-tested
+ FULL database editor
+ Real-time monitoring
+ 516 tests (296 + 220 new)
+ 6 tabs (fully interactive!)
+
+ UNIQUE FEATURES:
+  30-second undo window (NO OTHER TOOL HAS!)
+  Auto-backups before edits
+  GDPR/HIPAA audit logging
+  Touch ID integration
+  907 tests runnable from UI
+
+ ENTERPRISE-READY:
+  Compliance features
+  Audit trail
+  Security hardened
+  Production-tested
 ```
 
 ---

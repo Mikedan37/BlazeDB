@@ -168,7 +168,7 @@ if let v = vm.getVersion(recordID: version.recordID, snapshot: 1) {
 
 // Garbage collect
 let removed = vm.garbageCollect()
-print("️ Removed \(removed) old versions")
+print(" Removed \(removed) old versions")
 
 // Get stats
 let stats = vm.getStats()
@@ -251,7 +251,7 @@ print(" Snapshot isolation works!")
 
 ---
 
-## ️ **Known Limitations (Phase 1)**
+##  **Known Limitations (Phase 1)**
 
 Phase 1 is **foundation only**. These don't work yet (coming in Phase 2-5):
 
@@ -268,7 +268,7 @@ Phase 1 is **foundation only**. These don't work yet (coming in Phase 2-5):
  **No performance benchmarks yet**
  - Phase 5 will add before/after benchmarks
 
-**But**: The foundation is solid and tested! ️
+**But**: The foundation is solid and tested! 
 
 ---
 
@@ -305,11 +305,11 @@ Once tests pass:
 ## **Quick Checklist**
 
 ```
-□ Run: swift test --filter MVCCFoundationTests
-□ Verify: All 16 tests pass
-□ Check: No crashes or warnings
-□ Review: MVCC_IMPLEMENTATION_PROGRESS.md
-□ Ready for: Phase 2 integration
+ Run: swift test --filter MVCCFoundationTests
+ Verify: All 16 tests pass
+ Check: No crashes or warnings
+ Review: MVCC_IMPLEMENTATION_PROGRESS.md
+ Ready for: Phase 2 integration
 ```
 
 ---
@@ -323,7 +323,7 @@ If tests pass:
 - Concurrent access is thread-safe
 - Foundation is production-quality
 
-**You asked about GC - these tests prove it works!** ️
+**You asked about GC - these tests prove it works!** 
 
 ---
 
@@ -331,7 +331,7 @@ If tests pass:
 
 Run the tests and let me know:
 1. Do all 16 tests pass?
-2. Any errors or warnings? ️
+2. Any errors or warnings? 
 3. Ready for Phase 2?
 
 ---

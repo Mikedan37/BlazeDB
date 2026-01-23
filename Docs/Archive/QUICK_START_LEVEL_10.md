@@ -145,25 +145,25 @@ Overall Coverage: 89.4% Excellent
 
 ### **Test Dashboard**:
 ```
-┌─────────────────────────────────────┐
-│ Test Execution │
-│ 450 tests, 445 passed, 5 failed │
-└─────────────────────────────────────┘
 
-┌─────────────────────────────────────┐
-│ Code Coverage │
-│ 89.4% │
-└─────────────────────────────────────┘
+ Test Execution 
+ 450 tests, 445 passed, 5 failed 
 
-┌─────────────────────────────────────┐
-│ Performance Benchmarks │
-│ 15 tracked, 0 regressions │
-└─────────────────────────────────────┘
 
-┌─────────────────────────────────────┐
-│ Quality Score │
-│ 96/100 │
-└─────────────────────────────────────┘
+
+ Code Coverage 
+ 89.4% 
+
+
+
+ Performance Benchmarks 
+ 15 tracked, 0 regressions 
+
+
+
+ Quality Score 
+ 96/100 
+
 ```
 
 ---
@@ -171,7 +171,7 @@ Overall Coverage: 89.4% Excellent
 ### **Performance Profile**:
 ```
 Test: testProfile_BatchInsert1000
-──────────────────────────────────
+
 Time: 2.345s
 CPU: 85% (1 core)
 Memory: 12.4 MB peak
@@ -268,7 +268,7 @@ Quality Score =
 ```
 90-100: Excellent (ship it!)
 80-89: Good (production-ready)
-70-79: ️ Fair (needs work)
+70-79:  Fair (needs work)
 < 70: Poor (don't ship)
 ```
 

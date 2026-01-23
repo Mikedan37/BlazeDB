@@ -10,7 +10,7 @@
 
 ```
 iPhone App ↔ Mac App (Same Device)
-───────────────────────────────────
+
 Protocol: BlazeBinary
 Transport: Unix Domain Sockets
 Throughput: 50,000,000+ ops/sec
@@ -22,15 +22,15 @@ Result: INSTANT sync between apps!
 ### **2. Hub-and-Spoke (Multiple DBs → Single Server):**
 
 ```
-iPhone DB ──┐
-iPad DB ───┼──→ Server DB (Hub)
-Mac DB ───┘
+iPhone DB 
+iPad DB → Server DB (Hub)
+Mac DB 
  ↓
  Broadcast to all
  ↓
-iPhone DB ←──┐
-iPad DB ←───┼── Server DB
-Mac DB ←───┘
+iPhone DB ←
+iPad DB ← Server DB
+Mac DB ←
 
 Throughput: 7,800,000 ops/sec per connection
 Result: All devices stay in sync in real-time!
@@ -40,7 +40,7 @@ Result: All devices stay in sync in real-time!
 
 ```
 App Update Scenario:
-───────────────────
+
 1. User updates bug on iPhone
 2. Sync to Mac (P2P): <1ms (same device)
 3. Sync to Server (hub): 50ms (network)
@@ -57,35 +57,35 @@ Result: Near-instant updates everywhere!
 ### **Multi-Tier Sync System:**
 
 ```
-┌─────────────────────────────────────────┐
-│ TIER 1: SAME DEVICE (Fastest) │
-│ ─────────────────────────────────────── │
-│ • iPhone App ↔ Mac App │
-│ • Transport: Unix Domain Sockets │
-│ • Throughput: 50,000,000+ ops/sec │
-│ • Latency: <1ms │
-│ • Use: Cross-app sync, P2P same device │
-└─────────────────────────────────────────┘
+
+ TIER 1: SAME DEVICE (Fastest) 
+  
+ • iPhone App ↔ Mac App 
+ • Transport: Unix Domain Sockets 
+ • Throughput: 50,000,000+ ops/sec 
+ • Latency: <1ms 
+ • Use: Cross-app sync, P2P same device 
+
  ↓
-┌─────────────────────────────────────────┐
-│ TIER 2: LOCAL NETWORK (Very Fast) │
-│ ─────────────────────────────────────── │
-│ • iPhone ↔ Mac (different devices) │
-│ • Transport: Raw TCP (local WiFi) │
-│ • Throughput: 7,800,000 ops/sec │
-│ • Latency: 5ms │
-│ • Use: P2P local network │
-└─────────────────────────────────────────┘
+
+ TIER 2: LOCAL NETWORK (Very Fast) 
+  
+ • iPhone ↔ Mac (different devices) 
+ • Transport: Raw TCP (local WiFi) 
+ • Throughput: 7,800,000 ops/sec 
+ • Latency: 5ms 
+ • Use: P2P local network 
+
  ↓
-┌─────────────────────────────────────────┐
-│ TIER 3: INTERNET (Fast) │
-│ ─────────────────────────────────────── │
-│ • Device ↔ Server (hub) │
-│ • Transport: Raw TCP (internet) │
-│ • Throughput: 1,500,000 ops/sec │
-│ • Latency: 50-100ms │
-│ • Use: Hub-and-spoke, remote sync │
-└─────────────────────────────────────────┘
+
+ TIER 3: INTERNET (Fast) 
+  
+ • Device ↔ Server (hub) 
+ • Transport: Raw TCP (internet) 
+ • Throughput: 1,500,000 ops/sec 
+ • Latency: 50-100ms 
+ • Use: Hub-and-spoke, remote sync 
+
 ```
 
 ---
@@ -217,7 +217,7 @@ for device in devices {
 
 ```
 iPhone App → Mac App (Same Device)
-──────────────────────────────────
+
 Transport: Unix Domain Sockets
 Protocol: BlazeBinary
 Throughput: 50,000,000+ ops/sec
@@ -231,7 +231,7 @@ Result: Mac sees update in <1ms!
 
 ```
 iPhone → Mac (Different Devices, Same WiFi)
-───────────────────────────────────────────
+
 Transport: Raw TCP (local WiFi)
 Protocol: BlazeBinary
 Throughput: 7,800,000 ops/sec
@@ -245,7 +245,7 @@ Result: Mac sees update in 5ms!
 
 ```
 iPhone → Server → iPad (Internet)
-─────────────────────────────────
+
 Transport: Raw TCP (internet)
 Protocol: BlazeBinary
 Throughput: 1,500,000 ops/sec
@@ -259,7 +259,7 @@ Result: iPad sees update in 100ms!
 
 ```
 iPhone → Mac (5ms) → Server (50ms) → iPad (50ms)
-──────────────────────────────────────────────────
+
 Total Latency: 105ms
 But: Updates can take multiple paths!
 Fastest path is used automatically!

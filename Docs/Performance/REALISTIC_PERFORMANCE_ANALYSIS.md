@@ -10,7 +10,7 @@
 
 ```
 Single Operation Time:
-──────────────────────
+
 Insert: ~0.5ms (realistic for encrypted DB)
 Fetch: ~0.3ms (with index)
 Update: ~0.4ms
@@ -24,19 +24,19 @@ Theoretical Max: 2,500 ops/sec per core (1 / 0.0004)
 
 ```
 Async Operations:
-────────────────
+
 • Parallel execution (8 cores)
 • Theoretical: 2,500 × 8 = 20,000 ops/sec
 • Realistic (overhead): ~10,000 ops/sec
 
 Batching:
-─────────
+
 • 10,000 ops per batch
 • Batch overhead: ~1ms
 • Effective: ~9,900 ops/sec per batch
 
 Network Sync:
-─────────────
+
 • Network latency: ~5ms
 • Batch transfer: ~10ms for 10K ops
 • Effective: ~1,000 batches/sec = 10M ops/sec theoretical
@@ -51,18 +51,18 @@ Network Sync:
 
 ```
 Single Core:
-────────────
+
 • 1 operation = 0.4ms
 • Max: 2,500 ops/sec
 • Realistic: 2,000 ops/sec (80% efficiency)
 
 Multi-Core (8 cores):
-─────────────────────
+
 • Theoretical: 2,500 × 8 = 20,000 ops/sec
 • Realistic: 10,000 ops/sec (50% efficiency, overhead)
 
 With Batching:
-──────────────
+
 • 10,000 ops per batch
 • Batch time: ~4,000ms (10K × 0.4ms)
 • Batch overhead: ~1ms
@@ -74,7 +74,7 @@ With Batching:
 
 ```
 Single Batch:
-─────────────
+
 • 10,000 operations
 • Encode: ~10ms (parallel)
 • Compress: ~5ms (LZ4)
@@ -98,14 +98,14 @@ Effective: ~247 batches/sec = 2.47M ops/sec
 
 ```
 Single Operation:
-─────────────────
+
 CPU: 0.4ms × 2000mW = 0.8mJ
 Memory: 0.4ms × 500mW = 0.2mJ
 Storage: 0.4ms × 100mW = 0.04mJ
 Total: ~1.04mJ per operation
 
 With Batching (10K ops):
-────────────────────────
+
 CPU: 4,000ms × 2000mW = 8,000mJ
 Memory: 4,000ms × 500mW = 2,000mJ
 Storage: 4,000ms × 100mW = 400mJ
@@ -120,7 +120,7 @@ Per operation: ~1.04mJ (same!)
 iPhone Battery: 3,000mAh = 11,160,000mJ
 
 Operations per full battery:
-─────────────────────────────
+
 10,000,000 ops × 1.04mJ = 10,400,000mJ
 Battery life: ~93% of battery = ~7.4 hours
 
@@ -135,7 +135,7 @@ Realistic: 7-8 hours of active sync
 
 ```
 System Realistic Throughput
-════════════════════════════════════════
+
 BlazeDB (Local) 10,000 ops/sec
 BlazeDB (Network) 2,500,000 ops/sec
 Firebase 100,000 ops/sec
@@ -149,7 +149,7 @@ BLAZEDB: 25-200x FASTER (realistic!)
 
 ```
 System Battery Life Realistic
-════════════════════════════════════════════
+
 BlazeDB (Ultra) 7.4 hours
 BlazeDB (Balanced) 7.8 hours
 Firebase 6.0 hours

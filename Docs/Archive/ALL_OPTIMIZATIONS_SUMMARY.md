@@ -121,9 +121,9 @@ decoding: 0.017ms (11.8x faster!)
 ### **Remaining Optimizations (Very Minor):**
 
 ```
-️ Memory pooling (1.1-1.2x potential)
-️ Parallel encoding (2-4x for batches)
-️ Read-ahead prefetching (1.5-2x potential)
+ Memory pooling (1.1-1.2x potential)
+ Parallel encoding (2-4x for batches)
+ Read-ahead prefetching (1.5-2x potential)
 ```
 
 **BlazeDB is now INSANELY FAST with MASSIVE runway for future optimizations! **

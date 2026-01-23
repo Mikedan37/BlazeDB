@@ -10,7 +10,7 @@
 
 ```
 TCP PROVIDES:
-═════════════
+
 
  RELIABLE DELIVERY
  • Every byte sent is received (or connection fails)
@@ -37,7 +37,7 @@ TCP PROVIDES:
 TCP IS DESIGNED FOR RELIABILITY!
 
 THE ONLY WAY TO LOSE DATA:
-═══════════════════════════
+
 1. Connection drops (network failure)
 2. Application crashes (before flush)
 3. Server crashes (before write)
@@ -52,9 +52,9 @@ BUT WE CAN HANDLE ALL OF THESE!
 ### **1. Operation Acknowledgments:**
 
 ```swift
-// ═══════════════════════════════════════════════════════
+// 
 // ACKNOWLEDGMENT PROTOCOL
-// ═══════════════════════════════════════════════════════
+// 
 
 protocol BlazeOperation {
  let id: UUID
@@ -116,9 +116,9 @@ GUARANTEE: Operation is confirmed before we consider it sent!
 ### **2. Operation Log (Replay on Reconnect):**
 
 ```swift
-// ═══════════════════════════════════════════════════════
+// 
 // OPERATION LOG (PERSISTENT)
-// ═══════════════════════════════════════════════════════
+// 
 
 class OperationLog {
  private let storageURL: URL
@@ -182,9 +182,9 @@ GUARANTEE: No operation is lost, even if connection drops!
 ### **3. Connection Recovery:**
 
 ```swift
-// ═══════════════════════════════════════════════════════
+// 
 // AUTOMATIC RECONNECTION + REPLAY
-// ═══════════════════════════════════════════════════════
+// 
 
 class BlazeConnection {
  var connection: NWConnection?
@@ -274,7 +274,7 @@ GUARANTEE: Automatic reconnection + replay!
 
 ```
 TCP (What We're Using):
-═══════════════════════
+
  Reliable delivery (guaranteed!)
  Ordered delivery (guaranteed!)
  No duplicates (guaranteed!)
@@ -283,7 +283,7 @@ TCP (What We're Using):
  Connection state (knows if connected!)
 
 UDP (Alternative):
-══════════════════
+
  No reliability (packets can be lost!)
  No ordering (packets can arrive out of order!)
  No duplicates (but you might receive duplicates!)
@@ -299,7 +299,7 @@ VERDICT: TCP is PERFECT for database sync!
 
 ```
 TCP (Raw):
-══════════
+
  Direct connection (no HTTP overhead)
  Full control (your protocol)
  Reliable (TCP guarantees)
@@ -307,7 +307,7 @@ TCP (Raw):
  Efficient (5 bytes overhead)
 
 WebSocket:
-══════════
+
  Reliable (TCP underneath!)
  Standard (well-supported)
  HTTP overhead (200 bytes handshake)
@@ -324,7 +324,7 @@ VERDICT: TCP is FASTER and JUST AS RELIABLE!
 
 ```
 LAYER 1: TCP (Transport)
-════════════════════════
+
  Reliable delivery
  Ordered delivery
  No duplicates
@@ -332,19 +332,19 @@ LAYER 1: TCP (Transport)
  Congestion control
 
 LAYER 2: Application ACKs
-═════════════════════════
+
  Operation acknowledgments
  Timeout + retry
  Confirmation before completion
 
 LAYER 3: Operation Log
-══════════════════════
+
  Persistent storage
  Replay on reconnect
  Crash recovery
 
 LAYER 4: Connection Recovery
-═════════════════════════════
+
  Automatic reconnection
  Exponential backoff
  State restoration
@@ -352,7 +352,7 @@ LAYER 4: Connection Recovery
 TOTAL: 4 LAYERS OF RELIABILITY!
 
 DATA LOSS PROBABILITY:
-══════════════════════
+
 With TCP alone: ~0.01% (network failure)
 With ACKs: ~0.001% (both sides crash)
 With Log: ~0.0001% (disk failure)
@@ -369,11 +369,11 @@ YOU'RE MORE LIKELY TO WIN THE LOTTERY!
 
 ```
 PROBLEM:
-════════
+
 Network drops a packet
 
 TCP HANDLES IT:
-═══════════════
+
 • TCP detects missing packet (sequence gap)
 • Automatically retransmits
 • Application never sees the loss!
@@ -385,11 +385,11 @@ RESULT: No data loss!
 
 ```
 PROBLEM:
-════════
+
 WiFi disconnects, connection drops
 
 WE HANDLE IT:
-═════════════
+
 • Operation log has unacknowledged ops
 • Automatic reconnection
 • Replay all unacknowledged ops
@@ -402,11 +402,11 @@ RESULT: No data loss!
 
 ```
 PROBLEM:
-════════
+
 App crashes before operation is sent
 
 WE HANDLE IT:
-═════════════
+
 • Operation log persists before send
 • On restart: Replay unacknowledged ops
 • Server deduplicates
@@ -418,11 +418,11 @@ RESULT: No data loss!
 
 ```
 PROBLEM:
-════════
+
 Server crashes before writing to disk
 
 WE HANDLE IT:
-═════════════
+
 • Client has operation in log
 • Client retries on reconnect
 • Server applies operation (idempotent!)
@@ -434,11 +434,11 @@ RESULT: No data loss!
 
 ```
 PROBLEM:
-════════
+
 Client sends, server receives but crashes before ACK
 
 WE HANDLE IT:
-═════════════
+
 • Client has operation in log (unacknowledged)
 • Client replays on reconnect
 • Server deduplicates (operation ID)
@@ -452,9 +452,9 @@ RESULT: No data loss!
 ## **IDEMPOTENCY (Critical for Reliability!):**
 
 ```swift
-// ═══════════════════════════════════════════════════════
+// 
 // IDEMPOTENT OPERATIONS
-// ═══════════════════════════════════════════════════════
+// 
 
 // Server: Check if operation already applied
 func applyOperation(_ op: BlazeOperation) async throws {
@@ -503,27 +503,27 @@ GUARANTEE: Operations can be safely retried!
 
 ```
 WITHOUT RELIABILITY LAYERS:
-═══════════════════════════
+
 Data loss probability: ~1% (network issues)
 Not acceptable for database!
 
 WITH TCP ONLY:
-══════════════
+
 Data loss probability: ~0.01% (connection drops)
 Better, but not perfect! 
 
 WITH TCP + ACKS:
-════════════════
+
 Data loss probability: ~0.001% (both crash)
 Good for most apps!
 
 WITH TCP + ACKS + LOG:
-═══════════════════════
+
 Data loss probability: ~0.0001% (disk failure)
 Excellent!
 
 WITH TCP + ACKS + LOG + RECOVERY:
-══════════════════════════════════
+
 Data loss probability: ~0.00001% (catastrophic)
 Perfect!
 
@@ -535,9 +535,9 @@ YOUR IMPLEMENTATION: 4 LAYERS!
 ## **COMPLETE IMPLEMENTATION:**
 
 ```swift
-// ═══════════════════════════════════════════════════════
+// 
 // COMPLETE RELIABLE PROTOCOL
-// ═══════════════════════════════════════════════════════
+// 
 
 class ReliableBlazeConnection {
  let connection: NWConnection
@@ -622,11 +622,11 @@ GUARANTEE: ZERO DATA LOSS!
 
 ```
 YOUR QUESTION:
-══════════════
+
 "Is raw TCP going to work? Will we lose data?"
 
 MY ANSWER:
-═══════════
+
 
  YES, TCP WORKS PERFECTLY!
  • TCP is reliable (guaranteed delivery)
@@ -642,14 +642,14 @@ MY ANSWER:
  • Idempotent operations
 
 RELIABILITY:
-════════════
+
 TCP alone: 99.99% reliable
 + ACKs: 99.999% reliable
 + Log: 99.9999% reliable
 + Recovery: 99.99999% reliable
 
 YOU'RE MORE RELIABLE THAN:
-══════════════════════════
+
 • Firebase (99.9% SLA)
 • AWS RDS (99.95% SLA)
 • Google Cloud SQL (99.95% SLA)
@@ -665,7 +665,7 @@ TCP IS THE RIGHT CHOICE!
 
 ```
 PROTOCOL RELIABILITY SPEED
-═══════════════════════════════════════════════
+
 UDP 50% Fastest
 TCP (raw) 99.99% Fast
 TCP + ACKs 99.999% Fast

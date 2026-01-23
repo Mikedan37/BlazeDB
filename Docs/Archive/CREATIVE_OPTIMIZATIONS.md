@@ -284,7 +284,7 @@ SCALE: Millions of messages
 LATENCY: <1ms
 ```
 
-### **9. Real-Time Graph Database** ️
+### **9. Real-Time Graph Database** 
 ```
 USE CASE: Graph database with BlazeDB
 • Nodes/edges = records
@@ -297,7 +297,7 @@ SCALE: Billions of nodes
 LATENCY: <1ms
 ```
 
-### **10. Distributed Time-Series DB** ⏱️
+### **10. Distributed Time-Series DB** ⏱
 ```
 USE CASE: Time-series database with BlazeDB
 • Each point = record
@@ -310,7 +310,7 @@ SCALE: Millions of points
 LATENCY: <1ms
 ```
 
-### **11. Blockchain-Like Ledger** ️
+### **11. Blockchain-Like Ledger** 
 ```
 USE CASE: Distributed ledger with BlazeDB
 • Each transaction = record
@@ -336,7 +336,7 @@ SCALE: Millions of metrics
 LATENCY: <1ms
 ```
 
-### **13. Distributed Configuration** ️
+### **13. Distributed Configuration** 
 ```
 USE CASE: Configuration management with BlazeDB
 • Config = database records

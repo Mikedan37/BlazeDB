@@ -69,10 +69,10 @@ Read: [2_CORE_FEATURES.md](2_CORE_FEATURES.md)
 Read: [3_QUERY_GUIDE.md](3_QUERY_GUIDE.md)
 
 ### **→ Deploying to production?**
-Read: [8_PRODUCTION_GUIDE.md](8_PRODUCTION_GUIDE.md) ⭐
+Read: [8_PRODUCTION_GUIDE.md](8_PRODUCTION_GUIDE.md) 
 
 ### **→ Want monitoring?**
-Read: [5_TELEMETRY_GUIDE.md](5_TELEMETRY_GUIDE.md) ⭐
+Read: [5_TELEMETRY_GUIDE.md](5_TELEMETRY_GUIDE.md) 
 
 ### **→ Need everything?**
 Read: [MASTER_DOCUMENTATION_V3.md](MASTER_DOCUMENTATION_V3.md)
@@ -88,8 +88,8 @@ See [Examples/README.md](../Examples/README.md) for all examples
 **Recommended starters:**
 1. [BasicUsageExample.swift](../Examples/BasicUsageExample.swift) - CRUD basics
 2. [QueryBuilderExample.swift](../Examples/QueryBuilderExample.swift) - Queries
-3. [TelemetryBasicExample.swift](../Examples/TelemetryBasicExample.swift) - Monitoring ⭐
-4. [AshPileDebugMenu.swift](../Examples/AshPileDebugMenu.swift) - Production UI ⭐
+3. [TelemetryBasicExample.swift](../Examples/TelemetryBasicExample.swift) - Monitoring 
+4. [AshPileDebugMenu.swift](../Examples/AshPileDebugMenu.swift) - Production UI 
 
 **All examples are copy-paste ready!**
 
@@ -194,7 +194,7 @@ let results = try db.query()
 - [x] Production-ready
 - [x] Industry standards met/exceeded
 
-**Grade: A (92/100)** ⭐⭐⭐⭐⭐
+**Grade: A (92/100)** 
 
 ---
 

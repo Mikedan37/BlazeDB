@@ -10,17 +10,17 @@
 
 ```
 YOUR APP HAS TWO DATABASES:
-═══════════════════════════
+
 
 BugTracker.app:
- ├─ bugs.blazedb (1,500 bugs)
- └─ users.blazedb (50 users)
+  bugs.blazedb (1,500 bugs)
+  users.blazedb (50 users)
 
 HOW IT WORKS:
-═════════════
+
 
 1. CREATE DATABASES
- ─────────────────
+ 
  let bugsDB = try BlazeDBClient(
  name: "Bugs",
  at: bugsURL,
@@ -34,7 +34,7 @@ HOW IT WORKS:
  )
 
 2. CREATE TOPOLOGY
- ────────────────
+ 
  let topology = BlazeTopology()
 
  // Register both databases
@@ -49,7 +49,7 @@ HOW IT WORKS:
  )
 
 3. CONNECT LOCALLY
- ────────────────
+ 
  try await topology.connectLocal(
  from: bugsNode,
  to: usersNode,
@@ -63,7 +63,7 @@ HOW IT WORKS:
  // • <1ms latency!
 
 4. INSERT IN BUGS DB
- ──────────────────
+ 
  let bugId = try bugsDB.insert(BlazeDataRecord([
  "title":.string("Fix login bug"),
  "assignee":.uuid(userId),
@@ -80,7 +80,7 @@ HOW IT WORKS:
  // • <1ms total!
 
 5. QUERY FROM USERS DB
- ────────────────────
+ 
  // Now you can query bugs from usersDB!
  let bugs = try usersDB.query()
 .where("assignee", equals: userId)
@@ -89,7 +89,7 @@ HOW IT WORKS:
  // Works because they're synced!
 
 RESULT:
-═══════
+
  bugsDB and usersDB stay in sync
  <1ms latency (in-memory!)
  Automatic (no manual sync needed)
@@ -102,19 +102,19 @@ RESULT:
 
 ```
 YOUR APP SUITE:
-═══════════════
+
 
 BugTracker.app:
- └─ bugs.blazedb (1,500 bugs)
+  bugs.blazedb (1,500 bugs)
 
 Dashboard.app:
- └─ dashboard.blazedb (wants to read bugs!)
+  dashboard.blazedb (wants to read bugs!)
 
 HOW IT WORKS:
-═════════════
+
 
 1. BUGTRACKER: ENABLE CROSS-APP SYNC
- ───────────────────────────────────
+ 
  // In BugTracker.app
  let bugsDB = try BlazeDBClient(
  name: "Bugs",
@@ -138,7 +138,7 @@ HOW IT WORKS:
  // • Other apps can now access!
 
 2. DASHBOARD: CONNECT TO SHARED DB
- ────────────────────────────────
+ 
  // In Dashboard.app
  let bugTrackerDB = try BlazeDBClient.connectToSharedDB(
  appGroup: "group.com.yourcompany.suite",
@@ -153,7 +153,7 @@ HOW IT WORKS:
  // • Auto-reloads when BugTracker updates!
 
 3. QUERY BUGS FROM DASHBOARD
- ──────────────────────────
+ 
  // In Dashboard.app
  let highPriorityBugs = try await bugTrackerDB
 .query()
@@ -167,7 +167,7 @@ HOW IT WORKS:
  // • Real-time updates (file coordination)
 
 4. BUGTRACKER UPDATES BUG
- ───────────────────────
+ 
  // In BugTracker.app
  try bugsDB.update(id: bugId, with: [
  "status":.string("closed")
@@ -181,7 +181,7 @@ HOW IT WORKS:
  // • UI updates automatically!
 
 RESULT:
-═══════
+
  Dashboard reads bugs from BugTracker
  <1ms latency (same device!)
  Real-time updates
@@ -195,22 +195,22 @@ RESULT:
 
 ```
 YOUR SETUP:
-═══════════
+
 
 iPhone (Alice):
- └─ bugs.blazedb (creates bug)
+  bugs.blazedb (creates bug)
 
 Server (Raspberry Pi):
- └─ bugs.blazedb (coordinates)
+  bugs.blazedb (coordinates)
 
 iPad (Bob):
- └─ bugs.blazedb (receives bug)
+  bugs.blazedb (receives bug)
 
 HOW IT WORKS:
-═════════════
+
 
 1. IPHONE: ENABLE SYNC
- ────────────────────
+ 
  // On iPhone
  let bugsDB = try BlazeDBClient(
  name: "Bugs",
@@ -239,7 +239,7 @@ HOW IT WORKS:
  // • Ready to sync!
 
 2. IPHONE: CREATE BUG
- ───────────────────
+ 
  let bugId = try bugsDB.insert(BlazeDataRecord([
  "title":.string("Fix login bug"),
  "teamId":.uuid(iosTeamId),
@@ -256,7 +256,7 @@ HOW IT WORKS:
  // • Waits for ACK
 
 3. SERVER: RECEIVES OPERATION
- ───────────────────────────
+ 
  // On server (Vapor - when we build it!)
  // What happens:
  // • Receives encrypted frame
@@ -268,7 +268,7 @@ HOW IT WORKS:
  // • Sends ACK to iPhone
 
 4. IPAD: RECEIVES OPERATION
- ─────────────────────────
+ 
  // On iPad (Bob, same team)
  // What happens:
  // • Receives encrypted frame from server
@@ -278,7 +278,7 @@ HOW IT WORKS:
  // • UI updates automatically!
 
 RESULT:
-═══════
+
  Bug created on iPhone
  Synced to server (~5ms)
  Server forwards to iPad (~5ms)
@@ -293,10 +293,10 @@ RESULT:
 
 ```
 CLIENT → SERVER: HANDSHAKE
-═══════════════════════════
+
 
 1. CLIENT GENERATES KEYS
- ──────────────────────
+ 
  let clientPrivateKey = P256.KeyAgreement.PrivateKey()
  let clientPublicKey = clientPrivateKey.publicKey
 
@@ -304,7 +304,7 @@ CLIENT → SERVER: HANDSHAKE
  // Perfect Forward Secrecy!
 
 2. CLIENT SENDS HELLO
- ───────────────────
+ 
  Hello Message:
  • Protocol: "blazedb/1.0"
  • Node ID: client-uuid
@@ -316,7 +316,7 @@ CLIENT → SERVER: HANDSHAKE
  // Sent over TCP (encrypted with TLS if enabled)
 
 3. SERVER GENERATES KEYS
- ──────────────────────
+ 
  let serverPrivateKey = P256.KeyAgreement.PrivateKey()
  let serverPublicKey = serverPrivateKey.publicKey
 
@@ -324,7 +324,7 @@ CLIENT → SERVER: HANDSHAKE
  // Perfect Forward Secrecy!
 
 4. SERVER SENDS WELCOME
- ────────────────────
+ 
  Welcome Message:
  • Node ID: server-uuid
  • Database: "bugs"
@@ -333,7 +333,7 @@ CLIENT → SERVER: HANDSHAKE
  • Timestamp: now
 
 5. BOTH DERIVE SHARED SECRET
- ──────────────────────────
+ 
  // CLIENT:
  let sharedSecret = try clientPrivateKey
 .sharedSecretFromKeyAgreement(with: serverPublicKey)
@@ -346,7 +346,7 @@ CLIENT → SERVER: HANDSHAKE
  // No one else can compute it!
 
 6. BOTH DERIVE SYMMETRIC KEY
- ──────────────────────────
+ 
  // CLIENT & SERVER:
  let groupKey = HKDF<SHA256>.deriveKey(
  inputKeyMaterial: sharedSecret,
@@ -359,7 +359,7 @@ CLIENT → SERVER: HANDSHAKE
  // Different keys per DB pair!
 
 7. CLIENT VERIFIES CHALLENGE
- ──────────────────────────
+ 
  let response = HMAC<SHA256>.authenticationCode(
  for: challenge,
  using: groupKey
@@ -369,7 +369,7 @@ CLIENT → SERVER: HANDSHAKE
  // Server verifies (prevents MITM!)
 
 8. CONNECTION ESTABLISHED!
- ───────────────────────
+ 
  E2E encryption enabled
  All messages encrypted with AES-256-GCM
  Server blind (can't read if E2E mode!)
@@ -383,10 +383,10 @@ CLIENT → SERVER: HANDSHAKE
 
 ```
 ALICE CREATES BUG:
-══════════════════
+
 
 1. INSERT IN LOCAL DB
- ───────────────────
+ 
  let bugId = try bugsDB.insert(BlazeDataRecord([
  "title":.string("Fix login"),
  "teamId":.uuid(iosTeamId)
@@ -396,7 +396,7 @@ ALICE CREATES BUG:
  // Encrypted at rest (AES-256)
 
 2. SYNC ENGINE DETECTS CHANGE
- ───────────────────────────
+ 
  // BlazeSyncEngine watches for changes
  // Creates BlazeOperation:
  BlazeOperation(
@@ -409,24 +409,24 @@ ALICE CREATES BUG:
  )
 
 3. OPERATION LOGGED
- ─────────────────
+ 
  // Stored in operation_log.json
  // Crash-safe!
  // Will replay if connection drops!
 
 4. ENCODED WITH BLAZEBINARY
- ──────────────────────────
+ 
  let encoded = try BlazeBinaryEncoder.encode(operation)
  // 165 bytes (compact!)
 
 5. ENCRYPTED WITH E2E KEY
- ───────────────────────
+ 
  let sealed = try AES.GCM.seal(encoded, using: groupKey)
  let encrypted = sealed.combined!
  // 193 bytes (165 + 28 overhead)
 
 6. FRAMED FOR NETWORK
- ───────────────────
+ 
  Frame:
  • Type: 0x06 (Operation)
  • Length: 193 bytes
@@ -435,13 +435,13 @@ ALICE CREATES BUG:
  Total: 5 + 193 = 198 bytes
 
 7. SENT TO SERVER
- ───────────────
+ 
  try await connection.send(encryptedFrame)
  // Over TCP (with TLS if enabled)
  // ~5ms latency
 
 8. SERVER RECEIVES
- ────────────────
+ 
  // Decrypts (if smart mode)
  // Validates operation
  // Checks access control
@@ -450,13 +450,13 @@ ALICE CREATES BUG:
  // Sends ACK
 
 9. CLIENT RECEIVES ACK
- ────────────────────
+ 
  // Marks operation as acknowledged
  // Removes from pending queue
  // Operation complete!
 
 10. OTHER CLIENTS RECEIVE
- ─────────────────────
+ 
  // iPad (Bob) receives encrypted frame
  // Decrypts with group key
  // Checks access (iOS team?)
@@ -470,15 +470,15 @@ ALICE CREATES BUG:
 
 ```
 IF CONNECTION DROPS:
-════════════════════
+
 
 1. CLIENT DETECTS DISCONNECT
- ──────────────────────────
+ 
  // Connection state:.failed
  // Automatic reconnection starts
 
 2. REPLAY UNACKNOWLEDGED OPS
- ──────────────────────────
+ 
  // Operation log has unacknowledged operations
  // Replays them on reconnect
 
@@ -488,13 +488,13 @@ IF CONNECTION DROPS:
  }
 
 3. SERVER DEDUPLICATES
- ────────────────────
+ 
  // Server checks operation ID
  // If already applied, skips (idempotent!)
  // If not, applies and sends ACK
 
 4. SYNC RESUMES
- ─────────────
+ 
  // All operations replayed
  // No data lost!
  // Sync continues normally
@@ -505,12 +505,12 @@ IF CONNECTION DROPS:
 ## **REAL-WORLD EXAMPLE:**
 
 ```swift
-// ═══════════════════════════════════════════════════════
+// 
 // COMPLETE EXAMPLE: TEAM BUG TRACKER
-// ═══════════════════════════════════════════════════════
+// 
 
 // SETUP (One time)
-// ─────────────────
+// 
 
 // iPhone (Alice - iOS Developer)
 let bugsDB = try BlazeDBClient(
@@ -550,7 +550,7 @@ try await bugsDB.enableSync(
 )
 
 // NOW USE IT!
-// ───────────
+// 
 
 // 1. Create bug (local)
 let bugId = try bugsDB.insert(BlazeDataRecord([
@@ -592,7 +592,7 @@ try bugsDB.update(id: bugId, with: [
 // Everyone sees update!
 
 RESULT:
-═══════
+
  Local sync: <1ms
  Cross-app sync: <1ms
  Remote sync: ~5ms
@@ -656,7 +656,7 @@ OperationLog = Crash safety
 
 ```
 HOW IT WORKS:
-═════════════
+
 
 1. SETUP (One time)
  • Create databases

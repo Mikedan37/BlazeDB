@@ -11,64 +11,64 @@
 BlazeDB is a layered embedded database system with the following architecture:
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│ APPLICATION LAYER │
-│ BlazeDBClient, DynamicCollection, QueryBuilder, BlazeQuery │
-└─────────────────────────────────────────────────────────────────┘
- │
-┌─────────────────────────────────────────────────────────────────┐
-│ QUERY & INDEX LAYER │
-│ QueryBuilder, QueryOptimizer, QueryPlanner │
-│ SecondaryIndexes, FullTextSearch, SpatialIndex, VectorIndex │
-└─────────────────────────────────────────────────────────────────┘
- │
-┌─────────────────────────────────────────────────────────────────┐
-│ MVCC & CONCURRENCY LAYER │
-│ VersionManager, MVCCTransaction, ConflictResolution │
-│ OperationPool (max 100 concurrent), AsyncQueryCache │
-└─────────────────────────────────────────────────────────────────┘
- │
-┌─────────────────────────────────────────────────────────────────┐
-│ TRANSACTION & WAL LAYER │
-│ BlazeTransaction, TransactionLog, WriteAheadLog │
-│ Checkpoint threshold: 100 writes or 1.0s │
-└─────────────────────────────────────────────────────────────────┘
- │
-┌─────────────────────────────────────────────────────────────────┐
-│ STORAGE ENGINE LAYER │
-│ DynamicCollection (schema-less document store) │
-│ StorageLayout (metadata: indexMap, secondaryIndexes) │
-│ PageStore (4KB pages, AES-256-GCM encryption, 1000-page cache) │
-│ PageStore+Overflow (page chains for records >4KB) │
-└─────────────────────────────────────────────────────────────────┘
- │
-┌─────────────────────────────────────────────────────────────────┐
-│ ENCODING & SERIALIZATION │
-│ BlazeBinaryEncoder/Decoder (53% smaller than JSON) │
-│ BlazeRecordEncoder/Decoder (Codable integration) │
-│ Optional CRC32 checksums (99.9% corruption detection) │
-└─────────────────────────────────────────────────────────────────┘
- │
-┌─────────────────────────────────────────────────────────────────┐
-│ DISTRIBUTED SYNC LAYER │
-│ BlazeSyncEngine (op-log based, 10K-50K batch size) │
-│ OperationLog (Lamport timestamps, persistent storage) │
-│ TCPRelay, UnixDomainSocketRelay, InMemoryRelay │
-│ BlazeTopology, BlazeDiscovery (mDNS/Bonjour) │
-└─────────────────────────────────────────────────────────────────┘
- │
-┌─────────────────────────────────────────────────────────────────┐
-│ SECURITY & ENCRYPTION │
-│ SecureConnection (ECDH P-256 + HKDF + AES-256-GCM) │
-│ PolicyEngine (Row-Level Security) │
-│ PageStore encryption (AES-256-GCM per page, unique nonce) │
-└─────────────────────────────────────────────────────────────────┘
- │
-┌─────────────────────────────────────────────────────────────────┐
-│ TOOLBOX │
-│ BlazeServer (TCP server), BlazeShell (CLI), BlazeMCP (MCP) │
-│ BlazeDBVisualizer, BlazeStudio (GUI tools) │
-└─────────────────────────────────────────────────────────────────┘
+
+ APPLICATION LAYER 
+ BlazeDBClient, DynamicCollection, QueryBuilder, BlazeQuery 
+
+ 
+
+ QUERY & INDEX LAYER 
+ QueryBuilder, QueryOptimizer, QueryPlanner 
+ SecondaryIndexes, FullTextSearch, SpatialIndex, VectorIndex 
+
+ 
+
+ MVCC & CONCURRENCY LAYER 
+ VersionManager, MVCCTransaction, ConflictResolution 
+ OperationPool (max 100 concurrent), AsyncQueryCache 
+
+ 
+
+ TRANSACTION & WAL LAYER 
+ BlazeTransaction, TransactionLog, WriteAheadLog 
+ Checkpoint threshold: 100 writes or 1.0s 
+
+ 
+
+ STORAGE ENGINE LAYER 
+ DynamicCollection (schema-less document store) 
+ StorageLayout (metadata: indexMap, secondaryIndexes) 
+ PageStore (4KB pages, AES-256-GCM encryption, 1000-page cache) 
+ PageStore+Overflow (page chains for records >4KB) 
+
+ 
+
+ ENCODING & SERIALIZATION 
+ BlazeBinaryEncoder/Decoder (53% smaller than JSON) 
+ BlazeRecordEncoder/Decoder (Codable integration) 
+ Optional CRC32 checksums (99.9% corruption detection) 
+
+ 
+
+ DISTRIBUTED SYNC LAYER 
+ BlazeSyncEngine (op-log based, 10K-50K batch size) 
+ OperationLog (Lamport timestamps, persistent storage) 
+ TCPRelay, UnixDomainSocketRelay, InMemoryRelay 
+ BlazeTopology, BlazeDiscovery (mDNS/Bonjour) 
+
+ 
+
+ SECURITY & ENCRYPTION 
+ SecureConnection (ECDH P-256 + HKDF + AES-256-GCM) 
+ PolicyEngine (Row-Level Security) 
+ PageStore encryption (AES-256-GCM per page, unique nonce) 
+
+ 
+
+ TOOLBOX 
+ BlazeServer (TCP server), BlazeShell (CLI), BlazeMCP (MCP) 
+ BlazeDBVisualizer, BlazeStudio (GUI tools) 
+
 ```
 
 **Key Design Principles:**

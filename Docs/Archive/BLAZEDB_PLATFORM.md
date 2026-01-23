@@ -12,78 +12,78 @@ Not just a database. Not just a sync system.
 
 ---
 
-## ️ **THE COMPLETE STACK**
+##  **THE COMPLETE STACK**
 
 ```
-┌──────────────────────────────────────────────────────────────┐
-│ BLAZEDB PLATFORM │
-│ (Firebase Killer, But Better) │
-├──────────────────────────────────────────────────────────────┤
-│ │
-│ LAYER 1: DATABASE ENGINE │
-│ ═══════════════════════════ │
-│ • BlazeDB (Pure Swift) │
-│ • ACID transactions │
-│ • MVCC + GC │
-│ • AES-256 encryption │
-│ • BlazeBinary format (60% smaller) │
-│ • Query engine (JOINs, aggregations) │
-│ • Full-text search │
-│ • RLS + RBAC │
-│ STATUS: DONE (437 tests) │
-│ │
-│ LAYER 2: CLIENT SDKs │
-│ ═══════════════════ │
-│ • Swift (iOS, macOS) │
-│ • SwiftUI (@BlazeQuery) │
-│ • Async/await │
-│ • Codable integration │
-│ • TypeScript (Web) - Future │
-│ • Kotlin (Android) - Future │
-│ STATUS: DONE (Swift), ⏸️ TODO (others) │
-│ │
-│ LAYER 3: SYNC SYSTEM │
-│ ═══════════════════ │
-│ • gRPC + BlazeBinary protocol │
-│ • Smart compression (adaptive) │
-│ • CRDT conflict resolution │
-│ • Operation log + GC │
-│ • Delta sync (only changes) │
-│ • Snapshot system │
-│ • Offline queue │
-│ STATUS: ⏸️ TODO (1 month to implement) │
-│ │
-│ LAYER 4: SERVER │
-│ ═══════════════ │
-│ • Vapor + gRPC │
-│ • TLS + JWT security │
-│ • Server-side BlazeDB │
-│ • Query execution │
-│ • Multi-region support │
-│ • Load balancing │
-│ STATUS: ⏸️ TODO (1 week to implement) │
-│ │
-│ LAYER 5: TELEMETRY & MONITORING │
-│ ═══════════════════════════════ │
-│ • BlazeLogger (already have!) │
-│ • Telemetry system (already have!) │
-│ • Prometheus integration │
-│ • Grafana dashboards │
-│ • Real-time alerts │
-│ • Global metrics │
-│ STATUS: PARTIAL (local), ⏸️ TODO (distributed) │
-│ │
-│ LAYER 6: MANAGEMENT TOOLS │
-│ ═══════════════════════ │
-│ • BlazeDBVisualizer (already have!) │
-│ • Remote database access │
-│ • Query builder │
-│ • Performance charts │
-│ • Access control │
-│ • 15 feature tabs │
-│ STATUS: DONE (296 tests) │
-│ │
-└──────────────────────────────────────────────────────────────┘
+
+ BLAZEDB PLATFORM 
+ (Firebase Killer, But Better) 
+
+ 
+ LAYER 1: DATABASE ENGINE 
+  
+ • BlazeDB (Pure Swift) 
+ • ACID transactions 
+ • MVCC + GC 
+ • AES-256 encryption 
+ • BlazeBinary format (60% smaller) 
+ • Query engine (JOINs, aggregations) 
+ • Full-text search 
+ • RLS + RBAC 
+ STATUS: DONE (437 tests) 
+ 
+ LAYER 2: CLIENT SDKs 
+  
+ • Swift (iOS, macOS) 
+ • SwiftUI (@BlazeQuery) 
+ • Async/await 
+ • Codable integration 
+ • TypeScript (Web) - Future 
+ • Kotlin (Android) - Future 
+ STATUS: DONE (Swift), ⏸ TODO (others) 
+ 
+ LAYER 3: SYNC SYSTEM 
+  
+ • gRPC + BlazeBinary protocol 
+ • Smart compression (adaptive) 
+ • CRDT conflict resolution 
+ • Operation log + GC 
+ • Delta sync (only changes) 
+ • Snapshot system 
+ • Offline queue 
+ STATUS: ⏸ TODO (1 month to implement) 
+ 
+ LAYER 4: SERVER 
+  
+ • Vapor + gRPC 
+ • TLS + JWT security 
+ • Server-side BlazeDB 
+ • Query execution 
+ • Multi-region support 
+ • Load balancing 
+ STATUS: ⏸ TODO (1 week to implement) 
+ 
+ LAYER 5: TELEMETRY & MONITORING 
+  
+ • BlazeLogger (already have!) 
+ • Telemetry system (already have!) 
+ • Prometheus integration 
+ • Grafana dashboards 
+ • Real-time alerts 
+ • Global metrics 
+ STATUS: PARTIAL (local), ⏸ TODO (distributed) 
+ 
+ LAYER 6: MANAGEMENT TOOLS 
+  
+ • BlazeDBVisualizer (already have!) 
+ • Remote database access 
+ • Query builder 
+ • Performance charts 
+ • Access control 
+ • 15 feature tabs 
+ STATUS: DONE (296 tests) 
+ 
+
 ```
 
 ---
@@ -172,44 +172,44 @@ RESULT:
 ### **What You Get:**
 
 ```swift
-┌────────────────────────────────────────────────────────────┐
-│ BLAZEDB TELEMETRY: GLOBAL VISIBILITY │
-├────────────────────────────────────────────────────────────┤
-│ │
-│ CLIENT TELEMETRY (Automatic): │
-│ ─────────────────────────── │
-│ • Every operation tracked │
-│ • Network conditions logged │
-│ • Battery usage measured │
-│ • Errors captured │
-│ • Performance timed │
-│ • Sent to server with operations │
-│ │
-│ SERVER AGGREGATION: │
-│ ────────────────── │
-│ • Receives telemetry from ALL clients │
-│ • Stores in metrics DB │
-│ • Exports to Prometheus │
-│ • Real-time dashboards │
-│ │
-│ VISUALIZATION: │
-│ ───────────── │
-│ • Grafana (server metrics) │
-│ • BlazeDBVisualizer (DB management) │
-│ • Custom dashboards │
-│ │
-│ METRICS AVAILABLE: │
-│ ───────────────── │
-│ Operations: inserts, updates, deletes, queries │
-│ ⏱️ Latency: client, network, server, end-to-end │
-│ Storage: DB size, sync queue, memory usage │
-│ Battery: per operation, per hour, by device │
-│ Network: bandwidth, compression ratio, network type │
-│ Errors: by type, by device, by operation │
-│ Geographic: by region, by user, by network │
-│ Users: active devices, concurrent, sessions │
-│ │
-└────────────────────────────────────────────────────────────┘
+
+ BLAZEDB TELEMETRY: GLOBAL VISIBILITY 
+
+ 
+ CLIENT TELEMETRY (Automatic): 
+  
+ • Every operation tracked 
+ • Network conditions logged 
+ • Battery usage measured 
+ • Errors captured 
+ • Performance timed 
+ • Sent to server with operations 
+ 
+ SERVER AGGREGATION: 
+  
+ • Receives telemetry from ALL clients 
+ • Stores in metrics DB 
+ • Exports to Prometheus 
+ • Real-time dashboards 
+ 
+ VISUALIZATION: 
+  
+ • Grafana (server metrics) 
+ • BlazeDBVisualizer (DB management) 
+ • Custom dashboards 
+ 
+ METRICS AVAILABLE: 
+  
+ Operations: inserts, updates, deletes, queries 
+ ⏱ Latency: client, network, server, end-to-end 
+ Storage: DB size, sync queue, memory usage 
+ Battery: per operation, per hour, by device 
+ Network: bandwidth, compression ratio, network type 
+ Errors: by type, by device, by operation 
+ Geographic: by region, by user, by network 
+ Users: active devices, concurrent, sessions 
+ 
+
 ```
 
 ### **Implementation:**
@@ -474,7 +474,7 @@ FEATURES YOU GET:
 
 ```
 FEATURES ENABLED:
-═════════════════
+
  BlazeBinary encoding (60% smaller)
  LZ4 compression (67% smaller)
  Sync GC (stable memory)
@@ -484,10 +484,10 @@ FEATURES ENABLED:
  Snapshot sync (20x faster initial)
 
 COMBINED EFFECT:
-════════════════
+
 
 Test: Sync 10,000 Bug Records
-──────────────────────────────
+
 
 Firebase (REST + JSON):
 • Size: 4.5 MB
@@ -517,59 +517,59 @@ VERDICT: 25x BETTER!
 ### **Global Dashboard (All Devices):**
 
 ```
-═══════════════════════════════════════════════
+
  BLAZEDB GLOBAL TELEMETRY
-═══════════════════════════════════════════════
+
 
  OPERATIONS (Real-Time)
-───────────────────────────
-Inserts: 1,234/sec ████████████████░░░░
-Updates: 2,456/sec ████████████████████████
-Deletes: 123/sec ███░░░░░░░░░░░░░░░░░░░░
-Queries: 5,678/sec ██████████████████████████████
+
+Inserts: 1,234/sec 
+Updates: 2,456/sec 
+Deletes: 123/sec 
+Queries: 5,678/sec 
 
  DEVICES (58 Online)
-──────────────────────
+
 iOS: 23 devices
 Android: 15 devices
 Web: 12 devices
 Mac: 8 devices
 
  PERFORMANCE
-──────────────
-Avg Latency: 45ms [████████████████░░░░] p99: 89ms
-Sync Lag: 12ms [█████████████░░░░░░░] max: 45ms
-Server CPU: 23% [██████░░░░░░░░░░░░░░]
-Memory: 547 MB [███████░░░░░░░░░░░░░]
+
+Avg Latency: 45ms [] p99: 89ms
+Sync Lag: 12ms [] max: 45ms
+Server CPU: 23% []
+Memory: 547 MB []
 
  NETWORK (Last Hour)
-──────────────────────
+
 Sent: 12.3 MB
 Received: 8.7 MB
 Compressed: 6.9 MB (saved 67%)
 Compression Ratio: 3.0:1
 
  BATTERY IMPACT (Average)
-───────────────────────────
+
 Active sync: 1.2%/hour
 Background: 0.3%/hour
 Total: 1.5%/hour
 
  TOP QUERIES (Hot Paths)
-──────────────────────────
+
 1. bugs WHERE status='open' 234/hour, 12ms avg
 2. comments WHERE bugId=X 156/hour, 8ms avg
 3. users WHERE team=Y 89/hour, 15ms avg
 
  ERRORS (Last Hour)
-─────────────────────
+
 Network timeouts: 3
 Decode errors: 0
 Auth failures: 1
 Total: 4 (0.02% error rate)
 
  TRENDS
-─────────
+
 Operations: ↗ +15% vs yesterday
 Latency: ↘ -8% vs yesterday
 Errors: ↔ Stable
@@ -583,44 +583,44 @@ Users: ↗ +3 new devices
 ```swift
 // BlazeDB becomes a universal database API!
 
-┌────────────────────────────────────────────────┐
-│ ACCESS BLAZEDB FROM ANYWHERE │
-├────────────────────────────────────────────────┤
-│ │
-│ 1️⃣ iPhone App (Native) │
-│ let db = BlazeDBClient(...) │
-│ try await db.insert(record) │
-│ │
-│ 2️⃣ Web App (gRPC-Web) │
-│ const db = new BlazeDBClient(...) │
-│ await db.insert(record) │
-│ │
-│ 3️⃣ Command Line (curl) │
-│ curl https://api/insert \ │
-│ -d '{"record": "..."}' │
-│ │
-│ 4️⃣ BlazeDBVisualizer (Remote Mode) │
-│ Connect → Remote → yourpi.duckdns.org │
-│ → See database! │
-│ → Execute queries! │
-│ │
-│ 5️⃣ Jupyter Notebook (Python) │
-│ db = BlazeDBClient("yourpi.duckdns.org") │
-│ df = db.query("SELECT * FROM bugs") │
-│ │
-│ 6️⃣ Excel (Power Query) │
-│ → Connect to REST API │
-│ → Import BlazeDB data │
-│ │
-│ 7️⃣ Grafana (Visualization) │
-│ → BlazeDB as data source │
-│ → Chart your data │
-│ │
-│ 8️⃣ Zapier / IFTTT (Automation) │
-│ → Webhook → BlazeDB insert │
-│ → Trigger on changes │
-│ │
-└────────────────────────────────────────────────┘
+
+ ACCESS BLAZEDB FROM ANYWHERE 
+
+ 
+ 1⃣ iPhone App (Native) 
+ let db = BlazeDBClient(...) 
+ try await db.insert(record) 
+ 
+ 2⃣ Web App (gRPC-Web) 
+ const db = new BlazeDBClient(...) 
+ await db.insert(record) 
+ 
+ 3⃣ Command Line (curl) 
+ curl https://api/insert \ 
+ -d '{"record": "..."}' 
+ 
+ 4⃣ BlazeDBVisualizer (Remote Mode) 
+ Connect → Remote → yourpi.duckdns.org 
+ → See database! 
+ → Execute queries! 
+ 
+ 5⃣ Jupyter Notebook (Python) 
+ db = BlazeDBClient("yourpi.duckdns.org") 
+ df = db.query("SELECT * FROM bugs") 
+ 
+ 6⃣ Excel (Power Query) 
+ → Connect to REST API 
+ → Import BlazeDB data 
+ 
+ 7⃣ Grafana (Visualization) 
+ → BlazeDB as data source 
+ → Chart your data 
+ 
+ 8⃣ Zapier / IFTTT (Automation) 
+ → Webhook → BlazeDB insert 
+ → Trigger on changes 
+ 
+
 
 RESULT: BlazeDB is now a PLATFORM, not just a library!
 ```
@@ -631,7 +631,7 @@ RESULT: BlazeDB is now a PLATFORM, not just a library!
 
 ```
 WHAT YOU HAVE NOW:
-══════════════════
+
  BlazeDB (70,000 lines, 437 tests)
  BlazeDBVisualizer (30,000 lines, 296 tests)
  BlazeBinary protocol (battle-tested)
@@ -641,18 +641,18 @@ WHAT YOU HAVE NOW:
  Complete documentation (8,000+ lines!)
 
 WHAT TO ADD:
-════════════
-⏸️ gRPC server (1 week)
-⏸️ Sync engine (1 week)
-⏸️ Smart compression (2 days)
-⏸️ Sync GC (2 days)
-⏸️ Telemetry aggregation (2 days)
-⏸️ TLS + JWT (1 week)
+
+⏸ gRPC server (1 week)
+⏸ Sync engine (1 week)
+⏸ Smart compression (2 days)
+⏸ Sync GC (2 days)
+⏸ Telemetry aggregation (2 days)
+⏸ TLS + JWT (1 week)
 
 TOTAL: 4 weeks to complete platform!
 
 WHAT YOU GET:
-═════════════
+
  Fastest sync (8x better than Firebase)
  Most efficient (60% less bandwidth)
  Cheapest ($0 on Pi vs $50-500/mo)

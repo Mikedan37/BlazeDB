@@ -68,7 +68,7 @@ Developer: Commits code
 
 ---
 
-### **2. CI/CD Pipeline** ️
+### **2. CI/CD Pipeline** 
 
 **Before**:
 ```
@@ -100,7 +100,7 @@ git push
 **Before**:
 ```
 Developer: "How much code is tested?"
- → ¯\_(ツ)_/¯
+ → ¯\_()_/¯
 ```
 
 **Now**:

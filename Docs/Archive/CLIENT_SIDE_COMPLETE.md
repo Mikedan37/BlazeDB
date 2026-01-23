@@ -8,13 +8,13 @@
 
 ```
 BlazeDB/Distributed/
-├── BlazeOperation.swift Core operation type
-├── BlazeSyncEngine.swift Sync engine (push/pull)
-├── BlazeTopology.swift Multi-DB coordinator
-├── InMemoryRelay.swift Local sync (<1ms)
-├── SecureConnection.swift DH handshake + E2E
-├── WebSocketRelay.swift Remote sync relay
-└── CrossAppSync.swift Cross-app sync
+ BlazeOperation.swift Core operation type
+ BlazeSyncEngine.swift Sync engine (push/pull)
+ BlazeTopology.swift Multi-DB coordinator
+ InMemoryRelay.swift Local sync (<1ms)
+ SecureConnection.swift DH handshake + E2E
+ WebSocketRelay.swift Remote sync relay
+ CrossAppSync.swift Cross-app sync
 
 ALL CLIENT-SIDE CODE COMPLETE!
 ```
@@ -136,7 +136,7 @@ try await bugsDB.enableSync(
 
 ```
 CLIENT-SIDE: COMPLETE
-═════════════════════════
+
  All components implemented
  Zero compilation errors
  Ready for local sync
@@ -144,7 +144,7 @@ CLIENT-SIDE: COMPLETE
  Ready for server sync (when server is ready)
 
 SERVER-SIDE: ⏳ PENDING
-════════════════════════
+
 ⏳ Vapor server (later)
 ⏳ WebSocket handlers (later)
 ⏳ Database routing (later)

@@ -237,7 +237,7 @@ When it works correctly:
  "Test Case 'testUpdate' passed (0.001 seconds)"
 
 3. Updates UI in real-time:
- Progress: [████░░░] 45%
+ Progress: [] 45%
  Running: "AggregationTests"
  412 / 907 tests
  405 Passed
@@ -300,7 +300,7 @@ When working, you'll see:
 BlazeDB Test Suite Runner
 
 Running tests... [Cancel]
-Progress: ████████░░ 82%
+Progress:  82%
 
 Running: "PerformanceTests"
 745 / 907 tests

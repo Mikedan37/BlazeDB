@@ -199,7 +199,7 @@
 1. **CSV Export**
  - Proper comma escaping (`"This, has, commas"`)
  - Quote escaping (`She said ""Hello""`)
- - Unicode support (, 中文, العربية)
+ - Unicode support (, , العربية)
  - Headers row
  - UTF-8 encoding
 
@@ -300,24 +300,24 @@
 
 ```
  UNIT TESTS (186 total)
-├─ MonitoringService: 48 tests
-├─ BackupRestoreService: 28 tests
-├─ ExportService: 22 tests
-├─ PasswordVaultService: 44 tests
-├─ AlertService: 36 tests
-└─ Misc: 8 tests
+ MonitoringService: 48 tests
+ BackupRestoreService: 28 tests
+ ExportService: 22 tests
+ PasswordVaultService: 44 tests
+ AlertService: 36 tests
+ Misc: 8 tests
 
-️ UI TESTS (62 total)
-├─ DashboardTabs: 18 tests
-├─ PasswordUnlock: 8 tests
-├─ MonitoringDashboard: 14 tests
-└─ FullWorkflow: 22 tests
+ UI TESTS (62 total)
+ DashboardTabs: 18 tests
+ PasswordUnlock: 8 tests
+ MonitoringDashboard: 14 tests
+ FullWorkflow: 22 tests
 
  INTEGRATION TESTS (48 total)
-├─ Full user journeys
-├─ Multi-tab workflows
-├─ Export workflows
-└─ Backup/restore workflows
+ Full user journeys
+ Multi-tab workflows
+ Export workflows
+ Backup/restore workflows
 
 TOTAL: 296 tests covering:
  All 6 tabs
@@ -518,7 +518,7 @@ open ~/Library/Developer/Xcode/DerivedData/.../BlazeDBVisualizer.app
 
 ---
 
-**Built with ️ by Michael Danylchuk**
+**Built with  by Michael Danylchuk**
 **Powered by BlazeDB - The Swift-native embedded database**
 
 ---

@@ -75,20 +75,20 @@ BlazeDB has been refactored to meet modern open-source standards while preservin
 **Current Structure:**
 ```
 BlazeDB/
-├── BlazeDB/              # Main library source
-│   ├── Core/             # Core database engine
-│   ├── Query/            # Query system
-│   ├── Storage/          # Storage layer
-│   ├── Security/         # Security & encryption
-│   ├── Distributed/      # Sync & networking
-│   ├── Exports/          # Public API surface
-│   └── ...
-├── BlazeDBTests/         # Unit tests
-├── BlazeDBIntegrationTests/  # Integration tests
-├── Examples/             # Example projects
-├── Docs/                 # Documentation
-├── Tools/                # Migration tools
-└── .github/              # CI/CD workflows
+ BlazeDB/              # Main library source
+    Core/             # Core database engine
+    Query/            # Query system
+    Storage/          # Storage layer
+    Security/         # Security & encryption
+    Distributed/      # Sync & networking
+    Exports/          # Public API surface
+    ...
+ BlazeDBTests/         # Unit tests
+ BlazeDBIntegrationTests/  # Integration tests
+ Examples/             # Example projects
+ Docs/                 # Documentation
+ Tools/                # Migration tools
+ .github/              # CI/CD workflows
 ```
 
 **Status:** Structure follows Swift Package Manager conventions. No reorganization needed.

@@ -111,7 +111,7 @@ for i in 0..<1000 {
 **Random inputs include**:
 - Empty records
 - 1000-field records
-- Unicode strings: "李明مرحبا"
+- Unicode strings: "مرحبا"
 - Extreme numbers: Infinity, NaN, Int.max
 - Binary blobs: 0-10KB random bytes
 
@@ -122,7 +122,7 @@ for i in 0..<1000 {
 Insert 500 random records
 persist()
 Close database
-───────────────────────
+
 Reopen database
 fetchAll()
 
@@ -168,7 +168,7 @@ Insert: { field1: 10, field2: "hello", field3: true }
 Update: { field1: 99 } // Only change field1
 
 Fetch: { field1: 99, field2: "hello", field3: true }
- ↑───────────────↑───────────↑
+ ↑↑↑
  MUST be unchanged
 ```
 
@@ -532,19 +532,19 @@ Script tags: "<script>alert('xss')</script>"
 ## Quick Stats
 
 ```
-┌─────────────────────────────────────────┐
-│ CHAOS ENGINEERING: 7 tests │
-│ Scenarios tested: ~1,000 │
-├─────────────────────────────────────────┤
-│ PROPERTY-BASED: 15 tests │
-│ Random inputs: ~20,000 │
-├─────────────────────────────────────────┤
-│ FUZZING: 15 tests │
-│ Adversarial inputs: ~50,000 │
-├─────────────────────────────────────────┤
-│ TOTAL: 37 tests │
-│ TOTAL INPUTS: ~71,000 │
-└─────────────────────────────────────────┘
+
+ CHAOS ENGINEERING: 7 tests 
+ Scenarios tested: ~1,000 
+
+ PROPERTY-BASED: 15 tests 
+ Random inputs: ~20,000 
+
+ FUZZING: 15 tests 
+ Adversarial inputs: ~50,000 
+
+ TOTAL: 37 tests 
+ TOTAL INPUTS: ~71,000 
+
 ```
 
 ---

@@ -161,12 +161,12 @@ Returns what maintenance is needed and why
 let (vacuum, gc, reasons) = try db.needsMaintenance()
 
 if vacuum {
- print("️ VACUUM needed: \(reasons.joined(separator: ", "))")
+ print(" VACUUM needed: \(reasons.joined(separator: ", "))")
  // Run VACUUM in background
 }
 
 if gc {
- print("️ GC needed: \(reasons.joined(separator: ", "))")
+ print(" GC needed: \(reasons.joined(separator: ", "))")
  try db.runManualGC()
 }
 ```
@@ -250,10 +250,10 @@ Found 3 databases:
  Size: 44.8 MB
  Health: healthy
 
- ️ cache_db.blazedb
+  cache_db.blazedb
  Records: 250,000
  Size: 1.2 GB
- Health: ️ warning
+ Health:  warning
  Reason: High fragmentation (32%) - run VACUUM
 
  audit_log.blazedb
@@ -443,15 +443,15 @@ $ blaze-monitor --watch /path/to/databases
 
  Monitoring 3 databases...
 
-┌─────────────┬──────────┬─────────┬────────┐
-│ Database │ Records │ Size │ Health │
-├─────────────┼──────────┼─────────┼────────┤
-│ user_db │ 10,523 │ 44.8 MB │ │
-│ cache_db │ 250,000 │ 1.2 GB │ ️ │
-│ audit_log │ 5,234 │ 2.1 MB │ │
-└─────────────┴──────────┴─────────┴────────┘
 
-️ cache_db: High fragmentation (32%) - run VACUUM
+ Database  Records  Size  Health 
+
+ user_db  10,523  44.8 MB  
+ cache_db  250,000  1.2 GB   
+ audit_log  5,234  2.1 MB  
+
+
+ cache_db: High fragmentation (32%) - run VACUUM
 ```
 
 ---
@@ -617,5 +617,5 @@ func scanAllDatabases() -> [DBRecord] {
 
 ---
 
-**You now have a PRODUCTION-GRADE monitoring API that's safe to expose anywhere!** ️
+**You now have a PRODUCTION-GRADE monitoring API that's safe to expose anywhere!** 
 

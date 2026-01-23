@@ -35,13 +35,13 @@ try await topology.connectRemote(
 
 ```
 MAC (Server):
-─────────────
+
 1. Start BlazeDB server on port 8080
 2. Advertise via mDNS: "bugs-db._blazedb._tcp.local"
 3. Wait for connections
 
 iOS (Client):
-─────────────
+
 1. Browse for "_blazedb._tcp.local" services
 2. Discover "bugs-db" service automatically
 3. Resolve IP address and port
@@ -130,21 +130,21 @@ try await topology.connectRemote(
 
 ```
 HOW IT WORKS:
-─────────────
+
 • Mac advertises: "bugs-db._blazedb._tcp.local"
 • iOS discovers: "bugs-db._blazedb._tcp.local"
 • Automatic IP/port resolution
 • Zero configuration!
 
 BENEFITS:
-─────────
+
  Automatic discovery
  Zero configuration
  Works on local WiFi
  Fast (<1 second)
 
 IMPLEMENTATION:
-───────────────
+
  BlazeDiscovery.swift (created!)
  Uses NetService (advertise)
  Uses NWBrowser (browse)
@@ -155,13 +155,13 @@ IMPLEMENTATION:
 
 ```
 HOW IT WORKS:
-─────────────
+
 • Mac generates QR code with connection info
 • iOS scans QR code
 • Auto-connects
 
 QR CODE CONTAINS:
-─────────────────
+
 • IP address
 • Port number
 • Database name
@@ -169,7 +169,7 @@ QR CODE CONTAINS:
 • One-time token
 
 BENEFITS:
-─────────
+
  Easy pairing
  Secure (one-time token)
  No manual entry
@@ -180,14 +180,14 @@ BENEFITS:
 
 ```
 HOW IT WORKS:
-─────────────
+
 • All devices register with central server
 • Server maintains registry
 • Devices query for databases
 • Auto-connect
 
 BENEFITS:
-─────────
+
  Works across internet
  Centralized discovery
  Automatic updates
@@ -198,12 +198,12 @@ BENEFITS:
 
 ```
 HOW IT WORKS:
-─────────────
+
 • User enters IP/port manually
 • Direct connection
 
 BENEFITS:
-─────────
+
  Always works
  No dependencies
  Full control

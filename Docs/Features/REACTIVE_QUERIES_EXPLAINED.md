@@ -5,32 +5,32 @@
 ### **Architecture Overview**
 
 ```
-┌─────────────────┐
-│ BlazeDBClient │
-│ (Database) │
-└────────┬────────┘
- │
- │ notifyChanges()
- ▼
-┌─────────────────────────┐
-│ ChangeNotificationManager│ ← Batches changes (50ms delay)
-│ (Singleton) │
-└────────┬────────────────┘
- │
- │ flushPendingChanges()
- │ (batched, on main thread)
- ▼
-┌─────────────────────────┐
-│ BlazeQueryObserver │ ← Subscribed via db.observe()
-│ (@Published results) │
-└────────┬────────────────┘
- │
- │ results updated
- ▼
-┌─────────────────────────┐
-│ SwiftUI View │ ← Automatically re-renders!
-│ (@BlazeQuery) │
-└─────────────────────────┘
+
+ BlazeDBClient 
+ (Database) 
+
+ 
+  notifyChanges()
+ 
+
+ ChangeNotificationManager ← Batches changes (50ms delay)
+ (Singleton) 
+
+ 
+  flushPendingChanges()
+  (batched, on main thread)
+ 
+
+ BlazeQueryObserver  ← Subscribed via db.observe()
+ (@Published results) 
+
+ 
+  results updated
+ 
+
+ SwiftUI View  ← Automatically re-renders!
+ (@BlazeQuery) 
+
 ```
 
 ### **Step-by-Step Flow**

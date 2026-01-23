@@ -74,28 +74,28 @@
 **Source:** `BlazeBinaryEncoder.swift:41-88`, `BlazeBinaryDecoder.swift:105-170`
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│ HEADER (8 bytes, aligned) │
-├─────────────────────────────────────────────────────────────┤
-│ Offset Size Type Description │
-│ 0 5 char[5] Magic: "BLAZE" (0x42 0x4C 0x41...) │
-│ 5 1 uint8 Version: 0x01 (v1) or 0x02 (v2) │
-│ 6 2 uint16 Field count (big-endian) │
-├─────────────────────────────────────────────────────────────┤
-│ FIELD_1 (variable length) │
-│ [KEY_ENCODING][VALUE_ENCODING] │
-├─────────────────────────────────────────────────────────────┤
-│ FIELD_2 (variable length) │
-│ [KEY_ENCODING][VALUE_ENCODING] │
-├─────────────────────────────────────────────────────────────┤
-│... │
-├─────────────────────────────────────────────────────────────┤
-│ FIELD_N (variable length) │
-│ [KEY_ENCODING][VALUE_ENCODING] │
-├─────────────────────────────────────────────────────────────┤
-│ CRC32 (4 bytes, v2 only, big-endian) │
-│ Only present if version == 0x02 │
-└─────────────────────────────────────────────────────────────┘
+
+ HEADER (8 bytes, aligned) 
+
+ Offset Size Type Description 
+ 0 5 char[5] Magic: "BLAZE" (0x42 0x4C 0x41...) 
+ 5 1 uint8 Version: 0x01 (v1) or 0x02 (v2) 
+ 6 2 uint16 Field count (big-endian) 
+
+ FIELD_1 (variable length) 
+ [KEY_ENCODING][VALUE_ENCODING] 
+
+ FIELD_2 (variable length) 
+ [KEY_ENCODING][VALUE_ENCODING] 
+
+... 
+
+ FIELD_N (variable length) 
+ [KEY_ENCODING][VALUE_ENCODING] 
+
+ CRC32 (4 bytes, v2 only, big-endian) 
+ Only present if version == 0x02 
+
 ```
 
 **Code References:**
@@ -112,18 +112,18 @@
 
 **Option A: Common Field (1 byte)**
 ```
-┌─────────────────────────────────────┐
-│ 1 byte: Field ID (0x01-0x7F) │
-└─────────────────────────────────────┘
+
+ 1 byte: Field ID (0x01-0x7F) 
+
 ```
 
 **Option B: Custom Field (3+N bytes)**
 ```
-┌─────────────────────────────────────┐
-│ 1 byte: Marker (0xFF) │
-│ 2 bytes: Key length (big-endian) │
-│ N bytes: UTF-8 key string │
-└─────────────────────────────────────┘
+
+ 1 byte: Marker (0xFF) 
+ 2 bytes: Key length (big-endian) 
+ N bytes: UTF-8 key string 
+
 ```
 
 **Code References:**
@@ -159,16 +159,16 @@
 **Source:** `SecureConnection.swift:300-339`
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│ FRAME HEADER (5 bytes) │
-├─────────────────────────────────────────────────────────────┤
-│ 1 byte: Frame Type (0x01-0x06) │
-│ 4 bytes: Payload Length (big-endian UInt32) │
-├─────────────────────────────────────────────────────────────┤
-│ PAYLOAD (variable length) │
-│ Encrypted with AES-256-GCM (if handshaked) │
-│ Or plaintext (during handshake) │
-└─────────────────────────────────────────────────────────────┘
+
+ FRAME HEADER (5 bytes) 
+
+ 1 byte: Frame Type (0x01-0x06) 
+ 4 bytes: Payload Length (big-endian UInt32) 
+
+ PAYLOAD (variable length) 
+ Encrypted with AES-256-GCM (if handshaked) 
+ Or plaintext (during handshake) 
+
 ```
 
 **Frame Types:**
@@ -189,26 +189,26 @@
 **Source:** `TCPRelay+Encoding.swift:13-80`
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│ BATCH HEADER (1 or 5 bytes) │
-├─────────────────────────────────────────────────────────────┤
-│ If count < 256: │
-│ 1 byte: Count (0x00-0xFF) │
-│ Else: │
-│ 1 byte: Marker (0xFF) │
-│ 4 bytes: Count (big-endian UInt32) │
-├─────────────────────────────────────────────────────────────┤
-│ OPERATION_1 (variable length) │
-│ [LENGTH_PREFIX][OPERATION_DATA] │
-├─────────────────────────────────────────────────────────────┤
-│ OPERATION_2 (variable length) │
-│ [LENGTH_PREFIX][OPERATION_DATA] │
-├─────────────────────────────────────────────────────────────┤
-│... │
-├─────────────────────────────────────────────────────────────┤
-│ OPERATION_N (variable length) │
-│ [LENGTH_PREFIX][OPERATION_DATA] │
-└─────────────────────────────────────────────────────────────┘
+
+ BATCH HEADER (1 or 5 bytes) 
+
+ If count < 256: 
+ 1 byte: Count (0x00-0xFF) 
+ Else: 
+ 1 byte: Marker (0xFF) 
+ 4 bytes: Count (big-endian UInt32) 
+
+ OPERATION_1 (variable length) 
+ [LENGTH_PREFIX][OPERATION_DATA] 
+
+ OPERATION_2 (variable length) 
+ [LENGTH_PREFIX][OPERATION_DATA] 
+
+... 
+
+ OPERATION_N (variable length) 
+ [LENGTH_PREFIX][OPERATION_DATA] 
+
 ```
 
 **Operation Length Prefix:**
@@ -227,26 +227,26 @@
 **Source:** `TCPRelay+Encoding.swift:167-235`, `BlazeOperation+BlazeBinary.swift:12-84`
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│ OPERATION HEADER │
-├─────────────────────────────────────────────────────────────┤
-│ 16 bytes: Operation ID (UUID, binary) │
-│ 1-9 bytes: Timestamp counter (variable-length) │
-│ 0x00: 1-byte counter (0-255) │
-│ 0x01: 2-byte counter (256-65535) │
-│ 0x02: 8-byte counter (≥65536) │
-│ 16 bytes: Node ID (UUID, binary) │
-│ 1-3 bytes: Type + Collection length (bit-packed or separate)│
-│ If collection < 32 bytes: │
-│ 1 byte: (type << 5) | length │
-│ Else: │
-│ 1 byte: type │
-│ 1-2 bytes: length marker + value │
-│ N bytes: Collection name (UTF-8) │
-│ 16 bytes: Record ID (UUID, binary) │
-│ 4 bytes: Changes length (big-endian UInt32) │
-│ N bytes: Changes (BlazeBinary encoded) │
-└─────────────────────────────────────────────────────────────┘
+
+ OPERATION HEADER 
+
+ 16 bytes: Operation ID (UUID, binary) 
+ 1-9 bytes: Timestamp counter (variable-length) 
+ 0x00: 1-byte counter (0-255) 
+ 0x01: 2-byte counter (256-65535) 
+ 0x02: 8-byte counter (≥65536) 
+ 16 bytes: Node ID (UUID, binary) 
+ 1-3 bytes: Type + Collection length (bit-packed or separate)
+ If collection < 32 bytes: 
+ 1 byte: (type << 5) | length 
+ Else: 
+ 1 byte: type 
+ 1-2 bytes: length marker + value 
+ N bytes: Collection name (UTF-8) 
+ 16 bytes: Record ID (UUID, binary) 
+ 4 bytes: Changes length (big-endian UInt32) 
+ N bytes: Changes (BlazeBinary encoded) 
+
 ```
 
 **Code References:**
@@ -507,33 +507,33 @@
 
 **1-byte format (counter 0-255):**
 ```
-┌─────────────────────────────────────┐
-│ 1 byte: Marker (0x00) │
-│ 1 byte: Counter value (0x00-0xFF) │
-└─────────────────────────────────────┘
+
+ 1 byte: Marker (0x00) 
+ 1 byte: Counter value (0x00-0xFF) 
+
 ```
 
 **2-byte format (counter 256-65535):**
 ```
-┌─────────────────────────────────────┐
-│ 1 byte: Marker (0x01) │
-│ 2 bytes: Counter value (big-endian) │
-└─────────────────────────────────────┘
+
+ 1 byte: Marker (0x01) 
+ 2 bytes: Counter value (big-endian) 
+
 ```
 
 **8-byte format (counter ≥65536):**
 ```
-┌─────────────────────────────────────┐
-│ 1 byte: Marker (0x02) │
-│ 8 bytes: Counter value (big-endian) │
-└─────────────────────────────────────┘
+
+ 1 byte: Marker (0x02) 
+ 8 bytes: Counter value (big-endian) 
+
 ```
 
 **Legacy format (no marker, always 8 bytes):**
 ```
-┌─────────────────────────────────────┐
-│ 8 bytes: Counter value (big-endian) │
-└─────────────────────────────────────┘
+
+ 8 bytes: Counter value (big-endian) 
+
 ```
 
 **Code References:**
@@ -544,26 +544,26 @@
 
 **1-byte format (length < 128):**
 ```
-┌─────────────────────────────────────┐
-│ 1 byte: Length (0x00-0x7F) │
-└─────────────────────────────────────┘
+
+ 1 byte: Length (0x00-0x7F) 
+
 ```
 
 **2-byte format (length 128-32767):**
 ```
-┌─────────────────────────────────────┐
-│ 1 byte: High byte (0x80-0xFF) │
-│ Bits: 0x80 | (length >> 8) │
-│ 1 byte: Low byte (length & 0xFF) │
-└─────────────────────────────────────┘
+
+ 1 byte: High byte (0x80-0xFF) 
+ Bits: 0x80 | (length >> 8) 
+ 1 byte: Low byte (length & 0xFF) 
+
 ```
 
 **5-byte format (length ≥32768):**
 ```
-┌─────────────────────────────────────┐
-│ 1 byte: Marker (0xFF) │
-│ 4 bytes: Length (big-endian UInt32) │
-└─────────────────────────────────────┘
+
+ 1 byte: Marker (0xFF) 
+ 4 bytes: Length (big-endian UInt32) 
+
 ```
 
 **Code References:**
@@ -574,17 +574,17 @@
 
 **1-byte format (count < 256):**
 ```
-┌─────────────────────────────────────┐
-│ 1 byte: Count (0x00-0xFF) │
-└─────────────────────────────────────┘
+
+ 1 byte: Count (0x00-0xFF) 
+
 ```
 
 **5-byte format (count ≥256):**
 ```
-┌─────────────────────────────────────┐
-│ 1 byte: Marker (0xFF) │
-│ 4 bytes: Count (big-endian UInt32) │
-└─────────────────────────────────────┘
+
+ 1 byte: Marker (0xFF) 
+ 4 bytes: Count (big-endian UInt32) 
+
 ```
 
 **Code References:**
@@ -617,17 +617,17 @@
 
 **Frame Structure:**
 ```
-┌─────────────────────────────────────────────────────────────┐
-│ FRAME HEADER (5 bytes) │
-├─────────────────────────────────────────────────────────────┤
-│ 1 byte: Frame Type (enum FrameType) │
-│ 4 bytes: Payload Length (big-endian UInt32) │
-├─────────────────────────────────────────────────────────────┤
-│ PAYLOAD (variable length) │
-│ - Handshake: Plaintext JSON │
-│ - EncryptedData: AES-256-GCM encrypted │
-│ - Operation: BlazeBinary encoded operation batch │
-└─────────────────────────────────────────────────────────────┘
+
+ FRAME HEADER (5 bytes) 
+
+ 1 byte: Frame Type (enum FrameType) 
+ 4 bytes: Payload Length (big-endian UInt32) 
+
+ PAYLOAD (variable length) 
+ - Handshake: Plaintext JSON 
+ - EncryptedData: AES-256-GCM encrypted 
+ - Operation: BlazeBinary encoded operation batch 
+
 ```
 
 **Frame Types:**

@@ -10,19 +10,19 @@
 
 ```
 DEVICE A (Mac - Server):
-────────────────────────
+
 • Starts BlazeServer (listens on port 8080)
 • Advertises via mDNS
 • Waits for connections
 
 DEVICE B (iOS - Client):
-─────────────────────────
+
 • Discovers Device A via mDNS
 • Connects to Device A
 • Performs E2E handshake
 
 SYNC:
-─────
+
 • Device A → Device B (operations flow)
 • Device B → Device A (operations flow)
 • BOTH directions work!
@@ -34,14 +34,14 @@ RESULT: Bidirectional sync, but asymmetric connection (one server, one client)
 
 ```
 CONNECTION:
-───────────
-Device A (Server) ←─── TCP Connection ───→ Device B (Client)
- │ │
- │ │
- └─────────── E2E Encryption ──────────────────┘
+
+Device A (Server) ← TCP Connection → Device B (Client)
+  
+  
+  E2E Encryption 
 
 SYNC (Bidirectional):
-─────────────────────
+
 Device A changes → BlazeSyncEngine → WebSocketRelay → Device B
 Device B changes → BlazeSyncEngine → WebSocketRelay → Device A
 
@@ -60,24 +60,24 @@ BOTH DEVICES CAN:
 
 ```
 DEVICE A (Mac):
-───────────────
+
 • Starts BlazeServer (listens on port 8080)
 • Advertises via mDNS
 • ALSO connects to Device B (if discovered)
 
 DEVICE B (iOS):
-───────────────
+
 • Starts BlazeServer (listens on port 8081)
 • Advertises via mDNS
 • ALSO connects to Device A (if discovered)
 
 CONNECTION:
-───────────
-Device A ←─── Connection 1 ───→ Device B
-Device A ──── Connection 2 ───→ Device B
+
+Device A ← Connection 1 → Device B
+Device A  Connection 2 → Device B
 
 SYNC:
-─────
+
 • Both connections active
 • Redundant sync (fault tolerance)
 • Faster sync (parallel)
@@ -92,7 +92,7 @@ SYNC:
 
 ```
 MAC (Server):
-─────────────
+
 let server = try BlazeServer(database: db, port: 8080)
 try await server.start()
 
@@ -100,7 +100,7 @@ let discovery = BlazeDiscovery()
 discovery.advertise(database: "bugs", deviceName: "MacBook Pro")
 
 iOS (Client):
-─────────────
+
 let discovery = BlazeDiscovery()
 discovery.startBrowsing()
 
@@ -130,7 +130,7 @@ RESULT:
 
 ```
 IPHONE:
-───────
+
 // Start server
 let server1 = try BlazeServer(database: db1, port: 8080)
 try await server1.start()
@@ -150,7 +150,7 @@ if let iPad = discovery1b.discoveredDatabases.first(where: { $0.deviceName == "i
 }
 
 IPAD:
-─────
+
 // Start server
 let server2 = try BlazeServer(database: db2, port: 8081)
 try await server2.start()
@@ -330,7 +330,7 @@ RESULT: Direct device-to-device, no central server!
 
 ```
 MAC:
-────
+
 let db = try BlazeDBClient(name: "bugs", at: url, encryptionKey: key)
 
 // Start server
@@ -344,7 +344,7 @@ discovery.advertise(database: "bugs", deviceName: "MacBook Pro")
 // Mac is now discoverable!
 
 IPHONE:
-───────
+
 let db = try BlazeDBClient(name: "bugs", at: url, encryptionKey: key)
 
 // Discover Mac
@@ -368,7 +368,7 @@ try await topology.connectRemote(
 // iPhone connected to Mac!
 
 SYNC:
-─────
+
 • Mac inserts bug → Syncs to iPhone
 • iPhone updates bug → Syncs to Mac
 • Both directions work!

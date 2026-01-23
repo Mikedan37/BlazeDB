@@ -106,7 +106,7 @@ func garbageCollect() -> Int {
 }
 ```
 
-**This is the GC you need!** ️
+**This is the GC you need!** 
 
 ---
 
@@ -253,7 +253,7 @@ GC Strategy:
  4. Run periodically (e.g., after N commits)
 ```
 
-**You asked if we had GC - now we do!** ️
+**You asked if we had GC - now we do!** 
 
 ### **Memory Overhead**:
 ```

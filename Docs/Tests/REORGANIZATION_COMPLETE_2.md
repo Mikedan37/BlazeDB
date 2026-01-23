@@ -10,59 +10,59 @@ The BlazeDBTests directory has been reorganized into a clean, logical structure 
 
 ```
 BlazeDBTests/
-├── Codec/ # All BlazeBinary codec tests
-│ ├── CodecValidation.swift
-│ ├── BlazeBinaryCompatibilityTests.swift
-│ ├── BlazeBinaryCorruptionRecoveryTests.swift
-│ ├── BlazeBinaryEncoderTests.swift
-│ ├── BlazeBinaryEdgeCaseTests.swift
-│ ├── BlazeBinaryExhaustiveVerificationTests.swift
-│ ├── BlazeBinaryDirectVerificationTests.swift
-│ ├── BlazeBinaryReliabilityTests.swift
-│ ├── BlazeBinaryUltimateBulletproofTests.swift
-│ ├── BlazeBinaryPerformanceTests.swift
-│ ├── BlazeBinaryFuzzTests.swift
-│ ├── BlazeBinaryFieldViewTests.swift
-│ ├── BlazeBinaryLargeRecordTests.swift
-│ ├── BlazeBinaryMMapTests.swift
-│ └── BlazeBinaryPointerIntegrityTests.swift
-│
-├── Engine/ # Engine integration tests
-│ ├── Core/ # Core engine tests
-│ ├── Integration/ # Integration tests
-│ ├── CollectionCodecIntegrationTests.swift
-│ ├── PageStoreCodecIntegrationTests.swift
-│ ├── WALCodecIntegrationTests.swift
-│ ├── IndexingCodecIntegrationTests.swift
-│ ├── QueryCodecIntegrationTests.swift
-│ ├── TransactionCodecIntegrationTests.swift
-│ └── MVCCCodecIntegrationTests.swift
-│
-├── Stress/ # Stress and fuzz tests
-│ ├── Chaos/ # Chaos engineering tests
-│ ├── PropertyBased/ # Property-based tests
-│ └── [stress test files]
-│
-├── Performance/ # Performance benchmarks
-│ ├── BlazeBinaryARMBenchmarks.swift
-│ ├── BlazeBinaryPerformanceRegressionTests.swift
-│ ├── BlazeDBEngineBenchmarks.swift
-│ └── [other performance tests]
-│
-├── Fixtures/ # Test fixtures
-│ ├── FixtureLoader.swift
-│ └── FixtureValidationTests.swift
-│
-├── CI/ # CI-specific tests
-│ ├── CIMatrix.swift
-│ └── CodecDualPathTestSuite.swift
-│
-├── Docs/ # Documentation
-│ └── [all.md files]
-│
-└── Helpers/ # Shared test helpers (unchanged)
- ├── CodecValidation.swift (moved to Codec/)
- └── [other helpers]
+ Codec/ # All BlazeBinary codec tests
+  CodecValidation.swift
+  BlazeBinaryCompatibilityTests.swift
+  BlazeBinaryCorruptionRecoveryTests.swift
+  BlazeBinaryEncoderTests.swift
+  BlazeBinaryEdgeCaseTests.swift
+  BlazeBinaryExhaustiveVerificationTests.swift
+  BlazeBinaryDirectVerificationTests.swift
+  BlazeBinaryReliabilityTests.swift
+  BlazeBinaryUltimateBulletproofTests.swift
+  BlazeBinaryPerformanceTests.swift
+  BlazeBinaryFuzzTests.swift
+  BlazeBinaryFieldViewTests.swift
+  BlazeBinaryLargeRecordTests.swift
+  BlazeBinaryMMapTests.swift
+  BlazeBinaryPointerIntegrityTests.swift
+
+ Engine/ # Engine integration tests
+  Core/ # Core engine tests
+  Integration/ # Integration tests
+  CollectionCodecIntegrationTests.swift
+  PageStoreCodecIntegrationTests.swift
+  WALCodecIntegrationTests.swift
+  IndexingCodecIntegrationTests.swift
+  QueryCodecIntegrationTests.swift
+  TransactionCodecIntegrationTests.swift
+  MVCCCodecIntegrationTests.swift
+
+ Stress/ # Stress and fuzz tests
+  Chaos/ # Chaos engineering tests
+  PropertyBased/ # Property-based tests
+  [stress test files]
+
+ Performance/ # Performance benchmarks
+  BlazeBinaryARMBenchmarks.swift
+  BlazeBinaryPerformanceRegressionTests.swift
+  BlazeDBEngineBenchmarks.swift
+  [other performance tests]
+
+ Fixtures/ # Test fixtures
+  FixtureLoader.swift
+  FixtureValidationTests.swift
+
+ CI/ # CI-specific tests
+  CIMatrix.swift
+  CodecDualPathTestSuite.swift
+
+ Docs/ # Documentation
+  [all.md files]
+
+ Helpers/ # Shared test helpers (unchanged)
+  CodecValidation.swift (moved to Codec/)
+  [other helpers]
 ```
 
 ---

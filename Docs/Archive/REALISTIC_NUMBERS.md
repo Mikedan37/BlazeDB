@@ -10,7 +10,7 @@
 
 ```
 Operation Type Time (ms) Notes
-══════════════════════════════════════════════════════
+
 Insert (encrypted) 0.5-1.0ms AES-GCM encryption + write
 Fetch (indexed) 0.2-0.5ms Index lookup + decrypt
 Update 0.4-0.8ms Read + encrypt + write
@@ -72,7 +72,7 @@ LOCAL (Batched): 2,000,000 ops/sec
 
 ```
 Per Batch (10,000 ops):
-───────────────────────
+
 Encode: ~20ms (parallel, 8 cores)
 Compress: ~10ms (LZ4)
 Encrypt: ~5ms (AES-GCM)
@@ -96,14 +96,14 @@ Realistic: ~100 batches/sec = 1M ops/sec
 
 ```
 Single Operation:
-─────────────────
+
 CPU: 0.5ms × 2000mW = 1.0mJ
 Memory: 0.5ms × 500mW = 0.25mJ
 Storage: 0.5ms × 100mW = 0.05mJ
 Total: ~1.3mJ per operation
 
 With Batching (10K ops):
-────────────────────────
+
 CPU: 5,000ms × 2000mW = 10,000mJ
 Memory: 5,000ms × 500mW = 2,500mJ
 Storage: 5,000ms × 100mW = 500mJ
@@ -118,7 +118,7 @@ Per operation: ~1.3mJ (same!)
 iPhone Battery: 3,000mAh = 11,160,000mJ
 
 Operations per full battery:
-─────────────────────────────
+
 1,000,000 ops × 1.3mJ = 1,300,000mJ
 Battery life: ~12% of battery = ~1 hour of active sync
 
@@ -129,7 +129,7 @@ Realistic: 1-2 hours of active sync
 
 ```
 BlazeDB Idle:
-─────────────
+
 • No operations: ~0.1mW
 • Background sync: ~1mW (periodic)
 • Total: ~1.1mW
@@ -145,7 +145,7 @@ Battery life (idle): ~30+ days
 
 ```
 System Realistic Throughput
-════════════════════════════════════════
+
 BlazeDB (Local) 10,000-15,000 ops/sec (individual)
 BlazeDB (Local) 2,000,000 ops/sec (batched)
 BlazeDB (Network) 1,000,000 ops/sec (batched)
@@ -161,7 +161,7 @@ BLAZEDB: 50-200x FASTER (local), 5-20x FASTER (network)!
 
 ```
 System Battery Life Realistic
-════════════════════════════════════════════
+
 BlazeDB (Ultra) 1-2 hours
 BlazeDB (Balanced) 1.5-2.5 hours
 Firebase 0.5-1 hour

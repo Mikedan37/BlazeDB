@@ -10,7 +10,7 @@
 
 ```
 SCENARIO:
-═════════
+
 
 1. iPhone starts server on port 8080
 2. Advertises via mDNS/Bonjour
@@ -112,20 +112,20 @@ let server = try BlazeServer(
 
 ```
 iOS/macOS FIREWALL:
-═══════════════════
+
 
  Built-in firewall blocks incoming connections by default!
  Only allows connections from trusted networks
  Can be configured per-app
 
 DEFAULT BEHAVIOR:
-═════════════════
+
 
 - iOS: Blocks all incoming connections (unless app explicitly allows)
 - macOS: Blocks incoming connections (unless firewall disabled)
 
 YOUR APP:
-═════════
+
 
 - Only accepts connections from local network (mDNS/Bonjour)
 - Requires authentication token
@@ -142,7 +142,7 @@ SECURE BY DEFAULT!
 
 ```
 APP STORE GUIDELINES:
-═════════════════════
+
 
 2.5.1 Data Collection and Storage
  Must get user permission for data access
@@ -175,7 +175,7 @@ YOUR APP IS COMPLIANT!
 
 ```
 ALLOWED:
-════════
+
 
  Custom network protocols (like yours!)
  Server functionality (with proper security)
@@ -184,7 +184,7 @@ ALLOWED:
  Background sync (with proper permissions)
 
 EXAMPLES IN APP STORE:
-══════════════════════
+
 
  Dropbox (file sync server)
  Evernote (note sync server)
@@ -199,7 +199,7 @@ ALL USE CUSTOM PROTOCOLS!
 
 ```
 REQUIRED:
-═════════
+
 
  Encryption for sensitive data (AES-256-GCM)
  User permission for network access
@@ -300,9 +300,9 @@ if await requestServerPermission() {
 ### **Secure by Default:**
 
 ```swift
-// ═══════════════════════════════════════════════════════
+// 
 // SECURE SERVER IMPLEMENTATION
-// ═══════════════════════════════════════════════════════
+// 
 
 extension BlazeDBClient {
  /// Start server with security defaults
@@ -423,7 +423,7 @@ enum NetworkType {
 
 ```
 SCENARIO 1: No Auth Token (Current Default)
-═══════════════════════════════════════════
+
 
 1. iPhone starts server
 2. Someone discovers IP/port
@@ -435,7 +435,7 @@ RESULT: NO ACCESS!
 
 
 SCENARIO 2: With Auth Token (Recommended)
-═══════════════════════════════════════════
+
 
 1. iPhone starts server with auth token
 2. Someone discovers IP/port
@@ -447,7 +447,7 @@ RESULT: NO ACCESS!
 
 
 SCENARIO 3: With Auth Token + Correct Token
-════════════════════════════════════════════
+
 
 1. iPhone starts server with auth token
 2. Someone discovers IP/port
@@ -466,7 +466,7 @@ RESULT: ACCESS (but only with token!)
 YES!
 
 REASONS:
-════════
+
 
 1. Encryption: AES-256-GCM (required!)
 2. Authentication: Auth tokens (required!)
@@ -475,7 +475,7 @@ REASONS:
 5. Error Handling: Proper error handling
 
 EXAMPLES:
-═════════
+
 
  Dropbox (file sync)
  Evernote (note sync)
@@ -532,12 +532,12 @@ server.rateLimit = RateLimit(
 
 ```
 YOUR CONCERN:
-═════════════
+
 
 "Can someone access my iPhone database if they know IP/port?"
 
 ANSWER:
-═══════
+
 
 NO! Here's why:
 
@@ -548,7 +548,7 @@ NO! Here's why:
 5. Local network only (not exposed to internet!)
 
 EVEN IF THEY CONNECT:
-═════════════════════
+
 
 - Handshake fails (no auth token)
 - No encryption key
@@ -559,7 +559,7 @@ SECURE BY DEFAULT!
 
 
 APP STORE COMPLIANCE:
-═════════════════════
+
 
  Encryption (AES-256-GCM)
  Authentication (auth tokens)

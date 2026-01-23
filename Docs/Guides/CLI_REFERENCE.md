@@ -36,7 +36,7 @@ blazedb doctor /path/to/db.blazedb mypassword --json
 **Output (Human-readable):**
 ```
  BlazeDB Doctor - Health Check Report
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
 Database: mydb
 Path: /path/to/db.blazedb
 
@@ -219,7 +219,7 @@ blazedb info /path/to/db.blazedb mypassword
 **Output:**
 ```
  Database Information
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
 Path: /path/to/db.blazedb
 Name: mydb
 

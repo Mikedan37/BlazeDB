@@ -335,7 +335,7 @@
 - Field name: "\0" (null byte)
 - Field name: 10,000 characters
 - Field names with dots, dashes, spaces
-- Field names with Unicode (, 世界, مفتاح)
+- Field names with Unicode (, , مفتاح)
 - Field names with all special chars
 
 ### **5. Type Edge Cases**
@@ -429,7 +429,7 @@
 
 ---
 
-## ️ **BADGES OF HONOR:**
+##  **BADGES OF HONOR:**
 
 - **Byte-Perfect**: Every byte verified
 - **Mathematically Sound**: Size calculations proven
@@ -457,7 +457,7 @@
 **Boundaries tested:** 256+ (ALL work!)
 **Corruption tests:** 1,000+ (>95% detected!)
 
-### **Verdict: BULLETPROOF!** ️
+### **Verdict: BULLETPROOF!** 
 
 **Grade: A+++ (Perfect reliability!)**
 
