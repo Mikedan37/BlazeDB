@@ -1,6 +1,10 @@
 //  PageStoreTests.swift
 //  BlazeDB
 //  Created by Michael Danylchuk on 6/15/25.
+//
+//  TIER 3 — Legacy / Internal / Non-blocking
+//  This test accesses internal PageStore APIs and storage internals.
+//  It is NOT part of production gate tests and may fail without blocking releases.
 
 import XCTest
 @testable import BlazeDBCore

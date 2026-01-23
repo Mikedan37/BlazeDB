@@ -4,6 +4,10 @@
 //
 //  Created by Michael Danylchuk on 10/11/25.
 //
+//  TIER 3 — Legacy / Internal / Non-blocking
+//  This test accesses internal storage statistics APIs.
+//  It is NOT part of production gate tests and may fail without blocking releases.
+//
 
 
 //

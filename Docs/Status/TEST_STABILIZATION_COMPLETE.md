@@ -262,11 +262,14 @@ func testDatabaseLifecycle() throws {
 
 **Verified:**
 - ✅ `swift build --target BlazeDBCore` passes
-- ✅ `swift test --target BlazeDBCoreGateTests` compiles
-- ✅ CI runs without distributed modules
+- ✅ `swift build --target BlazeDBCoreGateTests` compiles successfully
+- ✅ CI runs only Tier 1 tests (no distributed modules)
 - ✅ No frozen core files changed
-- ✅ Test scripts created and executable
-- ✅ Tier 1 test count is reasonable (< 10 test suites)
+- ✅ Test scripts created and executable (`test-gate.sh`, `test-all.sh`)
+- ✅ Tier 1 test count is reasonable (7 test suites)
+- ✅ Tier 3 tests quarantined with proper headers
+
+**Note:** `swift test --filter BlazeDBCoreGateTests` may show errors from other test targets being compiled, but `swift build --target BlazeDBCoreGateTests` succeeds, confirming Gate tests compile correctly.
 
 ---
 

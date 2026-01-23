@@ -8,6 +8,7 @@
 
 import XCTest
 @testable import BlazeDBCore
+import Foundation
 
 final class GoldenPathIntegrationTests: XCTestCase {
     
@@ -81,7 +82,7 @@ final class GoldenPathIntegrationTests: XCTestCase {
         // Query records where count > 250 (should return records 26-50)
         let queryResults = try originalDB.query()
             .where("count", greaterThan: .int(250))
-            .orderBy("count", ascending: true)
+            .orderBy("count", descending: false)
             .execute()
             .records
         
@@ -90,8 +91,8 @@ final class GoldenPathIntegrationTests: XCTestCase {
         
         // Verify query results match inserted data
         for result in queryResults {
-            guard let name = result.string("name"),
-                  let count = result.int("count") else {
+            guard let name = try? result.string("name"),
+                  let count = try? result.int("count") else {
                 XCTFail("Query result should have name and count fields")
                 continue
             }
@@ -127,14 +128,16 @@ final class GoldenPathIntegrationTests: XCTestCase {
         XCTAssertTrue(FileManager.default.fileExists(atPath: dumpPath.path), 
                      "Dump file should exist")
         
-        // Verify dump integrity
-        let dumpHeader = try BlazeDBImporter.verify(dumpPath)
+        // Verify dump integrity and get record count
+        let dumpData = try Data(contentsOf: dumpPath)
+        let dump = try DatabaseDump.decodeAndVerify(dumpData)
+        let dumpHeader = dump.header
         XCTAssertNotNil(dumpHeader, "Dump header should be valid")
-        XCTAssertGreaterThanOrEqual(dumpHeader.recordCount, recordCount, 
+        XCTAssertGreaterThanOrEqual(dump.manifest.recordCount, recordCount, 
                                    "Dump should contain at least \(recordCount) records")
         print("✓ Dump created: \(dumpPath.path)")
         print("  Schema version: \(dumpHeader.schemaVersion)")
-        print("  Record count: \(dumpHeader.recordCount)")
+        print("  Record count: \(dump.manifest.recordCount)")
         
         // STEP 6: Restore database
         print("\n=== STEP 6: Restore Database ===")
@@ -151,8 +154,11 @@ final class GoldenPathIntegrationTests: XCTestCase {
         try BlazeDBImporter.restore(from: dumpPath, to: restoredDB, allowSchemaMismatch: false)
         
         // Verify restore succeeded
+        // Read dump again to get manifest (dump variable is out of scope)
+        let dumpDataForRestore = try Data(contentsOf: dumpPath)
+        let dumpForRestore = try DatabaseDump.decodeAndVerify(dumpDataForRestore)
         let recordsAfterRestore = try restoredDB.fetchAll()
-        XCTAssertEqual(recordsAfterRestore.count, dumpHeader.recordCount, 
+        XCTAssertEqual(recordsAfterRestore.count, dumpForRestore.manifest.recordCount, 
                       "Restored database should have same record count as dump")
         print("✓ Restore succeeded: \(recordsAfterRestore.count) records restored")
         
@@ -165,7 +171,7 @@ final class GoldenPathIntegrationTests: XCTestCase {
         
         // Query all records
         let allRestoredRecords = try reopenedDB.query()
-            .orderBy("index", ascending: true)
+            .orderBy("index", descending: false)
             .execute()
             .records
         
@@ -174,9 +180,9 @@ final class GoldenPathIntegrationTests: XCTestCase {
         
         // Verify data content matches original
         for (index, restoredRecord) in allRestoredRecords.enumerated() {
-            guard let name = restoredRecord.string("name"),
-                  let count = restoredRecord.int("count"),
-                  let recordIndex = restoredRecord.int("index") else {
+            guard let name = try? restoredRecord.string("name"),
+                  let count = try? restoredRecord.int("count"),
+                  let recordIndex = try? restoredRecord.int("index") else {
                 XCTFail("Restored record should have name, count, and index fields")
                 continue
             }

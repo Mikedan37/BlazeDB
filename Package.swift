@@ -168,6 +168,15 @@ let package = Package(
             name: "BlazeDBCoreGateTests",
             dependencies: ["BlazeDBCore"],
             path: "BlazeDBTests/Gate",
+            sources: [
+                "CLISmokeTests.swift",
+                "CrashSurvivalTests.swift",
+                "GoldenPathIntegrationTests.swift",
+                "ImportExportTests.swift",
+                "LifecycleTests.swift",
+                "OperationalConfidenceTests.swift",
+                "SchemaMigrationTests.swift"
+            ],
             swiftSettings: [
                 .define("BLAZEDB_CORE_ONLY")
             ]

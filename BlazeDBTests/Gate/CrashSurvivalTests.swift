@@ -69,7 +69,7 @@ final class CrashSurvivalTests: XCTestCase {
                 XCTFail("Record \(i) should exist after power loss")
                 continue
             }
-            XCTAssertEqual(record.int("index"), i, "Record \(i) should have correct index")
+            XCTAssertEqual(try record.int("index"), i, "Record \(i) should have correct index")
         }
         
         // Verify health
@@ -178,7 +178,7 @@ final class CrashSurvivalTests: XCTestCase {
         
         // Verify no duplicates
         let allRecords = try recoveredDB.fetchAll()
-        let recoveredIDs = Set(allRecords.compactMap { record in
+        let recoveredIDs: Set<UUID> = Set(allRecords.compactMap { record in
             guard case .uuid(let id) = record.storage["id"] else { return nil }
             return id
         })
