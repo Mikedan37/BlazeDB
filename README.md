@@ -1,5 +1,11 @@
 # BlazeDB
 
+**Version:** 0.1.0 (Pre-User Hardening Release)  
+**Status:** Core modules Swift 6 strict concurrency compliant ✅  
+**License:** [Your License]
+
+BlazeDB is a Swift database with explicit trust features: query ergonomics, schema migrations, verifiable backups, and operational confidence.
+
 **Embedded database for Swift with ACID transactions, encryption, and schema-less storage.**
 
 [![Swift](https://img.shields.io/badge/Swift-5.9+-orange.svg)](https://swift.org)
@@ -50,53 +56,101 @@ dependencies: [
 
 Or in Xcode: **File → Add Package Dependencies** → paste the repository URL.
 
-### Basic Usage
+### Example 1: Basic CRUD (30 seconds)
 
 ```swift
 import BlazeDB
 
 // Create or open a database
-let db = try BlazeDBClient(
-    name: "MyApp",
-    password: "your-secure-password"
-)
+let dbURL = FileManager.default.temporaryDirectory.appendingPathComponent("mydb.blazedb")
+let db = try BlazeDBClient(name: "MyApp", fileURL: dbURL, password: "secure-password-123")
 
 // Insert a record
-let record = BlazeDataRecord([
-    "title": .string("Hello, BlazeDB!"),
-    "count": .int(42),
+let id = try db.insert(BlazeDataRecord([
+    "name": .string("Alice"),
+    "age": .int(30),
     "active": .bool(true)
-])
-let id = try db.insert(record)
+]))
 
-// Query records
+// Fetch by ID
+if let record = try db.fetch(id: id) {
+    print(record.string("name") ?? "Unknown")  // "Alice"
+}
+
+// Update
+try db.update(id: id, with: BlazeDataRecord([
+    "name": .string("Alice Updated"),
+    "age": .int(31),
+    "active": .bool(true)
+]))
+
+// Delete
+try db.delete(id: id)
+```
+
+### Example 2: Query with Filters (1 minute)
+
+```swift
+import BlazeDB
+
+let dbURL = FileManager.default.temporaryDirectory.appendingPathComponent("mydb.blazedb")
+let db = try BlazeDBClient(name: "MyApp", fileURL: dbURL, password: "secure-password-123")
+
+// Insert sample data
+try db.insert(BlazeDataRecord(["name": .string("Alice"), "age": .int(30), "role": .string("admin")]))
+try db.insert(BlazeDataRecord(["name": .string("Bob"), "age": .int(25), "role": .string("user")]))
+try db.insert(BlazeDataRecord(["name": .string("Charlie"), "age": .int(35), "role": .string("admin")]))
+
+// Query: Find all admins over 30
 let results = try db.query()
-    .where("active", equals: .bool(true))
-    .orderBy("count", descending: true)
-    .limit(10)
+    .where("role", equals: .string("admin"))
+    .where("age", greaterThan: .int(30))
+    .orderBy("age", descending: true)
     .execute()
     .records
 
-// Use in SwiftUI
-struct ItemListView: View {
-    @BlazeQuery(db: db, where: "active", equals: .bool(true))
-    var items
-    
-    var body: some View {
-        List(items) { item in
-            Text(item.string("title") ?? "")
-        }
+for record in results {
+    print("\(record.string("name") ?? ""): \(record.int("age") ?? 0)")
+}
+// Output: Charlie: 35
+```
+
+### Example 3: Batch Operations (1 minute)
+
+```swift
+import BlazeDB
+
+let dbURL = FileManager.default.temporaryDirectory.appendingPathComponent("mydb.blazedb")
+let db = try BlazeDBClient(name: "MyApp", fileURL: dbURL, password: "secure-password-123")
+
+// Batch insert
+let records = (1...100).map { i in
+    BlazeDataRecord([
+        "id": .int(i),
+        "name": .string("Item \(i)"),
+        "value": .double(Double(i) * 1.5)
+    ])
+}
+let ids = try db.insertBatch(records)
+print("Inserted \(ids.count) records")
+
+// Batch fetch
+let allRecords = try db.fetchAll()
+print("Total records: \(allRecords.count)")
+
+// Batch update (update all records)
+for record in allRecords {
+    if let id = record.id {
+        try db.update(id: id, with: BlazeDataRecord([
+            "updated": .bool(true),
+            "timestamp": .date(Date())
+        ]))
     }
 }
 
-// Backup and restore
-let backupURL = FileManager.default.temporaryDirectory
-    .appendingPathComponent("backup.blazedb")
-let stats = try db.backup(to: backupURL)
-print("Backed up \(stats.recordCount) records")
-
-// Restore from backup (destroys current data)
-try db.restore(from: backupURL)
+// Get statistics
+let stats = try db.stats()
+print("Pages: \(stats.pageCount), Records: \(stats.recordCount), Indexes: \(stats.indexCount)")
 ```
 
 ---
@@ -148,6 +202,37 @@ See the [documentation index](Docs/MASTER_DOCUMENTATION_INDEX.md) for API refere
 On-disk format is stable. APIs may evolve during the alpha period.
 
 ---
+
+## Compatibility
+
+**Core Modules:** ✅ Swift 6 strict concurrency compliant  
+**Distributed Modules:** ⚠️ Not yet compliant (excluded from core)
+
+See `COMPATIBILITY.md` for detailed compatibility information.
+
+## API Stability
+
+**Stable APIs:** Core CRUD, query builder, statistics, health, migrations, import/export  
+**Experimental APIs:** Distributed sync, advanced queries, telemetry
+
+See `API_STABILITY.md` for detailed API stability information.
+
+## Support
+
+**Early Adopter Phase:** Limited support for selected early adopters  
+**Response Times:** Critical (24h), High (48h), Medium (1 week), Low (2 weeks)
+
+See `SUPPORT_POLICY.md` for detailed support information.
+
+## Documentation
+
+- `QUERY_PERFORMANCE.md` - Query performance and best practices
+- `OPERATIONAL_CONFIDENCE.md` - Health monitoring and when to investigate
+- `PRE_USER_HARDENING.md` - Complete trust envelope documentation
+- `CONCURRENCY_COMPLIANCE.md` - Swift 6 concurrency status
+- `COMPATIBILITY.md` - Platform and API compatibility
+- `API_STABILITY.md` - API stability policy
+- `SUPPORT_POLICY.md` - Support policy and expectations
 
 ## License
 

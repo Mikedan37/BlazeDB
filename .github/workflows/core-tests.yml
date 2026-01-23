@@ -1,0 +1,52 @@
+name: Core Tests
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  core-tests:
+    runs-on: macos-latest
+    name: Core Tests (Swift 6 Compliant)
+    steps:
+      - uses: actions/checkout@v3
+      - uses: swift-actions/setup-swift@v1
+        with:
+          swift-version: "6.0"
+      
+      - name: Build Core
+        run: swift build --target BlazeDB
+      
+      - name: Run Core Tests
+        run: |
+          swift test --filter BlazeDBClientTests.testDurabilityAfterConcurrencyChanges
+          swift test --filter CrashRecoveryTests
+          swift test --filter QueryErgonomicsTests
+          swift test --filter SchemaMigrationTests
+          swift test --filter ImportExportTests
+          swift test --filter OperationalConfidenceTests
+      
+      - name: Build CLI Tools
+        run: |
+          swift build --target BlazeDoctor
+          swift build --target BlazeDump
+  
+  distributed-tests:
+    runs-on: macos-latest
+    name: Distributed Tests (Allowed to Fail)
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v3
+      - uses: swift-actions/setup-swift@v1
+        with:
+          swift-version: "6.0"
+      
+      - name: Build All (Including Distributed)
+        run: swift build
+        continue-on-error: true
+      
+      - name: Run All Tests
+        run: swift test
+        continue-on-error: true

@@ -156,12 +156,8 @@ extension DynamicCollection {
         // This causes resource leaks where pool slots are never released
         // Use do-catch pattern to ensure release happens before return
         do {
-            let result = try await Task.detached(priority: .userInitiated) { [weak self] in
-                guard let self = self else {
-                    throw BlazeDBError.transactionFailed("Collection deallocated")
-                }
-                return try self.insert(data)
-            }.value
+            // Call directly - methods are thread-safe via internal DispatchQueue
+            let result = try insert(data)
             // CRITICAL: Release before returning to ensure pool slot is freed immediately
             await operationPool.release()
             return result
@@ -178,12 +174,8 @@ extension DynamicCollection {
         // CRITICAL: Ensure release is called before returning, not in a background Task
         // Use do-catch pattern to ensure release happens before return
         do {
-            let result = try await Task.detached(priority: .userInitiated) { [weak self] in
-                guard let self = self else {
-                    throw BlazeDBError.transactionFailed("Collection deallocated")
-                }
-                return try self.insertBatch(records)
-            }.value
+            // Call directly - methods are thread-safe via internal DispatchQueue
+            let result = try insertBatch(records)
             // CRITICAL: Release before returning to ensure pool slot is freed immediately
             await operationPool.release()
             return result
@@ -202,12 +194,8 @@ extension DynamicCollection {
         // CRITICAL: Ensure release is called before returning, not in a background Task
         // Use do-catch pattern to ensure release happens before return
         do {
-            let result = try await Task.detached(priority: .userInitiated) { [weak self] in
-                guard let self = self else {
-                    throw BlazeDBError.transactionFailed("Collection deallocated")
-                }
-                return try self.fetch(id: id)
-            }.value
+            // Call directly - methods are thread-safe via internal DispatchQueue
+            let result = try fetch(id: id)
             // CRITICAL: Release before returning to ensure pool slot is freed immediately
             await operationPool.release()
             return result
@@ -224,12 +212,8 @@ extension DynamicCollection {
         // CRITICAL: Ensure release is called before returning, not in a background Task
         // Use do-catch pattern to ensure release happens before return
         do {
-            let result = try await Task.detached(priority: .userInitiated) { [weak self] in
-                guard let self = self else {
-                    throw BlazeDBError.transactionFailed("Collection deallocated")
-                }
-                return try self.fetchAll()
-            }.value
+            // Call directly - methods are thread-safe via internal DispatchQueue
+            let result = try fetchAll()
             // CRITICAL: Release before returning to ensure pool slot is freed immediately
             await operationPool.release()
             return result
@@ -246,12 +230,8 @@ extension DynamicCollection {
         // CRITICAL: Ensure release is called before returning, not in a background Task
         // Use do-catch pattern to ensure release happens before return
         do {
-            let result = try await Task.detached(priority: .userInitiated) { [weak self] in
-                guard let self = self else {
-                    throw BlazeDBError.transactionFailed("Collection deallocated")
-                }
-                return try self.fetchAllIDs()
-            }.value
+            // Call directly - methods are thread-safe via internal DispatchQueue
+            let result = try fetchAllIDs()
             // CRITICAL: Release before returning to ensure pool slot is freed immediately
             await operationPool.release()
             return result
@@ -268,12 +248,8 @@ extension DynamicCollection {
         // CRITICAL: Ensure release is called before returning, not in a background Task
         // Use do-catch pattern to ensure release happens before return
         do {
-            let result = try await Task.detached(priority: .userInitiated) { [weak self] in
-                guard let self = self else {
-                    throw BlazeDBError.transactionFailed("Collection deallocated")
-                }
-                return try self.fetchPage(offset: offset, limit: limit)
-            }.value
+            // Call directly - methods are thread-safe via internal DispatchQueue
+            let result = try fetchPage(offset: offset, limit: limit)
             // CRITICAL: Release before returning to ensure pool slot is freed immediately
             await operationPool.release()
             return result
@@ -295,12 +271,8 @@ extension DynamicCollection {
             // Invalidate entire query cache since we can't know which queries might be affected
             await queryCache.invalidate()
             
-            try await Task.detached(priority: .userInitiated) { [weak self] in
-                guard let self = self else {
-                    throw BlazeDBError.transactionFailed("Collection deallocated")
-                }
-                try self.update(id: id, with: data)
-            }.value
+            // Call directly - methods are thread-safe via internal DispatchQueue
+            try update(id: id, with: data)
             // CRITICAL: Release before returning to ensure pool slot is freed immediately
             await operationPool.release()
         } catch {
@@ -321,12 +293,8 @@ extension DynamicCollection {
             // Invalidate entire query cache since we can't know which queries might be affected
             await queryCache.invalidate()
             
-            try await Task.detached(priority: .userInitiated) { [weak self] in
-                guard let self = self else {
-                    throw BlazeDBError.transactionFailed("Collection deallocated")
-                }
-                try self.delete(id: id)
-            }.value
+            // Call directly - methods are thread-safe via internal DispatchQueue
+            try delete(id: id)
             // CRITICAL: Release before returning to ensure pool slot is freed immediately
             await operationPool.release()
         } catch {
@@ -368,38 +336,35 @@ extension DynamicCollection {
             }
             
             // Execute query
-            let results = try await Task.detached(priority: .userInitiated) { [weak self] in
-                guard let self = self else {
-                    throw BlazeDBError.transactionFailed("Collection deallocated")
-                }
-                
-                let queryBuilder: QueryBuilder = self.query()
-                var query = queryBuilder
-                
-                if let field = field, let value = value {
-                    query = query.where(field, equals: value)
-                }
-                
-                if let orderBy = orderBy {
-                    query = query.orderBy(orderBy, descending: descending)
-                }
-                
-                if let limit = limit {
-                    query = query.limit(limit)
-                }
-                
-                let result = try query.execute()
-                // Extract records from QueryResult
-                switch result {
-                case .records(let records):
-                    return records
-                case .joined(let joined):
-                    return joined.map { $0.left }
-                case .aggregation, .grouped, .search:
-                    // Aggregations and search not supported in simple queryAsync
-                    throw BlazeDBError.invalidQuery(reason: "Aggregation/search queries not supported in queryAsync. Use query().execute() directly.")
-                }
-            }.value
+            // Call directly - methods are thread-safe via internal DispatchQueue
+            // Note: In async context, QueryBuilder async overloads are preferred, so we await them
+            let queryBuilder: QueryBuilder = query()
+            var query = queryBuilder
+            
+            if let field = field, let value = value {
+                query = await query.where(field, equals: value)
+            }
+            
+            if let orderBy = orderBy {
+                query = await query.orderBy(orderBy, descending: descending)
+            }
+            
+            if let limit = limit {
+                query = query.limit(limit)  // limit() doesn't have async overload
+            }
+            
+            let result = try await query.execute()
+            // Extract records from QueryResult
+            let results: [BlazeDataRecord]
+            switch result {
+            case .records(let records):
+                results = records
+            case .joined(let joined):
+                results = joined.map { $0.left }
+            case .aggregation, .grouped, .search:
+                // Aggregations and search not supported in simple queryAsync
+                throw BlazeDBError.invalidQuery(reason: "Aggregation/search queries not supported in queryAsync. Use query().execute() directly.")
+            }
             
             // Cache results
             if useCache {

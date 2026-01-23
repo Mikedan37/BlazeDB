@@ -17,87 +17,38 @@ import Accelerate
 
 extension DynamicCollection {
     
-    // MARK: - Parallel Encoding
+    // MARK: - Serial Encoding (Swift 6 Concurrency Safe)
     
-    /// Encode multiple records in parallel (4-8x faster!)
+    /// Encode multiple records serially (Swift 6 concurrency safe)
     public func encodeBatchParallel(_ records: [BlazeDataRecord]) async throws -> [Data] {
-        return try await withThrowingTaskGroup(of: (Int, Data).self) { group in
-            // Encode all records in parallel
-            for (index, record) in records.enumerated() {
-                group.addTask { @Sendable [weak self] in
-                    guard let self = self else {
-                        throw BlazeDBError.transactionFailed("Collection deallocated")
-                    }
-                    let encoded = try BlazeBinaryEncoder.encode(record)
-                    return (index, encoded)
-                }
-            }
-            
-            // Collect results in order
-            var results: [(Int, Data)] = []
-            for try await result in group {
-                results.append(result)
-            }
-            
-            // Sort by index to maintain order
-            results.sort { $0.0 < $1.0 }
-            
-            return results.map { $0.1 }
+        // Serial encoding for Swift 6 strict concurrency compliance
+        var results: [Data] = []
+        results.reserveCapacity(records.count)
+        for record in records {
+            let encoded = try BlazeBinaryEncoder.encode(record)
+            results.append(encoded)
         }
+        return results
     }
     
-    /// Decode multiple records in parallel (4-8x faster!)
+    /// Decode multiple records serially (Swift 6 concurrency safe)
     public func decodeBatchParallel(_ dataArray: [Data]) async throws -> [BlazeDataRecord] {
-        return try await withThrowingTaskGroup(of: (Int, BlazeDataRecord).self) { group in
-            // Decode all records in parallel
-            for (index, data) in dataArray.enumerated() {
-                group.addTask {
-                    let decoded = try BlazeBinaryDecoder.decode(data)
-                    return (index, decoded)
-                }
-            }
-            
-            // Collect results in order
-            var results: [(Int, BlazeDataRecord)] = []
-            for try await result in group {
-                results.append(result)
-            }
-            
-            // Sort by index to maintain order
-            results.sort { $0.0 < $1.0 }
-            
-            return results.map { $0.1 }
+        // Serial decoding for Swift 6 strict concurrency compliance
+        var results: [BlazeDataRecord] = []
+        results.reserveCapacity(dataArray.count)
+        for data in dataArray {
+            let decoded = try BlazeBinaryDecoder.decode(data)
+            results.append(decoded)
         }
+        return results
     }
     
-    // MARK: - SIMD Optimizations
+    // MARK: - Batch Insert
     
-    #if canImport(Accelerate)
-    /// SIMD-accelerated batch encoding (8x faster for large batches!)
-    public func encodeBatchSIMD(_ records: [BlazeDataRecord]) async throws -> [Data] {
-        // For very large batches, use SIMD-optimized encoding
-        if records.count > 100 {
-            return try await encodeBatchParallel(records)  // Already parallel, SIMD in encoder
-        } else {
-            // Small batches: regular parallel encoding
-            return try await encodeBatchParallel(records)
-        }
-    }
-    #endif
-    
-    // MARK: - Optimized Batch Insert with Parallel Encoding
-    
-    /// Insert batch with parallel encoding (4-8x faster!)
-    /// Uses existing insertBatch for consistency, but with parallel encoding
+    /// Insert batch with serial encoding (Swift 6 concurrency safe)
     public func insertBatchOptimized(_ records: [BlazeDataRecord]) async throws -> [UUID] {
-        // For now, use existing insertBatch (already optimized)
-        // Parallel encoding is handled at the BlazeBinaryEncoder level
-        return try await Task.detached(priority: .userInitiated) { @Sendable [weak self] in
-            guard let self = self else {
-                throw BlazeDBError.transactionFailed("Collection deallocated")
-            }
-            return try self.insertBatch(records)
-        }.value
+        // Use existing insertBatch (serial, Swift 6 safe)
+        return try insertBatch(records)
     }
 }
 

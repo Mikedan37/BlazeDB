@@ -108,19 +108,10 @@ extension DynamicCollection {
 // MARK: - Parallel Map Helper
 
 private extension Array {
+    /// Serial map for Swift 6 concurrency compliance
     func parallelMap<T>(_ transform: @escaping (Element) -> T) -> [T] {
-        let lock = NSLock()
-        var results: [T] = []
-        results.reserveCapacity(count)
-        
-        DispatchQueue.concurrentPerform(iterations: count) { @Sendable index in
-            let transformed = transform(self[index])
-            lock.lock()
-            results.append(transformed)
-            lock.unlock()
-        }
-        
-        return results
+        // Serial implementation for Swift 6 strict concurrency compliance
+        return self.map(transform)
     }
 }
 

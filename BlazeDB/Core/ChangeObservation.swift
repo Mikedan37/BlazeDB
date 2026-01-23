@@ -43,7 +43,7 @@ public struct DatabaseChange {
 
 // MARK: - Observer Closure Type
 
-public typealias ChangeObserver = ([DatabaseChange]) -> Void
+public typealias ChangeObserver = @Sendable ([DatabaseChange]) -> Void
 
 // MARK: - Observer Token
 
@@ -245,7 +245,7 @@ extension BlazeDBClient {
     /// ```
     @discardableResult
     public func observe(
-        where predicate: @escaping (BlazeDataRecord) -> Bool,
+        where predicate: @escaping @Sendable (BlazeDataRecord) -> Bool,
         changes observer: @escaping ChangeObserver
     ) -> ObserverToken {
         // Filtered observer: only notify if change matches predicate

@@ -254,25 +254,5 @@ public final class RecordCache: @unchecked Sendable {
 
 // MARK: - Helper Functions
 
-/// Compare two BlazeDocumentField values for equality
-private func fieldsEqual(_ a: BlazeDocumentField, _ b: BlazeDocumentField) -> Bool {
-    switch (a, b) {
-    case (.string(let s1), .string(let s2)):
-        return s1 == s2
-    case (.int(let i1), .int(let i2)):
-        return i1 == i2
-    case (.double(let d1), .double(let d2)):
-        return d1 == d2
-    case (.bool(let b1), .bool(let b2)):
-        return b1 == b2
-    case (.uuid(let u1), .uuid(let u2)):
-        return u1 == u2
-    case (.date(let d1), .date(let d2)):
-        return d1 == d2
-    case (.data(let d1), .data(let d2)):
-        return d1 == d2
-    default:
-        return false
-    }
-}
+// Note: fieldsEqual is defined in QueryBuilder.swift as internal, use that instead
 

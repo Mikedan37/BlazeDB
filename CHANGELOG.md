@@ -8,75 +8,59 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- Comprehensive Cryptographic Architecture documentation
-- CONTRIBUTING.md guidelines
-- CHANGELOG.md for version tracking
+- Query validation with helpful error messages and field name suggestions
+- Schema versioning and explicit migration system
+- Import/export with integrity verification (deterministic dump format)
+- Operational confidence: health reports (OK/WARN/ERROR) with actionable guidance
+- `blazedb doctor` CLI tool for database health checks
+- `blazedb dump` CLI tool for database backup/restore
+- Comprehensive documentation: query performance, operational confidence, migration guides
 
 ### Changed
-- README refactored for open-source release
-- Improved documentation structure
+- Error messages are now categorized and include remediation hints
+- Database statistics include interpretation (not just raw numbers)
+- Query errors provide field name suggestions using Levenshtein distance
 
-## [2.5.0-alpha] - 2025-01-XX
-
-### Added
-- Multi-version concurrency control (MVCC) with snapshot isolation
-- Write-ahead logging (WAL) for crash recovery
-- Per-page AES-256-GCM encryption
-- BlazeBinary encoding format (53% smaller than JSON)
-- Fluent query API with automatic index selection
-- Full-text search with inverted index
-- Spatial and vector indexes
-- JOIN operations (inner, left, right, full outer)
-- Aggregations (COUNT, SUM, AVG, MIN, MAX, GROUP BY, HAVING)
-- SwiftUI integration with `@BlazeQuery` property wrapper
-- Distributed sync with ECDH key exchange
-- Row-level security (RLS) policies
-- Migration tools (SQLite, Core Data, CSV, JSON)
-- Comprehensive test suite (907+ tests, 97% coverage)
-
-### Security
-- AES-256-GCM encryption by default
-- Argon2id key derivation
-- Secure Enclave integration (iOS/macOS)
-- Perfect forward secrecy for network sync
-- Replay attack protection
-
-### Performance
-- Sub-millisecond query latency
-- Linear scaling with available cores
-- Batch insert optimizations
-- Query result caching
-- Memory-mapped I/O
+### Fixed
+- Swift 6 strict concurrency compliance for core modules
+- Deadlock prevention guards in PageStore (dispatchPrecondition)
+- Durability verification across database close/reopen cycles
 
 ### Documentation
-- Complete API reference
-- Architecture documentation
-- Security model documentation
-- Threat model analysis
-- Cryptographic architecture guide
-- Performance benchmarks
+- `QUERY_PERFORMANCE.md` - Query performance characteristics and best practices
+- `OPERATIONAL_CONFIDENCE.md` - Health monitoring and when to investigate
+- `PRE_USER_HARDENING.md` - Complete trust envelope documentation
+- `CONCURRENCY_COMPLIANCE.md` - Swift 6 concurrency status and guarantees
 
-## [2.0.0] - 2024-XX-XX
+## [0.1.0] - Pre-User Hardening Release
 
-### Added
-- Initial public release
-- Core database functionality
-- Basic query system
-- Encryption support
+### Status
+**Core modules:** ✅ Swift 6 strict concurrency compliant  
+**Distributed modules:** ⚠️ Not yet compliant (excluded from core)
+
+### Compatibility
+- **Swift:** 6.0+
+- **Platforms:** macOS 14+, iOS 15+, Linux (aarch64)
+- **Storage format:** Stable (v1.0)
+- **Migration format:** Stable (v1.0)
+- **Dump format:** Stable (v1.0)
+
+### API Stability
+- **Stable:** Core CRUD operations, query builder, statistics API
+- **Stable:** Migration system (SchemaVersion, BlazeDBMigration protocol)
+- **Stable:** Import/export APIs (DumpFormat v1)
+- **Experimental:** Distributed sync modules (not included in core)
+
+### Known Limitations
+- Distributed modules fail to compile under Swift 6 strict concurrency
+- Parallel encoding/compression temporarily disabled (Phase 1 freeze)
+- No automatic query optimization (manual index creation required)
 
 ---
 
 ## Version History
 
-- **2.5.0-alpha**: Current development version with full feature set
-- **2.0.0**: Initial stable release
-
-## Types of Changes
-
-- **Added** for new features
-- **Changed** for changes in existing functionality
-- **Deprecated** for soon-to-be removed features
-- **Removed** for now removed features
-- **Fixed** for any bug fixes
-- **Security** for vulnerability fixes
-
+### 0.1.0 (Pre-User Hardening)
+- Complete trust envelope: query ergonomics, migrations, import/export, operational confidence
+- Swift 6 strict concurrency compliance for core
+- Comprehensive documentation and tooling

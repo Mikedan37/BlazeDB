@@ -133,64 +133,18 @@ extension DynamicCollection {
         }
     }
     
-    /// Parallel map for large datasets
+    /// Serial map for Swift 6 concurrency compliance
     private func parallelMap<T>(_ records: [BlazeDataRecord], _ transform: @escaping (BlazeDataRecord) throws -> T) throws -> [T] {
-        let group = DispatchGroup()
-        let queue = DispatchQueue(label: "com.blazedb.parallel.map", attributes: .concurrent)
-        var results: [T?] = Array(repeating: nil, count: records.count)
-        var errors: [Error] = []
-        let errorLock = NSLock()
-        
-        for (index, record) in records.enumerated() {
-            group.enter()
-            queue.async {
-                defer { group.leave() }
-                
-                do {
-                    let result = try transform(record)
-                    results[index] = result
-                } catch {
-                    errorLock.lock()
-                    errors.append(error)
-                    errorLock.unlock()
-                }
-            }
-        }
-        
-        group.wait()
-        
-        if let firstError = errors.first {
-            throw firstError
-        }
-        
-        return results.compactMap { $0 }
+        // Serial implementation for Swift 6 strict concurrency compliance
+        return try records.map(transform)
     }
 }
 
 extension Array {
-    /// Parallel filter for large arrays
+    /// Serial filter for Swift 6 concurrency compliance
     func parallelFilter(_ isIncluded: @escaping (Element) -> Bool) -> [Element] {
-        let group = DispatchGroup()
-        let queue = DispatchQueue(label: "com.blazedb.parallel.filter", attributes: .concurrent)
-        var results: [(Int, Element?)] = []
-        let resultsLock = NSLock()
-        
-        for (index, element) in self.enumerated() {
-            group.enter()
-            queue.async {
-                defer { group.leave() }
-                
-                if isIncluded(element) {
-                    resultsLock.lock()
-                    results.append((index, element))
-                    resultsLock.unlock()
-                }
-            }
-        }
-        
-        group.wait()
-        
-        return results.sorted { $0.0 < $1.0 }.compactMap { $0.1 }
+        // Serial implementation for Swift 6 strict concurrency compliance
+        return self.filter(isIncluded)
     }
 }
 

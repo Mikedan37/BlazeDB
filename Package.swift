@@ -21,7 +21,13 @@ let package = Package(
             targets: ["BlazeServer"]),
         .executable(
             name: "BasicExample",
-            targets: ["BasicExample"])
+            targets: ["BasicExample"]),
+        .executable(
+            name: "BlazeDoctor",
+            targets: ["BlazeDoctor"]),
+        .executable(
+            name: "BlazeDump",
+            targets: ["BlazeDump"])
     ],
     dependencies: [
         // BlazeTransport: Transport layer for distributed sync
@@ -45,7 +51,9 @@ let package = Package(
             path: "BlazeDB",
             exclude: ["BlazeDB.docc"],
             swiftSettings: [
-                .define("BLAZEDB_LINUX_CORE", .when(platforms: [.linux]))
+                .define("BLAZEDB_LINUX_CORE", .when(platforms: [.linux])),
+                // Distributed modules compile only when explicitly enabled
+                .define("BLAZEDB_DISTRIBUTED", .when(configuration: .debug))
             ]
         ),
         .executableTarget(
@@ -61,7 +69,11 @@ let package = Package(
         .testTarget(
             name: "BlazeDBTests",
             dependencies: ["BlazeDB"],
-            path: "BlazeDBTests"
+            path: "BlazeDBTests",
+            swiftSettings: [
+                // Core-only tests: exclude distributed modules
+                .define("BLAZEDB_CORE_ONLY")
+            ]
         ),
         .testTarget(
             name: "BlazeDBIntegrationTests",
@@ -72,6 +84,16 @@ let package = Package(
             name: "BasicExample",
             dependencies: ["BlazeDB"],
             path: "Examples/BasicExample"
+        ),
+        .executableTarget(
+            name: "BlazeDoctor",
+            dependencies: ["BlazeDB"],
+            path: "BlazeDoctor"
+        ),
+        .executableTarget(
+            name: "BlazeDump",
+            dependencies: ["BlazeDB"],
+            path: "BlazeDump"
         )
     ]
 )

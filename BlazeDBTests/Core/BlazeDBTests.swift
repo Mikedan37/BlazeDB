@@ -43,6 +43,58 @@ final class BlazeDBClientTests: XCTestCase {
         XCTAssertEqual(record?.storage["content"], .some(.string("Hello, Blaze!")))
     }
     
+    /// Minimal safety test: verify durability after Swift 6 concurrency changes
+    /// Tests: open → insert → commit → close → reopen → verify record exists
+    /// Stress test: writes enough records to force page flush and layout save
+    func testDurabilityAfterConcurrencyChanges() throws {
+        let fileURL = tempURL!
+        let metaURL = tempURL.deletingPathExtension().appendingPathExtension("meta")
+        let testContentPrefix = "Durability test - \(UUID().uuidString)"
+        var insertedIDs: [UUID] = []
+        
+        // Insert multiple records to force at least one page flush / layout save
+        // Page size is 4096 bytes, so ~10-20 records should force a flush
+        for i in 0..<25 {
+            let id = try client.insert(BlazeDataRecord([
+                "type": .string("test"),
+                "content": .string("\(testContentPrefix) - record \(i)"),
+                "timestamp": .date(Date()),
+                "index": .int(i),
+                "data": .string(String(repeating: "x", count: 100)) // Add padding to ensure page writes
+            ]))
+            insertedIDs.append(id)
+        }
+        
+        // Explicitly persist to ensure durability (forces layout save)
+        try client.persist()
+        
+        // Close database (deallocate client) - force new instance
+        client = nil
+        store = nil
+        
+        // Reopen database in a completely new instance (not just same process object)
+        let reopenedClient = try BlazeDBClient(name: "test-name", fileURL: fileURL, password: "test-password")
+        
+        // Verify all records still exist
+        for (i, id) in insertedIDs.enumerated() {
+            let record = try reopenedClient.fetch(id: id)
+            XCTAssertNotNil(record, "Record \(i) should persist after close/reopen")
+            XCTAssertEqual(record?.storage["content"], .some(.string("\(testContentPrefix) - record \(i)")), "Record \(i) content should match")
+            XCTAssertEqual(record?.storage["index"], .some(.int(i)), "Record \(i) index should match")
+        }
+        
+        // Verify we can query them back
+        let allRecords = try reopenedClient.fetchAll()
+        let testRecords = allRecords.filter { record in
+            if case .string(let content) = record.storage["content"],
+               content.hasPrefix(testContentPrefix) {
+                return true
+            }
+            return false
+        }
+        XCTAssertEqual(testRecords.count, 25, "Should find all 25 test records after reopen")
+    }
+    
     // MARK: - Performance Tests
     
     /// Measure insert performance for single records

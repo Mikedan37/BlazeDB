@@ -178,16 +178,22 @@ extension BlazeDBClient {
     /// ```
     public func stream(
         batchSize: Int = 100,
-        where predicate: ((BlazeDataRecord) -> Bool)? = nil
+        where predicate: (@Sendable (BlazeDataRecord) -> Bool)? = nil
     ) -> AsyncThrowingStream<[BlazeDataRecord], Error> {
         AsyncThrowingStream { continuation in
-            // Capture predicate before Task to avoid Sendable issues
+            // Capture predicate before Task - predicate is now @Sendable
             let capturedPredicate = predicate
-            Task {
+            // BlazeDBClient is @unchecked Sendable, so we can capture self
+            // Use Task.detached with @Sendable closure
+            Task.detached(priority: .userInitiated) { @Sendable [weak self] in
+                guard let self = self else {
+                    continuation.finish(throwing: BlazeDBError.transactionFailed("Client deallocated"))
+                    return
+                }
                 do {
                     var offset = 0
                     while true {
-                        let batch = try await self.fetchPage(offset: offset, limit: batchSize)
+                        let batch = try self.fetchPage(offset: offset, limit: batchSize)
                         
                         let filtered = if let predicate = capturedPredicate {
                             batch.filter(predicate)
