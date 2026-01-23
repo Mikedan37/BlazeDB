@@ -28,6 +28,27 @@ extension BlazeDBClient {
     /// ```
     public func health() throws -> HealthReport {
         let stats = try self.stats()
-        return HealthAnalyzer.analyze(stats)
+        var report = HealthAnalyzer.analyze(stats)
+        
+        // Add resource limit warnings
+        let resourceWarnings = DatabaseHealth.checkResourceLimits(stats: stats)
+        if !resourceWarnings.isEmpty {
+            // Upgrade status if needed
+            if report.status == .ok {
+                report = HealthReport(
+                    status: .warn,
+                    reasons: report.reasons + resourceWarnings,
+                    suggestedActions: report.suggestedActions
+                )
+            } else {
+                report = HealthReport(
+                    status: report.status,
+                    reasons: report.reasons + resourceWarnings,
+                    suggestedActions: report.suggestedActions
+                )
+            }
+        }
+        
+        return report
     }
 }

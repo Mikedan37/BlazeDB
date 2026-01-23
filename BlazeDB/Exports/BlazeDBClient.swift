@@ -136,6 +136,8 @@ public enum BlazeDBError: Error, LocalizedError, CustomStringConvertible {
             if let path = path {
                 msg += " at path: \(path.path)"
             }
+            msg += ". Another process is currently using this database."
+            msg += " To resolve: Close the other process or wait for it to finish, then try again."
             if let timeout = timeout {
                 msg += " (timeout: \(timeout)s)"
             }
@@ -191,6 +193,9 @@ public final class BlazeDBClient: @unchecked Sendable {
 
     // For reloads
     internal let fileURL: URL
+    
+    /// Internal flag tracking close state
+    internal var _isClosed: Bool = false
     internal let metaURL: URL
     internal let project: String
     private let password: String  // SECURITY: Store password for audit
@@ -296,6 +301,14 @@ public final class BlazeDBClient: @unchecked Sendable {
             // Test cleanup helpers handle aggressive cleanup in test scenarios
             
             print("🔷 [INIT] Creating PageStore...")
+            // Validate format version before opening
+            if FileManager.default.fileExists(atPath: metaURL.path) {
+                try validateFormatVersion()
+            } else {
+                // New database - store current format version
+                try storeFormatVersion()
+            }
+            
             let store = try PageStore(fileURL: fileURL, key: key)
             print("🔷 [INIT] ✅ PageStore created")
             
@@ -411,11 +424,15 @@ public final class BlazeDBClient: @unchecked Sendable {
         // Otherwise, the timer will remain in memory indefinitely
         cleanupAutoVacuumTimer()
         
-        do {
-            try persist()
-            BlazeLogger.debug("✅ Auto-flushed unsaved changes in deinit for '\(name)'")
-        } catch {
-            BlazeLogger.error("❌ Failed to flush in deinit for '\(name)': \(error)")
+        // If not explicitly closed, attempt to flush and mark as closed
+        if !_isClosed {
+            do {
+                try persist()
+                BlazeLogger.debug("Auto-flushed unsaved changes in deinit for '\(name)'")
+            } catch {
+                BlazeLogger.error("Failed to flush in deinit for '\(name)': \(error)")
+            }
+            _isClosed = true
         }
     }
 
@@ -816,6 +833,7 @@ public final class BlazeDBClient: @unchecked Sendable {
     /// }
     /// ```
     public func fetch(id: UUID) throws -> BlazeDataRecord? {
+        try ensureNotClosed()
         let startTime = Date()
         
         do {
@@ -924,6 +942,7 @@ public final class BlazeDBClient: @unchecked Sendable {
     /// try db.update(id: someUUID, with: record)
     /// ```
     public func update(id: UUID, with data: BlazeDataRecord) throws {
+        try ensureNotClosed()
         // Get existing record for triggers
         guard let existingRecord = try collection.fetch(id: id) else {
             throw BlazeDBError.recordNotFound(id: id)
@@ -1020,6 +1039,7 @@ public final class BlazeDBClient: @unchecked Sendable {
     /// try db.delete(id: recordToRemove)
     /// ```
     public func delete(id: UUID) throws {
+        try ensureNotClosed()
         let startTime = Date()
         
         do {
@@ -1118,6 +1138,7 @@ public final class BlazeDBClient: @unchecked Sendable {
     /// Manually flush pending metadata changes to disk
     /// Useful when you need to ensure data is persisted before critical operations
     public func persist() throws {
+        try ensureNotClosed()
         try collection.persist()
         
         // ✅ FIX: Delete transaction log after successful persist
@@ -1189,6 +1210,8 @@ public final class BlazeDBClient: @unchecked Sendable {
     ///     .execute()
     /// ```
     public func query() -> QueryBuilder {
+        // Note: QueryBuilder operations will fail when executed if database is closed
+        // We don't check here to allow query builder construction
         return collection.query()
     }
 
