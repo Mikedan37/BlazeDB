@@ -80,7 +80,7 @@ let results = try db.query()
 
 Directories are created automatically. Encryption is enabled by default.
 
-**Linux Users:** See `Docs/LINUX_GETTING_STARTED.md` for Linux-specific setup and examples.
+**Linux Users:** See [Linux Getting Started Guide](Docs/GettingStarted/LINUX_GETTING_STARTED.md) for Linux-specific setup and examples.
 
 Or in Xcode: **File → Add Package Dependencies** → paste the repository URL.
 
@@ -201,14 +201,14 @@ print("Pages: \(stats.pageCount), Records: \(stats.recordCount), Indexes: \(stat
 
 ## Documentation
 
-- **[Architecture](Docs/ARCHITECTURE.md)** - System layers, storage engine, MVCC, query execution
-- **[Security](Docs/SECURITY.md)** - Encryption model, threat model, cryptographic pipelines
-- **[Performance](Docs/PERFORMANCE.md)** - Benchmarks, methodology, performance invariants
-- **[Transactions](Docs/TRANSACTIONS.md)** - WAL, ACID guarantees, crash recovery
-- **[Protocol](Docs/PROTOCOL.md)** - BlazeBinary format, encoding rules, determinism
-- **[Why Not SQLite](Docs/WHY_NOT_SQLITE.md)** - Comparisons and tradeoffs
-- **[Compression Design](Docs/COMPRESSION_DESIGN.md)** - Compression strategy (optional, opt-in)
-- **[Snapshot Sync Design](Docs/SNAPSHOT_SYNC_DESIGN.md)** - Snapshot-based initial sync (design only, not implemented)
+- **[Architecture](Docs/Architecture/)** - System layers, storage engine, MVCC, query execution
+- **[Security](Docs/Security/)** - Encryption model, threat model, cryptographic pipelines
+- **[Performance](Docs/Performance/)** - Benchmarks, methodology, performance invariants
+- **[Transactions](Docs/Features/TRANSACTIONS.md)** - WAL, ACID guarantees, crash recovery
+- **[Protocol](Docs/Design/PROTOCOL.md)** - BlazeBinary format, encoding rules, determinism
+- **[Why Not SQLite](Docs/GettingStarted/WHY_NOT_SQLITE.md)** - Comparisons and tradeoffs
+- **[Compression Design](Docs/Design/COMPRESSION_DESIGN.md)** - Compression strategy (optional, opt-in)
+- **[Snapshot Sync Design](Docs/Design/SNAPSHOT_SYNC_DESIGN.md)** - Snapshot-based initial sync (design only, not implemented)
 
 See the [documentation index](Docs/MASTER_DOCUMENTATION_INDEX.md) for API reference, guides, and examples.
 
@@ -224,9 +224,9 @@ See the [documentation index](Docs/MASTER_DOCUMENTATION_INDEX.md) for API refere
 
 ## Status
 
-**Current Version:** 2.5.0-alpha
+**Current Version:** 0.1.0 (Pre-User Hardening Release)
 
-On-disk format is stable. APIs may evolve during the alpha period.
+Core modules are Swift 6 strict concurrency compliant. On-disk format is stable. APIs are stable for core CRUD, query builder, statistics, health, migrations, and import/export.
 
 ---
 
@@ -235,31 +235,33 @@ On-disk format is stable. APIs may evolve during the alpha period.
 **Core Modules:** ✅ Swift 6 strict concurrency compliant  
 **Distributed Modules:** ⚠️ Not yet compliant (excluded from core)
 
-See `COMPATIBILITY.md` for detailed compatibility information.
+See [Compatibility](Docs/COMPATIBILITY.md) for detailed compatibility information.
 
 ## API Stability
 
 **Stable APIs:** Core CRUD, query builder, statistics, health, migrations, import/export  
 **Experimental APIs:** Distributed sync, advanced queries, telemetry
 
-See `API_STABILITY.md` for detailed API stability information.
+See [API Stability](Docs/API_STABILITY.md) for detailed API stability information.
 
 ## Support
 
 **Early Adopter Phase:** Limited support for selected early adopters  
 **Response Times:** Critical (24h), High (48h), Medium (1 week), Low (2 weeks)
 
-See `SUPPORT_POLICY.md` for detailed support information.
+See [Support Policy](Docs/SUPPORT_POLICY.md) for detailed support information.
 
 ## Documentation
 
-- `QUERY_PERFORMANCE.md` - Query performance and best practices
-- `OPERATIONAL_CONFIDENCE.md` - Health monitoring and when to investigate
-- `PRE_USER_HARDENING.md` - Complete trust envelope documentation
-- `CONCURRENCY_COMPLIANCE.md` - Swift 6 concurrency status
-- `COMPATIBILITY.md` - Platform and API compatibility
-- `API_STABILITY.md` - API stability policy
-- `SUPPORT_POLICY.md` - Support policy and expectations
+- **[Query Performance](Docs/GettingStarted/QUERY_PERFORMANCE.md)** - Query performance and best practices
+- **[Operational Confidence](Docs/GettingStarted/OPERATIONAL_CONFIDENCE.md)** - Health monitoring and when to investigate
+- **[Pre-User Hardening](Docs/Compliance/PRE_USER_HARDENING.md)** - Complete trust envelope documentation
+- **[Concurrency Compliance](Docs/Compliance/CONCURRENCY_COMPLIANCE.md)** - Swift 6 concurrency status
+- **[Compatibility](Docs/COMPATIBILITY.md)** - Platform and API compatibility
+- **[API Stability](Docs/API_STABILITY.md)** - API stability policy
+- **[Support Policy](Docs/SUPPORT_POLICY.md)** - Support policy and expectations
+- **[Getting Started](Docs/GettingStarted/)** - Getting started guides
+- **[Linux Guide](Docs/GettingStarted/LINUX_GETTING_STARTED.md)** - Linux-specific setup
 
 ## License
 
