@@ -170,11 +170,14 @@ extension BlazeDBClient {
         }
         
         // Create read-only connection
-        return try BlazeDBClient(
+        guard let client = BlazeDBClient(
             name: database,
             at: sharedPath,
             password: ""  // Will need to handle password sharing
-        )
+        ) else {
+            throw CrossAppSyncError.invalidAppGroup
+        }
+        return client
     }
     
     public enum AccessMode {

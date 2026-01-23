@@ -1,10 +1,10 @@
 # What is Compression? (Simple Explanation)
 
-**Making data smaller so it transfers faster! 📦→📦**
+**Making data smaller so it transfers faster! →**
 
 ---
 
-## 🎯 **THE SIMPLE IDEA:**
+## **THE SIMPLE IDEA:**
 
 **Compression = Making files/data smaller before sending them**
 
@@ -15,7 +15,7 @@ Think of it like:
 
 ---
 
-## 📊 **REAL EXAMPLE:**
+## **REAL EXAMPLE:**
 
 ### **Without Compression:**
 ```
@@ -37,7 +37,7 @@ SAVED: 45 bytes (90% smaller!)
 
 ---
 
-## 🔥 **HOW IT WORKS IN BLAZEDB:**
+## **HOW IT WORKS IN BLAZEDB:**
 
 ### **Before Compression:**
 ```
@@ -56,7 +56,7 @@ FASTER: 2.5x faster transfer!
 
 ---
 
-## 🎯 **WHY IT MATTERS:**
+## **WHY IT MATTERS:**
 
 ### **1. Less Bandwidth:**
 ```
@@ -91,7 +91,7 @@ Less data = Less radio time = Less battery used!
 
 ---
 
-## 🔧 **HOW COMPRESSION WORKS:**
+## **HOW COMPRESSION WORKS:**
 
 ### **Pattern Recognition:**
 ```
@@ -121,37 +121,37 @@ Finds common words/phrases and replaces them!
 LZ4 = Fast compression algorithm
 
 Pros:
-✅ VERY fast (<1ms for 10 KB)
-✅ Good compression (60% smaller)
-✅ Low CPU usage
+ VERY fast (<1ms for 10 KB)
+ Good compression (60% smaller)
+ Low CPU usage
 
 Cons:
-❌ Not the best compression (but who cares, it's FAST!)
+ Not the best compression (but who cares, it's FAST!)
 ```
 
 ---
 
-## 📦 **TYPES OF COMPRESSION:**
+## **TYPES OF COMPRESSION:**
 
 ### **1. Lossless (What We Use):**
 ```
 Original → Compress → Decompress → Original
 
-✅ Perfect! No data lost!
-✅ Used for: Text, code, databases
+ Perfect! No data lost!
+ Used for: Text, code, databases
 ```
 
 ### **2. Lossy (We DON'T Use):**
 ```
 Original → Compress → Decompress → Similar (but not exact)
 
-❌ Some data lost
-❌ Used for: Images (JPEG), video (MP4), audio (MP3)
+ Some data lost
+ Used for: Images (JPEG), video (MP4), audio (MP3)
 ```
 
 ---
 
-## 🚀 **IN OUR CODE:**
+## **IN OUR CODE:**
 
 ### **What Happens:**
 ```swift
@@ -159,14 +159,14 @@ Original → Compress → Decompress → Similar (but not exact)
 let operations: [BlazeOperation] = [...]
 
 // 2. Encode them to binary
-let encoded = try encodeOperations(operations)  // 16.5 KB
+let encoded = try encodeOperations(operations) // 16.5 KB
 
 // 3. Compress if > 1KB
 if encoded.count > 1024 {
-    let compressed = try compress(encoded)  // 6.6 KB (60% smaller!)
-    // Send compressed version
+ let compressed = try compress(encoded) // 6.6 KB (60% smaller!)
+ // Send compressed version
 } else {
-    // Send uncompressed (too small to bother)
+ // Send uncompressed (too small to bother)
 }
 ```
 
@@ -177,16 +177,16 @@ let received = try await connection.receive()
 
 // 2. Check if compressed (magic bytes: "BZCZ")
 if isCompressed(received) {
-    let decompressed = try decompress(received)  // Back to 16.5 KB
-    // Use decompressed data
+ let decompressed = try decompress(received) // Back to 16.5 KB
+ // Use decompressed data
 } else {
-    // Use as-is (not compressed)
+ // Use as-is (not compressed)
 }
 ```
 
 ---
 
-## 💡 **ANALOGY:**
+## **ANALOGY:**
 
 ### **Like Packing a Suitcase:**
 ```
@@ -214,16 +214,16 @@ Same message, just shorter!
 
 ---
 
-## 🎯 **SUMMARY:**
+## **SUMMARY:**
 
 ### **What is Compression?**
 - Making data smaller before sending it
 - Like zipping a file before emailing
 
 ### **Why Use It?**
-- ✅ Less bandwidth (60% less data)
-- ✅ Faster transfer (2.5x faster)
-- ✅ Less battery (60% less radio time)
+- Less bandwidth (60% less data)
+- Faster transfer (2.5x faster)
+- Less battery (60% less radio time)
 
 ### **How Does It Work?**
 - Finds repeating patterns
@@ -237,7 +237,7 @@ Same message, just shorter!
 
 ---
 
-## 🔥 **BOTTOM LINE:**
+## **BOTTOM LINE:**
 
 **Compression = Making data smaller so it transfers faster!**
 
@@ -250,5 +250,5 @@ Same message, just shorter!
 - 100 operations: 16.5 KB → 6.6 KB (60% smaller!)
 - Transfer time: 13.2ms → 5.3ms (2.5x faster!)
 
-**That's it! Simple as that! 🚀**
+**That's it! Simple as that! **
 

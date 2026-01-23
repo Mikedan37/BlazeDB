@@ -1,10 +1,10 @@
 # BlazeDB Device Discovery: How Databases Find Each Other
 
-**How Mac and iOS databases discover and connect to each other! 🔍**
+**How Mac and iOS databases discover and connect to each other! **
 
 ---
 
-## 🔍 **CURRENT IMPLEMENTATION:**
+## **CURRENT IMPLEMENTATION:**
 
 ### **Manual Configuration (Current):**
 
@@ -12,16 +12,16 @@
 Currently, you need to manually specify the remote database:
 
 let remote = RemoteNode(
-    host: "192.168.1.100",  // Mac's IP address
-    port: 8080,
-    database: "bugs",
-    useTLS: false  // Local network
+ host: "192.168.1.100", // Mac's IP address
+ port: 8080,
+ database: "bugs",
+ useTLS: false // Local network
 )
 
 try await topology.connectRemote(
-    nodeId: iPhoneNode,
-    remote: remote,
-    policy: .bidirectional
+ nodeId: iPhoneNode,
+ remote: remote,
+ policy:.bidirectional
 )
 ```
 
@@ -29,41 +29,41 @@ try await topology.connectRemote(
 
 ```
 iPhone App
-  ↓
+ ↓
 1. User enters Mac's IP address (192.168.1.100:8080)
-  ↓
+ ↓
 2. Create RemoteNode with host/port
-  ↓
+ ↓
 3. SecureConnection.create() connects via TCP
-  ↓
+ ↓
 4. Perform E2E handshake (ECDH P-256)
-  ↓
+ ↓
 5. Start sync!
 
 Mac App
-  ↓
+ ↓
 1. Listen on port 8080 (server mode)
-  ↓
+ ↓
 2. Accept incoming connections
-  ↓
+ ↓
 3. Perform E2E handshake
-  ↓
+ ↓
 4. Start sync!
 ```
 
-> **iOS Permission Note:**  
+> **iOS Permission Note:**
 > When using any local-network based discovery or direct TCP connection (including fixed host/port or Bonjour),
 > your iOS app **must** declare:
 >
-> - `NSLocalNetworkUsageDescription` in `Info.plist` with a clear explanation, e.g.  
->   _"BlazeDB uses the local network to discover and sync with your Raspberry Pi or Mac servers."_
+> - `NSLocalNetworkUsageDescription` in `Info.plist` with a clear explanation, e.g.
+> _"BlazeDB uses the local network to discover and sync with your Raspberry Pi or Mac servers."_
 >
 > Without this key, iOS may block or severely limit local-network connections, and discovery / sync
 > to your BlazeDB servers (e.g. `raspberrypi.local:9090`) can fail or prompt in confusing ways.
 
 ---
 
-## 🚀 **DISCOVERY MECHANISMS (To Implement):**
+## **DISCOVERY MECHANISMS (To Implement):**
 
 ### **1. mDNS/Bonjour (Automatic Local Discovery):**
 
@@ -84,10 +84,10 @@ IMPLEMENTATION:
 
 BENEFITS:
 ─────────
-✅ Zero configuration
-✅ Automatic discovery
-✅ Works on local network
-✅ Secure (E2E encryption still applies)
+ Zero configuration
+ Automatic discovery
+ Works on local network
+ Secure (E2E encryption still applies)
 ```
 
 ### **2. QR Code (Easy Pairing):**
@@ -109,10 +109,10 @@ QR CODE CONTAINS:
 
 BENEFITS:
 ─────────
-✅ Easy pairing
-✅ Secure (one-time token)
-✅ No manual entry
-✅ Works offline (local network)
+ Easy pairing
+ Secure (one-time token)
+ No manual entry
+ Works offline (local network)
 ```
 
 ### **3. Server Registry (Central Discovery):**
@@ -135,10 +135,10 @@ REGISTRY CONTAINS:
 
 BENEFITS:
 ─────────
-✅ Works across internet
-✅ Centralized discovery
-✅ Can work with hub-and-spoke
-✅ Automatic updates
+ Works across internet
+ Centralized discovery
+ Can work with hub-and-spoke
+ Automatic updates
 ```
 
 ### **4. Manual Entry (Current - Fallback):**
@@ -153,15 +153,15 @@ HOW IT WORKS:
 
 BENEFITS:
 ─────────
-✅ Always works
-✅ No dependencies
-✅ Full control
-✅ Works everywhere
+ Always works
+ No dependencies
+ Full control
+ Works everywhere
 ```
 
 ---
 
-## 🔥 **RECOMMENDED IMPLEMENTATION:**
+## **RECOMMENDED IMPLEMENTATION:**
 
 ### **Multi-Tier Discovery:**
 
@@ -196,7 +196,7 @@ TIER 4: Manual Entry (Fallback, Always Works)
 
 ---
 
-## 📱 **MAC TO iOS CONNECTION FLOW:**
+## **MAC TO iOS CONNECTION FLOW:**
 
 ### **Scenario 1: Same WiFi (mDNS/Bonjour):**
 
@@ -216,7 +216,7 @@ iOS (Client):
 5. Perform E2E handshake
 6. Start sync!
 
-RESULT: Zero configuration, automatic discovery! 🔥
+RESULT: Zero configuration, automatic discovery!
 ```
 
 ### **Scenario 2: QR Code Pairing:**
@@ -226,11 +226,11 @@ MAC (Server):
 ─────────────
 1. Start BlazeDB server on port 8080
 2. Generate QR code with:
-   • IP: 192.168.1.100
-   • Port: 8080
-   • Database: "bugs"
-   • Public key: [ECDH public key]
-   • Token: [one-time connection token]
+ • IP: 192.168.1.100
+ • Port: 8080
+ • Database: "bugs"
+ • Public key: [ECDH public key]
+ • Token: [one-time connection token]
 3. Display QR code on screen
 
 iOS (Client):
@@ -242,7 +242,7 @@ iOS (Client):
 5. Perform E2E handshake
 6. Start sync!
 
-RESULT: Easy pairing, secure! 🔥
+RESULT: Easy pairing, secure!
 ```
 
 ### **Scenario 3: Server Registry:**
@@ -252,25 +252,25 @@ MAC (Server):
 ─────────────
 1. Start BlazeDB server on port 8080
 2. Register with central server:
-   • Database name: "bugs"
-   • Device name: "MacBook Pro"
-   • IP: 192.168.1.100
-   • Port: 8080
-   • Public key: [ECDH public key]
+ • Database name: "bugs"
+ • Device name: "MacBook Pro"
+ • IP: 192.168.1.100
+ • Port: 8080
+ • Public key: [ECDH public key]
 3. Keep registration alive (heartbeat)
 
 iOS (Client):
 ─────────────
 1. Query central server for databases
 2. Server returns list:
-   • "bugs" on "MacBook Pro" (192.168.1.100:8080)
-   • "notes" on "iPad" (192.168.1.101:8080)
+ • "bugs" on "MacBook Pro" (192.168.1.100:8080)
+ • "notes" on "iPad" (192.168.1.101:8080)
 3. User selects "bugs" on "MacBook Pro"
 4. Connect to Mac using info from registry
 5. Perform E2E handshake
 6. Start sync!
 
-RESULT: Works across internet, centralized! 🔥
+RESULT: Works across internet, centralized!
 ```
 
 ### **Scenario 4: Manual Entry (Current):**
@@ -285,19 +285,19 @@ MAC (Server):
 iOS (Client):
 ─────────────
 1. User enters:
-   • Host: 192.168.1.100
-   • Port: 8080
-   • Database: "bugs"
+ • Host: 192.168.1.100
+ • Port: 8080
+ • Database: "bugs"
 2. Connect to Mac
 3. Perform E2E handshake
 4. Start sync!
 
-RESULT: Always works, manual entry! ✅
+RESULT: Always works, manual entry!
 ```
 
 ---
 
-## 🎯 **IMPLEMENTATION PLAN:**
+## **IMPLEMENTATION PLAN:**
 
 ### **Phase 1: mDNS/Bonjour Discovery (Recommended First):**
 
@@ -307,66 +307,66 @@ RESULT: Always works, manual entry! ✅
 import Network
 
 class BlazeDiscovery {
-    private var browser: NWBrowser?
-    private var service: NetService?
-    
-    // Advertise database (Mac - Server)
-    func advertise(
-        database: String,
-        port: UInt16
-    ) {
-        let service = NetService(
-            domain: "local.",
-            type: "_blazedb._tcp.",
-            name: database,
-            port: Int32(port)
-        )
-        
-        service.publish()
-        self.service = service
-        
-        print("[BlazeDiscovery] Advertising: \(database) on port \(port)")
-    }
-    
-    // Browse for databases (iOS - Client)
-    func browse(callback: @escaping ([DiscoveredDatabase]) -> Void) {
-        let browser = NWBrowser(
-            for: .bonjour(type: "_blazedb._tcp.", domain: nil),
-            using: .tcp
-        )
-        
-        browser.stateUpdateHandler = { state in
-            if state == .ready {
-                // Start browsing
-            }
-        }
-        
-        browser.browseResultsChangedHandler = { results, changes in
-            var discovered: [DiscoveredDatabase] = []
-            
-            for result in results {
-                if case .bonjour(let record) = result.endpoint {
-                    let db = DiscoveredDatabase(
-                        name: record.name,
-                        host: record.hostname,
-                        port: UInt16(record.port ?? 8080)
-                    )
-                    discovered.append(db)
-                }
-            }
-            
-            callback(discovered)
-        }
-        
-        browser.start(queue: .global())
-        self.browser = browser
-    }
+ private var browser: NWBrowser?
+ private var service: NetService?
+
+ // Advertise database (Mac - Server)
+ func advertise(
+ database: String,
+ port: UInt16
+ ) {
+ let service = NetService(
+ domain: "local.",
+ type: "_blazedb._tcp.",
+ name: database,
+ port: Int32(port)
+ )
+
+ service.publish()
+ self.service = service
+
+ print("[BlazeDiscovery] Advertising: \(database) on port \(port)")
+ }
+
+ // Browse for databases (iOS - Client)
+ func browse(callback: @escaping ([DiscoveredDatabase]) -> Void) {
+ let browser = NWBrowser(
+ for:.bonjour(type: "_blazedb._tcp.", domain: nil),
+ using:.tcp
+ )
+
+ browser.stateUpdateHandler = { state in
+ if state ==.ready {
+ // Start browsing
+ }
+ }
+
+ browser.browseResultsChangedHandler = { results, changes in
+ var discovered: [DiscoveredDatabase] = []
+
+ for result in results {
+ if case.bonjour(let record) = result.endpoint {
+ let db = DiscoveredDatabase(
+ name: record.name,
+ host: record.hostname,
+ port: UInt16(record.port?? 8080)
+ )
+ discovered.append(db)
+ }
+ }
+
+ callback(discovered)
+ }
+
+ browser.start(queue:.global())
+ self.browser = browser
+ }
 }
 
 struct DiscoveredDatabase {
-    let name: String
-    let host: String
-    let port: UInt16
+ let name: String
+ let host: String
+ let port: UInt16
 }
 ```
 
@@ -378,65 +378,65 @@ struct DiscoveredDatabase {
 import CoreImage
 
 extension BlazeTopology {
-    /// Generate QR code for pairing
-    func generatePairingQR(
-        nodeId: UUID,
-        port: UInt16 = 8080
-    ) throws -> NSImage {
-        // Get local IP address
-        let ip = try getLocalIPAddress()
-        
-        // Create pairing info
-        let pairingInfo = PairingInfo(
-            host: ip,
-            port: port,
-            database: node.name,
-            publicKey: getPublicKey(),
-            token: generateOneTimeToken()
-        )
-        
-        // Encode as JSON
-        let json = try JSONEncoder().encode(pairingInfo)
-        
-        // Generate QR code
-        let filter = CIFilter(name: "CIQRCodeGenerator")!
-        filter.setValue(json, forKey: "inputMessage")
-        
-        let qrImage = filter.outputImage!
-        
-        return NSImage(ciImage: qrImage)
-    }
-    
-    /// Scan QR code and connect
-    func scanAndConnect(
-        qrCodeData: Data
-    ) async throws {
-        // Decode pairing info
-        let pairingInfo = try JSONDecoder().decode(PairingInfo.self, from: qrCodeData)
-        
-        // Create remote node
-        let remote = RemoteNode(
-            host: pairingInfo.host,
-            port: pairingInfo.port,
-            database: pairingInfo.database,
-            useTLS: false
-        )
-        
-        // Connect
-        try await connectRemote(
-            nodeId: nodeId,
-            remote: remote,
-            policy: .bidirectional
-        )
-    }
+ /// Generate QR code for pairing
+ func generatePairingQR(
+ nodeId: UUID,
+ port: UInt16 = 8080
+ ) throws -> NSImage {
+ // Get local IP address
+ let ip = try getLocalIPAddress()
+
+ // Create pairing info
+ let pairingInfo = PairingInfo(
+ host: ip,
+ port: port,
+ database: node.name,
+ publicKey: getPublicKey(),
+ token: generateOneTimeToken()
+ )
+
+ // Encode as JSON
+ let json = try JSONEncoder().encode(pairingInfo)
+
+ // Generate QR code
+ let filter = CIFilter(name: "CIQRCodeGenerator")!
+ filter.setValue(json, forKey: "inputMessage")
+
+ let qrImage = filter.outputImage!
+
+ return NSImage(ciImage: qrImage)
+ }
+
+ /// Scan QR code and connect
+ func scanAndConnect(
+ qrCodeData: Data
+ ) async throws {
+ // Decode pairing info
+ let pairingInfo = try JSONDecoder().decode(PairingInfo.self, from: qrCodeData)
+
+ // Create remote node
+ let remote = RemoteNode(
+ host: pairingInfo.host,
+ port: pairingInfo.port,
+ database: pairingInfo.database,
+ useTLS: false
+ )
+
+ // Connect
+ try await connectRemote(
+ nodeId: nodeId,
+ remote: remote,
+ policy:.bidirectional
+ )
+ }
 }
 
 struct PairingInfo: Codable {
-    let host: String
-    let port: UInt16
-    let database: String
-    let publicKey: Data
-    let token: String
+ let host: String
+ let port: UInt16
+ let database: String
+ let publicKey: Data
+ let token: String
 }
 ```
 
@@ -446,101 +446,101 @@ struct PairingInfo: Codable {
 // MARK: - Server Registry
 
 class BlazeRegistry {
-    private let serverURL: URL
-    
-    /// Register database with central server
-    func register(
-        database: String,
-        deviceName: String,
-        host: String,
-        port: UInt16,
-        publicKey: Data
-    ) async throws {
-        let registration = Registration(
-            database: database,
-            deviceName: deviceName,
-            host: host,
-            port: port,
-            publicKey: publicKey
-        )
-        
-        var request = URLRequest(url: serverURL.appendingPathComponent("register"))
-        request.httpMethod = "POST"
-        request.httpBody = try JSONEncoder().encode(registration)
-        
-        let (_, _) = try await URLSession.shared.data(for: request)
-    }
-    
-    /// Query server for available databases
-    func query() async throws -> [RegisteredDatabase] {
-        let url = serverURL.appendingPathComponent("query")
-        let (data, _) = try await URLSession.shared.data(from: url)
-        
-        return try JSONDecoder().decode([RegisteredDatabase].self, from: data)
-    }
+ private let serverURL: URL
+
+ /// Register database with central server
+ func register(
+ database: String,
+ deviceName: String,
+ host: String,
+ port: UInt16,
+ publicKey: Data
+ ) async throws {
+ let registration = Registration(
+ database: database,
+ deviceName: deviceName,
+ host: host,
+ port: port,
+ publicKey: publicKey
+ )
+
+ var request = URLRequest(url: serverURL.appendingPathComponent("register"))
+ request.httpMethod = "POST"
+ request.httpBody = try JSONEncoder().encode(registration)
+
+ let (_, _) = try await URLSession.shared.data(for: request)
+ }
+
+ /// Query server for available databases
+ func query() async throws -> [RegisteredDatabase] {
+ let url = serverURL.appendingPathComponent("query")
+ let (data, _) = try await URLSession.shared.data(from: url)
+
+ return try JSONDecoder().decode([RegisteredDatabase].self, from: data)
+ }
 }
 
 struct Registration: Codable {
-    let database: String
-    let deviceName: String
-    let host: String
-    let port: UInt16
-    let publicKey: Data
+ let database: String
+ let deviceName: String
+ let host: String
+ let port: UInt16
+ let publicKey: Data
 }
 
 struct RegisteredDatabase: Codable {
-    let database: String
-    let deviceName: String
-    let host: String
-    let port: UInt16
-    let publicKey: Data
-    let lastSeen: Date
+ let database: String
+ let deviceName: String
+ let host: String
+ let port: UInt16
+ let publicKey: Data
+ let lastSeen: Date
 }
 ```
 
 ---
 
-## 🎯 **RECOMMENDED APPROACH:**
+## **RECOMMENDED APPROACH:**
 
 ### **For Mac ↔ iOS (Same Network):**
 
 ```
 1. mDNS/Bonjour (Primary)
-   • Automatic discovery
-   • Zero configuration
-   • Works on local WiFi
-   • Fast (<1 second)
+ • Automatic discovery
+ • Zero configuration
+ • Works on local WiFi
+ • Fast (<1 second)
 
 2. QR Code (Fallback)
-   • Easy pairing
-   • Works if mDNS fails
-   • User-friendly
-   • Secure (one-time token)
+ • Easy pairing
+ • Works if mDNS fails
+ • User-friendly
+ • Secure (one-time token)
 
 3. Manual Entry (Last Resort)
-   • Always works
-   • Full control
-   • No dependencies
+ • Always works
+ • Full control
+ • No dependencies
 ```
 
 ### **For Mac ↔ iOS (Different Networks):**
 
 ```
 1. Server Registry (Primary)
-   • Centralized discovery
-   • Works across internet
-   • Automatic updates
-   • Can use hub-and-spoke
+ • Centralized discovery
+ • Works across internet
+ • Automatic updates
+ • Can use hub-and-spoke
 
 2. Manual Entry (Fallback)
-   • Direct connection
-   • Works everywhere
-   • No server needed
+ • Direct connection
+ • Works everywhere
+ • No server needed
 ```
 
 ---
 
-## 🔥 **COMPLETE FLOW EXAMPLE:**
+## **COMPLETE FLOW EXAMPLE:**
 
 ### **Mac to iOS Connection:**
 
@@ -569,35 +569,35 @@ iOS App:
 • Performs E2E handshake
 • Starts sync!
 
-RESULT: Automatic discovery, secure connection! 🔥
+RESULT: Automatic discovery, secure connection!
 ```
 
 ---
 
-## 🎯 **BOTTOM LINE:**
+## **BOTTOM LINE:**
 
 ### **Current State:**
 
 ```
-✅ Manual configuration works
-✅ Direct IP/port connection
-✅ E2E encryption
-✅ Secure handshake
+ Manual configuration works
+ Direct IP/port connection
+ E2E encryption
+ Secure handshake
 
-❌ No automatic discovery (yet)
-❌ Requires manual IP entry
-❌ Not user-friendly
+ No automatic discovery (yet)
+ Requires manual IP entry
+ Not user-friendly
 ```
 
 ### **Recommended Additions:**
 
 ```
-✅ mDNS/Bonjour (automatic local discovery)
-✅ QR Code (easy pairing)
-✅ Server Registry (internet discovery)
-✅ Manual Entry (fallback)
+ mDNS/Bonjour (automatic local discovery)
+ QR Code (easy pairing)
+ Server Registry (internet discovery)
+ Manual Entry (fallback)
 
-Result: Multiple discovery methods, maximum flexibility! 🔥
+Result: Multiple discovery methods, maximum flexibility!
 ```
 
 ### **Implementation Priority:**
@@ -608,8 +608,8 @@ Result: Multiple discovery methods, maximum flexibility! 🔥
 3. Server Registry (for internet)
 4. Manual Entry (already works!)
 
-Start with mDNS/Bonjour - it's the most impactful! 🚀
+Start with mDNS/Bonjour - it's the most impactful!
 ```
 
-**This is how databases find each other - and how to make it automatic! 🔥**
+**This is how databases find each other - and how to make it automatic! **
 

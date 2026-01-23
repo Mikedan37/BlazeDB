@@ -9,7 +9,8 @@
 import Foundation
 
 /// Protocol for sync transport implementations
-public protocol BlazeSyncRelay {
+@preconcurrency
+public protocol BlazeSyncRelay: Sendable {
     func connect() async throws
     func disconnect() async
     func exchangeSyncState() async throws -> SyncState
@@ -330,15 +331,15 @@ public actor BlazeSyncEngine {
                 try localDB.insert(record, id: op.recordId)
                 
             case .update:
-                if let existing = try localDB.fetch(id: op.recordId) {
+                if let existing = try await localDB.fetch(id: op.recordId) {
                     // SERVER PRIORITY: Use role from operation (if available)
                     let remoteRole = op.role ?? ((role == .server) ? .client : .server)
                     let merged = mergeWithCRDT(existing: existing, changes: op.changes, timestamp: op.timestamp, remoteRole: remoteRole)
-                    try localDB.update(id: op.recordId, with: merged)
+                    try await localDB.update(id: op.recordId, with: merged)
                 }
                 
             case .delete:
-                try localDB.delete(id: op.recordId)
+                try await localDB.delete(id: op.recordId)
                 
             case .createIndex, .dropIndex:
                 // Handle index operations
@@ -396,7 +397,7 @@ public actor BlazeSyncEngine {
             // Fetch the record to get its fields (for insert/update)
             var fields: [String: BlazeDocumentField] = [:]
             if opType != .delete {
-                if let record = try? localDB.fetch(id: recordId) {
+                if let record = try? await localDB.fetch(id: recordId) {
                     fields = record.storage
                     
                     // INCREMENTAL SYNC: Increment version on change
@@ -587,10 +588,11 @@ public actor BlazeSyncEngine {
         inFlightBatches += 1
         
         // Send in parallel (pipelining - don't wait!)
+        let relay = self.relay  // Capture relay before Task to avoid Sendable issue
         let sendTask = Task { [weak self] in
             guard let self = self else { return }
             do {
-                try await self.relay.pushOperations(batch)
+                try await relay.pushOperations(batch)
                 
                 // Measure batch time
                 let endTime = DispatchTime.now().uptimeNanoseconds
@@ -698,7 +700,7 @@ public actor BlazeSyncEngine {
             recordVersions = state.recordVersions
             lastSyncVersions = state.lastSyncVersions
         } catch {
-            BlazeLogger.warn("Failed to load sync state", error: error)
+            BlazeLogger.warn("Failed to load sync state: \(error)")
         }
     }
     
@@ -718,7 +720,7 @@ public actor BlazeSyncEngine {
             let data = try JSONEncoder().encode(state)
             try data.write(to: syncStateURL)
         } catch {
-            BlazeLogger.warn("Failed to save sync state", error: error)
+            BlazeLogger.warn("Failed to save sync state: \(error)")
         }
     }
     

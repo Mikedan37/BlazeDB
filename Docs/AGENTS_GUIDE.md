@@ -2,7 +2,7 @@
 
 **Purpose:** This is a comprehensive reference guide for AI assistants implementing BlazeDB in new projects. It covers all usage patterns, APIs, and best practices.
 
-**Last Updated:** 2025-01-XX  
+**Last Updated:** 2025-01-XX
 **BlazeDB Version:** 2.5.0+
 
 ---
@@ -51,7 +51,7 @@ This guide is a reference, not a mandate. When implementing BlazeDB:
 ```swift
 // Package.swift
 dependencies: [
-    .package(url: "https://github.com/Mikedan37/BlazeDB.git", from: "2.5.0")
+.package(url: "https://github.com/Mikedan37/BlazeDB.git", from: "2.5.0")
 ]
 ```
 
@@ -76,8 +76,8 @@ import BlazeDB
 ```swift
 // Creates database in ~/Library/Application Support/BlazeDB/
 let db = try BlazeDBClient(
-    name: "MyApp",
-    password: "your-secure-password-123"
+ name: "MyApp",
+ password: "your-secure-password-123"
 )
 ```
 
@@ -85,13 +85,13 @@ let db = try BlazeDBClient(
 
 ```swift
 let url = FileManager.default
-    .urls(for: .documentDirectory, in: .userDomainMask)[0]
-    .appendingPathComponent("mydb.blazedb")
+.urls(for:.documentDirectory, in:.userDomainMask)[0]
+.appendingPathComponent("mydb.blazedb")
 
 let db = try BlazeDBClient(
-    name: "MyApp",
-    fileURL: url,
-    password: "your-secure-password-123"
+ name: "MyApp",
+ fileURL: url,
+ password: "your-secure-password-123"
 )
 ```
 
@@ -99,11 +99,11 @@ let db = try BlazeDBClient(
 
 ```swift
 guard let db = BlazeDBClient(
-    name: "MyApp",
-    password: "your-secure-password-123"
+ name: "MyApp",
+ password: "your-secure-password-123"
 ) else {
-    print("Failed to initialize database")
-    return
+ print("Failed to initialize database")
+ return
 }
 ```
 
@@ -111,9 +111,9 @@ guard let db = BlazeDBClient(
 
 ```swift
 let db = try BlazeDBClient(
-    name: "MyApp",
-    password: "your-secure-password-123",
-    project: "Production"  // Optional namespace
+ name: "MyApp",
+ password: "your-secure-password-123",
+ project: "Production" // Optional namespace
 )
 ```
 
@@ -121,24 +121,24 @@ let db = try BlazeDBClient(
 
 ```swift
 class AppDatabase {
-    static let shared = AppDatabase()
-    let db: BlazeDBClient
-    
-    private init() {
-        let url = FileManager.default
-            .urls(for: .documentDirectory, in: .userDomainMask)[0]
-            .appendingPathComponent("app.blazedb")
-        
-        do {
-            db = try BlazeDBClient(
-                name: "App",
-                fileURL: url,
-                password: "your-secure-password-123"
-            )
-        } catch {
-            fatalError("Failed to initialize database: \(error)")
-        }
-    }
+ static let shared = AppDatabase()
+ let db: BlazeDBClient
+
+ private init() {
+ let url = FileManager.default
+.urls(for:.documentDirectory, in:.userDomainMask)[0]
+.appendingPathComponent("app.blazedb")
+
+ do {
+ db = try BlazeDBClient(
+ name: "App",
+ fileURL: url,
+ password: "your-secure-password-123"
+ )
+ } catch {
+ fatalError("Failed to initialize database: \(error)")
+ }
+ }
 }
 
 // Usage
@@ -160,19 +160,19 @@ let db = AppDatabase.shared.db
 ```swift
 // Create records with any fields
 let record = BlazeDataRecord([
-    "title": .string("Hello"),
-    "count": .int(42),
-    "active": .bool(true),
-    "tags": .array([.string("swift"), .string("database")]),
-    "metadata": .dictionary([
-        "author": .string("Alice"),
-        "version": .int(1)
-    ])
+ "title":.string("Hello"),
+ "count":.int(42),
+ "active":.bool(true),
+ "tags":.array([.string("swift"),.string("database")]),
+ "metadata":.dictionary([
+ "author":.string("Alice"),
+ "version":.int(1)
+ ])
 ])
 
 // Access fields
-let title = record["title"]?.stringValue ?? ""
-let count = record["count"]?.intValue ?? 0
+let title = record["title"]?.stringValue?? ""
+let count = record["count"]?.intValue?? 0
 ```
 
 ### Approach 2: Type-Safe (Recommended)
@@ -182,74 +182,74 @@ let count = record["count"]?.intValue ?? 0
 ```swift
 // Define model
 struct Bug: BlazeDocument {
-    var id: UUID
-    var title: String
-    var description: String
-    var priority: Int
-    var status: String
-    var assignee: String?
-    var tags: [String]
-    var createdAt: Date
-    var updatedAt: Date
-    
-    // MARK: - BlazeDocument Protocol
-    
-    func toStorage() throws -> BlazeDataRecord {
-        var fields: [String: BlazeDocumentField] = [
-            "id": .uuid(id),
-            "title": .string(title),
-            "description": .string(description),
-            "priority": .int(priority),
-            "status": .string(status),
-            "tags": .array(tags.map { .string($0) }),
-            "createdAt": .date(createdAt),
-            "updatedAt": .date(updatedAt)
-        ]
-        
-        if let assignee = assignee {
-            fields["assignee"] = .string(assignee)
-        }
-        
-        return BlazeDataRecord(fields)
-    }
-    
-    init(from storage: BlazeDataRecord) throws {
-        self.id = try storage.uuid("id")
-        self.title = try storage.string("title")
-        self.description = try storage.string("description")
-        self.priority = try storage.int("priority")
-        self.status = try storage.string("status")
-        self.assignee = storage.stringOptional("assignee")
-        
-        let tagsArray = try storage.array("tags")
-        self.tags = tagsArray.stringValues
-        
-        self.createdAt = try storage.date("createdAt")
-        self.updatedAt = try storage.date("updatedAt")
-    }
-    
-    // Convenience initializer
-    init(
-        id: UUID = UUID(),
-        title: String,
-        description: String = "",
-        priority: Int,
-        status: String,
-        assignee: String? = nil,
-        tags: [String] = [],
-        createdAt: Date = Date(),
-        updatedAt: Date = Date()
-    ) {
-        self.id = id
-        self.title = title
-        self.description = description
-        self.priority = priority
-        self.status = status
-        self.assignee = assignee
-        self.tags = tags
-        self.createdAt = createdAt
-        self.updatedAt = updatedAt
-    }
+ var id: UUID
+ var title: String
+ var description: String
+ var priority: Int
+ var status: String
+ var assignee: String?
+ var tags: [String]
+ var createdAt: Date
+ var updatedAt: Date
+
+ // MARK: - BlazeDocument Protocol
+
+ func toStorage() throws -> BlazeDataRecord {
+ var fields: [String: BlazeDocumentField] = [
+ "id":.uuid(id),
+ "title":.string(title),
+ "description":.string(description),
+ "priority":.int(priority),
+ "status":.string(status),
+ "tags":.array(tags.map {.string($0) }),
+ "createdAt":.date(createdAt),
+ "updatedAt":.date(updatedAt)
+ ]
+
+ if let assignee = assignee {
+ fields["assignee"] =.string(assignee)
+ }
+
+ return BlazeDataRecord(fields)
+ }
+
+ init(from storage: BlazeDataRecord) throws {
+ self.id = try storage.uuid("id")
+ self.title = try storage.string("title")
+ self.description = try storage.string("description")
+ self.priority = try storage.int("priority")
+ self.status = try storage.string("status")
+ self.assignee = storage.stringOptional("assignee")
+
+ let tagsArray = try storage.array("tags")
+ self.tags = tagsArray.stringValues
+
+ self.createdAt = try storage.date("createdAt")
+ self.updatedAt = try storage.date("updatedAt")
+ }
+
+ // Convenience initializer
+ init(
+ id: UUID = UUID(),
+ title: String,
+ description: String = "",
+ priority: Int,
+ status: String,
+ assignee: String? = nil,
+ tags: [String] = [],
+ createdAt: Date = Date(),
+ updatedAt: Date = Date()
+ ) {
+ self.id = id
+ self.title = title
+ self.description = description
+ self.priority = priority
+ self.status = status
+ self.assignee = assignee
+ self.tags = tags
+ self.createdAt = createdAt
+ self.updatedAt = updatedAt
+ }
 }
 ```
 
@@ -257,47 +257,47 @@ struct Bug: BlazeDocument {
 
 ```swift
 struct HybridBug: BlazeDocument {
-    // Type-safe core
-    var id: UUID
-    var title: String
-    var priority: Int
-    
-    // Access to underlying storage for dynamic fields
-    private var _storage: BlazeDataRecord
-    
-    // Dynamic field accessor
-    subscript(key: String) -> BlazeDocumentField? {
-        get { _storage.storage[key] }
-        set { _storage.storage[key] = newValue }
-    }
-    
-    func toStorage() throws -> BlazeDataRecord {
-        return _storage
-    }
-    
-    init(from storage: BlazeDataRecord) throws {
-        self._storage = storage
-        self.id = try storage.uuid("id")
-        self.title = try storage.string("title")
-        self.priority = try storage.int("priority")
-    }
-    
-    init(id: UUID = UUID(), title: String, priority: Int) {
-        self.id = id
-        self.title = title
-        self.priority = priority
-        self._storage = BlazeDataRecord([
-            "id": .uuid(id),
-            "title": .string(title),
-            "priority": .int(priority)
-        ])
-    }
+ // Type-safe core
+ var id: UUID
+ var title: String
+ var priority: Int
+
+ // Access to underlying storage for dynamic fields
+ private var _storage: BlazeDataRecord
+
+ // Dynamic field accessor
+ subscript(key: String) -> BlazeDocumentField? {
+ get { _storage.storage[key] }
+ set { _storage.storage[key] = newValue }
+ }
+
+ func toStorage() throws -> BlazeDataRecord {
+ return _storage
+ }
+
+ init(from storage: BlazeDataRecord) throws {
+ self._storage = storage
+ self.id = try storage.uuid("id")
+ self.title = try storage.string("title")
+ self.priority = try storage.int("priority")
+ }
+
+ init(id: UUID = UUID(), title: String, priority: Int) {
+ self.id = id
+ self.title = title
+ self.priority = priority
+ self._storage = BlazeDataRecord([
+ "id":.uuid(id),
+ "title":.string(title),
+ "priority":.int(priority)
+ ])
+ }
 }
 
 // Usage
 var bug = HybridBug(title: "Fix login", priority: 8)
-bug["assignee"] = .string("Alice")  // Dynamic field
-bug["tags"] = .array([.string("auth")])  // Dynamic field
+bug["assignee"] =.string("Alice") // Dynamic field
+bug["tags"] =.array([.string("auth")]) // Dynamic field
 ```
 
 ### Supported Field Types
@@ -312,7 +312,7 @@ bug["tags"] = .array([.string("auth")])  // Dynamic field
 .data(Data)
 .array([BlazeDocumentField])
 .dictionary([String: BlazeDocumentField])
-.vector([Float])  // For vector search
+.vector([Float]) // For vector search
 .null
 ```
 
@@ -327,15 +327,15 @@ bug["tags"] = .array([.string("auth")])  // Dynamic field
 ```swift
 // Single insert
 let record = BlazeDataRecord([
-    "title": .string("Hello"),
-    "count": .int(42)
+ "title":.string("Hello"),
+ "count":.int(42)
 ])
 let id = try db.insert(record)
 
 // Batch insert
 let records = [
-    BlazeDataRecord(["name": .string("Alice")]),
-    BlazeDataRecord(["name": .string("Bob")])
+ BlazeDataRecord(["name":.string("Alice")]),
+ BlazeDataRecord(["name":.string("Bob")])
 ]
 try db.insertMany(records)
 ```
@@ -345,25 +345,25 @@ try db.insertMany(records)
 ```swift
 // Single insert
 let bug = Bug(
-    title: "Fix login",
-    priority: 8,
-    status: "open"
+ title: "Fix login",
+ priority: 8,
+ status: "open"
 )
-try db.insert(bug)  // Returns UUID
+try db.insert(bug) // Returns UUID
 
 // Batch insert (dynamic records)
 let records = [
-    BlazeDataRecord(["name": .string("Alice")]),
-    BlazeDataRecord(["name": .string("Bob")])
+ BlazeDataRecord(["name":.string("Alice")]),
+ BlazeDataRecord(["name":.string("Bob")])
 ]
 try db.insertMany(records)
 
 // Batch insert (typed models - direct support!)
 let bugs = [
-    Bug(title: "Bug 1", priority: 1, status: "open"),
-    Bug(title: "Bug 2", priority: 2, status: "open")
+ Bug(title: "Bug 1", priority: 1, status: "open"),
+ Bug(title: "Bug 2", priority: 2, status: "open")
 ]
-try db.insertMany(bugs)  // Automatically converts to records
+try db.insertMany(bugs) // Automatically converts to records
 ```
 
 #### Async API
@@ -381,7 +381,7 @@ try await db.insertMany(records)
 ```swift
 // Fetch by ID
 if let record = try db.fetch(id: someUUID) {
-    let title = record["title"]?.stringValue ?? ""
+ let title = record["title"]?.stringValue?? ""
 }
 
 // Fetch all
@@ -389,7 +389,7 @@ let allRecords = try db.fetchAll()
 
 // Fetch batch
 let ids = [uuid1, uuid2, uuid3]
-let records = try db.fetchBatch(ids: ids)  // Returns [UUID: BlazeDataRecord]
+let records = try db.fetchBatch(ids: ids) // Returns [UUID: BlazeDataRecord]
 
 // Pagination
 let page = try db.fetchPage(offset: 0, limit: 20)
@@ -400,7 +400,7 @@ let page = try db.fetchPage(offset: 0, limit: 20)
 ```swift
 // Fetch by ID
 if let bug = try db.fetch(Bug.self, id: bugID) {
-    print(bug.title)  // Type-safe access
+ print(bug.title) // Type-safe access
 }
 
 // Fetch all as typed
@@ -408,7 +408,7 @@ let allBugs = try db.fetchAll(Bug.self)
 
 // Async
 if let bug = try await db.fetch(Bug.self, id: bugID) {
-    print(bug.title)
+ print(bug.title)
 }
 ```
 
@@ -419,13 +419,13 @@ if let bug = try await db.fetch(Bug.self, id: bugID) {
 ```swift
 // Update entire record
 var record = try db.fetch(id: someUUID)!
-record["status"] = .string("closed")
+record["status"] =.string("closed")
 try db.update(id: someUUID, with: record)
 
 // Update specific fields
 try db.update(id: someUUID, data: BlazeDataRecord([
-    "status": .string("closed"),
-    "updatedAt": .date(Date())
+ "status":.string("closed"),
+ "updatedAt":.date(Date())
 ]))
 ```
 
@@ -436,7 +436,7 @@ try db.update(id: someUUID, data: BlazeDataRecord([
 var bug = try db.fetch(Bug.self, id: bugID)!
 bug.status = "closed"
 bug.updatedAt = Date()
-try db.update(bug)  // Automatically uses bug.id
+try db.update(bug) // Automatically uses bug.id
 
 // Async
 try await db.update(bug)
@@ -457,8 +457,8 @@ try await db.delete(id: someUUID)
 ```swift
 // Upsert dynamic
 let record = BlazeDataRecord([
-    "id": .uuid(existingID),
-    "title": .string("Updated")
+ "id":.uuid(existingID),
+ "title":.string("Updated")
 ])
 try db.upsert(record)
 
@@ -476,60 +476,60 @@ try db.upsert(bug)
 ```swift
 // Simple WHERE
 let results = try db.query()
-    .where("status", equals: .string("open"))
-    .execute()
-    .records
+.where("status", equals:.string("open"))
+.execute()
+.records
 
 // Multiple WHERE (AND)
 let results = try db.query()
-    .where("status", equals: .string("open"))
-    .where("priority", greaterThan: .int(5))
-    .execute()
-    .records
+.where("status", equals:.string("open"))
+.where("priority", greaterThan:.int(5))
+.execute()
+.records
 
 // ORDER BY
 let results = try db.query()
-    .where("status", equals: .string("open"))
-    .orderBy("priority", descending: true)
-    .execute()
-    .records
+.where("status", equals:.string("open"))
+.orderBy("priority", descending: true)
+.execute()
+.records
 
 // LIMIT
 let results = try db.query()
-    .orderBy("priority", descending: true)
-    .limit(10)
-    .execute()
-    .records
+.orderBy("priority", descending: true)
+.limit(10)
+.execute()
+.records
 
 // OFFSET (Pagination)
 let results = try db.query()
-    .orderBy("createdAt", descending: true)
-    .offset(20)
-    .limit(10)
-    .execute()
-    .records
+.orderBy("createdAt", descending: true)
+.offset(20)
+.limit(10)
+.execute()
+.records
 ```
 
 ### Comparison Operators
 
 ```swift
 // Equals
-.where("status", equals: .string("open"))
+.where("status", equals:.string("open"))
 
 // Not equals
-.where("status", notEquals: .string("closed"))
+.where("status", notEquals:.string("closed"))
 
 // Greater than
-.where("priority", greaterThan: .int(5))
+.where("priority", greaterThan:.int(5))
 
 // Greater than or equal
-.where("priority", greaterThanOrEqual: .int(5))
+.where("priority", greaterThanOrEqual:.int(5))
 
 // Less than
-.where("priority", lessThan: .int(10))
+.where("priority", lessThan:.int(10))
 
 // Less than or equal
-.where("priority", lessThanOrEqual: .int(10))
+.where("priority", lessThanOrEqual:.int(10))
 ```
 
 ### Advanced Filters
@@ -539,17 +539,17 @@ let results = try db.query()
 .where("title", contains: "bug")
 
 // In clause
-.where("priority", in: [.int(1), .int(2), .int(5)])
+.where("priority", in: [.int(1),.int(2),.int(5)])
 
 // Custom closure
 .where { record in
-    let priority = record["priority"]?.intValue ?? 0
-    let status = record["status"]?.stringValue ?? ""
-    return priority > 5 && status == "open"
+ let priority = record["priority"]?.intValue?? 0
+ let status = record["status"]?.stringValue?? ""
+ return priority > 5 && status == "open"
 }
 
 // Between
-.where("priority", between: .int(1), and: .int(10))
+.where("priority", between:.int(1), and:.int(10))
 
 // Is null
 .where("assignee", isNull: true)
@@ -563,16 +563,16 @@ let results = try db.query()
 ```swift
 // Join with another database
 let results = try db.query()
-    .where("status", equals: .string("open"))
-    .join(usersDB.collection, on: "author_id")
-    .execute()
-    .joined
+.where("status", equals:.string("open"))
+.join(usersDB.collection, on: "author_id")
+.execute()
+.joined
 
 // Access joined data
 for result in results {
-    let bug = result.left
-    let author = result.right  // Optional
-    print("\(bug["title"]?.stringValue ?? ""): \(author?["name"]?.stringValue ?? "Unknown")")
+ let bug = result.left
+ let author = result.right // Optional
+ print("\(bug["title"]?.stringValue?? ""): \(author?["name"]?.stringValue?? "Unknown")")
 }
 ```
 
@@ -581,28 +581,28 @@ for result in results {
 ```swift
 // Count
 let result = try db.query()
-    .where("status", equals: .string("open"))
-    .count()
-    .execute()
+.where("status", equals:.string("open"))
+.count()
+.execute()
 let count = try result.aggregation.count
 
 // Sum
 let result = try db.query()
-    .sum("priority", as: "totalPriority")
-    .execute()
+.sum("priority", as: "totalPriority")
+.execute()
 let total = try result.aggregation.sum("totalPriority")
 
 // Average
 let result = try db.query()
-    .avg("priority", as: "avgPriority")
-    .execute()
+.avg("priority", as: "avgPriority")
+.execute()
 let avg = try result.aggregation.avg("avgPriority")
 
 // Min/Max
 let result = try db.query()
-    .min("priority", as: "minPriority")
-    .max("priority", as: "maxPriority")
-    .execute()
+.min("priority", as: "minPriority")
+.max("priority", as: "maxPriority")
+.execute()
 let min = try result.aggregation.min("minPriority")
 let max = try result.aggregation.max("maxPriority")
 ```
@@ -612,15 +612,15 @@ let max = try result.aggregation.max("maxPriority")
 ```swift
 // Group by field
 let result = try db.query()
-    .groupBy("status")
-    .count()
-    .execute()
+.groupBy("status")
+.count()
+.execute()
 let groups = try result.grouped
 
 for group in groups {
-    let status = group.key["status"]?.stringValue ?? ""
-    let count = group.aggregation.count
-    print("\(status): \(count)")
+ let status = group.key["status"]?.stringValue?? ""
+ let count = group.aggregation.count
+ print("\(status): \(count)")
 }
 ```
 
@@ -629,16 +629,16 @@ for group in groups {
 ```swift
 // Query with KeyPaths
 let bugs = try db.query(Bug.self)
-    .where(\.status, equals: "open")
-    .where(\.priority, greaterThan: 5)
-    .orderBy(\.createdAt, descending: true)
-    .all()
+.where(\.status, equals: "open")
+.where(\.priority, greaterThan: 5)
+.orderBy(\.createdAt, descending: true)
+.all()
 
 // Convert query results to typed models
 let result = try db.query()
-    .where("status", equals: .string("open"))
-    .execute()
-let bugs = try result.records(as: Bug.self)  // Converts to [Bug]
+.where("status", equals:.string("open"))
+.execute()
+let bugs = try result.records(as: Bug.self) // Converts to [Bug]
 ```
 
 ---
@@ -651,18 +651,18 @@ let bugs = try result.records(as: Bug.self)  // Converts to [Bug]
 
 ```swift
 struct BugListView: View {
-    @BlazeQuery(
-        db: AppDatabase.shared.db,
-        where: "status", equals: .string("open"),
-        sortBy: "priority", descending: true
-    )
-    var openBugs
-    
-    var body: some View {
-        List(openBugs, id: \.id) { bug in
-            Text(bug["title"]?.stringValue ?? "")
-        }
-    }
+ @BlazeQuery(
+ db: AppDatabase.shared.db,
+ where: "status", equals:.string("open"),
+ sortBy: "priority", descending: true
+ )
+ var openBugs
+
+ var body: some View {
+ List(openBugs, id: \.id) { bug in
+ Text(bug["title"]?.stringValue?? "")
+ }
+ }
 }
 ```
 
@@ -670,19 +670,19 @@ struct BugListView: View {
 
 ```swift
 struct BugListView: View {
-    @BlazeQueryTyped(
-        db: AppDatabase.shared.db,
-        type: Bug.self,
-        where: "status", equals: .string("open"),
-        sortBy: "priority", descending: true
-    )
-    var openBugs: [Bug]  // Type-safe!
-    
-    var body: some View {
-        List(openBugs) { bug in
-            Text(bug.title)  // Direct access, no optional unwrapping
-        }
-    }
+ @BlazeQueryTyped(
+ db: AppDatabase.shared.db,
+ type: Bug.self,
+ where: "status", equals:.string("open"),
+ sortBy: "priority", descending: true
+ )
+ var openBugs: [Bug] // Type-safe!
+
+ var body: some View {
+ List(openBugs) { bug in
+ Text(bug.title) // Direct access, no optional unwrapping
+ }
+ }
 }
 ```
 
@@ -690,21 +690,21 @@ struct BugListView: View {
 
 ```swift
 struct BugListView: View {
-    @BlazeQuery(db: AppDatabase.shared.db)
-    var allBugs
-    
-    var body: some View {
-        List(allBugs, id: \.id) { bug in
-            BugRowView(bug: bug)
-        }
-        .refreshable(query: $allBugs)  // Pull to refresh
-        .onAppear {
-            $allBugs.enableAutoRefresh(interval: 10)  // Auto-refresh every 10s
-        }
-        .onDisappear {
-            $allBugs.disableAutoRefresh()
-        }
-    }
+ @BlazeQuery(db: AppDatabase.shared.db)
+ var allBugs
+
+ var body: some View {
+ List(allBugs, id: \.id) { bug in
+ BugRowView(bug: bug)
+ }
+.refreshable(query: $allBugs) // Pull to refresh
+.onAppear {
+ $allBugs.enableAutoRefresh(interval: 10) // Auto-refresh every 10s
+ }
+.onDisappear {
+ $allBugs.disableAutoRefresh()
+ }
+ }
 }
 ```
 
@@ -712,36 +712,36 @@ struct BugListView: View {
 
 ```swift
 struct CreateBugView: View {
-    @Environment(\.dismiss) var dismiss
-    let db = AppDatabase.shared.db
-    
-    @State private var title = ""
-    @State private var priority = 5
-    
-    @BlazeQuery(
-        db: AppDatabase.shared.db,
-        where: "status", equals: .string("open")
-    )
-    var openBugs  // Auto-updates after insert!
-    
-    var body: some View {
-        Form {
-            TextField("Title", text: $title)
-            Stepper("Priority: \(priority)", value: $priority, in: 1...10)
-            
-            Button("Create") {
-                Task {
-                    let bug = BlazeDataRecord([
-                        "title": .string(title),
-                        "priority": .int(priority),
-                        "status": .string("open")
-                    ])
-                    try? await db.insert(bug)
-                    dismiss()  // @BlazeQuery auto-refreshes
-                }
-            }
-        }
-    }
+ @Environment(\.dismiss) var dismiss
+ let db = AppDatabase.shared.db
+
+ @State private var title = ""
+ @State private var priority = 5
+
+ @BlazeQuery(
+ db: AppDatabase.shared.db,
+ where: "status", equals:.string("open")
+ )
+ var openBugs // Auto-updates after insert!
+
+ var body: some View {
+ Form {
+ TextField("Title", text: $title)
+ Stepper("Priority: \(priority)", value: $priority, in: 1...10)
+
+ Button("Create") {
+ Task {
+ let bug = BlazeDataRecord([
+ "title":.string(title),
+ "priority":.int(priority),
+ "status":.string("open")
+ ])
+ try? await db.insert(bug)
+ dismiss() // @BlazeQuery auto-refreshes
+ }
+ }
+ }
+ }
 }
 ```
 
@@ -767,13 +767,13 @@ try db.commitTransaction()
 
 // Or rollback on error
 do {
-    try db.beginTransaction()
-    try db.insert(record1)
-    try db.insert(record2)
-    try db.commitTransaction()
+ try db.beginTransaction()
+ try db.insert(record1)
+ try db.insert(record2)
+ try db.commitTransaction()
 } catch {
-    try? db.rollbackTransaction()
-    throw error
+ try? db.rollbackTransaction()
+ throw error
 }
 ```
 
@@ -801,22 +801,22 @@ try db.commitTransaction()
 ```swift
 // Async transaction (recommended)
 try await db.performTransaction { txn in
-    let id = try txn.insert(record1)
-    try txn.update(id: id2, data: record2)
-    try txn.delete(id: id3)
-    try txn.commit()
-    // Automatically rolls back on error
+ let id = try txn.insert(record1)
+ try txn.update(id: id2, data: record2)
+ try txn.delete(id: id3)
+ try txn.commit()
+ // Automatically rolls back on error
 }
 
 // Sync transaction (manual)
 try db.beginTransaction()
 do {
-    try db.insert(record1)
-    try db.insert(record2)
-    try db.commitTransaction()
+ try db.insert(record1)
+ try db.insert(record2)
+ try db.commitTransaction()
 } catch {
-    try? db.rollbackTransaction()
-    throw error
+ try? db.rollbackTransaction()
+ throw error
 }
 ```
 
@@ -850,9 +850,9 @@ try db.enableSpatialIndex(on: "latitude", lonField: "longitude")
 ```swift
 // Indexes are automatically used when available
 let results = try db.query()
-    .where("status", equals: .string("open"))  // Uses index on "status"
-    .execute()
-    .records
+.where("status", equals:.string("open")) // Uses index on "status"
+.execute()
+.records
 ```
 
 ### Check Index Status
@@ -860,17 +860,17 @@ let results = try db.query()
 ```swift
 // Check if spatial index is enabled
 if db.isSpatialIndexEnabled() {
-    print("Spatial index is active")
+ print("Spatial index is active")
 }
 
 // Get vector index stats
 if let stats = db.getVectorIndexStats() {
-    print("Vector index: \(stats.totalVectors) vectors")
+ print("Vector index: \(stats.totalVectors) vectors")
 }
 
 // Get spatial index stats
 if let stats = db.getSpatialIndexStats() {
-    print("Spatial index: \(stats.totalRecords) records")
+ print("Spatial index: \(stats.totalRecords) records")
 }
 ```
 
@@ -889,22 +889,22 @@ import BlazeDB
 
 @main
 struct ServerMain {
-    static func main() async throws {
-        let config = BlazeDBServerConfig(
-            databaseName: "ServerMainDB",
-            password: "secure-password-123",
-            project: "Production",
-            port: 9090,
-            authToken: "secret-token-123",  // Optional: require auth
-            sharedSecret: nil  // Optional: for token derivation
-        )
-        
-        let server = try await BlazeDBServer.start(config)
-        print("Server started on port 9090")
-        
-        // Keep server running
-        RunLoop.main.run()
-    }
+ static func main() async throws {
+ let config = BlazeDBServerConfig(
+ databaseName: "ServerMainDB",
+ password: "secure-password-123",
+ project: "Production",
+ port: 9090,
+ authToken: "secret-token-123", // Optional: require auth
+ sharedSecret: nil // Optional: for token derivation
+ )
+
+ let server = try await BlazeDBServer.start(config)
+ print("Server started on port 9090")
+
+ // Keep server running
+ RunLoop.main.run()
+ }
 }
 ```
 
@@ -913,18 +913,18 @@ struct ServerMain {
 ```swift
 // Create database
 let serverDB = try BlazeDBClient(
-    name: "ServerDB",
-    fileURL: serverURL,
-    password: "server-password"
+ name: "ServerDB",
+ fileURL: serverURL,
+ password: "server-password"
 )
 
 // Create server
 let server = BlazeServer(
-    port: 9090,
-    database: serverDB,
-    databaseName: "ServerDB",
-    authToken: "secret-token-123",  // Optional
-    sharedSecret: nil  // Optional
+ port: 9090,
+ database: serverDB,
+ databaseName: "ServerDB",
+ authToken: "secret-token-123", // Optional
+ sharedSecret: nil // Optional
 )
 
 // Start server
@@ -944,21 +944,21 @@ Create a `docker-compose.yml`:
 version: "3.9"
 
 services:
-  blazedb-server:
-    build: .
-    container_name: blazedb-server
-    ports:
-      - "9090:9090"
-    environment:
-      - BLAZEDB_DB_NAME=ServerMainDB
-      - BLAZEDB_PASSWORD=secure-password-123
-      - BLAZEDB_PROJECT=Production
-      - BLAZEDB_PORT=9090
-      - BLAZEDB_AUTH_TOKEN=secret-token-123  # Optional
-      - BLAZEDB_SHARED_SECRET=  # Optional
-    restart: unless-stopped
-    volumes:
-      - ./data:/root/Library/Application Support/BlazeDB  # Persist database
+ blazedb-server:
+ build:.
+ container_name: blazedb-server
+ ports:
+ - "9090:9090"
+ environment:
+ - BLAZEDB_DB_NAME=ServerMainDB
+ - BLAZEDB_PASSWORD=secure-password-123
+ - BLAZEDB_PROJECT=Production
+ - BLAZEDB_PORT=9090
+ - BLAZEDB_AUTH_TOKEN=secret-token-123 # Optional
+ - BLAZEDB_SHARED_SECRET= # Optional
+ restart: unless-stopped
+ volumes:
+ -./data:/root/Library/Application Support/BlazeDB # Persist database
 ```
 
 Start the server:
@@ -978,18 +978,18 @@ docker-compose down
 
 ```bash
 # Build image
-docker build -t blazedb-server .
+docker build -t blazedb-server.
 
 # Run container
 docker run -d \
-  --name blazedb-server \
-  -p 9090:9090 \
-  -e BLAZEDB_DB_NAME=ServerMainDB \
-  -e BLAZEDB_PASSWORD=secure-password-123 \
-  -e BLAZEDB_PROJECT=Production \
-  -e BLAZEDB_AUTH_TOKEN=secret-token-123 \
-  -v $(pwd)/data:/root/Library/Application\ Support/BlazeDB \
-  blazedb-server
+ --name blazedb-server \
+ -p 9090:9090 \
+ -e BLAZEDB_DB_NAME=ServerMainDB \
+ -e BLAZEDB_PASSWORD=secure-password-123 \
+ -e BLAZEDB_PROJECT=Production \
+ -e BLAZEDB_AUTH_TOKEN=secret-token-123 \
+ -v $(pwd)/data:/root/Library/Application\ Support/BlazeDB \
+ blazedb-server
 
 # View logs
 docker logs -f blazedb-server
@@ -1011,25 +1011,25 @@ docker stop blazedb-server
 
 ```swift
 let clientDB = try BlazeDBClient(
-    name: "ClientDB",
-    fileURL: clientURL,
-    password: "client-password"
+ name: "ClientDB",
+ fileURL: clientURL,
+ password: "client-password"
 )
 
 // Connect to server
 try await clientDB.sync(
-    to: "localhost",
-    port: 9090,
-    database: "ServerDB",  // Optional, defaults to clientDB.name
-    useTLS: false,
-    authToken: "secret-token-123"
+ to: "localhost",
+ port: 9090,
+ database: "ServerDB", // Optional, defaults to clientDB.name
+ useTLS: false,
+ authToken: "secret-token-123"
 )
 
 // Or sync with another local database
 try await clientDB.sync(
-    with: otherDB,
-    mode: .bidirectional,
-    role: .client
+ with: otherDB,
+ mode:.bidirectional,
+ role:.client
 )
 ```
 
@@ -1037,7 +1037,7 @@ try await clientDB.sync(
 
 ```swift
 if clientDB.isSyncing() {
-    print("Sync in progress...")
+ print("Sync in progress...")
 }
 ```
 
@@ -1060,16 +1060,16 @@ try db.setMVCCEnabled(true)
 ```swift
 // Create RLS policy
 let policy = RLSPolicy(
-    name: "userData",
-    type: .restrictive,
-    predicate: { record, context in
-        // Only allow access if user owns the record
-        guard let userId = context.userId,
-              let recordOwner = record["userId"]?.uuidValue else {
-            return false
-        }
-        return userId == recordOwner
-    }
+ name: "userData",
+ type:.restrictive,
+ predicate: { record, context in
+ // Only allow access if user owns the record
+ guard let userId = context.userId,
+ let recordOwner = record["userId"]?.uuidValue else {
+ return false
+ }
+ return userId == recordOwner
+ }
 )
 
 try db.addRLSPolicy(policy)
@@ -1077,9 +1077,9 @@ try db.addRLSPolicy(policy)
 // Query with security context
 let context = BlazeUserContext(userId: currentUserId)
 let results = try db.query()
-    .withSecurityContext(context)
-    .execute()
-    .records
+.withSecurityContext(context)
+.execute()
+.records
 ```
 
 ### Vector Search
@@ -1090,22 +1090,22 @@ try db.enableVectorIndex(fieldName: "embedding")
 
 // Insert with vector
 let record = BlazeDataRecord([
-    "title": .string("Document"),
-    "embedding": .vector([0.1, 0.2, 0.3, ...])  // Vector of Float values
+ "title":.string("Document"),
+ "embedding":.vector([0.1, 0.2, 0.3,...]) // Vector of Float values
 ])
 try db.insert(record)
 
 // Vector similarity search
-let queryVector = VectorEmbedding([0.15, 0.25, 0.35, ...])
+let queryVector = VectorEmbedding([0.15, 0.25, 0.35,...])
 let results = try db.query()
-    .vectorNearest(
-        field: "embedding",
-        to: queryVector,
-        limit: 10,
-        threshold: 0.7  // Minimum similarity (0.0 to 1.0)
-    )
-    .execute()
-    .records
+.vectorNearest(
+ field: "embedding",
+ to: queryVector,
+ limit: 10,
+ threshold: 0.7 // Minimum similarity (0.0 to 1.0)
+ )
+.execute()
+.records
 ```
 
 ### Spatial Queries
@@ -1116,21 +1116,21 @@ try db.enableSpatialIndex(on: "latitude", lonField: "longitude")
 
 // Insert with location
 let record = BlazeDataRecord([
-    "name": .string("Restaurant"),
-    "latitude": .double(37.7749),
-    "longitude": .double(-122.4194)
+ "name":.string("Restaurant"),
+ "latitude":.double(37.7749),
+ "longitude":.double(-122.4194)
 ])
 try db.insert(record)
 
 // Find nearby locations
 let results = try db.query()
-    .withinRadius(
-        latitude: 37.7749,
-        longitude: -122.4194,
-        radiusMeters: 1000  // meters
-    )
-    .execute()
-    .records
+.withinRadius(
+ latitude: 37.7749,
+ longitude: -122.4194,
+ radiusMeters: 1000 // meters
+ )
+.execute()
+.records
 ```
 
 ### Backup and Restore
@@ -1140,7 +1140,7 @@ let results = try db.query()
 ```swift
 // Create a backup
 let backupURL = FileManager.default.temporaryDirectory
-    .appendingPathComponent("backup-\(Date().timeIntervalSince1970).blazedb")
+.appendingPathComponent("backup-\(Date().timeIntervalSince1970).blazedb")
 
 let stats = try db.backup(to: backupURL)
 print("Backed up \(stats.recordCount) records, \(stats.fileSize / 1024 / 1024) MB")
@@ -1159,14 +1159,14 @@ print("Database restored from backup")
 **Error Handling:**
 ```swift
 do {
-    let stats = try db.backup(to: backupURL)
-    print("Backup successful: \(stats.recordCount) records")
+ let stats = try db.backup(to: backupURL)
+ print("Backup successful: \(stats.recordCount) records")
 } catch BlazeDBError.databaseLocked {
-    print("Database is locked by another process")
+ print("Database is locked by another process")
 } catch BlazeDBError.diskFull {
-    print("Insufficient disk space for backup")
+ print("Insufficient disk space for backup")
 } catch {
-    print("Backup failed: \(error)")
+ print("Backup failed: \(error)")
 }
 ```
 
@@ -1178,31 +1178,31 @@ do {
 
 ```swift
 do {
-    try db.insert(record)
+ try db.insert(record)
 } catch BlazeDBError.recordExists(let id, let suggestion) {
-    print("Record already exists: \(id)")
-    if let suggestion = suggestion {
-        print("Suggestion: \(suggestion)")
-    }
+ print("Record already exists: \(id)")
+ if let suggestion = suggestion {
+ print("Suggestion: \(suggestion)")
+ }
 } catch BlazeDBError.recordNotFound(let id, let collection, let suggestion) {
-    print("Record not found: \(id)")
+ print("Record not found: \(id)")
 } catch BlazeDBError.transactionFailed(let reason, let underlying) {
-    print("Transaction failed: \(reason)")
-    if let underlying = underlying {
-        print("Underlying error: \(underlying)")
-    }
+ print("Transaction failed: \(reason)")
+ if let underlying = underlying {
+ print("Underlying error: \(underlying)")
+ }
 } catch BlazeDBError.invalidQuery(let reason, let suggestion) {
-    print("Invalid query: \(reason)")
-    if let suggestion = suggestion {
-        print("Suggestion: \(suggestion)")
-    }
+ print("Invalid query: \(reason)")
+ if let suggestion = suggestion {
+ print("Suggestion: \(suggestion)")
+ }
 } catch BlazeDBError.diskFull(let available) {
-    print("Disk full")
-    if let available = available {
-        print("Available: \(available / 1024 / 1024) MB")
-    }
+ print("Disk full")
+ if let available = available {
+ print("Available: \(available / 1024 / 1024) MB")
+ }
 } catch {
-    print("Unknown error: \(error)")
+ print("Unknown error: \(error)")
 }
 ```
 
@@ -1211,21 +1211,21 @@ do {
 ```swift
 // Retry with exponential backoff
 func insertWithRetry(_ record: BlazeDataRecord, maxRetries: Int = 3) throws {
-    var lastError: Error?
-    
-    for attempt in 0..<maxRetries {
-        do {
-            return try db.insert(record)
-        } catch {
-            lastError = error
-            if attempt < maxRetries - 1 {
-                Thread.sleep(forTimeInterval: pow(2.0, Double(attempt)) * 0.1)
-                continue
-            }
-        }
-    }
-    
-    throw lastError ?? BlazeDBError.transactionFailed("Insert failed after \(maxRetries) retries")
+ var lastError: Error?
+
+ for attempt in 0..<maxRetries {
+ do {
+ return try db.insert(record)
+ } catch {
+ lastError = error
+ if attempt < maxRetries - 1 {
+ Thread.sleep(forTimeInterval: pow(2.0, Double(attempt)) * 0.1)
+ continue
+ }
+ }
+ }
+
+ throw lastError?? BlazeDBError.transactionFailed("Insert failed after \(maxRetries) retries")
 }
 ```
 
@@ -1236,26 +1236,26 @@ func insertWithRetry(_ record: BlazeDataRecord, maxRetries: Int = 3) throws {
 ### 1. Use Type-Safe Models
 
 ```swift
-// ✅ Good: Type-safe
-struct Bug: BlazeDocument { ... }
+// Good: Type-safe
+struct Bug: BlazeDocument {... }
 let bug = try db.fetch(Bug.self, id: id)
 
-// ❌ Avoid: Dynamic (unless necessary)
+// Avoid: Dynamic (unless necessary)
 let record = try db.fetch(id: id)
-let title = record?["title"]?.stringValue ?? ""
+let title = record?["title"]?.stringValue?? ""
 ```
 
 ### 2. Use Transactions for Multiple Operations
 
 ```swift
-// ✅ Good: Transaction
+// Good: Transaction
 try db.transaction {
-    try db.insert(record1)
-    try db.insert(record2)
-    try db.update(id: id3, with: record3)
+ try db.insert(record1)
+ try db.insert(record2)
+ try db.update(id: id3, with: record3)
 }
 
-// ❌ Avoid: Multiple separate operations
+// Avoid: Multiple separate operations
 try db.insert(record1)
 try db.insert(record2)
 try db.update(id: id3, with: record3)
@@ -1264,100 +1264,100 @@ try db.update(id: id3, with: record3)
 ### 3. Create Indexes for Query Fields
 
 ```swift
-// ✅ Good: Create index before querying
+// Good: Create index before querying
 try db.createIndex(on: "status")
 let results = try db.query()
-    .where("status", equals: .string("open"))
-    .execute()
+.where("status", equals:.string("open"))
+.execute()
 
-// ❌ Avoid: Querying without index
+// Avoid: Querying without index
 let results = try db.query()
-    .where("status", equals: .string("open"))
-    .execute()  // Full scan if no index
+.where("status", equals:.string("open"))
+.execute() // Full scan if no index
 ```
 
 ### 4. Use Pagination for Large Results
 
 ```swift
-// ✅ Good: Pagination
+// Good: Pagination
 let page = try db.query()
-    .orderBy("createdAt", descending: true)
-    .offset(0)
-    .limit(20)
-    .execute()
+.orderBy("createdAt", descending: true)
+.offset(0)
+.limit(20)
+.execute()
 
-// ❌ Avoid: Fetching all records
-let all = try db.fetchAll()  // May be slow for large datasets
+// Avoid: Fetching all records
+let all = try db.fetchAll() // May be slow for large datasets
 ```
 
 ### 5. Use Singleton for Database Access
 
 ```swift
-// ✅ Good: Singleton
+// Good: Singleton
 class AppDatabase {
-    static let shared = AppDatabase()
-    let db: BlazeDBClient
-    // ...
+ static let shared = AppDatabase()
+ let db: BlazeDBClient
+ //...
 }
 
-// ❌ Avoid: Creating multiple instances
+// Avoid: Creating multiple instances
 let db1 = try BlazeDBClient(...)
-let db2 = try BlazeDBClient(...)  // Duplicate connections
+let db2 = try BlazeDBClient(...) // Duplicate connections
 ```
 
 ### 6. Handle Errors Gracefully
 
 ```swift
-// ✅ Good: Specific error handling
+// Good: Specific error handling
 do {
-    try db.insert(record)
+ try db.insert(record)
 } catch BlazeDBError.recordExists {
-    // Handle duplicate
+ // Handle duplicate
 } catch BlazeDBError.diskFull {
-    // Handle disk full
+ // Handle disk full
 } catch {
-    // Handle other errors
+ // Handle other errors
 }
 
-// ❌ Avoid: Ignoring errors
-try? db.insert(record)  // Silently fails
+// Avoid: Ignoring errors
+try? db.insert(record) // Silently fails
 ```
 
 ### 7. Use Async APIs for UI
 
 ```swift
-// ✅ Good: Async in UI
+// Good: Async in UI
 Task {
-    do {
-        let bugs = try await db.query()
-            .where("status", equals: .string("open"))
-            .execute()
-            .records
-        await MainActor.run {
-            self.bugs = bugs
-        }
-    } catch {
-        // Handle error
-    }
+ do {
+ let bugs = try await db.query()
+.where("status", equals:.string("open"))
+.execute()
+.records
+ await MainActor.run {
+ self.bugs = bugs
+ }
+ } catch {
+ // Handle error
+ }
 }
 
-// ❌ Avoid: Blocking UI thread
-let bugs = try db.query()  // Blocks UI
-    .where("status", equals: .string("open"))
-    .execute()
+// Avoid: Blocking UI thread
+let bugs = try db.query() // Blocks UI
+.where("status", equals:.string("open"))
+.execute()
 ```
 
 ### 8. Use @BlazeQuery for SwiftUI
 
 ```swift
-// ✅ Good: Reactive queries
-@BlazeQuery(db: db, where: "status", equals: .string("open"))
+// Good: Reactive queries
+@BlazeQuery(db: db, where: "status", equals:.string("open"))
 var openBugs
 
-// ❌ Avoid: Manual state management
+// Avoid: Manual state management
 @State private var bugs: [BlazeDataRecord] = []
 .onAppear {
-    bugs = try db.query()...
+ bugs = try db.query()...
 }
 ```
 
@@ -1371,89 +1371,89 @@ import BlazeDB
 
 // Model
 struct Bug: BlazeDocument {
-    var id: UUID
-    var title: String
-    var priority: Int
-    var status: String
-    var createdAt: Date
-    
-    func toStorage() throws -> BlazeDataRecord {
-        BlazeDataRecord([
-            "id": .uuid(id),
-            "title": .string(title),
-            "priority": .int(priority),
-            "status": .string(status),
-            "createdAt": .date(createdAt)
-        ])
-    }
-    
-    init(from storage: BlazeDataRecord) throws {
-        self.id = try storage.uuid("id")
-        self.title = try storage.string("title")
-        self.priority = try storage.int("priority")
-        self.status = try storage.string("status")
-        self.createdAt = try storage.date("createdAt")
-    }
-    
-    init(id: UUID = UUID(), title: String, priority: Int, status: String, createdAt: Date = Date()) {
-        self.id = id
-        self.title = title
-        self.priority = priority
-        self.status = status
-        self.createdAt = createdAt
-    }
+ var id: UUID
+ var title: String
+ var priority: Int
+ var status: String
+ var createdAt: Date
+
+ func toStorage() throws -> BlazeDataRecord {
+ BlazeDataRecord([
+ "id":.uuid(id),
+ "title":.string(title),
+ "priority":.int(priority),
+ "status":.string(status),
+ "createdAt":.date(createdAt)
+ ])
+ }
+
+ init(from storage: BlazeDataRecord) throws {
+ self.id = try storage.uuid("id")
+ self.title = try storage.string("title")
+ self.priority = try storage.int("priority")
+ self.status = try storage.string("status")
+ self.createdAt = try storage.date("createdAt")
+ }
+
+ init(id: UUID = UUID(), title: String, priority: Int, status: String, createdAt: Date = Date()) {
+ self.id = id
+ self.title = title
+ self.priority = priority
+ self.status = status
+ self.createdAt = createdAt
+ }
 }
 
 // Database
 class AppDatabase {
-    static let shared = AppDatabase()
-    let db: BlazeDBClient
-    
-    private init() {
-        let url = FileManager.default
-            .urls(for: .documentDirectory, in: .userDomainMask)[0]
-            .appendingPathComponent("bugs.blazedb")
-        
-        do {
-            db = try BlazeDBClient(name: "Bugs", fileURL: url, password: "secure-password-123")
-            try db.createIndex(on: "status")
-            try db.createIndex(on: "priority")
-        } catch {
-            fatalError("Failed to initialize database: \(error)")
-        }
-    }
+ static let shared = AppDatabase()
+ let db: BlazeDBClient
+
+ private init() {
+ let url = FileManager.default
+.urls(for:.documentDirectory, in:.userDomainMask)[0]
+.appendingPathComponent("bugs.blazedb")
+
+ do {
+ db = try BlazeDBClient(name: "Bugs", fileURL: url, password: "secure-password-123")
+ try db.createIndex(on: "status")
+ try db.createIndex(on: "priority")
+ } catch {
+ fatalError("Failed to initialize database: \(error)")
+ }
+ }
 }
 
 // View
 struct BugListView: View {
-    @BlazeQueryTyped(
-        db: AppDatabase.shared.db,
-        type: Bug.self,
-        where: "status", equals: .string("open"),
-        sortBy: "priority", descending: true
-    )
-    var openBugs: [Bug]
-    
-    var body: some View {
-        NavigationView {
-            List(openBugs) { bug in
-                VStack(alignment: .leading) {
-                    Text(bug.title)
-                        .font(.headline)
-                    Text("Priority: \(bug.priority)")
-                        .font(.caption)
-                }
-            }
-            .navigationTitle("Open Bugs (\(openBugs.count))")
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Add") {
-                        // Show create form
-                    }
-                }
-            }
-        }
-    }
+ @BlazeQueryTyped(
+ db: AppDatabase.shared.db,
+ type: Bug.self,
+ where: "status", equals:.string("open"),
+ sortBy: "priority", descending: true
+ )
+ var openBugs: [Bug]
+
+ var body: some View {
+ NavigationView {
+ List(openBugs) { bug in
+ VStack(alignment:.leading) {
+ Text(bug.title)
+.font(.headline)
+ Text("Priority: \(bug.priority)")
+.font(.caption)
+ }
+ }
+.navigationTitle("Open Bugs (\(openBugs.count))")
+.toolbar {
+ ToolbarItem(placement:.navigationBarTrailing) {
+ Button("Add") {
+ // Show create form
+ }
+ }
+ }
+ }
+ }
 }
 ```
 
@@ -1481,24 +1481,24 @@ try db.delete(id: id)
 
 // Query
 let results = try db.query()
-    .where("status", equals: .string("open"))
-    .orderBy("priority", descending: true)
-    .limit(10)
-    .execute()
-    .records
+.where("status", equals:.string("open"))
+.orderBy("priority", descending: true)
+.limit(10)
+.execute()
+.records
 
 // Transaction (async)
 try await db.performTransaction { txn in
-    try txn.insert(record1)
-    try txn.insert(record2)
-    try txn.commit()
+ try txn.insert(record1)
+ try txn.insert(record2)
+ try txn.commit()
 }
 
 // Index
 try db.createIndex(on: "status")
 
 // SwiftUI
-@BlazeQuery(db: db, where: "status", equals: .string("open"))
+@BlazeQuery(db: db, where: "status", equals:.string("open"))
 var records
 ```
 

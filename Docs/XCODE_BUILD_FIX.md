@@ -8,21 +8,21 @@ This happens when Xcode doesn't know which platform to build for.
 
 ---
 
-## ✅ **Solution 1: Select a Run Destination in Xcode**
+## **Solution 1: Select a Run Destination in Xcode**
 
 1. **Open Xcode** and open the BlazeDB package
 2. **Look at the top toolbar** - you'll see a device/simulator selector
 3. **Click the device selector** (next to the play/stop buttons)
 4. **Select a destination:**
-   - **"My Mac"** (for macOS)
-   - **Any iOS Simulator** (for iOS testing)
-   - **Any available device**
+ - **"My Mac"** (for macOS)
+ - **Any iOS Simulator** (for iOS testing)
+ - **Any available device**
 
 5. **Now try building again** (Cmd+B)
 
 ---
 
-## ✅ **Solution 2: Build a Specific Target**
+## **Solution 2: Build a Specific Target**
 
 Instead of building the package, build a specific target:
 
@@ -34,7 +34,7 @@ Or use the scheme selector in the toolbar (next to the device selector).
 
 ---
 
-## ✅ **Solution 3: Build from Command Line (Recommended)**
+## **Solution 3: Build from Command Line (Recommended)**
 
 If Xcode is giving you trouble, use the command line:
 
@@ -62,7 +62,7 @@ xcodebuild -scheme BlazeDB -destination 'platform=macOS'
 
 ---
 
-## ✅ **Solution 4: Create an Xcode Project File**
+## **Solution 4: Create an Xcode Project File**
 
 If you want to use Xcode's GUI, you can generate an Xcode project:
 
@@ -77,7 +77,7 @@ Then open the generated `.xcodeproj` file in Xcode.
 
 ---
 
-## ✅ **Solution 5: Open Package Directly in Xcode**
+## **Solution 5: Open Package Directly in Xcode**
 
 1. **Close Xcode** (if open)
 2. **Navigate to** `/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB`
@@ -88,7 +88,7 @@ Then open the generated `.xcodeproj` file in Xcode.
 
 ---
 
-## 🔍 **Why This Happens**
+## **Why This Happens**
 
 Swift Packages don't have a default run destination like Xcode projects do. Xcode needs to know:
 - **What platform** to build for (macOS, iOS, Linux)
@@ -98,7 +98,7 @@ When you select a destination, Xcode knows these details and can build correctly
 
 ---
 
-## ✅ **Recommended Approach**
+## **Recommended Approach**
 
 For Swift Packages, the **command line** is often more reliable:
 

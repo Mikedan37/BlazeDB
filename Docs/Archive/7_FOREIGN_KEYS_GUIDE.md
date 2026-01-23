@@ -1,4 +1,4 @@
-# 🔗 Foreign Keys Guide
+# Foreign Keys Guide
 
 **Maintain referential integrity across collections**
 
@@ -12,8 +12,8 @@ Foreign keys ensure relationships between records are valid.
 ```
 Users: [Alice(id=1), Bob(id=2)]
 Bugs: [Bug1(userId=1), Bug2(userId=2), Bug3(userId=999)]
-                                                    ↑
-                                         Invalid! User 999 doesn't exist
+ ↑
+ Invalid! User 999 doesn't exist
 ```
 
 **With foreign keys:** Enforces that Bug3.userId must reference a valid user
@@ -25,11 +25,11 @@ Bugs: [Bug1(userId=1), Bug2(userId=2), Bug3(userId=999)]
 ```swift
 // Bugs reference users
 bugsDB.addForeignKey(ForeignKey(
-    name: "bug_user_fk",              // Unique name
-    field: "userId",                  // Field in bugs
-    referencedCollection: "users",    // Collection referenced
-    referencedField: "id",            // Field in users (default: "id")
-    onDelete: .cascade                // What to do when user deleted
+ name: "bug_user_fk", // Unique name
+ field: "userId", // Field in bugs
+ referencedCollection: "users", // Collection referenced
+ referencedField: "id", // Field in users (default: "id")
+ onDelete:.cascade // What to do when user deleted
 ))
 ```
 
@@ -41,10 +41,10 @@ bugsDB.addForeignKey(ForeignKey(
 
 ```swift
 bugsDB.addForeignKey(ForeignKey(
-    name: "bug_user_fk",
-    field: "userId",
-    referencedCollection: "users",
-    onDelete: .cascade
+ name: "bug_user_fk",
+ field: "userId",
+ referencedCollection: "users",
+ onDelete:.cascade
 ))
 
 // Setup relationship manager
@@ -56,7 +56,7 @@ relationships.register(bugsDB, as: "bugs")
 let foreignKeys = bugsDB.getForeignKeys()
 try relationships.cascadeDelete(from: "users", id: userId, foreignKeys: foreignKeys)
 
-// ✅ User deleted → All their bugs automatically deleted
+// User deleted → All their bugs automatically deleted
 ```
 
 ---
@@ -64,7 +64,7 @@ try relationships.cascadeDelete(from: "users", id: userId, foreignKeys: foreignK
 ### SET NULL (Nullify Field)
 
 ```swift
-onDelete: .setNull
+onDelete:.setNull
 
 // Delete user → bug.userId = null (orphaned but tracked)
 ```
@@ -74,7 +74,7 @@ onDelete: .setNull
 ### RESTRICT (Prevent Delete)
 
 ```swift
-onDelete: .restrict
+onDelete:.restrict
 
 // Can't delete user if they have bugs
 // Must delete bugs first
@@ -85,7 +85,7 @@ onDelete: .restrict
 ### NO ACTION (Allow Orphans)
 
 ```swift
-onDelete: .noAction
+onDelete:.noAction
 
 // Delete user → bugs remain (orphaned)
 // No automatic cleanup
@@ -103,36 +103,36 @@ let commentsDB = try BlazeDBClient(name: "comments", fileURL: commentsURL, passw
 
 // Define foreign keys
 bugsDB.addForeignKey(ForeignKey(
-    name: "bug_user_fk",
-    field: "userId",
-    referencedCollection: "users",
-    onDelete: .cascade
+ name: "bug_user_fk",
+ field: "userId",
+ referencedCollection: "users",
+ onDelete:.cascade
 ))
 
 commentsDB.addForeignKey(ForeignKey(
-    name: "comment_bug_fk",
-    field: "bugId",
-    referencedCollection: "bugs",
-    onDelete: .cascade
+ name: "comment_bug_fk",
+ field: "bugId",
+ referencedCollection: "bugs",
+ onDelete:.cascade
 ))
 
 commentsDB.addForeignKey(ForeignKey(
-    name: "comment_user_fk",
-    field: "userId",
-    referencedCollection: "users",
-    onDelete: .cascade
+ name: "comment_user_fk",
+ field: "userId",
+ referencedCollection: "users",
+ onDelete:.cascade
 ))
 
 // Create data
-let userId = try usersDB.insert(BlazeDataRecord(["name": .string("Alice")]))
+let userId = try usersDB.insert(BlazeDataRecord(["name":.string("Alice")]))
 let bugId = try bugsDB.insert(BlazeDataRecord([
-    "title": .string("Bug 1"),
-    "userId": .uuid(userId)
+ "title":.string("Bug 1"),
+ "userId":.uuid(userId)
 ]))
 let commentId = try commentsDB.insert(BlazeDataRecord([
-    "text": .string("Comment 1"),
-    "bugId": .uuid(bugId),
-    "userId": .uuid(userId)
+ "text":.string("Comment 1"),
+ "bugId":.uuid(bugId),
+ "userId":.uuid(userId)
 ]))
 
 // Setup relationships
@@ -148,7 +148,7 @@ let commentFKs = commentsDB.getForeignKeys()
 try relationships.cascadeDelete(from: "users", id: userId, foreignKeys: bugFKs)
 try relationships.cascadeDelete(from: "bugs", id: bugId, foreignKeys: commentFKs)
 
-// ✅ User deleted → Bugs deleted → Comments deleted
+// User deleted → Bugs deleted → Comments deleted
 ```
 
 ---
@@ -165,7 +165,7 @@ db.removeForeignKey(named: "bug_user_fk")
 // List all
 let foreignKeys = db.getForeignKeys()
 for fk in foreignKeys {
-    print("\(fk.name): \(fk.field) -> \(fk.referencedCollection)")
+ print("\(fk.name): \(fk.field) -> \(fk.referencedCollection)")
 }
 ```
 
@@ -178,21 +178,21 @@ for fk in foreignKeys {
 // Users → Orders → OrderItems
 
 ordersDB.addForeignKey(ForeignKey(
-    name: "order_user_fk",
-    field: "userId",
-    referencedCollection: "users",
-    onDelete: .cascade  // Delete orders when user deleted
+ name: "order_user_fk",
+ field: "userId",
+ referencedCollection: "users",
+ onDelete:.cascade // Delete orders when user deleted
 ))
 
 itemsDB.addForeignKey(ForeignKey(
-    name: "item_order_fk",
-    field: "orderId",
-    referencedCollection: "orders",
-    onDelete: .cascade  // Delete items when order deleted
+ name: "item_order_fk",
+ field: "orderId",
+ referencedCollection: "orders",
+ onDelete:.cascade // Delete items when order deleted
 ))
 
 // Delete user → Orders deleted → OrderItems deleted
-// Perfect cascade! ✅
+// Perfect cascade!
 ```
 
 ---

@@ -1,4 +1,4 @@
-# 🔍 **BlazeDB Monitoring API**
+# **BlazeDB Monitoring API**
 
 ## **Secure Database Observability**
 
@@ -8,21 +8,21 @@ Expose database health, performance, and metadata **WITHOUT exposing sensitive d
 
 ## **What You Can Monitor (Safely):**
 
-### **✅ SAFE to Expose:**
-- 📊 **Database metadata** (name, size, file paths)
-- 📈 **Storage stats** (record count, pages, fragmentation)
-- ⚡ **Performance metrics** (MVCC, GC, indexes)
-- 🏥 **Health indicators** (needs vacuum, warnings)
-- 📋 **Schema info** (field names, types - NO values!)
-- 📁 **File listing** (paths only, not contents)
+### ** SAFE to Expose:**
+- **Database metadata** (name, size, file paths)
+- **Storage stats** (record count, pages, fragmentation)
+- **Performance metrics** (MVCC, GC, indexes)
+- **Health indicators** (needs vacuum, warnings)
+- **Schema info** (field names, types - NO values!)
+- **File listing** (paths only, not contents)
 
-### **❌ NEVER Exposed:**
-- 🔒 Actual record data
-- 🔑 Encryption keys
-- 🔐 Passwords
-- 👤 User identifiable information
-- 💼 Transaction contents
-- 📝 Field values
+### ** NEVER Exposed:**
+- Actual record data
+- Encryption keys
+- Passwords
+- User identifiable information
+- Transaction contents
+- Field values
 
 ---
 
@@ -73,48 +73,48 @@ Returns everything in one call:
 **Example Output:**
 ```json
 {
-  "database": {
-    "name": "user_db",
-    "path": "/path/to/user_db.blazedb",
-    "isEncrypted": true,
-    "version": "1.0",
-    "formatVersion": "blazeBinary",
-    "createdAt": "2025-11-13T14:00:00Z",
-    "lastModified": "2025-11-13T14:30:00Z"
-  },
-  "storage": {
-    "totalRecords": 10523,
-    "totalPages": 11200,
-    "orphanedPages": 677,
-    "fileSizeBytes": 45875200,
-    "fragmentationPercent": 6.05,
-    "avgRecordSizeBytes": 4358
-  },
-  "performance": {
-    "mvccEnabled": true,
-    "activeTransactions": 2,
-    "totalVersions": 523,
-    "obsoleteVersions": 234,
-    "indexCount": 5,
-    "indexNames": ["status", "userId", "createdAt"]
-  },
-  "health": {
-    "status": "healthy",
-    "needsVacuum": false,
-    "fragmentationHigh": false,
-    "gcNeeded": false,
-    "warnings": []
-  },
-  "schema": {
-    "totalFields": 15,
-    "commonFields": ["id", "createdAt", "status", "userId"],
-    "customFields": ["customField1", "appData"],
-    "inferredTypes": {
-      "id": "uuid",
-      "status": "string",
-      "count": "int"
-    }
-  }
+ "database": {
+ "name": "user_db",
+ "path": "/path/to/user_db.blazedb",
+ "isEncrypted": true,
+ "version": "1.0",
+ "formatVersion": "blazeBinary",
+ "createdAt": "2025-11-13T14:00:00Z",
+ "lastModified": "2025-11-13T14:30:00Z"
+ },
+ "storage": {
+ "totalRecords": 10523,
+ "totalPages": 11200,
+ "orphanedPages": 677,
+ "fileSizeBytes": 45875200,
+ "fragmentationPercent": 6.05,
+ "avgRecordSizeBytes": 4358
+ },
+ "performance": {
+ "mvccEnabled": true,
+ "activeTransactions": 2,
+ "totalVersions": 523,
+ "obsoleteVersions": 234,
+ "indexCount": 5,
+ "indexNames": ["status", "userId", "createdAt"]
+ },
+ "health": {
+ "status": "healthy",
+ "needsVacuum": false,
+ "fragmentationHigh": false,
+ "gcNeeded": false,
+ "warnings": []
+ },
+ "schema": {
+ "totalFields": 15,
+ "commonFields": ["id", "createdAt", "status", "userId"],
+ "customFields": ["customField1", "appData"],
+ "inferredTypes": {
+ "id": "uuid",
+ "status": "string",
+ "count": "int"
+ }
+ }
 }
 ```
 
@@ -161,13 +161,13 @@ Returns what maintenance is needed and why
 let (vacuum, gc, reasons) = try db.needsMaintenance()
 
 if vacuum {
-    print("⚠️  VACUUM needed: \(reasons.joined(separator: ", "))")
-    // Run VACUUM in background
+ print("️ VACUUM needed: \(reasons.joined(separator: ", "))")
+ // Run VACUUM in background
 }
 
 if gc {
-    print("🗑️  GC needed: \(reasons.joined(separator: ", "))")
-    try db.runManualGC()
+ print("️ GC needed: \(reasons.joined(separator: ", "))")
+ try db.runManualGC()
 }
 ```
 
@@ -201,7 +201,7 @@ let appDir = FileManager.default.documentsDirectory
 let databases = try BlazeDBClient.discoverDatabases(in: appDir)
 
 for db in databases {
-    print("\(db.name): \(db.recordCount) records, \(db.fileSizeBytes / 1024) KB")
+ print("\(db.name): \(db.recordCount) records, \(db.fileSizeBytes / 1024) KB")
 }
 ```
 
@@ -213,29 +213,29 @@ for db in databases {
 ```swift
 // API endpoint: GET /api/databases
 func getDatabaseStats() throws -> Data {
-    let db = try BlazeDBClient(name: "prod_db", ...)
-    return try db.exportMonitoringJSON()
+ let db = try BlazeDBClient(name: "prod_db",...)
+ return try db.exportMonitoringJSON()
 }
 ```
 
 ### **2. SwiftUI Monitoring App**
 ```swift
 struct DatabaseMonitor: View {
-    @State var snapshot: DatabaseMonitoringSnapshot?
-    
-    var body: some View {
-        VStack {
-            if let snapshot = snapshot {
-                Text("Records: \(snapshot.storage.totalRecords)")
-                Text("Size: \(snapshot.storage.fileSizeBytes / 1024) KB")
-                Text("Health: \(snapshot.health.status)")
-                    .foregroundColor(healthColor(snapshot.health.status))
-            }
-        }
-        .task {
-            snapshot = try? db.getMonitoringSnapshot()
-        }
-    }
+ @State var snapshot: DatabaseMonitoringSnapshot?
+
+ var body: some View {
+ VStack {
+ if let snapshot = snapshot {
+ Text("Records: \(snapshot.storage.totalRecords)")
+ Text("Size: \(snapshot.storage.fileSizeBytes / 1024) KB")
+ Text("Health: \(snapshot.health.status)")
+.foregroundColor(healthColor(snapshot.health.status))
+ }
+ }
+.task {
+ snapshot = try? db.getMonitoringSnapshot()
+ }
+ }
 }
 ```
 
@@ -244,38 +244,38 @@ struct DatabaseMonitor: View {
 $ blaze-monitor /path/to/databases/
 
 Found 3 databases:
-  
-  📊 user_db.blazedb
-     Records: 10,523
-     Size: 44.8 MB
-     Health: ✅ healthy
-     
-  ⚠️  cache_db.blazedb
-     Records: 250,000
-     Size: 1.2 GB
-     Health: ⚠️  warning
-     Reason: High fragmentation (32%) - run VACUUM
-     
-  ✅ audit_log.blazedb
-     Records: 5,234
-     Size: 2.1 MB
-     Health: ✅ healthy
+
+ user_db.blazedb
+ Records: 10,523
+ Size: 44.8 MB
+ Health: healthy
+
+ ️ cache_db.blazedb
+ Records: 250,000
+ Size: 1.2 GB
+ Health: ️ warning
+ Reason: High fragmentation (32%) - run VACUUM
+
+ audit_log.blazedb
+ Records: 5,234
+ Size: 2.1 MB
+ Health: healthy
 ```
 
 ### **4. Health Check Endpoint**
 ```swift
 // API endpoint: GET /api/health
 func healthCheck() throws -> HealthResponse {
-    let db = try BlazeDBClient(name: "prod_db", ...)
-    let status = try db.getHealthStatus()
-    let maintenance = try db.needsMaintenance()
-    
-    return HealthResponse(
-        status: status,
-        uptime: processUptime(),
-        needsVacuum: maintenance.vacuum,
-        warnings: maintenance.reasons
-    )
+ let db = try BlazeDBClient(name: "prod_db",...)
+ let status = try db.getHealthStatus()
+ let maintenance = try db.needsMaintenance()
+
+ return HealthResponse(
+ status: status,
+ uptime: processUptime(),
+ needsVacuum: maintenance.vacuum,
+ warnings: maintenance.reasons
+ )
 }
 ```
 
@@ -283,7 +283,7 @@ func healthCheck() throws -> HealthResponse {
 
 ## **Security Best Practices:**
 
-### **✅ DO:**
+### ** DO:**
 ```swift
 // Expose aggregated stats
 let count = db.getRecordCount()
@@ -295,16 +295,16 @@ let size = try db.getTotalDiskUsage()
 let schema = try db.getSchemaInfo()
 ```
 
-### **❌ DON'T:**
+### ** DON'T:**
 ```swift
 // Don't expose actual records
-let records = db.fetchAll()  // ❌ Contains user data!
+let records = db.fetchAll() // Contains user data!
 
 // Don't expose encryption keys
-let key = db.encryptionKey  // ❌ Private!
+let key = db.encryptionKey // Private!
 
 // Don't expose raw file contents
-let data = try Data(contentsOf: db.fileURL)  // ❌ Encrypted data!
+let data = try Data(contentsOf: db.fileURL) // Encrypted data!
 ```
 
 ---
@@ -314,12 +314,12 @@ let data = try Data(contentsOf: db.fileURL)  // ❌ Encrypted data!
 The monitoring APIs are **safe but not free**. Implement rate limiting:
 
 ```swift
-// ✅ GOOD: Poll every 5 seconds
+// GOOD: Poll every 5 seconds
 Timer.scheduledTimer(withTimeInterval: 5.0, repeats: true) { _ in
-    updateDashboard()
+ updateDashboard()
 }
 
-// ❌ BAD: Poll every 100ms (too frequent!)
+// BAD: Poll every 100ms (too frequent!)
 // This could impact database performance!
 ```
 
@@ -335,21 +335,21 @@ import Vapor
 import BlazeDB
 
 app.get("api", "databases") { req async throws -> Response in
-    // Discover all databases
-    let dbDir = URL(fileURLWithPath: "/var/databases")
-    let databases = try BlazeDBClient.discoverDatabases(in: dbDir)
-    
-    // Return as JSON (safe!)
-    return try Response(body: .init(data: JSONEncoder().encode(databases)))
+ // Discover all databases
+ let dbDir = URL(fileURLWithPath: "/var/databases")
+ let databases = try BlazeDBClient.discoverDatabases(in: dbDir)
+
+ // Return as JSON (safe!)
+ return try Response(body:.init(data: JSONEncoder().encode(databases)))
 }
 
 app.get("api", "database", ":name", "stats") { req async throws -> Response in
-    let name = req.parameters.get("name")!
-    let db = try BlazeDBClient(name: name, ...)
-    
-    // Return monitoring snapshot (safe!)
-    let json = try db.exportMonitoringJSON()
-    return Response(body: .init(data: json))
+ let name = req.parameters.get("name")!
+ let db = try BlazeDBClient(name: name,...)
+
+ // Return monitoring snapshot (safe!)
+ let json = try db.exportMonitoringJSON()
+ return Response(body:.init(data: json))
 }
 ```
 
@@ -363,22 +363,22 @@ import BlazeDB
 
 @main
 struct MonitorApp: App {
-    @StateObject var monitor = DatabaseMonitor()
-    
-    var body: some Scene {
-        MenuBarExtra("BlazeDB", systemImage: "cylinder.fill") {
-            ForEach(monitor.databases) { db in
-                VStack(alignment: .leading) {
-                    Text(db.name).font(.headline)
-                    Text("\(db.recordCount) records")
-                    Text(db.healthStatus).foregroundColor(db.healthColor)
-                }
-            }
-            
-            Divider()
-            Button("Refresh") { monitor.refresh() }
-        }
-    }
+ @StateObject var monitor = DatabaseMonitor()
+
+ var body: some Scene {
+ MenuBarExtra("BlazeDB", systemImage: "cylinder.fill") {
+ ForEach(monitor.databases) { db in
+ VStack(alignment:.leading) {
+ Text(db.name).font(.headline)
+ Text("\(db.recordCount) records")
+ Text(db.healthStatus).foregroundColor(db.healthColor)
+ }
+ }
+
+ Divider()
+ Button("Refresh") { monitor.refresh() }
+ }
+ }
 }
 ```
 
@@ -389,25 +389,25 @@ struct MonitorApp: App {
 ```swift
 // Export metrics in Prometheus format
 func exportPrometheusMetrics(db: BlazeDBClient) throws -> String {
-    let snapshot = try db.getMonitoringSnapshot()
-    
-    return """
-    # HELP blazedb_records_total Total number of records
-    # TYPE blazedb_records_total gauge
-    blazedb_records_total{\(snapshot.storage.totalRecords)}
-    
-    # HELP blazedb_size_bytes Database size in bytes
-    # TYPE blazedb_size_bytes gauge
-    blazedb_size_bytes{\(snapshot.storage.fileSizeBytes)}
-    
-    # HELP blazedb_fragmentation_percent Fragmentation percentage
-    # TYPE blazedb_fragmentation_percent gauge
-    blazedb_fragmentation_percent{\(snapshot.storage.fragmentationPercent)}
-    
-    # HELP blazedb_health_status Health status (0=healthy, 1=warning, 2=critical)
-    # TYPE blazedb_health_status gauge
-    blazedb_health_status{\(healthToMetric(snapshot.health.status))}
-    """
+ let snapshot = try db.getMonitoringSnapshot()
+
+ return """
+ # HELP blazedb_records_total Total number of records
+ # TYPE blazedb_records_total gauge
+ blazedb_records_total{\(snapshot.storage.totalRecords)}
+
+ # HELP blazedb_size_bytes Database size in bytes
+ # TYPE blazedb_size_bytes gauge
+ blazedb_size_bytes{\(snapshot.storage.fileSizeBytes)}
+
+ # HELP blazedb_fragmentation_percent Fragmentation percentage
+ # TYPE blazedb_fragmentation_percent gauge
+ blazedb_fragmentation_percent{\(snapshot.storage.fragmentationPercent)}
+
+ # HELP blazedb_health_status Health status (0=healthy, 1=warning, 2=critical)
+ # TYPE blazedb_health_status gauge
+ blazedb_health_status{\(healthToMetric(snapshot.health.status))}
+ """
 }
 ```
 
@@ -441,17 +441,17 @@ Build a simple web server that:
 ```bash
 $ blaze-monitor --watch /path/to/databases
 
-🔍 Monitoring 3 databases...
+ Monitoring 3 databases...
 
 ┌─────────────┬──────────┬─────────┬────────┐
-│ Database    │ Records  │ Size    │ Health │
+│ Database │ Records │ Size │ Health │
 ├─────────────┼──────────┼─────────┼────────┤
-│ user_db     │ 10,523   │ 44.8 MB │ ✅     │
-│ cache_db    │ 250,000  │ 1.2 GB  │ ⚠️      │
-│ audit_log   │ 5,234    │ 2.1 MB  │ ✅     │
+│ user_db │ 10,523 │ 44.8 MB │ │
+│ cache_db │ 250,000 │ 1.2 GB │ ️ │
+│ audit_log │ 5,234 │ 2.1 MB │ │
 └─────────────┴──────────┴─────────┴────────┘
 
-⚠️  cache_db: High fragmentation (32%) - run VACUUM
+️ cache_db: High fragmentation (32%) - run VACUUM
 ```
 
 ---
@@ -463,20 +463,20 @@ Update your existing visualizer to use this API:
 ```swift
 // In BlazeDBVisualizer/Model/ScanService.swift
 func scanDatabase(at url: URL) throws -> DBRecord {
-    // OLD: Manual file reading and parsing
-    
-    // NEW: Use monitoring API!
-    let db = try BlazeDBClient(name: "temp", fileURL: url, password: "visualizer")
-    let snapshot = try db.getMonitoringSnapshot()
-    
-    return DBRecord(
-        name: snapshot.database.name,
-        path: snapshot.database.path,
-        recordCount: snapshot.storage.totalRecords,
-        sizeBytes: snapshot.storage.fileSizeBytes,
-        health: snapshot.health.status,
-        lastModified: snapshot.database.lastModified ?? Date()
-    )
+ // OLD: Manual file reading and parsing
+
+ // NEW: Use monitoring API!
+ let db = try BlazeDBClient(name: "temp", fileURL: url, password: "visualizer")
+ let snapshot = try db.getMonitoringSnapshot()
+
+ return DBRecord(
+ name: snapshot.database.name,
+ path: snapshot.database.path,
+ recordCount: snapshot.storage.totalRecords,
+ sizeBytes: snapshot.storage.fileSizeBytes,
+ health: snapshot.health.status,
+ lastModified: snapshot.database.lastModified?? Date()
+ )
 }
 ```
 
@@ -485,18 +485,18 @@ func scanDatabase(at url: URL) throws -> DBRecord {
 ## **Security Guarantees:**
 
 ### **What This API Does:**
-✅ Reads metadata files  
-✅ Counts records  
-✅ Measures file sizes  
-✅ Analyzes structure  
-✅ Returns JSON-serializable data  
+ Reads metadata files
+ Counts records
+ Measures file sizes
+ Analyzes structure
+ Returns JSON-serializable data
 
 ### **What This API DOESN'T Do:**
-❌ Read actual record contents  
-❌ Expose encryption keys  
-❌ Return user data  
-❌ Allow unauthorized access  
-❌ Bypass security controls  
+ Read actual record contents
+ Expose encryption keys
+ Return user data
+ Allow unauthorized access
+ Bypass security controls
 
 ---
 
@@ -504,11 +504,11 @@ func scanDatabase(at url: URL) throws -> DBRecord {
 
 | Operation | Time | Safe for Real-Time? |
 |-----------|------|---------------------|
-| `getRecordCount()` | ~1μs | ✅ YES (no disk I/O) |
-| `getHealthStatus()` | ~5ms | ✅ YES |
-| `getMonitoringSnapshot()` | ~10-50ms | ✅ YES (sample-based) |
-| `discoverDatabases()` | ~50-200ms | ✅ YES (directory scan) |
-| `exportMonitoringJSON()` | ~10-50ms | ✅ YES |
+| `getRecordCount()` | ~1μs | YES (no disk I/O) |
+| `getHealthStatus()` | ~5ms | YES |
+| `getMonitoringSnapshot()` | ~10-50ms | YES (sample-based) |
+| `discoverDatabases()` | ~50-200ms | YES (directory scan) |
+| `exportMonitoringJSON()` | ~10-50ms | YES |
 
 **Recommendation:** Poll every **5-10 seconds** for real-time monitoring.
 
@@ -527,8 +527,8 @@ import BlazeDB
 
 // Parse command-line args
 guard CommandLine.arguments.count > 1 else {
-    print("Usage: monitor.swift <database-directory>")
-    exit(1)
+ print("Usage: monitor.swift <database-directory>")
+ exit(1)
 }
 
 let dir = URL(fileURLWithPath: CommandLine.arguments[1])
@@ -536,18 +536,18 @@ let dir = URL(fileURLWithPath: CommandLine.arguments[1])
 // Discover databases
 let databases = try! BlazeDBClient.discoverDatabases(in: dir)
 
-print("\n🔍 Found \(databases.count) databases:\n")
+print("\n Found \(databases.count) databases:\n")
 
 for db in databases {
-    let sizeKB = db.fileSizeBytes / 1024
-    let sizeMB = Double(db.fileSizeBytes) / 1024 / 1024
-    let sizeStr = sizeMB > 1 ? String(format: "%.1f MB", sizeMB) : "\(sizeKB) KB"
-    
-    print("📊 \(db.name)")
-    print("   Records: \(db.recordCount)")
-    print("   Size: \(sizeStr)")
-    print("   Modified: \(db.lastModified?.description ?? "unknown")")
-    print()
+ let sizeKB = db.fileSizeBytes / 1024
+ let sizeMB = Double(db.fileSizeBytes) / 1024 / 1024
+ let sizeStr = sizeMB > 1? String(format: "%.1f MB", sizeMB): "\(sizeKB) KB"
+
+ print(" \(db.name)")
+ print(" Records: \(db.recordCount)")
+ print(" Size: \(sizeStr)")
+ print(" Modified: \(db.lastModified?.description?? "unknown")")
+ print()
 }
 ```
 
@@ -555,33 +555,33 @@ for db in databases {
 ```bash
 $ swift monitor.swift ~/Documents/databases/
 
-🔍 Found 3 databases:
+ Found 3 databases:
 
-📊 user_database
-   Records: 10523
-   Size: 44.8 MB
-   Modified: 2025-11-13 14:30:00
+ user_database
+ Records: 10523
+ Size: 44.8 MB
+ Modified: 2025-11-13 14:30:00
 
-📊 cache_database
-   Records: 250000
-   Size: 1.2 GB
-   Modified: 2025-11-13 14:35:00
+ cache_database
+ Records: 250000
+ Size: 1.2 GB
+ Modified: 2025-11-13 14:35:00
 
-📊 audit_log
-   Records: 5234
-   Size: 2.1 MB
-   Modified: 2025-11-13 14:25:00
+ audit_log
+ Records: 5234
+ Size: 2.1 MB
+ Modified: 2025-11-13 14:25:00
 ```
 
 ---
 
 ## **Next Steps:**
 
-1. ✅ **Use with BlazeDBVisualizer** - Integrate this API
-2. ✅ **Build a web dashboard** - Real-time monitoring
-3. ✅ **Create alerts** - Email when health is critical
-4. ✅ **Export to Grafana** - Professional monitoring
-5. ✅ **Build admin panel** - One-click VACUUM/GC
+1. **Use with BlazeDBVisualizer** - Integrate this API
+2. **Build a web dashboard** - Real-time monitoring
+3. **Create alerts** - Email when health is critical
+4. **Export to Grafana** - Professional monitoring
+5. **Build admin panel** - One-click VACUUM/GC
 
 ---
 
@@ -593,29 +593,29 @@ $ swift monitor.swift ~/Documents/databases/
 // In BlazeDBVisualizer/Model/ScanService.swift
 
 func scanAllDatabases() -> [DBRecord] {
-    let dbDir = FileManager.default.urls(
-        for: .documentDirectory,
-        in: .userDomainMask
-    ).first!
-    
-    // Use monitoring API!
-    let discovered = try? BlazeDBClient.discoverDatabases(in: dbDir)
-    
-    return discovered?.map { info in
-        DBRecord(
-            id: UUID(),
-            name: info.name,
-            path: info.path,
-            recordCount: info.recordCount,
-            fileSizeBytes: info.fileSizeBytes,
-            lastModified: info.lastModified ?? Date(),
-            status: "active"
-        )
-    } ?? []
+ let dbDir = FileManager.default.urls(
+ for:.documentDirectory,
+ in:.userDomainMask
+ ).first!
+
+ // Use monitoring API!
+ let discovered = try? BlazeDBClient.discoverDatabases(in: dbDir)
+
+ return discovered?.map { info in
+ DBRecord(
+ id: UUID(),
+ name: info.name,
+ path: info.path,
+ recordCount: info.recordCount,
+ fileSizeBytes: info.fileSizeBytes,
+ lastModified: info.lastModified?? Date(),
+ status: "active"
+ )
+ }?? []
 }
 ```
 
 ---
 
-**You now have a PRODUCTION-GRADE monitoring API that's safe to expose anywhere!** 🔍🛡️🔥
+**You now have a PRODUCTION-GRADE monitoring API that's safe to expose anywhere!** ️
 

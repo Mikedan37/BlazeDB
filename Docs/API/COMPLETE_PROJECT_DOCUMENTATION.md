@@ -1,10 +1,10 @@
-# 🔥 BlazeDB - Complete Project Documentation
+# BlazeDB - Complete Project Documentation
 
 **Comprehensive documentation for the entire BlazeDB ecosystem.**
 
 ---
 
-## **📚 Table of Contents**
+## ** Table of Contents**
 
 1. [Project Overview](#project-overview)
 2. [BlazeDB Core API](#blazedb-core-api)
@@ -16,17 +16,17 @@
 
 ---
 
-## **🎯 Project Overview**
+## ** Project Overview**
 
 ### **What is BlazeDB?**
 
 BlazeDB is a **production-ready, industrial-grade Swift database** with:
-- ⚡ **Blazing fast** - 10K-50K ops/sec locally
-- 🔒 **Bank-grade security** - AES-256-GCM encryption
-- 🚀 **Zero migrations** - Schema-less, add fields anytime
-- 📦 **Zero dependencies** - Pure Swift
-- 🔄 **Distributed sync** - 3 transport layers (in-memory, Unix sockets, TCP)
-- 🧪 **970+ tests** - 97% coverage, legendary test suite
+- **Blazing fast** - 10K-50K ops/sec locally
+- **Bank-grade security** - AES-256-GCM encryption
+- **Zero migrations** - Schema-less, add fields anytime
+- **Zero dependencies** - Pure Swift
+- **Distributed sync** - 3 transport layers (in-memory, Unix sockets, TCP)
+- **970+ tests** - 97% coverage, legendary test suite
 
 ### **Project Components:**
 
@@ -37,7 +37,7 @@ BlazeDB is a **production-ready, industrial-grade Swift database** with:
 
 ---
 
-## **📦 BlazeDB Core API**
+## ** BlazeDB Core API**
 
 ### **Main Entry Point: `BlazeDBClient`**
 
@@ -48,19 +48,19 @@ The primary interface for all database operations.
 ```swift
 // Standard initialization
 let db = try BlazeDBClient(
-    name: "MyApp",
-    fileURL: url,
-    password: "secure-password-123"
+ name: "MyApp",
+ fileURL: url,
+ password: "secure-password-123"
 )
 
 // Failable initialization (no try-catch needed)
 guard let db = BlazeDBClient(
-    name: "MyApp",
-    at: url,
-    password: "secure-password-123"
+ name: "MyApp",
+ at: url,
+ password: "secure-password-123"
 ) else {
-    print("Failed to initialize")
-    return
+ print("Failed to initialize")
+ return
 }
 ```
 
@@ -69,8 +69,8 @@ guard let db = BlazeDBClient(
 **Insert:**
 ```swift
 let record = BlazeDataRecord([
-    "title": .string("Hello"),
-    "value": .int(42)
+ "title":.string("Hello"),
+ "value":.int(42)
 ])
 let id = try db.insert(record)
 ```
@@ -84,7 +84,7 @@ let allRecords = try db.fetchAll()
 **Update:**
 ```swift
 var record = try db.fetch(id: uuid)!
-record.storage["title"] = .string("Updated")
+record.storage["title"] =.string("Updated")
 try db.update(id: uuid, with: record)
 ```
 
@@ -96,11 +96,11 @@ try db.delete(id: uuid)
 **Query:**
 ```swift
 let results = try db.query()
-    .where("status", equals: .string("open"))
-    .where("priority", greaterThan: .int(3))
-    .orderBy("priority", descending: true)
-    .limit(10)
-    .all()
+.where("status", equals:.string("open"))
+.where("priority", greaterThan:.int(3))
+.orderBy("priority", descending: true)
+.limit(10)
+.all()
 ```
 
 #### **Batch Operations:**
@@ -112,13 +112,13 @@ let ids = try db.insertMany(records)
 
 // Update many
 let count = try db.updateMany(
-    where: { $0.string("status") == "open" },
-    set: ["status": .string("closed")]
+ where: { $0.string("status") == "open" },
+ set: ["status":.string("closed")]
 )
 
 // Delete many
 let deleted = try db.deleteMany(
-    where: { $0.int("age") ?? 0 < 18 }
+ where: { $0.int("age")?? 0 < 18 }
 )
 ```
 
@@ -133,38 +133,38 @@ let record = try await db.fetchAsync(id: uuid)
 
 // Async query
 let results = try await db.queryAsync()
-    .where("status", equals: .string("open"))
-    .all()
+.where("status", equals:.string("open"))
+.all()
 ```
 
 #### **Type-Safe Queries:**
 
 ```swift
 struct User: BlazeRecord {
-    var id: UUID
-    var name: String
-    var email: String
+ var id: UUID
+ var name: String
+ var email: String
 }
 
 // Type-safe query with autocomplete!
 let users = try db.queryTyped(User.self)
-    .where(\.name, equals: "John")
-    .where(\.email, contains: "@gmail.com")
-    .all()
+.where(\.name, equals: "John")
+.where(\.email, contains: "@gmail.com")
+.all()
 ```
 
 #### **Codable Integration:**
 
 ```swift
 struct Bug: Codable {
-    let title: String
-    let priority: Int
-    let status: String
+ let title: String
+ let priority: Int
+ let status: String
 }
 
 // Direct Codable support - zero conversion!
 let bug = Bug(title: "Fix login", priority: 5, status: "open")
-let id = try db.insert(bug)  // Works directly!
+let id = try db.insert(bug) // Works directly!
 let fetched: Bug? = try db.fetch(id: id, as: Bug.self)
 ```
 
@@ -172,9 +172,9 @@ let fetched: Bug? = try db.fetch(id: id, as: Bug.self)
 
 ```swift
 try db.transaction { db in
-    let id1 = try db.insert(record1)
-    let id2 = try db.insert(record2)
-    // Both succeed or both fail (ACID)
+ let id1 = try db.insert(record1)
+ let id2 = try db.insert(record2)
+ // Both succeed or both fail (ACID)
 }
 ```
 
@@ -188,7 +188,7 @@ try db.createIndex(on: "email")
 try db.createCompoundIndex(on: ["status", "priority"])
 
 // Query with index
-let results = try db.fetch(byIndexedField: "email", value: .string("user@example.com"))
+let results = try db.fetch(byIndexedField: "email", value:.string("user@example.com"))
 ```
 
 #### **Aggregations:**
@@ -196,21 +196,21 @@ let results = try db.fetch(byIndexedField: "email", value: .string("user@example
 ```swift
 // Count
 let count = try db.query()
-    .where("status", equals: .string("open"))
-    .count()
+.where("status", equals:.string("open"))
+.count()
 
 // Sum
 let total = try db.query()
-    .sum("price")
+.sum("price")
 
 // Average
 let avg = try db.query()
-    .average("score")
+.average("score")
 
 // Group by
 let grouped = try db.query()
-    .groupBy("status")
-    .count()
+.groupBy("status")
+.count()
 ```
 
 #### **JOINs:**
@@ -218,9 +218,9 @@ let grouped = try db.query()
 ```swift
 // Join two collections
 let results = try db.query()
-    .join(db2, on: "userId", equals: "id")
-    .where("status", equals: .string("active"))
-    .all()
+.join(db2, on: "userId", equals: "id")
+.where("status", equals:.string("active"))
+.all()
 ```
 
 #### **Full-Text Search:**
@@ -238,18 +238,18 @@ let results = try db.search("swift database")
 ```swift
 // Set security context
 db.setSecurityContext(SecurityContext(
-    userId: userID,
-    roles: ["admin"],
-    teams: [teamID]
+ userId: userID,
+ roles: ["admin"],
+ teams: [teamID]
 ))
 
 // Create policy
 let policy = SecurityPolicy(
-    name: "UserData",
-    rules: [
-        .allowRead(where: { $0.string("userId") == userID }),
-        .denyWrite()
-    ]
+ name: "UserData",
+ rules: [
+.allowRead(where: { $0.string("userId") == userID }),
+.denyWrite()
+ ]
 )
 try db.createPolicy(policy)
 ```
@@ -276,16 +276,16 @@ print("Status: \(health.status)")
 ```swift
 // Enable local sync (same app)
 let topology = BlazeTopology()
-let id1 = try await topology.register(db: db1, name: "DB1", role: .server)
-let id2 = try await topology.register(db: db2, name: "DB2", role: .client)
-try await topology.connectLocal(from: id1, to: id2, mode: .bidirectional)
+let id1 = try await topology.register(db: db1, name: "DB1", role:.server)
+let id2 = try await topology.register(db: db2, name: "DB2", role:.client)
+try await topology.connectLocal(from: id1, to: id2, mode:.bidirectional)
 
 // Enable cross-app sync (different apps)
 try await topology.connectCrossApp(
-    from: id1,
-    to: id2,
-    socketPath: "/tmp/blazedb_sync.sock",
-    mode: .bidirectional
+ from: id1,
+ to: id2,
+ socketPath: "/tmp/blazedb_sync.sock",
+ mode:.bidirectional
 )
 
 // Enable remote sync (different devices)
@@ -316,8 +316,8 @@ try db.restore(from: backupURL)
 
 // Validate integrity
 let report = try db.validateIntegrity()
-if !report.ok {
-    print("Issues found: \(report.issues)")
+if!report.ok {
+ print("Issues found: \(report.issues)")
 }
 ```
 
@@ -329,9 +329,9 @@ try db.runGarbageCollection()
 
 // Auto GC (configured)
 db.gcConfig = GCConfig(
-    enabled: true,
-    interval: 300,  // 5 minutes
-    threshold: 0.8  // 80% fragmentation
+ enabled: true,
+ interval: 300, // 5 minutes
+ threshold: 0.8 // 80% fragmentation
 )
 ```
 
@@ -349,7 +349,7 @@ print("Reclaimable: \(stats.reclaimableSpace) bytes")
 
 ---
 
-## **💻 BlazeShell CLI**
+## ** BlazeShell CLI**
 
 Command-line interface for BlazeDB operations.
 
@@ -391,11 +391,11 @@ BlazeShell /path/to/db.blazedb mypassword
 
 # Insert record
 > insert {"title": "Hello", "value": 42}
-✅ Inserted with ID: 123e4567-e89b-12d3-a456-426614174000
+ Inserted with ID: 123e4567-e89b-12d3-a456-426614174000
 
 # Fetch record
 > fetch 123e4567-e89b-12d3-a456-426614174000
-BlazeDataRecord(storage: ["title": .string("Hello"), "value": .int(42)])
+BlazeDataRecord(storage: ["title":.string("Hello"), "value":.int(42)])
 
 # Exit
 > exit
@@ -403,7 +403,7 @@ BlazeDataRecord(storage: ["title": .string("Hello"), "value": .int(42)])
 
 ---
 
-## **🎨 BlazeStudio Visual Editor**
+## ** BlazeStudio Visual Editor**
 
 Visual block-based editor for building database schemas and queries.
 
@@ -424,18 +424,18 @@ Visual block-based editor for building database schemas and queries.
 ### **Block Types:**
 
 - **Structure Blocks:**
-  - Class blocks
-  - Connector blocks
+ - Class blocks
+ - Connector blocks
 
 - **Logic Blocks:**
-  - Function blocks
-  - Variable blocks
-  - Condition blocks
-  - Loop blocks
+ - Function blocks
+ - Variable blocks
+ - Condition blocks
+ - Loop blocks
 
 ---
 
-## **📊 BlazeDBVisualizer Monitoring Tool**
+## ** BlazeDBVisualizer Monitoring Tool**
 
 Comprehensive database monitoring and management tool.
 
@@ -471,7 +471,7 @@ Comprehensive database monitoring and management tool.
 
 ---
 
-## **🧪 Test Coverage**
+## ** Test Coverage**
 
 ### **Test Statistics:**
 
@@ -526,31 +526,31 @@ Comprehensive database monitoring and management tool.
 
 ---
 
-## **👨‍💻 Developer Guide**
+## **‍ Developer Guide**
 
 ### **Getting Started:**
 
 1. **Install:**
-   ```swift
-   dependencies: [
-       .package(url: "https://github.com/yourusername/BlazeDB.git", from: "1.0.0")
-   ]
-   ```
+ ```swift
+ dependencies: [
+.package(url: "https://github.com/yourusername/BlazeDB.git", from: "1.0.0")
+ ]
+ ```
 
 2. **Import:**
-   ```swift
-   import BlazeDB
-   ```
+ ```swift
+ import BlazeDB
+ ```
 
 3. **Create Database:**
-   ```swift
-   let db = try BlazeDBClient(name: "MyApp", fileURL: url, password: "password")
-   ```
+ ```swift
+ let db = try BlazeDBClient(name: "MyApp", fileURL: url, password: "password")
+ ```
 
 4. **Use It:**
-   ```swift
-   let id = try db.insert(BlazeDataRecord(["title": .string("Hello")]))
-   ```
+ ```swift
+ let id = try db.insert(BlazeDataRecord(["title":.string("Hello")]))
+ ```
 
 ### **Best Practices:**
 
@@ -579,7 +579,7 @@ Comprehensive database monitoring and management tool.
 
 ---
 
-## **📖 Additional Documentation:**
+## ** Additional Documentation:**
 
 - **API Reference:** `Docs/API_REFERENCE.md`
 - **Tutorials:** `Docs/TUTORIALS.md`

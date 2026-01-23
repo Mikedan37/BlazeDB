@@ -1,60 +1,60 @@
 # BlazeDB Protocol Architecture: Same Protocol, Optimal Transport
 
-**Should we use different protocols for network vs same-device? The answer: Same protocol, different transport! 🚀**
+**Should we use different protocols for network vs same-device? The answer: Same protocol, different transport! **
 
 ---
 
-## 🎯 **THE ANSWER:**
+## **THE ANSWER:**
 
 ### **Same Protocol Format, Different Transport Layer:**
 
 ```
-✅ USE SAME PROTOCOL: BlazeBinary (encoding format)
-✅ USE DIFFERENT TRANSPORT: Optimize for each scenario
+ USE SAME PROTOCOL: BlazeBinary (encoding format)
+ USE DIFFERENT TRANSPORT: Optimize for each scenario
 
-Result: Best of both worlds - same code, maximum performance! 🔥
+Result: Best of both worlds - same code, maximum performance!
 ```
 
 ---
 
-## 📊 **CURRENT ARCHITECTURE:**
+## **CURRENT ARCHITECTURE:**
 
 ### **Protocol Abstraction (BlazeSyncRelay):**
 
 ```
 ┌─────────────────────────────────────────┐
-│  BlazeSyncEngine (sync logic)           │
-│  • Same code for all scenarios           │
-│  • Uses BlazeSyncRelay interface        │
+│ BlazeSyncEngine (sync logic) │
+│ • Same code for all scenarios │
+│ • Uses BlazeSyncRelay interface │
 └─────────────────────────────────────────┘
-              ↓
+ ↓
 ┌─────────────────────────────────────────┐
-│  BlazeSyncRelay (protocol interface)    │
-│  • connect()                             │
-│  • pushOperations()                      │
-│  • pullOperations()                      │
-│  • onOperationReceived()                │
+│ BlazeSyncRelay (protocol interface) │
+│ • connect() │
+│ • pushOperations() │
+│ • pullOperations() │
+│ • onOperationReceived() │
 └─────────────────────────────────────────┘
-              ↓
-    ┌─────────┴─────────┐
-    ↓                   ↓
-┌──────────┐      ┌──────────────┐
-│ Network  │      │ Same Device  │
-│ Relay    │      │ Relay        │
-└──────────┘      └──────────────┘
-    ↓                   ↓
-┌──────────┐      ┌──────────────┐
-│ Raw TCP  │      │ Unix Domain  │
-│          │      │ Sockets      │
-└──────────┘      └──────────────┘
+ ↓
+ ┌─────────┴─────────┐
+ ↓ ↓
+┌──────────┐ ┌──────────────┐
+│ Network │ │ Same Device │
+│ Relay │ │ Relay │
+└──────────┘ └──────────────┘
+ ↓ ↓
+┌──────────┐ ┌──────────────┐
+│ Raw TCP │ │ Unix Domain │
+│ │ │ Sockets │
+└──────────┘ └──────────────┘
 ```
 
 ### **Key Insight:**
 
 ```
-✅ SAME PROTOCOL FORMAT: BlazeBinary encoding
-✅ SAME API: BlazeSyncRelay interface
-✅ DIFFERENT TRANSPORT: Optimized for each scenario
+ SAME PROTOCOL FORMAT: BlazeBinary encoding
+ SAME API: BlazeSyncRelay interface
+ DIFFERENT TRANSPORT: Optimized for each scenario
 
 Benefits:
 • Same code for sync logic
@@ -64,16 +64,16 @@ Benefits:
 
 ---
 
-## 🌐 **SCENARIO 1: NETWORK (Device-to-Server)**
+## **SCENARIO 1: NETWORK (Device-to-Server)**
 
 ### **Current Implementation:**
 
 ```swift
 // Network sync (BlazeTopology.connectRemote)
 let secureConnection = try await SecureConnection.create(
-    to: remote,
-    database: node.name,
-    nodeId: nodeId
+ to: remote,
+ database: node.name,
+ nodeId: nodeId
 )
 
 let relay = WebSocketRelay(connection: secureConnection)
@@ -84,24 +84,24 @@ let relay = WebSocketRelay(connection: secureConnection)
 
 ```
 ┌─────────────────────────────────────────┐
-│  BlazeBinary Protocol (encoding)         │
-│  • Same format for all scenarios           │
+│ BlazeBinary Protocol (encoding) │
+│ • Same format for all scenarios │
 └─────────────────────────────────────────┘
-              ↓
+ ↓
 ┌─────────────────────────────────────────┐
-│  SecureConnection (E2E encryption)       │
-│  • AES-256-GCM                           │
-│  • ECDH P-256 handshake                  │
+│ SecureConnection (E2E encryption) │
+│ • AES-256-GCM │
+│ • ECDH P-256 handshake │
 └─────────────────────────────────────────┘
-              ↓
+ ↓
 ┌─────────────────────────────────────────┐
-│  Raw TCP (NWConnection)                  │
-│  • Direct socket connection              │
-│  • Optional TLS (transport security)     │
+│ Raw TCP (NWConnection) │
+│ • Direct socket connection │
+│ • Optional TLS (transport security) │
 └─────────────────────────────────────────┘
-              ↓
+ ↓
 ┌─────────────────────────────────────────┐
-│  Internet / Local Network                │
+│ Internet / Local Network │
 └─────────────────────────────────────────┘
 ```
 
@@ -116,13 +116,13 @@ Bandwidth: Limited by network (100 Mbps = 12.5 MB/s)
 
 ---
 
-## 📱 **SCENARIO 2: SAME DEVICE (Cross-App)**
+## **SCENARIO 2: SAME DEVICE (Cross-App)**
 
 ### **Current Implementation:**
 
 ```swift
 // Same-device sync (BlazeTopology.enableCrossAppSync)
-let relay = InMemoryRelay(mode: .bidirectional)
+let relay = InMemoryRelay(mode:.bidirectional)
 // Uses: App Groups (shared directory)
 ```
 
@@ -130,21 +130,21 @@ let relay = InMemoryRelay(mode: .bidirectional)
 
 ```
 ┌─────────────────────────────────────────┐
-│  BlazeBinary Protocol (encoding)         │
-│  • SAME format as network!               │
+│ BlazeBinary Protocol (encoding) │
+│ • SAME format as network! │
 └─────────────────────────────────────────┘
-              ↓
+ ↓
 ┌─────────────────────────────────────────┐
-│  InMemoryRelay (in-process)             │
-│  • Direct memory sharing                 │
-│  • Or: Unix Domain Sockets               │
+│ InMemoryRelay (in-process) │
+│ • Direct memory sharing │
+│ • Or: Unix Domain Sockets │
 └─────────────────────────────────────────┘
-              ↓
+ ↓
 ┌─────────────────────────────────────────┐
-│  App Groups (shared directory)           │
-│  • Shared container                      │
-│  • File-based messaging                  │
-│  • Or: Unix Domain Sockets (faster!)     │
+│ App Groups (shared directory) │
+│ • Shared container │
+│ • File-based messaging │
+│ • Or: Unix Domain Sockets (faster!) │
 └─────────────────────────────────────────┘
 ```
 
@@ -159,56 +159,56 @@ Bandwidth: Limited by memory speed (10+ GB/s)
 
 ---
 
-## 🔥 **OPTIMAL ARCHITECTURE:**
+## **OPTIMAL ARCHITECTURE:**
 
 ### **Recommended Approach:**
 
 ```
 ┌─────────────────────────────────────────┐
-│  BlazeBinary Protocol (UNIFIED)          │
-│  • Same encoding format everywhere       │
-│  • Same operation format                 │
-│  • Same compression                      │
+│ BlazeBinary Protocol (UNIFIED) │
+│ • Same encoding format everywhere │
+│ • Same operation format │
+│ • Same compression │
 └─────────────────────────────────────────┘
-              ↓
-    ┌─────────┴─────────┐
-    ↓                   ↓
-┌──────────┐      ┌──────────────┐
-│ Network  │      │ Same Device  │
-│ Transport│      │ Transport    │
-└──────────┘      └──────────────┘
-    ↓                   ↓
-┌──────────┐      ┌──────────────┐
-│ Raw TCP  │      │ Unix Domain  │
-│ + TLS    │      │ Sockets      │
-│          │      │ (or shared   │
-│          │      │  memory)     │
-└──────────┘      └──────────────┘
+ ↓
+ ┌─────────┴─────────┐
+ ↓ ↓
+┌──────────┐ ┌──────────────┐
+│ Network │ │ Same Device │
+│ Transport│ │ Transport │
+└──────────┘ └──────────────┘
+ ↓ ↓
+┌──────────┐ ┌──────────────┐
+│ Raw TCP │ │ Unix Domain │
+│ + TLS │ │ Sockets │
+│ │ │ (or shared │
+│ │ │ memory) │
+└──────────┘ └──────────────┘
 ```
 
 ### **Why This Works:**
 
 ```
-✅ SAME PROTOCOL FORMAT
-   • BlazeBinary encoding (same everywhere)
-   • Same operation structure
-   • Same compression
-   • Same encryption (if needed)
+ SAME PROTOCOL FORMAT
+ • BlazeBinary encoding (same everywhere)
+ • Same operation structure
+ • Same compression
+ • Same encryption (if needed)
 
-✅ OPTIMAL TRANSPORT
-   • Network: Raw TCP (fastest for network)
-   • Same device: Unix Domain Sockets (fastest for local)
-   • Both use same protocol format!
+ OPTIMAL TRANSPORT
+ • Network: Raw TCP (fastest for network)
+ • Same device: Unix Domain Sockets (fastest for local)
+ • Both use same protocol format!
 
-✅ SAME CODE
-   • BlazeSyncEngine doesn't care about transport
-   • BlazeSyncRelay abstraction handles it
-   • Easy to add new transports
+ SAME CODE
+ • BlazeSyncEngine doesn't care about transport
+ • BlazeSyncRelay abstraction handles it
+ • Easy to add new transports
 ```
 
 ---
 
-## 📊 **PERFORMANCE COMPARISON:**
+## **PERFORMANCE COMPARISON:**
 
 ### **Same Protocol, Different Transport:**
 
@@ -221,28 +221,28 @@ Bandwidth: Limited by memory speed (10+ GB/s)
 ### **Key Insight:**
 
 ```
-✅ SAME PROTOCOL FORMAT (BlazeBinary)
-✅ DIFFERENT TRANSPORT (optimized for each)
-✅ SAME CODE (BlazeSyncRelay abstraction)
+ SAME PROTOCOL FORMAT (BlazeBinary)
+ DIFFERENT TRANSPORT (optimized for each)
+ SAME CODE (BlazeSyncRelay abstraction)
 
-Result: Maximum performance everywhere! 🔥
+Result: Maximum performance everywhere!
 ```
 
 ---
 
-## 🎯 **IMPLEMENTATION STRATEGY:**
+## **IMPLEMENTATION STRATEGY:**
 
 ### **1. Unified Protocol Format:**
 
 ```swift
 // Same BlazeBinary encoding everywhere
 struct BlazeOperation {
-    let id: UUID
-    let timestamp: LamportTimestamp
-    let type: OperationType
-    let collectionName: String
-    let recordId: UUID
-    let changes: [String: BlazeDocumentField]
+ let id: UUID
+ let timestamp: LamportTimestamp
+ let type: OperationType
+ let collectionName: String
+ let recordId: UUID
+ let changes: [String: BlazeDocumentField]
 }
 
 // Same encoding
@@ -254,10 +254,10 @@ let encoded = try BlazeBinaryEncoder.encode(operation)
 ```swift
 // Protocol interface (same for all transports)
 protocol BlazeSyncRelay {
-    func connect() async throws
-    func pushOperations(_ ops: [BlazeOperation]) async throws
-    func pullOperations(since: LamportTimestamp) async throws -> [BlazeOperation]
-    func onOperationReceived(_ handler: @escaping ([BlazeOperation]) async -> Void)
+ func connect() async throws
+ func pushOperations(_ ops: [BlazeOperation]) async throws
+ func pullOperations(since: LamportTimestamp) async throws -> [BlazeOperation]
+ func onOperationReceived(_ handler: @escaping ([BlazeOperation]) async -> Void)
 }
 ```
 
@@ -266,12 +266,12 @@ protocol BlazeSyncRelay {
 ```swift
 // Network relay (Raw TCP)
 class WebSocketRelay: BlazeSyncRelay {
-    private let connection: SecureConnection  // Raw TCP
-    
-    func pushOperations(_ ops: [BlazeOperation]) async throws {
-        let encoded = try encodeOperations(ops)  // BlazeBinary
-        try await connection.send(encoded)      // Raw TCP
-    }
+ private let connection: SecureConnection // Raw TCP
+
+ func pushOperations(_ ops: [BlazeOperation]) async throws {
+ let encoded = try encodeOperations(ops) // BlazeBinary
+ try await connection.send(encoded) // Raw TCP
+ }
 }
 ```
 
@@ -280,60 +280,60 @@ class WebSocketRelay: BlazeSyncRelay {
 ```swift
 // Same-device relay (Unix Domain Sockets)
 class UnixDomainRelay: BlazeSyncRelay {
-    private let socket: UnixDomainSocket
-    
-    func pushOperations(_ ops: [BlazeOperation]) async throws {
-        let encoded = try encodeOperations(ops)  // SAME BlazeBinary!
-        try await socket.send(encoded)           // Unix Domain Socket
-    }
+ private let socket: UnixDomainSocket
+
+ func pushOperations(_ ops: [BlazeOperation]) async throws {
+ let encoded = try encodeOperations(ops) // SAME BlazeBinary!
+ try await socket.send(encoded) // Unix Domain Socket
+ }
 }
 
 // Or: In-memory relay (shared memory)
 class InMemoryRelay: BlazeSyncRelay {
-    private var operations: [BlazeOperation] = []
-    
-    func pushOperations(_ ops: [BlazeOperation]) async throws {
-        // Direct memory sharing (no encoding needed!)
-        operations.append(contentsOf: ops)
-    }
+ private var operations: [BlazeOperation] = []
+
+ func pushOperations(_ ops: [BlazeOperation]) async throws {
+ // Direct memory sharing (no encoding needed!)
+ operations.append(contentsOf: ops)
+ }
 }
 ```
 
 ---
 
-## 🔥 **RECOMMENDED ARCHITECTURE:**
+## **RECOMMENDED ARCHITECTURE:**
 
 ### **Three-Tier Transport System:**
 
 ```
 ┌─────────────────────────────────────────┐
-│  TIER 1: SAME DEVICE (Fastest)           │
-│  ─────────────────────────────────────── │
-│  Transport: Shared Memory / App Groups    │
-│  Protocol: BlazeBinary (in-memory)        │
-│  Throughput: 100,000,000+ ops/sec        │
-│  Latency: <0.1ms                         │
-│  Use: Cross-app sync on same device       │
+│ TIER 1: SAME DEVICE (Fastest) │
+│ ─────────────────────────────────────── │
+│ Transport: Shared Memory / App Groups │
+│ Protocol: BlazeBinary (in-memory) │
+│ Throughput: 100,000,000+ ops/sec │
+│ Latency: <0.1ms │
+│ Use: Cross-app sync on same device │
 └─────────────────────────────────────────┘
-              ↓ (if not available)
+ ↓ (if not available)
 ┌─────────────────────────────────────────┐
-│  TIER 2: SAME DEVICE (Very Fast)        │
-│  ─────────────────────────────────────── │
-│  Transport: Unix Domain Sockets          │
-│  Protocol: BlazeBinary (over socket)     │
-│  Throughput: 50,000,000+ ops/sec         │
-│  Latency: <1ms                           │
-│  Use: Cross-app sync (fallback)          │
+│ TIER 2: SAME DEVICE (Very Fast) │
+│ ─────────────────────────────────────── │
+│ Transport: Unix Domain Sockets │
+│ Protocol: BlazeBinary (over socket) │
+│ Throughput: 50,000,000+ ops/sec │
+│ Latency: <1ms │
+│ Use: Cross-app sync (fallback) │
 └─────────────────────────────────────────┘
-              ↓ (if different device)
+ ↓ (if different device)
 ┌─────────────────────────────────────────┐
-│  TIER 3: NETWORK (Fast)                  │
-│  ─────────────────────────────────────── │
-│  Transport: Raw TCP                      │
-│  Protocol: BlazeBinary (over TCP)        │
-│  Throughput: 7,800,000 ops/sec           │
-│  Latency: 5-100ms                        │
-│  Use: Device-to-server, device-to-device │
+│ TIER 3: NETWORK (Fast) │
+│ ─────────────────────────────────────── │
+│ Transport: Raw TCP │
+│ Protocol: BlazeBinary (over TCP) │
+│ Throughput: 7,800,000 ops/sec │
+│ Latency: 5-100ms │
+│ Use: Device-to-server, device-to-device │
 └─────────────────────────────────────────┘
 ```
 
@@ -342,23 +342,23 @@ class InMemoryRelay: BlazeSyncRelay {
 ```swift
 // BlazeTopology automatically selects best transport
 func connect(from: UUID, to: UUID) async throws {
-    if isSameDevice(from, to) {
-        // Use fastest: Shared memory or Unix Domain Sockets
-        let relay = InMemoryRelay()  // or UnixDomainRelay()
-    } else {
-        // Use network: Raw TCP
-        let relay = WebSocketRelay(connection: secureConnection)
-    }
-    
-    // Same sync engine works with both!
-    let engine = BlazeSyncEngine(localDB: db, relay: relay)
-    try await engine.start()
+ if isSameDevice(from, to) {
+ // Use fastest: Shared memory or Unix Domain Sockets
+ let relay = InMemoryRelay() // or UnixDomainRelay()
+ } else {
+ // Use network: Raw TCP
+ let relay = WebSocketRelay(connection: secureConnection)
+ }
+
+ // Same sync engine works with both!
+ let engine = BlazeSyncEngine(localDB: db, relay: relay)
+ try await engine.start()
 }
 ```
 
 ---
 
-## 📊 **PERFORMANCE BENEFITS:**
+## **PERFORMANCE BENEFITS:**
 
 ### **Using Same Protocol, Different Transport:**
 
@@ -384,18 +384,18 @@ Transport: Shared Memory (App Groups)
 Throughput: 100,000,000+ ops/sec
 Latency: <0.1ms
 
-KEY: Same protocol format, optimal transport! 🔥
+KEY: Same protocol format, optimal transport!
 ```
 
 ---
 
-## 🎯 **BOTTOM LINE:**
+## **BOTTOM LINE:**
 
 ### **Should We Use Different Protocols?**
 
 ```
-❌ NO - Use same protocol format (BlazeBinary)
-✅ YES - Use different transport layers (optimized)
+ NO - Use same protocol format (BlazeBinary)
+ YES - Use different transport layers (optimized)
 
 Result:
 • Same code for sync logic
@@ -407,7 +407,7 @@ Result:
 ### **Can Same Protocol Be Just As Fast?**
 
 ```
-✅ YES! Same protocol format, different transport:
+ YES! Same protocol format, different transport:
 
 Network: Raw TCP (7.8M ops/sec) - fastest for network
 Same Device: Unix Domain Sockets (50M+ ops/sec) - fastest for local
@@ -415,21 +415,21 @@ Same Device: Shared Memory (100M+ ops/sec) - fastest possible
 
 All use BlazeBinary protocol format!
 All use BlazeSyncRelay abstraction!
-All get maximum performance! 🔥🔥🔥
+All get maximum performance!
 ```
 
 ### **Recommended Architecture:**
 
 ```
-✅ Unified Protocol: BlazeBinary (same everywhere)
-✅ Transport Abstraction: BlazeSyncRelay (same interface)
-✅ Optimized Transports:
-   • Network: Raw TCP (WebSocketRelay)
-   • Same Device: Unix Domain Sockets (UnixDomainRelay)
-   • Same Device: Shared Memory (InMemoryRelay)
+ Unified Protocol: BlazeBinary (same everywhere)
+ Transport Abstraction: BlazeSyncRelay (same interface)
+ Optimized Transports:
+ • Network: Raw TCP (WebSocketRelay)
+ • Same Device: Unix Domain Sockets (UnixDomainRelay)
+ • Same Device: Shared Memory (InMemoryRelay)
 
-Result: Best of both worlds! 🚀
+Result: Best of both worlds!
 ```
 
-**Same protocol format, optimal transport for each scenario = Maximum performance everywhere! 🔥**
+**Same protocol format, optimal transport for each scenario = Maximum performance everywhere! **
 

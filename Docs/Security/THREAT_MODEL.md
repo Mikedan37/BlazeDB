@@ -4,7 +4,7 @@
 
 ---
 
-## 🎯 **ASSETS TO PROTECT**
+## **ASSETS TO PROTECT**
 
 ### **1. Data Assets**
 - **Database files** (`.blazedb` files) - Encrypted user data
@@ -25,7 +25,7 @@
 
 ---
 
-## 👤 **THREAT ACTORS**
+## **THREAT ACTORS**
 
 ### **1. External Attackers**
 - **Network attackers** - Intercept network traffic
@@ -80,7 +80,7 @@
 
 ---
 
-## 🚨 **ATTACK VECTORS**
+## **ATTACK VECTORS**
 
 ### **1. Network Attacks**
 
@@ -97,12 +97,12 @@ Attacker can:
 ```
 
 **Mitigation:**
-- ✅ TLS 1.2+ encryption (prevents interception)
-- ✅ Certificate pinning (prevents MITM)
-- ✅ End-to-end encryption (additional layer)
+- TLS 1.2+ encryption (prevents interception)
+- Certificate pinning (prevents MITM)
+- End-to-end encryption (additional layer)
 
-**Risk Level**: 🔴 **HIGH** (without TLS)
-**Risk Level**: 🟢 **LOW** (with TLS + pinning)
+**Risk Level**: **HIGH** (without TLS)
+**Risk Level**: **LOW** (with TLS + pinning)
 
 #### **B. Replay Attacks**
 **Threat**: Attacker captures and replays old operations
@@ -115,12 +115,12 @@ Attacker can:
 ```
 
 **Mitigation:**
-- ✅ Operation nonces (prevent duplicates)
-- ✅ Timestamp validation (prevent old operations)
-- ✅ Operation expiry (60-second window)
+- Operation nonces (prevent duplicates)
+- Timestamp validation (prevent old operations)
+- Operation expiry (60-second window)
 
-**Risk Level**: 🟡 **MEDIUM** (without nonces)
-**Risk Level**: 🟢 **LOW** (with nonces + timestamps)
+**Risk Level**: **MEDIUM** (without nonces)
+**Risk Level**: **LOW** (with nonces + timestamps)
 
 #### **C. Denial of Service (DoS)**
 **Threat**: Attacker floods server with requests
@@ -133,11 +133,11 @@ Legitimate users can't access database
 ```
 
 **Mitigation:**
-- ✅ Rate limiting (limit operations per user)
-- ✅ Operation pooling (limit concurrent operations)
-- ✅ Connection limits (limit concurrent connections)
+- Rate limiting (limit operations per user)
+- Operation pooling (limit concurrent operations)
+- Connection limits (limit concurrent connections)
 
-**Risk Level**: 🟡 **MEDIUM**
+**Risk Level**: **MEDIUM**
 
 ---
 
@@ -154,31 +154,31 @@ Legitimate users can't access database
 ```
 
 **Mitigation:**
-- ✅ AES-256-GCM encryption (unbreakable with current tech)
-- ✅ Strong password requirements (12+ characters)
-- ✅ Secure Enclave storage (iOS/macOS - hardware protection)
-- ✅ Key derivation (Argon2 - memory-hard)
+- AES-256-GCM encryption (unbreakable with current tech)
+- Strong password requirements (12+ characters)
+- Secure Enclave storage (iOS/macOS - hardware protection)
+- Key derivation (Argon2 - memory-hard)
 
-**Risk Level**: 🟡 **MEDIUM** (with weak passwords)
-**Risk Level**: 🟢 **LOW** (with strong passwords + Secure Enclave)
+**Risk Level**: **MEDIUM** (with weak passwords)
+**Risk Level**: **LOW** (with strong passwords + Secure Enclave)
 
 #### **B. Metadata Tampering**
 **Threat**: Attacker modifies metadata to corrupt database
 
 **Attack Scenario:**
 ```
-1. Attacker modifies .meta file
+1. Attacker modifies.meta file
 2. Changes indexMap to point to wrong pages
 3. Database becomes corrupted
 ```
 
 **Mitigation:**
-- ✅ HMAC signatures (detect tampering)
-- ✅ Integrity checks (verify on load)
-- ✅ Checksums (detect corruption)
+- HMAC signatures (detect tampering)
+- Integrity checks (verify on load)
+- Checksums (detect corruption)
 
-**Risk Level**: 🔴 **HIGH** (without signatures)
-**Risk Level**: 🟢 **LOW** (with HMAC signatures)
+**Risk Level**: **HIGH** (without signatures)
+**Risk Level**: **LOW** (with HMAC signatures)
 
 #### **C. Memory Dumps**
 **Threat**: Attacker extracts keys from memory
@@ -192,12 +192,12 @@ Legitimate users can't access database
 ```
 
 **Mitigation:**
-- ✅ Secure Enclave (keys never in app memory)
-- ✅ Key rotation (forward secrecy - limits exposure)
-- ✅ Memory clearing (zero keys after use)
+- Secure Enclave (keys never in app memory)
+- Key rotation (forward secrecy - limits exposure)
+- Memory clearing (zero keys after use)
 
-**Risk Level**: 🟡 **MEDIUM** (keys in memory)
-**Risk Level**: 🟢 **LOW** (Secure Enclave)
+**Risk Level**: **MEDIUM** (keys in memory)
+**Risk Level**: **LOW** (Secure Enclave)
 
 ---
 
@@ -214,13 +214,13 @@ Legitimate users can't access database
 ```
 
 **Mitigation:**
-- ✅ Argon2 KDF (memory-hard, GPU-resistant)
-- ✅ Strong password requirements (12+ chars, mixed case, numbers)
-- ✅ Rate limiting (limit password attempts)
-- ✅ Account lockout (lock after failed attempts)
+- Argon2 KDF (memory-hard, GPU-resistant)
+- Strong password requirements (12+ chars, mixed case, numbers)
+- Rate limiting (limit password attempts)
+- Account lockout (lock after failed attempts)
 
-**Risk Level**: 🔴 **HIGH** (with PBKDF2 + weak passwords)
-**Risk Level**: 🟢 **LOW** (with Argon2 + strong passwords)
+**Risk Level**: **HIGH** (with PBKDF2 + weak passwords)
+**Risk Level**: **LOW** (with Argon2 + strong passwords)
 
 #### **B. Credential Theft**
 **Threat**: Attacker steals passwords from users
@@ -233,12 +233,12 @@ Legitimate users can't access database
 ```
 
 **Mitigation:**
-- ✅ Multi-factor authentication (MFA - to be implemented)
-- ✅ Biometric authentication (Face ID/Touch ID)
-- ✅ Secure password storage (Keychain)
+- Multi-factor authentication (MFA - to be implemented)
+- Biometric authentication (Face ID/Touch ID)
+- Secure password storage (Keychain)
 
-**Risk Level**: 🟡 **MEDIUM** (password-only)
-**Risk Level**: 🟢 **LOW** (with MFA)
+**Risk Level**: **MEDIUM** (password-only)
+**Risk Level**: **LOW** (with MFA)
 
 ---
 
@@ -255,12 +255,12 @@ Legitimate users can't access database
 ```
 
 **Mitigation:**
-- ✅ Operation signatures (HMAC - detect tampering)
-- ✅ Authorization checks (RBAC/RLS - prevent unauthorized ops)
-- ✅ Replay protection (nonces - prevent duplicates)
+- Operation signatures (HMAC - detect tampering)
+- Authorization checks (RBAC/RLS - prevent unauthorized ops)
+- Replay protection (nonces - prevent duplicates)
 
-**Risk Level**: 🔴 **HIGH** (without signatures)
-**Risk Level**: 🟢 **LOW** (with signatures + authorization)
+**Risk Level**: **HIGH** (without signatures)
+**Risk Level**: **LOW** (with signatures + authorization)
 
 #### **B. Conflict Resolution Attacks**
 **Threat**: Attacker exploits conflict resolution
@@ -273,15 +273,15 @@ Legitimate users can't access database
 ```
 
 **Mitigation:**
-- ✅ Role-based priority (SERVER > CLIENT)
-- ✅ Timestamp-based resolution (Lamport timestamps)
-- ✅ Operation dependencies (prevent out-of-order)
+- Role-based priority (SERVER > CLIENT)
+- Timestamp-based resolution (Lamport timestamps)
+- Operation dependencies (prevent out-of-order)
 
-**Risk Level**: 🟡 **MEDIUM**
+**Risk Level**: **MEDIUM**
 
 ---
 
-## 🛡️ **MITIGATION STRATEGIES**
+## ️ **MITIGATION STRATEGIES**
 
 ### **1. Defense in Depth**
 - **Layer 1**: Network encryption (TLS)
@@ -309,7 +309,7 @@ Legitimate users can't access database
 
 ---
 
-## 📊 **RISK ASSESSMENT**
+## **RISK ASSESSMENT**
 
 ### **High Risk (Must Mitigate)**
 1. **Network interception** - Without TLS
@@ -330,27 +330,27 @@ Legitimate users can't access database
 
 ---
 
-## 🔒 **SECURITY CONTROLS**
+## **SECURITY CONTROLS**
 
 ### **Implemented Controls**
-- ✅ AES-256-GCM encryption (data at rest)
-- ✅ TLS support (data in transit - optional)
-- ✅ PBKDF2 key derivation (needs upgrade to Argon2)
-- ✅ Operation nonces (replay protection)
-- ✅ RBAC/RLS (access control)
-- ✅ Secure Enclave support (iOS/macOS)
+- AES-256-GCM encryption (data at rest)
+- TLS support (data in transit - optional)
+- PBKDF2 key derivation (needs upgrade to Argon2)
+- Operation nonces (replay protection)
+- RBAC/RLS (access control)
+- Secure Enclave support (iOS/macOS)
 
 ### **Missing Controls**
-- ❌ Argon2 KDF (hardened key derivation)
-- ❌ TLS enforcement (currently optional)
-- ❌ HMAC metadata signatures (tamper detection)
-- ❌ Forward secrecy (key rotation)
-- ❌ Certificate pinning (MITM prevention)
-- ❌ MFA support (multi-factor authentication)
+- Argon2 KDF (hardened key derivation)
+- TLS enforcement (currently optional)
+- HMAC metadata signatures (tamper detection)
+- Forward secrecy (key rotation)
+- Certificate pinning (MITM prevention)
+- MFA support (multi-factor authentication)
 
 ---
 
-## 📋 **SECURITY REQUIREMENTS**
+## **SECURITY REQUIREMENTS**
 
 ### **Must Have (Critical)**
 1. **TLS for all remote connections** - Prevent network interception
@@ -372,38 +372,38 @@ Legitimate users can't access database
 
 ---
 
-## 🎯 **SECURITY GOALS**
+## **SECURITY GOALS**
 
 ### **Confidentiality**
-- ✅ Data encrypted at rest (AES-256-GCM)
-- ✅ Data encrypted in transit (TLS - when enabled)
-- ⚠️ Keys protected (Secure Enclave - optional)
+- Data encrypted at rest (AES-256-GCM)
+- Data encrypted in transit (TLS - when enabled)
+- ️ Keys protected (Secure Enclave - optional)
 
 ### **Integrity**
-- ✅ Data integrity (GCM auth tag)
-- ⚠️ Metadata integrity (HMAC - to be implemented)
-- ✅ Operation integrity (signatures - optional)
+- Data integrity (GCM auth tag)
+- ️ Metadata integrity (HMAC - to be implemented)
+- Operation integrity (signatures - optional)
 
 ### **Availability**
-- ✅ Rate limiting (prevent DoS)
-- ✅ Operation pooling (prevent overload)
-- ✅ Connection limits (prevent exhaustion)
+- Rate limiting (prevent DoS)
+- Operation pooling (prevent overload)
+- Connection limits (prevent exhaustion)
 
 ### **Authentication**
-- ✅ Password-based (PBKDF2 - needs Argon2)
-- ⚠️ Biometric (Secure Enclave - optional)
-- ❌ MFA (to be implemented)
+- Password-based (PBKDF2 - needs Argon2)
+- ️ Biometric (Secure Enclave - optional)
+- MFA (to be implemented)
 
 ### **Authorization**
-- ✅ RBAC (role-based access control)
-- ✅ RLS (row-level security)
-- ✅ Policy engine (fine-grained control)
+- RBAC (role-based access control)
+- RLS (row-level security)
+- Policy engine (fine-grained control)
 
 ---
 
-## 📝 **THREAT MODEL SUMMARY**
+## **THREAT MODEL SUMMARY**
 
-**Overall Security Posture**: 🟡 **MODERATE**
+**Overall Security Posture**: **MODERATE**
 
 **Strengths:**
 - Strong encryption (AES-256-GCM)

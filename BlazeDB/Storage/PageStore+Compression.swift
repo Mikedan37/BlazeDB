@@ -9,6 +9,11 @@
 //
 
 import Foundation
+#if canImport(CryptoKit)
+import CryptoKit
+#else
+import Crypto
+#endif
 
 #if canImport(Compression)
 import Compression
@@ -17,8 +22,9 @@ extension PageStore {
     
     // MARK: - Compression Configuration
     
-    private static var compressionEnabled: [ObjectIdentifier: Bool] = [:]
-    private static let compressionLock = NSLock()
+    // Swift 6: Protected by NSLock, safe for concurrent access
+    nonisolated(unsafe) private static var compressionEnabled: [ObjectIdentifier: Bool] = [:]
+    nonisolated(unsafe) private static let compressionLock = NSLock()
     
     /// Enable compression for pages > 1KB
     public func enableCompression() {
@@ -148,19 +154,21 @@ extension PageStore {
     
     // MARK: - Compression Helpers
     
+    /// Compress data using specified algorithm
+    /// Standardized API: compress(_ input: Data) throws -> Data
     private func compressData(_ data: Data, algorithm: compression_algorithm) throws -> Data {
-        // Use safe Swift patterns (no unsafe pointers)
+        // Convert Data to [UInt8] for compression API
         let sourceBuffer = Array(data)
         let destBufferSize = data.count
         var destBuffer = [UInt8](repeating: 0, count: destBufferSize)
         
+        // Compression API signature: (dest, destSize, src, srcSize, scratch, algorithm)
         let compressedSize = compression_encode_buffer(
             &destBuffer,
             destBufferSize,
             sourceBuffer,
             sourceBuffer.count,
             nil,
-            0,
             algorithm
         )
         
@@ -170,21 +178,24 @@ extension PageStore {
             ])
         }
         
+        // Convert back to Data
         return Data(destBuffer.prefix(compressedSize))
     }
     
+    /// Decompress data using specified algorithm
+    /// Standardized API: decompress(_ input: Data) throws -> Data
     private func decompressData(_ data: Data, originalSize: Int, algorithm: compression_algorithm) throws -> Data {
-        // Use safe Swift patterns (no unsafe pointers)
+        // Convert Data to [UInt8] for decompression API
         let sourceBuffer = Array(data)
         var destBuffer = [UInt8](repeating: 0, count: originalSize)
         
+        // Decompression API signature: (dest, destSize, src, srcSize, scratch, algorithm)
         let decompressedSize = compression_decode_buffer(
             &destBuffer,
             originalSize,
             sourceBuffer,
             sourceBuffer.count,
             nil,
-            0,
             algorithm
         )
         
@@ -195,6 +206,7 @@ extension PageStore {
             )
         }
         
+        // Convert back to Data
         return Data(destBuffer)
     }
 }

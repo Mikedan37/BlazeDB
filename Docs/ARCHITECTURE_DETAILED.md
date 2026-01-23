@@ -16,8 +16,8 @@ BlazeDB is a page-based embedded database designed for predictable performance a
 
 **What guarantees it provides:** ACID compliance, encryption at rest, snapshot isolation via MVCC, crash recovery through write-ahead logging, deterministic encoding, and transparent corruption detection. Performance invariants are maintained through automated regression testing.
 
-**Current Version:** 2.5.0-alpha  
-**Platform Support:** macOS 12+, iOS 15+, Linux  
+**Current Version:** 2.5.0-alpha
+**Platform Support:** macOS 12+, iOS 15+, Linux
 **Language:** Swift 5.9+
 
 ---
@@ -44,44 +44,44 @@ Key constraints that shaped the architecture: latency requirements demanded care
 - [Limitations & Tradeoffs](#limitations--tradeoffs)
 - [Stability & Maturity](#stability--maturity)
 - [Architecture](#architecture)
-  - [System Architecture Layers](#system-architecture-layers)
+ - [System Architecture Layers](#system-architecture-layers)
 - [Prior Art & Influences](#prior-art--influences)
 - [Why Not SQLite / Core Data / Realm / LMDB?](#why-not-sqlite--core-data--realm--lmdb)
 - [Storage Engine](#storage-engine)
-  - [Page Structure](#page-structure)
+ - [Page Structure](#page-structure)
 - [BlazeBinary Protocol](#blazebinary-protocol)
-  - [Protocol Overview](#protocol-overview)
-  - [High-Level Characteristics](#high-level-characteristics)
+ - [Protocol Overview](#protocol-overview)
+ - [High-Level Characteristics](#high-level-characteristics)
 - [Concurrency Model](#concurrency-model)
-  - [MVCC Architecture](#mvcc-architecture)
+ - [MVCC Architecture](#mvcc-architecture)
 - [Security Model](#security-model)
-  - [Encryption Architecture](#encryption-architecture)
+ - [Encryption Architecture](#encryption-architecture)
 - [Threat Model](#threat-model)
-  - [Threat Actors & Attack Surfaces](#threat-actors--attack-surfaces)
-  - [Security Control Matrix](#security-control-matrix)
+ - [Threat Actors & Attack Surfaces](#threat-actors--attack-surfaces)
+ - [Security Control Matrix](#security-control-matrix)
 - [Cryptographic Architecture](#cryptographic-architecture)
-  - [Data at Rest: Local Encryption Pipeline](#data-at-rest-local-encryption-pipeline)
-  - [Data in Transit: Sync & Protocol Encryption](#data-in-transit-sync--protocol-encryption)
-  - [Putting It Together](#putting-it-together)
+ - [Data at Rest: Local Encryption Pipeline](#data-at-rest-local-encryption-pipeline)
+ - [Data in Transit: Sync & Protocol Encryption](#data-in-transit-sync--protocol-encryption)
+ - [Putting It Together](#putting-it-together)
 - [Transaction Model](#transaction-model)
-  - [Write-Ahead Logging](#write-ahead-logging)
+ - [Write-Ahead Logging](#write-ahead-logging)
 - [Query System](#query-system)
-  - [Query Execution](#query-execution)
+ - [Query Execution](#query-execution)
 - [Performance Characteristics](#performance-characteristics)
-  - [Core Operations](#core-operations)
-  - [Multi-Core Performance](#multi-core-performance)
-  - [Query Performance](#query-performance)
-  - [Network Sync Performance](#network-sync-performance)
-  - [Performance Invariants](#performance-invariants)
+ - [Core Operations](#core-operations)
+ - [Multi-Core Performance](#multi-core-performance)
+ - [Query Performance](#query-performance)
+ - [Network Sync Performance](#network-sync-performance)
+ - [Performance Invariants](#performance-invariants)
 - [Benchmark Methodology](#benchmark-methodology)
 - [Testing & Validation](#testing--validation)
-  - [Fault Injection & Crash Testing](#fault-injection--crash-testing)
-  - [Data Integrity Guarantees](#data-integrity-guarantees)
+ - [Fault Injection & Crash Testing](#fault-injection--crash-testing)
+ - [Data Integrity Guarantees](#data-integrity-guarantees)
 - [Recommended Use Cases](#recommended-use-cases)
 - [API & Integration](#api--integration)
-  - [Installation](#installation)
-  - [Basic Usage](#basic-usage)
-  - [Distributed Sync](#distributed-sync)
+ - [Installation](#installation)
+ - [Basic Usage](#basic-usage)
+ - [Distributed Sync](#distributed-sync)
 - [Future Work](#future-work)
 - [Versioning & Stability](#versioning--stability)
 - [Documentation](#documentation)
@@ -90,12 +90,12 @@ Key constraints that shaped the architecture: latency requirements demanded care
 - [Contributing](#contributing)
 - [License](#license)
 - [Appendix](#appendix)
-  - [BlazeBinary Protocol Specification](#blazebinary-protocol-specification)
-  - [Record Format Structure](#record-format-structure)
-  - [Field Encoding Details](#field-encoding-details)
-  - [Type System Reference](#type-system-reference)
-  - [Value Encoding Examples](#value-encoding-examples)
-  - [Network Frame Structure](#network-frame-structure)
+ - [BlazeBinary Protocol Specification](#blazebinary-protocol-specification)
+ - [Record Format Structure](#record-format-structure)
+ - [Field Encoding Details](#field-encoding-details)
+ - [Type System Reference](#type-system-reference)
+ - [Value Encoding Examples](#value-encoding-examples)
+ - [Network Frame Structure](#network-frame-structure)
 
 ---
 
@@ -182,94 +182,94 @@ The architecture is layered with clear separation of concerns. This structure ma
 
 ```mermaid
 graph TB
-    subgraph AppLayer["Application Layer"]
-        A1["BlazeDBClient<br/>Public API"]
-        A2["BlazeShell<br/>CLI Tool"]
-        A3["BlazeStudio<br/>GUI Tool"]
-        A4["SwiftUI Integration<br/>@BlazeQuery"]
-    end
-    
-    subgraph QueryLayer["Query & Index Layer"]
-        Q1["QueryBuilder<br/>Fluent DSL"]
-        Q2["QueryOptimizer<br/>Index Selection"]
-        Q3["QueryPlanner<br/>Execution Plan"]
-        I1["Secondary Indexes"]
-        I2["Full-Text Search"]
-        I3["Spatial Index"]
-        I4["Vector Index"]
-    end
-    
-    subgraph MVCCLayer["MVCC & Concurrency Layer"]
-        M1["VersionManager<br/>Multi-Version Storage"]
-        M2["MVCCTransaction<br/>Snapshot Isolation"]
-        M3["ConflictResolution<br/>Lost Update Prevention"]
-        M4["PageGarbageCollector<br/>Version Cleanup"]
-    end
-    
-    subgraph StorageLayer["Storage Layer"]
-        S1["PageStore<br/>4KB Pages"]
-        S2["WriteAheadLog<br/>WAL for Durability"]
-        S3["StorageLayout<br/>Metadata Management"]
-        S4["Overflow Pages<br/>Large Records"]
-    end
-    
-    subgraph EncryptLayer["Encryption Layer"]
-        E1["AES-256-GCM<br/>Per-Page Encryption"]
-        E2["KeyManager<br/>Argon2id + HKDF"]
-        E3["Secure Enclave<br/>iOS/macOS"]
-    end
-    
-    subgraph NetworkLayer["Network Layer"]
-        N1["In-Memory Queue<br/>&lt;0.1ms"]
-        N2["Unix Domain Socket<br/>~0.5ms"]
-        N3["TCP Relay<br/>~5ms"]
-        N4["BlazeBinary Protocol<br/>53% smaller"]
-    end
-    
-    A1 --> Q1
-    A2 --> Q1
-    A3 --> Q1
-    A4 --> Q1
-    
-    Q1 --> Q2
-    Q2 --> Q3
-    Q3 --> I1
-    Q3 --> I2
-    Q3 --> I3
-    Q3 --> I4
-    
-    Q3 --> M1
-    M1 --> M2
-    M2 --> M3
-    M3 --> M4
-    
-    M2 --> S1
-    M2 --> S2
-    S1 --> S3
-    S1 --> S4
-    
-    S1 --> E1
-    E1 --> E2
-    E2 --> E3
-    
-    A1 --> N1
-    A1 --> N2
-    A1 --> N3
-    N3 --> N4
-    
-    classDef appLayer fill:#3498db,stroke:#2980b9,stroke-width:3px,color:#fff
-    classDef queryLayer fill:#2ecc71,stroke:#27ae60,stroke-width:3px,color:#fff
-    classDef mvccLayer fill:#e74c3c,stroke:#c0392b,stroke-width:3px,color:#fff
-    classDef storageLayer fill:#f39c12,stroke:#e67e22,stroke-width:3px,color:#fff
-    classDef cryptoLayer fill:#9b59b6,stroke:#8e44ad,stroke-width:3px,color:#fff
-    classDef networkLayer fill:#1abc9c,stroke:#16a085,stroke-width:3px,color:#fff
-    
-    class A1,A2,A3,A4 appLayer
-    class Q1,Q2,Q3,I1,I2,I3,I4 queryLayer
-    class M1,M2,M3,M4 mvccLayer
-    class S1,S2,S3,S4 storageLayer
-    class E1,E2,E3 cryptoLayer
-    class N1,N2,N3,N4 networkLayer
+ subgraph AppLayer["Application Layer"]
+ A1["BlazeDBClient<br/>Public API"]
+ A2["BlazeShell<br/>CLI Tool"]
+ A3["BlazeStudio<br/>GUI Tool"]
+ A4["SwiftUI Integration<br/>@BlazeQuery"]
+ end
+
+ subgraph QueryLayer["Query & Index Layer"]
+ Q1["QueryBuilder<br/>Fluent DSL"]
+ Q2["QueryOptimizer<br/>Index Selection"]
+ Q3["QueryPlanner<br/>Execution Plan"]
+ I1["Secondary Indexes"]
+ I2["Full-Text Search"]
+ I3["Spatial Index"]
+ I4["Vector Index"]
+ end
+
+ subgraph MVCCLayer["MVCC & Concurrency Layer"]
+ M1["VersionManager<br/>Multi-Version Storage"]
+ M2["MVCCTransaction<br/>Snapshot Isolation"]
+ M3["ConflictResolution<br/>Lost Update Prevention"]
+ M4["PageGarbageCollector<br/>Version Cleanup"]
+ end
+
+ subgraph StorageLayer["Storage Layer"]
+ S1["PageStore<br/>4KB Pages"]
+ S2["WriteAheadLog<br/>WAL for Durability"]
+ S3["StorageLayout<br/>Metadata Management"]
+ S4["Overflow Pages<br/>Large Records"]
+ end
+
+ subgraph EncryptLayer["Encryption Layer"]
+ E1["AES-256-GCM<br/>Per-Page Encryption"]
+ E2["KeyManager<br/>Argon2id + HKDF"]
+ E3["Secure Enclave<br/>iOS/macOS"]
+ end
+
+ subgraph NetworkLayer["Network Layer"]
+ N1["In-Memory Queue<br/>&lt;0.1ms"]
+ N2["Unix Domain Socket<br/>~0.5ms"]
+ N3["TCP Relay<br/>~5ms"]
+ N4["BlazeBinary Protocol<br/>53% smaller"]
+ end
+
+ A1 --> Q1
+ A2 --> Q1
+ A3 --> Q1
+ A4 --> Q1
+
+ Q1 --> Q2
+ Q2 --> Q3
+ Q3 --> I1
+ Q3 --> I2
+ Q3 --> I3
+ Q3 --> I4
+
+ Q3 --> M1
+ M1 --> M2
+ M2 --> M3
+ M3 --> M4
+
+ M2 --> S1
+ M2 --> S2
+ S1 --> S3
+ S1 --> S4
+
+ S1 --> E1
+ E1 --> E2
+ E2 --> E3
+
+ A1 --> N1
+ A1 --> N2
+ A1 --> N3
+ N3 --> N4
+
+ classDef appLayer fill:#3498db,stroke:#2980b9,stroke-width:3px,color:#fff
+ classDef queryLayer fill:#2ecc71,stroke:#27ae60,stroke-width:3px,color:#fff
+ classDef mvccLayer fill:#e74c3c,stroke:#c0392b,stroke-width:3px,color:#fff
+ classDef storageLayer fill:#f39c12,stroke:#e67e22,stroke-width:3px,color:#fff
+ classDef cryptoLayer fill:#9b59b6,stroke:#8e44ad,stroke-width:3px,color:#fff
+ classDef networkLayer fill:#1abc9c,stroke:#16a085,stroke-width:3px,color:#fff
+
+ class A1,A2,A3,A4 appLayer
+ class Q1,Q2,Q3,I1,I2,I3,I4 queryLayer
+ class M1,M2,M3,M4 mvccLayer
+ class S1,S2,S3,S4 storageLayer
+ class E1,E2,E3 cryptoLayer
+ class N1,N2,N3,N4 networkLayer
 ```
 
 ---
@@ -331,49 +331,49 @@ BlazeDB uses a page-based storage architecture with 4KB pages. This size works w
 
 ```mermaid
 graph LR
-    subgraph PageStruct["Page Structure (4KB)"]
-        P1["Header<br/>Magic + Version<br/>8 bytes"]
-        P2["BlazeBinary Data<br/>Variable Length"]
-        P3["Overflow Pointer<br/>4 bytes if needed"]
-        P4["Padding<br/>Zero-filled"]
-    end
-    
-    subgraph FileLayout["File Layout"]
-        F1[".blazedb<br/>Data Pages"]
-        F2[".meta<br/>Index Map"]
-        F3[".wal<br/>Write-Ahead Log"]
-    end
-    
-    subgraph PageAlloc["Page Allocation"]
-        PA1["Main Page<br/>Record Start"]
-        PA2["Overflow Page 1<br/>Continuation"]
-        PA3["Overflow Page 2<br/>Continuation"]
-    end
-    
-    P1 --> P2
-    P2 --> P3
-    P3 --> P4
-    
-    P2 --> F1
-    F1 --> F2
-    F1 --> F3
-    
-    PA1 -->|"Overflow Chain"| PA2
-    PA2 -->|"Overflow Chain"| PA3
-    
-    classDef header fill:#3498db,stroke:#2980b9,stroke-width:2px,color:#fff
-    classDef data fill:#2ecc71,stroke:#27ae60,stroke-width:2px,color:#fff
-    classDef file fill:#e74c3c,stroke:#c0392b,stroke-width:2px,color:#fff
-    classDef meta fill:#f39c12,stroke:#e67e22,stroke-width:2px,color:#fff
-    classDef wal fill:#9b59b6,stroke:#8e44ad,stroke-width:2px,color:#fff
-    classDef page fill:#1abc9c,stroke:#16a085,stroke-width:2px,color:#fff
-    
-    class P1 header
-    class P2 data
-    class F1 file
-    class F2 meta
-    class F3 wal
-    class PA1,PA2,PA3 page
+ subgraph PageStruct["Page Structure (4KB)"]
+ P1["Header<br/>Magic + Version<br/>8 bytes"]
+ P2["BlazeBinary Data<br/>Variable Length"]
+ P3["Overflow Pointer<br/>4 bytes if needed"]
+ P4["Padding<br/>Zero-filled"]
+ end
+
+ subgraph FileLayout["File Layout"]
+ F1[".blazedb<br/>Data Pages"]
+ F2[".meta<br/>Index Map"]
+ F3[".wal<br/>Write-Ahead Log"]
+ end
+
+ subgraph PageAlloc["Page Allocation"]
+ PA1["Main Page<br/>Record Start"]
+ PA2["Overflow Page 1<br/>Continuation"]
+ PA3["Overflow Page 2<br/>Continuation"]
+ end
+
+ P1 --> P2
+ P2 --> P3
+ P3 --> P4
+
+ P2 --> F1
+ F1 --> F2
+ F1 --> F3
+
+ PA1 -->|"Overflow Chain"| PA2
+ PA2 -->|"Overflow Chain"| PA3
+
+ classDef header fill:#3498db,stroke:#2980b9,stroke-width:2px,color:#fff
+ classDef data fill:#2ecc71,stroke:#27ae60,stroke-width:2px,color:#fff
+ classDef file fill:#e74c3c,stroke:#c0392b,stroke-width:2px,color:#fff
+ classDef meta fill:#f39c12,stroke:#e67e22,stroke-width:2px,color:#fff
+ classDef wal fill:#9b59b6,stroke:#8e44ad,stroke-width:2px,color:#fff
+ classDef page fill:#1abc9c,stroke:#16a085,stroke-width:2px,color:#fff
+
+ class P1 header
+ class P2 data
+ class F1 file
+ class F2 meta
+ class F3 wal
+ class PA1,PA2,PA3 page
 ```
 
 **File Organization:**
@@ -398,47 +398,47 @@ BlazeDB uses a custom binary encoding format called BlazeBinary. After benchmark
 
 ```mermaid
 graph LR
-    subgraph Input["Input Data"]
-        D1["Swift Dictionary<br/>String: Any"]
-        D2["Codable Struct"]
-    end
-    
-    subgraph Encoder["BlazeBinary Encoder"]
-        E1["Field Name<br/>Compression<br/>Top 127 = 1 byte"]
-        E2["Type Tag<br/>1 byte"]
-        E3["Value Encoding<br/>Variable Length"]
-        E4["Bit Packing<br/>Optimization"]
-    end
-    
-    subgraph Output["Output"]
-        O1["Binary Data<br/>53% smaller<br/>than JSON"]
-        O2["CRC32 Checksum<br/>Integrity Check"]
-    end
-    
-    subgraph Network["Network Sync"]
-        N1["Optional LZ4<br/>Compression"]
-        N2["Encrypted<br/>AES-256-GCM"]
-    end
-    
-    D1 --> E1
-    D2 --> E1
-    E1 --> E2
-    E2 --> E3
-    E3 --> E4
-    E4 --> O1
-    O1 --> O2
-    O2 --> N1
-    N1 --> N2
-    
-    classDef input fill:#3498db,stroke:#2980b9,stroke-width:2px,color:#fff
-    classDef encoder fill:#2ecc71,stroke:#27ae60,stroke-width:2px,color:#fff
-    classDef output fill:#e74c3c,stroke:#c0392b,stroke-width:2px,color:#fff
-    classDef network fill:#9b59b6,stroke:#8e44ad,stroke-width:2px,color:#fff
-    
-    class D1,D2 input
-    class E1,E2,E3,E4 encoder
-    class O1,O2 output
-    class N1,N2 network
+ subgraph Input["Input Data"]
+ D1["Swift Dictionary<br/>String: Any"]
+ D2["Codable Struct"]
+ end
+
+ subgraph Encoder["BlazeBinary Encoder"]
+ E1["Field Name<br/>Compression<br/>Top 127 = 1 byte"]
+ E2["Type Tag<br/>1 byte"]
+ E3["Value Encoding<br/>Variable Length"]
+ E4["Bit Packing<br/>Optimization"]
+ end
+
+ subgraph Output["Output"]
+ O1["Binary Data<br/>53% smaller<br/>than JSON"]
+ O2["CRC32 Checksum<br/>Integrity Check"]
+ end
+
+ subgraph Network["Network Sync"]
+ N1["Optional LZ4<br/>Compression"]
+ N2["Encrypted<br/>AES-256-GCM"]
+ end
+
+ D1 --> E1
+ D2 --> E1
+ E1 --> E2
+ E2 --> E3
+ E3 --> E4
+ E4 --> O1
+ O1 --> O2
+ O2 --> N1
+ N1 --> N2
+
+ classDef input fill:#3498db,stroke:#2980b9,stroke-width:2px,color:#fff
+ classDef encoder fill:#2ecc71,stroke:#27ae60,stroke-width:2px,color:#fff
+ classDef output fill:#e74c3c,stroke:#c0392b,stroke-width:2px,color:#fff
+ classDef network fill:#9b59b6,stroke:#8e44ad,stroke-width:2px,color:#fff
+
+ class D1,D2 input
+ class E1,E2,E3,E4 encoder
+ class O1,O2 output
+ class N1,N2 network
 ```
 
 ### High-Level Characteristics
@@ -469,53 +469,53 @@ BlazeDB implements multi-version concurrency control (MVCC) to provide snapshot 
 
 ```mermaid
 graph TB
-    subgraph T1Group["Transaction T1 (Read)"]
-        T1["Snapshot Version<br/>V=100"]
-        T1R1["Read Record A<br/>Version 95"]
-        T1R2["Read Record B<br/>Version 98"]
-    end
-    
-    subgraph T2Group["Transaction T2 (Write)"]
-        T2["Snapshot Version<br/>V=100"]
-        T2W1["Write Record A<br/>Creates Version 101"]
-        T2C["Commit<br/>Version 101 visible"]
-    end
-    
-    subgraph T3Group["Transaction T3 (Read)"]
-        T3["Snapshot Version<br/>V=102"]
-        T3R1["Read Record A<br/>Version 101"]
-        T3R2["Read Record B<br/>Version 98"]
-    end
-    
-    subgraph VersionStore["Version Storage"]
-        VS["VersionManager<br/>Maintains All Versions"]
-        GC["Garbage Collector<br/>Removes Old Versions"]
-    end
-    
-    T1 --> T1R1
-    T1 --> T1R2
-    T2 --> T2W1
-    T2 --> T2C
-    T3 --> T3R1
-    T3 --> T3R2
-    
-    T1R1 --> VS
-    T1R2 --> VS
-    T2W1 --> VS
-    T3R1 --> VS
-    T3R2 --> VS
-    
-    VS --> GC
-    
-    classDef readTxn fill:#3498db,stroke:#2980b9,stroke-width:2px,color:#fff
-    classDef writeTxn fill:#e74c3c,stroke:#c0392b,stroke-width:2px,color:#fff
-    classDef readTxn2 fill:#2ecc71,stroke:#27ae60,stroke-width:2px,color:#fff
-    classDef version fill:#f39c12,stroke:#e67e22,stroke-width:2px,color:#fff
-    
-    class T1,T1R1,T1R2 readTxn
-    class T2,T2W1,T2C writeTxn
-    class T3,T3R1,T3R2 readTxn2
-    class VS,GC version
+ subgraph T1Group["Transaction T1 (Read)"]
+ T1["Snapshot Version<br/>V=100"]
+ T1R1["Read Record A<br/>Version 95"]
+ T1R2["Read Record B<br/>Version 98"]
+ end
+
+ subgraph T2Group["Transaction T2 (Write)"]
+ T2["Snapshot Version<br/>V=100"]
+ T2W1["Write Record A<br/>Creates Version 101"]
+ T2C["Commit<br/>Version 101 visible"]
+ end
+
+ subgraph T3Group["Transaction T3 (Read)"]
+ T3["Snapshot Version<br/>V=102"]
+ T3R1["Read Record A<br/>Version 101"]
+ T3R2["Read Record B<br/>Version 98"]
+ end
+
+ subgraph VersionStore["Version Storage"]
+ VS["VersionManager<br/>Maintains All Versions"]
+ GC["Garbage Collector<br/>Removes Old Versions"]
+ end
+
+ T1 --> T1R1
+ T1 --> T1R2
+ T2 --> T2W1
+ T2 --> T2C
+ T3 --> T3R1
+ T3 --> T3R2
+
+ T1R1 --> VS
+ T1R2 --> VS
+ T2W1 --> VS
+ T3R1 --> VS
+ T3R2 --> VS
+
+ VS --> GC
+
+ classDef readTxn fill:#3498db,stroke:#2980b9,stroke-width:2px,color:#fff
+ classDef writeTxn fill:#e74c3c,stroke:#c0392b,stroke-width:2px,color:#fff
+ classDef readTxn2 fill:#2ecc71,stroke:#27ae60,stroke-width:2px,color:#fff
+ classDef version fill:#f39c12,stroke:#e67e22,stroke-width:2px,color:#fff
+
+ class T1,T1R1,T1R2 readTxn
+ class T2,T2W1,T2C writeTxn
+ class T3,T3R1,T3R2 readTxn2
+ class VS,GC version
 ```
 
 **Snapshot Isolation:**
@@ -539,66 +539,66 @@ All data is encrypted at rest using AES-256-GCM. Encryption is the default, not 
 
 ```mermaid
 graph TB
-    subgraph Input["Input"]
-        I1["Plaintext Data<br/>BlazeDataRecord"]
-    end
-    
-    subgraph KeyDeriv["Key Derivation"]
-        K1["User Password"]
-        K2["Argon2id<br/>Password Hashing"]
-        K3["HKDF<br/>Key Expansion"]
-        K4["Encryption Key<br/>256-bit"]
-    end
-    
-    subgraph Encryption["Encryption"]
-        E1["Generate Nonce<br/>Unique per Page"]
-        E2["AES-256-GCM<br/>Encrypt"]
-        E3["Authentication Tag<br/>Tamper Detection"]
-    end
-    
-    subgraph Storage["Storage"]
-        S1["Encrypted Page<br/>4KB"]
-        S2["Secure Enclave<br/>iOS/macOS Optional"]
-    end
-    
-    subgraph Decryption["Decryption"]
-        D1["Read Encrypted Page"]
-        D2["Verify Tag"]
-        D3["AES-256-GCM<br/>Decrypt"]
-        D4["Plaintext Data"]
-    end
-    
-    I1 --> K1
-    K1 --> K2
-    K2 --> K3
-    K3 --> K4
-    
-    I1 --> E1
-    E1 --> E2
-    K4 --> E2
-    E2 --> E3
-    
-    E3 --> S1
-    K4 --> S2
-    S2 --> S1
-    
-    S1 --> D1
-    D1 --> D2
-    D2 --> D3
-    K4 --> D3
-    D3 --> D4
-    
-    classDef input fill:#3498db,stroke:#2980b9,stroke-width:2px,color:#fff
-    classDef key fill:#2ecc71,stroke:#27ae60,stroke-width:2px,color:#fff
-    classDef encrypt fill:#e74c3c,stroke:#c0392b,stroke-width:2px,color:#fff
-    classDef storage fill:#9b59b6,stroke:#8e44ad,stroke-width:2px,color:#fff
-    classDef decrypt fill:#f39c12,stroke:#e67e22,stroke-width:2px,color:#fff
-    
-    class I1 input
-    class K1,K2,K3,K4 key
-    class E1,E2,E3 encrypt
-    class S1,S2 storage
-    class D1,D2,D3,D4 decrypt
+ subgraph Input["Input"]
+ I1["Plaintext Data<br/>BlazeDataRecord"]
+ end
+
+ subgraph KeyDeriv["Key Derivation"]
+ K1["User Password"]
+ K2["Argon2id<br/>Password Hashing"]
+ K3["HKDF<br/>Key Expansion"]
+ K4["Encryption Key<br/>256-bit"]
+ end
+
+ subgraph Encryption["Encryption"]
+ E1["Generate Nonce<br/>Unique per Page"]
+ E2["AES-256-GCM<br/>Encrypt"]
+ E3["Authentication Tag<br/>Tamper Detection"]
+ end
+
+ subgraph Storage["Storage"]
+ S1["Encrypted Page<br/>4KB"]
+ S2["Secure Enclave<br/>iOS/macOS Optional"]
+ end
+
+ subgraph Decryption["Decryption"]
+ D1["Read Encrypted Page"]
+ D2["Verify Tag"]
+ D3["AES-256-GCM<br/>Decrypt"]
+ D4["Plaintext Data"]
+ end
+
+ I1 --> K1
+ K1 --> K2
+ K2 --> K3
+ K3 --> K4
+
+ I1 --> E1
+ E1 --> E2
+ K4 --> E2
+ E2 --> E3
+
+ E3 --> S1
+ K4 --> S2
+ S2 --> S1
+
+ S1 --> D1
+ D1 --> D2
+ D2 --> D3
+ K4 --> D3
+ D3 --> D4
+
+ classDef input fill:#3498db,stroke:#2980b9,stroke-width:2px,color:#fff
+ classDef key fill:#2ecc71,stroke:#27ae60,stroke-width:2px,color:#fff
+ classDef encrypt fill:#e74c3c,stroke:#c0392b,stroke-width:2px,color:#fff
+ classDef storage fill:#9b59b6,stroke:#8e44ad,stroke-width:2px,color:#fff
+ classDef decrypt fill:#f39c12,stroke:#e67e22,stroke-width:2px,color:#fff
+
+ class I1 input
+ class K1,K2,K3,K4 key
+ class E1,E2,E3 encrypt
+ class S1,S2 storage
+ class D1,D2,D3,D4 decrypt
 ```
 
 **Key Derivation:**
@@ -630,53 +630,53 @@ Threat model analysis based on actual code implementation:
 
 ```mermaid
 graph TB
-    subgraph External["External Network Attackers"]
-        E1["MITM<br/>Traffic Interception"]
-        E2["Replay<br/>Operation Replay"]
-        E3["DoS<br/>Resource Exhaustion"]
-        E4["Injection<br/>Malicious Operations"]
-    end
-    
-    subgraph Insider["Malicious Insiders"]
-        I1["RLS Bypass<br/>Policy Violation"]
-        I2["Privilege Escalation<br/>Permission Manipulation"]
-        I3["Data Exfiltration<br/>Unauthorized Access"]
-    end
-    
-    subgraph Physical["Compromised Devices"]
-        P1["Physical Access<br/>Device Theft"]
-        P2["Memory Dumps<br/>Key Extraction"]
-        P3["Metadata Tampering<br/>Index Corruption"]
-    end
-    
-    subgraph Controls["Security Controls"]
-        C1["AES-256-GCM<br/>Encryption"]
-        C2["ECDH + HMAC<br/>Authentication"]
-        C3["RLS Policies<br/>Access Control"]
-        C4["Rate Limiting<br/>DoS Protection"]
-        C5["Secure Enclave<br/>Hardware Keys"]
-    end
-    
-    E1 --> C1
-    E1 --> C2
-    E2 --> C4
-    E3 --> C4
-    E4 --> C2
-    
-    I1 --> C3
-    I2 --> C3
-    I3 --> C3
-    
-    P1 --> C1
-    P1 --> C5
-    P2 --> C5
-    P3 --> C2
-    
-    classDef threat fill:#e74c3c,stroke:#c0392b,stroke-width:2px,color:#fff
-    classDef control fill:#2ecc71,stroke:#27ae60,stroke-width:2px,color:#fff
-    
-    class E1,E2,E3,E4,I1,I2,I3,P1,P2,P3 threat
-    class C1,C2,C3,C4,C5 control
+ subgraph External["External Network Attackers"]
+ E1["MITM<br/>Traffic Interception"]
+ E2["Replay<br/>Operation Replay"]
+ E3["DoS<br/>Resource Exhaustion"]
+ E4["Injection<br/>Malicious Operations"]
+ end
+
+ subgraph Insider["Malicious Insiders"]
+ I1["RLS Bypass<br/>Policy Violation"]
+ I2["Privilege Escalation<br/>Permission Manipulation"]
+ I3["Data Exfiltration<br/>Unauthorized Access"]
+ end
+
+ subgraph Physical["Compromised Devices"]
+ P1["Physical Access<br/>Device Theft"]
+ P2["Memory Dumps<br/>Key Extraction"]
+ P3["Metadata Tampering<br/>Index Corruption"]
+ end
+
+ subgraph Controls["Security Controls"]
+ C1["AES-256-GCM<br/>Encryption"]
+ C2["ECDH + HMAC<br/>Authentication"]
+ C3["RLS Policies<br/>Access Control"]
+ C4["Rate Limiting<br/>DoS Protection"]
+ C5["Secure Enclave<br/>Hardware Keys"]
+ end
+
+ E1 --> C1
+ E1 --> C2
+ E2 --> C4
+ E3 --> C4
+ E4 --> C2
+
+ I1 --> C3
+ I2 --> C3
+ I3 --> C3
+
+ P1 --> C1
+ P1 --> C5
+ P2 --> C5
+ P3 --> C2
+
+ classDef threat fill:#e74c3c,stroke:#c0392b,stroke-width:2px,color:#fff
+ classDef control fill:#2ecc71,stroke:#27ae60,stroke-width:2px,color:#fff
+
+ class E1,E2,E3,E4,I1,I2,I3,P1,P2,P3 threat
+ class C1,C2,C3,C4,C5 control
 ```
 
 **Network Attack Vectors:**
@@ -702,17 +702,17 @@ graph TB
 
 | Control | Implementation | Status | Risk Level |
 |---------|---------------|--------|------------|
-| **At-Rest Encryption** | AES-256-GCM per page | ✅ Implemented | 🟢 LOW |
-| **In-Transit Encryption** | ECDH + AES-256-GCM | ✅ Implemented | 🟢 LOW |
-| **Key Derivation** | Argon2id | ✅ Implemented | 🟢 LOW |
-| **Perfect Forward Secrecy** | Ephemeral ECDH keys | ✅ Implemented | 🟢 LOW |
-| **Secure Enclave** | Hardware-backed keys | ✅ Implemented (iOS/macOS) | 🟢 LOW |
-| **Replay Protection** | Nonces + timestamps | ✅ Implemented | 🟢 LOW |
-| **Rate Limiting** | 1000 ops/min per user | ⚠️ Not enforced everywhere | 🟡 MEDIUM |
-| **RLS Policies** | Policy engine | ✅ Implemented | 🟢 LOW |
-| **HMAC Signatures** | Metadata signatures | ✅ Implemented | 🟢 LOW |
-| **Certificate Pinning** | TLS certificate validation | ⚠️ Stubbed | 🟡 MEDIUM |
-| **Operation Signatures** | Optional HMAC | ⚠️ Optional | 🟡 MEDIUM |
+| **At-Rest Encryption** | AES-256-GCM per page | Implemented | LOW |
+| **In-Transit Encryption** | ECDH + AES-256-GCM | Implemented | LOW |
+| **Key Derivation** | Argon2id | Implemented | LOW |
+| **Perfect Forward Secrecy** | Ephemeral ECDH keys | Implemented | LOW |
+| **Secure Enclave** | Hardware-backed keys | Implemented (iOS/macOS) | LOW |
+| **Replay Protection** | Nonces + timestamps | Implemented | LOW |
+| **Rate Limiting** | 1000 ops/min per user | ️ Not enforced everywhere | MEDIUM |
+| **RLS Policies** | Policy engine | Implemented | LOW |
+| **HMAC Signatures** | Metadata signatures | Implemented | LOW |
+| **Certificate Pinning** | TLS certificate validation | ️ Stubbed | MEDIUM |
+| **Operation Signatures** | Optional HMAC | ️ Optional | MEDIUM |
 
 **Risk Assessment Summary:**
 
@@ -755,9 +755,9 @@ Local database encryption protects stored data from physical access, device thef
 3. **Argon2id KDF:** The password and salt are fed into Argon2id, a memory-hard key derivation function. Argon2id parameters are tuned to balance security (resistance to GPU/ASIC attacks) with acceptable unlock latency. The output is a strong key material stream, typically 256 bits or more.
 
 4. **HKDF Expansion:** HKDF (HMAC-based Key Derivation Function) expands the Argon2id output into separate keys:
-   - `db_enc_key` (256 bits): Primary encryption key for AES-256-GCM page encryption
-   - `db_auth_key` (256 bits): Reserved for future authentication operations or metadata signing
-   - Additional keys can be derived as needed using different HKDF info parameters
+ - `db_enc_key` (256 bits): Primary encryption key for AES-256-GCM page encryption
+ - `db_auth_key` (256 bits): Reserved for future authentication operations or metadata signing
+ - Additional keys can be derived as needed using different HKDF info parameters
 
 5. **Secure Enclave Storage (Optional):** On iOS/macOS, the derived `db_enc_key` can be wrapped using Secure Enclave and stored in the Keychain. The wrapper key remains in hardware, never exposed to application memory. On unlock, the wrapped key is unwrapped by Secure Enclave, used for decryption, and ideally cleared from memory after use (explicit clearing is a known gap). When Secure Enclave is unavailable, keys remain in application memory with standard OS memory protection.
 
@@ -785,54 +785,54 @@ Local database encryption protects stored data from physical access, device thef
 
 ```mermaid
 graph TB
-    subgraph KeyDerivation["Key Derivation (Data at Rest)"]
-        P["User Password<br/>or App Secret"]
-        S["Per-Database Salt<br/>(stored in .meta)"]
-        A["Argon2id<br/>Memory-Hard KDF<br/>tuned parameters"]
-        H["HKDF-Extract/Expand<br/>info: 'db_enc_key'<br/>info: 'db_auth_key'"]
-        KE["db_enc_key<br/>(256-bit)"]
-        KA["db_auth_key<br/>(256-bit, reserved)"]
-    end
-    
-    subgraph StorageCrypto["Page Encryption (AES-256-GCM)"]
-        PL["Plaintext Page<br/>(4 KB BlazeBinary)"]
-        N["Nonce<br/>Unique per write<br/>(page index + version + random)"]
-        AE["AES-256-GCM Encrypt<br/>key: db_enc_key"]
-        CT["Ciphertext Page<br/>(4 KB)"]
-        TAG["GCM Auth Tag<br/>(16 bytes)"]
-        DISK[".blazedb / .wal Files<br/>(encrypted pages on disk)"]
-    end
-    
-    subgraph Hardware["Hardware Protection (Optional)"]
-        SEP["Secure Enclave<br/>Key Wrapper<br/>(iOS/macOS)"]
-        KC["Keychain / OS Key Store<br/>(wrapped key storage)"]
-        UM["Unwrap on Unlock<br/>(hardware-backed)"]
-    end
-    
-    P --> A
-    S --> A
-    A --> H
-    H --> KE
-    H --> KA
-    KE --> SEP
-    SEP --> KC
-    KC --> UM
-    UM --> AE
-    KE --> AE
-    PL --> AE
-    N --> AE
-    AE --> CT
-    AE --> TAG
-    CT --> DISK
-    TAG --> DISK
-    
-    classDef keyDeriv fill:#3498db,stroke:#2980b9,stroke-width:2px,color:#fff
-    classDef storage fill:#2ecc71,stroke:#27ae60,stroke-width:2px,color:#fff
-    classDef hardware fill:#9b59b6,stroke:#8e44ad,stroke-width:2px,color:#fff
-    
-    class P,S,A,H,KE,KA keyDeriv
-    class PL,N,AE,CT,TAG,DISK storage
-    class SEP,KC,UM hardware
+ subgraph KeyDerivation["Key Derivation (Data at Rest)"]
+ P["User Password<br/>or App Secret"]
+ S["Per-Database Salt<br/>(stored in.meta)"]
+ A["Argon2id<br/>Memory-Hard KDF<br/>tuned parameters"]
+ H["HKDF-Extract/Expand<br/>info: 'db_enc_key'<br/>info: 'db_auth_key'"]
+ KE["db_enc_key<br/>(256-bit)"]
+ KA["db_auth_key<br/>(256-bit, reserved)"]
+ end
+
+ subgraph StorageCrypto["Page Encryption (AES-256-GCM)"]
+ PL["Plaintext Page<br/>(4 KB BlazeBinary)"]
+ N["Nonce<br/>Unique per write<br/>(page index + version + random)"]
+ AE["AES-256-GCM Encrypt<br/>key: db_enc_key"]
+ CT["Ciphertext Page<br/>(4 KB)"]
+ TAG["GCM Auth Tag<br/>(16 bytes)"]
+ DISK[".blazedb /.wal Files<br/>(encrypted pages on disk)"]
+ end
+
+ subgraph Hardware["Hardware Protection (Optional)"]
+ SEP["Secure Enclave<br/>Key Wrapper<br/>(iOS/macOS)"]
+ KC["Keychain / OS Key Store<br/>(wrapped key storage)"]
+ UM["Unwrap on Unlock<br/>(hardware-backed)"]
+ end
+
+ P --> A
+ S --> A
+ A --> H
+ H --> KE
+ H --> KA
+ KE --> SEP
+ SEP --> KC
+ KC --> UM
+ UM --> AE
+ KE --> AE
+ PL --> AE
+ N --> AE
+ AE --> CT
+ AE --> TAG
+ CT --> DISK
+ TAG --> DISK
+
+ classDef keyDeriv fill:#3498db,stroke:#2980b9,stroke-width:2px,color:#fff
+ classDef storage fill:#2ecc71,stroke:#27ae60,stroke-width:2px,color:#fff
+ classDef hardware fill:#9b59b6,stroke:#8e44ad,stroke-width:2px,color:#fff
+
+ class P,S,A,H,KE,KA keyDeriv
+ class PL,N,AE,CT,TAG,DISK storage
+ class SEP,KC,UM hardware
 ```
 
 **Security Properties:**
@@ -851,17 +851,17 @@ Network sync encryption protects data during transmission between BlazeDB nodes.
 **Handshake and Key Establishment:**
 
 1. **Ephemeral Key Generation:** Each peer (client/server or node A/node B) generates a fresh ECDH P-256 keypair for each session:
-   - Private key `a` (or `b`) is a random 256-bit scalar
-   - Public key `A = a·G` (or `B = b·G`) where `G` is the P-256 generator point
+ - Private key `a` (or `b`) is a random 256-bit scalar
+ - Public key `A = a·G` (or `B = b·G`) where `G` is the P-256 generator point
 
 2. **Public Key Exchange:** Peers exchange public keys over the transport layer (TCP, Unix socket, or in-memory queue). Public keys are sent in plaintext during the handshake phase.
 
 3. **Shared Secret Computation:** Both peers compute the same shared secret `S = a·B = b·A = ab·G` using their private key and the peer's public key. This is the ECDH key agreement.
 
 4. **Session Key Derivation:** HKDF is applied to the shared secret with session-specific context:
-   - HKDF-Extract: `salt = session_id || timestamp || random` (prevents replay of old handshakes)
-   - HKDF-Expand: Derives `sess_enc_key` and `sess_auth_key` using different info parameters
-   - These session keys are 256 bits each and are used only for the current session
+ - HKDF-Extract: `salt = session_id || timestamp || random` (prevents replay of old handshakes)
+ - HKDF-Expand: Derives `sess_enc_key` and `sess_auth_key` using different info parameters
+ - These session keys are 256 bits each and are used only for the current session
 
 5. **Key Lifecycle:** Session keys are ephemeral—they exist only in memory for the duration of the connection. They are never written to disk and are cleared from memory when the session ends. This provides perfect forward secrecy: compromise of long-term storage keys does not reveal past session traffic.
 
@@ -886,66 +886,66 @@ Network sync encryption protects data during transmission between BlazeDB nodes.
 
 ```mermaid
 graph TB
-    subgraph EphemeralKeys["ECDH Handshake"]
-        A_priv["Client Private Key a<br/>(random 256-bit scalar)"]
-        A_pub["Client Public A = a·G<br/>(P-256 point)"]
-        B_priv["Server Private Key b<br/>(random 256-bit scalar)"]
-        B_pub["Server Public B = b·G<br/>(P-256 point)"]
-        Shared["Shared Secret S = ab·G<br/>(ECDH agreement)"]
-    end
-    
-    subgraph SessionDeriv["Session Key Derivation (HKDF)"]
-        SALT["Session Salt<br/>(session_id || timestamp || random)"]
-        HEX["HKDF-Extract<br/>(salt, S)"]
-        HEXP["HKDF-Expand<br/>info: 'sess_enc_key'<br/>→ sess_enc_key (256-bit)"]
-        HEXP2["HKDF-Expand<br/>info: 'sess_auth_key'<br/>→ sess_auth_key (256-bit)"]
-    end
-    
-    subgraph FrameCrypto["Frame Encryption (AES-256-GCM)"]
-        FPL["Plaintext Frame<br/>(operations, BlazeBinary)"]
-        FPL_AAD["AAD<br/>(frame type, metadata)"]
-        FN["Frame Nonce<br/>(counter or seq_id)"]
-        FAE["AES-256-GCM Encrypt<br/>key: sess_enc_key"]
-        FCT["Encrypted Frame<br/>(ciphertext)"]
-        FTAG["GCM Tag<br/>(16 bytes)"]
-        WIRE["Transport Layer<br/>(TCP / Unix Socket / In-Memory)"]
-    end
-    
-    subgraph ReplayProt["Replay Protection"]
-        OP_NONCE["Operation Nonce<br/>(16 bytes per op)"]
-        TS["Timestamp<br/>(60s window)"]
-        OP_ID["Operation ID Cache<br/>(10K entries)"]
-    end
-    
-    A_priv --> A_pub
-    B_priv --> B_pub
-    A_pub --> Shared
-    B_pub --> Shared
-    Shared --> HEX
-    SALT --> HEX
-    HEX --> HEXP
-    HEX --> HEXP2
-    HEXP --> FAE
-    FPL --> FAE
-    FPL_AAD --> FAE
-    FN --> FAE
-    FAE --> FCT
-    FAE --> FTAG
-    FCT --> WIRE
-    FTAG --> WIRE
-    OP_NONCE --> FPL
-    TS --> FPL
-    OP_ID --> FPL
-    
-    classDef handshake fill:#3498db,stroke:#2980b9,stroke-width:2px,color:#fff
-    classDef session fill:#2ecc71,stroke:#27ae60,stroke-width:2px,color:#fff
-    classDef frame fill:#e74c3c,stroke:#c0392b,stroke-width:2px,color:#fff
-    classDef replay fill:#f39c12,stroke:#e67e22,stroke-width:2px,color:#fff
-    
-    class A_priv,A_pub,B_priv,B_pub,Shared handshake
-    class SALT,HEX,HEXP,HEXP2 session
-    class FPL,FPL_AAD,FN,FAE,FCT,FTAG,WIRE frame
-    class OP_NONCE,TS,OP_ID replay
+ subgraph EphemeralKeys["ECDH Handshake"]
+ A_priv["Client Private Key a<br/>(random 256-bit scalar)"]
+ A_pub["Client Public A = a·G<br/>(P-256 point)"]
+ B_priv["Server Private Key b<br/>(random 256-bit scalar)"]
+ B_pub["Server Public B = b·G<br/>(P-256 point)"]
+ Shared["Shared Secret S = ab·G<br/>(ECDH agreement)"]
+ end
+
+ subgraph SessionDeriv["Session Key Derivation (HKDF)"]
+ SALT["Session Salt<br/>(session_id || timestamp || random)"]
+ HEX["HKDF-Extract<br/>(salt, S)"]
+ HEXP["HKDF-Expand<br/>info: 'sess_enc_key'<br/>→ sess_enc_key (256-bit)"]
+ HEXP2["HKDF-Expand<br/>info: 'sess_auth_key'<br/>→ sess_auth_key (256-bit)"]
+ end
+
+ subgraph FrameCrypto["Frame Encryption (AES-256-GCM)"]
+ FPL["Plaintext Frame<br/>(operations, BlazeBinary)"]
+ FPL_AAD["AAD<br/>(frame type, metadata)"]
+ FN["Frame Nonce<br/>(counter or seq_id)"]
+ FAE["AES-256-GCM Encrypt<br/>key: sess_enc_key"]
+ FCT["Encrypted Frame<br/>(ciphertext)"]
+ FTAG["GCM Tag<br/>(16 bytes)"]
+ WIRE["Transport Layer<br/>(TCP / Unix Socket / In-Memory)"]
+ end
+
+ subgraph ReplayProt["Replay Protection"]
+ OP_NONCE["Operation Nonce<br/>(16 bytes per op)"]
+ TS["Timestamp<br/>(60s window)"]
+ OP_ID["Operation ID Cache<br/>(10K entries)"]
+ end
+
+ A_priv --> A_pub
+ B_priv --> B_pub
+ A_pub --> Shared
+ B_pub --> Shared
+ Shared --> HEX
+ SALT --> HEX
+ HEX --> HEXP
+ HEX --> HEXP2
+ HEXP --> FAE
+ FPL --> FAE
+ FPL_AAD --> FAE
+ FN --> FAE
+ FAE --> FCT
+ FAE --> FTAG
+ FCT --> WIRE
+ FTAG --> WIRE
+ OP_NONCE --> FPL
+ TS --> FPL
+ OP_ID --> FPL
+
+ classDef handshake fill:#3498db,stroke:#2980b9,stroke-width:2px,color:#fff
+ classDef session fill:#2ecc71,stroke:#27ae60,stroke-width:2px,color:#fff
+ classDef frame fill:#e74c3c,stroke:#c0392b,stroke-width:2px,color:#fff
+ classDef replay fill:#f39c12,stroke:#e67e22,stroke-width:2px,color:#fff
+
+ class A_priv,A_pub,B_priv,B_pub,Shared handshake
+ class SALT,HEX,HEXP,HEXP2 session
+ class FPL,FPL_AAD,FN,FAE,FCT,FTAG,WIRE frame
+ class OP_NONCE,TS,OP_ID replay
 ```
 
 **Security Properties:**
@@ -990,30 +990,30 @@ ACID transaction guarantees with write-ahead logging. Durability was non-negotia
 
 ```mermaid
 sequenceDiagram
-    participant App
-    participant Client
-    participant WAL
-    participant PageStore
-    participant Index
-    
-    App->>Client: beginTransaction()
-    Client->>WAL: BEGIN entry
-    WAL->>WAL: fsync()
-    
-    App->>Client: insert(record)
-    Client->>WAL: WRITE entry
-    Client->>PageStore: Stage write
-    Client->>Index: Stage index update
-    
-    App->>Client: commitTransaction()
-    Client->>PageStore: Flush staged writes
-    Client->>Index: Apply index updates
-    Client->>WAL: COMMIT entry
-    WAL->>WAL: fsync()
-    Note over WAL: Checkpoint or truncate<br/>when safe
-    Client->>App: Success
-    
-    Note over WAL,PageStore: Crash Recovery:<br/>Replay WAL entries<br/>Restore committed state
+ participant App
+ participant Client
+ participant WAL
+ participant PageStore
+ participant Index
+
+ App->>Client: beginTransaction()
+ Client->>WAL: BEGIN entry
+ WAL->>WAL: fsync()
+
+ App->>Client: insert(record)
+ Client->>WAL: WRITE entry
+ Client->>PageStore: Stage write
+ Client->>Index: Stage index update
+
+ App->>Client: commitTransaction()
+ Client->>PageStore: Flush staged writes
+ Client->>Index: Apply index updates
+ Client->>WAL: COMMIT entry
+ WAL->>WAL: fsync()
+ Note over WAL: Checkpoint or truncate<br/>when safe
+ Client->>App: Success
+
+ Note over WAL,PageStore: Crash Recovery:<br/>Replay WAL entries<br/>Restore committed state
 ```
 
 **WAL Behavior:**
@@ -1045,64 +1045,64 @@ Query system uses a fluent API with automatic index selection. Built to feel nat
 
 ```mermaid
 graph TB
-    Q["QueryBuilder<br/>where/orderBy/limit"]
-    
-    subgraph Planning["Query Planning"]
-        QP["QueryPlanner<br/>Analyze Query"]
-        QO["QueryOptimizer<br/>Select Indexes"]
-        EP["Execution Plan<br/>Optimized Path"]
-    end
-    
-    subgraph Indexes["Index Selection"]
-        PI["Primary Index<br/>UUID Lookup"]
-        SI["Secondary Index<br/>Field Lookup"]
-        CI["Compound Index<br/>Multi-Field"]
-        FT["Full-Text Index<br/>Inverted Index"]
-    end
-    
-    subgraph Execution["Execution"]
-        EX1["Index Scan<br/>Fast Path"]
-        EX2["Full Scan<br/>Fallback"]
-        EX3["Filter<br/>In-Memory"]
-        EX4["Sort<br/>Result Ordering"]
-    end
-    
-    subgraph Result["Result"]
-        R1["BlazeDataRecord[]<br/>Results"]
-        R2["QueryCache<br/>10-100x Faster"]
-    end
-    
-    Q --> QP
-    QP --> QO
-    QO --> EP
-    
-    EP --> PI
-    EP --> SI
-    EP --> CI
-    EP --> FT
-    
-    PI --> EX1
-    SI --> EX1
-    CI --> EX1
-    FT --> EX1
-    
-    EX1 --> EX3
-    EX2 --> EX3
-    EX3 --> EX4
-    EX4 --> R1
-    R1 --> R2
-    
-    classDef query fill:#3498db,stroke:#2980b9,stroke-width:3px,color:#fff
-    classDef planning fill:#2ecc71,stroke:#27ae60,stroke-width:2px,color:#fff
-    classDef index fill:#f39c12,stroke:#e67e22,stroke-width:2px,color:#fff
-    classDef exec fill:#e74c3c,stroke:#c0392b,stroke-width:2px,color:#fff
-    classDef result fill:#9b59b6,stroke:#8e44ad,stroke-width:2px,color:#fff
-    
-    class Q query
-    class QP,QO,EP planning
-    class PI,SI,CI,FT index
-    class EX1,EX2,EX3,EX4 exec
-    class R1,R2 result
+ Q["QueryBuilder<br/>where/orderBy/limit"]
+
+ subgraph Planning["Query Planning"]
+ QP["QueryPlanner<br/>Analyze Query"]
+ QO["QueryOptimizer<br/>Select Indexes"]
+ EP["Execution Plan<br/>Optimized Path"]
+ end
+
+ subgraph Indexes["Index Selection"]
+ PI["Primary Index<br/>UUID Lookup"]
+ SI["Secondary Index<br/>Field Lookup"]
+ CI["Compound Index<br/>Multi-Field"]
+ FT["Full-Text Index<br/>Inverted Index"]
+ end
+
+ subgraph Execution["Execution"]
+ EX1["Index Scan<br/>Fast Path"]
+ EX2["Full Scan<br/>Fallback"]
+ EX3["Filter<br/>In-Memory"]
+ EX4["Sort<br/>Result Ordering"]
+ end
+
+ subgraph Result["Result"]
+ R1["BlazeDataRecord[]<br/>Results"]
+ R2["QueryCache<br/>10-100x Faster"]
+ end
+
+ Q --> QP
+ QP --> QO
+ QO --> EP
+
+ EP --> PI
+ EP --> SI
+ EP --> CI
+ EP --> FT
+
+ PI --> EX1
+ SI --> EX1
+ CI --> EX1
+ FT --> EX1
+
+ EX1 --> EX3
+ EX2 --> EX3
+ EX3 --> EX4
+ EX4 --> R1
+ R1 --> R2
+
+ classDef query fill:#3498db,stroke:#2980b9,stroke-width:3px,color:#fff
+ classDef planning fill:#2ecc71,stroke:#27ae60,stroke-width:2px,color:#fff
+ classDef index fill:#f39c12,stroke:#e67e22,stroke-width:2px,color:#fff
+ classDef exec fill:#e74c3c,stroke:#c0392b,stroke-width:2px,color:#fff
+ classDef result fill:#9b59b6,stroke:#8e44ad,stroke-width:2px,color:#fff
+
+ class Q query
+ class QP,QO,EP planning
+ class PI,SI,CI,FT index
+ class EX1,EX2,EX3,EX4 exec
+ class R1,R2 result
 ```
 
 **Query Planner:**
@@ -1314,7 +1314,7 @@ BlazeDB is not suitable for:
 **Swift Package Manager:**
 ```swift
 dependencies: [
-    .package(url: "https://github.com/Mikedan37/BlazeDB.git", from: "2.5.0")
+.package(url: "https://github.com/Mikedan37/BlazeDB.git", from: "2.5.0")
 ]
 ```
 
@@ -1330,30 +1330,30 @@ let db = try BlazeDBClient(name: "MyApp", password: "your-secure-password")
 
 // Insert
 let record = BlazeDataRecord([
-    "title": .string("Fix login bug"),
-    "priority": .int(5),
-    "status": .string("open")
+ "title":.string("Fix login bug"),
+ "priority":.int(5),
+ "status":.string("open")
 ])
 let id = try db.insert(record)
 
 // Query
 let openBugs = try db.query()
-    .where("status", equals: .string("open"))
-    .where("priority", greaterThan: .int(3))
-    .orderBy("priority", descending: true)
-    .execute()
-    .records
+.where("status", equals:.string("open"))
+.where("priority", greaterThan:.int(3))
+.orderBy("priority", descending: true)
+.execute()
+.records
 
 // Use in SwiftUI (auto-updating)
 struct BugListView: View {
-    @BlazeQuery(db: db, where: "status", equals: .string("open"))
-    var bugs
-    
-    var body: some View {
-        List(bugs) { bug in
-            Text(bug.string("title"))
-        }
-    }
+ @BlazeQuery(db: db, where: "status", equals:.string("open"))
+ var bugs
+
+ var body: some View {
+ List(bugs) { bug in
+ Text(bug.string("title"))
+ }
+ }
 }
 ```
 
@@ -1363,58 +1363,58 @@ struct BugListView: View {
 
 ```mermaid
 graph TB
-    subgraph NodeA["Node A"]
-        A1["BlazeDBClient"]
-        A2["SyncEngine"]
-        A3["OperationLog"]
-    end
-    
-    subgraph Transport["Transport Layer"]
-        T1["In-Memory<br/>&lt;0.1ms<br/>1M+ ops/sec"]
-        T2["Unix Socket<br/>~0.5ms<br/>5-20K ops/sec"]
-        T3["TCP Relay<br/>~5ms<br/>200-500 ops/sec"]
-    end
-    
-    subgraph NodeB["Node B"]
-        B1["BlazeDBClient"]
-        B2["SyncEngine"]
-        B3["OperationLog"]
-    end
-    
-    subgraph Protocol["Protocol"]
-        P1["BlazeBinary<br/>Encoding"]
-        P2["LZ4 Compression<br/>3-5x faster"]
-        P3["AES-256-GCM<br/>E2E Encryption"]
-        P4["ECDH P-256<br/>Key Exchange"]
-    end
-    
-    A1 --> A2
-    A2 --> A3
-    A3 --> T1
-    A3 --> T2
-    A3 --> T3
-    
-    T1 --> P1
-    T2 --> P1
-    T3 --> P1
-    
-    P1 --> P2
-    P2 --> P3
-    P3 --> P4
-    
-    P4 --> B3
-    B3 --> B2
-    B2 --> B1
-    
-    classDef node fill:#3498db,stroke:#2980b9,stroke-width:2px,color:#fff
-    classDef transport fill:#2ecc71,stroke:#27ae60,stroke-width:2px,color:#fff
-    classDef protocol fill:#9b59b6,stroke:#8e44ad,stroke-width:2px,color:#fff
-    classDef nodeB fill:#e74c3c,stroke:#c0392b,stroke-width:2px,color:#fff
-    
-    class A1,A2,A3 node
-    class T1,T2,T3 transport
-    class P1,P2,P3,P4 protocol
-    class B1,B2,B3 nodeB
+ subgraph NodeA["Node A"]
+ A1["BlazeDBClient"]
+ A2["SyncEngine"]
+ A3["OperationLog"]
+ end
+
+ subgraph Transport["Transport Layer"]
+ T1["In-Memory<br/>&lt;0.1ms<br/>1M+ ops/sec"]
+ T2["Unix Socket<br/>~0.5ms<br/>5-20K ops/sec"]
+ T3["TCP Relay<br/>~5ms<br/>200-500 ops/sec"]
+ end
+
+ subgraph NodeB["Node B"]
+ B1["BlazeDBClient"]
+ B2["SyncEngine"]
+ B3["OperationLog"]
+ end
+
+ subgraph Protocol["Protocol"]
+ P1["BlazeBinary<br/>Encoding"]
+ P2["LZ4 Compression<br/>3-5x faster"]
+ P3["AES-256-GCM<br/>E2E Encryption"]
+ P4["ECDH P-256<br/>Key Exchange"]
+ end
+
+ A1 --> A2
+ A2 --> A3
+ A3 --> T1
+ A3 --> T2
+ A3 --> T3
+
+ T1 --> P1
+ T2 --> P1
+ T3 --> P1
+
+ P1 --> P2
+ P2 --> P3
+ P3 --> P4
+
+ P4 --> B3
+ B3 --> B2
+ B2 --> B1
+
+ classDef node fill:#3498db,stroke:#2980b9,stroke-width:2px,color:#fff
+ classDef transport fill:#2ecc71,stroke:#27ae60,stroke-width:2px,color:#fff
+ classDef protocol fill:#9b59b6,stroke:#8e44ad,stroke-width:2px,color:#fff
+ classDef nodeB fill:#e74c3c,stroke:#c0392b,stroke-width:2px,color:#fff
+
+ class A1,A2,A3 node
+ class T1,T2,T3 transport
+ class P1,P2,P3,P4 protocol
+ class B1,B2,B3 nodeB
 ```
 
 **Transport Layers:**
@@ -1497,10 +1497,10 @@ See `Docs/Tools/` for complete documentation.
 
 ```swift
 try BlazeMigrationTool.importFromSQLite(
-    source: sqliteURL,
-    destination: blazeURL,
-    password: "your-password",
-    tables: ["users", "posts", "comments"]  // or nil for all tables
+ source: sqliteURL,
+ destination: blazeURL,
+ password: "your-password",
+ tables: ["users", "posts", "comments"] // or nil for all tables
 )
 ```
 
@@ -1508,10 +1508,10 @@ try BlazeMigrationTool.importFromSQLite(
 
 ```swift
 try BlazeMigrationTool.importFromCoreData(
-    container: container,
-    destination: blazeURL,
-    password: "your-password",
-    entities: ["User", "Post", "Comment"]  // or nil for all entities
+ container: container,
+ destination: blazeURL,
+ password: "your-password",
+ entities: ["User", "Post", "Comment"] // or nil for all entities
 )
 ```
 
@@ -1543,26 +1543,26 @@ BlazeBinary records use a fixed 8-byte header followed by variable-length fields
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│ HEADER (8 bytes, aligned)                                    │
+│ HEADER (8 bytes, aligned) │
 ├─────────────────────────────────────────────────────────────┤
-│ Offset  Size  Type     Description                           │
-│ 0       5     char[5]  Magic: "BLAZE" (0x42 0x4C 0x41...)   │
-│ 5       1     uint8    Version: 0x01 (v1) or 0x02 (v2)     │
-│ 6       2     uint16   Field count (big-endian)             │
+│ Offset Size Type Description │
+│ 0 5 char[5] Magic: "BLAZE" (0x42 0x4C 0x41...) │
+│ 5 1 uint8 Version: 0x01 (v1) or 0x02 (v2) │
+│ 6 2 uint16 Field count (big-endian) │
 ├─────────────────────────────────────────────────────────────┤
-│ FIELD_1 (variable length)                                    │
-│   [KEY_ENCODING][VALUE_ENCODING]                            │
+│ FIELD_1 (variable length) │
+│ [KEY_ENCODING][VALUE_ENCODING] │
 ├─────────────────────────────────────────────────────────────┤
-│ FIELD_2 (variable length)                                    │
-│   [KEY_ENCODING][VALUE_ENCODING]                            │
+│ FIELD_2 (variable length) │
+│ [KEY_ENCODING][VALUE_ENCODING] │
 ├─────────────────────────────────────────────────────────────┤
-│ ...                                                          │
+│... │
 ├─────────────────────────────────────────────────────────────┤
-│ FIELD_N (variable length)                                    │
-│   [KEY_ENCODING][VALUE_ENCODING]                            │
+│ FIELD_N (variable length) │
+│ [KEY_ENCODING][VALUE_ENCODING] │
 ├─────────────────────────────────────────────────────────────┤
-│ CRC32 (4 bytes, v2 only, big-endian)                        │
-│   Only present if version == 0x02                           │
+│ CRC32 (4 bytes, v2 only, big-endian) │
+│ Only present if version == 0x02 │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -1580,7 +1580,7 @@ Each field has a key encoding followed by a value encoding.
 **Variant A: Common Field (1 byte)**
 ```
 ┌─────────────────────────────────────┐
-│ 1 byte: Field ID (0x01-0x7F)        │
+│ 1 byte: Field ID (0x01-0x7F) │
 └─────────────────────────────────────┘
 ```
 
@@ -1589,9 +1589,9 @@ Top 127 most common field names (e.g., "id", "createdAt", "title") encoded as si
 **Variant B: Custom Field (3+N bytes)**
 ```
 ┌─────────────────────────────────────┐
-│ 1 byte: Marker (0xFF)               │
-│ 2 bytes: Key length (big-endian)     │
-│ N bytes: UTF-8 key string            │
+│ 1 byte: Marker (0xFF) │
+│ 2 bytes: Key length (big-endian) │
+│ N bytes: UTF-8 key string │
 └─────────────────────────────────────┘
 ```
 
@@ -1629,7 +1629,7 @@ Fields not in common dictionary use 0xFF marker.
 
 Empty string:
 ```
-[0x11]  (1 byte total)
+[0x11] (1 byte total)
 ```
 
 Inline string (≤15 bytes):
@@ -1662,24 +1662,24 @@ Example: 1000 → [0x02] [0x00 0x00 0x00 0x00 0x00 0x00 0x03 0xE8]
 
 Empty array:
 ```
-[0x18]  (1 byte total)
+[0x18] (1 byte total)
 ```
 
 Non-empty array:
 ```
-[0x08] [count:2 bytes BE] [item1] [item2] ... [itemN]
+[0x08] [count:2 bytes BE] [item1] [item2]... [itemN]
 ```
 
 **Dictionary Encoding:**
 
 Empty dictionary:
 ```
-[0x19]  (1 byte total)
+[0x19] (1 byte total)
 ```
 
 Non-empty dictionary:
 ```
-[0x09] [count:2 bytes BE] [key1][value1] [key2][value2] ... [keyN][valueN]
+[0x09] [count:2 bytes BE] [key1][value1] [key2][value2]... [keyN][valueN]
 ```
 
 Keys sorted before encoding for deterministic output.
@@ -1689,25 +1689,25 @@ Keys sorted before encoding for deterministic output.
 **Input:**
 ```swift
 BlazeDataRecord([
-    "id": .uuid(UUID(...)),
-    "title": .string("Hello"),
-    "count": .int(42),
-    "active": .bool(true)
+ "id":.uuid(UUID(...)),
+ "title":.string("Hello"),
+ "count":.int(42),
+ "active":.bool(true)
 ])
 ```
 
 **Binary Encoding (hexadecimal):**
 ```
-42 4C 41 5A 45 02 00 04    // Header: "BLAZE" + v2 + 4 fields
-01                          // Field 1 key: "id" (common field 0x01)
-05 [16 bytes UUID]          // Field 1 value: UUID type + 16 bytes
-06                          // Field 2 key: "title" (common field 0x06)
-25 48 65 6C 6C 6F          // Field 2 value: Inline string "Hello" (0x25 = 0x20|5)
-2F                          // Field 3 key: "count" (common field 0x2F)
-12 2A                       // Field 3 value: Small int 42 (0x12 + 0x2A)
-23                          // Field 4 key: "active" (common field 0x23)
-04 01                       // Field 4 value: Bool true (0x04 + 0x01)
-[CRC32: 4 bytes]            // CRC32 checksum (v2 only)
+42 4C 41 5A 45 02 00 04 // Header: "BLAZE" + v2 + 4 fields
+01 // Field 1 key: "id" (common field 0x01)
+05 [16 bytes UUID] // Field 1 value: UUID type + 16 bytes
+06 // Field 2 key: "title" (common field 0x06)
+25 48 65 6C 6C 6F // Field 2 value: Inline string "Hello" (0x25 = 0x20|5)
+2F // Field 3 key: "count" (common field 0x2F)
+12 2A // Field 3 value: Small int 42 (0x12 + 0x2A)
+23 // Field 4 key: "active" (common field 0x23)
+04 01 // Field 4 value: Bool true (0x04 + 0x01)
+[CRC32: 4 bytes] // CRC32 checksum (v2 only)
 ```
 
 **Size Comparison:**
@@ -1720,14 +1720,14 @@ For network sync, BlazeBinary records are wrapped in frames:
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│ FRAME HEADER (5 bytes)                                      │
+│ FRAME HEADER (5 bytes) │
 ├─────────────────────────────────────────────────────────────┤
-│ 1 byte: Frame Type (0x01-0x06)                              │
-│ 4 bytes: Payload Length (big-endian UInt32)                 │
+│ 1 byte: Frame Type (0x01-0x06) │
+│ 4 bytes: Payload Length (big-endian UInt32) │
 ├─────────────────────────────────────────────────────────────┤
-│ PAYLOAD (variable length)                                   │
-│   Encrypted with AES-256-GCM (if handshaked)                │
-│   Or plaintext (during handshake)                           │
+│ PAYLOAD (variable length) │
+│ Encrypted with AES-256-GCM (if handshaked) │
+│ Or plaintext (during handshake) │
 └─────────────────────────────────────────────────────────────┘
 ```
 

@@ -1,10 +1,10 @@
 # BlazeDB: Realistic Transfer Limits & What's Possible
 
-**Based on ACTUAL implementation - not theoretical! 📊**
+**Based on ACTUAL implementation - not theoretical! **
 
 ---
 
-## 🔥 **SAME DEVICE (Local DB-to-DB):**
+## **SAME DEVICE (Local DB-to-DB):**
 
 ### **Current Implementation:**
 ```swift
@@ -23,7 +23,7 @@
 • Operation processing: ~0.1ms (100 microseconds)
 • TOTAL: <0.2ms (200 microseconds!)
 
-ACTUAL: <0.2ms latency! 🔥
+ACTUAL: <0.2ms latency!
 ```
 
 #### **Throughput:**
@@ -36,7 +36,7 @@ ACTUAL: <0.2ms latency! 🔥
 
 Throughput: 5,000 ops / 3.1ms = ~1.6 MILLION ops/sec
 
-ACTUAL: ~1.6 MILLION ops/sec! 🔥
+ACTUAL: ~1.6 MILLION ops/sec!
 ```
 
 #### **Data Transfer:**
@@ -50,15 +50,15 @@ ACTUAL: 56-800 MB/s (depending on op size)
 
 ### **What This Means:**
 ```
-✅ Can sync 1.6 MILLION operations per second
-✅ Latency: <0.2ms (feels instant!)
-✅ Can handle multiple DBs simultaneously
-✅ No network bottleneck (in-memory!)
+ Can sync 1.6 MILLION operations per second
+ Latency: <0.2ms (feels instant!)
+ Can handle multiple DBs simultaneously
+ No network bottleneck (in-memory!)
 ```
 
 ---
 
-## 🔥 **CROSS-APP (Same Device):**
+## **CROSS-APP (Same Device):**
 
 ### **Current Implementation:**
 ```swift
@@ -89,7 +89,7 @@ ACTUAL: ~1.2ms latency
 
 Throughput: 5,000 ops / 1.2ms = ~4.2 MILLION ops/sec
 
-ACTUAL: ~4.2 MILLION ops/sec! 🔥
+ACTUAL: ~4.2 MILLION ops/sec!
 ```
 
 #### **Data Transfer:**
@@ -103,15 +103,15 @@ ACTUAL: 147 MB/s - 2.1 GB/s (depending on op size)
 
 ### **What This Means:**
 ```
-✅ Can sync 4.2 MILLION operations per second
-✅ Latency: ~1.2ms (still very fast!)
-✅ Can sync between different apps
-✅ Disk I/O is the bottleneck
+ Can sync 4.2 MILLION operations per second
+ Latency: ~1.2ms (still very fast!)
+ Can sync between different apps
+ Disk I/O is the bottleneck
 ```
 
 ---
 
-## 🔥 **REMOTE (Different Devices):**
+## **REMOTE (Different Devices):**
 
 ### **Current Implementation:**
 ```swift
@@ -166,20 +166,20 @@ ACTUAL: ~362,000 ops/sec (WiFi 100 Mbps)
 
 Throughput: 5,000 ops / 5ms = ~1,000,000 ops/sec
 
-ACTUAL: ~1,000,000 ops/sec (WiFi 1000 Mbps) 🔥
+ACTUAL: ~1,000,000 ops/sec (WiFi 1000 Mbps)
 ```
 
 ### **What This Means:**
 ```
-✅ Can sync 362K-1M operations per second (depending on network)
-✅ Latency: ~9.5ms (still very fast!)
-✅ Can sync across devices
-✅ Network bandwidth is the bottleneck
+ Can sync 362K-1M operations per second (depending on network)
+ Latency: ~9.5ms (still very fast!)
+ Can sync across devices
+ Network bandwidth is the bottleneck
 ```
 
 ---
 
-## 📊 **COMPREHENSIVE COMPARISON:**
+## **COMPREHENSIVE COMPARISON:**
 
 | Scenario | Latency | Throughput | Data Rate | Bottleneck |
 |----------|---------|------------|-----------|------------|
@@ -190,86 +190,86 @@ ACTUAL: ~1,000,000 ops/sec (WiFi 1000 Mbps) 🔥
 
 ---
 
-## 🎯 **WHAT THIS SPEED CAN SUPPORT:**
+## **WHAT THIS SPEED CAN SUPPORT:**
 
 ### **1. Real-Time Collaboration:**
 ```
 • Google Docs: ~100 edits/sec per document
 • BlazeDB: 1.6M ops/sec (16,000x faster!)
-• Can support: 16,000 simultaneous editors! 🔥
+• Can support: 16,000 simultaneous editors!
 ```
 
 ### **2. Multiplayer Games:**
 ```
 • Fortnite: ~60 updates/sec per player
 • BlazeDB: 1.6M ops/sec (26,000x faster!)
-• Can support: 26,000 simultaneous players! 🔥
+• Can support: 26,000 simultaneous players!
 ```
 
 ### **3. IoT Networks:**
 ```
 • Typical sensor: 1 reading/sec
 • BlazeDB: 1.6M ops/sec
-• Can support: 1.6 MILLION sensors! 🔥
+• Can support: 1.6 MILLION sensors!
 ```
 
 ### **4. Social Media:**
 ```
 • Twitter: ~6,000 tweets/sec (global)
 • BlazeDB: 1.6M ops/sec (266x faster!)
-• Can support: 266x Twitter's global rate! 🔥
+• Can support: 266x Twitter's global rate!
 ```
 
 ### **5. Financial Trading:**
 ```
 • High-frequency: ~1M trades/sec (exchange)
 • BlazeDB: 1.6M ops/sec (1.6x faster!)
-• Can support: Entire exchange! 🔥
+• Can support: Entire exchange!
 ```
 
 ---
 
-## 🚀 **CREATIVE USE CASES:**
+## **CREATIVE USE CASES:**
 
 ### **1. Distributed File System:**
 ```
 • Millions of files
 • Instant sync
 • Version history
-• 1.6M file operations/sec! 🔥
+• 1.6M file operations/sec!
 ```
 
 ### **2. Real-Time Code Sync:**
 ```
 • Thousands of developers
 • Instant conflict resolution
-• 1.6M code changes/sec! 🔥
+• 1.6M code changes/sec!
 ```
 
 ### **3. Distributed Cache:**
 ```
 • Millions of cache keys
 • Instant invalidation
-• 1.6M cache operations/sec! 🔥
+• 1.6M cache operations/sec!
 ```
 
 ### **4. Event Sourcing:**
 ```
 • Billions of events
 • Instant replay
-• 1.6M events/sec! 🔥
+• 1.6M events/sec!
 ```
 
 ### **5. Distributed State Machine:**
 ```
 • Complex state
 • Instant sync
-• 1.6M state changes/sec! 🔥
+• 1.6M state changes/sec!
 ```
 
 ---
 
-## 🔥 **BOTTOM LINE:**
+## **BOTTOM LINE:**
 
 ### **Limits:**
 - **Same device:** ~1.6M ops/sec (CPU limited)
@@ -278,17 +278,17 @@ ACTUAL: ~1,000,000 ops/sec (WiFi 1000 Mbps) 🔥
 - **Remote (1000 Mbps):** ~1M ops/sec (network limited)
 
 ### **What This Enables:**
-- ✅ **Real-time everything** (<0.2ms same device, ~9.5ms remote)
-- ✅ **Massive scale** (millions of operations/sec)
-- ✅ **Creative use cases** (distributed systems, edge computing)
-- ✅ **New paradigms** (distributed file systems, event sourcing)
+- **Real-time everything** (<0.2ms same device, ~9.5ms remote)
+- **Massive scale** (millions of operations/sec)
+- **Creative use cases** (distributed systems, edge computing)
+- **New paradigms** (distributed file systems, event sourcing)
 
 ### **This Speed Can Support:**
-- 🚀 **16,000 simultaneous editors** (Google Docs)
-- 🚀 **26,000 simultaneous players** (multiplayer games)
-- 🚀 **1.6 MILLION sensors** (IoT networks)
-- 🚀 **266x Twitter's global rate** (social media)
-- 🚀 **Entire financial exchange** (high-frequency trading)
+- **16,000 simultaneous editors** (Google Docs)
+- **26,000 simultaneous players** (multiplayer games)
+- **1.6 MILLION sensors** (IoT networks)
+- **266x Twitter's global rate** (social media)
+- **Entire financial exchange** (high-frequency trading)
 
-**We're FAST ENOUGH for ANYTHING! 🔥🔥🔥**
+**We're FAST ENOUGH for ANYTHING! **
 

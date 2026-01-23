@@ -1,10 +1,10 @@
-# 🔥 BlazeDB - Complete API Reference
+# BlazeDB - Complete API Reference
 
 **Every public API, method, and property available to developers.**
 
 ---
 
-## **🎯 Convenience API (NEW!)**
+## ** Convenience API (NEW!)**
 
 **Purpose:** Simplifies database creation and discovery without managing file paths manually. All databases are stored in `~/Library/Application Support/BlazeDB/` by default.
 
@@ -24,7 +24,7 @@ let db = try BlazeDBClient(name: "MyApp", password: "secure-password-123", proje
 // Failable (no try-catch)
 // USAGE: When you want to handle failures without try-catch blocks
 guard let db = BlazeDBClient.create(name: "MyApp", password: "secure-password-123") else {
-    return
+ return
 }
 ```
 
@@ -40,13 +40,13 @@ let databases = try BlazeDBClient.discoverDatabases()
 // Find specific database
 // USAGE: Find a specific database by name
 if let db = try BlazeDBClient.findDatabase(named: "MyApp") {
-    print("Found: \(db.name) at \(db.path)")
+ print("Found: \(db.name) at \(db.path)")
 }
 
 // Check if exists
 // USAGE: Quick check if a database exists before trying to open it
 if BlazeDBClient.databaseExists(named: "MyApp") {
-    print("Database exists!")
+ print("Database exists!")
 }
 ```
 
@@ -62,7 +62,7 @@ BlazeDBClient.registerDatabase(name: "MyApp", client: db)
 // Get registered database
 // USAGE: Retrieve a previously registered database instance
 if let db = BlazeDBClient.getRegisteredDatabase(named: "MyApp") {
-    // Use db...
+ // Use db...
 }
 
 // List registered databases
@@ -74,7 +74,7 @@ let registered = BlazeDBClient.registeredDatabases()
 
 ---
 
-## **📦 Core Types**
+## ** Core Types**
 
 ### **`BlazeDBClient`**
 
@@ -85,26 +85,26 @@ Main entry point for all database operations.
 ```swift
 // Standard initialization
 public init(
-    name: String,
-    fileURL: URL,
-    password: String,
-    project: String = "Default"
+ name: String,
+ fileURL: URL,
+ password: String,
+ project: String = "Default"
 ) throws
 
 // Failable initialization (no try-catch)
 public convenience init?(
-    name: String,
-    at fileURL: URL,
-    password: String,
-    project: String = "Default"
+ name: String,
+ at fileURL: URL,
+ password: String,
+ project: String = "Default"
 )
 ```
 
 #### **Properties:**
 
 ```swift
-public let name: String  // Database name
-public static func clearCachedKey()  // Clear encryption key cache
+public let name: String // Database name
+public static func clearCachedKey() // Clear encryption key cache
 ```
 
 ---
@@ -115,10 +115,10 @@ Core data structure for all records.
 
 ```swift
 public struct BlazeDataRecord: Codable, Hashable, Equatable {
-    public var storage: [String: BlazeDocumentField]
-    
-    public init(_ storage: [String: BlazeDocumentField])
-    public subscript(key: String) -> BlazeDocumentField?
+ public var storage: [String: BlazeDocumentField]
+
+ public init(_ storage: [String: BlazeDocumentField])
+ public subscript(key: String) -> BlazeDocumentField?
 }
 ```
 
@@ -126,15 +126,15 @@ public struct BlazeDataRecord: Codable, Hashable, Equatable {
 
 ```swift
 extension BlazeDataRecord {
-    func string(_ key: String) -> String?
-    func int(_ key: String) -> Int?
-    func double(_ key: String) -> Double?
-    func bool(_ key: String) -> Bool?
-    func date(_ key: String) -> Date?
-    func uuid(_ key: String) -> UUID?
-    func data(_ key: String) -> Data?
-    func array(_ key: String) -> [BlazeDocumentField]?
-    func dictionary(_ key: String) -> [String: BlazeDocumentField]?
+ func string(_ key: String) -> String?
+ func int(_ key: String) -> Int?
+ func double(_ key: String) -> Double?
+ func bool(_ key: String) -> Bool?
+ func date(_ key: String) -> Date?
+ func uuid(_ key: String) -> UUID?
+ func data(_ key: String) -> Data?
+ func array(_ key: String) -> [BlazeDocumentField]?
+ func dictionary(_ key: String) -> [String: BlazeDocumentField]?
 }
 ```
 
@@ -146,21 +146,21 @@ Type-safe field values.
 
 ```swift
 public enum BlazeDocumentField: Codable, Hashable, Equatable {
-    case string(String)
-    case int(Int)
-    case double(Double)
-    case bool(Bool)
-    case date(Date)
-    case uuid(UUID)
-    case data(Data)
-    case array([BlazeDocumentField])
-    case dictionary([String: BlazeDocumentField])
+ case string(String)
+ case int(Int)
+ case double(Double)
+ case bool(Bool)
+ case date(Date)
+ case uuid(UUID)
+ case data(Data)
+ case array([BlazeDocumentField])
+ case dictionary([String: BlazeDocumentField])
 }
 ```
 
 ---
 
-## **📝 CRUD Operations**
+## ** CRUD Operations**
 
 **Purpose:** Core Create, Read, Update, Delete operations for managing data in BlazeDB.
 
@@ -233,8 +233,8 @@ public func updateFields(id: UUID, fields: [String: BlazeDocumentField]) throws
 // Update many records (batch)
 // USAGE: Update multiple records matching a condition (e.g., mark all as archived)
 public func updateMany(
-    where predicate: @escaping (BlazeDataRecord) -> Bool,
-    set fields: [String: BlazeDocumentField]
+ where predicate: @escaping (BlazeDataRecord) -> Bool,
+ set fields: [String: BlazeDocumentField]
 ) throws -> Int
 ```
 
@@ -254,7 +254,7 @@ public func softDelete(id: UUID) throws
 // Delete many records (batch)
 // USAGE: Delete multiple records matching a condition (e.g., delete all old records)
 public func deleteMany(
-    where predicate: @escaping (BlazeDataRecord) -> Bool
+ where predicate: @escaping (BlazeDataRecord) -> Bool
 ) throws -> Int
 
 // Purge soft-deleted records
@@ -264,7 +264,7 @@ public func purge() throws
 
 ---
 
-## **🔍 Query API**
+## ** Query API**
 
 **Purpose:** Build complex queries to filter, sort, and retrieve records based on conditions.
 
@@ -371,22 +371,22 @@ func having(_ predicate: @escaping ([String: BlazeDocumentField]) -> Bool) -> Qu
 ```swift
 // Join with another database
 public func join(
-    _ otherDB: BlazeDBClient,
-    on localField: String,
-    equals remoteField: String
+ _ otherDB: BlazeDBClient,
+ on localField: String,
+ equals remoteField: String
 ) throws -> [BlazeDataRecord]
 
 // Join via query builder
 func join(
-    _ otherDB: BlazeDBClient,
-    on localField: String,
-    equals remoteField: String
+ _ otherDB: BlazeDBClient,
+ on localField: String,
+ equals remoteField: String
 ) -> QueryBuilder
 ```
 
 ---
 
-## **⚡ Async Operations**
+## ** Async Operations**
 
 ### **Async CRUD:**
 
@@ -417,7 +417,7 @@ func first() async throws -> BlazeDataRecord?
 
 ---
 
-## **🔐 Security & RLS**
+## ** Security & RLS**
 
 ### **Security Context:**
 
@@ -446,10 +446,10 @@ func deletePolicy(name: String) throws
 
 ```swift
 public struct SecurityContext {
-    public let userId: UUID
-    public let roles: [String]
-    public let teams: [UUID]
-    public let publicKey: Data?
+ public let userId: UUID
+ public let roles: [String]
+ public let teams: [UUID]
+ public let publicKey: Data?
 }
 ```
 
@@ -457,21 +457,21 @@ public struct SecurityContext {
 
 ```swift
 public struct SecurityPolicy {
-    public let name: String
-    public let rules: [PolicyRule]
-    
-    public enum PolicyRule {
-        case allowRead(where: (BlazeDataRecord) -> Bool)
-        case allowWrite(where: (BlazeDataRecord) -> Bool)
-        case denyRead(where: (BlazeDataRecord) -> Bool)
-        case denyWrite(where: (BlazeDataRecord) -> Bool)
-    }
+ public let name: String
+ public let rules: [PolicyRule]
+
+ public enum PolicyRule {
+ case allowRead(where: (BlazeDataRecord) -> Bool)
+ case allowWrite(where: (BlazeDataRecord) -> Bool)
+ case denyRead(where: (BlazeDataRecord) -> Bool)
+ case denyWrite(where: (BlazeDataRecord) -> Bool)
+ }
 }
 ```
 
 ---
 
-## **📊 Indexes**
+## ** Indexes**
 
 **Purpose:** Speed up queries by creating indexes on frequently queried fields.
 
@@ -533,7 +533,7 @@ func fetch(byIndexedField field: String, value: BlazeDocumentField) throws -> [B
 
 ---
 
-## **🔄 Transactions**
+## ** Transactions**
 
 **Purpose:** Ensure atomic operations - either all changes succeed or all are rolled back.
 
@@ -571,7 +571,7 @@ public func replayTransactionLogIfNeeded() throws
 
 ---
 
-## **🔄 Sync & Distributed**
+## ** Sync & Distributed**
 
 **Purpose:** Synchronize databases across devices, apps, and networks using BlazeBinary protocol.
 
@@ -581,21 +581,21 @@ public func replayTransactionLogIfNeeded() throws
 
 ```swift
 public actor BlazeTopology {
-    // Register database
-    // USAGE: Register a database in the topology so it can sync with others
-    func register(db: BlazeDBClient, name: String, role: SyncRole) async throws -> UUID
-    
-    // Local sync (same app)
-    // USAGE: Sync two databases in the same app process (in-memory queue, <1ms latency)
-    func connectLocal(from: UUID, to: UUID, mode: ConnectionMode) async throws
-    
-    // Cross-app sync (different apps)
-    // USAGE: Sync databases between different apps on same device (Unix Domain Socket, ~0.5ms latency)
-    func connectCrossApp(from: UUID, to: UUID, socketPath: String, mode: ConnectionMode) async throws
-    
-    // Remote sync (different devices)
-    // USAGE: Sync databases across network (TCP + BlazeBinary, ~5ms latency, E2E encrypted)
-    func connectRemote(nodeId: UUID, remote: RemoteNode, policy: SyncPolicy) async throws
+ // Register database
+ // USAGE: Register a database in the topology so it can sync with others
+ func register(db: BlazeDBClient, name: String, role: SyncRole) async throws -> UUID
+
+ // Local sync (same app)
+ // USAGE: Sync two databases in the same app process (in-memory queue, <1ms latency)
+ func connectLocal(from: UUID, to: UUID, mode: ConnectionMode) async throws
+
+ // Cross-app sync (different apps)
+ // USAGE: Sync databases between different apps on same device (Unix Domain Socket, ~0.5ms latency)
+ func connectCrossApp(from: UUID, to: UUID, socketPath: String, mode: ConnectionMode) async throws
+
+ // Remote sync (different devices)
+ // USAGE: Sync databases across network (TCP + BlazeBinary, ~5ms latency, E2E encrypted)
+ func connectRemote(nodeId: UUID, remote: RemoteNode, policy: SyncPolicy) async throws
 }
 ```
 
@@ -605,12 +605,12 @@ public actor BlazeTopology {
 
 ```swift
 public actor BlazeServer {
-    // USAGE: Create server instance (listens on port, accepts client connections)
-    init(database: String, port: UInt16, localDB: BlazeDBClient, authToken: String?) throws
-    // USAGE: Start listening for incoming connections (call this to make server available)
-    func start() async throws
-    // USAGE: Stop server and close all connections
-    func stop() async
+ // USAGE: Create server instance (listens on port, accepts client connections)
+ init(database: String, port: UInt16, localDB: BlazeDBClient, authToken: String?) throws
+ // USAGE: Start listening for incoming connections (call this to make server available)
+ func start() async throws
+ // USAGE: Stop server and close all connections
+ func stop() async
 }
 ```
 
@@ -620,25 +620,25 @@ public actor BlazeServer {
 
 ```swift
 public class BlazeDiscovery {
-    // Advertise database
-    // USAGE: Make this database discoverable on the network (server side)
-    func startAdvertising(database: String, port: UInt16, deviceName: String) throws
-    
-    // Browse for databases
-    // USAGE: Start searching for BlazeDB servers on network (client side)
-    func startBrowsing()
-    // USAGE: Stop searching for servers
-    func stopBrowsing()
-    
-    // Discovered databases
-    // USAGE: Access list of discovered servers (updates automatically)
-    var discoveredDatabases: [DiscoveredDatabase]
+ // Advertise database
+ // USAGE: Make this database discoverable on the network (server side)
+ func startAdvertising(database: String, port: UInt16, deviceName: String) throws
+
+ // Browse for databases
+ // USAGE: Start searching for BlazeDB servers on network (client side)
+ func startBrowsing()
+ // USAGE: Stop searching for servers
+ func stopBrowsing()
+
+ // Discovered databases
+ // USAGE: Access list of discovered servers (updates automatically)
+ var discoveredDatabases: [DiscoveredDatabase]
 }
 ```
 
 ---
 
-## **📈 Monitoring & Telemetry**
+## ** Monitoring & Telemetry**
 
 ### **Database Info:**
 
@@ -667,16 +667,16 @@ var telemetry: TelemetryService { get }
 
 // TelemetryService API
 class TelemetryService {
-    func enable()
-    func disable()
-    func getMetrics() -> TelemetryMetrics
-    func record(operation: String, duration: Double, success: Bool, recordCount: Int, error: Error?)
+ func enable()
+ func disable()
+ func getMetrics() -> TelemetryMetrics
+ func record(operation: String, duration: Double, success: Bool, recordCount: Int, error: Error?)
 }
 ```
 
 ---
 
-## **🔧 Maintenance**
+## ** Maintenance**
 
 ### **Persistence:**
 
@@ -733,13 +733,13 @@ func performSecurityAudit() -> SecurityAuditReport
 
 ---
 
-## **🎨 SwiftUI Integration**
+## ** SwiftUI Integration**
 
 ### **Property Wrappers:**
 
 ```swift
 // Query property wrapper
-@BlazeQuery(db: BlazeDBClient, where: "status", equals: .string("open"))
+@BlazeQuery(db: BlazeDBClient, where: "status", equals:.string("open"))
 var records: [BlazeDataRecord]
 
 // Typed query property wrapper
@@ -749,7 +749,7 @@ var users: [User]
 
 ---
 
-## **🔍 Full-Text Search**
+## ** Full-Text Search**
 
 ```swift
 // Create full-text index
@@ -764,37 +764,37 @@ func search(_ query: String, options: SearchOptions) throws -> [BlazeDataRecord]
 
 ---
 
-## **🔗 Foreign Keys**
+## ** Foreign Keys**
 
 ```swift
 // Create foreign key
 func createForeignKey(
-    from localField: String,
-    to remoteDB: BlazeDBClient,
-    remoteField: String,
-    onDelete: ForeignKey.DeleteAction = .noAction,
-    onUpdate: ForeignKey.UpdateAction = .noAction
+ from localField: String,
+ to remoteDB: BlazeDBClient,
+ remoteField: String,
+ onDelete: ForeignKey.DeleteAction =.noAction,
+ onUpdate: ForeignKey.UpdateAction =.noAction
 ) throws
 
 // Foreign key actions
 enum ForeignKey {
-    enum DeleteAction {
-        case noAction
-        case cascade
-        case restrict
-        case setNull
-    }
-    enum UpdateAction {
-        case noAction
-        case cascade
-        case restrict
-    }
+ enum DeleteAction {
+ case noAction
+ case cascade
+ case restrict
+ case setNull
+ }
+ enum UpdateAction {
+ case noAction
+ case cascade
+ case restrict
+ }
 }
 ```
 
 ---
 
-## **📊 Change Observation**
+## ** Change Observation**
 
 ```swift
 // Observe changes
@@ -802,21 +802,21 @@ func observeChanges(_ handler: @escaping ([DatabaseChange]) -> Void) -> Observer
 
 // DatabaseChange
 enum DatabaseChange {
-    case insert(UUID)
-    case update(UUID)
-    case delete(UUID)
+ case insert(UUID)
+ case update(UUID)
+ case delete(UUID)
 }
 ```
 
 ---
 
-## **🎯 Type Safety**
+## ** Type Safety**
 
 ### **BlazeRecord Protocol:**
 
 ```swift
 public protocol BlazeRecord: Codable, Identifiable {
-    var id: UUID { get }
+ var id: UUID { get }
 }
 ```
 
@@ -828,16 +828,16 @@ func queryTyped<T: BlazeRecord>(_ type: T.Type) -> TypedQueryBuilder<T>
 
 // TypedQueryBuilder
 class TypedQueryBuilder<T: BlazeRecord> {
-    func where(_ keyPath: KeyPath<T, String>, equals: String) -> TypedQueryBuilder<T>
-    func where(_ keyPath: KeyPath<T, Int>, equals: Int) -> TypedQueryBuilder<T>
-    // ... more type-safe methods
-    func all() throws -> [T]
+ func where(_ keyPath: KeyPath<T, String>, equals: String) -> TypedQueryBuilder<T>
+ func where(_ keyPath: KeyPath<T, Int>, equals: Int) -> TypedQueryBuilder<T>
+ //... more type-safe methods
+ func all() throws -> [T]
 }
 ```
 
 ---
 
-## **📦 Codable Integration**
+## ** Codable Integration**
 
 ```swift
 // Insert Codable directly
@@ -852,19 +852,19 @@ func query<T: Codable>(as type: T.Type) -> CodableQueryBuilder<T>
 
 ---
 
-## **🛠️ Utilities**
+## **️ Utilities**
 
 ### **Pretty Print:**
 
 ```swift
 // Pretty print record
-func prettyPrint(_ record: BlazeDataRecord, options: PrettyPrintOptions = .default) -> String
+func prettyPrint(_ record: BlazeDataRecord, options: PrettyPrintOptions =.default) -> String
 
 // PrettyPrintOptions
 struct PrettyPrintOptions {
-    var indent: Int
-    var includeMetadata: Bool
-    var maxDepth: Int
+ var indent: Int
+ var includeMetadata: Bool
+ var maxDepth: Int
 }
 ```
 
@@ -880,57 +880,57 @@ func getEncodingStats() -> EncodingStats
 
 ---
 
-## **📝 Logging**
+## ** Logging**
 
 ### **BlazeLogger:**
 
 ```swift
 public final class BlazeLogger {
-    // Log levels
-    public static var level: BlazeLogLevel
-    
-    // Logging methods
-    public static func trace(_ message: @autoclosure () -> String, file: String = #file, line: Int = #line)
-    public static func debug(_ message: @autoclosure () -> String, file: String = #file, line: Int = #line)
-    public static func info(_ message: @autoclosure () -> String, file: String = #file, line: Int = #line)
-    public static func warn(_ message: @autoclosure () -> String, includeStack: Bool = false, file: String = #file, line: Int = #line)
-    public static func error(_ message: @autoclosure () -> String, error: Error? = nil, includeStack: Bool = false, file: String = #file, line: Int = #line)
-    
-    // Configuration
-    public static func enableDebugMode()
-    public static func enableTraceMode()
-    public static func enableSilentMode()
-    public static func reset()
+ // Log levels
+ public static var level: BlazeLogLevel
+
+ // Logging methods
+ public static func trace(_ message: @autoclosure () -> String, file: String = #file, line: Int = #line)
+ public static func debug(_ message: @autoclosure () -> String, file: String = #file, line: Int = #line)
+ public static func info(_ message: @autoclosure () -> String, file: String = #file, line: Int = #line)
+ public static func warn(_ message: @autoclosure () -> String, includeStack: Bool = false, file: String = #file, line: Int = #line)
+ public static func error(_ message: @autoclosure () -> String, error: Error? = nil, includeStack: Bool = false, file: String = #file, line: Int = #line)
+
+ // Configuration
+ public static func enableDebugMode()
+ public static func enableTraceMode()
+ public static func enableSilentMode()
+ public static func reset()
 }
 ```
 
 ---
 
-## **❌ Error Types**
+## ** Error Types**
 
 ### **BlazeDBError:**
 
 ```swift
 public enum BlazeDBError: Error, LocalizedError {
-    case recordExists(id: UUID?, suggestion: String?)
-    case recordNotFound(id: UUID?, collection: String?, suggestion: String?)
-    case transactionFailed(String, underlyingError: Error?)
-    case migrationFailed(String, underlyingError: Error?)
-    case invalidQuery(reason: String, suggestion: String?)
-    case indexNotFound(field: String, availableIndexes: [String])
-    case invalidField(name: String, expectedType: String, actualType: String)
-    case diskFull(availableSpace: Int64?)
-    case permissionDenied(operation: String, path: String?)
-    case databaseLocked(operation: String, timeout: TimeInterval?)
-    case corruptedData(location: String, reason: String)
-    case passwordTooWeak(requirements: String)
-    case invalidData(reason: String)
+ case recordExists(id: UUID?, suggestion: String?)
+ case recordNotFound(id: UUID?, collection: String?, suggestion: String?)
+ case transactionFailed(String, underlyingError: Error?)
+ case migrationFailed(String, underlyingError: Error?)
+ case invalidQuery(reason: String, suggestion: String?)
+ case indexNotFound(field: String, availableIndexes: [String])
+ case invalidField(name: String, expectedType: String, actualType: String)
+ case diskFull(availableSpace: Int64?)
+ case permissionDenied(operation: String, path: String?)
+ case databaseLocked(operation: String, timeout: TimeInterval?)
+ case corruptedData(location: String, reason: String)
+ case passwordTooWeak(requirements: String)
+ case invalidData(reason: String)
 }
 ```
 
 ---
 
-## **📚 Complete Method List**
+## ** Complete Method List**
 
 ### **CRUD (29 methods):**
 - `insert(_:)` - Insert record

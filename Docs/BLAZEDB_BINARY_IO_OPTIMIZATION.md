@@ -22,12 +22,12 @@
 - Decryption: 0.05ms per page (AES-GCM)
 
 **Bottlenecks Identified:**
-1. 🔴 **Synchronous I/O** - Blocks threads, prevents parallelization
-2. 🔴 **Per-write fsync** - 10-100x slower than batched fsync
-3. 🟡 **Data.append() reallocations** - Memory churn in encoder
-4. 🟡 **Byte-by-byte unaligned reads** - Safe but slow
-5. 🟡 **Sequential overflow reads** - No parallelization
-6. 🟡 **No SIMD optimizations** - Missing vectorization opportunities
+1. **Synchronous I/O** - Blocks threads, prevents parallelization
+2. **Per-write fsync** - 10-100x slower than batched fsync
+3. **Data.append() reallocations** - Memory churn in encoder
+4. **Byte-by-byte unaligned reads** - Safe but slow
+5. **Sequential overflow reads** - No parallelization
+6. **No SIMD optimizations** - Missing vectorization opportunities
 
 **Optimization Potential:**
 - **I/O Batching:** 10-100x faster writes (batched fsync)
@@ -48,33 +48,33 @@
 ```swift
 // BlazeBinaryEncoder.swift:52-88
 public static func encode(_ record: BlazeDataRecord) throws -> Data {
-    var data = Data()
-    data.reserveCapacity(estimatedSize)  // ✅ Good: Pre-allocation
-    
-    // ... encoding logic using data.append()
+ var data = Data()
+ data.reserveCapacity(estimatedSize) // Good: Pre-allocation
+
+ //... encoding logic using data.append()
 }
 ```
 
 **Issues:**
 1. **Data.append() Reallocations:**
-   - `Data` may reallocate if capacity exceeded
-   - Each reallocation copies entire buffer
-   - Cost: O(n) per reallocation
+ - `Data` may reallocate if capacity exceeded
+ - Each reallocation copies entire buffer
+ - Cost: O(n) per reallocation
 
 2. **No Memory Pooling:**
-   - New `Data` buffer for every encode
-   - No reuse of buffers
-   - Memory churn increases GC pressure
+ - New `Data` buffer for every encode
+ - No reuse of buffers
+ - Memory churn increases GC pressure
 
 3. **Sequential Encoding:**
-   - Fields encoded one at a time
-   - No parallelization for large records
-   - No SIMD for bulk operations
+ - Fields encoded one at a time
+ - No parallelization for large records
+ - No SIMD for bulk operations
 
 4. **String UTF-8 Encoding:**
-   - `s.data(using: .utf8)` creates new Data
-   - No reuse of UTF-8 buffers
-   - Cost: ~0.01ms per string
+ - `s.data(using:.utf8)` creates new Data
+ - No reuse of UTF-8 buffers
+ - Cost: ~0.01ms per string
 
 **Code References:**
 - `BlazeBinaryEncoder.swift:52-88` - Main encode function
@@ -89,45 +89,45 @@ public static func encode(_ record: BlazeDataRecord) throws -> Data {
 ```swift
 // BlazeBinaryDecoder.swift:105-170
 public static func decode(_ data: Data) throws -> BlazeDataRecord {
-    var offset = 0
-    var storage = Dictionary<String, BlazeDocumentField>(minimumCapacity: fieldCount)
-    
-    for _ in 0..<fieldCount {
-        let (key, value, bytesRead) = try decodeField(from: data, at: offset)
-        storage[key] = value
-        offset += bytesRead
-    }
+ var offset = 0
+ var storage = Dictionary<String, BlazeDocumentField>(minimumCapacity: fieldCount)
+
+ for _ in 0..<fieldCount {
+ let (key, value, bytesRead) = try decodeField(from: data, at: offset)
+ storage[key] = value
+ offset += bytesRead
+ }
 }
 ```
 
 **Issues:**
 1. **Byte-by-Byte Unaligned Reads:**
-   ```swift
-   // BlazeBinaryDecoder.swift:25-32
-   internal static func readUInt16(from data: Data, at offset: Int) throws -> UInt16 {
-       let byte1 = UInt16(data[offset])
-       let byte2 = UInt16(data[offset + 1])
-       return (byte1 << 8) | byte2  // ❌ Slow: 2 loads + shift + OR
-   }
-   ```
-   - Safe but slow (no alignment assumptions)
-   - Could use `withUnsafeBytes` for faster access
-   - Cost: ~0.001ms per read (adds up for many fields)
+ ```swift
+ // BlazeBinaryDecoder.swift:25-32
+ internal static func readUInt16(from data: Data, at offset: Int) throws -> UInt16 {
+ let byte1 = UInt16(data[offset])
+ let byte2 = UInt16(data[offset + 1])
+ return (byte1 << 8) | byte2 // Slow: 2 loads + shift + OR
+ }
+ ```
+ - Safe but slow (no alignment assumptions)
+ - Could use `withUnsafeBytes` for faster access
+ - Cost: ~0.001ms per read (adds up for many fields)
 
 2. **String UTF-8 Decoding:**
-   - `String(data: keyData, encoding: .utf8)` creates new String
-   - No UTF-8 buffer reuse
-   - Cost: ~0.01ms per string
+ - `String(data: keyData, encoding:.utf8)` creates new String
+ - No UTF-8 buffer reuse
+ - Cost: ~0.01ms per string
 
 3. **No SIMD for Bulk Operations:**
-   - Vector decoding could use SIMD
-   - Array/dictionary decoding is sequential
-   - Cost: O(n) instead of O(n/4) with SIMD
+ - Vector decoding could use SIMD
+ - Array/dictionary decoding is sequential
+ - Cost: O(n) instead of O(n/4) with SIMD
 
 4. **No Prefetching:**
-   - Reads data sequentially
-   - No read-ahead for next field
-   - CPU cache misses
+ - Reads data sequentially
+ - No read-ahead for next field
+ - CPU cache misses
 
 **Code References:**
 - `BlazeBinaryDecoder.swift:25-56` - Unaligned read helpers
@@ -142,43 +142,43 @@ public static func decode(_ data: Data) throws -> BlazeDataRecord {
 ```swift
 // PageStore.swift:205-209
 public func writePage(index: Int, plaintext: Data) throws {
-    try queue.sync(flags: .barrier) {
-        try _writePageLocked(index: index, plaintext: plaintext)
-    }
+ try queue.sync(flags:.barrier) {
+ try _writePageLocked(index: index, plaintext: plaintext)
+ }
 }
 
 // PageStore.swift:139-143
 internal func _writePageLocked(index: Int, plaintext: Data) throws {
-    try _writePageLockedUnsynchronized(index: index, plaintext: plaintext)
-    try fileHandle.compatSynchronize()  // ❌ fsync on EVERY write!
+ try _writePageLockedUnsynchronized(index: index, plaintext: plaintext)
+ try fileHandle.compatSynchronize() // fsync on EVERY write!
 }
 ```
 
 **Issues:**
 1. **Synchronous I/O:**
-   - `queue.sync(flags: .barrier)` blocks thread
-   - Cannot parallelize writes
-   - Cost: 0.2-0.5ms per write
+ - `queue.sync(flags:.barrier)` blocks thread
+ - Cannot parallelize writes
+ - Cost: 0.2-0.5ms per write
 
 2. **Per-Write fsync:**
-   - `fileHandle.compatSynchronize()` on every write
-   - fsync is 10-100x slower than write
-   - Cost: 1-10ms per fsync (varies by disk)
+ - `fileHandle.compatSynchronize()` on every write
+ - fsync is 10-100x slower than write
+ - Cost: 1-10ms per fsync (varies by disk)
 
 3. **No Write Batching:**
-   - Each write is independent
-   - No coalescing of adjacent writes
-   - Cost: Multiple seeks for sequential writes
+ - Each write is independent
+ - No coalescing of adjacent writes
+ - Cost: Multiple seeks for sequential writes
 
 4. **No Read-Ahead:**
-   - Reads only requested page
-   - No prefetching of likely-next pages
-   - Cost: Cache misses
+ - Reads only requested page
+ - No prefetching of likely-next pages
+ - Cost: Cache misses
 
 5. **Sequential Overflow Reads:**
-   - Overflow chains read one page at a time
-   - No parallel reads for long chains
-   - Cost: O(n) for n-page chain
+ - Overflow chains read one page at a time
+ - No parallel reads for long chains
+ - Cost: O(n) for n-page chain
 
 **Code References:**
 - `PageStore.swift:205-209` - Write page (synchronous)
@@ -201,27 +201,27 @@ internal func _writePageLocked(index: Int, plaintext: Data) throws {
 ```swift
 // New: BlazeBinaryBufferPool.swift
 public actor BlazeBinaryBufferPool {
-    private var encodeBuffers: [Data] = []
-    private var decodeBuffers: [Data] = []
-    private let maxPoolSize = 10
-    
-    func acquireEncodeBuffer(capacity: Int) -> Data {
-        // Reuse buffer if available
-        if let buffer = encodeBuffers.popLast(), buffer.capacity >= capacity {
-            buffer.removeAll(keepingCapacity: true)
-            return buffer
-        }
-        // Allocate new buffer
-        var buffer = Data()
-        buffer.reserveCapacity(capacity)
-        return buffer
-    }
-    
-    func releaseEncodeBuffer(_ buffer: Data) {
-        if encodeBuffers.count < maxPoolSize {
-            encodeBuffers.append(buffer)
-        }
-    }
+ private var encodeBuffers: [Data] = []
+ private var decodeBuffers: [Data] = []
+ private let maxPoolSize = 10
+
+ func acquireEncodeBuffer(capacity: Int) -> Data {
+ // Reuse buffer if available
+ if let buffer = encodeBuffers.popLast(), buffer.capacity >= capacity {
+ buffer.removeAll(keepingCapacity: true)
+ return buffer
+ }
+ // Allocate new buffer
+ var buffer = Data()
+ buffer.reserveCapacity(capacity)
+ return buffer
+ }
+
+ func releaseEncodeBuffer(_ buffer: Data) {
+ if encodeBuffers.count < maxPoolSize {
+ encodeBuffers.append(buffer)
+ }
+ }
 }
 ```
 
@@ -229,12 +229,12 @@ public actor BlazeBinaryBufferPool {
 ```swift
 // BlazeBinaryEncoder.swift (modified)
 public static func encode(_ record: BlazeDataRecord) throws -> Data {
-    let pool = BlazeBinaryBufferPool.shared
-    var data = await pool.acquireEncodeBuffer(capacity: estimateSize(record))
-    defer { await pool.releaseEncodeBuffer(data) }
-    
-    // ... encoding logic ...
-    return data
+ let pool = BlazeBinaryBufferPool.shared
+ var data = await pool.acquireEncodeBuffer(capacity: estimateSize(record))
+ defer { await pool.releaseEncodeBuffer(data) }
+
+ //... encoding logic...
+ return data
 }
 ```
 
@@ -261,19 +261,19 @@ public static func encode(_ record: BlazeDataRecord) throws -> Data {
 ```swift
 // BlazeBinaryDecoder.swift (optimized)
 internal static func readUInt16Fast(from data: Data, at offset: Int) throws -> UInt16 {
-    return try data.withUnsafeBytes { bytes in
-        guard offset + 2 <= bytes.count else {
-            throw BlazeBinaryError.invalidFormat("Data too short")
-        }
-        // Fast path: Direct load if aligned
-        if offset % 2 == 0 {
-            return bytes.load(fromByteOffset: offset, as: UInt16.self).bigEndian
-        }
-        // Slow path: Byte-by-byte for unaligned
-        let byte1 = UInt16(bytes[offset])
-        let byte2 = UInt16(bytes[offset + 1])
-        return (byte1 << 8) | byte2
-    }
+ return try data.withUnsafeBytes { bytes in
+ guard offset + 2 <= bytes.count else {
+ throw BlazeBinaryError.invalidFormat("Data too short")
+ }
+ // Fast path: Direct load if aligned
+ if offset % 2 == 0 {
+ return bytes.load(fromByteOffset: offset, as: UInt16.self).bigEndian
+ }
+ // Slow path: Byte-by-byte for unaligned
+ let byte1 = UInt16(bytes[offset])
+ let byte2 = UInt16(bytes[offset + 1])
+ return (byte1 << 8) | byte2
+ }
 }
 ```
 
@@ -302,34 +302,34 @@ internal static func readUInt16Fast(from data: Data, at offset: Int) throws -> U
 import Accelerate
 
 private static func decodeVectorSIMD(from data: Data, at offset: Int, count: Int) throws -> [Double] {
-    guard offset + (count * 4) <= data.count else {
-        throw BlazeBinaryError.invalidFormat("Data too short for vector")
-    }
-    
-    return try data.withUnsafeBytes { bytes in
-        let floatPtr = bytes.baseAddress!.advanced(by: offset).assumingMemoryBound(to: Float32.self)
-        
-        // SIMD: Convert 4 floats at a time
-        var result: [Double] = []
-        result.reserveCapacity(count)
-        
-        var i = 0
-        while i + 4 <= count {
-            // Load 4 floats with SIMD
-            let simd4 = SIMD4<Float32>(floatPtr[i], floatPtr[i+1], floatPtr[i+2], floatPtr[i+3])
-            // Convert to Double (4 at a time)
-            result.append(contentsOf: simd4.map { Double($0) })
-            i += 4
-        }
-        
-        // Handle remainder
-        while i < count {
-            result.append(Double(floatPtr[i]))
-            i += 1
-        }
-        
-        return result
-    }
+ guard offset + (count * 4) <= data.count else {
+ throw BlazeBinaryError.invalidFormat("Data too short for vector")
+ }
+
+ return try data.withUnsafeBytes { bytes in
+ let floatPtr = bytes.baseAddress!.advanced(by: offset).assumingMemoryBound(to: Float32.self)
+
+ // SIMD: Convert 4 floats at a time
+ var result: [Double] = []
+ result.reserveCapacity(count)
+
+ var i = 0
+ while i + 4 <= count {
+ // Load 4 floats with SIMD
+ let simd4 = SIMD4<Float32>(floatPtr[i], floatPtr[i+1], floatPtr[i+2], floatPtr[i+3])
+ // Convert to Double (4 at a time)
+ result.append(contentsOf: simd4.map { Double($0) })
+ i += 4
+ }
+
+ // Handle remainder
+ while i < count {
+ result.append(Double(floatPtr[i]))
+ i += 1
+ }
+
+ return result
+ }
 }
 #endif
 ```
@@ -356,40 +356,40 @@ private static func decodeVectorSIMD(from data: Data, at offset: Int, count: Int
 ```swift
 // PageStore.swift (batched fsync)
 public actor PageStoreWriteBatcher {
-    private var pendingWrites: [(index: Int, data: Data)] = []
-    private var lastSyncTime: Date = Date()
-    private let syncInterval: TimeInterval = 0.1  // 100ms
-    private let maxPendingWrites = 100
-    
-    func addWrite(index: Int, data: Data) async throws {
-        pendingWrites.append((index, data))
-        
-        // Flush if threshold reached
-        if pendingWrites.count >= maxPendingWrites {
-            try await flush()
-        } else {
-            // Schedule delayed flush
-            Task.detached { [weak self] in
-                try? await Task.sleep(nanoseconds: 100_000_000)  // 100ms
-                try? await self?.flush()
-            }
-        }
-    }
-    
-    func flush() async throws {
-        guard !pendingWrites.isEmpty else { return }
-        
-        // Write all pages (no fsync yet)
-        for (index, data) in pendingWrites {
-            try await pageStore.writePageUnsynchronized(index: index, plaintext: data)
-        }
-        
-        // Single fsync for all writes
-        try await pageStore.synchronize()
-        
-        pendingWrites.removeAll()
-        lastSyncTime = Date()
-    }
+ private var pendingWrites: [(index: Int, data: Data)] = []
+ private var lastSyncTime: Date = Date()
+ private let syncInterval: TimeInterval = 0.1 // 100ms
+ private let maxPendingWrites = 100
+
+ func addWrite(index: Int, data: Data) async throws {
+ pendingWrites.append((index, data))
+
+ // Flush if threshold reached
+ if pendingWrites.count >= maxPendingWrites {
+ try await flush()
+ } else {
+ // Schedule delayed flush
+ Task.detached { [weak self] in
+ try? await Task.sleep(nanoseconds: 100_000_000) // 100ms
+ try? await self?.flush()
+ }
+ }
+ }
+
+ func flush() async throws {
+ guard!pendingWrites.isEmpty else { return }
+
+ // Write all pages (no fsync yet)
+ for (index, data) in pendingWrites {
+ try await pageStore.writePageUnsynchronized(index: index, plaintext: data)
+ }
+
+ // Single fsync for all writes
+ try await pageStore.synchronize()
+
+ pendingWrites.removeAll()
+ lastSyncTime = Date()
+ }
 }
 ```
 
@@ -397,7 +397,7 @@ public actor PageStoreWriteBatcher {
 ```swift
 // PageStore.swift (modified)
 public func writePage(index: Int, plaintext: Data) async throws {
-    try await writeBatcher.addWrite(index: index, data: plaintext)
+ try await writeBatcher.addWrite(index: index, data: plaintext)
 }
 ```
 
@@ -424,51 +424,51 @@ public func writePage(index: Int, plaintext: Data) async throws {
 ```swift
 // PageStore+Async.swift (enhanced)
 extension PageStore {
-    /// Read multiple pages in parallel
-    public func readPagesParallel(indices: [Int]) async throws -> [Int: Data?] {
-        return try await withThrowingTaskGroup(of: (Int, Data?).self) { group in
-            // Start all reads in parallel
-            for index in indices {
-                group.addTask { [weak self] in
-                    guard let self = self else { return (index, nil) }
-                    let data = try await self.readPageAsync(index: index)
-                    return (index, data)
-                }
-            }
-            
-            // Collect results
-            var results: [Int: Data?] = [:]
-            for try await (index, data) in group {
-                results[index] = data
-            }
-            
-            return results
-        }
-    }
-    
-    /// Read overflow chain in parallel
-    public func readPageWithOverflowParallel(index: Int) async throws -> Data? {
-        // Read main page first
-        guard let mainPage = try await readPageAsync(index: index) else {
-            return nil
-        }
-        
-        // Detect overflow chain
-        let overflowIndices = try detectOverflowChain(from: mainPage, startIndex: index)
-        
-        // Read all overflow pages in parallel
-        let overflowPages = try await readPagesParallel(indices: overflowIndices)
-        
-        // Combine results
-        var completeData = mainPage
-        for overflowIndex in overflowIndices.sorted() {
-            if let overflowData = overflowPages[overflowIndex] ?? nil {
-                completeData.append(overflowData)
-            }
-        }
-        
-        return completeData
-    }
+ /// Read multiple pages in parallel
+ public func readPagesParallel(indices: [Int]) async throws -> [Int: Data?] {
+ return try await withThrowingTaskGroup(of: (Int, Data?).self) { group in
+ // Start all reads in parallel
+ for index in indices {
+ group.addTask { [weak self] in
+ guard let self = self else { return (index, nil) }
+ let data = try await self.readPageAsync(index: index)
+ return (index, data)
+ }
+ }
+
+ // Collect results
+ var results: [Int: Data?] = [:]
+ for try await (index, data) in group {
+ results[index] = data
+ }
+
+ return results
+ }
+ }
+
+ /// Read overflow chain in parallel
+ public func readPageWithOverflowParallel(index: Int) async throws -> Data? {
+ // Read main page first
+ guard let mainPage = try await readPageAsync(index: index) else {
+ return nil
+ }
+
+ // Detect overflow chain
+ let overflowIndices = try detectOverflowChain(from: mainPage, startIndex: index)
+
+ // Read all overflow pages in parallel
+ let overflowPages = try await readPagesParallel(indices: overflowIndices)
+
+ // Combine results
+ var completeData = mainPage
+ for overflowIndex in overflowIndices.sorted() {
+ if let overflowData = overflowPages[overflowIndex]?? nil {
+ completeData.append(overflowData)
+ }
+ }
+
+ return completeData
+ }
 }
 ```
 
@@ -495,74 +495,74 @@ extension PageStore {
 ```swift
 // PageStore.swift (write coalescing)
 extension PageStore {
-    private var writeQueue: [(index: Int, data: Data)] = []
-    private var coalescingTask: Task<Void, Never>?
-    
-    func writePageCoalesced(index: Int, plaintext: Data) async throws {
-        // Add to queue
-        await queue.sync(flags: .barrier) {
-            writeQueue.append((index, plaintext))
-        }
-        
-        // Start coalescing task if not running
-        if coalescingTask == nil {
-            coalescingTask = Task {
-                try? await Task.sleep(nanoseconds: 1_000_000)  // 1ms
-                try? await flushCoalescedWrites()
-            }
-        }
-    }
-    
-    func flushCoalescedWrites() async throws {
-        let writes = await queue.sync(flags: .barrier) {
-            let w = writeQueue
-            writeQueue.removeAll()
-            return w
-        }
-        
-        // Sort by index (sequential writes)
-        let sortedWrites = writes.sorted(by: { $0.index < $1.index })
-        
-        // Write in batches (coalesce adjacent pages)
-        var currentBatch: [(index: Int, data: Data)] = []
-        var lastIndex = -1
-        
-        for (index, data) in sortedWrites {
-            if index == lastIndex + 1 {
-                // Adjacent page - add to batch
-                currentBatch.append((index, data))
-            } else {
-                // Non-adjacent - flush current batch
-                if !currentBatch.isEmpty {
-                    try await writeBatchCoalesced(currentBatch)
-                    currentBatch.removeAll()
-                }
-                currentBatch.append((index, data))
-            }
-            lastIndex = index
-        }
-        
-        // Flush remaining batch
-        if !currentBatch.isEmpty {
-            try await writeBatchCoalesced(currentBatch)
-        }
-    }
-    
-    func writeBatchCoalesced(_ batch: [(index: Int, data: Data)]) async throws {
-        // Single seek to first page
-        let firstIndex = batch.first!.index
-        let offset = UInt64(firstIndex) * UInt64(pageSize)
-        
-        try await queue.sync(flags: .barrier) {
-            try fileHandle.compatSeek(toOffset: offset)
-            
-            // Write all pages in batch (single seek, multiple writes)
-            for (index, data) in batch {
-                let encrypted = try encryptPage(data)
-                try fileHandle.compatWrite(encrypted)
-            }
-        }
-    }
+ private var writeQueue: [(index: Int, data: Data)] = []
+ private var coalescingTask: Task<Void, Never>?
+
+ func writePageCoalesced(index: Int, plaintext: Data) async throws {
+ // Add to queue
+ await queue.sync(flags:.barrier) {
+ writeQueue.append((index, plaintext))
+ }
+
+ // Start coalescing task if not running
+ if coalescingTask == nil {
+ coalescingTask = Task {
+ try? await Task.sleep(nanoseconds: 1_000_000) // 1ms
+ try? await flushCoalescedWrites()
+ }
+ }
+ }
+
+ func flushCoalescedWrites() async throws {
+ let writes = await queue.sync(flags:.barrier) {
+ let w = writeQueue
+ writeQueue.removeAll()
+ return w
+ }
+
+ // Sort by index (sequential writes)
+ let sortedWrites = writes.sorted(by: { $0.index < $1.index })
+
+ // Write in batches (coalesce adjacent pages)
+ var currentBatch: [(index: Int, data: Data)] = []
+ var lastIndex = -1
+
+ for (index, data) in sortedWrites {
+ if index == lastIndex + 1 {
+ // Adjacent page - add to batch
+ currentBatch.append((index, data))
+ } else {
+ // Non-adjacent - flush current batch
+ if!currentBatch.isEmpty {
+ try await writeBatchCoalesced(currentBatch)
+ currentBatch.removeAll()
+ }
+ currentBatch.append((index, data))
+ }
+ lastIndex = index
+ }
+
+ // Flush remaining batch
+ if!currentBatch.isEmpty {
+ try await writeBatchCoalesced(currentBatch)
+ }
+ }
+
+ func writeBatchCoalesced(_ batch: [(index: Int, data: Data)]) async throws {
+ // Single seek to first page
+ let firstIndex = batch.first!.index
+ let offset = UInt64(firstIndex) * UInt64(pageSize)
+
+ try await queue.sync(flags:.barrier) {
+ try fileHandle.compatSeek(toOffset: offset)
+
+ // Write all pages in batch (single seek, multiple writes)
+ for (index, data) in batch {
+ let encrypted = try encryptPage(data)
+ try fileHandle.compatWrite(encrypted)
+ }
+ }
+ }
 }
 ```
 
@@ -589,43 +589,43 @@ extension PageStore {
 ```swift
 // PageStore.swift (read-ahead)
 extension PageStore {
-    private var prefetchQueue: [Int] = []
-    private var prefetchTask: Task<Void, Never>?
-    
-    func readPageWithPrefetch(index: Int) async throws -> Data? {
-        // Read requested page
-        let data = try await readPageAsync(index: index)
-        
-        // Prefetch likely-next pages (heuristic: sequential access)
-        let nextIndices = [index + 1, index + 2, index + 3]
-        for nextIndex in nextIndices {
-            prefetchQueue.append(nextIndex)
-        }
-        
-        // Start prefetch task if not running
-        if prefetchTask == nil {
-            prefetchTask = Task {
-                try? await prefetchPages()
-            }
-        }
-        
-        return data
-    }
-    
-    func prefetchPages() async throws {
-        let indices = await queue.sync {
-            let i = prefetchQueue
-            prefetchQueue.removeAll()
-            return i
-        }
-        
-        // Prefetch in background (low priority)
-        for index in indices {
-            Task.detached(priority: .utility) { [weak self] in
-                _ = try? await self?.readPageAsync(index: index)
-            }
-        }
-    }
+ private var prefetchQueue: [Int] = []
+ private var prefetchTask: Task<Void, Never>?
+
+ func readPageWithPrefetch(index: Int) async throws -> Data? {
+ // Read requested page
+ let data = try await readPageAsync(index: index)
+
+ // Prefetch likely-next pages (heuristic: sequential access)
+ let nextIndices = [index + 1, index + 2, index + 3]
+ for nextIndex in nextIndices {
+ prefetchQueue.append(nextIndex)
+ }
+
+ // Start prefetch task if not running
+ if prefetchTask == nil {
+ prefetchTask = Task {
+ try? await prefetchPages()
+ }
+ }
+
+ return data
+ }
+
+ func prefetchPages() async throws {
+ let indices = await queue.sync {
+ let i = prefetchQueue
+ prefetchQueue.removeAll()
+ return i
+ }
+
+ // Prefetch in background (low priority)
+ for index in indices {
+ Task.detached(priority:.utility) { [weak self] in
+ _ = try? await self?.readPageAsync(index: index)
+ }
+ }
+ }
 }
 ```
 
@@ -646,45 +646,45 @@ extension PageStore {
 ### 4.1 Critical (Implement First)
 
 1. **Batched fsync** (3.4)
-   - **Impact:** 10-100x faster writes
-   - **Effort:** Medium (1-2 days)
-   - **Risk:** Low (well-understood pattern)
+ - **Impact:** 10-100x faster writes
+ - **Effort:** Medium (1-2 days)
+ - **Risk:** Low (well-understood pattern)
 
 2. **Memory Pooling** (3.1)
-   - **Impact:** 2-3x faster encoding
-   - **Effort:** Low (1 day)
-   - **Risk:** Low (simple buffer reuse)
+ - **Impact:** 2-3x faster encoding
+ - **Effort:** Low (1 day)
+ - **Risk:** Low (simple buffer reuse)
 
 ### 4.2 High Priority
 
 3. **Async I/O with Parallelization** (3.5)
-   - **Impact:** 2-4x faster overflow reads
-   - **Effort:** Medium (2-3 days)
-   - **Risk:** Medium (concurrency complexity)
+ - **Impact:** 2-4x faster overflow reads
+ - **Effort:** Medium (2-3 days)
+ - **Risk:** Medium (concurrency complexity)
 
 4. **Unsafe Fast-Path** (3.2)
-   - **Impact:** 2-3x faster aligned reads
-   - **Effort:** Low (1 day)
-   - **Risk:** Low (fallback to safe path)
+ - **Impact:** 2-3x faster aligned reads
+ - **Effort:** Low (1 day)
+ - **Risk:** Low (fallback to safe path)
 
 ### 4.3 Medium Priority
 
 5. **Write Coalescing** (3.6)
-   - **Impact:** 2-3x faster sequential writes
-   - **Effort:** Medium (2 days)
-   - **Risk:** Medium (coalescing logic)
+ - **Impact:** 2-3x faster sequential writes
+ - **Effort:** Medium (2 days)
+ - **Risk:** Medium (coalescing logic)
 
 6. **Read-Ahead Prefetching** (3.7)
-   - **Impact:** 2-3x faster sequential reads
-   - **Effort:** Medium (2 days)
-   - **Risk:** Low (optional optimization)
+ - **Impact:** 2-3x faster sequential reads
+ - **Effort:** Medium (2 days)
+ - **Risk:** Low (optional optimization)
 
 ### 4.4 Low Priority (Future)
 
 7. **SIMD Optimizations** (3.3)
-   - **Impact:** 4-8x faster bulk operations
-   - **Effort:** High (3-5 days)
-   - **Risk:** Medium (platform-specific)
+ - **Impact:** 4-8x faster bulk operations
+ - **Effort:** High (3-5 days)
+ - **Risk:** Medium (platform-specific)
 
 ---
 
@@ -733,37 +733,37 @@ extension PageStore {
 ### 6.1 New Files
 
 1. **`BlazeDB/Utils/BlazeBinaryBufferPool.swift`**
-   - Memory pooling for encode/decode buffers
-   - Actor-based for thread safety
+ - Memory pooling for encode/decode buffers
+ - Actor-based for thread safety
 
 2. **`BlazeDB/Storage/PageStoreWriteBatcher.swift`**
-   - Batched fsync implementation
-   - Actor-based for thread safety
+ - Batched fsync implementation
+ - Actor-based for thread safety
 
 ### 6.2 Modified Files
 
 1. **`BlazeDB/Utils/BlazeBinaryEncoder.swift`**
-   - Use buffer pool
-   - Add fast-path for aligned writes (future)
+ - Use buffer pool
+ - Add fast-path for aligned writes (future)
 
 2. **`BlazeDB/Utils/BlazeBinaryDecoder.swift`**
-   - Use buffer pool
-   - Add fast-path for aligned reads
-   - Add SIMD for vector decoding (optional)
+ - Use buffer pool
+ - Add fast-path for aligned reads
+ - Add SIMD for vector decoding (optional)
 
 3. **`BlazeDB/Storage/PageStore.swift`**
-   - Add write batcher integration
-   - Add write coalescing
-   - Add read-ahead prefetching
+ - Add write batcher integration
+ - Add write coalescing
+ - Add read-ahead prefetching
 
 4. **`BlazeDB/Storage/PageStore+Async.swift`**
-   - Add parallel page reads
-   - Add parallel overflow reads
-   - Enhance async I/O
+ - Add parallel page reads
+ - Add parallel overflow reads
+ - Enhance async I/O
 
 5. **`BlazeDB/Storage/PageStore+Overflow.swift`**
-   - Add parallel overflow chain reads
-   - Optimize overflow detection
+ - Add parallel overflow chain reads
+ - Optimize overflow detection
 
 ---
 
@@ -772,35 +772,35 @@ extension PageStore {
 ### 7.1 Performance Tests
 
 1. **Encoding/Decoding Benchmarks:**
-   - Measure before/after encoding speed
-   - Measure before/after decoding speed
-   - Verify memory usage reduction
+ - Measure before/after encoding speed
+ - Measure before/after decoding speed
+ - Verify memory usage reduction
 
 2. **I/O Benchmarks:**
-   - Measure before/after write throughput
-   - Measure before/after read throughput
-   - Verify fsync batching effectiveness
+ - Measure before/after write throughput
+ - Measure before/after read throughput
+ - Verify fsync batching effectiveness
 
 3. **Overflow Benchmarks:**
-   - Measure before/after overflow read speed
-   - Verify parallel reads correctness
+ - Measure before/after overflow read speed
+ - Verify parallel reads correctness
 
 ### 7.2 Correctness Tests
 
 1. **Buffer Pool Tests:**
-   - Verify buffer reuse
-   - Verify thread safety
-   - Verify memory leak prevention
+ - Verify buffer reuse
+ - Verify thread safety
+ - Verify memory leak prevention
 
 2. **Write Batcher Tests:**
-   - Verify batched fsync correctness
-   - Verify crash recovery (pending writes)
-   - Verify ordering guarantees
+ - Verify batched fsync correctness
+ - Verify crash recovery (pending writes)
+ - Verify ordering guarantees
 
 3. **Parallel Read Tests:**
-   - Verify parallel read correctness
-   - Verify race condition handling
-   - Verify error propagation
+ - Verify parallel read correctness
+ - Verify race condition handling
+ - Verify error propagation
 
 ---
 
@@ -828,31 +828,31 @@ extension PageStore {
 ## 9. Implementation Timeline
 
 ### Phase 1 (Week 1): Critical Optimizations
-- ✅ Batched fsync (3.4)
-- ✅ Memory pooling (3.1)
+- Batched fsync (3.4)
+- Memory pooling (3.1)
 
 **Expected Gain:** 10-30x faster writes, 2-3x faster encoding
 
 ### Phase 2 (Week 2): High Priority
-- ✅ Async I/O with parallelization (3.5)
-- ✅ Unsafe fast-path (3.2)
+- Async I/O with parallelization (3.5)
+- Unsafe fast-path (3.2)
 
 **Expected Gain:** 2-4x faster reads, 2-3x faster decoding
 
 ### Phase 3 (Week 3): Medium Priority
-- ✅ Write coalescing (3.6)
-- ✅ Read-ahead prefetching (3.7)
+- Write coalescing (3.6)
+- Read-ahead prefetching (3.7)
 
 **Expected Gain:** 2-3x faster sequential operations
 
 ### Phase 4 (Future): Advanced
-- ⚠️ SIMD optimizations (3.3)
+- ️ SIMD optimizations (3.3)
 
 **Expected Gain:** 4-8x faster bulk operations
 
 ---
 
-**Document Version:** 1.0  
-**Last Updated:** Based on complete codebase analysis  
+**Document Version:** 1.0
+**Last Updated:** Based on complete codebase analysis
 **Next Steps:** Implement Phase 1 optimizations
 

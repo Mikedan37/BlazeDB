@@ -9,7 +9,7 @@
 - **Implementation:** `InMemoryRelay`
 - **Usage:** `topology.connectLocal()`
 
-### 2. **Unix Domain Sockets** (Different Apps, Same Device) ✅ NEW
+### 2. **Unix Domain Sockets** (Different Apps, Same Device) NEW
 - **Use Case:** Different apps on the same device
 - **Latency:** ~0.3-0.5ms (very fast)
 - **Throughput:** 5,000-20,000 ops/sec
@@ -27,7 +27,7 @@
 
 ## **BlazeBinary Encoding:**
 
-✅ **All transports use BlazeBinary** (not JSON):
+ **All transports use BlazeBinary** (not JSON):
 - **5-10x faster** encoding/decoding
 - **34-67% smaller** payload size
 - **Zero-copy** optimizations
@@ -38,21 +38,21 @@
 
 ```swift
 // Same app (in-memory)
-try await topology.connectLocal(from: id1, to: id2, mode: .bidirectional)
+try await topology.connectLocal(from: id1, to: id2, mode:.bidirectional)
 
 // Different apps (Unix Domain Socket)
 try await topology.connectCrossApp(
-    from: id1,
-    to: id2,
-    socketPath: "/tmp/blazedb_sync.sock",
-    mode: .bidirectional
+ from: id1,
+ to: id2,
+ socketPath: "/tmp/blazedb_sync.sock",
+ mode:.bidirectional
 )
 
 // Different devices (TCP)
 try await topology.connectRemote(
-    nodeId: id1,
-    remote: RemoteNode(host: "192.168.1.100", port: 8080, ...),
-    policy: SyncPolicy()
+ nodeId: id1,
+ remote: RemoteNode(host: "192.168.1.100", port: 8080,...),
+ policy: SyncPolicy()
 )
 ```
 
@@ -70,8 +70,8 @@ try await topology.connectRemote(
 
 ## **Status:**
 
-✅ **All three transports implemented**
-✅ **All use BlazeBinary encoding**
-✅ **Comprehensive tests**
-✅ **Production ready**
+ **All three transports implemented**
+ **All use BlazeBinary encoding**
+ **Comprehensive tests**
+ **Production ready**
 

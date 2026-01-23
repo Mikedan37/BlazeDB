@@ -1,17 +1,17 @@
-# Shared Secret Implementation - Complete Guide 🔐
+# Shared Secret Implementation - Complete Guide
 
 **Cross-platform shared secret authentication for BlazeDB**
 
 **Works on:**
-- ✅ macOS (CryptoKit)
-- ✅ iOS (CryptoKit)
-- ✅ Linux / Raspberry Pi (Swift Crypto)
-- ✅ Vapor Server (Swift Crypto)
-- ✅ All platforms!
+- macOS (CryptoKit)
+- iOS (CryptoKit)
+- Linux / Raspberry Pi (Swift Crypto)
+- Vapor Server (Swift Crypto)
+- All platforms!
 
 ---
 
-## 🎯 **HOW IT WORKS:**
+## **HOW IT WORKS:**
 
 ### **Token Derivation:**
 
@@ -21,19 +21,19 @@ let secret = "my-password-123"
 
 // Server (Raspberry Pi)
 let token1 = BlazeDBClient.deriveToken(
-    from: secret,
-    database1: "PiDB",
-    database2: "iPhoneDB"
+ from: secret,
+ database1: "PiDB",
+ database2: "iPhoneDB"
 )
 
 // Client (iPhone)
 let token2 = BlazeDBClient.deriveToken(
-    from: secret,
-    database1: "PiDB",
-    database2: "iPhoneDB"
+ from: secret,
+ database1: "PiDB",
+ database2: "iPhoneDB"
 )
 
-// ✅ Tokens match! (same secret + same DB names)
+// Tokens match! (same secret + same DB names)
 ```
 
 ### **Why Different Tokens Per Pair:**
@@ -47,12 +47,12 @@ deriveToken(secret: "pass", db1: "DB1", db2: "DB2")
 deriveToken(secret: "pass", db1: "DB1", db2: "DB3")
 // → Token B (DIFFERENT!)
 
-// ✅ Each pair has unique token!
+// Each pair has unique token!
 ```
 
 ---
 
-## 🚀 **USAGE EXAMPLES:**
+## **USAGE EXAMPLES:**
 
 ### **Example 1: Vapor Server (Raspberry Pi)**
 
@@ -62,39 +62,39 @@ import BlazeDB
 
 @main
 enum Entrypoint {
-    static func main() async throws {
-        let app = try await Application.make(.production)
-        defer { app.shutdown() }
-        
-        // Create database
-        let db = try BlazeDBClient(
-            name: "PiDB",
-            fileURL: URL(fileURLWithPath: "/home/pi/database.blazedb"),
-            password: "pi-password"
-        )
-        
-        // Get shared secret from environment
-        let secret = Environment.get("BLAZEDB_SECRET") ?? "default-secret-123"
-        
-        // Start server with shared secret
-        let server = try await db.startServer(
-            port: 8080,
-            sharedSecret: secret  // ✅ Shared secret!
-        )
-        
-        // Advertise for discovery
-        let discovery = BlazeDiscovery()
-        discovery.advertise(
-            database: "PiDB",
-            deviceName: "raspberry-pi",
-            port: 8080
-        )
-        
-        print("✅ BlazeDB server running on port 8080")
-        print("   Shared secret: \(secret.prefix(4))...")
-        
-        try await app.run()
-    }
+ static func main() async throws {
+ let app = try await Application.make(.production)
+ defer { app.shutdown() }
+
+ // Create database
+ let db = try BlazeDBClient(
+ name: "PiDB",
+ fileURL: URL(fileURLWithPath: "/home/pi/database.blazedb"),
+ password: "pi-password"
+ )
+
+ // Get shared secret from environment
+ let secret = Environment.get("BLAZEDB_SECRET")?? "default-secret-123"
+
+ // Start server with shared secret
+ let server = try await db.startServer(
+ port: 8080,
+ sharedSecret: secret // Shared secret!
+ )
+
+ // Advertise for discovery
+ let discovery = BlazeDiscovery()
+ discovery.advertise(
+ database: "PiDB",
+ deviceName: "raspberry-pi",
+ port: 8080
+ )
+
+ print(" BlazeDB server running on port 8080")
+ print(" Shared secret: \(secret.prefix(4))...")
+
+ try await app.run()
+ }
 }
 ```
 
@@ -105,17 +105,17 @@ import BlazeDB
 
 // Create database
 let db = try BlazeDBClient(
-    name: "iPhoneDB",
-    fileURL: getDatabaseURL(),
-    password: "iphone-password"
+ name: "iPhoneDB",
+ fileURL: getDatabaseURL(),
+ password: "iphone-password"
 )
 
 // Auto-connect with shared secret
 try await db.autoConnect(
-    sharedSecret: "my-password-123"  // ✅ Same secret as server!
+ sharedSecret: "my-password-123" // Same secret as server!
 )
 
-print("✅ Connected to Raspberry Pi!")
+print(" Connected to Raspberry Pi!")
 ```
 
 ### **Example 3: Mac Client**
@@ -125,20 +125,20 @@ import BlazeDB
 
 // Create database
 let db = try BlazeDBClient(
-    name: "MacDB",
-    fileURL: URL(fileURLWithPath: "/Users/you/macdb.blazedb"),
-    password: "mac-password"
+ name: "MacDB",
+ fileURL: URL(fileURLWithPath: "/Users/you/macdb.blazedb"),
+ password: "mac-password"
 )
 
 // Connect with shared secret
 try await db.sync(
-    to: "192.168.1.100",  // Raspberry Pi IP
-    port: 8080,
-    database: "PiDB",
-    sharedSecret: "my-password-123"  // ✅ Same secret!
+ to: "192.168.1.100", // Raspberry Pi IP
+ port: 8080,
+ database: "PiDB",
+ sharedSecret: "my-password-123" // Same secret!
 )
 
-print("✅ Connected to Raspberry Pi!")
+print(" Connected to Raspberry Pi!")
 ```
 
 ### **Example 4: Direct Connection (No Discovery)**
@@ -146,46 +146,46 @@ print("✅ Connected to Raspberry Pi!")
 ```swift
 // On any client device
 try await db.sync(
-    to: "192.168.1.100",
-    port: 8080,
-    database: "PiDB",
-    sharedSecret: "my-password-123"
+ to: "192.168.1.100",
+ port: 8080,
+ database: "PiDB",
+ sharedSecret: "my-password-123"
 )
 
-// ✅ Automatically derives token and connects!
+// Automatically derives token and connects!
 ```
 
 ---
 
-## 🔐 **SECURITY:**
+## **SECURITY:**
 
 ### **Token Derivation Algorithm:**
 
 ```swift
 1. Sort database names (ensures same token regardless of order)
-   → "DB1:DB2" or "DB2:DB1" → both become "DB1:DB2"
+ → "DB1:DB2" or "DB2:DB1" → both become "DB1:DB2"
 
 2. Derive token using HKDF:
-   - Input: Shared secret (user's password)
-   - Salt: "blazedb-auth-v1" (constant)
-   - Info: Sorted database names
-   - Output: 32-byte (256-bit) token
+ - Input: Shared secret (user's password)
+ - Salt: "blazedb-auth-v1" (constant)
+ - Info: Sorted database names
+ - Output: 32-byte (256-bit) token
 
 3. Encode as base64 string
-   → "abc123xyz..." (safe to transmit)
+ → "abc123xyz..." (safe to transmit)
 ```
 
 ### **Why This is Secure:**
 
-✅ **Different token per database pair**  
-✅ **Even with same secret, tokens are different**  
-✅ **Compromising one token doesn't affect others**  
-✅ **Derived with HKDF (cryptographically secure)**  
-✅ **No token storage needed (derived on demand)**  
+ **Different token per database pair**
+ **Even with same secret, tokens are different**
+ **Compromising one token doesn't affect others**
+ **Derived with HKDF (cryptographically secure)**
+ **No token storage needed (derived on demand)**
 
 ---
 
-## 📦 **PLATFORM SUPPORT:**
+## **PLATFORM SUPPORT:**
 
 ### **Apple Platforms (macOS, iOS):**
 
@@ -194,10 +194,10 @@ try await db.sync(
 import CryptoKit
 
 let tokenKey = HKDF<SHA256>.deriveKey(
-    inputKeyMaterial: SymmetricKey(data: secretData),
-    salt: salt,
-    info: info,
-    outputByteCount: 32
+ inputKeyMaterial: SymmetricKey(data: secretData),
+ salt: salt,
+ info: info,
+ outputByteCount: 32
 )
 ```
 
@@ -208,10 +208,10 @@ let tokenKey = HKDF<SHA256>.deriveKey(
 import Crypto
 
 let tokenKey = HKDF<SHA256>.deriveKey(
-    inputKeyMaterial: SymmetricKey(data: secretData),
-    salt: salt,
-    info: info,
-    outputByteCount: 32
+ inputKeyMaterial: SymmetricKey(data: secretData),
+ salt: salt,
+ info: info,
+ outputByteCount: 32
 )
 ```
 
@@ -224,7 +224,7 @@ let tokenKey = HKDF<SHA256>.deriveKey(
 
 ---
 
-## 🎯 **COMPLETE WORKFLOW:**
+## **COMPLETE WORKFLOW:**
 
 ### **1. Server Setup (Raspberry Pi):**
 
@@ -240,7 +240,7 @@ swift run
 
 ```swift
 // User enters same password
-let secret = getUserPassword()  // "my-password-123"
+let secret = getUserPassword() // "my-password-123"
 
 // Auto-connect
 try await db.autoConnect(sharedSecret: secret)
@@ -251,23 +251,23 @@ try await db.autoConnect(sharedSecret: secret)
 ```
 1. Server derives token: secret + "PiDB" + "iPhoneDB" → Token A
 2. Client derives token: secret + "PiDB" + "iPhoneDB" → Token A
-3. Tokens match! ✅
-4. Connection succeeds! ✅
-5. Sync starts automatically! ✅
+3. Tokens match!
+4. Connection succeeds!
+5. Sync starts automatically!
 ```
 
 ---
 
-## ✅ **API SUMMARY:**
+## **API SUMMARY:**
 
 ### **Token Derivation:**
 
 ```swift
 // Static method - works everywhere!
 let token = BlazeDBClient.deriveToken(
-    from: "my-password-123",
-    database1: "DB1",
-    database2: "DB2"
+ from: "my-password-123",
+ database1: "DB1",
+ database2: "DB2"
 )
 ```
 
@@ -276,8 +276,8 @@ let token = BlazeDBClient.deriveToken(
 ```swift
 // On Vapor server (Raspberry Pi)
 let server = try await db.startServer(
-    port: 8080,
-    sharedSecret: "my-password-123"
+ port: 8080,
+ sharedSecret: "my-password-123"
 )
 ```
 
@@ -286,10 +286,10 @@ let server = try await db.startServer(
 ```swift
 // On client device (iPhone/Mac)
 try await db.sync(
-    to: "192.168.1.100",
-    port: 8080,
-    database: "PiDB",
-    sharedSecret: "my-password-123"
+ to: "192.168.1.100",
+ port: 8080,
+ database: "PiDB",
+ sharedSecret: "my-password-123"
 )
 ```
 
@@ -298,30 +298,30 @@ try await db.sync(
 ```swift
 // Auto-discover and connect
 try await db.autoConnect(
-    sharedSecret: "my-password-123"
+ sharedSecret: "my-password-123"
 )
 ```
 
 ---
 
-## 🔥 **BENEFITS:**
+## **BENEFITS:**
 
-✅ **Cross-platform** → Works on macOS, iOS, Linux, Vapor  
-✅ **Secure** → HKDF token derivation  
-✅ **Simple** → User only needs one password  
-✅ **Unique tokens** → Different token per database pair  
-✅ **No storage** → Tokens derived on demand  
-✅ **Works with Vapor** → Full server support  
-✅ **Works with clients** → Full client support  
+ **Cross-platform** → Works on macOS, iOS, Linux, Vapor
+ **Secure** → HKDF token derivation
+ **Simple** → User only needs one password
+ **Unique tokens** → Different token per database pair
+ **No storage** → Tokens derived on demand
+ **Works with Vapor** → Full server support
+ **Works with clients** → Full client support
 
 ---
 
-## 📚 **FILES CREATED:**
+## **FILES CREATED:**
 
 1. **`BlazeDBClient+SharedSecret.swift`** → Shared secret implementation
 2. **`SHARED_SECRET_IMPLEMENTATION.md`** → This guide
 
 ---
 
-**Shared secret is now fully implemented and works on all platforms! 🔥**
+**Shared secret is now fully implemented and works on all platforms! **
 

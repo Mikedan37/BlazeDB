@@ -1,90 +1,90 @@
 # Reactive Live Queries: How They Work & Performance Impact
 
-## 🔄 **How Reactive Queries Work**
+## **How Reactive Queries Work**
 
 ### **Architecture Overview**
 
 ```
 ┌─────────────────┐
-│  BlazeDBClient  │
-│   (Database)    │
+│ BlazeDBClient │
+│ (Database) │
 └────────┬────────┘
-         │
-         │ notifyChanges()
-         ▼
+ │
+ │ notifyChanges()
+ ▼
 ┌─────────────────────────┐
-│ ChangeNotificationManager│  ← Batches changes (50ms delay)
-│   (Singleton)           │
+│ ChangeNotificationManager│ ← Batches changes (50ms delay)
+│ (Singleton) │
 └────────┬────────────────┘
-         │
-         │ flushPendingChanges()
-         │ (batched, on main thread)
-         ▼
+ │
+ │ flushPendingChanges()
+ │ (batched, on main thread)
+ ▼
 ┌─────────────────────────┐
-│  BlazeQueryObserver     │  ← Subscribed via db.observe()
-│  (@Published results)  │
+│ BlazeQueryObserver │ ← Subscribed via db.observe()
+│ (@Published results) │
 └────────┬────────────────┘
-         │
-         │ results updated
-         ▼
+ │
+ │ results updated
+ ▼
 ┌─────────────────────────┐
-│   SwiftUI View          │  ← Automatically re-renders!
-│   (@BlazeQuery)         │
+│ SwiftUI View │ ← Automatically re-renders!
+│ (@BlazeQuery) │
 └─────────────────────────┘
 ```
 
 ### **Step-by-Step Flow**
 
 1. **Database Change Occurs:**
-   ```swift
-   try db.insert(record)  // or update/delete
-   ```
+ ```swift
+ try db.insert(record) // or update/delete
+ ```
 
 2. **Change Notification Sent:**
-   ```swift
-   // Inside BlazeDBClient
-   notifyInsert(id: recordID)
-   → ChangeNotificationManager.shared.notifyChanges([change])
-   ```
+ ```swift
+ // Inside BlazeDBClient
+ notifyInsert(id: recordID)
+ → ChangeNotificationManager.shared.notifyChanges([change])
+ ```
 
 3. **Batching (50ms delay):**
-   ```swift
-   // ChangeNotificationManager batches changes
-   pendingChanges.append(change)
-   // Wait 50ms to batch multiple changes together
-   Timer.scheduledTimer(0.05 seconds) { flushPendingChanges() }
-   ```
+ ```swift
+ // ChangeNotificationManager batches changes
+ pendingChanges.append(change)
+ // Wait 50ms to batch multiple changes together
+ Timer.scheduledTimer(0.05 seconds) { flushPendingChanges() }
+ ```
 
 4. **Notification Flushed:**
-   ```swift
-   // All pending changes sent to observers
-   DispatchQueue.main.async {
-       for observer in observers.values {
-           observer(changesToNotify)  // Batched changes
-       }
-   }
-   ```
+ ```swift
+ // All pending changes sent to observers
+ DispatchQueue.main.async {
+ for observer in observers.values {
+ observer(changesToNotify) // Batched changes
+ }
+ }
+ ```
 
 5. **Query Auto-Refresh:**
-   ```swift
-   // Inside BlazeQueryObserver
-   changeObserverToken = db.observe { changes in
-       if changes.contains(where: { /* affects query */ }) {
-           self.refresh()  // Re-run query
-       }
-   }
-   ```
+ ```swift
+ // Inside BlazeQueryObserver
+ changeObserverToken = db.observe { changes in
+ if changes.contains(where: { /* affects query */ }) {
+ self.refresh() // Re-run query
+ }
+ }
+ ```
 
 6. **View Updates:**
-   ```swift
-   // @Published property updates
-   @Published var results: [BlazeDataRecord] = []
-   // SwiftUI automatically re-renders!
-   ```
+ ```swift
+ // @Published property updates
+ @Published var results: [BlazeDataRecord] = []
+ // SwiftUI automatically re-renders!
+ ```
 
 ---
 
-## ⚡ **Performance Characteristics**
+## **Performance Characteristics**
 
 ### **Memory Impact: LOW**
 
@@ -127,7 +127,7 @@
 
 ---
 
-## 🎯 **Performance Optimizations**
+## **Performance Optimizations**
 
 ### **1. Change Batching (50ms delay)**
 
@@ -140,7 +140,7 @@
 ```swift
 // Insert 1000 records
 for i in 0..<1000 {
-    try db.insert(record)  // Each triggers notification
+ try db.insert(record) // Each triggers notification
 }
 
 // Without batching: 1000 notifications × 10ms = 10 seconds!
@@ -157,8 +157,8 @@ for i in 0..<1000 {
 **Code:**
 ```swift
 changeObserverToken = db.observe { [weak self] changes in
-    guard let self = self else { return }  // Auto-cleanup
-    self.refresh()
+ guard let self = self else { return } // Auto-cleanup
+ self.refresh()
 }
 ```
 
@@ -172,9 +172,9 @@ changeObserverToken = db.observe { [weak self] changes in
 **Code:**
 ```swift
 DispatchQueue.main.async {
-    for observer in observers.values {
-        observer(changesToNotify)  // Safe UI updates
-    }
+ for observer in observers.values {
+ observer(changesToNotify) // Safe UI updates
+ }
 }
 ```
 
@@ -187,7 +187,7 @@ DispatchQueue.main.async {
 
 ---
 
-## 📊 **Performance Benchmarks**
+## **Performance Benchmarks**
 
 ### **Scenario 1: Single Query, Single Change**
 
@@ -223,48 +223,48 @@ CPU: ~0.1ms (notification) + ~100ms (queries) = ~100ms
 
 ---
 
-## ⚠️ **Performance Considerations**
+## ️ **Performance Considerations**
 
 ### **When Performance Might Degrade:**
 
 1. **Too Many Active Queries:**
-   - 1000+ queries refreshing simultaneously
-   - **Solution:** Use query limits, pagination
+ - 1000+ queries refreshing simultaneously
+ - **Solution:** Use query limits, pagination
 
 2. **Expensive Queries:**
-   - Complex JOINs, aggregations
-   - **Solution:** Optimize queries, add indexes
+ - Complex JOINs, aggregations
+ - **Solution:** Optimize queries, add indexes
 
 3. **Rapid Changes:**
-   - 1000+ changes/second
-   - **Solution:** Batching already handles this (50ms delay)
+ - 1000+ changes/second
+ - **Solution:** Batching already handles this (50ms delay)
 
 ### **Best Practices:**
 
-1. ✅ **Use query limits:**
-   ```swift
-   @BlazeQuery(db: db, limit: 100)  // Limit results
-   ```
+1. **Use query limits:**
+ ```swift
+ @BlazeQuery(db: db, limit: 100) // Limit results
+ ```
 
-2. ✅ **Filter at database level:**
-   ```swift
-   @BlazeQuery(db: db, where: "status", equals: .string("active"))
-   // Better than fetching all and filtering in Swift
-   ```
+2. **Filter at database level:**
+ ```swift
+ @BlazeQuery(db: db, where: "status", equals:.string("active"))
+ // Better than fetching all and filtering in Swift
+ ```
 
-3. ✅ **Use indexes:**
-   ```swift
-   try db.createIndex(on: "status")  // Speeds up queries
-   ```
+3. **Use indexes:**
+ ```swift
+ try db.createIndex(on: "status") // Speeds up queries
+ ```
 
-4. ✅ **Batch operations:**
-   ```swift
-   try db.insertMany(records)  // Single notification vs many
-   ```
+4. **Batch operations:**
+ ```swift
+ try db.insertMany(records) // Single notification vs many
+ ```
 
 ---
 
-## 🎯 **Summary**
+## **Summary**
 
 ### **Performance Impact:**
 
@@ -277,10 +277,10 @@ CPU: ~0.1ms (notification) + ~100ms (queries) = ~100ms
 
 ### **Key Features:**
 
-✅ **Batched notifications** (50ms delay) - 10-100x faster  
-✅ **Weak references** - No memory leaks  
-✅ **Main thread safety** - Safe for SwiftUI  
-✅ **Automatic cleanup** - Observers auto-unregister  
+ **Batched notifications** (50ms delay) - 10-100x faster
+ **Weak references** - No memory leaks
+ **Main thread safety** - Safe for SwiftUI
+ **Automatic cleanup** - Observers auto-unregister
 
 ### **Bottom Line:**
 

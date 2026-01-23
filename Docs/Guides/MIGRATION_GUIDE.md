@@ -25,12 +25,12 @@ BlazeDB provides built-in migration tools to help you transition from existing d
 
 Consider migrating to BlazeDB if you need:
 
-- ✅ Better performance for large datasets
-- ✅ Built-in encryption
-- ✅ Distributed sync capabilities
-- ✅ SQL-like query features
-- ✅ MVCC transactions
-- ✅ Schema-free flexibility
+- Better performance for large datasets
+- Built-in encryption
+- Distributed sync capabilities
+- SQL-like query features
+- MVCC transactions
+- Schema-free flexibility
 
 ## Migration Tools
 
@@ -56,45 +56,45 @@ let monitor = MigrationProgressMonitor()
 
 // Start migration with monitor
 Task {
-    try SQLiteMigrator.importFromSQLite(
-        source: sqliteURL,
-        destination: blazeDBURL,
-        password: "password",
-        progressMonitor: monitor
-    )
+ try SQLiteMigrator.importFromSQLite(
+ source: sqliteURL,
+ destination: blazeDBURL,
+ password: "password",
+ progressMonitor: monitor
+ )
 }
 
 // Poll progress in UI (SwiftUI example)
 struct MigrationView: View {
-    @State private var progress: MigrationProgress?
-    let monitor: MigrationProgressMonitor
-    
-    var body: some View {
-        VStack {
-            if let progress = progress {
-                Text("Status: \(progress.status.rawValue)")
-                Text("Table: \(progress.currentTable ?? "none")")
-                Text("Progress: \(String(format: "%.1f", progress.percentage))%")
-                ProgressView(value: progress.percentage / 100.0)
-            }
-        }
-        .onAppear {
-            // Poll every 0.1 seconds
-            Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { _ in
-                self.progress = monitor.getProgress()
-            }
-        }
-    }
+ @State private var progress: MigrationProgress?
+ let monitor: MigrationProgressMonitor
+
+ var body: some View {
+ VStack {
+ if let progress = progress {
+ Text("Status: \(progress.status.rawValue)")
+ Text("Table: \(progress.currentTable?? "none")")
+ Text("Progress: \(String(format: "%.1f", progress.percentage))%")
+ ProgressView(value: progress.percentage / 100.0)
+ }
+ }
+.onAppear {
+ // Poll every 0.1 seconds
+ Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { _ in
+ self.progress = monitor.getProgress()
+ }
+ }
+ }
 }
 ```
 
 ### Progress Monitor Features
 
-- ✅ **Thread-safe** - Safe to poll from any thread
-- ✅ **Real-time updates** - Get current progress anytime
-- ✅ **Observer pattern** - Subscribe to progress updates
-- ✅ **Estimated time** - Calculates time remaining
-- ✅ **Status tracking** - Current status (preparing, migrating, completed, etc.)
+- **Thread-safe** - Safe to poll from any thread
+- **Real-time updates** - Get current progress anytime
+- **Observer pattern** - Subscribe to progress updates
+- **Estimated time** - Calculates time remaining
+- **Status tracking** - Current status (preparing, migrating, completed, etc.)
 
 ### Progress Information
 
@@ -102,16 +102,16 @@ struct MigrationView: View {
 let progress = monitor.getProgress()
 
 // Available properties:
-progress.currentTable          // Current table being migrated
-progress.currentTableIndex     // Current table index (1-based)
-progress.totalTables           // Total number of tables
-progress.recordsProcessed      // Records processed so far
-progress.recordsTotal          // Total records (if known)
-progress.percentage            // Progress percentage (0-100)
-progress.elapsedTime           // Time elapsed
+progress.currentTable // Current table being migrated
+progress.currentTableIndex // Current table index (1-based)
+progress.totalTables // Total number of tables
+progress.recordsProcessed // Records processed so far
+progress.recordsTotal // Total records (if known)
+progress.percentage // Progress percentage (0-100)
+progress.elapsedTime // Time elapsed
 progress.estimatedTimeRemaining // Estimated time remaining
-progress.status                // Current status
-progress.error                 // Error (if failed)
+progress.status // Current status
+progress.error // Error (if failed)
 ```
 
 ### Observer Pattern
@@ -119,8 +119,8 @@ progress.error                 // Error (if failed)
 ```swift
 // Subscribe to progress updates
 let observerID = monitor.addObserver { progress in
-    print("Progress: \(progress.percentage)%")
-    // Update UI here
+ print("Progress: \(progress.percentage)%")
+ // Update UI here
 }
 
 // Later, remove observer
@@ -137,18 +137,18 @@ If you have SQL commands (CREATE TABLE, INSERT, etc.), use `SQLMigrator`:
 import BlazeDB
 
 let sqlCommands = [
-    "CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT, email TEXT)",
-    "INSERT INTO users (name, email) VALUES ('Alice', 'alice@example.com')",
-    "INSERT INTO users (name, email) VALUES ('Bob', 'bob@example.com')"
+ "CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT, email TEXT)",
+ "INSERT INTO users (name, email) VALUES ('Alice', 'alice@example.com')",
+ "INSERT INTO users (name, email) VALUES ('Bob', 'bob@example.com')"
 ]
 
 try SQLMigrator.importFromSQL(
-    sqlCommands: sqlCommands,
-    destination: URL(fileURLWithPath: "/path/to/app.blazedb"),
-    password: "secure-password"
+ sqlCommands: sqlCommands,
+ destination: URL(fileURLWithPath: "/path/to/app.blazedb"),
+ password: "secure-password"
 )
 
-print("✅ Migration complete!")
+print(" Migration complete!")
 ```
 
 ### From SQL File
@@ -158,9 +158,9 @@ Import from a SQL file:
 ```swift
 let sqlFile = URL(fileURLWithPath: "/path/to/schema.sql")
 try SQLMigrator.importFromSQLFile(
-    sqlFileURL: sqlFile,
-    destination: URL(fileURLWithPath: "/path/to/app.blazedb"),
-    password: "secure-password"
+ sqlFileURL: sqlFile,
+ destination: URL(fileURLWithPath: "/path/to/app.blazedb"),
+ password: "secure-password"
 )
 ```
 
@@ -188,12 +188,12 @@ let blazeDBURL = URL(fileURLWithPath: "/path/to/app.blazedb")
 
 // Step 3: Run migration
 try SQLiteMigrator.importFromSQLite(
-    source: sqliteURL,
-    destination: blazeDBURL,
-    password: "your-secure-password"
+ source: sqliteURL,
+ destination: blazeDBURL,
+ password: "your-secure-password"
 )
 
-print("✅ Migration complete!")
+print(" Migration complete!")
 ```
 
 ### Selective Table Migration
@@ -202,10 +202,10 @@ Migrate only specific tables:
 
 ```swift
 try SQLiteMigrator.importFromSQLite(
-    source: sqliteURL,
-    destination: blazeDBURL,
-    password: "your-password",
-    tables: ["users", "posts", "comments"]  // Only these tables
+ source: sqliteURL,
+ destination: blazeDBURL,
+ password: "your-password",
+ tables: ["users", "posts", "comments"] // Only these tables
 )
 ```
 
@@ -213,13 +213,13 @@ try SQLiteMigrator.importFromSQLite(
 
 ```swift
 try SQLiteMigrator.importFromSQLite(
-    source: sqliteURL,
-    destination: blazeDBURL,
-    password: "your-password",
-    progressHandler: { current, total in
-        let percent = Double(current) / Double(total) * 100
-        print("Progress: \(String(format: "%.1f", percent))%")
-    }
+ source: sqliteURL,
+ destination: blazeDBURL,
+ password: "your-password",
+ progressHandler: { current, total in
+ let percent = Double(current) / Double(total) * 100
+ print("Progress: \(String(format: "%.1f", percent))%")
+ }
 )
 ```
 
@@ -246,9 +246,9 @@ import CoreData
 // Step 1: Load your Core Data container
 let container = NSPersistentContainer(name: "MyApp")
 container.loadPersistentStores { _, error in
-    if let error = error {
-        fatalError("Failed to load: \(error)")
-    }
+ if let error = error {
+ fatalError("Failed to load: \(error)")
+ }
 }
 
 // Step 2: Choose destination
@@ -256,12 +256,12 @@ let blazeDBURL = URL(fileURLWithPath: "/path/to/app.blazedb")
 
 // Step 3: Run migration
 try CoreDataMigrator.importFromCoreData(
-    container: container,
-    destination: blazeDBURL,
-    password: "your-secure-password"
+ container: container,
+ destination: blazeDBURL,
+ password: "your-secure-password"
 )
 
-print("✅ Migration complete!")
+print(" Migration complete!")
 ```
 
 ### Selective Entity Migration
@@ -270,10 +270,10 @@ Migrate only specific entities:
 
 ```swift
 try CoreDataMigrator.importFromCoreData(
-    container: container,
-    destination: blazeDBURL,
-    password: "your-password",
-    entities: ["User", "Post", "Comment"]  // Only these entities
+ container: container,
+ destination: blazeDBURL,
+ password: "your-password",
+ entities: ["User", "Post", "Comment"] // Only these entities
 )
 ```
 
@@ -281,13 +281,13 @@ try CoreDataMigrator.importFromCoreData(
 
 ```swift
 try CoreDataMigrator.importFromCoreData(
-    container: container,
-    destination: blazeDBURL,
-    password: "your-password",
-    progressHandler: { current, total in
-        let percent = Double(current) / Double(total) * 100
-        print("Progress: \(String(format: "%.1f", percent))%")
-    }
+ container: container,
+ destination: blazeDBURL,
+ password: "your-password",
+ progressHandler: { current, total in
+ let percent = Double(current) / Double(total) * 100
+ print("Progress: \(String(format: "%.1f", percent))%")
+ }
 )
 ```
 
@@ -328,16 +328,16 @@ let jsonData = try JSONEncoder().encode(records)
 ```swift
 // Create BlazeDB
 let db = try BlazeDBClient(
-    name: "MigratedDB",
-    fileURL: destinationURL,
-    password: "your-password"
+ name: "MigratedDB",
+ fileURL: destinationURL,
+ password: "your-password"
 )
 
 // Import data
 let stats = try await db.import(
-    from: jsonData,
-    format: .json,
-    mode: .append  // or .replace, .merge
+ from: jsonData,
+ format:.json,
+ mode:.append // or.replace,.merge
 )
 
 print("Imported: \(stats.recordsImported) records")
@@ -364,7 +364,7 @@ BlazeDB handles null values differently than SQL databases:
 // After migration: email field doesn't exist
 
 let record = try db.fetch(id: userId)
-let email = record?.storage["email"]  // nil (field missing)
+let email = record?.storage["email"] // nil (field missing)
 ```
 
 ### Querying Missing Fields
@@ -372,13 +372,13 @@ let email = record?.storage["email"]  // nil (field missing)
 ```swift
 // Find records where field is missing (null equivalent)
 let records = try db.query()
-    .whereNil("email")
-    .execute()
+.whereNil("email")
+.execute()
 
 // Find records where field exists (not null)
 let records = try db.query()
-    .whereNotNil("email")
-    .execute()
+.whereNotNil("email")
+.execute()
 ```
 
 See [Null Handling Guide](./NULL_HANDLING.md) for complete details.
@@ -390,9 +390,9 @@ See [Null Handling Guide](./NULL_HANDLING.md) for complete details.
 ```swift
 // Open migrated database
 let db = try BlazeDBClient(
-    name: "MigratedDB",
-    fileURL: migratedURL,
-    password: "your-password"
+ name: "MigratedDB",
+ fileURL: migratedURL,
+ password: "your-password"
 )
 
 // Check record count
@@ -402,7 +402,7 @@ print("Total records: \(count)")
 // Sample a few records
 let sample = try db.fetchAll().prefix(5)
 for record in sample {
-    print(record.storage)
+ print(record.storage)
 }
 ```
 
@@ -423,14 +423,14 @@ Replace your old database calls:
 
 **Before (SQLite):**
 ```swift
-let statement = try db.prepare("SELECT * FROM users WHERE email = ?")
+let statement = try db.prepare("SELECT * FROM users WHERE email =?")
 ```
 
 **After (BlazeDB):**
 ```swift
 let users = try db.query()
-    .where("email", equals: .string("user@example.com"))
-    .execute()
+.where("email", equals:.string("user@example.com"))
+.execute()
 ```
 
 ## Troubleshooting
@@ -472,10 +472,10 @@ If you encounter issues:
 2. Review error messages carefully
 3. Test with a small subset first
 4. File an issue on GitHub with:
-   - Source database type and version
-   - BlazeDB version
-   - Error messages
-   - Sample data (if possible)
+ - Source database type and version
+ - BlazeDB version
+ - Error messages
+ - Sample data (if possible)
 
 ## Best Practices
 
@@ -489,11 +489,11 @@ If you encounter issues:
 
 BlazeDB migration is optimized for performance:
 
-- ✅ **Batch Processing** - Processes records in batches of 1000 for efficiency
-- ✅ **Memory Efficient** - Large tables are processed in chunks to avoid memory issues
-- ✅ **Progress Tracking** - Optional callbacks for monitoring progress
-- ✅ **Selective Migration** - Migrate only specific tables/entities
-- ✅ **Type Preservation** - All data types are preserved during migration
+- **Batch Processing** - Processes records in batches of 1000 for efficiency
+- **Memory Efficient** - Large tables are processed in chunks to avoid memory issues
+- **Progress Tracking** - Optional callbacks for monitoring progress
+- **Selective Migration** - Migrate only specific tables/entities
+- **Type Preservation** - All data types are preserved during migration
 
 ### Performance Benchmarks
 
@@ -509,36 +509,36 @@ For a typical migration:
 import BlazeDB
 
 func migrateFromSQLite() throws {
-    // 1. Backup source
-    let sourceURL = URL(fileURLWithPath: "/path/to/app.sqlite")
-    let backupURL = sourceURL.appendingPathExtension("backup")
-    try FileManager.default.copyItem(at: sourceURL, to: backupURL)
-    
-    // 2. Migrate
-    let destURL = URL(fileURLWithPath: "/path/to/app.blazedb")
-    try SQLiteMigrator.importFromSQLite(
-        source: sourceURL,
-        destination: destURL,
-        password: "secure-password",
-        progressHandler: { current, total in
-            print("Migrating table \(current)/\(total)...")
-        }
-    )
-    
-    // 3. Verify
-    let db = try BlazeDBClient(
-        name: "MigratedDB",
-        fileURL: destURL,
-        password: "secure-password"
-    )
-    let count = try db.count()
-    print("✅ Migration complete: \(count) records")
-    
-    // 4. Create indexes
-    try db.collection.createIndex(on: "email")
-    try db.collection.createIndex(on: "createdAt")
-    
-    print("✅ Indexes created")
+ // 1. Backup source
+ let sourceURL = URL(fileURLWithPath: "/path/to/app.sqlite")
+ let backupURL = sourceURL.appendingPathExtension("backup")
+ try FileManager.default.copyItem(at: sourceURL, to: backupURL)
+
+ // 2. Migrate
+ let destURL = URL(fileURLWithPath: "/path/to/app.blazedb")
+ try SQLiteMigrator.importFromSQLite(
+ source: sourceURL,
+ destination: destURL,
+ password: "secure-password",
+ progressHandler: { current, total in
+ print("Migrating table \(current)/\(total)...")
+ }
+ )
+
+ // 3. Verify
+ let db = try BlazeDBClient(
+ name: "MigratedDB",
+ fileURL: destURL,
+ password: "secure-password"
+ )
+ let count = try db.count()
+ print(" Migration complete: \(count) records")
+
+ // 4. Create indexes
+ try db.collection.createIndex(on: "email")
+ try db.collection.createIndex(on: "createdAt")
+
+ print(" Indexes created")
 }
 ```
 
@@ -555,13 +555,13 @@ BlazeDB handles null values differently than SQL databases:
 ```swift
 // Find records where field is missing (null equivalent)
 let records = try db.query()
-    .whereNil("email")
-    .execute()
+.whereNil("email")
+.execute()
 
 // Find records where field exists (not null)
 let records = try db.query()
-    .whereNotNil("email")
-    .execute()
+.whereNotNil("email")
+.execute()
 ```
 
 See [Null Handling Guide](./NULL_HANDLING.md) for complete details.

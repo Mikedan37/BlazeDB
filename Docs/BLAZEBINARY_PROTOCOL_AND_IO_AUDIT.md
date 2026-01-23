@@ -1,7 +1,7 @@
 # BlazeBinary Protocol and I/O Pipeline Audit
 
-**Date:** 2025-01-XX  
-**Auditor:** Technical Analysis  
+**Date:** 2025-01-XX
+**Auditor:** Technical Analysis
 **Scope:** Complete protocol specification, encoding/decoding paths, PageStore I/O, network framing, and performance characteristics
 
 ---
@@ -26,23 +26,23 @@
 
 ```
 ┌─────────────────────────────────────────┐
-│ Header (8 bytes, aligned)               │
+│ Header (8 bytes, aligned) │
 ├─────────────────────────────────────────┤
-│ Magic: "BLAZE" (5 bytes)                │
-│   Bytes: 0x42 0x4C 0x41 0x5A 0x45       │
-│ Version: 0x01 or 0x02 (1 byte)          │
-│   • 0x01 = No CRC32                     │
-│   • 0x02 = With CRC32 checksum          │
-│ Field Count: UInt16 (2 bytes, BE)       │
+│ Magic: "BLAZE" (5 bytes) │
+│ Bytes: 0x42 0x4C 0x41 0x5A 0x45 │
+│ Version: 0x01 or 0x02 (1 byte) │
+│ • 0x01 = No CRC32 │
+│ • 0x02 = With CRC32 checksum │
+│ Field Count: UInt16 (2 bytes, BE) │
 ├─────────────────────────────────────────┤
-│ Fields (variable length)                │
-│   [Field 1]                             │
-│   [Field 2]                             │
-│   ...                                   │
-│   [Field N]                             │
+│ Fields (variable length) │
+│ [Field 1] │
+│ [Field 2] │
+│... │
+│ [Field N] │
 ├─────────────────────────────────────────┤
-│ CRC32 (4 bytes, optional, v2 only)      │
-│   UInt32 big-endian                     │
+│ CRC32 (4 bytes, optional, v2 only) │
+│ UInt32 big-endian │
 └─────────────────────────────────────────┘
 ```
 
@@ -60,20 +60,20 @@
 
 **Variant A: Common Field (1 byte)**
 ```
-Offset  Size  Type    Description
-------  ----  ----    -----------
-0       1     uint8   Field ID (0x01-0x7F)
+Offset Size Type Description
+------ ---- ---- -----------
+0 1 uint8 Field ID (0x01-0x7F)
 
 Example: "id" → 0x01 (1 byte total)
 ```
 
 **Variant B: Custom Field (Variable)**
 ```
-Offset  Size  Type    Description
-------  ----  ----    -----------
-0       1     uint8   Marker: 0xFF
-1       2     uint16  Key length (big-endian)
-3       N     utf8    Key string
+Offset Size Type Description
+------ ---- ---- -----------
+0 1 uint8 Marker: 0xFF
+1 2 uint16 Key length (big-endian)
+3 N utf8 Key string
 
 Example: "myCustomField" → 0xFF + 0x000D + "myCustomField"
 Total: 1 + 2 + 13 = 16 bytes
@@ -90,24 +90,24 @@ Total: 1 + 2 + 13 = 16 bytes
 
 ```swift
 enum TypeTag: UInt8 {
-    case string = 0x01
-    case int = 0x02
-    case double = 0x03
-    case bool = 0x04
-    case uuid = 0x05
-    case date = 0x06
-    case data = 0x07
-    case array = 0x08
-    case dictionary = 0x09
-    case vector = 0x0A
-    case null = 0x0B
-    
-    // Optimizations:
-    case emptyString = 0x11    // 1 byte total
-    case smallInt = 0x12       // 0-255, 2 bytes total
-    case emptyArray = 0x18     // 1 byte total
-    case emptyDict = 0x19      // 1 byte total
-    // 0x20-0x2F: Inline strings (type + length in 1 byte!)
+ case string = 0x01
+ case int = 0x02
+ case double = 0x03
+ case bool = 0x04
+ case uuid = 0x05
+ case date = 0x06
+ case data = 0x07
+ case array = 0x08
+ case dictionary = 0x09
+ case vector = 0x0A
+ case null = 0x0B
+
+ // Optimizations:
+ case emptyString = 0x11 // 1 byte total
+ case smallInt = 0x12 // 0-255, 2 bytes total
+ case emptyArray = 0x18 // 1 byte total
+ case emptyDict = 0x19 // 1 byte total
+ // 0x20-0x2F: Inline strings (type + length in 1 byte!)
 }
 ```
 
@@ -154,7 +154,7 @@ let sortedFields = record.storage.sorted(by: { $0.key < $1.key })
 
 **UTF-8 Handling:**
 - Uses byte count, not character count (line 153)
-- Handles multi-byte characters correctly (e.g., "🔥" = 1 char, 4 bytes)
+- Handles multi-byte characters correctly (e.g., "" = 1 char, 4 bytes)
 - Fallback to empty string on encoding failure (line 150)
 
 **Data Blob Encoding:** `BlazeBinaryEncoder.swift:199-203`
@@ -167,13 +167,13 @@ let sortedFields = record.storage.sorted(by: { $0.key < $1.key })
 
 **Array Encoding:**
 ```
-Empty:    0x18 (1 byte)
+Empty: 0x18 (1 byte)
 Non-empty: 0x08 + UInt16(count, BE) + [item1][item2]...[itemN]
 ```
 
 **Dictionary Encoding:**
 ```
-Empty:    0x19 (1 byte)
+Empty: 0x19 (1 byte)
 Non-empty: 0x09 + UInt16(count, BE) + [key1][value1][key2][value2]...
 ```
 
@@ -264,30 +264,30 @@ Non-empty: 0x09 + UInt16(count, BE) + [key1][value1][key2][value2]...
 
 ```
 1. Estimate Size (line 54)
-   └─> estimateSize(record) + CRC32 overhead
-   └─> Formula: 8 + (fieldCount * 40) bytes
+ └─> estimateSize(record) + CRC32 overhead
+ └─> Formula: 8 + (fieldCount * 40) bytes
 
 2. Pre-allocate Buffer (line 55-56)
-   └─> Data.reserveCapacity(estimatedSize)
-   └─> Prevents reallocation churn
+ └─> Data.reserveCapacity(estimatedSize)
+ └─> Prevents reallocation churn
 
 3. Write Header (line 59-65)
-   └─> Magic: "BLAZE" (5 bytes)
-   └─> Version: 0x01 or 0x02 (1 byte)
-   └─> Field Count: UInt16 BE (2 bytes)
+ └─> Magic: "BLAZE" (5 bytes)
+ └─> Version: 0x01 or 0x02 (1 byte)
+ └─> Field Count: UInt16 BE (2 bytes)
 
 4. Sort Fields (line 70)
-   └─> record.storage.sorted(by: { $0.key < $1.key })
-   └─> O(n log n) cost for determinism
+ └─> record.storage.sorted(by: { $0.key < $1.key })
+ └─> O(n log n) cost for determinism
 
 5. Encode Fields (line 73-75)
-   └─> For each (key, value):
-       ├─> encodeField(key, value, into: &data)
-       └─> Recursive for nested structures
+ └─> For each (key, value):
+ ├─> encodeField(key, value, into: &data)
+ └─> Recursive for nested structures
 
 6. Append CRC32 (line 78-81, if enabled)
-   └─> calculateCRC32(data)
-   └─> Append 4 bytes big-endian
+ └─> calculateCRC32(data)
+ └─> Append 4 bytes big-endian
 
 7. Return Data (line 87)
 ```
@@ -304,28 +304,28 @@ Non-empty: 0x09 + UInt16(count, BE) + [key1][value1][key2][value2]...
 
 ```
 1. Validate Header (line 106-119)
-   └─> Check minimum 8 bytes
-   └─> Verify magic "BLAZE"
-   └─> Verify version (0x01 or 0x02)
+ └─> Check minimum 8 bytes
+ └─> Verify magic "BLAZE"
+ └─> Verify version (0x01 or 0x02)
 
 2. Verify CRC32 (line 123-144, if v2)
-   └─> Read stored CRC32 from last 4 bytes
-   └─> Calculate CRC32 over data[0..<count-4]
-   └─> Compare and throw on mismatch
+ └─> Read stored CRC32 from last 4 bytes
+ └─> Calculate CRC32 over data[0..<count-4]
+ └─> Compare and throw on mismatch
 
 3. Read Field Count (line 148)
-   └─> readUInt16(data, at: 6)
-   └─> Validate: 0-100,000
+ └─> readUInt16(data, at: 6)
+ └─> Validate: 0-100,000
 
 4. Pre-allocate Dictionary (line 159)
-   └─> Dictionary(minimumCapacity: fieldCount)
-   └─> Avoids rehashing during decode
+ └─> Dictionary(minimumCapacity: fieldCount)
+ └─> Avoids rehashing during decode
 
 5. Decode Fields (line 162-166)
-   └─> For 0..<fieldCount:
-       ├─> decodeField(data, at: offset)
-       └─> Returns (key, value, bytesRead)
-       └─> offset += bytesRead
+ └─> For 0..<fieldCount:
+ ├─> decodeField(data, at: offset)
+ └─> Returns (key, value, bytesRead)
+ └─> offset += bytesRead
 
 6. Return BlazeDataRecord (line 169)
 ```
@@ -340,7 +340,7 @@ Non-empty: 0x09 + UInt16(count, BE) + [key1][value1][key2][value2]...
 **Standard Encoder:** `BlazeBinaryEncoder.swift:55-56`
 ```swift
 var data = Data()
-data.reserveCapacity(estimatedSize)  // Pre-allocation
+data.reserveCapacity(estimatedSize) // Pre-allocation
 ```
 
 **Allocation Pattern:**
@@ -354,33 +354,33 @@ data.reserveCapacity(estimatedSize)  // Pre-allocation
 - Reduces GC pressure
 
 **Hotspot Analysis:**
-1. **String UTF-8 conversion:** `s.data(using: .utf8)` (line 148)
-   - Cost: O(n) where n = string length
-   - Cannot be optimized (Foundation requirement)
+1. **String UTF-8 conversion:** `s.data(using:.utf8)` (line 148)
+ - Cost: O(n) where n = string length
+ - Cannot be optimized (Foundation requirement)
 
 2. **Dictionary sorting:** `record.storage.sorted()` (line 70)
-   - Cost: O(n log n) where n = field count
-   - **Optimization Opportunity:** Pre-sort if record is reused
+ - Cost: O(n log n) where n = field count
+ - **Optimization Opportunity:** Pre-sort if record is reused
 
 3. **Data.append() calls:** Multiple per field
-   - Cost: O(1) amortized, O(n) worst-case (reallocation)
-   - **Mitigation:** Accurate size estimation reduces reallocations
+ - Cost: O(1) amortized, O(n) worst-case (reallocation)
+ - **Mitigation:** Accurate size estimation reduces reallocations
 
 ### 2.4 Buffer Size Selection
 
 **Size Estimation:** `BlazeBinaryEncoder.swift:256-261`
 ```swift
 internal static func estimateSize(_ record: BlazeDataRecord) -> Int {
-    return 8 + (record.storage.count * 40)  // Conservative estimate
+ return 8 + (record.storage.count * 40) // Conservative estimate
 }
 ```
 
 **Formula Breakdown:**
 - Header: 8 bytes (fixed)
 - Per field: 40 bytes average
-  - Key: ~10 bytes average
-  - Type tag: 1 byte
-  - Value: ~29 bytes average
+ - Key: ~10 bytes average
+ - Type tag: 1 byte
+ - Value: ~29 bytes average
 
 **Accuracy:**
 - **Overestimate:** Common (wastes memory)
@@ -395,7 +395,7 @@ internal static func estimateSize(_ record: BlazeDataRecord) -> Int {
 
 **Encoding Cost:** `BlazeBinaryEncoder.swift:148`
 ```swift
-guard let utf8Data = s.data(using: .utf8) else { ... }
+guard let utf8Data = s.data(using:.utf8) else {... }
 ```
 
 **Complexity:**
@@ -405,7 +405,7 @@ guard let utf8Data = s.data(using: .utf8) else { ... }
 
 **Decoding Cost:** `BlazeBinaryDecoder.swift:266`
 ```swift
-guard let string = String(data: stringData, encoding: .utf8) else { ... }
+guard let string = String(data: stringData, encoding:.utf8) else {... }
 ```
 
 **Complexity:**
@@ -454,9 +454,9 @@ guard let string = String(data: stringData, encoding: .utf8) else { ... }
 **Unaligned Reads:** `BlazeBinaryDecoder.swift:24-77`
 ```swift
 internal static func readUInt16(from data: Data, at offset: Int) throws -> UInt16 {
-    let byte1 = UInt16(data[offset])
-    let byte2 = UInt16(data[offset + 1])
-    return (byte1 << 8) | byte2  // Manual assembly
+ let byte1 = UInt16(data[offset])
+ let byte2 = UInt16(data[offset + 1])
+ return (byte1 << 8) | byte2 // Manual assembly
 }
 ```
 
@@ -496,35 +496,35 @@ internal static func readUInt16(from data: Data, at offset: Int) throws -> UInt1
 
 ```
 1. Invalidate Cache (line 149)
-   └─> pageCache.remove(index)
+ └─> pageCache.remove(index)
 
 2. Generate Nonce (line 154)
-   └─> AES.GCM.Nonce()  // 12 bytes random
+ └─> AES.GCM.Nonce() // 12 bytes random
 
 3. Encrypt Plaintext (line 157)
-   └─> AES.GCM.seal(plaintext, using: key, nonce: nonce)
-   └─> Returns: SealedBox(ciphertext, tag)
+ └─> AES.GCM.seal(plaintext, using: key, nonce: nonce)
+ └─> Returns: SealedBox(ciphertext, tag)
 
 4. Build Encrypted Page (line 173-195)
-   └─> Format: [BZDB][0x02][length][nonce][tag][ciphertext][padding]
-   └─> Header: 4 bytes ("BZDB")
-   └─> Version: 1 byte (0x02 = encrypted)
-   └─> Length: 4 bytes (UInt32 BE, plaintext length)
-   └─> Nonce: 12 bytes
-   └─> Tag: 16 bytes (authentication tag)
-   └─> Ciphertext: Variable (same length as plaintext)
-   └─> Padding: Zeros to pageSize (4096 bytes)
+ └─> Format: [BZDB][0x02][length][nonce][tag][ciphertext][padding]
+ └─> Header: 4 bytes ("BZDB")
+ └─> Version: 1 byte (0x02 = encrypted)
+ └─> Length: 4 bytes (UInt32 BE, plaintext length)
+ └─> Nonce: 12 bytes
+ └─> Tag: 16 bytes (authentication tag)
+ └─> Ciphertext: Variable (same length as plaintext)
+ └─> Padding: Zeros to pageSize (4096 bytes)
 
 5. Seek to Offset (line 201)
-   └─> offset = index * 4096
-   └─> fileHandle.compatSeek(toOffset: offset)
+ └─> offset = index * 4096
+ └─> fileHandle.compatSeek(toOffset: offset)
 
 6. Write Buffer (line 202)
-   └─> fileHandle.compatWrite(buffer)
+ └─> fileHandle.compatWrite(buffer)
 
 7. Synchronize (line 142)
-   └─> fileHandle.compatSynchronize()
-   └─> Forces write to disk
+ └─> fileHandle.compatSynchronize()
+ └─> Forces write to disk
 ```
 
 **Synchronization:** `PageStore.swift:64`
@@ -544,40 +544,40 @@ internal static func readUInt16(from data: Data, at offset: Int) throws -> UInt1
 
 ```
 1. Check Cache (line 236-238)
-   └─> if let cached = pageCache.get(index) { return cached }
-   └─> Cache hit: O(1) return
+ └─> if let cached = pageCache.get(index) { return cached }
+ └─> Cache hit: O(1) return
 
 2. Validate File Exists (line 242-245)
-   └─> FileManager.default.fileExists(atPath: fileURL.path)
+ └─> FileManager.default.fileExists(atPath: fileURL.path)
 
 3. Check File Size (line 249-254)
-   └─> Verify offset < fileSize
-   └─> Prevents reading beyond file
+ └─> Verify offset < fileSize
+ └─> Prevents reading beyond file
 
 4. Seek to Offset (line 255)
-   └─> fileHandle.compatSeek(toOffset: offset)
+ └─> fileHandle.compatSeek(toOffset: offset)
 
 5. Read Page (line 256)
-   └─> fileHandle.compatRead(upToCount: pageSize)
-   └─> Returns: Data (4096 bytes)
+ └─> fileHandle.compatRead(upToCount: pageSize)
+ └─> Returns: Data (4096 bytes)
 
 6. Validate Header (line 273-277)
-   └─> Check magic bytes: 0x42 0x5A 0x44 0x42 ("BZDB")
+ └─> Check magic bytes: 0x42 0x5A 0x44 0x42 ("BZDB")
 
 7. Check Version (line 280)
-   └─> version = page[4]
-   └─> 0x01 = plaintext, 0x02 = encrypted
+ └─> version = page[4]
+ └─> 0x01 = plaintext, 0x02 = encrypted
 
 8. Decrypt (if encrypted, line 311-353)
-   └─> Extract nonce (bytes 9-20)
-   └─> Extract tag (bytes 21-36)
-   └─> Extract ciphertext (bytes 37+)
-   └─> AES.GCM.open(sealedBox, using: key)
-   └─> Returns: plaintext Data
+ └─> Extract nonce (bytes 9-20)
+ └─> Extract tag (bytes 21-36)
+ └─> Extract ciphertext (bytes 37+)
+ └─> AES.GCM.open(sealedBox, using: key)
+ └─> Returns: plaintext Data
 
 9. Cache Result (line 350)
-   └─> pageCache.set(index, data: decrypted)
-   └─> Future reads return instantly
+ └─> pageCache.set(index, data: decrypted)
+ └─> Future reads return instantly
 ```
 
 **Cache Strategy:** `PageCache.swift`
@@ -594,17 +594,17 @@ internal static func readUInt16(from data: Data, at offset: Int) throws -> UInt1
 **Chain Structure:**
 ```
 Main Page:
-  [BZDB][0x02][length][nonce][tag][ciphertext...][overflow_ptr:4]
+ [BZDB][0x02][length][nonce][tag][ciphertext...][overflow_ptr:4]
 
 Overflow Page 1:
-  [OVER][0x03][padding:3][next_ptr:4][data_len:4][nonce][tag][ciphertext...]
+ [OVER][0x03][padding:3][next_ptr:4][data_len:4][nonce][tag][ciphertext...]
 
 Overflow Page 2:
-  [OVER][0x03][padding:3][next_ptr:4][data_len:4][nonce][tag][ciphertext...]
-  ...
-  
+ [OVER][0x03][padding:3][next_ptr:4][data_len:4][nonce][tag][ciphertext...]
+...
+
 Last Overflow Page:
-  [OVER][0x03][padding:3][0x00000000][data_len:4][nonce][tag][ciphertext...]
+ [OVER][0x03][padding:3][0x00000000][data_len:4][nonce][tag][ciphertext...]
 ```
 
 **Write Algorithm:** `PageStore+Overflow.swift:114-193`
@@ -615,7 +615,7 @@ Last Overflow Page:
 **Read Algorithm:** `PageStore+Overflow.swift:516-587`
 1. Read main page
 2. Extract overflow pointer (last 4 bytes)
-3. If pointer != 0, read overflow chain recursively
+3. If pointer!= 0, read overflow chain recursively
 4. Concatenate all data
 
 **Overhead:**
@@ -681,11 +681,11 @@ Last Overflow Page:
 **Batch Writes:** `PageStore.swift:211-217`
 ```swift
 public func writePageUnsynchronized(index: Int, plaintext: Data) throws {
-    // Write without fsync
+ // Write without fsync
 }
 
 public func synchronize() throws {
-    // Flush all pending writes
+ // Flush all pending writes
 }
 ```
 
@@ -731,29 +731,29 @@ public func synchronize() throws {
 
 ```
 ┌─────────────────────────────────────────┐
-│ Frame Header (5 bytes)                  │
+│ Frame Header (5 bytes) │
 ├─────────────────────────────────────────┤
-│ Type: UInt8 (1 byte)                    │
-│   0x01 = handshake                      │
-│   0x02 = handshakeAck                   │
-│   0x03 = verify                         │
-│   0x04 = handshakeComplete              │
-│   0x05 = encryptedData                  │
-│   0x06 = operation                      │
-│ Length: UInt32 (4 bytes, BE)            │
+│ Type: UInt8 (1 byte) │
+│ 0x01 = handshake │
+│ 0x02 = handshakeAck │
+│ 0x03 = verify │
+│ 0x04 = handshakeComplete │
+│ 0x05 = encryptedData │
+│ 0x06 = operation │
+│ Length: UInt32 (4 bytes, BE) │
 ├─────────────────────────────────────────┤
-│ Payload (variable length)               │
-│   [Encrypted BlazeBinary data]          │
+│ Payload (variable length) │
+│ [Encrypted BlazeBinary data] │
 └─────────────────────────────────────────┘
 ```
 
 **Frame Encoding:** `SecureConnection.swift:314-322`
 ```swift
 var frame = Data()
-frame.append(type.rawValue)           // 1 byte
+frame.append(type.rawValue) // 1 byte
 var length = UInt32(payload.count).bigEndian
-frame.append(Data(bytes: &length, count: 4))  // 4 bytes
-frame.append(payload)                  // Variable
+frame.append(Data(bytes: &length, count: 4)) // 4 bytes
+frame.append(payload) // Variable
 ```
 
 **Total Overhead:** 5 bytes per frame
@@ -811,13 +811,13 @@ frame.append(payload)                  // Variable
 **TCP Transport:** `SecureConnection.swift:270-296`
 ```
 1. Encrypt with AES-GCM-256
-   └─> AES.GCM.seal(data, using: key)
+ └─> AES.GCM.seal(data, using: key)
 
 2. Wrap in Frame
-   └─> Frame(type: .encryptedData, payload: encrypted)
+ └─> Frame(type:.encryptedData, payload: encrypted)
 
 3. Send via NWConnection
-   └─> connection.send(content: frame, ...)
+ └─> connection.send(content: frame,...)
 ```
 
 **WebSocket Transport:** `TCPRelay.swift` (implied)
@@ -837,13 +837,13 @@ frame.append(payload)                  // Variable
 
 ```swift
 private func readExactly(_ count: Int) async throws -> Data {
-    while receiveBuffer.count < count {
-        let (content, ...) = try await connection.receiveMessage()
-        receiveBuffer.append(content ?? Data())
-    }
-    let result = receiveBuffer.prefix(count)
-    receiveBuffer.removeFirst(count)
-    return result
+ while receiveBuffer.count < count {
+ let (content,...) = try await connection.receiveMessage()
+ receiveBuffer.append(content?? Data())
+ }
+ let result = receiveBuffer.prefix(count)
+ receiveBuffer.removeFirst(count)
+ return result
 }
 ```
 
@@ -879,19 +879,19 @@ private func readExactly(_ count: Int) async throws -> Data {
 **Encryption Flow:** `SecureConnection.swift:270-296`
 ```
 Plaintext BlazeBinary
-  ↓
+ ↓
 AES-GCM-256 Encrypt
-  ↓
+ ↓
 Frame Wrap (type + length + encrypted payload)
-  ↓
+ ↓
 TCP Send
-  ↓
+ ↓
 TCP Receive
-  ↓
+ ↓
 Frame Unwrap
-  ↓
+ ↓
 AES-GCM-256 Decrypt
-  ↓
+ ↓
 Plaintext BlazeBinary
 ```
 
@@ -1059,79 +1059,79 @@ Plaintext BlazeBinary
 
 ### 6.1 Optimal Parts
 
-**✅ Field Name Compression:**
+** Field Name Compression:**
 - Common fields: 1 byte vs 3+N bytes
 - **Savings:** 80-90% for common fields
 - **Implementation:** `BlazeBinaryShared.swift:23-84`
 
-**✅ Inline String Optimization:**
+** Inline String Optimization:**
 - Strings ≤15 bytes: 1 byte type+length
 - **Savings:** 4 bytes per small string
 - **Implementation:** `BlazeBinaryEncoder.swift:155-159`
 
-**✅ Small Int Optimization:**
+** Small Int Optimization:**
 - Values 0-255: 2 bytes vs 9 bytes
 - **Savings:** 78% for small integers
 - **Implementation:** `BlazeBinaryEncoder.swift:169-177`
 
-**✅ Deterministic Encoding:**
+** Deterministic Encoding:**
 - Sorted fields ensure identical output
 - **Benefit:** Enables signature verification
 - **Implementation:** `BlazeBinaryEncoder.swift:70`
 
-**✅ Alignment-Safe Decoding:**
+** Alignment-Safe Decoding:**
 - Byte-by-byte reads prevent crashes
 - **Benefit:** Works on all architectures
 - **Implementation:** `BlazeBinaryDecoder.swift:24-77`
 
-**✅ CRC32 Corruption Detection:**
+** CRC32 Corruption Detection:**
 - 99.9% detection rate
 - **Benefit:** Catches corruption early
 - **Implementation:** `BlazeBinaryDecoder.swift:123-144`
 
-**✅ Page-Level Encryption:**
+** Page-Level Encryption:**
 - AES-GCM-256 per page
 - **Benefit:** Strong security, hardware accelerated
 - **Implementation:** `PageStore.swift:154-157`
 
-**✅ Overflow Chain Support:**
+** Overflow Chain Support:**
 - Handles records >4KB seamlessly
 - **Benefit:** No size limits
 - **Implementation:** `PageStore+Overflow.swift`
 
 ### 6.2 Slow Parts
 
-**❌ UTF-8 Conversion:**
+** UTF-8 Conversion:**
 - **Cost:** O(n) per string
 - **Impact:** 25-30% of encode/decode time
 - **Location:** `BlazeBinaryEncoder.swift:148`, `BlazeBinaryDecoder.swift:266`
 - **Optimization:** Cache UTF-8 bytes, use UTF8View
 
-**❌ Field Sorting:**
+** Field Sorting:**
 - **Cost:** O(n log n) per record
 - **Impact:** 7% of encode time
 - **Location:** `BlazeBinaryEncoder.swift:70`
 - **Optimization:** Pre-sort if record reused, use insertion sort for small n
 
-**❌ Dictionary Rehashing:**
+** Dictionary Rehashing:**
 - **Cost:** O(n) when capacity exceeded
 - **Impact:** 8-12% of decode time
 - **Location:** `BlazeBinaryDecoder.swift:159`
 - **Optimization:** Accurate capacity estimation (already done)
 
-**❌ Data.append() Reallocation:**
+** Data.append() Reallocation:**
 - **Cost:** O(n) copy when capacity exceeded
 - **Impact:** 10-20% of encode time
 - **Location:** `BlazeBinaryEncoder.swift:55-56`
 - **Optimization:** More accurate size estimation, use UnsafeMutableRawPointer
 
-**❌ Fsync Per Page:**
+** Fsync Per Page:**
 - **Cost:** ~0.1ms per page (SSD)
 - **Impact:** 40% of write latency
 - **Location:** `PageStore.swift:142`
 - **Optimization:** Batch writes, single fsync
 
-**❌ Cache Miss Penalty:**
+** Cache Miss Penalty:**
 - **Cost:** ~0.15ms (SSD), ~10ms (HDD)
 - **Impact:** 100% of read latency (if not cached)
 - **Location:** `PageStore.swift:236`
@@ -1139,28 +1139,28 @@ Plaintext BlazeBinary
 
 ### 6.3 Vectorization Opportunities
 
-**✅ Already Vectorized:**
+** Already Vectorized:**
 - **memcpy:** Used in ARM encoder (`BlazeBinaryEncoder+ARM.swift:36`)
 - **CRC32:** Hardware accelerated (zlib)
 
-**🔶 Can Be Vectorized:**
+** Can Be Vectorized:**
 1. **String Comparison:** Use `memcmp` for key sorting
 2. **Integer Encoding:** SIMD for batch big-endian conversion
 3. **Field Name Matching:** SIMD for common field lookup
 4. **CRC32 Calculation:** Hardware CRC32 instruction (ARMv8)
 
-**❌ Cannot Be Vectorized:**
+** Cannot Be Vectorized:**
 - UTF-8 conversion (requires character-by-character processing)
 - Dictionary operations (hash table, random access)
 - Recursive structures (stack-based)
 
 ### 6.4 Batching Opportunities
 
-**✅ Already Batched:**
+** Already Batched:**
 - **Page Writes:** `writePageUnsynchronized()` + `synchronize()`
 - **Network Operations:** Batch encoding in `BlazeSyncEngine`
 
-**🔶 Can Be Batched:**
+** Can Be Batched:**
 1. **Encoding:** Batch encode multiple records (not implemented)
 2. **Decoding:** Batch decode multiple records (not implemented)
 3. **CRC32:** Calculate CRC32 for batch (not implemented)
@@ -1173,25 +1173,25 @@ Plaintext BlazeBinary
 
 ### 6.5 Security Risks
 
-**⚠️ Cache Stores Decrypted Data:**
+**️ Cache Stores Decrypted Data:**
 - **Risk:** Memory dump exposes plaintext
 - **Location:** `PageCache.swift:17`
 - **Mitigation:** Use encrypted cache (not implemented)
 - **Severity:** Medium (requires physical access)
 
-**⚠️ No Forward Secrecy at Page Level:**
+**️ No Forward Secrecy at Page Level:**
 - **Risk:** Compromised key exposes all historical data
 - **Location:** `PageStore.swift:62` (single key)
 - **Mitigation:** Use key rotation (not implemented)
 - **Severity:** Low (key compromise is catastrophic anyway)
 
-**⚠️ Overflow Chain Not Atomic:**
+**️ Overflow Chain Not Atomic:**
 - **Risk:** Partial writes on crash
 - **Location:** `PageStore+Overflow.swift:114-193`
 - **Mitigation:** Transaction support (not implemented)
 - **Severity:** Medium (data loss risk)
 
-**✅ Strong Security:**
+** Strong Security:**
 - AES-GCM-256 encryption
 - Per-message authentication
 - CRC32 corruption detection
@@ -1199,28 +1199,28 @@ Plaintext BlazeBinary
 
 ### 6.6 Robust Parts
 
-**✅ Error Handling:**
+** Error Handling:**
 - Comprehensive bounds checking
 - Graceful error propagation
 - **Location:** `BlazeBinaryDecoder.swift:105-169`
 
-**✅ Corruption Detection:**
+** Corruption Detection:**
 - Magic bytes validation
 - CRC32 checksum
 - Version validation
 - **Location:** `BlazeBinaryDecoder.swift:110-144`
 
-**✅ Overflow Handling:**
+** Overflow Handling:**
 - Handles records of any size
 - Chain validation
 - **Location:** `PageStore+Overflow.swift`
 
-**✅ Cache Management:**
+** Cache Management:**
 - LRU eviction
 - Prevents memory leaks
 - **Location:** `PageCache.swift`
 
-**✅ Thread Safety:**
+** Thread Safety:**
 - DispatchQueue with barriers
 - Exclusive writes, concurrent reads
 - **Location:** `PageStore.swift:64`
@@ -1233,7 +1233,7 @@ Plaintext BlazeBinary
 
 **1. Cache UTF-8 Bytes**
 - **File:** `BlazeBinaryEncoder.swift:148`
-- **Change:** Cache `s.data(using: .utf8)` if string is reused
+- **Change:** Cache `s.data(using:.utf8)` if string is reused
 - **Impact:** 25-30% encoding speedup for repeated strings
 - **Effort:** Low
 
@@ -1379,18 +1379,18 @@ Plaintext BlazeBinary
 
 ```
 BlazeDataRecord
-  ↓
+ ↓
 Sort Fields (O(n log n))
-  ↓
+ ↓
 For Each Field:
-  ├─> Encode Key (1 byte or 3+N bytes)
-  └─> Encode Value (type-specific)
-      ├─> String: Inline (≤15) or Full
-      ├─> Int: Small (≤255) or Full
-      └─> Recursive for Arrays/Dicts
-  ↓
+ ├─> Encode Key (1 byte or 3+N bytes)
+ └─> Encode Value (type-specific)
+ ├─> String: Inline (≤15) or Full
+ ├─> Int: Small (≤255) or Full
+ └─> Recursive for Arrays/Dicts
+ ↓
 Append CRC32 (if enabled)
-  ↓
+ ↓
 BlazeBinary Data
 ```
 
@@ -1398,20 +1398,20 @@ BlazeBinary Data
 
 ```
 Plaintext Data
-  ↓
+ ↓
 Generate Nonce (12 bytes)
-  ↓
+ ↓
 AES-GCM-256 Encrypt
-  ↓
+ ↓
 Build Page Format:
-  [BZDB][0x02][length][nonce][tag][ciphertext][padding]
-  ↓
+ [BZDB][0x02][length][nonce][tag][ciphertext][padding]
+ ↓
 Seek to Offset (index × 4096)
-  ↓
+ ↓
 Write Buffer
-  ↓
+ ↓
 Fsync (force to disk)
-  ↓
+ ↓
 Done
 ```
 
@@ -1419,20 +1419,20 @@ Done
 
 ```
 BlazeBinary Data
-  ↓
+ ↓
 AES-GCM-256 Encrypt
-  ↓
+ ↓
 Wrap in Frame:
-  [Type:1][Length:4][Encrypted Payload]
-  ↓
+ [Type:1][Length:4][Encrypted Payload]
+ ↓
 Send via TCP/WebSocket
-  ↓
+ ↓
 Receive Frame
-  ↓
+ ↓
 Unwrap Frame
-  ↓
+ ↓
 AES-GCM-256 Decrypt
-  ↓
+ ↓
 BlazeBinary Data
 ```
 

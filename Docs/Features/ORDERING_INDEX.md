@@ -8,10 +8,10 @@
 
 BlazeDB now supports an **optional** fractional ordering system that allows records to be ordered using a fractional index field. This feature is:
 
-- ✅ **Completely optional** - Off by default
-- ✅ **Zero breaking changes** - Existing databases work exactly as before
-- ✅ **Opt-in only** - Must explicitly enable ordering
-- ✅ **Non-destructive** - Never modifies existing data unless you opt in
+- **Completely optional** - Off by default
+- **Zero breaking changes** - Existing databases work exactly as before
+- **Opt-in only** - Must explicitly enable ordering
+- **Non-destructive** - Never modifies existing data unless you opt in
 
 ---
 
@@ -32,14 +32,14 @@ try db.enableOrdering(fieldName: "position")
 ```swift
 // Insert with default index (1000.0)
 let record1 = BlazeDataRecord(id: UUID(), storage: [
-    "title": .string("First Item"),
-    "orderingIndex": .double(OrderingIndex.default)
+ "title":.string("First Item"),
+ "orderingIndex":.double(OrderingIndex.default)
 ])
 
 // Insert with custom index
 let record2 = BlazeDataRecord(id: UUID(), storage: [
-    "title": .string("Second Item"),
-    "orderingIndex": .double(2000.0)
+ "title":.string("Second Item"),
+ "orderingIndex":.double(2000.0)
 ])
 
 try db.insert(record1)
@@ -89,9 +89,9 @@ let newIndex = OrderingIndex.after(1000.0)
 
 ```swift
 // Nil values sort last
-OrderingIndex.between(nil, 1000.0)  // Returns before(1000.0)
-OrderingIndex.between(1000.0, nil)  // Returns after(1000.0)
-OrderingIndex.between(nil, nil)      // Returns default (1000.0)
+OrderingIndex.between(nil, 1000.0) // Returns before(1000.0)
+OrderingIndex.between(1000.0, nil) // Returns after(1000.0)
+OrderingIndex.between(nil, nil) // Returns default (1000.0)
 ```
 
 ---
@@ -139,8 +139,8 @@ Explicit sort operations override automatic ordering:
 ```swift
 // Explicit sort takes precedence
 let results = try db.query()
-    .orderBy("name", descending: false)
-    .execute()
+.orderBy("name", descending: false)
+.execute()
 // Sorted by "name", not orderingIndex
 ```
 
@@ -171,13 +171,13 @@ The `list_schema` tool marks the ordering field with `isOrderIndex: true`:
 
 ```json
 {
-  "fields": [
-    {
-      "name": "orderingIndex",
-      "type": "double",
-      "isOrderIndex": true
-    }
-  ]
+ "fields": [
+ {
+ "name": "orderingIndex",
+ "type": "double",
+ "isOrderIndex": true
+ }
+ ]
 }
 ```
 
@@ -193,16 +193,16 @@ try db.enableOrdering()
 
 // Insert tasks
 let task1 = BlazeDataRecord(id: UUID(), storage: [
-    "title": .string("Task 1"),
-    "orderingIndex": .double(1000.0)
+ "title":.string("Task 1"),
+ "orderingIndex":.double(1000.0)
 ])
 let task2 = BlazeDataRecord(id: UUID(), storage: [
-    "title": .string("Task 2"),
-    "orderingIndex": .double(2000.0)
+ "title":.string("Task 2"),
+ "orderingIndex":.double(2000.0)
 ])
 let task3 = BlazeDataRecord(id: UUID(), storage: [
-    "title": .string("Task 3"),
-    "orderingIndex": .double(3000.0)
+ "title":.string("Task 3"),
+ "orderingIndex":.double(3000.0)
 ])
 
 try db.insert(task1)
@@ -223,16 +223,16 @@ try db.enableOrdering()
 
 // Create columns
 let todo = BlazeDataRecord(id: UUID(), storage: [
-    "name": .string("To Do"),
-    "orderingIndex": .double(1000.0)
+ "name":.string("To Do"),
+ "orderingIndex":.double(1000.0)
 ])
 let inProgress = BlazeDataRecord(id: UUID(), storage: [
-    "name": .string("In Progress"),
-    "orderingIndex": .double(2000.0)
+ "name":.string("In Progress"),
+ "orderingIndex":.double(2000.0)
 ])
 let done = BlazeDataRecord(id: UUID(), storage: [
-    "name": .string("Done"),
-    "orderingIndex": .double(3000.0)
+ "name":.string("Done"),
+ "orderingIndex":.double(3000.0)
 ])
 
 // Reorder: move "Done" before "In Progress"
@@ -246,22 +246,22 @@ try db.moveBefore(recordId: done.id, beforeId: inProgress.id)
 
 ### Zero Breaking Changes
 
-- ✅ Existing databases work exactly as before
-- ✅ No schema migrations required
-- ✅ No data modifications unless explicitly enabled
-- ✅ Queries behave identically when ordering is disabled
+- Existing databases work exactly as before
+- No schema migrations required
+- No data modifications unless explicitly enabled
+- Queries behave identically when ordering is disabled
 
 ### Backward Compatibility
 
-- ✅ Databases without ordering support work normally
-- ✅ Queries ignore `orderingIndex` field when ordering is disabled
-- ✅ No performance impact when ordering is disabled
+- Databases without ordering support work normally
+- Queries ignore `orderingIndex` field when ordering is disabled
+- No performance impact when ordering is disabled
 
 ### Opt-In Only
 
-- ✅ Ordering is **off by default**
-- ✅ Must explicitly call `enableOrdering()`
-- ✅ No automatic activation
+- Ordering is **off by default**
+- Must explicitly call `enableOrdering()`
+- No automatic activation
 
 ---
 
@@ -328,12 +328,12 @@ static func setIndex(_ index: Double, on record: BlazeDataRecord, fieldName: Str
 
 Comprehensive tests verify:
 
-- ✅ Zero impact on databases without ordering
-- ✅ Correct fractional index calculation
-- ✅ Stability over multiple operations
-- ✅ Nil handling (sorts last)
-- ✅ Explicit sort overrides ordering
-- ✅ Move operations (before, after, to index)
+- Zero impact on databases without ordering
+- Correct fractional index calculation
+- Stability over multiple operations
+- Nil handling (sorts last)
+- Explicit sort overrides ordering
+- Move operations (before, after, to index)
 
 ---
 

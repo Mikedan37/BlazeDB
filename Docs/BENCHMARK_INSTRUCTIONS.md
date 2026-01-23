@@ -14,10 +14,10 @@ swift test --filter ComprehensiveBenchmarks
 The benchmarks will output actual measured performance like:
 
 ```
-📊 BlazeDB Batch Insert 1,000 records: 0.234ms (avg over 5 runs)
-📊 BlazeDB Batch Insert 10,000 records: 5234 ops/sec (1.91s for 10000 ops)
-📊 BlazeDB Fetch 1,000 records: 2847 ops/sec (0.35s for 1000 ops)
-📊 BlazeDB Query with filter (10,000 records): 45.2ms
+ BlazeDB Batch Insert 1,000 records: 0.234ms (avg over 5 runs)
+ BlazeDB Batch Insert 10,000 records: 5234 ops/sec (1.91s for 10000 ops)
+ BlazeDB Fetch 1,000 records: 2847 ops/sec (0.35s for 1000 ops)
+ BlazeDB Query with filter (10,000 records): 45.2ms
 ```
 
 ## All Benchmark Commands

@@ -15,7 +15,7 @@ Create a custom Swift `Encoder` implementation that directly converts `Codable` 
 - Directly builds `BlazeDataRecord` during encoding
 - Handles all Swift types: String, Int, Double, Bool, UUID, Date, Data, Array, Dictionary, Optional
 
-### 2. Create `BlazeRecordDecoder` class  
+### 2. Create `BlazeRecordDecoder` class
 - Implements Swift's `Decoder` protocol
 - Directly converts `BlazeDataRecord` to Codable types
 - Handles type conversions (e.g., Date from TimeInterval, Bool from Int)

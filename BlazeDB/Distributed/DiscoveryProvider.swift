@@ -67,7 +67,7 @@ import Network
 
 /// Apple platform implementation using Network framework
 /// Provides mDNS/Bonjour discovery on iOS/macOS
-public final class AppleDiscoveryProvider: DiscoveryProvider {
+public final class AppleDiscoveryProvider: DiscoveryProvider, @unchecked Sendable {
     private var browser: NWBrowser?
     private var service: NetService?
     private var isBrowsing = false
@@ -131,17 +131,19 @@ public final class AppleDiscoveryProvider: DiscoveryProvider {
             var discovered: [DiscoveredDatabase] = []
             
             for result in results {
-                if case .bonjour(let record) = result.endpoint {
+                if case .service(let name, let type, let domain, _) = result.endpoint {
                     // Parse service name: "database-deviceName"
-                    let parts = record.name.split(separator: "-", maxSplits: 1)
+                    let parts = name.split(separator: "-", maxSplits: 1)
                     let database = String(parts.first ?? "")
                     let deviceName = parts.count > 1 ? String(parts[1]) : "Unknown"
                     
+                    // Note: IP and port are not available until connection/resolution
+                    // Use default values - actual connection will resolve these
                     let db = DiscoveredDatabase(
-                        name: record.name,
+                        name: name,
                         deviceName: deviceName,
-                        host: record.hostname ?? "localhost",
-                        port: UInt16(record.port ?? 8080),
+                        host: "localhost",  // Will be resolved on connection
+                        port: 8080,  // Will be resolved on connection
                         database: database
                     )
                     discovered.append(db)

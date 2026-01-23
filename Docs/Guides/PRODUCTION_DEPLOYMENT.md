@@ -18,10 +18,10 @@ Complete guide for deploying BlazeDB in production environments.
 
 BlazeDB is production-ready for:
 
-- ✅ Single-device applications
-- ✅ Multi-device sync via BlazeServer
-- ✅ High-performance local databases
-- ✅ Distributed applications
+- Single-device applications
+- Multi-device sync via BlazeServer
+- High-performance local databases
+- Distributed applications
 
 This guide covers deployment best practices for production use.
 
@@ -36,22 +36,22 @@ import BlazeDB
 
 @main
 struct ServerMain {
-    static func main() async throws {
-        let config = BlazeDBServerConfig(
-            databaseName: "ServerMainDB",
-            password: "secure-password-123",
-            project: "Production",
-            port: 9090,
-            authToken: "secret-token-123",  // Optional: require auth
-            sharedSecret: nil  // Optional: for token derivation
-        )
-        
-        let server = try await BlazeDBServer.start(config)
-        print("Server started on port 9090")
-        
-        // Keep server running
-        RunLoop.main.run()
-    }
+ static func main() async throws {
+ let config = BlazeDBServerConfig(
+ databaseName: "ServerMainDB",
+ password: "secure-password-123",
+ project: "Production",
+ port: 9090,
+ authToken: "secret-token-123", // Optional: require auth
+ sharedSecret: nil // Optional: for token derivation
+ )
+
+ let server = try await BlazeDBServer.start(config)
+ print("Server started on port 9090")
+
+ // Keep server running
+ RunLoop.main.run()
+ }
 }
 ```
 
@@ -60,18 +60,18 @@ struct ServerMain {
 ```swift
 // Create database
 let serverDB = try BlazeDBClient(
-    name: "ServerDB",
-    fileURL: serverURL,
-    password: "server-password"
+ name: "ServerDB",
+ fileURL: serverURL,
+ password: "server-password"
 )
 
 // Create server
 let server = BlazeServer(
-    port: 9090,
-    database: serverDB,
-    databaseName: "ServerDB",
-    authToken: "secret-token-123",  // Optional
-    sharedSecret: nil  // Optional
+ port: 9090,
+ database: serverDB,
+ databaseName: "ServerDB",
+ authToken: "secret-token-123", // Optional
+ sharedSecret: nil // Optional
 )
 
 // Start server
@@ -91,21 +91,21 @@ Create a `docker-compose.yml`:
 version: "3.9"
 
 services:
-  blazedb-server:
-    build: .
-    container_name: blazedb-server
-    ports:
-      - "9090:9090"
-    environment:
-      - BLAZEDB_DB_NAME=ServerMainDB
-      - BLAZEDB_PASSWORD=secure-password-123
-      - BLAZEDB_PROJECT=Production
-      - BLAZEDB_PORT=9090
-      - BLAZEDB_AUTH_TOKEN=secret-token-123  # Optional
-      - BLAZEDB_SHARED_SECRET=  # Optional
-    restart: unless-stopped
-    volumes:
-      - ./data:/root/Library/Application Support/BlazeDB  # Persist database
+ blazedb-server:
+ build:.
+ container_name: blazedb-server
+ ports:
+ - "9090:9090"
+ environment:
+ - BLAZEDB_DB_NAME=ServerMainDB
+ - BLAZEDB_PASSWORD=secure-password-123
+ - BLAZEDB_PROJECT=Production
+ - BLAZEDB_PORT=9090
+ - BLAZEDB_AUTH_TOKEN=secret-token-123 # Optional
+ - BLAZEDB_SHARED_SECRET= # Optional
+ restart: unless-stopped
+ volumes:
+ -./data:/root/Library/Application Support/BlazeDB # Persist database
 ```
 
 Start with:
@@ -124,19 +124,19 @@ docker-compose down
 
 ```bash
 # Build Docker image
-docker build -t blazedb-server .
+docker build -t blazedb-server.
 
 # Run server
 docker run -d \
-  --name blazedb-server \
-  -p 9090:9090 \
-  -e BLAZEDB_DB_NAME=ServerMainDB \
-  -e BLAZEDB_PASSWORD=secure-password-123 \
-  -e BLAZEDB_PROJECT=Production \
-  -e BLAZEDB_PORT=9090 \
-  -e BLAZEDB_AUTH_TOKEN=secret-token-123 \
-  -v $(pwd)/data:/root/Library/Application\ Support/BlazeDB \
-  blazedb-server
+ --name blazedb-server \
+ -p 9090:9090 \
+ -e BLAZEDB_DB_NAME=ServerMainDB \
+ -e BLAZEDB_PASSWORD=secure-password-123 \
+ -e BLAZEDB_PROJECT=Production \
+ -e BLAZEDB_PORT=9090 \
+ -e BLAZEDB_AUTH_TOKEN=secret-token-123 \
+ -v $(pwd)/data:/root/Library/Application\ Support/BlazeDB \
+ blazedb-server
 
 # View logs
 docker logs -f blazedb-server
@@ -210,24 +210,24 @@ For high-traffic applications:
 
 ```swift
 class DatabasePool {
-    private var connections: [BlazeDBClient] = []
-    private let lock = NSLock()
-    
-    func getConnection() -> BlazeDBClient {
-        lock.lock()
-        defer { lock.unlock() }
-        
-        if let available = connections.first(where: { !$0.isInUse }) {
-            return available
-        }
-        
-        let newConnection = try! BlazeDBClient(
-            name: "PooledDB",
-            password: "password"
-        )
-        connections.append(newConnection)
-        return newConnection
-    }
+ private var connections: [BlazeDBClient] = []
+ private let lock = NSLock()
+
+ func getConnection() -> BlazeDBClient {
+ lock.lock()
+ defer { lock.unlock() }
+
+ if let available = connections.first(where: {!$0.isInUse }) {
+ return available
+ }
+
+ let newConnection = try! BlazeDBClient(
+ name: "PooledDB",
+ password: "password"
+ )
+ connections.append(newConnection)
+ return newConnection
+ }
 }
 ```
 
@@ -237,19 +237,19 @@ Implement robust error handling:
 
 ```swift
 func performDatabaseOperation() {
-    do {
-        try db.insert(record)
-    } catch BlazeDBError.transactionFailed(let reason, _) {
-        // Handle transaction failure
-        logger.error("Transaction failed: \(reason)")
-        // Retry logic here
-    } catch BlazeDBError.recordNotFound(let id) {
-        // Handle missing record
-        logger.warn("Record not found: \(id)")
-    } catch {
-        // Handle other errors
-        logger.error("Unexpected error: \(error)")
-    }
+ do {
+ try db.insert(record)
+ } catch BlazeDBError.transactionFailed(let reason, _) {
+ // Handle transaction failure
+ logger.error("Transaction failed: \(reason)")
+ // Retry logic here
+ } catch BlazeDBError.recordNotFound(let id) {
+ // Handle missing record
+ logger.warn("Record not found: \(id)")
+ } catch {
+ // Handle other errors
+ logger.error("Unexpected error: \(error)")
+ }
 }
 ```
 
@@ -273,7 +273,7 @@ Use batch operations for better performance:
 ```swift
 // Instead of individual inserts
 let records = generateRecords()
-let ids = try db.insertMany(records)  // Much faster!
+let ids = try db.insertMany(records) // Much faster!
 ```
 
 ### MVCC Configuration
@@ -283,8 +283,8 @@ For high-concurrency scenarios:
 ```swift
 // Enable MVCC for better concurrency
 try db.enableMVCC(
-    snapshotIsolation: true,
-    versionRetention: .days(7)
+ snapshotIsolation: true,
+ versionRetention:.days(7)
 )
 ```
 
@@ -295,9 +295,9 @@ Schedule periodic GC:
 ```swift
 // Run GC daily
 Timer.scheduledTimer(withTimeInterval: 86400, repeats: true) { _ in
-    Task {
-        try await db.collection.gcManager.runFullGC()
-    }
+ Task {
+ try await db.collection.gcManager.runFullGC()
+ }
 }
 ```
 
@@ -309,19 +309,19 @@ Implement health check endpoints:
 
 ```swift
 func healthCheck() -> HealthStatus {
-    do {
-        let status = try db.getHealthStatus()
-        return status
-    } catch {
-        return HealthStatus(
-            isHealthy: false,
-            issues: [error.localizedDescription],
-            uptime: 0,
-            lastBackup: nil,
-            databaseSize: 0,
-            recordCount: 0
-        )
-    }
+ do {
+ let status = try db.getHealthStatus()
+ return status
+ } catch {
+ return HealthStatus(
+ isHealthy: false,
+ issues: [error.localizedDescription],
+ uptime: 0,
+ lastBackup: nil,
+ databaseSize: 0,
+ recordCount: 0
+ )
+ }
 }
 ```
 
@@ -338,13 +338,13 @@ print("Success rate: \(summary.successRate)%")
 // Find slow operations
 let slowOps = try await db.telemetry.getSlowOperations(threshold: 100)
 for op in slowOps {
-    print("SLOW: \(op.operation) took \(op.duration)ms")
+ print("SLOW: \(op.operation) took \(op.duration)ms")
 }
 
 // Check for errors
 let errors = try await db.telemetry.getErrors(last: 10)
 for error in errors {
-    print("ERROR: \(error.operation) - \(error.errorMessage)")
+ print("ERROR: \(error.operation) - \(error.errorMessage)")
 }
 ```
 
@@ -364,10 +364,10 @@ Configure appropriate log levels:
 
 ```swift
 // Production: info and above
-BlazeLogger.configure(level: .info)
+BlazeLogger.configure(level:.info)
 
 // Development: debug
-BlazeLogger.configure(level: .debug)
+BlazeLogger.configure(level:.debug)
 ```
 
 ## Backup & Recovery
@@ -379,12 +379,12 @@ Schedule regular backups:
 ```swift
 // Daily backup
 Timer.scheduledTimer(withTimeInterval: 86400, repeats: true) { _ in
-    Task {
-        let backupURL = backupDirectory
-            .appendingPathComponent("backup-\(Date().timeIntervalSince1970).blazedb")
-        let stats = try await db.backup(to: backupURL)
-        print("Backup complete: \(stats.recordCount) records")
-    }
+ Task {
+ let backupURL = backupDirectory
+.appendingPathComponent("backup-\(Date().timeIntervalSince1970).blazedb")
+ let stats = try await db.backup(to: backupURL)
+ print("Backup complete: \(stats.recordCount) records")
+ }
 }
 ```
 
@@ -405,9 +405,9 @@ Verify backups are valid:
 ```swift
 let isValid = try await db.verifyBackup(at: backupURL)
 if isValid {
-    print("✅ Backup is valid")
+ print(" Backup is valid")
 } else {
-    print("❌ Backup verification failed")
+ print(" Backup verification failed")
 }
 ```
 
@@ -418,7 +418,7 @@ Restore from backup:
 ```swift
 // Restore from backup
 try await db.restore(from: backupURL)
-print("✅ Database restored")
+print(" Database restored")
 ```
 
 ## Security Hardening
@@ -439,18 +439,18 @@ KeychainHelper.store(password: password, for: "blazedb")
 
 BlazeDB encrypts all data at rest. Ensure:
 
-- ✅ Strong passwords (32+ characters)
-- ✅ Secure password storage (Keychain)
-- ✅ Regular password rotation
+- Strong passwords (32+ characters)
+- Secure password storage (Keychain)
+- Regular password rotation
 
 ### Network Security
 
 For server deployments:
 
-- ✅ Use TLS/SSL for connections
-- ✅ Implement authentication
-- ✅ Use firewall rules
-- ✅ Limit network exposure
+- Use TLS/SSL for connections
+- Implement authentication
+- Use firewall rules
+- Limit network exposure
 
 ### Access Control
 
@@ -459,10 +459,10 @@ Implement row-level security:
 ```swift
 // Use RLS policies
 try db.addRLSPolicy(
-    name: "user_data",
-    predicate: { record, user in
-        record.storage["userId"]?.uuidValue == user.id
-    }
+ name: "user_data",
+ predicate: { record, user in
+ record.storage["userId"]?.uuidValue == user.id
+ }
 )
 ```
 
@@ -478,15 +478,15 @@ let topology = BlazeTopology()
 
 // Connect to server
 try await topology.connectTCP(
-    host: "server.example.com",
-    port: 9090,
-    sharedSecret: "secret"
+ host: "server.example.com",
+ port: 9090,
+ sharedSecret: "secret"
 )
 
 // Connect peer-to-peer
 try await topology.connectCrossApp(
-    appID: "com.example.app",
-    sharedSecret: "secret"
+ appID: "com.example.app",
+ sharedSecret: "secret"
 )
 ```
 
@@ -506,8 +506,8 @@ Split large databases:
 // Shard by user ID
 let shardID = userID.hashValue % numberOfShards
 let db = try BlazeDBClient(
-    name: "shard-\(shardID)",
-    password: "password"
+ name: "shard-\(shardID)",
+ password: "password"
 )
 ```
 
@@ -548,7 +548,7 @@ let db = try BlazeDBClient(
 Enable detailed logging:
 
 ```swift
-BlazeLogger.configure(level: .debug)
+BlazeLogger.configure(level:.debug)
 ```
 
 Query telemetry for insights:
@@ -564,10 +564,10 @@ let breakdown = try await db.telemetry.getOperationBreakdown()
 2. Review telemetry data
 3. Test with minimal reproduction case
 4. File issue on GitHub with:
-   - Error messages
-   - Telemetry summary
-   - System information
-   - Steps to reproduce
+ - Error messages
+ - Telemetry summary
+ - System information
+ - Steps to reproduce
 
 ## Best Practices
 

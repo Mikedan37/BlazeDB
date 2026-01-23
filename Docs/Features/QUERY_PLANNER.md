@@ -7,11 +7,11 @@
 ## Overview
 
 The query planner automatically chooses the best execution strategy:
-- ✅ Spatial index vs sequential scan
-- ✅ Vector search vs full scan
-- ✅ Full-text index vs sequential scan
-- ✅ Regular indexes vs sequential scan
-- ✅ Hybrid queries (combining multiple indexes)
+- Spatial index vs sequential scan
+- Vector search vs full scan
+- Full-text index vs sequential scan
+- Regular indexes vs sequential scan
+- Hybrid queries (combining multiple indexes)
 
 ---
 
@@ -22,9 +22,9 @@ The query planner automatically chooses the best execution strategy:
 ```swift
 // Planner automatically chooses best strategy
 let results = try db.query()
-    .where("status", equals: .string("open"))
-    .withinRadius(latitude: 37.7749, longitude: -122.4194, radiusMeters: 1000)
-    .executeWithPlanner()  // Uses intelligent planner
+.where("status", equals:.string("open"))
+.withinRadius(latitude: 37.7749, longitude: -122.4194, radiusMeters: 1000)
+.executeWithPlanner() // Uses intelligent planner
 ```
 
 ### EXPLAIN Query
@@ -32,18 +32,18 @@ let results = try db.query()
 ```swift
 // See what the planner chose
 let explanation = try db.explain {
-    db.query()
-        .where("status", equals: .string("open"))
-        .withinRadius(latitude: 37.7749, longitude: -122.4194, radiusMeters: 1000)
+ db.query()
+.where("status", equals:.string("open"))
+.withinRadius(latitude: 37.7749, longitude: -122.4194, radiusMeters: 1000)
 }
 
 print(explanation.description)
 // Query Plan:
-//   Strategy: Spatial Index (R-tree)
-//   Estimated Cost: 5.00
-//   Estimated Rows: 50
-//   Execution Order: spatial_index → filter → sort → limit
-//   Indexes Used: spatial(latitude, longitude)
+// Strategy: Spatial Index (R-tree)
+// Estimated Cost: 5.00
+// Estimated Rows: 50
+// Execution Order: spatial_index → filter → sort → limit
+// Indexes Used: spatial(latitude, longitude)
 ```
 
 ---
@@ -84,7 +84,7 @@ The planner uses collection statistics:
 
 ```swift
 let explanation = try db.explain {
-    db.query().withinRadius(latitude: 37.7749, longitude: -122.4194, radiusMeters: 1000)
+ db.query().withinRadius(latitude: 37.7749, longitude: -122.4194, radiusMeters: 1000)
 }
 // Strategy: Spatial Index (R-tree)
 // Estimated Cost: 5.00
@@ -94,9 +94,9 @@ let explanation = try db.explain {
 
 ```swift
 let explanation = try db.explain {
-    db.query()
-        .vectorNearest(field: "embedding", to: vector, limit: 100)
-        .withinRadius(latitude: 37.7749, longitude: -122.4194, radiusMeters: 2000)
+ db.query()
+.vectorNearest(field: "embedding", to: vector, limit: 100)
+.withinRadius(latitude: 37.7749, longitude: -122.4194, radiusMeters: 2000)
 }
 // Strategy: Hybrid Query
 // Execution Order: spatial_index → vector_search → intersect → filter → sort → limit

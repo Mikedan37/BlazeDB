@@ -1,10 +1,10 @@
-# 🚀 BlazeDB v3.0 - Complete Documentation
+# BlazeDB v3.0 - Complete Documentation
 
 **A production-ready, feature-complete embedded database for Swift & SwiftUI**
 
 ---
 
-## 📖 **Quick Navigation:**
+## **Quick Navigation:**
 
 - **[Getting Started](1_GETTING_STARTED.md)** - Install & setup
 - **[Core Features](2_CORE_FEATURES.md)** - What BlazeDB can do
@@ -15,112 +15,112 @@
 
 ---
 
-## 🎯 **What is BlazeDB?**
+## **What is BlazeDB?**
 
 BlazeDB is a **lightweight, encrypted, schema-flexible embedded database** built specifically for Swift applications. Think of it as **Core Data + Realm + Redis** combined, but:
-- ✅ Simpler API (no boilerplate!)
-- ✅ More flexible (dynamic schemas!)
-- ✅ More secure (encrypted by default!)
-- ✅ Better SwiftUI integration (@BlazeQuery!)
-- ✅ Better testing (built-in telemetry!)
+- Simpler API (no boilerplate!)
+- More flexible (dynamic schemas!)
+- More secure (encrypted by default!)
+- Better SwiftUI integration (@BlazeQuery!)
+- Better testing (built-in telemetry!)
 
 ---
 
-## ✨ **Key Features:**
+## **Key Features:**
 
-### **1. Dynamic Schemas** 📦
+### **1. Dynamic Schemas**
 ```swift
 // No schema definition needed!
 try db.collection("bugs").insert([
-    "title": .string("Fix login"),
-    "priority": .int(5),
-    "tags": .array([.string("urgent")])
+ "title":.string("Fix login"),
+ "priority":.int(5),
+ "tags":.array([.string("urgent")])
 ])
 ```
 
-### **2. Powerful Queries** 🔍
+### **2. Powerful Queries**
 ```swift
 // JOIN, aggregate, filter, sort - all in one!
 let results = try db.collection("bugs")
-    .query()
-    .where("priority", .greaterThan, 5)
-    .join("users", on: "assignedTo", foreignKey: "id")
-    .groupBy(["status"])
-    .aggregate("count", operation: .count)
-    .execute()
+.query()
+.where("priority",.greaterThan, 5)
+.join("users", on: "assignedTo", foreignKey: "id")
+.groupBy(["status"])
+.aggregate("count", operation:.count)
+.execute()
 ```
 
-### **3. SwiftUI Integration** 📱
+### **3. SwiftUI Integration**
 ```swift
 struct BugsView: View {
-    @BlazeQuery(collection: "bugs", filter: .where("status", .equals, "open"))
-    var openBugs: [BlazeDataRecord]
-    
-    var body: some View {
-        List(openBugs, id: \.id) { bug in
-            Text(bug.storage["title"]?.stringValue ?? "")
-        }
-    }
+ @BlazeQuery(collection: "bugs", filter:.where("status",.equals, "open"))
+ var openBugs: [BlazeDataRecord]
+
+ var body: some View {
+ List(openBugs, id: \.id) { bug in
+ Text(bug.storage["title"]?.stringValue?? "")
+ }
+ }
 }
 ```
 
-### **4. Type Safety (Optional)** 🛡️
+### **4. Type Safety (Optional)** ️
 ```swift
 struct Bug: BlazeDocument {
-    @Field var title: String
-    @Field var priority: Int
-    @Field var status: String
+ @Field var title: String
+ @Field var priority: Int
+ @Field var status: String
 }
 
 // Type-safe queries!
 let bugs = try db.fetch(Bug.self, where: { $0.priority > 5 })
 ```
 
-### **5. Encryption** 🔐
+### **5. Encryption**
 ```swift
 // Encrypted by default!
 let db = try BlazeDBClient(
-    name: "mydb",
-    at: dbURL,
-    password: "secure123"  // AES-256-GCM encryption
+ name: "mydb",
+ at: dbURL,
+ password: "secure123" // AES-256-GCM encryption
 )
 ```
 
-### **6. Full-Text Search** 🔎
+### **6. Full-Text Search**
 ```swift
 // Smart full-text search with relevance scoring
 try db.collection("docs").enableSmartSearch(on: ["title", "content"])
 let results = try db.collection("docs").search("bug fix")
 ```
 
-### **7. Transactions** ⚡
+### **7. Transactions**
 ```swift
 try db.transaction { tx in
-    try tx.insert(into: "bugs", record: bug1)
-    try tx.update(in: "users", where: ["id": userId], set: ["count": newCount])
-    // Auto-rollback on error!
+ try tx.insert(into: "bugs", record: bug1)
+ try tx.update(in: "users", where: ["id": userId], set: ["count": newCount])
+ // Auto-rollback on error!
 }
 ```
 
-### **8. Foreign Keys** 🔗
+### **8. Foreign Keys**
 ```swift
 // Referential integrity with CASCADE/SET_NULL/RESTRICT
 try db.collection("bugs").addForeignKey(
-    field: "assignedTo",
-    references: "users",
-    field: "id",
-    onDelete: .cascade
+ field: "assignedTo",
+ references: "users",
+ field: "id",
+ onDelete:.cascade
 )
 ```
 
-### **9. Garbage Collection** 🗑️
+### **9. Garbage Collection** ️
 ```swift
 // Auto-reclaim disk space
-try db.vacuum()  // Manual
-try db.enableAutoVACUUM(threshold: 0.3)  // Automatic at 30% waste
+try db.vacuum() // Manual
+try db.enableAutoVACUUM(threshold: 0.3) // Automatic at 30% waste
 ```
 
-### **10. Built-in Telemetry** 📊
+### **10. Built-in Telemetry**
 ```swift
 // Track performance automatically!
 let metrics = db.telemetry.getMetrics()
@@ -129,7 +129,7 @@ print("Reads: \(metrics.readCount), Avg: \(metrics.avgReadTime)ms")
 
 ---
 
-## 🏗️ **Architecture:**
+## ️ **Architecture:**
 
 ### **Storage:**
 - **BlazeBinary Format** - Custom binary encoding (53% smaller than JSON, 48% faster!)
@@ -153,7 +153,7 @@ print("Reads: \(metrics.readCount), Avg: \(metrics.avgReadTime)ms")
 
 ---
 
-## 📊 **Performance:**
+## **Performance:**
 
 ### **Benchmarks (vs JSON):**
 | Operation | BlazeDB | JSON | Improvement |
@@ -164,52 +164,52 @@ print("Reads: \(metrics.readCount), Avg: \(metrics.avgReadTime)ms")
 | Round-trip | 0.59ms | 1.10ms | **46% faster** |
 
 ### **Scale:**
-- ✅ 10,000 fields per record
-- ✅ 500-level deep nesting
-- ✅ 10MB records
-- ✅ Sub-millisecond queries (with indexes)
-- ✅ 10,000 concurrent operations (thread-safe)
+- 10,000 fields per record
+- 500-level deep nesting
+- 10MB records
+- Sub-millisecond queries (with indexes)
+- 10,000 concurrent operations (thread-safe)
 
 ---
 
-## 🧪 **Testing:**
+## **Testing:**
 
 ### **Test Coverage:**
 - **116+ comprehensive tests** for BlazeBinary alone!
 - **720+ total tests** covering all features
 - **100,000 round-trips** with zero failures
 - **10,000 concurrent operations** with zero corruption
-- **THE FINAL BOSS** defeated 🏆
+- **THE FINAL BOSS** defeated
 
 ### **Test Quality:**
-- ✅ Unit tests (every component)
-- ✅ Integration tests (feature combinations)
-- ✅ Edge case tests (pathological scenarios)
-- ✅ Stress tests (10K ops, 10MB records)
-- ✅ Concurrency tests (thread safety)
-- ✅ Performance tests (benchmarks)
-- ✅ Corruption tests (bit flips, truncation)
+- Unit tests (every component)
+- Integration tests (feature combinations)
+- Edge case tests (pathological scenarios)
+- Stress tests (10K ops, 10MB records)
+- Concurrency tests (thread safety)
+- Performance tests (benchmarks)
+- Corruption tests (bit flips, truncation)
 
-**Grade: A+++ (Perfect reliability!)** 🏆
+**Grade: A+++ (Perfect reliability!)**
 
 ---
 
-## 🚀 **Use Cases:**
+## **Use Cases:**
 
 ### **1. Bug Tracking (AshPile)**
 ```swift
 // Dynamic schemas - perfect for custom fields!
 try db.collection("bugs").insert([
-    "title": .string("Fix login"),
-    "priority": .int(5),
-    "customField": .string("Whatever you want!")
+ "title":.string("Fix login"),
+ "priority":.int(5),
+ "customField":.string("Whatever you want!")
 ])
 ```
 
 ### **2. Swift Task Management**
 ```swift
 // SwiftUI integration with auto-refresh!
-@BlazeQuery(collection: "tasks", filter: .where("completed", .equals, false))
+@BlazeQuery(collection: "tasks", filter:.where("completed",.equals, false))
 var pendingTasks: [BlazeDataRecord]
 ```
 
@@ -224,7 +224,7 @@ let db = try BlazeDBClient(name: "myapp", at: dbURL, password: password)
 ```swift
 // Use as embedded DB in Vapor backend
 app.get("bugs") { req in
-    try db.collection("bugs").query().execute()
+ try db.collection("bugs").query().execute()
 }
 ```
 
@@ -236,7 +236,7 @@ try db.collection("cache").insert(record, ttl: 3600)
 
 ---
 
-## 🔒 **Security:**
+## **Security:**
 
 ### **Encryption:**
 - AES-256-GCM (industry standard)
@@ -246,19 +246,19 @@ try db.collection("cache").insert(record, ttl: 3600)
 - Encrypted metadata (field names, types)
 
 ### **Tested:**
-- ✅ Wrong password detection
-- ✅ Tamper detection (bit flip detection)
-- ✅ Unique nonces (no reuse)
-- ✅ Large data encryption (10MB+)
+- Wrong password detection
+- Tamper detection (bit flip detection)
+- Unique nonces (no reuse)
+- Large data encryption (10MB+)
 
 ---
 
-## 📦 **Installation:**
+## **Installation:**
 
 ### **Swift Package Manager:**
 ```swift
 dependencies: [
-    .package(url: "https://github.com/yourusername/BlazeDB.git", from: "3.0.0")
+.package(url: "https://github.com/yourusername/BlazeDB.git", from: "3.0.0")
 ]
 ```
 
@@ -267,27 +267,27 @@ dependencies: [
 import BlazeDB
 
 // Create encrypted database
-let dbURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+let dbURL = FileManager.default.urls(for:.documentDirectory, in:.userDomainMask)[0]
 let db = try BlazeDBClient(name: "mydb", at: dbURL, password: "secure123", project: "myapp")
 
 // Insert data
 try db.collection("bugs").insert([
-    "title": .string("Fix login"),
-    "priority": .int(5)
+ "title":.string("Fix login"),
+ "priority":.int(5)
 ])
 
 // Query
 let results = try db.collection("bugs")
-    .query()
-    .where("priority", .greaterThan, 3)
-    .execute()
+.query()
+.where("priority",.greaterThan, 3)
+.execute()
 
 print("Found \(results.count) high-priority bugs!")
 ```
 
 ---
 
-## 🎓 **Learn More:**
+## **Learn More:**
 
 ### **Documentation:**
 1. **[Getting Started](1_GETTING_STARTED.md)** - Installation, setup, first steps
@@ -309,39 +309,39 @@ print("Found \(results.count) high-priority bugs!")
 
 ---
 
-## 🏆 **Why BlazeDB?**
+## **Why BlazeDB?**
 
 ### **vs Core Data:**
-- ✅ Simpler API (no boilerplate, no `.xcdatamodeld`)
-- ✅ More flexible (dynamic schemas!)
-- ✅ Better encryption (built-in, not just file-level)
-- ✅ Better testing (built-in telemetry)
+- Simpler API (no boilerplate, no `.xcdatamodeld`)
+- More flexible (dynamic schemas!)
+- Better encryption (built-in, not just file-level)
+- Better testing (built-in telemetry)
 
 ### **vs Realm:**
-- ✅ Pure Swift (no Obj-C bridge)
-- ✅ More flexible (no fixed schemas)
-- ✅ Lighter (no 50MB+ framework)
-- ✅ Encrypted by default
+- Pure Swift (no Obj-C bridge)
+- More flexible (no fixed schemas)
+- Lighter (no 50MB+ framework)
+- Encrypted by default
 
 ### **vs SQLite:**
-- ✅ More Swifty (no SQL strings!)
-- ✅ Dynamic schemas (no ALTER TABLE!)
-- ✅ Better SwiftUI integration
-- ✅ Built-in telemetry & debugging
+- More Swifty (no SQL strings!)
+- Dynamic schemas (no ALTER TABLE!)
+- Better SwiftUI integration
+- Built-in telemetry & debugging
 
 ---
 
-## 🎯 **Project Status:**
+## **Project Status:**
 
-### **Maturity: Production-Ready** ✅
-- ✅ 720+ tests (all passing!)
-- ✅ 100,000+ round-trips (0 failures!)
-- ✅ Full encryption (AES-256-GCM)
-- ✅ ACID transactions
-- ✅ Crash recovery (WAL)
-- ✅ Thread-safe
-- ✅ Memory-safe (Swift-managed)
-- ✅ Zero dependencies (100% native Swift!)
+### **Maturity: Production-Ready**
+- 720+ tests (all passing!)
+- 100,000+ round-trips (0 failures!)
+- Full encryption (AES-256-GCM)
+- ACID transactions
+- Crash recovery (WAL)
+- Thread-safe
+- Memory-safe (Swift-managed)
+- Zero dependencies (100% native Swift!)
 
 ### **Version: 3.0.0**
 - Custom BlazeBinary format (53% smaller, 48% faster)
@@ -354,7 +354,7 @@ print("Found \(results.count) high-priority bugs!")
 
 ---
 
-## 💬 **Community:**
+## **Community:**
 
 - **GitHub:** [Your repo URL]
 - **Issues:** [Your issues URL]
@@ -362,25 +362,25 @@ print("Found \(results.count) high-priority bugs!")
 
 ---
 
-## 📄 **License:**
+## **License:**
 
 [Your License Here]
 
 ---
 
-## 🙏 **Acknowledgments:**
+## **Acknowledgments:**
 
-Built with ❤️ using:
+Built with ️ using:
 - **Swift** (100% native!)
 - **CryptoKit** (encryption)
 - **Foundation** (file I/O)
 - **SwiftUI** (property wrappers)
 
-**Zero external dependencies!** 🔥
+**Zero external dependencies!**
 
 ---
 
-## 🚀 **Get Started:**
+## **Get Started:**
 
 ```bash
 # Clone the repo
@@ -393,11 +393,11 @@ swift test
 cd Examples && swift run
 ```
 
-**Welcome to BlazeDB!** 🎉
+**Welcome to BlazeDB!**
 
 ---
 
-**Made with 🔥 by [Your Name]**
+**Made with by [Your Name]**
 
 **Version 3.0.0 | Last Updated: November 2025**
 

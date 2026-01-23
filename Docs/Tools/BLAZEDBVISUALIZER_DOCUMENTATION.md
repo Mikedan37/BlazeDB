@@ -1,4 +1,4 @@
-# 📊 BlazeDBVisualizer - Complete Documentation
+# BlazeDBVisualizer - Complete Documentation
 
 **Comprehensive database monitoring and management tool.**
 
@@ -13,16 +13,16 @@ BlazeDBVisualizer is a powerful macOS application for monitoring, managing, and 
 ## **Features**
 
 ### **Core Features:**
-- ✅ **Real-time Dashboard** - Live database metrics
-- ✅ **Data Viewer** - Browse and edit records
-- ✅ **Query Builder** - Visual query construction
-- ✅ **Schema Editor** - Manage database schema
-- ✅ **Performance Monitor** - Track performance metrics
-- ✅ **Security Dashboard** - View security policies
-- ✅ **Sync Monitor** - Monitor sync operations
-- ✅ **Telemetry Dashboard** - View telemetry data
-- ✅ **Test Runner** - Run tests from UI
-- ✅ **Charts & Visualization** - Visualize data
+- **Real-time Dashboard** - Live database metrics
+- **Data Viewer** - Browse and edit records
+- **Query Builder** - Visual query construction
+- **Schema Editor** - Manage database schema
+- **Performance Monitor** - Track performance metrics
+- **Security Dashboard** - View security policies
+- **Sync Monitor** - Monitor sync operations
+- **Telemetry Dashboard** - View telemetry data
+- **Test Runner** - Run tests from UI
+- **Charts & Visualization** - Visualize data
 
 ---
 

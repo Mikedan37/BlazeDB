@@ -238,6 +238,6 @@
 
 ---
 
-For architecture details, see [ARCHITECTURE.md](ARCHITECTURE.md).  
+For architecture details, see [ARCHITECTURE.md](ARCHITECTURE.md).
 For performance benchmarks, see [PERFORMANCE.md](PERFORMANCE.md).
 

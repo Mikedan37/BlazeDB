@@ -26,12 +26,12 @@ db.rls.enable()
 ```swift
 // Policy: Users can only see records from their team
 db.rls.addPolicy(SecurityPolicy(
-    name: "team_access",
-    operation: .select,
-    type: .restrictive
+ name: "team_access",
+ operation:.select,
+ type:.restrictive
 ) { record, context in
-    guard let teamID = record.storage["team_id"]?.uuidValue else { return false }
-    return context.teamIDs.contains(teamID)
+ guard let teamID = record.storage["team_id"]?.uuidValue else { return false }
+ return context.teamIDs.contains(teamID)
 })
 ```
 
@@ -40,8 +40,8 @@ db.rls.addPolicy(SecurityPolicy(
 ```swift
 let userContext = BlazeUserContext.engineer(userID: userID, teamIDs: [teamID])
 let points = try db.graph(for: userContext) {
-    $0.x("createdAt", .day)
-      .y(.count)
+ $0.x("createdAt",.day)
+.y(.count)
 }.toPoints()
 ```
 
@@ -72,14 +72,14 @@ let admin = BlazeUserContext.admin()
 
 // Engineer on specific teams
 let engineer = BlazeUserContext.engineer(
-    userID: userID,
-    teamIDs: [team1ID, team2ID]
+ userID: userID,
+ teamIDs: [team1ID, team2ID]
 )
 
 // Viewer
 let viewer = BlazeUserContext.viewer(
-    userID: userID,
-    teamIDs: []
+ userID: userID,
+ teamIDs: []
 )
 ```
 
@@ -92,8 +92,8 @@ let userContext = BlazeUserContext.engineer(userID: userID, teamIDs: [teamID])
 
 // Graph query with RLS
 let points = try db.graph(for: userContext) {
-    $0.x("category")
-      .y(.count)
+ $0.x("category")
+.y(.count)
 }.toPoints()
 ```
 
@@ -103,9 +103,9 @@ RLS filters are applied **before** user-defined filters:
 
 ```swift
 let points = try db.graph(for: userContext) {
-    $0.x("status")
-      .y(.count)
-      .filter { $0.storage["priority"]?.intValue ?? 0 > 5 }  // User filter
+ $0.x("status")
+.y(.count)
+.filter { $0.storage["priority"]?.intValue?? 0 > 5 } // User filter
 }.toPoints()
 
 // Effective filter: RLSFilter && UserFilter
@@ -115,8 +115,8 @@ let points = try db.graph(for: userContext) {
 
 ```swift
 let points = try db.graph(for: userContext) {
-    $0.x("createdAt", .day)
-      .y(.sum("amount"))
+ $0.x("createdAt",.day)
+.y(.sum("amount"))
 }.toPoints()
 ```
 
@@ -124,9 +124,9 @@ let points = try db.graph(for: userContext) {
 
 ```swift
 let points = try db.graph(for: userContext) {
-    $0.x("createdAt", .day)
-      .y(.sum("sales"))
-      .movingAverage(7)
+ $0.x("createdAt",.day)
+.y(.sum("sales"))
+.movingAverage(7)
 }.toPoints()
 ```
 
@@ -137,8 +137,8 @@ Admin users automatically bypass all RLS policies:
 ```swift
 let admin = BlazeUserContext.admin()
 let points = try db.graph(for: admin) {
-    $0.x("category")
-      .y(.count)
+ $0.x("category")
+.y(.count)
 }.toPoints()
 
 // Admin sees ALL records, regardless of policies
@@ -152,19 +152,19 @@ let points = try db.graph(for: admin) {
 // Setup
 db.rls.enable()
 db.rls.addPolicy(SecurityPolicy(
-    name: "team_access",
-    operation: .select,
-    type: .restrictive
+ name: "team_access",
+ operation:.select,
+ type:.restrictive
 ) { record, context in
-    guard let teamID = record.storage["team_id"]?.uuidValue else { return false }
-    return context.teamIDs.contains(teamID)
+ guard let teamID = record.storage["team_id"]?.uuidValue else { return false }
+ return context.teamIDs.contains(teamID)
 })
 
 // Query as engineer
 let engineer = BlazeUserContext.engineer(userID: userID, teamIDs: [teamID])
 let dailySales = try db.graph(for: engineer) {
-    $0.x("createdAt", .day)
-      .y(.sum("amount"))
+ $0.x("createdAt",.day)
+.y(.sum("amount"))
 }.toPoints()
 
 // Engineer sees only their team's sales
@@ -176,19 +176,19 @@ let dailySales = try db.graph(for: engineer) {
 // Setup
 db.rls.enable()
 db.rls.addPolicy(SecurityPolicy(
-    name: "assigned_access",
-    operation: .select,
-    type: .restrictive
+ name: "assigned_access",
+ operation:.select,
+ type:.restrictive
 ) { record, context in
-    guard let assignedTo = record.storage["assigned_to"]?.uuidValue else { return false }
-    return assignedTo == context.userID
+ guard let assignedTo = record.storage["assigned_to"]?.uuidValue else { return false }
+ return assignedTo == context.userID
 })
 
 // Query as viewer
 let viewer = BlazeUserContext.viewer(userID: userID)
 let myTasks = try db.graph(for: viewer) {
-    $0.x("status")
-      .y(.count)
+ $0.x("status")
+.y(.count)
 }.toPoints()
 
 // Viewer sees only assigned tasks
@@ -200,27 +200,27 @@ let myTasks = try db.graph(for: viewer) {
 // Setup: Engineers see team records, viewers see assigned records
 db.rls.enable()
 db.rls.addPolicy(SecurityPolicy(
-    name: "role_based_access",
-    operation: .select,
-    type: .restrictive
+ name: "role_based_access",
+ operation:.select,
+ type:.restrictive
 ) { record, context in
-    if context.hasRole("engineer") {
-        // Engineers see team records
-        guard let teamID = record.storage["team_id"]?.uuidValue else { return false }
-        return context.teamIDs.contains(teamID)
-    } else if context.hasRole("viewer") {
-        // Viewers see assigned records
-        guard let assignedTo = record.storage["assigned_to"]?.uuidValue else { return false }
-        return assignedTo == context.userID
-    }
-    return false
+ if context.hasRole("engineer") {
+ // Engineers see team records
+ guard let teamID = record.storage["team_id"]?.uuidValue else { return false }
+ return context.teamIDs.contains(teamID)
+ } else if context.hasRole("viewer") {
+ // Viewers see assigned records
+ guard let assignedTo = record.storage["assigned_to"]?.uuidValue else { return false }
+ return assignedTo == context.userID
+ }
+ return false
 })
 
 // Query as engineer
 let engineer = BlazeUserContext.engineer(userID: userID, teamIDs: [teamID])
 let teamStats = try db.graph(for: engineer) {
-    $0.x("category")
-      .y(.count)
+ $0.x("category")
+.y(.count)
 }.toPoints()
 ```
 
@@ -230,18 +230,18 @@ For type-safe policy definitions, you can use the `RLSPolicy` protocol:
 
 ```swift
 struct BugRLSPolicy: RLSPolicy {
-    typealias Model = Bug
-    
-    func filter(for user: BlazeUserContext) -> (BlazeDataRecord) -> Bool {
-        if user.isAdmin {
-            return { _ in true }  // Admin bypass
-        }
-        
-        return { record in
-            guard let teamID = record.storage["team_id"]?.uuidValue else { return false }
-            return user.isMemberOf(team: teamID)
-        }
-    }
+ typealias Model = Bug
+
+ func filter(for user: BlazeUserContext) -> (BlazeDataRecord) -> Bool {
+ if user.isAdmin {
+ return { _ in true } // Admin bypass
+ }
+
+ return { record in
+ guard let teamID = record.storage["team_id"]?.uuidValue else { return false }
+ return user.isMemberOf(team: teamID)
+ }
+ }
 }
 
 // Register policy
@@ -263,8 +263,8 @@ BlazeRLSRegistry.registerRLS(Bug.self, policy: ownerPolicy)
 
 // Role-based policy
 let rolePolicy = RoleBasedRLSPolicy<Bug>(
-    teamIDField: "team_id",
-    assignedToField: "assigned_to"
+ teamIDField: "team_id",
+ assignedToField: "assigned_to"
 )
 BlazeRLSRegistry.registerRLS(Bug.self, policy: rolePolicy)
 ```
@@ -284,9 +284,9 @@ This means:
 Example:
 ```swift
 let points = try db.graph(for: userContext) {
-    $0.x("status")
-      .y(.count)
-      .filter { $0.storage["priority"]?.intValue ?? 0 > 5 }
+ $0.x("status")
+.y(.count)
+.filter { $0.storage["priority"]?.intValue?? 0 > 5 }
 }.toPoints()
 
 // Only returns records that:
@@ -305,14 +305,14 @@ let points = try db.graph(for: userContext) {
 ```swift
 // This works exactly as before (no RLS)
 let points = try db.graph() {
-    $0.x("category")
-      .y(.count)
+ $0.x("category")
+.y(.count)
 }.toPoints()
 
 // This also works (RLS not enabled)
 let points = try db.graph(for: userContext) {
-    $0.x("category")
-      .y(.count)
+ $0.x("category")
+.y(.count)
 }.toPoints()
 // (No filtering occurs if RLS is disabled)
 ```

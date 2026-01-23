@@ -125,9 +125,12 @@ actor WriteAheadLog {
         pendingWrites.removeAll()
         
         // Apply writes to main file (batch operation)
-        if let store = pageStore {
+        // Capture store reference to avoid isolation boundary issues
+        let store = pageStore
+        if let store = store {
             // Use optimized batch write (single fsync for all pages)
             let pageWrites = writes.map { (index: $0.pageIndex, plaintext: $0.data) }
+            // Call async method directly - actor isolation handles it
             try await store.writePagesOptimizedBatch(pageWrites)
         }
         

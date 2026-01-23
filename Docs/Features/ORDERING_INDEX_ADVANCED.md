@@ -35,10 +35,10 @@ For datasets with 1000+ records, BlazeDB automatically uses an optimized index-b
 ```swift
 // Automatically uses index-based sort for 1500+ records
 for i in 0..<1500 {
-    try db.insert(BlazeDataRecord([
-        "title": .string("Record \(i)"),
-        "orderingIndex": .double(Double(i) * 10.0)
-    ]))
+ try db.insert(BlazeDataRecord([
+ "title":.string("Record \(i)"),
+ "orderingIndex":.double(Double(i) * 10.0)
+ ]))
 }
 
 let results = try db.query().execute() // Uses index-based sort
@@ -136,14 +136,14 @@ func bulkReorder(_ operations: [BulkReorderOperation]) throws -> BulkReorderResu
 **Types:**
 ```swift
 public struct BulkReorderOperation {
-    public let recordId: UUID
-    public let newIndex: Double
+ public let recordId: UUID
+ public let newIndex: Double
 }
 
 public struct BulkReorderResult {
-    public let successful: Int
-    public let failed: Int
-    public let errors: [(UUID, Error)]
+ public let successful: Int
+ public let failed: Int
+ public let errors: [(UUID, Error)]
 }
 ```
 
@@ -151,7 +151,7 @@ public struct BulkReorderResult {
 ```swift
 // Reverse the order of 10 records
 let operations = ids.enumerated().map { (index, id) in
-    BulkReorderOperation(recordId: id, newIndex: Double(9 - index) * 10.0)
+ BulkReorderOperation(recordId: id, newIndex: Double(9 - index) * 10.0)
 }
 
 let result = try db.bulkReorder(operations)
@@ -159,7 +159,7 @@ print("Successful: \(result.successful), Failed: \(result.failed)")
 
 // Handle errors
 for (recordId, error) in result.errors {
-    print("Failed to reorder \(recordId): \(error)")
+ print("Failed to reorder \(recordId): \(error)")
 }
 ```
 
@@ -179,8 +179,8 @@ Enable separate ordering indices for different categories (e.g., "todo", "done",
 **API:**
 ```swift
 func enableOrderingWithCategories(
-    fieldName: String = "orderingIndex",
-    categoryField: String
+ fieldName: String = "orderingIndex",
+ categoryField: String
 ) throws
 ```
 
@@ -196,15 +196,15 @@ try db.enableOrderingWithCategories(categoryField: "status")
 
 // Insert records in different categories
 let todo1 = try db.insert(BlazeDataRecord([
-    "title": .string("Todo 1"),
-    "status": .string("todo"),
-    "orderingIndex_todo": .double(100.0)
+ "title":.string("Todo 1"),
+ "status":.string("todo"),
+ "orderingIndex_todo":.double(100.0)
 ]))
 
 let done1 = try db.insert(BlazeDataRecord([
-    "title": .string("Done 1"),
-    "status": .string("done"),
-    "orderingIndex_done": .double(100.0)
+ "title":.string("Done 1"),
+ "status":.string("done"),
+ "orderingIndex_done":.double(100.0)
 ]))
 ```
 
@@ -215,10 +215,10 @@ Move a record within its category without affecting other categories.
 **API:**
 ```swift
 func moveInCategory(
-    recordId: UUID,
-    categoryValue: String,
-    beforeId: UUID? = nil,
-    afterId: UUID? = nil
+ recordId: UUID,
+ categoryValue: String,
+ beforeId: UUID? = nil,
+ afterId: UUID? = nil
 ) throws
 ```
 
@@ -262,7 +262,7 @@ try db.bulkReorder(operations)
 
 // Query telemetry
 let summary = try db.telemetry.getSummary()
-print("Move operations: \(summary.operationBreakdown["moveUp"]?.count ?? 0)")
+print("Move operations: \(summary.operationBreakdown["moveUp"]?.count?? 0)")
 ```
 
 ### Ordering Query Performance
@@ -288,27 +288,27 @@ QueryBuilder.applySorts: using cached order (1500 records)
 
 | Records | Standard Sort | Index-Based Sort | Speedup |
 |---------|---------------|------------------|---------|
-| 500     | 12ms          | 12ms             | 1.0x    |
-| 1,000   | 25ms          | 15ms             | 1.7x    |
-| 2,000   | 52ms          | 28ms             | 1.9x    |
-| 5,000   | 135ms         | 68ms             | 2.0x    |
-| 10,000  | 280ms         | 140ms            | 2.0x    |
+| 500 | 12ms | 12ms | 1.0x |
+| 1,000 | 25ms | 15ms | 1.7x |
+| 2,000 | 52ms | 28ms | 1.9x |
+| 5,000 | 135ms | 68ms | 2.0x |
+| 10,000 | 280ms | 140ms | 2.0x |
 
 ### Cached Queries
 
 | Operation | First Query | Cached Query | Speedup |
 |-----------|-------------|--------------|---------|
-| 100 records | 5ms        | 0.5ms        | 10x     |
-| 1,000 records | 25ms      | 2ms          | 12.5x   |
-| 5,000 records | 135ms     | 8ms          | 16.9x   |
+| 100 records | 5ms | 0.5ms | 10x |
+| 1,000 records | 25ms | 2ms | 12.5x |
+| 5,000 records | 135ms | 8ms | 16.9x |
 
 ### Bulk Reordering
 
 | Records | Individual Moves | Bulk Reorder | Speedup |
 |---------|------------------|--------------|---------|
-| 10      | 50ms             | 15ms         | 3.3x    |
-| 100     | 500ms            | 120ms        | 4.2x    |
-| 1,000   | 5,000ms          | 1,200ms      | 4.2x    |
+| 10 | 50ms | 15ms | 3.3x |
+| 100 | 500ms | 120ms | 4.2x |
+| 1,000 | 5,000ms | 1,200ms | 4.2x |
 
 ---
 
@@ -350,14 +350,14 @@ func bulkReorder(_ operations: [BulkReorderOperation]) throws -> BulkReorderResu
 
 // Category ordering
 func enableOrderingWithCategories(
-    fieldName: String = "orderingIndex",
-    categoryField: String
+ fieldName: String = "orderingIndex",
+ categoryField: String
 ) throws
 func moveInCategory(
-    recordId: UUID,
-    categoryValue: String,
-    beforeId: UUID? = nil,
-    afterId: UUID? = nil
+ recordId: UUID,
+ categoryValue: String,
+ beforeId: UUID? = nil,
+ afterId: UUID? = nil
 ) throws
 ```
 
@@ -370,17 +370,17 @@ static func moveDown(from currentIndex: Double, positions: Int = 1) -> Double
 
 // Category-specific index access
 static func getIndex(
-    from record: BlazeDataRecord,
-    categoryField: String,
-    categoryValue: String,
-    fieldName: String = "orderingIndex"
+ from record: BlazeDataRecord,
+ categoryField: String,
+ categoryValue: String,
+ fieldName: String = "orderingIndex"
 ) -> Double?
 static func setIndex(
-    _ index: Double,
-    on record: BlazeDataRecord,
-    categoryField: String,
-    categoryValue: String,
-    fieldName: String = "orderingIndex"
+ _ index: Double,
+ on record: BlazeDataRecord,
+ categoryField: String,
+ categoryValue: String,
+ fieldName: String = "orderingIndex"
 ) -> BlazeDataRecord
 ```
 
@@ -390,15 +390,15 @@ static func setIndex(
 
 Comprehensive tests are available in `BlazeDBTests/OrderingIndexAdvancedTests.swift`:
 
-- ✅ Index-based sorting for large datasets
-- ✅ Cached sorted order
-- ✅ Cache invalidation
-- ✅ Relative moves (up/down)
-- ✅ Bulk reordering
-- ✅ Category ordering
-- ✅ Telemetry recording
-- ✅ Performance metrics
-- ✅ Edge cases
+- Index-based sorting for large datasets
+- Cached sorted order
+- Cache invalidation
+- Relative moves (up/down)
+- Bulk reordering
+- Category ordering
+- Telemetry recording
+- Performance metrics
+- Edge cases
 
 Run tests:
 ```bash

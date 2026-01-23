@@ -1,4 +1,4 @@
-# 🎨 BlazeStudio - Visual Editor Documentation
+# BlazeStudio - Visual Editor Documentation
 
 **Visual block-based editor for building database schemas and queries.**
 
@@ -35,18 +35,18 @@ BlazeStudio is a visual block-based editor that lets you design database schemas
 ## **Getting Started**
 
 1. **Launch BlazeStudio**
-   - Open the BlazeStudio app
-   - Create a new project or open existing
+ - Open the BlazeStudio app
+ - Create a new project or open existing
 
 2. **Create Blocks**
-   - Drag blocks from the palette
-   - Connect blocks to define relationships
-   - Set block properties
+ - Drag blocks from the palette
+ - Connect blocks to define relationships
+ - Set block properties
 
 3. **Generate Code**
-   - Export schema to Swift
-   - Generate BlazeDB code
-   - Copy to your project
+ - Export schema to Swift
+ - Generate BlazeDB code
+ - Copy to your project
 
 ---
 
@@ -66,9 +66,9 @@ Defines a data model/class.
 ```
 Class: User
 Fields:
-  - id: UUID
-  - name: String
-  - email: String
+ - id: UUID
+ - name: String
+ - email: String
 ```
 
 #### **Connector Block**
@@ -153,9 +153,9 @@ BlazeStudio can export schemas directly to BlazeDB:
 ```swift
 // Generated from BlazeStudio
 struct User: BlazeRecord {
-    var id: UUID
-    var name: String
-    var email: String
+ var id: UUID
+ var name: String
+ var email: String
 }
 
 // Use in BlazeDB
@@ -168,9 +168,9 @@ let id = try db.insert(user)
 ```swift
 // Generated query from BlazeStudio
 let users = try db.queryTyped(User.self)
-    .where(\.name, contains: "John")
-    .orderBy(\.email)
-    .all()
+.where(\.name, contains: "John")
+.orderBy(\.email)
+.all()
 ```
 
 ---
@@ -220,17 +220,17 @@ BlazeStudio projects are saved as JSON:
 
 ```json
 {
-  "version": "1.0",
-  "blocks": [
-    {
-      "type": "class",
-      "id": "block-1",
-      "name": "User",
-      "fields": [...],
-      "position": {"x": 100, "y": 100}
-    }
-  ],
-  "connections": [...]
+ "version": "1.0",
+ "blocks": [
+ {
+ "type": "class",
+ "id": "block-1",
+ "name": "User",
+ "fields": [...],
+ "position": {"x": 100, "y": 100}
+ }
+ ],
+ "connections": [...]
 }
 ```
 

@@ -2,7 +2,7 @@
 
 ## Status
 
-✅ Package.swift updated to use `path: "Tests/BlazeDBTests"`
+ Package.swift updated to use `path: "Tests/BlazeDBTests"`
 
 ## Remaining Work
 
@@ -12,7 +12,7 @@ Due to the large number of files (100+), a comprehensive migration script is nee
 
 ### Codec Tests → Tests/BlazeDBTests/Codec/
 - BlazeDBTests/Encoding/BlazeBinary/*.swift
-- BlazeDBTests/Encoding/BlazeBinary*.swift  
+- BlazeDBTests/Encoding/BlazeBinary*.swift
 - BlazeDBTests/Fuzz/BlazeBinaryFuzzTests.swift
 - BlazeDBTests/Codec/*.swift (already moved)
 

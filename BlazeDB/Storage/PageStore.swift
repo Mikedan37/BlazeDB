@@ -80,11 +80,18 @@ internal extension FileHandle {
     }
 }
 
-public final class PageStore {
+// Swift 6: Thread-safe via internal DispatchQueue synchronization
+public final class PageStore: @unchecked Sendable {
     public let fileURL: URL
     internal let fileHandle: FileHandle  // Made internal for PageStore+Overflow access
     internal let key: SymmetricKey  // ✅ ENCRYPTION KEY STORED - Made internal for PageStore+Overflow access
     internal let pageSize = 4096  // Made internal for DynamicCollection access
+    
+    // MARK: - Concurrency Invariants
+    // Invariants:
+    // - All public methods entering queue.sync must not already be on `queue`
+    // - Re-entrancy is guarded via dispatchPrecondition in DEBUG builds
+    // - Internal helpers (_writePageLocked, _writePageLockedUnsynchronized) assume caller holds barrier or queue context
     internal let queue = DispatchQueue(label: "com.yourorg.blazedb.pagestore", attributes: .concurrent)  // Made internal for PageStore+Overflow access
     internal let pageCache = PageCache(maxSize: 1000)  // Made internal for DynamicCollection access
     private var isLocked: Bool = false  // Track lock state for cleanup
@@ -189,6 +196,9 @@ public final class PageStore {
     }
     
     public func deletePage(index: Int) throws {
+        #if DEBUG
+        dispatchPrecondition(condition: .notOnQueue(queue))
+        #endif
         try queue.sync(flags: .barrier) {
             // Invalidate cache on delete
             pageCache.remove(index)
@@ -219,6 +229,9 @@ public final class PageStore {
     /// Appends a page to the end of the file and returns the assigned page index.
     @discardableResult
     public func write(_ data: Data) throws -> Int {
+        #if DEBUG
+        dispatchPrecondition(condition: .notOnQueue(queue))
+        #endif
         return try queue.sync(flags: .barrier) {
             // Determine next page index from current file size.
             let attrs = try FileManager.default.attributesOfItem(atPath: fileURL.path)
@@ -300,6 +313,9 @@ public final class PageStore {
     }
 
     public func writePage(index: Int, plaintext: Data) throws {
+        #if DEBUG
+        dispatchPrecondition(condition: .notOnQueue(queue))
+        #endif
         try queue.sync(flags: .barrier) {
             try _writePageLocked(index: index, plaintext: plaintext)
         }
@@ -308,6 +324,9 @@ public final class PageStore {
     /// Write a page without synchronizing to disk (for batch operations)
     /// ⚠️ Must call `synchronize()` after batch is complete!
     public func writePageUnsynchronized(index: Int, plaintext: Data) throws {
+        #if DEBUG
+        dispatchPrecondition(condition: .notOnQueue(queue))
+        #endif
         try queue.sync(flags: .barrier) {
             try _writePageLockedUnsynchronized(index: index, plaintext: plaintext)
         }
@@ -315,6 +334,9 @@ public final class PageStore {
     
     /// Flush all pending writes to disk
     public func synchronize() throws {
+        #if DEBUG
+        dispatchPrecondition(condition: .notOnQueue(queue))
+        #endif
         try queue.sync(flags: .barrier) {
             try fileHandle.compatSynchronize()
         }
@@ -327,6 +349,9 @@ public final class PageStore {
     }
 
     public func readPage(index: Int) throws -> Data? {
+        #if DEBUG
+        dispatchPrecondition(condition: .notOnQueue(queue))
+        #endif
         return try queue.sync {
             // Check cache first (MASSIVE speedup for repeated reads!)
             // Note: Cache stores decrypted data for maximum performance
@@ -447,6 +472,9 @@ public final class PageStore {
 
     // Returns (totalPages, orphanedPages, estimatedSize)
     public func getStorageStats() throws -> (totalPages: Int, orphanedPages: Int, estimatedSize: Int) {
+        #if DEBUG
+        dispatchPrecondition(condition: .notOnQueue(queue))
+        #endif
         return try queue.sync {
             // Correctly fetch file size from the fileURL
             let attrs = try FileManager.default.attributesOfItem(atPath: fileURL.path)
@@ -476,6 +504,9 @@ public final class PageStore {
     /// Get the next available page index for MVCC
     /// This calculates based on current file size
     public func nextAvailablePageIndex() -> Int {
+        #if DEBUG
+        dispatchPrecondition(condition: .notOnQueue(queue))
+        #endif
         return queue.sync {
             do {
                 let fileSize = try fileHandle.seekToEnd()

@@ -1,6 +1,6 @@
 # BlazeDB Distributed: Latency Breakdown
 
-**What does "5ms" actually mean? Let's break it down! 🔍**
+**What does "5ms" actually mean? Let's break it down! **
 
 ---
 
@@ -20,7 +20,7 @@ Breakdown:
 • In-memory relay: 0.1ms (queue + forward)
 • Decoding: 0.08ms (BlazeBinary decode)
 • Apply to DB: 0.5ms (insert/update/delete)
-• Total: ~0.84ms (<1ms) ✅
+• Total: ~0.84ms (<1ms)
 
 This is IN-MEMORY, so it's basically instant!
 ```
@@ -39,7 +39,7 @@ Breakdown:
 • Shared container write: 0.3ms (disk I/O)
 • File coordination read: 0.2ms (other app)
 • Apply to DB: 0.5ms
-• Total: ~1.26ms (<2ms, but we say <1ms for simplicity) ✅
+• Total: ~1.26ms (<2ms, but we say <1ms for simplicity)
 
 This is LOCAL DISK, so it's still very fast!
 ```
@@ -68,29 +68,29 @@ BUT WAIT! That's just CLIENT → SERVER!
 
 ---
 
-## 🔄 **COMPLETE REMOTE SYNC (Round-Trip):**
+## **COMPLETE REMOTE SYNC (Round-Trip):**
 
 ```
 iPhone → Server → iPad:
 ═══════════════════════
 
 1. iPhone creates bug
-   • Local operations: 0.84ms
-   • Send to server: 6.24ms
-   • Total: ~7ms
+ • Local operations: 0.84ms
+ • Send to server: 6.24ms
+ • Total: ~7ms
 
 2. Server receives and applies
-   • Server operations: 0.88ms
-   • Total: ~8ms
+ • Server operations: 0.88ms
+ • Total: ~8ms
 
 3. Server forwards to iPad
-   • Server operations: 0.88ms
-   • Send to iPad: 6.24ms
-   • Total: ~7ms
+ • Server operations: 0.88ms
+ • Send to iPad: 6.24ms
+ • Total: ~7ms
 
 4. iPad receives and applies
-   • iPad operations: 0.88ms
-   • Total: ~1ms
+ • iPad operations: 0.88ms
+ • Total: ~1ms
 
 TOTAL TIME (iPhone → iPad):
 ═══════════════════════════
@@ -105,26 +105,26 @@ simultaneously, so it's more like:
 
 ---
 
-## 📊 **WHAT IS THE 5MS?**
+## **WHAT IS THE 5MS?**
 
 The **5ms** is specifically the **network transmission time** for sending a single operation from client to server over TCP.
 
 ### **What it includes:**
-- ✅ TCP packet transmission (network latency)
-- ✅ Router/switch processing
-- ✅ Internet routing
-- ✅ Server TCP receive
+- TCP packet transmission (network latency)
+- Router/switch processing
+- Internet routing
+- Server TCP receive
 
 ### **What it does NOT include:**
-- ❌ Encoding/decoding (adds ~0.18ms)
-- ❌ Encryption/decryption (adds ~0.4ms)
-- ❌ Database operations (adds ~0.5ms)
-- ❌ Server processing (adds ~0.88ms)
-- ❌ Round-trip time (double it for full sync)
+- Encoding/decoding (adds ~0.18ms)
+- Encryption/decryption (adds ~0.4ms)
+- Database operations (adds ~0.5ms)
+- Server processing (adds ~0.88ms)
+- Round-trip time (double it for full sync)
 
 ---
 
-## 🌐 **NETWORK LATENCY FACTORS:**
+## **NETWORK LATENCY FACTORS:**
 
 ### **Same Network (LAN):**
 ```
@@ -156,21 +156,21 @@ Different Continents:
 
 ---
 
-## ⚡ **WHY IS 5MS GOOD?**
+## **WHY IS 5MS GOOD?**
 
 ### **Comparison:**
 ```
 WebSocket (with HTTP upgrade):
 • Handshake: 50ms
 • Per message: 20ms
-• Total: 70ms ❌
+• Total: 70ms
 
 Raw TCP (our protocol):
 • Handshake: 10ms (DH + encryption)
 • Per message: 5ms
-• Total: 15ms ✅
+• Total: 15ms
 
-4.6x FASTER! 🔥
+4.6x FASTER!
 ```
 
 ### **Real-World Impact:**
@@ -186,12 +186,12 @@ User creates bug on iPhone:
 User experience:
 • iPhone: Instant (optimistic UI)
 • iPad: ~14ms (feels instant!)
-• No loading spinners needed! ✨
+• No loading spinners needed!
 ```
 
 ---
 
-## 🎯 **SUMMARY:**
+## **SUMMARY:**
 
 ### **The 5ms is:**
 - **Network transmission time** (TCP send)
@@ -213,5 +213,5 @@ User experience:
 
 ---
 
-**The 5ms is the network transmission time - the actual time it takes for data to travel over the internet from one device to another! 🌐**
+**The 5ms is the network transmission time - the actual time it takes for data to travel over the internet from one device to another! **
 

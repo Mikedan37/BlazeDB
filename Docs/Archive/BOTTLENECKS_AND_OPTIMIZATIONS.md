@@ -1,10 +1,10 @@
 # Real Bottlenecks & Optimizations
 
-**Let's find the REAL bottlenecks and fix them! 🔧**
+**Let's find the REAL bottlenecks and fix them! **
 
 ---
 
-## 🔍 **IDENTIFIED BOTTLENECKS:**
+## **IDENTIFIED BOTTLENECKS:**
 
 ### **1. JSON Encoding/Decoding (MAJOR BOTTLENECK)**
 
@@ -22,11 +22,11 @@ Problem:
 
 Solution:
 ─────────
-✅ Use BlazeBinary encoding (already implemented!)
-✅ BlazeBinary is 5-10x faster than JSON
-✅ BlazeBinary is 30-40% smaller
+ Use BlazeBinary encoding (already implemented!)
+ BlazeBinary is 5-10x faster than JSON
+ BlazeBinary is 30-40% smaller
 
-Impact: 5-10x faster encoding/decoding! 🚀
+Impact: 5-10x faster encoding/decoding!
 ```
 
 ### **2. File I/O Synchronous (BOTTLENECK)**
@@ -45,12 +45,12 @@ Problem:
 
 Solution:
 ─────────
-✅ Async File I/O (already implemented!)
-✅ Use DispatchQueue.async for writes
-✅ Use async/await for reads
-✅ Batch multiple operations
+ Async File I/O (already implemented!)
+ Use DispatchQueue.async for writes
+ Use async/await for reads
+ Batch multiple operations
 
-Impact: 2-3x faster I/O! 🚀
+Impact: 2-3x faster I/O!
 ```
 
 ### **3. Index Updates (BOTTLENECK)**
@@ -68,11 +68,11 @@ Problem:
 
 Solution:
 ─────────
-✅ Batch index updates (save every N operations)
-✅ Use write-ahead log for index changes
-✅ Lazy persistence (save on persist() call)
+ Batch index updates (save every N operations)
+ Use write-ahead log for index changes
+ Lazy persistence (save on persist() call)
 
-Impact: 10-100x faster for batch operations! 🚀
+Impact: 10-100x faster for batch operations!
 ```
 
 ### **4. Encryption Overhead (MINOR BOTTLENECK)**
@@ -90,11 +90,11 @@ Problem:
 
 Solution:
 ─────────
-✅ Already using hardware acceleration
-✅ Batch encryption (encrypt multiple pages at once)
-✅ Use AES-NI if available
+ Already using hardware acceleration
+ Batch encryption (encrypt multiple pages at once)
+ Use AES-NI if available
 
-Impact: 1.2-1.5x faster encryption! 🚀
+Impact: 1.2-1.5x faster encryption!
 ```
 
 ### **5. Memory Allocation (MINOR BOTTLENECK)**
@@ -111,88 +111,88 @@ Problem:
 
 Solution:
 ─────────
-✅ Memory pooling (reuse buffers)
-✅ Pre-allocate buffers
-✅ Use stack allocation where possible
+ Memory pooling (reuse buffers)
+ Pre-allocate buffers
+ Use stack allocation where possible
 
-Impact: 1.1-1.2x faster! 🚀
+Impact: 1.1-1.2x faster!
 ```
 
 ---
 
-## 📊 **REAL PERFORMANCE NUMBERS:**
+## **REAL PERFORMANCE NUMBERS:**
 
 ### **Current Performance (Measured from Tests):**
 
 ```
-Operation Type        Time (ms)    Throughput
+Operation Type Time (ms) Throughput
 ══════════════════════════════════════════════
-Insert (single)      0.5-1.0ms    1,000-2,000 ops/sec
-Insert (batch)       0.3-0.5ms    2,000-3,333 ops/sec
-Fetch (single)       0.2-0.5ms    2,000-5,000 ops/sec
-Fetch (batch)        0.1-0.3ms    3,333-10,000 ops/sec
+Insert (single) 0.5-1.0ms 1,000-2,000 ops/sec
+Insert (batch) 0.3-0.5ms 2,000-3,333 ops/sec
+Fetch (single) 0.2-0.5ms 2,000-5,000 ops/sec
+Fetch (batch) 0.1-0.3ms 3,333-10,000 ops/sec
 
 REALISTIC: 1,000-5,000 ops/sec (single)
-REALISTIC: 2,000-10,000 ops/sec (batched)  ✅
+REALISTIC: 2,000-10,000 ops/sec (batched)
 ```
 
 ### **After Optimizations (Projected):**
 
 ```
-Operation Type        Time (ms)    Throughput
+Operation Type Time (ms) Throughput
 ══════════════════════════════════════════════
-Insert (single)      0.2-0.4ms    2,500-5,000 ops/sec
-Insert (batch)       0.1-0.2ms    5,000-10,000 ops/sec
-Fetch (single)       0.1-0.2ms    5,000-10,000 ops/sec
-Fetch (batch)        0.05-0.1ms   10,000-20,000 ops/sec
+Insert (single) 0.2-0.4ms 2,500-5,000 ops/sec
+Insert (batch) 0.1-0.2ms 5,000-10,000 ops/sec
+Fetch (single) 0.1-0.2ms 5,000-10,000 ops/sec
+Fetch (batch) 0.05-0.1ms 10,000-20,000 ops/sec
 
 PROJECTED: 2,500-10,000 ops/sec (single)
-PROJECTED: 5,000-20,000 ops/sec (batched)  ✅
+PROJECTED: 5,000-20,000 ops/sec (batched)
 ```
 
 ---
 
-## 🚀 **OPTIMIZATION PRIORITIES:**
+## **OPTIMIZATION PRIORITIES:**
 
 ### **High Priority (Big Impact):**
 
 ```
 1. Switch to BlazeBinary (5-10x faster encoding)
-   Impact: 5-10x faster operations
-   Effort: Medium (already implemented, need to enable)
+ Impact: 5-10x faster operations
+ Effort: Medium (already implemented, need to enable)
 
 2. Batch Index Updates (10-100x faster for batches)
-   Impact: 10-100x faster batch operations
-   Effort: Low (change saveLayout() to be lazy)
+ Impact: 10-100x faster batch operations
+ Effort: Low (change saveLayout() to be lazy)
 
 3. Async File I/O (2-3x faster I/O)
-   Impact: 2-3x faster operations
-   Effort: Low (already implemented, need to use)
+ Impact: 2-3x faster operations
+ Effort: Low (already implemented, need to use)
 ```
 
 ### **Medium Priority (Good Impact):**
 
 ```
 4. Memory Pooling (1.1-1.2x faster)
-   Impact: 10-20% faster
-   Effort: Medium (add buffer pool)
+ Impact: 10-20% faster
+ Effort: Medium (add buffer pool)
 
 5. Batch Encryption (1.2-1.5x faster)
-   Impact: 20-50% faster encryption
-   Effort: Medium (batch AES-GCM operations)
+ Impact: 20-50% faster encryption
+ Effort: Medium (batch AES-GCM operations)
 ```
 
 ### **Low Priority (Small Impact):**
 
 ```
 6. Stack Allocation (1.05-1.1x faster)
-   Impact: 5-10% faster
-   Effort: High (refactor allocations)
+ Impact: 5-10% faster
+ Effort: High (refactor allocations)
 ```
 
 ---
 
-## 🎯 **RECOMMENDED FIXES:**
+## **RECOMMENDED FIXES:**
 
 ### **Fix 1: Enable BlazeBinary by Default**
 
@@ -211,23 +211,23 @@ let encoded = try BlazeBinaryEncoder.encode(record)
 ```swift
 // Current: Saves on every insert
 func insert(_ record: Record) throws {
-    // ... insert logic ...
-    try saveLayout()  // ❌ Saves to disk every time!
+ //... insert logic...
+ try saveLayout() // Saves to disk every time!
 }
 
 // Optimized: Lazy save
 private var needsSave = false
 
 func insert(_ record: Record) throws {
-    // ... insert logic ...
-    needsSave = true  // ✅ Mark as dirty
+ //... insert logic...
+ needsSave = true // Mark as dirty
 }
 
 func persist() throws {
-    if needsSave {
-        try saveLayout()  // ✅ Save once
-        needsSave = false
-    }
+ if needsSave {
+ try saveLayout() // Save once
+ needsSave = false
+ }
 }
 ```
 
@@ -238,14 +238,14 @@ func persist() throws {
 ```swift
 // Current: Synchronous
 func writePage(index: Int, plaintext: Data) throws {
-    let encrypted = try encrypt(plaintext)
-    try fileHandle.write(encrypted)  // ❌ Blocks thread
+ let encrypted = try encrypt(plaintext)
+ try fileHandle.write(encrypted) // Blocks thread
 }
 
 // Optimized: Async
 func writePageAsync(index: Int, plaintext: Data) async throws {
-    let encrypted = try encrypt(plaintext)
-    try await fileHandle.writeAsync(encrypted)  // ✅ Non-blocking
+ let encrypted = try encrypt(plaintext)
+ try await fileHandle.writeAsync(encrypted) // Non-blocking
 }
 ```
 
@@ -253,42 +253,42 @@ func writePageAsync(index: Int, plaintext: Data) async throws {
 
 ---
 
-## 📈 **EXPECTED IMPROVEMENTS:**
+## **EXPECTED IMPROVEMENTS:**
 
 ### **Before Optimizations:**
 
 ```
-Single Insert:    0.5-1.0ms  →  1,000-2,000 ops/sec
-Batch Insert:     0.3-0.5ms  →  2,000-3,333 ops/sec
-Single Fetch:     0.2-0.5ms  →  2,000-5,000 ops/sec
-Batch Fetch:      0.1-0.3ms  →  3,333-10,000 ops/sec
+Single Insert: 0.5-1.0ms → 1,000-2,000 ops/sec
+Batch Insert: 0.3-0.5ms → 2,000-3,333 ops/sec
+Single Fetch: 0.2-0.5ms → 2,000-5,000 ops/sec
+Batch Fetch: 0.1-0.3ms → 3,333-10,000 ops/sec
 ```
 
 ### **After Optimizations:**
 
 ```
-Single Insert:    0.2-0.4ms  →  2,500-5,000 ops/sec  (2.5x faster!)
-Batch Insert:     0.1-0.2ms  →  5,000-10,000 ops/sec  (2.5x faster!)
-Single Fetch:     0.1-0.2ms  →  5,000-10,000 ops/sec  (2x faster!)
-Batch Fetch:      0.05-0.1ms →  10,000-20,000 ops/sec  (3x faster!)
+Single Insert: 0.2-0.4ms → 2,500-5,000 ops/sec (2.5x faster!)
+Batch Insert: 0.1-0.2ms → 5,000-10,000 ops/sec (2.5x faster!)
+Single Fetch: 0.1-0.2ms → 5,000-10,000 ops/sec (2x faster!)
+Batch Fetch: 0.05-0.1ms → 10,000-20,000 ops/sec (3x faster!)
 ```
 
-**TOTAL IMPROVEMENT: 2-3x faster overall! 🚀**
+**TOTAL IMPROVEMENT: 2-3x faster overall! **
 
 ---
 
-## 🔥 **BOTTOM LINE:**
+## **BOTTOM LINE:**
 
 ### **Real Numbers:**
 
 ```
-Current:     1,000-5,000 ops/sec (single)
-             2,000-10,000 ops/sec (batched)
+Current: 1,000-5,000 ops/sec (single)
+ 2,000-10,000 ops/sec (batched)
 
-Optimized:   2,500-10,000 ops/sec (single)
-             5,000-20,000 ops/sec (batched)
+Optimized: 2,500-10,000 ops/sec (single)
+ 5,000-20,000 ops/sec (batched)
 
-IMPROVEMENT: 2-3x faster! 🚀
+IMPROVEMENT: 2-3x faster!
 ```
 
 ### **Bottlenecks:**
@@ -301,5 +301,5 @@ IMPROVEMENT: 2-3x faster! 🚀
 5. Memory allocation (5-10% of time) → Fix: Memory pooling
 ```
 
-**Let's fix these bottlenecks! 🔧**
+**Let's fix these bottlenecks! **
 

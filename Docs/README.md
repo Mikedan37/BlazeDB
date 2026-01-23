@@ -1,84 +1,84 @@
-# 📚 BlazeDB Documentation Index
+# BlazeDB Documentation Index
 
-**Navigate all BlazeDB documentation**  
-**Version:** 3.0  
-**Tests:** 1,248 comprehensive tests ✅  
-**Status:** Production-Ready 🚀
+**Navigate all BlazeDB documentation**
+**Version:** 3.0
+**Tests:** 1,248 comprehensive tests
+**Status:** Production-Ready
 
 ---
 
-## 🎯 START HERE
+## START HERE
 
 **New to BlazeDB?** Start with these in order:
 
 1. **[Getting Started](1_GETTING_STARTED.md)** ← Start here!
-   - Installation
-   - Your first database (2 minutes)
-   - Basic operations
+ - Installation
+ - Your first database (2 minutes)
+ - Basic operations
 
 2. **[Core Features](2_CORE_FEATURES.md)**
-   - CRUD operations
-   - Batch operations
-   - Field access
+ - CRUD operations
+ - Batch operations
+ - Field access
 
 3. **[Query Guide](3_QUERY_GUIDE.md)**
-   - WHERE clauses
-   - Sorting & pagination
-   - Aggregations & JOINs
+ - WHERE clauses
+ - Sorting & pagination
+ - Aggregations & JOINs
 
 ---
 
-## 📖 FEATURE GUIDES
+## FEATURE GUIDES
 
 **Learn specific features:**
 
 4. **[Schema Validation](4_SCHEMA_VALIDATION.md)**
-   - Define schemas
-   - Custom validators
-   - Enforce data integrity
+ - Define schemas
+ - Custom validators
+ - Enforce data integrity
 
-5. **[Telemetry Guide](5_TELEMETRY_GUIDE.md)** ⭐
-   - Automatic performance monitoring
-   - Find slow operations
-   - Track errors
+5. **[Telemetry Guide](5_TELEMETRY_GUIDE.md)**
+ - Automatic performance monitoring
+ - Find slow operations
+ - Track errors
 
 6. **[Garbage Collection](6_GARBAGE_COLLECTION_GUIDE.md)**
-   - Page reuse (automatic)
-   - Manual VACUUM
-   - Auto-VACUUM
+ - Page reuse (automatic)
+ - Manual VACUUM
+ - Auto-VACUUM
 
 7. **[Foreign Keys](7_FOREIGN_KEYS_GUIDE.md)**
-   - Referential integrity
-   - CASCADE DELETE
-   - Multi-collection relationships
+ - Referential integrity
+ - CASCADE DELETE
+ - Multi-collection relationships
 
-8. **[Production Guide](8_PRODUCTION_GUIDE.md)** ⭐
-   - Deployment checklist
-   - Performance optimization
-   - Monitoring & alerts
+8. **[Production Guide](8_PRODUCTION_GUIDE.md)**
+ - Deployment checklist
+ - Performance optimization
+ - Monitoring & alerts
 
 9. **[SwiftUI & Type Safety](9_SWIFTUI_TYPE_SAFETY.md)**
-   - @BlazeQuery integration
-   - Type-safe models
-   - Codable support
+ - @BlazeQuery integration
+ - Type-safe models
+ - Codable support
 
 ---
 
-## 📚 REFERENCE
+## REFERENCE
 
-10. **[API Reference](10_API_REFERENCE.md)** ⭐
-    - Complete API list (100+ methods)
-    - Every method documented
-    - Quick reference
+10. **[API Reference](10_API_REFERENCE.md)**
+ - Complete API list (100+ methods)
+ - Every method documented
+ - Quick reference
 
 11. **[Master Documentation](MASTER_DOCUMENTATION_V3.md)**
-    - Everything in one place
-    - Comprehensive guide
-    - All features covered
+ - Everything in one place
+ - Comprehensive guide
+ - All features covered
 
 ---
 
-## 🎯 QUICK LINKS
+## QUICK LINKS
 
 ### By Use Case
 
@@ -99,7 +99,7 @@
 
 ---
 
-## 💻 EXAMPLES
+## EXAMPLES
 
 **17 runnable examples in [Examples/](../Examples/) folder:**
 
@@ -118,7 +118,7 @@
 
 ---
 
-## 🧪 TESTS
+## TESTS
 
 **1,248 comprehensive tests** verify everything works:
 
@@ -129,31 +129,31 @@
 
 ---
 
-## 🎊 WHAT BLAZEDB CAN DO
+## WHAT BLAZEDB CAN DO
 
 **103+ features including:**
-- ✅ Full CRUD + batch operations
-- ✅ Rich queries (WHERE, JOIN, GROUP BY, aggregations)
-- ✅ Full-text search
-- ✅ Schema validation
-- ✅ Foreign keys & CASCADE DELETE
-- ✅ Automatic telemetry (unique!)
-- ✅ Advanced garbage collection (12 APIs)
-- ✅ Transactions (ACID compliant)
-- ✅ Crash recovery (automatic)
-- ✅ Encryption (AES-256 built-in)
-- ✅ Type safety (optional)
-- ✅ SwiftUI integration
-- ✅ Async/await support
-- ✅ 1,248 tests
+- Full CRUD + batch operations
+- Rich queries (WHERE, JOIN, GROUP BY, aggregations)
+- Full-text search
+- Schema validation
+- Foreign keys & CASCADE DELETE
+- Automatic telemetry (unique!)
+- Advanced garbage collection (12 APIs)
+- Transactions (ACID compliant)
+- Crash recovery (automatic)
+- Encryption (AES-256 built-in)
+- Type safety (optional)
+- SwiftUI integration
+- Async/await support
+- 1,248 tests
 
-**Performance:** < 5ms average operations  
-**Security:** AES-256-GCM encryption  
+**Performance:** < 5ms average operations
+**Security:** AES-256-GCM encryption
 **Grade:** A- (88/100) - Excellent
 
 ---
 
-## 🚀 QUICK START (30 SECONDS)
+## QUICK START (30 SECONDS)
 
 ```swift
 import BlazeDB
@@ -166,19 +166,19 @@ db.telemetry.enable(samplingRate: 0.01)
 db.enableAutoVacuum(wasteThreshold: 0.30, checkInterval: 3600)
 
 // 3. Use
-let id = try db.insert(BlazeDataRecord(["title": .string("Hello")]))
+let id = try db.insert(BlazeDataRecord(["title":.string("Hello")]))
 let results = try db.query().where("title", contains: "Hello").execute()
 
 // 4. Monitor
 let summary = try await db.telemetry.getSummary()
 print("Performance: \(summary.avgDuration)ms")
 
-// Done! ✅
+// Done!
 ```
 
 ---
 
-## 🆘 GETTING HELP
+## GETTING HELP
 
 **Having issues?**
 1. Check [Getting Started](1_GETTING_STARTED.md)
@@ -189,18 +189,18 @@ print("Performance: \(summary.avgDuration)ms")
 
 ---
 
-## 🏆 WHY BLAZEDB?
+## WHY BLAZEDB?
 
 **Better than alternatives:**
-- ✅ Faster than CoreData (30x)
-- ✅ Cleaner API than SQLite
-- ✅ More flexible than Realm
-- ✅ Built-in telemetry (unique!)
-- ✅ Advanced GC (unique!)
-- ✅ Encryption by default
+- Faster than CoreData (30x)
+- Cleaner API than SQLite
+- More flexible than Realm
+- Built-in telemetry (unique!)
+- Advanced GC (unique!)
+- Encryption by default
 
 **Grade: A- (88/100)** ⭐⭐⭐⭐
 
 ---
 
-**Ready to build? Start with [Getting Started](1_GETTING_STARTED.md)!** 🚀
+**Ready to build? Start with [Getting Started](1_GETTING_STARTED.md)!**

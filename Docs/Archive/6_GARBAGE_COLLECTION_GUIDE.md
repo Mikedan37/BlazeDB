@@ -1,4 +1,4 @@
-# 🧹 Garbage Collection Guide
+# Garbage Collection Guide
 
 **Keep your database clean and efficient**
 
@@ -9,19 +9,19 @@
 BlazeDB has 3-tier garbage collection:
 
 1. **Page Reuse** (Automatic, always on)
-   - Deleted pages are reused immediately
-   - < 0.5% overhead
-   - Prevents file growth
+ - Deleted pages are reused immediately
+ - < 0.5% overhead
+ - Prevents file growth
 
 2. **Manual VACUUM** (On-demand)
-   - Compacts database file
-   - Reclaims fragmented space
-   - ~1s per 1K records
+ - Compacts database file
+ - Reclaims fragmented space
+ - ~1s per 1K records
 
 3. **Auto-VACUUM** (Optional background)
-   - Automatic maintenance
-   - Configurable thresholds
-   - Hands-off operation
+ - Automatic maintenance
+ - Configurable thresholds
+ - Hands-off operation
 
 ---
 
@@ -30,11 +30,11 @@ BlazeDB has 3-tier garbage collection:
 ```swift
 // Enable auto-vacuum (hands-off maintenance)
 db.enableAutoVacuum(
-    wasteThreshold: 0.30,  // VACUUM at 30% waste
-    checkInterval: 3600    // Check every hour
+ wasteThreshold: 0.30, // VACUUM at 30% waste
+ checkInterval: 3600 // Check every hour
 )
 
-// Done! Database maintains itself ✅
+// Done! Database maintains itself
 ```
 
 ---
@@ -77,24 +77,24 @@ print("File size: \(stats.fileSize / 1024 / 1024) MB")
 
 ```swift
 // Conservative (less frequent VACUUM)
-db.setGCPolicy(.conservative)  // 50% threshold
+db.setGCPolicy(.conservative) // 50% threshold
 
 // Balanced (recommended)
-db.setGCPolicy(.balanced)  // 30% threshold
+db.setGCPolicy(.balanced) // 30% threshold
 
 // Aggressive (frequent VACUUM)
-db.setGCPolicy(.aggressive)  // 15% threshold
+db.setGCPolicy(.aggressive) // 15% threshold
 
 // Space-saving (VACUUM at 10 MB or 20%)
 db.setGCPolicy(.spaceSaving)
 
 // Custom policy
 db.setGCPolicy(GCPolicy(
-    name: "My Policy",
-    description: "VACUUM when > 100 MB wasted",
-    shouldVacuum: { stats in
-        stats.wastedSpace > 100_000_000
-    }
+ name: "My Policy",
+ description: "VACUUM when > 100 MB wasted",
+ shouldVacuum: { stats in
+ stats.wastedSpace > 100_000_000
+ }
 ))
 ```
 
@@ -105,18 +105,18 @@ db.setGCPolicy(GCPolicy(
 ```swift
 let health = try await db.checkGCHealth()
 
-print(health.status)  // .healthy, .warning, or .critical
+print(health.status) //.healthy,.warning, or.critical
 
 if health.needsAttention {
-    print("Issues:")
-    for issue in health.issues {
-        print("  • \(issue)")
-    }
-    
-    print("Recommendations:")
-    for rec in health.recommendations {
-        print("  → \(rec)")
-    }
+ print("Issues:")
+ for issue in health.issues {
+ print(" • \(issue)")
+ }
+
+ print("Recommendations:")
+ for rec in health.recommendations {
+ print(" → \(rec)")
+ }
 }
 ```
 
@@ -126,7 +126,7 @@ if health.needsAttention {
 
 ```swift
 let status = try await db.gcStatus()
-// Output: "✅ Healthy: 5.2% waste"
+// Output: " Healthy: 5.2% waste"
 ```
 
 ---
@@ -139,7 +139,7 @@ print(result)
 
 // Output:
 // VACUUM: Reclaimed 15 MB
-// Status: ✅ Healthy
+// Status: Healthy
 ```
 
 ---
@@ -164,11 +164,11 @@ print(report)
 
 | Feature | Overhead | Acceptable? |
 |---------|----------|-------------|
-| Page reuse | +0.5% | ✅ YES |
-| VACUUM | Blocks DB (~1s) | ✅ YES (rare) |
-| Auto-VACUUM | < 0.01% | ✅ YES |
+| Page reuse | +0.5% | YES |
+| VACUUM | Blocks DB (~1s) | YES (rare) |
+| Auto-VACUUM | < 0.01% | YES |
 
-**Total impact: Negligible** ✅
+**Total impact: Negligible**
 
 ---
 
@@ -186,7 +186,7 @@ print(report)
 // File size: 12 MB (0% waste!)
 
 // With auto-VACUUM:
-// File stays optimal automatically ✅
+// File stays optimal automatically
 ```
 
 ---

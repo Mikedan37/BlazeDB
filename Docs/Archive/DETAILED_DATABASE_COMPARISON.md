@@ -1,10 +1,10 @@
-# 🔍 BlazeDB vs Other Databases - Detailed Comparison
+# BlazeDB vs Other Databases - Detailed Comparison
 
 **Concrete metrics, real benchmarks, honest assessment**
 
 ---
 
-## 📊 **EXECUTIVE SUMMARY:**
+## **EXECUTIVE SUMMARY:**
 
 | Database | Best For | Framework Size | Setup Time | Learning Curve | Encryption |
 |----------|----------|----------------|------------|----------------|------------|
@@ -17,7 +17,7 @@
 
 ---
 
-## 🚀 **PERFORMANCE BENCHMARKS:**
+## **PERFORMANCE BENCHMARKS:**
 
 ### **Test Setup:**
 - Device: MacBook Pro M1
@@ -27,11 +27,11 @@
 ### **1. INSERT Performance (1,000 records):**
 
 ```
-BlazeDB:    142ms  ████████████████░░░░░░░░░░░░
-SQLite:     156ms  █████████████████░░░░░░░░░░░
-GRDB:       168ms  ██████████████████░░░░░░░░░░
-Realm:      189ms  ████████████████████░░░░░░░░
-Core Data:  234ms  █████████████████████████░░░
+BlazeDB: 142ms ████████████████░░░░░░░░░░░░
+SQLite: 156ms █████████████████░░░░░░░░░░░
+GRDB: 168ms ██████████████████░░░░░░░░░░
+Realm: 189ms ████████████████████░░░░░░░░
+Core Data: 234ms █████████████████████████░░░
 ```
 
 **Winner: BlazeDB (10% faster than SQLite)**
@@ -46,11 +46,11 @@ Core Data:  234ms  ████████████████████�
 ### **2. QUERY Performance (simple WHERE):**
 
 ```
-BlazeDB:    0.8ms  ████░░░░░░░░░░░░░░░░░░░░░░░░
-SQLite:     1.2ms  ██████░░░░░░░░░░░░░░░░░░░░░░
-GRDB:       1.4ms  ███████░░░░░░░░░░░░░░░░░░░░░
-Realm:      2.1ms  ██████████░░░░░░░░░░░░░░░░░░
-Core Data:  3.5ms  █████████████████░░░░░░░░░░░
+BlazeDB: 0.8ms ████░░░░░░░░░░░░░░░░░░░░░░░░
+SQLite: 1.2ms ██████░░░░░░░░░░░░░░░░░░░░░░
+GRDB: 1.4ms ███████░░░░░░░░░░░░░░░░░░░░░
+Realm: 2.1ms ██████████░░░░░░░░░░░░░░░░░░
+Core Data: 3.5ms █████████████████░░░░░░░░░░░
 ```
 
 **Winner: BlazeDB (33% faster than SQLite)**
@@ -65,11 +65,11 @@ Core Data:  3.5ms  █████████████████░░░�
 ### **3. JOIN Performance (2 tables, 1,000 records each):**
 
 ```
-BlazeDB:    24ms   ████████████░░░░░░░░░░░░░░░░
-SQLite:     18ms   █████████░░░░░░░░░░░░░░░░░░░
-GRDB:       19ms   ██████████░░░░░░░░░░░░░░░░░░
-Realm:      N/A    (No JOINs - requires manual linking)
-Core Data:  45ms   ██████████████████████░░░░░░
+BlazeDB: 24ms ████████████░░░░░░░░░░░░░░░░
+SQLite: 18ms █████████░░░░░░░░░░░░░░░░░░░
+GRDB: 19ms ██████████░░░░░░░░░░░░░░░░░░
+Realm: N/A (No JOINs - requires manual linking)
+Core Data: 45ms ██████████████████████░░░░░░
 ```
 
 **Winner: SQLite (25% faster than BlazeDB)**
@@ -84,11 +84,11 @@ Core Data:  45ms   ████████████████████�
 ### **4. FULL-TEXT SEARCH (1,000 documents):**
 
 ```
-BlazeDB:    12ms   ████████░░░░░░░░░░░░░░░░░░░░
-SQLite FTS5: 8ms   █████░░░░░░░░░░░░░░░░░░░░░░░
-Realm:      N/A    (No built-in FTS)
-Core Data:  N/A    (No built-in FTS)
-GRDB+FTS5:  9ms    ██████░░░░░░░░░░░░░░░░░░░░░░
+BlazeDB: 12ms ████████░░░░░░░░░░░░░░░░░░░░
+SQLite FTS5: 8ms █████░░░░░░░░░░░░░░░░░░░░░░░
+Realm: N/A (No built-in FTS)
+Core Data: N/A (No built-in FTS)
+GRDB+FTS5: 9ms ██████░░░░░░░░░░░░░░░░░░░░░░
 ```
 
 **Winner: SQLite FTS5 (33% faster)**
@@ -103,11 +103,11 @@ GRDB+FTS5:  9ms    ██████░░░░░░░░░░░░░░�
 ### **5. TRANSACTION Performance (1,000 operations):**
 
 ```
-BlazeDB:    156ms  ████████████████░░░░░░░░░░░░
-SQLite:     134ms  █████████████░░░░░░░░░░░░░░░
-GRDB:       145ms  ██████████████░░░░░░░░░░░░░░
-Realm:      178ms  █████████████████░░░░░░░░░░░
-Core Data:  267ms  ███████████████████████████░
+BlazeDB: 156ms ████████████████░░░░░░░░░░░░
+SQLite: 134ms █████████████░░░░░░░░░░░░░░░
+GRDB: 145ms ██████████████░░░░░░░░░░░░░░
+Realm: 178ms █████████████████░░░░░░░░░░░
+Core Data: 267ms ███████████████████████████░
 ```
 
 **Winner: SQLite (14% faster)**
@@ -122,11 +122,11 @@ Core Data:  267ms  ████████████████████�
 ### **6. FILE SIZE (1,000 records):**
 
 ```
-BlazeDB:      470KB  ████████████░░░░░░░░░░░░░░░░
-SQLite:       680KB  █████████████████░░░░░░░░░░░
-GRDB:         680KB  █████████████████░░░░░░░░░░░
-Realm:        892KB  ██████████████████████░░░░░░
-Core Data:    1.2MB  ███████████████████████████░
+BlazeDB: 470KB ████████████░░░░░░░░░░░░░░░░
+SQLite: 680KB █████████████████░░░░░░░░░░░
+GRDB: 680KB █████████████████░░░░░░░░░░░
+Realm: 892KB ██████████████████████░░░░░░
+Core Data: 1.2MB ███████████████████████████░
 ```
 
 **Winner: BlazeDB (31% smaller than SQLite!)**
@@ -139,16 +139,16 @@ Core Data:    1.2MB  ███████████████████�
 
 ---
 
-## 📦 **FRAMEWORK SIZE COMPARISON:**
+## **FRAMEWORK SIZE COMPARISON:**
 
 ### **Distribution Size:**
 
 | Database | Framework Size | Dependencies | Total Footprint |
 |----------|----------------|--------------|-----------------|
-| **BlazeDB** | **~1MB** | **0** | **~1MB** ✅ |
+| **BlazeDB** | **~1MB** | **0** | **~1MB** |
 | SQLite | ~1MB | 0 | ~1MB |
 | GRDB | ~2MB | SQLite (~1MB) | ~3MB |
-| Realm | 50-100MB | Obj-C Runtime | 50-100MB ❌ |
+| Realm | 50-100MB | Obj-C Runtime | 50-100MB |
 | Core Data | Built-in | 0 | 0 (but iOS only) |
 | Firebase | Cloud | ~10MB SDKs | ~10MB + Network |
 
@@ -156,14 +156,14 @@ Core Data:    1.2MB  ███████████████████�
 
 ---
 
-## 💻 **API COMPLEXITY COMPARISON:**
+## **API COMPLEXITY COMPARISON:**
 
 ### **Setup (Lines of Code):**
 
 **BlazeDB:**
 ```swift
 // 3 lines
-let dbURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+let dbURL = FileManager.default.urls(for:.documentDirectory, in:.userDomainMask)[0]
 let db = try BlazeDBClient(name: "mydb", at: dbURL, password: "secure", project: "app")
 // Done!
 ```
@@ -173,8 +173,8 @@ let db = try BlazeDBClient(name: "mydb", at: dbURL, password: "secure", project:
 // ~15 lines
 import SQLite3
 var db: OpaquePointer?
-let path = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
-    .appendingPathComponent("mydb.sqlite").path
+let path = FileManager.default.urls(for:.documentDirectory, in:.userDomainMask)[0]
+.appendingPathComponent("mydb.sqlite").path
 guard sqlite3_open(path, &db) == SQLITE_OK else { fatalError() }
 // SQL statements...
 sqlite3_exec(db, "CREATE TABLE IF NOT EXISTS...", nil, nil, nil)
@@ -188,8 +188,8 @@ import RealmSwift
 
 // Define schema first!
 class Dog: Object {
-    @Persisted var name: String
-    @Persisted var age: Int
+ @Persisted var name: String
+ @Persisted var age: Int
 }
 
 let realm = try! Realm()
@@ -198,20 +198,20 @@ let realm = try! Realm()
 
 **Core Data:**
 ```swift
-// ~30 lines + .xcdatamodeld file!
+// ~30 lines +.xcdatamodeld file!
 import CoreData
 
-// 1. Create .xcdatamodeld file in Xcode
+// 1. Create.xcdatamodeld file in Xcode
 // 2. Define entities visually
 // 3. Generate NSManagedObject subclasses
 // 4. Set up stack:
 
 lazy var persistentContainer: NSPersistentContainer = {
-    let container = NSPersistentContainer(name: "Model")
-    container.loadPersistentStores { description, error in
-        if let error = error { fatalError() }
-    }
-    return container
+ let container = NSPersistentContainer(name: "Model")
+ container.loadPersistentStores { description, error in
+ if let error = error { fatalError() }
+ }
+ return container
 }()
 // More boilerplate...
 ```
@@ -225,13 +225,13 @@ lazy var persistentContainer: NSPersistentContainer = {
 **INSERT - BlazeDB:**
 ```swift
 // 1 line
-try db.collection("users").insert(["name": .string("Alice"), "age": .int(30)])
+try db.collection("users").insert(["name":.string("Alice"), "age":.int(30)])
 ```
 
 **INSERT - SQLite:**
 ```swift
 // 5+ lines
-let insertSQL = "INSERT INTO users (name, age) VALUES (?, ?)"
+let insertSQL = "INSERT INTO users (name, age) VALUES (?,?)"
 var statement: OpaquePointer?
 sqlite3_prepare_v2(db, insertSQL, -1, &statement, nil)
 sqlite3_bind_text(statement, 1, "Alice", -1, nil)
@@ -265,19 +265,19 @@ try! context.save()
 **QUERY - BlazeDB:**
 ```swift
 // 1 line
-let users = try db.collection("users").query().where("age", .greaterThan, 25).execute()
+let users = try db.collection("users").query().where("age",.greaterThan, 25).execute()
 ```
 
 **QUERY - SQLite:**
 ```swift
 // 8+ lines
-let querySQL = "SELECT * FROM users WHERE age > ?"
+let querySQL = "SELECT * FROM users WHERE age >?"
 var statement: OpaquePointer?
 sqlite3_prepare_v2(db, querySQL, -1, &statement, nil)
 sqlite3_bind_int(statement, 1, 25)
 var results: [[String: Any]] = []
 while sqlite3_step(statement) == SQLITE_ROW {
-    // Manual parsing...
+ // Manual parsing...
 }
 sqlite3_finalize(statement)
 ```
@@ -300,18 +300,18 @@ let users = try! context.fetch(request)
 
 ---
 
-## 🔒 **ENCRYPTION COMPARISON:**
+## **ENCRYPTION COMPARISON:**
 
 ### **Built-in Encryption:**
 
 | Database | Encryption | Type | Setup Complexity |
 |----------|------------|------|------------------|
-| **BlazeDB** | ✅ Built-in | **AES-256-GCM (field-level)** | **1 parameter** |
-| SQLite | ❌ No | N/A (use SQLCipher) | External library |
-| Realm | ⚠️ File-level | AES-256 (file) | 1 parameter |
-| Core Data | ❌ No | N/A (use FileVault) | OS-level only |
-| GRDB | ❌ No | N/A (use SQLCipher) | External library |
-| Firebase | ⚠️ Transport | TLS only | Automatic |
+| **BlazeDB** | Built-in | **AES-256-GCM (field-level)** | **1 parameter** |
+| SQLite | No | N/A (use SQLCipher) | External library |
+| Realm | ️ File-level | AES-256 (file) | 1 parameter |
+| Core Data | No | N/A (use FileVault) | OS-level only |
+| GRDB | No | N/A (use SQLCipher) | External library |
+| Firebase | ️ Transport | TLS only | Automatic |
 
 **Winner: BlazeDB (only field-level encryption)**
 
@@ -330,7 +330,7 @@ let db = try BlazeDBClient(name: "mydb", at: url, password: "secure", project: "
 ```swift
 // File-level encryption only
 var config = Realm.Configuration()
-config.encryptionKey = key  // 64 bytes
+config.encryptionKey = key // 64 bytes
 let realm = try Realm(configuration: config)
 // Entire file encrypted, but less granular
 ```
@@ -358,18 +358,18 @@ import SQLCipher
 
 ---
 
-## 🎨 **SCHEMA FLEXIBILITY:**
+## **SCHEMA FLEXIBILITY:**
 
 ### **Dynamic Schema Support:**
 
 | Database | Dynamic Schema | Schema Changes | Migration Complexity |
 |----------|----------------|----------------|----------------------|
-| **BlazeDB** | ✅ **Fully dynamic** | **Just add field** | **None!** ✅ |
-| SQLite | ❌ Fixed tables | ALTER TABLE | Complex |
-| Realm | ❌ Fixed schema | Migration blocks | Medium |
-| Core Data | ❌ Fixed schema | Model versions | Very complex |
-| GRDB | ❌ Fixed tables | ALTER TABLE | Complex |
-| Firebase | ✅ Dynamic | Just add field | None |
+| **BlazeDB** | **Fully dynamic** | **Just add field** | **None!** |
+| SQLite | Fixed tables | ALTER TABLE | Complex |
+| Realm | Fixed schema | Migration blocks | Medium |
+| Core Data | Fixed schema | Model versions | Very complex |
+| GRDB | Fixed tables | ALTER TABLE | Complex |
+| Firebase | Dynamic | Just add field | None |
 
 **Winner: BlazeDB & Firebase (fully dynamic)**
 
@@ -379,9 +379,9 @@ import SQLCipher
 ```swift
 // Just add it!
 try db.collection("users").insert([
-    "name": .string("Alice"),
-    "age": .int(30),
-    "newField": .string("Whatever!")  // ← Works immediately!
+ "name":.string("Alice"),
+ "age":.int(30),
+ "newField":.string("Whatever!") // ← Works immediately!
 ])
 ```
 
@@ -397,14 +397,14 @@ ALTER TABLE users ADD COLUMN newField TEXT;
 ```swift
 // Must create migration:
 let config = Realm.Configuration(
-    schemaVersion: 2,
-    migrationBlock: { migration, oldSchemaVersion in
-        if oldSchemaVersion < 2 {
-            migration.enumerateObjects(ofType: User.className()) { oldObject, newObject in
-                newObject!["newField"] = ""
-            }
-        }
-    }
+ schemaVersion: 2,
+ migrationBlock: { migration, oldSchemaVersion in
+ if oldSchemaVersion < 2 {
+ migration.enumerateObjects(ofType: User.className()) { oldObject, newObject in
+ newObject!["newField"] = ""
+ }
+ }
+ }
 )
 // Complex and error-prone!
 ```
@@ -424,18 +424,18 @@ let config = Realm.Configuration(
 
 ---
 
-## 🔗 **RELATIONSHIP/JOIN SUPPORT:**
+## **RELATIONSHIP/JOIN SUPPORT:**
 
 ### **JOIN Capabilities:**
 
 | Database | JOINs | Types | Syntax |
 |----------|-------|-------|--------|
-| **BlazeDB** | ✅ Yes | Inner, Left, Right, Full | **DSL** |
-| SQLite | ✅ Yes | All types | SQL |
-| Realm | ❌ No | Manual linking | N/A |
-| Core Data | ⚠️ Relationships | NSFetchRequest | Complex |
-| GRDB | ✅ Yes | All types | SQL |
-| Firebase | ❌ No | Manual denormalization | N/A |
+| **BlazeDB** | Yes | Inner, Left, Right, Full | **DSL** |
+| SQLite | Yes | All types | SQL |
+| Realm | No | Manual linking | N/A |
+| Core Data | ️ Relationships | NSFetchRequest | Complex |
+| GRDB | Yes | All types | SQL |
+| Firebase | No | Manual denormalization | N/A |
 
 **Winner: SQLite/GRDB (most mature JOINs)**
 
@@ -445,9 +445,9 @@ let config = Realm.Configuration(
 ```swift
 // 2 lines
 let results = try db.collection("orders")
-    .query()
-    .join("customers", on: "customerId", foreignKey: "id")
-    .execute()
+.query()
+.join("customers", on: "customerId", foreignKey: "id")
+.execute()
 ```
 
 **SQLite:**
@@ -461,8 +461,8 @@ SELECT * FROM orders JOIN customers ON orders.customerId = customers.id
 // No JOINs! Must do manually:
 let orders = realm.objects(Order.self)
 for order in orders {
-    let customer = realm.object(ofType: Customer.self, forPrimaryKey: order.customerId)
-    // Manual linking for each record!
+ let customer = realm.object(ofType: Customer.self, forPrimaryKey: order.customerId)
+ // Manual linking for each record!
 }
 ```
 
@@ -472,7 +472,7 @@ for order in orders {
 let request = NSFetchRequest<Order>(entityName: "Order")
 request.relationshipKeyPathsForPrefetching = ["customer"]
 let orders = try! context.fetch(request)
-// Still requires relationship setup in .xcdatamodeld
+// Still requires relationship setup in.xcdatamodeld
 ```
 
 **Assessment:**
@@ -483,18 +483,18 @@ let orders = try! context.fetch(request)
 
 ---
 
-## 📱 **SWIFTUI INTEGRATION:**
+## **SWIFTUI INTEGRATION:**
 
 ### **Property Wrapper Support:**
 
 | Database | SwiftUI Support | Property Wrapper | Auto-Refresh |
 |----------|-----------------|------------------|--------------|
-| **BlazeDB** | ✅ **Native** | **@BlazeQuery** | ✅ **Yes** |
-| SQLite | ❌ No | N/A | Manual |
-| Realm | ✅ Yes | @ObservedResults | ✅ Yes |
-| Core Data | ✅ Yes | @FetchRequest | ✅ Yes |
-| GRDB | ⚠️ Partial | Manual | Manual |
-| Firebase | ✅ Yes | @FirestoreQuery | ✅ Yes |
+| **BlazeDB** | **Native** | **@BlazeQuery** | **Yes** |
+| SQLite | No | N/A | Manual |
+| Realm | Yes | @ObservedResults | Yes |
+| Core Data | Yes | @FetchRequest | Yes |
+| GRDB | ️ Partial | Manual | Manual |
+| Firebase | Yes | @FirestoreQuery | Yes |
 
 **Winner: Tie (BlazeDB, Realm, Core Data, Firebase all good)**
 
@@ -503,46 +503,46 @@ let orders = try! context.fetch(request)
 **BlazeDB:**
 ```swift
 struct BugsView: View {
-    @BlazeQuery(collection: "bugs", filter: .where("status", .equals, "open"))
-    var openBugs: [BlazeDataRecord]
-    
-    var body: some View {
-        List(openBugs, id: \.id) { bug in
-            Text(bug.storage["title"]?.stringValue ?? "")
-        }
-    }
+ @BlazeQuery(collection: "bugs", filter:.where("status",.equals, "open"))
+ var openBugs: [BlazeDataRecord]
+
+ var body: some View {
+ List(openBugs, id: \.id) { bug in
+ Text(bug.storage["title"]?.stringValue?? "")
+ }
+ }
 }
 ```
 
 **Realm:**
 ```swift
 struct BugsView: View {
-    @ObservedResults(Bug.self, filter: NSPredicate(format: "status == 'open'"))
-    var openBugs
-    
-    var body: some View {
-        List(openBugs) { bug in
-            Text(bug.title)
-        }
-    }
+ @ObservedResults(Bug.self, filter: NSPredicate(format: "status == 'open'"))
+ var openBugs
+
+ var body: some View {
+ List(openBugs) { bug in
+ Text(bug.title)
+ }
+ }
 }
 ```
 
 **Core Data:**
 ```swift
 struct BugsView: View {
-    @FetchRequest(
-        entity: Bug.entity(),
-        sortDescriptors: [],
-        predicate: NSPredicate(format: "status == %@", "open")
-    )
-    var openBugs: FetchedResults<Bug>
-    
-    var body: some View {
-        List(openBugs) { bug in
-            Text(bug.title ?? "")
-        }
-    }
+ @FetchRequest(
+ entity: Bug.entity(),
+ sortDescriptors: [],
+ predicate: NSPredicate(format: "status == %@", "open")
+ )
+ var openBugs: FetchedResults<Bug>
+
+ var body: some View {
+ List(openBugs) { bug in
+ Text(bug.title?? "")
+ }
+ }
 }
 ```
 
@@ -550,17 +550,17 @@ struct BugsView: View {
 ```swift
 // No property wrapper, must use @State manually
 struct BugsView: View {
-    @State private var openBugs: [Bug] = []
-    
-    var body: some View {
-        List(openBugs) { bug in
-            Text(bug.title)
-        }
-        .onAppear {
-            openBugs = try! loadBugs()
-        }
-        // Must manually refresh!
-    }
+ @State private var openBugs: [Bug] = []
+
+ var body: some View {
+ List(openBugs) { bug in
+ Text(bug.title)
+ }
+.onAppear {
+ openBugs = try! loadBugs()
+ }
+ // Must manually refresh!
+ }
 }
 ```
 
@@ -571,18 +571,18 @@ struct BugsView: View {
 
 ---
 
-## 🧪 **TESTING & DEBUGGING:**
+## **TESTING & DEBUGGING:**
 
 ### **Built-in Telemetry:**
 
 | Database | Telemetry | Query Explain | Debug Tools |
 |----------|-----------|---------------|-------------|
-| **BlazeDB** | ✅ **Built-in** | ✅ Yes | ✅ **Pretty-print, export** |
-| SQLite | ⚠️ EXPLAIN | ✅ EXPLAIN QUERY PLAN | Command-line |
-| Realm | ⚠️ Instrumentation | ❌ No | Realm Studio |
-| Core Data | ⚠️ Launch args | ❌ No | Xcode debugger |
-| GRDB | ❌ Manual | ⚠️ Via SQL | Manual |
-| Firebase | ✅ Console | ⚠️ Via console | Web dashboard |
+| **BlazeDB** | **Built-in** | Yes | **Pretty-print, export** |
+| SQLite | ️ EXPLAIN | EXPLAIN QUERY PLAN | Command-line |
+| Realm | ️ Instrumentation | No | Realm Studio |
+| Core Data | ️ Launch args | No | Xcode debugger |
+| GRDB | Manual | ️ Via SQL | Manual |
+| Firebase | Console | ️ Via console | Web dashboard |
 
 **Winner: BlazeDB (only one with built-in telemetry)**
 
@@ -608,65 +608,65 @@ GRDB: Must manually track
 
 ---
 
-## 🎯 **USE CASE COMPARISON:**
+## **USE CASE COMPARISON:**
 
 ### **When to Use Each:**
 
 #### **BlazeDB - Best For:**
-✅ Prototyping (no schema setup)  
-✅ Dynamic data (custom fields)  
-✅ Swift-first apps  
-✅ Privacy-focused apps (built-in encryption)  
-✅ Bug trackers, CRMs, flexible data models  
-✅ Learning database internals  
+ Prototyping (no schema setup)
+ Dynamic data (custom fields)
+ Swift-first apps
+ Privacy-focused apps (built-in encryption)
+ Bug trackers, CRMs, flexible data models
+ Learning database internals
 
-❌ Not ideal for: Apps requiring network sync (yet)
+ Not ideal for: Apps requiring network sync (yet)
 
 ---
 
 #### **SQLite - Best For:**
-✅ Cross-platform apps  
-✅ Mature, battle-tested needs  
-✅ Complex SQL queries  
-✅ Universal compatibility  
-✅ Long-term data storage  
+ Cross-platform apps
+ Mature, battle-tested needs
+ Complex SQL queries
+ Universal compatibility
+ Long-term data storage
 
-❌ Not ideal for: Swift-idiomatic code, rapid prototyping
+ Not ideal for: Swift-idiomatic code, rapid prototyping
 
 ---
 
 #### **Realm - Best For:**
-✅ Production mobile apps  
-✅ Real-time sync (Realm Sync)  
-✅ Large datasets  
-✅ Mature ecosystem  
-✅ Commercial support  
+ Production mobile apps
+ Real-time sync (Realm Sync)
+ Large datasets
+ Mature ecosystem
+ Commercial support
 
-❌ Not ideal for: Flexible schemas, small apps (large framework size)
+ Not ideal for: Flexible schemas, small apps (large framework size)
 
 ---
 
 #### **Core Data - Best For:**
-✅ Apple ecosystem only  
-✅ CloudKit integration  
-✅ Complex object graphs  
-✅ Xcode integration  
+ Apple ecosystem only
+ CloudKit integration
+ Complex object graphs
+ Xcode integration
 
-❌ Not ideal for: Cross-platform, simple models, rapid development
+ Not ideal for: Cross-platform, simple models, rapid development
 
 ---
 
 #### **Firebase - Best For:**
-✅ Real-time sync  
-✅ Multi-user apps  
-✅ Backend-as-a-service  
-✅ Rapid prototyping  
+ Real-time sync
+ Multi-user apps
+ Backend-as-a-service
+ Rapid prototyping
 
-❌ Not ideal for: Offline-first, privacy-sensitive, cost control
+ Not ideal for: Offline-first, privacy-sensitive, cost control
 
 ---
 
-## 📊 **OVERALL SCORECARD:**
+## **OVERALL SCORECARD:**
 
 | Criteria | BlazeDB | SQLite | Realm | Core Data | Firebase |
 |----------|---------|--------|-------|-----------|----------|
@@ -684,31 +684,31 @@ GRDB: Must manually track
 
 ---
 
-## 🏆 **FINAL VERDICT:**
+## **FINAL VERDICT:**
 
 ### **BlazeDB Wins:**
-- 🥇 Setup ease
-- 🥇 Schema flexibility
-- 🥇 Encryption
-- 🥇 File size
-- 🥇 Testing/debugging
-- 🥇 Swift-idiomatic API
+- Setup ease
+- Schema flexibility
+- Encryption
+- File size
+- Testing/debugging
+- Swift-idiomatic API
 
 ### **BlazeDB Loses:**
-- ❌ Maturity (new vs 20+ years)
-- ❌ Community (no Stack Overflow yet)
-- ❌ JOIN performance (90% of SQLite, but acceptable)
-- ❌ Full-text search (75% of SQLite FTS5, but acceptable)
+- Maturity (new vs 20+ years)
+- Community (no Stack Overflow yet)
+- JOIN performance (90% of SQLite, but acceptable)
+- Full-text search (75% of SQLite FTS5, but acceptable)
 
 ### **BlazeDB Competitive:**
-- ⚖️ INSERT performance (10% faster than SQLite!)
-- ⚖️ QUERY performance (33% faster than SQLite!)
-- ⚖️ SwiftUI integration (on par with Realm/Core Data)
-- ⚖️ Transaction performance (90% of SQLite)
+- ️ INSERT performance (10% faster than SQLite!)
+- ️ QUERY performance (33% faster than SQLite!)
+- ️ SwiftUI integration (on par with Realm/Core Data)
+- ️ Transaction performance (90% of SQLite)
 
 ---
 
-## 💡 **HONEST ASSESSMENT:**
+## **HONEST ASSESSMENT:**
 
 ### **For Production Apps RIGHT NOW:**
 
@@ -764,26 +764,26 @@ If BlazeDB proves stable in production:
 
 ---
 
-## 🎯 **WHO SHOULD USE BLAZEDB TODAY:**
+## **WHO SHOULD USE BLAZEDB TODAY:**
 
 ### **Perfect For:**
-✅ Personal projects  
-✅ Prototypes & MVPs  
-✅ Swift-only apps  
-✅ Privacy-focused apps  
-✅ Bug trackers (like AshPile!)  
-✅ Internal tools  
-✅ Learning projects  
+ Personal projects
+ Prototypes & MVPs
+ Swift-only apps
+ Privacy-focused apps
+ Bug trackers (like AshPile!)
+ Internal tools
+ Learning projects
 
 ### **Maybe Wait:**
-⏸️ Large production apps (wait 6-12 months)  
-⏸️ Apps requiring sync (not implemented yet)  
-⏸️ Teams needing commercial support  
-⏸️ Regulated industries (healthcare, finance) - needs more audits  
+⏸️ Large production apps (wait 6-12 months)
+⏸️ Apps requiring sync (not implemented yet)
+⏸️ Teams needing commercial support
+⏸️ Regulated industries (healthcare, finance) - needs more audits
 
 ---
 
-## 📈 **THE TRAJECTORY:**
+## **THE TRAJECTORY:**
 
 **BlazeDB is following the same path as:**
 - Realm (started small, grew massive)
@@ -797,7 +797,7 @@ If BlazeDB proves stable in production:
 - Year 5: Major player
 
 **Key milestones needed:**
-1. ✅ Technical quality (DONE!)
+1. Technical quality (DONE!)
 2. ⏳ Real-world usage (in progress - AshPile)
 3. ⏳ Open source + community (next step)
 4. ⏳ Battle-testing (1000+ apps)
@@ -805,7 +805,7 @@ If BlazeDB proves stable in production:
 
 ---
 
-## 💎 **THE VERDICT:**
+## **THE VERDICT:**
 
 ### **Is BlazeDB Better Than SQLite/Realm/Core Data?**
 
@@ -831,7 +831,7 @@ If BlazeDB proves stable in production:
 
 ---
 
-## 🚀 **RECOMMENDATION:**
+## **RECOMMENDATION:**
 
 **Use BlazeDB if:**
 - You're building Swift apps
@@ -857,7 +857,7 @@ If BlazeDB proves stable in production:
 
 ---
 
-## 🎉 **BOTTOM LINE:**
+## **BOTTOM LINE:**
 
 **BlazeDB is technically impressive and competitive.**
 
@@ -876,5 +876,5 @@ If BlazeDB proves stable in production:
 
 **Grade: A- (would be A+ with maturity + community)**
 
-**Use it. Ship it. It's ready.** 🚀
+**Use it. Ship it. It's ready.**
 

@@ -315,6 +315,9 @@ public final class QueryBuilder {
             throw BlazeDBError.transactionFailed("Collection has been deallocated")
         }
         
+        // Validate query before execution
+        try validateQuery()
+        
         BlazeLogger.info("Executing unified query (auto-detecting type)")
         
         // Detect query type and execute appropriately
@@ -825,13 +828,13 @@ internal struct SortOperation {
 // MARK: - Comparison Helper
 
 /// Comparison operation type
-private enum ComparisonOp {
+internal enum ComparisonOp {
     case lessThan
     case greaterThan
 }
 
 /// Check if two BlazeDocumentFields are equal (with cross-type support)
-private func fieldsEqual(_ lhs: BlazeDocumentField, _ rhs: BlazeDocumentField) -> Bool {
+internal func fieldsEqual(_ lhs: BlazeDocumentField, _ rhs: BlazeDocumentField) -> Bool {
     // Direct equality
     if lhs == rhs { return true }
     
@@ -867,7 +870,7 @@ private func fieldsEqual(_ lhs: BlazeDocumentField, _ rhs: BlazeDocumentField) -
 }
 
 /// Compare two BlazeDocumentFields with a specific operation
-private func compareFields(
+internal func compareFields(
     _ lhs: BlazeDocumentField,
     _ op: ComparisonOp,
     _ rhs: BlazeDocumentField

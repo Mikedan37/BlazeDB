@@ -1,4 +1,4 @@
-# 🚀 Production Deployment Guide
+# Production Deployment Guide
 
 **Everything you need to deploy BlazeDB in production**
 
@@ -10,16 +10,16 @@
 
 ```swift
 let db = try BlazeDBClient(
-    name: "MyApp",
-    fileURL: productionURL,
-    password: strongPassword  // Use secure password!
+ name: "MyApp",
+ fileURL: productionURL,
+ password: strongPassword // Use secure password!
 )
 ```
 
 **Security:**
-- ✅ Use strong password (16+ characters)
-- ✅ Store password in Keychain (not hardcoded)
-- ✅ All data encrypted automatically (AES-256)
+- Use strong password (16+ characters)
+- Store password in Keychain (not hardcoded)
+- All data encrypted automatically (AES-256)
 
 ---
 
@@ -27,7 +27,7 @@ let db = try BlazeDBClient(
 
 ```swift
 // Enable telemetry (automatic performance tracking)
-db.telemetry.enable(samplingRate: 0.01)  // 1% sampling
+db.telemetry.enable(samplingRate: 0.01) // 1% sampling
 
 // Why: Find production issues, track performance, monitor errors
 // Cost: < 1% overhead
@@ -40,8 +40,8 @@ db.telemetry.enable(samplingRate: 0.01)  // 1% sampling
 ```swift
 // Enable auto-VACUUM (prevent database bloat)
 db.enableAutoVacuum(
-    wasteThreshold: 0.30,  // VACUUM at 30% waste
-    checkInterval: 3600    // Check every hour
+ wasteThreshold: 0.30, // VACUUM at 30% waste
+ checkInterval: 3600 // Check every hour
 )
 
 // Why: Keeps database small, prevents mysterious growth
@@ -54,11 +54,11 @@ db.enableAutoVacuum(
 
 ```swift
 let schema = DatabaseSchema(fields: [
-    FieldSchema(name: "title", type: .string, required: true),
-    FieldSchema(name: "status", type: .string, required: true, validator: { field in
-        guard case .string(let value) = field else { return false }
-        return ["open", "in-progress", "closed"].contains(value)
-    })
+ FieldSchema(name: "title", type:.string, required: true),
+ FieldSchema(name: "status", type:.string, required: true, validator: { field in
+ guard case.string(let value) = field else { return false }
+ return ["open", "in-progress", "closed"].contains(value)
+ })
 ])
 
 db.defineSchema(schema)
@@ -90,26 +90,26 @@ try db.collection.enableSearch(on: ["title", "description"])
 ```swift
 // Periodic health checks
 Task.detached {
-    while appIsRunning {
-        try await Task.sleep(for: .hours(1))
-        
-        // Check GC health
-        let gcHealth = try await db.checkGCHealth()
-        if gcHealth.status == .critical {
-            BlazeLogger.error("Database needs VACUUM: \(gcHealth.issues)")
-            try await db.vacuum()
-        }
-        
-        // Check performance
-        let telemetry = try await db.telemetry.getSummary()
-        if telemetry.avgDuration > 50 {
-            BlazeLogger.warn("Performance degraded: \(telemetry.avgDuration)ms avg")
-        }
-        
-        if telemetry.successRate < 95 {
-            BlazeLogger.warn("High error rate: \(100 - telemetry.successRate)%")
-        }
-    }
+ while appIsRunning {
+ try await Task.sleep(for:.hours(1))
+
+ // Check GC health
+ let gcHealth = try await db.checkGCHealth()
+ if gcHealth.status ==.critical {
+ BlazeLogger.error("Database needs VACUUM: \(gcHealth.issues)")
+ try await db.vacuum()
+ }
+
+ // Check performance
+ let telemetry = try await db.telemetry.getSummary()
+ if telemetry.avgDuration > 50 {
+ BlazeLogger.warn("Performance degraded: \(telemetry.avgDuration)ms avg")
+ }
+
+ if telemetry.successRate < 95 {
+ BlazeLogger.warn("High error rate: \(100 - telemetry.successRate)%")
+ }
+ }
 }
 ```
 
@@ -120,17 +120,17 @@ Task.detached {
 ```swift
 // Daily backups
 Task.detached {
-    while appIsRunning {
-        try await Task.sleep(for: .hours(24))
-        
-        let backupURL = getBackupURL(for: Date())
-        let stats = try await db.backup(to: backupURL)
-        
-        BlazeLogger.info("Backup created: \(stats.recordCount) records, \(stats.fileSize / 1024 / 1024) MB")
-        
-        // Optional: Upload to cloud storage
-        // uploadToCloud(backupURL)
-    }
+ while appIsRunning {
+ try await Task.sleep(for:.hours(24))
+
+ let backupURL = getBackupURL(for: Date())
+ let stats = try await db.backup(to: backupURL)
+
+ BlazeLogger.info("Backup created: \(stats.recordCount) records, \(stats.fileSize / 1024 / 1024) MB")
+
+ // Optional: Upload to cloud storage
+ // uploadToCloud(backupURL)
+ }
 }
 ```
 
@@ -141,22 +141,22 @@ Task.detached {
 ```swift
 // Global error handler
 func handleDatabaseError(_ error: Error) {
-    switch error {
-    case BlazeDBError.recordNotFound:
-        // User-facing: "Item not found"
-        // Log: Track frequency
-        
-    case BlazeDBError.diskFull:
-        // Critical: Alert user, clear cache
-        // Log: Send alert to dev team
-        
-    case BlazeDBError.databaseLocked:
-        // Retry with backoff
-        
-    default:
-        // Log unexpected errors
-        BlazeLogger.error("Unexpected DB error: \(error)")
-    }
+ switch error {
+ case BlazeDBError.recordNotFound:
+ // User-facing: "Item not found"
+ // Log: Track frequency
+
+ case BlazeDBError.diskFull:
+ // Critical: Alert user, clear cache
+ // Log: Send alert to dev team
+
+ case BlazeDBError.databaseLocked:
+ // Retry with backoff
+
+ default:
+ // Log unexpected errors
+ BlazeLogger.error("Unexpected DB error: \(error)")
+ }
 }
 ```
 
@@ -167,12 +167,12 @@ func handleDatabaseError(_ error: Error) {
 ### 1. Use Batch Operations
 
 ```swift
-// ❌ Slow (100 individual operations)
+// Slow (100 individual operations)
 for record in records {
-    try db.insert(record)
+ try db.insert(record)
 }
 
-// ✅ Fast (1 batch operation, 3-5x faster)
+// Fast (1 batch operation, 3-5x faster)
 try db.insertMany(records)
 ```
 
@@ -186,8 +186,8 @@ let slowOps = try await db.telemetry.getSlowOperations(threshold: 50)
 
 // Add indexes for slow query fields
 for op in slowOps {
-    // If querying on "status" is slow:
-    try db.collection.createIndex(on: "status")
+ // If querying on "status" is slow:
+ try db.collection.createIndex(on: "status")
 }
 ```
 
@@ -197,11 +197,11 @@ for op in slowOps {
 
 ```swift
 // Enable caching
-db.enableQueryCache(ttl: 300)  // 5 minutes
+db.enableQueryCache(ttl: 300) // 5 minutes
 
 // Repeated queries are cached automatically
-let results1 = try db.query()...execute()  // Queries DB
-let results2 = try db.query()...execute()  // From cache ✅
+let results1 = try db.query()...execute() // Queries DB
+let results2 = try db.query()...execute() // From cache
 ```
 
 ---
@@ -209,10 +209,10 @@ let results2 = try db.query()...execute()  // From cache ✅
 ### 4. Pagination
 
 ```swift
-// ❌ Don't do this
-let allRecords = try db.fetchAll()  // Loads everything!
+// Don't do this
+let allRecords = try db.fetchAll() // Loads everything!
 
-// ✅ Do this
+// Do this
 let page = try db.fetchPage(offset: pageNumber * 20, limit: 20)
 ```
 
@@ -222,45 +222,45 @@ let page = try db.fetchPage(offset: pageNumber * 20, limit: 20)
 
 ```swift
 struct MonitoringDashboard: View {
-    let database: BlazeDBClient
-    @State private var telemetrySummary: TelemetrySummary?
-    @State private var gcHealth: GCHealthReport?
-    
-    var body: some View {
-        VStack {
-            // Performance
-            if let telemetry = telemetrySummary {
-                VStack {
-                    Text("📊 Performance")
-                    Text("Ops: \(telemetry.totalOperations)")
-                    Text("Avg: \(String(format: "%.2f", telemetry.avgDuration))ms")
-                        .foregroundColor(telemetry.avgDuration < 10 ? .green : .orange)
-                    Text("Success: \(String(format: "%.1f", telemetry.successRate))%")
-                        .foregroundColor(telemetry.successRate > 95 ? .green : .red)
-                }
-            }
-            
-            // GC Health
-            if let health = gcHealth {
-                VStack {
-                    Text("🧹 Database Health")
-                    Text("\(health.status.emoji) \(health.status.rawValue)")
-                    Text("Waste: \(String(format: "%.1f", health.wastePercentage))%")
-                }
-            }
-            
-            Button("Refresh") {
-                Task {
-                    telemetrySummary = try? await database.telemetry.getSummary()
-                    gcHealth = try? await database.checkGCHealth()
-                }
-            }
-        }
-        .task {
-            telemetrySummary = try? await database.telemetry.getSummary()
-            gcHealth = try? await database.checkGCHealth()
-        }
-    }
+ let database: BlazeDBClient
+ @State private var telemetrySummary: TelemetrySummary?
+ @State private var gcHealth: GCHealthReport?
+
+ var body: some View {
+ VStack {
+ // Performance
+ if let telemetry = telemetrySummary {
+ VStack {
+ Text(" Performance")
+ Text("Ops: \(telemetry.totalOperations)")
+ Text("Avg: \(String(format: "%.2f", telemetry.avgDuration))ms")
+.foregroundColor(telemetry.avgDuration < 10?.green:.orange)
+ Text("Success: \(String(format: "%.1f", telemetry.successRate))%")
+.foregroundColor(telemetry.successRate > 95?.green:.red)
+ }
+ }
+
+ // GC Health
+ if let health = gcHealth {
+ VStack {
+ Text(" Database Health")
+ Text("\(health.status.emoji) \(health.status.rawValue)")
+ Text("Waste: \(String(format: "%.1f", health.wastePercentage))%")
+ }
+ }
+
+ Button("Refresh") {
+ Task {
+ telemetrySummary = try? await database.telemetry.getSummary()
+ gcHealth = try? await database.checkGCHealth()
+ }
+ }
+ }
+.task {
+ telemetrySummary = try? await database.telemetry.getSummary()
+ gcHealth = try? await database.checkGCHealth()
+ }
+ }
 }
 ```
 
@@ -271,22 +271,22 @@ struct MonitoringDashboard: View {
 ```swift
 // Send alerts when issues detected
 func checkDatabaseHealth() async {
-    // Performance alerts
-    let telemetry = try? await db.telemetry.getSummary()
-    if let telemetry = telemetry, telemetry.avgDuration > 50 {
-        sendAlert("Database slow: \(telemetry.avgDuration)ms avg")
-    }
-    
-    // Error alerts
-    if let telemetry = telemetry, telemetry.successRate < 95 {
-        sendAlert("High error rate: \(100 - telemetry.successRate)%")
-    }
-    
-    // GC alerts
-    let health = try? await db.checkGCHealth()
-    if health?.status == .critical {
-        sendAlert("Database needs maintenance")
-    }
+ // Performance alerts
+ let telemetry = try? await db.telemetry.getSummary()
+ if let telemetry = telemetry, telemetry.avgDuration > 50 {
+ sendAlert("Database slow: \(telemetry.avgDuration)ms avg")
+ }
+
+ // Error alerts
+ if let telemetry = telemetry, telemetry.successRate < 95 {
+ sendAlert("High error rate: \(100 - telemetry.successRate)%")
+ }
+
+ // GC alerts
+ let health = try? await db.checkGCHealth()
+ if health?.status ==.critical {
+ sendAlert("Database needs maintenance")
+ }
 }
 ```
 
@@ -295,20 +295,20 @@ func checkDatabaseHealth() async {
 ## Production Best Practices
 
 **DO:**
-- ✅ Enable telemetry (monitor performance)
-- ✅ Enable auto-VACUUM (prevent bloat)
-- ✅ Create indexes (critical for performance)
-- ✅ Use batch operations (3-5x faster)
-- ✅ Implement backups (daily recommended)
-- ✅ Monitor health (hourly checks)
-- ✅ Handle errors gracefully
+- Enable telemetry (monitor performance)
+- Enable auto-VACUUM (prevent bloat)
+- Create indexes (critical for performance)
+- Use batch operations (3-5x faster)
+- Implement backups (daily recommended)
+- Monitor health (hourly checks)
+- Handle errors gracefully
 
 **DON'T:**
-- ❌ Use fetchAll() on large datasets
-- ❌ Skip indexes (queries will be slow)
-- ❌ Ignore telemetry warnings
-- ❌ Let database bloat (enable auto-VACUUM)
-- ❌ Hardcode passwords (use Keychain)
+- Use fetchAll() on large datasets
+- Skip indexes (queries will be slow)
+- Ignore telemetry warnings
+- Let database bloat (enable auto-VACUUM)
+- Hardcode passwords (use Keychain)
 
 ---
 
@@ -325,7 +325,7 @@ config.vacuumBeforeBackup = true
 db.configureGC(config)
 
 var telemetryConfig = TelemetryConfiguration()
-telemetryConfig.samplingRate = 0.01  // 1%
+telemetryConfig.samplingRate = 0.01 // 1%
 telemetryConfig.retentionDays = 30
 telemetryConfig.autoCleanup = true
 
@@ -346,7 +346,7 @@ print("Average: \(summary.avgDuration)ms")
 // 2. Find slow operations
 let slowOps = try await db.telemetry.getSlowOperations(threshold: 50)
 for op in slowOps {
-    print("SLOW: \(op.operation) - \(op.duration)ms")
+ print("SLOW: \(op.operation) - \(op.duration)ms")
 }
 
 // 3. Add indexes or optimize queries
@@ -363,7 +363,7 @@ print("Waste: \(stats.wastePercentage)%")
 
 // 2. If > 30% waste, run VACUUM
 if stats.wastePercentage > 30 {
-    try await db.vacuum()
+ try await db.vacuum()
 }
 
 // 3. Enable auto-VACUUM for future
@@ -381,17 +381,17 @@ let errors = try await db.telemetry.getErrors()
 // 2. Group by error type
 var errorCounts: [String: Int] = [:]
 for error in errors {
-    errorCounts[error.errorMessage, default: 0] += 1
+ errorCounts[error.errorMessage, default: 0] += 1
 }
 
 // 3. Fix most common errors
 for (message, count) in errorCounts.sorted(by: { $0.value > $1.value }) {
-    print("\(count)x: \(message)")
+ print("\(count)x: \(message)")
 }
 ```
 
 ---
 
-**BlazeDB is production-ready!** ✅  
-**Deploy with confidence!** 🚀
+**BlazeDB is production-ready!**
+**Deploy with confidence!**
 

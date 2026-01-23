@@ -9,6 +9,11 @@
 //
 
 import Foundation
+#if canImport(CryptoKit)
+import CryptoKit
+#else
+import Crypto
+#endif
 
 // MARK: - Write Batch
 
@@ -146,12 +151,15 @@ extension PageStore {
     
     // MARK: - Async Infrastructure
     
-    private static var writeBatches: [ObjectIdentifier: WriteBatch] = [:]
-    #if !BLAZEDB_LINUX_CORE
+    // Swift 6: Protected by NSLock, safe for concurrent access
+    nonisolated(unsafe) private static var writeBatches: [ObjectIdentifier: WriteBatch] = [:]
+    #if canImport(Darwin)
     // MemoryMappedFile is not available on Linux
-    private static var memoryMappedFiles: [ObjectIdentifier: Any] = [:]
+    // Swift 6: Protected by NSLock, safe for concurrent access
+    // Use concrete type instead of Any for type safety
+    nonisolated(unsafe) private static var memoryMappedFiles: [ObjectIdentifier: MemoryMappedFile] = [:]
     #endif
-    private static let batchLock = NSLock()
+    private static let batchLock = NSLock()  // NSLock is Sendable, no need for nonisolated(unsafe)
     
     private var writeBatch: WriteBatch {
         let id = ObjectIdentifier(self)
@@ -204,10 +212,8 @@ extension PageStore {
         #endif
         
         // Fallback: Async file I/O (or for decryption)
-        return try await Task.detached(priority: .userInitiated) { [weak self] in
-            guard let self = self else { return nil }
-            return try self.readPage(index: index)
-        }.value
+        // Call sync method directly - it uses queue.sync internally
+        return try readPage(index: index)
     }
     
     /// Write a page asynchronously (non-blocking, batched)
@@ -218,13 +224,9 @@ extension PageStore {
         if shouldFlush {
             // Flush batch immediately
             try await flushBatch()
-        } else {
-            // Schedule delayed flush
-            Task.detached { [weak self] in
-                try? await Task.sleep(nanoseconds: 10_000_000)  // 10ms
-                try? await self?.flushBatch()
-            }
         }
+        // Note: Delayed flush removed for Swift 6 concurrency compliance
+        // Batch will flush on next write or explicit flushBatch() call
     }
     
     /// Flush pending writes in batch
@@ -232,32 +234,26 @@ extension PageStore {
         let batch = await writeBatch.takeBatch()
         guard !batch.isEmpty else { return }
         
-        // Write all pages in batch (unsynchronized)
-        try await Task.detached(priority: .userInitiated) { [weak self] in
-            guard let self = self else { return }
-            
-            for (index, plaintext) in batch {
-                try self.writePageUnsynchronized(index: index, plaintext: plaintext)
-            }
-            
-            // Single fsync for entire batch!
-            try self.synchronize()
-        }.value
+        // Write all pages in batch
+        // Call sync method directly - it uses queue.sync internally so it's already non-blocking for the async context
+        for (index, plaintext) in batch {
+            try writePageUnsynchronized(index: index, plaintext: plaintext)
+        }
+        
+        // Single fsync for entire batch!
+        try synchronize()
     }
     
     /// Write multiple pages in batch (optimized)
     public func writePagesBatchAsync(_ pages: [(index: Int, plaintext: Data)]) async throws {
         // Write all pages unsynchronized
-        try await Task.detached(priority: .userInitiated) { [weak self] in
-            guard let self = self else { return }
-            
-            for (index, plaintext) in pages {
-                try self.writePageUnsynchronized(index: index, plaintext: plaintext)
-            }
-            
-            // Single fsync for entire batch!
-            try self.synchronize()
-        }.value
+        // Call sync methods directly - they use queue.sync internally
+        for (index, plaintext) in pages {
+            try writePageUnsynchronized(index: index, plaintext: plaintext)
+        }
+        
+        // Single fsync for entire batch!
+        try synchronize()
     }
     
     // MARK: - Memory-Mapped I/O

@@ -15,20 +15,20 @@ File → BlazeBinary → BlazeDataRecord
 ```
 
 **Key Characteristics:**
-- ✅ **Already optimal** - Uses `BlazeBinaryEncoder.encode()` directly
-- ✅ **No JSON** - Works with `BlazeDataRecord` natively
-- ✅ **Schema-less** - Can store any fields, any structure
-- ✅ **Used by BlazeDBClient** - Main collection type
-- ✅ **Supports indexes** - Secondary indexes, search indexes, spatial indexes
-- ✅ **Supports MVCC** - Multi-version concurrency control
+- **Already optimal** - Uses `BlazeBinaryEncoder.encode()` directly
+- **No JSON** - Works with `BlazeDataRecord` natively
+- **Schema-less** - Can store any fields, any structure
+- **Used by BlazeDBClient** - Main collection type
+- **Supports indexes** - Secondary indexes, search indexes, spatial indexes
+- **Supports MVCC** - Multi-version concurrency control
 
 **Example:**
 ```swift
 let record = BlazeDataRecord([
-    "title": .string("Test"),
-    "count": .int(42)
+ "title":.string("Test"),
+ "count":.int(42)
 ])
-let id = try collection.insert(record)  // Direct BlazeBinary encoding!
+let id = try collection.insert(record) // Direct BlazeBinary encoding!
 ```
 
 ## BlazeCollection
@@ -42,21 +42,21 @@ File → BlazeBinary → BlazeDataRecord → Record (Codable)
 ```
 
 **Key Characteristics:**
-- ✅ **Now optimal** - Uses `BlazeRecordEncoder`/`BlazeRecordDecoder` (no JSON!)
-- ✅ **Type-safe** - Compile-time type checking
-- ✅ **Simpler API** - Works with Swift structs/classes directly
-- ✅ **Less features** - No indexes, no MVCC (simpler = faster for basic use)
+- **Now optimal** - Uses `BlazeRecordEncoder`/`BlazeRecordDecoder` (no JSON!)
+- **Type-safe** - Compile-time type checking
+- **Simpler API** - Works with Swift structs/classes directly
+- **Less features** - No indexes, no MVCC (simpler = faster for basic use)
 
 **Example:**
 ```swift
 struct Bug: BlazeRecord {
-    var id: UUID
-    var title: String
-    var count: Int
+ var id: UUID
+ var title: String
+ var count: Int
 }
 
 let bug = Bug(id: UUID(), title: "Test", count: 42)
-try collection.insert(bug)  // Direct encoding via BlazeRecordEncoder!
+try collection.insert(bug) // Direct encoding via BlazeRecordEncoder!
 ```
 
 ## Architecture Comparison
@@ -66,10 +66,10 @@ try collection.insert(bug)  // Direct encoding via BlazeRecordEncoder!
 | **Input Type** | `BlazeDataRecord` | `Record: BlazeRecord` (Codable) |
 | **Encoding** | `BlazeBinaryEncoder.encode()` | `BlazeRecordEncoder` → `BlazeBinaryEncoder` |
 | **Decoding** | `BlazeBinaryDecoder.decode()` | `BlazeBinaryDecoder` → `BlazeRecordDecoder` |
-| **JSON Used?** | ❌ No | ❌ No (after our changes!) |
+| **JSON Used?** | No | No (after our changes!) |
 | **Schema** | Schema-less (dynamic) | Schema-full (type-safe) |
-| **Indexes** | ✅ Yes (secondary, search, spatial) | ❌ No |
-| **MVCC** | ✅ Yes (optional) | ❌ No |
+| **Indexes** | Yes (secondary, search, spatial) | No |
+| **MVCC** | Yes (optional) | No |
 | **Used By** | `BlazeDBClient` (main API) | Type-safe wrapper |
 | **Performance** | Fast (direct BlazeBinary) | Fast (direct encoding, no JSON) |
 
@@ -80,20 +80,20 @@ try collection.insert(bug)  // Direct encoding via BlazeRecordEncoder!
 ┌─────────────────┐
 │ BlazeDataRecord │
 └────────┬────────┘
-         │
-         ▼
+ │
+ ▼
 ┌──────────────────┐
 │ BlazeBinaryEncoder│
 └────────┬─────────┘
-         │
-         ▼
+ │
+ ▼
 ┌──────────────────┐
-│   BlazeBinary    │
+│ BlazeBinary │
 └────────┬─────────┘
-         │
-         ▼
+ │
+ ▼
 ┌──────────────────┐
-│      File        │
+│ File │
 └──────────────────┘
 ```
 
@@ -102,30 +102,30 @@ try collection.insert(bug)  // Direct encoding via BlazeRecordEncoder!
 ┌─────────────────┐
 │ Record (Codable)│
 └────────┬────────┘
-         │
-         ▼
+ │
+ ▼
 ┌──────────────────┐
 │ BlazeRecordEncoder│ (NEW - no JSON!)
 └────────┬─────────┘
-         │
-         ▼
+ │
+ ▼
 ┌─────────────────┐
 │ BlazeDataRecord │
 └────────┬────────┘
-         │
-         ▼
+ │
+ ▼
 ┌──────────────────┐
 │ BlazeBinaryEncoder│
 └────────┬─────────┘
-         │
-         ▼
+ │
+ ▼
 ┌──────────────────┐
-│   BlazeBinary    │
+│ BlazeBinary │
 └────────┬─────────┘
-         │
-         ▼
+ │
+ ▼
 ┌──────────────────┐
-│      File        │
+│ File │
 └──────────────────┘
 ```
 
@@ -135,33 +135,33 @@ Both are now optimized:
 
 | Operation | DynamicCollection | BlazeCollection |
 |-----------|-------------------|-----------------|
-| **Insert** | ✅ Direct BlazeBinary | ✅ Direct encoding (no JSON) |
-| **Fetch** | ✅ Direct BlazeBinary | ✅ Direct decoding (no JSON) |
-| **Update** | ✅ Direct BlazeBinary | ✅ Direct encoding (no JSON) |
-| **Delete** | ✅ Direct | ✅ Direct |
+| **Insert** | Direct BlazeBinary | Direct encoding (no JSON) |
+| **Fetch** | Direct BlazeBinary | Direct decoding (no JSON) |
+| **Update** | Direct BlazeBinary | Direct encoding (no JSON) |
+| **Delete** | Direct | Direct |
 
 ## When to Use Which?
 
 ### Use DynamicCollection When:
-- ✅ You need schema-less flexibility
-- ✅ You need indexes (secondary, search, spatial)
-- ✅ You need MVCC for concurrent access
-- ✅ You're using `BlazeDBClient` (it uses DynamicCollection internally)
-- ✅ You want maximum features
+- You need schema-less flexibility
+- You need indexes (secondary, search, spatial)
+- You need MVCC for concurrent access
+- You're using `BlazeDBClient` (it uses DynamicCollection internally)
+- You want maximum features
 
 ### Use BlazeCollection When:
-- ✅ You want type safety (compile-time checking)
-- ✅ You have a fixed schema (Swift structs/classes)
-- ✅ You don't need indexes
-- ✅ You want simpler API
-- ✅ You want maximum performance for basic CRUD
+- You want type safety (compile-time checking)
+- You have a fixed schema (Swift structs/classes)
+- You don't need indexes
+- You want simpler API
+- You want maximum performance for basic CRUD
 
 ## Conclusion
 
 **Both collections are now optimal!**
 
-- ✅ **DynamicCollection**: Already was optimal (direct BlazeBinary)
-- ✅ **BlazeCollection**: Now optimal (direct encoding, no JSON)
+- **DynamicCollection**: Already was optimal (direct BlazeBinary)
+- **BlazeCollection**: Now optimal (direct encoding, no JSON)
 
 **No JSON is used in either path!** Both use BlazeBinary directly for maximum performance.
 

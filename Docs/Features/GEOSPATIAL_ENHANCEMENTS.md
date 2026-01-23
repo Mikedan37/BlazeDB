@@ -4,7 +4,7 @@
 
 ---
 
-## 🚀 **HIGH-IMPACT ENHANCEMENTS**
+## **HIGH-IMPACT ENHANCEMENTS**
 
 ### 1. **Distance-Based Sorting** ⭐⭐⭐⭐⭐
 **Impact:** CRITICAL - Most requested feature
@@ -19,10 +19,10 @@
 ```swift
 // Sort by distance automatically
 let nearest = try db.query()
-    .withinRadius(latitude: 37.7749, longitude: -122.4194, radiusMeters: 5000)
-    .orderByDistance(from: SpatialPoint(latitude: 37.7749, longitude: -122.4194))
-    .limit(10)
-    .execute()
+.withinRadius(latitude: 37.7749, longitude: -122.4194, radiusMeters: 5000)
+.orderByDistance(from: SpatialPoint(latitude: 37.7749, longitude: -122.4194))
+.limit(10)
+.execute()
 ```
 
 ---
@@ -39,12 +39,12 @@ let nearest = try db.query()
 ```swift
 // Results include distance
 let results = try db.query()
-    .withinRadius(latitude: 37.7749, longitude: -122.4194, radiusMeters: 1000)
-    .execute()
+.withinRadius(latitude: 37.7749, longitude: -122.4194, radiusMeters: 1000)
+.execute()
 
 for result in results {
-    let distance = result.distance // NEW: Distance in meters
-    print("\(result.name) is \(distance)m away")
+ let distance = result.distance // NEW: Distance in meters
+ print("\(result.name) is \(distance)m away")
 }
 ```
 
@@ -63,8 +63,8 @@ for result in results {
 ```swift
 // True k-nearest neighbor
 let nearest = try db.query()
-    .nearest(to: SpatialPoint(latitude: 37.7749, longitude: -122.4194), limit: 10)
-    .execute()
+.nearest(to: SpatialPoint(latitude: 37.7749, longitude: -122.4194), limit: 10)
+.execute()
 
 // Returns 10 nearest records, sorted by distance
 ```
@@ -87,8 +87,8 @@ try db.enableGeohashIndex(on: "latitude", lonField: "longitude")
 
 // Ultra-fast prefix queries
 let nearby = try db.query()
-    .geohashPrefix("9q8yy") // All locations in this geohash cell
-    .execute()
+.geohashPrefix("9q8yy") // All locations in this geohash cell
+.execute()
 ```
 
 ---
@@ -105,11 +105,11 @@ let nearby = try db.query()
 ```swift
 // Bulk insert with optimized spatial indexing
 let locations = (0..<1000).map { i in
-    BlazeDataRecord([
-        "name": .string("Location \(i)"),
-        "latitude": .double(37.7749 + Double.random(in: -0.1...0.1)),
-        "longitude": .double(-122.4194 + Double.random(in: -0.1...0.1))
-    ])
+ BlazeDataRecord([
+ "name":.string("Location \(i)"),
+ "latitude":.double(37.7749 + Double.random(in: -0.1...0.1)),
+ "longitude":.double(-122.4194 + Double.random(in: -0.1...0.1))
+ ])
 }
 
 try db.insertMany(locations) // Automatically uses bulk spatial indexing
@@ -130,9 +130,9 @@ try db.insertMany(locations) // Automatically uses bulk spatial indexing
 ```swift
 // Cluster nearby points
 let clusters = try db.cluster(
-    latitude: 37.7749, longitude: -122.4194,
-    radiusMeters: 10_000,
-    clusterRadius: 500 // Group points within 500m
+ latitude: 37.7749, longitude: -122.4194,
+ radiusMeters: 10_000,
+ clusterRadius: 500 // Group points within 500m
 )
 
 // Returns: [Cluster] where each cluster has center + count
@@ -153,9 +153,9 @@ let clusters = try db.cluster(
 ```swift
 // Calculate distance along a route
 let route = [
-    SpatialPoint(latitude: 37.7749, longitude: -122.4194),
-    SpatialPoint(latitude: 37.8044, longitude: -122.2711),
-    SpatialPoint(latitude: 37.7849, longitude: -122.4094)
+ SpatialPoint(latitude: 37.7749, longitude: -122.4194),
+ SpatialPoint(latitude: 37.8044, longitude: -122.2711),
+ SpatialPoint(latitude: 37.7849, longitude: -122.4094)
 ]
 
 let totalDistance = SpatialPoint.distance(along: route) // Total distance in meters
@@ -176,34 +176,34 @@ let totalDistance = SpatialPoint.distance(along: route) // Total distance in met
 ```swift
 // Count locations per grid cell
 let density = try db.query()
-    .withinBoundingBox(minLat: 37.7, maxLat: 37.8, minLon: -122.5, maxLon: -122.4)
-    .spatialAggregate(gridSize: 0.01) // 1km grid cells
-    .execute()
+.withinBoundingBox(minLat: 37.7, maxLat: 37.8, minLon: -122.5, maxLon: -122.4)
+.spatialAggregate(gridSize: 0.01) // 1km grid cells
+.execute()
 
 // Returns: [(center: SpatialPoint, count: Int)]
 ```
 
 ---
 
-## 🎯 **RECOMMENDED IMPLEMENTATION ORDER**
+## **RECOMMENDED IMPLEMENTATION ORDER**
 
 ### **Phase 1: Critical (2-3 hours)**
-1. ✅ **Distance-based sorting** - Most requested
-2. ✅ **Distance in results** - Essential for apps
+1. **Distance-based sorting** - Most requested
+2. **Distance in results** - Essential for apps
 
 ### **Phase 2: High Value (6-8 hours)**
-3. ✅ **True k-NN** - Complete nearest neighbor
-4. ✅ **Geohash support** - 10-100x speedup for some queries
+3. **True k-NN** - Complete nearest neighbor
+4. **Geohash support** - 10-100x speedup for some queries
 
 ### **Phase 3: Nice-to-Have (8-12 hours)**
-5. ✅ **Bulk operations** - Performance optimization
-6. ✅ **Clustering** - Visualization feature
-7. ✅ **Route calculations** - Routing feature
-8. ✅ **Spatial aggregations** - Analytics feature
+5. **Bulk operations** - Performance optimization
+6. **Clustering** - Visualization feature
+7. **Route calculations** - Routing feature
+8. **Spatial aggregations** - Analytics feature
 
 ---
 
-## 💡 **WHAT WOULD MAKE IT "INSANE"**
+## **WHAT WOULD MAKE IT "INSANE"**
 
 ### **The Ultimate Geospatial API:**
 
@@ -216,22 +216,22 @@ let locations = try db.insertMany(restaurantData)
 
 // 3. Find nearest 10 restaurants, sorted by distance
 let nearest = try db.query()
-    .nearest(to: userLocation, limit: 10)
-    .where("category", equals: .string("restaurant"))
-    .where("rating", greaterThan: .double(4.0))
-    .orderByDistance(from: userLocation) // NEW
-    .execute()
+.nearest(to: userLocation, limit: 10)
+.where("category", equals:.string("restaurant"))
+.where("rating", greaterThan:.double(4.0))
+.orderByDistance(from: userLocation) // NEW
+.execute()
 
 // 4. Results include distance
 for restaurant in nearest {
-    print("\(restaurant.name) - \(restaurant.distance)m away - ⭐\(restaurant.rating)")
+ print("\(restaurant.name) - \(restaurant.distance)m away - ⭐\(restaurant.rating)")
 }
 
 // 5. Cluster for map visualization
 let clusters = try db.cluster(
-    center: mapCenter,
-    radiusMeters: 10_000,
-    clusterRadius: 500
+ center: mapCenter,
+ radiusMeters: 10_000,
+ clusterRadius: 500
 )
 
 // 6. Calculate route distance
@@ -240,7 +240,7 @@ let routeDistance = SpatialPoint.distance(along: routePoints)
 
 ---
 
-## 🚀 **PERFORMANCE TARGETS**
+## **PERFORMANCE TARGETS**
 
 ### **Current:**
 - Radius query (10k records): 15ms
@@ -255,7 +255,7 @@ let routeDistance = SpatialPoint.distance(along: routePoints)
 
 ---
 
-## 📊 **COMPETITIVE ADVANTAGE**
+## **COMPETITIVE ADVANTAGE**
 
 **What makes this "insane":**
 
@@ -271,14 +271,14 @@ let routeDistance = SpatialPoint.distance(along: routePoints)
 
 ---
 
-## 🎯 **BOTTOM LINE**
+## **BOTTOM LINE**
 
 **To make it "insane", implement:**
 
-1. ✅ **Distance sorting** (2 hours) - CRITICAL
-2. ✅ **Distance in results** (1 hour) - ESSENTIAL
-3. ✅ **True k-NN** (4 hours) - HIGH VALUE
-4. ✅ **Geohash support** (6 hours) - PERFORMANCE BOOST
+1. **Distance sorting** (2 hours) - CRITICAL
+2. **Distance in results** (1 hour) - ESSENTIAL
+3. **True k-NN** (4 hours) - HIGH VALUE
+4. **Geohash support** (6 hours) - PERFORMANCE BOOST
 
 **Total: ~13 hours of work for a world-class geospatial API.**
 

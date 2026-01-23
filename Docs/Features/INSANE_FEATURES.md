@@ -4,7 +4,7 @@
 
 ---
 
-## 🚀 **1. EVENT TRIGGERS (Local Firebase Functions)**
+## **1. EVENT TRIGGERS (Local Firebase Functions)**
 
 **Level:** Local Firebase Functions on your phone
 
@@ -19,36 +19,36 @@
 ```swift
 // Auto-generate embeddings on insert
 db.onInsert("Workouts") { record, modified, ctx in
-    if let notes = record.storage["notes"]?.stringValue {
-        // Generate embedding (would call AI service)
-        let embed = AI.embed(notes)
-        modified?.storage["noteEmbedding"] = .data(embed)
-    }
+ if let notes = record.storage["notes"]?.stringValue {
+ // Generate embedding (would call AI service)
+ let embed = AI.embed(notes)
+ modified?.storage["noteEmbedding"] =.data(embed)
+ }
 }
 
 // Automatically maintain spatial index
 db.onUpdate("Locations") { old, new, ctx in
-    if old.storage["lat"] != new.storage["lat"] || 
-       old.storage["lon"] != new.storage["lon"] {
-        try ctx.rebuildSpatialIndex()
-    }
+ if old.storage["lat"]!= new.storage["lat"] ||
+ old.storage["lon"]!= new.storage["lon"] {
+ try ctx.rebuildSpatialIndex()
+ }
 }
 
 // Automatically maintain ordering
 db.onInsert("Tasks") { _, modified, ctx in
-    try ctx.rebalanceOrderIndex()
+ try ctx.rebalanceOrderIndex()
 }
 ```
 
 **Benefits:**
-- ✅ Offline automation (no server needed)
-- ✅ Automatic index maintenance
-- ✅ AI integration hooks
-- ✅ Metadata pipelines
+- Offline automation (no server needed)
+- Automatic index maintenance
+- AI integration hooks
+- Metadata pipelines
 
 ---
 
-## 🧩 **2. QUERY PLANNER / COST OPTIMIZER**
+## **2. QUERY PLANNER / COST OPTIMIZER**
 
 **Level:** "ok who let a real database engine in here"
 
@@ -62,11 +62,11 @@ db.onInsert("Tasks") { _, modified, ctx in
 ```swift
 // Query: "Find 10 closest restaurants matching 'pizza' near me"
 let results = try db.query()
-    .fullTextSearch("name", query: "pizza")
-    .withinRadius(latitude: myLat, longitude: myLon, radiusMeters: 1000)
-    .orderByDistance(latitude: myLat, longitude: myLon)
-    .limit(10)
-    .executeWithPlanner()  // Uses intelligent planner
+.fullTextSearch("name", query: "pizza")
+.withinRadius(latitude: myLat, longitude: myLon, radiusMeters: 1000)
+.orderByDistance(latitude: myLat, longitude: myLon)
+.limit(10)
+.executeWithPlanner() // Uses intelligent planner
 
 // Planner automatically chooses:
 // 1. Use spatial index (fastest, O(log n))
@@ -76,14 +76,14 @@ let results = try db.query()
 ```
 
 **Benefits:**
-- ✅ Automatic index selection
-- ✅ Optimal execution order
-- ✅ 10-100x faster for complex queries
-- ✅ No manual optimization needed
+- Automatic index selection
+- Optimal execution order
+- 10-100x faster for complex queries
+- No manual optimization needed
 
 ---
 
-## 🧬 **3. PARTIAL / LAZY DECODING**
+## **3. PARTIAL / LAZY DECODING**
 
 **Level:** "holy hell this is fast"
 
@@ -97,27 +97,27 @@ let results = try db.query()
 ```swift
 // Only decode name and rating (skip notes, embeddings, thumbnails)
 let results = try db.query()
-    .project("name", "rating")  // Lazy decoding automatically enabled
-    .where("status", equals: .string("active"))
-    .execute()
+.project("name", "rating") // Lazy decoding automatically enabled
+.where("status", equals:.string("active"))
+.execute()
 
 // Large fields (notes, embeddings) are NOT decoded until accessed
 for record in results {
-    let name = record.storage["name"]  // Decoded immediately
-    // record.storage["notes"] is NOT decoded (saves memory)
+ let name = record.storage["name"] // Decoded immediately
+ // record.storage["notes"] is NOT decoded (saves memory)
 }
 ```
 
 **Benefits:**
-- ✅ 100-1000x less memory for records with large fields
-- ✅ List views load instantly
-- ✅ Graph queries avoid decoding payloads
-- ✅ Sync diffing gets 100x faster
-- ✅ Spatial queries stay tiny
+- 100-1000x less memory for records with large fields
+- List views load instantly
+- Graph queries avoid decoding payloads
+- Sync diffing gets 100x faster
+- Spatial queries stay tiny
 
 ---
 
-## 🔥 **4. VECTOR + SPATIAL COMBINED QUERIES**
+## **4. VECTOR + SPATIAL COMBINED QUERIES**
 
 **Level:** "this should NOT be possible in a phone database"
 
@@ -129,34 +129,34 @@ for record in results {
 
 **Example:**
 ```swift
-// "Find journal entries that feel emotionally similar to 'anxious' 
-//  AND happened within 2km of my gym"
+// "Find journal entries that feel emotionally similar to 'anxious'
+// AND happened within 2km of my gym"
 let results = try db.query()
-    .vectorNearest(field: "moodEmbedding", to: anxiousEmbedding, limit: 100)
-    .withinRadius(latitude: gym.lat, longitude: gym.lon, radiusMeters: 2000)
-    .orderByDistance(from: SpatialPoint(latitude: gym.lat, longitude: gym.lon))
-    .execute()
+.vectorNearest(field: "moodEmbedding", to: anxiousEmbedding, limit: 100)
+.withinRadius(latitude: gym.lat, longitude: gym.lon, radiusMeters: 2000)
+.orderByDistance(from: SpatialPoint(latitude: gym.lat, longitude: gym.lon))
+.execute()
 
 // Or use the convenience method:
 let results = try db.query()
-    .vectorAndSpatial(
-        vectorField: "moodEmbedding",
-        vectorEmbedding: anxiousEmbedding,
-        latitude: gym.lat,
-        longitude: gym.lon,
-        radiusMeters: 2000
-    )
-    .execute()
+.vectorAndSpatial(
+ vectorField: "moodEmbedding",
+ vectorEmbedding: anxiousEmbedding,
+ latitude: gym.lat,
+ longitude: gym.lon,
+ radiusMeters: 2000
+ )
+.execute()
 ```
 
 **What this enables:**
-- ✅ Fitness → mood correlations
-- ✅ Location → behavior correlations
-- ✅ Semantic map searching
-- ✅ Local AI journaling
-- ✅ "Where was I when I felt like this?"
-- ✅ "What stores do I visit when I'm stressed?"
-- ✅ "Which work locations correlate with good focus?"
+- Fitness → mood correlations
+- Location → behavior correlations
+- Semantic map searching
+- Local AI journaling
+- "Where was I when I felt like this?"
+- "What stores do I visit when I'm stressed?"
+- "Which work locations correlate with good focus?"
 
 **This is basically:**
 - Local RAG + Spatial AI + Personal context graph
@@ -164,20 +164,20 @@ let results = try db.query()
 
 ---
 
-## 🧠 **WHAT YOU END UP WITH**
+## **WHAT YOU END UP WITH**
 
 Combine all 4 features with the geo engine and you get:
 
 **BlazeDB becomes:**
-- ✅ A local-first, AI-ready, map-aware, event-driven, cost-optimized hybrid engine
-- ✅ That runs faster than SQLite
-- ✅ With custom binary encoding
-- ✅ With RLS
-- ✅ With MCP integration
-- ✅ With geospatial + vector + full-text + ordering indexes
-- ✅ With triggers
-- ✅ With lazy decode
-- ✅ With a query planner
+- A local-first, AI-ready, map-aware, event-driven, cost-optimized hybrid engine
+- That runs faster than SQLite
+- With custom binary encoding
+- With RLS
+- With MCP integration
+- With geospatial + vector + full-text + ordering indexes
+- With triggers
+- With lazy decode
+- With a query planner
 
 **This is not "a database."**
 
@@ -185,7 +185,7 @@ Combine all 4 features with the geo engine and you get:
 
 ---
 
-## 📊 **PERFORMANCE IMPACT**
+## **PERFORMANCE IMPACT**
 
 ### **With All Features:**
 
@@ -198,63 +198,63 @@ Combine all 4 features with the geo engine and you get:
 
 ---
 
-## 🎯 **USAGE EXAMPLES**
+## **USAGE EXAMPLES**
 
 ### **Complete Example: AI Journaling App**
 
 ```swift
 // 1. Set up triggers for auto-embedding
 db.onInsert("JournalEntries") { record, modified, ctx in
-    if let text = record.storage["text"]?.stringValue {
-        // Auto-generate mood embedding
-        let moodEmbed = AI.generateMoodEmbedding(text)
-        modified?.storage["moodEmbedding"] = .data(moodEmbed)
-        
-        // Auto-generate location if available
-        if let lat = record.storage["latitude"]?.doubleValue,
-           let lon = record.storage["longitude"]?.doubleValue {
-            // Spatial index automatically maintained
-        }
-    }
+ if let text = record.storage["text"]?.stringValue {
+ // Auto-generate mood embedding
+ let moodEmbed = AI.generateMoodEmbedding(text)
+ modified?.storage["moodEmbedding"] =.data(moodEmbed)
+
+ // Auto-generate location if available
+ if let lat = record.storage["latitude"]?.doubleValue,
+ let lon = record.storage["longitude"]?.doubleValue {
+ // Spatial index automatically maintained
+ }
+ }
 }
 
 // 2. Query: "Find anxious entries near my gym"
 let results = try db.query()
-    .vectorNearest(field: "moodEmbedding", to: anxiousEmbedding, limit: 100)
-    .withinRadius(latitude: gym.lat, longitude: gym.lon, radiusMeters: 2000)
-    .orderByDistance(from: SpatialPoint(latitude: gym.lat, longitude: gym.lon))
-    .project("text", "createdAt", "distance")  // Lazy decode (skip embeddings)
-    .execute()
+.vectorNearest(field: "moodEmbedding", to: anxiousEmbedding, limit: 100)
+.withinRadius(latitude: gym.lat, longitude: gym.lon, radiusMeters: 2000)
+.orderByDistance(from: SpatialPoint(latitude: gym.lat, longitude: gym.lon))
+.project("text", "createdAt", "distance") // Lazy decode (skip embeddings)
+.execute()
 
 // 3. Results are:
-//    - Automatically sorted by distance
-//    - Include distance in each record
-//    - Only decode needed fields (fast!)
-//    - Optimized by query planner
+// - Automatically sorted by distance
+// - Include distance in each record
+// - Only decode needed fields (fast!)
+// - Optimized by query planner
 ```
 
 ---
 
-## 🚀 **COMPETITIVE ADVANTAGE**
+## **COMPETITIVE ADVANTAGE**
 
 **What makes this "insane":**
 
-1. ✅ **Event Triggers** - Local Firebase Functions (nobody has this in embedded DBs)
-2. ✅ **Query Planner** - Intelligent multi-index optimization (SQLite doesn't have this)
-3. ✅ **Lazy Decoding** - Partial field access (Realm doesn't have this)
-4. ✅ **Vector + Spatial** - Combined semantic + location search (**NOBODY has this**)
+1. **Event Triggers** - Local Firebase Functions (nobody has this in embedded DBs)
+2. **Query Planner** - Intelligent multi-index optimization (SQLite doesn't have this)
+3. **Lazy Decoding** - Partial field access (Realm doesn't have this)
+4. **Vector + Spatial** - Combined semantic + location search (**NOBODY has this**)
 
 **Result:** BlazeDB is the **only embedded database** with all four features.
 
 ---
 
-## 📝 **IMPLEMENTATION STATUS**
+## **IMPLEMENTATION STATUS**
 
-- ✅ **Event Triggers** - Enhanced with context API
-- ✅ **Query Planner** - Enhanced for spatial + vector + full-text
-- ✅ **Lazy Decoding** - Integrated into QueryBuilder
-- ✅ **Vector Support** - Implemented with cosine similarity
-- ✅ **Hybrid Queries** - Vector + Spatial combined
+- **Event Triggers** - Enhanced with context API
+- **Query Planner** - Enhanced for spatial + vector + full-text
+- **Lazy Decoding** - Integrated into QueryBuilder
+- **Vector Support** - Implemented with cosine similarity
+- **Hybrid Queries** - Vector + Spatial combined
 
 **All features are production-ready and integrated.**
 

@@ -1,4 +1,4 @@
-# 🗑️ Garbage Collection Enhancements Needed
+# ️ Garbage Collection Enhancements Needed
 
 **Critical GC features missing for distributed sync, MVCC, and multi-database scenarios.**
 
@@ -7,17 +7,17 @@
 ## **Current GC Implementation**
 
 ### **What Exists:**
-1. ✅ **Basic Record GC** - `StorageManager.performCleanup()` removes orphaned records
-2. ✅ **MVCC Version GC** - `AutomaticGCManager` cleans up old MVCC versions
-3. ✅ **Page-Level GC** - `PageGarbageCollector` reclaims unused pages
-4. ✅ **Manual GC** - `runGarbageCollection()` for manual cleanup
-5. ✅ **Auto GC** - Automatic GC on transaction commit
+1. **Basic Record GC** - `StorageManager.performCleanup()` removes orphaned records
+2. **MVCC Version GC** - `AutomaticGCManager` cleans up old MVCC versions
+3. **Page-Level GC** - `PageGarbageCollector` reclaims unused pages
+4. **Manual GC** - `runGarbageCollection()` for manual cleanup
+5. **Auto GC** - Automatic GC on transaction commit
 
 ---
 
 ## **Missing GC Features**
 
-### **1. Operation Log GC** 🔴 **CRITICAL**
+### **1. Operation Log GC** **CRITICAL**
 
 **Problem:**
 - `OperationLog` grows indefinitely with every sync operation
@@ -33,17 +33,17 @@
 ```swift
 // Operation Log GC
 class OperationLogGC {
-    // Keep only last N operations per record
-    func cleanupOldOperations(keepLast: Int = 1000) throws
-    
-    // Remove operations older than X days
-    func cleanupOperationsOlderThan(days: Int) throws
-    
-    // Remove operations for records that no longer exist
-    func cleanupOrphanedOperations() throws
-    
-    // Compact operation log (remove duplicates)
-    func compactOperationLog() throws
+ // Keep only last N operations per record
+ func cleanupOldOperations(keepLast: Int = 1000) throws
+
+ // Remove operations older than X days
+ func cleanupOperationsOlderThan(days: Int) throws
+
+ // Remove operations for records that no longer exist
+ func cleanupOrphanedOperations() throws
+
+ // Compact operation log (remove duplicates)
+ func compactOperationLog() throws
 }
 ```
 
@@ -54,7 +54,7 @@ class OperationLogGC {
 
 ---
 
-### **2. Sync State GC** 🔴 **CRITICAL**
+### **2. Sync State GC** **CRITICAL**
 
 **Problem:**
 - `syncedRecords`, `recordVersions`, `lastSyncVersions` maps grow indefinitely
@@ -70,17 +70,17 @@ class OperationLogGC {
 ```swift
 // Sync State GC
 extension BlazeSyncEngine {
-    // Remove sync state for deleted records
-    func cleanupSyncStateForDeletedRecords() async throws
-    
-    // Remove sync state older than X days
-    func cleanupOldSyncState(olderThan: TimeInterval) async throws
-    
-    // Compact sync state (remove duplicates)
-    func compactSyncState() async throws
-    
-    // Remove sync state for nodes that are no longer connected
-    func cleanupSyncStateForDisconnectedNodes() async throws
+ // Remove sync state for deleted records
+ func cleanupSyncStateForDeletedRecords() async throws
+
+ // Remove sync state older than X days
+ func cleanupOldSyncState(olderThan: TimeInterval) async throws
+
+ // Compact sync state (remove duplicates)
+ func compactSyncState() async throws
+
+ // Remove sync state for nodes that are no longer connected
+ func cleanupSyncStateForDisconnectedNodes() async throws
 }
 ```
 
@@ -91,7 +91,7 @@ extension BlazeSyncEngine {
 
 ---
 
-### **3. MVCC Version GC for Distributed Sync** 🟡 **HIGH PRIORITY**
+### **3. MVCC Version GC for Distributed Sync** **HIGH PRIORITY**
 
 **Problem:**
 - MVCC versions can't be GC'd if other nodes are still reading them
@@ -107,17 +107,17 @@ extension BlazeSyncEngine {
 ```swift
 // Distributed MVCC GC
 class DistributedVersionGC {
-    // Track minimum version in use across all nodes
-    var minVersionInUse: [UUID: UInt64] = [:]  // Record ID -> Min version
-    
-    // Request version cleanup from other nodes
-    func requestVersionCleanup(recordID: UUID, minVersion: UInt64) async throws
-    
-    // Coordinate GC across nodes
-    func coordinateGC(recordID: UUID) async throws -> UInt64  // Returns safe version to GC
-    
-    // Broadcast version usage to other nodes
-    func broadcastVersionUsage(recordID: UUID, version: UInt64) async throws
+ // Track minimum version in use across all nodes
+ var minVersionInUse: [UUID: UInt64] = [:] // Record ID -> Min version
+
+ // Request version cleanup from other nodes
+ func requestVersionCleanup(recordID: UUID, minVersion: UInt64) async throws
+
+ // Coordinate GC across nodes
+ func coordinateGC(recordID: UUID) async throws -> UInt64 // Returns safe version to GC
+
+ // Broadcast version usage to other nodes
+ func broadcastVersionUsage(recordID: UUID, version: UInt64) async throws
 }
 ```
 
@@ -128,7 +128,7 @@ class DistributedVersionGC {
 
 ---
 
-### **4. Cross-Database GC Coordination** 🟡 **HIGH PRIORITY**
+### **4. Cross-Database GC Coordination** **HIGH PRIORITY**
 
 **Problem:**
 - Multiple databases on same device don't coordinate GC
@@ -144,19 +144,19 @@ class DistributedVersionGC {
 ```swift
 // Multi-Database GC Coordinator
 class MultiDatabaseGCCoordinator {
-    static let shared = MultiDatabaseGCCoordinator()
-    
-    // Register database for GC coordination
-    func registerDatabase(_ db: BlazeDBClient, name: String) throws
-    
-    // Unregister database
-    func unregisterDatabase(name: String) throws
-    
-    // Coordinate GC across all registered databases
-    func coordinateGC() async throws
-    
-    // Get minimum safe version across all DBs
-    func getMinimumSafeVersion(recordID: UUID) -> UInt64?
+ static let shared = MultiDatabaseGCCoordinator()
+
+ // Register database for GC coordination
+ func registerDatabase(_ db: BlazeDBClient, name: String) throws
+
+ // Unregister database
+ func unregisterDatabase(name: String) throws
+
+ // Coordinate GC across all registered databases
+ func coordinateGC() async throws
+
+ // Get minimum safe version across all DBs
+ func getMinimumSafeVersion(recordID: UUID) -> UInt64?
 }
 ```
 
@@ -167,7 +167,7 @@ class MultiDatabaseGCCoordinator {
 
 ---
 
-### **5. Relay Memory GC** 🟢 **MEDIUM PRIORITY**
+### **5. Relay Memory GC** **MEDIUM PRIORITY**
 
 **Problem:**
 - `InMemoryRelay` queues can grow indefinitely
@@ -183,14 +183,14 @@ class MultiDatabaseGCCoordinator {
 ```swift
 // Relay Memory GC
 extension InMemoryRelay {
-    // Cleanup old queued operations
-    func cleanupOldOperations(olderThan: TimeInterval) throws
-    
-    // Limit queue size
-    func limitQueueSize(maxSize: Int) throws
-    
-    // Compact queue (remove duplicates)
-    func compactQueue() throws
+ // Cleanup old queued operations
+ func cleanupOldOperations(olderThan: TimeInterval) throws
+
+ // Limit queue size
+ func limitQueueSize(maxSize: Int) throws
+
+ // Compact queue (remove duplicates)
+ func compactQueue() throws
 }
 ```
 
@@ -201,7 +201,7 @@ extension InMemoryRelay {
 
 ---
 
-### **6. Conflict Resolution GC** 🟢 **MEDIUM PRIORITY**
+### **6. Conflict Resolution GC** **MEDIUM PRIORITY**
 
 **Problem:**
 - Old conflict versions accumulate
@@ -217,11 +217,11 @@ extension InMemoryRelay {
 ```swift
 // Conflict Resolution GC
 extension ConflictResolution {
-    // Cleanup resolved conflicts older than X days
-    func cleanupResolvedConflicts(olderThan: TimeInterval) throws
-    
-    // Remove conflict versions that are no longer needed
-    func cleanupOldConflictVersions() throws
+ // Cleanup resolved conflicts older than X days
+ func cleanupResolvedConflicts(olderThan: TimeInterval) throws
+
+ // Remove conflict versions that are no longer needed
+ func cleanupOldConflictVersions() throws
 }
 ```
 
@@ -232,7 +232,7 @@ extension ConflictResolution {
 
 ---
 
-### **7. Sync Metadata GC** 🟢 **MEDIUM PRIORITY**
+### **7. Sync Metadata GC** **MEDIUM PRIORITY**
 
 **Problem:**
 - Sync metadata (node info, connection state) accumulates
@@ -248,11 +248,11 @@ extension ConflictResolution {
 ```swift
 // Sync Metadata GC
 extension BlazeTopology {
-    // Cleanup metadata for disconnected nodes
-    func cleanupDisconnectedNodeMetadata() async throws
-    
-    // Remove old sync metadata
-    func cleanupOldSyncMetadata(olderThan: TimeInterval) async throws
+ // Cleanup metadata for disconnected nodes
+ func cleanupDisconnectedNodeMetadata() async throws
+
+ // Remove old sync metadata
+ func cleanupOldSyncMetadata(olderThan: TimeInterval) async throws
 }
 ```
 
@@ -263,7 +263,7 @@ extension BlazeTopology {
 
 ---
 
-### **8. Incremental Sync State GC** 🟢 **MEDIUM PRIORITY**
+### **8. Incremental Sync State GC** **MEDIUM PRIORITY**
 
 **Problem:**
 - `syncedRecords`, `recordVersions`, `lastSyncVersions` grow with every record
@@ -279,24 +279,24 @@ extension BlazeTopology {
 ```swift
 // Incremental Sync State GC
 extension BlazeSyncEngine {
-    // Cleanup sync state for deleted records
-    func cleanupSyncStateForDeletedRecords() async throws {
-        let allRecords = try localDB.fetchAll()
-        let existingIDs = Set(allRecords.map { $0.storage["id"]?.uuidValue ?? UUID() })
-        
-        // Remove sync state for records that no longer exist
-        syncedRecords = syncedRecords.filter { existingIDs.contains($0.key) }
-        recordVersions = recordVersions.filter { existingIDs.contains($0.key) }
-        lastSyncVersions = lastSyncVersions.mapValues { nodeVersions in
-            nodeVersions.filter { existingIDs.contains($0.key) }
-        }
-    }
-    
-    // Cleanup old sync state (older than X days)
-    func cleanupOldSyncState(olderThan: TimeInterval) async throws {
-        let cutoff = Date().addingTimeInterval(-olderThan)
-        // Implementation...
-    }
+ // Cleanup sync state for deleted records
+ func cleanupSyncStateForDeletedRecords() async throws {
+ let allRecords = try localDB.fetchAll()
+ let existingIDs = Set(allRecords.map { $0.storage["id"]?.uuidValue?? UUID() })
+
+ // Remove sync state for records that no longer exist
+ syncedRecords = syncedRecords.filter { existingIDs.contains($0.key) }
+ recordVersions = recordVersions.filter { existingIDs.contains($0.key) }
+ lastSyncVersions = lastSyncVersions.mapValues { nodeVersions in
+ nodeVersions.filter { existingIDs.contains($0.key) }
+ }
+ }
+
+ // Cleanup old sync state (older than X days)
+ func cleanupOldSyncState(olderThan: TimeInterval) async throws {
+ let cutoff = Date().addingTimeInterval(-olderThan)
+ // Implementation...
+ }
 }
 ```
 
@@ -309,15 +309,15 @@ extension BlazeSyncEngine {
 
 ## **Implementation Priority**
 
-### **🔴 Critical (Do First):**
+### ** Critical (Do First):**
 1. **Operation Log GC** - Prevents disk exhaustion
 2. **Sync State GC** - Prevents memory leaks
 
-### **🟡 High Priority (Do Soon):**
+### ** High Priority (Do Soon):**
 3. **MVCC Version GC for Distributed Sync** - Prevents version accumulation
 4. **Cross-Database GC Coordination** - Prevents data loss
 
-### **🟢 Medium Priority (Do Later):**
+### ** Medium Priority (Do Later):**
 5. **Relay Memory GC** - Prevents memory leaks
 6. **Conflict Resolution GC** - Prevents disk waste
 7. **Sync Metadata GC** - Prevents memory waste
@@ -328,30 +328,30 @@ extension BlazeSyncEngine {
 ## **Recommended Implementation Order**
 
 1. **Phase 1: Operation Log GC** (1-2 days)
-   - Add cleanup methods to `OperationLog`
-   - Add periodic cleanup task
-   - Add configuration options
+ - Add cleanup methods to `OperationLog`
+ - Add periodic cleanup task
+ - Add configuration options
 
 2. **Phase 2: Sync State GC** (1-2 days)
-   - Add cleanup methods to `BlazeSyncEngine`
-   - Clean up on record deletion
-   - Add periodic cleanup task
+ - Add cleanup methods to `BlazeSyncEngine`
+ - Clean up on record deletion
+ - Add periodic cleanup task
 
 3. **Phase 3: MVCC Distributed GC** (3-5 days)
-   - Add version tracking across nodes
-   - Add coordination protocol
-   - Integrate with `AutomaticGCManager`
+ - Add version tracking across nodes
+ - Add coordination protocol
+ - Integrate with `AutomaticGCManager`
 
 4. **Phase 4: Cross-Database Coordination** (2-3 days)
-   - Add `MultiDatabaseGCCoordinator`
-   - Integrate with `BlazeDBManager`
-   - Add shared state management
+ - Add `MultiDatabaseGCCoordinator`
+ - Integrate with `BlazeDBManager`
+ - Add shared state management
 
 5. **Phase 5: Remaining Features** (3-5 days)
-   - Relay memory GC
-   - Conflict resolution GC
-   - Sync metadata GC
-   - Incremental sync state GC
+ - Relay memory GC
+ - Conflict resolution GC
+ - Sync metadata GC
+ - Incremental sync state GC
 
 ---
 
@@ -360,25 +360,25 @@ extension BlazeSyncEngine {
 ```swift
 // GC Configuration for Distributed Sync
 public struct DistributedGCConfig {
-    // Operation Log
-    var operationLogRetentionDays: Int = 30
-    var operationLogMaxOperations: Int = 10_000
-    
-    // Sync State
-    var syncStateRetentionDays: Int = 7
-    var syncStateCleanupInterval: TimeInterval = 3600  // 1 hour
-    
-    // MVCC Versions
-    var mvccVersionRetentionDays: Int = 7
-    var mvccVersionCoordinationEnabled: Bool = true
-    
-    // Cross-Database
-    var crossDatabaseGCEnabled: Bool = true
-    var crossDatabaseGCInterval: TimeInterval = 3600  // 1 hour
-    
-    // Relay Memory
-    var relayQueueMaxSize: Int = 10_000
-    var relayQueueCleanupInterval: TimeInterval = 300  // 5 minutes
+ // Operation Log
+ var operationLogRetentionDays: Int = 30
+ var operationLogMaxOperations: Int = 10_000
+
+ // Sync State
+ var syncStateRetentionDays: Int = 7
+ var syncStateCleanupInterval: TimeInterval = 3600 // 1 hour
+
+ // MVCC Versions
+ var mvccVersionRetentionDays: Int = 7
+ var mvccVersionCoordinationEnabled: Bool = true
+
+ // Cross-Database
+ var crossDatabaseGCEnabled: Bool = true
+ var crossDatabaseGCInterval: TimeInterval = 3600 // 1 hour
+
+ // Relay Memory
+ var relayQueueMaxSize: Int = 10_000
+ var relayQueueCleanupInterval: TimeInterval = 300 // 5 minutes
 }
 ```
 
@@ -398,17 +398,17 @@ For each GC feature, add tests:
 ## **Summary**
 
 **Current State:**
-- ✅ Basic GC exists (records, MVCC versions, pages)
-- ❌ No GC for distributed sync components
-- ❌ No coordination across databases
-- ❌ No cleanup of sync state
+- Basic GC exists (records, MVCC versions, pages)
+- No GC for distributed sync components
+- No coordination across databases
+- No cleanup of sync state
 
 **Needed:**
-- 🔴 **Operation Log GC** (critical - prevents disk exhaustion)
-- 🔴 **Sync State GC** (critical - prevents memory leaks)
-- 🟡 **MVCC Distributed GC** (high - prevents version accumulation)
-- 🟡 **Cross-Database Coordination** (high - prevents data loss)
-- 🟢 **Remaining features** (medium - quality of life)
+- **Operation Log GC** (critical - prevents disk exhaustion)
+- **Sync State GC** (critical - prevents memory leaks)
+- **MVCC Distributed GC** (high - prevents version accumulation)
+- **Cross-Database Coordination** (high - prevents data loss)
+- **Remaining features** (medium - quality of life)
 
 **Total Estimated Time:** 10-17 days for all features
 

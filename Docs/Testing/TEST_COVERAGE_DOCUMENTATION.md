@@ -1,4 +1,4 @@
-# 🧪 BlazeDB - Complete Test Coverage Documentation
+# BlazeDB - Complete Test Coverage Documentation
 
 **Comprehensive documentation of all tests in the BlazeDB test suite.**
 
@@ -967,38 +967,38 @@ BlazeDB is validated across a broad matrix of **platforms, OS versions, and hard
 ### **Primary Supported Platforms**
 
 - **macOS**
-  - macOS 14 (Sonoma) – Intel & Apple Silicon
-  - macOS 13 (Ventura) – Intel & Apple Silicon
+ - macOS 14 (Sonoma) – Intel & Apple Silicon
+ - macOS 13 (Ventura) – Intel & Apple Silicon
 - **iOS**
-  - iOS 17 – modern devices (A14 and newer)
-  - iOS 16 – compatibility baseline
+ - iOS 17 – modern devices (A14 and newer)
+ - iOS 16 – compatibility baseline
 - **visionOS** (where applicable for BlazeStudio/Visualizer UIs)
 - **Linux (Server)**
-  - Ubuntu LTS (22.04+) – Swift server / Docker deployments
+ - Ubuntu LTS (22.04+) – Swift server / Docker deployments
 
 ### **Device / Hardware Profiles**
 
 - **Apple Silicon**
-  - M1 / M1 Pro / M1 Max
-  - M2 / M2 Pro
+ - M1 / M1 Pro / M1 Max
+ - M2 / M2 Pro
 - **Intel Macs**
-  - Quad‑core i5 / i7 (2018+)
+ - Quad‑core i5 / i7 (2018+)
 - **iOS Devices**
-  - Recent iPhone (A16+)
-  - Recent iPad (M1/M2)
+ - Recent iPhone (A16+)
+ - Recent iPad (M1/M2)
 
 ### **Test Matrix Dimensions**
 
 - **By Platform**
-  - macOS: full unit + integration + stress + soak tests
-  - iOS: core unit + integration + sync + security + memory tests
-  - Linux: core unit + integration + sync + GC + storage tests (server‑style workloads)
+ - macOS: full unit + integration + stress + soak tests
+ - iOS: core unit + integration + sync + security + memory tests
+ - Linux: core unit + integration + sync + GC + storage tests (server‑style workloads)
 - **By Build Configuration**
-  - Debug: fast feedback, full assertions
-  - Release: performance, GC, soak, and stress tests with optimization enabled
+ - Debug: fast feedback, full assertions
+ - Release: performance, GC, soak, and stress tests with optimization enabled
 - **By Architecture**
-  - x86_64 (Intel)
-  - arm64 (Apple Silicon / iOS devices)
+ - x86_64 (Intel)
+ - arm64 (Apple Silicon / iOS devices)
 
 ### **How to Run Targeted Matrix Slices**
 
@@ -1015,9 +1015,9 @@ swift test --enable-test-discovery
 ```
 
 - **iOS (Xcode, on‑device or simulator):**
-  - Select the BlazeDB test scheme.
-  - Choose the target device/simulator (e.g., iPhone 15 Pro, iPad Air (M1)).
-  - Run all tests or the desired test plans (including performance/soak where enabled).
+ - Select the BlazeDB test scheme.
+ - Choose the target device/simulator (e.g., iPhone 15 Pro, iPad Air (M1)).
+ - Run all tests or the desired test plans (including performance/soak where enabled).
 
 Matrix coverage is tracked in CI to ensure that **critical categories** (GC, sync, security, storage, concurrency) are exercised on at least one **Intel**, one **Apple Silicon**, one **iOS**, and one **Linux** environment before release.
 
@@ -1071,12 +1071,12 @@ Matrix coverage is tracked in CI to ensure that **critical categories** (GC, syn
 
 ## **Test Coverage Goals**
 
-- ✅ **Core Operations:** 100%
-- ✅ **Query API:** 98%
-- ✅ **Security:** 96%
-- ✅ **Sync:** 95%
-- ✅ **Performance:** 95%
-- ✅ **Reliability:** 98%
+- **Core Operations:** 100%
+- **Query API:** 98%
+- **Security:** 96%
+- **Sync:** 95%
+- **Performance:** 95%
+- **Reliability:** 98%
 
 ---
 
@@ -1090,5 +1090,5 @@ All tests run automatically:
 
 ---
 
-**This is one of the most comprehensive test suites in the Swift ecosystem! 🔥**
+**This is one of the most comprehensive test suites in the Swift ecosystem! **
 

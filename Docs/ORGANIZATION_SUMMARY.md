@@ -4,7 +4,7 @@
 
 ---
 
-## **📁 Folder Structure**
+## ** Folder Structure**
 
 ### **Root Files (3 files)**
 - `README.md` - Main documentation README
@@ -54,7 +54,7 @@ Project-level documentation:
 
 ---
 
-## **✅ Organization Complete**
+## ** Organization Complete**
 
 All files have been moved from the root into appropriate folders. Each folder has a `README.md` with quick links to its contents.
 

@@ -33,8 +33,8 @@ BlazeDB's Row-Level Security (RLS) system has been optimized to minimize perform
 
 ```swift
 // Admin bypass (check once, not per record)
-guard !userContext.isAdmin else {
-    return  // Skip all RLS
+guard!userContext.isAdmin else {
+ return // Skip all RLS
 }
 ```
 
@@ -51,11 +51,11 @@ guard !userContext.isAdmin else {
 
 ```swift
 // Pre-filter policies once
-let (isEnabled, applicablePolicies) = policyEngine.getApplicablePolicies(operation: .select)
+let (isEnabled, applicablePolicies) = policyEngine.getApplicablePolicies(operation:.select)
 
 // Use pre-filtered list for each record (no filtering needed)
 for policy in applicablePolicies {
-    // Evaluate policy
+ // Evaluate policy
 }
 ```
 
@@ -98,8 +98,8 @@ let fieldName = teamIDField
 
 // Use in closure (no repeated access)
 return { record in
-    guard let teamID = record.storage[fieldName]?.uuidValue else { return false }
-    return teamIDSet.contains(teamID)
+ guard let teamID = record.storage[fieldName]?.uuidValue else { return false }
+ return teamIDSet.contains(teamID)
 }
 ```
 
@@ -116,13 +116,13 @@ return { record in
 
 ```swift
 // Early exit: If permissive grants and no restrictive, allow immediately
-if permissiveResult && !hasRestrictive {
-    return true
+if permissiveResult &&!hasRestrictive {
+ return true
 }
 
 // Early exit: If restrictive denies and no permissive, deny immediately
-if !restrictiveResult && !hasPermissive {
-    return false
+if!restrictiveResult &&!hasPermissive {
+ return false
 }
 ```
 
@@ -146,7 +146,7 @@ lock.unlock()
 
 // Evaluate without lock (policies are immutable)
 for policy in applicablePolicies {
-    // No lock needed
+ // No lock needed
 }
 ```
 
@@ -164,14 +164,14 @@ for policy in applicablePolicies {
 ```swift
 // Optimized version (no lock, pre-filtered policies)
 internal func isAllowedOptimized(
-    operation: PolicyOperation,
-    context: SecurityContext,
-    record: BlazeDataRecord,
-    applicablePolicies: [SecurityPolicy],  // Pre-filtered
-    userID: UUID,  // Pre-computed
-    teamIDSet: Set<UUID>  // Pre-computed
+ operation: PolicyOperation,
+ context: SecurityContext,
+ record: BlazeDataRecord,
+ applicablePolicies: [SecurityPolicy], // Pre-filtered
+ userID: UUID, // Pre-computed
+ teamIDSet: Set<UUID> // Pre-computed
 ) -> Bool {
-    // Fast evaluation without overhead
+ // Fast evaluation without overhead
 }
 ```
 
@@ -209,33 +209,33 @@ internal func isAllowedOptimized(
 ```swift
 // Optimized RLS filter injection
 private func injectRLSFilter(userContext: BlazeUserContext, client: BlazeDBClient) {
-    // 1. Admin bypass (fast path)
-    guard !userContext.isAdmin else { return }
-    
-    // 2. Check if enabled (once)
-    guard client.rls.isEnabled() else { return }
-    
-    // 3. Pre-filter policies (once)
-    let (isEnabled, applicablePolicies) = policyEngine.getApplicablePolicies(operation: .select)
-    guard isEnabled && !applicablePolicies.isEmpty else { return }
-    
-    // 4. Pre-compute values (once)
-    let teamIDSet = Set(userContext.teamIDs)
-    let userID = userContext.userID
-    
-    // 5. Create optimized filter
-    let rlsFilter: (BlazeDataRecord) -> Bool = { record in
-        return policyEngine.isAllowedOptimized(
-            operation: .select,
-            context: securityContext,
-            record: record,
-            applicablePolicies: applicablePolicies,  // Pre-filtered
-            userID: userID,  // Pre-computed
-            teamIDSet: teamIDSet  // Pre-computed
-        )
-    }
-    
-    queryBuilder.where(rlsFilter)
+ // 1. Admin bypass (fast path)
+ guard!userContext.isAdmin else { return }
+
+ // 2. Check if enabled (once)
+ guard client.rls.isEnabled() else { return }
+
+ // 3. Pre-filter policies (once)
+ let (isEnabled, applicablePolicies) = policyEngine.getApplicablePolicies(operation:.select)
+ guard isEnabled &&!applicablePolicies.isEmpty else { return }
+
+ // 4. Pre-compute values (once)
+ let teamIDSet = Set(userContext.teamIDs)
+ let userID = userContext.userID
+
+ // 5. Create optimized filter
+ let rlsFilter: (BlazeDataRecord) -> Bool = { record in
+ return policyEngine.isAllowedOptimized(
+ operation:.select,
+ context: securityContext,
+ record: record,
+ applicablePolicies: applicablePolicies, // Pre-filtered
+ userID: userID, // Pre-computed
+ teamIDSet: teamIDSet // Pre-computed
+ )
+ }
+
+ queryBuilder.where(rlsFilter)
 }
 ```
 
@@ -244,16 +244,16 @@ private func injectRLSFilter(userContext: BlazeUserContext, client: BlazeDBClien
 ```swift
 // TeamBasedRLSPolicy: Uses Set for O(1) lookups
 public func filter(for user: BlazeUserContext) -> (BlazeDataRecord) -> Bool {
-    if user.isAdmin { return { _ in true } }
-    
-    // Pre-compute Set (once)
-    let teamIDSet = Set(user.teamIDs)
-    let fieldName = teamIDField
-    
-    return { record in
-        guard let teamID = record.storage[fieldName]?.uuidValue else { return false }
-        return teamIDSet.contains(teamID)  // O(1) lookup
-    }
+ if user.isAdmin { return { _ in true } }
+
+ // Pre-compute Set (once)
+ let teamIDSet = Set(user.teamIDs)
+ let fieldName = teamIDField
+
+ return { record in
+ guard let teamID = record.storage[fieldName]?.uuidValue else { return false }
+ return teamIDSet.contains(teamID) // O(1) lookup
+ }
 }
 ```
 

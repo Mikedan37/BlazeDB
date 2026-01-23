@@ -1,30 +1,30 @@
-# 📚 BlazeDB Sync - Documentation Index
+# BlazeDB Sync - Documentation Index
 
 **Find the right guide for your needs.**
 
 ---
 
-## **🚀 Start Here:**
+## ** Start Here:**
 
 ### **New to Sync?**
 1. **`SYNC_TRANSPORT_GUIDE.md`** ⭐ **START HERE**
-   - Clear examples for all 3 transport layers
-   - When to use each one
-   - Complete code examples
-   - Performance comparisons
+ - Clear examples for all 3 transport layers
+ - When to use each one
+ - Complete code examples
+ - Performance comparisons
 
 2. **`SYNC_SIMPLE_GUIDE.md`**
-   - 3-step quick start
-   - Minimal code, maximum clarity
+ - 3-step quick start
+ - Minimal code, maximum clarity
 
 3. **`SYNC_EXAMPLES.md`**
-   - 10 copy-paste ready examples
-   - Common patterns
-   - Production setups
+ - 10 copy-paste ready examples
+ - Common patterns
+ - Production setups
 
 ---
 
-## **📖 Detailed Guides:**
+## ** Detailed Guides:**
 
 ### **Transport Layers:**
 - **`SYNC_TRANSPORT_GUIDE.md`** - Complete guide to all 3 transports
@@ -43,7 +43,7 @@
 
 ---
 
-## **🎯 Quick Decision:**
+## ** Quick Decision:**
 
 **"I want to sync two databases..."**
 
@@ -53,7 +53,7 @@
 
 ---
 
-## **📋 All Documentation Files:**
+## ** All Documentation Files:**
 
 1. **`SYNC_TRANSPORT_GUIDE.md`** ⭐ - **Main guide with all 3 transports**
 2. **`SYNC_EXAMPLES.md`** - 10 ready-to-use examples
@@ -68,7 +68,7 @@
 
 ---
 
-## **💡 Recommended Reading Order:**
+## ** Recommended Reading Order:**
 
 1. **First time?** → `SYNC_TRANSPORT_GUIDE.md` (read all 3 sections)
 2. **Need code?** → `SYNC_EXAMPLES.md` (copy-paste examples)

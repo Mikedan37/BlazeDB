@@ -221,9 +221,9 @@ swift test --filter PerformanceBenchmarks
 **Output:**
 - JSON files in `.build/test-metrics/`
 - Each benchmark includes:
-  - Time (ms)
-  - Throughput (ops/sec)
-  - Metadata (record count, etc.)
+ - Time (ms)
+ - Throughput (ops/sec)
+ - Metadata (record count, etc.)
 
 **What it measures:**
 - Insert latency and throughput
@@ -294,12 +294,12 @@ CHAOS_SEED=12345 swift test --filter ChaosEngineTests
 ## Summary
 
 These six test suites provide comprehensive coverage for:
-- ✅ Random operation generation (chaos)
-- ✅ Extreme concurrency (torture)
-- ✅ Model-based validation (ground truth)
-- ✅ Index consistency (all types)
-- ✅ Crash recovery (replay)
-- ✅ Performance baselines (metrics)
+- Random operation generation (chaos)
+- Extreme concurrency (torture)
+- Model-based validation (ground truth)
+- Index consistency (all types)
+- Crash recovery (replay)
+- Performance baselines (metrics)
 
 All tests are **production-ready**, **self-contained**, and **backward compatible**.
 

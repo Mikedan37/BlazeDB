@@ -7,27 +7,27 @@ The key derivation process can produce different keys from the same password, wh
 ### Root Cause
 
 1. **Argon2 Fallback Behavior**: The code tries Argon2 first, and if it fails, falls back to PBKDF2:
-   ```swift
-   do {
-       let derivedKey = try Argon2KDF.deriveKey(...)
-       // Use Argon2 key
-   } catch {
-       // Fallback to PBKDF2
-       let derivedKey = try deriveKeyPBKDF2(...)
-       // Use PBKDF2 key
-   }
-   ```
+ ```swift
+ do {
+ let derivedKey = try Argon2KDF.deriveKey(...)
+ // Use Argon2 key
+ } catch {
+ // Fallback to PBKDF2
+ let derivedKey = try deriveKeyPBKDF2(...)
+ // Use PBKDF2 key
+ }
+ ```
 
 2. **Non-Deterministic Failures**: If Argon2 fails inconsistently (e.g., due to memory constraints, timing, or implementation bugs), the same password might:
-   - Use Argon2 in one instance → Key A
-   - Fall back to PBKDF2 in another instance → Key B
-   - Result: **Different keys from the same password!**
+ - Use Argon2 in one instance → Key A
+ - Fall back to PBKDF2 in another instance → Key B
+ - Result: **Different keys from the same password!**
 
-3. **Impact**: 
-   - Signature verification fails (as we're seeing in tests)
-   - Database cannot be opened with the same password
-   - Data becomes inaccessible
-   - **This breaks the fundamental security guarantee that the same password always produces the same key**
+3. **Impact**:
+ - Signature verification fails (as we're seeing in tests)
+ - Database cannot be opened with the same password
+ - Data becomes inaccessible
+ - **This breaks the fundamental security guarantee that the same password always produces the same key**
 
 ## Current Behavior
 
@@ -50,40 +50,40 @@ Always use the same KDF method for the same password. If Argon2 fails once, alwa
 
 ```swift
 public static func getKey(from password: String, salt: Data) throws -> SymmetricKey {
-    let cacheKey = password + salt.base64EncodedString()
-    
-    // Check cache first
-    if let cached = passwordKeyCache[cacheKey] {
-        return cached
-    }
-    
-    // Try Argon2, but if it fails, mark this password as "PBKDF2-only"
-    // and always use PBKDF2 for it in the future
-    let useArgon2: Bool
-    if let method = kdfMethodCache[cacheKey] {
-        useArgon2 = (method == .argon2)
-    } else {
-        useArgon2 = true  // Try Argon2 first
-    }
-    
-    let derivedKey: Data
-    if useArgon2 {
-        do {
-            derivedKey = try Argon2KDF.deriveKey(...)
-            kdfMethodCache[cacheKey] = .argon2
-        } catch {
-            // Argon2 failed - use PBKDF2 and remember this
-            derivedKey = try deriveKeyPBKDF2(...)
-            kdfMethodCache[cacheKey] = .pbkdf2
-        }
-    } else {
-        // Always use PBKDF2 for this password
-        derivedKey = try deriveKeyPBKDF2(...)
-    }
-    
-    let symmetricKey = SymmetricKey(data: derivedKey)
-    passwordKeyCache[cacheKey] = symmetricKey
-    return symmetricKey
+ let cacheKey = password + salt.base64EncodedString()
+
+ // Check cache first
+ if let cached = passwordKeyCache[cacheKey] {
+ return cached
+ }
+
+ // Try Argon2, but if it fails, mark this password as "PBKDF2-only"
+ // and always use PBKDF2 for it in the future
+ let useArgon2: Bool
+ if let method = kdfMethodCache[cacheKey] {
+ useArgon2 = (method ==.argon2)
+ } else {
+ useArgon2 = true // Try Argon2 first
+ }
+
+ let derivedKey: Data
+ if useArgon2 {
+ do {
+ derivedKey = try Argon2KDF.deriveKey(...)
+ kdfMethodCache[cacheKey] =.argon2
+ } catch {
+ // Argon2 failed - use PBKDF2 and remember this
+ derivedKey = try deriveKeyPBKDF2(...)
+ kdfMethodCache[cacheKey] =.pbkdf2
+ }
+ } else {
+ // Always use PBKDF2 for this password
+ derivedKey = try deriveKeyPBKDF2(...)
+ }
+
+ let symmetricKey = SymmetricKey(data: derivedKey)
+ passwordKeyCache[cacheKey] = symmetricKey
+ return symmetricKey
 }
 ```
 
@@ -94,9 +94,9 @@ If Argon2 fails, throw an error instead of falling back:
 ```swift
 // Remove fallback - if Argon2 fails, fail hard
 let derivedKey = try Argon2KDF.deriveKey(
-    from: password,
-    salt: salt,
-    parameters: Argon2KDF.Parameters.default
+ from: password,
+ salt: salt,
+ parameters: Argon2KDF.Parameters.default
 )
 ```
 
@@ -106,9 +106,9 @@ Store the KDF method and parameters in the database metadata so each database us
 
 ```swift
 struct DatabaseMetadata {
-    let kdfMethod: KDFMethod  // .argon2 or .pbkdf2
-    let kdfParameters: Data   // Serialized parameters
-    // ... other metadata
+ let kdfMethod: KDFMethod //.argon2 or.pbkdf2
+ let kdfParameters: Data // Serialized parameters
+ //... other metadata
 }
 ```
 
@@ -123,20 +123,20 @@ struct DatabaseMetadata {
 
 ```swift
 func testKeyDerivationDeterminism() throws {
-    let password = "TestPassword123!"
-    let salt = "AshPileSalt".data(using: .utf8)!
-    
-    // Clear cache
-    KeyManager.clearPasswordKeyCache()
-    
-    // Derive key multiple times
-    let key1 = try KeyManager.getKey(from: password, salt: salt)
-    let key2 = try KeyManager.getKey(from: password, salt: salt)
-    let key3 = try KeyManager.getKey(from: password, salt: salt)
-    
-    // All should be identical
-    XCTAssertEqual(key1, key2, "Key derivation must be deterministic")
-    XCTAssertEqual(key2, key3, "Key derivation must be deterministic")
+ let password = "TestPassword123!"
+ let salt = "AshPileSalt".data(using:.utf8)!
+
+ // Clear cache
+ KeyManager.clearPasswordKeyCache()
+
+ // Derive key multiple times
+ let key1 = try KeyManager.getKey(from: password, salt: salt)
+ let key2 = try KeyManager.getKey(from: password, salt: salt)
+ let key3 = try KeyManager.getKey(from: password, salt: salt)
+
+ // All should be identical
+ XCTAssertEqual(key1, key2, "Key derivation must be deterministic")
+ XCTAssertEqual(key2, key3, "Key derivation must be deterministic")
 }
 ```
 

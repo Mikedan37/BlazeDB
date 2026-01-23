@@ -74,32 +74,32 @@ MVCC enables snapshot isolation: readers see a consistent snapshot while writers
 
 ```swift
 struct RecordVersion {
-    let recordID: UUID
-    let version: UInt64
-    let pageNumber: Int
-    let createdByTransaction: UInt64
-    let deletedByTransaction: UInt64
+ let recordID: UUID
+ let version: UInt64
+ let pageNumber: Int
+ let createdByTransaction: UInt64
+ let deletedByTransaction: UInt64
 }
 
 // Readers see snapshot
 func read(id: UUID, snapshotVersion: UInt64) -> Data? {
-    return versions[id]?
-        .filter { $0.isVisibleTo(snapshotVersion: snapshotVersion) }
-        .last
-        .flatMap { pageStore.read(pageNumber: $0.pageNumber) }
+ return versions[id]?
+.filter { $0.isVisibleTo(snapshotVersion: snapshotVersion) }
+.last
+.flatMap { pageStore.read(pageNumber: $0.pageNumber) }
 }
 
 // Writers create new version (don't block)
 func write(id: UUID, data: Data, txID: UInt64) {
-    let pageNumber = pageStore.write(data)
-    let newVersion = RecordVersion(
-        recordID: id,
-        version: nextVersion(),
-        pageNumber: pageNumber,
-        createdByTransaction: txID,
-        deletedByTransaction: 0
-    )
-    versions[id]?.append(newVersion)
+ let pageNumber = pageStore.write(data)
+ let newVersion = RecordVersion(
+ recordID: id,
+ version: nextVersion(),
+ pageNumber: pageNumber,
+ createdByTransaction: txID,
+ deletedByTransaction: 0
+ )
+ versions[id]?.append(newVersion)
 }
 ```
 
@@ -234,7 +234,7 @@ The MVCC implementation provides true concurrent access:
 
 ---
 
-For detailed protocol specifications, see [PROTOCOL.md](PROTOCOL.md).  
-For transaction details, see [TRANSACTIONS.md](TRANSACTIONS.md).  
+For detailed protocol specifications, see [PROTOCOL.md](PROTOCOL.md).
+For transaction details, see [TRANSACTIONS.md](TRANSACTIONS.md).
 For security architecture, see [SECURITY.md](SECURITY.md).
 

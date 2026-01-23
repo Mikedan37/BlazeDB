@@ -1,10 +1,10 @@
-# BlazeDB Discovery & Auto-Connect 🔍
+# BlazeDB Discovery & Auto-Connect
 
 **How databases find each other and connect automatically**
 
 ---
 
-## 🎯 **THE PROBLEM:**
+## **THE PROBLEM:**
 
 **Before:** You had to know the exact IP address and port to connect databases.
 
@@ -12,7 +12,7 @@
 
 ---
 
-## 🚀 **SERVER SIDE (Mac - Advertise Database)**
+## **SERVER SIDE (Mac - Advertise Database)**
 
 ### **Simple - One Line:**
 
@@ -21,9 +21,9 @@ import BlazeDB
 
 // Create server database
 let serverDB = try BlazeDBClient(
-    name: "ServerDB",
-    fileURL: serverURL,
-    password: "password"
+ name: "ServerDB",
+ fileURL: serverURL,
+ password: "password"
 )
 
 // Start server and advertise (ONE LINE!)
@@ -40,7 +40,7 @@ let server = try await serverDB.startServer(port: 8080)
 
 ---
 
-## 📱 **CLIENT SIDE (iPhone - Discover & Connect)**
+## **CLIENT SIDE (iPhone - Discover & Connect)**
 
 ### **Option 1: Auto-Connect (Simplest!)**
 
@@ -49,9 +49,9 @@ import BlazeDB
 
 // Create client database
 let clientDB = try BlazeDBClient(
-    name: "ClientDB",
-    fileURL: clientURL,
-    password: "password"
+ name: "ClientDB",
+ fileURL: clientURL,
+ password: "password"
 )
 
 // Auto-connect to first database found (ONE LINE!)
@@ -69,9 +69,9 @@ import Combine
 
 // Create client database
 let clientDB = try BlazeDBClient(
-    name: "ClientDB",
-    fileURL: clientURL,
-    password: "password"
+ name: "ClientDB",
+ fileURL: clientURL,
+ password: "password"
 )
 
 // Discover databases
@@ -80,19 +80,19 @@ let discovery = clientDB.discoverDatabases()
 // Subscribe to discoveries
 var cancellables = Set<AnyCancellable>()
 discovery.sink { databases in
-    print("Found \(databases.count) databases:")
-    
-    for db in databases {
-        print("  - \(db.name) on \(db.deviceName)")
-    }
-    
-    // Connect to first one
-    if let first = databases.first {
-        Task {
-            try await clientDB.connect(to: first)
-            print("✅ Connected to \(first.name)!")
-        }
-    }
+ print("Found \(databases.count) databases:")
+
+ for db in databases {
+ print(" - \(db.name) on \(db.deviceName)")
+ }
+
+ // Connect to first one
+ if let first = databases.first {
+ Task {
+ try await clientDB.connect(to: first)
+ print(" Connected to \(first.name)!")
+ }
+ }
 }
 .store(in: &cancellables)
 ```
@@ -102,16 +102,16 @@ discovery.sink { databases in
 ```swift
 // Auto-connect to specific database
 try await clientDB.autoConnect(
-    filter: { db in
-        // Only connect to databases named "ServerDB"
-        db.database == "ServerDB"
-    }
+ filter: { db in
+ // Only connect to databases named "ServerDB"
+ db.database == "ServerDB"
+ }
 )
 ```
 
 ---
 
-## 🔄 **COMPLETE EXAMPLE: Mac ↔ iPhone**
+## **COMPLETE EXAMPLE: Mac ↔ iPhone**
 
 ### **On Mac (Server):**
 
@@ -120,25 +120,25 @@ import BlazeDB
 
 @main
 struct ServerApp {
-    static func main() async throws {
-        // Create server database
-        let serverDB = try BlazeDBClient(
-            name: "ServerDB",
-            fileURL: URL(fileURLWithPath: "/Users/you/server.blazedb"),
-            password: "server-password"
-        )
-        
-        // Start server and advertise
-        let server = try await serverDB.startServer(port: 8080)
-        
-        print("✅ Server running!")
-        print("   Database: ServerDB")
-        print("   Port: 8080")
-        print("   Waiting for connections...")
-        
-        // Keep server running
-        try await Task.sleep(nanoseconds: UInt64.max)
-    }
+ static func main() async throws {
+ // Create server database
+ let serverDB = try BlazeDBClient(
+ name: "ServerDB",
+ fileURL: URL(fileURLWithPath: "/Users/you/server.blazedb"),
+ password: "server-password"
+ )
+
+ // Start server and advertise
+ let server = try await serverDB.startServer(port: 8080)
+
+ print(" Server running!")
+ print(" Database: ServerDB")
+ print(" Port: 8080")
+ print(" Waiting for connections...")
+
+ // Keep server running
+ try await Task.sleep(nanoseconds: UInt64.max)
+ }
 }
 ```
 
@@ -149,35 +149,35 @@ import BlazeDB
 
 @main
 struct ClientApp {
-    static func main() async throws {
-        // Create client database
-        let clientDB = try BlazeDBClient(
-            name: "ClientDB",
-            fileURL: FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
-                .appendingPathComponent("client.blazedb"),
-            password: "client-password"
-        )
-        
-        // Auto-connect to server
-        print("🔍 Discovering databases...")
-        try await clientDB.autoConnect()
-        
-        print("✅ Connected to server!")
-        
-        // Insert data - automatically syncs to server!
-        let record = BlazeDataRecord([
-            "message": .string("Hello from iPhone!"),
-            "device": .string("iPhone")
-        ])
-        let id = try clientDB.insert(record)
-        print("Inserted: \(id) (syncing to server...)")
-    }
+ static func main() async throws {
+ // Create client database
+ let clientDB = try BlazeDBClient(
+ name: "ClientDB",
+ fileURL: FileManager.default.urls(for:.documentDirectory, in:.userDomainMask)[0]
+.appendingPathComponent("client.blazedb"),
+ password: "client-password"
+ )
+
+ // Auto-connect to server
+ print(" Discovering databases...")
+ try await clientDB.autoConnect()
+
+ print(" Connected to server!")
+
+ // Insert data - automatically syncs to server!
+ let record = BlazeDataRecord([
+ "message":.string("Hello from iPhone!"),
+ "device":.string("iPhone")
+ ])
+ let id = try clientDB.insert(record)
+ print("Inserted: \(id) (syncing to server...)")
+ }
 }
 ```
 
 ---
 
-## 🎯 **HOW IT WORKS:**
+## **HOW IT WORKS:**
 
 ### **1. Discovery (mDNS/Bonjour):**
 - **Server** advertises itself using mDNS/Bonjour
@@ -197,22 +197,22 @@ struct ClientApp {
 
 ---
 
-## 🔒 **SECURITY:**
+## **SECURITY:**
 
 ### **With Auth Token:**
 
 ```swift
 // Server side
 let server = try await serverDB.startServer(
-    port: 8080,
-    authToken: "my-secret-token"
+ port: 8080,
+ authToken: "my-secret-token"
 )
 
 // Client side
 let request = ConnectionRequest(
-    clientName: "My iPhone",
-    requestedDatabase: "ServerDB",
-    authToken: "my-secret-token"
+ clientName: "My iPhone",
+ requestedDatabase: "ServerDB",
+ authToken: "my-secret-token"
 )
 try await clientDB.requestConnection(to: discovered, request: request)
 ```
@@ -222,31 +222,31 @@ try await clientDB.requestConnection(to: discovered, request: request)
 ```swift
 // Server: Allow auto-connect without approval
 let server = try await serverDB.startServer(
-    port: 8080,
-    allowAutoConnect: true  // Clients can connect without approval
+ port: 8080,
+ allowAutoConnect: true // Clients can connect without approval
 )
 
 // Server: Require approval (default)
 let server = try await serverDB.startServer(
-    port: 8080,
-    allowAutoConnect: false  // Clients must request connection
+ port: 8080,
+ allowAutoConnect: false // Clients must request connection
 )
 ```
 
 ---
 
-## 📊 **DISCOVERY DETAILS:**
+## **DISCOVERY DETAILS:**
 
 ### **DiscoveredDatabase Structure:**
 
 ```swift
 public struct DiscoveredDatabase {
-    public let id: UUID
-    public let name: String              // Service name
-    public let deviceName: String        // "John's MacBook Pro"
-    public let host: String              // IP address
-    public let port: UInt16              // Port number
-    public let database: String          // Database name
+ public let id: UUID
+ public let name: String // Service name
+ public let deviceName: String // "John's MacBook Pro"
+ public let host: String // IP address
+ public let port: UInt16 // Port number
+ public let database: String // Database name
 }
 ```
 
@@ -258,16 +258,16 @@ let discovery = clientDB.discoverDatabases()
 
 // Subscribe
 discovery.sink { databases in
-    // Called whenever databases are discovered/updated
-    for db in databases {
-        print("Found: \(db.name)")
-    }
+ // Called whenever databases are discovered/updated
+ for db in databases {
+ print("Found: \(db.name)")
+ }
 }
 ```
 
 ---
 
-## 🎯 **USE CASES:**
+## **USE CASES:**
 
 ### **1. Local Network Sync:**
 ```swift
@@ -283,12 +283,12 @@ try await iPhoneDB.autoConnect()
 // Connect to specific server
 let discovery = clientDB.discoverDatabases()
 discovery.sink { databases in
-    // Find server by name
-    if let server = databases.first(where: { $0.database == "ProductionDB" }) {
-        Task {
-            try await clientDB.connect(to: server)
-        }
-    }
+ // Find server by name
+ if let server = databases.first(where: { $0.database == "ProductionDB" }) {
+ Task {
+ try await clientDB.connect(to: server)
+ }
+ }
 }
 ```
 
@@ -300,7 +300,7 @@ try await devDB.autoConnect(timeout: 5.0)
 
 ---
 
-## ✅ **QUICK REFERENCE:**
+## **QUICK REFERENCE:**
 
 ### **Server (Mac):**
 ```swift
@@ -315,17 +315,17 @@ try await db.autoConnect()
 // Or discover and choose
 let discovery = db.discoverDatabases()
 discovery.sink { databases in
-    if let server = databases.first {
-        Task { try await db.connect(to: server) }
-    }
+ if let server = databases.first {
+ Task { try await db.connect(to: server) }
+ }
 }
 ```
 
 ---
 
-## 🔥 **THAT'S IT!**
+## **THAT'S IT!**
 
-**Before:** Need to know IP address, port, configure manually  
+**Before:** Need to know IP address, port, configure manually
 **After:** One line - databases find each other automatically!
 
 ```swift
@@ -336,5 +336,5 @@ try await serverDB.startServer(port: 8080)
 try await clientDB.autoConnect()
 ```
 
-**Much better! 🚀**
+**Much better! **
 

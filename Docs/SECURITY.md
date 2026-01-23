@@ -27,21 +27,21 @@ All data is encrypted at rest using AES-256-GCM with unique nonces per page:
 ```swift
 // Key derivation from user password (PBKDF2 default)
 let key = try KeyManager.getKey(
-    from: .password(password),
-    createIfMissing: false
+ from:.password(password),
+ createIfMissing: false
 )
 
 // Alternative: Argon2id for enhanced security
 let argon2Key = try KeyManager.getKeyArgon2(
-    from: password,
-    salt: databaseSalt,
-    parameters: .default
+ from: password,
+ salt: databaseSalt,
+ parameters:.default
 )
 
 // Secure Enclave integration (iOS/macOS)
 let secureKey = try KeyManager.getKey(
-    from: .secureEnclave(label: "com.app.blazedb"),
-    createIfMissing: true
+ from:.secureEnclave(label: "com.app.blazedb"),
+ createIfMissing: true
 )
 ```
 
@@ -58,16 +58,16 @@ Records are encoded to BlazeBinary, assembled into 4KB pages, encrypted with AES
 ### Threat Actors
 
 1. **Physical Access**: Attacker has device access
-   - Mitigation: Encryption at rest, Secure Enclave
+ - Mitigation: Encryption at rest, Secure Enclave
 
 2. **Network Interception**: Attacker intercepts sync traffic
-   - Mitigation: TLS/SSL, ECDH key exchange, end-to-end encryption
+ - Mitigation: TLS/SSL, ECDH key exchange, end-to-end encryption
 
 3. **Malicious Application**: Compromised app process
-   - Mitigation: Row-level security, policy evaluation
+ - Mitigation: Row-level security, policy evaluation
 
 4. **Storage Corruption**: Accidental or malicious data corruption
-   - Mitigation: CRC32 checksums, corruption detection, automatic recovery
+ - Mitigation: CRC32 checksums, corruption detection, automatic recovery
 
 ### Attack Surfaces
 
@@ -105,12 +105,12 @@ Fine-grained access control at the record level:
 
 ```swift
 let policy = SecurityPolicy(
-    name: "view_team_bugs",
-    type: .restrictive,
-    operation: .select
+ name: "view_team_bugs",
+ type:.restrictive,
+ operation:.select
 ) { record, context in
-    guard let teamID = record.storage["teamID"]?.uuidValue else { return false }
-    return context.teamIDs.contains(teamID)
+ guard let teamID = record.storage["teamID"]?.uuidValue else { return false }
+ return context.teamIDs.contains(teamID)
 }
 ```
 
@@ -123,10 +123,10 @@ let policy = SecurityPolicy(
 
 ```swift
 struct SecurityContext {
-    let userID: UUID
-    let teamIDs: [UUID]
-    let roles: Set<String>
-    let customClaims: [String: Any]
+ let userID: UUID
+ let teamIDs: [UUID]
+ let roles: Set<String>
+ let customClaims: [String: Any]
 }
 ```
 
@@ -136,13 +136,13 @@ struct SecurityContext {
 
 | Threat | Control | Status |
 |--------|---------|--------|
-| Physical access | Encryption at rest | ✅ Implemented |
-| Key extraction | Secure Enclave | ✅ Implemented |
-| Network interception | TLS/SSL | ⚠️ Required |
-| E2E encryption | ECDH + AES-256-GCM | ✅ Implemented |
-| Unauthorized access | Row-level security | ✅ Implemented |
-| Data tampering | GCM auth tag | ✅ Implemented |
-| Corruption | CRC32 + detection | ✅ Implemented |
+| Physical access | Encryption at rest | Implemented |
+| Key extraction | Secure Enclave | Implemented |
+| Network interception | TLS/SSL | ️ Required |
+| E2E encryption | ECDH + AES-256-GCM | Implemented |
+| Unauthorized access | Row-level security | Implemented |
+| Data tampering | GCM auth tag | Implemented |
+| Corruption | CRC32 + detection | Implemented |
 
 ---
 
@@ -175,6 +175,6 @@ Software-based key storage:
 
 ---
 
-For architecture details, see [ARCHITECTURE.md](ARCHITECTURE.md).  
+For architecture details, see [ARCHITECTURE.md](ARCHITECTURE.md).
 For protocol security, see [PROTOCOL.md](PROTOCOL.md).
 

@@ -1,21 +1,21 @@
-# 🎯 BlazeDB Convenience API Guide
+# BlazeDB Convenience API Guide
 
 **Easy database creation - just provide a name! No file paths needed.**
 
 ---
 
-## **🚀 Quick Start**
+## ** Quick Start**
 
 ### **Before (Complex):**
 ```swift
-let url = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
-    .appendingPathComponent("myapp.blazedb")
+let url = FileManager.default.urls(for:.documentDirectory, in:.userDomainMask)[0]
+.appendingPathComponent("myapp.blazedb")
 let db = try BlazeDBClient(name: "MyApp", fileURL: url, password: "password")
 ```
 
 ### **After (Simple):**
 ```swift
-// Just a name - that's it! 🎉
+// Just a name - that's it!
 let db = try BlazeDBClient(name: "MyApp", password: "password")
 ```
 
@@ -24,7 +24,7 @@ let db = try BlazeDBClient(name: "MyApp", password: "password")
 
 ---
 
-## **📖 API Reference**
+## ** API Reference**
 
 ### **1. Create Database by Name**
 
@@ -37,8 +37,8 @@ let db = try BlazeDBClient(name: "MyApp", password: "secure-password-123", proje
 
 // Failable (no try-catch needed)
 guard let db = BlazeDBClient.create(name: "MyApp", password: "secure-password-123") else {
-    print("Failed to create database")
-    return
+ print("Failed to create database")
+ return
 }
 ```
 
@@ -60,19 +60,19 @@ let directory = try BlazeDBClient.defaultDatabaseDirectory
 // Discover all databases in default location
 let databases = try BlazeDBClient.discoverDatabases()
 for db in databases {
-    print("Found: \(db.name) at \(db.path)")
-    print("  Records: \(db.recordCount)")
-    print("  Size: \(db.fileSizeBytes) bytes")
+ print("Found: \(db.name) at \(db.path)")
+ print(" Records: \(db.recordCount)")
+ print(" Size: \(db.fileSizeBytes) bytes")
 }
 
 // Find specific database by name
 if let db = try BlazeDBClient.findDatabase(named: "MyApp") {
-    print("Found: \(db.name) at \(db.path)")
+ print("Found: \(db.name) at \(db.path)")
 }
 
 // Check if database exists
 if BlazeDBClient.databaseExists(named: "MyApp") {
-    print("Database exists!")
+ print("Database exists!")
 }
 ```
 
@@ -85,7 +85,7 @@ BlazeDBClient.registerDatabase(name: "MyApp", client: db)
 
 // Get registered database
 if let db = BlazeDBClient.getRegisteredDatabase(named: "MyApp") {
-    // Use db...
+ // Use db...
 }
 
 // List all registered databases
@@ -98,7 +98,7 @@ BlazeDBClient.unregisterDatabase(named: "MyApp")
 
 ---
 
-## **💡 Usage Examples**
+## ** Usage Examples**
 
 ### **Example 1: Simple App Database**
 
@@ -109,7 +109,7 @@ import BlazeDB
 let db = try BlazeDBClient(name: "MyApp", password: "secure-password-123")
 
 // Use it!
-let id = try db.insert(BlazeDataRecord(["title": .string("Hello")]))
+let id = try db.insert(BlazeDataRecord(["title":.string("Hello")]))
 let record = try db.fetch(id: id)
 ```
 
@@ -131,15 +131,15 @@ let settingsDB = try BlazeDBClient(name: "Settings", password: "password3")
 let databases = try BlazeDBClient.discoverDatabases()
 
 for dbInfo in databases {
-    print("Database: \(dbInfo.name)")
-    print("  Path: \(dbInfo.path)")
-    print("  Records: \(dbInfo.recordCount)")
-    print("  Size: \(ByteCountFormatter.string(fromByteCount: dbInfo.fileSizeBytes, countStyle: .file))")
-    
-    // Open database (requires password)
-    // In production, you'd get password from secure storage
-    let db = try BlazeDBClient(name: dbInfo.name, password: "password")
-    // Use db...
+ print("Database: \(dbInfo.name)")
+ print(" Path: \(dbInfo.path)")
+ print(" Records: \(dbInfo.recordCount)")
+ print(" Size: \(ByteCountFormatter.string(fromByteCount: dbInfo.fileSizeBytes, countStyle:.file))")
+
+ // Open database (requires password)
+ // In production, you'd get password from secure storage
+ let db = try BlazeDBClient(name: dbInfo.name, password: "password")
+ // Use db...
 }
 ```
 
@@ -155,13 +155,13 @@ BlazeDBClient.registerDatabase(name: "Cache", client: cacheDB)
 
 // Later, get database by name
 if let db = BlazeDBClient.getRegisteredDatabase(named: "UserData") {
-    // Use db without reopening
+ // Use db without reopening
 }
 ```
 
 ---
 
-## **📁 Default Location**
+## ** Default Location**
 
 ### **macOS/iOS:**
 ```
@@ -169,15 +169,15 @@ if let db = BlazeDBClient.getRegisteredDatabase(named: "UserData") {
 ```
 
 ### **Benefits:**
-- ✅ Standard location (follows Apple guidelines)
-- ✅ Automatically backed up by Time Machine
-- ✅ Secure permissions (700)
-- ✅ Easy to find for servers/tools
-- ✅ No file path management needed
+- Standard location (follows Apple guidelines)
+- Automatically backed up by Time Machine
+- Secure permissions (700)
+- Easy to find for servers/tools
+- No file path management needed
 
 ---
 
-## **🔍 Discovery**
+## ** Discovery**
 
 ### **What Gets Discovered:**
 - All `.blazedb` files in default location
@@ -189,20 +189,20 @@ if let db = BlazeDBClient.getRegisteredDatabase(named: "UserData") {
 - Last modified date
 
 ### **What Doesn't Get Discovered:**
-- ❌ Password (never exposed)
-- ❌ Record data (never exposed)
-- ❌ Encryption keys (never exposed)
+- Password (never exposed)
+- Record data (never exposed)
+- Encryption keys (never exposed)
 
 **Discovery is safe and secure!**
 
 ---
 
-## **🔄 Migration from Old API**
+## ** Migration from Old API**
 
 ### **Old Way:**
 ```swift
-let url = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
-    .appendingPathComponent("myapp.blazedb")
+let url = FileManager.default.urls(for:.documentDirectory, in:.userDomainMask)[0]
+.appendingPathComponent("myapp.blazedb")
 let db = try BlazeDBClient(name: "MyApp", fileURL: url, password: "password")
 ```
 
@@ -215,15 +215,15 @@ let db = try BlazeDBClient(name: "MyApp", password: "password")
 
 ---
 
-## **🎯 Best Practices**
+## ** Best Practices**
 
 ### **1. Use Descriptive Names:**
 ```swift
-// ✅ Good
+// Good
 let db = try BlazeDBClient(name: "UserData", password: "password")
 let db = try BlazeDBClient(name: "AppCache", password: "password")
 
-// ❌ Bad
+// Bad
 let db = try BlazeDBClient(name: "db1", password: "password")
 let db = try BlazeDBClient(name: "data", password: "password")
 ```
@@ -236,7 +236,7 @@ BlazeDBClient.registerDatabase(name: "MyApp", client: db)
 
 // Use throughout app
 if let db = BlazeDBClient.getRegisteredDatabase(named: "MyApp") {
-    // Use db...
+ // Use db...
 }
 ```
 
@@ -245,23 +245,23 @@ if let db = BlazeDBClient.getRegisteredDatabase(named: "MyApp") {
 // Server can discover all databases
 let databases = try BlazeDBClient.discoverDatabases()
 for dbInfo in databases {
-    // Process each database
+ // Process each database
 }
 ```
 
 ---
 
-## **🔒 Security**
+## ** Security**
 
-- ✅ Databases are encrypted (AES-256-GCM)
-- ✅ Passwords are never stored
-- ✅ Discovery only exposes metadata
-- ✅ Default directory has secure permissions (700)
-- ✅ No sensitive data in discovery
+- Databases are encrypted (AES-256-GCM)
+- Passwords are never stored
+- Discovery only exposes metadata
+- Default directory has secure permissions (700)
+- No sensitive data in discovery
 
 ---
 
-## **📊 Comparison**
+## ** Comparison**
 
 | Feature | Old API | New API |
 |---------|---------|---------|
@@ -273,7 +273,7 @@ for dbInfo in databases {
 
 ---
 
-## **✅ Benefits**
+## ** Benefits**
 
 1. **Simpler API** - Just a name, no paths
 2. **Standard Location** - Application Support (Apple guidelines)
@@ -284,5 +284,5 @@ for dbInfo in databases {
 
 ---
 
-**The convenience API makes BlazeDB even easier to use! 🎉**
+**The convenience API makes BlazeDB even easier to use! **
 

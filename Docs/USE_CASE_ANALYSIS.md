@@ -7,65 +7,65 @@
 ## Current State
 
 ### DynamicCollection
-- ✅ **Used by BlazeDBClient** (line 162: `internal var collection: DynamicCollection`)
-- ✅ **Production-ready** - All features (indexes, MVCC, search, spatial, vector)
-- ✅ **Type-safe APIs available** - Via `BlazeDBClient+TypeSafe.swift` using `BlazeDocument` protocol
-- ✅ **Schema-less** - Can store any `BlazeDataRecord` structure
+- **Used by BlazeDBClient** (line 162: `internal var collection: DynamicCollection`)
+- **Production-ready** - All features (indexes, MVCC, search, spatial, vector)
+- **Type-safe APIs available** - Via `BlazeDBClient+TypeSafe.swift` using `BlazeDocument` protocol
+- **Schema-less** - Can store any `BlazeDataRecord` structure
 
 ### BlazeCollection
-- ❌ **NOT used by BlazeDBClient** - Only found in test files
-- ❌ **Limited features** - No indexes, no MVCC, no search
-- ⚠️ **Redundant** - `BlazeDBClient` already provides type-safe APIs via `BlazeDocument`
+- **NOT used by BlazeDBClient** - Only found in test files
+- **Limited features** - No indexes, no MVCC, no search
+- ️ **Redundant** - `BlazeDBClient` already provides type-safe APIs via `BlazeDocument`
 
 ## The Confusion
 
 There are **THREE** type-safe approaches in BlazeDB:
 
-1. **`BlazeDocument`** (Used by BlazeDBClient) ✅
-2. **`BlazeRecord`** (Used by BlazeCollection) ❌ Not used in production
-3. **`BlazeStorable`** (Used by CodableIntegration) ✅ Alternative API
+1. **`BlazeDocument`** (Used by BlazeDBClient)
+2. **`BlazeRecord`** (Used by BlazeCollection) Not used in production
+3. **`BlazeStorable`** (Used by CodableIntegration) Alternative API
 
 ## Type-Safe APIs Already Exist!
 
 ### Option 1: BlazeDocument (Recommended)
 ```swift
 struct Bug: BlazeDocument {
-    @Field var id: UUID = UUID()
-    @Field var title: String
-    @Field var priority: Int
+ @Field var id: UUID = UUID()
+ @Field var title: String
+ @Field var priority: Int
 }
 
 let db = try BlazeDBClient(name: "db", fileURL: url, password: "pass")
 let bug = Bug(title: "Fix login", priority: 5)
-let id = try await db.insert(bug)  // Type-safe!
-let fetched = try await db.fetch(Bug.self, id: id)  // Type-safe!
+let id = try await db.insert(bug) // Type-safe!
+let fetched = try await db.fetch(Bug.self, id: id) // Type-safe!
 ```
 
 ### Option 2: BlazeStorable (Alternative)
 ```swift
 struct Bug: BlazeStorable {
-    var id: UUID
-    var title: String
-    var priority: Int
+ var id: UUID
+ var title: String
+ var priority: Int
 }
 
 let db = try BlazeDBClient(name: "db", fileURL: url, password: "pass")
 let bug = Bug(id: UUID(), title: "Fix login", priority: 5)
-let id = try db.insert(bug)  // Type-safe!
-let fetched = try db.fetch(Bug.self, id: id)  // Type-safe!
+let id = try db.insert(bug) // Type-safe!
+let fetched = try db.fetch(Bug.self, id: id) // Type-safe!
 ```
 
 ### Option 3: BlazeCollection (NOT Recommended)
 ```swift
 struct Bug: BlazeRecord {
-    var id: UUID
-    var title: String
-    var priority: Int
+ var id: UUID
+ var title: String
+ var priority: Int
 }
 
 // You'd have to create BlazeCollection manually - NOT integrated!
 let collection = try BlazeCollection<Bug>(store: store, metaURL: metaURL, key: key)
-try collection.insert(bug)  // Type-safe but missing features!
+try collection.insert(bug) // Type-safe but missing features!
 ```
 
 ## Why BlazeCollection Exists
@@ -77,15 +77,15 @@ Looking at the code, `BlazeCollection` appears to be:
 
 ## Recommendation
 
-### ✅ Use DynamicCollection (via BlazeDBClient)
+### Use DynamicCollection (via BlazeDBClient)
 
 **For type-safe usage:**
 ```swift
 // Use BlazeDBClient with BlazeDocument
 struct Bug: BlazeDocument {
-    @Field var id: UUID = UUID()
-    @Field var title: String
-    @Field var priority: Int
+ @Field var id: UUID = UUID()
+ @Field var title: String
+ @Field var priority: Int
 }
 
 let db = try BlazeDBClient(name: "db", fileURL: url, password: "pass")
@@ -97,13 +97,13 @@ let id = try await db.insert(bug)
 ```swift
 // Use BlazeDBClient with BlazeDataRecord
 let record = BlazeDataRecord([
-    "title": .string("Fix login"),
-    "priority": .int(5)
+ "title":.string("Fix login"),
+ "priority":.int(5)
 ])
 let id = try db.insert(record)
 ```
 
-### ❌ Don't Use BlazeCollection
+### Don't Use BlazeCollection
 
 **Reasons:**
 1. Not integrated into BlazeDBClient
@@ -116,32 +116,32 @@ let id = try db.insert(record)
 **Current Architecture:**
 ```
 BlazeDBClient
-  └── DynamicCollection (production)
-       └── BlazeDataRecord → BlazeBinary → File
+ └── DynamicCollection (production)
+ └── BlazeDataRecord → BlazeBinary → File
 
 BlazeCollection (test-only, redundant)
-  └── Record → BlazeDataRecord → BlazeBinary → File
+ └── Record → BlazeDataRecord → BlazeBinary → File
 ```
 
 **Recommended Architecture:**
 ```
 BlazeDBClient
-  └── DynamicCollection (production)
-       └── BlazeDataRecord → BlazeBinary → File
-       
+ └── DynamicCollection (production)
+ └── BlazeDataRecord → BlazeBinary → File
+
 Type-Safe APIs:
-  └── BlazeDocument → BlazeDataRecord (via BlazeDBClient+TypeSafe)
-  └── BlazeStorable → BlazeDataRecord (via CodableIntegration)
+ └── BlazeDocument → BlazeDataRecord (via BlazeDBClient+TypeSafe)
+ └── BlazeStorable → BlazeDataRecord (via CodableIntegration)
 ```
 
 ## Conclusion
 
 **Yes, you should just use DynamicCollection!**
 
-- ✅ It's what BlazeDBClient uses internally
-- ✅ It has all the features (indexes, MVCC, search, etc.)
-- ✅ Type-safe APIs are available via `BlazeDocument` or `BlazeStorable`
-- ✅ `BlazeCollection` is redundant and not used in production
+- It's what BlazeDBClient uses internally
+- It has all the features (indexes, MVCC, search, etc.)
+- Type-safe APIs are available via `BlazeDocument` or `BlazeStorable`
+- `BlazeCollection` is redundant and not used in production
 
 **Action Items:**
 1. Use `BlazeDBClient` with `BlazeDocument` for type-safe APIs

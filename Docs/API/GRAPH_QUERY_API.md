@@ -17,9 +17,9 @@ The Graph Query API is designed for SwiftUI developers who need to visualize dat
 
 ```swift
 let points = try db.graph()
-    .x("category")
-    .y(.count)
-    .toPoints()
+.x("category")
+.y(.count)
+.toPoints()
 
 // points: [BlazeGraphPoint<Any, Any>]
 // Each point has x: String (category) and y: Int (count)
@@ -29,9 +29,9 @@ let points = try db.graph()
 
 ```swift
 let points = try db.graph()
-    .x("createdAt", .day)
-    .y(.count)
-    .toPoints()
+.x("createdAt",.day)
+.y(.count)
+.toPoints()
 
 // points: [BlazeGraphPoint<Any, Any>]
 // Each point has x: Date (binned by day) and y: Int (count)
@@ -42,21 +42,21 @@ let points = try db.graph()
 ```swift
 // Sum
 let points = try db.graph()
-    .x("category")
-    .y(.sum("amount"))
-    .toPoints()
+.x("category")
+.y(.sum("amount"))
+.toPoints()
 
 // Average
 let points = try db.graph()
-    .x("category")
-    .y(.avg("amount"))
-    .toPoints()
+.x("category")
+.y(.avg("amount"))
+.toPoints()
 
 // Min/Max
 let points = try db.graph()
-    .x("category")
-    .y(.min("amount"))
-    .toPoints()
+.x("category")
+.y(.min("amount"))
+.toPoints()
 ```
 
 ## Date Binning
@@ -72,15 +72,15 @@ The Graph Query API supports five date binning granularities:
 ```swift
 // Daily sales
 let dailySales = try db.graph()
-    .x("createdAt", .day)
-    .y(.sum("amount"))
-    .toPoints()
+.x("createdAt",.day)
+.y(.sum("amount"))
+.toPoints()
 
 // Monthly revenue
 let monthlyRevenue = try db.graph()
-    .x("createdAt", .month)
-    .y(.sum("revenue"))
-    .toPoints()
+.x("createdAt",.month)
+.y(.sum("revenue"))
+.toPoints()
 ```
 
 ## Moving Windows
@@ -91,20 +91,20 @@ Moving windows are useful for smoothing data and calculating trends:
 
 ```swift
 let points = try db.graph()
-    .x("createdAt", .day)
-    .y(.sum("sales"))
-    .movingAverage(7)  // 7-day moving average
-    .toPoints()
+.x("createdAt",.day)
+.y(.sum("sales"))
+.movingAverage(7) // 7-day moving average
+.toPoints()
 ```
 
 ### Moving Sum
 
 ```swift
 let points = try db.graph()
-    .x("createdAt", .day)
-    .y(.sum("sales"))
-    .movingSum(14)  // 14-day moving sum
-    .toPoints()
+.x("createdAt",.day)
+.y(.sum("sales"))
+.movingSum(14) // 14-day moving sum
+.toPoints()
 ```
 
 ## Filtering
@@ -113,22 +113,22 @@ Graph queries support the same filtering API as regular queries:
 
 ```swift
 let points = try db.graph()
-    .x("category")
-    .y(.count)
-    .filter { record in
-        record.storage["status"]?.stringValue == "active"
-    }
-    .toPoints()
+.x("category")
+.y(.count)
+.filter { record in
+ record.storage["status"]?.stringValue == "active"
+ }
+.toPoints()
 ```
 
 Or using the `where` clause:
 
 ```swift
 let points = try db.graph()
-    .x("category")
-    .y(.count)
-    .where("status", equals: .string("active"))
-    .toPoints()
+.x("category")
+.y(.count)
+.where("status", equals:.string("active"))
+.toPoints()
 ```
 
 ## Sorting
@@ -137,10 +137,10 @@ Graph queries are automatically sorted by X-axis in ascending order. You can cus
 
 ```swift
 let points = try db.graph()
-    .x("category")
-    .y(.count)
-    .sorted(ascending: false)  // Descending order
-    .toPoints()
+.x("category")
+.y(.count)
+.sorted(ascending: false) // Descending order
+.toPoints()
 ```
 
 ## Type-Safe Access
@@ -149,15 +149,15 @@ For type-safe access to graph points, use `toPointsTyped()`:
 
 ```swift
 let points: [BlazeGraphPoint<Date, Int>] = try db.graph()
-    .x("createdAt", .day)
-    .y(.count)
-    .toPointsTyped()
+.x("createdAt",.day)
+.y(.count)
+.toPointsTyped()
 
 // Now you can access points with full type safety
 for point in points {
-    let date: Date = point.x
-    let count: Int = point.y
-    print("\(date): \(count)")
+ let date: Date = point.x
+ let count: Int = point.y
+ print("\(date): \(count)")
 }
 ```
 
@@ -170,22 +170,22 @@ import SwiftUI
 import Charts
 
 struct SalesChartView: View {
-    @BlazeGraphQuery(
-        db: myDatabase,
-        xField: "createdAt",
-        xBin: .day,
-        yAggregation: .sum("amount")
-    )
-    var salesPoints
-    
-    var body: some View {
-        Chart(salesPoints, id: \.x) { point in
-            LineMark(
-                x: .value("Date", point.x as? Date ?? Date()),
-                y: .value("Sales", point.y as? Double ?? 0)
-            )
-        }
-    }
+ @BlazeGraphQuery(
+ db: myDatabase,
+ xField: "createdAt",
+ xBin:.day,
+ yAggregation:.sum("amount")
+ )
+ var salesPoints
+
+ var body: some View {
+ Chart(salesPoints, id: \.x) { point in
+ LineMark(
+ x:.value("Date", point.x as? Date?? Date()),
+ y:.value("Sales", point.y as? Double?? 0)
+ )
+ }
+ }
 }
 ```
 
@@ -193,35 +193,35 @@ struct SalesChartView: View {
 
 ```swift
 struct AnalyticsView: View {
-    @BlazeGraphQuery(
-        db: myDatabase,
-        xField: "createdAt",
-        xBin: .day,
-        yAggregation: .count,
-        filter: { $0.storage["status"]?.stringValue == "active" },
-        movingWindowSize: 7,
-        movingWindowType: .average
-    )
-    var activeUsers
-    
-    var body: some View {
-        VStack {
-            if activeUsers.isEmpty {
-                Text("No data")
-            } else {
-                Chart(activeUsers, id: \.x) { point in
-                    BarMark(
-                        x: .value("Date", point.x as? Date ?? Date()),
-                        y: .value("Users", point.y as? Int ?? 0)
-                    )
-                }
-            }
-            
-            if $activeUsers.isLoading {
-                ProgressView()
-            }
-        }
-    }
+ @BlazeGraphQuery(
+ db: myDatabase,
+ xField: "createdAt",
+ xBin:.day,
+ yAggregation:.count,
+ filter: { $0.storage["status"]?.stringValue == "active" },
+ movingWindowSize: 7,
+ movingWindowType:.average
+ )
+ var activeUsers
+
+ var body: some View {
+ VStack {
+ if activeUsers.isEmpty {
+ Text("No data")
+ } else {
+ Chart(activeUsers, id: \.x) { point in
+ BarMark(
+ x:.value("Date", point.x as? Date?? Date()),
+ y:.value("Users", point.y as? Int?? 0)
+ )
+ }
+ }
+
+ if $activeUsers.isLoading {
+ ProgressView()
+ }
+ }
+ }
 }
 ```
 
@@ -250,8 +250,8 @@ A single point in a graph/XY dataset.
 
 ```swift
 public struct BlazeGraphPoint<X: Sendable, Y: Sendable>: Sendable {
-    public let x: X
-    public let y: Y
+ public let x: X
+ public let y: Y
 }
 ```
 
@@ -261,11 +261,11 @@ Date binning granularity enum:
 
 ```swift
 public enum BlazeDateBin: String, Sendable, CaseIterable {
-    case hour
-    case day
-    case week
-    case month
-    case year
+ case hour
+ case day
+ case week
+ case month
+ case year
 }
 ```
 
@@ -275,11 +275,11 @@ Y-axis aggregation:
 
 ```swift
 public enum BlazeGraphAggregation: Sendable {
-    case count
-    case sum(String)  // Field name
-    case avg(String)  // Field name
-    case min(String)  // Field name
-    case max(String)  // Field name
+ case count
+ case sum(String) // Field name
+ case avg(String) // Field name
+ case min(String) // Field name
+ case max(String) // Field name
 }
 ```
 
@@ -289,13 +289,13 @@ SwiftUI property wrapper for reactive graph queries.
 
 ```swift
 @BlazeGraphQuery(
-    db: BlazeDBClient,
-    xField: String,
-    xBin: BlazeDateBin? = nil,
-    yAggregation: BlazeGraphAggregation,
-    filter: ((BlazeDataRecord) -> Bool)? = nil,
-    movingWindowSize: Int? = nil,
-    movingWindowType: MovingWindowType? = nil
+ db: BlazeDBClient,
+ xField: String,
+ xBin: BlazeDateBin? = nil,
+ yAggregation: BlazeGraphAggregation,
+ filter: ((BlazeDataRecord) -> Bool)? = nil,
+ movingWindowSize: Int? = nil,
+ movingWindowType: MovingWindowType? = nil
 )
 var points: [BlazeGraphPoint<Any, Any>]
 ```
@@ -320,40 +320,40 @@ var points: [BlazeGraphPoint<Any, Any>]
 
 ```swift
 struct SalesDashboard: View {
-    @BlazeGraphQuery(
-        db: salesDB,
-        xField: "date",
-        xBin: .day,
-        yAggregation: .sum("amount")
-    )
-    var dailySales
-    
-    @BlazeGraphQuery(
-        db: salesDB,
-        xField: "category",
-        yAggregation: .sum("amount")
-    )
-    var categorySales
-    
-    var body: some View {
-        VStack {
-            Text("Daily Sales")
-            Chart(dailySales, id: \.x) { point in
-                LineMark(
-                    x: .value("Date", point.x as? Date ?? Date()),
-                    y: .value("Sales", point.y as? Double ?? 0)
-                )
-            }
-            
-            Text("Sales by Category")
-            Chart(categorySales, id: \.x) { point in
-                BarMark(
-                    x: .value("Category", point.x as? String ?? ""),
-                    y: .value("Sales", point.y as? Double ?? 0)
-                )
-            }
-        }
-    }
+ @BlazeGraphQuery(
+ db: salesDB,
+ xField: "date",
+ xBin:.day,
+ yAggregation:.sum("amount")
+ )
+ var dailySales
+
+ @BlazeGraphQuery(
+ db: salesDB,
+ xField: "category",
+ yAggregation:.sum("amount")
+ )
+ var categorySales
+
+ var body: some View {
+ VStack {
+ Text("Daily Sales")
+ Chart(dailySales, id: \.x) { point in
+ LineMark(
+ x:.value("Date", point.x as? Date?? Date()),
+ y:.value("Sales", point.y as? Double?? 0)
+ )
+ }
+
+ Text("Sales by Category")
+ Chart(categorySales, id: \.x) { point in
+ BarMark(
+ x:.value("Category", point.x as? String?? ""),
+ y:.value("Sales", point.y as? Double?? 0)
+ )
+ }
+ }
+ }
 }
 ```
 
@@ -361,16 +361,16 @@ struct SalesDashboard: View {
 
 ```swift
 let userGrowth = try db.graph()
-    .x("createdAt", .month)
-    .y(.count)
-    .filter { $0.storage["isActive"]?.boolValue == true }
-    .toPoints()
+.x("createdAt",.month)
+.y(.count)
+.filter { $0.storage["isActive"]?.boolValue == true }
+.toPoints()
 
 let engagement = try db.graph()
-    .x("date", .day)
-    .y(.avg("sessionDuration"))
-    .movingAverage(7)
-    .toPoints()
+.x("date",.day)
+.y(.avg("sessionDuration"))
+.movingAverage(7)
+.toPoints()
 ```
 
 ## Best Practices

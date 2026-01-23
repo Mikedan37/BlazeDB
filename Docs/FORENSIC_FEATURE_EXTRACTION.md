@@ -1,7 +1,7 @@
 # BlazeDB - Forensic Feature Extraction
 
-**Date:** 2025-01-XX  
-**Method:** Code-driven analysis only - no speculation  
+**Date:** 2025-01-XX
+**Method:** Code-driven analysis only - no speculation
 **Scope:** Complete codebase scan
 
 ---
@@ -11,7 +11,7 @@
 ### 1.1 Database Engine Architecture
 
 #### DynamicCollection (Schema-less Document Store)
-**File:** `BlazeDB/Core/DynamicCollection.swift`  
+**File:** `BlazeDB/Core/DynamicCollection.swift`
 **Lines:** 1-2661
 
 **What It Is:**
@@ -36,7 +36,7 @@
 - Per-record version tracking for MVCC
 
 #### PageStore (Encrypted Page Storage)
-**File:** `BlazeDB/Storage/PageStore.swift`  
+**File:** `BlazeDB/Storage/PageStore.swift`
 **Lines:** 59-429
 
 **What It Is:**
@@ -58,7 +58,7 @@
 - Compatible with older iOS/macOS versions via compatibility layer
 
 #### StorageLayout (Metadata Management)
-**File:** `BlazeDB/Storage/StorageLayout.swift`  
+**File:** `BlazeDB/Storage/StorageLayout.swift`
 **Lines:** 1-500+
 
 **What It Is:**
@@ -82,7 +82,7 @@
 ### 1.2 Query Subsystem
 
 #### QueryBuilder (Fluent Query DSL)
-**File:** `BlazeDB/Query/QueryBuilder.swift`  
+**File:** `BlazeDB/Query/QueryBuilder.swift`
 **Lines:** 1-1000+
 
 **What It Is:**
@@ -108,7 +108,7 @@
 - Index hints for query optimization
 
 #### QueryOptimizer (Cost-Based Optimization)
-**File:** `BlazeDB/Query/QueryOptimizer.swift`  
+**File:** `BlazeDB/Query/QueryOptimizer.swift`
 **Lines:** 38-270
 
 **What It Is:**
@@ -129,7 +129,7 @@
 - Supports parallel execution plans
 
 #### QueryPlanner (Execution Planning)
-**File:** `BlazeDB/Query/QueryPlanner.swift`  
+**File:** `BlazeDB/Query/QueryPlanner.swift`
 **Lines:** 1-200+
 
 **What It Is:**
@@ -149,7 +149,7 @@
 ### 1.3 Indexing and Search
 
 #### Secondary Indexes (B-Tree-like)
-**File:** `BlazeDB/Core/DynamicCollection.swift`  
+**File:** `BlazeDB/Core/DynamicCollection.swift`
 **Lines:** 28, 197-279, 547-626, etc.
 
 **What It Is:**
@@ -168,7 +168,7 @@
 - Index definitions persisted in `StorageLayout`
 
 #### CompoundIndexKey (Multi-Field Index Keys)
-**File:** `BlazeDB/Core/CompoundIndexKey.swift`  
+**File:** `BlazeDB/Core/CompoundIndexKey.swift`
 **Lines:** 1-50+
 
 **What It Is:**
@@ -186,7 +186,7 @@
 - Supports any field type combination
 
 #### InvertedIndex (Full-Text Search)
-**File:** `BlazeDB/Storage/InvertedIndex.swift`  
+**File:** `BlazeDB/Storage/InvertedIndex.swift`
 **Lines:** 35-439
 
 **What It Is:**
@@ -208,7 +208,7 @@
 - 50-1000x faster than full-text scan
 
 #### Vector Index (Embedding Search)
-**File:** `BlazeDB/Core/DynamicCollection+Vector.swift`  
+**File:** `BlazeDB/Core/DynamicCollection+Vector.swift`
 **Lines:** 1-300+
 
 **What It Is:**
@@ -227,7 +227,7 @@
 - Cosine similarity for semantic search
 
 #### Spatial Index (Geographic Search)
-**File:** `BlazeDB/Core/DynamicCollection+Spatial.swift`  
+**File:** `BlazeDB/Core/DynamicCollection+Spatial.swift`
 **Lines:** 1-300+
 
 **What It Is:**
@@ -247,7 +247,7 @@
 ### 1.4 MVCC / Concurrency Control
 
 #### MVCCTransaction (Snapshot Isolation)
-**File:** `BlazeDB/Core/MVCC/MVCCTransaction.swift`  
+**File:** `BlazeDB/Core/MVCC/MVCCTransaction.swift`
 **Lines:** 22-300+
 
 **What It Is:**
@@ -268,7 +268,7 @@
 - Snapshot version prevents phantom reads
 
 #### VersionManager (Version Tracking)
-**File:** `BlazeDB/Core/MVCC/RecordVersion.swift`  
+**File:** `BlazeDB/Core/MVCC/RecordVersion.swift`
 **Lines:** 90-300+
 
 **What It Is:**
@@ -289,7 +289,7 @@
 - GC coordination prevents premature deletion
 
 #### RecordVersion (Version Metadata)
-**File:** `BlazeDB/Core/MVCC/RecordVersion.swift`  
+**File:** `BlazeDB/Core/MVCC/RecordVersion.swift`
 **Lines:** 22-81
 
 **What It Is:**
@@ -311,7 +311,7 @@
 ### 1.5 File Format + Storage Engine
 
 #### BlazeBinary (Custom Binary Format)
-**File:** `BlazeDB/Utils/BlazeBinaryEncoder.swift`  
+**File:** `BlazeDB/Utils/BlazeBinaryEncoder.swift`
 **Lines:** 24-250
 
 **What It Is:**
@@ -338,7 +338,7 @@
 - Zero-copy decoding possible with `BlazeBinaryFieldView`
 
 #### BlazeBinaryFieldView (Zero-Copy Decoding)
-**File:** `BlazeDB/Utils/BlazeBinary/BlazeBinaryFieldView.swift`  
+**File:** `BlazeDB/Utils/BlazeBinary/BlazeBinaryFieldView.swift`
 **Lines:** 1-500+
 
 **What It Is:**
@@ -357,7 +357,7 @@
 - Enables streaming processing
 
 #### Page-Based Storage
-**File:** `BlazeDB/Storage/PageStore.swift`  
+**File:** `BlazeDB/Storage/PageStore.swift`
 **Lines:** 59-429
 
 **What It Is:**
@@ -379,7 +379,7 @@
 ### 1.6 WAL System / Crash Recovery
 
 #### WriteAheadLog (WAL Manager)
-**File:** `BlazeDB/Storage/WriteAheadLog.swift`  
+**File:** `BlazeDB/Storage/WriteAheadLog.swift`
 **Lines:** 21-199
 
 **What It Is:**
@@ -403,7 +403,7 @@
 ### 1.7 Transactions
 
 #### BlazeTransaction (ACID Transactions)
-**File:** `BlazeDB/Transactions/BlazeTransaction.swift`  
+**File:** `BlazeDB/Transactions/BlazeTransaction.swift`
 **Lines:** 1-500+
 
 **What It Is:**
@@ -425,7 +425,7 @@
 ### 1.8 Encryption (Storage + Transport)
 
 #### Page-Level Encryption
-**File:** `BlazeDB/Storage/PageStore.swift`  
+**File:** `BlazeDB/Storage/PageStore.swift`
 **Lines:** 100-200
 
 **What It Is:**
@@ -445,7 +445,7 @@
 - Keys never persisted (security)
 
 #### SecureConnection (E2E Encrypted Transport)
-**File:** `BlazeDB/Distributed/SecureConnection.swift`  
+**File:** `BlazeDB/Distributed/SecureConnection.swift`
 **Lines:** 13-522
 
 **What It Is:**
@@ -469,13 +469,13 @@
 ### 1.9 Query Planning and Optimization
 
 #### QueryOptimizer (Cost-Based)
-**File:** `BlazeDB/Query/QueryOptimizer.swift`  
+**File:** `BlazeDB/Query/QueryOptimizer.swift`
 **Lines:** 38-270
 
 **Already covered in 1.2**
 
 #### QueryPlanner (Execution Planning)
-**File:** `BlazeDB/Query/QueryPlanner.swift`  
+**File:** `BlazeDB/Query/QueryPlanner.swift`
 **Lines:** 1-200+
 
 **Already covered in 1.2**
@@ -483,7 +483,7 @@
 ### 1.10 In-Memory vs On-Disk Behavior
 
 #### Page Cache
-**File:** `BlazeDB/Storage/PageStore.swift`  
+**File:** `BlazeDB/Storage/PageStore.swift`
 **Line:** 65
 
 **What It Is:**
@@ -512,7 +512,7 @@
 ### 1.11 Dynamic Schema System
 
 #### BlazeDocumentField (Type System)
-**File:** `BlazeDB/TypeSafety/BlazeDocument.swift`  
+**File:** `BlazeDB/TypeSafety/BlazeDocument.swift`
 **Lines:** 1-200+
 
 **What It Is:**
@@ -533,7 +533,7 @@
 ### 1.12 Distributed Sync
 
 #### BlazeSyncEngine (Sync Coordinator)
-**File:** `BlazeDB/Distributed/BlazeSyncEngine.swift`  
+**File:** `BlazeDB/Distributed/BlazeSyncEngine.swift`
 **Lines:** 1-900+
 
 **What It Is:**
@@ -560,7 +560,7 @@
 - Operation merging (Insert+Update → Update)
 
 #### OperationLog (Operation History)
-**File:** `BlazeDB/Distributed/BlazeOperation.swift`  
+**File:** `BlazeDB/Distributed/BlazeOperation.swift`
 **Lines:** 111-268
 
 **What It Is:**
@@ -580,7 +580,7 @@
 - Efficient encoding (BlazeBinary)
 
 #### BlazeOperation (Operation Type)
-**File:** `BlazeDB/Distributed/BlazeOperation.swift`  
+**File:** `BlazeDB/Distributed/BlazeOperation.swift`
 **Lines:** 11-89
 
 **What It Is:**
@@ -607,7 +607,7 @@
 ### 1.13 Network Protocol (BlazeBinary)
 
 #### TCPRelay (TCP Transport)
-**File:** `BlazeDB/Distributed/TCPRelay.swift`  
+**File:** `BlazeDB/Distributed/TCPRelay.swift`
 **Lines:** 1-300+
 
 **What It Is:**
@@ -630,7 +630,7 @@
 - Parallel encoding for throughput
 
 #### TCPRelay+Encoding (Operation Encoding)
-**File:** `BlazeDB/Distributed/TCPRelay+Encoding.swift`  
+**File:** `BlazeDB/Distributed/TCPRelay+Encoding.swift`
 **Lines:** 167-372
 
 **What It Is:**
@@ -652,7 +652,7 @@
 ### 1.14 Sync Conflict Resolution
 
 #### ConflictResolution (CRDT-style Merging)
-**File:** `BlazeDB/Core/MVCC/ConflictResolution.swift`  
+**File:** `BlazeDB/Core/MVCC/ConflictResolution.swift`
 **Lines:** 1-53
 
 **What It Is:**
@@ -673,7 +673,7 @@
 ### 1.15 Network Compression (Stubbed)
 
 #### TCPRelay+Compression
-**File:** `BlazeDB/Distributed/TCPRelay+Compression.swift`  
+**File:** `BlazeDB/Distributed/TCPRelay+Compression.swift`
 **Lines:** 13-36
 
 **What It Is:**
@@ -694,7 +694,7 @@
 ### 1.16 Auto-Discovery
 
 #### BlazeDiscovery (mDNS/Bonjour)
-**File:** `BlazeDB/Distributed/BlazeDiscovery.swift`  
+**File:** `BlazeDB/Distributed/BlazeDiscovery.swift`
 **Lines:** 45-170
 
 **What It Is:**
@@ -759,7 +759,7 @@
 ### 2.1 Zero-Copy Encoding/Decoding
 
 #### BlazeBinaryFieldView (Zero-Copy Access)
-**File:** `BlazeDB/Utils/BlazeBinary/BlazeBinaryFieldView.swift`  
+**File:** `BlazeDB/Utils/BlazeBinary/BlazeBinaryFieldView.swift`
 **Lines:** 1-500+
 
 **What It Is:**
@@ -773,7 +773,7 @@
 - Streaming processing support
 
 #### Memory Pooling (Buffer Reuse)
-**File:** `BlazeDB/Distributed/TCPRelay.swift`  
+**File:** `BlazeDB/Distributed/TCPRelay.swift`
 **Lines:** 20-25, 300-350
 
 **What It Is:**
@@ -789,7 +789,7 @@
 ### 2.2 Unsafe Optimizations (Past/Present)
 
 #### BlazeBinaryEncoder+ARM (SIMD Optimizations)
-**File:** `BlazeDB/Utils/BlazeBinary/BlazeBinaryEncoder+ARM.swift`  
+**File:** `BlazeDB/Utils/BlazeBinary/BlazeBinaryEncoder+ARM.swift`
 **Lines:** 1-50+
 
 **What It Is:**
@@ -805,7 +805,7 @@
 ### 2.3 Page-Sized Storage
 
 #### 4KB Page Alignment
-**File:** `BlazeDB/Storage/PageStore.swift`  
+**File:** `BlazeDB/Storage/PageStore.swift`
 **Line:** 63
 
 **What It Is:**
@@ -821,7 +821,7 @@
 ### 2.4 Coalesced fsync Batching
 
 #### WriteAheadLog Batching
-**File:** `BlazeDB/Storage/WriteAheadLog.swift`  
+**File:** `BlazeDB/Storage/WriteAheadLog.swift`
 **Lines:** 25-26, 83-87
 
 **What It Is:**
@@ -837,7 +837,7 @@
 ### 2.5 Lamport Clocks
 
 #### LamportTimestamp (Causal Ordering)
-**File:** `BlazeDB/Distributed/BlazeOperation.swift`  
+**File:** `BlazeDB/Distributed/BlazeOperation.swift`
 **Lines:** 92-108
 
 **What It Is:**
@@ -858,7 +858,7 @@
 ### 2.6 CRDT Rules
 
 #### ConflictResolution (CRDT-style)
-**File:** `BlazeDB/Core/MVCC/ConflictResolution.swift`  
+**File:** `BlazeDB/Core/MVCC/ConflictResolution.swift`
 **Lines:** 1-53
 
 **Already covered in 1.14**
@@ -866,7 +866,7 @@
 ### 2.7 Batched Network Frames
 
 #### TCPRelay Batching
-**File:** `BlazeDB/Distributed/BlazeSyncEngine.swift`  
+**File:** `BlazeDB/Distributed/BlazeSyncEngine.swift`
 **Lines:** 580-629
 
 **What It Is:**
@@ -882,7 +882,7 @@
 ### 2.8 Opportunistic Compression Hooks
 
 #### TCPRelay+Compression
-**File:** `BlazeDB/Distributed/TCPRelay+Compression.swift`  
+**File:** `BlazeDB/Distributed/TCPRelay+Compression.swift`
 **Lines:** 13-36
 
 **Already covered in 1.15**
@@ -890,7 +890,7 @@
 ### 2.9 Diffie-Hellman Handshake
 
 #### SecureConnection ECDH
-**File:** `BlazeDB/Distributed/SecureConnection.swift`  
+**File:** `BlazeDB/Distributed/SecureConnection.swift`
 **Lines:** 95-122, 207-234
 
 **Already covered in 1.8**
@@ -898,7 +898,7 @@
 ### 2.10 HKDF Key Derivation
 
 #### SecureConnection HKDF
-**File:** `BlazeDB/Distributed/SecureConnection.swift`  
+**File:** `BlazeDB/Distributed/SecureConnection.swift`
 **Lines:** 131-136, 243-248
 
 **Already covered in 1.8**
@@ -906,7 +906,7 @@
 ### 2.11 AES-GCM Authenticated Encryption
 
 #### SecureConnection AES-GCM
-**File:** `BlazeDB/Distributed/SecureConnection.swift`  
+**File:** `BlazeDB/Distributed/SecureConnection.swift`
 **Lines:** 276, 292-293
 
 **Already covered in 1.8**
@@ -914,7 +914,7 @@
 ### 2.12 Smart Caching (Operation Encoding Cache)
 
 #### TCPRelay Cache
-**File:** `BlazeDB/Distributed/TCPRelay.swift`  
+**File:** `BlazeDB/Distributed/TCPRelay.swift`
 **Lines:** 27-32, 300-350
 
 **What It Is:**
@@ -930,7 +930,7 @@
 ### 2.13 Deduplication Strategies
 
 #### Operation Deduplication
-**File:** `BlazeDB/Distributed/TCPRelay+Encoding.swift`  
+**File:** `BlazeDB/Distributed/TCPRelay+Encoding.swift`
 **Lines:** 29-37
 
 **What It Is:**
@@ -946,7 +946,7 @@
 ### 2.14 Varint Encoding
 
 #### Variable-Length Encoding
-**File:** `BlazeDB/Distributed/TCPRelay+Encoding.swift`  
+**File:** `BlazeDB/Distributed/TCPRelay+Encoding.swift`
 **Lines:** 19-27, 62-74, 177-192
 
 **What It Is:**
@@ -962,7 +962,7 @@
 ### 2.15 Bit-Packing
 
 #### Type+Length Bit-Packing
-**File:** `BlazeDB/Distributed/TCPRelay+Encoding.swift`  
+**File:** `BlazeDB/Distributed/TCPRelay+Encoding.swift`
 **Lines:** 195-220
 
 **What It Is:**
@@ -997,7 +997,7 @@
 ### 3.1 Encoding Pipeline Speedups
 
 #### BlazeBinaryEncoder+Optimized
-**File:** `BlazeDB/Utils/BlazeBinaryEncoder+Optimized.swift`  
+**File:** `BlazeDB/Utils/BlazeBinaryEncoder+Optimized.swift`
 **Lines:** 48-84
 
 **What It Is:**
@@ -1011,7 +1011,7 @@
 - Batch encoding support
 
 #### Parallel Encoding
-**File:** `BlazeDB/Distributed/TCPRelay+Extensions.swift`  
+**File:** `BlazeDB/Distributed/TCPRelay+Extensions.swift`
 **Lines:** 36-60
 
 **What It Is:**
@@ -1027,13 +1027,13 @@
 ### 3.2 Query Performance Strategies
 
 #### Index Selection
-**File:** `BlazeDB/Query/QueryOptimizer.swift`  
+**File:** `BlazeDB/Query/QueryOptimizer.swift`
 **Lines:** 120-163
 
 **Already covered in 1.2**
 
 #### Early Exit Optimization
-**File:** `BlazeDB/Query/QueryBuilder+Optimized.swift`  
+**File:** `BlazeDB/Query/QueryBuilder+Optimized.swift`
 **Lines:** 46-49
 
 **What It Is:**
@@ -1049,7 +1049,7 @@
 ### 3.3 Index Performance Design
 
 #### Hash-Based Indexes
-**File:** `BlazeDB/Core/DynamicCollection.swift`  
+**File:** `BlazeDB/Core/DynamicCollection.swift`
 **Line:** 28
 
 **What It Is:**
@@ -1065,13 +1065,13 @@
 ### 3.4 Disk I/O Batching
 
 #### WAL Batching
-**File:** `BlazeDB/Storage/WriteAheadLog.swift`  
+**File:** `BlazeDB/Storage/WriteAheadLog.swift`
 **Lines:** 25-26, 83-87
 
 **Already covered in 2.4**
 
 #### Batch Operations
-**File:** `BlazeDB/Core/DynamicCollection+Batch.swift`  
+**File:** `BlazeDB/Core/DynamicCollection+Batch.swift`
 **Lines:** 29-739
 
 **What It Is:**
@@ -1087,7 +1087,7 @@
 ### 3.5 WAL Write Frequency + Batching
 
 #### Checkpoint Thresholds
-**File:** `BlazeDB/Storage/WriteAheadLog.swift`  
+**File:** `BlazeDB/Storage/WriteAheadLog.swift`
 **Lines:** 25-26
 
 **Already covered in 2.4**
@@ -1102,13 +1102,13 @@
 ### 3.7 Memory Management Patterns
 
 #### Page Cache (LRU)
-**File:** `BlazeDB/Storage/PageStore.swift`  
+**File:** `BlazeDB/Storage/PageStore.swift`
 **Line:** 65
 
 **Already covered in 1.10**
 
 #### Memory Pooling
-**File:** `BlazeDB/Distributed/TCPRelay.swift`  
+**File:** `BlazeDB/Distributed/TCPRelay.swift`
 **Lines:** 20-25
 
 **Already covered in 2.1**
@@ -1136,7 +1136,7 @@
 ### 3.9 Hot-Path Avoidance Patterns
 
 #### Cached Search Index
-**File:** `BlazeDB/Core/DynamicCollection.swift`  
+**File:** `BlazeDB/Core/DynamicCollection.swift`
 **Line:** 48
 
 **What It Is:**
@@ -1344,7 +1344,7 @@
 
 ### 5.1 End-to-End Encrypted Sync Channels
 
-**File:** `BlazeDB/Distributed/SecureConnection.swift`  
+**File:** `BlazeDB/Distributed/SecureConnection.swift`
 **Lines:** 270-296
 
 **What It Is:**
@@ -1356,7 +1356,7 @@
 
 ### 5.2 Perfect Forward Secrecy (Ephemeral ECDH)
 
-**File:** `BlazeDB/Distributed/SecureConnection.swift`  
+**File:** `BlazeDB/Distributed/SecureConnection.swift`
 **Lines:** 95-96, 207-208
 
 **What It Is:**
@@ -1368,7 +1368,7 @@
 
 ### 5.3 HKDF-Based AES Key Derivation
 
-**File:** `BlazeDB/Distributed/SecureConnection.swift`  
+**File:** `BlazeDB/Distributed/SecureConnection.swift`
 **Lines:** 131-136
 
 **What It Is:**
@@ -1380,7 +1380,7 @@
 
 ### 5.4 Frame-Level Authenticated Encryption
 
-**File:** `BlazeDB/Distributed/SecureConnection.swift`  
+**File:** `BlazeDB/Distributed/SecureConnection.swift`
 **Lines:** 276, 292-293
 
 **What It Is:**
@@ -1392,7 +1392,7 @@
 
 ### 5.5 Incremental Op-Log Synchronization Engine
 
-**File:** `BlazeDB/Distributed/BlazeSyncEngine.swift`  
+**File:** `BlazeDB/Distributed/BlazeSyncEngine.swift`
 **Lines:** 192-224
 
 **What It Is:**
@@ -1404,7 +1404,7 @@
 
 ### 5.6 Full Custom Binary Protocol
 
-**File:** `BlazeDB/Utils/BlazeBinaryEncoder.swift`  
+**File:** `BlazeDB/Utils/BlazeBinaryEncoder.swift`
 **Lines:** 24-250
 
 **What It Is:**
@@ -1416,7 +1416,7 @@
 
 ### 5.7 Actor-Isolated Storage Layer
 
-**File:** `BlazeDB/Storage/WriteAheadLog.swift`  
+**File:** `BlazeDB/Storage/WriteAheadLog.swift`
 **Line:** 21
 
 **What It Is:**
@@ -1442,7 +1442,7 @@
 
 ### 5.9 Auto-Discovery via mDNS
 
-**File:** `BlazeDB/Distributed/BlazeDiscovery.swift`  
+**File:** `BlazeDB/Distributed/BlazeDiscovery.swift`
 **Lines:** 45-170
 
 **What It Is:**
@@ -1454,7 +1454,7 @@
 
 ### 5.10 Multi-Node Version Tracking
 
-**File:** `BlazeDB/Distributed/BlazeSyncEngine.swift`  
+**File:** `BlazeDB/Distributed/BlazeSyncEngine.swift`
 **Lines:** 77-79
 
 **What It Is:**
@@ -1466,7 +1466,7 @@
 
 ### 5.11 CRDT-Inspired State Merging
 
-**File:** `BlazeDB/Core/MVCC/ConflictResolution.swift`  
+**File:** `BlazeDB/Core/MVCC/ConflictResolution.swift`
 **Lines:** 1-53
 
 **What It Is:**
@@ -1478,7 +1478,7 @@
 
 ### 5.12 Snapshot-Ready Architecture
 
-**File:** `BlazeDB/Core/MVCC/MVCCTransaction.swift`  
+**File:** `BlazeDB/Core/MVCC/MVCCTransaction.swift`
 **Lines:** 22-60
 
 **What It Is:**
@@ -1490,7 +1490,7 @@
 
 ### 5.13 Chunk-Stream-Ready Pipeline
 
-**File:** `BlazeDB/Distributed/TCPRelay+Encoding.swift`  
+**File:** `BlazeDB/Distributed/TCPRelay+Encoding.swift`
 **Lines:** 13-153
 
 **What It Is:**
@@ -1502,7 +1502,7 @@
 
 ### 5.14 Compression-Extensible Protocol
 
-**File:** `BlazeDB/Distributed/TCPRelay+Compression.swift`  
+**File:** `BlazeDB/Distributed/TCPRelay+Compression.swift`
 **Lines:** 13-36
 
 **What It Is:**
@@ -1518,7 +1518,7 @@
 
 ### 6.1 Frame Types
 
-**File:** `BlazeDB/Distributed/SecureConnection.swift`  
+**File:** `BlazeDB/Distributed/SecureConnection.swift`
 **Lines:** 300-307
 
 **Frame Types:**
@@ -1537,7 +1537,7 @@
 ### 6.2 Message Formats
 
 #### HandshakeMessage
-**File:** `BlazeDB/Distributed/SecureConnection.swift`  
+**File:** `BlazeDB/Distributed/SecureConnection.swift`
 **Lines:** 356-393, 395-438
 
 **Format:**
@@ -1551,7 +1551,7 @@
 - Auth Token: 1 byte length + UTF-8 string (optional)
 
 #### BlazeOperation Encoding
-**File:** `BlazeDB/Distributed/TCPRelay+Encoding.swift`  
+**File:** `BlazeDB/Distributed/TCPRelay+Encoding.swift`
 **Lines:** 169-230
 
 **Format:**
@@ -1566,7 +1566,7 @@
 ### 6.3 Encoding Rules
 
 #### Variable-Length Encoding
-**File:** `BlazeDB/Distributed/TCPRelay+Encoding.swift`  
+**File:** `BlazeDB/Distributed/TCPRelay+Encoding.swift`
 **Lines:** 19-27, 62-74, 177-192
 
 **Rules:**
@@ -1577,7 +1577,7 @@
 - Timestamp counter: 1/2/8 bytes (variable-length)
 
 #### Bit-Packing
-**File:** `BlazeDB/Distributed/TCPRelay+Encoding.swift`  
+**File:** `BlazeDB/Distributed/TCPRelay+Encoding.swift`
 **Lines:** 195-220
 
 **Rules:**
@@ -1588,7 +1588,7 @@
 ### 6.4 Sync Rules
 
 #### Incremental Sync
-**File:** `BlazeDB/Distributed/BlazeSyncEngine.swift`  
+**File:** `BlazeDB/Distributed/BlazeSyncEngine.swift`
 **Lines:** 192-224
 
 **Rules:**
@@ -1599,7 +1599,7 @@
 5. Apply operations idempotently
 
 #### Conflict Resolution
-**File:** `BlazeDB/Core/MVCC/ConflictResolution.swift`  
+**File:** `BlazeDB/Core/MVCC/ConflictResolution.swift`
 **Lines:** 1-53
 
 **Rules:**
@@ -1609,7 +1609,7 @@
 
 ### 6.5 ECDH Handshake Steps
 
-**File:** `BlazeDB/Distributed/SecureConnection.swift`  
+**File:** `BlazeDB/Distributed/SecureConnection.swift`
 **Lines:** 93-158, 161-266
 
 **Steps:**
@@ -1626,7 +1626,7 @@
 
 ### 6.6 HKDF Derivation Parameters
 
-**File:** `BlazeDB/Distributed/SecureConnection.swift`  
+**File:** `BlazeDB/Distributed/SecureConnection.swift`
 **Lines:** 125-136, 237-248
 
 **Parameters:**
@@ -1638,7 +1638,7 @@
 
 ### 6.7 AES-GCM Usage Details
 
-**File:** `BlazeDB/Distributed/SecureConnection.swift`  
+**File:** `BlazeDB/Distributed/SecureConnection.swift`
 **Lines:** 276, 292-293
 
 **Details:**
@@ -1650,7 +1650,7 @@
 
 ### 6.8 Replay Protection Rules
 
-**File:** `BlazeDB/Distributed/BlazeOperation.swift`  
+**File:** `BlazeDB/Distributed/BlazeOperation.swift`
 **Lines:** 23-24, 52-54
 
 **Rules:**
@@ -1660,7 +1660,7 @@
 
 ### 6.9 Lamport Timestamp Pipeline
 
-**File:** `BlazeDB/Distributed/BlazeOperation.swift`  
+**File:** `BlazeDB/Distributed/BlazeOperation.swift`
 **Lines:** 92-108, 123-149
 
 **Pipeline:**
@@ -1671,7 +1671,7 @@
 
 ### 6.10 Operation Encoding Steps
 
-**File:** `BlazeDB/Distributed/TCPRelay+Encoding.swift`  
+**File:** `BlazeDB/Distributed/TCPRelay+Encoding.swift`
 **Lines:** 169-230
 
 **Steps:**
@@ -1689,157 +1689,157 @@
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                        BLAZEDB ARCHITECTURE                       │
+│ BLAZEDB ARCHITECTURE │
 └─────────────────────────────────────────────────────────────────┘
 
 ┌─────────────────────────────────────────────────────────────────┐
-│                    CLIENT API LAYER                               │
+│ CLIENT API LAYER │
 ├─────────────────────────────────────────────────────────────────┤
-│  BlazeDBClient                                                   │
-│  - CRUD operations                                               │
-│  - Query DSL                                                     │
-│  - Transaction management                                       │
-│  - Sync coordination                                             │
+│ BlazeDBClient │
+│ - CRUD operations │
+│ - Query DSL │
+│ - Transaction management │
+│ - Sync coordination │
 └────────────────────────┬────────────────────────────────────────┘
-                         │
+ │
 ┌────────────────────────▼────────────────────────────────────────┐
-│                    CORE ENGINE LAYER                             │
+│ CORE ENGINE LAYER │
 ├─────────────────────────────────────────────────────────────────┤
-│  DynamicCollection                                               │
-│  - Schema-less document storage                                  │
-│  - Secondary indexes (hash-based)                                │
-│  - Full-text search (InvertedIndex)                              │
-│  - Vector/spatial indexes (in-memory)                            │
-│  - MVCC support (opt-in)                                         │
-│  - Batch operations                                              │
-│                                                                   │
-│  ┌──────────────────────────────────────────────────────────┐  │
-│  │  Query Subsystem                                          │  │
-│  │  - QueryBuilder (fluent DSL)                              │  │
-│  │  - QueryOptimizer (cost-based)                            │  │
-│  │  - QueryPlanner (execution planning)                      │  │
-│  │  - Graph queries, CTEs, subqueries                        │  │
-│  └──────────────────────────────────────────────────────────┘  │
-│                                                                   │
-│  ┌──────────────────────────────────────────────────────────┐  │
-│  │  MVCC Subsystem                                           │  │
-│  │  - MVCCTransaction (snapshot isolation)                   │  │
-│  │  - VersionManager (version tracking)                      │  │
-│  │  - RecordVersion (version metadata)                        │  │
-│  │  - ConflictResolution (CRDT-style)                        │  │
-│  └──────────────────────────────────────────────────────────┘  │
+│ DynamicCollection │
+│ - Schema-less document storage │
+│ - Secondary indexes (hash-based) │
+│ - Full-text search (InvertedIndex) │
+│ - Vector/spatial indexes (in-memory) │
+│ - MVCC support (opt-in) │
+│ - Batch operations │
+│ │
+│ ┌──────────────────────────────────────────────────────────┐ │
+│ │ Query Subsystem │ │
+│ │ - QueryBuilder (fluent DSL) │ │
+│ │ - QueryOptimizer (cost-based) │ │
+│ │ - QueryPlanner (execution planning) │ │
+│ │ - Graph queries, CTEs, subqueries │ │
+│ └──────────────────────────────────────────────────────────┘ │
+│ │
+│ ┌──────────────────────────────────────────────────────────┐ │
+│ │ MVCC Subsystem │ │
+│ │ - MVCCTransaction (snapshot isolation) │ │
+│ │ - VersionManager (version tracking) │ │
+│ │ - RecordVersion (version metadata) │ │
+│ │ - ConflictResolution (CRDT-style) │ │
+│ └──────────────────────────────────────────────────────────┘ │
 └────────────────────────┬────────────────────────────────────────┘
-                         │
+ │
 ┌────────────────────────▼────────────────────────────────────────┐
-│                    STORAGE LAYER                                  │
+│ STORAGE LAYER │
 ├─────────────────────────────────────────────────────────────────┤
-│  PageStore                                                       │
-│  - 4KB page-aligned storage                                      │
-│  - AES-GCM encryption per page                                   │
-│  - Page cache (LRU, 1000 pages)                                 │
-│  - Overflow chain support                                       │
-│                                                                   │
-│  StorageLayout                                                   │
-│  - Metadata storage (.meta file)                                 │
-│  - Index map, secondary indexes                                 │
-│  - Search index, deleted pages                                  │
-│  - Signature verification (HMAC-SHA256)                         │
-│                                                                   │
-│  WriteAheadLog (Actor)                                           │
-│  - WAL entries (page index + data)                              │
-│  - Batched writes (100 ops or 1s)                               │
-│  - Checkpointing to PageStore                                   │
-│  - Crash recovery via replay                                    │
+│ PageStore │
+│ - 4KB page-aligned storage │
+│ - AES-GCM encryption per page │
+│ - Page cache (LRU, 1000 pages) │
+│ - Overflow chain support │
+│ │
+│ StorageLayout │
+│ - Metadata storage (.meta file) │
+│ - Index map, secondary indexes │
+│ - Search index, deleted pages │
+│ - Signature verification (HMAC-SHA256) │
+│ │
+│ WriteAheadLog (Actor) │
+│ - WAL entries (page index + data) │
+│ - Batched writes (100 ops or 1s) │
+│ - Checkpointing to PageStore │
+│ - Crash recovery via replay │
 └────────────────────────┬────────────────────────────────────────┘
-                         │
+ │
 ┌────────────────────────▼────────────────────────────────────────┐
-│                    ENCODING LAYER                                 │
+│ ENCODING LAYER │
 ├─────────────────────────────────────────────────────────────────┤
-│  BlazeBinaryEncoder                                              │
-│  - Custom binary format (53% smaller than JSON)                   │
-│  - Variable-length encoding                                     │
-│  - Bit-packing optimizations                                    │
-│  - CRC32 checksum (optional)                                    │
-│  - Zero-copy decoding (BlazeBinaryFieldView)                    │
-│                                                                   │
-│  BlazeBinaryDecoder                                              │
-│  - Decodes BlazeBinary format                                    │
-│  - Lazy field extraction                                        │
-│  - Memory-efficient                                              │
+│ BlazeBinaryEncoder │
+│ - Custom binary format (53% smaller than JSON) │
+│ - Variable-length encoding │
+│ - Bit-packing optimizations │
+│ - CRC32 checksum (optional) │
+│ - Zero-copy decoding (BlazeBinaryFieldView) │
+│ │
+│ BlazeBinaryDecoder │
+│ - Decodes BlazeBinary format │
+│ - Lazy field extraction │
+│ - Memory-efficient │
 └────────────────────────┬────────────────────────────────────────┘
-                         │
+ │
 ┌────────────────────────▼────────────────────────────────────────┐
-│                    DISTRIBUTED SYNC LAYER                        │
+│ DISTRIBUTED SYNC LAYER │
 ├─────────────────────────────────────────────────────────────────┤
-│  BlazeSyncEngine                                                 │
-│  - Incremental op-log sync                                       │
-│  - Per-node sync state tracking                                 │
-│  - Conflict resolution (server/client roles)                     │
-│  - Adaptive batching (10K ops)                                   │
-│  - Pipelining (multiple batches in flight)                      │
-│  - Predictive prefetching                                       │
-│                                                                   │
-│  OperationLog (Actor)                                            │
-│  - Operation history ([UUID: BlazeOperation])                    │
-│  - Lamport timestamp management                                 │
-│  - BlazeBinary persistence                                       │
-│                                                                   │
-│  BlazeOperation                                                  │
-│  - Atomic operation unit                                         │
-│  - Lamport timestamp (causal ordering)                           │
-│  - Replay protection (nonce + expiry)                           │
-│  - Optional signature (HMAC)                                    │
+│ BlazeSyncEngine │
+│ - Incremental op-log sync │
+│ - Per-node sync state tracking │
+│ - Conflict resolution (server/client roles) │
+│ - Adaptive batching (10K ops) │
+│ - Pipelining (multiple batches in flight) │
+│ - Predictive prefetching │
+│ │
+│ OperationLog (Actor) │
+│ - Operation history ([UUID: BlazeOperation]) │
+│ - Lamport timestamp management │
+│ - BlazeBinary persistence │
+│ │
+│ BlazeOperation │
+│ - Atomic operation unit │
+│ - Lamport timestamp (causal ordering) │
+│ - Replay protection (nonce + expiry) │
+│ - Optional signature (HMAC) │
 └────────────────────────┬────────────────────────────────────────┘
-                         │
+ │
 ┌────────────────────────▼────────────────────────────────────────┐
-│                    NETWORK TRANSPORT LAYER                       │
+│ NETWORK TRANSPORT LAYER │
 ├─────────────────────────────────────────────────────────────────┤
-│  TCPRelay (Actor)                                                │
-│  - TCP transport                                                 │
-│  - BlazeBinary encoding                                          │
-│  - Smart caching (encoded operations)                           │
-│  - Memory pooling (buffer reuse)                                │
-│  - Parallel encoding                                             │
-│  - Deduplication                                                │
-│                                                                   │
-│  UnixDomainSocketRelay (Actor)                                   │
-│  - Unix Domain Socket transport                                 │
-│  - Cross-app sync on same device                                 │
-│                                                                   │
-│  InMemoryRelay (Actor)                                           │
-│  - In-memory queue transport                                     │
-│  - Same-process sync                                            │
+│ TCPRelay (Actor) │
+│ - TCP transport │
+│ - BlazeBinary encoding │
+│ - Smart caching (encoded operations) │
+│ - Memory pooling (buffer reuse) │
+│ - Parallel encoding │
+│ - Deduplication │
+│ │
+│ UnixDomainSocketRelay (Actor) │
+│ - Unix Domain Socket transport │
+│ - Cross-app sync on same device │
+│ │
+│ InMemoryRelay (Actor) │
+│ - In-memory queue transport │
+│ - Same-process sync │
 └────────────────────────┬────────────────────────────────────────┘
-                         │
+ │
 ┌────────────────────────▼────────────────────────────────────────┐
-│                    SECURITY LAYER                                │
+│ SECURITY LAYER │
 ├─────────────────────────────────────────────────────────────────┤
-│  SecureConnection                                                │
-│  - ECDH P-256 handshake (ephemeral keys)                        │
-│  - HKDF-SHA256 key derivation                                   │
-│  - AES-256-GCM encryption                                       │
-│  - Challenge-response authentication                            │
-│  - Perfect Forward Secrecy                                      │
-│                                                                   │
-│  PolicyEngine                                                    │
-│  - Row-Level Security (RLS)                                     │
-│  - Policy evaluation engine                                     │
-│  - Permissive/restrictive policies                              │
-│                                                                   │
-│  PageStore Encryption                                            │
-│  - AES-128/192/256-GCM per page                                 │
-│  - Authentication tags                                          │
-│  - Key in memory only                                           │
+│ SecureConnection │
+│ - ECDH P-256 handshake (ephemeral keys) │
+│ - HKDF-SHA256 key derivation │
+│ - AES-256-GCM encryption │
+│ - Challenge-response authentication │
+│ - Perfect Forward Secrecy │
+│ │
+│ PolicyEngine │
+│ - Row-Level Security (RLS) │
+│ - Policy evaluation engine │
+│ - Permissive/restrictive policies │
+│ │
+│ PageStore Encryption │
+│ - AES-128/192/256-GCM per page │
+│ - Authentication tags │
+│ - Key in memory only │
 └────────────────────────┬────────────────────────────────────────┘
-                         │
+ │
 ┌────────────────────────▼────────────────────────────────────────┐
-│                    DISCOVERY LAYER                               │
+│ DISCOVERY LAYER │
 ├─────────────────────────────────────────────────────────────────┤
-│  BlazeDiscovery                                                  │
-│  - mDNS/Bonjour advertising (server)                            │
-│  - NWBrowser browsing (client)                                   │
-│  - Zero-configuration networking                                 │
-│  - SwiftUI integration (@Published)                             │
+│ BlazeDiscovery │
+│ - mDNS/Bonjour advertising (server) │
+│ - NWBrowser browsing (client) │
+│ - Zero-configuration networking │
+│ - SwiftUI integration (@Published) │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -1862,33 +1862,33 @@
 ### Feature Completeness
 
 **Fully Implemented:**
-- ✅ Schema-less document storage
-- ✅ Secondary indexes (single + compound)
-- ✅ Full-text search (inverted index)
-- ✅ Vector/spatial indexes (in-memory)
-- ✅ MVCC with snapshot isolation
-- ✅ ACID transactions with WAL
-- ✅ BlazeBinary encoding (custom format)
-- ✅ Page-based encrypted storage
-- ✅ Incremental op-log sync
-- ✅ E2E encrypted transport (ECDH + AES-GCM)
-- ✅ Conflict resolution (CRDT-style)
-- ✅ Auto-discovery (mDNS/Bonjour)
-- ✅ Multi-transport (TCP/UDS/In-Memory)
-- ✅ Query optimizer (cost-based)
-- ✅ Row-Level Security (RLS)
+- Schema-less document storage
+- Secondary indexes (single + compound)
+- Full-text search (inverted index)
+- Vector/spatial indexes (in-memory)
+- MVCC with snapshot isolation
+- ACID transactions with WAL
+- BlazeBinary encoding (custom format)
+- Page-based encrypted storage
+- Incremental op-log sync
+- E2E encrypted transport (ECDH + AES-GCM)
+- Conflict resolution (CRDT-style)
+- Auto-discovery (mDNS/Bonjour)
+- Multi-transport (TCP/UDS/In-Memory)
+- Query optimizer (cost-based)
+- Row-Level Security (RLS)
 
 **Partially Implemented:**
-- ⚠️ Compression (stubbed)
-- ⚠️ Unix Domain Socket server (not implemented)
-- ⚠️ Snapshot sync (architecture ready, not implemented)
-- ⚠️ Chunked transfers (protocol ready, not implemented)
+- ️ Compression (stubbed)
+- ️ Unix Domain Socket server (not implemented)
+- ️ Snapshot sync (architecture ready, not implemented)
+- ️ Chunked transfers (protocol ready, not implemented)
 
 **Missing:**
-- ❌ Peer-to-peer mesh sync
-- ❌ Snapshot-based initial sync
-- ❌ Chunked/streaming transfers
-- ❌ Progress tracking
+- Peer-to-peer mesh sync
+- Snapshot-based initial sync
+- Chunked/streaming transfers
+- Progress tracking
 
 ---
 

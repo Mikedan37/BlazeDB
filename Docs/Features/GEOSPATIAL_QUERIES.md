@@ -7,11 +7,11 @@ BlazeDB now supports **fast geospatial queries** using R-tree spatial indexing. 
 ## Overview
 
 Geospatial queries allow you to:
-- ✅ Find records within a radius of a point (e.g., "restaurants within 1km")
-- ✅ Search by bounding box (e.g., "all locations in this area")
-- ✅ Query locations near a point (**sorted by distance**)
-- ✅ Find nearest N records (true k-NN)
-- ✅ **Distance included in results** (no manual calculation needed!)
+- Find records within a radius of a point (e.g., "restaurants within 1km")
+- Search by bounding box (e.g., "all locations in this area")
+- Query locations near a point (**sorted by distance**)
+- Find nearest N records (true k-NN)
+- **Distance included in results** (no manual calculation needed!)
 
 **Performance:**
 - **With spatial index:** O(log n) - ultra-fast
@@ -35,15 +35,15 @@ try db.enableSpatialIndex(on: "latitude", lonField: "longitude")
 ```swift
 // Insert records with coordinates
 let sf = try db.insert(BlazeDataRecord([
-    "name": .string("San Francisco"),
-    "latitude": .double(37.7749),
-    "longitude": .double(-122.4194)
+ "name":.string("San Francisco"),
+ "latitude":.double(37.7749),
+ "longitude":.double(-122.4194)
 ]))
 
 let oakland = try db.insert(BlazeDataRecord([
-    "name": .string("Oakland"),
-    "latitude": .double(37.8044),
-    "longitude": .double(-122.2711)
+ "name":.string("Oakland"),
+ "latitude":.double(37.8044),
+ "longitude":.double(-122.2711)
 ]))
 ```
 
@@ -52,14 +52,14 @@ let oakland = try db.insert(BlazeDataRecord([
 ```swift
 // Find locations within 10km of San Francisco (sorted by distance!)
 let nearby = try db.query()
-    .near(latitude: 37.7749, longitude: -122.4194, radiusMeters: 10_000)
-    .limit(10)
-    .execute()
+.near(latitude: 37.7749, longitude: -122.4194, radiusMeters: 10_000)
+.limit(10)
+.execute()
 
 let records = try nearby.records
 for location in records {
-    // Distance is automatically included!
-    print("\(location.storage["name"]?.stringValue ?? "Unknown") - \(location.distance ?? 0)m away")
+ // Distance is automatically included!
+ print("\(location.storage["name"]?.stringValue?? "Unknown") - \(location.distance?? 0)m away")
 }
 ```
 
@@ -75,16 +75,16 @@ try db.enableSpatialIndex(on: "latitude", lonField: "longitude")
 
 // Check if enabled
 if db.isSpatialIndexEnabled() {
-    print("Spatial index is enabled")
+ print("Spatial index is enabled")
 }
 
 // Get statistics
 if let stats = db.getSpatialIndexStats() {
-    print(stats.description)
-    // Spatial Index Stats:
-    //   Total records: 1000
-    //   Tree height: 5
-    //   Memory: 245 KB
+ print(stats.description)
+ // Spatial Index Stats:
+ // Total records: 1000
+ // Tree height: 5
+ // Memory: 245 KB
 }
 
 // Rebuild index (after bulk updates)
@@ -102,8 +102,8 @@ Find all records within a radius (meters) of a point.
 
 ```swift
 let nearby = try db.query()
-    .withinRadius(latitude: 37.7749, longitude: -122.4194, radiusMeters: 1000)
-    .execute()
+.withinRadius(latitude: 37.7749, longitude: -122.4194, radiusMeters: 1000)
+.execute()
 ```
 
 **Use cases:**
@@ -117,11 +117,11 @@ Find all records within a rectangular area.
 
 ```swift
 let inArea = try db.query()
-    .withinBoundingBox(
-        minLat: 37.7, maxLat: 37.8,
-        minLon: -122.5, maxLon: -122.4
-    )
-    .execute()
+.withinBoundingBox(
+ minLat: 37.7, maxLat: 37.8,
+ minLon: -122.5, maxLon: -122.4
+ )
+.execute()
 ```
 
 **Use cases:**
@@ -135,15 +135,15 @@ Find records near a point, **automatically sorted by distance**.
 
 ```swift
 let nearest = try db.query()
-    .near(latitude: 37.7749, longitude: -122.4194, radiusMeters: 5000)
-    .limit(10)
-    .execute()
+.near(latitude: 37.7749, longitude: -122.4194, radiusMeters: 5000)
+.limit(10)
+.execute()
 
 let records = try nearest.records
 // Results are automatically sorted by distance (nearest first)
 // Distance is included in each record!
 for record in records {
-    print("\(record.name) - \(record.distance ?? 0)m away")
+ print("\(record.name) - \(record.distance?? 0)m away")
 }
 ```
 
@@ -153,8 +153,8 @@ Find the nearest N records using true k-nearest neighbor algorithm.
 
 ```swift
 let nearest = try db.query()
-    .nearest(to: SpatialPoint(latitude: 37.7749, longitude: -122.4194), limit: 10)
-    .execute()
+.nearest(to: SpatialPoint(latitude: 37.7749, longitude: -122.4194), limit: 10)
+.execute()
 
 let records = try nearest.records
 // Returns exactly 10 nearest records, sorted by distance
@@ -166,10 +166,10 @@ Explicitly sort results by distance from a point.
 
 ```swift
 let results = try db.query()
-    .withinRadius(latitude: 37.7749, longitude: -122.4194, radiusMeters: 5000)
-    .orderByDistance(latitude: 37.7749, longitude: -122.4194)
-    .limit(10)
-    .execute()
+.withinRadius(latitude: 37.7749, longitude: -122.4194, radiusMeters: 5000)
+.orderByDistance(latitude: 37.7749, longitude: -122.4194)
+.limit(10)
+.execute()
 
 // Results sorted by distance, distance included in each record
 ```
@@ -182,15 +182,15 @@ When using `.near()`, `.nearest()`, or `.orderByDistance()`, **distance is autom
 
 ```swift
 let results = try db.query()
-    .near(latitude: 37.7749, longitude: -122.4194, radiusMeters: 1000)
-    .execute()
+.near(latitude: 37.7749, longitude: -122.4194, radiusMeters: 1000)
+.execute()
 
 let records = try results.records
 for record in records {
-    // Distance is automatically calculated and included!
-    if let distance = record.distance {
-        print("\(record.name) is \(distance)m away")
-    }
+ // Distance is automatically calculated and included!
+ if let distance = record.distance {
+ print("\(record.name) is \(distance)m away")
+ }
 }
 ```
 
@@ -205,12 +205,12 @@ for record in records {
 ```swift
 // Find nearby restaurants (combine location + category)
 let nearbyRestaurants = try db.query()
-    .withinRadius(latitude: 37.7749, longitude: -122.4194, radiusMeters: 2000)
-    .where("category", equals: .string("restaurant"))
-    .where("rating", greaterThan: .double(4.0))
-    .orderByDistance(latitude: 37.7749, longitude: -122.4194)  // Sort by distance
-    .limit(10)
-    .execute()
+.withinRadius(latitude: 37.7749, longitude: -122.4194, radiusMeters: 2000)
+.where("category", equals:.string("restaurant"))
+.where("rating", greaterThan:.double(4.0))
+.orderByDistance(latitude: 37.7749, longitude: -122.4194) // Sort by distance
+.limit(10)
+.execute()
 ```
 
 ### Custom Field Names
@@ -221,8 +221,8 @@ try db.enableSpatialIndex(on: "lat", lonField: "lng")
 
 // Queries automatically use the indexed fields
 let nearby = try db.query()
-    .withinRadius(latitude: 37.7749, longitude: -122.4194, radiusMeters: 1000)
-    .execute()
+.withinRadius(latitude: 37.7749, longitude: -122.4194, radiusMeters: 1000)
+.execute()
 ```
 
 ### Without Spatial Index
@@ -232,8 +232,8 @@ Spatial queries work even without an index (full scan), but are slower:
 ```swift
 // No index needed - works with full scan
 let nearby = try db.query()
-    .withinRadius(latitude: 37.7749, longitude: -122.4194, radiusMeters: 1000)
-    .execute()
+.withinRadius(latitude: 37.7749, longitude: -122.4194, radiusMeters: 1000)
+.execute()
 ```
 
 **Performance:**
@@ -248,10 +248,10 @@ let nearby = try db.query()
 
 | Records | With Index | Without Index | Speedup |
 |---------|------------|---------------|---------|
-| 100     | 2ms        | 5ms           | 2.5x    |
-| 1,000   | 5ms        | 50ms          | 10x     |
-| 10,000  | 15ms       | 500ms         | 33x     |
-| 100,000 | 45ms       | 5,000ms       | 111x    |
+| 100 | 2ms | 5ms | 2.5x |
+| 1,000 | 5ms | 50ms | 10x |
+| 10,000 | 15ms | 500ms | 33x |
+| 100,000 | 45ms | 5,000ms | 111x |
 
 ### Memory Usage
 
@@ -281,9 +281,9 @@ Uses the **Haversine formula** for accurate distance calculation:
 ### Automatic Index Maintenance
 
 The spatial index is automatically updated on:
-- ✅ Insert
-- ✅ Update
-- ✅ Delete
+- Insert
+- Update
+- Delete
 
 No manual maintenance needed!
 
@@ -299,24 +299,24 @@ try db.enableSpatialIndex(on: "latitude", lonField: "longitude")
 
 // Insert restaurants
 let restaurant1 = try db.insert(BlazeDataRecord([
-    "name": .string("Joe's Pizza"),
-    "category": .string("restaurant"),
-    "latitude": .double(37.7750),
-    "longitude": .double(-122.4195),
-    "rating": .double(4.5)
+ "name":.string("Joe's Pizza"),
+ "category":.string("restaurant"),
+ "latitude":.double(37.7750),
+ "longitude":.double(-122.4195),
+ "rating":.double(4.5)
 ]))
 
 // Find nearby restaurants (sorted by distance!)
 let nearby = try db.query()
-    .near(latitude: 37.7749, longitude: -122.4194, radiusMeters: 1000)
-    .where("category", equals: .string("restaurant"))
-    .limit(10)
-    .execute()
+.near(latitude: 37.7749, longitude: -122.4194, radiusMeters: 1000)
+.where("category", equals:.string("restaurant"))
+.limit(10)
+.execute()
 
 let records = try nearby.records
 for restaurant in records {
-    // Distance is automatically included!
-    print("\(restaurant.name) - \(restaurant.distance ?? 0)m - ⭐\(restaurant.rating)")
+ // Distance is automatically included!
+ print("\(restaurant.name) - \(restaurant.distance?? 0)m - ⭐\(restaurant.rating)")
 }
 ```
 
@@ -325,13 +325,13 @@ for restaurant in records {
 ```swift
 // Find all locations visible on map
 let visible = try db.query()
-    .withinBoundingBox(
-        minLat: mapView.southWest.latitude,
-        maxLat: mapView.northEast.latitude,
-        minLon: mapView.southWest.longitude,
-        maxLon: mapView.northEast.longitude
-    )
-    .execute()
+.withinBoundingBox(
+ minLat: mapView.southWest.latitude,
+ maxLat: mapView.northEast.latitude,
+ minLon: mapView.southWest.longitude,
+ maxLon: mapView.northEast.longitude
+ )
+.execute()
 ```
 
 ### Nearest Neighbor
@@ -339,8 +339,8 @@ let visible = try db.query()
 ```swift
 // Find 5 nearest locations (true k-NN)
 let nearest = try db.query()
-    .nearest(to: SpatialPoint(latitude: userLatitude, longitude: userLongitude), limit: 5)
-    .execute()
+.nearest(to: SpatialPoint(latitude: userLatitude, longitude: userLongitude), limit: 5)
+.execute()
 
 let records = try nearest.records
 // Results are sorted by distance, distance included
@@ -352,12 +352,12 @@ let records = try nearest.records
 
 ### When to Enable Spatial Index
 
-✅ **Enable when:**
+ **Enable when:**
 - You have 100+ location records
 - You frequently query by location
 - You need fast location queries
 
-❌ **Skip when:**
+ **Skip when:**
 - You have < 100 records (full scan is fast enough)
 - You rarely query by location
 - Memory is very constrained
@@ -379,22 +379,22 @@ Use consistent field names:
 
 ## What Makes This "Insane"
 
-### 🚀 **Critical Enhancements (Just Added):**
+### **Critical Enhancements (Just Added):**
 
-1. ✅ **Distance-based sorting** - Results automatically sorted by distance
-2. ✅ **Distance in results** - No manual calculation needed
-3. ✅ **True k-NN** - Proper nearest neighbor algorithm
-4. ✅ **Auto-sorting** - `.near()` automatically sorts by distance
+1. **Distance-based sorting** - Results automatically sorted by distance
+2. **Distance in results** - No manual calculation needed
+3. **True k-NN** - Proper nearest neighbor algorithm
+4. **Auto-sorting** - `.near()` automatically sorts by distance
 
-### 🎯 **Result:**
+### **Result:**
 
 ```swift
 // One line to find nearest restaurants, sorted by distance, with distance included!
 let nearest = try db.query()
-    .near(latitude: 37.7749, longitude: -122.4194, radiusMeters: 1000)
-    .where("category", equals: .string("restaurant"))
-    .limit(10)
-    .execute()
+.near(latitude: 37.7749, longitude: -122.4194, radiusMeters: 1000)
+.where("category", equals:.string("restaurant"))
+.limit(10)
+.execute()
 
 // Results are:
 // 1. Sorted by distance (nearest first)
@@ -425,13 +425,13 @@ let nearest = try db.query()
 ## Summary
 
 Geospatial queries in BlazeDB provide:
-- ✅ **Fast queries** - O(log n) with spatial index
-- ✅ **Distance sorting** - Automatic sorting by distance
-- ✅ **Distance in results** - No manual calculation
-- ✅ **True k-NN** - Proper nearest neighbor
-- ✅ **Easy to use** - Simple API, automatic maintenance
-- ✅ **Flexible** - Works with or without index
-- ✅ **Production-ready** - Tested, optimized, documented
+- **Fast queries** - O(log n) with spatial index
+- **Distance sorting** - Automatic sorting by distance
+- **Distance in results** - No manual calculation
+- **True k-NN** - Proper nearest neighbor
+- **Easy to use** - Simple API, automatic maintenance
+- **Flexible** - Works with or without index
+- **Production-ready** - Tested, optimized, documented
 
 **Perfect for:**
 - Location-based apps

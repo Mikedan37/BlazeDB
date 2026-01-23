@@ -4,22 +4,22 @@
 
 ---
 
-## 🎯 What is BlazeMCP?
+## What is BlazeMCP?
 
 BlazeMCP is a **Model Context Protocol (MCP) server** that exposes BlazeDB databases to AI assistants and development tools. It provides a secure, standardized interface for AI tools to read and write data while maintaining all of BlazeDB's security features.
 
 ### Key Benefits
 
-✅ **AI-Native Database Access** - Let AI tools query, analyze, and modify your BlazeDB data safely  
-✅ **Zero Breaking Changes** - MCP is a separate executable; BlazeDB core remains untouched  
-✅ **Full Security** - All operations enforce RLS, metadata signatures, and transactional safety  
-✅ **Standard Protocol** - Uses JSON-RPC 2.0 over stdin/stdout (MCP standard)  
-✅ **Type-Safe** - Proper error handling and validation for all operations  
-✅ **Production-Ready** - Comprehensive test coverage and error handling  
+ **AI-Native Database Access** - Let AI tools query, analyze, and modify your BlazeDB data safely
+ **Zero Breaking Changes** - MCP is a separate executable; BlazeDB core remains untouched
+ **Full Security** - All operations enforce RLS, metadata signatures, and transactional safety
+ **Standard Protocol** - Uses JSON-RPC 2.0 over stdin/stdout (MCP standard)
+ **Type-Safe** - Proper error handling and validation for all operations
+ **Production-Ready** - Comprehensive test coverage and error handling
 
 ---
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Installation
 
@@ -28,7 +28,7 @@ BlazeMCP is included in the BlazeDB Swift package:
 ```swift
 // Package.swift
 dependencies: [
-    .package(url: "https://github.com/yourorg/BlazeDB.git", from: "1.0.0")
+.package(url: "https://github.com/yourorg/BlazeDB.git", from: "1.0.0")
 ]
 ```
 
@@ -59,12 +59,12 @@ Add to your Cursor MCP settings:
 
 ```json
 {
-  "mcpServers": {
-    "blazedb": {
-      "command": "/path/to/BlazeMCP",
-      "args": ["--db", "/path/to/database.blazedb", "--password", "your-password"]
-    }
-  }
+ "mcpServers": {
+ "blazedb": {
+ "command": "/path/to/BlazeMCP",
+ "args": ["--db", "/path/to/database.blazedb", "--password", "your-password"]
+ }
+ }
 }
 ```
 
@@ -74,48 +74,48 @@ Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
 
 ```json
 {
-  "mcpServers": {
-    "blazedb": {
-      "command": "/path/to/BlazeMCP",
-      "args": ["--name", "mydb", "--password", "your-password"]
-    }
-  }
+ "mcpServers": {
+ "blazedb": {
+ "command": "/path/to/BlazeMCP",
+ "args": ["--name", "mydb", "--password", "your-password"]
+ }
+ }
 }
 ```
 
 ---
 
-## 📖 How It Works
+## How It Works
 
 ### Architecture
 
 ```
 ┌─────────────────┐
-│  AI Tool        │
-│  (Cursor/Claude)│
+│ AI Tool │
+│ (Cursor/Claude)│
 └────────┬────────┘
-         │ JSON-RPC 2.0
-         │ (stdin/stdout)
-         ▼
+ │ JSON-RPC 2.0
+ │ (stdin/stdout)
+ ▼
 ┌─────────────────┐
-│  BlazeMCP       │
-│  Server         │
+│ BlazeMCP │
+│ Server │
 └────────┬────────┘
-         │
-         │ Tool Execution
-         │ (with RLS)
-         ▼
+ │
+ │ Tool Execution
+ │ (with RLS)
+ ▼
 ┌─────────────────┐
-│  BlazeDB        │
-│  Client         │
+│ BlazeDB │
+│ Client │
 └────────┬────────┘
-         │
-         │ BlazeBinary
-         │ (internal)
-         ▼
+ │
+ │ BlazeBinary
+ │ (internal)
+ ▼
 ┌─────────────────┐
-│  Database Files   │
-│  (.blazedb, .meta)│
+│ Database Files │
+│ (.blazedb,.meta)│
 └────────────────────┘
 ```
 
@@ -132,15 +132,15 @@ Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
 
 All operations pass through BlazeDB's security layers:
 
-- ✅ **Row-Level Security (RLS)** - Automatically enforced on all queries, inserts, updates, deletes
-- ✅ **Metadata Signatures** - HMAC-SHA256 signatures prevent tampering
-- ✅ **Transactional Safety** - ACID guarantees maintained
-- ✅ **Type Validation** - All inputs validated before execution
-- ✅ **Error Handling** - Graceful failures with descriptive errors
+- **Row-Level Security (RLS)** - Automatically enforced on all queries, inserts, updates, deletes
+- **Metadata Signatures** - HMAC-SHA256 signatures prevent tampering
+- **Transactional Safety** - ACID guarantees maintained
+- **Type Validation** - All inputs validated before execution
+- **Error Handling** - Graceful failures with descriptive errors
 
 ---
 
-## 🛠️ Available Tools
+## ️ Available Tools
 
 ### 1. `list_schema` - Database Schema Introspection
 
@@ -154,40 +154,40 @@ All operations pass through BlazeDB's security layers:
 **Example Request:**
 ```json
 {
-  "jsonrpc": "2.0",
-  "id": 1,
-  "method": "tools/call",
-  "params": {
-    "name": "list_schema",
-    "arguments": {
-      "includeSamples": false
-    }
-  }
+ "jsonrpc": "2.0",
+ "id": 1,
+ "method": "tools/call",
+ "params": {
+ "name": "list_schema",
+ "arguments": {
+ "includeSamples": false
+ }
+ }
 }
 ```
 
 **Example Response:**
 ```json
 {
-  "jsonrpc": "2.0",
-  "id": 1,
-  "result": {
-    "models": [
-      {
-        "name": "Record",
-        "fields": [
-          {"name": "id", "type": "uuid", "isCommon": true},
-          {"name": "name", "type": "string", "isCommon": false},
-          {"name": "age", "type": "int", "isCommon": false}
-        ],
-        "totalFields": 10
-      }
-    ],
-    "indexes": [],
-    "totalFields": 10,
-    "commonFields": ["id", "createdAt"],
-    "customFields": ["name", "age", "email"]
-  }
+ "jsonrpc": "2.0",
+ "id": 1,
+ "result": {
+ "models": [
+ {
+ "name": "Record",
+ "fields": [
+ {"name": "id", "type": "uuid", "isCommon": true},
+ {"name": "name", "type": "string", "isCommon": false},
+ {"name": "age", "type": "int", "isCommon": false}
+ ],
+ "totalFields": 10
+ }
+ ],
+ "indexes": [],
+ "totalFields": 10,
+ "commonFields": ["id", "createdAt"],
+ "customFields": ["name", "age", "email"]
+ }
 }
 ```
 
@@ -210,24 +210,24 @@ All operations pass through BlazeDB's security layers:
 **Example Request:**
 ```json
 {
-  "jsonrpc": "2.0",
-  "id": 2,
-  "method": "tools/call",
-  "params": {
-    "name": "run_query",
-    "arguments": {
-      "filter": {
-        "field": "status",
-        "op": "eq",
-        "value": "active"
-      },
-      "sort": [
-        {"field": "priority", "direction": "desc"}
-      ],
-      "limit": 50,
-      "project": ["id", "name", "status"]
-    }
-  }
+ "jsonrpc": "2.0",
+ "id": 2,
+ "method": "tools/call",
+ "params": {
+ "name": "run_query",
+ "arguments": {
+ "filter": {
+ "field": "status",
+ "op": "eq",
+ "value": "active"
+ },
+ "sort": [
+ {"field": "priority", "direction": "desc"}
+ ],
+ "limit": 50,
+ "project": ["id", "name", "status"]
+ }
+ }
 }
 ```
 
@@ -246,19 +246,19 @@ All operations pass through BlazeDB's security layers:
 **Example Response:**
 ```json
 {
-  "jsonrpc": "2.0",
-  "id": 2,
-  "result": {
-    "records": [
-      {
-        "id": "550e8400-e29b-41d4-a716-446655440000",
-        "name": "Task 1",
-        "status": "active"
-      }
-    ],
-    "count": 1,
-    "hasMore": false
-  }
+ "jsonrpc": "2.0",
+ "id": 2,
+ "result": {
+ "records": [
+ {
+ "id": "550e8400-e29b-41d4-a716-446655440000",
+ "name": "Task 1",
+ "status": "active"
+ }
+ ],
+ "count": 1,
+ "hasMore": false
+ }
 }
 ```
 
@@ -281,33 +281,33 @@ All operations pass through BlazeDB's security layers:
 **Example Request:**
 ```json
 {
-  "jsonrpc": "2.0",
-  "id": 3,
-  "method": "tools/call",
-  "params": {
-    "name": "insert_record",
-    "arguments": {
-      "record": {
-        "name": "New Task",
-        "status": "pending",
-        "priority": 5,
-        "dueDate": "2025-01-20T10:00:00Z"
-      }
-    }
-  }
+ "jsonrpc": "2.0",
+ "id": 3,
+ "method": "tools/call",
+ "params": {
+ "name": "insert_record",
+ "arguments": {
+ "record": {
+ "name": "New Task",
+ "status": "pending",
+ "priority": 5,
+ "dueDate": "2025-01-20T10:00:00Z"
+ }
+ }
+ }
 }
 ```
 
 **Example Response:**
 ```json
 {
-  "jsonrpc": "2.0",
-  "id": 3,
-  "result": {
-    "id": "550e8400-e29b-41d4-a716-446655440000",
-    "success": true,
-    "message": "Record inserted successfully"
-  }
+ "jsonrpc": "2.0",
+ "id": 3,
+ "result": {
+ "id": "550e8400-e29b-41d4-a716-446655440000",
+ "success": true,
+ "message": "Record inserted successfully"
+ }
 }
 ```
 
@@ -330,32 +330,32 @@ All operations pass through BlazeDB's security layers:
 **Example Request:**
 ```json
 {
-  "jsonrpc": "2.0",
-  "id": 4,
-  "method": "tools/call",
-  "params": {
-    "name": "update_record",
-    "arguments": {
-      "id": "550e8400-e29b-41d4-a716-446655440000",
-      "values": {
-        "status": "completed",
-        "completedAt": "2025-01-15T10:00:00Z"
-      }
-    }
-  }
+ "jsonrpc": "2.0",
+ "id": 4,
+ "method": "tools/call",
+ "params": {
+ "name": "update_record",
+ "arguments": {
+ "id": "550e8400-e29b-41d4-a716-446655440000",
+ "values": {
+ "status": "completed",
+ "completedAt": "2025-01-15T10:00:00Z"
+ }
+ }
+ }
 }
 ```
 
 **Example Response:**
 ```json
 {
-  "jsonrpc": "2.0",
-  "id": 4,
-  "result": {
-    "id": "550e8400-e29b-41d4-a716-446655440000",
-    "success": true,
-    "message": "Record updated successfully"
-  }
+ "jsonrpc": "2.0",
+ "id": 4,
+ "result": {
+ "id": "550e8400-e29b-41d4-a716-446655440000",
+ "success": true,
+ "message": "Record updated successfully"
+ }
 }
 ```
 
@@ -378,28 +378,28 @@ All operations pass through BlazeDB's security layers:
 **Example Request:**
 ```json
 {
-  "jsonrpc": "2.0",
-  "id": 5,
-  "method": "tools/call",
-  "params": {
-    "name": "delete_record",
-    "arguments": {
-      "id": "550e8400-e29b-41d4-a716-446655440000"
-    }
-  }
+ "jsonrpc": "2.0",
+ "id": 5,
+ "method": "tools/call",
+ "params": {
+ "name": "delete_record",
+ "arguments": {
+ "id": "550e8400-e29b-41d4-a716-446655440000"
+ }
+ }
 }
 ```
 
 **Example Response:**
 ```json
 {
-  "jsonrpc": "2.0",
-  "id": 5,
-  "result": {
-    "id": "550e8400-e29b-41d4-a716-446655440000",
-    "success": true,
-    "message": "Record deleted successfully"
-  }
+ "jsonrpc": "2.0",
+ "id": 5,
+ "result": {
+ "id": "550e8400-e29b-41d4-a716-446655440000",
+ "success": true,
+ "message": "Record deleted successfully"
+ }
 }
 ```
 
@@ -423,23 +423,23 @@ All operations pass through BlazeDB's security layers:
 **Example Request:**
 ```json
 {
-  "jsonrpc": "2.0",
-  "id": 6,
-  "method": "tools/call",
-  "params": {
-    "name": "graph_query",
-    "arguments": {
-      "xField": "createdAt",
-      "xDateBin": "day",
-      "yAggregation": "count",
-      "filter": {
-        "field": "status",
-        "op": "eq",
-        "value": "active"
-      },
-      "limit": 100
-    }
-  }
+ "jsonrpc": "2.0",
+ "id": 6,
+ "method": "tools/call",
+ "params": {
+ "name": "graph_query",
+ "arguments": {
+ "xField": "createdAt",
+ "xDateBin": "day",
+ "yAggregation": "count",
+ "filter": {
+ "field": "status",
+ "op": "eq",
+ "value": "active"
+ },
+ "limit": 100
+ }
+ }
 }
 ```
 
@@ -460,17 +460,17 @@ All operations pass through BlazeDB's security layers:
 **Example Response:**
 ```json
 {
-  "jsonrpc": "2.0",
-  "id": 6,
-  "result": {
-    "points": [
-      {"x": "2025-01-15T00:00:00Z", "y": 10},
-      {"x": "2025-01-16T00:00:00Z", "y": 15},
-      {"x": "2025-01-17T00:00:00Z", "y": 12}
-    ],
-    "count": 3,
-    "description": "Graph query: count of records grouped by createdAt"
-  }
+ "jsonrpc": "2.0",
+ "id": 6,
+ "result": {
+ "points": [
+ {"x": "2025-01-15T00:00:00Z", "y": 10},
+ {"x": "2025-01-16T00:00:00Z", "y": 15},
+ {"x": "2025-01-17T00:00:00Z", "y": 12}
+ ],
+ "count": 3,
+ "description": "Graph query: count of records grouped by createdAt"
+ }
 }
 ```
 
@@ -493,46 +493,46 @@ All operations pass through BlazeDB's security layers:
 **Example Request:**
 ```json
 {
-  "jsonrpc": "2.0",
-  "id": 7,
-  "method": "tools/call",
-  "params": {
-    "name": "suggest_indexes",
-    "arguments": {
-      "filterFields": ["status", "priority"],
-      "sortFields": ["createdAt"],
-      "joinFields": ["userId"]
-    }
-  }
+ "jsonrpc": "2.0",
+ "id": 7,
+ "method": "tools/call",
+ "params": {
+ "name": "suggest_indexes",
+ "arguments": {
+ "filterFields": ["status", "priority"],
+ "sortFields": ["createdAt"],
+ "joinFields": ["userId"]
+ }
+ }
 }
 ```
 
 **Example Response:**
 ```json
 {
-  "jsonrpc": "2.0",
-  "id": 7,
-  "result": {
-    "suggestions": [
-      {
-        "field": "status",
-        "type": "single",
-        "reason": "Frequently filtered",
-        "priority": "high",
-        "estimatedImpact": "High - speeds up WHERE clauses"
-      },
-      {
-        "fields": ["status", "createdAt"],
-        "type": "compound",
-        "reason": "Filtered and sorted together",
-        "priority": "high",
-        "estimatedImpact": "Very High - optimizes filtered + sorted queries"
-      }
-    ],
-    "count": 2,
-    "existingIndexes": [],
-    "message": "Review suggestions and create indexes using createIndex() method"
-  }
+ "jsonrpc": "2.0",
+ "id": 7,
+ "result": {
+ "suggestions": [
+ {
+ "field": "status",
+ "type": "single",
+ "reason": "Frequently filtered",
+ "priority": "high",
+ "estimatedImpact": "High - speeds up WHERE clauses"
+ },
+ {
+ "fields": ["status", "createdAt"],
+ "type": "compound",
+ "reason": "Filtered and sorted together",
+ "priority": "high",
+ "estimatedImpact": "Very High - optimizes filtered + sorted queries"
+ }
+ ],
+ "count": 2,
+ "existingIndexes": [],
+ "message": "Review suggestions and create indexes using createIndex() method"
+ }
 }
 ```
 
@@ -555,16 +555,16 @@ All operations pass through BlazeDB's security layers:
 **Example Request:**
 ```json
 {
-  "jsonrpc": "2.0",
-  "id": 8,
-  "method": "tools/call",
-  "params": {
-    "name": "binary_query",
-    "arguments": {
-      "binaryQuery": "base64-encoded-blazebinary-query",
-      "returnBinary": false
-    }
-  }
+ "jsonrpc": "2.0",
+ "id": 8,
+ "method": "tools/call",
+ "params": {
+ "name": "binary_query",
+ "arguments": {
+ "binaryQuery": "base64-encoded-blazebinary-query",
+ "returnBinary": false
+ }
+ }
 }
 ```
 
@@ -575,7 +575,7 @@ All operations pass through BlazeDB's security layers:
 
 ---
 
-## 🔒 Security Features
+## Security Features
 
 ### Row-Level Security (RLS)
 
@@ -591,31 +591,31 @@ db.registerRLSPolicy(policy)
 ```
 
 **What This Means:**
-- ✅ Queries return only allowed records
-- ✅ Inserts validated against RLS policies
-- ✅ Updates only work on accessible records
-- ✅ Deletes only work on accessible records
+- Queries return only allowed records
+- Inserts validated against RLS policies
+- Updates only work on accessible records
+- Deletes only work on accessible records
 
 ### Metadata Signatures
 
 All metadata operations use HMAC-SHA256 signatures:
 
-- ✅ Schema reads verified
-- ✅ Index operations signed
-- ✅ Layout updates tamper-proof
+- Schema reads verified
+- Index operations signed
+- Layout updates tamper-proof
 
 ### Transactional Safety
 
 All operations maintain ACID guarantees:
 
-- ✅ **Atomicity** - All or nothing
-- ✅ **Consistency** - Valid state maintained
-- ✅ **Isolation** - MVCC isolation
-- ✅ **Durability** - Persisted to disk
+- **Atomicity** - All or nothing
+- **Consistency** - Valid state maintained
+- **Isolation** - MVCC isolation
+- **Durability** - Persisted to disk
 
 ---
 
-## 💡 Real-World Use Cases & Examples
+## Real-World Use Cases & Examples
 
 ### Example 1: Business Analyst Needs Sales Report
 
@@ -893,7 +893,7 @@ AI: [Uses BlazeMCP]
 
 ---
 
-## 🎯 Why These Examples Matter
+## Why These Examples Matter
 
 ### The Pattern You See:
 
@@ -939,7 +939,7 @@ You just:
 
 ---
 
-## 🎨 Best Practices
+## Best Practices
 
 ### 1. Use Field Projection
 
@@ -947,7 +947,7 @@ Always project only needed fields to reduce data transfer:
 
 ```json
 {
-  "project": ["id", "name", "status"]
+ "project": ["id", "name", "status"]
 }
 ```
 
@@ -957,7 +957,7 @@ Always set reasonable limits to prevent large result sets:
 
 ```json
 {
-  "limit": 100
+ "limit": 100
 }
 ```
 
@@ -986,21 +986,21 @@ Always handle errors gracefully:
 
 ```json
 {
-  "jsonrpc": "2.0",
-  "id": 1,
-  "error": {
-    "code": -32602,
-    "message": "Invalid params",
-    "data": {
-      "error": "Field 'id' must be a valid UUID string"
-    }
-  }
+ "jsonrpc": "2.0",
+ "id": 1,
+ "error": {
+ "code": -32602,
+ "message": "Invalid params",
+ "data": {
+ "error": "Field 'id' must be a valid UUID string"
+ }
+ }
 }
 ```
 
 ---
 
-## 🐛 Troubleshooting
+## Troubleshooting
 
 ### Issue: "Failed to initialize database"
 
@@ -1041,7 +1041,7 @@ Always handle errors gracefully:
 
 ---
 
-## 📊 Performance Considerations
+## Performance Considerations
 
 ### Query Optimization
 
@@ -1064,23 +1064,23 @@ Always handle errors gracefully:
 
 ---
 
-## 🔄 Integration Examples
+## Integration Examples
 
 ### Cursor Integration
 
 ```json
 {
-  "mcpServers": {
-    "blazedb": {
-      "command": "/usr/local/bin/BlazeMCP",
-      "args": [
-        "--db",
-        "/Users/me/data/project.blazedb",
-        "--password",
-        "secure-password"
-      ]
-    }
-  }
+ "mcpServers": {
+ "blazedb": {
+ "command": "/usr/local/bin/BlazeMCP",
+ "args": [
+ "--db",
+ "/Users/me/data/project.blazedb",
+ "--password",
+ "secure-password"
+ ]
+ }
+ }
 }
 ```
 
@@ -1088,17 +1088,17 @@ Always handle errors gracefully:
 
 ```json
 {
-  "mcpServers": {
-    "blazedb": {
-      "command": "/usr/local/bin/BlazeMCP",
-      "args": [
-        "--name",
-        "myproject",
-        "--password",
-        "secure-password"
-      ]
-    }
-  }
+ "mcpServers": {
+ "blazedb": {
+ "command": "/usr/local/bin/BlazeMCP",
+ "args": [
+ "--name",
+ "myproject",
+ "--password",
+ "secure-password"
+ ]
+ }
+ }
 }
 ```
 
@@ -1109,12 +1109,12 @@ Always handle errors gracefully:
 ./blazemcp --db /path/to/db.blazedb --password "secret" &
 
 # Send request
-echo '{"jsonrpc":"2.0","id":1,"method":"tools/list"}' | ./blazemcp --db /path/to/db.blazedb --password "secret"
+echo '{"jsonrpc":"2.0","id":1,"method":"tools/list"}' |./blazemcp --db /path/to/db.blazedb --password "secret"
 ```
 
 ---
 
-## 📚 Additional Resources
+## Additional Resources
 
 - [MCP Protocol Specification](https://modelcontextprotocol.io)
 - [BlazeDB API Reference](../API/API_REFERENCE.md)
@@ -1123,7 +1123,7 @@ echo '{"jsonrpc":"2.0","id":1,"method":"tools/list"}' | ./blazemcp --db /path/to
 
 ---
 
-## ✅ Testing
+## Testing
 
 Run comprehensive test suite:
 
@@ -1132,16 +1132,16 @@ swift test --filter MCPServerTests
 ```
 
 **Test Coverage:**
-- ✅ All 8 tools
-- ✅ 40+ test cases
-- ✅ Edge cases
-- ✅ Error scenarios
-- ✅ Performance benchmarks
-- ✅ Concurrent operations
+- All 8 tools
+- 40+ test cases
+- Edge cases
+- Error scenarios
+- Performance benchmarks
+- Concurrent operations
 
 ---
 
-## 📊 Performance Metrics & AI Advantages
+## Performance Metrics & AI Advantages
 
 ### BlazeMCP vs Alternatives
 
@@ -1149,10 +1149,10 @@ swift test --filter MCPServerTests
 
 | Method | Setup Time | Complexity | AI Integration |
 |--------|------------|------------|----------------|
-| **BlazeMCP** | **< 2 minutes** | ⭐ Simple | ✅ Native |
-| Custom REST API | 2-4 hours | ⭐⭐⭐ Complex | ⚠️ Manual |
-| SQL Interface | 1-2 hours | ⭐⭐ Moderate | ⚠️ Manual |
-| GraphQL API | 3-6 hours | ⭐⭐⭐⭐ Very Complex | ⚠️ Manual |
+| **BlazeMCP** | **< 2 minutes** | ⭐ Simple | Native |
+| Custom REST API | 2-4 hours | ⭐⭐⭐ Complex | ️ Manual |
+| SQL Interface | 1-2 hours | ⭐⭐ Moderate | ️ Manual |
+| GraphQL API | 3-6 hours | ⭐⭐⭐⭐ Very Complex | ️ Manual |
 
 **BlazeMCP Advantage:** 60-180x faster setup time
 
@@ -1217,11 +1217,11 @@ swift test --filter MCPServerTests
 
 | Feature | BlazeMCP | Custom API | SQL Interface |
 |---------|----------|------------|---------------|
-| **RLS Enforcement** | ✅ Automatic | ⚠️ Manual | ⚠️ Manual |
-| **SQL Injection Risk** | ✅ **0%** | ⚠️ 15-30% | ❌ 40-60% |
-| **Type Validation** | ✅ **100%** | ⚠️ 60-80% | ⚠️ 40-60% |
-| **Metadata Tampering** | ✅ **Protected** | ⚠️ Vulnerable | ⚠️ Vulnerable |
-| **Error Exposure** | ✅ **Safe** | ⚠️ Risky | ❌ Very Risky |
+| **RLS Enforcement** | Automatic | ️ Manual | ️ Manual |
+| **SQL Injection Risk** | **0%** | ️ 15-30% | 40-60% |
+| **Type Validation** | **100%** | ️ 60-80% | ️ 40-60% |
+| **Metadata Tampering** | **Protected** | ️ Vulnerable | ️ Vulnerable |
+| **Error Exposure** | **Safe** | ️ Risky | Very Risky |
 
 **BlazeMCP Advantage:** Zero SQL injection risk, automatic RLS, full type safety
 
@@ -1248,10 +1248,10 @@ swift test --filter MCPServerTests
 
 | AI Tool | BlazeMCP | Custom API | SQL Interface |
 |---------|----------|------------|---------------|
-| **Cursor** | ✅ Native | ⚠️ Manual | ❌ Not Supported |
-| **Claude Desktop** | ✅ Native | ⚠️ Manual | ❌ Not Supported |
-| **ChatGPT** | ✅ Via MCP | ⚠️ Manual | ❌ Not Supported |
-| **Custom AI** | ✅ MCP Standard | ⚠️ Custom | ❌ Not Supported |
+| **Cursor** | Native | ️ Manual | Not Supported |
+| **Claude Desktop** | Native | ️ Manual | Not Supported |
+| **ChatGPT** | Via MCP | ️ Manual | Not Supported |
+| **Custom AI** | MCP Standard | ️ Custom | Not Supported |
 
 **BlazeMCP Advantage:** Works with all MCP-compatible AI tools out of the box
 
@@ -1263,11 +1263,11 @@ swift test --filter MCPServerTests
 
 | Method | Payload Size | Transfer Time | Compression |
 |---------|--------------|---------------|-------------|
-| **BlazeMCP (Binary)** | **1.2 MB** | 12ms | ✅ Built-in |
-| **BlazeMCP (JSON)** | 2.5 MB | 25ms | ❌ None |
-| REST API | 3.8 MB | 38ms | ⚠️ Optional |
-| GraphQL | 2.9 MB | 29ms | ⚠️ Optional |
-| SQL JSON | 4.2 MB | 42ms | ❌ None |
+| **BlazeMCP (Binary)** | **1.2 MB** | 12ms | Built-in |
+| **BlazeMCP (JSON)** | 2.5 MB | 25ms | None |
+| REST API | 3.8 MB | 38ms | ️ Optional |
+| GraphQL | 2.9 MB | 29ms | ️ Optional |
+| SQL JSON | 4.2 MB | 42ms | None |
 
 **BlazeMCP Binary Advantage:**
 - **68% smaller** than REST API
@@ -1327,28 +1327,28 @@ swift test --filter MCPServerTests
 ### Summary: Why BlazeMCP is Better for AI
 
 #### Performance Metrics
-- ⚡ **2-4x faster** query execution
-- 📦 **53% smaller** payloads (binary mode)
-- 🚀 **48% faster** encoding/decoding
+- **2-4x faster** query execution
+- **53% smaller** payloads (binary mode)
+- **48% faster** encoding/decoding
 - ⏱️ **6-18x faster** end-to-end workflows
 
 #### Developer Experience
-- 🎯 **48-192x faster** development time
-- ✅ **94% success rate** for natural language queries
-- 🔒 **Zero SQL injection** risk
-- 🛡️ **100% type safety**
+- **48-192x faster** development time
+- **94% success rate** for natural language queries
+- **Zero SQL injection** risk
+- ️ **100% type safety**
 
 #### AI Integration
-- 🤖 **Native support** for all MCP-compatible AI tools
-- 📊 **Automatic schema** discovery
-- 🔍 **Intelligent query** generation
-- 🎨 **Chart-ready** data format
+- **Native support** for all MCP-compatible AI tools
+- **Automatic schema** discovery
+- **Intelligent query** generation
+- **Chart-ready** data format
 
 #### Security
-- 🔐 **Automatic RLS** enforcement
-- ✍️ **Metadata signatures** prevent tampering
-- 🛡️ **ACID guarantees** maintained
-- ✅ **Zero vulnerabilities** in tested scenarios
+- **Automatic RLS** enforcement
+- ️ **Metadata signatures** prevent tampering
+- ️ **ACID guarantees** maintained
+- **Zero vulnerabilities** in tested scenarios
 
 ---
 
@@ -1362,35 +1362,35 @@ swift test --filter MCPServerTests
 
 **BlazeMCP Results:**
 ```
-Schema Discovery:     0.45s  ✅
-Query Execution:      0.23s  ✅ (binary mode)
-Data Transfer:        1.1 MB ✅ (53% smaller)
-Memory Usage:         4.2 MB ✅
-Error Rate:           0.6%   ✅
-Success Rate:         94%    ✅
+Schema Discovery: 0.45s
+Query Execution: 0.23s (binary mode)
+Data Transfer: 1.1 MB (53% smaller)
+Memory Usage: 4.2 MB
+Error Rate: 0.6%
+Success Rate: 94%
 ```
 
 **Competitor Average:**
 ```
-Schema Discovery:     8.2s   ⚠️
-Query Execution:      0.95s  ⚠️
-Data Transfer:        3.2 MB ⚠️
-Memory Usage:         12.8 MB ⚠️
-Error Rate:           4.2%   ⚠️
-Success Rate:         68%    ⚠️
+Schema Discovery: 8.2s ️
+Query Execution: 0.95s ️
+Data Transfer: 3.2 MB ️
+Memory Usage: 12.8 MB ️
+Error Rate: 4.2% ️
+Success Rate: 68% ️
 ```
 
 **BlazeMCP Wins:**
-- 🏆 **18x faster** schema discovery
-- 🏆 **4.1x faster** query execution
-- 🏆 **66% smaller** data transfer
-- 🏆 **67% less** memory usage
-- 🏆 **7x lower** error rate
-- 🏆 **38% higher** success rate
+- **18x faster** schema discovery
+- **4.1x faster** query execution
+- **66% smaller** data transfer
+- **67% less** memory usage
+- **7x lower** error rate
+- **38% higher** success rate
 
 ---
 
-## 🚀 Future Enhancements
+## Future Enhancements
 
 - [ ] Async/await support
 - [ ] Connection pooling
@@ -1402,6 +1402,6 @@ Success Rate:         68%    ⚠️
 
 ---
 
-**Last Updated:** 2025-01-XX  
-**Version:** 1.0.0  
+**Last Updated:** 2025-01-XX
+**Version:** 1.0.0
 **License:** Apache License 2.0

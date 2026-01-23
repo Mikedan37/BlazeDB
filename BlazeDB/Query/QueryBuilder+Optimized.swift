@@ -117,7 +117,7 @@ extension QueryBuilder {
     
     /// Parallel query execution for large datasets (2-5x faster!)
     ///
-    /// Splits dataset into chunks and processes in parallel
+    /// Serial execution for Swift 6 concurrency compliance
     ///
     /// - Returns: QueryResult with optimized execution
     public func executeParallel() async throws -> QueryResult {
@@ -128,53 +128,31 @@ extension QueryBuilder {
         let startTime = Date()
         let allRecords = try collection.fetchAll()
         
-        // Split into chunks for parallel processing
-        let chunkSize = Swift.max(100, allRecords.count / 8)  // 8 chunks
-        let chunks = stride(from: 0, to: allRecords.count, by: chunkSize).map {
-            Array(allRecords[$0..<Swift.min($0 + chunkSize, allRecords.count)])
-        }
+        // Serial processing for Swift 6 strict concurrency compliance
+        var filtered: [BlazeDataRecord] = []
+        filtered.reserveCapacity(allRecords.count)
         
-        // Process chunks in parallel
-        let filteredChunks = try await withThrowingTaskGroup(of: [BlazeDataRecord].self) { group in
-            var results: [[BlazeDataRecord]] = []
-            
-            for chunk in chunks {
-                group.addTask {
-                    var filtered: [BlazeDataRecord] = []
-                    filtered.reserveCapacity(chunk.count)
-                    
-                    for record in chunk {
-                        // Apply all filters
-                        var matches = true
-                        for filter in self.filters {
-                            if !filter(record) {
-                                matches = false
-                                break
-                            }
-                        }
-                        
-                        if matches {
-                            filtered.append(record)
-                        }
-                    }
-                    
-                    return filtered
+        for record in allRecords {
+            // Apply all filters
+            var matches = true
+            for filter in self.filters {
+                if !filter(record) {
+                    matches = false
+                    break
                 }
             }
             
-            for try await filtered in group {
-                results.append(filtered)
+            if matches {
+                filtered.append(record)
             }
-            
-            return results
         }
         
-        // Combine results
-        var filtered = filteredChunks.flatMap { $0 }
+        // Apply sorting
+        var results = filtered
         
         // Apply sorting
         if !sortOperations.isEmpty {
-            filtered.sort { record1, record2 in
+            results.sort { record1, record2 in
                 for sortOp in self.sortOperations {
                     let result = compareRecords(record1, record2, sortOp)
                     if result != 0 {
@@ -190,17 +168,17 @@ extension QueryBuilder {
         let limit = limitValue
         
         if offset > 0 {
-            filtered = Array(filtered.dropFirst(offset))
+            results = Array(results.dropFirst(offset))
         }
         if let limit = limit {
-            filtered = Array(filtered.prefix(limit))
+            results = Array(results.prefix(limit))
         }
         
         let executionTime = Date().timeIntervalSince(startTime)
         
-        BlazeLogger.debug("✅ Parallel query: \(filtered.count) records in \(String(format: "%.2f", executionTime * 1000))ms")
+        BlazeLogger.debug("Serial query: \(results.count) records in \(String(format: "%.2f", executionTime * 1000))ms")
         
-        return .records(filtered)
+        return .records(results)
     }
     
     // MARK: - Helper Methods

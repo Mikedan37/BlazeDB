@@ -17,10 +17,10 @@ Unix Domain Sockets enable **cross-app synchronization** between different apps 
 - **Memory:** Kernel-managed buffers (efficient)
 
 ### **Benefits:**
-- ✅ **Cross-process:** Works between different apps
-- ✅ **Fast:** Much faster than TCP (no network stack)
-- ✅ **Secure:** Local only (no network exposure)
-- ✅ **BlazeBinary:** Uses BlazeBinary encoding (5-10x faster than JSON!)
+- **Cross-process:** Works between different apps
+- **Fast:** Much faster than TCP (no network stack)
+- **Secure:** Local only (no network exposure)
+- **BlazeBinary:** Uses BlazeBinary encoding (5-10x faster than JSON!)
 
 ---
 
@@ -32,42 +32,42 @@ Unix Domain Sockets enable **cross-app synchronization** between different apps 
 // App 1 (Server)
 let db1 = try BlazeDBClient(name: "App1DB", fileURL: url1, password: "pass")
 let topology = BlazeTopology()
-let id1 = try await topology.register(db: db1, name: "App1DB", role: .server)
+let id1 = try await topology.register(db: db1, name: "App1DB", role:.server)
 
 // App 2 (Client)
 let db2 = try BlazeDBClient(name: "App2DB", fileURL: url2, password: "pass")
-let id2 = try await topology.register(db: db2, name: "App2DB", role: .client)
+let id2 = try await topology.register(db: db2, name: "App2DB", role:.client)
 
 // Connect via Unix Domain Socket (same socket path in both apps)
-let socketPath = "/tmp/blazedb_sync.sock"  // Or use App Group path
+let socketPath = "/tmp/blazedb_sync.sock" // Or use App Group path
 try await topology.connectCrossApp(
-    from: id1,
-    to: id2,
-    socketPath: socketPath,
-    mode: .bidirectional
+ from: id1,
+ to: id2,
+ socketPath: socketPath,
+ mode:.bidirectional
 )
 ```
 
 ### **Socket Path Best Practices:**
 
 1. **App Groups (Recommended):**
-   ```swift
-   let containerURL = FileManager.default.containerURL(
-       forSecurityApplicationGroupIdentifier: "group.com.yourapp.blazedb"
-   )!
-   let socketPath = containerURL.appendingPathComponent("blazedb_sync.sock").path
-   ```
+ ```swift
+ let containerURL = FileManager.default.containerURL(
+ forSecurityApplicationGroupIdentifier: "group.com.yourapp.blazedb"
+ )!
+ let socketPath = containerURL.appendingPathComponent("blazedb_sync.sock").path
+ ```
 
 2. **Temporary Directory:**
-   ```swift
-   let socketPath = FileManager.default.temporaryDirectory
-       .appendingPathComponent("blazedb_sync.sock").path
-   ```
+ ```swift
+ let socketPath = FileManager.default.temporaryDirectory
+.appendingPathComponent("blazedb_sync.sock").path
+ ```
 
 3. **Custom Path:**
-   ```swift
-   let socketPath = "/var/run/blazedb_sync.sock"  // Requires permissions
-   ```
+ ```swift
+ let socketPath = "/var/run/blazedb_sync.sock" // Requires permissions
+ ```
 
 ---
 
@@ -76,20 +76,20 @@ try await topology.connectCrossApp(
 ### **Connection Flow:**
 
 1. **Server Side (App 1):**
-   - Creates `UnixDomainSocketRelay` (listener)
-   - Calls `startListening()` on socket path
-   - Waits for incoming connections
+ - Creates `UnixDomainSocketRelay` (listener)
+ - Calls `startListening()` on socket path
+ - Waits for incoming connections
 
 2. **Client Side (App 2):**
-   - Creates `UnixDomainSocketRelay` (connector)
-   - Calls `connect()` to socket path
-   - Establishes connection to server
+ - Creates `UnixDomainSocketRelay` (connector)
+ - Calls `connect()` to socket path
+ - Establishes connection to server
 
 3. **Data Flow:**
-   - Operations encoded in **BlazeBinary** (fast!)
-   - Sent over Unix Domain Socket
-   - Decoded on receiving side
-   - Applied to database
+ - Operations encoded in **BlazeBinary** (fast!)
+ - Sent over Unix Domain Socket
+ - Decoded on receiving side
+ - Applied to database
 
 ---
 
@@ -134,16 +134,16 @@ All operations are encoded using **BlazeBinary** (not JSON):
 ## **Testing:**
 
 See `UnixDomainSocketTests.swift` for:
-- ✅ Unit tests (encoding/decoding)
-- ✅ Integration tests (cross-app sync)
-- ✅ Performance tests (throughput)
-- ✅ Error handling tests
+- Unit tests (encoding/decoding)
+- Integration tests (cross-app sync)
+- Performance tests (throughput)
+- Error handling tests
 
 ---
 
 ## **Status:**
 
-✅ **PRODUCTION READY**
+ **PRODUCTION READY**
 
 - Fully implemented
 - BlazeBinary encoding

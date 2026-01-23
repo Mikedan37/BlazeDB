@@ -1,10 +1,10 @@
-# 📚 BlazeDB - Master Documentation Index
+# BlazeDB - Master Documentation Index
 
 **Complete guide to all BlazeDB documentation.**
 
 ---
 
-## **🚀 Start Here**
+## **Start Here**
 
 ### **New to BlazeDB?**
 1. **`README.md`** - Project overview and quick start
@@ -21,13 +21,13 @@
 
 ---
 
-## **📖 Core Documentation**
+## **Core Documentation**
 
 ### **Getting Started:**
 - **`README.md`** - Main README with quick start
 - **`DEVELOPER_GUIDE.md`** - Complete developer guide
 - **`TUTORIALS.md`** - Step-by-step tutorials
-- **`Guides/CONVENIENCE_API_GUIDE.md`** ⭐ - NEW: Easy database creation by name!
+- **`Guides/CONVENIENCE_API_GUIDE.md`** - NEW: Easy database creation by name!
 - **`Examples/README.md`** - All examples
 
 ### **API Documentation:**
@@ -41,10 +41,10 @@
 
 ---
 
-## **🔄 Sync Documentation**
+## **Sync Documentation**
 
 ### **Guides:**
-- **`Sync/SYNC_TRANSPORT_GUIDE.md`** ⭐ - Main sync guide (all 3 transports)
+- **`Sync/SYNC_TRANSPORT_GUIDE.md`** - Main sync guide (all 3 transports)
 - **`Guides/CONNECTING_DATABASES_GUIDE.md`** - Comprehensive guide
 
 ### **Examples:**
@@ -62,14 +62,14 @@ Removed legacy status/audit files in favor of canonical guides above.
 
 ---
 
-## **🧪 Testing Documentation**
+## **Testing Documentation**
 
 - **`Testing/TEST_COVERAGE_DOCUMENTATION.md`** - Complete test coverage (970+ tests)
 - **`Examples/`** - Test examples
 
 ---
 
-## **🏗️ Architecture Documentation**
+## **Architecture Documentation**
 
 - **`Architecture/ARCHITECTURE.md`** - System architecture
 - **`Architecture/BLAZEDB_RELAY.md`** - Relay architecture
@@ -79,7 +79,7 @@ Removed legacy “complete/final/status” variants to avoid duplication.
 
 ---
 
-## **🔒 Security Documentation**
+## **Security Documentation**
 
 - **`Security/SECURITY_ANALYSIS.md`** - Security analysis
 - **`Security/ENCRYPTION_STRATEGY.md`** - Encryption strategy
@@ -90,7 +90,7 @@ Removed legacy “complete/final/status” variants to avoid duplication.
 
 ---
 
-## **📦 Distribution Documentation**
+## **Distribution Documentation**
 
 - **`BLAZEDB_RELAY.md`** - Relay system
 - **`BLAZEBINARY_PROTOCOL.md`** - Binary protocol
@@ -102,7 +102,7 @@ Removed legacy “complete/final/status” variants to avoid duplication.
 
 ---
 
-## **🚀 Performance Documentation**
+## **Performance Documentation**
 
 - **`Performance/IMPROVEMENTS_SUMMARY.md`** - Performance improvements
 - **`Performance/ASYNC_AND_SERVER_READINESS.md`** - Async operations
@@ -112,7 +112,7 @@ Removed legacy “complete/final/status” variants to avoid duplication.
 
 ---
 
-## **📊 Migration Documentation**
+## **Migration Documentation**
 
 - **`Tools/SQLiteMigrator.swift`** - SQLite migration
 - **`Tools/CoreDataMigrator.swift`** - Core Data migration
@@ -120,12 +120,12 @@ Removed legacy “complete/final/status” variants to avoid duplication.
 
 ---
 
-## **🎯 Quick Reference**
+## **Quick Reference**
 
 ### **"I want to..."**
 
 - **...get started?** → `README.md` → `DEVELOPER_GUIDE.md`
-- **...create database easily?** → `CONVENIENCE_API_GUIDE.md` ⭐ NEW!
+- **...create database easily?** → `CONVENIENCE_API_GUIDE.md` NEW!
 - **...see APIs?** → `API_REFERENCE.md`
 - **...sync databases?** → `SYNC_TRANSPORT_GUIDE.md`
 - **...use examples?** → `Examples/README.md`
@@ -136,7 +136,7 @@ Removed legacy “complete/final/status” variants to avoid duplication.
 
 ---
 
-## **📋 Documentation Files (Complete List)**
+## ** Documentation Files (Complete List)**
 
 ### **Core:**
 1. `README.md` - Main README
@@ -146,7 +146,7 @@ Removed legacy “complete/final/status” variants to avoid duplication.
 5. `TUTORIALS.md` - Tutorials
 
 ### **Sync (20+ files):**
-- `SYNC_TRANSPORT_GUIDE.md` ⭐
+- `SYNC_TRANSPORT_GUIDE.md`
 - `SYNC_SIMPLE_GUIDE.md`
 - `SYNC_EXAMPLES.md`
 - `SYNC_WALKTHROUGH.md`
@@ -173,7 +173,7 @@ Removed legacy “complete/final/status” variants to avoid duplication.
 
 ---
 
-## **🎓 Learning Path**
+## **Learning Path**
 
 ### **Beginner:**
 1. Read `README.md`
@@ -195,7 +195,7 @@ Removed legacy “complete/final/status” variants to avoid duplication.
 
 ---
 
-## **📞 Support**
+## **Support**
 
 - **Documentation Issues:** Check this index
 - **API Questions:** See `API_REFERENCE.md`
@@ -204,11 +204,11 @@ Removed legacy “complete/final/status” variants to avoid duplication.
 
 ---
 
-**This index is your gateway to all BlazeDB documentation! 🔥**
+**This index is your gateway to all BlazeDB documentation!**
 
 ---
 
-## 🗂 Archive
+## Archive
 
 To keep this index concise, many historical/status/alternative write-ups are now considered “Archive”. They remain in the `Docs/` folder for reference but are not required reading. See:
 

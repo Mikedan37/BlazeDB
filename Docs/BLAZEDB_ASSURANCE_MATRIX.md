@@ -30,16 +30,16 @@ This document maps each critical guarantee to specific test files and methods, e
 
 **How It's Tested:**
 - **Test Files:**
-  - `Tests/BlazeDBIntegrationTests/DataConsistencyACIDTests.swift` - Comprehensive ACID validation
-  - `Tests/BlazeDBTests/Transactions/TransactionDurabilityTests.swift` - Durability invariants
-  - `Tests/BlazeDBTests/Transactions/TransactionRecoveryTests.swift` - WAL replay correctness
-  - `Tests/BlazeDBTests/PropertyBased/PropertyBasedTests.swift` - Property-based atomicity validation
+ - `Tests/BlazeDBIntegrationTests/DataConsistencyACIDTests.swift` - Comprehensive ACID validation
+ - `Tests/BlazeDBTests/Transactions/TransactionDurabilityTests.swift` - Durability invariants
+ - `Tests/BlazeDBTests/Transactions/TransactionRecoveryTests.swift` - WAL replay correctness
+ - `Tests/BlazeDBTests/PropertyBased/PropertyBasedTests.swift` - Property-based atomicity validation
 - **Example Methods:**
-  - `testACID_Atomicity_AllOrNothing()` - Validates 100 operations roll back completely on failure
-  - `testACID_Consistency_ValidStateAlways()` - Verifies database never enters invalid state under concurrent updates
-  - `testACID_Isolation_TransactionsDontInterfere()` - Confirms concurrent transactions see consistent snapshots
-  - `testACID_Durability_CommittedDataSurvivesCrash()` - Ensures 100 committed records survive abrupt termination
-  - `testProperty_TransactionAtomicity()` - Property-based test: 100 random batch operations verify all-or-nothing semantics
+ - `testACID_Atomicity_AllOrNothing()` - Validates 100 operations roll back completely on failure
+ - `testACID_Consistency_ValidStateAlways()` - Verifies database never enters invalid state under concurrent updates
+ - `testACID_Isolation_TransactionsDontInterfere()` - Confirms concurrent transactions see consistent snapshots
+ - `testACID_Durability_CommittedDataSurvivesCrash()` - Ensures 100 committed records survive abrupt termination
+ - `testProperty_TransactionAtomicity()` - Property-based test: 100 random batch operations verify all-or-nothing semantics
 
 **Risk If Broken:**
 Data loss, partial writes, inconsistent state, or committed data disappearing after crashes. Tests catch atomicity violations (partial inserts), consistency breaks (index mismatches), isolation failures (dirty reads), and durability gaps (lost commits).
@@ -57,18 +57,18 @@ Data loss, partial writes, inconsistent state, or committed data disappearing af
 
 **How It's Tested:**
 - **Test Files:**
-  - `Tests/BlazeDBTests/Transactions/TransactionDurabilityTests.swift` - WAL durability invariants
-  - `Tests/BlazeDBTests/Transactions/TransactionRecoveryTests.swift` - WAL replay tests
-  - `Tests/BlazeDBTests/Persistence/BlazeDBRecoveryTests.swift` - Basic recovery validation
-  - `Tests/BlazeDBTests/Persistence/BlazeCorruptionRecoveryTests.swift` - Corruption recovery
-  - `Tests/BlazeDBTests/Recovery/ReplayTests.swift` - Comprehensive replay scenarios
-  - `Tests/BlazeDBTests/Stress/BlazeDBCrashSimTests.swift` - Crash simulation
-  - `Tests/BlazeDBTests/Overflow/OverflowPageDestructiveTests.swift` - Crash during overflow operations
+ - `Tests/BlazeDBTests/Transactions/TransactionDurabilityTests.swift` - WAL durability invariants
+ - `Tests/BlazeDBTests/Transactions/TransactionRecoveryTests.swift` - WAL replay tests
+ - `Tests/BlazeDBTests/Persistence/BlazeDBRecoveryTests.swift` - Basic recovery validation
+ - `Tests/BlazeDBTests/Persistence/BlazeCorruptionRecoveryTests.swift` - Corruption recovery
+ - `Tests/BlazeDBTests/Recovery/ReplayTests.swift` - Comprehensive replay scenarios
+ - `Tests/BlazeDBTests/Stress/BlazeDBCrashSimTests.swift` - Crash simulation
+ - `Tests/BlazeDBTests/Overflow/OverflowPageDestructiveTests.swift` - Crash during overflow operations
 - **Example Methods:**
-  - `testWAL_EnsuresDurabilityUnderCrash()` - Committed transaction (20 records) survives crash; uncommitted (10 records) rolled back
-  - `testCrashRecovery_NoPartialOutcomes_AllOrNothing()` - Validates no partial page updates after crash
-  - `testCorruption_MetadataRecovery()` - Database recovers by rebuilding metadata from data pages
-  - `test6_1_CrashBetweenMainAndOverflow()` - Crash during overflow chain creation is handled correctly
+ - `testWAL_EnsuresDurabilityUnderCrash()` - Committed transaction (20 records) survives crash; uncommitted (10 records) rolled back
+ - `testCrashRecovery_NoPartialOutcomes_AllOrNothing()` - Validates no partial page updates after crash
+ - `testCorruption_MetadataRecovery()` - Database recovers by rebuilding metadata from data pages
+ - `test6_1_CrashBetweenMainAndOverflow()` - Crash during overflow chain creation is handled correctly
 
 **Risk If Broken:**
 Committed data lost after crashes, partial writes corrupting database, or uncommitted transactions persisting. Tests simulate crashes mid-transaction, verify WAL replay correctness, and validate metadata recovery.
@@ -86,16 +86,16 @@ Committed data lost after crashes, partial writes corrupting database, or uncomm
 
 **How It's Tested:**
 - **Test Files:**
-  - `Tests/BlazeDBTests/MVCC/MVCCFoundationTests.swift` - Version management and snapshot basics
-  - `Tests/BlazeDBTests/MVCC/MVCCIntegrationTests.swift` - MVCC with real database operations
-  - `Tests/BlazeDBTests/MVCC/MVCCAdvancedTests.swift` - Conflict resolution and GC
-  - `Tests/BlazeDBTests/MVCC/MVCCPerformanceTests.swift` - Concurrent read/write performance
-  - `Tests/BlazeDBTests/MVCC/MVCCRegressionTests.swift` - Regression prevention
+ - `Tests/BlazeDBTests/MVCC/MVCCFoundationTests.swift` - Version management and snapshot basics
+ - `Tests/BlazeDBTests/MVCC/MVCCIntegrationTests.swift` - MVCC with real database operations
+ - `Tests/BlazeDBTests/MVCC/MVCCAdvancedTests.swift` - Conflict resolution and GC
+ - `Tests/BlazeDBTests/MVCC/MVCCPerformanceTests.swift` - Concurrent read/write performance
+ - `Tests/BlazeDBTests/MVCC/MVCCRegressionTests.swift` - Regression prevention
 - **Example Methods:**
-  - `testMVCC_ReadWhileWrite()` - 50 concurrent readers and 10 writers execute without blocking
-  - `testMVCC_SnapshotConsistency()` - Transaction sees consistent snapshot even as other transactions modify data
-  - `testConflictDetection()` - Detects conflicts when newer versions exist
-  - `testConcurrentReads()` - 100 threads reading simultaneously, all succeed without deadlocks
+ - `testMVCC_ReadWhileWrite()` - 50 concurrent readers and 10 writers execute without blocking
+ - `testMVCC_SnapshotConsistency()` - Transaction sees consistent snapshot even as other transactions modify data
+ - `testConflictDetection()` - Detects conflicts when newer versions exist
+ - `testConcurrentReads()` - 100 threads reading simultaneously, all succeed without deadlocks
 
 **Risk If Broken:**
 Dirty reads, lost updates, inconsistent snapshots, or deadlocks under concurrent access. Tests validate snapshot isolation, conflict detection, and concurrent read/write correctness.
@@ -113,17 +113,17 @@ Dirty reads, lost updates, inconsistent snapshots, or deadlocks under concurrent
 
 **How It's Tested:**
 - **Test Files:**
-  - `Tests/BlazeDBTests/Security/RLSPolicyEngineTests.swift` - Policy evaluation correctness
-  - `Tests/BlazeDBTests/Security/RLSAccessManagerTests.swift` - Access control enforcement
-  - `Tests/BlazeDBTests/Security/RLSSecurityContextTests.swift` - Security context handling
-  - `Tests/BlazeDBIntegrationTests/RLSIntegrationTests.swift` - End-to-end RLS scenarios
-  - `Tests/BlazeDBIntegrationTests/RLSNegativeTests.swift` - Unauthorized access denial
-  - `Tests/BlazeDBTests/Security/RLSGraphQueryTests.swift` - RLS with graph queries
+ - `Tests/BlazeDBTests/Security/RLSPolicyEngineTests.swift` - Policy evaluation correctness
+ - `Tests/BlazeDBTests/Security/RLSAccessManagerTests.swift` - Access control enforcement
+ - `Tests/BlazeDBTests/Security/RLSSecurityContextTests.swift` - Security context handling
+ - `Tests/BlazeDBIntegrationTests/RLSIntegrationTests.swift` - End-to-end RLS scenarios
+ - `Tests/BlazeDBIntegrationTests/RLSNegativeTests.swift` - Unauthorized access denial
+ - `Tests/BlazeDBTests/Security/RLSGraphQueryTests.swift` - RLS with graph queries
 - **Example Methods:**
-  - `testRLS_TeamBasedAccess()` - Users see only their team's records; admin sees all
-  - `testRLS_DeniesAccessForUnauthorizedUser()` - Viewer cannot update protected records
-  - `testRLS_HierarchicalPermissions()` - Admin/Manager/Employee role hierarchy enforced
-  - `testRLS_GraphQueryFiltering()` - Graph queries respect RLS policies
+ - `testRLS_TeamBasedAccess()` - Users see only their team's records; admin sees all
+ - `testRLS_DeniesAccessForUnauthorizedUser()` - Viewer cannot update protected records
+ - `testRLS_HierarchicalPermissions()` - Admin/Manager/Employee role hierarchy enforced
+ - `testRLS_GraphQueryFiltering()` - Graph queries respect RLS policies
 
 **Risk If Broken:**
 Unauthorized data access, privilege escalation, or data leaks. Tests verify policy enforcement, unauthorized access denial, and RLS integration with queries.
@@ -141,17 +141,17 @@ Unauthorized data access, privilege escalation, or data leaks. Tests verify poli
 
 **How It's Tested:**
 - **Test Files:**
-  - `Tests/BlazeDBTests/Sync/DistributedSyncTests.swift` - Basic sync operations
-  - `Tests/BlazeDBTests/Sync/DistributedSecurityTests.swift` - Sync security validation
-  - `Tests/BlazeDBTests/Sync/SyncIntegrationTests.swift` - Integration scenarios
-  - `Tests/BlazeDBTests/Sync/SyncEndToEndTests.swift` - End-to-end sync validation
-  - `Tests/BlazeDBTests/Sync/DistributedGCTests.swift` - GC in distributed context
-  - `Tests/BlazeDBIntegrationTests/MixedVersionSyncTests.swift` - Version compatibility
+ - `Tests/BlazeDBTests/Sync/DistributedSyncTests.swift` - Basic sync operations
+ - `Tests/BlazeDBTests/Sync/DistributedSecurityTests.swift` - Sync security validation
+ - `Tests/BlazeDBTests/Sync/SyncIntegrationTests.swift` - Integration scenarios
+ - `Tests/BlazeDBTests/Sync/SyncEndToEndTests.swift` - End-to-end sync validation
+ - `Tests/BlazeDBTests/Sync/DistributedGCTests.swift` - GC in distributed context
+ - `Tests/BlazeDBIntegrationTests/MixedVersionSyncTests.swift` - Version compatibility
 - **Example Methods:**
-  - `testLocalSyncBidirectional()` - Two databases sync operations bidirectionally
-  - `testOperationLog()` - Operation log maintains correct history
-  - `testSyncPolicy()` - Sync policies control what data is synchronized
-  - `testRemoteNode()` - Remote node connection and sync validation
+ - `testLocalSyncBidirectional()` - Two databases sync operations bidirectionally
+ - `testOperationLog()` - Operation log maintains correct history
+ - `testSyncPolicy()` - Sync policies control what data is synchronized
+ - `testRemoteNode()` - Remote node connection and sync validation
 
 **Risk If Broken:**
 Data divergence, lost operations, incorrect conflict resolution, or causal ordering violations. Tests validate operation log correctness, timestamp ordering, and conflict resolution.
@@ -169,17 +169,17 @@ Data divergence, lost operations, incorrect conflict resolution, or causal order
 
 **How It's Tested:**
 - **Test Files:**
-  - `Tests/BlazeDBTests/Codec/BlazeBinaryCorruptionRecoveryTests.swift` - Codec corruption handling
-  - `Tests/BlazeDBTests/Codec/BlazeBinaryReliabilityTests.swift` - Corruption detection validation
-  - `Tests/BlazeDBTests/Persistence/BlazeCorruptionRecoveryTests.swift` - Database corruption recovery
-  - `Tests/BlazeDBTests/Codec/BlazeBinaryExhaustiveVerificationTests.swift` - Exhaustive corruption scenarios
-  - `Tests/BlazeDBIntegrationTests/ChaosEngineeringTests.swift` - Chaos corruption injection
-  - `Tests/BlazeDBIntegrationTests/FailureRecoveryScenarios.swift` - Recovery scenario validation
+ - `Tests/BlazeDBTests/Codec/BlazeBinaryCorruptionRecoveryTests.swift` - Codec corruption handling
+ - `Tests/BlazeDBTests/Codec/BlazeBinaryReliabilityTests.swift` - Corruption detection validation
+ - `Tests/BlazeDBTests/Persistence/BlazeCorruptionRecoveryTests.swift` - Database corruption recovery
+ - `Tests/BlazeDBTests/Codec/BlazeBinaryExhaustiveVerificationTests.swift` - Exhaustive corruption scenarios
+ - `Tests/BlazeDBIntegrationTests/ChaosEngineeringTests.swift` - Chaos corruption injection
+ - `Tests/BlazeDBIntegrationTests/FailureRecoveryScenarios.swift` - Recovery scenario validation
 - **Example Methods:**
-  - `testReliability_DetectsAllCorruption()` - Detects magic byte corruption, version corruption, truncated data, invalid type tags
-  - `testChaos_CorruptedPageRecovery()` - Database detects 3 corrupted pages and fails gracefully for those records
-  - `testCorruption_MetadataRecovery()` - Metadata corruption triggers automatic rebuild from data pages
-  - `testDetectFileCorruption()` - File corruption is detected and reported without crashing
+ - `testReliability_DetectsAllCorruption()` - Detects magic byte corruption, version corruption, truncated data, invalid type tags
+ - `testChaos_CorruptedPageRecovery()` - Database detects 3 corrupted pages and fails gracefully for those records
+ - `testCorruption_MetadataRecovery()` - Metadata corruption triggers automatic rebuild from data pages
+ - `testDetectFileCorruption()` - File corruption is detected and reported without crashing
 
 **Risk If Broken:**
 Silent data corruption, crashes on invalid data, or inability to recover from corruption. Tests inject various corruption types and validate detection and recovery.
@@ -197,17 +197,17 @@ Silent data corruption, crashes on invalid data, or inability to recover from co
 
 **How It's Tested:**
 - **Test Files:**
-  - `Tests/BlazeDBTests/Security/EncryptionSecurityFullTests.swift` - Complete encryption validation
-  - `Tests/BlazeDBTests/Security/EncryptionRoundTripTests.swift` - Round-trip encryption correctness
-  - `Tests/BlazeDBTests/Security/EncryptionRoundTripVerificationTests.swift` - Byte-perfect verification
-  - `Tests/BlazeDBTests/Security/EncryptionSecurityTests.swift` - Security property validation
-  - `Tests/BlazeDBIntegrationTests/SecurityEncryptionTests.swift` - Integration scenarios
+ - `Tests/BlazeDBTests/Security/EncryptionSecurityFullTests.swift` - Complete encryption validation
+ - `Tests/BlazeDBTests/Security/EncryptionRoundTripTests.swift` - Round-trip encryption correctness
+ - `Tests/BlazeDBTests/Security/EncryptionRoundTripVerificationTests.swift` - Byte-perfect verification
+ - `Tests/BlazeDBTests/Security/EncryptionSecurityTests.swift` - Security property validation
+ - `Tests/BlazeDBIntegrationTests/SecurityEncryptionTests.swift` - Integration scenarios
 - **Example Methods:**
-  - `testSecurity_DataEncryptedOnDisk()` - Sensitive data does not appear in plaintext on disk
-  - `testSecurity_EachPageHasUniqueNonce()` - Each encrypted page uses a unique nonce
-  - `testSecurity_AuthenticationTagPreventsModification()` - Tampered ciphertext fails to decrypt
-  - `testEncryption_BasicRoundTrip()` - All data types encrypt and decrypt correctly
-  - `testEncryption_LargeData()` - Large records (10MB+) encrypt correctly
+ - `testSecurity_DataEncryptedOnDisk()` - Sensitive data does not appear in plaintext on disk
+ - `testSecurity_EachPageHasUniqueNonce()` - Each encrypted page uses a unique nonce
+ - `testSecurity_AuthenticationTagPreventsModification()` - Tampered ciphertext fails to decrypt
+ - `testEncryption_BasicRoundTrip()` - All data types encrypt and decrypt correctly
+ - `testEncryption_LargeData()` - Large records (10MB+) encrypt correctly
 
 **Risk If Broken:**
 Data readable in plaintext, tampering undetected, or key derivation vulnerabilities. Tests verify encryption on disk, nonce uniqueness, authentication tag validation, and wrong password rejection.
@@ -225,19 +225,19 @@ Data readable in plaintext, tampering undetected, or key derivation vulnerabilit
 
 **How It's Tested:**
 - **Test Files:**
-  - `Tests/BlazeDBTests/Indexes/IndexConsistencyTests.swift` - Comprehensive index consistency
-  - `Tests/BlazeDBTests/Indexes/FullTextSearchTests.swift` - Full-text search correctness
-  - `Tests/BlazeDBTests/Indexes/SpatialIndexTests.swift` - Spatial index validation
-  - `Tests/BlazeDBTests/Indexes/VectorIndexIntegrationTests.swift` - Vector index correctness
-  - `Tests/BlazeDBTests/Query/QueryBuilderTests.swift` - Query correctness validation
-  - `Tests/BlazeDBTests/Query/QueryBuilderEdgeCaseTests.swift` - Edge case handling
-  - `Tests/BlazeDBTests/Engine/DynamicCollectionTests.swift` - Index update on field change
+ - `Tests/BlazeDBTests/Indexes/IndexConsistencyTests.swift` - Comprehensive index consistency
+ - `Tests/BlazeDBTests/Indexes/FullTextSearchTests.swift` - Full-text search correctness
+ - `Tests/BlazeDBTests/Indexes/SpatialIndexTests.swift` - Spatial index validation
+ - `Tests/BlazeDBTests/Indexes/VectorIndexIntegrationTests.swift` - Vector index correctness
+ - `Tests/BlazeDBTests/Query/QueryBuilderTests.swift` - Query correctness validation
+ - `Tests/BlazeDBTests/Query/QueryBuilderEdgeCaseTests.swift` - Edge case handling
+ - `Tests/BlazeDBTests/Engine/DynamicCollectionTests.swift` - Index update on field change
 - **Example Methods:**
-  - `testSecondaryIndexFetch()` - Secondary index returns correct records
-  - `testIndexUpdateOnFieldChange()` - Index updates when indexed field changes
-  - `testIndexConsistency_PrimaryIndex()` - Primary index matches all records
-  - `testIndexConsistency_CrossIndexValidation()` - All indexes match data and each other
-  - `testWhereEquals()` - Query results match manual filtering
+ - `testSecondaryIndexFetch()` - Secondary index returns correct records
+ - `testIndexUpdateOnFieldChange()` - Index updates when indexed field changes
+ - `testIndexConsistency_PrimaryIndex()` - Primary index matches all records
+ - `testIndexConsistency_CrossIndexValidation()` - All indexes match data and each other
+ - `testWhereEquals()` - Query results match manual filtering
 
 **Risk If Broken:**
 Incorrect query results, missing records, index drift, or performance degradation. Tests validate index consistency, query correctness, and cross-index alignment.
@@ -255,17 +255,17 @@ Incorrect query results, missing records, index drift, or performance degradatio
 
 **How It's Tested:**
 - **Test Files:**
-  - `Tests/BlazeDBTests/Performance/PerformanceInvariantTests.swift` - Performance bounds validation
-  - `Tests/BlazeDBTests/Performance/BlazeDBEngineBenchmarks.swift` - Engine performance benchmarks
-  - `Tests/BlazeDBTests/Performance/BlazeDBPerformanceTests.swift` - General performance tests
-  - `Tests/BlazeDBTests/Performance/BlazeBinaryPerformanceTests.swift` - Codec performance
-  - `Tests/BlazeDBTests/Performance/PerformanceProfilingTests.swift` - Profiling and optimization
-  - `Tests/BlazeDBTests/Performance/BlazeBinaryPerformanceRegressionTests.swift` - Regression prevention
+ - `Tests/BlazeDBTests/Performance/PerformanceInvariantTests.swift` - Performance bounds validation
+ - `Tests/BlazeDBTests/Performance/BlazeDBEngineBenchmarks.swift` - Engine performance benchmarks
+ - `Tests/BlazeDBTests/Performance/BlazeDBPerformanceTests.swift` - General performance tests
+ - `Tests/BlazeDBTests/Performance/BlazeBinaryPerformanceTests.swift` - Codec performance
+ - `Tests/BlazeDBTests/Performance/PerformanceProfilingTests.swift` - Profiling and optimization
+ - `Tests/BlazeDBTests/Performance/BlazeBinaryPerformanceRegressionTests.swift` - Regression prevention
 - **Example Methods:**
-  - `testPerformance_BatchInsert10kRecords()` - Batch insert of 10k records completes in < 2s
-  - `testBenchmark_Insert10000Records()` - Measures insert throughput and validates against baseline
-  - `testPerformance_QueryLatency()` - Query latency meets targets
-  - `testPerformance_IndexBuildTime()` - Index build time is acceptable
+ - `testPerformance_BatchInsert10kRecords()` - Batch insert of 10k records completes in < 2s
+ - `testBenchmark_Insert10000Records()` - Measures insert throughput and validates against baseline
+ - `testPerformance_QueryLatency()` - Query latency meets targets
+ - `testPerformance_IndexBuildTime()` - Index build time is acceptable
 
 **Risk If Broken:**
 Performance degradation going unnoticed, user-facing latency spikes, or throughput regressions. Tests catch performance regressions early and ensure operations meet targets.
@@ -279,9 +279,9 @@ Performance degradation going unnoticed, user-facing latency spikes, or throughp
 - **Total Test Files:** 223
 - **Total Test Methods:** ~2,300+ (2,636 matches including helpers)
 - **Test Directories:** 3 main directories
-  - `BlazeDBTests/` - Unit and component tests (196 files)
-  - `BlazeDBIntegrationTests/` - Integration tests (27 files)
-  - `BlazeDBVisualizerTests/` - Visualizer-specific tests (6 files)
+ - `BlazeDBTests/` - Unit and component tests (196 files)
+ - `BlazeDBIntegrationTests/` - Integration tests (27 files)
+ - `BlazeDBVisualizerTests/` - Visualizer-specific tests (6 files)
 
 **Breakdown by Domain:**
 
@@ -343,7 +343,7 @@ Performance degradation going unnoticed, user-facing latency spikes, or throughp
 
 ---
 
-**Document Version:** 1.0  
-**Last Updated:** Based on codebase analysis and `TEST_ENUMERATION.md`  
+**Document Version:** 1.0
+**Last Updated:** Based on codebase analysis and `TEST_ENUMERATION.md`
 **Test Count:** ~2,300+ test methods across 223 test files
 

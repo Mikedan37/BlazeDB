@@ -1,23 +1,23 @@
-# 🎯 **MASTER INTEGRATION PLAN**
+# **MASTER INTEGRATION PLAN**
 
 ## **The Vision:**
 
 **Turn BlazeDBVisualizer into the ULTIMATE database management tool for BlazeDB!**
 
-Think: **"Sequel Pro + Activity Monitor + 1Password"** in ONE app! 🔥
+Think: **"Sequel Pro + Activity Monitor + 1Password"** in ONE app!
 
 ---
 
 ## **What You Already Have:**
 
-### **BlazeDBVisualizer** ✅
+### **BlazeDBVisualizer**
 - Nice SwiftUI interface
 - File scanning (ScanService)
 - List view (DBListView)
 - Detail view (DetailView)
 - Basic metrics display
 
-### **BlazeStudio** ✅
+### **BlazeStudio**
 - Visual programming tool
 - Uses BlazeDB for storage
 - Could benefit from monitoring!
@@ -30,31 +30,31 @@ Think: **"Sequel Pro + Activity Monitor + 1Password"** in ONE app! 🔥
 
 ```
 ┌──────────────────────────────────────────────────────┐
-│                 BlazeDBVisualizer                    │
-│              (Database Management Tool)              │
+│ BlazeDBVisualizer │
+│ (Database Management Tool) │
 └──────────────────────────────────────────────────────┘
-                          │
-                          ↓
-        ┌─────────────────────────────────┐
-        │   BlazeDB Monitoring API        │
-        │   (NEW - We just built this!)   │
-        └─────────────────────────────────┘
-                          │
-                          ↓
-              ┌───────────────────────┐
-              │   BlazeDB Core        │
-              │   (Your database!)    │
-              └───────────────────────┘
-                          │
-                ┌─────────┴─────────┐
-                ↓                   ↓
-        ┌──────────────┐    ┌──────────────┐
-        │ BlazeStudio  │    │  Your Apps   │
-        │   Databases  │    │   Databases  │
-        └──────────────┘    └──────────────┘
+ │
+ ↓
+ ┌─────────────────────────────────┐
+ │ BlazeDB Monitoring API │
+ │ (NEW - We just built this!) │
+ └─────────────────────────────────┘
+ │
+ ↓
+ ┌───────────────────────┐
+ │ BlazeDB Core │
+ │ (Your database!) │
+ └───────────────────────┘
+ │
+ ┌─────────┴─────────┐
+ ↓ ↓
+ ┌──────────────┐ ┌──────────────┐
+ │ BlazeStudio │ │ Your Apps │
+ │ Databases │ │ Databases │
+ └──────────────┘ └──────────────┘
 ```
 
-**BlazeDBVisualizer can manage EVERYTHING!** 🔥
+**BlazeDBVisualizer can manage EVERYTHING!**
 
 ---
 
@@ -80,69 +80,69 @@ import Foundation
 import BlazeDB
 
 struct DBFileGroup: Identifiable, Hashable {
-    let id = UUID()
-    let app: String
-    let databases: [DatabaseDiscoveryInfo]
-    
-    var totalRecords: Int {
-        databases.reduce(0) { $0 + $1.recordCount }
-    }
-    
-    var totalSize: Int64 {
-        databases.reduce(0) { $0 + $1.fileSizeBytes }
-    }
+ let id = UUID()
+ let app: String
+ let databases: [DatabaseDiscoveryInfo]
+
+ var totalRecords: Int {
+ databases.reduce(0) { $0 + $1.recordCount }
+ }
+
+ var totalSize: Int64 {
+ databases.reduce(0) { $0 + $1.fileSizeBytes }
+ }
 }
 
 enum ScanService {
-    /// ✅ UPGRADED: Use BlazeDB Monitoring API!
-    static func scanAllBlazeDBs() -> [DBFileGroup] {
-        let discovered = discoverAllDatabases()
-        return groupByApp(discovered)
-    }
-    
-    private static func discoverAllDatabases() -> [DatabaseDiscoveryInfo] {
-        let locations = [
-            FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Developer"),
-            FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Documents"),
-            FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Library/Application Support"),
-            FileManager.default.temporaryDirectory
-        ]
-        
-        var all: [DatabaseDiscoveryInfo] = []
-        
-        for location in locations {
-            guard FileManager.default.fileExists(atPath: location.path) else { continue }
-            
-            if let found = try? BlazeDBClient.discoverDatabases(in: location) {
-                all.append(contentsOf: found)
-            }
-        }
-        
-        return all
-    }
-    
-    private static func groupByApp(_ databases: [DatabaseDiscoveryInfo]) -> [DBFileGroup] {
-        var groups: [String: [DatabaseDiscoveryInfo]] = [:]
-        
-        for db in databases {
-            let appName = extractAppName(from: db.name)
-            groups[appName, default: []].append(db)
-        }
-        
-        return groups.map { appName, dbs in
-            DBFileGroup(
-                app: appName,
-                databases: dbs.sorted { $0.lastModified ?? Date.distantPast > $1.lastModified ?? Date.distantPast }
-            )
-        }.sorted { $0.app < $1.app }
-    }
-    
-    private static func extractAppName(from name: String) -> String {
-        // "MyApp-userdata" -> "MyApp"
-        // "MyApp.component.cache" -> "MyApp"
-        let cleaned = name.components(separatedBy: CharacterSet(charactersIn: "-._")).first ?? name
-        return cleaned
-    }
+ /// UPGRADED: Use BlazeDB Monitoring API!
+ static func scanAllBlazeDBs() -> [DBFileGroup] {
+ let discovered = discoverAllDatabases()
+ return groupByApp(discovered)
+ }
+
+ private static func discoverAllDatabases() -> [DatabaseDiscoveryInfo] {
+ let locations = [
+ FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Developer"),
+ FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Documents"),
+ FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Library/Application Support"),
+ FileManager.default.temporaryDirectory
+ ]
+
+ var all: [DatabaseDiscoveryInfo] = []
+
+ for location in locations {
+ guard FileManager.default.fileExists(atPath: location.path) else { continue }
+
+ if let found = try? BlazeDBClient.discoverDatabases(in: location) {
+ all.append(contentsOf: found)
+ }
+ }
+
+ return all
+ }
+
+ private static func groupByApp(_ databases: [DatabaseDiscoveryInfo]) -> [DBFileGroup] {
+ var groups: [String: [DatabaseDiscoveryInfo]] = [:]
+
+ for db in databases {
+ let appName = extractAppName(from: db.name)
+ groups[appName, default: []].append(db)
+ }
+
+ return groups.map { appName, dbs in
+ DBFileGroup(
+ app: appName,
+ databases: dbs.sorted { $0.lastModified?? Date.distantPast > $1.lastModified?? Date.distantPast }
+ )
+ }.sorted { $0.app < $1.app }
+ }
+
+ private static func extractAppName(from name: String) -> String {
+ // "MyApp-userdata" -> "MyApp"
+ // "MyApp.component.cache" -> "MyApp"
+ let cleaned = name.components(separatedBy: CharacterSet(charactersIn: "-._")).first?? name
+ return cleaned
+ }
 }
 ```
 
@@ -180,15 +180,15 @@ Replace with the enhanced version that shows:
 
 **Add frameworks to target:**
 ```
-✅ LocalAuthentication.framework
-✅ Security.framework
+ LocalAuthentication.framework
+ Security.framework
 ```
 
 **Add to entitlements:**
 ```xml
 <key>keychain-access-groups</key>
 <array>
-    <string>$(AppIdentifierPrefix)com.yourname.blazedb-visualizer</string>
+ <string>$(AppIdentifierPrefix)com.yourname.blazedb-visualizer</string>
 </array>
 
 <key>com.apple.security.device.usbiometric</key>
@@ -202,7 +202,7 @@ Replace with the enhanced version that shows:
 ### **BEFORE:**
 ```
 BlazeDBVisualizer:
-- Shows .blaze files
+- Shows.blaze files
 - Basic file info
 - Static view
 ```
@@ -210,15 +210,15 @@ BlazeDBVisualizer:
 ### **AFTER:**
 ```
 BlazeDBVisualizer:
-✅ Auto-discovers ALL BlazeDB databases
-✅ Shows: records, size, health, fragmentation
-✅ Password manager with Face ID
-✅ Real-time monitoring (5s refresh)
-✅ Health dashboard with graphs
-✅ Schema browser (field names + types)
-✅ One-click VACUUM / GC
-✅ Multi-database view
-✅ Professional tool!
+ Auto-discovers ALL BlazeDB databases
+ Shows: records, size, health, fragmentation
+ Password manager with Face ID
+ Real-time monitoring (5s refresh)
+ Health dashboard with graphs
+ Schema browser (field names + types)
+ One-click VACUUM / GC
+ Multi-database view
+ Professional tool!
 ```
 
 ---
@@ -239,7 +239,7 @@ BlazeDBVisualizer:
 ```
 1. BlazeStudio creates databases for blocks/projects
 2. User opens BlazeDBVisualizer
-3. See: "BlazeStudio: 1,523 blocks, 2.3 MB, Healthy ✅"
+3. See: "BlazeStudio: 1,523 blocks, 2.3 MB, Healthy "
 4. Monitor their studio data!
 ```
 
@@ -284,28 +284,28 @@ BlazeDBVisualizer:
 ```
 BlazeDBVisualizer/
 ├─ App/
-│  ├─ BlazeDBVisualizerApp.swift
-│  ├─ DetailView.swift  ← UPGRADE THIS
-│  └─ MenuExtraView.swift
+│ ├─ BlazeDBVisualizerApp.swift
+│ ├─ DetailView.swift ← UPGRADE THIS
+│ └─ MenuExtraView.swift
 │
 ├─ Model/
-│  ├─ DBRecord.swift  ← ENHANCE THIS
-│  └─ ScanService.swift  ← UPGRADE THIS
+│ ├─ DBRecord.swift ← ENHANCE THIS
+│ └─ ScanService.swift ← UPGRADE THIS
 │
-├─ Services/  ← NEW FOLDER
-│  ├─ PasswordVaultService.swift  ← NEW
-│  └─ MonitoringService.swift  ← NEW
+├─ Services/ ← NEW FOLDER
+│ ├─ PasswordVaultService.swift ← NEW
+│ └─ MonitoringService.swift ← NEW
 │
 ├─ Views/
-│  ├─ DBListView.swift  ← Keep as-is
-│  ├─ DBRowView.swift  ← Keep as-is
-│  ├─ EmptyStateView.swift  ← Keep as-is
-│  ├─ PasswordPromptView.swift  ← NEW
-│  ├─ MonitoringDashboardView.swift  ← NEW
-│  ├─ HealthSectionView.swift  ← NEW
-│  └─ SchemaSectionView.swift  ← NEW
+│ ├─ DBListView.swift ← Keep as-is
+│ ├─ DBRowView.swift ← Keep as-is
+│ ├─ EmptyStateView.swift ← Keep as-is
+│ ├─ PasswordPromptView.swift ← NEW
+│ ├─ MonitoringDashboardView.swift ← NEW
+│ ├─ HealthSectionView.swift ← NEW
+│ └─ SchemaSectionView.swift ← NEW
 │
-└─ BlazeDBVisualizer.entitlements  ← ADD KEYCHAIN/FACEID
+└─ BlazeDBVisualizer.entitlements ← ADD KEYCHAIN/FACEID
 ```
 
 ---
@@ -315,37 +315,37 @@ BlazeDBVisualizer/
 ### **One Tool to Manage Everything:**
 ```
 Open BlazeDBVisualizer
-    ↓
+ ↓
 See ALL BlazeDB databases on your Mac:
-    ├─ BlazeStudio databases (your blocks/projects)
-    ├─ Test databases (dev work)
-    ├─ App databases (your apps)
-    └─ Cache databases (temp data)
-    
+ ├─ BlazeStudio databases (your blocks/projects)
+ ├─ Test databases (dev work)
+ ├─ App databases (your apps)
+ └─ Cache databases (temp data)
+
 Click ANY database
-    ↓
+ ↓
 Face ID unlock
-    ↓
+ ↓
 BOOM! Real-time dashboard:
-    ├─ Live record counts
-    ├─ Storage size + graphs
-    ├─ Health status
-    ├─ Schema browser
-    ├─ Performance metrics
-    └─ Maintenance buttons
+ ├─ Live record counts
+ ├─ Storage size + graphs
+ ├─ Health status
+ ├─ Schema browser
+ ├─ Performance metrics
+ └─ Maintenance buttons
 ```
 
 ---
 
 ## **Want Me To:**
 
-1. ✅ **Upgrade ScanService** to use Monitoring API? (15 min)
-2. ✅ **Add PasswordVaultService** with Face ID? (30 min)
-3. ✅ **Create PasswordPromptView**? (30 min)
-4. ✅ **Enhance DetailView** with monitoring? (1 hour)
-5. ✅ **Write tests** for new features? (30 min)
+1. **Upgrade ScanService** to use Monitoring API? (15 min)
+2. **Add PasswordVaultService** with Face ID? (30 min)
+3. **Create PasswordPromptView**? (30 min)
+4. **Enhance DetailView** with monitoring? (1 hour)
+5. **Write tests** for new features? (30 min)
 
-**Total: ~3 hours to make BlazeDBVisualizer PROFESSIONAL!** 💪
+**Total: ~3 hours to make BlazeDBVisualizer PROFESSIONAL!**
 
-Should I start? This would be SO SICK! 🔥
+Should I start? This would be SO SICK!
 

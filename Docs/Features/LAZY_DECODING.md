@@ -7,10 +7,10 @@
 ## Overview
 
 Lazy decoding allows BlazeDB to only decode fields that are actually accessed, providing:
-- ✅ **100-1000x less memory** for records with large fields
-- ✅ **Instant list views** (only decode displayed fields)
-- ✅ **Faster queries** (skip heavy blobs)
-- ✅ **Backward compatible** (works with existing data)
+- **100-1000x less memory** for records with large fields
+- **Instant list views** (only decode displayed fields)
+- **Faster queries** (skip heavy blobs)
+- **Backward compatible** (works with existing data)
 
 ---
 
@@ -28,9 +28,9 @@ try db.enableLazyDecoding()
 ```swift
 // Only decode name and status (skip large fields)
 let results = try db.query()
-    .project("name", "status")
-    .where("status", equals: .string("active"))
-    .execute()
+.project("name", "status")
+.where("status", equals:.string("active"))
+.execute()
 ```
 
 ---
@@ -61,9 +61,9 @@ This allows decoding individual fields without parsing the entire record.
 ```swift
 // Project only needed fields
 let results = try db.query()
-    .project("id", "name", "rating")
-    .where("category", equals: .string("restaurant"))
-    .execute()
+.project("id", "name", "rating")
+.where("category", equals:.string("restaurant"))
+.execute()
 
 // Large fields (images, embeddings, logs) are NOT decoded
 ```
@@ -73,11 +73,11 @@ let results = try db.query()
 ```swift
 // Fetch with lazy decoding
 if let lazyRecord = try db.collection?.fetchLazy(id: recordId) {
-    // Access field (decodes on-demand)
-    let name = lazyRecord["name"]
-    
-    // Large field not decoded until accessed
-    let image = lazyRecord["imageData"]  // Decodes now
+ // Access field (decodes on-demand)
+ let name = lazyRecord["name"]
+
+ // Large field not decoded until accessed
+ let image = lazyRecord["imageData"] // Decodes now
 }
 ```
 
@@ -111,13 +111,13 @@ if let lazyRecord = try db.collection?.fetchLazy(id: recordId) {
 
 ## Best Practices
 
-✅ **Enable when:**
+ **Enable when:**
 - Records have many fields (>10)
 - Records have large fields (>1KB)
 - You frequently query with projection
 - Memory is constrained
 
-❌ **Skip when:**
+ **Skip when:**
 - Records are small (<10 fields, <1KB total)
 - You always need all fields
 - Memory is not a concern

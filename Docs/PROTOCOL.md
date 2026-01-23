@@ -21,16 +21,16 @@ BlazeBinary is a custom binary format optimized for Swift types. It provides:
 
 ```swift
 enum BlazeValue {
-    case null
-    case bool(Bool)
-    case int(Int64)
-    case double(Double)
-    case string(String)
-    case data(Data)
-    case date(Date)
-    case uuid(UUID)
-    case array([BlazeValue])
-    case dictionary([String: BlazeValue])
+ case null
+ case bool(Bool)
+ case int(Int64)
+ case double(Double)
+ case string(String)
+ case data(Data)
+ case date(Date)
+ case uuid(UUID)
+ case array([BlazeValue])
+ case dictionary([String: BlazeValue])
 }
 ```
 
@@ -65,8 +65,8 @@ Subsequent: [Index: 1 byte] (references first occurrence)
 
 **Example:**
 ```
-"title" (first):  [0x05] [5] [t-i-t-l-e] = 7 bytes
-"title" (next):   [0x00] = 1 byte (60% smaller!)
+"title" (first): [0x05] [5] [t-i-t-l-e] = 7 bytes
+"title" (next): [0x00] = 1 byte (60% smaller!)
 ```
 
 ---
@@ -79,8 +79,8 @@ Dictionary keys are always sorted lexicographically:
 
 ```swift
 // Input order doesn't matter
-let record1 = BlazeDataRecord(["b": .int(2), "a": .int(1)])
-let record2 = BlazeDataRecord(["a": .int(1), "b": .int(2)])
+let record1 = BlazeDataRecord(["b":.int(2), "a":.int(1)])
+let record2 = BlazeDataRecord(["a":.int(1), "b":.int(2)])
 
 // Both produce identical binary
 assert(encode(record1) == encode(record2))
@@ -107,20 +107,20 @@ Identical values produce identical binary:
 
 ```
 ┌─────────────────────────────────────┐
-│ Frame Header (8 bytes)               │
+│ Frame Header (8 bytes) │
 ├─────────────────────────────────────┤
-│ Magic: "BLAZE" (5 bytes)            │
-│ Version: 1 (1 byte)                 │
-│ MessageType: enum (1 byte)          │
-│ Length: payload size (4 bytes)      │
+│ Magic: "BLAZE" (5 bytes) │
+│ Version: 1 (1 byte) │
+│ MessageType: enum (1 byte) │
+│ Length: payload size (4 bytes) │
 ├─────────────────────────────────────┤
-│ Payload (BlazeBinary encoded)        │
-│ • Handshake                         │
-│ • SyncState                         │
-│ • Operations                        │
-│ • Query                             │
+│ Payload (BlazeBinary encoded) │
+│ • Handshake │
+│ • SyncState │
+│ • Operations │
+│ • Query │
 ├─────────────────────────────────────┤
-│ CRC32 Checksum (4 bytes)            │
+│ CRC32 Checksum (4 bytes) │
 └─────────────────────────────────────┘
 ```
 
@@ -160,18 +160,18 @@ Identical values produce identical binary:
 
 ```swift
 let record = BlazeDataRecord([
-    "title": .string("Hello"),
-    "count": .int(42)
+ "title":.string("Hello"),
+ "count":.int(42)
 ])
 ```
 
 **Binary (hex):**
 ```
-09 02                    // Dictionary, 2 fields
-04 05 74 69 74 6C 65    // "title" (string, 5 bytes)
-04 05 48 65 6C 6C 6F    // "Hello" (string, 5 bytes)
-04 05 63 6F 75 6E 74    // "count" (string, 5 bytes)
-02 2A                    // 42 (int)
+09 02 // Dictionary, 2 fields
+04 05 74 69 74 6C 65 // "title" (string, 5 bytes)
+04 05 48 65 6C 6C 6F // "Hello" (string, 5 bytes)
+04 05 63 6F 75 6E 74 // "count" (string, 5 bytes)
+02 2A // 42 (int)
 ```
 
 ### With Field Compression
@@ -179,11 +179,11 @@ let record = BlazeDataRecord([
 After first occurrence, field names are compressed:
 
 ```
-09 02                    // Dictionary, 2 fields
-00                       // "title" (compressed, index 0)
-04 05 48 65 6C 6C 6F    // "Hello"
-01                       // "count" (compressed, index 1)
-02 2A                    // 42
+09 02 // Dictionary, 2 fields
+00 // "title" (compressed, index 0)
+04 05 48 65 6C 6C 6F // "Hello"
+01 // "count" (compressed, index 1)
+02 2A // 42
 ```
 
 ---
@@ -221,6 +221,6 @@ Format migrations are automatic:
 
 ---
 
-For architecture details, see [ARCHITECTURE.md](ARCHITECTURE.md).  
+For architecture details, see [ARCHITECTURE.md](ARCHITECTURE.md).
 For network sync, see [ARCHITECTURE.md](ARCHITECTURE.md#network-layer).
 

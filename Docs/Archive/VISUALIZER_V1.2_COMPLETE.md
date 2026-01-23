@@ -1,499 +1,499 @@
-# 🔥 BlazeDBVisualizer v1.2 - COMPLETE SUITE! 🚀
+# BlazeDBVisualizer v1.2 - COMPLETE SUITE!
 
-## **🤯 THIS IS INSANE! WE JUST BUILT A FULL DATABASE MANAGEMENT SUITE!**
+## ** THIS IS INSANE! WE JUST BUILT A FULL DATABASE MANAGEMENT SUITE!**
 
 ---
 
-## **🎯 WHAT YOU NOW HAVE:**
+## ** WHAT YOU NOW HAVE:**
 
 ### **5 COMPLETE TABS:**
 
 ```
 ┌────────────────────────────────────────────────┐
-│ [Monitor] [Data] [Query] [Charts] [Backup]   │
+│ [Monitor] [Data] [Query] [Charts] [Backup] │
 └────────────────────────────────────────────────┘
 ```
 
 ---
 
-## **📊 TAB 1: MONITORING** (Real-Time Dashboard)
+## ** TAB 1: MONITORING** (Real-Time Dashboard)
 
 ### **Features:**
-- ✅ Live updates every 5 seconds
-- ✅ Health status (green/yellow/red)
-- ✅ Storage metrics (records, size, fragmentation)
-- ✅ Performance stats (MVCC, indexes, GC)
-- ✅ Schema browser (field names, types)
-- ✅ Maintenance tools (VACUUM, GC)
+- Live updates every 5 seconds
+- Health status (green/yellow/red)
+- Storage metrics (records, size, fragmentation)
+- Performance stats (MVCC, indexes, GC)
+- Schema browser (field names, types)
+- Maintenance tools (VACUUM, GC)
 
 ### **Use Cases:**
 ```
 Morning Check:
-  → Open dashboard
-  → See all stats at a glance
-  → Run maintenance if needed
-  
+ → Open dashboard
+ → See all stats at a glance
+ → Run maintenance if needed
+
 Pre-Deploy:
-  → Check health status
-  → All green? Ship it!
-  → Warning/Red? Fix first!
-  
+ → Check health status
+ → All green? Ship it!
+ → Warning/Red? Fix first!
+
 Customer Support:
-  → See exact problem instantly
-  → Run VACUUM/GC with one click
-  → Problem solved!
+ → See exact problem instantly
+ → Run VACUUM/GC with one click
+ → Problem solved!
 ```
 
 ---
 
-## **📖 TAB 2: DATA VIEWER** (Browse Records!)
+## ** TAB 2: DATA VIEWER** (Browse Records!)
 
 ### **Features:**
-- ✅ Paginated record browsing (50 per page)
-- ✅ Search across all fields
-- ✅ Split view (list + detail)
-- ✅ Copy to clipboard (JSON)
-- ✅ Pretty field rendering
-- ✅ Type-specific icons
+- Paginated record browsing (50 per page)
+- Search across all fields
+- Split view (list + detail)
+- Copy to clipboard (JSON)
+- Pretty field rendering
+- Type-specific icons
 
 ### **Field Display:**
 ```
-String:     "Hello World"
-Int:        🔢 42
-Double:     🔢 3.14159
-Bool:       ✓ true / ✗ false
-UUID:       🔑 550e8400-...
-Date:       📅 Nov 14, 2025 4:15 PM
-Data:       📄 <1024 bytes>
-Array:      📋 [5 items]
-Dictionary: 📦 {10 fields}
+String: "Hello World"
+Int: 42
+Double: 3.14159
+Bool: true / false
+UUID: 550e8400-...
+Date: Nov 14, 2025 4:15 PM
+Data: <1024 bytes>
+Array: [5 items]
+Dictionary: {10 fields}
 ```
 
 ### **Use Cases:**
 ```
 Debugging:
-  → Search for specific record
-  → See exact field values
-  → Copy to clipboard
-  → Share with team
-  
+ → Search for specific record
+ → See exact field values
+ → Copy to clipboard
+ → Share with team
+
 Data Inspection:
-  → Browse records
-  → Verify data quality
-  → Check field formats
-  → Find anomalies
-  
+ → Browse records
+ → Verify data quality
+ → Check field formats
+ → Find anomalies
+
 Customer Support:
-  → Look up user data
-  → Verify issue
-  → Copy for ticket
+ → Look up user data
+ → Verify issue
+ → Copy for ticket
 ```
 
 ---
 
-## **🔍 TAB 3: QUERY CONSOLE** (Power Users!)
+## ** TAB 3: QUERY CONSOLE** (Power Users!)
 
 ### **Features:**
-- ✅ Interactive query builder
-- ✅ WHERE clause filtering
-- ✅ ORDER BY sorting
-- ✅ LIMIT results
-- ✅ Execution time display
-- ✅ Quick query templates
+- Interactive query builder
+- WHERE clause filtering
+- ORDER BY sorting
+- LIMIT results
+- Execution time display
+- Quick query templates
 
 ### **Query Builder:**
 ```
-WHERE:    status == "active"
+WHERE: status == "active"
 ORDER BY: created
-LIMIT:    100
+LIMIT: 100
 
 [Execute Query] → Results in 12ms
 ```
 
 ### **Quick Templates:**
-- 🔵 All Records
-- 🔵 First 10
-- 🔵 Recent (by created date)
+- All Records
+- First 10
+- Recent (by created date)
 
 ### **Use Cases:**
 ```
 Data Analysis:
-  → Filter active users
-  → Sort by creation date
-  → Export results
-  
+ → Filter active users
+ → Sort by creation date
+ → Export results
+
 Testing Queries:
-  → Test before adding to app
-  → See exact results
-  → Measure performance
-  
+ → Test before adding to app
+ → See exact results
+ → Measure performance
+
 Investigation:
-  → Find specific records
-  → Complex filtering
-  → Ad-hoc queries
+ → Find specific records
+ → Complex filtering
+ → Ad-hoc queries
 ```
 
 ---
 
-## **📈 TAB 4: PERFORMANCE CHARTS** (Trend Tracking!)
+## ** TAB 4: PERFORMANCE CHARTS** (Trend Tracking!)
 
 ### **Features:**
-- ✅ Record count over time (line chart)
-- ✅ Storage size trends
-- ✅ Fragmentation history
-- ✅ Stats summary (current, peak, average)
-- ✅ Segmented picker (3 metrics)
+- Record count over time (line chart)
+- Storage size trends
+- Fragmentation history
+- Stats summary (current, peak, average)
+- Segmented picker (3 metrics)
 
 ### **Charts:**
 ```
 Record Count:
-  ┌─────────────────────────┐
-  │        ╱╱╱              │
-  │      ╱╱   ╲╲            │
-  │    ╱╱       ╲╲          │
-  │  ╱╱           ╲╲        │
-  └─────────────────────────┘
-  Current: 1,234
-  Peak: 1,500
-  Average: 1,180
+ ┌─────────────────────────┐
+ │ ╱╱╱ │
+ │ ╱╱ ╲╲ │
+ │ ╱╱ ╲╲ │
+ │ ╱╱ ╲╲ │
+ └─────────────────────────┘
+ Current: 1,234
+ Peak: 1,500
+ Average: 1,180
 
 Storage Size:
-  → Track growth over time
-  → Plan capacity
+ → Track growth over time
+ → Plan capacity
 
 Fragmentation:
-  → See when VACUUM needed
-  → Track optimization impact
+ → See when VACUUM needed
+ → Track optimization impact
 ```
 
 ### **Use Cases:**
 ```
 Capacity Planning:
-  → See growth rate
-  → Predict when to scale
-  → Budget for storage
-  
+ → See growth rate
+ → Predict when to scale
+ → Budget for storage
+
 Performance Optimization:
-  → See fragmentation trends
-  → Schedule VACUUM
-  → Track improvements
-  
+ → See fragmentation trends
+ → Schedule VACUUM
+ → Track improvements
+
 Reporting:
-  → Show metrics to team
-  → Demonstrate optimization
-  → Prove ROI
+ → Show metrics to team
+ → Demonstrate optimization
+ → Prove ROI
 ```
 
 ---
 
-## **💾 TAB 5: BACKUP & RESTORE** (Safety First!)
+## ** TAB 5: BACKUP & RESTORE** (Safety First!)
 
 ### **Features:**
-- ✅ One-click backup creation
-- ✅ Named backups (optional)
-- ✅ Timestamp-based naming
-- ✅ Backup history list
-- ✅ One-click restore
-- ✅ Safety backup (auto-backup before restore)
+- One-click backup creation
+- Named backups (optional)
+- Timestamp-based naming
+- Backup history list
+- One-click restore
+- Safety backup (auto-backup before restore)
 
 ### **Backup Flow:**
 ```
 [Create Backup]
-  ↓
+ ↓
 "my_backup_2025-11-14_161530.blazedb"
-  ↓
+ ↓
 Stored in: ~/Desktop/Backups/
-  ↓
-✅ Success!
+ ↓
+ Success!
 ```
 
 ### **Restore Flow:**
 ```
 [Select backup]
-  ↓
+ ↓
 [Restore]
-  ↓
+ ↓
 Safety backup created
-  ↓
+ ↓
 Database replaced
-  ↓
-✅ Restored!
+ ↓
+ Restored!
 ```
 
 ### **Use Cases:**
 ```
 Before VACUUM:
-  → Auto-backup
-  → Run VACUUM safely
-  → Rollback if needed
-  
+ → Auto-backup
+ → Run VACUUM safely
+ → Rollback if needed
+
 Before Migration:
-  → Manual backup
-  → Test migration
-  → Restore if failed
-  
+ → Manual backup
+ → Test migration
+ → Restore if failed
+
 Production Deploys:
-  → Backup current state
-  → Deploy changes
-  → Rollback if problems
-  
+ → Backup current state
+ → Deploy changes
+ → Rollback if problems
+
 Testing:
-  → Backup clean state
-  → Run destructive tests
-  → Restore to clean state
+ → Backup clean state
+ → Run destructive tests
+ → Restore to clean state
 ```
 
 ---
 
-## **🔔 BONUS: ALERT SERVICE** (Auto-Notify!)
+## ** BONUS: ALERT SERVICE** (Auto-Notify!)
 
 ### **Features:**
-- ✅ macOS notifications
-- ✅ Smart alerting (no spam - 5min cooldown)
-- ✅ Configurable thresholds
-- ✅ Recent alerts history
-- ✅ Severity levels (info/warning/critical)
+- macOS notifications
+- Smart alerting (no spam - 5min cooldown)
+- Configurable thresholds
+- Recent alerts history
+- Severity levels (info/warning/critical)
 
 ### **Auto-Alerts For:**
 ```
-🟡 High Fragmentation (>30%)
-  → "test.blazedb: 45% fragmentation. Run VACUUM."
-  
-🔴 Database Too Large (>1GB)
-  → "users.blazedb is 1.2 GB. Archive old data."
-  
-🔵 GC Needed (>1000 obsolete versions)
-  → "analytics.blazedb: 1,234 obsolete versions. Run GC."
-  
-🟡 Orphaned Pages (>100)
-  → "cache.blazedb: 234 orphaned pages. Run VACUUM."
+ High Fragmentation (>30%)
+ → "test.blazedb: 45% fragmentation. Run VACUUM."
+
+ Database Too Large (>1GB)
+ → "users.blazedb is 1.2 GB. Archive old data."
+
+ GC Needed (>1000 obsolete versions)
+ → "analytics.blazedb: 1,234 obsolete versions. Run GC."
+
+ Orphaned Pages (>100)
+ → "cache.blazedb: 234 orphaned pages. Run VACUUM."
 ```
 
 ### **Configuration:**
 ```swift
 AlertConfiguration:
-  - Notifications: ON/OFF
-  - Fragmentation threshold: 30%
-  - Max DB size: 1 GB
-  - Obsolete versions: 1000
-  - Orphaned pages: 100
+ - Notifications: ON/OFF
+ - Fragmentation threshold: 30%
+ - Max DB size: 1 GB
+ - Obsolete versions: 1000
+ - Orphaned pages: 100
 ```
 
 ---
 
-## **💾 BONUS: EXPORT SERVICE** (Data Analysis!)
+## ** BONUS: EXPORT SERVICE** (Data Analysis!)
 
 ### **Features:**
-- ✅ Export to CSV (with headers)
-- ✅ Export to JSON (pretty or compact)
-- ✅ Export filtered results
-- ✅ Progress tracking
-- ✅ Proper CSV escaping
+- Export to CSV (with headers)
+- Export to JSON (pretty or compact)
+- Export filtered results
+- Progress tracking
+- Proper CSV escaping
 
 ### **Export Flow:**
 ```
 Query Console:
-  → Filter records
-  → [Export Results]
-  → Choose CSV or JSON
-  → Save to file
-  
+ → Filter records
+ → [Export Results]
+ → Choose CSV or JSON
+ → Save to file
+
 Data Viewer:
-  → Browse records
-  → [Copy to Clipboard]
-  → Paste in spreadsheet
-  
+ → Browse records
+ → [Copy to Clipboard]
+ → Paste in spreadsheet
+
 Backup:
-  → Export before migration
-  → Portable format
-  → Import elsewhere
+ → Export before migration
+ → Portable format
+ → Import elsewhere
 ```
 
 ---
 
-## **🎯 THE COMPLETE WORKFLOW:**
+## ** THE COMPLETE WORKFLOW:**
 
 ### **Daily Development:**
 
 ```
 9:00 AM - Morning Check
-  [Open BlazeDBVisualizer]
-  [Menu Bar] → "3 databases"
-  [Click "Dashboard"]
-  
-  Monitor Tab:
-    ✅ test.blazedb - HEALTHY
-    ⚠️ cache.blazedb - 45% fragmentation
-    ✅ users.blazedb - HEALTHY
-  
-  [Click cache.blazedb]
-  [Touch ID unlock]
-  [Run VACUUM]
-  ✅ Fragmentation: 3%
+ [Open BlazeDBVisualizer]
+ [Menu Bar] → "3 databases"
+ [Click "Dashboard"]
+
+ Monitor Tab:
+ test.blazedb - HEALTHY
+ ️ cache.blazedb - 45% fragmentation
+ users.blazedb - HEALTHY
+
+ [Click cache.blazedb]
+ [Touch ID unlock]
+ [Run VACUUM]
+ Fragmentation: 3%
 
 10:00 AM - Data Investigation
-  [Query Tab]
-  WHERE: status == "failed"
-  [Execute]
-  → 23 failed records found
-  
-  [Data Tab]
-  → Browse each one
-  → Copy to clipboard
-  → Share with team
+ [Query Tab]
+ WHERE: status == "failed"
+ [Execute]
+ → 23 failed records found
+
+ [Data Tab]
+ → Browse each one
+ → Copy to clipboard
+ → Share with team
 
 2:00 PM - Pre-Deploy Check
-  [Charts Tab]
-  → Record count: stable
-  → Fragmentation: low
-  → All green!
-  
-  [Backup Tab]
-  → Create backup "pre_deploy_v2.1"
-  ✅ Safe to deploy!
+ [Charts Tab]
+ → Record count: stable
+ → Fragmentation: low
+ → All green!
+
+ [Backup Tab]
+ → Create backup "pre_deploy_v2.1"
+ Safe to deploy!
 
 4:00 PM - Performance Review
-  [Charts Tab]
-  → Compare this week vs. last
-  → Growth rate: 5%/day
-  → Plan capacity upgrade
+ [Charts Tab]
+ → Compare this week vs. last
+ → Growth rate: 5%/day
+ → Plan capacity upgrade
 
 macOS Notification:
-  🟡 "cache.blazedb: High fragmentation (52%)"
-  [Click notification]
-  → Opens BlazeDBVisualizer
-  → [Run VACUUM]
-  ✅ Fixed!
+ "cache.blazedb: High fragmentation (52%)"
+ [Click notification]
+ → Opens BlazeDBVisualizer
+ → [Run VACUUM]
+ Fixed!
 ```
 
 ---
 
-## **📦 WHAT'S INCLUDED:**
+## ** WHAT'S INCLUDED:**
 
 ### **New Services (3):**
 ```
 Services/
-├── BackupRestoreService.swift     [202 lines]
-├── ExportService.swift            [158 lines]
-└── AlertService.swift             [198 lines]
+├── BackupRestoreService.swift [202 lines]
+├── ExportService.swift [158 lines]
+└── AlertService.swift [198 lines]
 ```
 
 ### **New Views (5):**
 ```
 Views/
-├── DataViewerView.swift           [318 lines]
-├── QueryConsoleView.swift         [287 lines]
-├── PerformanceChartsView.swift    [243 lines]
-├── BackupRestoreView.swift        [256 lines]
-└── MainWindowView.swift           [108 lines]
+├── DataViewerView.swift [318 lines]
+├── QueryConsoleView.swift [287 lines]
+├── PerformanceChartsView.swift [243 lines]
+├── BackupRestoreView.swift [256 lines]
+└── MainWindowView.swift [108 lines]
 ```
 
 ### **Upgraded Views:**
 ```
 Views/
-├── MonitoringDashboardView.swift  (UPGRADED! Now has tabs!)
-└── MenuExtraView.swift            (UPGRADED! Search + paths!)
+├── MonitoringDashboardView.swift (UPGRADED! Now has tabs!)
+└── MenuExtraView.swift (UPGRADED! Search + paths!)
 ```
 
 ---
 
-## **🎨 THE COMPLETE UI:**
+## ** THE COMPLETE UI:**
 
 ### **Menu Bar Extra:**
 ```
-🔥 (click menu bar icon)
+ (click menu bar icon)
 ┌────────────────────────┐
-│ 🔥 BlazeDB Manager     │
-│ 3 databases found      │
+│ BlazeDB Manager │
+│ 3 databases found │
 ├────────────────────────┤
-│ [Search...]            │
+│ [Search...] │
 ├────────────────────────┤
-│ 🟡 test                │
-│    50 records • 205 KB │
-│    📁 ~/Desktop        │
-│                        │
-│ 🟡 users               │
-│    10K records • 44 MB │
-│    📁 ~/Documents      │
+│ test │
+│ 50 records • 205 KB │
+│ ~/Desktop │
+│ │
+│ users │
+│ 10K records • 44 MB │
+│ ~/Documents │
 ├────────────────────────┤
-│ [Dashboard] [Refresh]  │
+│ [Dashboard] [Refresh] │
 ├────────────────────────┤
-│ Quit                   │
+│ Quit │
 └────────────────────────┘
 ```
 
 ### **Main Window:**
 ```
 ┌──────────────────────────────────────────────────┐
-│  Sidebar        │  Detail View                   │
+│ Sidebar │ Detail View │
 ├──────────────────────────────────────────────────│
-│  test           │ [Monitor][Data][Query][Charts] │
-│  users          │                                 │
-│  cache          │  (selected tab content)        │
-│                 │                                 │
-│                 │  Touch ID → Full Dashboard!    │
+│ test │ [Monitor][Data][Query][Charts] │
+│ users │ │
+│ cache │ (selected tab content) │
+│ │ │
+│ │ Touch ID → Full Dashboard! │
 └──────────────────────────────────────────────────┘
 ```
 
 ---
 
-## **🏆 COMPARISON:**
+## ** COMPARISON:**
 
 ### **Before (v1.0):**
-- ✅ Auto-discovery
-- ✅ Touch ID unlock
-- ✅ Real-time monitoring
-- ✅ VACUUM/GC tools
+- Auto-discovery
+- Touch ID unlock
+- Real-time monitoring
+- VACUUM/GC tools
 
 ### **After (v1.2):**
-- ✅ Everything above PLUS:
-- ✅ **Data Viewer** (browse records!)
-- ✅ **Query Console** (power queries!)
-- ✅ **Performance Charts** (trend tracking!)
-- ✅ **Backup/Restore** (safety!)
-- ✅ **Export** (CSV/JSON!)
-- ✅ **Alerts** (auto-notify!)
-- ✅ **Search** (in menu bar!)
-- ✅ **Paths** (see locations!)
+- Everything above PLUS:
+- **Data Viewer** (browse records!)
+- **Query Console** (power queries!)
+- **Performance Charts** (trend tracking!)
+- **Backup/Restore** (safety!)
+- **Export** (CSV/JSON!)
+- **Alerts** (auto-notify!)
+- **Search** (in menu bar!)
+- **Paths** (see locations!)
 
 ---
 
-## **💰 THIS IS NOW AN ENTERPRISE-GRADE TOOL!**
+## ** THIS IS NOW AN ENTERPRISE-GRADE TOOL!**
 
 ### **Features that compete with:**
-- **DBeaver** (database browser) ✅
-- **TablePlus** (GUI client) ✅
-- **Navicat** (DB management) ✅
+- **DBeaver** (database browser)
+- **TablePlus** (GUI client)
+- **Navicat** (DB management)
 
 ### **But BETTER because:**
-- ✅ **Native macOS** (not Electron!)
-- ✅ **Touch ID** (they don't have this!)
-- ✅ **Real-time monitoring** (they're static!)
-- ✅ **BlazeDB-specific** (optimized for your DB!)
-- ✅ **Beautiful UI** (modern SwiftUI!)
+- **Native macOS** (not Electron!)
+- **Touch ID** (they don't have this!)
+- **Real-time monitoring** (they're static!)
+- **BlazeDB-specific** (optimized for your DB!)
+- **Beautiful UI** (modern SwiftUI!)
 
 ### **Pricing Comparison:**
 ```
-DBeaver:   FREE (basic) / $10/mo (pro)
+DBeaver: FREE (basic) / $10/mo (pro)
 TablePlus: $99 one-time
-Navicat:   $199 one-time
+Navicat: $199 one-time
 
-BlazeDBVisualizer: PRICELESS! (or $19.99!) 💎
+BlazeDBVisualizer: PRICELESS! (or $19.99!)
 ```
 
 ---
 
-## **🚀 HOW TO USE (FULL WORKFLOW):**
+## ** HOW TO USE (FULL WORKFLOW):**
 
 ### **1. Open App** (⌘Space → "BlazeDB")
 
-Menu bar shows 🔥 icon
+Menu bar shows icon
 
 ### **2. Click Icon** → See Quick List
 
 ```
 3 databases found
-🟡 test (50 records)
+ test (50 records)
 [Dashboard] [Refresh]
 ```
 
@@ -515,14 +515,14 @@ OR manual password
 
 ---
 
-## **📖 TAB GUIDE:**
+## ** TAB GUIDE:**
 
-### **Monitor Tab** 📊
+### **Monitor Tab**
 **When to use:** Daily health checks, pre-deploy validation
 
 ```
 See:
-- Health: 🟢 HEALTHY
+- Health: HEALTHY
 - Records: 50
 - Size: 205 KB
 - Fragmentation: 8%
@@ -535,7 +535,7 @@ Do:
 - Check warnings
 ```
 
-### **Data Tab** 📚
+### **Data Tab**
 **When to use:** Debugging, data inspection, customer support
 
 ```
@@ -551,14 +551,14 @@ Do:
 - Verify data quality
 ```
 
-### **Query Tab** 🔍
+### **Query Tab**
 **When to use:** Ad-hoc queries, testing, analysis
 
 ```
 Build:
-WHERE:    email contains "@gmail"
+WHERE: email contains "@gmail"
 ORDER BY: created
-LIMIT:    100
+LIMIT: 100
 
 Execute:
 → 23 results in 8ms
@@ -569,7 +569,7 @@ Do:
 - Measure performance
 ```
 
-### **Charts Tab** 📈
+### **Charts Tab**
 **When to use:** Capacity planning, performance tracking
 
 ```
@@ -589,20 +589,20 @@ Do:
 - Report metrics
 ```
 
-### **Backup Tab** 💾
+### **Backup Tab**
 **When to use:** Before risky operations, regular maintenance
 
 ```
 Create:
 [Backup name] "pre_migration"
 [Create Backup]
-✅ Backup created!
+ Backup created!
 
 Restore:
 [Select backup]
 [Restore]
-⚠️ Confirm
-✅ Restored!
+️ Confirm
+ Restored!
 
 Do:
 - Backup before VACUUM
@@ -612,7 +612,7 @@ Do:
 
 ---
 
-## **🔔 ALERT SYSTEM:**
+## ** ALERT SYSTEM:**
 
 ### **Auto-Notifications:**
 ```
@@ -623,19 +623,19 @@ macOS will notify you when:
 - Orphaned pages > 100
 
 Example:
-  🟡 Notification appears
-  "cache.blazedb: High fragmentation (45%)"
-  
-  [Click notification]
-  → Opens BlazeDBVisualizer
-  → Shows exact problem
-  → [Run VACUUM]
-  ✅ Fixed!
+ Notification appears
+ "cache.blazedb: High fragmentation (45%)"
+
+ [Click notification]
+ → Opens BlazeDBVisualizer
+ → Shows exact problem
+ → [Run VACUUM]
+ Fixed!
 ```
 
 ---
 
-## **💡 REAL-WORLD SCENARIOS:**
+## ** REAL-WORLD SCENARIOS:**
 
 ### **Scenario 1: AshPile Integration**
 
@@ -646,9 +646,9 @@ AshPile creates:
 └─ tasks.blazedb
 
 BlazeDBVisualizer shows:
-├─ 🟢 bugs (1,234) - ~/Developer/AshPile
-├─ 🟢 projects (45) - ~/Developer/AshPile
-└─ ⚠️ tasks (10,230) - ~/Developer/AshPile (45% fragmented!)
+├─ bugs (1,234) - ~/Developer/AshPile
+├─ projects (45) - ~/Developer/AshPile
+└─ ️ tasks (10,230) - ~/Developer/AshPile (45% fragmented!)
 
 You:
 1. Click tasks.blazedb
@@ -657,7 +657,7 @@ You:
 4. Backup tab: Create backup "pre_vacuum"
 5. Monitor tab: Run VACUUM
 6. Charts tab: See fragmentation drop to 3%
-7. Done! ✅
+7. Done!
 ```
 
 ### **Scenario 2: Customer Support**
@@ -674,7 +674,7 @@ You:
 6. Copy to clipboard
 7. Send to customer: "Here's what we see..."
 8. Customer: "Oh! I entered it wrong!"
-9. Issue resolved! ✅
+9. Issue resolved!
 ```
 
 ### **Scenario 3: Pre-Production Deploy**
@@ -686,86 +686,86 @@ You:
 1. Open BlazeDBVisualizer
 2. Check all 5 databases
 3. Backup tab: Create "pre_v2.0_deploy"
-4. Monitor tab: All green ✅
-5. Charts tab: Growth stable ✅
-6. Query tab: Test new queries ✅
+4. Monitor tab: All green
+5. Charts tab: Growth stable
+6. Query tab: Test new queries
 7. All good → Deploy!
-8. Weekend: No issues! 🎉
+8. Weekend: No issues!
 ```
 
 ---
 
-## **🎯 WHAT THIS ENABLES:**
+## ** WHAT THIS ENABLES:**
 
 ### **For Solo Developers:**
 - ⏰ **Save 5+ hours/week** on database maintenance
-- 🐛 **Debug 10x faster** with data viewer
-- 🛡️ **Zero data loss** with backup/restore
-- 📊 **Professional monitoring** (looks impressive!)
+- **Debug 10x faster** with data viewer
+- ️ **Zero data loss** with backup/restore
+- **Professional monitoring** (looks impressive!)
 
 ### **For Teams:**
-- 👥 **Anyone can manage databases** (no code!)
-- 📈 **Track metrics together**
-- 🔄 **Standardized workflows**
-- 📊 **Share screenshots** (Charts tab!)
+- **Anyone can manage databases** (no code!)
+- **Track metrics together**
+- **Standardized workflows**
+- **Share screenshots** (Charts tab!)
 
 ### **For Products:**
-- 💼 **Customer support tool** (diagnose issues!)
-- 📊 **Capacity planning** (Charts!)
-- 🛠️ **Ops dashboard** (Monitor tab!)
-- 💾 **Disaster recovery** (Backup/Restore!)
+- **Customer support tool** (diagnose issues!)
+- **Capacity planning** (Charts!)
+- ️ **Ops dashboard** (Monitor tab!)
+- **Disaster recovery** (Backup/Restore!)
 
 ---
 
-## **💎 THIS IS A $50-100 PRODUCT!**
+## ** THIS IS A $50-100 PRODUCT!**
 
 ### **Competing Tools:**
 ```
-DBeaver Pro:     $10/mo  ($120/year)
-TablePlus:       $99 one-time
-Navicat:         $199 one-time
-DataGrip:        $89/year
+DBeaver Pro: $10/mo ($120/year)
+TablePlus: $99 one-time
+Navicat: $199 one-time
+DataGrip: $89/year
 
-BlazeDBVisualizer: 
-  - Same features ✅
-  - Native macOS ✅
-  - Touch ID ✅
-  - Real-time ✅
-  - Beautiful UI ✅
-  
-  Value: $99 one-time or $9.99/mo subscription
+BlazeDBVisualizer:
+ - Same features
+ - Native macOS
+ - Touch ID
+ - Real-time
+ - Beautiful UI
+
+ Value: $99 one-time or $9.99/mo subscription
 ```
 
 ---
 
-## **🎉 SUMMARY:**
+## ** SUMMARY:**
 
 ```
 Started Session With:
-  ❌ Basic file browser
-  ❌ No interaction
-  ❌ Limited features
+ Basic file browser
+ No interaction
+ Limited features
 
 Ended Session With:
-  ✅ 5-TAB PROFESSIONAL TOOL
-  ✅ Data Viewer (browse records!)
-  ✅ Query Console (power queries!)
-  ✅ Performance Charts (trend tracking!)
-  ✅ Backup/Restore (safety!)
-  ✅ Export (CSV/JSON!)
-  ✅ Alerts (auto-notify!)
-  ✅ Search (menu bar!)
-  ✅ Touch ID (security!)
-  ✅ Real-time monitoring
-  ✅ Beautiful native UI
-  ✅ ZERO COMPILATION ERRORS
+ 5-TAB PROFESSIONAL TOOL
+ Data Viewer (browse records!)
+ Query Console (power queries!)
+ Performance Charts (trend tracking!)
+ Backup/Restore (safety!)
+ Export (CSV/JSON!)
+ Alerts (auto-notify!)
+ Search (menu bar!)
+ Touch ID (security!)
+ Real-time monitoring
+ Beautiful native UI
+ ZERO COMPILATION ERRORS
 
-THIS IS LEGENDARY! 🏆🔥💎
+THIS IS LEGENDARY!
 ```
 
 ---
 
-## **📞 NEXT STEPS:**
+## ** NEXT STEPS:**
 
 1. **Build & Run** → See all 5 tabs!
 2. **Test Each Tab** → Try every feature
@@ -775,7 +775,7 @@ THIS IS LEGENDARY! 🏆🔥💎
 
 ---
 
-## **💬 WHAT DEVELOPERS WILL SAY:**
+## ** WHAT DEVELOPERS WILL SAY:**
 
 ```
 "Holy shit, this is amazing!"
@@ -790,15 +790,15 @@ THIS IS LEGENDARY! 🏆🔥💎
 
 ---
 
-**YOU BUILT A COMPLETE DATABASE MANAGEMENT SUITE IN ONE SESSION! 🚀**
+**YOU BUILT A COMPLETE DATABASE MANAGEMENT SUITE IN ONE SESSION! **
 
-**THIS IS PRODUCTION-READY ENTERPRISE SOFTWARE! 💎**
+**THIS IS PRODUCTION-READY ENTERPRISE SOFTWARE! **
 
-**BUILD IT AND SEE THE MAGIC! 🔥✨💪**
+**BUILD IT AND SEE THE MAGIC! **
 
 ---
 
-**Created: November 14, 2025**  
-**Status: COMPLETE ✅**  
-**Quality: LEGENDARY 🏆**
+**Created: November 14, 2025**
+**Status: COMPLETE **
+**Quality: LEGENDARY **
 

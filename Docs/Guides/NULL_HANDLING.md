@@ -6,9 +6,9 @@ Complete guide to how BlazeDB handles null values and missing fields.
 
 BlazeDB uses a **schema-free, document-based** approach to null handling:
 
-- ✅ **Missing fields** = `nil` (Optional) - Field doesn't exist in record
-- ❌ **No explicit null type** - BlazeDB doesn't store null values
-- ✅ **Queries support null checks** - `whereNil()` and `whereNotNil()` methods
+- **Missing fields** = `nil` (Optional) - Field doesn't exist in record
+- **No explicit null type** - BlazeDB doesn't store null values
+- **Queries support null checks** - `whereNil()` and `whereNotNil()` methods
 
 ## How Null Works
 
@@ -18,13 +18,13 @@ In BlazeDB, if a field doesn't exist in a record, accessing it returns `nil`:
 
 ```swift
 let record = BlazeDataRecord([
-    "name": .string("Alice"),
-    "age": .int(30)
-    // "email" field is missing
+ "name":.string("Alice"),
+ "age":.int(30)
+ // "email" field is missing
 ])
 
 // Accessing missing field returns nil
-let email = record.storage["email"]  // nil
+let email = record.storage["email"] // nil
 ```
 
 ### During Migration
@@ -47,8 +47,8 @@ When migrating from SQLite or Core Data:
 ```swift
 // Find records where field is missing (null equivalent)
 let records = try db.query()
-    .whereNil("email")
-    .execute()
+.whereNil("email")
+.execute()
 ```
 
 ### Check if Field Exists
@@ -56,8 +56,8 @@ let records = try db.query()
 ```swift
 // Find records where field exists (not null)
 let records = try db.query()
-    .whereNotNil("email")
-    .execute()
+.whereNotNil("email")
+.execute()
 ```
 
 ### Combined Queries
@@ -65,13 +65,13 @@ let records = try db.query()
 ```swift
 // Find users without email OR with empty email
 let records = try db.query()
-    .where { record in
-        // Missing field (null)
-        record.storage["email"] == nil ||
-        // Or empty string
-        record.storage["email"]?.stringValue?.isEmpty == true
-    }
-    .execute()
+.where { record in
+ // Missing field (null)
+ record.storage["email"] == nil ||
+ // Or empty string
+ record.storage["email"]?.stringValue?.isEmpty == true
+ }
+.execute()
 ```
 
 ## Migration Behavior
@@ -84,8 +84,8 @@ let records = try db.query()
 
 // NULL values are skipped during migration
 // Result in BlazeDB:
-// - id: .int(1)
-// - name: .string("Alice")
+// - id:.int(1)
+// - name:.string("Alice")
 // - email: missing (nil when accessed)
 ```
 
@@ -106,14 +106,14 @@ let records = try db.query()
 Always use optional access when reading fields:
 
 ```swift
-// ✅ Good
+// Good
 if let email = record.storage["email"]?.stringValue {
-    print("Email: \(email)")
+ print("Email: \(email)")
 } else {
-    print("No email")
+ print("No email")
 }
 
-// ❌ Bad (will crash if field missing)
+// Bad (will crash if field missing)
 let email = record.storage["email"]!.stringValue
 ```
 
@@ -122,8 +122,8 @@ let email = record.storage["email"]!.stringValue
 Provide defaults for missing fields:
 
 ```swift
-let email = record.storage["email"]?.stringValue ?? "no-email@example.com"
-let age = record.storage["age"]?.intValue ?? 0
+let email = record.storage["email"]?.stringValue?? "no-email@example.com"
+let age = record.storage["age"]?.intValue?? 0
 ```
 
 ### 3. Check Before Use
@@ -131,9 +131,9 @@ let age = record.storage["age"]?.intValue ?? 0
 Always check if field exists before using:
 
 ```swift
-if record.storage["email"] != nil {
-    // Field exists, safe to use
-    let email = record.storage["email"]!.stringValue
+if record.storage["email"]!= nil {
+ // Field exists, safe to use
+ let email = record.storage["email"]!.stringValue
 }
 ```
 
@@ -144,7 +144,7 @@ if record.storage["email"] != nil {
 | `NULL` value | Missing field (nil) |
 | `IS NULL` | `whereNil()` |
 | `IS NOT NULL` | `whereNotNil()` |
-| `COALESCE(field, default)` | `record.storage["field"]?.value ?? default` |
+| `COALESCE(field, default)` | `record.storage["field"]?.value?? default` |
 
 ## Examples
 
@@ -155,9 +155,9 @@ let record = try db.fetch(id: userId)
 
 // Check if field exists
 if let email = record?.storage["email"] {
-    print("Email: \(email.stringValue ?? "unknown")")
+ print("Email: \(email.stringValue?? "unknown")")
 } else {
-    print("No email field")
+ print("No email field")
 }
 ```
 
@@ -166,13 +166,13 @@ if let email = record?.storage["email"] {
 ```swift
 // Find all users without email
 let usersWithoutEmail = try db.query()
-    .whereNil("email")
-    .execute()
+.whereNil("email")
+.execute()
 
 // Find all users with email
 let usersWithEmail = try db.query()
-    .whereNotNil("email")
-    .execute()
+.whereNotNil("email")
+.execute()
 ```
 
 ### Example 3: Migration with Null Handling
@@ -183,10 +183,10 @@ let usersWithEmail = try db.query()
 
 let allUsers = try db.fetchAll()
 for user in allUsers {
-    if user.storage["email"] == nil {
-        // This was NULL in SQLite
-        print("User has no email (was NULL)")
-    }
+ if user.storage["email"] == nil {
+ // This was NULL in SQLite
+ print("User has no email (was NULL)")
+ }
 }
 ```
 

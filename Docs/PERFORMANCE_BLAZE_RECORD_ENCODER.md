@@ -34,10 +34,10 @@ Record → BlazeRecordEncoder → BlazeDataRecord → BlazeBinary → File
 2. BlazeBinaryEncoder encodes BlazeDataRecord
 
 **Benefits:**
-- ✅ **No JSON serialization** - Direct dictionary building
-- ✅ **No JSON parsing** - Direct field access
-- ✅ **No intermediate Data** - Direct memory operations
-- ✅ **Type-safe** - Direct type conversions
+- **No JSON serialization** - Direct dictionary building
+- **No JSON parsing** - Direct field access
+- **No intermediate Data** - Direct memory operations
+- **Type-safe** - Direct type conversions
 
 ## Expected Performance Gains
 
@@ -53,20 +53,20 @@ Record → BlazeRecordEncoder → BlazeDataRecord → BlazeBinary → File
 
 ### Overall Pipeline
 - **Store**: Record → BlazeDataRecord → BlazeBinary → File
-  - Eliminates JSON encoding step
-  - Direct conversion is faster
-  
+ - Eliminates JSON encoding step
+ - Direct conversion is faster
+
 - **Load**: File → BlazeBinary → BlazeDataRecord → Record
-  - Eliminates JSON decoding step
-  - Direct conversion is faster
+ - Eliminates JSON decoding step
+ - Direct conversion is faster
 
 ## Crash Safety
 
 ### Fixed Issues
-1. ✅ **Removed force unwraps** - All `as!` replaced with safe `as?` with error handling
-2. ✅ **Integer overflow protection** - Added bounds checking for Int8/Int16/UInt conversions
-3. ✅ **Type safety** - Proper error throwing instead of crashes
-4. ✅ **Bounds checking** - Array index validation in unkeyed containers
+1. **Removed force unwraps** - All `as!` replaced with safe `as?` with error handling
+2. **Integer overflow protection** - Added bounds checking for Int8/Int16/UInt conversions
+3. **Type safety** - Proper error throwing instead of crashes
+4. **Bounds checking** - Array index validation in unkeyed containers
 
 ### Safety Features
 - All type conversions use `guard let` with descriptive errors
@@ -101,10 +101,10 @@ Expected performance improvements (based on similar implementations):
 ## Conclusion
 
 The direct encoder/decoder approach is:
-- ✅ **Faster** - Eliminates JSON overhead
-- ✅ **Safer** - No force unwraps, proper error handling
-- ✅ **More efficient** - Lower memory usage
-- ✅ **Type-safe** - Direct conversions with validation
+- **Faster** - Eliminates JSON overhead
+- **Safer** - No force unwraps, proper error handling
+- **More efficient** - Lower memory usage
+- **Type-safe** - Direct conversions with validation
 
 This makes BlazeDB's encoding/decoding pipeline significantly faster and more robust.
 

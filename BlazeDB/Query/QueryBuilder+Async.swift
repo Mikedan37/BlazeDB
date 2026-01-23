@@ -20,25 +20,49 @@ extension QueryBuilder {
     /// Filter records where field equals value (async)
     @discardableResult
     public func `where`(_ field: String, equals value: BlazeDocumentField) async -> QueryBuilder {
-        return self.where(field, equals: value)
+        // Inline sync version logic to avoid recursion with async method
+        BlazeLogger.debug("Query: WHERE \(field) = \(value)")
+        filters.append { record in
+            guard let fieldValue = record.storage[field] else { return false }
+            return fieldsEqual(fieldValue, value)
+        }
+        return self
     }
     
     /// Filter records where field does not equal value (async)
     @discardableResult
     public func `where`(_ field: String, notEquals value: BlazeDocumentField) async -> QueryBuilder {
-        return self.where(field, notEquals: value)
+        // Inline sync version logic to avoid recursion with async method
+        BlazeLogger.debug("Query: WHERE \(field) != \(value)")
+        filters.append { record in
+            guard let fieldValue = record.storage[field] else { return false }
+            return !fieldsEqual(fieldValue, value)
+        }
+        return self
     }
     
     /// Filter records where field is greater than value (async)
     @discardableResult
     public func `where`(_ field: String, greaterThan value: BlazeDocumentField) async -> QueryBuilder {
-        return self.where(field, greaterThan: value)
+        // Inline sync version logic to avoid recursion with async method
+        BlazeLogger.debug("Query: WHERE \(field) > \(value)")
+        filters.append { (record: BlazeDataRecord) -> Bool in
+            guard let fieldValue = record.storage[field] else { return false }
+            return compareFields(fieldValue, ComparisonOp.greaterThan, value)
+        }
+        return self
     }
     
     /// Filter records where field is less than value (async)
     @discardableResult
     public func `where`(_ field: String, lessThan value: BlazeDocumentField) async -> QueryBuilder {
-        return self.where(field, lessThan: value)
+        // Inline sync version logic to avoid recursion with async method
+        BlazeLogger.debug("Query: WHERE \(field) < \(value)")
+        filters.append { (record: BlazeDataRecord) -> Bool in
+            guard let fieldValue = record.storage[field] else { return false }
+            return compareFields(fieldValue, ComparisonOp.lessThan, value)
+        }
+        return self
     }
     
     // MARK: - Async JOIN
@@ -51,7 +75,15 @@ extension QueryBuilder {
         equals primaryKey: String = "id",
         type: JoinType = .inner
     ) async -> QueryBuilder {
-        return self.join(other, on: foreignKey, equals: primaryKey, type: type)
+        // Inline sync version logic to avoid recursion with async method
+        BlazeLogger.debug("Query: JOIN on \(foreignKey) = \(primaryKey) (type: \(type))")
+        joinOperations.append(JoinOperation(
+            collection: other,
+            foreignKey: foreignKey,
+            primaryKey: primaryKey,
+            type: type
+        ))
+        return self
     }
     
     // MARK: - Async Sorting
@@ -59,7 +91,13 @@ extension QueryBuilder {
     /// Order results by field (async)
     @discardableResult
     public func orderBy(_ field: String, descending: Bool = false) async -> QueryBuilder {
-        return self.orderBy(field, descending: descending)
+        // Inline sync version logic to avoid recursion with async method
+        BlazeLogger.debug("Query: ORDER BY \(field) \(descending ? "DESC" : "ASC")")
+        sortOperations.append(SortOperation(
+            field: field,
+            descending: descending
+        ))
+        return self
     }
     
     // MARK: - Async Execution

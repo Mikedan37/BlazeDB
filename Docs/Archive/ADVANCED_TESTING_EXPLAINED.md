@@ -1,37 +1,37 @@
-# 🎓 Advanced Testing Explained: What Makes BlazeDB Bulletproof
+# Advanced Testing Explained: What Makes BlazeDB Bulletproof
 
-**Date**: 2025-11-12  
+**Date**: 2025-11-12
 **Author**: Built for Production Reliability
 
 ---
 
-## 🤔 The Problem With Traditional Testing
+## The Problem With Traditional Testing
 
 ### **Traditional Testing Approach**:
 
 ```swift
 func testInsertUser() {
-    let user = User(name: "Alice", age: 30)
-    try db.insert(user)
-    
-    let fetched = try db.fetch(id: user.id)
-    XCTAssertEqual(fetched.name, "Alice")
+ let user = User(name: "Alice", age: 30)
+ try db.insert(user)
+
+ let fetched = try db.fetch(id: user.id)
+ XCTAssertEqual(fetched.name, "Alice")
 }
 ```
 
 **This is good, but...**
-- ✅ Tests that Alice with age 30 works
-- ❌ What about Bob with age -5?
-- ❌ What about empty names?
-- ❌ What about Unicode names like "李明"?
-- ❌ What about 1,000,000 character names?
-- ❌ What about null bytes in names?
+- Tests that Alice with age 30 works
+- What about Bob with age -5?
+- What about empty names?
+- What about Unicode names like "李明"?
+- What about 1,000,000 character names?
+- What about null bytes in names?
 
 **Problem**: You only test the cases you think of. Real users do **CRAZY THINGS** you never imagine.
 
 ---
 
-## 🔥 Level 7: Chaos Engineering
+## Level 7: Chaos Engineering
 
 ### **What Is It?**
 
@@ -41,7 +41,7 @@ Instead of assuming perfect conditions, we **deliberately break things** and ver
 
 ### **Real-World Inspiration**
 
-**Netflix Chaos Monkey**: 
+**Netflix Chaos Monkey**:
 - Randomly kills production servers
 - Forces engineers to build resilient systems
 - Result: Netflix stays online even during AWS outages
@@ -54,27 +54,27 @@ Instead of assuming perfect conditions, we **deliberately break things** and ver
 
 ```swift
 func testChaos_ProcessKillMidTransaction() async throws {
-    // Start writing data
-    try db.insert(record1)
-    try db.insert(record2)
-    
-    // SIMULATE SUDDEN DEATH (SIGKILL)
-    // Database process is KILLED instantly
-    // No cleanup, no graceful shutdown
-    
-    // Reopen database
-    let db2 = try BlazeDBClient(...)
-    
-    // CRITICAL: Can we recover?
-    XCTAssertNoThrow(try db2.fetchAll())
+ // Start writing data
+ try db.insert(record1)
+ try db.insert(record2)
+
+ // SIMULATE SUDDEN DEATH (SIGKILL)
+ // Database process is KILLED instantly
+ // No cleanup, no graceful shutdown
+
+ // Reopen database
+ let db2 = try BlazeDBClient(...)
+
+ // CRITICAL: Can we recover?
+ XCTAssertNoThrow(try db2.fetchAll())
 }
 ```
 
 **What This Tests**:
-- ✅ Transaction log works correctly
-- ✅ No partial writes corrupt the database
-- ✅ Database remains readable after crash
-- ✅ Lost records are truly lost (not zombie data)
+- Transaction log works correctly
+- No partial writes corrupt the database
+- Database remains readable after crash
+- Lost records are truly lost (not zombie data)
 
 **Real Scenario**: Your app crashes, power fails, or user force-quits. Database MUST survive.
 
@@ -84,23 +84,23 @@ func testChaos_ProcessKillMidTransaction() async throws {
 
 ```swift
 func testChaos_DiskFullDuringWrite() async throws {
-    // Try to write MASSIVE data to fill disk
-    let hugeRecord = Data(repeating: 0xFF, count: 100_000_000)
-    
-    // This WILL fail (disk full)
-    XCTAssertThrowsError(try db.insert(hugeRecord))
-    
-    // CRITICAL: Is database still usable?
-    XCTAssertNoThrow(try db.fetchAll())
-    XCTAssertNoThrow(try db.insert(smallRecord))
+ // Try to write MASSIVE data to fill disk
+ let hugeRecord = Data(repeating: 0xFF, count: 100_000_000)
+
+ // This WILL fail (disk full)
+ XCTAssertThrowsError(try db.insert(hugeRecord))
+
+ // CRITICAL: Is database still usable?
+ XCTAssertNoThrow(try db.fetchAll())
+ XCTAssertNoThrow(try db.insert(smallRecord))
 }
 ```
 
 **What This Tests**:
-- ✅ Database doesn't corrupt when writes fail
-- ✅ Clear error messages (not silent failure)
-- ✅ Can recover and continue using database
-- ✅ Existing data remains intact
+- Database doesn't corrupt when writes fail
+- Clear error messages (not silent failure)
+- Can recover and continue using database
+- Existing data remains intact
 
 **Real Scenario**: User's phone is full, server disk fills up. Must fail gracefully.
 
@@ -110,25 +110,25 @@ func testChaos_DiskFullDuringWrite() async throws {
 
 ```swift
 func testChaos_ReadOnlyFileSystem() async throws {
-    // Make file read-only (simulate permission error)
-    try FileManager.default.setAttributes(
-        [.posixPermissions: 0o444], 
-        ofItemAtPath: dbURL.path
-    )
-    
-    // Try to write
-    XCTAssertThrowsError(try db.insert(record))
-    
-    // CRITICAL: Can still read data?
-    XCTAssertNoThrow(try db.fetchAll())
+ // Make file read-only (simulate permission error)
+ try FileManager.default.setAttributes(
+ [.posixPermissions: 0o444],
+ ofItemAtPath: dbURL.path
+ )
+
+ // Try to write
+ XCTAssertThrowsError(try db.insert(record))
+
+ // CRITICAL: Can still read data?
+ XCTAssertNoThrow(try db.fetchAll())
 }
 ```
 
 **What This Tests**:
-- ✅ Handles permission errors gracefully
-- ✅ Read operations still work
-- ✅ Clear error messages ("Permission denied")
-- ✅ No crash or hang
+- Handles permission errors gracefully
+- Read operations still work
+- Clear error messages ("Permission denied")
+- No crash or hang
 
 **Real Scenario**: iOS app protection, Linux file permissions, cloud storage mounted read-only.
 
@@ -138,27 +138,27 @@ func testChaos_ReadOnlyFileSystem() async throws {
 
 ```swift
 func testChaos_FileDescriptorExhaustion() async throws {
-    var databases: [BlazeDBClient] = []
-    
-    // Open 100+ databases (exhaust file descriptors)
-    for i in 0..<150 {
-        let db = try? BlazeDBClient(name: "db\(i)", ...)
-        databases.append(db)
-    }
-    
-    // CRITICAL: System hits FD limit
-    // Does it crash? Leak memory? Hang?
-    
-    // Cleanup should work
-    databases.removeAll()
+ var databases: [BlazeDBClient] = []
+
+ // Open 100+ databases (exhaust file descriptors)
+ for i in 0..<150 {
+ let db = try? BlazeDBClient(name: "db\(i)",...)
+ databases.append(db)
+ }
+
+ // CRITICAL: System hits FD limit
+ // Does it crash? Leak memory? Hang?
+
+ // Cleanup should work
+ databases.removeAll()
 }
 ```
 
 **What This Tests**:
-- ✅ Proper file descriptor cleanup
-- ✅ Handles "Too many open files" error
-- ✅ No leaks when hitting limits
-- ✅ Can close and reopen databases
+- Proper file descriptor cleanup
+- Handles "Too many open files" error
+- No leaks when hitting limits
+- Can close and reopen databases
 
 **Real Scenario**: Long-running server, multi-tenant system, resource limits.
 
@@ -168,30 +168,30 @@ func testChaos_FileDescriptorExhaustion() async throws {
 
 ```swift
 func testChaos_ConcurrentFileCorruption() async throws {
-    // Start normal operations
-    Task {
-        for i in 0..<1000 {
-            try? db.insert(record)
-        }
-    }
-    
-    // SIMULTANEOUSLY: Corrupt the file
-    Task {
-        let fileHandle = try FileHandle(forWritingTo: dbURL)
-        // Write random garbage
-        fileHandle.write(Data([0xFF, 0xFF, 0xFF, 0xFF]))
-    }
-    
-    // CRITICAL: Does database detect corruption?
-    // Does it crash? Return garbage data?
+ // Start normal operations
+ Task {
+ for i in 0..<1000 {
+ try? db.insert(record)
+ }
+ }
+
+ // SIMULTANEOUSLY: Corrupt the file
+ Task {
+ let fileHandle = try FileHandle(forWritingTo: dbURL)
+ // Write random garbage
+ fileHandle.write(Data([0xFF, 0xFF, 0xFF, 0xFF]))
+ }
+
+ // CRITICAL: Does database detect corruption?
+ // Does it crash? Return garbage data?
 }
 ```
 
 **What This Tests**:
-- ✅ Data integrity verification (checksums)
-- ✅ Detects corruption instead of returning bad data
-- ✅ Concurrent access safety
-- ✅ Clear error: "Data corrupted"
+- Data integrity verification (checksums)
+- Detects corruption instead of returning bad data
+- Concurrent access safety
+- Clear error: "Data corrupted"
 
 **Real Scenario**: Disk hardware failure, cosmic ray bit flip, malicious modification.
 
@@ -201,29 +201,29 @@ func testChaos_ConcurrentFileCorruption() async throws {
 
 ```swift
 func testChaos_PowerLossMidWrite() async throws {
-    // Start big write operation
-    let task = Task {
-        try await db.insertMany(1000Records)
-    }
-    
-    // SIMULATE POWER LOSS (immediate termination)
-    Task.sleep(nanoseconds: 1_000_000) // 1ms
-    task.cancel()
-    exit(0) // BRUTAL TERMINATION
-    
-    // On reopen:
-    let db2 = try BlazeDBClient(...)
-    
-    // CRITICAL: Database is consistent
-    // Either all 1000 records exist, or none do
+ // Start big write operation
+ let task = Task {
+ try await db.insertMany(1000Records)
+ }
+
+ // SIMULATE POWER LOSS (immediate termination)
+ Task.sleep(nanoseconds: 1_000_000) // 1ms
+ task.cancel()
+ exit(0) // BRUTAL TERMINATION
+
+ // On reopen:
+ let db2 = try BlazeDBClient(...)
+
+ // CRITICAL: Database is consistent
+ // Either all 1000 records exist, or none do
 }
 ```
 
 **What This Tests**:
-- ✅ Write-ahead logging (WAL) works
-- ✅ No partial transactions committed
-- ✅ Durability guarantees honored
-- ✅ Database is never in inconsistent state
+- Write-ahead logging (WAL) works
+- No partial transactions committed
+- Durability guarantees honored
+- Database is never in inconsistent state
 
 **Real Scenario**: Power outage, battery dies, kernel panic.
 
@@ -233,31 +233,31 @@ func testChaos_PowerLossMidWrite() async throws {
 
 ```swift
 func testChaos_RapidMemoryPressure() async throws {
-    for i in 0..<10_000 {
-        // Insert HUGE records rapidly
-        let hugeData = Data(repeating: 0xFF, count: 1_000_000)
-        try db.insert(BlazeDataRecord(["blob": .data(hugeData)]))
-        
-        // Immediately delete (stress allocator)
-        try db.delete(id: lastID)
-    }
-    
-    // CRITICAL: Memory usage stays constant
-    // No leaks, no fragmentation
+ for i in 0..<10_000 {
+ // Insert HUGE records rapidly
+ let hugeData = Data(repeating: 0xFF, count: 1_000_000)
+ try db.insert(BlazeDataRecord(["blob":.data(hugeData)]))
+
+ // Immediately delete (stress allocator)
+ try db.delete(id: lastID)
+ }
+
+ // CRITICAL: Memory usage stays constant
+ // No leaks, no fragmentation
 }
 ```
 
 **What This Tests**:
-- ✅ No memory leaks
-- ✅ Proper memory cleanup
-- ✅ Buffer management works
-- ✅ Can handle large records
+- No memory leaks
+- Proper memory cleanup
+- Buffer management works
+- Can handle large records
 
 **Real Scenario**: Mobile devices (limited RAM), long-running servers, memory-constrained containers.
 
 ---
 
-## 🎯 Level 8: Property-Based Testing
+## Level 8: Property-Based Testing
 
 ### **What Is It?**
 
@@ -269,8 +269,8 @@ Instead of testing **specific examples**, we test **universal laws** (properties
 ```swift
 // Test ONE specific case
 func testInsert() {
-    try db.insert(User(name: "Alice", age: 30))
-    XCTAssertEqual(db.count(), 1)
+ try db.insert(User(name: "Alice", age: 30))
+ XCTAssertEqual(db.count(), 1)
 }
 ```
 
@@ -278,19 +278,19 @@ func testInsert() {
 ```swift
 // Test a UNIVERSAL LAW with 1000 random cases
 func testProperty_InsertFetchRoundTrip() {
-    for _ in 0..<1000 {
-        let randomRecord = generateRandomRecord()
-        
-        let id = try db.insert(randomRecord)
-        let fetched = try db.fetch(id: id)
-        
-        // PROPERTY: Fetched data MUST equal inserted data
-        XCTAssertEqual(fetched, randomRecord)
-    }
+ for _ in 0..<1000 {
+ let randomRecord = generateRandomRecord()
+
+ let id = try db.insert(randomRecord)
+ let fetched = try db.fetch(id: id)
+
+ // PROPERTY: Fetched data MUST equal inserted data
+ XCTAssertEqual(fetched, randomRecord)
+ }
 }
 ```
 
-**Difference**: 
+**Difference**:
 - Traditional: "Alice with age 30 works"
 - Property-Based: "**ANY** record survives insert/fetch"
 
@@ -303,15 +303,15 @@ func testProperty_InsertFetchRoundTrip() {
 ```swift
 // PROPERTY: insert(x) → fetch() → x
 func testProperty_InsertFetchRoundTrip() {
-    for _ in 0..<1000 {
-        let x = randomRecord()
-        
-        let id = try db.insert(x)
-        let fetched = try db.fetch(id: id)
-        
-        XCTAssertEqual(fetched, x)
-        // If this fails, we have DATA CORRUPTION
-    }
+ for _ in 0..<1000 {
+ let x = randomRecord()
+
+ let id = try db.insert(x)
+ let fetched = try db.fetch(id: id)
+
+ XCTAssertEqual(fetched, x)
+ // If this fails, we have DATA CORRUPTION
+ }
 }
 ```
 
@@ -333,13 +333,13 @@ func testProperty_InsertFetchRoundTrip() {
 ```swift
 // PROPERTY: f(f(x)) = f(x)
 func testProperty_DeleteIdempotence() {
-    let id = try db.insert(record)
-    
-    try db.delete(id: id)  // First delete
-    try db.delete(id: id)  // Second delete
-    
-    // PROPERTY: Deleting twice = Deleting once
-    // Should not error or change state
+ let id = try db.insert(record)
+
+ try db.delete(id: id) // First delete
+ try db.delete(id: id) // Second delete
+
+ // PROPERTY: Deleting twice = Deleting once
+ // Should not error or change state
 }
 ```
 
@@ -357,16 +357,16 @@ func testProperty_DeleteIdempotence() {
 ```swift
 // PROPERTY: f(a, b) = f(b, a)
 func testProperty_InsertOrderIndependence() {
-    let records = [record1, record2, record3]
-    
-    // Database 1: Insert in order
-    for r in records { try db1.insert(r) }
-    
-    // Database 2: Insert shuffled
-    for r in records.shuffled() { try db2.insert(r) }
-    
-    // PROPERTY: Final state is identical
-    XCTAssertEqual(db1.fetchAll(), db2.fetchAll())
+ let records = [record1, record2, record3]
+
+ // Database 1: Insert in order
+ for r in records { try db1.insert(r) }
+
+ // Database 2: Insert shuffled
+ for r in records.shuffled() { try db2.insert(r) }
+
+ // PROPERTY: Final state is identical
+ XCTAssertEqual(db1.fetchAll(), db2.fetchAll())
 }
 ```
 
@@ -379,15 +379,15 @@ func testProperty_InsertOrderIndependence() {
 ```swift
 // PROPERTY: count() ALWAYS equals fetchAll().count
 func testProperty_CountConsistency() {
-    for _ in 0..<100 {
-        randomOperation() // insert, update, or delete
-        
-        let count1 = db.count()
-        let count2 = try db.fetchAll().count
-        
-        XCTAssertEqual(count1, count2)
-        // If this fails, metadata is out of sync
-    }
+ for _ in 0..<100 {
+ randomOperation() // insert, update, or delete
+
+ let count1 = db.count()
+ let count2 = try db.fetchAll().count
+
+ XCTAssertEqual(count1, count2)
+ // If this fails, metadata is out of sync
+ }
 }
 ```
 
@@ -400,13 +400,13 @@ func testProperty_CountConsistency() {
 ```swift
 // PROPERTY: Same query → Same results
 func testProperty_QueryDeterminism() {
-    // Run same query twice
-    let result1 = try db.query().where("status", equals: "open").execute()
-    let result2 = try db.query().where("status", equals: "open").execute()
-    
-    // PROPERTY: Results must be identical
-    XCTAssertEqual(result1.count, result2.count)
-    XCTAssertEqual(result1, result2)
+ // Run same query twice
+ let result1 = try db.query().where("status", equals: "open").execute()
+ let result2 = try db.query().where("status", equals: "open").execute()
+
+ // PROPERTY: Results must be identical
+ XCTAssertEqual(result1.count, result2.count)
+ XCTAssertEqual(result1, result2)
 }
 ```
 
@@ -422,14 +422,14 @@ func testProperty_QueryDeterminism() {
 ```swift
 // PROPERTY: Database aggregation = Manual calculation
 func testProperty_AggregationCorrectness() {
-    let values = [1, 2, 3, 4, 5]
-    for v in values { try db.insert(["value": .int(v)]) }
-    
-    let dbSum = try db.query().sum("value").result
-    let manualSum = values.reduce(0, +)
-    
-    XCTAssertEqual(dbSum, manualSum)
-    // If this fails, aggregations are WRONG
+ let values = [1, 2, 3, 4, 5]
+ for v in values { try db.insert(["value":.int(v)]) }
+
+ let dbSum = try db.query().sum("value").result
+ let manualSum = values.reduce(0, +)
+
+ XCTAssertEqual(dbSum, manualSum)
+ // If this fails, aggregations are WRONG
 }
 ```
 
@@ -441,34 +441,34 @@ func testProperty_AggregationCorrectness() {
 
 ```swift
 func randomRecord() -> BlazeDataRecord {
-    let fieldCount = Int.random(in: 1...20)
-    var fields: [String: BlazeDocumentField] = [:]
-    
-    for i in 0..<fieldCount {
-        let fieldType = Int.random(in: 0...8)
-        
-        switch fieldType {
-        case 0: // Random string
-            let length = Int.random(in: 0...200)
-            fields["f\(i)"] = .string(randomString(length))
-            
-        case 1: // Random int (FULL RANGE)
-            fields["f\(i)"] = .int(Int.random(in: Int.min...Int.max))
-            
-        case 2: // Random double (including special values)
-            let special = Int.random(in: 0...10)
-            if special == 0 { fields["f\(i)"] = .double(.infinity) }
-            else if special == 1 { fields["f\(i)"] = .double(.nan) }
-            else { fields["f\(i)"] = .double(Double.random(in: -1e9...1e9)) }
-            
-        case 3: // Random bool
-            fields["f\(i)"] = .bool(Bool.random())
-            
-        // ... more types
-        }
-    }
-    
-    return BlazeDataRecord(fields)
+ let fieldCount = Int.random(in: 1...20)
+ var fields: [String: BlazeDocumentField] = [:]
+
+ for i in 0..<fieldCount {
+ let fieldType = Int.random(in: 0...8)
+
+ switch fieldType {
+ case 0: // Random string
+ let length = Int.random(in: 0...200)
+ fields["f\(i)"] =.string(randomString(length))
+
+ case 1: // Random int (FULL RANGE)
+ fields["f\(i)"] =.int(Int.random(in: Int.min...Int.max))
+
+ case 2: // Random double (including special values)
+ let special = Int.random(in: 0...10)
+ if special == 0 { fields["f\(i)"] =.double(.infinity) }
+ else if special == 1 { fields["f\(i)"] =.double(.nan) }
+ else { fields["f\(i)"] =.double(Double.random(in: -1e9...1e9)) }
+
+ case 3: // Random bool
+ fields["f\(i)"] =.bool(Bool.random())
+
+ //... more types
+ }
+ }
+
+ return BlazeDataRecord(fields)
 }
 ```
 
@@ -484,7 +484,7 @@ func randomRecord() -> BlazeDataRecord {
 
 ---
 
-## 💣 Level 8: Fuzzing
+## Level 8: Fuzzing
 
 ### **What Is It?**
 
@@ -514,7 +514,7 @@ memcpy(buffer, input, input_length);
 **Attack**:
 ```
 input = "ABC"
-input_length = 64000  // LIE!
+input_length = 64000 // LIE!
 ```
 
 **Result**: Copies 64KB from memory (including passwords, keys, etc.)
@@ -529,16 +529,16 @@ input_length = 64000  // LIE!
 
 ```swift
 func testFuzz_RandomStrings() {
-    for _ in 0..<10_000 {
-        let randomString = generateFuzzString()
-        
-        // Try to insert
-        let id = try db.insert(["fuzz": .string(randomString)])
-        
-        // Verify no crash, no corruption
-        let fetched = try db.fetch(id: id)
-        XCTAssertEqual(fetched["fuzz"]?.stringValue, randomString)
-    }
+ for _ in 0..<10_000 {
+ let randomString = generateFuzzString()
+
+ // Try to insert
+ let id = try db.insert(["fuzz":.string(randomString)])
+
+ // Verify no crash, no corruption
+ let fetched = try db.fetch(id: id)
+ XCTAssertEqual(fetched["fuzz"]?.stringValue, randomString)
+ }
 }
 ```
 
@@ -547,7 +547,7 @@ func testFuzz_RandomStrings() {
 - 1,000,000 character strings
 - Null bytes (`\0`)
 - Control characters (`\n`, `\r`, `\t`)
-- Emoji (`🔥💀`)
+- Emoji (``)
 - Right-to-left text (Arabic, Hebrew)
 - Zero-width characters (invisible!)
 - Combining characters (é vs é)
@@ -565,11 +565,11 @@ func testFuzz_RandomStrings() {
 
 ```swift
 let edgeCases = [
-    "👨‍👩‍👧‍👦",           // Family emoji (4 codepoints!)
-    "🏳️‍🌈",                // Rainbow flag (ZWJ sequence)
-    "مرحبا Hello שלום",    // Mixed RTL/LTR
-    "e\u{0301}\u{0302}",   // Combining accents
-    "Test\u{200B}Data",    // Zero-width space (invisible)
+ "‍‍‍", // Family emoji (4 codepoints!)
+ "️‍", // Rainbow flag (ZWJ sequence)
+ "مرحبا Hello שלום", // Mixed RTL/LTR
+ "e\u{0301}\u{0302}", // Combining accents
+ "Test\u{200B}Data", // Zero-width space (invisible)
 ]
 ```
 
@@ -582,21 +582,21 @@ let edgeCases = [
 **Real Bug Example**:
 ```swift
 // BUG: Slicing emoji breaks it
-let str = "Hello 👨‍👩‍👧‍👦 World"
+let str = "Hello ‍‍‍ World"
 let broken = str.prefix(10) // Might slice INSIDE emoji
-// Result: Displays as "Hello 👨‍� World" (corrupted)
+// Result: Displays as "Hello ‍� World" (corrupted)
 ```
 
 **BlazeDB Must Handle This**:
 ```swift
 // Insert emoji
-let id = try db.insert(["emoji": .string("👨‍👩‍👧‍👦")])
+let id = try db.insert(["emoji":.string("‍‍‍")])
 
 // Fetch back
 let fetched = try db.fetch(id: id)
 
 // MUST be IDENTICAL (byte-perfect)
-XCTAssertEqual(fetched["emoji"]?.stringValue, "👨‍👩‍👧‍👦")
+XCTAssertEqual(fetched["emoji"]?.stringValue, "‍‍‍")
 ```
 
 ---
@@ -605,13 +605,13 @@ XCTAssertEqual(fetched["emoji"]?.stringValue, "👨‍👩‍👧‍👦")
 
 ```swift
 let extremeNumbers = [
-    .double(.infinity),
-    .double(-.infinity),
-    .double(.nan),
-    .double(0.0),
-    .double(-0.0),  // YES, THESE ARE DIFFERENT
-    .int(Int.max),
-    .int(Int.min),
+.double(.infinity),
+.double(-.infinity),
+.double(.nan),
+.double(0.0),
+.double(-0.0), // YES, THESE ARE DIFFERENT
+.int(Int.max),
+.int(Int.min),
 ]
 ```
 
@@ -620,22 +620,22 @@ let extremeNumbers = [
 **NaN (Not a Number)**:
 ```swift
 let x = Double.nan
-x == x  // FALSE!
+x == x // FALSE!
 // NaN is not equal to itself
 ```
 
 **Positive vs Negative Zero**:
 ```swift
-0.0 == -0.0      // TRUE
-1.0 / 0.0        // Infinity
-1.0 / -0.0       // -Infinity (different!)
+0.0 == -0.0 // TRUE
+1.0 / 0.0 // Infinity
+1.0 / -0.0 // -Infinity (different!)
 ```
 
 **Infinity**:
 ```swift
-Double.infinity + 1    // Still infinity
-Double.infinity * 2    // Still infinity
-Double.infinity - Double.infinity  // NaN!
+Double.infinity + 1 // Still infinity
+Double.infinity * 2 // Still infinity
+Double.infinity - Double.infinity // NaN!
 ```
 
 **BlazeDB Must**:
@@ -649,17 +649,17 @@ Double.infinity - Double.infinity  // NaN!
 
 ```swift
 func testFuzz_RandomBinaryData() {
-    for _ in 0..<5000 {
-        let size = Int.random(in: 0...10_000)
-        let randomBytes = (0..<size).map { _ in UInt8.random(in: 0...255) }
-        let data = Data(randomBytes)
-        
-        let id = try db.insert(["blob": .data(data)])
-        let fetched = try db.fetch(id: id)
-        
-        // MUST be BYTE-PERFECT
-        XCTAssertEqual(fetched["blob"]?.dataValue, data)
-    }
+ for _ in 0..<5000 {
+ let size = Int.random(in: 0...10_000)
+ let randomBytes = (0..<size).map { _ in UInt8.random(in: 0...255) }
+ let data = Data(randomBytes)
+
+ let id = try db.insert(["blob":.data(data)])
+ let fetched = try db.fetch(id: id)
+
+ // MUST be BYTE-PERFECT
+ XCTAssertEqual(fetched["blob"]?.dataValue, data)
+ }
 }
 ```
 
@@ -680,16 +680,16 @@ func testFuzz_RandomBinaryData() {
 
 ```swift
 let maliciousNames = [
-    "",                    // Empty
-    "__proto__",           // JavaScript prototype pollution
-    "$where",              // MongoDB injection
-    "'; DROP TABLE --",    // SQL injection
-    "../../etc/passwd",    // Path traversal
-    "\0",                  // Null byte
+ "", // Empty
+ "__proto__", // JavaScript prototype pollution
+ "$where", // MongoDB injection
+ "'; DROP TABLE --", // SQL injection
+ "../../etc/passwd", // Path traversal
+ "\0", // Null byte
 ]
 
 for name in maliciousNames {
-    try db.insert([name: .string("exploit")])
+ try db.insert([name:.string("exploit")])
 }
 ```
 
@@ -725,23 +725,23 @@ fieldName = "../../etc/passwd"
 
 ```swift
 let injectionPayloads = [
-    "' OR '1'='1",
-    "'; DROP TABLE users; --",
-    "$where: '1 == 1'",
-    "{ $ne: null }",
+ "' OR '1'='1",
+ "'; DROP TABLE users; --",
+ "$where: '1 == 1'",
+ "{ $ne: null }",
 ]
 
 for payload in injectionPayloads {
-    // Insert record with injection payload
-    try db.insert(["name": .string(payload)])
-    
-    // Query for it
-    let results = try db.query()
-        .where("name", equals: .string(payload))
-        .execute()
-    
-    // MUST return exactly 1 record (not all records!)
-    XCTAssertEqual(results.count, 1)
+ // Insert record with injection payload
+ try db.insert(["name":.string(payload)])
+
+ // Query for it
+ let results = try db.query()
+.where("name", equals:.string(payload))
+.execute()
+
+ // MUST return exactly 1 record (not all records!)
+ XCTAssertEqual(results.count, 1)
 }
 ```
 
@@ -756,34 +756,34 @@ for payload in injectionPayloads {
 ### **Fuzzing Statistics**
 
 ```
-🎲 Random Strings:      10,000 inputs
-🌍 Unicode Edge Cases:   5,000 inputs
-🎲 Binary Data:          5,000 blobs
-🔢 Extreme Numbers:      1,000 values
-🪆 Nested Structures:      100 depths
-💀 Malicious Names:        100 cases
-📦 Size Extremes:           20 tests
-🌀 Concurrent Chaos:     5,000 operations
-💉 Injection Payloads:     100 attempts
-💾 Memory Stress:        1,000 cycles
-⚡ Transaction Chaos:      200 batches
-📅 Date Edge Cases:         10 extremes
+ Random Strings: 10,000 inputs
+ Unicode Edge Cases: 5,000 inputs
+ Binary Data: 5,000 blobs
+ Extreme Numbers: 1,000 values
+ Nested Structures: 100 depths
+ Malicious Names: 100 cases
+ Size Extremes: 20 tests
+ Concurrent Chaos: 5,000 operations
+ Injection Payloads: 100 attempts
+ Memory Stress: 1,000 cycles
+ Transaction Chaos: 200 batches
+ Date Edge Cases: 10 extremes
 ────────────────────────────────────────
-TOTAL:                 ~27,000+ malicious inputs
+TOTAL: ~27,000+ malicious inputs
 ```
 
 **Result**: If BlazeDB survives these, it can handle **ANYTHING** users throw at it.
 
 ---
 
-## 🎓 Key Takeaways
+## Key Takeaways
 
 ### **1. Traditional Testing Is Not Enough**
 
 ```
-Traditional Testing:  5-10 hand-picked examples
-Property-Based:      1,000-10,000 random examples
-Fuzzing:            10,000-100,000 adversarial examples
+Traditional Testing: 5-10 hand-picked examples
+Property-Based: 1,000-10,000 random examples
+Fuzzing: 10,000-100,000 adversarial examples
 ```
 
 **BlazeDB**: Uses ALL THREE approaches.
@@ -809,19 +809,19 @@ Fuzzing:            10,000-100,000 adversarial examples
 **Bad**:
 ```swift
 func testSum() {
-    XCTAssertEqual(sum([1, 2, 3]), 6)
+ XCTAssertEqual(sum([1, 2, 3]), 6)
 }
 ```
 
 **Good**:
 ```swift
 func testSumProperty() {
-    for _ in 0..<1000 {
-        let numbers = randomArray()
-        let dbSum = db.sum(numbers)
-        let manualSum = numbers.reduce(0, +)
-        XCTAssertEqual(dbSum, manualSum)
-    }
+ for _ in 0..<1000 {
+ let numbers = randomArray()
+ let dbSum = db.sum(numbers)
+ let manualSum = numbers.reduce(0, +)
+ XCTAssertEqual(dbSum, manualSum)
+ }
 }
 ```
 
@@ -845,11 +845,11 @@ Users will:
 
 ---
 
-## 🚀 How This Makes You A Better Engineer
+## How This Makes You A Better Engineer
 
 ### **1. Think In Properties**
 
-Instead of: "Does this specific case work?"  
+Instead of: "Does this specific case work?"
 Think: "What property should ALWAYS be true?"
 
 **Examples**:
@@ -884,19 +884,19 @@ This makes your code **resilient**.
 
 ---
 
-## 💡 Interview Tips
+## Interview Tips
 
 When discussing BlazeDB testing in interviews:
 
-**❌ Don't say**: "I wrote 400 tests"
+** Don't say**: "I wrote 400 tests"
 
-**✅ Do say**: "I implemented property-based testing with 20,000+ random test cases, fuzzing with adversarial inputs, and chaos engineering to verify resilience against process kills and disk corruption. This ensures data integrity even under extreme conditions."
+** Do say**: "I implemented property-based testing with 20,000+ random test cases, fuzzing with adversarial inputs, and chaos engineering to verify resilience against process kills and disk corruption. This ensures data integrity even under extreme conditions."
 
 **Why**: The second shows you understand **advanced testing concepts**, not just writing tests.
 
 ---
 
-## 🎯 Summary: What You Built
+## Summary: What You Built
 
 1. **Chaos Engineering**: Proves database survives disasters
 2. **Property-Based Testing**: Proves correctness with 20,000+ random cases
@@ -915,12 +915,12 @@ When discussing BlazeDB testing in interviews:
 
 ---
 
-## 🔥 Final Thought
+## Final Thought
 
-**Most databases**: "It works for the cases I tested"  
+**Most databases**: "It works for the cases I tested"
 **BlazeDB**: "It works for cases I haven't even imagined"
 
-That's the power of advanced testing. 🚀
+That's the power of advanced testing.
 
 ---
 

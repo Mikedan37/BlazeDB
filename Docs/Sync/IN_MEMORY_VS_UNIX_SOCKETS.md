@@ -28,16 +28,16 @@
 ## **When to Use Each:**
 
 ### **In-Memory Queue (Current):**
-✅ **Same process** - Two `BlazeDBClient` instances in same app
-✅ **Fastest possible** - No kernel overhead
-✅ **Simplest** - No file system, no cleanup
-✅ **Memory efficient** - Temporary, cleared automatically
+ **Same process** - Two `BlazeDBClient` instances in same app
+ **Fastest possible** - No kernel overhead
+ **Simplest** - No file system, no cleanup
+ **Memory efficient** - Temporary, cleared automatically
 
 ### **Unix Domain Sockets (Future Enhancement):**
-✅ **Cross-process** - Different processes/apps on same device
-✅ **Persistent** - Survives process restarts
-✅ **Kernel-buffered** - OS handles buffering
-✅ **File system** - Uses `/tmp` or App Group paths
+ **Cross-process** - Different processes/apps on same device
+ **Persistent** - Survives process restarts
+ **Kernel-buffered** - OS handles buffering
+ **File system** - Uses `/tmp` or App Group paths
 
 ---
 

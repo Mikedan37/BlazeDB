@@ -45,10 +45,10 @@ let swiftFiles = try db.getFileMetadata(forWorkspace: workspaceId, fileExtension
 ```swift
 // Get cached summary
 if let summary = try db.getWorkspaceSummary(for: workspaceId) {
-    print("Swift files: \(summary.totalSwiftFiles)")
-    print("Symbols: \(summary.totalSymbols)")
-    print("Runs: \(summary.totalRuns)")
-    print("Last execution: \(summary.lastExecutionTimestamp ?? Date())")
+ print("Swift files: \(summary.totalSwiftFiles)")
+ print("Symbols: \(summary.totalSymbols)")
+ print("Runs: \(summary.totalRuns)")
+ print("Last execution: \(summary.lastExecutionTimestamp?? Date())")
 }
 
 // Recalculate summary (forces full scan)
@@ -66,18 +66,18 @@ For better performance, update summaries incrementally when adding records:
 // When adding a new file
 try db.insert(fileRecord)
 try WorkspaceSummaryManager.incrementSummary(
-    client: db,
-    workspaceId: workspaceId,
-    recordType: "file"
+ client: db,
+ workspaceId: workspaceId,
+ recordType: "file"
 )
 
 // When adding a new run
 try db.insert(runRecord)
 try WorkspaceSummaryManager.incrementSummary(
-    client: db,
-    workspaceId: workspaceId,
-    recordType: "run",
-    timestamp: Date()
+ client: db,
+ workspaceId: workspaceId,
+ recordType: "run",
+ timestamp: Date()
 )
 ```
 
@@ -88,11 +88,11 @@ Range queries now automatically use indexes when available:
 ```swift
 // This will use an index if "timestamp" is indexed
 let recentRuns = try db.query()
-    .where("type", equals: .string("run"))
-    .whereRange("timestamp", min: .date(Date().addingTimeInterval(-86400)), max: .date(Date()))
-    .order(by: "timestamp", .descending)
-    .limit(100)
-    .run()
+.where("type", equals:.string("run"))
+.whereRange("timestamp", min:.date(Date().addingTimeInterval(-86400)), max:.date(Date()))
+.order(by: "timestamp",.descending)
+.limit(100)
+.run()
 ```
 
 ## Index Details
@@ -106,9 +106,9 @@ let recentRuns = try db.query()
 **Example:**
 ```swift
 let workspaces = try db.query()
-    .where("type", equals: .string("workspace"))
-    .where("projectRoot", equals: .string("/path/to/project"))
-    .run()
+.where("type", equals:.string("workspace"))
+.where("projectRoot", equals:.string("/path/to/project"))
+.run()
 ```
 
 ### Run History Index
@@ -120,11 +120,11 @@ let workspaces = try db.query()
 **Example:**
 ```swift
 let runs = try db.query()
-    .where("type", equals: .string("run"))
-    .where("workspaceId", equals: .uuid(workspaceId))
-    .order(by: "timestamp", .descending)
-    .limit(50)
-    .run()
+.where("type", equals:.string("run"))
+.where("workspaceId", equals:.uuid(workspaceId))
+.order(by: "timestamp",.descending)
+.limit(50)
+.run()
 ```
 
 ### File Metadata Index
@@ -136,10 +136,10 @@ let runs = try db.query()
 **Example:**
 ```swift
 let files = try db.query()
-    .where("type", equals: .string("file"))
-    .where("workspaceId", equals: .uuid(workspaceId))
-    .where("filePath", contains: ".swift")
-    .run()
+.where("type", equals:.string("file"))
+.where("workspaceId", equals:.uuid(workspaceId))
+.where("filePath", contains: ".swift")
+.run()
 ```
 
 ## Workspace Summary Table
@@ -174,12 +174,12 @@ If your schema uses different field names, you can customize:
 
 ```swift
 try WorkspaceIndexing.createWorkspaceIndexes(
-    client: db,
-    workspaceTypeField: "kind",        // Instead of "type"
-    workspaceIdField: "workspace",     // Instead of "workspaceId"
-    projectRootField: "root",          // Instead of "projectRoot"
-    timestampField: "createdAt",       // Instead of "timestamp"
-    filePathField: "path"              // Instead of "filePath"
+ client: db,
+ workspaceTypeField: "kind", // Instead of "type"
+ workspaceIdField: "workspace", // Instead of "workspaceId"
+ projectRootField: "root", // Instead of "projectRoot"
+ timestampField: "createdAt", // Instead of "timestamp"
+ filePathField: "path" // Instead of "filePath"
 )
 ```
 
@@ -214,21 +214,21 @@ try db.initializeWorkspaceIndexes()
 3. **Generate summaries:**
 ```swift
 let workspaces = try db.query()
-    .where("type", equals: .string("workspace"))
-    .run()
+.where("type", equals:.string("workspace"))
+.run()
 
 for workspace in workspaces {
-    if let workspaceId = workspace.storage["id"]?.uuidValue {
-        _ = try db.recalculateWorkspaceSummary(for: workspaceId)
-    }
+ if let workspaceId = workspace.storage["id"]?.uuidValue {
+ _ = try db.recalculateWorkspaceSummary(for: workspaceId)
+ }
 }
 ```
 
 ## Constraints Maintained
 
-✅ **Encryption by default** - All data remains encrypted  
-✅ **Binary storage format** - No breaking changes to storage  
-✅ **API stability** - All changes are additive, existing code continues to work
+ **Encryption by default** - All data remains encrypted
+ **Binary storage format** - No breaking changes to storage
+ **API stability** - All changes are additive, existing code continues to work
 
 ## Example: Complete Workflow
 
@@ -239,22 +239,22 @@ try db.initializeWorkspaceIndexes()
 
 // 2. Create workspace
 let workspace = BlazeDataRecord([
-    "id": .uuid(workspaceId),
-    "type": .string("workspace"),
-    "name": .string("MyProject"),
-    "projectRoot": .string("/path/to/project")
+ "id":.uuid(workspaceId),
+ "type":.string("workspace"),
+ "name":.string("MyProject"),
+ "projectRoot":.string("/path/to/project")
 ])
 try db.insert(workspace)
 
 // 3. Add files and update summary incrementally
 for file in swiftFiles {
-    let fileRecord = BlazeDataRecord([...])
-    try db.insert(fileRecord)
-    try WorkspaceSummaryManager.incrementSummary(
-        client: db,
-        workspaceId: workspaceId,
-        recordType: "file"
-    )
+ let fileRecord = BlazeDataRecord([...])
+ try db.insert(fileRecord)
+ try WorkspaceSummaryManager.incrementSummary(
+ client: db,
+ workspaceId: workspaceId,
+ recordType: "file"
+ )
 }
 
 // 4. Query efficiently
@@ -263,6 +263,6 @@ let allSwiftFiles = try db.getFileMetadata(forWorkspace: workspaceId, fileExtens
 
 // 5. Get summary
 let summary = try db.getWorkspaceSummary(for: workspaceId)
-print("Project has \(summary?.totalSwiftFiles ?? 0) Swift files")
+print("Project has \(summary?.totalSwiftFiles?? 0) Swift files")
 ```
 

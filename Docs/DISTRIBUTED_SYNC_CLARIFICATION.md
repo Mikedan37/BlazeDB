@@ -1,128 +1,128 @@
 # BlazeDB Distributed Sync - Second-Pass Clarification
 
-**Date:** 2025-01-XX  
-**Based On:** Code analysis + audit findings  
+**Date:** 2025-01-XX
+**Based On:** Code analysis + audit findings
 **Purpose:** Explicit categorization of distributed system maturity
 
 ---
 
 ## 1. CATEGORIZATION BY IMPLEMENTATION STATUS
 
-### 1.1 Fully Implemented ✅
+### 1.1 Fully Implemented
 
 **Operation Log Synchronization:**
-- ✅ Incremental sync (only changed operations)
-- ✅ Lamport timestamp causal ordering
-- ✅ Per-record version tracking
-- ✅ Per-node sync state tracking
-- ✅ Idempotent operation application
-- ✅ Operation deduplication
-- ✅ Operation merging (Insert+Update → Update)
+- Incremental sync (only changed operations)
+- Lamport timestamp causal ordering
+- Per-record version tracking
+- Per-node sync state tracking
+- Idempotent operation application
+- Operation deduplication
+- Operation merging (Insert+Update → Update)
 
 **Transport Layer:**
-- ✅ TCP relay with E2E encryption
-- ✅ Unix Domain Socket relay (client-side)
-- ✅ In-Memory relay (same process)
-- ✅ Secure handshake (Diffie-Hellman + AES-256-GCM)
-- ✅ Shared secret authentication
+- TCP relay with E2E encryption
+- Unix Domain Socket relay (client-side)
+- In-Memory relay (same process)
+- Secure handshake (Diffie-Hellman + AES-256-GCM)
+- Shared secret authentication
 
 **Discovery & Connection:**
-- ✅ mDNS/Bonjour auto-discovery
-- ✅ TCP candidate auto-connect
-- ✅ Server accepts multiple clients
-- ✅ Client connects to server
+- mDNS/Bonjour auto-discovery
+- TCP candidate auto-connect
+- Server accepts multiple clients
+- Client connects to server
 
 **Conflict Resolution:**
-- ✅ Server/Client role-based priority
-- ✅ Last-Write-Wins for equal roles
-- ✅ CRDT-style merging
-- ✅ Timestamp-based ordering
+- Server/Client role-based priority
+- Last-Write-Wins for equal roles
+- CRDT-style merging
+- Timestamp-based ordering
 
 **Security:**
-- ✅ E2E encryption (server blind)
-- ✅ Replay attack protection (nonce + expiry)
-- ✅ Operation signature verification (HMAC-SHA256)
-- ✅ Authentication token support
+- E2E encryption (server blind)
+- Replay attack protection (nonce + expiry)
+- Operation signature verification (HMAC-SHA256)
+- Authentication token support
 
 **Encoding:**
-- ✅ BlazeBinary encoding (variable-length, bit-packed)
-- ✅ Smart caching (encoded operation cache)
-- ✅ Parallel encoding (concurrentMap)
-- ✅ Variable-length encoding for efficiency
+- BlazeBinary encoding (variable-length, bit-packed)
+- Smart caching (encoded operation cache)
+- Parallel encoding (concurrentMap)
+- Variable-length encoding for efficiency
 
-### 1.2 Partially Implemented ⚠️
+### 1.2 Partially Implemented ️
 
 **Compression:**
-- ⚠️ **Status:** Stubbed (returns data unchanged)
-- ⚠️ **Code:** `TCPRelay+Compression.swift:13-36`
-- ⚠️ **Impact:** No compression, 2-3x bandwidth waste
-- ⚠️ **Reason:** Unsafe pointer code removed for Swift 6 safety
-- ⚠️ **Can Enable:** Yes, with safe re-implementation
+- ️ **Status:** Stubbed (returns data unchanged)
+- ️ **Code:** `TCPRelay+Compression.swift:13-36`
+- ️ **Impact:** No compression, 2-3x bandwidth waste
+- ️ **Reason:** Unsafe pointer code removed for Swift 6 safety
+- ️ **Can Enable:** Yes, with safe re-implementation
 
 **Unix Domain Socket Server:**
-- ⚠️ **Status:** Throws `RelayError.notImplemented`
-- ⚠️ **Code:** `UnixDomainSocketRelay.swift:163-199`
-- ⚠️ **Impact:** Can't use Unix Domain Sockets for server-side listening
-- ⚠️ **Reason:** `NWListener` doesn't support Unix Domain Socket endpoints
-- ⚠️ **Can Enable:** Yes, using POSIX sockets instead of NWListener
+- ️ **Status:** Throws `RelayError.notImplemented`
+- ️ **Code:** `UnixDomainSocketRelay.swift:163-199`
+- ️ **Impact:** Can't use Unix Domain Sockets for server-side listening
+- ️ **Reason:** `NWListener` doesn't support Unix Domain Socket endpoints
+- ️ **Can Enable:** Yes, using POSIX sockets instead of NWListener
 
 **Retry Logic:**
-- ⚠️ **Status:** Basic requeue, no exponential backoff
-- ⚠️ **Code:** `BlazeSyncEngine.swift:660-662`
-- ⚠️ **Impact:** Failed operations retry immediately (could spam network)
-- ⚠️ **Can Enable:** Yes, add backoff to `requeueBatch()`
+- ️ **Status:** Basic requeue, no exponential backoff
+- ️ **Code:** `BlazeSyncEngine.swift:660-662`
+- ️ **Impact:** Failed operations retry immediately (could spam network)
+- ️ **Can Enable:** Yes, add backoff to `requeueBatch()`
 
 **Discovery Storage:**
-- ⚠️ **Status:** Server/discovery not persisted
-- ⚠️ **Code:** `BlazeDBClient+Discovery.swift:65` (TODO comment)
-- ⚠️ **Impact:** Server must be re-created on each app launch
-- ⚠️ **Can Enable:** Yes, store server instance
+- ️ **Status:** Server/discovery not persisted
+- ️ **Code:** `BlazeDBClient+Discovery.swift:65` (TODO comment)
+- ️ **Impact:** Server must be re-created on each app launch
+- ️ **Can Enable:** Yes, store server instance
 
-### 1.3 Missing ❌
+### 1.3 Missing
 
 **Snapshot-Based Initial Sync:**
-- ❌ **Status:** Not implemented
-- ❌ **Evidence:** No `getSnapshot()`, `loadSnapshot()`, or `DatabaseSnapshot` types
-- ❌ **Impact:** New nodes must replay entire operation log (slow for large databases)
-- ❌ **Reason:** System designed for incremental sync only
+- **Status:** Not implemented
+- **Evidence:** No `getSnapshot()`, `loadSnapshot()`, or `DatabaseSnapshot` types
+- **Impact:** New nodes must replay entire operation log (slow for large databases)
+- **Reason:** System designed for incremental sync only
 
 **Chunked/Streaming Transfers:**
-- ❌ **Status:** Not implemented
-- ❌ **Evidence:** Entire batches sent atomically, no `hasMore` flags
-- ❌ **Impact:** Memory pressure for large syncs (>10K operations)
-- ❌ **Reason:** Designed for small-to-medium batches
+- **Status:** Not implemented
+- **Evidence:** Entire batches sent atomically, no `hasMore` flags
+- **Impact:** Memory pressure for large syncs (>10K operations)
+- **Reason:** Designed for small-to-medium batches
 
 **Progress Tracking:**
-- ❌ **Status:** Not implemented
-- ❌ **Evidence:** No progress callbacks in `pushOperations()` or `pullOperations()`
-- ❌ **Impact:** Can't show progress for large syncs
-- ❌ **Reason:** Not needed for current batch-based design
+- **Status:** Not implemented
+- **Evidence:** No progress callbacks in `pushOperations()` or `pullOperations()`
+- **Impact:** Can't show progress for large syncs
+- **Reason:** Not needed for current batch-based design
 
 **Peer-to-Peer Mesh Sync:**
-- ❌ **Status:** Not implemented
-- ❌ **Evidence:** Only hub-and-spoke (clients → server)
-- ❌ **Impact:** Requires central server, no direct client-to-client sync
-- ❌ **Reason:** Architecture choice (simpler conflict resolution)
+- **Status:** Not implemented
+- **Evidence:** Only hub-and-spoke (clients → server)
+- **Impact:** Requires central server, no direct client-to-client sync
+- **Reason:** Architecture choice (simpler conflict resolution)
 
-### 1.4 Currently Impossible Without Architectural Changes 🔴
+### 1.4 Currently Impossible Without Architectural Changes
 
 **Full Database Replication:**
-- 🔴 **Requires:** New protocol messages (`getSnapshot`, `loadSnapshot`)
-- 🔴 **Requires:** Snapshot generation logic
-- 🔴 **Requires:** Snapshot storage format
-- 🔴 **Impact:** Major protocol change, backward compatibility concerns
+- **Requires:** New protocol messages (`getSnapshot`, `loadSnapshot`)
+- **Requires:** Snapshot generation logic
+- **Requires:** Snapshot storage format
+- **Impact:** Major protocol change, backward compatibility concerns
 
 **Peer-to-Peer Mesh:**
-- 🔴 **Requires:** Peer discovery protocol
-- 🔴 **Requires:** Mesh routing logic
-- 🔴 **Requires:** Multi-peer conflict resolution
-- 🔴 **Impact:** Major architecture change
+- **Requires:** Peer discovery protocol
+- **Requires:** Mesh routing logic
+- **Requires:** Multi-peer conflict resolution
+- **Impact:** Major architecture change
 
 **Streaming with Progress:**
-- 🔴 **Requires:** Protocol changes (add `hasMore` flags)
-- 🔴 **Requires:** Chunking logic in relay layer
-- 🔴 **Requires:** Progress callback API
-- 🔴 **Impact:** Protocol change, but backward compatible possible
+- **Requires:** Protocol changes (add `hasMore` flags)
+- **Requires:** Chunking logic in relay layer
+- **Requires:** Progress callback API
+- **Impact:** Protocol change, but backward compatible possible
 
 ---
 
@@ -198,10 +198,10 @@
 - No direct record transfer, only operation transfer
 
 **What This Means:**
-- ✅ **Efficient for incremental sync** - only changed operations
-- ❌ **Inefficient for initial sync** - must replay all operations
-- ⚠️ **Memory overhead** - operation log grows over time
-- ✅ **Event sourcing pattern** - state derived from operations
+- **Efficient for incremental sync** - only changed operations
+- **Inefficient for initial sync** - must replay all operations
+- ️ **Memory overhead** - operation log grows over time
+- **Event sourcing pattern** - state derived from operations
 
 **Code References:**
 - `BlazeOperation.swift:111-112` - `OperationLog` stores operations
@@ -218,10 +218,10 @@
 - No snapshot download, no fast bootstrap path
 
 **What This Means:**
-- ❌ **Slow initial sync** - must download entire operation log
-- ❌ **Bandwidth intensive** - 100K operations = ~20MB (uncompressed)
-- ❌ **Time intensive** - could take minutes for large databases
-- ⚠️ **Memory intensive** - must store all operations in memory during sync
+- **Slow initial sync** - must download entire operation log
+- **Bandwidth intensive** - 100K operations = ~20MB (uncompressed)
+- **Time intensive** - could take minutes for large databases
+- ️ **Memory intensive** - must store all operations in memory during sync
 
 **Example Scenario:**
 ```
@@ -244,15 +244,15 @@ Database with 100,000 operations:
 **Reasoning:**
 
 **Current Impact (Op-Log Only):**
-- ✅ **BlazeBinary is already 53% smaller than JSON** - good baseline
-- ⚠️ **Large operation logs** - 100K ops × 200 bytes = 20MB uncompressed
-- ⚠️ **With compression** - 20MB → ~7-10MB (50-65% reduction)
-- ⚠️ **Bandwidth savings** - Significant for slow networks
+- **BlazeBinary is already 53% smaller than JSON** - good baseline
+- ️ **Large operation logs** - 100K ops × 200 bytes = 20MB uncompressed
+- ️ **With compression** - 20MB → ~7-10MB (50-65% reduction)
+- ️ **Bandwidth savings** - Significant for slow networks
 
 **With Snapshot Sync (Future):**
-- ✅ **Would help more** - snapshots are larger (full database state)
-- ✅ **Critical for large databases** - 1GB database → 300-500MB compressed
-- ✅ **Essential for mobile** - data plan savings
+- **Would help more** - snapshots are larger (full database state)
+- **Critical for large databases** - 1GB database → 300-500MB compressed
+- **Essential for mobile** - data plan savings
 
 **Verdict:**
 - **Now:** Nice-to-have optimization (saves 50-65% bandwidth for large op-logs)
@@ -284,24 +284,24 @@ Database with 100,000 operations:
 ### 3.2 What Code Actually Implements
 
 **Fully Matches Documentation:**
-- ✅ Multi-transport (TCP, Unix Domain Sockets, In-Memory)
-- ✅ E2E encryption
-- ✅ Auto-discovery
-- ✅ Incremental sync
-- ✅ Conflict resolution
-- ✅ Lamport timestamps
+- Multi-transport (TCP, Unix Domain Sockets, In-Memory)
+- E2E encryption
+- Auto-discovery
+- Incremental sync
+- Conflict resolution
+- Lamport timestamps
 
 **Documented But Not Implemented:**
-- ❌ Snapshot-based initial sync (mentioned in docs, not in code)
-- ❌ Chunked streaming (mentioned in protocol docs, not implemented)
-- ⚠️ Compression (documented as feature, currently stubbed)
+- Snapshot-based initial sync (mentioned in docs, not in code)
+- Chunked streaming (mentioned in protocol docs, not implemented)
+- ️ Compression (documented as feature, currently stubbed)
 
 **Implemented But Not Emphasized in Docs:**
-- ✅ Operation merging (Insert+Update → Update)
-- ✅ Per-record version tracking
-- ✅ Per-node sync state
-- ✅ Smart caching of encoded operations
-- ✅ Adaptive batching
+- Operation merging (Insert+Update → Update)
+- Per-record version tracking
+- Per-node sync state
+- Smart caching of encoded operations
+- Adaptive batching
 
 ### 3.3 Gap Analysis
 
@@ -324,37 +324,37 @@ Database with 100,000 operations:
 **Assessment: PARTIALLY CORRECT**
 
 **What's Correct:**
-- ✅ Databases can sync across devices
-- ✅ Multiple clients can sync to one server
-- ✅ Data is replicated (via operation log)
-- ✅ Conflict resolution works
-- ✅ Causal ordering is maintained
-- ✅ E2E encryption protects data
+- Databases can sync across devices
+- Multiple clients can sync to one server
+- Data is replicated (via operation log)
+- Conflict resolution works
+- Causal ordering is maintained
+- E2E encryption protects data
 
 **What's Partially Correct:**
-- ⚠️ **"Fully distributed"** - True for hub-and-spoke, false for peer-to-peer mesh
-- ⚠️ **"Database replication"** - True for incremental sync, false for full snapshot sync
-- ⚠️ **"Efficient bootstrap"** - False, new nodes must replay entire operation log
+- ️ **"Fully distributed"** - True for hub-and-spoke, false for peer-to-peer mesh
+- ️ **"Database replication"** - True for incremental sync, false for full snapshot sync
+- ️ **"Efficient bootstrap"** - False, new nodes must replay entire operation log
 
 **What's Incorrect:**
-- ❌ **"Full database replication"** - Only operation log replication
-- ❌ **"Snapshot sync"** - Not implemented
-- ❌ **"Peer-to-peer"** - Only hub-and-spoke
-- ❌ **"Chunked transfers"** - Not implemented
+- **"Full database replication"** - Only operation log replication
+- **"Snapshot sync"** - Not implemented
+- **"Peer-to-peer"** - Only hub-and-spoke
+- **"Chunked transfers"** - Not implemented
 
 ### 4.2 More Accurate Mental Model
 
 **BlazeDB is:**
-- ✅ **An operation log synchronization system** (not full database replication)
-- ✅ **An incremental sync engine** (not snapshot-based)
-- ✅ **A hub-and-spoke distributed system** (not peer-to-peer mesh)
-- ✅ **An event-sourcing sync protocol** (state derived from operations)
+- **An operation log synchronization system** (not full database replication)
+- **An incremental sync engine** (not snapshot-based)
+- **A hub-and-spoke distributed system** (not peer-to-peer mesh)
+- **An event-sourcing sync protocol** (state derived from operations)
 
 **BlazeDB is NOT:**
-- ❌ A full database replication system (no snapshot sync)
-- ❌ A peer-to-peer mesh network (hub-and-spoke only)
-- ❌ A streaming/chunked transfer system (atomic batches)
-- ❌ A compression-enabled system (currently stubbed)
+- A full database replication system (no snapshot sync)
+- A peer-to-peer mesh network (hub-and-spoke only)
+- A streaming/chunked transfer system (atomic batches)
+- A compression-enabled system (currently stubbed)
 
 **Better Description:**
 > "BlazeDB is an **incremental operation log synchronization system** that enables multiple databases to stay in sync by replicating database operations (inserts, updates, deletes) rather than full database state. It uses a hub-and-spoke architecture where clients sync through a central server, with E2E encryption and causal ordering via Lamport timestamps."
@@ -376,43 +376,43 @@ Database with 100,000 operations:
 ```swift
 // 1. New protocol method
 protocol BlazeSyncRelay: Actor {
-    func getSnapshot() async throws -> DatabaseSnapshot  // NEW
-    func loadSnapshot(_ snapshot: DatabaseSnapshot) async throws  // NEW
+ func getSnapshot() async throws -> DatabaseSnapshot // NEW
+ func loadSnapshot(_ snapshot: DatabaseSnapshot) async throws // NEW
 }
 
 // 2. New snapshot type
 struct DatabaseSnapshot: Codable {
-    let timestamp: LamportTimestamp
-    let records: [UUID: BlazeDataRecord]  // Full record data
-    let checksum: Data  // Integrity check
+ let timestamp: LamportTimestamp
+ let records: [UUID: BlazeDataRecord] // Full record data
+ let checksum: Data // Integrity check
 }
 
 // 3. Snapshot generation (in BlazeDBClient or DynamicCollection)
 func generateSnapshot() async throws -> DatabaseSnapshot {
-    let allRecords = try await fetchAll()
-    let maxTimestamp = await opLog.getCurrentState().lastSyncedTimestamp
-    return DatabaseSnapshot(
-        timestamp: maxTimestamp,
-        records: Dictionary(uniqueKeysWithValues: allRecords.map { ($0.id, $0) }),
-        checksum: calculateChecksum(allRecords)
-    )
+ let allRecords = try await fetchAll()
+ let maxTimestamp = await opLog.getCurrentState().lastSyncedTimestamp
+ return DatabaseSnapshot(
+ timestamp: maxTimestamp,
+ records: Dictionary(uniqueKeysWithValues: allRecords.map { ($0.id, $0) }),
+ checksum: calculateChecksum(allRecords)
+ )
 }
 
 // 4. Snapshot loading
 func loadSnapshot(_ snapshot: DatabaseSnapshot) async throws {
-    // Bulk insert all records
-    for (id, record) in snapshot.records {
-        try insert(record, id: id)
-    }
-    // Update operation log to snapshot timestamp
-    await opLog.setTimestamp(snapshot.timestamp)
+ // Bulk insert all records
+ for (id, record) in snapshot.records {
+ try insert(record, id: id)
+ }
+ // Update operation log to snapshot timestamp
+ await opLog.setTimestamp(snapshot.timestamp)
 }
 ```
 
 **Can It Be Added Without Breaking Protocol?**
-- ✅ **Yes** - Add new methods to protocol (existing methods unchanged)
-- ✅ **Backward compatible** - Old clients ignore new methods
-- ⚠️ **Requires version negotiation** - Client must indicate support
+- **Yes** - Add new methods to protocol (existing methods unchanged)
+- **Backward compatible** - Old clients ignore new methods
+- ️ **Requires version negotiation** - Client must indicate support
 
 **Level of Difficulty: MEDIUM**
 - **Effort:** 2-3 weeks
@@ -439,51 +439,51 @@ func loadSnapshot(_ snapshot: DatabaseSnapshot) async throws {
 ```swift
 // 1. Modify protocol to support pagination
 protocol BlazeSyncRelay: Actor {
-    func pullOperations(
-        since: LamportTimestamp,
-        limit: Int? = nil,  // NEW: chunk size
-        continuationToken: Data? = nil  // NEW: pagination token
-    ) async throws -> (operations: [BlazeOperation], hasMore: Bool, nextToken: Data?)
+ func pullOperations(
+ since: LamportTimestamp,
+ limit: Int? = nil, // NEW: chunk size
+ continuationToken: Data? = nil // NEW: pagination token
+ ) async throws -> (operations: [BlazeOperation], hasMore: Bool, nextToken: Data?)
 }
 
 // 2. Chunking logic in TCPRelay
 func pullOperations(since: LamportTimestamp, limit: Int? = nil, continuationToken: Data? = nil) async throws -> (operations: [BlazeOperation], hasMore: Bool, nextToken: Data?) {
-    // Get all operations
-    let allOps = await opLog.getOperations(since: since)
-    
-    // Apply pagination
-    let chunkSize = limit ?? 1000
-    let startIndex = continuationToken != nil ? decodeToken(continuationToken!) : 0
-    let endIndex = min(startIndex + chunkSize, allOps.count)
-    
-    let chunk = Array(allOps[startIndex..<endIndex])
-    let hasMore = endIndex < allOps.count
-    let nextToken = hasMore ? encodeToken(endIndex) : nil
-    
-    return (chunk, hasMore, nextToken)
+ // Get all operations
+ let allOps = await opLog.getOperations(since: since)
+
+ // Apply pagination
+ let chunkSize = limit?? 1000
+ let startIndex = continuationToken!= nil? decodeToken(continuationToken!): 0
+ let endIndex = min(startIndex + chunkSize, allOps.count)
+
+ let chunk = Array(allOps[startIndex..<endIndex])
+ let hasMore = endIndex < allOps.count
+ let nextToken = hasMore? encodeToken(endIndex): nil
+
+ return (chunk, hasMore, nextToken)
 }
 
 // 3. Client-side chunking loop
 func pullAllOperations(since: LamportTimestamp) async throws -> [BlazeOperation] {
-    var allOps: [BlazeOperation] = []
-    var token: Data? = nil
-    var hasMore = true
-    
-    while hasMore {
-        let result = try await relay.pullOperations(since: since, limit: 1000, continuationToken: token)
-        allOps.append(contentsOf: result.operations)
-        hasMore = result.hasMore
-        token = result.nextToken
-    }
-    
-    return allOps
+ var allOps: [BlazeOperation] = []
+ var token: Data? = nil
+ var hasMore = true
+
+ while hasMore {
+ let result = try await relay.pullOperations(since: since, limit: 1000, continuationToken: token)
+ allOps.append(contentsOf: result.operations)
+ hasMore = result.hasMore
+ token = result.nextToken
+ }
+
+ return allOps
 }
 ```
 
 **Can It Be Added Without Breaking Protocol?**
-- ✅ **Yes** - Add optional parameters (default to nil = no pagination)
-- ✅ **Backward compatible** - Old clients use default (no pagination)
-- ⚠️ **Requires protocol version** - New clients can request pagination
+- **Yes** - Add optional parameters (default to nil = no pagination)
+- **Backward compatible** - Old clients use default (no pagination)
+- ️ **Requires protocol version** - New clients can request pagination
 
 **Level of Difficulty: MEDIUM**
 - **Effort:** 1-2 weeks
@@ -508,65 +508,65 @@ func pullAllOperations(since: LamportTimestamp) async throws -> [BlazeOperation]
 ```swift
 // 1. Safe compression using Data
 extension TCPRelay {
-    nonisolated func compress(_ data: Data) -> Data {
-        // Use Data.withUnsafeMutableBytes (safe, scoped)
-        return data.withUnsafeMutableBytes { mutableBytes in
-            let buffer = UnsafeMutablePointer<UInt8>.allocate(capacity: data.count)
-            defer { buffer.deallocate() }
-            
-            let compressedSize = compression_encode_buffer(
-                buffer, data.count,
-                mutableBytes.baseAddress!, data.count,
-                nil, 0,
-                COMPRESSION_LZ4
-            )
-            
-            guard compressedSize > 0 && compressedSize < data.count else {
-                return data  // Compression didn't help
-            }
-            
-            var result = Data("BZL4".utf8)  // Magic bytes
-            result.append(Data(bytes: buffer, count: compressedSize))
-            return result
-        }
-    }
-    
-    nonisolated func decompressIfNeeded(_ data: Data) throws -> Data {
-        guard data.count >= 4 else { return data }
-        
-        let magic = String(data: data[0..<4], encoding: .utf8) ?? ""
-        guard magic == "BZL4" else { return data }  // Not compressed
-        
-        let compressed = data[4...]
-        let algorithm = COMPRESSION_LZ4
-        
-        // Estimate size (LZ4: 2-3x)
-        let estimatedSize = compressed.count * 3
-        let buffer = UnsafeMutablePointer<UInt8>.allocate(capacity: estimatedSize)
-        defer { buffer.deallocate() }
-        
-        let decompressedSize = compressed.withUnsafeBytes { source in
-            compression_decode_buffer(
-                buffer, estimatedSize,
-                source.bindMemory(to: UInt8.self).baseAddress!, compressed.count,
-                nil, 0,
-                algorithm
-            )
-        }
-        
-        guard decompressedSize > 0 else {
-            throw RelayError.decompressionFailed
-        }
-        
-        return Data(bytes: buffer, count: decompressedSize)
-    }
+ nonisolated func compress(_ data: Data) -> Data {
+ // Use Data.withUnsafeMutableBytes (safe, scoped)
+ return data.withUnsafeMutableBytes { mutableBytes in
+ let buffer = UnsafeMutablePointer<UInt8>.allocate(capacity: data.count)
+ defer { buffer.deallocate() }
+
+ let compressedSize = compression_encode_buffer(
+ buffer, data.count,
+ mutableBytes.baseAddress!, data.count,
+ nil, 0,
+ COMPRESSION_LZ4
+ )
+
+ guard compressedSize > 0 && compressedSize < data.count else {
+ return data // Compression didn't help
+ }
+
+ var result = Data("BZL4".utf8) // Magic bytes
+ result.append(Data(bytes: buffer, count: compressedSize))
+ return result
+ }
+ }
+
+ nonisolated func decompressIfNeeded(_ data: Data) throws -> Data {
+ guard data.count >= 4 else { return data }
+
+ let magic = String(data: data[0..<4], encoding:.utf8)?? ""
+ guard magic == "BZL4" else { return data } // Not compressed
+
+ let compressed = data[4...]
+ let algorithm = COMPRESSION_LZ4
+
+ // Estimate size (LZ4: 2-3x)
+ let estimatedSize = compressed.count * 3
+ let buffer = UnsafeMutablePointer<UInt8>.allocate(capacity: estimatedSize)
+ defer { buffer.deallocate() }
+
+ let decompressedSize = compressed.withUnsafeBytes { source in
+ compression_decode_buffer(
+ buffer, estimatedSize,
+ source.bindMemory(to: UInt8.self).baseAddress!, compressed.count,
+ nil, 0,
+ algorithm
+ )
+ }
+
+ guard decompressedSize > 0 else {
+ throw RelayError.decompressionFailed
+ }
+
+ return Data(bytes: buffer, count: decompressedSize)
+ }
 }
 ```
 
 **Can It Be Added Without Breaking Protocol?**
-- ✅ **Yes** - Compression is transparent (magic bytes indicate compression)
-- ✅ **Backward compatible** - Old clients receive uncompressed data (no magic bytes)
-- ✅ **No protocol change** - Compression is transport-layer only
+- **Yes** - Compression is transparent (magic bytes indicate compression)
+- **Backward compatible** - Old clients receive uncompressed data (no magic bytes)
+- **No protocol change** - Compression is transport-layer only
 
 **Level of Difficulty: EASY**
 - **Effort:** 2-3 days
@@ -610,25 +610,25 @@ An **incremental operation log synchronization engine** that enables multiple Bl
 
 | Feature | BlazeDB | Firebase | CouchDB | Realm |
 |---------|---------|----------|---------|-------|
-| Incremental Sync | ✅ | ✅ | ✅ | ✅ |
-| Snapshot Sync | ❌ | ✅ | ✅ | ✅ |
-| Peer-to-Peer | ❌ | ❌ | ✅ | ❌ |
-| E2E Encryption | ✅ | ❌ | ❌ | ❌ |
-| Causal Ordering | ✅ | ❌ | ✅ | ❌ |
-| Conflict Resolution | ✅ | ✅ | ✅ | ✅ |
-| Auto-Discovery | ✅ | ❌ | ❌ | ❌ |
+| Incremental Sync | | | | |
+| Snapshot Sync | | | | |
+| Peer-to-Peer | | | | |
+| E2E Encryption | | | | |
+| Causal Ordering | | | | |
+| Conflict Resolution | | | | |
+| Auto-Discovery | | | | |
 
 **Maturity Assessment:**
-- **Level 1 (Basic):** ✅ Operation log sync
-- **Level 2 (Intermediate):** ✅ Incremental sync, conflict resolution, E2E encryption
-- **Level 3 (Advanced):** ⚠️ Missing snapshot sync, chunked transfers
-- **Level 4 (Enterprise):** ❌ Missing peer-to-peer mesh, advanced routing
+- **Level 1 (Basic):** Operation log sync
+- **Level 2 (Intermediate):** Incremental sync, conflict resolution, E2E encryption
+- **Level 3 (Advanced):** ️ Missing snapshot sync, chunked transfers
+- **Level 4 (Enterprise):** Missing peer-to-peer mesh, advanced routing
 
 **BlazeDB is at Level 2 (Intermediate)** - Fully functional for incremental sync scenarios, but missing optimizations for large-scale initial sync.
 
 ### 6.3 What It's Capable Of Today
 
-**✅ Can Do:**
+** Can Do:**
 1. **Sync changes between databases** - Real-time incremental sync
 2. **Handle multiple clients** - One server, many clients
 3. **Resolve conflicts** - Server priority, Last-Write-Wins
@@ -638,7 +638,7 @@ An **incremental operation log synchronization engine** that enables multiple Bl
 7. **Sync across networks** - TCP transport with TLS
 8. **Sync on same device** - Unix Domain Sockets, In-Memory
 
-**❌ Cannot Do:**
+** Cannot Do:**
 1. **Fast initial sync** - Must replay entire operation log
 2. **Full database replication** - Only operation log replication
 3. **Peer-to-peer sync** - Hub-and-spoke only
@@ -651,26 +651,26 @@ An **incremental operation log synchronization engine** that enables multiple Bl
 **To achieve "full database replication" status, you need:**
 
 1. **Snapshot-Based Initial Sync** (Critical)
-   - Generate full database snapshots
-   - Download snapshot for new nodes
-   - Apply snapshot + incremental ops
-   - **Impact:** 20x faster initial sync
+ - Generate full database snapshots
+ - Download snapshot for new nodes
+ - Apply snapshot + incremental ops
+ - **Impact:** 20x faster initial sync
 
 2. **Chunked Transfers** (Important)
-   - Pagination for large operation sets
-   - Streaming for large snapshots
-   - Progress tracking
-   - **Impact:** Memory efficiency
+ - Pagination for large operation sets
+ - Streaming for large snapshots
+ - Progress tracking
+ - **Impact:** Memory efficiency
 
 3. **Compression** (Nice-to-Have)
-   - Re-enable compression safely
-   - Compress snapshots and operations
-   - **Impact:** 50-70% bandwidth reduction
+ - Re-enable compression safely
+ - Compress snapshots and operations
+ - **Impact:** 50-70% bandwidth reduction
 
 4. **Peer-to-Peer Mesh** (Optional)
-   - Direct client-to-client sync
-   - Mesh routing
-   - **Impact:** No central server required
+ - Direct client-to-client sync
+ - Mesh routing
+ - **Impact:** No central server required
 
 **Priority Order:**
 1. **Compression** (Easy, 2-3 days) - Immediate bandwidth savings
@@ -681,20 +681,20 @@ An **incremental operation log synchronization engine** that enables multiple Bl
 ### 6.5 Final Verdict
 
 **BlazeDB's distributed engine is:**
-- ✅ **Production-ready** for incremental sync scenarios (<100K operations)
-- ✅ **Fully functional** for hub-and-spoke architectures
-- ⚠️ **Not optimized** for large-scale initial sync (>100K operations)
-- ⚠️ **Missing optimizations** (compression, chunking, snapshots) but core functionality works
+- **Production-ready** for incremental sync scenarios (<100K operations)
+- **Fully functional** for hub-and-spoke architectures
+- ️ **Not optimized** for large-scale initial sync (>100K operations)
+- ️ **Missing optimizations** (compression, chunking, snapshots) but core functionality works
 
 **It is NOT:**
-- ❌ A full database replication system (operation log only)
-- ❌ A peer-to-peer mesh network (hub-and-spoke only)
-- ❌ A streaming/chunked transfer system (atomic batches)
+- A full database replication system (operation log only)
+- A peer-to-peer mesh network (hub-and-spoke only)
+- A streaming/chunked transfer system (atomic batches)
 
 **It IS:**
-- ✅ An incremental operation log synchronization system
-- ✅ A hub-and-spoke distributed database sync engine
-- ✅ An event-sourcing based replication protocol
+- An incremental operation log synchronization system
+- A hub-and-spoke distributed database sync engine
+- An event-sourcing based replication protocol
 
 **Recommendation:**
 Ship as-is for MVP (works for small-to-medium databases). Add compression first (easy win), then chunked transfers, then snapshot sync as optimizations.

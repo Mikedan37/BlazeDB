@@ -1,4 +1,4 @@
-# 🛡️ **CRC32 Checksums in BlazeBinary**
+# ️ **CRC32 Checksums in BlazeBinary**
 
 ## **What Is It?**
 
@@ -19,8 +19,8 @@ CRC32 (Cyclic Redundancy Check) is a **4-byte checksum** appended to each record
 ### **v2 (With CRC32)**
 ```
 [BLAZE][0x02][count][fields...][CRC32]
-                                   ↑
-                              4 bytes
+ ↑
+ 4 bytes
 ```
 - **99.9% corruption detection**
 - **+4 bytes per record** (~8-15% size increase)
@@ -34,7 +34,7 @@ CRC32 (Cyclic Redundancy Check) is a **4-byte checksum** appended to each record
 ### **Option 1: Global Toggle (Recommended)**
 ```swift
 // Enable CRC32 for all operations
-BlazeBinaryEncoder.crc32Mode = .enabled
+BlazeBinaryEncoder.crc32Mode =.enabled
 
 // Your database now has 99.9% corruption detection!
 let db = try BlazeDBClient(name: "my_db")
@@ -43,19 +43,19 @@ let db = try BlazeDBClient(name: "my_db")
 ### **Option 2: Temporary Enable**
 ```swift
 // Enable for specific operations
-BlazeBinaryEncoder.crc32Mode = .enabled
+BlazeBinaryEncoder.crc32Mode =.enabled
 try db.insert(criticalRecord)
-BlazeBinaryEncoder.crc32Mode = .disabled  // Back to fast mode
+BlazeBinaryEncoder.crc32Mode =.disabled // Back to fast mode
 ```
 
 ### **Option 3: Mixed Mode**
 ```swift
 // Critical data: CRC32 ON
-BlazeBinaryEncoder.crc32Mode = .enabled
+BlazeBinaryEncoder.crc32Mode =.enabled
 try financialDB.insert(transaction)
 
 // Cache/temp data: CRC32 OFF
-BlazeBinaryEncoder.crc32Mode = .disabled
+BlazeBinaryEncoder.crc32Mode =.disabled
 try cacheDB.insert(tempData)
 ```
 
@@ -63,20 +63,20 @@ try cacheDB.insert(tempData)
 
 ## **When to Use Each Mode:**
 
-### **✅ Use v1 (Disabled) - DEFAULT:**
-- ✅ **Encrypted databases** (99.9999% integrity from AES-GCM auth tags)
-- ✅ **Development/testing** (maximum speed)
-- ✅ **High-throughput workloads** (20-30% faster)
-- ✅ **Battery-sensitive apps** (mobile)
-- ✅ **Temporary/cache data** (performance > durability)
+### ** Use v1 (Disabled) - DEFAULT:**
+- **Encrypted databases** (99.9999% integrity from AES-GCM auth tags)
+- **Development/testing** (maximum speed)
+- **High-throughput workloads** (20-30% faster)
+- **Battery-sensitive apps** (mobile)
+- **Temporary/cache data** (performance > durability)
 
-### **✅ Use v2 (Enabled):**
-- ✅ **Unencrypted databases** (no auth tag protection)
-- ✅ **Cold storage/archival** (data sits for months/years)
-- ✅ **Compliance requirements** (audit trails, legal)
-- ✅ **Critical data** (financial, medical, legal)
-- ✅ **Network transfer** (before encryption layer)
-- ✅ **Paranoid mode** (belt + suspenders)
+### ** Use v2 (Enabled):**
+- **Unencrypted databases** (no auth tag protection)
+- **Cold storage/archival** (data sits for months/years)
+- **Compliance requirements** (audit trails, legal)
+- **Critical data** (financial, medical, legal)
+- **Network transfer** (before encryption layer)
+- **Paranoid mode** (belt + suspenders)
 
 ---
 
@@ -99,7 +99,7 @@ try cacheDB.insert(tempData)
 |----------|----------|----------|------------|
 | **10K inserts** | 1.2s | 1.5s | +0.3s |
 | **1M inserts** | 120s | 150s | +30s |
-| **Bulk import** | Fast ⚡ | Slower 🐢 | ~25% |
+| **Bulk import** | Fast | Slower | ~25% |
 
 ---
 
@@ -119,7 +119,7 @@ The decoder **automatically detects** which version it receives:
 - Reads v1 (0x01) → Skips CRC32 check
 - Reads v2 (0x02) → Verifies CRC32
 
-**No code changes needed!** Both formats work side-by-side! 🔥
+**No code changes needed!** Both formats work side-by-side!
 
 ---
 
@@ -127,18 +127,18 @@ The decoder **automatically detects** which version it receives:
 
 ### **Default Config (Current):**
 ```swift
-BlazeBinaryEncoder.crc32Mode = .disabled
+BlazeBinaryEncoder.crc32Mode =.disabled
 ```
 **Why:** Your database uses **encryption by default**, which has **AES-GCM auth tags** that already provide 99.9999% integrity checking. Adding CRC32 would be **redundant and slow things down**.
 
 ### **If You Want Maximum Protection:**
 ```swift
 // Enable globally
-BlazeBinaryEncoder.crc32Mode = .enabled
+BlazeBinaryEncoder.crc32Mode =.enabled
 
 // Or per-database
-let db = try BlazeDBClient(name: "critical_data", ...)
-BlazeBinaryEncoder.crc32Mode = .enabled
+let db = try BlazeDBClient(name: "critical_data",...)
+BlazeBinaryEncoder.crc32Mode =.enabled
 ```
 
 ---
@@ -147,23 +147,23 @@ BlazeBinaryEncoder.crc32Mode = .enabled
 
 ### **Example 1: Dev/Test (Fast)**
 ```swift
-BlazeBinaryEncoder.crc32Mode = .disabled  // Default!
+BlazeBinaryEncoder.crc32Mode =.disabled // Default!
 let db = try BlazeDBClient(name: "dev_db")
-// Blazing fast! ⚡
+// Blazing fast!
 ```
 
 ### **Example 2: Production Encrypted (Fast + Secure)**
 ```swift
-BlazeBinaryEncoder.crc32Mode = .disabled  // Auth tags handle integrity!
+BlazeBinaryEncoder.crc32Mode =.disabled // Auth tags handle integrity!
 let db = try BlazeDBClient(name: "prod_db", password: "secret")
-// Fast + 99.9999% detection from encryption! 🔥
+// Fast + 99.9999% detection from encryption!
 ```
 
 ### **Example 3: Unencrypted Critical Data (Maximum Safety)**
 ```swift
-BlazeBinaryEncoder.crc32Mode = .enabled  // Need CRC32 without encryption
+BlazeBinaryEncoder.crc32Mode =.enabled // Need CRC32 without encryption
 let db = try BlazeDBClient(name: "logs", password: nil)
-// 99.9% corruption detection! 🛡️
+// 99.9% corruption detection! ️
 ```
 
 ---
@@ -183,8 +183,8 @@ let crc = zlib.crc32(0, data.bytes, data.count)
 
 ### **Verification:**
 ```swift
-if storedCRC32 != calculatedCRC32 {
-    throw "CRC32 mismatch - data corrupted!"
+if storedCRC32!= calculatedCRC32 {
+ throw "CRC32 mismatch - data corrupted!"
 }
 ```
 
@@ -197,5 +197,5 @@ You now have **TWO modes**:
 1. **v1 (Fast)**: For encrypted DBs, dev/test, high-throughput
 2. **v2 (Perfect)**: For unencrypted, archival, compliance
 
-**Toggle with one line!** Choose speed or perfection! 🔥💪
+**Toggle with one line!** Choose speed or perfection!
 

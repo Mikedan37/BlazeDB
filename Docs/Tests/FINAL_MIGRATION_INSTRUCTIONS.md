@@ -1,22 +1,22 @@
 # Final Migration Instructions
 
-## ✅ Completed
+## Completed
 
-1. ✅ Updated Package.swift to use `path: "Tests/BlazeDBTests"`
-2. ✅ Created Tests/BlazeDBTests/ directory structure
-3. ✅ Moved critical Codec test files:
-   - CodecValidation.swift
-   - BlazeBinaryCompatibilityTests.swift
-   - BlazeBinaryFuzzTests.swift
-   - BlazeBinaryCorruptionRecoveryTests.swift
-   - BlazeBinaryFieldViewTests.swift
-   - BlazeBinaryLargeRecordTests.swift
-   - BlazeBinaryMMapTests.swift
-   - BlazeBinaryPointerIntegrityTests.swift
-   - BlazeBinaryEncoderTests.swift
-   - BlazeBinaryEdgeCaseTests.swift
+1. Updated Package.swift to use `path: "Tests/BlazeDBTests"`
+2. Created Tests/BlazeDBTests/ directory structure
+3. Moved critical Codec test files:
+ - CodecValidation.swift
+ - BlazeBinaryCompatibilityTests.swift
+ - BlazeBinaryFuzzTests.swift
+ - BlazeBinaryCorruptionRecoveryTests.swift
+ - BlazeBinaryFieldViewTests.swift
+ - BlazeBinaryLargeRecordTests.swift
+ - BlazeBinaryMMapTests.swift
+ - BlazeBinaryPointerIntegrityTests.swift
+ - BlazeBinaryEncoderTests.swift
+ - BlazeBinaryEdgeCaseTests.swift
 
-## ⚠️ Remaining Work
+## ️ Remaining Work
 
 Due to the large number of files (100+), you need to:
 
@@ -55,7 +55,7 @@ cp -r BlazeDBTests/CI/* Tests/BlazeDBTests/CI/
 cp -r BlazeDBTests/Fixtures/* Tests/BlazeDBTests/Fixtures/
 
 # Copy all other test files to Engine/Integration
-find BlazeDBTests -name "*Tests.swift" -type f ! -path "*/Codec/*" ! -path "*/Engine/*" ! -path "*/Stress/*" ! -path "*/Performance/*" ! -path "*/Fixtures/*" ! -path "*/CI/*" ! -path "*/Helpers/*" -exec cp {} Tests/BlazeDBTests/Engine/Integration/ \;
+find BlazeDBTests -name "*Tests.swift" -type f! -path "*/Codec/*"! -path "*/Engine/*"! -path "*/Stress/*"! -path "*/Performance/*"! -path "*/Fixtures/*"! -path "*/CI/*"! -path "*/Helpers/*" -exec cp {} Tests/BlazeDBTests/Engine/Integration/ \;
 
 # Copy docs
 find BlazeDBTests -name "*.md" -type f -exec cp {} Tests/BlazeDBTests/Docs/ \;

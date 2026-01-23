@@ -1,54 +1,54 @@
 # BlazeDB: Server/Client Architecture with Priority
 
-**Optional distributed sync layer with server priority! 🚀**
+**Optional distributed sync layer with server priority! **
 
 ---
 
-## ✅ **WHAT WE IMPLEMENTED:**
+## **WHAT WE IMPLEMENTED:**
 
 ### **1. Optional Sync Layer:**
 ```
-✅ Sync is OPTIONAL - database works fine without it!
-✅ Must explicitly call enableSync() to enable
-✅ No performance impact if sync is disabled
-✅ Can use BlazeDB as local-only database
+ Sync is OPTIONAL - database works fine without it!
+ Must explicitly call enableSync() to enable
+ No performance impact if sync is disabled
+ Can use BlazeDB as local-only database
 
 Result: Sync is opt-in, not forced!
 ```
 
 ### **2. Server/Client Roles:**
 ```
-✅ Server role: Has priority in conflicts (wins)
-✅ Client role: Defers to server (server wins conflicts)
-✅ Configurable per database
-✅ Default: Client (opt-in server mode)
+ Server role: Has priority in conflicts (wins)
+ Client role: Defers to server (server wins conflicts)
+ Configurable per database
+ Default: Client (opt-in server mode)
 
 Result: Clear hierarchy with server priority!
 ```
 
 ### **3. Server Priority Logic:**
 ```
-✅ Server changes always win over client changes
-✅ Client changes are accepted if no server conflict
-✅ Timestamp used as tie-breaker for same-role conflicts
-✅ Conflict resolution happens during merge
+ Server changes always win over client changes
+ Client changes are accepted if no server conflict
+ Timestamp used as tie-breaker for same-role conflicts
+ Conflict resolution happens during merge
 
 Result: Server has authority, clients defer!
 ```
 
 ### **4. Multi-Client Support:**
 ```
-✅ One server can talk to multiple clients
-✅ Each client syncs independently
-✅ Server coordinates all clients
-✅ Clients don't talk to each other (hub-and-spoke)
+ One server can talk to multiple clients
+ Each client syncs independently
+ Server coordinates all clients
+ Clients don't talk to each other (hub-and-spoke)
 
 Result: Server as central coordinator!
 ```
 
 ---
 
-## 🎯 **HOW IT WORKS:**
+## **HOW IT WORKS:**
 
 ### **1. Setting Up a Server:**
 ```swift
@@ -57,8 +57,8 @@ let serverDB = try BlazeDBClient(name: "Server", at: serverURL, password: "passw
 
 // Enable sync as SERVER (has priority)
 let serverEngine = try await serverDB.enableSync(
-    relay: someRelay,
-    role: .server  // SERVER: Has priority!
+ relay: someRelay,
+ role:.server // SERVER: Has priority!
 )
 ```
 
@@ -69,8 +69,8 @@ let clientDB = try BlazeDBClient(name: "Client", at: clientURL, password: "passw
 
 // Enable sync as CLIENT (defers to server)
 let clientEngine = try await clientDB.enableSync(
-    relay: someRelay,
-    role: .client  // CLIENT: Defers to server (default)
+ relay: someRelay,
+ role:.client // CLIENT: Defers to server (default)
 )
 ```
 
@@ -88,21 +88,21 @@ Result: Server always has final say!
 
 ---
 
-## 📊 **ARCHITECTURE:**
+## **ARCHITECTURE:**
 
 ### **Hub-and-Spoke (Server-Centric):**
 ```
-                    ┌─────────────┐
-                    │   SERVER    │
-                    │  (Priority) │
-                    └──────┬──────┘
-                           │
-            ┌──────────────┼──────────────┐
-            │              │              │
-      ┌─────▼─────┐  ┌─────▼─────┐  ┌─────▼─────┐
-      │  CLIENT 1 │  │  CLIENT 2 │  │  CLIENT 3 │
-      │  (Defers) │  │  (Defers) │  │  (Defers) │
-      └───────────┘  └───────────┘  └───────────┘
+ ┌─────────────┐
+ │ SERVER │
+ │ (Priority) │
+ └──────┬──────┘
+ │
+ ┌──────────────┼──────────────┐
+ │ │ │
+ ┌─────▼─────┐ ┌─────▼─────┐ ┌─────▼─────┐
+ │ CLIENT 1 │ │ CLIENT 2 │ │ CLIENT 3 │
+ │ (Defers) │ │ (Defers) │ │ (Defers) │
+ └───────────┘ └───────────┘ └───────────┘
 
 • Server coordinates all clients
 • Clients sync with server only
@@ -112,10 +112,10 @@ Result: Server always has final say!
 
 ### **Peer-to-Peer (Equal Roles):**
 ```
-      ┌──────────┐      ┌──────────┐      ┌──────────┐
-      │  NODE 1  │◄────►│  NODE 2  │◄────►│  NODE 3  │
-      │ (Client) │      │ (Client) │      │ (Client) │
-      └──────────┘      └──────────┘      └──────────┘
+ ┌──────────┐ ┌──────────┐ ┌──────────┐
+ │ NODE 1 │◄────►│ NODE 2 │◄────►│ NODE 3 │
+ │ (Client) │ │ (Client) │ │ (Client) │
+ └──────────┘ └──────────┘ └──────────┘
 
 • All nodes are clients (no server)
 • Timestamp-based conflict resolution
@@ -124,7 +124,7 @@ Result: Server always has final say!
 
 ---
 
-## 🔥 **USE CASES:**
+## **USE CASES:**
 
 ### **1. Centralized Server:**
 ```
@@ -152,7 +152,7 @@ Use Case: Mobile app with offline support
 
 ---
 
-## 📊 **CONFIGURATION:**
+## **CONFIGURATION:**
 
 ### **Server Setup:**
 
@@ -162,20 +162,20 @@ import BlazeDB
 
 @main
 struct ServerMain {
-    static func main() async throws {
-        let config = BlazeDBServerConfig(
-            databaseName: "ServerMainDB",
-            password: "secure-password-123",
-            project: "Production",
-            port: 9090,
-            authToken: "secret-token-123",  // Optional
-            sharedSecret: nil  // Optional
-        )
-        
-        let server = try await BlazeDBServer.start(config)
-        print("Server started on port 9090")
-        RunLoop.main.run()
-    }
+ static func main() async throws {
+ let config = BlazeDBServerConfig(
+ databaseName: "ServerMainDB",
+ password: "secure-password-123",
+ project: "Production",
+ port: 9090,
+ authToken: "secret-token-123", // Optional
+ sharedSecret: nil // Optional
+ )
+
+ let server = try await BlazeDBServer.start(config)
+ print("Server started on port 9090")
+ RunLoop.main.run()
+ }
 }
 ```
 
@@ -186,11 +186,11 @@ let serverDB = try BlazeDBClient(name: "Server", at: serverURL, password: "passw
 
 // 2. Create server
 let server = BlazeServer(
-    port: 9090,
-    database: serverDB,
-    databaseName: "Server",
-    authToken: "secret-token-123",  // Optional
-    sharedSecret: nil  // Optional
+ port: 9090,
+ database: serverDB,
+ databaseName: "Server",
+ authToken: "secret-token-123", // Optional
+ sharedSecret: nil // Optional
 )
 
 // 3. Start server
@@ -206,8 +206,8 @@ let clientDB = try BlazeDBClient(name: "Client", at: clientURL, password: "passw
 
 // 2. Enable sync as CLIENT (default)
 let clientEngine = try await clientDB.enableSync(
-    relay: clientRelay,
-    role: .client  // CLIENT: Defers to server (default)
+ relay: clientRelay,
+ role:.client // CLIENT: Defers to server (default)
 )
 
 // 3. Client syncs with server
@@ -220,44 +220,44 @@ let topology = BlazeTopology()
 
 // Register SERVER
 let serverNodeId = try await topology.register(
-    db: serverDB,
-    name: "Server",
-    syncMode: .localAndRemote,
-    role: .server  // SERVER: Has priority!
+ db: serverDB,
+ name: "Server",
+ syncMode:.localAndRemote,
+ role:.server // SERVER: Has priority!
 )
 
 // Register CLIENTS
 let client1NodeId = try await topology.register(
-    db: client1DB,
-    name: "Client1",
-    syncMode: .localAndRemote,
-    role: .client  // CLIENT: Defers to server
+ db: client1DB,
+ name: "Client1",
+ syncMode:.localAndRemote,
+ role:.client // CLIENT: Defers to server
 )
 
 let client2NodeId = try await topology.register(
-    db: client2DB,
-    name: "Client2",
-    syncMode: .localAndRemote,
-    role: .client  // CLIENT: Defers to server
+ db: client2DB,
+ name: "Client2",
+ syncMode:.localAndRemote,
+ role:.client // CLIENT: Defers to server
 )
 
 // Connect clients to server
 try await topology.connectRemote(
-    nodeId: client1NodeId,
-    remote: RemoteNode(host: "server.example.com", port: 9090, database: "Server"),
-    policy: SyncPolicy()
+ nodeId: client1NodeId,
+ remote: RemoteNode(host: "server.example.com", port: 9090, database: "Server"),
+ policy: SyncPolicy()
 )
 
 try await topology.connectRemote(
-    nodeId: client2NodeId,
-    remote: RemoteNode(host: "server.example.com", port: 9090, database: "Server"),
-    policy: SyncPolicy()
+ nodeId: client2NodeId,
+ remote: RemoteNode(host: "server.example.com", port: 9090, database: "Server"),
+ policy: SyncPolicy()
 )
 ```
 
 ---
 
-## 🔥 **CONFLICT RESOLUTION:**
+## **CONFLICT RESOLUTION:**
 
 ### **Server vs Client:**
 ```
@@ -294,59 +294,59 @@ Reason: Both are servers, equal priority
 
 ---
 
-## 📊 **PERFORMANCE:**
+## **PERFORMANCE:**
 
 ### **No Sync (Local-Only):**
 ```
-✅ Zero overhead
-✅ No network calls
-✅ Fastest performance
-✅ Works offline
+ Zero overhead
+ No network calls
+ Fastest performance
+ Works offline
 
 Result: Perfect for local-only databases!
 ```
 
 ### **With Sync (Optional Layer):**
 ```
-✅ Only enabled when needed
-✅ Incremental sync (only changed data)
-✅ Server priority (clear conflict resolution)
-✅ Multi-client support
+ Only enabled when needed
+ Incremental sync (only changed data)
+ Server priority (clear conflict resolution)
+ Multi-client support
 
 Result: Efficient distributed sync when needed!
 ```
 
 ---
 
-## 🔥 **BOTTOM LINE:**
+## **BOTTOM LINE:**
 
 ### **What We Implemented:**
 ```
-✅ Optional sync layer (opt-in, not forced)
-✅ Server/Client roles with priority
-✅ Server wins conflicts
-✅ Multi-client support (hub-and-spoke)
-✅ Configurable per database
+ Optional sync layer (opt-in, not forced)
+ Server/Client roles with priority
+ Server wins conflicts
+ Multi-client support (hub-and-spoke)
+ Configurable per database
 ```
 
 ### **Key Features:**
 ```
-✅ Sync is OPTIONAL - database works without it
-✅ Server has priority in conflicts
-✅ Clients defer to server
-✅ Clear hierarchy (server-centric)
-✅ Easy to configure (role parameter)
+ Sync is OPTIONAL - database works without it
+ Server has priority in conflicts
+ Clients defer to server
+ Clear hierarchy (server-centric)
+ Easy to configure (role parameter)
 ```
 
 ### **Use Cases:**
 ```
-✅ Centralized server with multiple clients
-✅ Team collaboration (server coordinates)
-✅ Offline-first apps (server sync)
-✅ Multi-device sync (hub-and-spoke)
+ Centralized server with multiple clients
+ Team collaboration (server coordinates)
+ Offline-first apps (server sync)
+ Multi-device sync (hub-and-spoke)
 
-Result: Flexible distributed sync with clear hierarchy! 🔥🔥🔥
+Result: Flexible distributed sync with clear hierarchy!
 ```
 
-**BlazeDB: Optional distributed sync with server priority! 🚀**
+**BlazeDB: Optional distributed sync with server priority! **
 

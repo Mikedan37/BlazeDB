@@ -57,7 +57,7 @@
 - CodecValidation.swift (from various locations)
 
 ### Docs → Tests/BlazeDBTests/Docs/
-- All .md files from BlazeDBTests/
+- All.md files from BlazeDBTests/
 
 ## Directories Cleaned
 - BlazeDBTests/Encoding/

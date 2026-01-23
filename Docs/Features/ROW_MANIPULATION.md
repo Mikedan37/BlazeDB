@@ -6,7 +6,7 @@
 
 ## What You Can Do With Rows
 
-### 1. ✅ **Read Rows** (Query)
+### 1. **Read Rows** (Query)
 
 **Basic querying:**
 ```swift
@@ -15,51 +15,51 @@ let allRows = try db.fetchAll()
 
 // Query with filters
 let results = try db.query()
-    .where("status", equals: .string("active"))
-    .orderBy("createdAt", descending: true)
-    .limit(10)
-    .execute()
+.where("status", equals:.string("active"))
+.orderBy("createdAt", descending: true)
+.limit(10)
+.execute()
 
 let rows = try results.records
 ```
 
-### 2. ✅ **Transform Rows** (Computed Fields - Read-Only)
+### 2. **Transform Rows** (Computed Fields - Read-Only)
 
 **Add calculated fields to query results (doesn't modify stored data):**
 
 ```swift
 // Calculate total = price * quantity (adds new field to results)
 let results = try db.query()
-    .compute("total", multiply: "price", by: "quantity")
-    .execute()
+.compute("total", multiply: "price", by: "quantity")
+.execute()
 
 // Results now have: price, quantity, AND total (computed)
 let rows = try results.records
 for row in rows {
-    let total = row.storage["total"]?.doubleValue  // ✅ New computed field
-    print("Total: \(total)")
+ let total = row.storage["total"]?.doubleValue // New computed field
+ print("Total: \(total)")
 }
 ```
 
 **Important:** Computed fields are **read-only transformations**. They:
-- ✅ Add new fields to query results
-- ✅ Don't modify the stored data
-- ✅ Are calculated on-the-fly during queries
-- ✅ Can use other fields in calculations
+- Add new fields to query results
+- Don't modify the stored data
+- Are calculated on-the-fly during queries
+- Can use other fields in calculations
 
 **Example: Complex Transformation**
 ```swift
 // Transform rows with multiple computed fields
 let results = try db.query()
-    .compute("subtotal", multiply: "price", by: "quantity")
-    .compute("tax", expression: .multiply(.field("subtotal"), .field("tax_rate")))
-    .compute("total", expression: .add(.field("subtotal"), .field("tax")))
-    .execute()
+.compute("subtotal", multiply: "price", by: "quantity")
+.compute("tax", expression:.multiply(.field("subtotal"),.field("tax_rate")))
+.compute("total", expression:.add(.field("subtotal"),.field("tax")))
+.execute()
 
 // Each row now has: price, quantity, tax_rate, subtotal, tax, total
 ```
 
-### 3. ✅ **Modify Rows** (CRUD Operations)
+### 3. **Modify Rows** (CRUD Operations)
 
 **Update existing rows:**
 
@@ -67,14 +67,14 @@ let results = try db.query()
 // Update a single row
 let record = try db.fetch(id: someUUID)
 var updated = record
-updated.storage["price"] = .double(99.99)
-updated.storage["updatedAt"] = .date(Date())
+updated.storage["price"] =.double(99.99)
+updated.storage["updatedAt"] =.date(Date())
 try db.update(id: someUUID, with: updated)
 
 // Or update specific fields only
 try db.updateFields(id: someUUID, fields: [
-    "price": .double(99.99),
-    "updatedAt": .date(Date())
+ "price":.double(99.99),
+ "updatedAt":.date(Date())
 ])
 ```
 
@@ -82,10 +82,10 @@ try db.updateFields(id: someUUID, fields: [
 ```swift
 // Update all rows matching a condition
 let count = try db.updateMany(where: { record in
-    record.storage["status"]?.stringValue == "pending"
+ record.storage["status"]?.stringValue == "pending"
 }, set: [
-    "status": .string("processed"),
-    "processedAt": .date(Date())
+ "status":.string("processed"),
+ "processedAt":.date(Date())
 ])
 
 print("Updated \(count) rows")
@@ -95,9 +95,9 @@ print("Updated \(count) rows")
 ```swift
 // Insert single row
 let newRecord = BlazeDataRecord(id: UUID(), storage: [
-    "name": .string("Product"),
-    "price": .double(29.99),
-    "quantity": .int(10)
+ "name":.string("Product"),
+ "price":.double(29.99),
+ "quantity":.int(10)
 ])
 try db.insert(newRecord)
 
@@ -113,7 +113,7 @@ try db.delete(id: someUUID)
 
 // Delete multiple rows
 let count = try db.deleteMany(where: { record in
-    record.storage["status"]?.stringValue == "archived"
+ record.storage["status"]?.stringValue == "archived"
 })
 ```
 
@@ -123,14 +123,14 @@ let count = try db.deleteMany(where: { record in
 try db.upsert(id: someUUID, data: record)
 ```
 
-### 4. ✅ **Calculate Across Rows** (Aggregations)
+### 4. **Calculate Across Rows** (Aggregations)
 
 **Sum, average, count across all rows:**
 ```swift
 // Sum all prices
 let result = try db.query()
-    .sum("price", as: "total_price")
-    .execute()
+.sum("price", as: "total_price")
+.execute()
 
 let total = result.aggregation?["total_price"]?.doubleValue
 ```
@@ -139,26 +139,26 @@ let total = result.aggregation?["total_price"]?.doubleValue
 ```swift
 // Sum prices by category
 let result = try db.query()
-    .groupBy("category")
-    .sum("price", as: "category_total")
-    .execute()
+.groupBy("category")
+.sum("price", as: "category_total")
+.execute()
 
 // Result: { "Electronics": 1500.0, "Books": 300.0 }
 ```
 
-### 5. ✅ **Row-to-Row Calculations** (Window Functions)
+### 5. **Row-to-Row Calculations** (Window Functions)
 
 **Calculate values based on other rows:**
 ```swift
 // Running total (sum of all previous rows + current)
 let results = try db.query()
-    .orderBy("date", descending: false)
-    .sumOver("amount", orderBy: ["date"], as: "running_total")
-    .executeWithWindow()
+.orderBy("date", descending: false)
+.sumOver("amount", orderBy: ["date"], as: "running_total")
+.executeWithWindow()
 
 // Each row gets a running_total field
 for result in results {
-    let runningTotal = result.getWindowValue("running_total")?.doubleValue
+ let runningTotal = result.getWindowValue("running_total")?.doubleValue
 }
 ```
 
@@ -166,15 +166,15 @@ for result in results {
 ```swift
 // Get previous row's value
 let results = try db.query()
-    .orderBy("date", descending: false)
-    .lag("price", offset: 1, orderBy: ["date"], as: "prev_price")
-    .executeWithWindow()
+.orderBy("date", descending: false)
+.lag("price", offset: 1, orderBy: ["date"], as: "prev_price")
+.executeWithWindow()
 
 for result in results {
-    let current = result.record.storage["price"]?.doubleValue ?? 0
-    let previous = result.getWindowValue("prev_price")?.doubleValue ?? 0
-    let change = current - previous
-    print("Price change: \(change)")
+ let current = result.record.storage["price"]?.doubleValue?? 0
+ let previous = result.getWindowValue("prev_price")?.doubleValue?? 0
+ let change = current - previous
+ print("Price change: \(change)")
 }
 ```
 
@@ -186,8 +186,8 @@ for result in results {
 
 | Feature | Computed Fields | Updates |
 |---------|----------------|---------|
-| **Modifies stored data?** | ❌ No | ✅ Yes |
-| **Persists to disk?** | ❌ No | ✅ Yes |
+| **Modifies stored data?** | No | Yes |
+| **Persists to disk?** | No | Yes |
 | **When calculated?** | On query | On update |
 | **Use case** | Display calculations | Store new values |
 | **Example** | `total = price * quantity` (in results) | `price = 99.99` (stored) |
@@ -195,26 +195,26 @@ for result in results {
 ### **Example: When to Use Each**
 
 ```swift
-// ❌ WRONG: Trying to "update" with computed field
+// WRONG: Trying to "update" with computed field
 // This doesn't work - computed fields are read-only
 let results = try db.query()
-    .compute("total", multiply: "price", by: "quantity")
-    .execute()
+.compute("total", multiply: "price", by: "quantity")
+.execute()
 // total is only in results, not stored!
 
-// ✅ CORRECT: Use computed field for display
+// CORRECT: Use computed field for display
 let results = try db.query()
-    .compute("total", multiply: "price", by: "quantity")
-    .execute()
+.compute("total", multiply: "price", by: "quantity")
+.execute()
 let rows = try results.records
 for row in rows {
-    print("Total: \(row.storage["total"]?.doubleValue)")
+ print("Total: \(row.storage["total"]?.doubleValue)")
 }
 
-// ✅ CORRECT: Update to store new value
+// CORRECT: Update to store new value
 var record = try db.fetch(id: someUUID)
-record.storage["price"] = .double(99.99)  // New value
-try db.update(id: someUUID, with: record)  // Stored!
+record.storage["price"] =.double(99.99) // New value
+try db.update(id: someUUID, with: record) // Stored!
 ```
 
 ---
@@ -226,19 +226,19 @@ try db.update(id: someUUID, with: record)  // Stored!
 ```swift
 // 1. Query orders with computed totals (read-only transformation)
 let orders = try db.query()
-    .where("status", equals: .string("pending"))
-    .compute("subtotal", multiply: "price", by: "quantity")
-    .compute("tax", expression: .multiply(.field("subtotal"), .literal(.double(0.08))))
-    .compute("total", expression: .add(.field("subtotal"), .field("tax")))
-    .execute()
+.where("status", equals:.string("pending"))
+.compute("subtotal", multiply: "price", by: "quantity")
+.compute("tax", expression:.multiply(.field("subtotal"),.literal(.double(0.08))))
+.compute("total", expression:.add(.field("subtotal"),.field("tax")))
+.execute()
 
 // 2. Process orders (modify rows)
 for order in try orders.records {
-    // Mark as processed
-    try db.updateFields(id: order.id, fields: [
-        "status": .string("processed"),
-        "processedAt": .date(Date())
-    ])
+ // Mark as processed
+ try db.updateFields(id: order.id, fields: [
+ "status":.string("processed"),
+ "processedAt":.date(Date())
+ ])
 }
 ```
 
@@ -247,16 +247,16 @@ for order in try orders.records {
 ```swift
 // 1. Calculate stock value (computed field)
 let products = try db.query()
-    .compute("stock_value", multiply: "price", by: "quantity")
-    .execute()
+.compute("stock_value", multiply: "price", by: "quantity")
+.execute()
 
 // 2. Update low stock items (modify rows)
 let lowStock = try db.updateMany(where: { record in
-    let quantity = record.storage["quantity"]?.intValue ?? 0
-    return quantity < 10
+ let quantity = record.storage["quantity"]?.intValue?? 0
+ return quantity < 10
 }, set: [
-    "low_stock_alert": .bool(true),
-    "alerted_at": .date(Date())
+ "low_stock_alert":.bool(true),
+ "alerted_at":.date(Date())
 ])
 ```
 
@@ -265,17 +265,17 @@ let lowStock = try db.updateMany(where: { record in
 ```swift
 // 1. Calculate running balance (window function)
 let transactions = try db.query()
-    .orderBy("date", descending: false)
-    .sumOver("amount", orderBy: ["date"], as: "running_balance")
-    .executeWithWindow()
+.orderBy("date", descending: false)
+.sumOver("amount", orderBy: ["date"], as: "running_balance")
+.executeWithWindow()
 
 // 2. Update account balance (modify row)
 let latest = transactions.last
 if let balance = latest?.getWindowValue("running_balance")?.doubleValue {
-    try db.updateFields(id: accountId, fields: [
-        "balance": .double(balance),
-        "last_updated": .date(Date())
-    ])
+ try db.updateFields(id: accountId, fields: [
+ "balance":.double(balance),
+ "last_updated":.date(Date())
+ ])
 }
 ```
 
@@ -283,7 +283,7 @@ if let balance = latest?.getWindowValue("running_balance")?.doubleValue {
 
 ## Summary
 
-### ✅ **What You CAN Do:**
+### **What You CAN Do:**
 
 1. **Read rows** - Query with filters, sorting, limits
 2. **Transform rows** - Add computed fields to query results (read-only)
@@ -291,13 +291,13 @@ if let balance = latest?.getWindowValue("running_balance")?.doubleValue {
 4. **Calculate across rows** - Aggregations (sum, avg, count)
 5. **Row-to-row calculations** - Window functions (running totals, differences)
 
-### ❌ **What You CANNOT Do:**
+### **What You CANNOT Do:**
 
 1. **Computed fields don't persist** - They're only in query results
 2. **Can't modify during query** - Queries are read-only
 3. **Can't use computed fields in WHERE** - Only in SELECT (results)
 
-### 💡 **Best Practices:**
+### **Best Practices:**
 
 - Use **computed fields** for display/calculations
 - Use **updates** to store new values

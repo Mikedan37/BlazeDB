@@ -18,7 +18,7 @@ public protocol ServerTransportProvider {
     /// - Parameter port: Port number to listen on
     /// - Parameter onConnection: Callback when a new connection is established
     /// - Throws: If server cannot be started
-    func startServer(port: UInt16, onConnection: @escaping (ServerConnection) async -> Void) async throws
+    func startServer(port: UInt16, onConnection: @escaping @Sendable (ServerConnection) async -> Void) async throws
     
     /// Stop listening for connections
     func stopServer() async
@@ -52,7 +52,7 @@ import Network
 
 /// Apple platform implementation using Network framework
 /// Provides TCP server functionality on iOS/macOS
-public final class AppleServerTransportProvider: ServerTransportProvider {
+public final class AppleServerTransportProvider: ServerTransportProvider, @unchecked Sendable {
     private var listener: NWListener?
     private var isRunning = false
     
@@ -78,11 +78,11 @@ public final class AppleServerTransportProvider: ServerTransportProvider {
         let listener = try NWListener(using: parameters, on: port)
         
         // Handle new connections
-        listener.newConnectionHandler = { @Sendable [weak self] connection in
-            guard let self = self else { return }
+        let connectionHandler = onConnection  // Capture before Task
+        listener.newConnectionHandler = { @Sendable connection in
             Task { @Sendable in
                 let serverConnection = AppleServerConnection(connection: connection)
-                await onConnection(serverConnection)
+                await connectionHandler(serverConnection)
             }
         }
         

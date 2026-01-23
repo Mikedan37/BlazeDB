@@ -1,10 +1,10 @@
 # BlazeDB Distributed: Bandwidth Analysis
 
-**How much data can we send in 5ms? Let's calculate! 📊**
+**How much data can we send in 5ms? Let's calculate! **
 
 ---
 
-## ⚡ **THE KEY INSIGHT:**
+## **THE KEY INSIGHT:**
 
 **5ms is LATENCY (time to send), not BANDWIDTH (how much data)!**
 
@@ -13,7 +13,7 @@
 
 ---
 
-## 📦 **TYPICAL OPERATION SIZES:**
+## **TYPICAL OPERATION SIZES:**
 
 ### **Small Operation (Insert Bug):**
 ```
@@ -67,7 +67,7 @@ TOTAL: ~1900 bytes per operation
 
 ---
 
-## 🌐 **BANDWIDTH BY CONNECTION TYPE:**
+## **BANDWIDTH BY CONNECTION TYPE:**
 
 ### **1. Same WiFi (LAN):**
 ```
@@ -117,7 +117,7 @@ Latency: 5-20ms (depends on distance)
 
 ---
 
-## 🎯 **REAL-WORLD SCENARIOS:**
+## **REAL-WORLD SCENARIOS:**
 
 ### **Scenario 1: Single Operation (Typical)**
 ```
@@ -173,7 +173,7 @@ Total: ~21ms (bandwidth matters now!)
 
 ---
 
-## 📊 **THE MATH:**
+## **THE MATH:**
 
 ### **Formula:**
 ```
@@ -191,7 +191,7 @@ Small operation (200 bytes) on 100 Mbps WiFi:
 = 5ms + (200 bytes / 12,500,000 bytes/s)
 = 5ms + 0.000016s
 = 5ms + 0.016ms
-= 5.016ms ≈ 5ms ✅
+= 5.016ms ≈ 5ms
 
 Large batch (200 KB) on 100 Mbps WiFi:
 = 5ms + (200,000 bytes / 12,500,000 bytes/s)
@@ -202,7 +202,7 @@ Large batch (200 KB) on 100 Mbps WiFi:
 
 ---
 
-## 🚀 **WHY THIS MATTERS:**
+## **WHY THIS MATTERS:**
 
 ### **For Small Operations (Typical):**
 ```
@@ -210,8 +210,8 @@ Single operation: ~5ms (latency dominates)
 10 operations: ~5.2ms (still latency-dominated)
 100 operations: ~7ms (bandwidth starts to matter)
 
-✅ Batching helps, but not much for small batches!
-✅ The 5ms latency is the main factor!
+ Batching helps, but not much for small batches!
+ The 5ms latency is the main factor!
 ```
 
 ### **For Large Batches:**
@@ -219,13 +219,13 @@ Single operation: ~5ms (latency dominates)
 1,000 operations: ~21ms (bandwidth matters!)
 10,000 operations: ~165ms (bandwidth dominates!)
 
-✅ Batching REALLY helps for large batches!
-✅ Can send thousands of operations efficiently!
+ Batching REALLY helps for large batches!
+ Can send thousands of operations efficiently!
 ```
 
 ---
 
-## 💡 **OPTIMIZATION STRATEGIES:**
+## **OPTIMIZATION STRATEGIES:**
 
 ### **1. Batching (Send Multiple Ops Together):**
 ```
@@ -233,13 +233,13 @@ Instead of:
 • Op 1: 5ms
 • Op 2: 5ms
 • Op 3: 5ms
-Total: 15ms ❌
+Total: 15ms
 
 Do this:
 • Batch [Op1, Op2, Op3]: 5.2ms
-Total: 5.2ms ✅
+Total: 5.2ms
 
-3x FASTER! 🔥
+3x FASTER!
 ```
 
 ### **2. Compression (BlazeBinary):**
@@ -254,18 +254,18 @@ Saves bandwidth, especially for large batches!
 ```
 Instead of:
 • Send Op1 → Wait → Process → Send Op2
-Total: 10ms ❌
+Total: 10ms
 
 Do this:
 • Send Op1 → Send Op2 → Send Op3 (all at once!)
-Total: 5.2ms ✅
+Total: 5.2ms
 
-2x FASTER! 🔥
+2x FASTER!
 ```
 
 ---
 
-## 🎯 **SUMMARY:**
+## **SUMMARY:**
 
 ### **The 5ms is:**
 - **Latency:** Time for first byte to arrive
@@ -289,7 +289,7 @@ Total: 5.2ms ✅
 
 ---
 
-## 🔥 **BOTTOM LINE:**
+## **BOTTOM LINE:**
 
 **In 5ms, you can send:**
 - **WiFi:** ~62.5 KB (hundreds of operations!)
@@ -299,9 +299,9 @@ Total: 5.2ms ✅
 **But for typical use (1-10 operations):**
 - **Time is ~5ms** (latency dominates)
 - **Data is ~2-5 KB** (tiny!)
-- **Feels instant to users!** ✨
+- **Feels instant to users!**
 
 ---
 
-**The 5ms is the network delay - how long it takes for data to start arriving. The actual amount of data depends on your connection speed! 🌐**
+**The 5ms is the network delay - how long it takes for data to start arriving. The actual amount of data depends on your connection speed! **
 

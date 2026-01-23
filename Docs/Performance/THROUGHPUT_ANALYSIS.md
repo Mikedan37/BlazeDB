@@ -1,10 +1,10 @@
 # BlazeDB Distributed: Throughput Analysis
 
-**How much data per second can databases share? 📊**
+**How much data per second can databases share?**
 
 ---
 
-## 🚀 **THROUGHPUT BY CONNECTION TYPE:**
+## **THROUGHPUT BY CONNECTION TYPE:**
 
 ### **1. Same WiFi (LAN):**
 ```
@@ -64,7 +64,7 @@ REALISTIC (with batching):
 
 ---
 
-## 📊 **DETAILED BREAKDOWN:**
+## **DETAILED BREAKDOWN:**
 
 ### **Small Operations (200 bytes each):**
 
@@ -138,7 +138,7 @@ Realistic:
 
 ---
 
-## 🎯 **REAL-WORLD SCENARIOS:**
+## **REAL-WORLD SCENARIOS:**
 
 ### **Scenario 1: Bug Tracker (Small Operations)**
 ```
@@ -148,7 +148,7 @@ Connection: WiFi (100 Mbps)
 Throughput:
 • Operations: ~7,800 ops/sec
 • Data: ~1.56 MB/s
-• Can sync: ~468,000 bugs per minute! 🔥
+• Can sync: ~468,000 bugs per minute!
 ```
 
 ### **Scenario 2: Chat App (Medium Operations)**
@@ -159,7 +159,7 @@ Connection: WiFi (100 Mbps)
 Throughput:
 • Operations: ~5,000 ops/sec
 • Data: ~2.75 MB/s
-• Can sync: ~300,000 messages per minute! 🔥
+• Can sync: ~300,000 messages per minute!
 ```
 
 ### **Scenario 3: File Sync (Large Operations)**
@@ -170,12 +170,12 @@ Connection: WiFi (100 Mbps)
 Throughput:
 • Operations: ~3,450 ops/sec
 • Data: ~6.55 MB/s
-• Can sync: ~207,000 file updates per minute! 🔥
+• Can sync: ~207,000 file updates per minute!
 ```
 
 ---
 
-## 📈 **THROUGHPUT COMPARISON:**
+## **THROUGHPUT COMPARISON:**
 
 ### **Without Optimizations (JSON, No Batching):**
 ```
@@ -192,14 +192,14 @@ WiFi (100 Mbps):
 • Data: ~1.56 MB/s
 • Network calls: 156/sec
 
-15.6x MORE OPERATIONS! 🔥
-15.6x MORE DATA! 🔥
-3.2x FEWER NETWORK CALLS! 🔥
+15.6x MORE OPERATIONS!
+15.6x MORE DATA!
+3.2x FEWER NETWORK CALLS!
 ```
 
 ---
 
-## ⚡ **BOTTLENECKS:**
+## **BOTTLENECKS:**
 
 ### **1. Network Bandwidth:**
 ```
@@ -217,7 +217,7 @@ BlazeBinary encoding: 0.03ms per op
 50 ops per batch: 1.5ms per batch
 
 Can handle: ~666 batches/sec = 33,300 ops/sec
-NOT a bottleneck! ✅
+NOT a bottleneck!
 ```
 
 ### **3. Compression:**
@@ -225,7 +225,7 @@ NOT a bottleneck! ✅
 LZ4 compression: 0.5ms per batch
 
 Can handle: ~2,000 batches/sec = 100,000 ops/sec
-NOT a bottleneck! ✅
+NOT a bottleneck!
 ```
 
 ### **4. Network Latency:**
@@ -233,12 +233,12 @@ NOT a bottleneck! ✅
 5ms per batch (network delay)
 
 Can handle: ~200 batches/sec = 10,000 ops/sec
-NOT a bottleneck for batches! ✅
+NOT a bottleneck for batches!
 ```
 
 ---
 
-## 🎯 **SUMMARY:**
+## **SUMMARY:**
 
 ### **Throughput (Data per Second):**
 
@@ -265,7 +265,7 @@ NOT a bottleneck for batches! ✅
 
 ---
 
-## 🔥 **BOTTOM LINE:**
+## **BOTTOM LINE:**
 
 **Throughput depends on:**
 1. **Network bandwidth** (main bottleneck)
@@ -278,5 +278,5 @@ NOT a bottleneck for batches! ✅
 - **4G (50 Mbps):** ~0.78 MB/s = ~3,900 ops/sec
 - **5G (1000 Mbps):** ~3.45 MB/s = ~17,250 ops/sec
 
-**That's A LOT of data! 🚀**
+**That's A LOT of data!**
 

@@ -44,17 +44,17 @@ let clientPublicKey = clientPrivateKey.publicKey
 ```swift
 // Lines 99-110: Client sends Hello with public key
 let hello = HandshakeMessage(
-    protocol: "blazedb/1.0",
-    nodeId: nodeId,
-    database: database,
-    publicKey: clientPublicKey.rawRepresentation,  // 65 bytes (uncompressed P-256)
-    capabilities: [.e2eEncryption, .compression, .selectiveSync, .rls],
-    timestamp: Date(),
-    authToken: authToken  // Optional authentication
+ protocol: "blazedb/1.0",
+ nodeId: nodeId,
+ database: database,
+ publicKey: clientPublicKey.rawRepresentation, // 65 bytes (uncompressed P-256)
+ capabilities: [.e2eEncryption,.compression,.selectiveSync,.rls],
+ timestamp: Date(),
+ authToken: authToken // Optional authentication
 )
 
 let helloData = try encodeHandshake(hello)
-try await sendFrame(type: .handshake, payload: helloData)
+try await sendFrame(type:.handshake, payload: helloData)
 ```
 
 **What's Sent:**
@@ -78,8 +78,8 @@ try await sendFrame(type: .handshake, payload: helloData)
 ```swift
 // Lines 113-119: Client receives server's Welcome message
 let welcomeFrame = try await receiveFrame()
-guard welcomeFrame.type == .handshakeAck else {
-    throw HandshakeError.invalidResponse
+guard welcomeFrame.type ==.handshakeAck else {
+ throw HandshakeError.invalidResponse
 }
 
 let welcome = try decodeHandshake(welcomeFrame.payload)
@@ -108,7 +108,7 @@ Client has: clientPrivateKey (secret) + serverPublicKey (from server)
 Server has: serverPrivateKey (secret) + clientPublicKey (from client)
 
 Both compute: sharedSecret = ECDH(clientPrivateKey, serverPublicKey)
-             = ECDH(serverPrivateKey, clientPublicKey)
+ = ECDH(serverPrivateKey, clientPublicKey)
 
 Result: Both sides get the SAME shared secret, but:
 - Client never sees server's private key
@@ -127,16 +127,16 @@ Result: Both sides get the SAME shared secret, but:
 
 ```swift
 // Lines 125-136: Derive AES-256 key from shared secret
-let salt = "blazedb-sync-v1".data(using: .utf8)!
-let info = [database, welcome.database].sorted().joined(separator: ":").data(using: .utf8)!
+let salt = "blazedb-sync-v1".data(using:.utf8)!
+let info = [database, welcome.database].sorted().joined(separator: ":").data(using:.utf8)!
 
 let sharedSecretKey = SymmetricKey(data: sharedSecret.withUnsafeBytes { Data($0) })
 
 groupKey = HKDF<SHA256>.deriveKey(
-    inputKeyMaterial: sharedSecretKey,
-    salt: salt,
-    info: info,
-    outputByteCount: 32  // AES-256 = 32 bytes = 256 bits
+ inputKeyMaterial: sharedSecretKey,
+ salt: salt,
+ info: info,
+ outputByteCount: 32 // AES-256 = 32 bytes = 256 bits
 )
 ```
 
@@ -159,15 +159,15 @@ groupKey = HKDF<SHA256>.deriveKey(
 ```swift
 // Lines 139-147: Client proves it has the correct key
 guard let challenge = welcome.challenge else {
-    throw HandshakeError.invalidResponse
+ throw HandshakeError.invalidResponse
 }
 
 let response = HMAC<SHA256>.authenticationCode(
-    for: challenge,
-    using: groupKey!
+ for: challenge,
+ using: groupKey!
 )
 
-try await sendFrame(type: .verify, payload: Data(response))
+try await sendFrame(type:.verify, payload: Data(response))
 ```
 
 **What Happens:**
@@ -187,8 +187,8 @@ try await sendFrame(type: .verify, payload: Data(response))
 ```swift
 // Lines 150-155: Server confirms handshake complete
 let confirmFrame = try await receiveFrame()
-guard confirmFrame.type == .handshakeComplete else {
-    throw HandshakeError.invalidResponse
+guard confirmFrame.type ==.handshakeComplete else {
+ throw HandshakeError.invalidResponse
 }
 
 isHandshaked = true
@@ -208,8 +208,8 @@ isHandshaked = true
 ```swift
 // Lines 167-172: Server receives client's Hello
 let helloFrame = try await receiveFrame()
-guard helloFrame.type == .handshake else {
-    throw HandshakeError.invalidResponse
+guard helloFrame.type ==.handshake else {
+ throw HandshakeError.invalidResponse
 }
 
 let hello = try decodeHandshake(helloFrame.payload)
@@ -226,31 +226,31 @@ let hello = try decodeHandshake(helloFrame.payload)
 ```swift
 // Lines 174-202: Server verifies auth token
 if let secret = sharedSecret, let serverDB = serverDatabase {
-    // Shared secret mode: derive expected token
-    let dbNames = [serverDB, hello.database].sorted().joined(separator: ":")
-    let expectedTokenKey = HKDF<SHA256>.deriveKey(
-        inputKeyMaterial: SymmetricKey(data: secret.data(using: .utf8)!),
-        salt: "blazedb-auth-v1".data(using: .utf8)!,
-        info: dbNames.data(using: .utf8)!,
-        outputByteCount: 32
-    )
-    let expectedToken = expectedTokenKey.withUnsafeBytes { Data($0).base64EncodedString() }
-    
-    guard let clientToken = hello.authToken, clientToken == expectedToken else {
-        throw HandshakeError.invalidAuthToken
-    }
+ // Shared secret mode: derive expected token
+ let dbNames = [serverDB, hello.database].sorted().joined(separator: ":")
+ let expectedTokenKey = HKDF<SHA256>.deriveKey(
+ inputKeyMaterial: SymmetricKey(data: secret.data(using:.utf8)!),
+ salt: "blazedb-auth-v1".data(using:.utf8)!,
+ info: dbNames.data(using:.utf8)!,
+ outputByteCount: 32
+ )
+ let expectedToken = expectedTokenKey.withUnsafeBytes { Data($0).base64EncodedString() }
+
+ guard let clientToken = hello.authToken, clientToken == expectedToken else {
+ throw HandshakeError.invalidAuthToken
+ }
 }
 ```
 
 **What Happens:**
 - If server uses **shared secret** authentication:
-  - Server derives expected token from shared secret + database names
-  - Compares with client's token
-  - Rejects if mismatch
+ - Server derives expected token from shared secret + database names
+ - Compares with client's token
+ - Rejects if mismatch
 - If server uses **direct token** authentication:
-  - Compares client's token with expected token
+ - Compares client's token with expected token
 - If server requires **no auth**:
-  - Rejects if client sent a token
+ - Rejects if client sent a token
 
 **Security:** Prevents unauthorized connections.
 
@@ -280,17 +280,17 @@ let challenge = try AES.GCM.Nonce().withUnsafeBytes { Data($0) }
 ```swift
 // Lines 214-225: Server sends Welcome with public key and challenge
 let welcome = HandshakeMessage(
-    protocol: "blazedb/1.0",
-    nodeId: nodeId,
-    database: database,
-    publicKey: serverPublicKey.rawRepresentation,
-    capabilities: [.e2eEncryption, .compression, .selectiveSync, .rls],
-    timestamp: Date(),
-    challenge: challenge  // Random nonce for authentication
+ protocol: "blazedb/1.0",
+ nodeId: nodeId,
+ database: database,
+ publicKey: serverPublicKey.rawRepresentation,
+ capabilities: [.e2eEncryption,.compression,.selectiveSync,.rls],
+ timestamp: Date(),
+ challenge: challenge // Random nonce for authentication
 )
 
 let welcomeData = try encodeHandshake(welcome)
-try await sendFrame(type: .handshakeAck, payload: welcomeData)
+try await sendFrame(type:.handshakeAck, payload: welcomeData)
 ```
 
 **What's Sent:**
@@ -305,8 +305,8 @@ try await sendFrame(type: .handshakeAck, payload: welcomeData)
 ```swift
 // Lines 228-231: Server receives client's HMAC response
 let verifyFrame = try await receiveFrame()
-guard verifyFrame.type == .verify else {
-    throw HandshakeError.invalidResponse
+guard verifyFrame.type ==.verify else {
+ throw HandshakeError.invalidResponse
 }
 ```
 
@@ -328,16 +328,16 @@ let sharedSecret = try serverPrivateKey.sharedSecretFromKeyAgreement(with: clien
 
 ```swift
 // Lines 237-248: Server derives same AES-256 key
-let salt = "blazedb-sync-v1".data(using: .utf8)!
-let info = [database, hello.database].sorted().joined(separator: ":").data(using: .utf8)!
+let salt = "blazedb-sync-v1".data(using:.utf8)!
+let info = [database, hello.database].sorted().joined(separator: ":").data(using:.utf8)!
 
 let sharedSecretKey = SymmetricKey(data: sharedSecret.withUnsafeBytes { Data($0) })
 
 groupKey = HKDF<SHA256>.deriveKey(
-    inputKeyMaterial: sharedSecretKey,
-    salt: salt,
-    info: info,
-    outputByteCount: 32
+ inputKeyMaterial: sharedSecretKey,
+ salt: salt,
+ info: info,
+ outputByteCount: 32
 )
 ```
 
@@ -350,12 +350,12 @@ groupKey = HKDF<SHA256>.deriveKey(
 ```swift
 // Lines 251-258: Server verifies client's HMAC
 let expectedResponse = HMAC<SHA256>.authenticationCode(
-    for: challenge,
-    using: groupKey!
+ for: challenge,
+ using: groupKey!
 )
 
 guard verifyFrame.payload == Data(expectedResponse) else {
-    throw HandshakeError.invalidResponse
+ throw HandshakeError.invalidResponse
 }
 ```
 
@@ -371,7 +371,7 @@ guard verifyFrame.payload == Data(expectedResponse) else {
 
 ```swift
 // Lines 261-265: Server confirms handshake complete
-try await sendFrame(type: .handshakeComplete, payload: Data())
+try await sendFrame(type:.handshakeComplete, payload: Data())
 
 isHandshaked = true
 ```
@@ -387,25 +387,25 @@ isHandshaked = true
 ```swift
 // Lines 270-281: Send encrypted data
 public func send(_ data: Data) async throws {
-    guard isHandshaked, let key = groupKey else {
-        throw ConnectionError.notHandshaked
-    }
-    
-    // Encrypt with AES-256-GCM
-    let sealed = try AES.GCM.seal(data, using: key)
-    let encrypted = sealed.combined!  // Nonce + ciphertext + tag
-    
-    // Send encrypted frame
-    try await sendFrame(type: .encryptedData, payload: encrypted)
+ guard isHandshaked, let key = groupKey else {
+ throw ConnectionError.notHandshaked
+ }
+
+ // Encrypt with AES-256-GCM
+ let sealed = try AES.GCM.seal(data, using: key)
+ let encrypted = sealed.combined! // Nonce + ciphertext + tag
+
+ // Send encrypted frame
+ try await sendFrame(type:.encryptedData, payload: encrypted)
 }
 ```
 
 **What Happens:**
 1. **Plaintext** → AES-256-GCM encryption → **Ciphertext + Authentication Tag**
 2. GCM mode provides:
-   - **Confidentiality:** Data is encrypted
-   - **Authenticity:** Authentication tag prevents tampering
-   - **Integrity:** Any modification is detected
+ - **Confidentiality:** Data is encrypted
+ - **Authenticity:** Authentication tag prevents tampering
+ - **Integrity:** Any modification is detected
 
 **AES-256-GCM Details:**
 - **Key:** 32 bytes (256 bits) - derived from HKDF
@@ -418,18 +418,18 @@ public func send(_ data: Data) async throws {
 ```swift
 // Lines 283-296: Receive and decrypt data
 public func receive() async throws -> Data {
-    guard isHandshaked, let key = groupKey else {
-        throw ConnectionError.notHandshaked
-    }
-    
-    // Receive encrypted frame
-    let frame = try await receiveFrame()
-    
-    // Decrypt
-    let sealed = try AES.GCM.SealedBox(combined: frame.payload)
-    let decrypted = try AES.GCM.open(sealed, using: key)
-    
-    return decrypted
+ guard isHandshaked, let key = groupKey else {
+ throw ConnectionError.notHandshaked
+ }
+
+ // Receive encrypted frame
+ let frame = try await receiveFrame()
+
+ // Decrypt
+ let sealed = try AES.GCM.SealedBox(combined: frame.payload)
+ let decrypted = try AES.GCM.open(sealed, using: key)
+
+ return decrypted
 }
 ```
 
@@ -451,11 +451,11 @@ public func receive() async throws -> Data {
 ```swift
 // Lines 314-322: Frame format
 private func sendFrame(type: FrameType, payload: Data) async throws {
-    var frame = Data()
-    frame.append(type.rawValue)           // 1 byte: frame type
-    var length = UInt32(payload.count).bigEndian
-    frame.append(Data(bytes: &length, count: 4))  // 4 bytes: payload length
-    frame.append(payload)                  // N bytes: payload
+ var frame = Data()
+ frame.append(type.rawValue) // 1 byte: frame type
+ var length = UInt32(payload.count).bigEndian
+ frame.append(Data(bytes: &length, count: 4)) // 4 bytes: payload length
+ frame.append(payload) // N bytes: payload
 }
 ```
 
@@ -476,7 +476,7 @@ private func sendFrame(type: FrameType, payload: Data) async throws {
 
 ## SECURITY PROPERTIES
 
-### 1. Perfect Forward Secrecy (PFS) ✅
+### 1. Perfect Forward Secrecy (PFS)
 
 **What It Means:**
 - Each connection uses a **unique ephemeral key pair**
@@ -488,7 +488,7 @@ private func sendFrame(type: FrameType, payload: Data) async throws {
 - Line 207: Server generates new key pair per connection
 - Keys are **ephemeral** (temporary, connection-specific)
 
-### 2. End-to-End Encryption ✅
+### 2. End-to-End Encryption
 
 **What It Means:**
 - Data is encrypted **client-to-server**
@@ -500,7 +500,7 @@ private func sendFrame(type: FrameType, payload: Data) async throws {
 - Key derived from ECDH (only client and server can compute it)
 - Server doesn't store keys (ephemeral)
 
-### 3. Authentication ✅
+### 3. Authentication
 
 **What It Means:**
 - Client proves it has the correct key (challenge-response)
@@ -512,7 +512,7 @@ private func sendFrame(type: FrameType, payload: Data) async throws {
 - Lines 142-147: Client proves key ownership via HMAC challenge
 - Lines 251-258: Server verifies client's HMAC response
 
-### 4. Integrity Protection ✅
+### 4. Integrity Protection
 
 **What It Means:**
 - Any tampering with encrypted data is detected
@@ -522,7 +522,7 @@ private func sendFrame(type: FrameType, payload: Data) async throws {
 - AES-256-GCM includes **authentication tag** (16 bytes)
 - Line 293: `AES.GCM.open()` verifies tag (throws if tampered)
 
-### 5. Replay Protection ✅
+### 5. Replay Protection
 
 **What It Means:**
 - Old encrypted messages can't be replayed
@@ -538,34 +538,34 @@ private func sendFrame(type: FrameType, payload: Data) async throws {
 ## COMPLETE HANDSHAKE FLOW DIAGRAM
 
 ```
-CLIENT                                    SERVER
-  │                                         │
-  │───[1] Generate clientPrivateKey ───────┤
-  │                                         │
-  │───[2] Hello (clientPublicKey) ─────────>│
-  │                                         │───[1] Receive Hello
-  │                                         │───[2] Authenticate (verify token)
-  │                                         │───[3] Generate serverPrivateKey
-  │                                         │───[4] Generate challenge
-  │<──[3] Welcome (serverPublicKey + challenge)───[5] Send Welcome
-  │                                         │
-  │───[4] ECDH: sharedSecret ──────────────┤
-  │    = ECDH(clientPrivateKey, serverPublicKey) │
-  │                                         │───[6] ECDH: sharedSecret
-  │                                         │    = ECDH(serverPrivateKey, clientPublicKey)
-  │                                         │    (Same result!)
-  │───[5] HKDF: groupKey (AES-256) ────────┤
-  │    = HKDF(sharedSecret, salt, info)    │───[7] HKDF: groupKey (AES-256)
-  │                                         │    = HKDF(sharedSecret, salt, info)
-  │                                         │    (Same result!)
-  │───[6] HMAC(challenge, groupKey) ───────>│
-  │    Verify (prove key ownership)        │───[8] Verify HMAC response
-  │                                         │    (Confirm client has correct key)
-  │<──[7] handshakeComplete ────────────────[9] Send confirmation
-  │                                         │
-  │───[8] All future data encrypted ───────>│
-  │    AES-256-GCM(groupKey)               │───[10] All future data encrypted
-  │                                         │    AES-256-GCM(groupKey)
+CLIENT SERVER
+ │ │
+ │───[1] Generate clientPrivateKey ───────┤
+ │ │
+ │───[2] Hello (clientPublicKey) ─────────>│
+ │ │───[1] Receive Hello
+ │ │───[2] Authenticate (verify token)
+ │ │───[3] Generate serverPrivateKey
+ │ │───[4] Generate challenge
+ │<──[3] Welcome (serverPublicKey + challenge)───[5] Send Welcome
+ │ │
+ │───[4] ECDH: sharedSecret ──────────────┤
+ │ = ECDH(clientPrivateKey, serverPublicKey) │
+ │ │───[6] ECDH: sharedSecret
+ │ │ = ECDH(serverPrivateKey, clientPublicKey)
+ │ │ (Same result!)
+ │───[5] HKDF: groupKey (AES-256) ────────┤
+ │ = HKDF(sharedSecret, salt, info) │───[7] HKDF: groupKey (AES-256)
+ │ │ = HKDF(sharedSecret, salt, info)
+ │ │ (Same result!)
+ │───[6] HMAC(challenge, groupKey) ───────>│
+ │ Verify (prove key ownership) │───[8] Verify HMAC response
+ │ │ (Confirm client has correct key)
+ │<──[7] handshakeComplete ────────────────[9] Send confirmation
+ │ │
+ │───[8] All future data encrypted ───────>│
+ │ AES-256-GCM(groupKey) │───[10] All future data encrypted
+ │ │ AES-256-GCM(groupKey)
 ```
 
 ---

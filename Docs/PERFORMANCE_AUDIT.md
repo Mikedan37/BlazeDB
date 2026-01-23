@@ -1,6 +1,6 @@
 # BlazeDB Performance Audit: Operations Per Minute & Operational Details
 
-**⚠️ IMPORTANT: These numbers are ESTIMATES based on documentation and test targets, NOT actual measured results.**
+**️ IMPORTANT: These numbers are ESTIMATES based on documentation and test targets, NOT actual measured results.**
 
 **To get ACTUAL measured performance numbers, run:**
 ```bash
@@ -20,7 +20,7 @@ BLAZEDB_RUN_BASELINE_TESTS=1 swift test --filter BaselinePerformanceTests
 
 ---
 
-## 📊 **Executive Summary**
+## **Executive Summary**
 
 **Note: These are ESTIMATED numbers based on:**
 - Test expectations/targets in benchmark code
@@ -48,7 +48,7 @@ BLAZEDB_RUN_BASELINE_TESTS=1 swift test --filter BaselinePerformanceTests
 
 ---
 
-## 🔧 **How BlazeDB Actually Operates**
+## **How BlazeDB Actually Operates**
 
 ### **Storage Architecture**
 1. **Page-Based Storage**: Data stored in 8KB pages with overflow pages for large records
@@ -72,7 +72,7 @@ BLAZEDB_RUN_BASELINE_TESTS=1 swift test --filter BaselinePerformanceTests
 
 ---
 
-## 📈 **Detailed Operations Per Minute**
+## **Detailed Operations Per Minute**
 
 ### **1. Core CRUD Operations**
 
@@ -337,35 +337,35 @@ BLAZEDB_RUN_BASELINE_TESTS=1 swift test --filter BaselinePerformanceTests
 
 ---
 
-## 🎯 **Real-World Scenarios**
+## **Real-World Scenarios**
 
 ### **Bug Tracker Application**
 - **Operations**: Small (200 bytes each)
 - **Typical Load**: 100 inserts/min, 500 queries/min, 50 updates/min
 - **Peak Load**: 1,000 inserts/min, 5,000 queries/min, 500 updates/min
-- **BlazeDB Capacity**: **468,000 ops/min** (WiFi 100 Mbps) - **470x headroom** ✅
+- **BlazeDB Capacity**: **468,000 ops/min** (WiFi 100 Mbps) - **470x headroom**
 
 ### **Chat Application**
 - **Operations**: Medium (550 bytes each)
 - **Typical Load**: 500 messages/min, 1,000 queries/min
 - **Peak Load**: 5,000 messages/min, 10,000 queries/min
-- **BlazeDB Capacity**: **300,000 ops/min** (WiFi 100 Mbps) - **30x headroom** ✅
+- **BlazeDB Capacity**: **300,000 ops/min** (WiFi 100 Mbps) - **30x headroom**
 
 ### **File Sync Application**
 - **Operations**: Large (1900 bytes each)
 - **Typical Load**: 100 file updates/min, 200 queries/min
 - **Peak Load**: 1,000 file updates/min, 2,000 queries/min
-- **BlazeDB Capacity**: **207,000 ops/min** (WiFi 100 Mbps) - **207x headroom** ✅
+- **BlazeDB Capacity**: **207,000 ops/min** (WiFi 100 Mbps) - **207x headroom**
 
 ### **IoT Sensor Data**
 - **Operations**: Small (200 bytes each)
 - **Typical Load**: 10,000 sensor readings/min
 - **Peak Load**: 100,000 sensor readings/min
-- **BlazeDB Capacity**: **468,000 ops/min** (WiFi 100 Mbps) - **4.7x headroom** ✅
+- **BlazeDB Capacity**: **468,000 ops/min** (WiFi 100 Mbps) - **4.7x headroom**
 
 ---
 
-## ⚡ **Performance Optimization Impact**
+## **Performance Optimization Impact**
 
 ### **Batch Operations**
 - **2-5x faster** per record than individual operations
@@ -390,7 +390,7 @@ BLAZEDB_RUN_BASELINE_TESTS=1 swift test --filter BaselinePerformanceTests
 
 ---
 
-## 📊 **Summary Table: Operations Per Minute**
+## **Summary Table: Operations Per Minute**
 
 | Category | Single Core | Multi-Core (8) | Network Sync (WiFi 100Mbps) |
 |----------|-------------|----------------|----------------------------|
@@ -405,7 +405,7 @@ BLAZEDB_RUN_BASELINE_TESTS=1 swift test --filter BaselinePerformanceTests
 
 ---
 
-## 🔍 **Operational Details**
+## **Operational Details**
 
 ### **Write Path (Insert/Update)**
 1. **Encrypt**: AES-256-GCM encryption (0.1-0.2ms)
@@ -436,7 +436,7 @@ BLAZEDB_RUN_BASELINE_TESTS=1 swift test --filter BaselinePerformanceTests
 
 ---
 
-## 🎯 **Conclusion**
+## **Conclusion**
 
 BlazeDB is designed for **high-performance embedded database** use cases:
 
@@ -449,13 +449,13 @@ BlazeDB is designed for **high-performance embedded database** use cases:
 
 ---
 
-**Last Updated**: 2025-01-XX  
-**Test Environment**: Apple M1 Pro, macOS 14.6, 8 cores, 16GB RAM, NVMe SSD  
+**Last Updated**: 2025-01-XX
+**Test Environment**: Apple M1 Pro, macOS 14.6, 8 cores, 16GB RAM, NVMe SSD
 **Source**: `Docs/Project/PERFORMANCE_METRICS.md`, `Docs/Performance/THROUGHPUT_ANALYSIS.md`
 
 ---
 
-## ⚠️ **HOW TO GET ACTUAL MEASURED NUMBERS**
+## ️ **HOW TO GET ACTUAL MEASURED NUMBERS**
 
 ### **Quick Method: Run Benchmark Script**
 ```bash
@@ -501,7 +501,7 @@ BLAZEDB_RUN_BASELINE_TESTS=1 swift test --filter BaselinePerformanceTests
 #### **Step 4: Extract Actual Numbers**
 ```bash
 # View JSON results
-cat .build/test-metrics/*.json
+cat.build/test-metrics/*.json
 
 # View baseline results
 cat /tmp/blazedb_baselines.json
@@ -511,11 +511,11 @@ cat /tmp/blazedb_baselines.json
 
 ---
 
-## 📝 **NOTE: Current Numbers Are Estimates**
+## **NOTE: Current Numbers Are Estimates**
 
 The numbers in this document are **ESTIMATES** based on:
 - Test expectations/targets in benchmark code
-- Realistic performance analysis documents  
+- Realistic performance analysis documents
 - Theoretical calculations
 
 **To get ACTUAL measured numbers, you must run the benchmarks yourself.**

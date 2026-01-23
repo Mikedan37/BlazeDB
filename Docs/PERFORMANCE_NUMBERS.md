@@ -30,19 +30,19 @@
 
 **JSON Approach:**
 1. `JSONEncoder.encode(record)` - Serializes to JSON string
-   - String formatting: ~5-10ms per record
-   - Escaping/quotes: ~2-5ms per record
-   - Memory allocation: ~2x record size
+ - String formatting: ~5-10ms per record
+ - Escaping/quotes: ~2-5ms per record
+ - Memory allocation: ~2x record size
 2. `JSONDecoder.decode(BlazeDataRecord.self)` - Parses JSON
-   - Tokenization: ~3-8ms per record
-   - Validation: ~1-3ms per record
-   - Memory allocation: ~1x record size
+ - Tokenization: ~3-8ms per record
+ - Validation: ~1-3ms per record
+ - Memory allocation: ~1x record size
 
 **Direct Approach:**
 1. `BlazeRecordEncoder` - Direct dictionary building
-   - Direct field access: ~1-2ms per record
-   - Type conversion: ~0.5-1ms per record
-   - Memory allocation: ~1x record size
+ - Direct field access: ~1-2ms per record
+ - Type conversion: ~0.5-1ms per record
+ - Memory allocation: ~1x record size
 
 **Time Saved:** ~10-20ms per record (40-50% faster)
 **Memory Saved:** ~1x record size (50% less)
@@ -51,19 +51,19 @@
 
 **JSON Approach:**
 1. Convert `BlazeDataRecord` to JSON dictionary
-   - Field iteration: ~2-4ms per record
-   - Type conversion: ~3-6ms per record
-   - JSON serialization: ~5-10ms per record
+ - Field iteration: ~2-4ms per record
+ - Type conversion: ~3-6ms per record
+ - JSON serialization: ~5-10ms per record
 2. `JSONDecoder.decode(Record.self)` - Parse JSON
-   - Tokenization: ~3-8ms per record
-   - Validation: ~1-3ms per record
-   - Memory allocation: ~1x record size
+ - Tokenization: ~3-8ms per record
+ - Validation: ~1-3ms per record
+ - Memory allocation: ~1x record size
 
 **Direct Approach:**
 1. `BlazeRecordDecoder` - Direct field access
-   - Direct field access: ~1-2ms per record
-   - Type conversion: ~0.5-1ms per record
-   - Memory allocation: Minimal
+ - Direct field access: ~1-2ms per record
+ - Type conversion: ~0.5-1ms per record
+ - Memory allocation: Minimal
 
 **Time Saved:** ~12-20ms per record (50-60% faster)
 **Memory Saved:** ~1x record size (50% less)
@@ -72,35 +72,35 @@
 
 ### Small Record (10 fields, ~200 bytes)
 ```
-JSON Encode:     0.15ms per record
-Direct Encode:   0.10ms per record
-Improvement:     33% faster
+JSON Encode: 0.15ms per record
+Direct Encode: 0.10ms per record
+Improvement: 33% faster
 
-JSON Decode:     0.20ms per record
-Direct Decode:   0.12ms per record
-Improvement:     40% faster
+JSON Decode: 0.20ms per record
+Direct Decode: 0.12ms per record
+Improvement: 40% faster
 ```
 
 ### Medium Record (20 fields, ~500 bytes)
 ```
-JSON Encode:     0.35ms per record
-Direct Encode:   0.22ms per record
-Improvement:     37% faster
+JSON Encode: 0.35ms per record
+Direct Encode: 0.22ms per record
+Improvement: 37% faster
 
-JSON Decode:     0.45ms per record
-Direct Decode:   0.25ms per record
-Improvement:     44% faster
+JSON Decode: 0.45ms per record
+Direct Decode: 0.25ms per record
+Improvement: 44% faster
 ```
 
 ### Large Record (50 fields, ~2KB)
 ```
-JSON Encode:     1.2ms per record
-Direct Encode:   0.7ms per record
-Improvement:     42% faster
+JSON Encode: 1.2ms per record
+Direct Encode: 0.7ms per record
+Improvement: 42% faster
 
-JSON Decode:     1.5ms per record
-Direct Decode:   0.8ms per record
-Improvement:     47% faster
+JSON Decode: 1.5ms per record
+Direct Decode: 0.8ms per record
+Improvement: 47% faster
 ```
 
 ## Batch Operations (1000 records)
@@ -108,37 +108,37 @@ Improvement:     47% faster
 ### Encoding
 ```
 JSON Approach:
-  Time: 150-250ms
-  Memory: ~2MB (JSON) + ~1MB (BlazeBinary) = 3MB
-  Allocations: ~2000 (JSON strings + Data)
+ Time: 150-250ms
+ Memory: ~2MB (JSON) + ~1MB (BlazeBinary) = 3MB
+ Allocations: ~2000 (JSON strings + Data)
 
 Direct Approach:
-  Time: 100-150ms
-  Memory: ~1MB (BlazeBinary only)
-  Allocations: ~1000 (direct dictionaries)
+ Time: 100-150ms
+ Memory: ~1MB (BlazeBinary only)
+ Allocations: ~1000 (direct dictionaries)
 
 Improvement:
-  Time: 33-40% faster
-  Memory: 67% less
-  Allocations: 50% fewer
+ Time: 33-40% faster
+ Memory: 67% less
+ Allocations: 50% fewer
 ```
 
 ### Decoding
 ```
 JSON Approach:
-  Time: 200-300ms
-  Memory: ~2MB (JSON) + ~1MB (Records) = 3MB
-  Allocations: ~3000 (JSON parsing + Records)
+ Time: 200-300ms
+ Memory: ~2MB (JSON) + ~1MB (Records) = 3MB
+ Allocations: ~3000 (JSON parsing + Records)
 
 Direct Approach:
-  Time: 120-180ms
-  Memory: ~1MB (Records only)
-  Allocations: ~1000 (direct Records)
+ Time: 120-180ms
+ Memory: ~1MB (Records only)
+ Allocations: ~1000 (direct Records)
 
 Improvement:
-  Time: 40-50% faster
-  Memory: 67% less
-  Allocations: 67% fewer
+ Time: 40-50% faster
+ Memory: 67% less
+ Allocations: 67% fewer
 ```
 
 ## Memory Usage Analysis
@@ -261,11 +261,11 @@ Improvement:
 ## Conclusion
 
 The direct encoder/decoder approach provides:
-- ✅ **20-50% faster** encoding/decoding
-- ✅ **50-75% less memory** usage
-- ✅ **70-80% fewer CPU cycles**
-- ✅ **50-100% higher throughput**
-- ✅ **35-40% lower latency**
+- **20-50% faster** encoding/decoding
+- **50-75% less memory** usage
+- **70-80% fewer CPU cycles**
+- **50-100% higher throughput**
+- **35-40% lower latency**
 
 These improvements are especially significant for:
 - High-frequency operations (many small records)

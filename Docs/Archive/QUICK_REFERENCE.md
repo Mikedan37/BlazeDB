@@ -1,41 +1,41 @@
-# 🚀 BlazeDB Quick Reference
+# BlazeDB Quick Reference
 
 **The essentials you need to know**
 
 ---
 
-## 📦 **Basic Setup**
+## **Basic Setup**
 
 ```swift
 import BlazeDB
 
 // Create encrypted database
 let db = try BlazeDBClient(
-    name: "MyApp",
-    fileURL: documentsURL.appendingPathComponent("myapp.blazedb"),
-    password: "your-secure-password"  // ← Enables AES-256 encryption
+ name: "MyApp",
+ fileURL: documentsURL.appendingPathComponent("myapp.blazedb"),
+ password: "your-secure-password" // ← Enables AES-256 encryption
 )
 ```
 
 ---
 
-## 💾 **CRUD Operations**
+## **CRUD Operations**
 
 ```swift
 // INSERT
 let id = try db.insert(BlazeDataRecord([
-    "title": .string("My Record"),
-    "value": .int(42),
-    "tags": .array([.string("important")])
+ "title":.string("My Record"),
+ "value":.int(42),
+ "tags":.array([.string("important")])
 ]))
 
 // FETCH
 let record = try db.fetch(id: id)
-print(record?.storage["title"]?.stringValue)  // "My Record"
+print(record?.storage["title"]?.stringValue) // "My Record"
 
 // UPDATE
 try db.update(id: id, with: BlazeDataRecord([
-    "value": .int(100)
+ "value":.int(100)
 ]))
 
 // DELETE
@@ -47,7 +47,7 @@ let all = try db.fetchAll()
 
 ---
 
-## 🔐 **Encryption (Automatic)**
+## **Encryption (Automatic)**
 
 ```swift
 // Everything is encrypted automatically!
@@ -55,19 +55,19 @@ let db = try BlazeDBClient(name: "MyDB", fileURL: url, password: "secure-pass-12
 
 // Insert (encrypted on disk)
 let id = try db.insert(BlazeDataRecord([
-    "secret": .string("TOP SECRET DATA")
+ "secret":.string("TOP SECRET DATA")
 ]))
 
 // Fetch (decrypted automatically)
 let record = try db.fetch(id: id)
-// ✅ Data encrypted at rest
-// ✅ Automatic decryption on read
-// ✅ AES-256-GCM (industry standard)
+// Data encrypted at rest
+// Automatic decryption on read
+// AES-256-GCM (industry standard)
 ```
 
 ---
 
-## 🛡️ **Row-Level Security (RLS)**
+## ️ **Row-Level Security (RLS)**
 
 ```swift
 // 1. Enable RLS
@@ -82,7 +82,7 @@ let userID = db.rls.createUser(user)
 db.rls.setContext(user.toSecurityContext())
 
 // 4. All operations automatically filtered!
-let myRecords = try db.fetchAll()  // ✅ Only user's records
+let myRecords = try db.fetchAll() // Only user's records
 ```
 
 ### **Common Policies:**
@@ -105,7 +105,7 @@ db.rls.addPolicy(.publicRead)
 
 ---
 
-## 🗑️ **Garbage Collection**
+## ️ **Garbage Collection**
 
 ```swift
 // Auto-GC (recommended)
@@ -122,45 +122,45 @@ print("Waste: \(gcStats.wastePercentage * 100)%")
 
 ---
 
-## 🔍 **Queries**
+## **Queries**
 
 ### **Simple:**
 ```swift
 // Query builder
 let results = try db.query()
-    .where("age", .greaterThan, 18)
-    .where("active", .equals, true)
-    .sort(by: "name", ascending: true)
-    .limit(10)
-    .execute()
+.where("age",.greaterThan, 18)
+.where("active",.equals, true)
+.sort(by: "name", ascending: true)
+.limit(10)
+.execute()
 ```
 
 ### **Advanced:**
 ```swift
 // JOINs
 let results = try db.query()
-    .join(collection: "orders", on: "userId", equals: "id", type: .inner)
-    .where("status", .equals, "active")
-    .execute()
+.join(collection: "orders", on: "userId", equals: "id", type:.inner)
+.where("status",.equals, "active")
+.execute()
 
 // Aggregations
 let summary = try db.query()
-    .where("category", .equals, "sales")
-    .aggregate(.sum, field: "amount", as: "total")
-    .aggregate(.avg, field: "amount", as: "average")
-    .execute()
+.where("category",.equals, "sales")
+.aggregate(.sum, field: "amount", as: "total")
+.aggregate(.avg, field: "amount", as: "average")
+.execute()
 
 // GROUP BY
 let grouped = try db.query()
-    .groupBy(["category"])
-    .aggregate(.count, as: "count")
-    .having("count", .greaterThan, 5)
-    .execute()
+.groupBy(["category"])
+.aggregate(.count, as: "count")
+.having("count",.greaterThan, 5)
+.execute()
 ```
 
 ---
 
-## 🔍 **Full-Text Search**
+## **Full-Text Search**
 
 ```swift
 // Enable search
@@ -169,13 +169,13 @@ try db.collection.enableSmartSearch(on: ["title", "description"])
 // Search
 let results = try db.collection.smartSearch(query: "important bug", limit: 10)
 for result in results {
-    print("\(result.record) - Score: \(result.score)")
+ print("\(result.record) - Score: \(result.score)")
 }
 ```
 
 ---
 
-## 📊 **Telemetry**
+## **Telemetry**
 
 ```swift
 // Enable
@@ -190,27 +190,27 @@ print("Cache hit rate: \(summary.cacheHitRate * 100)%")
 
 ---
 
-## 🔄 **SwiftUI Integration**
+## **SwiftUI Integration**
 
 ```swift
 import SwiftUI
 import BlazeDB
 
 struct BugListView: View {
-    @BlazeQuery(db: db, where: ("status", .equals, "open"))
-    var openBugs: [BlazeDataRecord]
-    
-    var body: some View {
-        List(openBugs) { bug in
-            Text(bug.storage["title"]?.stringValue ?? "")
-        }
-    }
+ @BlazeQuery(db: db, where: ("status",.equals, "open"))
+ var openBugs: [BlazeDataRecord]
+
+ var body: some View {
+ List(openBugs) { bug in
+ Text(bug.storage["title"]?.stringValue?? "")
+ }
+ }
 }
 ```
 
 ---
 
-## ⚡ **Async/Await**
+## **Async/Await**
 
 ```swift
 // All operations have async versions
@@ -225,50 +225,50 @@ let stats = try await db.vacuum()
 
 ---
 
-## 🧪 **Schema Validation**
+## **Schema Validation**
 
 ```swift
 // Define schema
 let schema = DatabaseSchema(fields: [
-    FieldSchema(name: "email", type: .string, required: true),
-    FieldSchema(name: "age", type: .int, required: false)
+ FieldSchema(name: "email", type:.string, required: true),
+ FieldSchema(name: "age", type:.int, required: false)
 ])
 
 db.defineSchema(schema)
 
 // Validation happens automatically on insert/update
 try db.insert(BlazeDataRecord([
-    "email": .string("test@example.com"),
-    "age": .int(25)
-]))  // ✅ Valid
+ "email":.string("test@example.com"),
+ "age":.int(25)
+])) // Valid
 
 try db.insert(BlazeDataRecord([
-    "name": .string("Missing email")
-]))  // ❌ Throws: Missing required field 'email'
+ "name":.string("Missing email")
+])) // Throws: Missing required field 'email'
 ```
 
 ---
 
-## 🔗 **Foreign Keys**
+## **Foreign Keys**
 
 ```swift
 // Define foreign key
 db.addForeignKey(ForeignKeyConstraint(
-    name: "user_orders",
-    fromCollection: "orders",
-    fromField: "userId",
-    toCollection: "users",
-    toField: "id",
-    onDelete: .cascade
+ name: "user_orders",
+ fromCollection: "orders",
+ fromField: "userId",
+ toCollection: "users",
+ toField: "id",
+ onDelete:.cascade
 ))
 
 // Delete user → automatically deletes their orders
-try db.delete(id: userID)  // CASCADE DELETE!
+try db.delete(id: userID) // CASCADE DELETE!
 ```
 
 ---
 
-## 📝 **Logging**
+## **Logging**
 
 ```swift
 // Configure logger
@@ -280,23 +280,23 @@ BlazeLogger.info("Custom message")
 
 ---
 
-## 🚨 **Error Handling**
+## **Error Handling**
 
 ```swift
 do {
-    let record = try db.fetch(id: someID)
+ let record = try db.fetch(id: someID)
 } catch BlazeDBError.recordNotFound {
-    print("Record not found")
+ print("Record not found")
 } catch BlazeDBError.invalidData {
-    print("Invalid data format")
+ print("Invalid data format")
 } catch {
-    print("Other error: \(error)")
+ print("Other error: \(error)")
 }
 ```
 
 ---
 
-## 🎯 **Common Patterns**
+## **Common Patterns**
 
 ### **Multi-Tenant SaaS:**
 ```swift
@@ -308,7 +308,7 @@ db.rls.addPolicy(.userInTeam(teamIDField: "organizationId"))
 db.rls.setContext(currentUser.toSecurityContext())
 
 // All queries automatically filtered!
-let data = try db.fetchAll()  // Only current tenant's data
+let data = try db.fetchAll() // Only current tenant's data
 ```
 
 ### **Bug Tracker:**
@@ -329,15 +329,15 @@ db.rls.addPolicy(.viewerReadOnly())
 
 // Schema for documents
 db.defineSchema(DatabaseSchema(fields: [
-    FieldSchema(name: "title", type: .string, required: true),
-    FieldSchema(name: "content", type: .string, required: true),
-    FieldSchema(name: "createdAt", type: .date, required: true)
+ FieldSchema(name: "title", type:.string, required: true),
+ FieldSchema(name: "content", type:.string, required: true),
+ FieldSchema(name: "createdAt", type:.date, required: true)
 ]))
 ```
 
 ---
 
-## 🔧 **Maintenance**
+## **Maintenance**
 
 ```swift
 // Check database health
@@ -346,8 +346,8 @@ print("Size: \(stats.fileSize / 1024) KB")
 print("Pages: \(stats.totalPages)")
 
 // Run VACUUM if needed
-if stats.fileSize > 10_000_000 {  // 10MB
-    try await db.vacuum()
+if stats.fileSize > 10_000_000 { // 10MB
+ try await db.vacuum()
 }
 
 // Backup
@@ -356,7 +356,7 @@ try db.backup(to: backupURL)
 
 ---
 
-## 📚 **More Info:**
+## **More Info:**
 
 - **Full Guides:** See `Docs/` folder
 - **Examples:** See `Examples/` folder
@@ -364,16 +364,16 @@ try db.backup(to: backupURL)
 
 ---
 
-## 🎊 **That's It!**
+## **That's It!**
 
 **You now know:**
-- ✅ Basic CRUD
-- ✅ Encryption (automatic)
-- ✅ RLS (multi-tenant)
-- ✅ Queries (simple & advanced)
-- ✅ GC (auto-cleanup)
-- ✅ Telemetry (monitoring)
-- ✅ SwiftUI integration
+- Basic CRUD
+- Encryption (automatic)
+- RLS (multi-tenant)
+- Queries (simple & advanced)
+- GC (auto-cleanup)
+- Telemetry (monitoring)
+- SwiftUI integration
 
-**Go build something amazing!** 🚀
+**Go build something amazing!**
 

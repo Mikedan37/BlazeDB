@@ -4,21 +4,21 @@
 
 ---
 
-## 🍓 **Why Raspberry Pi is Perfect:**
+## **Why Raspberry Pi is Perfect:**
 
 ```
-✅ Always on (low power)
-✅ Port forwarding already done
-✅ FREE hosting (no monthly cost)
-✅ Full control
-✅ Local network access
-✅ Can scale later if needed
-✅ Perfect for testing/learning
+ Always on (low power)
+ Port forwarding already done
+ FREE hosting (no monthly cost)
+ Full control
+ Local network access
+ Can scale later if needed
+ Perfect for testing/learning
 ```
 
 ---
 
-## 🚀 **DEPLOYMENT GUIDE**
+## **DEPLOYMENT GUIDE**
 
 ### **Step 1: Install Swift on Raspberry Pi** (30 min)
 
@@ -31,12 +31,12 @@ sudo apt update && sudo apt upgrade -y
 
 # Install dependencies
 sudo apt install -y \
-    curl \
-    git \
-    clang \
-    libpython3-dev \
-    libncurses5-dev \
-    libssl-dev
+ curl \
+ git \
+ clang \
+ libpython3-dev \
+ libncurses5-dev \
+ libssl-dev
 
 # Download Swift for ARM (Raspberry Pi)
 # Check latest version at: https://swift.org/download/
@@ -77,8 +77,8 @@ export PORT=50051
 .build/release/BlazeDBServer
 
 # You should see:
-# ✅ Server BlazeDB initialized
-# 🚀 gRPC server running on port 50051
+# Server BlazeDB initialized
+# gRPC server running on port 50051
 ```
 
 ### **Step 3: Setup as System Service** (10 min)
@@ -162,22 +162,22 @@ let certPath = "/etc/letsencrypt/live/yourname.duckdns.org/fullchain.pem"
 let keyPath = "/etc/letsencrypt/live/yourname.duckdns.org/privkey.pem"
 
 let cert = try! NIOSSLCertificate.fromPEMFile(certPath)
-let key = try! NIOSSLPrivateKey(file: keyPath, format: .pem)
+let key = try! NIOSSLPrivateKey(file: keyPath, format:.pem)
 
 let tlsConfig = GRPCTLSConfiguration.makeServerConfiguration(
-    certificateChain: cert.map { .certificate($0) },
-    privateKey: .privateKey(key)
+ certificateChain: cert.map {.certificate($0) },
+ privateKey:.privateKey(key)
 )
 
 let server = try await Server.secure(
-    group: group,
-    tlsConfiguration: tlsConfig
+ group: group,
+ tlsConfiguration: tlsConfig
 )
 .withServiceProviders([provider])
-.bind(host: "0.0.0.0", port: 443)  // Use 443 for HTTPS
+.bind(host: "0.0.0.0", port: 443) // Use 443 for HTTPS
 .get()
 
-print("🔒 Secure gRPC server running with TLS on port 443")
+print(" Secure gRPC server running with TLS on port 443")
 ```
 
 ```bash
@@ -194,118 +194,118 @@ sudo systemctl restart blazedb
 ```swift
 // Your iPhone app
 let channel = try! GRPCChannelPool.with(
-    target: .host("yourname.duckdns.org", port: 443),  // Your Pi!
-    transportSecurity: .tls(.makeClientConfigurationBackedByNIOSSL())
+ target:.host("yourname.duckdns.org", port: 443), // Your Pi!
+ transportSecurity:.tls(.makeClientConfigurationBackedByNIOSSL())
 )
 
 let client = BlazeDB_BlazeDBAsyncClient(channel: channel)
 
-// Now iPhone ↔ Raspberry Pi sync works! ✅
-// ✅ Encrypted with TLS
-// ✅ Free hosting
-// ✅ You control everything
+// Now iPhone ↔ Raspberry Pi sync works!
+// Encrypted with TLS
+// Free hosting
+// You control everything
 ```
 
 ---
 
-## 🔐 **COMPLETE SECURITY FLOW (With Your Pi)**
+## **COMPLETE SECURITY FLOW (With Your Pi)**
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
-│           COMPLETE ENCRYPTED FLOW                             │
+│ COMPLETE ENCRYPTED FLOW │
 ├──────────────────────────────────────────────────────────────┤
-│                                                                │
-│  IPHONE (San Francisco)                                       │
-│  ═══════════════════════                                      │
-│                                                                │
-│  1. Create record (memory)                                    │
-│     "title": "Secret bug"  ← Plain text in RAM               │
-│                                                                │
-│  2. Encode with BlazeBinary                                   │
-│     [0x42 0x4C 0x41 0x5A 0x45...]  ← Binary, NOT encrypted   │
-│     • Compact (165 bytes)                                     │
-│     • Fast (15ms)                                             │
-│     • ⚠️ Still readable if intercepted!                       │
-│                                                                │
-│  3. Encrypt with LOCAL key (storage)                          │
-│     AES-256-GCM(binary) → [encrypted blob]  ← Can't read! ✅ │
-│     • Stored on iPhone disk                                   │
-│     • Protected by your password                              │
-│                                                                │
-│  4. Send to server via gRPC                                   │
-│     BlazeBinary (plain) → TLS tunnel → [encrypted]           │
-│     │                                                          │
-│     │  ═══════ INTERNET (TLS TUNNEL) ═══════                │
-│     │  • TLS 1.3 encryption ✅                               │
-│     │  • Certificate validation ✅                            │
-│     │  • Perfect forward secrecy ✅                           │
-│     │  • BlazeBinary data encrypted in transit ✅            │
-│     │                                                          │
-│     ▼                                                          │
-│                                                                │
-│  RASPBERRY PI (Your Home)                                     │
-│  ═══════════════════════                                      │
-│                                                                │
-│  5. TLS decrypts tunnel                                       │
-│     [encrypted] → TLS → BlazeBinary (plain)                  │
-│     • Server now has plain binary data                        │
-│     • Can read and process it                                 │
-│                                                                │
-│  6. Decode with BlazeBinary                                   │
-│     binary → BlazeDataRecord                                  │
-│     "title": "Secret bug"  ← Plain text in server RAM        │
-│     • Server can read this! ⚠️                               │
-│                                                                │
-│  7. Insert into Server BlazeDB                                │
-│     try await serverDB.insert(record)                         │
-│                                                                │
-│  8. Encrypt with SERVER key                                   │
-│     AES-256-GCM(binary) → [encrypted blob]  ← Can't read! ✅│
-│     • Stored on Pi's SD card                                  │
-│     • Protected by server password                            │
-│                                                                │
+│ │
+│ IPHONE (San Francisco) │
+│ ═══════════════════════ │
+│ │
+│ 1. Create record (memory) │
+│ "title": "Secret bug" ← Plain text in RAM │
+│ │
+│ 2. Encode with BlazeBinary │
+│ [0x42 0x4C 0x41 0x5A 0x45...] ← Binary, NOT encrypted │
+│ • Compact (165 bytes) │
+│ • Fast (15ms) │
+│ • ️ Still readable if intercepted! │
+│ │
+│ 3. Encrypt with LOCAL key (storage) │
+│ AES-256-GCM(binary) → [encrypted blob] ← Can't read! │
+│ • Stored on iPhone disk │
+│ • Protected by your password │
+│ │
+│ 4. Send to server via gRPC │
+│ BlazeBinary (plain) → TLS tunnel → [encrypted] │
+│ │ │
+│ │ ═══════ INTERNET (TLS TUNNEL) ═══════ │
+│ │ • TLS 1.3 encryption │
+│ │ • Certificate validation │
+│ │ • Perfect forward secrecy │
+│ │ • BlazeBinary data encrypted in transit │
+│ │ │
+│ ▼ │
+│ │
+│ RASPBERRY PI (Your Home) │
+│ ═══════════════════════ │
+│ │
+│ 5. TLS decrypts tunnel │
+│ [encrypted] → TLS → BlazeBinary (plain) │
+│ • Server now has plain binary data │
+│ • Can read and process it │
+│ │
+│ 6. Decode with BlazeBinary │
+│ binary → BlazeDataRecord │
+│ "title": "Secret bug" ← Plain text in server RAM │
+│ • Server can read this! ️ │
+│ │
+│ 7. Insert into Server BlazeDB │
+│ try await serverDB.insert(record) │
+│ │
+│ 8. Encrypt with SERVER key │
+│ AES-256-GCM(binary) → [encrypted blob] ← Can't read! │
+│ • Stored on Pi's SD card │
+│ • Protected by server password │
+│ │
 └──────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## ✅ **WHAT'S ENCRYPTED:**
+## **WHAT'S ENCRYPTED:**
 
 ```
-✅ Data on iPhone disk: AES-256-GCM (your password)
-✅ Data in transit (with TLS): TLS 1.3 tunnel
-✅ Data on server disk: AES-256-GCM (server password)
+ Data on iPhone disk: AES-256-GCM (your password)
+ Data in transit (with TLS): TLS 1.3 tunnel
+ Data on server disk: AES-256-GCM (server password)
 
-⚠️ Data in iPhone RAM: Plain text (normal)
-⚠️ Data in server RAM: Plain text (normal)
-⚠️ BlazeBinary encoding: Not encrypted (just compact format)
+️ Data in iPhone RAM: Plain text (normal)
+️ Data in server RAM: Plain text (normal)
+️ BlazeBinary encoding: Not encrypted (just compact format)
 ```
 
 ---
 
-## 🎯 **SECURITY MODELS: CHOOSE YOUR LEVEL**
+## **SECURITY MODELS: CHOOSE YOUR LEVEL**
 
 ### **Model 1: Standard (TLS + Auth)** - RECOMMENDED
 
 ```
 SECURITY FLOW:
-1. iPhone: Record encrypted on disk (AES) ✅
+1. iPhone: Record encrypted on disk (AES)
 2. iPhone: Plain binary in RAM
-3. iPhone → Server: TLS encrypted tunnel ✅
+3. iPhone → Server: TLS encrypted tunnel
 4. Server: Plain binary in RAM (can read!)
-5. Server: Record encrypted on disk (AES) ✅
+5. Server: Record encrypted on disk (AES)
 
 WHO CAN READ YOUR DATA:
-✅ You (with password)
-✅ Server admin (you!)
-❌ Network attackers (TLS blocks them)
-❌ Disk thieves (AES blocks them)
+ You (with password)
+ Server admin (you!)
+ Network attackers (TLS blocks them)
+ Disk thieves (AES blocks them)
 
 GOOD FOR:
-✅ Personal apps
-✅ Team apps
-✅ Most SaaS products
-✅ 95% of use cases
+ Personal apps
+ Team apps
+ Most SaaS products
+ 95% of use cases
 
 EFFORT: 1 week (TLS + JWT)
 ```
@@ -314,37 +314,37 @@ EFFORT: 1 week (TLS + JWT)
 
 ```
 SECURITY FLOW:
-1. iPhone: Record encrypted on disk (AES) ✅
-2. iPhone: Encrypt record AGAIN for recipients (E2E) ✅
+1. iPhone: Record encrypted on disk (AES)
+2. iPhone: Encrypt record AGAIN for recipients (E2E)
 3. iPhone: Encode encrypted record (BlazeBinary)
-4. iPhone → Server: TLS tunnel ✅ (double encrypted!)
-5. Server: Can't decrypt E2E layer! ✅
+4. iPhone → Server: TLS tunnel (double encrypted!)
+5. Server: Can't decrypt E2E layer!
 6. Server: Stores encrypted blob
-7. Server → iPad: TLS tunnel ✅
-8. iPad: Decrypts E2E layer with private key ✅
-9. iPad: Record encrypted on disk (AES) ✅
+7. Server → iPad: TLS tunnel
+8. iPad: Decrypts E2E layer with private key
+9. iPad: Record encrypted on disk (AES)
 
 WHO CAN READ YOUR DATA:
-✅ You (with password + private key)
-✅ Authorized devices (with private keys)
-❌ Server admin (can't decrypt E2E layer!)
-❌ Network attackers (TLS blocks them)
-❌ Disk thieves (AES blocks them)
-❌ Subpoenas (server has no keys!)
+ You (with password + private key)
+ Authorized devices (with private keys)
+ Server admin (can't decrypt E2E layer!)
+ Network attackers (TLS blocks them)
+ Disk thieves (AES blocks them)
+ Subpoenas (server has no keys!)
 
 GOOD FOR:
-✅ Healthcare (HIPAA)
-✅ Finance (PCI-DSS)
-✅ Legal (attorney-client privilege)
-✅ Privacy-critical apps
-✅ Messaging apps
+ Healthcare (HIPAA)
+ Finance (PCI-DSS)
+ Legal (attorney-client privilege)
+ Privacy-critical apps
+ Messaging apps
 
 EFFORT: 2-3 weeks (E2E + key management)
 ```
 
 ---
 
-## 🍓 **YOUR RASPBERRY PI SETUP (With Security)**
+## **YOUR RASPBERRY PI SETUP (With Security)**
 
 ### **Recommended Security for Pi:**
 
@@ -371,27 +371,27 @@ let certPath = "/etc/letsencrypt/live/yourname.duckdns.org/fullchain.pem"
 let keyPath = "/etc/letsencrypt/live/yourname.duckdns.org/privkey.pem"
 
 let server = try await Server.secure(
-    group: group,
-    tlsConfiguration: GRPCTLSConfiguration.makeServerConfiguration(
-        certificateChain: try NIOSSLCertificate.fromPEMFile(certPath),
-        privateKey: .file(keyPath)
-    )
+ group: group,
+ tlsConfiguration: GRPCTLSConfiguration.makeServerConfiguration(
+ certificateChain: try NIOSSLCertificate.fromPEMFile(certPath),
+ privateKey:.file(keyPath)
+ )
 )
 .withServiceProviders([provider])
 .bind(host: "0.0.0.0", port: 443)
 .get()
 
-print("🔒 Secure gRPC server running on Pi with TLS")
+print(" Secure gRPC server running on Pi with TLS")
 ```
 
 ```swift
 // 3. iPhone connects securely
 let channel = try! GRPCChannelPool.with(
-    target: .host("yourname.duckdns.org", port: 443),
-    transportSecurity: .tls(.makeClientConfigurationBackedByNIOSSL())
+ target:.host("yourname.duckdns.org", port: 443),
+ transportSecurity:.tls(.makeClientConfigurationBackedByNIOSSL())
 )
 
-// ✅ Now your Pi is a secure sync server!
+// Now your Pi is a secure sync server!
 ```
 
 ### **Security Checklist for Pi:**
@@ -399,15 +399,15 @@ let channel = try! GRPCChannelPool.with(
 ```bash
 # 1. Firewall (only allow gRPC)
 sudo ufw enable
-sudo ufw allow 443/tcp  # gRPC
-sudo ufw allow 22/tcp   # SSH (for management)
+sudo ufw allow 443/tcp # gRPC
+sudo ufw allow 22/tcp # SSH (for management)
 sudo ufw deny 50051/tcp # Don't expose plaintext port!
 
 # 2. Secure SSH
 sudo nano /etc/ssh/sshd_config
 # Set:
 PermitRootLogin no
-PasswordAuthentication no  # Use SSH keys only!
+PasswordAuthentication no # Use SSH keys only!
 
 # 3. Keep updated
 sudo apt update && sudo apt upgrade -y
@@ -423,7 +423,7 @@ sudo journalctl -u blazedb -f
 
 ---
 
-## 🔐 **COMPLETE SECURITY SETUP (Pi + TLS + JWT)**
+## **COMPLETE SECURITY SETUP (Pi + TLS + JWT)**
 
 ### **Implementation:**
 
@@ -439,114 +439,114 @@ import BlazeDB
 
 @main
 struct BlazeDBServer {
-    static func main() async throws {
-        // 1. Initialize BlazeDB (encrypted on disk!)
-        let dbURL = URL(fileURLWithPath: "./data/server.blazedb")
-        guard let db = BlazeDBClient(
-            name: "ServerDB",
-            at: dbURL,
-            password: ProcessInfo.processInfo.environment["DB_PASSWORD"]!  // ✅ Encrypted!
-        ) else {
-            fatalError("Failed to init DB")
-        }
-        
-        // 2. Setup TLS
-        let certPath = "/etc/letsencrypt/live/yourname.duckdns.org/fullchain.pem"
-        let keyPath = "/etc/letsencrypt/live/yourname.duckdns.org/privkey.pem"
-        
-        let tlsConfig = try GRPCTLSConfiguration.makeServerConfiguration(
-            certificateChain: NIOSSLCertificate.fromPEMFile(certPath),
-            privateKey: .file(keyPath)
-        )
-        
-        // 3. Create server
-        let group = MultiThreadedEventLoopGroup(numberOfThreads: 2)  // Pi has 4 cores
-        
-        let provider = SecureBlazeDBServiceProvider(db: db)
-        
-        let server = try await Server.secure(
-            group: group,
-            tlsConfiguration: tlsConfig
-        )
-        .withServiceProviders([provider])
-        .bind(host: "0.0.0.0", port: 443)
-        .get()
-        
-        print("🔒 Secure BlazeDB gRPC server running on Raspberry Pi")
-        print("   Port: 443 (TLS encrypted)")
-        print("   Domain: yourname.duckdns.org")
-        print("   Authentication: JWT")
-        print("   Database: AES-256 encrypted")
-        
-        try await server.onClose.get()
-    }
+ static func main() async throws {
+ // 1. Initialize BlazeDB (encrypted on disk!)
+ let dbURL = URL(fileURLWithPath: "./data/server.blazedb")
+ guard let db = BlazeDBClient(
+ name: "ServerDB",
+ at: dbURL,
+ password: ProcessInfo.processInfo.environment["DB_PASSWORD"]! // Encrypted!
+ ) else {
+ fatalError("Failed to init DB")
+ }
+
+ // 2. Setup TLS
+ let certPath = "/etc/letsencrypt/live/yourname.duckdns.org/fullchain.pem"
+ let keyPath = "/etc/letsencrypt/live/yourname.duckdns.org/privkey.pem"
+
+ let tlsConfig = try GRPCTLSConfiguration.makeServerConfiguration(
+ certificateChain: NIOSSLCertificate.fromPEMFile(certPath),
+ privateKey:.file(keyPath)
+ )
+
+ // 3. Create server
+ let group = MultiThreadedEventLoopGroup(numberOfThreads: 2) // Pi has 4 cores
+
+ let provider = SecureBlazeDBServiceProvider(db: db)
+
+ let server = try await Server.secure(
+ group: group,
+ tlsConfiguration: tlsConfig
+ )
+.withServiceProviders([provider])
+.bind(host: "0.0.0.0", port: 443)
+.get()
+
+ print(" Secure BlazeDB gRPC server running on Raspberry Pi")
+ print(" Port: 443 (TLS encrypted)")
+ print(" Domain: yourname.duckdns.org")
+ print(" Authentication: JWT")
+ print(" Database: AES-256 encrypted")
+
+ try await server.onClose.get()
+ }
 }
 
 final class SecureBlazeDBServiceProvider: BlazeDB_BlazeDBAsyncProvider {
-    let db: BlazeDBClient
-    let jwtSecret = "your-jwt-secret-key"  // Store securely!
-    
-    init(db: BlazeDBClient) {
-        self.db = db
-    }
-    
-    func insert(
-        request: BlazeDB_InsertRequest,
-        context: GRPCAsyncServerCallContext
-    ) async throws -> BlazeDB_InsertResponse {
-        // ✅ VERIFY JWT
-        let userId = try authenticateRequest(context)
-        
-        // ✅ DECODE WITH YOUR DECODER
-        let record = try BlazeBinaryDecoder.decode(Data(request.record))
-        
-        // ✅ CHECK PERMISSIONS (RLS)
-        guard hasPermission(userId, collection: request.collection, operation: .insert) else {
-            throw GRPCStatus(code: .permissionDenied, message: "No permission to insert")
-        }
-        
-        // ✅ INSERT INTO ENCRYPTED DB
-        let id = try await db.insert(record)
-        
-        // ✅ AUDIT LOG
-        logOperation(userId: userId, operation: "insert", recordId: id)
-        
-        var response = BlazeDB_InsertResponse()
-        response.id = withUnsafeBytes(of: id.uuid) { Data($0) }
-        
-        return response
-    }
-    
-    private func authenticateRequest(_ context: GRPCAsyncServerCallContext) throws -> UUID {
-        // Extract token from headers
-        guard let authHeader = context.request.headers["authorization"].first,
-              authHeader.hasPrefix("Bearer "),
-              let token = authHeader.split(separator: " ").last else {
-            throw GRPCStatus(code: .unauthenticated, message: "No token provided")
-        }
-        
-        // Verify JWT
-        let jwt = try JWT<UserClaims>(from: String(token), verifiedUsing: .hs256(key: jwtSecret))
-        
-        // Check expiry
-        guard jwt.exp > Date() else {
-            throw GRPCStatus(code: .unauthenticated, message: "Token expired")
-        }
-        
-        return jwt.sub
-    }
+ let db: BlazeDBClient
+ let jwtSecret = "your-jwt-secret-key" // Store securely!
+
+ init(db: BlazeDBClient) {
+ self.db = db
+ }
+
+ func insert(
+ request: BlazeDB_InsertRequest,
+ context: GRPCAsyncServerCallContext
+ ) async throws -> BlazeDB_InsertResponse {
+ // VERIFY JWT
+ let userId = try authenticateRequest(context)
+
+ // DECODE WITH YOUR DECODER
+ let record = try BlazeBinaryDecoder.decode(Data(request.record))
+
+ // CHECK PERMISSIONS (RLS)
+ guard hasPermission(userId, collection: request.collection, operation:.insert) else {
+ throw GRPCStatus(code:.permissionDenied, message: "No permission to insert")
+ }
+
+ // INSERT INTO ENCRYPTED DB
+ let id = try await db.insert(record)
+
+ // AUDIT LOG
+ logOperation(userId: userId, operation: "insert", recordId: id)
+
+ var response = BlazeDB_InsertResponse()
+ response.id = withUnsafeBytes(of: id.uuid) { Data($0) }
+
+ return response
+ }
+
+ private func authenticateRequest(_ context: GRPCAsyncServerCallContext) throws -> UUID {
+ // Extract token from headers
+ guard let authHeader = context.request.headers["authorization"].first,
+ authHeader.hasPrefix("Bearer "),
+ let token = authHeader.split(separator: " ").last else {
+ throw GRPCStatus(code:.unauthenticated, message: "No token provided")
+ }
+
+ // Verify JWT
+ let jwt = try JWT<UserClaims>(from: String(token), verifiedUsing:.hs256(key: jwtSecret))
+
+ // Check expiry
+ guard jwt.exp > Date() else {
+ throw GRPCStatus(code:.unauthenticated, message: "Token expired")
+ }
+
+ return jwt.sub
+ }
 }
 
 struct UserClaims: JWTPayload {
-    let sub: UUID  // User ID
-    let exp: Date  // Expiry
-    
-    func verify(using signer: JWTSigner) throws {
-        // Verify expiry
-        guard exp > Date() else {
-            throw JWTError.claimVerificationFailure(name: "exp", reason: "Token expired")
-        }
-    }
+ let sub: UUID // User ID
+ let exp: Date // Expiry
+
+ func verify(using signer: JWTSigner) throws {
+ // Verify expiry
+ guard exp > Date() else {
+ throw JWTError.claimVerificationFailure(name: "exp", reason: "Token expired")
+ }
+ }
 }
 ```
 
@@ -554,82 +554,82 @@ struct UserClaims: JWTPayload {
 
 ```swift
 class SecureBlazeDBClient {
-    let localDB: BlazeDBClient
-    let grpcClient: BlazeDB_BlazeDBAsyncClient
-    var jwtToken: String?
-    
-    init(serverHost: String) {
-        // Local DB (encrypted on disk!)
-        let url = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
-            .appendingPathComponent("app.blazedb")
-        
-        localDB = try! BlazeDBClient(name: "App", at: url, password: getUserPassword())
-        
-        // gRPC with TLS
-        let channel = try! GRPCChannelPool.with(
-            target: .host(serverHost, port: 443),
-            transportSecurity: .tls(.makeClientConfigurationBackedByNIOSSL())
-        )
-        
-        grpcClient = BlazeDB_BlazeDBAsyncClient(channel: channel)
-    }
-    
-    func login(email: String, password: String) async throws {
-        // Get JWT from auth endpoint
-        let authResponse = try await grpcClient.authenticate(
-            AuthRequest(email: email, password: password)
-        )
-        
-        jwtToken = authResponse.token
-        print("✅ Logged in, token expires in \(authResponse.expiresIn) seconds")
-    }
-    
-    func insert(_ record: BlazeDataRecord) async throws -> UUID {
-        // 1. Insert locally (encrypted on disk)
-        let id = try await localDB.insert(record)
-        
-        // 2. Sync to server
-        Task {
-            // Encode with YOUR encoder
-            let encoded = try BlazeBinaryEncoder.encode(record)
-            
-            var request = BlazeDB_InsertRequest()
-            request.collection = "bugs"
-            request.record = Data(encoded)
-            
-            // Add JWT to headers
-            let options = CallOptions(
-                customMetadata: HPACKHeaders([
-                    ("authorization", "Bearer \(jwtToken!)")
-                ])
-            )
-            
-            // Send (TLS encrypted!)
-            _ = try await grpcClient.insert(request, callOptions: options)
-            
-            print("✅ Synced to Pi server (TLS + JWT)")
-        }
-        
-        return id
-    }
+ let localDB: BlazeDBClient
+ let grpcClient: BlazeDB_BlazeDBAsyncClient
+ var jwtToken: String?
+
+ init(serverHost: String) {
+ // Local DB (encrypted on disk!)
+ let url = FileManager.default.urls(for:.documentDirectory, in:.userDomainMask)[0]
+.appendingPathComponent("app.blazedb")
+
+ localDB = try! BlazeDBClient(name: "App", at: url, password: getUserPassword())
+
+ // gRPC with TLS
+ let channel = try! GRPCChannelPool.with(
+ target:.host(serverHost, port: 443),
+ transportSecurity:.tls(.makeClientConfigurationBackedByNIOSSL())
+ )
+
+ grpcClient = BlazeDB_BlazeDBAsyncClient(channel: channel)
+ }
+
+ func login(email: String, password: String) async throws {
+ // Get JWT from auth endpoint
+ let authResponse = try await grpcClient.authenticate(
+ AuthRequest(email: email, password: password)
+ )
+
+ jwtToken = authResponse.token
+ print(" Logged in, token expires in \(authResponse.expiresIn) seconds")
+ }
+
+ func insert(_ record: BlazeDataRecord) async throws -> UUID {
+ // 1. Insert locally (encrypted on disk)
+ let id = try await localDB.insert(record)
+
+ // 2. Sync to server
+ Task {
+ // Encode with YOUR encoder
+ let encoded = try BlazeBinaryEncoder.encode(record)
+
+ var request = BlazeDB_InsertRequest()
+ request.collection = "bugs"
+ request.record = Data(encoded)
+
+ // Add JWT to headers
+ let options = CallOptions(
+ customMetadata: HPACKHeaders([
+ ("authorization", "Bearer \(jwtToken!)")
+ ])
+ )
+
+ // Send (TLS encrypted!)
+ _ = try await grpcClient.insert(request, callOptions: options)
+
+ print(" Synced to Pi server (TLS + JWT)")
+ }
+
+ return id
+ }
 }
 ```
 
 ---
 
-## 🔐 **ENCRYPTION AT EACH STAGE:**
+## **ENCRYPTION AT EACH STAGE:**
 
 ### **Data States:**
 
 | Location | State | Encryption | Who Can Read |
 |----------|-------|------------|--------------|
-| **iPhone RAM** | Plain text | ❌ None | App process only |
-| **iPhone Disk** | Binary | ✅ AES-256 | No one (without password) |
-| **BlazeBinary (memory)** | Binary | ❌ None | It's a format, not encryption! |
-| **Network (no TLS)** | Binary | ❌ None | ❌ ANYONE (bad!) |
-| **Network (with TLS)** | Binary | ✅ TLS 1.3 | ✅ No one (good!) |
-| **Pi RAM** | Plain text | ❌ None | Server process only |
-| **Pi Disk** | Binary | ✅ AES-256 | No one (without server password) |
+| **iPhone RAM** | Plain text | None | App process only |
+| **iPhone Disk** | Binary | AES-256 | No one (without password) |
+| **BlazeBinary (memory)** | Binary | None | It's a format, not encryption! |
+| **Network (no TLS)** | Binary | None | ANYONE (bad!) |
+| **Network (with TLS)** | Binary | TLS 1.3 | No one (good!) |
+| **Pi RAM** | Plain text | None | Server process only |
+| **Pi Disk** | Binary | AES-256 | No one (without server password) |
 
 ### **Key Insight:**
 
@@ -647,15 +647,15 @@ let encrypted = try AES.GCM.seal(compressed, using: key)
 
 ---
 
-## 🚀 **RASPBERRY PI DEPLOYMENT (Complete)**
+## **RASPBERRY PI DEPLOYMENT (Complete)**
 
 ### **Your Pi Specs:**
 ```
-✅ Port forwarding: Already done
-✅ Public IP: Accessible from internet
-✅ Dynamic DNS: Get free subdomain (DuckDNS)
-✅ Let's Encrypt: Free SSL certificate
-✅ Cost: $0 (you own the Pi!)
+ Port forwarding: Already done
+ Public IP: Accessible from internet
+ Dynamic DNS: Get free subdomain (DuckDNS)
+ Let's Encrypt: Free SSL certificate
+ Cost: $0 (you own the Pi!)
 ```
 
 ### **Full Deployment:**
@@ -683,7 +683,7 @@ sudo journalctl -u blazedb -f
 
 # 7. Test from iPhone
 // Connect to yourname.duckdns.org:443
-// ✅ Should work with TLS!
+// Should work with TLS!
 ```
 
 ### **Pi Performance:**
@@ -697,106 +697,106 @@ Raspberry Pi 4 (4GB RAM, 4 cores):
 • Power: ~5W (pennies per month!)
 
 GOOD FOR:
-✅ Personal use (you + family)
-✅ Small teams (<50 people)
-✅ Learning/testing
-✅ Prototype/MVP
+ Personal use (you + family)
+ Small teams (<50 people)
+ Learning/testing
+ Prototype/MVP
 
 NOT GOOD FOR:
-❌ Large scale (1000+ users)
-❌ High traffic (use cloud)
-❌ Critical uptime (use redundant servers)
+ Large scale (1000+ users)
+ High traffic (use cloud)
+ Critical uptime (use redundant servers)
 ```
 
 ---
 
-## 🎯 **FINAL SECURITY RECOMMENDATION:**
+## **FINAL SECURITY RECOMMENDATION:**
 
 ### **For Your Pi Server:**
 
 ```
-1. ✅ TLS Certificate (Let's Encrypt)
-   • Free
-   • 4 hours to setup
-   • Encrypts all traffic
+1. TLS Certificate (Let's Encrypt)
+ • Free
+ • 4 hours to setup
+ • Encrypts all traffic
 
-2. ✅ JWT Authentication
-   • Simple login endpoint
-   • 1 day to implement
-   • Prevents unauthorized access
+2. JWT Authentication
+ • Simple login endpoint
+ • 1 day to implement
+ • Prevents unauthorized access
 
-3. ✅ Encrypt Server DB
-   • 1 hour to setup
-   • Protects data at rest
-   • Use environment variable for password
+3. Encrypt Server DB
+ • 1 hour to setup
+ • Protects data at rest
+ • Use environment variable for password
 
-4. ✅ Firewall
-   • ufw (already on Pi)
-   • Only allow 443 + SSH
-   • 30 minutes
+4. Firewall
+ • ufw (already on Pi)
+ • Only allow 443 + SSH
+ • 30 minutes
 
-5. ✅ Rate Limiting
-   • 100 requests/minute
-   • Prevents abuse
-   • 2 hours
+5. Rate Limiting
+ • 100 requests/minute
+ • Prevents abuse
+ • 2 hours
 
 TOTAL: 1 week of work
 COST: $0 (all free tools)
-RESULT: Production-ready security! ✅
+RESULT: Production-ready security!
 ```
 
 ### **Optional (Later):**
 
 ```
-💎 End-to-End Encryption (2 weeks)
-   • Maximum privacy
-   • Server can't read data
-   • Complex key management
+ End-to-End Encryption (2 weeks)
+ • Maximum privacy
+ • Server can't read data
+ • Complex key management
 
-💎 Certificate Pinning (4 hours)
-   • Only trust YOUR server cert
-   • Prevents MITM
+ Certificate Pinning (4 hours)
+ • Only trust YOUR server cert
+ • Prevents MITM
 
-💎 Hardware Security (N/A for Pi)
-   • Secure Enclave (iOS only)
-   • TPM chip (enterprise servers)
+ Hardware Security (N/A for Pi)
+ • Secure Enclave (iOS only)
+ • TPM chip (enterprise servers)
 ```
 
 ---
 
-## ✅ **SUMMARY:**
+## **SUMMARY:**
 
 **Your Questions:**
 
-**Q: "Is data encrypted before encoding/decoding?"**  
-**A:** ❌ No - BlazeBinary is serialization, not encryption!
-- Data encrypted on disk (AES-256) ✅
+**Q: "Is data encrypted before encoding/decoding?"**
+**A:** No - BlazeBinary is serialization, not encryption!
+- Data encrypted on disk (AES-256)
 - Data plain in memory (normal)
 - BlazeBinary is just compact binary format
-- Need TLS for network security ⚠️
+- Need TLS for network security ️
 
-**Q: "I have a Raspberry Pi"**  
-**A:** ✅ PERFECT! Free hosting!
+**Q: "I have a Raspberry Pi"**
+**A:** PERFECT! Free hosting!
 - Can run BlazeDB server
 - Add TLS (Let's Encrypt)
 - Add authentication (JWT)
 - Total cost: $0/month
 - Good for 50-100 users
 
-**Q: "Would this be secure?"**  
-**A:** ✅ YES - with TLS + JWT (1 week of work)
-- Without them: ❌ NO
-- With them: ✅ YES (production-ready)
-- With E2E: ✅ EXTREMELY SECURE
+**Q: "Would this be secure?"**
+**A:** YES - with TLS + JWT (1 week of work)
+- Without them: NO
+- With them: YES (production-ready)
+- With E2E: EXTREMELY SECURE
 
 ---
 
-## 🚀 **NEXT STEPS:**
+## **NEXT STEPS:**
 
 Want me to:
-1. ✅ Create complete Pi deployment script?
-2. ✅ Implement TLS + JWT security?
-3. ✅ Build secure gRPC server?
-4. ✅ Create secure iPhone client?
+1. Create complete Pi deployment script?
+2. Implement TLS + JWT security?
+3. Build secure gRPC server?
+4. Create secure iPhone client?
 
-**You have everything you need! Your Pi + TLS + JWT = secure, free BlazeDB sync server! 🔥**
+**You have everything you need! Your Pi + TLS + JWT = secure, free BlazeDB sync server! **

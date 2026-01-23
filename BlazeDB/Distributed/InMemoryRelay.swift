@@ -9,7 +9,6 @@
 import Foundation
 
 /// In-memory relay for coordinating databases on the same device (in-memory queue, not Unix Domain Sockets)
-@preconcurrency
 public actor InMemoryRelay: BlazeSyncRelay {
     private let fromNodeId: UUID
     private let toNodeId: UUID

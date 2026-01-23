@@ -96,7 +96,8 @@ public struct QueryStatistics {
 
 /// Global query profiling manager
 public final class QueryProfiler {
-    public static let shared = QueryProfiler()
+    // Swift 6: Protected by NSLock, safe for concurrent access
+    nonisolated(unsafe) public static let shared = QueryProfiler()
     
     private var profiles: [QueryProfile] = []
     private let lock = NSLock()

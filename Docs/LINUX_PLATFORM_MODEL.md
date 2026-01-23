@@ -15,29 +15,29 @@ This document explains the feature matrix, design rationale, and explicit limita
 
 | Feature | Apple Platforms | Linux | Notes |
 |---------|----------------|-------|-------|
-| **Core CRUD** | ✅ | ✅ | Insert, fetch, update, delete |
-| **Transactions** | ✅ | ✅ | ACID transactions (serial on Linux) |
-| **BlazeBinary Encoding** | ✅ | ✅ | Custom binary format, CRC32 checksums |
-| **Page-Based Storage** | ✅ | ✅ | 4KB pages, encryption, MVCC |
-| **Secondary Indexes** | ✅ | ✅ | Single-field and compound indexes |
-| **Query Builder** | ✅ | ✅ | Type-safe query construction |
-| **MVCC (Multi-Version Concurrency)** | ✅ | ✅ | Snapshot isolation, version management |
-| **Encryption (AES-256-GCM)** | ✅ | ✅ | Per-page encryption, PBKDF2/Argon2 KDF |
-| **Backup & Restore** | ✅ | ✅ | Full database backup with metadata |
-| **Async Queries** | ✅ | ❌ | `async/await` APIs gated on Apple |
-| **SwiftUI Bindings** | ✅ | ❌ | `@BlazeQuery`, `@BlazeQueryTyped` property wrappers |
-| **Combine Integration** | ✅ | ❌ | Reactive query updates |
-| **Vector Search** | ✅ | ❌ | Vector similarity indexing |
-| **Spatial Indexing** | ✅ | ❌ | R-tree geospatial queries |
-| **Full-Text Search** | ✅ | ❌ | Inverted index search |
-| **Parallel Encoding** | ✅ | ❌ | SIMD-accelerated batch operations |
-| **Batch Operations** | ✅ | ❌ | `insertBatch`, `updateBatch`, `deleteBatch` |
-| **Performance Caching** | ✅ | ❌ | Query result caching, fetchAll optimization |
-| **Distributed Sync** | ✅ | ❌ | Multi-database synchronization, peer discovery |
-| **Network Transport** | ✅ | ❌ | SecureConnection, TCPRelay, WebSocketRelay |
-| **Certificate Pinning** | ✅ | ❌ | Network.framework TLS pinning |
-| **Secure Enclave** | ✅ | ❌ | Hardware-backed key storage |
-| **LocalAuthentication** | ✅ | ❌ | Biometric key unlock |
+| **Core CRUD** | | | Insert, fetch, update, delete |
+| **Transactions** | | | ACID transactions (serial on Linux) |
+| **BlazeBinary Encoding** | | | Custom binary format, CRC32 checksums |
+| **Page-Based Storage** | | | 4KB pages, encryption, MVCC |
+| **Secondary Indexes** | | | Single-field and compound indexes |
+| **Query Builder** | | | Type-safe query construction |
+| **MVCC (Multi-Version Concurrency)** | | | Snapshot isolation, version management |
+| **Encryption (AES-256-GCM)** | | | Per-page encryption, PBKDF2/Argon2 KDF |
+| **Backup & Restore** | | | Full database backup with metadata |
+| **Async Queries** | | | `async/await` APIs gated on Apple |
+| **SwiftUI Bindings** | | | `@BlazeQuery`, `@BlazeQueryTyped` property wrappers |
+| **Combine Integration** | | | Reactive query updates |
+| **Vector Search** | | | Vector similarity indexing |
+| **Spatial Indexing** | | | R-tree geospatial queries |
+| **Full-Text Search** | | | Inverted index search |
+| **Parallel Encoding** | | | SIMD-accelerated batch operations |
+| **Batch Operations** | | | `insertBatch`, `updateBatch`, `deleteBatch` |
+| **Performance Caching** | | | Query result caching, fetchAll optimization |
+| **Distributed Sync** | | | Multi-database synchronization, peer discovery |
+| **Network Transport** | | | SecureConnection, TCPRelay, WebSocketRelay |
+| **Certificate Pinning** | | | Network.framework TLS pinning |
+| **Secure Enclave** | | | Hardware-backed key storage |
+| **LocalAuthentication** | | | Biometric key unlock |
 
 ---
 
@@ -99,14 +99,14 @@ BlazeDB uses a compile-time flag `BLAZEDB_LINUX_CORE` defined in `Package.swift`
 
 ```swift
 swiftSettings: [
-    .define("BLAZEDB_LINUX_CORE", .when(platforms: [.linux]))
+.define("BLAZEDB_LINUX_CORE",.when(platforms: [.linux]))
 ]
 ```
 
 Advanced extension files are wrapped with:
 
 ```swift
-#if !BLAZEDB_LINUX_CORE
+#if!BLAZEDB_LINUX_CORE
 // Advanced features (async, parallel, caching, indexing)
 #endif
 ```
@@ -186,7 +186,7 @@ If you're migrating code from Apple platforms to Linux:
 **Apple (Full Features):**
 ```swift
 // SwiftUI binding
-@BlazeQuery(db: db, where: "status", equals: .string("open"))
+@BlazeQuery(db: db, where: "status", equals:.string("open"))
 var bugs: [BlazeDataRecord]
 
 // Async batch insert
@@ -194,8 +194,8 @@ let ids = try await collection.insertBatchAsync(records)
 
 // Vector search
 let results = try db.query()
-    .vectorNearest(embedding, field: "embedding", limit: 10)
-    .execute()
+.vectorNearest(embedding, field: "embedding", limit: 10)
+.execute()
 ```
 
 **Linux (Core Only):**
@@ -203,14 +203,14 @@ let results = try db.query()
 // Manual fetch
 var bugs: [BlazeDataRecord] = []
 bugs = try db.query()
-    .where("status", equals: .string("open"))
-    .execute()
-    .records
+.where("status", equals:.string("open"))
+.execute()
+.records
 
 // Synchronous loop
 var ids: [UUID] = []
 for record in records {
-    ids.append(try collection.insert(record))
+ ids.append(try collection.insert(record))
 }
 
 // Vector search not available - use full scan or external index
@@ -226,12 +226,12 @@ The `BLAZEDB_LINUX_CORE` flag is defined in `Package.swift`:
 
 ```swift
 .target(
-    name: "BlazeDB",
-    dependencies: [...],
-    path: "BlazeDB",
-    swiftSettings: [
-        .define("BLAZEDB_LINUX_CORE", .when(platforms: [.linux]))
-    ]
+ name: "BlazeDB",
+ dependencies: [...],
+ path: "BlazeDB",
+ swiftSettings: [
+.define("BLAZEDB_LINUX_CORE",.when(platforms: [.linux]))
+ ]
 )
 ```
 
@@ -259,13 +259,13 @@ The following files and directories are entirely gated on Linux:
 
 **Distributed Sync (Entire Directory):**
 - `Distributed/` - All files in this directory (28 files)
-  - `BlazeSyncEngine.swift` - Multi-database synchronization
-  - `BlazeTopology.swift` - Connection topology management
-  - `BlazeServer.swift` - Remote database server
-  - `BlazeDiscovery.swift` - mDNS/Bonjour peer discovery
-  - `SecureConnection.swift` - E2E encrypted connections
-  - `TCPRelay.swift`, `WebSocketRelay.swift` - Transport implementations
-  - All GC, validation, and relay implementations
+ - `BlazeSyncEngine.swift` - Multi-database synchronization
+ - `BlazeTopology.swift` - Connection topology management
+ - `BlazeServer.swift` - Remote database server
+ - `BlazeDiscovery.swift` - mDNS/Bonjour peer discovery
+ - `SecureConnection.swift` - E2E encrypted connections
+ - `TCPRelay.swift`, `WebSocketRelay.swift` - Transport implementations
+ - All GC, validation, and relay implementations
 
 **Deprecated:**
 - `BlazeCollection.swift` - Legacy collection type (use `DynamicCollection` instead)
@@ -308,20 +308,20 @@ For Apple platforms, BlazeDB provides a complete, integrated database solution w
 When adding new features to BlazeDB, you must declare the platform support:
 
 1. **Core Feature**: Works on all platforms (Apple + Linux)
-   - Must not use Apple-only frameworks
-   - Must not use Swift 6 concurrency patterns that violate Sendable
-   - Must not use static mutable state
-   - Must compile cleanly on Linux
+ - Must not use Apple-only frameworks
+ - Must not use Swift 6 concurrency patterns that violate Sendable
+ - Must not use static mutable state
+ - Must compile cleanly on Linux
 
 2. **Apple-Only Feature**: Works only on Apple platforms
-   - Wrap entire file/extension with `#if !BLAZEDB_LINUX_CORE`
-   - Document in this file's feature matrix
-   - No Linux stubs or fallbacks
+ - Wrap entire file/extension with `#if!BLAZEDB_LINUX_CORE`
+ - Document in this file's feature matrix
+ - No Linux stubs or fallbacks
 
 3. **Future Linux Support**: Optional future Linux support
-   - Mark as "Future Linux Support" in feature matrix
-   - Do not gate with `#if !BLAZEDB_LINUX_CORE` if Linux support is planned
-   - Document Linux requirements/limitations
+ - Mark as "Future Linux Support" in feature matrix
+ - Do not gate with `#if!BLAZEDB_LINUX_CORE` if Linux support is planned
+ - Document Linux requirements/limitations
 
 ### Gating Rules
 
@@ -337,29 +337,29 @@ When adding new features to BlazeDB, you must declare the platform support:
 // BlazeDB/Core/NewCoreFeature.swift
 // No gating - compiles on all platforms
 extension DynamicCollection {
-    public func newCoreFeature() throws {
-        // Core logic only
-    }
+ public func newCoreFeature() throws {
+ // Core logic only
+ }
 }
 ```
 
 **Apple-Only Feature:**
 ```swift
 // BlazeDB/Core/DynamicCollection+AppleFeature.swift
-#if !BLAZEDB_LINUX_CORE
+#if!BLAZEDB_LINUX_CORE
 
 extension DynamicCollection {
-    public func newAppleFeature() async throws {
-        // Apple-specific implementation
-    }
+ public func newAppleFeature() async throws {
+ // Apple-specific implementation
+ }
 }
 
-#endif // !BLAZEDB_LINUX_CORE
+#endif //!BLAZEDB_LINUX_CORE
 ```
 
 ---
 
-**Last Updated**: 2025-01-XX  
-**BlazeDB Version**: 2.5.x  
+**Last Updated**: 2025-01-XX
+**BlazeDB Version**: 2.5.x
 **Swift Version**: 6.0+
 

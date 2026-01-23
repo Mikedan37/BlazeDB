@@ -1,12 +1,12 @@
-# 🔍 Test Runner Debugging Guide
+# Test Runner Debugging Guide
 
-## 🐛 **Issue: Tests Don't Run (0 passed, 0 failed, 0.01s)**
+## **Issue: Tests Don't Run (0 passed, 0 failed, 0.01s)**
 
 This means xcodebuild failed to execute the test suite. Here's how to fix it:
 
 ---
 
-## ✅ **Quick Fixes (Try These First)**
+## **Quick Fixes (Try These First)**
 
 ### **1. Make Sure BlazeDB Scheme is Shared**
 
@@ -47,9 +47,9 @@ xcodebuild test -scheme BlazeDB -destination 'platform=macOS'
 2. Search for "xcodebuild" or "BlazeDBVisualizer"
 3. Look for error messages
 4. Common errors:
-   - "Scheme BlazeDB is not configured"
-   - "Unable to find scheme"
-   - "Build failed"
+ - "Scheme BlazeDB is not configured"
+ - "Unable to find scheme"
+ - "Build failed"
 ```
 
 ---
@@ -66,7 +66,7 @@ Fastest method:
 
 ---
 
-## 🔧 **Common Issues & Solutions**
+## **Common Issues & Solutions**
 
 ### **Issue 1: Scheme Not Found**
 
@@ -126,7 +126,7 @@ Make sure this matches YOUR actual project location!
 
 ---
 
-## 🧪 **Debugging Steps**
+## **Debugging Steps**
 
 ### **Step 1: Check if xcodebuild works**
 
@@ -150,7 +150,7 @@ xcodebuild -list
 **Expected output:**
 ```
 Schemes:
-    BlazeDB
+ BlazeDB
 ```
 
 ---
@@ -177,18 +177,18 @@ When you click "Run Tests" in BlazeDBVisualizer:
 2. Click "Start" to begin streaming
 3. Search for "xcodebuild" or "BlazeDBVisualizer"
 4. Look for these debug lines:
-   🔍 Executing: xcodebuild test -scheme BlazeDB -destination platform=macOS
-   🔍 Working directory: /Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB
-   ✅ xcodebuild started successfully
-   
-   OR
-   
-   ❌ xcodebuild error output: [error details]
+ Executing: xcodebuild test -scheme BlazeDB -destination platform=macOS
+ Working directory: /Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB
+ xcodebuild started successfully
+
+ OR
+
+ xcodebuild error output: [error details]
 ```
 
 ---
 
-## 🎯 **Alternative: Run Tests in Xcode**
+## **Alternative: Run Tests in Xcode**
 
 **Easiest solution:**
 
@@ -200,60 +200,60 @@ When you click "Run Tests" in BlazeDBVisualizer:
 ```
 
 **This always works and gives you:**
-- ✅ Real-time test execution
-- ✅ Test failures with stack traces
-- ✅ Performance metrics
-- ✅ Test coverage reports
+- Real-time test execution
+- Test failures with stack traces
+- Performance metrics
+- Test coverage reports
 
 ---
 
-## 💡 **Future Enhancement**
+## **Future Enhancement**
 
 If xcodebuild doesn't work from BlazeDBVisualizer, we could:
 
 1. **Show Recent Test Results**
-   - Parse test results from DerivedData
-   - Display last run results
+ - Parse test results from DerivedData
+ - Display last run results
 
 2. **Open in Xcode Button**
-   - One-click to open project
-   - Run tests there
+ - One-click to open project
+ - Run tests there
 
 3. **Alternative Test Runner**
-   - Use `swift test` instead
-   - Or parse test logs from file
+ - Use `swift test` instead
+ - Or parse test logs from file
 
 ---
 
-## 📊 **What the Test Runner Does**
+## **What the Test Runner Does**
 
 When it works correctly:
 
 ```
 1. Executes: xcodebuild test -scheme BlazeDB
 2. Parses live output:
-   "Test Suite 'BlazeDBTests' started..."
-   "Test Case 'testInsert' passed (0.002 seconds)"
-   "Test Case 'testUpdate' passed (0.001 seconds)"
-   
+ "Test Suite 'BlazeDBTests' started..."
+ "Test Case 'testInsert' passed (0.002 seconds)"
+ "Test Case 'testUpdate' passed (0.001 seconds)"
+
 3. Updates UI in real-time:
-   Progress: [████░░░] 45%
-   Running: "AggregationTests"
-   412 / 907 tests
-   ✅ 405 Passed
-   ❌ 7 Failed
-   ⏱️ 48.5s
+ Progress: [████░░░] 45%
+ Running: "AggregationTests"
+ 412 / 907 tests
+ 405 Passed
+ 7 Failed
+ ⏱️ 48.5s
 
 4. Shows final results:
-   ✅ 893 PASSED
-   ❌ 14 FAILED
-   📊 98.5% Pass Rate
-   ⏱️ Completed in 127.3s
+ 893 PASSED
+ 14 FAILED
+ 98.5% Pass Rate
+ ⏱️ Completed in 127.3s
 ```
 
 ---
 
-## 🚀 **Recommended Workflow**
+## **Recommended Workflow**
 
 **For now, use Xcode directly:**
 
@@ -268,7 +268,7 @@ When it works correctly:
 
 ---
 
-## 🔍 **Diagnostic Commands**
+## **Diagnostic Commands**
 
 Run these to diagnose:
 
@@ -292,7 +292,7 @@ rm -rf ~/Library/Developer/Xcode/DerivedData/BlazeDB-*
 
 ---
 
-## 💎 **The Goal**
+## **The Goal**
 
 When working, you'll see:
 
@@ -305,8 +305,8 @@ Progress: ████████░░ 82%
 Running: "PerformanceTests"
 745 / 907 tests
 
-✅ 738 Passed
-❌ 7 Failed
+ 738 Passed
+ 7 Failed
 ⏱️ 94.2s
 ```
 
@@ -314,5 +314,5 @@ Then beautiful results with category breakdown!
 
 ---
 
-**Check Console.app now for xcodebuild output to see what went wrong!** 🔍
+**Check Console.app now for xcodebuild output to see what went wrong!**
 

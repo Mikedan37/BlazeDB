@@ -9,10 +9,10 @@
 Vector queries allow you to find records that are semantically similar using cosine similarity search.
 
 **Features:**
-- ✅ Cosine similarity search
-- ✅ Combined with spatial queries (hybrid)
-- ✅ Combined with full-text search
-- ✅ Efficient lazy decoding
+- Cosine similarity search
+- Combined with spatial queries (hybrid)
+- Combined with full-text search
+- Efficient lazy decoding
 
 ---
 
@@ -23,20 +23,20 @@ Vector queries allow you to find records that are semantically similar using cos
 ```swift
 // Find records similar to a query vector
 let results = try db.query()
-    .vectorNearest(field: "moodEmbedding", to: anxiousEmbedding, limit: 10)
-    .execute()
+.vectorNearest(field: "moodEmbedding", to: anxiousEmbedding, limit: 10)
+.execute()
 ```
 
 ### Combined Vector + Spatial
 
 ```swift
-// "Find journal entries that feel emotionally similar to 'anxious' 
-//  AND happened within 2km of my gym"
+// "Find journal entries that feel emotionally similar to 'anxious'
+// AND happened within 2km of my gym"
 let results = try db.query()
-    .vectorNearest(field: "moodEmbedding", to: anxiousEmbedding, limit: 100)
-    .withinRadius(latitude: gym.lat, longitude: gym.lon, radiusMeters: 2000)
-    .orderByDistance(from: SpatialPoint(latitude: gym.lat, longitude: gym.lon))
-    .execute()
+.vectorNearest(field: "moodEmbedding", to: anxiousEmbedding, limit: 100)
+.withinRadius(latitude: gym.lat, longitude: gym.lon, radiusMeters: 2000)
+.orderByDistance(from: SpatialPoint(latitude: gym.lat, longitude: gym.lon))
+.execute()
 ```
 
 ---
@@ -47,12 +47,12 @@ Vectors are stored as `Data` fields (encoded as `[Float]`):
 
 ```swift
 // Store vector embedding
-let embedding: VectorEmbedding = [0.1, 0.2, 0.3, ...]  // 384-dim vector
+let embedding: VectorEmbedding = [0.1, 0.2, 0.3,...] // 384-dim vector
 let embeddingData = Data(bytes: embedding, count: embedding.count * MemoryLayout<Float>.size)
 
 let record = BlazeDataRecord([
-    "text": .string("I feel anxious"),
-    "moodEmbedding": .data(embeddingData)
+ "text":.string("I feel anxious"),
+ "moodEmbedding":.data(embeddingData)
 ])
 ```
 
@@ -75,11 +75,11 @@ let record = BlazeDataRecord([
 
 ```swift
 .vectorAndSpatial(
-    vectorField: "moodEmbedding",
-    vectorEmbedding: anxiousEmbedding,
-    latitude: 37.7749,
-    longitude: -122.4194,
-    radiusMeters: 2000
+ vectorField: "moodEmbedding",
+ vectorEmbedding: anxiousEmbedding,
+ latitude: 37.7749,
+ longitude: -122.4194,
+ radiusMeters: 2000
 )
 ```
 

@@ -1,10 +1,10 @@
 # BlazeDB Protocol vs. Others: Performance Comparison
 
-**How does our protocol stack up against the competition? 📊**
+**How does our protocol stack up against the competition? **
 
 ---
 
-## 🚀 **PROTOCOL COMPARISON:**
+## **PROTOCOL COMPARISON:**
 
 ### **1. BlazeDB Protocol (Our Custom Binary Protocol)**
 
@@ -35,13 +35,13 @@ Throughput (WiFi 100 Mbps):
 ```
 
 **Advantages:**
-- ✅ **60% smaller** than JSON
-- ✅ **10x faster** encoding/decoding
-- ✅ **Pure binary** (no text overhead)
-- ✅ **Delta encoding** (only changes)
-- ✅ **Parallel encoding** (multi-threaded)
-- ✅ **LZ4 compression** (fastest algorithm)
-- ✅ **Raw TCP** (minimal overhead)
+- **60% smaller** than JSON
+- **10x faster** encoding/decoding
+- **Pure binary** (no text overhead)
+- **Delta encoding** (only changes)
+- **Parallel encoding** (multi-threaded)
+- **LZ4 compression** (fastest algorithm)
+- **Raw TCP** (minimal overhead)
 
 ---
 
@@ -74,18 +74,18 @@ Throughput (WiFi 100 Mbps):
 ```
 
 **Advantages:**
-- ✅ Language-agnostic
-- ✅ Good compression
-- ✅ HTTP/2 multiplexing
+- Language-agnostic
+- Good compression
+- HTTP/2 multiplexing
 
 **Disadvantages:**
-- ❌ **2.5x larger** than BlazeBinary
-- ❌ **3x slower** encoding
-- ❌ **HTTP/2 overhead** (headers, framing)
-- ❌ **No delta encoding**
-- ❌ **Sequential encoding**
+- **2.5x larger** than BlazeBinary
+- **3x slower** encoding
+- **HTTP/2 overhead** (headers, framing)
+- **No delta encoding**
+- **Sequential encoding**
 
-**BlazeDB is 6x FASTER! 🔥**
+**BlazeDB is 6x FASTER! **
 
 ---
 
@@ -118,17 +118,17 @@ Throughput (WiFi 100 Mbps):
 ```
 
 **Advantages:**
-- ✅ Simple (JSON)
-- ✅ Browser-friendly
+- Simple (JSON)
+- Browser-friendly
 
 **Disadvantages:**
-- ❌ **5x larger** than BlazeBinary
-- ❌ **4x slower** than BlazeBinary
-- ❌ **WebSocket overhead** (framing, headers)
-- ❌ **No compression** (by default)
-- ❌ **Text-based** (inefficient)
+- **5x larger** than BlazeBinary
+- **4x slower** than BlazeBinary
+- **WebSocket overhead** (framing, headers)
+- **No compression** (by default)
+- **Text-based** (inefficient)
 
-**BlazeDB is 125x FASTER! 🔥🔥🔥**
+**BlazeDB is 125x FASTER! **
 
 ---
 
@@ -161,18 +161,18 @@ Throughput (WiFi 100 Mbps):
 ```
 
 **Advantages:**
-- ✅ Universal (everyone understands HTTP)
-- ✅ Cacheable
-- ✅ Simple debugging
+- Universal (everyone understands HTTP)
+- Cacheable
+- Simple debugging
 
 **Disadvantages:**
-- ❌ **5x larger** than BlazeBinary
-- ❌ **10x slower** than BlazeBinary
-- ❌ **HTTP overhead** (headers, handshake)
-- ❌ **No batching** (1 request = 1 operation)
-- ❌ **Text-based** (inefficient)
+- **5x larger** than BlazeBinary
+- **10x slower** than BlazeBinary
+- **HTTP overhead** (headers, handshake)
+- **No batching** (1 request = 1 operation)
+- **Text-based** (inefficient)
 
-**BlazeDB is 208x FASTER! 🔥🔥🔥**
+**BlazeDB is 208x FASTER! **
 
 ---
 
@@ -205,18 +205,18 @@ Throughput (WiFi 100 Mbps):
 ```
 
 **Advantages:**
-- ✅ Managed service
-- ✅ Automatic scaling
-- ✅ Built-in auth
+- Managed service
+- Automatic scaling
+- Built-in auth
 
 **Disadvantages:**
-- ❌ **5x larger** than BlazeBinary
-- ❌ **20x slower** than BlazeBinary
-- ❌ **HTTPS overhead** (TLS handshake)
-- ❌ **Cloud dependency** (not self-hosted)
-- ❌ **Text-based** (inefficient)
+- **5x larger** than BlazeBinary
+- **20x slower** than BlazeBinary
+- **HTTPS overhead** (TLS handshake)
+- **Cloud dependency** (not self-hosted)
+- **Text-based** (inefficient)
 
-**BlazeDB is 367x FASTER! 🔥🔥🔥**
+**BlazeDB is 367x FASTER! **
 
 ---
 
@@ -249,22 +249,22 @@ Throughput (WiFi 100 Mbps):
 ```
 
 **Advantages:**
-- ✅ Binary format (efficient)
-- ✅ Language-agnostic
-- ✅ Good compression
+- Binary format (efficient)
+- Language-agnostic
+- Good compression
 
 **Disadvantages:**
-- ❌ **3.6x larger** than BlazeBinary
-- ❌ **2.6x slower** than BlazeBinary
-- ❌ **No delta encoding**
-- ❌ **Sequential encoding**
-- ❌ **No native Swift support**
+- **3.6x larger** than BlazeBinary
+- **2.6x slower** than BlazeBinary
+- **No delta encoding**
+- **Sequential encoding**
+- **No native Swift support**
 
-**BlazeDB is 4.2x FASTER! 🔥**
+**BlazeDB is 4.2x FASTER! **
 
 ---
 
-## 📊 **COMPREHENSIVE COMPARISON TABLE:**
+## **COMPREHENSIVE COMPARISON TABLE:**
 
 | Protocol | Size/Op | Encoding | Network | Total | Throughput | vs BlazeDB |
 |----------|---------|----------|---------|-------|------------|------------|
@@ -277,125 +277,125 @@ Throughput (WiFi 100 Mbps):
 
 ---
 
-## 🎯 **KEY DIFFERENCES:**
+## **KEY DIFFERENCES:**
 
 ### **1. Encoding Efficiency:**
 ```
-BlazeDB:     50 bytes/op (delta + binary)
-gRPC:        120 bytes/op (protobuf)
+BlazeDB: 50 bytes/op (delta + binary)
+gRPC: 120 bytes/op (protobuf)
 MessagePack: 180 bytes/op (binary JSON)
-WebSocket:   250 bytes/op (JSON)
-REST:        250 bytes/op (JSON)
-CloudKit:    250 bytes/op (JSON)
+WebSocket: 250 bytes/op (JSON)
+REST: 250 bytes/op (JSON)
+CloudKit: 250 bytes/op (JSON)
 
-BlazeDB is 2.4x-5x SMALLER! 🔥
+BlazeDB is 2.4x-5x SMALLER!
 ```
 
 ### **2. Encoding Speed:**
 ```
-BlazeDB:     0.03ms/op (parallel, native)
-gRPC:        0.1ms/op (protobuf)
+BlazeDB: 0.03ms/op (parallel, native)
+gRPC: 0.1ms/op (protobuf)
 MessagePack: 0.08ms/op (MessagePack)
-WebSocket:   0.15ms/op (JSON)
-REST:        0.15ms/op (JSON)
-CloudKit:    0.15ms/op (JSON)
+WebSocket: 0.15ms/op (JSON)
+REST: 0.15ms/op (JSON)
+CloudKit: 0.15ms/op (JSON)
 
-BlazeDB is 2.6x-5x FASTER! 🔥
+BlazeDB is 2.6x-5x FASTER!
 ```
 
 ### **3. Network Overhead:**
 ```
-BlazeDB:     5ms (raw TCP, minimal)
-gRPC:        5ms (HTTP/2, some overhead)
+BlazeDB: 5ms (raw TCP, minimal)
+gRPC: 5ms (HTTP/2, some overhead)
 MessagePack: 5ms (TCP, minimal)
-WebSocket:   20ms (WebSocket framing)
-REST:        50ms (HTTP handshake)
-CloudKit:    100ms (HTTPS handshake)
+WebSocket: 20ms (WebSocket framing)
+REST: 50ms (HTTP handshake)
+CloudKit: 100ms (HTTPS handshake)
 
-BlazeDB is 4x-20x FASTER! 🔥
+BlazeDB is 4x-20x FASTER!
 ```
 
 ### **4. Throughput:**
 ```
-BlazeDB:     312,000 ops/sec (WiFi 100 Mbps)
-gRPC:        50,000 ops/sec
+BlazeDB: 312,000 ops/sec (WiFi 100 Mbps)
+gRPC: 50,000 ops/sec
 MessagePack: 75,000 ops/sec
-WebSocket:   2,500 ops/sec
-REST:        1,500 ops/sec
-CloudKit:    850 ops/sec
+WebSocket: 2,500 ops/sec
+REST: 1,500 ops/sec
+CloudKit: 850 ops/sec
 
-BlazeDB is 4x-367x FASTER! 🔥🔥🔥
+BlazeDB is 4x-367x FASTER!
 ```
 
 ---
 
-## 🔥 **WHY BLAZEDB IS FASTER:**
+## **WHY BLAZEDB IS FASTER:**
 
 ### **1. Pure Binary Encoding:**
-- ✅ No JSON overhead (no quotes, commas, etc.)
-- ✅ Binary UUIDs (16 bytes, not 36 bytes string)
-- ✅ Native types (no string conversion)
-- ✅ **2.4x-5x smaller** than JSON
+- No JSON overhead (no quotes, commas, etc.)
+- Binary UUIDs (16 bytes, not 36 bytes string)
+- Native types (no string conversion)
+- **2.4x-5x smaller** than JSON
 
 ### **2. Delta Encoding:**
-- ✅ Only send changed fields
-- ✅ **75% less data** for updates
-- ✅ **4x more efficient** for incremental sync
+- Only send changed fields
+- **75% less data** for updates
+- **4x more efficient** for incremental sync
 
 ### **3. Parallel Encoding:**
-- ✅ Multi-threaded encoding
-- ✅ **10x faster** than sequential
-- ✅ All operations encoded simultaneously
+- Multi-threaded encoding
+- **10x faster** than sequential
+- All operations encoded simultaneously
 
 ### **4. Native BlazeBinary:**
-- ✅ Custom format optimized for Swift
-- ✅ **53% smaller** than JSON
-- ✅ **17% smaller** than CBOR
-- ✅ **Zero dependencies**
+- Custom format optimized for Swift
+- **53% smaller** than JSON
+- **17% smaller** than CBOR
+- **Zero dependencies**
 
 ### **5. Raw TCP:**
-- ✅ Minimal overhead (5 bytes header)
-- ✅ No HTTP/WebSocket framing
-- ✅ Direct connection
-- ✅ **4x-20x faster** than HTTP/WebSocket
+- Minimal overhead (5 bytes header)
+- No HTTP/WebSocket framing
+- Direct connection
+- **4x-20x faster** than HTTP/WebSocket
 
 ### **6. LZ4 Compression:**
-- ✅ Fastest compression algorithm
-- ✅ **60% smaller** data
-- ✅ **<1ms** overhead
-- ✅ Automatic (if batch > 512 bytes)
+- Fastest compression algorithm
+- **60% smaller** data
+- **<1ms** overhead
+- Automatic (if batch > 512 bytes)
 
 ### **7. Aggressive Batching:**
-- ✅ 2,000 operations per batch
-- ✅ 20 batches in parallel
-- ✅ **40x more** operations per network call
-- ✅ **10x faster** than individual sends
+- 2,000 operations per batch
+- 20 batches in parallel
+- **40x more** operations per network call
+- **10x faster** than individual sends
 
 ---
 
-## 🎯 **SUMMARY:**
+## **SUMMARY:**
 
 ### **BlazeDB Protocol Advantages:**
-1. ✅ **2.4x-5x smaller** than competitors
-2. ✅ **2.6x-5x faster** encoding
-3. ✅ **4x-20x faster** network
-4. ✅ **4x-367x higher** throughput
-5. ✅ **Delta encoding** (only changes)
-6. ✅ **Parallel encoding** (multi-threaded)
-7. ✅ **Pure binary** (no text overhead)
-8. ✅ **Raw TCP** (minimal overhead)
+1. **2.4x-5x smaller** than competitors
+2. **2.6x-5x faster** encoding
+3. **4x-20x faster** network
+4. **4x-367x higher** throughput
+5. **Delta encoding** (only changes)
+6. **Parallel encoding** (multi-threaded)
+7. **Pure binary** (no text overhead)
+8. **Raw TCP** (minimal overhead)
 
 ### **Performance Ranking:**
-1. **🥇 BlazeDB:** 312,000 ops/sec (FASTEST!)
-2. **🥈 MessagePack:** 75,000 ops/sec (4.2x slower)
-3. **🥉 gRPC:** 50,000 ops/sec (6.2x slower)
+1. ** BlazeDB:** 312,000 ops/sec (FASTEST!)
+2. ** MessagePack:** 75,000 ops/sec (4.2x slower)
+3. ** gRPC:** 50,000 ops/sec (6.2x slower)
 4. **WebSocket:** 2,500 ops/sec (125x slower)
 5. **REST:** 1,500 ops/sec (208x slower)
 6. **CloudKit:** 850 ops/sec (367x slower)
 
 ---
 
-## 🔥 **BOTTOM LINE:**
+## **BOTTOM LINE:**
 
 **BlazeDB Protocol is:**
 - **2.4x-5x SMALLER** than competitors
@@ -405,5 +405,5 @@ BlazeDB is 4x-367x FASTER! 🔥🔥🔥
 - **Parallel** (multi-threaded)
 - **Optimized** for Swift and databases
 
-**We're the FASTEST protocol for database sync! 🚀🔥💀**
+**We're the FASTEST protocol for database sync! **
 

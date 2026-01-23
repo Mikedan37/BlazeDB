@@ -1,10 +1,10 @@
-# 👨‍💻 BlazeDB - Complete Developer Guide
+# ‍ BlazeDB - Complete Developer Guide
 
 **Everything developers need to know to build with BlazeDB.**
 
 ---
 
-## **📚 Table of Contents**
+## ** Table of Contents**
 
 1. [Getting Started](#getting-started)
 2. [Core Concepts](#core-concepts)
@@ -19,14 +19,14 @@
 
 ---
 
-## **🚀 Getting Started**
+## ** Getting Started**
 
 ### **Installation**
 
 **Swift Package Manager:**
 ```swift
 dependencies: [
-    .package(url: "https://github.com/yourusername/BlazeDB.git", from: "1.0.0")
+.package(url: "https://github.com/yourusername/BlazeDB.git", from: "1.0.0")
 ]
 ```
 
@@ -42,25 +42,25 @@ dependencies: [
 import BlazeDB
 
 // Create database
-let url = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
-    .appendingPathComponent("myapp.blazedb")
+let url = FileManager.default.urls(for:.documentDirectory, in:.userDomainMask)[0]
+.appendingPathComponent("myapp.blazedb")
 let db = try BlazeDBClient(name: "MyApp", fileURL: url, password: "secure-password-123")
 
 // Insert data
 let record = BlazeDataRecord([
-    "title": .string("Hello BlazeDB!"),
-    "value": .int(42)
+ "title":.string("Hello BlazeDB!"),
+ "value":.int(42)
 ])
 let id = try db.insert(record)
 
 // Fetch data
 let fetched = try db.fetch(id: id)
-print(fetched?.string("title") ?? "Not found")
+print(fetched?.string("title")?? "Not found")
 ```
 
 ---
 
-## **💡 Core Concepts**
+## ** Core Concepts**
 
 ### **1. BlazeDataRecord**
 
@@ -68,9 +68,9 @@ The core data structure - a dictionary-like record with type-safe fields.
 
 ```swift
 let record = BlazeDataRecord([
-    "name": .string("John"),
-    "age": .int(30),
-    "active": .bool(true)
+ "name":.string("John"),
+ "age":.int(30),
+ "active":.bool(true)
 ])
 ```
 
@@ -86,8 +86,8 @@ Type-safe field values:
 .date(Date())
 .uuid(UUID())
 .data(Data())
-.array([.string("a"), .string("b")])
-.dictionary(["key": .string("value")])
+.array([.string("a"),.string("b")])
+.dictionary(["key":.string("value")])
 ```
 
 ### **3. Query Builder**
@@ -96,11 +96,11 @@ Fluent API for building queries:
 
 ```swift
 let results = try db.query()
-    .where("status", equals: .string("open"))
-    .where("priority", greaterThan: .int(3))
-    .orderBy("priority", descending: true)
-    .limit(10)
-    .all()
+.where("status", equals:.string("open"))
+.where("priority", greaterThan:.int(3))
+.orderBy("priority", descending: true)
+.limit(10)
+.all()
 ```
 
 ### **4. Transactions**
@@ -109,15 +109,15 @@ ACID-compliant transactions:
 
 ```swift
 try db.transaction { db in
-    let id1 = try db.insert(record1)
-    let id2 = try db.insert(record2)
-    // Both succeed or both fail
+ let id1 = try db.insert(record1)
+ let id2 = try db.insert(record2)
+ // Both succeed or both fail
 }
 ```
 
 ---
 
-## **📖 API Reference**
+## ** API Reference**
 
 See `API_REFERENCE.md` for complete API documentation.
 
@@ -134,128 +134,128 @@ See `API_REFERENCE.md` for complete API documentation.
 
 ---
 
-## **✅ Best Practices**
+## ** Best Practices**
 
 ### **1. Use Strong Passwords**
 
 ```swift
-// ✅ Good
+// Good
 let db = try BlazeDBClient(name: "MyApp", fileURL: url, password: "SecurePass123!@#")
 
-// ❌ Bad
+// Bad
 let db = try BlazeDBClient(name: "MyApp", fileURL: url, password: "123")
 ```
 
 ### **2. Use Transactions for Multiple Operations**
 
 ```swift
-// ✅ Good
+// Good
 try db.transaction { db in
-    try db.insert(record1)
-    try db.insert(record2)
-    try db.insert(record3)
+ try db.insert(record1)
+ try db.insert(record2)
+ try db.insert(record3)
 }
 
-// ❌ Bad
+// Bad
 try db.insert(record1)
 try db.insert(record2)
-try db.insert(record3)  // If this fails, record1 and record2 are still inserted
+try db.insert(record3) // If this fails, record1 and record2 are still inserted
 ```
 
 ### **3. Create Indexes for Frequently Queried Fields**
 
 ```swift
-// ✅ Good
+// Good
 try db.createIndex(on: "email")
-let users = try db.fetch(byIndexedField: "email", value: .string("user@example.com"))
+let users = try db.fetch(byIndexedField: "email", value:.string("user@example.com"))
 
-// ❌ Bad (slow - scans all records)
+// Bad (slow - scans all records)
 let users = try db.query()
-    .where("email", equals: .string("user@example.com"))
-    .all()
+.where("email", equals:.string("user@example.com"))
+.all()
 ```
 
 ### **4. Use Batch Operations for Bulk Inserts**
 
 ```swift
-// ✅ Good (10x faster)
+// Good (10x faster)
 let ids = try db.insertMany(records)
 
-// ❌ Bad (slow)
+// Bad (slow)
 for record in records {
-    _ = try db.insert(record)
+ _ = try db.insert(record)
 }
 ```
 
 ### **5. Enable Telemetry in Development**
 
 ```swift
-// ✅ Good
+// Good
 db.telemetry.enable()
 // Monitor performance and debug issues
 
-// ❌ Bad
+// Bad
 // No visibility into performance
 ```
 
 ### **6. Use Async Operations in UI**
 
 ```swift
-// ✅ Good (doesn't block UI)
+// Good (doesn't block UI)
 Task {
-    let id = try await db.insertAsync(record)
-    await MainActor.run {
-        // Update UI
-    }
+ let id = try await db.insertAsync(record)
+ await MainActor.run {
+ // Update UI
+ }
 }
 
-// ❌ Bad (blocks UI)
-let id = try db.insert(record)  // Blocks main thread
+// Bad (blocks UI)
+let id = try db.insert(record) // Blocks main thread
 ```
 
 ### **7. Set Up Backups**
 
 ```swift
-// ✅ Good
+// Good
 try db.createBackup(to: backupURL)
 // Regular backups protect against data loss
 
-// ❌ Bad
+// Bad
 // No backups = risk of data loss
 ```
 
 ---
 
-## **🚀 Advanced Features**
+## ** Advanced Features**
 
 ### **Type-Safe Queries**
 
 ```swift
 struct User: BlazeRecord {
-    var id: UUID
-    var name: String
-    var email: String
+ var id: UUID
+ var name: String
+ var email: String
 }
 
 // Type-safe query with autocomplete!
 let users = try db.queryTyped(User.self)
-    .where(\.name, equals: "John")
-    .where(\.email, contains: "@gmail.com")
-    .all()
+.where(\.name, equals: "John")
+.where(\.email, contains: "@gmail.com")
+.all()
 ```
 
 ### **Codable Integration**
 
 ```swift
 struct Bug: Codable {
-    let title: String
-    let priority: Int
-    let status: String
+ let title: String
+ let priority: Int
+ let status: String
 }
 
 // Direct Codable support - zero conversion!
 let bug = Bug(title: "Fix login", priority: 5, status: "open")
-let id = try db.insert(bug)  // Works directly!
+let id = try db.insert(bug) // Works directly!
 let fetched: Bug? = try db.fetch(id: id, as: Bug.self)
 ```
 
@@ -264,18 +264,18 @@ let fetched: Bug? = try db.fetch(id: id, as: Bug.self)
 ```swift
 // Set security context
 db.setSecurityContext(SecurityContext(
-    userId: userID,
-    roles: ["admin"],
-    teams: [teamID]
+ userId: userID,
+ roles: ["admin"],
+ teams: [teamID]
 ))
 
 // Create policy
 let policy = SecurityPolicy(
-    name: "UserData",
-    rules: [
-        .allowRead(where: { $0.string("userId") == userID }),
-        .denyWrite()
-    ]
+ name: "UserData",
+ rules: [
+.allowRead(where: { $0.string("userId") == userID }),
+.denyWrite()
+ ]
 )
 try db.createPolicy(policy)
 ```
@@ -295,17 +295,17 @@ let results = try db.search("swift database")
 ```swift
 // Count
 let count = try db.query()
-    .where("status", equals: .string("open"))
-    .count()
+.where("status", equals:.string("open"))
+.count()
 
 // Sum
 let total = try db.query()
-    .sum("price")
+.sum("price")
 
 // Group by
 let grouped = try db.query()
-    .groupBy("status")
-    .count()
+.groupBy("status")
+.count()
 ```
 
 ### **JOINs**
@@ -313,14 +313,14 @@ let grouped = try db.query()
 ```swift
 // Join two databases
 let results = try db.query()
-    .join(otherDB, on: "userId", equals: "id")
-    .where("status", equals: .string("active"))
-    .all()
+.join(otherDB, on: "userId", equals: "id")
+.where("status", equals:.string("active"))
+.all()
 ```
 
 ---
 
-## **⚡ Performance Optimization**
+## ** Performance Optimization**
 
 ### **1. Use Indexes**
 
@@ -329,7 +329,7 @@ let results = try db.query()
 try db.createIndex(on: "email")
 
 // Query uses index (50-1000x faster)
-let user = try db.fetch(byIndexedField: "email", value: .string("user@example.com"))
+let user = try db.fetch(byIndexedField: "email", value:.string("user@example.com"))
 ```
 
 ### **2. Use Batch Operations**
@@ -340,8 +340,8 @@ let ids = try db.insertMany(records)
 
 // Batch update
 let count = try db.updateMany(
-    where: { $0.string("status") == "open" },
-    set: ["status": .string("closed")]
+ where: { $0.string("status") == "open" },
+ set: ["status":.string("closed")]
 )
 ```
 
@@ -350,8 +350,8 @@ let count = try db.updateMany(
 ```swift
 // Query cache is automatic
 // Repeated queries are 100x faster
-let results1 = try db.query().where("status", equals: .string("open")).all()
-let results2 = try db.query().where("status", equals: .string("open")).all()  // Cached!
+let results1 = try db.query().where("status", equals:.string("open")).all()
+let results2 = try db.query().where("status", equals:.string("open")).all() // Cached!
 ```
 
 ### **4. Use Async Operations**
@@ -371,7 +371,7 @@ try db.vacuum()
 
 ---
 
-## **🔒 Security Guide**
+## ** Security Guide**
 
 ### **1. Use Strong Passwords**
 
@@ -401,7 +401,7 @@ let db = try BlazeDBClient(name: "MyApp", fileURL: url, password: "secure-passwo
 ```swift
 // Always validate user input
 guard let email = record.string("email"), email.contains("@") else {
-    throw BlazeDBError.invalidData(reason: "Invalid email")
+ throw BlazeDBError.invalidData(reason: "Invalid email")
 }
 ```
 
@@ -415,7 +415,7 @@ db.telemetry.enable()
 
 ---
 
-## **🔄 Sync Guide**
+## ** Sync Guide**
 
 See `SYNC_TRANSPORT_GUIDE.md` for complete sync documentation.
 
@@ -424,12 +424,12 @@ See `SYNC_TRANSPORT_GUIDE.md` for complete sync documentation.
 ```swift
 // Same app (fastest)
 let topology = BlazeTopology()
-let id1 = try await topology.register(db: db1, name: "DB1", role: .server)
-let id2 = try await topology.register(db: db2, name: "DB2", role: .client)
-try await topology.connectLocal(from: id1, to: id2, mode: .bidirectional)
+let id1 = try await topology.register(db: db1, name: "DB1", role:.server)
+let id2 = try await topology.register(db: db2, name: "DB2", role:.client)
+try await topology.connectLocal(from: id1, to: id2, mode:.bidirectional)
 
 // Different apps
-try await topology.connectCrossApp(from: id1, to: id2, socketPath: "/tmp/sync.sock", mode: .bidirectional)
+try await topology.connectCrossApp(from: id1, to: id2, socketPath: "/tmp/sync.sock", mode:.bidirectional)
 
 // Different devices
 let remote = RemoteNode(host: "192.168.1.100", port: 8080, database: "ServerDB", useTLS: true, authToken: "token")
@@ -438,7 +438,7 @@ try await topology.connectRemote(nodeId: id1, remote: remote, policy: SyncPolicy
 
 ---
 
-## **🐛 Troubleshooting**
+## ** Troubleshooting**
 
 ### **Common Issues:**
 
@@ -464,7 +464,7 @@ try await topology.connectRemote(nodeId: id1, remote: remote, policy: SyncPolicy
 
 ---
 
-## **📝 Examples**
+## ** Examples**
 
 See `Examples/README.md` for complete examples.
 
@@ -478,7 +478,7 @@ See `Examples/README.md` for complete examples.
 
 ---
 
-## **📚 Additional Resources**
+## ** Additional Resources**
 
 - **API Reference:** `Docs/API_REFERENCE.md`
 - **Sync Guide:** `Docs/SYNC_TRANSPORT_GUIDE.md`
@@ -488,7 +488,7 @@ See `Examples/README.md` for complete examples.
 
 ---
 
-## **🎯 Next Steps**
+## ** Next Steps**
 
 1. **Read Quick Start** - Get up and running
 2. **Try Examples** - See BlazeDB in action
@@ -497,5 +497,5 @@ See `Examples/README.md` for complete examples.
 
 ---
 
-**Happy coding with BlazeDB! 🔥**
+**Happy coding with BlazeDB! **
 

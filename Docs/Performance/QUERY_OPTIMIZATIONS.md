@@ -15,9 +15,9 @@ Field projection allows you to select only specific fields from query results, r
 ```swift
 // Select only id, name, and status fields
 let results = try db.query()
-    .project("id", "name", "status")
-    .where("status", equals: .string("active"))
-    .execute()
+.project("id", "name", "status")
+.where("status", equals:.string("active"))
+.execute()
 
 let records = try results.records
 // Each record only contains id, name, and status fields
@@ -43,22 +43,22 @@ This is **10% of the effort** of binary-level partial decoding but provides **70
 ```swift
 // Project with filters
 let results = try db.query()
-    .project("id", "title")
-    .where("status", equals: .string("open"))
-    .limit(10)
-    .execute()
+.project("id", "title")
+.where("status", equals:.string("open"))
+.limit(10)
+.execute()
 
 // Project with sorting
 let results = try db.query()
-    .project("name", "priority")
-    .orderBy("priority", descending: true)
-    .execute()
+.project("name", "priority")
+.orderBy("priority", descending: true)
+.execute()
 
 // Multiple projections (additive)
 let results = try db.query()
-    .project("id", "name")
-    .project("status")  // Adds to projection
-    .execute()
+.project("id", "name")
+.project("status") // Adds to projection
+.execute()
 ```
 
 ## 2. Record Caching
@@ -85,7 +85,7 @@ let record2 = try db.fetch(id: recordID)
 RecordCache.shared.setMaxSize(5000)
 
 // Set maximum age (default: 5 minutes)
-RecordCache.shared.setMaxAge(600)  // 10 minutes
+RecordCache.shared.setMaxAge(600) // 10 minutes
 
 // Get cache statistics
 let stats = RecordCache.shared.getStats()
@@ -127,27 +127,27 @@ Lazy field decoding defers decoding of large fields until they're accessed, savi
 ```swift
 // Fetch record with lazy decoding (large fields >1KB are lazy)
 let lazyRecord = try db.collection.fetchLazy(
-    id: recordID,
-    fieldSizeThreshold: 1024  // Fields >1KB are lazy
+ id: recordID,
+ fieldSizeThreshold: 1024 // Fields >1KB are lazy
 )
 
 // Small fields decoded immediately
-let name = lazyRecord?["name"]  // Instant access
+let name = lazyRecord?["name"] // Instant access
 
 // Large fields decoded on-demand
-let largeData = lazyRecord?["largeData"]  // Decodes only when accessed
+let largeData = lazyRecord?["largeData"] // Decodes only when accessed
 ```
 
 ### Configuration
 
 ```swift
 // Set default threshold (default: 1KB)
-LazyFieldRecord.defaultFieldSizeThreshold = 2048  // 2KB
+LazyFieldRecord.defaultFieldSizeThreshold = 2048 // 2KB
 
 // Per-record threshold
 let lazyRecord = try LazyFieldRecord(
-    encodedData: data,
-    fieldSizeThreshold: 5120  // 5KB
+ encodedData: data,
+ fieldSizeThreshold: 5120 // 5KB
 )
 ```
 
@@ -168,10 +168,10 @@ let lazyRecord = try LazyFieldRecord(
 ```swift
 // Record with large data field
 let record = BlazeDataRecord([
-    "id": .uuid(UUID()),
-    "name": .string("Test"),
-    "smallData": .data(Data(repeating: 0, count: 100)),  // 100 bytes
-    "largeData": .data(Data(repeating: 0, count: 10000))  // 10KB
+ "id":.uuid(UUID()),
+ "name":.string("Test"),
+ "smallData":.data(Data(repeating: 0, count: 100)), // 100 bytes
+ "largeData":.data(Data(repeating: 0, count: 10000)) // 10KB
 ])
 
 let encoded = try BlazeBinaryEncoder.encode(record)
@@ -186,8 +186,8 @@ XCTAssertNotNil(lazyRecord["smallData"])
 XCTAssertTrue(lazyRecord.isLazy(field: "largeData"))
 
 // Access triggers decode
-let largeData = lazyRecord["largeData"]  // Decodes now
-XCTAssertFalse(lazyRecord.isLazy(field: "largeData"))  // No longer lazy
+let largeData = lazyRecord["largeData"] // Decodes now
+XCTAssertFalse(lazyRecord.isLazy(field: "largeData")) // No longer lazy
 ```
 
 ## Performance Impact
@@ -221,20 +221,20 @@ All three optimizations work together:
 ```swift
 // Query with projection (reduces memory)
 let results = try db.query()
-    .project("id", "name", "status")
-    .where("status", equals: .string("active"))
-    .execute()
+.project("id", "name", "status")
+.where("status", equals:.string("active"))
+.execute()
 
 // Records are cached automatically
 for record in try results.records {
-    let id = record.storage["id"]?.uuidValue
-    // Subsequent fetches use cache
-    let fullRecord = try db.fetch(id: id!)
+ let id = record.storage["id"]?.uuidValue
+ // Subsequent fetches use cache
+ let fullRecord = try db.fetch(id: id!)
 }
 
 // Large fields use lazy decoding
 let lazyRecord = try db.collection.fetchLazy(id: id!)
-let largeData = lazyRecord?["largeData"]  // Decoded on-demand
+let largeData = lazyRecord?["largeData"] // Decoded on-demand
 ```
 
 ## Best Practices
