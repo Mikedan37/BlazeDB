@@ -75,7 +75,12 @@ let package = Package(
             path: "BlazeDBTests",
             swiftSettings: [
                 // Core-only tests: exclude distributed modules
-                .define("BLAZEDB_CORE_ONLY")
+                .define("BLAZEDB_CORE_ONLY"),
+                // Exclude distributed modules from test builds
+                .unsafeFlags(["-Xfrontend", "-disable-implicit-concurrency-module-import"], .when(configuration: .debug))
+            ],
+            linkerSettings: [
+                // Only link core modules
             ]
         ),
         .testTarget(

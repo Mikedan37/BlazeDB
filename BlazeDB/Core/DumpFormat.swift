@@ -7,6 +7,11 @@
 //
 
 import Foundation
+#if canImport(CryptoKit)
+import CryptoKit
+#else
+import Crypto
+#endif
 
 /// Dump format version
 public enum DumpFormatVersion: Int, Codable {
@@ -197,11 +202,9 @@ public struct DatabaseDump: Codable {
 extension Data {
     func sha256() -> String {
         #if canImport(CryptoKit)
-        import CryptoKit
         let hash = SHA256.hash(data: self)
         return hash.compactMap { String(format: "%02x", $0) }.joined()
         #else
-        import Crypto
         // Fallback: use base64 for non-CryptoKit platforms
         // Note: This is not cryptographically secure, but acceptable for non-security-critical verification
         return self.base64EncodedString()
