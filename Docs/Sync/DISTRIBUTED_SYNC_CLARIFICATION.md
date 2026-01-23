@@ -50,33 +50,33 @@
 - Parallel encoding (concurrentMap)
 - Variable-length encoding for efficiency
 
-### 1.2 Partially Implemented ️
+### 1.2 Partially Implemented 
 
 **Compression:**
-- ️ **Status:** Stubbed (returns data unchanged)
-- ️ **Code:** `TCPRelay+Compression.swift:13-36`
-- ️ **Impact:** No compression, 2-3x bandwidth waste
-- ️ **Reason:** Unsafe pointer code removed for Swift 6 safety
-- ️ **Can Enable:** Yes, with safe re-implementation
+-  **Status:** Stubbed (returns data unchanged)
+-  **Code:** `TCPRelay+Compression.swift:13-36`
+-  **Impact:** No compression, 2-3x bandwidth waste
+-  **Reason:** Unsafe pointer code removed for Swift 6 safety
+-  **Can Enable:** Yes, with safe re-implementation
 
 **Unix Domain Socket Server:**
-- ️ **Status:** Throws `RelayError.notImplemented`
-- ️ **Code:** `UnixDomainSocketRelay.swift:163-199`
-- ️ **Impact:** Can't use Unix Domain Sockets for server-side listening
-- ️ **Reason:** `NWListener` doesn't support Unix Domain Socket endpoints
-- ️ **Can Enable:** Yes, using POSIX sockets instead of NWListener
+-  **Status:** Throws `RelayError.notImplemented`
+-  **Code:** `UnixDomainSocketRelay.swift:163-199`
+-  **Impact:** Can't use Unix Domain Sockets for server-side listening
+-  **Reason:** `NWListener` doesn't support Unix Domain Socket endpoints
+-  **Can Enable:** Yes, using POSIX sockets instead of NWListener
 
 **Retry Logic:**
-- ️ **Status:** Basic requeue, no exponential backoff
-- ️ **Code:** `BlazeSyncEngine.swift:660-662`
-- ️ **Impact:** Failed operations retry immediately (could spam network)
-- ️ **Can Enable:** Yes, add backoff to `requeueBatch()`
+-  **Status:** Basic requeue, no exponential backoff
+-  **Code:** `BlazeSyncEngine.swift:660-662`
+-  **Impact:** Failed operations retry immediately (could spam network)
+-  **Can Enable:** Yes, add backoff to `requeueBatch()`
 
 **Discovery Storage:**
-- ️ **Status:** Server/discovery not persisted
-- ️ **Code:** `BlazeDBClient+Discovery.swift:65` (TODO comment)
-- ️ **Impact:** Server must be re-created on each app launch
-- ️ **Can Enable:** Yes, store server instance
+-  **Status:** Server/discovery not persisted
+-  **Code:** `BlazeDBClient+Discovery.swift:65` (TODO comment)
+-  **Impact:** Server must be re-created on each app launch
+-  **Can Enable:** Yes, store server instance
 
 ### 1.3 Missing
 
@@ -200,7 +200,7 @@
 **What This Means:**
 - **Efficient for incremental sync** - only changed operations
 - **Inefficient for initial sync** - must replay all operations
-- ️ **Memory overhead** - operation log grows over time
+-  **Memory overhead** - operation log grows over time
 - **Event sourcing pattern** - state derived from operations
 
 **Code References:**
@@ -221,7 +221,7 @@
 - **Slow initial sync** - must download entire operation log
 - **Bandwidth intensive** - 100K operations = ~20MB (uncompressed)
 - **Time intensive** - could take minutes for large databases
-- ️ **Memory intensive** - must store all operations in memory during sync
+-  **Memory intensive** - must store all operations in memory during sync
 
 **Example Scenario:**
 ```
@@ -245,9 +245,9 @@ Database with 100,000 operations:
 
 **Current Impact (Op-Log Only):**
 - **BlazeBinary is already 53% smaller than JSON** - good baseline
-- ️ **Large operation logs** - 100K ops × 200 bytes = 20MB uncompressed
-- ️ **With compression** - 20MB → ~7-10MB (50-65% reduction)
-- ️ **Bandwidth savings** - Significant for slow networks
+-  **Large operation logs** - 100K ops × 200 bytes = 20MB uncompressed
+-  **With compression** - 20MB → ~7-10MB (50-65% reduction)
+-  **Bandwidth savings** - Significant for slow networks
 
 **With Snapshot Sync (Future):**
 - **Would help more** - snapshots are larger (full database state)
@@ -294,7 +294,7 @@ Database with 100,000 operations:
 **Documented But Not Implemented:**
 - Snapshot-based initial sync (mentioned in docs, not in code)
 - Chunked streaming (mentioned in protocol docs, not implemented)
-- ️ Compression (documented as feature, currently stubbed)
+-  Compression (documented as feature, currently stubbed)
 
 **Implemented But Not Emphasized in Docs:**
 - Operation merging (Insert+Update → Update)
@@ -332,9 +332,9 @@ Database with 100,000 operations:
 - E2E encryption protects data
 
 **What's Partially Correct:**
-- ️ **"Fully distributed"** - True for hub-and-spoke, false for peer-to-peer mesh
-- ️ **"Database replication"** - True for incremental sync, false for full snapshot sync
-- ️ **"Efficient bootstrap"** - False, new nodes must replay entire operation log
+-  **"Fully distributed"** - True for hub-and-spoke, false for peer-to-peer mesh
+-  **"Database replication"** - True for incremental sync, false for full snapshot sync
+-  **"Efficient bootstrap"** - False, new nodes must replay entire operation log
 
 **What's Incorrect:**
 - **"Full database replication"** - Only operation log replication
@@ -412,7 +412,7 @@ func loadSnapshot(_ snapshot: DatabaseSnapshot) async throws {
 **Can It Be Added Without Breaking Protocol?**
 - **Yes** - Add new methods to protocol (existing methods unchanged)
 - **Backward compatible** - Old clients ignore new methods
-- ️ **Requires version negotiation** - Client must indicate support
+-  **Requires version negotiation** - Client must indicate support
 
 **Level of Difficulty: MEDIUM**
 - **Effort:** 2-3 weeks
@@ -483,7 +483,7 @@ func pullAllOperations(since: LamportTimestamp) async throws -> [BlazeOperation]
 **Can It Be Added Without Breaking Protocol?**
 - **Yes** - Add optional parameters (default to nil = no pagination)
 - **Backward compatible** - Old clients use default (no pagination)
-- ️ **Requires protocol version** - New clients can request pagination
+-  **Requires protocol version** - New clients can request pagination
 
 **Level of Difficulty: MEDIUM**
 - **Effort:** 1-2 weeks
@@ -621,7 +621,7 @@ An **incremental operation log synchronization engine** that enables multiple Bl
 **Maturity Assessment:**
 - **Level 1 (Basic):** Operation log sync
 - **Level 2 (Intermediate):** Incremental sync, conflict resolution, E2E encryption
-- **Level 3 (Advanced):** ️ Missing snapshot sync, chunked transfers
+- **Level 3 (Advanced):**  Missing snapshot sync, chunked transfers
 - **Level 4 (Enterprise):** Missing peer-to-peer mesh, advanced routing
 
 **BlazeDB is at Level 2 (Intermediate)** - Fully functional for incremental sync scenarios, but missing optimizations for large-scale initial sync.
@@ -683,8 +683,8 @@ An **incremental operation log synchronization engine** that enables multiple Bl
 **BlazeDB's distributed engine is:**
 - **Production-ready** for incremental sync scenarios (<100K operations)
 - **Fully functional** for hub-and-spoke architectures
-- ️ **Not optimized** for large-scale initial sync (>100K operations)
-- ️ **Missing optimizations** (compression, chunking, snapshots) but core functionality works
+-  **Not optimized** for large-scale initial sync (>100K operations)
+-  **Missing optimizations** (compression, chunking, snapshots) but core functionality works
 
 **It is NOT:**
 - A full database replication system (operation log only)

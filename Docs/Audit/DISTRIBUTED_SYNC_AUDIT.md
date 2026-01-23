@@ -18,11 +18,11 @@
 - BlazeBinary encoding (fully implemented, optimized)
 
 **What's Incomplete:**
-- ️ Compression (stubbed - returns data as-is)
-- ️ Unix Domain Socket server-side listening (throws `notImplemented`)
-- ️ Full database snapshot sync (NOT implemented - op-log only)
-- ️ Chunked/streaming transfers (NOT implemented)
-- ️ Large data transfer optimization (NOT implemented)
+-  Compression (stubbed - returns data as-is)
+-  Unix Domain Socket server-side listening (throws `notImplemented`)
+-  Full database snapshot sync (NOT implemented - op-log only)
+-  Chunked/streaming transfers (NOT implemented)
+-  Large data transfer optimization (NOT implemented)
 
 **What's Missing:**
 - Snapshot-based initial sync
@@ -48,7 +48,7 @@
 - **Incremental sync works** - only changed operations are transferred
 - **Initial sync is slow** - must replay entire operation log (could be 100K+ operations)
 - **No fast bootstrap** - new devices must download all historical operations
-- ️ **Memory pressure** - large operation logs consume memory
+-  **Memory pressure** - large operation logs consume memory
 
 **Code References:**
 - `BlazeSyncEngine.swift:192-224` - `synchronize()` method
@@ -66,9 +66,9 @@
 - Batch size is configurable (10K ops) but entire batch sent atomically
 
 **What This Means:**
-- ️ **Memory risk** - large batches (10K ops × ~200 bytes = 2MB) sent in one go
-- ️ **Network timeout risk** - large transfers may timeout
-- ️ **No progress tracking** - can't show progress for large syncs
+-  **Memory risk** - large batches (10K ops × ~200 bytes = 2MB) sent in one go
+-  **Network timeout risk** - large transfers may timeout
+-  **No progress tracking** - can't show progress for large syncs
 - **Works for small/medium datasets** - fine for <100K operations
 
 **Code References:**
@@ -88,9 +88,9 @@
 
 **What This Means:**
 - **No compression** - all data sent uncompressed
-- ️ **Bandwidth waste** - 2-3x larger transfers than needed
+-  **Bandwidth waste** - 2-3x larger transfers than needed
 - **Safe** - no unsafe pointer usage
-- ️ **Performance impact** - especially on slow networks
+-  **Performance impact** - especially on slow networks
 
 **Code References:**
 - `TCPRelay+Compression.swift` - entire file is stubs
@@ -296,7 +296,7 @@
 - Static shared state (cache, pools) protected by `NSLock`
 
 **Potential Issues:**
-- ️ **Static cache/pools** use `NSLock` - safe but not Swift concurrency native
+-  **Static cache/pools** use `NSLock` - safe but not Swift concurrency native
 - **Actor isolation** - prevents data races on instance state
 - **Protocol conformance** - `BlazeSyncRelay: Actor` ensures isolation
 
@@ -329,7 +329,7 @@
 - Tasks properly isolated
 
 **Potential Issues:**
-- ️ **Static cache** - shared across all `TCPRelay` instances (intentional, but could cause memory growth)
+-  **Static cache** - shared across all `TCPRelay` instances (intentional, but could cause memory growth)
 - **Operation queue** - isolated to `BlazeSyncEngine` actor
 - **Connection state** - isolated to `TCPRelay` actor
 
@@ -347,7 +347,7 @@
 - `TCPRelay.swift:39-50` - Receive loop with cancellation check
 - `BlazeSyncEngine.swift:146-151` - Periodic sync with cancellation check
 
-### 4.5 Retry Logic: ️ PARTIAL
+### 4.5 Retry Logic:  PARTIAL
 
 **FINDING:** Retry logic exists but is limited.
 
@@ -359,8 +359,8 @@
 - **NO max retry limit** - could retry forever
 
 **What This Means:**
-- ️ **Network failures** - operations requeued but no backoff
-- ️ **Connection failures** - retries but no limit
+-  **Network failures** - operations requeued but no backoff
+-  **Connection failures** - retries but no limit
 - **Operation failures** - requeued for retry
 
 **Code References:**
@@ -378,7 +378,7 @@
 - No circular dependencies between actors
 
 **Potential Issues:**
-- ️ **Static cache lock** - could block if cache operations are slow (unlikely)
+-  **Static cache lock** - could block if cache operations are slow (unlikely)
 - **Actor isolation** - prevents deadlocks between actors
 
 ---
@@ -425,9 +425,9 @@ encodeOperations() → compress() → encrypt() → send()
 - Re-implement using safe Swift patterns
 
 **Is Compression Needed Now?**
-- ️ **For small datasets (<10K ops):** Not critical - BlazeBinary is already 53% smaller than JSON
+-  **For small datasets (<10K ops):** Not critical - BlazeBinary is already 53% smaller than JSON
 - **For large datasets (>100K ops):** Yes - could save 50-70% bandwidth
-- ️ **For slow networks:** Yes - compression would help significantly
+-  **For slow networks:** Yes - compression would help significantly
 - **For fast networks (LAN):** Less critical - encoding speed more important
 
 **Verdict:** Compression is **nice-to-have** for large syncs, but **not blocking** for core functionality.
@@ -512,7 +512,7 @@ encodeOperations() → compress() → encrypt() → send()
 - `BlazeOperation.swift:111-169` - `OperationLog` with Lamport clock
 - `BlazeSyncEngine.swift:284-286` - Sorts by timestamp
 
-### 6.5 SyncState Messages: ️ PARTIAL STATE
+### 6.5 SyncState Messages:  PARTIAL STATE
 
 **FINDING:** `SyncState` contains **metadata only**, not full database state.
 
@@ -624,7 +624,7 @@ encodeOperations() → compress() → encrypt() → send()
 
 ### 8.2 What Is Incomplete
 
-**️ Partially Implemented:**
+** Partially Implemented:**
 1. **Compression** - Stubbed (returns data unchanged)
 2. **Unix Domain Socket server** - Throws `notImplemented` (client works)
 3. **Large data transfers** - No chunking/streaming (works but not optimized)
@@ -699,8 +699,8 @@ encodeOperations() → compress() → encrypt() → send()
 **Reasoning:**
 - **BlazeBinary is already 53% smaller than JSON** - good compression ratio
 - **System works without compression** - functional for most use cases
-- ️ **Large syncs (>100K ops) would benefit** - but not common
-- ️ **Slow networks would benefit** - but most users have fast networks
+-  **Large syncs (>100K ops) would benefit** - but not common
+-  **Slow networks would benefit** - but most users have fast networks
 - **Can be added later** - doesn't break existing functionality
 
 **When to Add:**
@@ -722,7 +722,7 @@ encodeOperations() → compress() → encrypt() → send()
 - Protocol requires Actor conformance
 - No cross-isolation issues
 
-### 9.2 Static Shared State: ️ ACCEPTABLE
+### 9.2 Static Shared State:  ACCEPTABLE
 
 - Cache and pools use `NSLock` (not Swift concurrency native)
 - Short critical sections (low contention risk)
@@ -760,9 +760,9 @@ A **fully functional op-log based incremental sync system** with:
 - Peer-to-peer mesh (hub-and-spoke only)
 
 ### What Needs Work:
-- ️ Compression re-implementation (stubbed)
-- ️ Unix Domain Socket server (throws notImplemented)
-- ️ Retry logic (basic, needs backoff)
+-  Compression re-implementation (stubbed)
+-  Unix Domain Socket server (throws notImplemented)
+-  Retry logic (basic, needs backoff)
 
 ### Overall Assessment:
 **The system is production-ready for small-to-medium databases (<100K operations) with fast networks.** For large databases or slow networks, compression and snapshot sync would significantly improve performance, but are not blocking issues.

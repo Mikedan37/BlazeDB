@@ -2,7 +2,7 @@
 
 **Platform:** Linux (aarch64 tested on Orange Pi 5 Ultra)  
 **Swift:** 6.0+  
-**Status:** ✅ Core functionality fully supported
+**Status:**  Core functionality fully supported
 
 ---
 
@@ -152,7 +152,7 @@ let db2 = try BlazeDB.openDefault(name: "test", password: "test-password")
 let record2 = try db2.fetch(id: id)
 assert(record2?.storage["test"] == .string("value"))
 
-print("✅ BlazeDB works correctly on Linux!")
+print(" BlazeDB works correctly on Linux!")
 ```
 
 ---
@@ -203,15 +203,15 @@ let db = try BlazeDB.openDefault(name: "mydb", password: "password")
 ```
 
 **What BlazeDB Guarantees:**
-- ✅ Directories created automatically
-- ✅ Encryption enabled by default
-- ✅ Safe defaults for all settings
-- ✅ Works identically on Linux and macOS
+-  Directories created automatically
+-  Encryption enabled by default
+-  Safe defaults for all settings
+-  Works identically on Linux and macOS
 
 **What BlazeDB Refuses to Guess:**
-- ❌ Database location (use `openDefault()` or specify path)
-- ❌ Encryption password (you must provide it)
-- ❌ Schema version (use migrations for upgrades)
+-  Database location (use `openDefault()` or specify path)
+-  Encryption password (you must provide it)
+-  Schema version (use migrations for upgrades)
 
 **Next Steps:**
 - Read `QUERY_PERFORMANCE.md` for query optimization

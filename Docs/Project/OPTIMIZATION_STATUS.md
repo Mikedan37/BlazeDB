@@ -39,7 +39,7 @@
 
 ---
 
-## ️ **CRITICAL GAPS (Need Integration)**
+##  **CRITICAL GAPS (Need Integration)**
 
 ### 1. Lazy Decoding Integration
 
@@ -126,15 +126,15 @@ let encoded = isLazyEnabled
 
 | Feature | Foundation | Integration | Optimization | Tests |
 |---------|-----------|-------------|--------------|-------|
-| Lazy Decoding | | | | ️ |
+| Lazy Decoding | | | |  |
 | Geospatial | | | | |
-| Event Triggers | | | ️ | ️ |
-| Vector Search | | | | ️ |
-| Query Planner | | | ️ | ️ |
+| Event Triggers | | |  |  |
+| Vector Search | | | |  |
+| Query Planner | | |  |  |
 
 **Legend:**
 - Complete
-- ️ Partial
+-  Partial
 - Missing
 
 ---

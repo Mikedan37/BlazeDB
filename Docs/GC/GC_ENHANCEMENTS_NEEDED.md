@@ -1,4 +1,4 @@
-# ️ Garbage Collection Enhancements Needed
+#  Garbage Collection Enhancements Needed
 
 **Critical GC features missing for distributed sync, MVCC, and multi-database scenarios.**
 

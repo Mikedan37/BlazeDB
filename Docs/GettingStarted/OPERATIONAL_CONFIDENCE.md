@@ -150,16 +150,16 @@ The doctor command now includes:
 ## Limitations
 
 **What health reports do NOT do:**
-- ❌ Background monitoring (computed on-demand only)
-- ❌ Automatic tuning (observes only)
-- ❌ Performance optimization (interpretation only)
-- ❌ Predictive alerts (current state only)
+-  Background monitoring (computed on-demand only)
+-  Automatic tuning (observes only)
+-  Performance optimization (interpretation only)
+-  Predictive alerts (current state only)
 
 **What health reports DO:**
-- ✅ Provide current health verdict
-- ✅ Interpret statistics meaningfully
-- ✅ Suggest actionable steps
-- ✅ Help users understand their database
+-  Provide current health verdict
+-  Interpret statistics meaningfully
+-  Suggest actionable steps
+-  Help users understand their database
 
 ## Summary
 

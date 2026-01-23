@@ -21,10 +21,10 @@ Result: Already pretty async!
 
 ### **What's Synchronous:**
 ```
-️ Database operations (insert/fetch/update) - synchronous
-️ File I/O operations - synchronous
-️ Encryption/decryption - synchronous
-️ Index operations - synchronous
+ Database operations (insert/fetch/update) - synchronous
+ File I/O operations - synchronous
+ Encryption/decryption - synchronous
+ Index operations - synchronous
 
 Result: Core operations are blocking
 ```
@@ -253,7 +253,7 @@ await multiplexer.connect(host: "server.com", port: 8080)
 • CPU: 20% (waiting for I/O)
 • Memory: Low (one at a time)
 
-Result: Works, but limited! ️
+Result: Works, but limited! 
 ```
 
 ### **With Async Improvements:**
@@ -285,14 +285,14 @@ Result: 100x better!
  Concurrent reads
 ```
 
-### **️ What Could Be Better:**
+### ** What Could Be Better:**
 ```
-️ Connection pooling (for multiple clients)
-️ Connection limits (prevent overload)
-️ Async database operations (non-blocking)
-️ Query caching (repeated queries)
-️ Better isolation (per-client context)
-️ Resource limits (memory/CPU/disk)
+ Connection pooling (for multiple clients)
+ Connection limits (prevent overload)
+ Async database operations (non-blocking)
+ Query caching (repeated queries)
+ Better isolation (per-client context)
+ Resource limits (memory/CPU/disk)
 ```
 
 ### ** Bottom Line:**

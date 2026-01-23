@@ -48,7 +48,7 @@ STATUS: Already implemented
 
 ---
 
-## ️ **WHAT YOU NEED TO ADD (Critical Gaps)**
+##  **WHAT YOU NEED TO ADD (Critical Gaps)**
 
 ### **1. TLS/SSL for Transport** CRITICAL
 
@@ -80,7 +80,7 @@ IMPLEMENTATION:
 3. Update clients to use.tls()
 
 TIME: 1-2 hours
-STATUS: ️ MUST IMPLEMENT
+STATUS:  MUST IMPLEMENT
 ```
 
 ### **2. Authentication** CRITICAL
@@ -153,7 +153,7 @@ PROS: Expires automatically, contains user info, standard
 CONS: Slightly more complex
 
 TIME: 1 day
-STATUS: ️ RECOMMENDED
+STATUS:  RECOMMENDED
 ```
 
 **Option C: Mutual TLS (Best for High Security)**
@@ -187,7 +187,7 @@ STATUS: OVERKILL FOR MOST APPS
 **CURRENT STATE:**
 ```swift
 // TLS encrypts data in transit
-// ️ Server can read everything (not E2E!)
+//  Server can read everything (not E2E!)
 
 iPhone → [TLS encrypted] → Server (decrypts, reads!) → [TLS encrypted] → iPad
 ```
@@ -241,29 +241,29 @@ STATUS: OPTIONAL (for privacy-critical apps)
 │ │
 │ Layer 6: End-to-End Encryption (Optional) │
 │ ┌────────────────────────────────────────────────┐ │
-│ │ • Public key encryption ️ TO ADD │ │
+│ │ • Public key encryption  TO ADD │ │
 │ │ • Server can't read data │ │
 │ └────────────────────────────────────────────────┘ │
 │ │
 │ Layer 5: Authentication │
 │ ┌────────────────────────────────────────────────┐ │
-│ │ • JWT tokens ️ TO ADD │ │
-│ │ • API keys ️ TO ADD │ │
+│ │ • JWT tokens  TO ADD │ │
+│ │ • API keys  TO ADD │ │
 │ │ • OAuth 2.0 OPTIONAL │ │
 │ └────────────────────────────────────────────────┘ │
 │ │
 │ Layer 4: Transport Encryption │
 │ ┌────────────────────────────────────────────────┐ │
-│ │ • TLS 1.3 ️ TO ADD │ │
-│ │ • Certificate validation ️ TO ADD │ │
+│ │ • TLS 1.3  TO ADD │ │
+│ │ • Certificate validation  TO ADD │ │
 │ │ • Perfect forward secrecy (with TLS) │ │
 │ └────────────────────────────────────────────────┘ │
 │ │
 │ Layer 3: Data Integrity │
 │ ┌────────────────────────────────────────────────┐ │
 │ │ • BlazeBinary CRC32 │ │
-│ │ • HMAC signatures ️ TO ADD │ │
-│ │ • Operation signatures ️ TO ADD │ │
+│ │ • HMAC signatures  TO ADD │ │
+│ │ • Operation signatures  TO ADD │ │
 │ └────────────────────────────────────────────────┘ │
 │ │
 │ Layer 2: Local Storage │
@@ -304,7 +304,7 @@ let channel = GRPCChannelPool.with(
 )
 
 EFFECTIVENESS: (Prevents eavesdropping)
-STATUS: ️ MUST ADD
+STATUS:  MUST ADD
 ```
 
 ### **Threat 2: Man-in-the-Middle (MITM)**
@@ -331,7 +331,7 @@ let channel = GRPCChannelPool.with(
 )
 
 EFFECTIVENESS: (Prevents MITM)
-STATUS: ️ RECOMMENDED
+STATUS:  RECOMMENDED
 ```
 
 ### **Threat 3: Unauthorized Access**
@@ -362,7 +362,7 @@ func insert(request: InsertRequest, context: GRPCAsyncServerCallContext) async t
 }
 
 EFFECTIVENESS:
-STATUS: ️ MUST IMPLEMENT
+STATUS:  MUST IMPLEMENT
 ```
 
 ### **Threat 4: Data Tampering**
@@ -408,7 +408,7 @@ func insert(request: InsertRequest, context: GRPCAsyncServerCallContext) async t
 }
 
 EFFECTIVENESS: (Prevents tampering)
-STATUS: ️ RECOMMENDED
+STATUS:  RECOMMENDED
 ```
 
 ### **Threat 5: Replay Attacks**
@@ -454,7 +454,7 @@ func validateOperation(_ op: BlazeOperation) throws {
 }
 
 EFFECTIVENESS: (Prevents replay)
-STATUS: ️ RECOMMENDED
+STATUS:  RECOMMENDED
 ```
 
 ### **Threat 6: Server Compromise**
@@ -514,7 +514,7 @@ STATUS: OPTIONAL (for ultra-sensitive data)
 
 ---
 
-## ️ **COMPLETE SECURITY IMPLEMENTATION**
+##  **COMPLETE SECURITY IMPLEMENTATION**
 
 ### **Minimum Viable Security (1 Week)**
 
@@ -574,15 +574,15 @@ SECURITY LEVEL: (Banking/healthcare level)
 
 | Security Feature | Firebase | Realm | Supabase | CloudKit | **BlazeDB** |
 |------------------|----------|-------|----------|----------|-------------|
-| **Transport Encryption** | TLS | TLS | TLS | TLS | ️ Must add |
-| **Data at Rest** | | ️ Paid | | | **AES-256** |
-| **Authentication** | | | | | ️ Must add |
+| **Transport Encryption** | TLS | TLS | TLS | TLS |  Must add |
+| **Data at Rest** | |  Paid | | | **AES-256** |
+| **Authentication** | | | | |  Must add |
 | **Authorization** | Rules | | RLS | | **RLS + RBAC** |
-| **End-to-End** | | | | | ️ Can add |
-| **Operation Signing** | | | | ️ | ️ Can add |
+| **End-to-End** | | | | |  Can add |
+| **Operation Signing** | | | |  |  Can add |
 | **Self-Hosted** | | | | | |
 | **Open Source** | | | | | |
-| **Audit Logs** | | ️ | | ️ | |
+| **Audit Logs** | |  | |  | |
 
 **VERDICT: BlazeDB has BETTER security primitives, just needs TLS + auth added.**
 
@@ -721,8 +721,8 @@ SECURITY:
  Local encryption: (AES-256, excellent)
  Local integrity: (CRC32, good)
  Access control: (RLS, excellent)
-️ Network: (no TLS yet, BAD)
-️ Auth: (no auth yet, BAD)
+ Network: (no TLS yet, BAD)
+ Auth: (no auth yet, BAD)
 
 OVERALL: (Good locally, insecure over network)
 ```
@@ -830,7 +830,7 @@ RESULT: Banking-grade security
  Implement TLS + JWT (1 week)
  Document security features
  Add security best practices guide
-⏸️ E2E encryption (v2.0 feature)
+⏸ E2E encryption (v2.0 feature)
 
 This gives you:
 • Production-ready security
@@ -839,9 +839,9 @@ This gives you:
 ```
 
 **Don't go for maximum security right away:**
-- ️ E2E breaks server-side queries
-- ️ Complex key management scares developers
-- ️ Most apps don't need it
+-  E2E breaks server-side queries
+-  Complex key management scares developers
+-  Most apps don't need it
 
 **Ship with TLS + JWT first. Add E2E later if users demand it.**
 

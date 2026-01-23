@@ -2,7 +2,7 @@
 
 ## **Current Status**
 
-**Implementation:** ️ **PARTIAL** - Core logic exists, needs integration
+**Implementation:**  **PARTIAL** - Core logic exists, needs integration
 
 **What's Done:**
 - Overflow page format defined (`OverflowPageHeader`)
@@ -11,9 +11,9 @@
 - Comprehensive test suite (15+ tests covering edge cases)
 
 **What's Missing:**
-- ️ Main page format doesn't include overflow pointer
-- ️ Need to modify page header to store overflow pointer
-- ️ Integration with `DynamicCollection` write path
+-  Main page format doesn't include overflow pointer
+-  Need to modify page header to store overflow pointer
+-  Integration with `DynamicCollection` write path
 
 ---
 
@@ -70,7 +70,7 @@
 
 ---
 
-## ️ **Integration Issues**
+##  **Integration Issues**
 
 ### **Problem 1: Main Page Format**
 
@@ -241,9 +241,9 @@ if let pageIndices = indexMap[id] {
 - Comprehensive tests
 
 **What Needs Work:**
-- ️ Page format update (add overflow pointer)
-- ️ DynamicCollection integration
-- ️ Page deletion handling
+-  Page format update (add overflow pointer)
+-  DynamicCollection integration
+-  Page deletion handling
 
 **Estimated Effort:** 2-3 days to complete integration
 

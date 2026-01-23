@@ -10,21 +10,21 @@
 - `DynamicCollection.insert()` now checks `lazyDecodingEnabled` flag
 - Uses `encodeWithFieldTable()` when lazy decoding enabled
 - QueryBuilder planner integration added
-- ️ LazyBlazeRecord.decodeField() still needs true partial decode (placeholder)
+-  LazyBlazeRecord.decodeField() still needs true partial decode (placeholder)
 
 ### 2. Query Planner Integration
 - Planner called automatically in `QueryBuilder._executeStandard()`
 - Logs plan strategy and execution order
-- ️ Plan not yet used to optimize execution (just logged)
+-  Plan not yet used to optimize execution (just logged)
 
 ### 3. Event Triggers Foundation
 - TriggerContext API complete
 - StorageLayout persistence structure
-- ️ Trigger persistence hook needs completion (BlazeDBClient+Triggers created)
+-  Trigger persistence hook needs completion (BlazeDBClient+Triggers created)
 
 ---
 
-## ️ **REMAINING GAPS**
+##  **REMAINING GAPS**
 
 ### 1. Lazy Decoding - Partial Decode
 **Status:** Foundation complete, true partial decode missing
@@ -47,7 +47,7 @@
 
 **Fix Needed:** Add VectorIndex to DynamicCollection, maintain on writes
 
-### 3. Event Triggers Persistence ️
+### 3. Event Triggers Persistence 
 **Status:** Structure exists, hook needs completion
 
 **Missing:**
@@ -58,7 +58,7 @@
 
 **Fix Needed:** Complete BlazeDBClient+Triggers integration
 
-### 4. Query Planner Execution ️
+### 4. Query Planner Execution 
 **Status:** Planner called but plan not used
 
 **Missing:**
@@ -86,15 +86,15 @@
 
 | Feature | Foundation | Integration | Optimization | Tests |
 |---------|-----------|-------------|--------------|-------|
-| Lazy Decoding | | | ️ | ️ |
+| Lazy Decoding | | |  |  |
 | Geospatial | | | | |
-| Event Triggers | | ️ | ️ | ️ |
-| Vector Search | | | | ️ |
-| Query Planner | | ️ | ️ | ️ |
+| Event Triggers | |  |  |  |
+| Vector Search | | | |  |
+| Query Planner | |  |  |  |
 
 **Legend:**
 - Complete
-- ️ Partial
+-  Partial
 - Missing
 
 ---
@@ -120,17 +120,17 @@
 - All APIs defined
 - Basic tests pass
 
-**Integration:** ️ ~70% Complete
+**Integration:**  ~70% Complete
 - Lazy decoding integrated
 - Query planner integrated (logging only)
 - Triggers need persistence hook
 
-**Optimization:** ️ ~50% Complete
+**Optimization:**  ~50% Complete
 - Geospatial fully optimized
 - Lazy decoding partially optimized
 - Vector/Planner not optimized
 
-**Testing:** ️ ~40% Complete
+**Testing:**  ~40% Complete
 - Basic functionality tests
 - Missing performance/edge case tests
 

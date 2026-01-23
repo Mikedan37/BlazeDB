@@ -556,7 +556,7 @@ SELECT * FROM users USE INDEX (idx_email) WHERE email = 'test@example.com';
 
 ### **Feature Coverage:**
 - **Implemented:** ~**95%** of common SQL features (up from 60%!)
-- ️ **Missing:** ~5% (only low-priority convenience features)
+-  **Missing:** ~5% (only low-priority convenience features)
 
 ### ** Recently Implemented (2025-01-XX):**
 

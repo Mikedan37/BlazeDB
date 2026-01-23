@@ -242,13 +242,13 @@ When it works correctly:
  412 / 907 tests
  405 Passed
  7 Failed
- ⏱️ 48.5s
+ ⏱ 48.5s
 
 4. Shows final results:
  893 PASSED
  14 FAILED
  98.5% Pass Rate
- ⏱️ Completed in 127.3s
+ ⏱ Completed in 127.3s
 ```
 
 ---
@@ -307,7 +307,7 @@ Running: "PerformanceTests"
 
  738 Passed
  7 Failed
-⏱️ 94.2s
+⏱ 94.2s
 ```
 
 Then beautiful results with category breakdown!

@@ -852,7 +852,7 @@ func query<T: Codable>(as type: T.Type) -> CodableQueryBuilder<T>
 
 ---
 
-## **️ Utilities**
+## ** Utilities**
 
 ### **Pretty Print:**
 

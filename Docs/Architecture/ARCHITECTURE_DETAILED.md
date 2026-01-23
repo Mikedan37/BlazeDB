@@ -708,11 +708,11 @@ graph TB
 | **Perfect Forward Secrecy** | Ephemeral ECDH keys | Implemented | LOW |
 | **Secure Enclave** | Hardware-backed keys | Implemented (iOS/macOS) | LOW |
 | **Replay Protection** | Nonces + timestamps | Implemented | LOW |
-| **Rate Limiting** | 1000 ops/min per user | ️ Not enforced everywhere | MEDIUM |
+| **Rate Limiting** | 1000 ops/min per user |  Not enforced everywhere | MEDIUM |
 | **RLS Policies** | Policy engine | Implemented | LOW |
 | **HMAC Signatures** | Metadata signatures | Implemented | LOW |
-| **Certificate Pinning** | TLS certificate validation | ️ Stubbed | MEDIUM |
-| **Operation Signatures** | Optional HMAC | ️ Optional | MEDIUM |
+| **Certificate Pinning** | TLS certificate validation |  Stubbed | MEDIUM |
+| **Operation Signatures** | Optional HMAC |  Optional | MEDIUM |
 
 **Risk Assessment Summary:**
 

@@ -5,7 +5,7 @@
 
 ## Changes Made
 
-### 1. Error Surface Improvements ✅
+### 1. Error Surface Improvements 
 
 **Files:**
 - `BlazeDB/Exports/BlazeDBError+Categories.swift` (new)
@@ -20,10 +20,10 @@
 - Added tests verifying error messages are stable and readable
 
 **Verification:**
-- ✅ ErrorSurfaceTests.swift compiles and tests error categorization
-- ✅ No core logic changes - presentation layer only
+-  ErrorSurfaceTests.swift compiles and tests error categorization
+-  No core logic changes - presentation layer only
 
-### 2. Observability & Diagnostics Polish ✅
+### 2. Observability & Diagnostics Polish 
 
 **Files:**
 - `BlazeDB/Exports/BlazeDBClient+Stats.swift` (enhanced)
@@ -34,11 +34,11 @@
 - Enhanced BlazeDoctor to use stats.prettyPrint()
 
 **Verification:**
-- ✅ Stats API compiles cleanly
-- ✅ Read-only, no mutations
-- ✅ No concurrency changes
+-  Stats API compiles cleanly
+-  Read-only, no mutations
+-  No concurrency changes
 
-### 3. Read-Path Micro-Optimizations ✅
+### 3. Read-Path Micro-Optimizations 
 
 **Files:**
 - `BlazeDB/Storage/PageCache+Optimized.swift` (new)
@@ -51,11 +51,11 @@
 **Note:** These are optional optimizations. Existing PageCache methods remain unchanged.
 
 **Verification:**
-- ✅ No concurrency changes
-- ✅ No behavioral changes
-- ✅ No frozen core touched
+-  No concurrency changes
+-  No behavioral changes
+-  No frozen core touched
 
-### 4. Crash Recovery & Corruption Hardening ✅
+### 4. Crash Recovery & Corruption Hardening 
 
 **Files:**
 - `BlazeDBTests/Persistence/CrashRecoveryTests.swift` (extended)
@@ -66,11 +66,11 @@
 - `testCrashRecovery_RandomizedCrashPoints()` - Fuzz-style testing with multiple batches
 
 **Verification:**
-- ✅ Tests compile successfully
-- ✅ Tests exercise durability guarantees
-- ✅ No code changes required - tests validate existing behavior
+-  Tests compile successfully
+-  Tests exercise durability guarantees
+-  No code changes required - tests validate existing behavior
 
-### 5. CLI & Docs Polish ✅
+### 5. CLI & Docs Polish 
 
 **Files:**
 - `BlazeDoctor/main.swift` (enhanced error handling)
@@ -83,17 +83,17 @@
 - Added index count to stats output
 
 **Verification:**
-- ✅ All README examples are self-contained
-- ✅ BlazeDoctor compiles (blocked by distributed deps, but syntax correct)
+-  All README examples are self-contained
+-  BlazeDoctor compiles (blocked by distributed deps, but syntax correct)
 
 ## Verification Checklist
 
-- ✅ Core tests compile (filtered if needed)
-- ✅ No frozen core files modified (PageStore, DynamicCollection, QueryBuilder untouched)
-- ✅ Swift 6 strict concurrency still compiles (no new warnings in core)
-- ✅ No new Task.detached or @unchecked Sendable in new code
-- ✅ Build status documented
-- ✅ All changes are testable/observable
+-  Core tests compile (filtered if needed)
+-  No frozen core files modified (PageStore, DynamicCollection, QueryBuilder untouched)
+-  Swift 6 strict concurrency still compiles (no new warnings in core)
+-  No new Task.detached or @unchecked Sendable in new code
+-  Build status documented
+-  All changes are testable/observable
 
 ## Files Created/Modified
 
@@ -109,16 +109,16 @@
 - `README.md` (fixed examples)
 
 **Frozen Core Files:**
-- ❌ **NONE MODIFIED** - Phase 1 freeze respected
+-  **NONE MODIFIED** - Phase 1 freeze respected
 
 ## Summary
 
 All quality improvements completed without touching frozen core:
-- ✅ Error surfaces improved (categorized, actionable)
-- ✅ Observability enhanced (prettyPrint, stable JSON)
-- ✅ Read-path optimizations (optional, safe)
-- ✅ Crash recovery tests extended (3 new tests)
-- ✅ CLI and docs polished (examples fixed, error handling improved)
+-  Error surfaces improved (categorized, actionable)
+-  Observability enhanced (prettyPrint, stable JSON)
+-  Read-path optimizations (optional, safe)
+-  Crash recovery tests extended (3 new tests)
+-  CLI and docs polished (examples fixed, error handling improved)
 
 **Phase 1 remains frozen and intact.**
 
@@ -175,12 +175,12 @@ Which is why it was Phase-1-safe.
 
 ### Validation Signals
 
-- ✅ Core builds cleanly under Swift 6
-- ✅ No frozen files touched
-- ✅ New files compile
-- ✅ Tests cover behavior
-- ✅ CLI output is observable
-- ✅ Build status documented honestly
+-  Core builds cleanly under Swift 6
+-  No frozen files touched
+-  New files compile
+-  Tests cover behavior
+-  CLI output is observable
+-  Build status documented honestly
 
 **This is provably better, not "looks better."**
 

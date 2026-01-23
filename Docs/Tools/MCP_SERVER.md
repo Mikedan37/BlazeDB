@@ -140,7 +140,7 @@ All operations pass through BlazeDB's security layers:
 
 ---
 
-## ️ Available Tools
+##  Available Tools
 
 ### 1. `list_schema` - Database Schema Introspection
 
@@ -1149,10 +1149,10 @@ swift test --filter MCPServerTests
 
 | Method | Setup Time | Complexity | AI Integration |
 |--------|------------|------------|----------------|
-| **BlazeMCP** | **< 2 minutes** | ⭐ Simple | Native |
-| Custom REST API | 2-4 hours | ⭐⭐⭐ Complex | ️ Manual |
-| SQL Interface | 1-2 hours | ⭐⭐ Moderate | ️ Manual |
-| GraphQL API | 3-6 hours | ⭐⭐⭐⭐ Very Complex | ️ Manual |
+| **BlazeMCP** | **< 2 minutes** |  Simple | Native |
+| Custom REST API | 2-4 hours |  Complex |  Manual |
+| SQL Interface | 1-2 hours |  Moderate |  Manual |
+| GraphQL API | 3-6 hours |  Very Complex |  Manual |
 
 **BlazeMCP Advantage:** 60-180x faster setup time
 
@@ -1217,11 +1217,11 @@ swift test --filter MCPServerTests
 
 | Feature | BlazeMCP | Custom API | SQL Interface |
 |---------|----------|------------|---------------|
-| **RLS Enforcement** | Automatic | ️ Manual | ️ Manual |
-| **SQL Injection Risk** | **0%** | ️ 15-30% | 40-60% |
-| **Type Validation** | **100%** | ️ 60-80% | ️ 40-60% |
-| **Metadata Tampering** | **Protected** | ️ Vulnerable | ️ Vulnerable |
-| **Error Exposure** | **Safe** | ️ Risky | Very Risky |
+| **RLS Enforcement** | Automatic |  Manual |  Manual |
+| **SQL Injection Risk** | **0%** |  15-30% | 40-60% |
+| **Type Validation** | **100%** |  60-80% |  40-60% |
+| **Metadata Tampering** | **Protected** |  Vulnerable |  Vulnerable |
+| **Error Exposure** | **Safe** |  Risky | Very Risky |
 
 **BlazeMCP Advantage:** Zero SQL injection risk, automatic RLS, full type safety
 
@@ -1248,10 +1248,10 @@ swift test --filter MCPServerTests
 
 | AI Tool | BlazeMCP | Custom API | SQL Interface |
 |---------|----------|------------|---------------|
-| **Cursor** | Native | ️ Manual | Not Supported |
-| **Claude Desktop** | Native | ️ Manual | Not Supported |
-| **ChatGPT** | Via MCP | ️ Manual | Not Supported |
-| **Custom AI** | MCP Standard | ️ Custom | Not Supported |
+| **Cursor** | Native |  Manual | Not Supported |
+| **Claude Desktop** | Native |  Manual | Not Supported |
+| **ChatGPT** | Via MCP |  Manual | Not Supported |
+| **Custom AI** | MCP Standard |  Custom | Not Supported |
 
 **BlazeMCP Advantage:** Works with all MCP-compatible AI tools out of the box
 
@@ -1265,8 +1265,8 @@ swift test --filter MCPServerTests
 |---------|--------------|---------------|-------------|
 | **BlazeMCP (Binary)** | **1.2 MB** | 12ms | Built-in |
 | **BlazeMCP (JSON)** | 2.5 MB | 25ms | None |
-| REST API | 3.8 MB | 38ms | ️ Optional |
-| GraphQL | 2.9 MB | 29ms | ️ Optional |
+| REST API | 3.8 MB | 38ms |  Optional |
+| GraphQL | 2.9 MB | 29ms |  Optional |
 | SQL JSON | 4.2 MB | 42ms | None |
 
 **BlazeMCP Binary Advantage:**
@@ -1330,13 +1330,13 @@ swift test --filter MCPServerTests
 - **2-4x faster** query execution
 - **53% smaller** payloads (binary mode)
 - **48% faster** encoding/decoding
-- ⏱️ **6-18x faster** end-to-end workflows
+- ⏱ **6-18x faster** end-to-end workflows
 
 #### Developer Experience
 - **48-192x faster** development time
 - **94% success rate** for natural language queries
 - **Zero SQL injection** risk
-- ️ **100% type safety**
+-  **100% type safety**
 
 #### AI Integration
 - **Native support** for all MCP-compatible AI tools
@@ -1346,8 +1346,8 @@ swift test --filter MCPServerTests
 
 #### Security
 - **Automatic RLS** enforcement
-- ️ **Metadata signatures** prevent tampering
-- ️ **ACID guarantees** maintained
+-  **Metadata signatures** prevent tampering
+-  **ACID guarantees** maintained
 - **Zero vulnerabilities** in tested scenarios
 
 ---
@@ -1372,12 +1372,12 @@ Success Rate: 94%
 
 **Competitor Average:**
 ```
-Schema Discovery: 8.2s ️
-Query Execution: 0.95s ️
-Data Transfer: 3.2 MB ️
-Memory Usage: 12.8 MB ️
-Error Rate: 4.2% ️
-Success Rate: 68% ️
+Schema Discovery: 8.2s 
+Query Execution: 0.95s 
+Data Transfer: 3.2 MB 
+Memory Usage: 12.8 MB 
+Error Rate: 4.2% 
+Success Rate: 68% 
 ```
 
 **BlazeMCP Wins:**

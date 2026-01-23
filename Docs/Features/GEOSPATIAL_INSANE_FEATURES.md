@@ -6,7 +6,7 @@
 
 ## **CRITICAL ENHANCEMENTS (Just Implemented)**
 
-### 1. **Distance-Based Sorting** ⭐⭐⭐⭐⭐
+### 1. **Distance-Based Sorting** 
 **Status:** **IMPLEMENTED**
 
 **What it does:**
@@ -32,7 +32,7 @@ let nearest = try db.query()
 
 ---
 
-### 2. **Distance in Results** ⭐⭐⭐⭐⭐
+### 2. **Distance in Results** 
 **Status:** **IMPLEMENTED**
 
 **What it does:**
@@ -60,7 +60,7 @@ for record in records {
 
 ---
 
-### 3. **True k-NN (Nearest Neighbor)** ⭐⭐⭐⭐
+### 3. **True k-NN (Nearest Neighbor)** 
 **Status:** **IMPLEMENTED**
 
 **What it does:**
@@ -84,7 +84,7 @@ let nearest = try db.query()
 
 ---
 
-### 4. **Auto-Sorting with `.near()`** ⭐⭐⭐⭐⭐
+### 4. **Auto-Sorting with `.near()`** 
 **Status:** **IMPLEMENTED**
 
 **What it does:**
@@ -147,7 +147,7 @@ let nearest = try db.query()
 
 let records = try nearest.records
 for restaurant in records {
- print("\(restaurant.name) - \(restaurant.distance?? 0)m - ⭐\(restaurant.rating)")
+ print("\(restaurant.name) - \(restaurant.distance?? 0)m - \(restaurant.rating)")
 }
 ```
 

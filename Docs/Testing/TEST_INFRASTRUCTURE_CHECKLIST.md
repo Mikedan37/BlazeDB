@@ -158,12 +158,12 @@
 
 | Phase | Status | Existing Coverage | Missing Coverage |
 |-------|--------|------------------|------------------|
-| **Phase 1: Chaos Engine** | ️ Partial | FuzzTests, PropertyBasedTests | Comprehensive chaos engine with deterministic seed |
-| **Phase 2: Concurrency Torture** | ️ Partial | Multiple concurrency tests | Extreme torture (50-200 writers, deadlock detection) |
+| **Phase 1: Chaos Engine** |  Partial | FuzzTests, PropertyBasedTests | Comprehensive chaos engine with deterministic seed |
+| **Phase 2: Concurrency Torture** |  Partial | Multiple concurrency tests | Extreme torture (50-200 writers, deadlock detection) |
 | **Phase 3: Model-Based Testing** | Missing | PropertyBasedTests (partial) | State machine with Dictionary ground truth |
-| **Phase 4: Index Consistency** | ️ Partial | Individual index tests | Cross-index validation, drift detection |
-| **Phase 5: Replay & Crash Recovery** | ️ Partial | Basic recovery tests | Comprehensive replay engine, orphan detection |
-| **Phase 6: Performance Baselines** | ️ Partial | Multiple benchmarks | Microbenchmarks with CI-safe output |
+| **Phase 4: Index Consistency** |  Partial | Individual index tests | Cross-index validation, drift detection |
+| **Phase 5: Replay & Crash Recovery** |  Partial | Basic recovery tests | Comprehensive replay engine, orphan detection |
+| **Phase 6: Performance Baselines** |  Partial | Multiple benchmarks | Microbenchmarks with CI-safe output |
 
 ---
 

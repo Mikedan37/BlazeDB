@@ -193,5 +193,5 @@ If these 4 pass, you're 95% confident the critical bugs are fixed.
 
 ---
 
-**️ Your database is now bulletproof!**
+** Your database is now bulletproof!**
 

@@ -1,4 +1,4 @@
-# ️ GARBAGE COLLECTION: PROOF IT WORKS
+#  GARBAGE COLLECTION: PROOF IT WORKS
 
 **TL;DR**: YES, GC is implemented and tested. Here's the proof.
 
@@ -225,7 +225,7 @@ Test Case 'testGarbageCollectionWithActiveSnapshots' passed (0.006s)
  2 GC tests PASSED
 ```
 
-**This PROVES GC works!** ️
+**This PROVES GC works!** 
 
 ---
 
@@ -376,7 +376,7 @@ Confidence: ABSOLUTE
  **Tests**: YES - 3 tests that all PASS
  **Proof**: Run `swift test --filter MVCCFoundationTests` right now!
 
-**GC will catch everything and keep your memory safe!** ️
+**GC will catch everything and keep your memory safe!** 
 
 ---
 

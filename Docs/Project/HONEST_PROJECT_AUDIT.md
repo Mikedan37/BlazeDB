@@ -463,7 +463,7 @@ Total: 56-260ms (for 10K records)
 ---
 
 ### **7. Query Optimization**
-**Status:** ️ **PARTIAL**
+**Status:**  **PARTIAL**
 
 **Implemented:**
 - Index selection (automatic)
@@ -501,7 +501,7 @@ Total: 56-260ms (for 10K records)
 ---
 
 ### **9. Audit Logging**
-**Status:** ️ **PARTIAL**
+**Status:**  **PARTIAL**
 
 **Implemented:**
 - Telemetry (operation tracking)
@@ -606,11 +606,11 @@ Pages: ~2.1 billion (theoretical)
 
 ### **Optimization Opportunities:**
 ```
-️ Async File I/O (2-3x faster I/O)
-️ Batch fsync (10-100x faster for batches)
-️ Parallel encoding (2-5x faster encoding)
-️ Cost-based query optimizer (10-20% faster queries)
-️ Statistics collection (better query plans)
+ Async File I/O (2-3x faster I/O)
+ Batch fsync (10-100x faster for batches)
+ Parallel encoding (2-5x faster encoding)
+ Cost-based query optimizer (10-20% faster queries)
+ Statistics collection (better query plans)
 ```
 
 ---
@@ -632,10 +632,10 @@ Pages: ~2.1 billion (theoretical)
 - Query explanation
 - Reactive queries
 
-### **️ Production Ready with Limitations:**
-- ️ Complex queries (10-20% slower than SQLite)
-- ️ Query optimization (no cost-based optimizer)
-- ️ Audit logging (telemetry exists, but not full audit)
+### ** Production Ready with Limitations:**
+-  Complex queries (10-20% slower than SQLite)
+-  Query optimization (no cost-based optimizer)
+-  Audit logging (telemetry exists, but not full audit)
 
 ### ** Not Production Ready:**
 - Cost-based query optimizer (performance gap)
@@ -657,20 +657,20 @@ Pages: ~2.1 billion (theoretical)
 ### **What BlazeDB Lacks:**
 - **Query Optimization** - No cost-based optimizer (10-20% slower than SQLite)
 - **Full Audit Logging** - Telemetry exists, but not full compliance audit
-- ️ **Async File I/O** - Could be 2-3x faster with async I/O
+-  **Async File I/O** - Could be 2-3x faster with async I/O
 
 ### **Performance vs. Competitors:**
 ```
 BlazeDB vs. SQLite:
  - Simple queries: Faster (0.2-0.5ms vs. 0.5-1.0ms)
- - Complex queries: ️ Slower (10-20% overhead)
+ - Complex queries:  Slower (10-20% overhead)
  - Inserts: Faster (0.4-0.8ms vs. 0.5-1.0ms)
  - Sync: Much faster (1.6M-4.2M ops/sec vs. N/A)
 
 BlazeDB vs. Realm:
  - Performance: Faster (1,000-2,500 ops/sec vs. 500-1,000 ops/sec)
  - Sync: Faster (1.6M-4.2M ops/sec vs. 100K-500K ops/sec)
- - Tooling: ️ Worse (no Realm Studio equivalent)
+ - Tooling:  Worse (no Realm Studio equivalent)
 
 BlazeDB vs. Core Data:
  - Performance: Much faster (1,000-2,500 ops/sec vs. 200-500 ops/sec)
@@ -689,7 +689,7 @@ BlazeDB vs. Core Data:
 
 **BlazeDB is NOT production-ready for:**
 - Enterprise compliance (full audit logging)
-- ️ Complex query optimization (cost-based optimizer missing)
+-  Complex query optimization (cost-based optimizer missing)
 
 **Performance Impact of Logging/Telemetry:**
 - **ZERO impact** - Optimized with sampling and async storage

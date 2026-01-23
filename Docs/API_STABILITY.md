@@ -19,7 +19,7 @@ func delete(id: UUID) throws
 func fetchAll() throws -> [BlazeDataRecord]
 ```
 
-**Stability:** ✅ Stable  
+**Stability:**  Stable  
 **Breaking Changes:** None planned  
 **Deprecation:** Will warn before removal
 
@@ -31,7 +31,7 @@ func orderBy(_ field: String, descending: Bool) -> QueryBuilder
 func execute() throws -> QueryResult
 ```
 
-**Stability:** ✅ Stable  
+**Stability:**  Stable  
 **Breaking Changes:** None planned  
 **Note:** Query validation and error messages may improve, but API remains stable
 
@@ -40,7 +40,7 @@ func execute() throws -> QueryResult
 func stats() throws -> DatabaseStats
 ```
 
-**Stability:** ✅ Stable  
+**Stability:**  Stable  
 **Breaking Changes:** None planned  
 **Note:** New fields may be added, but existing fields remain
 
@@ -49,7 +49,7 @@ func stats() throws -> DatabaseStats
 func health() throws -> HealthReport
 ```
 
-**Stability:** ✅ Stable  
+**Stability:**  Stable  
 **Breaking Changes:** None planned  
 **Note:** Health thresholds may be refined, but API remains stable
 
@@ -71,7 +71,7 @@ func planMigration(to: SchemaVersion, migrations: [BlazeDBMigration]) throws -> 
 func executeMigration(plan: MigrationPlan, dryRun: Bool) throws -> MigrationResult
 ```
 
-**Stability:** ✅ Stable  
+**Stability:**  Stable  
 **Breaking Changes:** None planned  
 **Note:** Migration protocol is stable; migration execution is explicit and controlled
 
@@ -82,7 +82,7 @@ static func restore(from: URL, to: BlazeDBClient, allowSchemaMismatch: Bool) thr
 static func verify(_ dumpURL: URL) throws -> DumpHeader
 ```
 
-**Stability:** ✅ Stable  
+**Stability:**  Stable  
 **Breaking Changes:** None planned  
 **Note:** Dump format v1 is stable; future versions will be backward compatible
 
@@ -98,7 +98,7 @@ These APIs are **experimental** and may change:
 - `DiscoveryProvider`
 - Network transport layers
 
-**Status:** ⚠️ Experimental  
+**Status:**  Experimental  
 **Reason:** Not Swift 6 compliant, excluded from core  
 **Breaking Changes:** May occur without notice  
 **Use:** At your own risk
@@ -108,7 +108,7 @@ These APIs are **experimental** and may change:
 - Vector similarity search
 - Window functions
 
-**Status:** ⚠️ Experimental  
+**Status:**  Experimental  
 **Reason:** Platform-specific (disabled on Linux)  
 **Breaking Changes:** May occur  
 **Use:** Check platform support first
@@ -117,7 +117,7 @@ These APIs are **experimental** and may change:
 - Metrics collection
 - Performance monitoring
 
-**Status:** ⚠️ Experimental  
+**Status:**  Experimental  
 **Reason:** Actor isolation issues  
 **Breaking Changes:** May occur  
 **Use:** May not work reliably
@@ -219,16 +219,16 @@ func oldMethod() { ... }
 ## Recommendations
 
 ### For Production Use
-- ✅ Use stable APIs only
-- ✅ Pin to specific versions
-- ✅ Test migrations before deploying
-- ✅ Monitor health reports
+-  Use stable APIs only
+-  Pin to specific versions
+-  Test migrations before deploying
+-  Monitor health reports
 
 ### For Experimentation
-- ⚠️ Experimental APIs OK
-- ⚠️ Expect changes
-- ⚠️ Don't rely on stability
-- ⚠️ Test thoroughly
+-  Experimental APIs OK
+-  Expect changes
+-  Don't rely on stability
+-  Test thoroughly
 
 ---
 

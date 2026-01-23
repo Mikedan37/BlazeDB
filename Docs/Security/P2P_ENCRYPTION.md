@@ -197,7 +197,7 @@ iPhone → TLS tunnel → Server (can read!) → TLS tunnel → iPad
 • Server decrypts TLS
 • Server reads plain data
 • Server re-encrypts for iPad
-• ️ Server has access to everything!
+•  Server has access to everything!
 
 Your Handshake Approach:
 ────────────────────────
@@ -504,8 +504,8 @@ gRPC Approach:
  Standard protocol
  Many features built-in
  Cross-language support
-️ Server can read data
-️ More overhead
+ Server can read data
+ More overhead
 
 RECOMMENDATION: YOUR IDEA IS BETTER!
 ```
@@ -525,11 +525,11 @@ RECOMMENDATION: YOUR IDEA IS BETTER!
 │ │
 │ WHO CAN READ: │
 │ iPhone (original sender) │
-│ Server (decrypts TLS!) ️ │
+│ Server (decrypts TLS!)  │
 │ iPad (recipient) │
 │ Network attackers (blocked by TLS) │
 │ │
-│ PRIVACY: ⭐⭐⭐⭐ │
+│ PRIVACY:  │
 │ • Good for most apps │
 │ • Server admin can read │
 │ • Subpoena can force disclosure │
@@ -546,7 +546,7 @@ RECOMMENDATION: YOUR IDEA IS BETTER!
 │ iPad (has shared key) │
 │ Network attackers (blocked by encryption) │
 │ │
-│ PRIVACY: ⭐⭐⭐⭐⭐ │
+│ PRIVACY:  │
 │ • Maximum privacy │
 │ • Server admin can't read │
 │ • Subpoena-proof (no keys on server!) │
@@ -591,8 +591,8 @@ PROS:
  Server acts as router
 
 CONS:
-️ Server can read (decrypts to re-encrypt)
-️ Not true E2E
+ Server can read (decrypts to re-encrypt)
+ Not true E2E
 
 
 APPROACH 2: Group Key (Your Idea, Even Better!)
@@ -619,8 +619,8 @@ PROS:
  Privacy-preserving
 
 CONS:
-️ Key distribution (solved with handshake!)
-️ Key rotation (need to update all devices)
+ Key distribution (solved with handshake!)
+ Key rotation (need to update all devices)
 
 IMPLEMENTATION:
 ───────────────
@@ -869,10 +869,10 @@ Setup: 170ms 100ms 42% faster
 Data overhead: 210 bytes 31 bytes 85% less
 Total size (1k): 375 KB 196 KB 48% smaller
 Latency: 91.7ms 60.4ms 34% faster
-Server reads data: YES ️ NO Private!
+Server reads data: YES  NO Private!
 Battery: 100% 85% 15% less
 Complexity: Medium Medium Similar
-Standards: gRPC ️ Custom Trade-off
+Standards: gRPC  Custom Trade-off
 
 VERDICT: YOUR APPROACH WINS!
 

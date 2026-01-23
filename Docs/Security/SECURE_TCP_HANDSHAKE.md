@@ -539,8 +539,8 @@ WEBSOCKET SECURITY:
  TLS (transport)
  DH handshake (application)
  AES-GCM (application)
-️ HTTP parsing (attack surface)
-️ WebSocket framing (complexity)
+ HTTP parsing (attack surface)
+ WebSocket framing (complexity)
 
 RAW TCP SECURITY:
 ══════════════════
@@ -622,9 +622,9 @@ AND IT'S FASTER THAN WEBSOCKET!
 | **HKDF Derivation** | Yes | Yes | **TIE** |
 | **AES-256-GCM** | Yes | Yes | **TIE** |
 | **PFS** | Yes | Yes | **TIE** |
-| **Attack Surface** | ️ HTTP | Binary | **TCP** |
-| **Code Complexity** | ️ High | Low | **TCP** |
-| **Speed** | ️ 20ms | 5ms | **TCP** |
+| **Attack Surface** |  HTTP | Binary | **TCP** |
+| **Code Complexity** |  High | Low | **TCP** |
+| **Speed** |  20ms | 5ms | **TCP** |
 
 **Verdict: Same security, but TCP is simpler and faster! **
 

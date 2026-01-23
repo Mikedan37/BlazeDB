@@ -223,7 +223,7 @@ CPU: ~0.1ms (notification) + ~100ms (queries) = ~100ms
 
 ---
 
-## ️ **Performance Considerations**
+##  **Performance Considerations**
 
 ### **When Performance Might Degrade:**
 

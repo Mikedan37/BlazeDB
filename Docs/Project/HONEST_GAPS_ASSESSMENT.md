@@ -45,7 +45,7 @@
 ---
 
 ### 3. **Performance Benchmarks vs Competitors**
-**Status:** ️ Internal benchmarks only
+**Status:**  Internal benchmarks only
 **Impact:** **HIGH** - Can't prove performance claims
 
 **Why it matters:**
@@ -67,7 +67,7 @@
 ## **HIGH PRIORITY GAPS (Should Have)**
 
 ### 4. **Connection Pooling (Server Mode)**
-**Status:** ️ Basic support, not production-grade
+**Status:**  Basic support, not production-grade
 **Impact:** **HIGH** - Limits server scalability
 
 **What's missing:**
@@ -84,7 +84,7 @@
 ---
 
 ### 5. **Query Plan Caching**
-**Status:** ️ Basic query caching, no plan caching
+**Status:**  Basic query caching, no plan caching
 **Impact:** **MEDIUM-HIGH** - Repeated queries still re-plan
 
 **What's missing:**
@@ -100,7 +100,7 @@
 ---
 
 ### 6. **Better Error Messages**
-**Status:** ️ Errors exist but could be clearer
+**Status:**  Errors exist but could be clearer
 **Impact:** **MEDIUM** - Developer frustration
 
 **What's missing:**
@@ -116,7 +116,7 @@
 ---
 
 ### 7. **Production Monitoring Dashboard**
-**Status:** ️ Telemetry exists, no dashboard
+**Status:**  Telemetry exists, no dashboard
 **Impact:** **MEDIUM** - Hard to monitor in production
 
 **What's missing:**
@@ -178,7 +178,7 @@
 ---
 
 ### 11. **Full-Text Search Improvements**
-**Status:** ️ Basic FTS exists
+**Status:**  Basic FTS exists
 **Impact:** **LOW** - Could be better
 
 **What's missing:**
@@ -228,8 +228,8 @@
 ### **For Beta Release:**
 1. **Security Audit** - Must have
 2. **Performance Benchmarks** - Must have
-3. ️ **Connection Pooling** - Should have
-4. ️ **Better Error Messages** - Should have
+3.  **Connection Pooling** - Should have
+4.  **Better Error Messages** - Should have
 
 ### **For Production Release:**
 1. **3-5 Production Deployments** - Must have

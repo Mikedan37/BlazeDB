@@ -155,12 +155,12 @@ DO NOT:
 ## When Phase 2 is "Done"
 
 Phase 2 is complete when all of these are true:
-- ✅ Encoding/compression are parallel
-- ✅ PageStore unchanged
-- ✅ Swift 6 still trusts the code
-- ✅ Durability tests still pass
-- ✅ Throughput improved measurably
-- ✅ No new concurrency warnings
+-  Encoding/compression are parallel
+-  PageStore unchanged
+-  Swift 6 still trusts the code
+-  Durability tests still pass
+-  Throughput improved measurably
+-  No new concurrency warnings
 
 **If you don't see at least ~30% throughput gain, stop. The bottleneck moved.**
 

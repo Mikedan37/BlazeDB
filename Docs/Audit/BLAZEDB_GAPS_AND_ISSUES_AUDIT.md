@@ -11,33 +11,33 @@
 BlazeDB is **production-ready** with excellent fundamentals, but has several gaps and missing features that should be addressed:
 
 **Critical Gaps (Must Fix):**
-- ⚠️ **Multi-process file locking** - Concurrent writes from different processes can corrupt database
-- ⚠️ **Backup/Restore API exposure** - Exists but not easily accessible in main API
-- ⚠️ **Compression** - Stubbed out, wastes bandwidth
+-  **Multi-process file locking** - Concurrent writes from different processes can corrupt database
+-  **Backup/Restore API exposure** - Exists but not easily accessible in main API
+-  **Compression** - Stubbed out, wastes bandwidth
 
 **Missing Features (Should Have):**
-- ❌ **Snapshot-based initial sync** - Only op-log sync exists (slow for large DBs)
-- ❌ **Unix Domain Socket server** - Client works, server throws `notImplemented`
-- ❌ **Database repair/check** - Corruption recovery exists but no explicit repair API
-- ❌ **Export/Import formats** - No JSON/CSV export for migration
-- ❌ **Query explain/analyze** - No EXPLAIN API for query optimization
+-  **Snapshot-based initial sync** - Only op-log sync exists (slow for large DBs)
+-  **Unix Domain Socket server** - Client works, server throws `notImplemented`
+-  **Database repair/check** - Corruption recovery exists but no explicit repair API
+-  **Export/Import formats** - No JSON/CSV export for migration
+-  **Query explain/analyze** - No EXPLAIN API for query optimization
 
 **Documentation Gaps:**
-- ⚠️ **Backup/Restore** - Not documented in main docs
-- ⚠️ **Vacuum** - Exists but not prominently documented
-- ⚠️ **Monitoring** - Exists but not in main API docs
+-  **Backup/Restore** - Not documented in main docs
+-  **Vacuum** - Exists but not prominently documented
+-  **Monitoring** - Exists but not in main API docs
 
 ---
 
 ## Critical Issues
 
-### 1. Multi-Process File Locking ⚠️ **CRITICAL**
+### 1. Multi-Process File Locking  **CRITICAL**
 
 **Status:** Missing proper file locking for multi-process access
 
 **Evidence:**
 - `BlazeFileSystemErrorTests.swift:127-149` - Test shows concurrent access allowed
-- Test comment: "⚠️ Note: This may lead to corruption without proper locking"
+- Test comment: " Note: This may lead to corruption without proper locking"
 - No exclusive file locks on database file
 - Multiple processes can open same database simultaneously
 
@@ -56,7 +56,7 @@ BlazeDB is **production-ready** with excellent fundamentals, but has several gap
 
 ---
 
-### 2. Backup/Restore API Not Exposed ⚠️ **HIGH**
+### 2. Backup/Restore API Not Exposed  **HIGH**
 
 **Status:** Backup/restore exists but not easily accessible
 
@@ -81,7 +81,7 @@ BlazeDB is **production-ready** with excellent fundamentals, but has several gap
 
 ---
 
-### 3. Compression Stubbed Out ⚠️ **MEDIUM**
+### 3. Compression Stubbed Out  **MEDIUM**
 
 **Status:** Compression exists but returns data unchanged
 
@@ -107,7 +107,7 @@ BlazeDB is **production-ready** with excellent fundamentals, but has several gap
 
 ## Missing Features
 
-### 4. Snapshot-Based Initial Sync ❌ **HIGH**
+### 4. Snapshot-Based Initial Sync  **HIGH**
 
 **Status:** Only operation log sync exists, no snapshot sync
 
@@ -132,7 +132,7 @@ BlazeDB is **production-ready** with excellent fundamentals, but has several gap
 
 ---
 
-### 5. Unix Domain Socket Server ❌ **MEDIUM**
+### 5. Unix Domain Socket Server  **MEDIUM**
 
 **Status:** Client works, server throws `notImplemented`
 
@@ -155,7 +155,7 @@ BlazeDB is **production-ready** with excellent fundamentals, but has several gap
 
 ---
 
-### 6. Database Repair/Check API ❌ **MEDIUM**
+### 6. Database Repair/Check API  **MEDIUM**
 
 **Status:** Corruption recovery exists but no explicit repair API
 
@@ -180,7 +180,7 @@ BlazeDB is **production-ready** with excellent fundamentals, but has several gap
 
 ---
 
-### 7. Export/Import Formats ❌ **LOW**
+### 7. Export/Import Formats  **LOW**
 
 **Status:** No JSON/CSV export for migration
 
@@ -204,7 +204,7 @@ BlazeDB is **production-ready** with excellent fundamentals, but has several gap
 
 ---
 
-### 8. Query Explain/Analyze ❌ **LOW**
+### 8. Query Explain/Analyze  **LOW**
 
 **Status:** No EXPLAIN API for query optimization
 
@@ -230,7 +230,7 @@ BlazeDB is **production-ready** with excellent fundamentals, but has several gap
 
 ## Documentation Gaps
 
-### 9. Backup/Restore Not Documented ⚠️
+### 9. Backup/Restore Not Documented 
 
 **Status:** Feature exists but not in main docs
 
@@ -248,7 +248,7 @@ BlazeDB is **production-ready** with excellent fundamentals, but has several gap
 
 ---
 
-### 10. Vacuum Not Prominently Documented ⚠️
+### 10. Vacuum Not Prominently Documented 
 
 **Status:** Vacuum exists but not easy to find
 
@@ -264,7 +264,7 @@ BlazeDB is **production-ready** with excellent fundamentals, but has several gap
 
 ---
 
-### 11. Monitoring API Not Documented ⚠️
+### 11. Monitoring API Not Documented 
 
 **Status:** Monitoring exists but not in main docs
 
@@ -355,25 +355,25 @@ BlazeDB is **production-ready** with excellent fundamentals, but has several gap
 ## Summary
 
 ### Critical (Must Fix)
-1. ⚠️ Multi-process file locking
-2. ⚠️ Backup/Restore API exposure
+1.  Multi-process file locking
+2.  Backup/Restore API exposure
 
 ### High Priority (Should Fix)
-3. ⚠️ Compression re-implementation
-4. ❌ Snapshot-based initial sync
-5. ⚠️ Documentation gaps (backup, vacuum, monitoring)
+3.  Compression re-implementation
+4.  Snapshot-based initial sync
+5.  Documentation gaps (backup, vacuum, monitoring)
 
 ### Medium Priority (Nice to Have)
-6. ❌ Unix Domain Socket server
-7. ❌ Database repair/check API
-8. ⚠️ API consistency (async/sync)
+6.  Unix Domain Socket server
+7.  Database repair/check API
+8.  API consistency (async/sync)
 
 ### Low Priority (Future)
-9. ❌ Export/Import formats
-10. ❌ Query explain/analyze
-11. ⚠️ Convenience methods
-12. ⚠️ Large database handling
-13. ⚠️ Sync progress tracking
+9.  Export/Import formats
+10.  Query explain/analyze
+11.  Convenience methods
+12.  Large database handling
+13.  Sync progress tracking
 
 ---
 

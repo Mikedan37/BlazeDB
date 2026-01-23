@@ -294,7 +294,7 @@ BlazeDBTests/
 
 ---
 
-## ️ Considerations
+##  Considerations
 
 ### Pros:
 - Much better organization
@@ -304,9 +304,9 @@ BlazeDBTests/
 - Easier to maintain
 
 ### Cons:
-- ️ One-time migration effort (~1-2 hours)
-- ️ Need to update any scripts that reference test files
-- ️ Git history preserved (files moved, not deleted)
+-  One-time migration effort (~1-2 hours)
+-  Need to update any scripts that reference test files
+-  Git history preserved (files moved, not deleted)
 
 ### Migration Safety:
 - Git tracks file moves (no history loss)

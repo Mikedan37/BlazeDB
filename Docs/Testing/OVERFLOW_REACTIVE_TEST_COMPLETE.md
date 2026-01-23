@@ -98,7 +98,7 @@
 
 ---
 
-## ️ **Helper Utilities**
+##  **Helper Utilities**
 
 ### **Chain Validation:**
 - `validateOverflowChain()` - Verify chain structure
@@ -150,7 +150,7 @@
 
 ---
 
-## ️ **What's Missing (Implementation, Not Tests)**
+##  **What's Missing (Implementation, Not Tests)**
 
 ### **1. Overflow Pages Integration**
 - `DynamicCollection` doesn't use overflow write/read
@@ -230,7 +230,7 @@ These tests follow the specification's destructive mindset:
 
 **Tests:** **100% Complete** (30 destructive + 35 other = 65 total)
 
-**Implementation:** ️ **Needs Integration** (core logic exists, needs wiring)
+**Implementation:**  **Needs Integration** (core logic exists, needs wiring)
 
 **Next Steps:**
 1. Complete overflow pages integration with `DynamicCollection`

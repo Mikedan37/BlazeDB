@@ -11,7 +11,7 @@ This test plan is organized by **component** to match the new test file structur
 
 ---
 
-## ️ Core Components
+##  Core Components
 
 ### **Core Database Engine** (`Core/`)
 **Purpose:** Test core database functionality
@@ -193,7 +193,7 @@ This test plan is organized by **component** to match the new test file structur
 
 ---
 
-## ️ Garbage Collection
+##  Garbage Collection
 
 ### **GC System** (`GarbageCollection/`)
 **Purpose:** Test garbage collection
@@ -423,7 +423,7 @@ This test plan is organized by **component** to match the new test file structur
 
 ---
 
-## ️ Utilities & Infrastructure
+##  Utilities & Infrastructure
 
 ### **Utilities** (`Utilities/`)
 **Purpose:** Test utility components

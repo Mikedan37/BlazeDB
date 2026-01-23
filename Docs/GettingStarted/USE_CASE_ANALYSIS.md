@@ -15,7 +15,7 @@
 ### BlazeCollection
 - **NOT used by BlazeDBClient** - Only found in test files
 - **Limited features** - No indexes, no MVCC, no search
-- ️ **Redundant** - `BlazeDBClient` already provides type-safe APIs via `BlazeDocument`
+-  **Redundant** - `BlazeDBClient` already provides type-safe APIs via `BlazeDocument`
 
 ## The Confusion
 

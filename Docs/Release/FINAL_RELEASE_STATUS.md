@@ -62,7 +62,7 @@
 
 ---
 
-## ️ **KNOWN LIMITATIONS (Non-Blockers)**
+##  **KNOWN LIMITATIONS (Non-Blockers)**
 
 ### **1. MVCC Disabled by Default**
 - **Status:** Feature exists but disabled
@@ -99,9 +99,9 @@
 - All core features
 
 **What Needs Monitoring:**
-- ️ Long-running distributed sync (monitor GC)
-- ️ Very large datasets (use VACUUM periodically)
-- ️ Memory usage in production
+-  Long-running distributed sync (monitor GC)
+-  Very large datasets (use VACUUM periodically)
+-  Memory usage in production
 
 **What's Not Ready:**
 - Enterprise features (audit logging, compliance)
@@ -117,8 +117,8 @@
 3. Check for memory leaks (Instruments)
 4. Performance benchmark
 5. Review error messages
-6. ️ Update version number
-7. ️ Create release notes
+6.  Update version number
+7.  Create release notes
 
 ### **Recommended Testing:**
 ```bash
@@ -225,9 +225,9 @@ swift test --filter Destructive
 - Production-ready for single-device apps
 
 **Weaknesses:**
-- ️ MVCC disabled by default (non-blocker)
-- ️ Some enterprise features missing (future)
-- ️ SQL features limited (by design)
+-  MVCC disabled by default (non-blocker)
+-  Some enterprise features missing (future)
+-  SQL features limited (by design)
 
 **Recommendation:**
 **RELEASE AS BETA** with clear documentation of:

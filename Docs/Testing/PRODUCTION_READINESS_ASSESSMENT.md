@@ -89,7 +89,7 @@
 - **Multi-device sync** - Existing sync tests cover
 - **Migration** - Existing migration tests cover
 
-### **️ MAY Need Real-World Validation:**
+### ** MAY Need Real-World Validation:**
 - **Platform-specific issues** (Linux vs macOS vs iOS)
 - **Network sync edge cases** (real network conditions)
 - **Migration with real data** (production data shapes)
@@ -128,9 +128,9 @@
 ### **Before These Tests:**
 - Good feature coverage
 - Basic edge cases covered
-- ️ Unknown behavior under extreme stress
-- ️ Unknown index consistency under concurrency
-- ️ Unknown crash recovery edge cases
+-  Unknown behavior under extreme stress
+-  Unknown index consistency under concurrency
+-  Unknown crash recovery edge cases
 
 ### **After These Tests:**
 - **Excellent feature coverage**

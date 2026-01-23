@@ -138,7 +138,7 @@ struct SecurityContext {
 |--------|---------|--------|
 | Physical access | Encryption at rest | Implemented |
 | Key extraction | Secure Enclave | Implemented |
-| Network interception | TLS/SSL | ️ Required |
+| Network interception | TLS/SSL |  Required |
 | E2E encryption | ECDH + AES-256-GCM | Implemented |
 | Unauthorized access | Row-level security | Implemented |
 | Data tampering | GCM auth tag | Implemented |

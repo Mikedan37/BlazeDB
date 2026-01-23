@@ -2,7 +2,7 @@
 
 Welcome to the BlazeDB documentation. This directory contains all documentation organized by topic.
 
-## 📚 Quick Navigation
+##  Quick Navigation
 
 ### Getting Started
 - **[Getting Started Guides](GettingStarted/)** - Start here if you're new to BlazeDB
@@ -40,7 +40,7 @@ Welcome to the BlazeDB documentation. This directory contains all documentation 
 - **[Project](Project/)** - Project status and assessments
 - **[Meta](Meta/)** - Internal project documentation
 
-## 📖 Main Indexes
+##  Main Indexes
 
 - **[Master Documentation Index](MASTER_DOCUMENTATION_INDEX.md)** - Complete documentation index
 - **[Archive Index](ARCHIVE_INDEX.md)** - Archive documentation index

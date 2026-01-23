@@ -14,7 +14,7 @@ iPhone:
  Record (plain) → BlazeBinary encode → TLS tunnel → Server
 
 SERVER CAN READ DATA: Yes
-COMPLEXITY: ⭐ (Simple)
+COMPLEXITY:  (Simple)
 SECURITY: (Good)
 PERFORMANCE: (Fast)
 
@@ -27,9 +27,9 @@ PROS:
  Free SSL certs
 
 CONS:
-️ Server can read your data
-️ Server admin has access
-️ Subpoena could force disclosure
+ Server can read your data
+ Server admin has access
+ Subpoena could force disclosure
 
 GOOD FOR:
 • Personal apps
@@ -53,7 +53,7 @@ iPhone:
 
 SERVER CAN READ DATA: No (if different keys per user)
  Yes (if shared key)
-COMPLEXITY: ⭐⭐⭐ (Medium)
+COMPLEXITY:  (Medium)
 SECURITY: (Excellent)
 PERFORMANCE: (Good, small overhead)
 
@@ -80,11 +80,11 @@ PROS:
  Server can do queries (has key)
 
 CONS:
-️ Key distribution problem (how to share securely?)
-️ Server still has access
-️ One key for all users (privacy issue)
+ Key distribution problem (how to share securely?)
+ Server still has access
+ One key for all users (privacy issue)
 
-VERDICT: ️ Not much better than TLS only
+VERDICT:  Not much better than TLS only
 
 
 APPROACH B: Per-User Keys (Better!)
@@ -110,11 +110,11 @@ PROS:
  User data isolated
 
 CONS:
-️ Server still has keys (can decrypt)
-️ Key management complexity
-️ Extra encryption overhead
+ Server still has keys (can decrypt)
+ Key management complexity
+ Extra encryption overhead
 
-VERDICT: ️ Better, but still not true E2E
+VERDICT:  Better, but still not true E2E
 ```
 
 ---
@@ -131,7 +131,7 @@ iPhone:
  → Server
 
 SERVER CAN READ DATA: NO! (True E2E!)
-COMPLEXITY: ⭐⭐⭐⭐⭐ (Complex)
+COMPLEXITY:  (Complex)
 SECURITY: (Maximum)
 PERFORMANCE: (Slower, asymmetric crypto is expensive)
 
@@ -164,10 +164,10 @@ PROS:
  Perfect forward secrecy
 
 CONS:
-️ Complex key management
-️ Can't do server-side queries (server can't decrypt!)
-️ Slower (public key crypto)
-️ Multi-recipient encryption tricky
+ Complex key management
+ Can't do server-side queries (server can't decrypt!)
+ Slower (public key crypto)
+ Multi-recipient encryption tricky
 
 VERDICT: Best for privacy-critical apps (healthcare, legal)
 ```
@@ -517,10 +517,10 @@ PROS:
  Defense in depth
 
 CONS:
-️ Server still has access (can decrypt with master key)
-️ More complex than TLS only
+ Server still has access (can decrypt with master key)
+ More complex than TLS only
 
-VERDICT: ⭐ BEST BALANCE for most apps!
+VERDICT:  BEST BALANCE for most apps!
 ```
 
 ---
@@ -820,9 +820,9 @@ POTENTIAL: BlazeDB as a Service ($$$$)
 ```
 
 **Don't do AES-GCM before sending (yet):**
-- ️ Key distribution is hard
-- ️ TLS already encrypts transport
-- ️ Adds complexity for little benefit
+-  Key distribution is hard
+-  TLS already encrypts transport
+-  Adds complexity for little benefit
 - Add E2E later if users demand privacy
 
 **Just use:**

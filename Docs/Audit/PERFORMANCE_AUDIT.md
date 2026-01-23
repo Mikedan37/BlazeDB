@@ -1,6 +1,6 @@
 # BlazeDB Performance Audit: Operations Per Minute & Operational Details
 
-**️ IMPORTANT: These numbers are ESTIMATES based on documentation and test targets, NOT actual measured results.**
+** IMPORTANT: These numbers are ESTIMATES based on documentation and test targets, NOT actual measured results.**
 
 **To get ACTUAL measured performance numbers, run:**
 ```bash
@@ -455,7 +455,7 @@ BlazeDB is designed for **high-performance embedded database** use cases:
 
 ---
 
-## ️ **HOW TO GET ACTUAL MEASURED NUMBERS**
+##  **HOW TO GET ACTUAL MEASURED NUMBERS**
 
 ### **Quick Method: Run Benchmark Script**
 ```bash

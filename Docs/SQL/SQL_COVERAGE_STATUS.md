@@ -116,10 +116,10 @@
  **BlazeDB is sufficient** - Covers 80% of SQL features that 95% of apps need
 
 ### **For Complex Analytics:**
-️ **May need workarounds** - UNION, CTEs, correlated subqueries require Swift code
+ **May need workarounds** - UNION, CTEs, correlated subqueries require Swift code
 
 ### **For Enterprise SQL Migration:**
-️ **Not a drop-in replacement** - Missing some convenience features, but core functionality is there
+ **Not a drop-in replacement** - Missing some convenience features, but core functionality is there
 
 ### **For New Swift Projects:**
  **Perfect fit** - Better than SQL for Swift apps (type-safe, reactive, encrypted, synced)

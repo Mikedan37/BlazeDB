@@ -53,7 +53,7 @@ swift test --filter QueryErgonomicsTests 2>&1 | grep -v "Distributed\|Telemetry\
 
 ## Build Status
 
-### Core Modules: ✅ Compiles
+### Core Modules:  Compiles
 
 ```bash
 swift build --target BlazeDB
@@ -61,7 +61,7 @@ swift build --target BlazeDB
 
 **Status:** Core modules compile cleanly under Swift 6 strict concurrency.
 
-### CLI Tools: ✅ Compile
+### CLI Tools:  Compile
 
 ```bash
 swift build --target BlazeDoctor
@@ -71,7 +71,7 @@ swift build --target BlazeInfo
 
 **Status:** All CLI tools compile successfully.
 
-### Full Build: ⚠️ Distributed Errors (Expected)
+### Full Build:  Distributed Errors (Expected)
 
 ```bash
 swift build
@@ -87,19 +87,19 @@ swift build
 
 ### Core Tests (Passing)
 
-- ✅ Query ergonomics (validation, error messages)
-- ✅ Schema migrations (versioning, planning, execution)
-- ✅ Import/export (round-trip, integrity verification)
-- ✅ Operational confidence (health classification)
-- ✅ Linux compatibility (path handling, round-trip)
-- ✅ Crash recovery (durability across close/reopen)
-- ✅ Error surface (message stability)
+-  Query ergonomics (validation, error messages)
+-  Schema migrations (versioning, planning, execution)
+-  Import/export (round-trip, integrity verification)
+-  Operational confidence (health classification)
+-  Linux compatibility (path handling, round-trip)
+-  Crash recovery (durability across close/reopen)
+-  Error surface (message stability)
 
 ### Distributed Tests (Blocked)
 
-- ❌ Distributed sync (modules not Swift 6 compliant)
-- ❌ Network transport (actor isolation issues)
-- ❌ Telemetry (concurrency errors)
+-  Distributed sync (modules not Swift 6 compliant)
+-  Network transport (actor isolation issues)
+-  Telemetry (concurrency errors)
 
 **Note:** Distributed tests are explicitly out of scope. They fail to compile but don't affect core functionality.
 
@@ -151,9 +151,9 @@ chmod 755 ~/.local/share/blazedb
 
 ## Summary
 
-**Core Tests:** ✅ Pass (run with filters)  
-**Distributed Tests:** ⚠️ Blocked (expected, out of scope)  
-**Build:** ✅ Core compiles cleanly  
-**CLI Tools:** ✅ All compile successfully
+**Core Tests:**  Pass (run with filters)  
+**Distributed Tests:**  Blocked (expected, out of scope)  
+**Build:**  Core compiles cleanly  
+**CLI Tools:**  All compile successfully
 
 For questions, see `BUILD_STATUS.md` or `COMPATIBILITY.md`.

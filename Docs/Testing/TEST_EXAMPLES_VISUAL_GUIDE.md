@@ -341,7 +341,7 @@ Test inputs:
 ### 2. **Unicode Edge Cases** (5,000 inputs)
 ```
 "‍‍‍" // Family emoji (4 codepoints)
-"️‍" // Rainbow flag (combining)
+"‍" // Rainbow flag (combining)
 "مرحبا Hello שלום" // Mixed RTL/LTR
 "e\u{0301}\u{0302}" // Combining accents
 "Τеѕt" // Homoglyphs (Greek/Cyrillic/Latin)

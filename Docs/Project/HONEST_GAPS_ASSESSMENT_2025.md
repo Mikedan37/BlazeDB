@@ -389,9 +389,9 @@ let csv = records.map { record in
 - **Point-in-time recovery** - Enterprise feature
 
 ### **For Future (Optional):**
-- ️ **Multi-master replication** - Advanced feature, high effort
-- ️ **Advanced index types** - Nice-to-have optimizations
-- ️ **Export/import formats** - Convenience features
+-  **Multi-master replication** - Advanced feature, high effort
+-  **Advanced index types** - Nice-to-have optimizations
+-  **Export/import formats** - Convenience features
 
 ---
 

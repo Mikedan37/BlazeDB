@@ -846,7 +846,7 @@ extension PageStore {
 **Expected Gain:** 2-3x faster sequential operations
 
 ### Phase 4 (Future): Advanced
-- ️ SIMD optimizations (3.3)
+-  SIMD optimizations (3.3)
 
 **Expected Gain:** 4-8x faster bulk operations
 

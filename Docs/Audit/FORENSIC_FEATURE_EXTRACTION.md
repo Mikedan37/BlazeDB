@@ -1879,10 +1879,10 @@
 - Row-Level Security (RLS)
 
 **Partially Implemented:**
-- ️ Compression (stubbed)
-- ️ Unix Domain Socket server (not implemented)
-- ️ Snapshot sync (architecture ready, not implemented)
-- ️ Chunked transfers (protocol ready, not implemented)
+-  Compression (stubbed)
+-  Unix Domain Socket server (not implemented)
+-  Snapshot sync (architecture ready, not implemented)
+-  Chunked transfers (protocol ready, not implemented)
 
 **Missing:**
 - Peer-to-peer mesh sync

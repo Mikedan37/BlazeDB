@@ -99,7 +99,7 @@ Update an existing record.
 
 ```bash
 > update 123e4567-e89b-12d3-a456-426614174000 {"title": "Updated", "value": 100}
-️ Updated record 123e4567-e89b-12d3-a456-426614174000
+ Updated record 123e4567-e89b-12d3-a456-426614174000
 ```
 
 #### **`delete <uuid>`**
@@ -115,7 +115,7 @@ Soft delete a record (marks as deleted, can be recovered).
 
 ```bash
 > softDelete 123e4567-e89b-12d3-a456-426614174000
-️ Soft deleted
+ Soft deleted
 ```
 
 #### **`exit`**
@@ -195,7 +195,7 @@ $ BlazeShell /tmp/test.blazedb password123
 BlazeDataRecord(storage: ["id":.uuid(123e4567...), "title":.string("Hello"), "value":.int(42)])
 
 > update 123e4567-e89b-12d3-a456-426614174000 {"title": "Updated"}
-️ Updated record 123e4567-e89b-12d3-a456-426614174000
+ Updated record 123e4567-e89b-12d3-a456-426614174000
 
 > fetchAll
 BlazeDataRecord(storage: ["id":.uuid(123e4567...), "title":.string("Updated"), "value":.int(42)])
@@ -234,7 +234,7 @@ $ BlazeShell --manager
 $ BlazeShell --create-test
 
  Creating test database for BlazeDBVisualizer...
-️ Adding 50 test records...
+ Adding 50 test records...
  SUCCESS! Created test.blazedb on Desktop!
  Location: /Users/mdanylchuk/Desktop/test.blazedb
  Password: test1234

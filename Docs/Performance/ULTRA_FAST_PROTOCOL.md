@@ -59,7 +59,7 @@ WebSocket: 165 + 31 = 196 bytes
 vs Raw TCP: 165 + 7 = 172 bytes
 SAVINGS: 12% (not huge, but...)
 
-BUT WAIT! There's MORE overhead! ️
+BUT WAIT! There's MORE overhead! 
 ```
 
 ---
@@ -341,9 +341,9 @@ BATCHING = MASSIVE WIN!
 ### **1. Raw TCP (Fastest for Reliable):**
 
 ```
-SPEED: ⭐⭐⭐⭐⭐ (5/5)
-RELIABILITY: ⭐⭐⭐⭐⭐ (5/5)
-COMPLEXITY: ⭐⭐⭐ (3/5)
+SPEED:  (5/5)
+RELIABILITY:  (5/5)
+COMPLEXITY:  (3/5)
 
 LATENCY:
 • Connection: 10ms
@@ -360,9 +360,9 @@ USE CASE: Your primary protocol!
 ### **2. Unix Domain Sockets (Fastest for Local!):**
 
 ```
-SPEED: ⭐⭐⭐⭐⭐ (5/5) - FASTEST!
-RELIABILITY: ⭐⭐⭐⭐⭐ (5/5)
-COMPLEXITY: ⭐⭐⭐⭐ (4/5)
+SPEED:  (5/5) - FASTEST!
+RELIABILITY:  (5/5)
+COMPLEXITY:  (4/5)
 
 LATENCY:
 • Connection: <1ms
@@ -390,9 +390,9 @@ AUTOMATIC: Fastest path!
 ### **3. QUIC (Modern Alternative):**
 
 ```
-SPEED: ⭐⭐⭐⭐ (4/5)
-RELIABILITY: ⭐⭐⭐⭐⭐ (5/5)
-COMPLEXITY: ⭐⭐ (2/5)
+SPEED:  (4/5)
+RELIABILITY:  (5/5)
+COMPLEXITY:  (2/5)
 
 LATENCY:
 • Connection: 15ms (0-RTT possible!)
@@ -409,9 +409,9 @@ USE CASE: Future option (HTTP/3)
 ### **4. UDP + Reliability Layer (Fastest, but...):**
 
 ```
-SPEED: ⭐⭐⭐⭐⭐ (5/5)
-RELIABILITY: ⭐⭐⭐ (3/5) - Need to build!
-COMPLEXITY: ⭐ (1/5) - Very complex!
+SPEED:  (5/5)
+RELIABILITY:  (3/5) - Need to build!
+COMPLEXITY:  (1/5) - Very complex!
 
 LATENCY:
 • Connection: 0ms (connectionless!)
@@ -701,7 +701,7 @@ WebSocket (WSS) 50ms 20ms 70ms
 Raw TCP (TLS) 10ms 5ms 15ms
 Unix Domain Socket 0.5ms 0.5ms 1ms
 QUIC 15ms 8ms 23ms
-UDP (unreliable) 0ms 3ms 3ms ️
+UDP (unreliable) 0ms 3ms 3ms 
 
 WINNER: Unix Domain Socket (same device)!
  Raw TCP (different device)!

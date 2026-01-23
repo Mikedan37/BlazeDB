@@ -65,7 +65,7 @@
 
 ---
 
-## ️ **KNOWN LIMITATIONS (Non-Blockers)**
+##  **KNOWN LIMITATIONS (Non-Blockers)**
 
 ### **1. MVCC Disabled by Default**
 - **Status:** MVCC exists but disabled (`mvccEnabled: Bool = false`)
@@ -122,7 +122,7 @@
 - Monitor memory usage
 
 ### **For Enterprise:**
-️ **NOT READY**
+ **NOT READY**
 - Missing audit logging
 - Missing compliance features
 - Missing backup/restore API
@@ -239,9 +239,9 @@
 - Solid architecture
 
 **Weaknesses:**
-- ️ MVCC disabled by default
-- ️ GC needs verification in production
-- ️ Some enterprise features missing
+-  MVCC disabled by default
+-  GC needs verification in production
+-  Some enterprise features missing
 
 **Recommendation:**
 **Release as BETA** with clear documentation of:
@@ -278,7 +278,7 @@
 - Consistent logging
 - Comprehensive documentation
 
-## ️ Known Limitations
+##  Known Limitations
 
 - MVCC disabled by default (enable in code)
 - Monitor GC in production

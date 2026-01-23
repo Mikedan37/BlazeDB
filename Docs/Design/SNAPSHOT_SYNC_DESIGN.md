@@ -15,8 +15,8 @@ BlazeDB currently uses **operation log (op-log) based sync only**. This means:
 - **Incremental sync works well** - only changed operations are transferred
 - **Initial sync is slow** - new devices must replay entire operation log (could be 100K+ operations)
 - **No fast bootstrap** - large databases require downloading all historical operations
-- ️ **Memory pressure** - large operation logs consume memory during replay
-- ️ **Network bandwidth** - entire operation history must be transferred
+-  **Memory pressure** - large operation logs consume memory during replay
+-  **Network bandwidth** - entire operation history must be transferred
 
 ### Example Problem
 

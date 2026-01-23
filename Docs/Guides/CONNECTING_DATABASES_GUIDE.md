@@ -1,6 +1,6 @@
 # Connecting Two BlazeDB Databases
 
-**️ This guide is comprehensive but verbose. For simple examples, see:**
+** This guide is comprehensive but verbose. For simple examples, see:**
 - **`SYNC_QUICK_START.md`** - Minimal examples (start here!)
 - **`SYNC_EXAMPLES.md`** - Complete working code for all scenarios
 - **`SYNC_GUIDE.md`** - Clear explanations with examples
@@ -473,7 +473,7 @@ let remoteNode = RemoteNode(
 
 ---
 
-## ️ **SYNC CONFIGURATION:**
+##  **SYNC CONFIGURATION:**
 
 ### **Sync Roles:**
 

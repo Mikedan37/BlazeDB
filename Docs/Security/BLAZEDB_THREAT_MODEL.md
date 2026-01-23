@@ -21,11 +21,11 @@
 - **Integrity:** HMAC signatures, CRC32 checksums
 
 **Gaps:**
-- ️ **Rate Limiting:** Implemented but not enforced in all sync paths
-- ️ **Signature Verification:** Optional (not required)
-- ️ **Certificate Pinning:** Stubbed (not fully implemented)
-- ️ **Audit Logging:** Limited coverage
-- ️ **Compression:** Stubbed (potential attack vector if re-enabled)
+-  **Rate Limiting:** Implemented but not enforced in all sync paths
+-  **Signature Verification:** Optional (not required)
+-  **Certificate Pinning:** Stubbed (not fully implemented)
+-  **Audit Logging:** Limited coverage
+-  **Compression:** Stubbed (potential attack vector if re-enabled)
 
 ---
 
@@ -131,7 +131,7 @@
 - **Challenge-Response:** HMAC-SHA256 authentication
  - Code: `SecureConnection.swift:142-147`
  - Prevents MITM without key
-- ️ **Certificate Pinning:** Stubbed (not fully implemented)
+-  **Certificate Pinning:** Stubbed (not fully implemented)
  - Code: `CertificatePinning.swift:114-143`
  - Status: TODO for proper Network framework implementation
 
@@ -226,7 +226,7 @@
 - `DynamicCollection+Async.swift:70-89` - Operation pool limits
 
 **Recommendations:**
-1. ️ **Enforce rate limiting in all sync paths** (currently optional)
+1.  **Enforce rate limiting in all sync paths** (currently optional)
 2. Add connection-level rate limiting
 3. Add IP-based rate limiting for server mode
 4. Add circuit breaker for repeated failures
@@ -333,7 +333,7 @@
 - **Key Rotation:** Forward secrecy support
  - Code: `ForwardSecrecyManager.swift`
  - Limits exposure window
-- ️ **Memory Clearing:** Not explicitly implemented
+-  **Memory Clearing:** Not explicitly implemented
  - Keys may remain in memory after use
 
 **Risk Assessment:**
@@ -408,7 +408,7 @@
 - **Admin Flag:** Separate admin permission
  - Code: `SyncPermissions.swift:290`
  - Prevents non-admin escalation
-- ️ **Policy Modification:** No explicit protection against policy changes
+-  **Policy Modification:** No explicit protection against policy changes
 
 **Risk Assessment:**
 - **Without Authorization:** **CRITICAL** - No permission checks
@@ -556,7 +556,7 @@
 - **Operation Signatures:** Optional HMAC signatures
  - Code: `SecurityValidator.swift:129-152`
  - Tamper detection
-- ️ **Signature Enforcement:** Not required (optional)
+-  **Signature Enforcement:** Not required (optional)
 
 **Risk Assessment:**
 - **Without Validation:** **CRITICAL** - Injection possible
@@ -568,7 +568,7 @@
 - `SecurityValidator.swift:156-175` - Complete validation
 
 **Recommendations:**
-1. ️ **Make signatures mandatory** (high priority)
+1.  **Make signatures mandatory** (high priority)
 2. Add operation source validation
 3. Add operation content validation
 
@@ -640,14 +640,14 @@
 |---------|---------------|--------|----------------|
 | **HMAC Signatures** | Metadata signatures | Implemented | `StorageLayout+Security.swift` |
 | **CRC32 Checksums** | Optional corruption detection | Implemented | `BlazeBinaryEncoder.swift` |
-| **Operation Signatures** | Optional HMAC | ️ Optional | `SecurityValidator.swift:129-152` |
+| **Operation Signatures** | Optional HMAC |  Optional | `SecurityValidator.swift:129-152` |
 | **Frame Authentication** | AES-GCM tags | Implemented | `SecureConnection.swift` |
 
 ### 4.4 Availability Controls
 
 | Control | Implementation | Status | Code Reference |
 |---------|---------------|--------|----------------|
-| **Rate Limiting** | 1000 ops/min per user | ️ Not enforced everywhere | `SecurityValidator.swift:74-94` |
+| **Rate Limiting** | 1000 ops/min per user |  Not enforced everywhere | `SecurityValidator.swift:74-94` |
 | **Operation Pooling** | Max 100 concurrent | Implemented | `DynamicCollection+Async.swift:70-89` |
 | **Batch Size Limits** | Max 10K-50K ops | Implemented | `BlazeSyncEngine.swift:53` |
 | **Connection Limits** | Max 200 in-flight | Implemented | `BlazeSyncEngine.swift:58` |
@@ -679,18 +679,18 @@
 
 | Threat ID | Threat | Risk Level | Mitigation Status |
 |-----------|--------|------------|------------------|
-| `THREAT-NET-001` | MITM Attack | HIGH → LOW | E2E encryption, ️ Certificate pinning stubbed |
+| `THREAT-NET-001` | MITM Attack | HIGH → LOW | E2E encryption,  Certificate pinning stubbed |
 | `THREAT-NET-002` | Replay Attack | LOW | Nonces, timestamps, expiry |
-| `THREAT-NET-003` | DoS Attack | MEDIUM | Rate limiting, ️ Not enforced everywhere |
+| `THREAT-NET-003` | DoS Attack | MEDIUM | Rate limiting,  Not enforced everywhere |
 | `THREAT-STOR-001` | Physical Access | MEDIUM → LOW | AES-256-GCM, Secure Enclave |
 | `THREAT-STOR-002` | Metadata Tampering | LOW | HMAC signatures |
-| `THREAT-STOR-003` | Memory Dumps | MEDIUM → LOW | Secure Enclave, ️ Memory clearing not explicit |
+| `THREAT-STOR-003` | Memory Dumps | MEDIUM → LOW | Secure Enclave,  Memory clearing not explicit |
 | `THREAT-ACL-001` | RLS Bypass | LOW | Policy engine, query integration |
-| `THREAT-ACL-002` | Privilege Escalation | MEDIUM | Authorization checks, ️ Policy modification not protected |
+| `THREAT-ACL-002` | Privilege Escalation | MEDIUM | Authorization checks,  Policy modification not protected |
 | `THREAT-INPUT-001` | Path Traversal | LOW | Path validation |
 | `THREAT-INPUT-002` | Memory Exhaustion | LOW | Size limits |
 | `THREAT-INPUT-003` | Injection Attacks | LOW | Type-safe queries, schema validation |
-| `THREAT-SYNC-001` | Operation Injection | MEDIUM | Validation, ️ Signatures optional |
+| `THREAT-SYNC-001` | Operation Injection | MEDIUM | Validation,  Signatures optional |
 | `THREAT-SYNC-002` | Conflict Manipulation | LOW | Server priority, role tracking |
 
 ---
@@ -724,11 +724,11 @@
 ### 6.2 Test Coverage Gaps
 
 **Missing Tests:**
-1. ️ **Certificate Pinning Tests** - Not implemented
-2. ️ **Rate Limiting Enforcement Tests** - Limited coverage
-3. ️ **Memory Dump Simulation** - Difficult to test
-4. ️ **Distributed DoS Tests** - Limited coverage
-5. ️ **Policy Modification Protection** - Not tested
+1.  **Certificate Pinning Tests** - Not implemented
+2.  **Rate Limiting Enforcement Tests** - Limited coverage
+3.  **Memory Dump Simulation** - Difficult to test
+4.  **Distributed DoS Tests** - Limited coverage
+5.  **Policy Modification Protection** - Not tested
 
 ---
 
@@ -737,51 +737,51 @@
 ### 7.1 Critical (Fix Immediately)
 
 1. **Enforce Rate Limiting in All Sync Paths**
- - Status: ️ Implemented but not enforced everywhere
+ - Status:  Implemented but not enforced everywhere
  - Priority: CRITICAL
  - Code: `BlazeSyncEngine.swift` - Add validation calls
 
 2. **Make Operation Signatures Mandatory**
- - Status: ️ Optional
+ - Status:  Optional
  - Priority: CRITICAL
  - Code: `SecurityValidator.swift:131-134` - Remove optional check
 
 3. **Implement Certificate Pinning**
- - Status: ️ Stubbed
+ - Status:  Stubbed
  - Priority: CRITICAL
  - Code: `CertificatePinning.swift:114-143` - Complete implementation
 
 ### 7.2 High Priority (Fix Within 1 Week)
 
 1. **Add Policy Modification Protection**
- - Status: ️ Not protected
+ - Status:  Not protected
  - Priority: HIGH
  - Code: `PolicyEngine.swift` - Add admin requirement
 
 2. **Add Explicit Memory Clearing**
- - Status: ️ Not implemented
+ - Status:  Not implemented
  - Priority: HIGH
  - Code: `KeyManager.swift` - Clear keys after use
 
 3. **Add Connection-Level Rate Limiting**
- - Status: ️ Not implemented
+ - Status:  Not implemented
  - Priority: HIGH
  - Code: `BlazeServer.swift` - Add connection limits
 
 ### 7.3 Medium Priority (Fix Within 1 Month)
 
 1. **Add Audit Logging**
- - Status: ️ Limited coverage
+ - Status:  Limited coverage
  - Priority: MEDIUM
  - Code: New `AuditLogger.swift` file
 
 2. **Add IP-Based Rate Limiting**
- - Status: ️ Not implemented
+ - Status:  Not implemented
  - Priority: MEDIUM
  - Code: `BlazeServer.swift` - Add IP tracking
 
 3. **Add Circuit Breaker**
- - Status: ️ Not implemented
+ - Status:  Not implemented
  - Priority: MEDIUM
  - Code: `BlazeSyncEngine.swift` - Add failure tracking
 
@@ -836,20 +836,20 @@
 **GDPR:**
 - Encryption at rest
 - Encryption in transit
-- ️ Audit logging (limited)
-- ️ Data retention policies (not implemented)
+-  Audit logging (limited)
+-  Data retention policies (not implemented)
 
 **SOC 2:**
 - Access controls
 - Encryption
-- ️ Audit logging (limited)
-- ️ Monitoring (not implemented)
+-  Audit logging (limited)
+-  Monitoring (not implemented)
 
 **HIPAA:**
 - Encryption at rest
 - Encryption in transit
 - Access controls
-- ️ Audit logging (limited)
+-  Audit logging (limited)
 
 ---
 

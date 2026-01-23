@@ -1,6 +1,6 @@
 # Swift 6 Strict Concurrency Compliance
 
-**⚠️ Phase 1 is FROZEN. See `PHASE_1_FREEZE.md` for policy.**
+** Phase 1 is FROZEN. See `PHASE_1_FREEZE.md` for policy.**
 
 ## Status
 
@@ -10,7 +10,7 @@
 - Detached tasks removed from core; Sendable closure requirements satisfied
 - PageStore marked `@unchecked Sendable` due to internal queue serialization
 
-⚠️ **Repository-wide Swift 6 concurrency compliance is not yet complete; distributed modules currently fail to compile under Swift 6 and are excluded from this phase.**
+ **Repository-wide Swift 6 concurrency compliance is not yet complete; distributed modules currently fail to compile under Swift 6 and are excluded from this phase.**
 
 ## Scope
 
@@ -62,7 +62,7 @@ This compliance applies to **BlazeDB core modules only**:
 
 ### Deadlock Prevention
 
-✅ **Verified**: No deadlock risk
+ **Verified**: No deadlock risk
 - PageStore uses `.concurrent` queue with `.barrier` flags
 - Async methods call sync methods directly (not from within `queue.async` blocks)
 - No re-entrancy: sync methods are never called from within the queue itself
@@ -73,10 +73,10 @@ This compliance applies to **BlazeDB core modules only**:
 
 ### Durability Guarantees
 
-✅ **Verified**: Durability maintained
-- `commitTransaction()` → `persist()` → `store.synchronize()` ✅
-- `saveLayout()` calls `store.synchronize()` ✅
-- Batch operations call `store.synchronize()` ✅
+ **Verified**: Durability maintained
+- `commitTransaction()` → `persist()` → `store.synchronize()` 
+- `saveLayout()` calls `store.synchronize()` 
+- Batch operations call `store.synchronize()` 
 - Removed delayed flush was optimization only, not a durability guarantee
 
 ## Future Work (Phase 2)
@@ -135,10 +135,10 @@ This provides clean CI signals for core while maintaining pressure on distribute
 
 ## Summary
 
-✅ **BlazeDB core compiles under Swift 6 strict concurrency**
-✅ **Deadlock risk checked** (with runtime assertions to keep it that way)
-✅ **Durability path still flushes at commit boundaries**
-✅ **Minimal durability regression test added** (25+ records, full reopen cycle)
-⚠️ **Repo-wide `swift test` currently blocked by distributed module build failures** (out of scope)
+ **BlazeDB core compiles under Swift 6 strict concurrency**
+ **Deadlock risk checked** (with runtime assertions to keep it that way)
+ **Durability path still flushes at commit boundaries**
+ **Minimal durability regression test added** (25+ records, full reopen cycle)
+ **Repo-wide `swift test` currently blocked by distributed module build failures** (out of scope)
 
 This is a real milestone. Core is correct and compiler-compliant. Ready for Phase 2 (reintroducing parallelism within isolated walls) when needed.

@@ -1173,19 +1173,19 @@ Plaintext BlazeBinary
 
 ### 6.5 Security Risks
 
-**️ Cache Stores Decrypted Data:**
+** Cache Stores Decrypted Data:**
 - **Risk:** Memory dump exposes plaintext
 - **Location:** `PageCache.swift:17`
 - **Mitigation:** Use encrypted cache (not implemented)
 - **Severity:** Medium (requires physical access)
 
-**️ No Forward Secrecy at Page Level:**
+** No Forward Secrecy at Page Level:**
 - **Risk:** Compromised key exposes all historical data
 - **Location:** `PageStore.swift:62` (single key)
 - **Mitigation:** Use key rotation (not implemented)
 - **Severity:** Low (key compromise is catastrophic anyway)
 
-**️ Overflow Chain Not Atomic:**
+** Overflow Chain Not Atomic:**
 - **Risk:** Partial writes on crash
 - **Location:** `PageStore+Overflow.swift:114-193`
 - **Mitigation:** Transaction support (not implemented)

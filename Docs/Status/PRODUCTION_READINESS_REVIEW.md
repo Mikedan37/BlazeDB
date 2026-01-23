@@ -40,7 +40,7 @@ BlazeDB is **production-ready** for your use case with the following assessment:
 
 ---
 
-### **3. Ordering/Sorting (Critical for Kanban)** - **️ NEEDS FIX**
+### **3. Ordering/Sorting (Critical for Kanban)** - ** NEEDS FIX**
 
 **What Works:**
 - `enableOrdering()` - Enables fractional ordering
@@ -51,7 +51,7 @@ BlazeDB is **production-ready** for your use case with the following assessment:
 - Cached sorted order for performance
 
 **Known Issue:**
-- ️ **Sorting bug in large datasets** - Test `testIndexBasedSortingForLargeDatasets` is failing
+-  **Sorting bug in large datasets** - Test `testIndexBasedSortingForLargeDatasets` is failing
 - Issue: Records not properly sorted when using `insertMany` with 1500+ records
 - Impact: Kanban boards with many items may show incorrect order
 - Fix: Need to investigate `OrderingIndex.sortWithIndex()` implementation
@@ -61,7 +61,7 @@ BlazeDB is **production-ready** for your use case with the following assessment:
 2. Test with your expected dataset size (how many items per kanban column?)
 3. Consider using `insertMany` for bulk imports (already implemented)
 
-**Status:** ️ **FIX NEEDED** - Core feature works but has a bug with large datasets
+**Status:**  **FIX NEEDED** - Core feature works but has a bug with large datasets
 
 ---
 
@@ -345,9 +345,9 @@ Based on documentation:
 - Package configuration
 
 ### **What Needs Attention:**
-- ️ Ordering sort bug (must fix)
-- ️ Test with your data volume
-- ️ Set up monitoring/logging
+-  Ordering sort bug (must fix)
+-  Test with your data volume
+-  Set up monitoring/logging
 
 ### **What's Optional:**
 - MVCC (can enable later if needed)

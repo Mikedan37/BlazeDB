@@ -35,8 +35,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.1.0] - Pre-User Hardening Release
 
 ### Status
-**Core modules:** ✅ Swift 6 strict concurrency compliant  
-**Distributed modules:** ⚠️ Not yet compliant (excluded from core)
+**Core modules:**  Swift 6 strict concurrency compliant  
+**Distributed modules:**  Not yet compliant (excluded from core)
 
 ### Compatibility
 - **Swift:** 6.0+

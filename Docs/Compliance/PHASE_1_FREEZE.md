@@ -18,16 +18,16 @@ Phase 1 concurrency compliance is complete and frozen. This document defines the
 ## Required Checks Before Any Change
 
 **Any change to core modules must:**
-1. ✅ Run `swift test --filter BlazeDBClientTests.testDurabilityAfterConcurrencyChanges`
-2. ✅ Run all core tests (`swift test` excluding distributed modules)
-3. ✅ Verify Swift 6 strict concurrency still compiles: `swift build -Xswiftc -strict-concurrency=complete`
-4. ✅ Update `CONCURRENCY_COMPLIANCE.md` if concurrency-related
+1.  Run `swift test --filter BlazeDBClientTests.testDurabilityAfterConcurrencyChanges`
+2.  Run all core tests (`swift test` excluding distributed modules)
+3.  Verify Swift 6 strict concurrency still compiles: `swift build -Xswiftc -strict-concurrency=complete`
+4.  Update `CONCURRENCY_COMPLIANCE.md` if concurrency-related
 
 **Any concurrency change additionally requires:**
-- ✅ All 8 `queue.sync` guardrails still in place
-- ✅ No new `Task.detached` in core
-- ✅ No new `@unchecked Sendable` without documented justification
-- ✅ Deadlock guardrails verified (`dispatchPrecondition` checks)
+-  All 8 `queue.sync` guardrails still in place
+-  No new `Task.detached` in core
+-  No new `@unchecked Sendable` without documented justification
+-  Deadlock guardrails verified (`dispatchPrecondition` checks)
 
 ## What IS Allowed (Feature Work)
 

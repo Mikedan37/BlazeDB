@@ -1,7 +1,7 @@
 # BlazeDB
 
 **Version:** 0.1.0 (Pre-User Hardening Release)  
-**Status:** Core modules Swift 6 strict concurrency compliant ✅  
+**Status:** Core modules Swift 6 strict concurrency compliant  
 **License:** [Your License]
 
 BlazeDB is a Swift database with explicit trust features: query ergonomics, schema migrations, verifiable backups, and operational confidence.
@@ -232,8 +232,8 @@ Core modules are Swift 6 strict concurrency compliant. On-disk format is stable.
 
 ## Compatibility
 
-**Core Modules:** ✅ Swift 6 strict concurrency compliant  
-**Distributed Modules:** ⚠️ Not yet compliant (excluded from core)
+**Core Modules:** Swift 6 strict concurrency compliant  
+**Distributed Modules:** Not yet compliant (excluded from core)
 
 See [Compatibility](Docs/COMPATIBILITY.md) for detailed compatibility information.
 

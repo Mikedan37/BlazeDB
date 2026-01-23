@@ -16,7 +16,7 @@
  - BlazeBinaryEncoderTests.swift
  - BlazeBinaryEdgeCaseTests.swift
 
-## ️ Remaining Work
+##  Remaining Work
 
 Due to the large number of files (100+), you need to:
 

@@ -212,7 +212,7 @@ class BlazeConnection {
  }
 
  case.failed(let error),.waiting(let error):
- print("️ Connection issue: \(error)")
+ print(" Connection issue: \(error)")
  Task {
  await self?.scheduleReconnect()
  }
@@ -255,7 +255,7 @@ class BlazeConnection {
  try await performConnection()
  break // Success!
  } catch {
- print("️ Reconnect failed, retrying in \(delay/1_000_000_000)s...")
+ print(" Reconnect failed, retrying in \(delay/1_000_000_000)s...")
  delay = min(delay * 2, 60_000_000_000) // Max 60s
  }
  }
@@ -310,9 +310,9 @@ WebSocket:
 ══════════
  Reliable (TCP underneath!)
  Standard (well-supported)
-️ HTTP overhead (200 bytes handshake)
-️ Frame overhead (2-14 bytes per message)
-️ Slower (20ms latency)
+ HTTP overhead (200 bytes handshake)
+ Frame overhead (2-14 bytes per message)
+ Slower (20ms latency)
 
 VERDICT: TCP is FASTER and JUST AS RELIABLE!
  WebSocket is just TCP with extra overhead!
@@ -460,7 +460,7 @@ RESULT: No data loss!
 func applyOperation(_ op: BlazeOperation) async throws {
  // Check if already applied (by operation ID!)
  if await operationLog.contains(op.id) {
- print("️ Operation \(op.id) already applied, skipping (idempotent!)")
+ print(" Operation \(op.id) already applied, skipping (idempotent!)")
  return // Already done!
  }
 
@@ -469,7 +469,7 @@ func applyOperation(_ op: BlazeOperation) async throws {
  case.insert:
  // Check if record exists (by record ID!)
  if try await database.exists(id: op.recordId) {
- print("️ Record \(op.recordId) already exists, skipping")
+ print(" Record \(op.recordId) already exists, skipping")
  return // Already inserted!
  }
 
@@ -510,7 +510,7 @@ Not acceptable for database!
 WITH TCP ONLY:
 ══════════════
 Data loss probability: ~0.01% (connection drops)
-Better, but not perfect! ️
+Better, but not perfect! 
 
 WITH TCP + ACKS:
 ════════════════
@@ -585,7 +585,7 @@ class ReliableBlazeConnection {
  }
 
  // Timeout! Retry
- print("️ ACK timeout for \(opId), retrying...")
+ print(" ACK timeout for \(opId), retrying...")
  throw AckTimeoutError(operationId: opId)
  }
 
@@ -604,7 +604,7 @@ class ReliableBlazeConnection {
  do {
  try await sendOperation(op)
  } catch {
- print("️ Failed to replay \(op.id), will retry later")
+ print(" Failed to replay \(op.id), will retry later")
  // Keep in log for next reconnect
  }
  }
@@ -670,7 +670,7 @@ UDP 50% Fastest
 TCP (raw) 99.99% Fast
 TCP + ACKs 99.999% Fast
 TCP + ACKs + Log 99.9999% Fast
-WebSocket 99.99% Slower ️
+WebSocket 99.99% Slower 
 
 WINNER: TCP + ACKs + Log!
 ```

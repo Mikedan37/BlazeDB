@@ -20,16 +20,16 @@
 | **Platforms** | Apple only | Any platform |
 | **Self-Hosted** | | |
 | **Cost** | $$$, then free tier limits | Free (self-host) or $0.01/GB |
-| **Offline** | ️ Complex | Native |
+| **Offline** |  Complex | Native |
 | **Conflict Resolution** | Manual | Automatic (CRDT) |
 | **Query on Server** | Limited | Full BlazeDB queries |
-| **Real-Time** | ️ Push notifications | WebSocket |
+| **Real-Time** |  Push notifications | WebSocket |
 | **E2E Encryption** | | |
 | **Open Source** | | |
 
 ---
 
-## ️ **Architecture**
+##  **Architecture**
 
 ```
 ┌────────────────────────────────────────────────────────────────┐

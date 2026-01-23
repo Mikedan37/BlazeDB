@@ -419,19 +419,19 @@ BlazeDB's end-to-end encryption for distributed sync is **unavailable on Linux**
 
 | Feature | Apple Platforms | Linux | Notes |
 |---------|----------------|-------|-------|
-| **Certificate Pinning** | ✅ Yes (Security.framework) | ❌ No | Linux: External TLS termination required |
-| **Secure Enclave** | ✅ Yes (Hardware-backed) | ❌ No | Linux: Software-based key storage |
-| **OS Trust Store** | ✅ Yes (Security.framework) | ❌ No | Linux: External trust store management |
-| **Software Crypto** | ✅ Yes (CryptoKit/swift-crypto) | ✅ Yes (swift-crypto) | Cross-platform |
-| **Network.framework TLS** | ✅ Yes | ❌ No | Linux: External TLS termination |
-| **Hardware Key Storage** | ✅ Yes (Secure Enclave) | ❌ No | Linux: Process memory only |
-| **Certificate Validation** | ✅ Yes (Automatic) | ❌ No | Linux: Manual validation required |
-| **AES-256-GCM Encryption** | ✅ Yes | ✅ Yes | Cross-platform (data at rest only) |
-| **ECDH Key Exchange** | ✅ Yes (SecureConnection) | ❌ No | Linux: SecureConnection unavailable |
-| **Perfect Forward Secrecy** | ✅ Yes (SecureConnection) | ❌ No | Linux: SecureConnection unavailable |
-| **Row-Level Security** | ✅ Yes | ✅ Yes | Cross-platform |
-| **WAL Encryption** | ❌ No | ❌ No | Plaintext JSON on all platforms |
-| **Compression** | ✅ Yes (Compression.framework) | ❌ No | Linux: Compression unavailable |
+| **Certificate Pinning** |  Yes (Security.framework) |  No | Linux: External TLS termination required |
+| **Secure Enclave** |  Yes (Hardware-backed) |  No | Linux: Software-based key storage |
+| **OS Trust Store** |  Yes (Security.framework) |  No | Linux: External trust store management |
+| **Software Crypto** |  Yes (CryptoKit/swift-crypto) |  Yes (swift-crypto) | Cross-platform |
+| **Network.framework TLS** |  Yes |  No | Linux: External TLS termination |
+| **Hardware Key Storage** |  Yes (Secure Enclave) |  No | Linux: Process memory only |
+| **Certificate Validation** |  Yes (Automatic) |  No | Linux: Manual validation required |
+| **AES-256-GCM Encryption** |  Yes |  Yes | Cross-platform (data at rest only) |
+| **ECDH Key Exchange** |  Yes (SecureConnection) |  No | Linux: SecureConnection unavailable |
+| **Perfect Forward Secrecy** |  Yes (SecureConnection) |  No | Linux: SecureConnection unavailable |
+| **Row-Level Security** |  Yes |  Yes | Cross-platform |
+| **WAL Encryption** |  No |  No | Plaintext JSON on all platforms |
+| **Compression** |  Yes (Compression.framework) |  No | Linux: Compression unavailable |
 
 ### Why These Differences Exist
 

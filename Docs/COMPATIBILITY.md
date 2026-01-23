@@ -1,6 +1,6 @@
 # Compatibility Statement
 
-## Core Modules: Swift 6 Strict Concurrency Compliant ✅
+## Core Modules: Swift 6 Strict Concurrency Compliant 
 
 **Status:** Core modules compile cleanly under Swift 6 strict concurrency.
 
@@ -25,7 +25,7 @@
 
 ---
 
-## Distributed Modules: Not Yet Compliant ⚠️
+## Distributed Modules: Not Yet Compliant 
 
 **Status:** Distributed modules currently fail to compile under Swift 6 strict concurrency.
 
@@ -37,9 +37,9 @@
 - Telemetry (actor isolation issues)
 
 **Impact:**
-- Core functionality: ✅ Works independently
-- Distributed sync: ❌ Not available
-- Full test suite: ⚠️ Blocked by distributed module errors
+- Core functionality:  Works independently
+- Distributed sync:  Not available
+- Full test suite:  Blocked by distributed module errors
 
 **Strategy:**
 - Core and distributed are isolated
@@ -53,17 +53,17 @@
 
 ### macOS
 - **Minimum:** macOS 14.0
-- **Status:** ✅ Fully supported
+- **Status:**  Fully supported
 - **Notes:** All features available
 
 ### iOS
 - **Minimum:** iOS 15.0
-- **Status:** ✅ Fully supported
+- **Status:**  Fully supported
 - **Notes:** All features available
 
 ### Linux
 - **Platform:** aarch64 (tested on Orange Pi 5 Ultra)
-- **Status:** ✅ Core supported
+- **Status:**  Core supported
 - **Notes:** Some advanced features disabled (`BLAZEDB_LINUX_CORE`)
 
 ---
@@ -128,16 +128,16 @@ These APIs may change:
 ## Support Policy
 
 ### What We Support
-- ✅ Core functionality bugs
-- ✅ Data corruption issues
-- ✅ Migration failures
-- ✅ Import/export failures
-- ✅ Documentation improvements
+-  Core functionality bugs
+-  Data corruption issues
+-  Migration failures
+-  Import/export failures
+-  Documentation improvements
 
 ### What We Don't Support (Yet)
-- ❌ Distributed sync issues (modules not compliant)
-- ❌ Performance optimization requests (Phase 2 not started)
-- ❌ Feature requests for experimental APIs
+-  Distributed sync issues (modules not compliant)
+-  Performance optimization requests (Phase 2 not started)
+-  Feature requests for experimental APIs
 
 ### Reporting Issues
 See `CONTRIBUTING.md` for bug report templates and guidelines.
@@ -160,10 +160,10 @@ See `CONTRIBUTING.md` for bug report templates and guidelines.
 
 ## Summary
 
-**Core:** ✅ Swift 6 compliant, stable, production-ready  
-**Distributed:** ⚠️ Not yet compliant, excluded from core  
-**Storage:** ✅ Stable format, migration support  
-**APIs:** ✅ Core APIs stable, experimental APIs clearly marked
+**Core:**  Swift 6 compliant, stable, production-ready  
+**Distributed:**  Not yet compliant, excluded from core  
+**Storage:**  Stable format, migration support  
+**APIs:**  Core APIs stable, experimental APIs clearly marked
 
 For detailed status, see:
 - `CONCURRENCY_COMPLIANCE.md` - Concurrency details

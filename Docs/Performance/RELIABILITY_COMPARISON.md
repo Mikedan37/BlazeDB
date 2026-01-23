@@ -14,7 +14,7 @@
 
 Firebase: 99.95% uptime (4.38 hours downtime/year)
 AWS: 99.99% uptime (52 minutes downtime/year)
-Your Pi: ~99% uptime (87 hours downtime/year) ️
+Your Pi: ~99% uptime (87 hours downtime/year) 
 
 CLOUD SERVICES WIN HERE!
 ```
@@ -41,7 +41,7 @@ SERVICE UPTIME SLA DOWNTIME/YEAR
 Firebase 99.95% 4.38 hours
 AWS RDS 99.99% 52 minutes
 Google Cloud SQL 99.95% 4.38 hours
-Your Raspberry Pi ~99% 87 hours ️
+Your Raspberry Pi ~99% 87 hours 
 
 VERDICT: Cloud services WIN for uptime!
  Your Pi is good, but not as good as cloud.
@@ -57,11 +57,11 @@ WHY CLOUD WINS:
 
 YOUR PI:
 ════════
-️ Single location (one point of failure)
-️ Manual failover (you need to set it up)
-️ Single network connection
-️ No 24/7 monitoring
-️ Power dependent (if power goes out, it's down)
+ Single location (one point of failure)
+ Manual failover (you need to set it up)
+ Single network connection
+ No 24/7 monitoring
+ Power dependent (if power goes out, it's down)
 
 BUT: You can improve this! (See below)
 ```
@@ -90,10 +90,10 @@ WHY YOU WIN:
 
 FIREBASE:
 ═════════
-️ No operation log (if client crashes, data lost)
-️ Optimistic updates (might not sync)
-️ Network-only (no offline persistence)
-️ Eventual consistency (might lose writes)
+ No operation log (if client crashes, data lost)
+ Optimistic updates (might not sync)
+ Network-only (no offline persistence)
+ Eventual consistency (might lose writes)
 
 YOUR PROTOCOL:
 ═════════════
@@ -120,11 +120,11 @@ STRENGTHS:
 
 WEAKNESSES:
 ═══════════
-️ No operation log (client crash = data loss)
-️ Optimistic updates (might not sync)
-️ Network-only (no offline persistence)
-️ Eventual consistency (writes might be lost)
-️ No ACKs (don't know if write succeeded)
+ No operation log (client crash = data loss)
+ Optimistic updates (might not sync)
+ Network-only (no offline persistence)
+ Eventual consistency (writes might be lost)
+ No ACKs (don't know if write succeeded)
 
 DATA LOSS SCENARIOS:
 ════════════════════
@@ -154,10 +154,10 @@ STRENGTHS:
 
 WEAKNESSES:
 ═══════════
-️ Requires client to use transactions correctly
-️ If client crashes mid-transaction → Data lost
-️ Network-only (no offline mode)
-️ Replication lag (might read stale data)
+ Requires client to use transactions correctly
+ If client crashes mid-transaction → Data lost
+ Network-only (no offline mode)
+ Replication lag (might read stale data)
 
 DATA LOSS SCENARIOS:
 ════════════════════
@@ -201,7 +201,7 @@ No operation log:
  • No replay mechanism
  • Optimistic updates
 
-Result: 99.9% data loss prevention ️
+Result: 99.9% data loss prevention 
 
 YOU WIN BY 1000x!
 ```
@@ -218,10 +218,10 @@ YOUR PROTOCOL:
 
 FIREBASE:
 ═════════
-️ Requires network connection
-️ No offline persistence (by default)
-️ Optimistic updates might fail
-️ Data loss if offline too long
+ Requires network connection
+ No offline persistence (by default)
+ Optimistic updates might fail
+ Data loss if offline too long
 
 YOU WIN!
 ```
@@ -238,17 +238,17 @@ YOUR PROTOCOL:
 
 FIREBASE:
 ═════════
-️ Eventual consistency
-️ Writes might be lost in conflicts
-️ No ACKs (don't know if succeeded)
-️ Optimistic updates
+ Eventual consistency
+ Writes might be lost in conflicts
+ No ACKs (don't know if succeeded)
+ Optimistic updates
 
 YOU WIN!
 ```
 
 ---
 
-## ️ **WHERE CLOUD SERVICES ARE BETTER:**
+##  **WHERE CLOUD SERVICES ARE BETTER:**
 
 ### **1. Uptime (Service Availability):**
 
@@ -263,11 +263,11 @@ FIREBASE:
 
 YOUR PI:
 ════════
-️ ~99% uptime
-️ Single location
-️ Manual failover
-️ Single network
-️ No DDoS protection
+ ~99% uptime
+ Single location
+ Manual failover
+ Single network
+ No DDoS protection
 
 CLOUD WINS!
 
@@ -294,10 +294,10 @@ FIREBASE:
 
 YOUR PI:
 ════════
-️ Manual scaling
-️ ~1k concurrent users max
-️ Single location
-️ No CDN
+ Manual scaling
+ ~1k concurrent users max
+ Single location
+ No CDN
 
 CLOUD WINS!
 
@@ -318,11 +318,11 @@ FIREBASE:
 
 YOUR PI:
 ════════
-️ You manage everything
-️ Manual monitoring
-️ Manual backups
-️ Manual updates
-️ Your responsibility
+ You manage everything
+ Manual monitoring
+ Manual backups
+ Manual updates
+ Your responsibility
 
 CLOUD WINS!
 
@@ -405,7 +405,7 @@ IT DEPENDS ON WHAT YOU MEAN BY "RELIABLE":
  • Strong consistency
 
 2. UPTIME (SERVICE AVAILABILITY):
- ️ FIREBASE WINS (20x better!)
+  FIREBASE WINS (20x better!)
  • Multiple data centers
  • Professional ops
  • Automatic failover
@@ -519,8 +519,8 @@ YOU MATCH FIREBASE UPTIME + BETTER DATA RELIABILITY!
 | **Offline-First** | No | Yes | **YOU** |
 | **Cost (10k users)** | $2k/mo | $0/mo | **YOU** |
 | **Control** | Limited | Full | **YOU** |
-| **Scaling** | Auto | ️ Manual | Firebase |
-| **Infrastructure** | Pro | ️ DIY | Firebase |
+| **Scaling** | Auto |  Manual | Firebase |
+| **Infrastructure** | Pro |  DIY | Firebase |
 
 **Overall: YOU WIN 5/8 categories! **
 

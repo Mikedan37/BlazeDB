@@ -54,8 +54,8 @@ Compression in BlazeDB is a **pure performance optimization** that reduces stora
 **Current Status:**
 - Implemented in `PageStore+Compression.swift`
 - Uses safe Swift patterns (no unsafe pointers)
-- ️ Not enabled by default
-- ️ Requires explicit `enableCompression()` call
+-  Not enabled by default
+-  Requires explicit `enableCompression()` call
 
 ---
 
@@ -84,8 +84,8 @@ Compression in BlazeDB is a **pure performance optimization** that reduces stora
 **Current Status:**
 - Implemented in `CompressionSupport.swift`
 - Uses safe Swift patterns
-- ️ Not enabled by default
-- ️ Requires explicit `enableCompression()` call
+-  Not enabled by default
+-  Requires explicit `enableCompression()` call
 
 ---
 
@@ -289,8 +289,8 @@ db.disableCompression()
 - Error handling and fallback
 
 ### Pending
-- ️ Compression enabled by default (currently opt-in)
-- ️ Compression ratio monitoring/logging
+-  Compression enabled by default (currently opt-in)
+-  Compression ratio monitoring/logging
 
 ### Deferred
 - Adaptive compression (algorithm selection based on data type)

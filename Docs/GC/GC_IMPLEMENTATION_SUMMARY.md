@@ -1,4 +1,4 @@
-# ️ GC Enhancements Implementation Summary
+#  GC Enhancements Implementation Summary
 
 **Complete implementation of all distributed GC features with comprehensive tests.**
 
@@ -162,7 +162,7 @@ All GC features include statistics and monitoring:
 
 ---
 
-## **️ Configuration**
+## ** Configuration**
 
 All GC features are configurable:
 

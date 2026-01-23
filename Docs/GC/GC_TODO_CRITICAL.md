@@ -1,6 +1,6 @@
 # GC Critical TODOs: Prevent Storage Blowup
 
-**Status**: Version GC complete, Page GC incomplete ️
+**Status**: Version GC complete, Page GC incomplete 
 **Risk**: Database file grows forever without page GC
 
 ---
@@ -181,7 +181,7 @@ extension BlazeDBClient {
  func autoVacuumIfNeeded() throws {
  let health = getStorageHealth()
  if health.needsVacuum {
- print("️ Storage \(health.wastedPercentage)% wasted, running VACUUM...")
+ print(" Storage \(health.wastedPercentage)% wasted, running VACUUM...")
  try vacuum()
  }
  }
@@ -272,21 +272,21 @@ NotificationCenter.default.addObserver(
 ├─────────────────────────────────────────┤
 │ Page-Level GC 0% CRITICAL │
 │ VACUUM Operation 0% CRITICAL │
-│ Page Reuse ️ 50% CRITICAL │
+│ Page Reuse  50% CRITICAL │
 │ Storage Monitoring 0% IMPORTANT │
 │ Incremental Vacuum 0% NICE │
 │ Memory Pressure 0% NICE │
 └─────────────────────────────────────────┘
 
 Memory GC: 100% (prevents RAM blowup)
-Storage GC: 20% ️ (file can still grow!)
+Storage GC: 20%  (file can still grow!)
 ```
 
 ---
 
 ## **WILL STORAGE BLOW UP?**
 
-### **Short Answer**: **Eventually, yes.** ️
+### **Short Answer**: **Eventually, yes.** 
 
 ### **The Timeline**:
 
@@ -294,8 +294,8 @@ Storage GC: 20% ️ (file can still grow!)
 Scenario: Mobile app with heavy usage
 
 Day 1: Insert 10k records → 40 MB
-Day 7: Update 5k records → 60 MB ️ (old versions + new)
-Day 30: Delete 3k, insert 5k → 100 MB ️️
+Day 7: Update 5k records → 60 MB  (old versions + new)
+Day 30: Delete 3k, insert 5k → 100 MB 
 Day 90: Heavy churn → 300 MB
 Day 180: File keeps growing → 1 GB
 
@@ -308,8 +308,8 @@ WITH page GC: File stays ~50-80 MB
 ```
  Version metadata GC prevents RAM blowup
  Can manually delete database and recreate
-️ No automatic page cleanup
-️ No VACUUM to reclaim space
+ No automatic page cleanup
+ No VACUUM to reclaim space
 ```
 
 **For now**: You can survive with manual cleanup. **Long-term**: Need page GC.
@@ -405,7 +405,7 @@ When: After profiling shows need
 
 ## **The Actual Risks**
 
-### **Without Page GC** ️:
+### **Without Page GC** :
 
 ```
 Risk Level: MEDIUM-HIGH
@@ -426,7 +426,7 @@ Permanent Fix:
  - Implement page GC (1 week)
 ```
 
-### **Without VACUUM** ️:
+### **Without VACUUM** :
 
 ```
 Risk Level: MEDIUM
@@ -502,9 +502,9 @@ I can build:
 
 Current state:
 - Version GC works
-- Pages don't get cleaned ️
-- File grows over time ️
-- Manual workarounds needed ️
+- Pages don't get cleaned 
+- File grows over time 
+- Manual workarounds needed 
 
 **Risk**: File hits 1 GB+ after months of use
 
@@ -524,7 +524,7 @@ Current state:
 
 ---
 
-## ️ **GC Completeness Score**
+##  **GC Completeness Score**
 
 ```
 Version GC (memory): 100%
@@ -536,13 +536,13 @@ Statistics: 100%
 Memory Protection: 100%
 
 Page GC (disk): 0%
-Page reuse: 50% ️
+Page reuse: 50% 
 VACUUM: 0%
 Storage monitoring: 0%
 ──────────────────────────────────
 Storage Protection: 12%
 
-OVERALL GC: 56% ️
+OVERALL GC: 56% 
 ```
 
 ---
@@ -585,7 +585,7 @@ Build:
 Result: 100% bulletproof, zero worries
 
 Time: 1 week focused work
-Status after: INDESTRUCTIBLE ️
+Status after: INDESTRUCTIBLE 
 ```
 
 ### **Option 2: Quick Fix** (1-2 days)
@@ -601,7 +601,7 @@ Time: 1-2 days
 Status after: Production-ready with caveats
 ```
 
-### **Option 3: Ship Now** (0 days) ️
+### **Option 3: Ship Now** (0 days) 
 ```
 Ship current version
 Document limitations
@@ -637,14 +637,14 @@ Build **Option 1** (full page GC) because:
 
 **GC Status**:
 - Memory: 100% complete
-- Storage: ️ 12% complete
+- Storage:  12% complete
 
 **Will it blow up?**
 - RAM: NO (GC prevents it)
-- Disk: ️ YES (over months, without page GC)
+- Disk:  YES (over months, without page GC)
 
 **What to do?**
-- **Best**: 1 week, finish page GC, **bulletproof forever** ️
+- **Best**: 1 week, finish page GC, **bulletproof forever** 
 - **Good**: 1-2 days, quick fix, **good enough**
 - **Risky**: Ship now, **hope for the best**
 

@@ -83,21 +83,21 @@ let results = try db.query()
 ## What BlazeDB Guarantees
 
 ### Correctness Guarantees
-- ✅ All queries return correct results
-- ✅ Type mismatches are handled gracefully (comparison returns false)
-- ✅ Invalid field names in sort/groupBy fail with helpful errors
-- ✅ Empty collections return empty results (no crashes)
+-  All queries return correct results
+-  Type mismatches are handled gracefully (comparison returns false)
+-  Invalid field names in sort/groupBy fail with helpful errors
+-  Empty collections return empty results (no crashes)
 
 ### Performance Guarantees
-- ✅ Indexed queries: O(log n) lookup time
-- ✅ Indexed sorting: Uses index, avoids full scan
-- ⚠️ Unindexed queries: O(n) scan time (no guarantee of speed)
+-  Indexed queries: O(log n) lookup time
+-  Indexed sorting: Uses index, avoids full scan
+-  Unindexed queries: O(n) scan time (no guarantee of speed)
 
 ### What BlazeDB Does NOT Guarantee
-- ❌ Automatic query optimization
-- ❌ Automatic index creation
-- ❌ Parallel query execution (Phase 1)
-- ❌ Query planner optimizations
+-  Automatic query optimization
+-  Automatic index creation
+-  Parallel query execution (Phase 1)
+-  Query planner optimizations
 
 ## Best Practices
 

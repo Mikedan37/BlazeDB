@@ -89,7 +89,7 @@ try await db2.sync(to: "192.168.1.100", port: 8080, authToken: token)
 **Benefits:**
 - Simple (user enters once)
 - Works offline
-- ️ Less secure (same token for all connections)
+-  Less secure (same token for all connections)
 
 ---
 
@@ -400,9 +400,9 @@ let token3 = deriveToken(secret: "pass", db1: "DB2", db2: "DB3")
 
 | Strategy | Security | Ease of Use | Token Per Connection |
 |----------|----------|-------------|---------------------|
-| **Shared Secret** | ⭐⭐⭐⭐ | ⭐⭐⭐⭐⭐ | Yes (derived) |
-| **QR Code** | ⭐⭐⭐⭐⭐ | ⭐⭐⭐ | Yes (unique) |
-| **Pre-Shared** | ⭐⭐⭐ | ⭐⭐⭐⭐ | No (same) |
+| **Shared Secret** |  |  | Yes (derived) |
+| **QR Code** |  |  | Yes (unique) |
+| **Pre-Shared** |  |  | No (same) |
 
 **Winner: Shared Secret (best balance!) **
 
