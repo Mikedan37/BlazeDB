@@ -10,6 +10,17 @@ All core modules compile cleanly under Swift 6 strict concurrency:
 -  Transactions
 -  Encoding (BlazeBinaryEncoder, BlazeBinaryDecoder)
 
+## Hardening Features:  Compile Successfully
+
+All hardening improvements compile:
+- **BlazeDBClient+Lifecycle.swift** (explicit close(), idempotency, resource cleanup)
+- **BlazeDBClient+Compatibility.swift** (format versioning and validation)
+- **DatabaseHealth+Limits.swift** (resource bounds and warnings)
+- **LifecycleTests.swift** (lifecycle safety tests)
+- **LockingTests.swift** (file locking tests)
+- **ResourceLimitsTests.swift** (resource limit tests)
+- **CompatibilityTests.swift** (format version tests)
+
 ## New Features:  Compile Successfully
 
 All Phase 1 feature work compiles:
