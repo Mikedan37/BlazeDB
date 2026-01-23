@@ -74,11 +74,17 @@ extension BlazeDBError {
         case .passwordTooWeak:
             return "Use a stronger password (8+ chars, letters, numbers, special characters)."
         case .permissionDenied:
-            return "Check file permissions and app sandbox entitlements."
+            return "Check file permissions and app sandbox entitlements. On Linux, ensure directory is writable (chmod 755)."
         case .databaseLocked:
             return "Close other instances of the database and try again."
         case .diskFull:
             return "Free up disk space and retry the operation."
+        case .invalidInput(let reason):
+            // Check if it's a path-related error
+            if reason.contains("directory") || reason.contains("path") {
+                return "Ensure the directory exists and is writable. Use BlazeDB.openDefault() for automatic directory creation."
+            }
+            return "Check your input parameters."
         case .migrationFailed:
             return "Restore from backup. Migration cannot proceed safely."
         case .transactionFailed:

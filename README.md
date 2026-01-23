@@ -50,20 +50,47 @@ Add to your `Package.swift`:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/Mikedan37/BlazeDB.git", from: "2.5.0")
+    .package(url: "https://github.com/Mikedan37/BlazeDB.git", from: "0.1.0")
 ]
 ```
 
-Or in Xcode: **File → Add Package Dependencies** → paste the repository URL.
-
-### Example 1: Basic CRUD (30 seconds)
+### Simplest Usage (Zero Configuration)
 
 ```swift
 import BlazeDB
 
-// Create or open a database
-let dbURL = FileManager.default.temporaryDirectory.appendingPathComponent("mydb.blazedb")
-let db = try BlazeDBClient(name: "MyApp", fileURL: dbURL, password: "secure-password-123")
+// Open database with defaults (automatic path, encryption enabled)
+let db = try BlazeDB.openDefault(name: "mydb", password: "secure-password")
+
+// Insert a record
+let id = try db.insert(BlazeDataRecord(["name": .string("Alice")]))
+
+// Query records
+let results = try db.query()
+    .where("name", equals: .string("Alice"))
+    .execute()
+    .records
+
+// That's it! No configuration needed.
+```
+
+**Platform Defaults:**
+- **macOS:** `~/Library/Application Support/BlazeDB/mydb.blazedb`
+- **Linux:** `~/.local/share/blazedb/mydb.blazedb`
+
+Directories are created automatically. Encryption is enabled by default.
+
+**Linux Users:** See `Docs/LINUX_GETTING_STARTED.md` for Linux-specific setup and examples.
+
+Or in Xcode: **File → Add Package Dependencies** → paste the repository URL.
+
+### Example 1: Basic CRUD (Simplest Way)
+
+```swift
+import BlazeDB
+
+// Open database with defaults (zero configuration)
+let db = try BlazeDB.openDefault(name: "mydb", password: "secure-password-123")
 
 // Insert a record
 let id = try db.insert(BlazeDataRecord([
@@ -88,13 +115,13 @@ try db.update(id: id, with: BlazeDataRecord([
 try db.delete(id: id)
 ```
 
-### Example 2: Query with Filters (1 minute)
+### Example 2: Query with Filters
 
 ```swift
 import BlazeDB
 
-let dbURL = FileManager.default.temporaryDirectory.appendingPathComponent("mydb.blazedb")
-let db = try BlazeDBClient(name: "MyApp", fileURL: dbURL, password: "secure-password-123")
+// Open with defaults
+let db = try BlazeDB.openDefault(name: "mydb", password: "secure-password-123")
 
 // Insert sample data
 try db.insert(BlazeDataRecord(["name": .string("Alice"), "age": .int(30), "role": .string("admin")]))
@@ -115,13 +142,13 @@ for record in results {
 // Output: Charlie: 35
 ```
 
-### Example 3: Batch Operations (1 minute)
+### Example 3: Batch Operations
 
 ```swift
 import BlazeDB
 
-let dbURL = FileManager.default.temporaryDirectory.appendingPathComponent("mydb.blazedb")
-let db = try BlazeDBClient(name: "MyApp", fileURL: dbURL, password: "secure-password-123")
+// Open with defaults
+let db = try BlazeDB.openDefault(name: "mydb", password: "secure-password-123")
 
 // Batch insert
 let records = (1...100).map { i in

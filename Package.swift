@@ -27,7 +27,10 @@ let package = Package(
             targets: ["BlazeDoctor"]),
         .executable(
             name: "BlazeDump",
-            targets: ["BlazeDump"])
+            targets: ["BlazeDump"]),
+        .executable(
+            name: "BlazeInfo",
+            targets: ["BlazeInfo"])
     ],
     dependencies: [
         // BlazeTransport: Transport layer for distributed sync
@@ -94,6 +97,11 @@ let package = Package(
             name: "BlazeDump",
             dependencies: ["BlazeDB"],
             path: "BlazeDump"
+        ),
+        .executableTarget(
+            name: "BlazeInfo",
+            dependencies: ["BlazeDB"],
+            path: "BlazeInfo"
         )
     ]
 )
