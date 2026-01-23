@@ -119,7 +119,9 @@ extension QueryBuilder {
                 estimatedRecords: estimatedRecords,
                 estimatedTime: Double(estimatedRecords) * 0.00005
             ))
-            estimatedTime += steps.last!.estimatedTime
+            if let lastStep = steps.last {
+                estimatedTime += lastStep.estimatedTime
+            }
             
             warnings.append("Large dataset (\(estimatedRecords) records) - consider adding indexes")
         }
@@ -134,7 +136,9 @@ extension QueryBuilder {
                 estimatedTime: Double(estimatedRecords) * 0.00001  // 0.01ms per record
             ))
             estimatedRecords = filteredCount
-            estimatedTime += steps.last!.estimatedTime
+            if let lastStep = steps.last {
+                estimatedTime += lastStep.estimatedTime
+            }
         }
         
         // Step 3: Join estimation
@@ -144,7 +148,9 @@ extension QueryBuilder {
                 estimatedRecords: estimatedRecords,
                 estimatedTime: Double(estimatedRecords) * 0.0001  // 0.1ms per record
             ))
-            estimatedTime += steps.last!.estimatedTime
+            if let lastStep = steps.last {
+                estimatedTime += lastStep.estimatedTime
+            }
         }
         
         // Step 4: Aggregation/Group By estimation
@@ -157,7 +163,9 @@ extension QueryBuilder {
                 estimatedTime: Double(estimatedRecords) * 0.00002  // 0.02ms per record
             ))
             estimatedRecords = estimatedGroups
-            estimatedTime += steps.last!.estimatedTime
+            if let lastStep = steps.last {
+                estimatedTime += lastStep.estimatedTime
+            }
         } else if !aggregations.isEmpty {
             steps.append(QueryStep(
                 type: .aggregate,
@@ -165,7 +173,9 @@ extension QueryBuilder {
                 estimatedTime: Double(estimatedRecords) * 0.00002
             ))
             estimatedRecords = 1
-            estimatedTime += steps.last!.estimatedTime
+            if let lastStep = steps.last {
+                estimatedTime += lastStep.estimatedTime
+            }
         }
         
         // Step 5: Sort estimation
@@ -175,7 +185,9 @@ extension QueryBuilder {
                 estimatedRecords: estimatedRecords,
                 estimatedTime: Double(estimatedRecords) * log2(Double(estimatedRecords)) * 0.000001
             ))
-            estimatedTime += steps.last!.estimatedTime
+            if let lastStep = steps.last {
+                estimatedTime += lastStep.estimatedTime
+            }
         }
         
         // Step 6: Limit estimation
@@ -186,7 +198,9 @@ extension QueryBuilder {
                 estimatedTime: 0.0001  // Negligible
             ))
             estimatedRecords = Swift.min(estimatedRecords, limit)
-            estimatedTime += steps.last!.estimatedTime
+            if let lastStep = steps.last {
+                estimatedTime += lastStep.estimatedTime
+            }
         }
         
         // Warnings
