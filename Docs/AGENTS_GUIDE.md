@@ -2,8 +2,8 @@
 
 **Purpose:** This is a comprehensive reference guide for AI assistants implementing BlazeDB in new projects. It covers all usage patterns, APIs, and best practices.
 
-**Last Updated:** 2025-01-XX
-**BlazeDB Version:** 2.5.0+
+**Last Updated:** 2026-01-23
+**BlazeDB Version:** 0.1.3+
 
 ---
 
@@ -21,9 +21,10 @@ This guide is a reference, not a mandate. When implementing BlazeDB:
 
 ## Versioning & API Stability
 
-- This guide targets BlazeDB 2.5.x.
+- This guide targets BlazeDB 0.1.3+.
 - APIs may evolve. If code generated from this guide conflicts with compiler errors or library updates, the compiler wins.
 - Do not assume undocumented APIs exist. Only use methods and patterns documented in this guide or the official BlazeDB API.
+- **Note:** Distributed sync features are not yet Swift 6 compliant and are excluded from core builds. Use only core features unless explicitly needed.
 
 ---
 
@@ -51,7 +52,7 @@ This guide is a reference, not a mandate. When implementing BlazeDB:
 ```swift
 // Package.swift
 dependencies: [
-.package(url: "https://github.com/Mikedan37/BlazeDB.git", from: "2.5.0")
+.package(url: "https://github.com/Mikedan37/BlazeDB.git", from: "0.1.3")
 ]
 ```
 
@@ -59,12 +60,13 @@ dependencies: [
 
 1. **File → Add Package Dependencies**
 2. Enter: `https://github.com/Mikedan37/BlazeDB.git`
-3. Select version: `2.5.0` or later
+3. Select version: `0.1.3` or later
 
 ### Import
 
 ```swift
-import BlazeDB
+import BlazeDBCore  // Core database functionality
+// SwiftUI integration is conditionally available on macOS/iOS/watchOS/tvOS
 ```
 
 ---
