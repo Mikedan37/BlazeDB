@@ -220,6 +220,7 @@ print("Pages: \(stats.pageCount), Records: \(stats.recordCount), Indexes: \(stat
 ## Documentation
 
 **Start here:**
+- **[Developer Guide](Docs/DEVELOPER_GUIDE.md)** - **Complete public API reference for developers** ⭐
 - **[Usage by Task](Docs/Guides/USAGE_BY_TASK.md)** - Common tasks and APIs (start here)
 - **[Getting Started](Docs/GettingStarted/)** - Getting started guides
 - **[Linux Guide](Docs/GettingStarted/LINUX_GETTING_STARTED.md)** - Linux-specific setup

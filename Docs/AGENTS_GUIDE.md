@@ -1523,8 +1523,8 @@ If a feature is not documented in this guide and the user has not requested it, 
 **End of Agents Guide**
 
 This guide covers all major usage patterns for BlazeDB. For more details, see:
-- [Architecture Documentation](ARCHITECTURE.md)
-- [Security Documentation](SECURITY.md)
-- [Performance Documentation](PERFORMANCE.md)
-- [Transactions Documentation](TRANSACTIONS.md)
+- [Developer Guide](DEVELOPER_GUIDE.md) - **Complete public API reference for developers**
+- [Architecture Documentation](Architecture/ARCHITECTURE_DETAILED.md)
+- [Security Documentation](Security/)
+- [Performance Documentation](Performance/)
 
