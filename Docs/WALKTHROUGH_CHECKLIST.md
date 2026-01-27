@@ -1332,3 +1332,6 @@ Validation: Tests/BlazeDBTests/Engine/PageStoreTests.swift
 **End of Walkthrough Checklist**
 
 This document provides defensible system facts you can walk through in Cursor. Each section answers the three questions: What is it? Why does it exist? How do I know it works?
+
+**For deeper understanding of why each component is necessary, see:**
+- [Why Each Part Exists](WHY_EACH_PART_EXISTS.md) - Complete rationale and interdependencies
