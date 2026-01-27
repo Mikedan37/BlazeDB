@@ -220,6 +220,7 @@ print("Pages: \(stats.pageCount), Records: \(stats.recordCount), Indexes: \(stat
 ## Documentation
 
 **Start here:**
+- **[Walkthrough Checklist](Docs/WALKTHROUGH_CHECKLIST.md)** - **Systematic code walkthrough you can do in Cursor** 🔍
 - **[Interview Preparation](Docs/INTERVIEW_PREPARATION.md)** - **Complete guide to explaining BlazeDB in interviews** 🎯
 - **[Developer Guide](Docs/DEVELOPER_GUIDE.md)** - **Complete public API reference for developers** ⭐
 - **[Usage by Task](Docs/Guides/USAGE_BY_TASK.md)** - Common tasks and APIs (start here)
