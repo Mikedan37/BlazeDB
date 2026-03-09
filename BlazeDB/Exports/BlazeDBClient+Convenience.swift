@@ -34,6 +34,7 @@ extension BlazeDBClient {
     /// // Database is automatically stored in:
     /// // ~/Library/Application Support/BlazeDB/MyApp.blazedb
     /// ```
+    @available(*, deprecated, message: "Use BlazeDBClient.open(named:password:) or open(at:password:) instead.")
     public convenience init(name: String, password: String, project: String = "Default") throws {
         let url = try Self.defaultDatabaseURL(for: name)
         try self.init(name: name, fileURL: url, password: password, project: project)
@@ -54,6 +55,7 @@ extension BlazeDBClient {
     ///     return
     /// }
     /// ```
+    @available(*, deprecated, message: "Use BlazeDBClient.open(named:password:) instead. Returns non-optional and throws on failure.")
     public static func create(name: String, password: String, project: String = "Default") -> BlazeDBClient? {
         do {
             let url = try defaultDatabaseURL(for: name)
@@ -234,7 +236,7 @@ extension BlazeDBClient {
 
 /// Global registry for tracking databases by name
 public final class DatabaseRegistry: @unchecked Sendable {
-    nonisolated(unsafe) public static let shared = DatabaseRegistry()
+    public static let shared = DatabaseRegistry()
     
     private var databases: [String: BlazeDBClient] = [:]
     private let lock = NSLock()

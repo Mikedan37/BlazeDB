@@ -51,6 +51,7 @@ public struct QueryExecutionPlan {
 extension QueryBuilder {
     
     /// EXPLAIN query - analyze execution plan (detailed version)
+    @available(*, deprecated, message: "Use explain() instead, which returns a DetailedQueryPlan you can inspect programmatically.")
     public func explainDetailed() throws -> QueryExecutionPlan {
         var steps: [QueryExecutionPlan.ExecutionStep] = []
         var totalCost: Double = 0.0
@@ -166,6 +167,7 @@ extension QueryBuilder {
     }
     
     /// EXPLAIN ANALYZE - execute query and return plan with actual stats
+    @available(*, deprecated, message: "Use explain() instead, which returns a DetailedQueryPlan you can inspect programmatically.")
     public func explainAnalyze() throws -> QueryExecutionPlan {
         let startTime = Date()
         // Call the QueryExecutionPlan version explicitly

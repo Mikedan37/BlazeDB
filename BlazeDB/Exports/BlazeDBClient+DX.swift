@@ -28,18 +28,14 @@ extension BlazeDBClient {
     /// // Opens existing DB or creates new one
     /// let db = try BlazeDB.openOrCreate(name: "mydb", password: "secure-password")
     /// ```
+    @available(*, deprecated, message: "Use open(named:password:). BlazeDB open methods create the database if absent.")
     public static func openOrCreate(
         name: String,
         password: String
     ) throws -> BlazeDBClient {
-        // Try to open existing database
-        do {
-            return try openDefault(name: name, password: password)
-        } catch {
-            // If it doesn't exist, create it
-            // openDefault already creates directories, so this should work
-            return try openDefault(name: name, password: password)
-        }
+        // Open or create database - openDefault handles both cases
+        // It creates directories if needed and initializes empty database if not exists
+        return try openDefault(name: name, password: password)
     }
     
     /// Open temporary database for testing or sandboxing
@@ -59,6 +55,7 @@ extension BlazeDBClient {
     /// let db = try BlazeDB.openTemporary(password: "test-password")
     /// defer { try? FileManager.default.removeItem(at: db.fileURL) }
     /// ```
+    @available(*, deprecated, message: "Use openForTesting() instead.")
     public static func openTemporary(
         name: String? = nil,
         password: String = "temp-password"
@@ -90,7 +87,7 @@ extension BlazeDBClient {
         password: String,
         _ block: (BlazeDBClient) throws -> T
     ) throws -> T {
-        let db = try openDefault(name: name, password: password)
+        let db = try open(named: name, password: password)
         return try block(db)
     }
     

@@ -16,15 +16,22 @@ extension DynamicCollection {
     // MARK: - Fetch All Cache
     
     nonisolated(unsafe) private static var fetchAllCache: [ObjectIdentifier: ([BlazeDataRecord], Date)] = [:]
-    nonisolated(unsafe) private static let cacheLock = NSLock()
+    private static let cacheLock = NSLock()
     private static let cacheMaxAge: TimeInterval = 5.0  // 5 seconds
     
-    /// Clear fetchAll cache (called after writes)
+    /// Clear fetchAll cache for this instance (called after writes)
     internal func clearFetchAllCache() {
         let id = ObjectIdentifier(self)
         Self.cacheLock.lock()
         defer { Self.cacheLock.unlock() }
         Self.fetchAllCache.removeValue(forKey: id)
+    }
+
+    /// Clear all fetchAll caches globally (used in tests to prevent cross-test leakage)
+    internal static func clearAllFetchAllCaches() {
+        cacheLock.lock()
+        defer { cacheLock.unlock() }
+        fetchAllCache.removeAll()
     }
     
     /// Get cached fetchAll result if available

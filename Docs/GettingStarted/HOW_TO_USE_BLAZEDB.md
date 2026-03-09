@@ -1,19 +1,19 @@
 # How to Use BlazeDB
 
-Copy the code. Run it. It works.
+Complete reference guide. For a quick start, see [README.md](README.md).
 
 ---
 
 ## 1. What BlazeDB Is
 
-BlazeDB runs inside your app. One process writes at a time. If your app crashes, BlazeDB stops too. This is intentional.
+BlazeDB is an embedded database that runs inside your app. One process writes at a time. If your app crashes, committed data survives.
 
 **What it is:**
 - Embedded database (lives in your process)
-- Encrypted by default
-- Survives crashes (data persists)
-- Fast for local-first apps
-- Runs on macOS, Linux, iOS, tvOS, and watchOS
+- Encrypted by default (AES-256-GCM)
+- Crash-safe (write-ahead logging)
+- Schemaless (no migrations required)
+- Runs on macOS, Linux, iOS, tvOS, watchOS
 
 **What it is NOT:**
 - Not distributed (no clustering)
@@ -25,23 +25,17 @@ If you need multiple processes writing to the same database, BlazeDB is not the 
 
 ---
 
-## 2. The 90-Second Quick Start
-
-Copy this. Run it.
+## 2. Quick Start
 
 ```swift
-import Foundation
-import BlazeDBCore
+import BlazeDB
 
-// Open database
-let db = try BlazeDBClient.openOrCreate(name: "mydb", password: "secure-password-123")
+// Open database (creates if needed, always encrypted)
+let db = try BlazeDBClient.open(named: "myapp", password: "your-secure-password")
 
 // Insert records
-let record1 = BlazeDataRecord(["name": .string("Alice"), "count": .int(10)])
-let record2 = BlazeDataRecord(["name": .string("Bob"), "count": .int(20)])
-
-let id1 = try db.insert(record1)
-let id2 = try db.insert(record2)
+let id1 = try db.insert(BlazeDataRecord(["name": .string("Alice"), "count": .int(10)]))
+let id2 = try db.insert(BlazeDataRecord(["name": .string("Bob"), "count": .int(20)]))
 
 // Query records
 let results = try db.query()
@@ -55,31 +49,31 @@ print("Found \(results.count) records")
 try db.close()
 ```
 
-**Note:** `BlazeDataRecord` is a lightweight, typed key-value container. BlazeDB stores values with explicit types (`.string`, `.int`, `.bool`, etc.) so queries and migrations remain predictable.
-
 That's it. You have a working database.
 
 ---
 
 ## 3. Where the Database Lives
 
-**macOS:** `~/Library/Application Support/BlazeDB/{name}.blazedb`  
-**Linux:** `~/.local/share/blazedb/{name}.blazedb`  
-**iOS/tvOS/watchOS:** Inside your app's sandbox (use default location)
+| Platform | Location |
+|----------|----------|
+| macOS | `~/Library/Application Support/BlazeDB/{name}.blazedb` |
+| Linux | `~/.local/share/blazedb/{name}.blazedb` |
+| iOS/tvOS/watchOS | Inside your app's sandbox |
 
-**Use default location:**
+**Default location (recommended):**
 ```swift
-let db = try BlazeDBClient.openDefault(name: "mydb", password: "password")
+let db = try BlazeDBClient.open(named: "mydb", password: "your-password")
 ```
 
-**Use custom path:**
+**Custom path:**
 ```swift
 let db = try BlazeDBClient.open(name: "mydb", path: "./data/mydb.blazedb", password: "password")
 ```
 
-**Find where your database is:**
+**Find your database location:**
 ```swift
-let db = try BlazeDBClient.openDefault(name: "mydb", password: "password")
+let db = try BlazeDBClient.open(named: "mydb", password: "your-password")
 print("Database at: \(db.fileURL.path)")
 ```
 
@@ -166,7 +160,7 @@ struct AddEmailField: BlazeDBMigration {
 
 **Step 3: Run migration**
 ```swift
-let db = try BlazeDBClient.openDefault(name: "mydb", password: "password")
+let db = try BlazeDBClient.open(named: "mydb", password: "your-password")
 
 let migrations: [BlazeDBMigration] = [AddEmailField()]
 let targetVersion = MyAppSchema.version
@@ -233,10 +227,8 @@ A slow query scans all records because there's no index. If you filter by `user_
 **Open once per process. Close once at shutdown.**
 
 ```swift
-let db = try BlazeDBClient.openDefault(name: "mydb", password: "password")
-defer {
-    try? db.close()
-}
+let db = try BlazeDBClient.open(named: "myapp", password: "your-password")
+defer { try? db.close() }
 
 // Use database...
 ```
@@ -273,7 +265,7 @@ Create a new instance if you need to continue.
 
 ```swift
 import Vapor
-import BlazeDBCore
+import BlazeDB
 
 // Store database in Application
 extension Application {
@@ -297,8 +289,8 @@ private struct BlazeDBKey: StorageKey {
 // In configure.swift
 public func configure(_ app: Application) throws {
     // Open database on startup
-    let db = try BlazeDBClient.openForDaemon(
-        name: "myserver",
+    let db = try BlazeDBClient.open(
+        named: "myserver",
         password: ProcessInfo.processInfo.environment["BLAZEDB_PASSWORD"] ?? "change-me"
     )
     app.blazeDB = db
@@ -342,28 +334,28 @@ func routes(_ app: Application) throws {
 
 **Export database:**
 ```swift
-let db = try BlazeDBClient.openDefault(name: "mydb", password: "password")
+let db = try BlazeDBClient.open(named: "myapp", password: "your-password")
 
-let dumpURL = FileManager.default.temporaryDirectory
+let backupURL = FileManager.default.temporaryDirectory
     .appendingPathComponent("backup.blazedump")
 
-try db.export(to: dumpURL)
-print("Exported to: \(dumpURL.path)")
+try db.export(to: backupURL)
+print("Exported to: \(backupURL.path)")
 ```
 
-**Verify dump:**
+**Verify backup:**
 ```swift
-let header = try BlazeDBImporter.verify(dumpURL)
+let header = try BlazeDBImporter.verify(backupURL)
 print("Schema version: \(header.schemaVersion)")
 print("Record count: \(header.recordCount)")
 ```
 
 **Restore:**
 ```swift
-let restoredDB = try BlazeDBClient.openDefault(name: "restored", password: "password")
+let restoredDB = try BlazeDBClient.open(named: "restored", password: "your-password")
 
-// Restore (database must be empty)
-try BlazeDBImporter.restore(from: dumpURL, to: restoredDB, allowSchemaMismatch: false)
+// Restore (target database must be empty)
+try BlazeDBImporter.restore(from: backupURL, to: restoredDB, allowSchemaMismatch: false)
 
 print("Restored \(restoredDB.count()) records")
 try restoredDB.close()
@@ -476,7 +468,7 @@ blazedb info mydb --password "password"
 
 **Minimum viable usage:**
 ```swift
-let db = try BlazeDBClient.openOrCreate(name: "mydb", password: "password")
+let db = try BlazeDBClient.open(named: "myapp", password: "your-password")
 defer { try? db.close() }
 
 // Use database...

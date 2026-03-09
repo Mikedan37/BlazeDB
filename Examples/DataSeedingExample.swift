@@ -35,7 +35,7 @@ func seedingExample() throws {
     let fileURL = FileManager.default.temporaryDirectory
         .appendingPathComponent("seeding-example.blazedb")
     
-    guard let db = BlazeDBClient(name: "SeedDemo", at: fileURL, password: "password-123") else {
+    guard let db = try? BlazeDBClient.open(at: fileURL, password: "password-123") else {
         print("❌ Failed to initialize database")
         return
     }

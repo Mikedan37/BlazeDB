@@ -194,7 +194,7 @@ extension DynamicCollection {
         }
         #else
         // Linux: MetaStore not available, ordering not supported
-        throw BlazeDBError.transactionFailed("Ordering support requires MetaStore (not available on Linux)")
+        throw BlazeDBError.invalidQuery(reason: "Ordering support requires MetaStore (not available on Linux)", suggestion: "Use macOS/iOS for ordering support, or sort results in-memory")
         #endif
     }
 }

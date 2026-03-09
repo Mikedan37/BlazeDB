@@ -14,7 +14,7 @@ func runPrettyPrintExample() {
         let dbURL = FileManager.default.temporaryDirectory
             .appendingPathComponent("example.blazedb")
         
-        let db = try BlazeDBClient(name: "BugTracker", fileURL: dbURL, password: "test-pass-123456")
+        let db = try BlazeDBClient.open(at: dbURL, password: "TestPass-123456!")
         
         // Insert sample data
         print("Creating sample bugs...")

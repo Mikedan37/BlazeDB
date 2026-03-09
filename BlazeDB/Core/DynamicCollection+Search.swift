@@ -40,8 +40,18 @@ extension DynamicCollection {
             BlazeLogger.info("Enabling search index on fields: \(fields)")
             let startTime = Date()
             
-            // Load existing index or create new one
-            let layout = try StorageLayout.load(from: metaURL)
+            // Load existing index or create new one (prefer secure signed metadata).
+            let layout: StorageLayout
+            do {
+                layout = try StorageLayout.loadSecure(
+                    from: metaURL,
+                    signingKey: encryptionKey,
+                    password: password,
+                    salt: Data("AshPileSalt".utf8)
+                )
+            } catch {
+                layout = try StorageLayout.load(from: metaURL)
+            }
             let searchIndex = layout.searchIndex ?? InvertedIndex()
             
             // Build index from all existing records
@@ -52,7 +62,14 @@ extension DynamicCollection {
             var updatedLayout = layout
             updatedLayout.searchIndex = searchIndex
             updatedLayout.searchIndexedFields = fields
-            try updatedLayout.save(to: metaURL)
+            // Keep runtime cache in sync so immediate read-your-writes search works.
+            cachedSearchIndex = searchIndex
+            cachedSearchIndexedFields = fields
+            if password != nil {
+                try updatedLayout.saveSecure(to: metaURL, signingKey: encryptionKey)
+            } else {
+                try updatedLayout.save(to: metaURL)
+            }
             
             let duration = Date().timeIntervalSince(startTime)
             let stats = searchIndex.getStats()
@@ -68,10 +85,26 @@ extension DynamicCollection {
         try queue.sync(flags: .barrier) {
             BlazeLogger.info("Disabling search index")
             
-            var layout = try StorageLayout.load(from: metaURL)
+            var layout: StorageLayout
+            do {
+                layout = try StorageLayout.loadSecure(
+                    from: metaURL,
+                    signingKey: encryptionKey,
+                    password: password,
+                    salt: Data("AshPileSalt".utf8)
+                )
+            } catch {
+                layout = try StorageLayout.load(from: metaURL)
+            }
             layout.searchIndex = nil
             layout.searchIndexedFields = []
-            try layout.save(to: metaURL)
+            cachedSearchIndex = nil
+            cachedSearchIndexedFields = []
+            if password != nil {
+                try layout.saveSecure(to: metaURL, signingKey: encryptionKey)
+            } else {
+                try layout.save(to: metaURL)
+            }
             
             BlazeLogger.info("Search index disabled, memory freed")
         }
@@ -80,7 +113,17 @@ extension DynamicCollection {
     /// Check if search is enabled
     public func isSearchEnabled() throws -> Bool {
         return try queue.sync {
-            let layout = try StorageLayout.load(from: metaURL)
+            let layout: StorageLayout
+            do {
+                layout = try StorageLayout.loadSecure(
+                    from: metaURL,
+                    signingKey: encryptionKey,
+                    password: password,
+                    salt: Data("AshPileSalt".utf8)
+                )
+            } catch {
+                layout = try StorageLayout.load(from: metaURL)
+            }
             return layout.searchIndex != nil
         }
     }
@@ -88,7 +131,17 @@ extension DynamicCollection {
     /// Get search index statistics
     public func getSearchStats() throws -> IndexStats? {
         return try queue.sync {
-            let layout = try StorageLayout.load(from: metaURL)
+            let layout: StorageLayout
+            do {
+                layout = try StorageLayout.loadSecure(
+                    from: metaURL,
+                    signingKey: encryptionKey,
+                    password: password,
+                    salt: Data("AshPileSalt".utf8)
+                )
+            } catch {
+                layout = try StorageLayout.load(from: metaURL)
+            }
             return layout.searchIndex?.getStats()
         }
     }
@@ -99,7 +152,17 @@ extension DynamicCollection {
             BlazeLogger.info("Rebuilding search index")
             let startTime = Date()
             
-            var layout = try StorageLayout.load(from: metaURL)
+            var layout: StorageLayout
+            do {
+                layout = try StorageLayout.loadSecure(
+                    from: metaURL,
+                    signingKey: encryptionKey,
+                    password: password,
+                    salt: Data("AshPileSalt".utf8)
+                )
+            } catch {
+                layout = try StorageLayout.load(from: metaURL)
+            }
             guard !layout.searchIndexedFields.isEmpty else {
                 BlazeLogger.warn("No indexed fields configured, skipping rebuild")
                 return
@@ -111,7 +174,13 @@ extension DynamicCollection {
             newIndex.indexRecords(allRecords, fields: layout.searchIndexedFields)
             
             layout.searchIndex = newIndex
-            try layout.save(to: metaURL)
+            cachedSearchIndex = newIndex
+            cachedSearchIndexedFields = layout.searchIndexedFields
+            if password != nil {
+                try layout.saveSecure(to: metaURL, signingKey: encryptionKey)
+            } else {
+                try layout.save(to: metaURL)
+            }
             
             let duration = Date().timeIntervalSince(startTime)
             BlazeLogger.info("Search index rebuilt in \(String(format: "%.2f", duration))s")
@@ -173,14 +242,17 @@ extension DynamicCollection {
     /// - Throws: If search fails
     public func searchOptimized(query: String, in fields: [String], config: SearchConfig? = nil) throws -> [FullTextSearchResult] {
         return try queue.sync {
-            let layout = try StorageLayout.load(from: metaURL)
-            let searchConfig = config ?? SearchConfig(fields: fields)
+            var effectiveFields = fields
+            if effectiveFields.isEmpty {
+                effectiveFields = cachedSearchIndexedFields
+            }
+            let searchConfig = config ?? SearchConfig(fields: effectiveFields)
             
             // Check if index is available AND case-insensitive mode
             // InvertedIndex always lowercases, so we can't use it for case-sensitive search
-            guard let index = layout.searchIndex, !searchConfig.caseSensitive else {
+            guard let index = cachedSearchIndex, !searchConfig.caseSensitive else {
                 // Fallback to non-indexed search
-                if layout.searchIndex == nil {
+                if cachedSearchIndex == nil {
                     BlazeLogger.warn("Search index not enabled for this collection, using full scan (slower)")
                     BlazeLogger.info("Tip: Enable index with enableSearch(on: fields) for 50-1000x speedup")
                 } else {
@@ -188,10 +260,24 @@ extension DynamicCollection {
                 }
                 
                 let allRecords = try _fetchAllNoSync()
+                if effectiveFields.isEmpty {
+                    let discoveredFields = Set(allRecords.flatMap { record in
+                        record.storage.compactMap { key, value in
+                            value.stringValue == nil ? nil : key
+                        }
+                    })
+                    effectiveFields = Array(discoveredFields)
+                }
+                let effectiveConfig = SearchConfig(
+                    minWordLength: searchConfig.minWordLength,
+                    caseSensitive: searchConfig.caseSensitive,
+                    language: searchConfig.language,
+                    fields: effectiveFields
+                )
                 return FullTextSearchEngine.search(
                     records: allRecords,
                     query: query,
-                    config: searchConfig
+                    config: effectiveConfig
                 )
             }
             
@@ -199,7 +285,7 @@ extension DynamicCollection {
             BlazeLogger.debug("Using inverted index for search: '\(query)'")
             
             // Use inverted index (fast!)
-            let scoredIDs = index.search(query: query, in: fields)
+            let scoredIDs = index.search(query: query, in: effectiveFields)
             
             // Fetch only matching records
             var results: [FullTextSearchResult] = []
@@ -207,7 +293,7 @@ extension DynamicCollection {
                 if let record = try? _fetchNoSync(id: id) {
                     // Extract actual matches for display
                     var matches: [String: [String]] = [:]
-                    for field in fields {
+                    for field in effectiveFields {
                         if let text = record.storage[field]?.stringValue,
                            text.localizedCaseInsensitiveContains(query) {
                             matches[field] = [query]
@@ -250,7 +336,7 @@ extension DynamicCollection {
     public func enableSmartSearch(threshold: Int, fields: [String]) throws {
         BlazeLogger.info("Smart search enabled: will auto-index when count > \(threshold)")
         
-        let recordCount = try queue.sync {
+        let recordCount = queue.sync {
             return indexMap.count
         }
         
@@ -260,16 +346,40 @@ extension DynamicCollection {
         } else {
             BlazeLogger.info("Record count (\(recordCount)) < threshold (\(threshold)), will enable later")
             // Store threshold in metadata for future checks
-            var layout = try StorageLayout.load(from: metaURL)
+            var layout: StorageLayout
+            do {
+                layout = try StorageLayout.loadSecure(
+                    from: metaURL,
+                    signingKey: encryptionKey,
+                    password: password,
+                    salt: Data("AshPileSalt".utf8)
+                )
+            } catch {
+                layout = try StorageLayout.load(from: metaURL)
+            }
             layout.metaData["_searchAutoThreshold"] = .int(threshold)
             layout.metaData["_searchAutoFields"] = .array(fields.map { .string($0) })
-            try layout.save(to: metaURL)
+            if password != nil {
+                try layout.saveSecure(to: metaURL, signingKey: encryptionKey)
+            } else {
+                try layout.save(to: metaURL)
+            }
         }
     }
     
     /// Internal: Check if auto-indexing threshold has been reached
     internal func checkAutoIndexThreshold() throws {
-        let layout = try StorageLayout.load(from: metaURL)
+        let layout: StorageLayout
+        do {
+            layout = try StorageLayout.loadSecure(
+                from: metaURL,
+                signingKey: encryptionKey,
+                password: password,
+                salt: Data("AshPileSalt".utf8)
+            )
+        } catch {
+            layout = try StorageLayout.load(from: metaURL)
+        }
         
         // Check if auto-indexing is configured
         guard let thresholdField = layout.metaData["_searchAutoThreshold"],

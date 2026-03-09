@@ -36,6 +36,8 @@ extension BlazeDBError {
             return .encryptionKey
         case .diskFull, .databaseLocked:
             return .ioFailure
+        case .concurrentProcessAccessNotSupported:
+            return .other
         case .invalidInput:
             return .invalidInput
         case .transactionFailed:
@@ -77,6 +79,8 @@ extension BlazeDBError {
             return "Check file permissions and app sandbox entitlements. On Linux, ensure directory is writable (chmod 755)."
         case .databaseLocked:
             return "Close other instances of the database and try again."
+        case .concurrentProcessAccessNotSupported:
+            return "BlazeDB is single-process only. Close the other process or handle holding this database and try again."
         case .diskFull:
             return "Free up disk space and retry the operation."
         case .invalidInput(let reason):

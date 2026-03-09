@@ -184,7 +184,7 @@ extension QueryBuilder {
     ) throws -> [SearchResult] {
         guard let collection = collection else {
             BlazeLogger.error("Search failed: Collection has been deallocated")
-            throw BlazeDBError.transactionFailed("Collection has been deallocated")
+            throw BlazeDBError.invalidData(reason: "Query builder's collection has been deallocated. Recreate the query from a live database.")
         }
         
         let startTime = Date()

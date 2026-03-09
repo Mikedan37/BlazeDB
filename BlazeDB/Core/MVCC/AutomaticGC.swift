@@ -90,7 +90,7 @@ public class AutomaticGCManager: @unchecked Sendable {
         // Threshold 1: Transaction count
         if transactionsSinceLastGC >= config.transactionThreshold {
             if config.verbose {
-                print("🗑️ GC trigger: Transaction threshold (\(transactionsSinceLastGC) >= \(config.transactionThreshold))")
+                BlazeLogger.debug("GC trigger: Transaction threshold (\(transactionsSinceLastGC) >= \(config.transactionThreshold))")
             }
             return true
         }
@@ -99,7 +99,7 @@ public class AutomaticGCManager: @unchecked Sendable {
         let stats = versionManager.getStats()
         if stats.averageVersionsPerRecord >= config.versionThreshold {
             if config.verbose {
-                print("🗑️ GC trigger: Version threshold (\(String(format: "%.2f", stats.averageVersionsPerRecord)) >= \(config.versionThreshold))")
+                BlazeLogger.debug("GC trigger: Version threshold (\(String(format: "%.2f", stats.averageVersionsPerRecord)) >= \(config.versionThreshold))")
             }
             return true
         }
@@ -108,7 +108,7 @@ public class AutomaticGCManager: @unchecked Sendable {
         let timeSinceLastGC = Date().timeIntervalSince(lastGCTime)
         if timeSinceLastGC >= config.timeInterval {
             if config.verbose {
-                print("🗑️ GC trigger: Time threshold (\(String(format: "%.1f", timeSinceLastGC))s >= \(config.timeInterval)s)")
+                BlazeLogger.debug("GC trigger: Time threshold (\(String(format: "%.1f", timeSinceLastGC))s >= \(config.timeInterval)s)")
             }
             return true
         }
@@ -142,14 +142,7 @@ public class AutomaticGCManager: @unchecked Sendable {
         
         // Log results
         if config.verbose || removed >= config.minVersionsToRemove {
-            print("""
-                🗑️ Garbage Collection Complete:
-                   Versions before: \(statsBefore.totalVersions)
-                   Versions after:  \(statsAfter.totalVersions)
-                   Removed:         \(removed)
-                   Duration:        \(String(format: "%.3f", duration))s
-                   Total GC runs:   \(totalGCRuns)
-                """)
+            BlazeLogger.info("Garbage Collection Complete: Versions before: \(statsBefore.totalVersions), after: \(statsAfter.totalVersions), removed: \(removed), duration: \(String(format: "%.3f", duration))s, total GC runs: \(totalGCRuns)")
         }
     }
     

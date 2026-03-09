@@ -2,8 +2,29 @@ import Foundation
 
 // MARK: - Direct Codable Support for BlazeDB
 
-/// Allows any Codable type to be used directly with BlazeDB
-/// WITHOUT needing BlazeDocument conformance or manual conversion
+/// The recommended protocol for typed model support.
+///
+/// Conform to `BlazeStorable` and `Codable` to get automatic serialization
+/// and type-safe KeyPath queries via `query(for:)`.
+///
+/// ```swift
+/// struct Task: BlazeStorable, Codable {
+///     var id: UUID
+///     var title: String
+///     var priority: Int
+///     var isComplete: Bool
+/// }
+///
+/// // Type-safe queries with KeyPath:
+/// let urgent = try db.query(for: Task.self)
+///     .where(\.priority, .greaterThanOrEqual, 7)
+///     .execute()
+/// ```
+///
+/// ## When to use BlazeDocument instead
+/// - You need manual control over storage mapping
+/// - Your type cannot conform to Codable
+/// - You need custom field translation logic
 public protocol BlazeStorable: Codable, Identifiable where ID == UUID {
     var id: UUID { get set }
 }
@@ -21,7 +42,7 @@ extension BlazeStorable {
         let jsonObject = try JSONSerialization.jsonObject(with: jsonData) as? [String: Any]
         
         guard let jsonObject = jsonObject else {
-            throw BlazeDBError.transactionFailed("Failed to convert Codable to JSON")
+            throw BlazeDBError.invalidData(reason: "Failed to convert Codable to JSON")
         }
         
         var storage: [String: BlazeDocumentField] = [:]
@@ -41,23 +62,7 @@ extension BlazeStorable {
         
         for (key, field) in record.storage {
             BlazeLogger.debug("  Processing field '\(key)': \(String(describing: field).prefix(100))...")
-            // Handle dates stored as TimeInterval (Double)
-            if case .double(let timestamp) = field, 
-               (key.contains("At") || key.contains("Date") || key == "created" || key == "updated" || key == "timestamp") {
-                // Convert timestamp back to Date, then to ISO8601 string for Codable
-                let date = Date(timeIntervalSinceReferenceDate: timestamp)
-                jsonObject[key] = ISO8601DateFormatter().string(from: date)
-            }
-            // Handle bools stored as integers (0/1)
-            else if case .int(let intValue) = field,
-                    (key.contains("is") || key.contains("has") || key.contains("can") || 
-                     key.contains("should") || key == "active" || key == "enabled" || key == "disabled") {
-                // Convert to actual bool for Codable
-                jsonObject[key] = intValue != 0
-            }
-            else {
-                jsonObject[key] = try convertToJSON(field)
-            }
+            jsonObject[key] = try convertToJSON(field)
         }
         
         let jsonData = try JSONSerialization.data(withJSONObject: jsonObject)
@@ -100,7 +105,7 @@ private func convertToBlazeField(_ value: Any) throws -> BlazeDocumentField {
         if let str = value as? String, let date = ISO8601DateFormatter().date(from: str) {
             return .date(date)
         }
-        throw BlazeDBError.transactionFailed("Unsupported type during Codable conversion: \(type(of: value))")
+        throw BlazeDBError.invalidData(reason: "Unsupported type during Codable conversion: \(type(of: value))")
     }
 }
 

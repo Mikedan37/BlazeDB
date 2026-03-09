@@ -188,7 +188,6 @@ extension BlazeDBClient {
             DispatchQueue.global(qos: .userInitiated).async {
                 do {
                     var results: [UUID: Bool] = [:]
-                    let idSet = Set(ids)
                     
                     // Single scan
                     let allRecords = try self.fetchAll()

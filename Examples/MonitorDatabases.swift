@@ -47,7 +47,7 @@ Full Monitoring Snapshot:
 ──────────────────────────
 
 ```swift
-let db = try BlazeDBClient(name: "my_db", fileURL: url, password: "secret")
+let db = try BlazeDBClient.open(at: url, password: "secret")
 let snapshot = try db.getMonitoringSnapshot()
 
 // Access all stats:
@@ -94,7 +94,7 @@ func scanDatabases(in directory: URL) -> [DBRecord] {
 
 func getDetailedStats(for dbPath: String, password: String) -> DatabaseMonitoringSnapshot? {
     let url = URL(fileURLWithPath: dbPath)
-    guard let db = try? BlazeDBClient(name: "monitor", fileURL: url, password: password) else {
+    guard let db = try? BlazeDBClient.open(at: url, password: password) else {
         return nil
     }
     

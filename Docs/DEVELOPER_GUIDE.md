@@ -1,6 +1,6 @@
 # BlazeDB Developer Guide - Complete Public API Reference
 
-**Version:** 0.1.3+  
+**Version:** 2.7.0+  
 **Last Updated:** 2026-01-23  
 **Purpose:** Comprehensive guide to all publicly exposed BlazeDB APIs for developers
 
@@ -40,12 +40,12 @@ dependencies: [
 
 1. **File → Add Package Dependencies**
 2. Enter: `https://github.com/Mikedan37/BlazeDB.git`
-3. Select version: `0.1.3` or later
+3. Select version: `2.7.0` or later
 
 ### Import
 
 ```swift
-import BlazeDBCore  // Core database functionality
+import BlazeDB  // Database functionality
 
 // SwiftUI integration (macOS/iOS/watchOS/tvOS only)
 #if canImport(SwiftUI)
@@ -230,17 +230,14 @@ guard let db = BlazeDBClient.create(
     return
 }
 
-// Open or create
-let db = try BlazeDBClient.openOrCreate(
-    name: "MyApp",
+// Open (creates if absent)
+let db = try BlazeDBClient.open(
+    named: "MyApp",
     password: "secure-password-123"
 )
 
 // Temporary database (for testing)
-let db = try BlazeDBClient.openTemporary(
-    name: "test-db",
-    password: "test-password"
-)
+let db = try BlazeDBClient.openForTesting()
 ```
 
 ### Pattern 5: Singleton (App-wide Access)
@@ -617,6 +614,13 @@ if let records = result.recordsOrNil {
 ---
 
 ## Type-Safe Models
+
+### Choosing a Protocol
+
+| Use case | Protocol | Query style |
+|----------|----------|-------------|
+| Default — Codable models, KeyPath queries, minimal boilerplate | `BlazeStorable` | `query(for: MyModel.self)` |
+| Manual mapping, custom field control, non-Codable types | `BlazeDocument` | `query()` with string-based filters |
 
 ### BlazeDocument Protocol
 
@@ -1005,8 +1009,7 @@ print("Issues: \(health.issues.count)")
 // Manually flush pending changes to disk
 try db.persist()
 
-// Alias for persist()
-try db.flush()
+// persist() ensures all pending changes are written to disk
 ```
 
 ### Close Database
@@ -1213,7 +1216,7 @@ var openBugs
 
 ```swift
 import SwiftUI
-import BlazeDBCore
+import BlazeDB
 
 // Model
 struct Bug: BlazeDocument {
@@ -1257,7 +1260,7 @@ class AppDatabase {
     
     private init() {
         do {
-            db = try BlazeDBClient(name: "Bugs", password: "secure-password-123")
+            db = try BlazeDBClient.open(named: "Bugs", password: "secure-password-123")
             try db.createIndex(on: "status")
             try db.createIndex(on: "priority")
         } catch {
@@ -1307,7 +1310,7 @@ struct BugListView: View {
 
 ```swift
 // Initialize
-let db = try BlazeDBClient(name: "App", password: "pass")
+let db = try BlazeDBClient.open(named: "App", password: "pass")
 
 // Insert
 let id = try db.insert(record)

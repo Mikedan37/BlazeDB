@@ -26,6 +26,7 @@ extension BlazeDBClient {
     /// let record = BlazeDataRecord(["title": .string("Hello")])
     /// let id = try await db.insertAsync(record)
     /// ```
+    @available(*, deprecated, message: "Use insert(_:) async throws instead. The *Async suffix is unnecessary in Swift concurrency.")
     public func insertAsync(_ data: BlazeDataRecord) async throws -> UUID {
         let startTime = Date()
         
@@ -72,6 +73,7 @@ extension BlazeDBClient {
     }
     
     /// Insert multiple records asynchronously (true async, parallel)
+    @available(*, deprecated, message: "Use insertMany(_:) async throws instead. The *Async suffix is unnecessary in Swift concurrency.")
     public func insertManyAsync(_ records: [BlazeDataRecord]) async throws -> [UUID] {
         let startTime = Date()
         
@@ -80,7 +82,7 @@ extension BlazeDBClient {
             let ids = try await collection.insertBatchAsync(records)
             
             // Log to transaction log (synchronously - thread-safe method)
-            for (index, id) in ids.enumerated() {
+            for (index, _) in ids.enumerated() {
                 if index < records.count {
                     appendToTransactionLog("insert", payload: records[index].storage)
                 }
@@ -100,6 +102,7 @@ extension BlazeDBClient {
     }
     
     /// Fetch a record by ID asynchronously (true async, non-blocking)
+    @available(*, deprecated, message: "Use fetch(id:) async throws instead. The *Async suffix is unnecessary in Swift concurrency.")
     public func fetchAsync(id: UUID) async throws -> BlazeDataRecord? {
         let startTime = Date()
         
@@ -118,6 +121,7 @@ extension BlazeDBClient {
     }
     
     /// Fetch all records asynchronously (true async, non-blocking)
+    @available(*, deprecated, message: "Use fetchAll() async throws instead. The *Async suffix is unnecessary in Swift concurrency.")
     public func fetchAllAsync() async throws -> [BlazeDataRecord] {
         let startTime = Date()
         
@@ -136,6 +140,7 @@ extension BlazeDBClient {
     }
     
     /// Fetch a page of records asynchronously (true async, non-blocking)
+    @available(*, deprecated, message: "Use fetchPage(offset:limit:) async throws instead. The *Async suffix is unnecessary in Swift concurrency.")
     public func fetchPageAsync(offset: Int, limit: Int) async throws -> [BlazeDataRecord] {
         let startTime = Date()
         
@@ -154,6 +159,7 @@ extension BlazeDBClient {
     }
     
     /// Update a record asynchronously (true async, non-blocking)
+    @available(*, deprecated, message: "Use update(id:data:) async throws instead. The *Async suffix is unnecessary in Swift concurrency.")
     public func updateAsync(id: UUID, with data: BlazeDataRecord) async throws {
         let startTime = Date()
         
@@ -177,6 +183,7 @@ extension BlazeDBClient {
     }
     
     /// Delete a record asynchronously (true async, non-blocking)
+    @available(*, deprecated, message: "Use delete(id:) async throws instead. The *Async suffix is unnecessary in Swift concurrency.")
     public func deleteAsync(id: UUID) async throws {
         let startTime = Date()
         
@@ -211,6 +218,7 @@ extension BlazeDBClient {
     ///     useCache: true
     /// )
     /// ```
+    @available(*, deprecated, message: "Use query(where:equals:orderBy:descending:limit:) async throws instead. The *Async suffix is unnecessary in Swift concurrency.")
     public func queryAsync(
         where field: String? = nil,
         equals value: BlazeDocumentField? = nil,

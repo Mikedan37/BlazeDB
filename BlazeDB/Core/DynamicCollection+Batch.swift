@@ -458,8 +458,8 @@ extension DynamicCollection {
             
             // Phase 2.5: Clear fetchAll cache (new records were inserted!)
             BlazeLogger.debug("📦 [INSERT] Batch: Phase 2.6 - Clearing fetchAll cache...")
-            // clearFetchAllCache() is defined in DynamicCollection+Optimized (gated)
-            // Cache will be cleared on next fetchAll call
+            // Keep fetch paths consistent with single-record insert behavior.
+            clearFetchAllCache()
             
             // Invalidate ordering index cache (new records may change sort order)
             if supportsOrdering() {
@@ -477,6 +477,9 @@ extension DynamicCollection {
                !layout.searchIndexedFields.isEmpty {
                 // Batch index all records at once
                 index.indexRecords(insertedRecords, fields: layout.searchIndexedFields)
+                // Keep runtime cache consistent so search sees batch writes immediately.
+                cachedSearchIndex = index
+                cachedSearchIndexedFields = layout.searchIndexedFields
                 
                 var updatedLayout = layout
                 updatedLayout.searchIndex = index
@@ -705,7 +708,7 @@ extension DynamicCollection {
             // This ensures caches are only cleared if the operation is fully persisted
             // If saveLayout() fails, caches remain valid and operation will rollback
             for id in idsToDelete {
-                RecordCache.shared.remove(id: id)
+                recordCache.remove(id: id)
             }
             #if !BLAZEDB_LINUX_CORE
 // clearFetchAllCache() is defined in DynamicCollection+Optimized (gated)

@@ -5,8 +5,8 @@ import BlazeDB
 
 /// This example demonstrates the most common BlazeDB operations
 func basicUsageExample() throws {
-    // 1. Create a database (super simple - just a name!)
-    let db = try BlazeDBClient(name: "example", password: "my-secure-password")
+    // 1. Open a database (super simple - just a name!)
+    let db = try BlazeDBClient.open(named: "example", password: "example-password-123!")
     // Database automatically stored in: ~/Library/Application Support/BlazeDB/example.blazedb
     
     // 2. Insert a record

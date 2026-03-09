@@ -12,8 +12,8 @@ func visualJoinDemo() throws {
     let bugsURL = FileManager.default.temporaryDirectory.appendingPathComponent("demo_bugs.blazedb")
     let usersURL = FileManager.default.temporaryDirectory.appendingPathComponent("demo_users.blazedb")
     
-    let bugsDB = try BlazeDBClient(name: "bugs", fileURL: bugsURL, password: "demo")
-    let usersDB = try BlazeDBClient(name: "users", fileURL: usersURL, password: "demo")
+    let bugsDB = try BlazeDBClient.open(at: bugsURL, password: "demo")
+    let usersDB = try BlazeDBClient.open(at: usersURL, password: "demo")
     
     // Insert sample data
     print("\n📝 SETTING UP DATA...")

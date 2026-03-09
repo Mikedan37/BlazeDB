@@ -4,12 +4,114 @@
 
 import Foundation
 
+// MARK: - Filter Descriptor for Cache Key Generation and Index Execution
+
+/// Describes a filter operation for cache key generation and index-based execution
+internal struct FilterDescriptor: Hashable {
+    let field: String
+    let operation: String
+    let valueHash: Int
+    let value: BlazeDocumentField?  // Stored for index execution
+    let values: [BlazeDocumentField]?  // For IN queries
+    
+    init(field: String, operation: String, value: BlazeDocumentField) {
+        self.field = field
+        self.operation = operation
+        self.valueHash = Self.hashValue(value)
+        self.value = value
+        self.values = nil
+    }
+    
+    init(field: String, operation: String, values: [BlazeDocumentField]) {
+        self.field = field
+        self.operation = operation
+        var hasher = Hasher()
+        for value in values {
+            hasher.combine(Self.hashValue(value))
+        }
+        self.valueHash = hasher.finalize()
+        self.value = nil
+        self.values = values
+    }
+    
+    init(customDescription: String) {
+        self.field = "_custom"
+        self.operation = "closure"
+        var hasher = Hasher()
+        hasher.combine(customDescription)
+        self.valueHash = hasher.finalize()
+        self.value = nil
+        self.values = nil
+    }
+    
+    private static func hashValue(_ field: BlazeDocumentField) -> Int {
+        var hasher = Hasher()
+        switch field {
+        case .string(let s): hasher.combine("s"); hasher.combine(s)
+        case .int(let i): hasher.combine("i"); hasher.combine(i)
+        case .double(let d): hasher.combine("d"); hasher.combine(d.bitPattern)
+        case .bool(let b): hasher.combine("b"); hasher.combine(b)
+        case .uuid(let u): hasher.combine("u"); hasher.combine(u)
+        case .date(let d): hasher.combine("t"); hasher.combine(d.timeIntervalSince1970)
+        case .data(let d): hasher.combine("D"); hasher.combine(d)
+        case .array(let a):
+            hasher.combine("a")
+            for item in a { hasher.combine(hashValue(item)) }
+        case .dictionary(let d):
+            hasher.combine("m")
+            for (k, v) in d.sorted(by: { $0.key < $1.key }) {
+                hasher.combine(k)
+                hasher.combine(hashValue(v))
+            }
+        case .null: hasher.combine("n")
+        case .vector(let v): hasher.combine("v"); hasher.combine(v)
+        }
+        return hasher.finalize()
+    }
+    
+    /// Convert BlazeDocumentField to AnyHashable for index lookup
+    var hashableValue: AnyHashable? {
+        guard let value = value else { return nil }
+        switch value {
+        case .string(let s): return s
+        case .int(let i): return i
+        case .double(let d): return d
+        case .bool(let b): return b
+        case .uuid(let u): return u
+        case .date(let d): return d
+        case .data(let d): return d
+        case .null: return nil
+        case .array, .dictionary, .vector: return nil  // Complex types not indexable
+        }
+    }
+    
+    var cacheKeyComponent: String {
+        return "\(field):\(operation):\(valueHash)"
+    }
+    
+    // Hashable conformance - exclude stored value for equality to avoid issues with complex types
+    static func == (lhs: FilterDescriptor, rhs: FilterDescriptor) -> Bool {
+        return lhs.field == rhs.field &&
+               lhs.operation == rhs.operation &&
+               lhs.valueHash == rhs.valueHash
+    }
+    
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(field)
+        hasher.combine(operation)
+        hasher.combine(valueHash)
+    }
+}
+
 // MARK: - Query Builder
 
 /// Fluent query builder for BlazeDB with chainable methods
-public final class QueryBuilder {
+/// Note: @unchecked Sendable for async method compatibility - builder is designed for sequential access
+public final class QueryBuilder: @unchecked Sendable {
     internal weak var collection: DynamicCollection?
     internal var filters: [(BlazeDataRecord) -> Bool] = []  // Internal for subquery access
+    internal var filterDescriptors: [FilterDescriptor] = []  // For cache key generation
+    internal var filterFields: Set<String> = []  // Tracked filter fields for optimizer
     internal var joinOperations: [JoinOperation] = []
     internal var sortOperations: [SortOperation] = []
     internal var limitValue: Int?
@@ -22,7 +124,6 @@ public final class QueryBuilder {
     // Advanced query features (spatial, vector, window functions)
     internal var sortByDistanceCenter: SpatialPoint?
     internal var windowFunctions: [(function: WindowFunction, alias: String)] = []
-    internal var filterFields: Set<String> = []
     #endif
     
     internal init(collection: DynamicCollection) {
@@ -35,6 +136,8 @@ public final class QueryBuilder {
     @discardableResult
     public func `where`(_ field: String, equals value: BlazeDocumentField) -> QueryBuilder {
         BlazeLogger.debug("Query: WHERE \(field) = \(value)")
+        filterFields.insert(field)
+        filterDescriptors.append(FilterDescriptor(field: field, operation: "eq", value: value))
         filters.append { record in
             guard let fieldValue = record.storage[field] else { return false }
             return fieldsEqual(fieldValue, value)
@@ -46,6 +149,8 @@ public final class QueryBuilder {
     @discardableResult
     public func `where`(_ field: String, notEquals value: BlazeDocumentField) -> QueryBuilder {
         BlazeLogger.debug("Query: WHERE \(field) != \(value)")
+        filterFields.insert(field)
+        filterDescriptors.append(FilterDescriptor(field: field, operation: "ne", value: value))
         filters.append { record in
             guard let fieldValue = record.storage[field] else { return false }
             return !fieldsEqual(fieldValue, value)
@@ -57,6 +162,8 @@ public final class QueryBuilder {
     @discardableResult
     public func `where`(_ field: String, greaterThan value: BlazeDocumentField) -> QueryBuilder {
         BlazeLogger.debug("Query: WHERE \(field) > \(value)")
+        filterFields.insert(field)
+        filterDescriptors.append(FilterDescriptor(field: field, operation: "gt", value: value))
         filters.append { (record: BlazeDataRecord) -> Bool in
             guard let fieldValue = record.storage[field] else { return false }
             return compareFields(fieldValue, .greaterThan, value)
@@ -68,6 +175,8 @@ public final class QueryBuilder {
     @discardableResult
     public func `where`(_ field: String, lessThan value: BlazeDocumentField) -> QueryBuilder {
         BlazeLogger.debug("Query: WHERE \(field) < \(value)")
+        filterFields.insert(field)
+        filterDescriptors.append(FilterDescriptor(field: field, operation: "lt", value: value))
         filters.append { (record: BlazeDataRecord) -> Bool in
             guard let fieldValue = record.storage[field] else { return false }
             return compareFields(fieldValue, .lessThan, value)
@@ -79,6 +188,8 @@ public final class QueryBuilder {
     @discardableResult
     public func `where`(_ field: String, greaterThanOrEqual value: BlazeDocumentField) -> QueryBuilder {
         BlazeLogger.debug("Query: WHERE \(field) >= \(value)")
+        filterFields.insert(field)
+        filterDescriptors.append(FilterDescriptor(field: field, operation: "gte", value: value))
         filters.append { (record: BlazeDataRecord) -> Bool in
             guard let fieldValue = record.storage[field] else { return false }
             return compareFields(fieldValue, .greaterThan, value) || fieldsEqual(fieldValue, value)
@@ -90,6 +201,8 @@ public final class QueryBuilder {
     @discardableResult
     public func `where`(_ field: String, lessThanOrEqual value: BlazeDocumentField) -> QueryBuilder {
         BlazeLogger.debug("Query: WHERE \(field) <= \(value)")
+        filterFields.insert(field)
+        filterDescriptors.append(FilterDescriptor(field: field, operation: "lte", value: value))
         filters.append { (record: BlazeDataRecord) -> Bool in
             guard let fieldValue = record.storage[field] else { return false }
             return compareFields(fieldValue, .lessThan, value) || fieldsEqual(fieldValue, value)
@@ -101,6 +214,8 @@ public final class QueryBuilder {
     @discardableResult
     public func `where`(_ field: String, contains substring: String) -> QueryBuilder {
         BlazeLogger.debug("Query: WHERE \(field) CONTAINS '\(substring)'")
+        filterFields.insert(field)
+        filterDescriptors.append(FilterDescriptor(field: field, operation: "contains", value: .string(substring)))
         filters.append { record in
             guard let stringValue = record.storage[field]?.stringValue else { return false }
             return stringValue.contains(substring)
@@ -112,9 +227,10 @@ public final class QueryBuilder {
     @discardableResult
     public func `where`(_ field: String, in values: [BlazeDocumentField]) -> QueryBuilder {
         BlazeLogger.debug("Query: WHERE \(field) IN [\(values.count) values]")
+        filterFields.insert(field)
+        filterDescriptors.append(FilterDescriptor(field: field, operation: "in", values: values))
         filters.append { record in
             guard let fieldValue = record.storage[field] else { return false }
-            // Use fieldsEqual for cross-type comparison
             return values.contains { fieldsEqual(fieldValue, $0) }
         }
         return self
@@ -124,6 +240,8 @@ public final class QueryBuilder {
     @discardableResult
     public func whereNil(_ field: String) -> QueryBuilder {
         BlazeLogger.debug("Query: WHERE \(field) IS NULL")
+        filterFields.insert(field)
+        filterDescriptors.append(FilterDescriptor(field: field, operation: "isnil", value: .null))
         filters.append { record in
             record.storage[field] == nil
         }
@@ -134,6 +252,8 @@ public final class QueryBuilder {
     @discardableResult
     public func whereNotNil(_ field: String) -> QueryBuilder {
         BlazeLogger.debug("Query: WHERE \(field) IS NOT NULL")
+        filterFields.insert(field)
+        filterDescriptors.append(FilterDescriptor(field: field, operation: "notnil", value: .null))
         filters.append { record in
             record.storage[field] != nil
         }
@@ -144,6 +264,7 @@ public final class QueryBuilder {
     @discardableResult
     public func `where`(_ predicate: @escaping (BlazeDataRecord) -> Bool) -> QueryBuilder {
         BlazeLogger.debug("Query: WHERE <custom closure>")
+        filterDescriptors.append(FilterDescriptor(customDescription: "closure_\(filters.count)"))
         filters.append(predicate)
         return self
     }
@@ -310,9 +431,9 @@ public final class QueryBuilder {
     /// let groups = try result.grouped  // Extract grouped results
     /// ```
     public func execute() throws -> QueryResult {
-        guard let collection = collection else {
+        guard collection != nil else {
             BlazeLogger.error("Query execution failed: Collection has been deallocated")
-            throw BlazeDBError.transactionFailed("Collection has been deallocated")
+            throw BlazeDBError.invalidData(reason: "Query builder's collection has been deallocated. Recreate the query from a live database.")
         }
         
         // Validate query before execution
@@ -377,7 +498,7 @@ public final class QueryBuilder {
     private func _executeStandard() throws -> [BlazeDataRecord] {
         guard let collection = collection else {
             BlazeLogger.error("Query execution failed: Collection has been deallocated")
-            throw BlazeDBError.transactionFailed("Collection has been deallocated")
+            throw BlazeDBError.invalidData(reason: "Query builder's collection has been deallocated. Recreate the query from a live database.")
         }
         
         let startTime = Date()
@@ -457,14 +578,14 @@ public final class QueryBuilder {
     private func _executeJoin() throws -> [JoinedRecord] {
         guard let collection = collection else {
             BlazeLogger.error("Join execution failed: Collection has been deallocated")
-            throw BlazeDBError.transactionFailed("Collection has been deallocated")
+            throw BlazeDBError.invalidData(reason: "Query builder's collection has been deallocated. Recreate the query from a live database.")
         }
         
         let startTime = Date()
         
         guard !joinOperations.isEmpty else {
             BlazeLogger.error("executeJoin() called but no join operations defined. Use .join() first")
-            throw BlazeDBError.transactionFailed("No join operations defined. Use join() before executeJoin()")
+            throw BlazeDBError.invalidQuery(reason: "No join operations defined", suggestion: "Add .join() before .execute()")
         }
         
         BlazeLogger.info("Executing JOIN query with \(filters.count) pre-filters, \(joinOperations.count) join(s)")
@@ -504,7 +625,7 @@ public final class QueryBuilder {
         // Step 2: Perform joins
         guard let joinOp = joinOperations.first else {
             BlazeLogger.error("Join operation list is empty")
-            throw BlazeDBError.transactionFailed("No join operation defined")
+            throw BlazeDBError.invalidQuery(reason: "No join operation defined", suggestion: "Add .join() before .execute()")
         }
         
         BlazeLogger.debug("Performing \(joinOp.type) join on \(joinOp.foreignKey) = \(joinOp.primaryKey)")
@@ -550,12 +671,12 @@ public final class QueryBuilder {
     private func _executeAggregation() throws -> AggregationResult {
         guard let collection = collection else {
             BlazeLogger.error("Aggregation execution failed: Collection has been deallocated")
-            throw BlazeDBError.transactionFailed("Collection has been deallocated")
+            throw BlazeDBError.invalidData(reason: "Query builder's collection has been deallocated. Recreate the query from a live database.")
         }
         
         guard !aggregations.isEmpty else {
             BlazeLogger.error("executeAggregation() called but no aggregations defined")
-            throw BlazeDBError.transactionFailed("No aggregations defined. Use count(), sum(), avg(), etc.")
+            throw BlazeDBError.invalidQuery(reason: "No aggregations defined", suggestion: "Add .count(), .sum(), or .avg() before .execute()")
         }
         
         let startTime = Date()
@@ -598,17 +719,17 @@ public final class QueryBuilder {
     private func _executeGroupedAggregation() throws -> GroupedAggregationResult {
         guard let collection = collection else {
             BlazeLogger.error("Grouped aggregation execution failed: Collection has been deallocated")
-            throw BlazeDBError.transactionFailed("Collection has been deallocated")
+            throw BlazeDBError.invalidData(reason: "Query builder's collection has been deallocated. Recreate the query from a live database.")
         }
         
         guard !groupByFields.isEmpty else {
             BlazeLogger.error("executeGroupedAggregation() called but no groupBy defined")
-            throw BlazeDBError.transactionFailed("No groupBy defined. Use groupBy() first.")
+            throw BlazeDBError.invalidQuery(reason: "No groupBy defined", suggestion: "Add .groupBy() before .execute()")
         }
-        
+
         guard !aggregations.isEmpty else {
             BlazeLogger.error("executeGroupedAggregation() called but no aggregations defined")
-            throw BlazeDBError.transactionFailed("No aggregations defined. Use count(), sum(), etc.")
+            throw BlazeDBError.invalidQuery(reason: "No aggregations defined for grouped query", suggestion: "Add .count(), .sum(), or .avg() after .groupBy()")
         }
         
         let startTime = Date()
@@ -658,22 +779,28 @@ public final class QueryBuilder {
     // MARK: - Helpers
     
     /// Generate a unique cache key for this query
-    private func generateCacheKey() -> String {
+    internal func generateCacheKey() -> String {
         var key = "q"
-        
-        // Include filters (simplified for caching)
-        key += "_f\(filters.count)"
-        
+
+        // Include filters with their full descriptors (field, operation, value hash)
+        if !filterDescriptors.isEmpty {
+            var hasher = Hasher()
+            for descriptor in filterDescriptors {
+                hasher.combine(descriptor)
+            }
+            key += "_f\(hasher.finalize())"
+        }
+
         // Include joins
         if !joinOperations.isEmpty {
             key += "_j\(joinOperations.count)"
         }
-        
+
         // Include sorts
         if !sortOperations.isEmpty {
-            key += "_s\(sortOperations.map { $0.field }.joined(separator: ","))"
+            key += "_s\(sortOperations.map { $0.field + ($0.descending ? "D" : "A") }.joined(separator: ","))"
         }
-        
+
         // Include limit/offset
         if let limit = limitValue {
             key += "_l\(limit)"
@@ -681,17 +808,17 @@ public final class QueryBuilder {
         if offsetValue > 0 {
             key += "_o\(offsetValue)"
         }
-        
+
         // Include aggregations
         if !aggregations.isEmpty {
             key += "_a\(aggregations.count)"
         }
-        
+
         // Include groupBy
         if !groupByFields.isEmpty {
             key += "_g\(groupByFields.joined(separator: ","))"
         }
-        
+
         return key
     }
     
@@ -852,11 +979,9 @@ internal func fieldsEqual(_ lhs: BlazeDocumentField, _ rhs: BlazeDocumentField) 
     case (.date(let l), .int(let r)):
         return abs(l.timeIntervalSinceReferenceDate - Double(r)) < 0.001
     
-    // Data/String equality (base64)
-    case (.string(let l), .data(let r)):
-        return Data(base64Encoded: l) == r
-    case (.data(let l), .string(let r)):
-        return l == Data(base64Encoded: r)
+    // String and Data are distinct types; no implicit conversion
+    case (.string, .data), (.data, .string):
+        return false
     
     // Int/Double equality
     case (.int(let l), .double(let r)):
@@ -892,18 +1017,8 @@ internal func compareFields(
         // Compare Data by count (size comparison)
         return op == .lessThan ? l.count < r.count : l.count > r.count
     
-    // Handle Data stored as base64 string (cross-type comparison)
-    case (.string(let l), .data(let r)):
-        // Try to decode left string as base64, then compare sizes
-        if let leftData = Data(base64Encoded: l) {
-            return op == .lessThan ? leftData.count < r.count : leftData.count > r.count
-        }
-        return false
-    case (.data(let l), .string(let r)):
-        // Try to decode right string as base64, then compare sizes
-        if let rightData = Data(base64Encoded: r) {
-            return op == .lessThan ? l.count < rightData.count : l.count > rightData.count
-        }
+    // String and Data are distinct types; no implicit ordering
+    case (.string, .data), (.data, .string):
         return false
     
     // Numeric cross-type comparisons
@@ -959,6 +1074,179 @@ private func compare(
         return op(l, Double(r))
     default:
         return false
+    }
+}
+
+// MARK: - Query Cursor for Batch Fetching
+
+/// A cursor for iterating over query results in batches
+/// Provides memory-efficient access to large result sets
+public final class QueryCursor: Sequence, IteratorProtocol {
+    private let records: [BlazeDataRecord]
+    private let batchSize: Int
+    private var currentIndex: Int = 0
+    
+    /// Total number of records in the result set
+    public let totalCount: Int
+    
+    /// Number of batches remaining
+    public var batchesRemaining: Int {
+        let remaining = totalCount - currentIndex
+        return (remaining + batchSize - 1) / batchSize
+    }
+    
+    /// Whether there are more records to fetch
+    public var hasMore: Bool {
+        return currentIndex < totalCount
+    }
+    
+    /// Current position in the result set
+    public var currentPosition: Int {
+        return currentIndex
+    }
+    
+    internal init(records: [BlazeDataRecord], batchSize: Int) {
+        self.records = records
+        self.batchSize = Swift.max(1, batchSize)
+        self.totalCount = records.count
+    }
+    
+    /// Fetch the next batch of records
+    /// - Returns: Array of records, or nil if no more records
+    public func next() -> [BlazeDataRecord]? {
+        guard hasMore else { return nil }
+        
+        let endIndex = Swift.min(currentIndex + batchSize, totalCount)
+        let batch = Array(records[currentIndex..<endIndex])
+        currentIndex = endIndex
+        
+        return batch
+    }
+    
+    /// Reset the cursor to the beginning
+    public func reset() {
+        currentIndex = 0
+    }
+    
+    /// Skip a number of records
+    /// - Parameter count: Number of records to skip
+    public func skip(_ count: Int) {
+        currentIndex = Swift.min(currentIndex + count, totalCount)
+    }
+    
+    /// Get all remaining records (caution: may use significant memory)
+    public func fetchAll() -> [BlazeDataRecord] {
+        guard hasMore else { return [] }
+        let remaining = Array(records[currentIndex...])
+        currentIndex = totalCount
+        return remaining
+    }
+    
+    /// Iterate over all batches with a closure
+    /// - Parameter handler: Closure called for each batch
+    public func forEachBatch(_ handler: ([BlazeDataRecord]) throws -> Void) rethrows {
+        while let batch = next() {
+            try handler(batch)
+        }
+    }
+}
+
+// MARK: - QueryBuilder Cursor Extension
+
+extension QueryBuilder {
+    
+    /// Execute query and return a cursor for batch iteration
+    /// Memory-efficient for large result sets
+    ///
+    /// - Parameter batchSize: Number of records per batch (default: 100)
+    /// - Returns: A cursor for iterating over results in batches
+    ///
+    /// ## Example
+    /// ```swift
+    /// let cursor = try db.query()
+    ///     .where("status", equals: .string("active"))
+    ///     .cursor(batchSize: 50)
+    ///
+    /// while let batch = cursor.next() {
+    ///     for record in batch {
+    ///         process(record)
+    ///     }
+    /// }
+    /// ```
+    public func cursor(batchSize: Int = 100) throws -> QueryCursor {
+        let result = try execute()
+        let records = try result.records
+        return QueryCursor(records: records, batchSize: batchSize)
+    }
+    
+    /// Execute query and process results in batches
+    /// More memory-efficient than loading all records at once
+    ///
+    /// - Parameters:
+    ///   - batchSize: Number of records per batch (default: 100)
+    ///   - handler: Closure called for each batch
+    /// - Returns: Total number of records processed
+    ///
+    /// ## Example
+    /// ```swift
+    /// let processed = try db.query()
+    ///     .where("type", equals: .string("order"))
+    ///     .forEachBatch(size: 50) { batch in
+    ///         for record in batch {
+    ///             exportToCSV(record)
+    ///         }
+    ///     }
+    /// print("Processed \(processed) records")
+    /// ```
+    @discardableResult
+    public func forEachBatch(size: Int = 100, handler: ([BlazeDataRecord]) throws -> Void) throws -> Int {
+        let cursor = try cursor(batchSize: size)
+        var totalProcessed = 0
+        
+        while let batch = cursor.next() {
+            try handler(batch)
+            totalProcessed += batch.count
+        }
+        
+        return totalProcessed
+    }
+    
+    /// Execute query with pagination support
+    /// Returns a specific page of results
+    ///
+    /// - Parameters:
+    ///   - page: Page number (1-indexed)
+    ///   - pageSize: Number of records per page
+    /// - Returns: Records for the specified page
+    ///
+    /// ## Example
+    /// ```swift
+    /// // Get page 3 of results (records 21-30)
+    /// let page3 = try db.query()
+    ///     .orderBy("createdAt", descending: true)
+    ///     .page(3, size: 10)
+    /// ```
+    public func page(_ page: Int, size: Int) throws -> [BlazeDataRecord] {
+        guard page > 0 && size > 0 else {
+            throw BlazeDBError.invalidInput(reason: "Page must be >= 1 and size must be > 0")
+        }
+        
+        let skipCount = (page - 1) * size
+        
+        // Use existing offset/limit functionality
+        let originalOffset = offsetValue
+        let originalLimit = limitValue
+        
+        offsetValue = skipCount
+        limitValue = size
+        
+        defer {
+            offsetValue = originalOffset
+            limitValue = originalLimit
+        }
+        
+        let result = try execute()
+        return try result.records
     }
 }
 

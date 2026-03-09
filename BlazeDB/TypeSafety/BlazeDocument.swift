@@ -12,26 +12,26 @@ import Foundation
 
 // MARK: - BlazeDocument Protocol
 
-/// Protocol for type-safe document models.
+/// Protocol for manual typed model support.
 ///
-/// Conform to this protocol to get compile-time type safety for your database models
-/// while maintaining BlazeDB's flexibility and zero-migration philosophy.
+/// For most use cases, prefer ``BlazeStorable`` which provides automatic
+/// Codable-based serialization and KeyPath query support. Use `BlazeDocument`
+/// only when you need manual control over how your model maps to and from
+/// `BlazeDataRecord` storage.
 ///
 /// Example:
 /// ```swift
-/// @BlazeDocument
-/// struct Bug: Identifiable {
-///     @Field var id: UUID = UUID()
-///     @Field var title: String
-///     @Field var priority: Int
-///     @Field var status: String
-///     @Field var assignee: String?
-///     @Field var tags: [String] = []
-///     @Field var createdAt: Date = Date()
+/// struct Bug: BlazeDocument {
+///     var id: UUID
+///     var title: String
+///     var priority: Int
+///     var status: String
+///     var assignee: String?
+///     var tags: [String] = []
+///     var createdAt: Date = Date()
 ///
-///     var isHighPriority: Bool {
-///         priority >= 7
-///     }
+///     func toStorage() throws -> BlazeDataRecord { ... }
+///     init(from storage: BlazeDataRecord) throws { ... }
 /// }
 /// ```
 public protocol BlazeDocument: Codable, Identifiable where ID == UUID {
@@ -94,37 +94,24 @@ extension BlazeDocument {
 ///     @Field var tags: [String] = []
 /// }
 /// ```
+@available(*, unavailable, message: "Macro support is not implemented. Use BlazeStorable (Codable-based) or BlazeDocument protocol for typed models.")
 @propertyWrapper
 public struct Field<Value> {
-    private let key: String
-    private var defaultValue: Value?
-    
     public var wrappedValue: Value {
-        get {
-            // Log error and return default value instead of crashing
-            BlazeLogger.error("@Field can only be used within a @BlazeDocument struct. This indicates a programming error.")
-            if let defaultValue = defaultValue {
-                return defaultValue
-            }
-            // If no default, use preconditionFailure (better than fatalError - can be caught in debug)
-            preconditionFailure("@Field can only be used within a @BlazeDocument struct. Provide a default value or use @BlazeDocument.")
-        }
-        set {
-            // Log error instead of crashing
-            BlazeLogger.error("@Field can only be used within a @BlazeDocument struct. Attempted to set value: \(newValue). This indicates a programming error.")
-            // Property setters can't throw, so we log and do nothing
-            // The value won't be stored, but the app won't crash
-        }
+        get { fatalError("unavailable") }
+        set { fatalError("unavailable") }
     }
-    
+
     public init(wrappedValue: Value) {
-        self.key = ""
-        self.defaultValue = wrappedValue
+        fatalError("unavailable")
     }
-    
-    public init() where Value: ExpressibleByNilLiteral {
-        self.key = ""
-        self.defaultValue = nil
+
+    public init(_ key: String) {
+        fatalError("unavailable")
+    }
+
+    public init(_ key: String, defaultValue: Value) {
+        fatalError("unavailable")
     }
 }
 
@@ -187,10 +174,10 @@ extension BlazeDataRecord {
     /// Extract a UUID value for a given key
     public func uuid(_ key: String) throws -> UUID {
         guard let value = self.storage[key] else {
-            throw BlazeDBError.transactionFailed("Missing field: \(key)")
+            throw BlazeDBError.invalidData(reason: "Missing field: \(key)")
         }
         guard let uuid = value.uuidValue else {
-            throw BlazeDBError.transactionFailed("Field '\(key)' is not a UUID")
+            throw BlazeDBError.invalidData(reason: "Field '\(key)' is not a UUID")
         }
         return uuid
     }
@@ -203,10 +190,10 @@ extension BlazeDataRecord {
     /// Extract a String value
     public func string(_ key: String) throws -> String {
         guard let value = self.storage[key] else {
-            throw BlazeDBError.transactionFailed("Missing field: \(key)")
+            throw BlazeDBError.invalidData(reason: "Missing field: \(key)")
         }
         guard let string = value.stringValue else {
-            throw BlazeDBError.transactionFailed("Field '\(key)' is not a String")
+            throw BlazeDBError.invalidData(reason: "Field '\(key)' is not a String")
         }
         return string
     }
@@ -219,10 +206,10 @@ extension BlazeDataRecord {
     /// Extract an Int value
     public func int(_ key: String) throws -> Int {
         guard let value = self.storage[key] else {
-            throw BlazeDBError.transactionFailed("Missing field: \(key)")
+            throw BlazeDBError.invalidData(reason: "Missing field: \(key)")
         }
         guard let int = value.intValue else {
-            throw BlazeDBError.transactionFailed("Field '\(key)' is not an Int")
+            throw BlazeDBError.invalidData(reason: "Field '\(key)' is not an Int")
         }
         return int
     }
@@ -235,10 +222,10 @@ extension BlazeDataRecord {
     /// Extract a Double value
     public func double(_ key: String) throws -> Double {
         guard let value = self.storage[key] else {
-            throw BlazeDBError.transactionFailed("Missing field: \(key)")
+            throw BlazeDBError.invalidData(reason: "Missing field: \(key)")
         }
         guard let double = value.doubleValue else {
-            throw BlazeDBError.transactionFailed("Field '\(key)' is not a Double")
+            throw BlazeDBError.invalidData(reason: "Field '\(key)' is not a Double")
         }
         return double
     }
@@ -251,10 +238,10 @@ extension BlazeDataRecord {
     /// Extract a Bool value
     public func bool(_ key: String) throws -> Bool {
         guard let value = self.storage[key] else {
-            throw BlazeDBError.transactionFailed("Missing field: \(key)")
+            throw BlazeDBError.invalidData(reason: "Missing field: \(key)")
         }
         guard let bool = value.boolValue else {
-            throw BlazeDBError.transactionFailed("Field '\(key)' is not a Bool")
+            throw BlazeDBError.invalidData(reason: "Field '\(key)' is not a Bool")
         }
         return bool
     }
@@ -267,10 +254,10 @@ extension BlazeDataRecord {
     /// Extract a Date value
     public func date(_ key: String) throws -> Date {
         guard let value = self.storage[key] else {
-            throw BlazeDBError.transactionFailed("Missing field: \(key)")
+            throw BlazeDBError.invalidData(reason: "Missing field: \(key)")
         }
         guard let date = value.dateValue else {
-            throw BlazeDBError.transactionFailed("Field '\(key)' is not a Date")
+            throw BlazeDBError.invalidData(reason: "Field '\(key)' is not a Date")
         }
         return date
     }
@@ -283,10 +270,10 @@ extension BlazeDataRecord {
     /// Extract a Data value
     public func data(_ key: String) throws -> Data {
         guard let value = self.storage[key] else {
-            throw BlazeDBError.transactionFailed("Missing field: \(key)")
+            throw BlazeDBError.invalidData(reason: "Missing field: \(key)")
         }
         guard let data = value.dataValue else {
-            throw BlazeDBError.transactionFailed("Field '\(key)' is not Data")
+            throw BlazeDBError.invalidData(reason: "Field '\(key)' is not Data")
         }
         return data
     }
@@ -299,10 +286,10 @@ extension BlazeDataRecord {
     /// Extract an Array value
     public func array(_ key: String) throws -> [BlazeDocumentField] {
         guard let value = self.storage[key] else {
-            throw BlazeDBError.transactionFailed("Missing field: \(key)")
+            throw BlazeDBError.invalidData(reason: "Missing field: \(key)")
         }
         guard let array = value.arrayValue else {
-            throw BlazeDBError.transactionFailed("Field '\(key)' is not an Array")
+            throw BlazeDBError.invalidData(reason: "Field '\(key)' is not an Array")
         }
         return array
     }
@@ -315,10 +302,10 @@ extension BlazeDataRecord {
     /// Extract a Dictionary value
     public func dictionary(_ key: String) throws -> [String: BlazeDocumentField] {
         guard let value = self.storage[key] else {
-            throw BlazeDBError.transactionFailed("Missing field: \(key)")
+            throw BlazeDBError.invalidData(reason: "Missing field: \(key)")
         }
         guard let dict = value.dictionaryValue else {
-            throw BlazeDBError.transactionFailed("Field '\(key)' is not a Dictionary")
+            throw BlazeDBError.invalidData(reason: "Field '\(key)' is not a Dictionary")
         }
         return dict
     }

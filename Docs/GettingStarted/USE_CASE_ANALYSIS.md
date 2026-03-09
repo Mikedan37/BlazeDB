@@ -35,7 +35,7 @@ struct Bug: BlazeDocument {
  @Field var priority: Int
 }
 
-let db = try BlazeDBClient(name: "db", fileURL: url, password: "pass")
+let db = try BlazeDBClient.open(at: url, password: "pass")
 let bug = Bug(title: "Fix login", priority: 5)
 let id = try await db.insert(bug) // Type-safe!
 let fetched = try await db.fetch(Bug.self, id: id) // Type-safe!
@@ -49,7 +49,7 @@ struct Bug: BlazeStorable {
  var priority: Int
 }
 
-let db = try BlazeDBClient(name: "db", fileURL: url, password: "pass")
+let db = try BlazeDBClient.open(at: url, password: "pass")
 let bug = Bug(id: UUID(), title: "Fix login", priority: 5)
 let id = try db.insert(bug) // Type-safe!
 let fetched = try db.fetch(Bug.self, id: id) // Type-safe!
@@ -88,7 +88,7 @@ struct Bug: BlazeDocument {
  @Field var priority: Int
 }
 
-let db = try BlazeDBClient(name: "db", fileURL: url, password: "pass")
+let db = try BlazeDBClient.open(at: url, password: "pass")
 let bug = Bug(title: "Fix login", priority: 5)
 let id = try await db.insert(bug)
 ```

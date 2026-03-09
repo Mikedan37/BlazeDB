@@ -420,7 +420,7 @@ extension BlazeDBClient {
     
     /// Get quick health status (for dashboards)
     /// Returns: "healthy", "warning", or "critical"
-    public func getHealthStatus() throws -> String {
+    internal func getHealthStatus() throws -> String {
         let health = try getHealthInfo()
         return health.status
     }

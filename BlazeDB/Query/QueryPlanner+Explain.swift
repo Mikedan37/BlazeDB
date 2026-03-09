@@ -10,6 +10,7 @@
 import Foundation
 
 /// Human-readable query plan explanation
+@available(*, deprecated, message: "Use DetailedQueryPlan from QueryBuilder.explain() instead.")
 public struct QueryPlanExplanation {
     public let strategy: String
     public let estimatedCost: Double
@@ -17,7 +18,7 @@ public struct QueryPlanExplanation {
     public let executionOrder: [String]
     public let indexesUsed: [String]
     public let notes: [String]
-    
+
     public var description: String {
         var lines: [String] = []
         lines.append("Query Plan:")
@@ -108,10 +109,11 @@ extension BlazeDBClient {
     /// }
     /// print(explanation.description)
     /// ```
+    @available(*, deprecated, message: "Use QueryBuilder.explain() instead, which returns a DetailedQueryPlan.")
     public func explain(_ queryBuilder: () throws -> QueryBuilder) throws -> QueryPlanExplanation {
         let query = try queryBuilder()
         guard let collection = query.collection else {
-            throw BlazeDBError.transactionFailed("Collection not available")
+            throw BlazeDBError.invalidData(reason: "Query builder's collection has been deallocated. Recreate the query from a live database.")
         }
         return try QueryPlanner.explain(query: query, collection: collection)
     }
