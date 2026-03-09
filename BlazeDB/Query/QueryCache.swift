@@ -132,21 +132,49 @@ public final class QueryCache {
             BlazeLogger.debug("Cleaned up \(cleaned) expired cache entries")
         }
     }
+    
+    /// Invalidate all cache entries for a specific database/collection
+    /// Called automatically when writes occur to ensure cache consistency
+    /// - Parameter databaseName: The name of the database whose cache should be invalidated
+    public func invalidateForDatabase(_ databaseName: String) {
+        lock.lock()
+        defer { lock.unlock() }
+        
+        // Clear all cache entries since queries can span collections
+        // A more sophisticated implementation could track which queries
+        // reference which collections, but full invalidation is safe
+        let beforeCount = cache.count
+        cache.removeAll()
+        
+        if beforeCount > 0 {
+            BlazeLogger.debug("Invalidated \(beforeCount) cache entries due to write in '\(databaseName)'")
+        }
+    }
+    
+    /// Notify the cache that a write operation occurred
+    /// This clears all cached query results to ensure consistency
+    public func notifyWrite() {
+        lock.lock()
+        defer { lock.unlock() }
+        
+        let beforeCount = cache.count
+        cache.removeAll()
+        
+        if beforeCount > 0 {
+            BlazeLogger.debug("Cleared \(beforeCount) cache entries due to write operation")
+        }
+    }
 }
 
 // MARK: - Query Builder Cache Extension
 
 extension QueryBuilder {
     private var cacheKey: String {
-        var components: [String] = []
-        components.append("filters:\(filters.count)")
-        components.append("joins:\(joinOperations.count)")
-        components.append("sorts:\(sortOperations.count)")
-        components.append("limit:\(limitValue ?? -1)")
-        components.append("offset:\(offsetValue)")
-        components.append("groupBy:\(groupByFields.joined(separator:","))")
-        components.append("aggs:\(aggregations.count)")
-        return components.joined(separator:"|")
+        // Delegate to generateCacheKey() which correctly includes filter descriptor
+        // hashes (field, operation, value), not just filter count.
+        // The old implementation only used filters.count, causing false cache hits
+        // when two queries had the same number of WHERE clauses but different conditions.
+        return generateCacheKey()
     }
     
     /// Execute query with caching (deprecated - use execute(withCache:))
@@ -185,7 +213,8 @@ extension QueryBuilder {
         }
         
         BlazeLogger.debug("Cache miss, executing grouped aggregation")
-        let results = try executeGroupedAggregation()
+        let queryResult = try execute()
+        let results = try queryResult.grouped
         
         QueryCache.shared.set(key: key, value: results, ttl: ttl)
         

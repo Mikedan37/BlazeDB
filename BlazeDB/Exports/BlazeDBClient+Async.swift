@@ -129,7 +129,7 @@ extension BlazeDBClient {
     
     /// Update many records asynchronously
     public func updateMany(
-        where predicate: @escaping (BlazeDataRecord) -> Bool,
+        where predicate: @escaping @Sendable (BlazeDataRecord) -> Bool,
         set fields: [String: BlazeDocumentField]
     ) async throws -> Int {
         return try await withCheckedThrowingContinuation { continuation in
@@ -146,7 +146,7 @@ extension BlazeDBClient {
     
     /// Delete many records asynchronously
     public func deleteMany(
-        where predicate: @escaping (BlazeDataRecord) -> Bool
+        where predicate: @escaping @Sendable (BlazeDataRecord) -> Bool
     ) async throws -> Int {
         return try await withCheckedThrowingContinuation { continuation in
             DispatchQueue.global(qos: .userInitiated).async {
@@ -236,32 +236,33 @@ extension BlazeDBClient {
     }
     
     /// Flush metadata to disk asynchronously (alias for persist)
+    @available(*, deprecated, message: "Use persist() instead. persist() syncs data to disk and finalizes the transaction log. flush() did the same sync but left the transaction log in place, which is rarely the intended behavior.")
     public func flush() async throws {
         return try await self.persist()
     }
     
     // MARK: - Async Transaction Support
     
-    /// Perform a transaction asynchronously
+    /// Perform a transaction asynchronously using the unified transaction API.
     ///
     /// Example usage:
     /// ```swift
-    /// try await db.performTransaction { txn in
-    ///     let id = try txn.insert(record1)
-    ///     try txn.update(id: id2, data: record2)
-    ///     try txn.delete(id: id3)
-    ///     try txn.commit()
+    /// try await db.performTransaction {
+    ///     let id = try db.insert(record1)
+    ///     try db.update(id: id2, with: record2)
+    ///     try db.delete(id: id3)
     /// }
     /// ```
-    public func performTransaction(_ closure: @escaping (BlazeTransaction) throws -> Void) async throws {
+    public func performTransaction(_ closure: @escaping @Sendable () throws -> Void) async throws {
         return try await withCheckedThrowingContinuation { continuation in
             DispatchQueue.global(qos: .userInitiated).async {
                 do {
-                    let transaction = BlazeTransaction(store: self.collection.store)
-                    try closure(transaction)
-                    try transaction.commit()
+                    try self.beginTransaction()
+                    try closure()
+                    try self.commitTransaction()
                     continuation.resume()
                 } catch {
+                    try? self.rollbackTransaction()
                     continuation.resume(throwing: error)
                 }
             }

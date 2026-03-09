@@ -13,7 +13,7 @@ import BlazeDB
 /// Example: Semantic search with vector embeddings
 func vectorIndexExample() throws {
     // Initialize database
-    let db = try BlazeDBClient(name: "VectorSearch", password: "test123")
+    let db = try BlazeDBClient.open(named: "VectorSearch", password: "TestPass123!")
     
     // Enable vector index for semantic search
     try db.enableVectorIndex(fieldName: "embedding")
@@ -53,7 +53,7 @@ func vectorIndexExample() throws {
 
 /// Example: Vector + Spatial hybrid query
 func vectorSpatialHybridExample() throws {
-    let db = try BlazeDBClient(name: "HybridSearch", password: "test123")
+    let db = try BlazeDBClient.open(named: "HybridSearch", password: "TestPass123!")
     
     // Enable both indexes
     try db.enableSpatialIndex(latField: "latitude", lonField: "longitude")

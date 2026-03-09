@@ -101,7 +101,7 @@ extension BlazeDBClient {
     @MainActor
     public func factory<T: BlazeStorable>(
         _ type: T.Type,
-        generator: @escaping (Int) -> T
+        generator: @escaping @Sendable (Int) -> T
     ) {
         FactoryRegistry.shared.register(type, generator: generator)
     }
@@ -114,20 +114,20 @@ extension BlazeDBClient {
         count: Int = 1
     ) throws -> [T] {
         guard let generator = FactoryRegistry.shared.get(type) else {
-            throw BlazeDBError.transactionFailed("No factory registered for \(T.self)")
+            throw BlazeDBError.invalidData(reason: "No factory registered for \(T.self)")
         }
-        
+
         return try self.seed(type, count: count, generator: generator)
     }
-    
+
     /// Create async
     @discardableResult
     public func create<T: BlazeStorable>(
         _ type: T.Type,
         count: Int = 1
     ) async throws -> [T] {
-        guard let generator = await FactoryRegistry.shared.get(type) else {
-            throw BlazeDBError.transactionFailed("No factory registered for \(T.self)")
+        guard let generator = FactoryRegistry.shared.get(type) else {
+            throw BlazeDBError.invalidData(reason: "No factory registered for \(T.self)")
         }
         
         return try await self.seed(type, count: count, generator: generator)
@@ -198,7 +198,7 @@ extension BlazeDBClient {
         let jsonArray = try JSONSerialization.jsonObject(with: data) as? [[String: Any]]
         
         guard let jsonArray = jsonArray else {
-            throw BlazeDBError.transactionFailed("Invalid JSON format for fixtures")
+            throw BlazeDBError.invalidData(reason: "Invalid JSON format for fixtures")
         }
         
         var records: [BlazeDataRecord] = []
@@ -266,24 +266,30 @@ extension BlazeDBClient {
 
 // MARK: - Factory Registry
 
-/// Thread-safe factory registry using MainActor isolation
-@MainActor
-internal class FactoryRegistry {
+/// Thread-safe factory registry using explicit locking (Swift 6 compliant)
+internal final class FactoryRegistry: @unchecked Sendable {
     static let shared = FactoryRegistry()
     
     private var factories: [String: Any] = [:]
+    private let lock = NSLock()
     
-    func register<T: BlazeStorable>(_ type: T.Type, generator: @escaping (Int) -> T) {
+    func register<T: BlazeStorable>(_ type: T.Type, generator: @escaping @Sendable (Int) -> T) {
         let key = String(describing: type)
+        lock.lock()
+        defer { lock.unlock() }
         factories[key] = generator
     }
     
     func get<T: BlazeStorable>(_ type: T.Type) -> (@Sendable (Int) -> T)? {
         let key = String(describing: type)
+        lock.lock()
+        defer { lock.unlock() }
         return factories[key] as? @Sendable (Int) -> T
     }
     
     func clear() {
+        lock.lock()
+        defer { lock.unlock() }
         factories.removeAll()
     }
 }
@@ -330,7 +336,7 @@ private func convertJSONValue(_ value: Any) throws -> BlazeDocumentField {
         }
         return .dictionary(dictFields)
     default:
-        throw BlazeDBError.transactionFailed("Unsupported JSON type: \(type(of: value))")
+        throw BlazeDBError.invalidData(reason: "Unsupported JSON type: \(type(of: value))")
     }
 }
 

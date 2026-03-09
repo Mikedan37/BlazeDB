@@ -37,20 +37,24 @@ extension DynamicCollection {
         guard !ids.isEmpty else { return [] }
         
         // Parallel read all pages (MASSIVE speedup!)
+        // Swift 6: Use nonisolated(unsafe) for lock-protected mutations
         let group = DispatchGroup()
-        let queue = DispatchQueue(label: "com.blazedb.parallel.fetch", attributes: .concurrent)
-        var results: [(UUID, BlazeDataRecord?)] = []
+        let dispatchQueue = DispatchQueue(label: "com.blazedb.parallel.fetch", attributes: .concurrent)
+        nonisolated(unsafe) var results: [(UUID, BlazeDataRecord?)] = []
         let resultsLock = NSLock()
+        
+        // Capture store reference for thread-safe access
+        let pageStore = self.store
         
         for id in ids {
             guard let pageIndices = indexMap[id], let pageIndex = pageIndices.first else { continue }
             
             group.enter()
-            queue.async {
+            dispatchQueue.async {
                 defer { group.leave() }
                 
                 do {
-                    let data = try self.store.readPage(index: pageIndex)
+                    let data = try pageStore.readPage(index: pageIndex)
                     guard let data = data, !data.allSatisfy({ $0 == 0 }) else {
                         resultsLock.lock()
                         results.append((id, nil))
@@ -64,7 +68,8 @@ extension DynamicCollection {
                     results.append((id, record))
                     resultsLock.unlock()
                 } catch {
-                    // Silently skip errors (consistent with original behavior)
+                    // Log error and skip - don't crash batch operation for single record failure
+                    BlazeLogger.warn("Failed to decode record \(id): \(error)")
                     resultsLock.lock()
                     results.append((id, nil))
                     resultsLock.unlock()
@@ -92,7 +97,7 @@ extension DynamicCollection {
     /// Note: fetchAllCache is defined in DynamicCollection+Optimized.swift
     /// This is a duplicate - removed to avoid redeclaration error
     nonisolated(unsafe) private static var fetchAllCachePerformance: [ObjectIdentifier: ([BlazeDataRecord], Date)] = [:]
-    nonisolated(unsafe) private static let cacheLockPerformance = NSLock()
+    private static let cacheLockPerformance = NSLock()
     private static let cacheTTL: TimeInterval = 1.0  // 1 second cache
     
     public func fetchAllCached() throws -> [BlazeDataRecord] {
@@ -127,7 +132,7 @@ extension DynamicCollection {
         
         // Parallel filter (for large datasets)
         if records.count > 100 {
-            return try records.parallelFilter(isMatch)
+            return records.parallelFilter(isMatch)
         } else {
             return records.filter(isMatch)
         }

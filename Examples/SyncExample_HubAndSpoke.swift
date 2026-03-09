@@ -25,7 +25,7 @@ struct SyncExample_HubAndSpoke {
         // Create hub (server)
         print("\n🔄 Creating Hub (server)...")
         let hubURL = tempDir.appendingPathComponent("hub.blazedb")
-        let hub = try BlazeDBClient(name: "Hub", fileURL: hubURL, password: "test123")
+        let hub = try BlazeDBClient.open(at: hubURL, password: "TestPass123!")
         print("✅ Hub database created")
         
         // Create multiple spokes (clients)
@@ -35,7 +35,7 @@ struct SyncExample_HubAndSpoke {
         
         for i in 1...5 {
             let url = tempDir.appendingPathComponent("spoke\(i).blazedb")
-            let spoke = try BlazeDBClient(name: "Spoke\(i)", fileURL: url, password: "test123")
+            let spoke = try BlazeDBClient.open(at: url, password: "TestPass123!")
             spokes.append(spoke)
             spokeURLs.append(url)
             print("   ✅ Created Spoke\(i)")

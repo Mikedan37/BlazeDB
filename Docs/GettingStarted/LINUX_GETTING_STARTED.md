@@ -33,7 +33,7 @@ import BlazeDB
 
 // Open database (zero configuration)
 // Default location: ~/.local/share/blazedb/mydb.blazedb
-let db = try BlazeDB.openDefault(name: "mydb", password: "secure-password")
+let db = try BlazeDBClient.open(named: "mydb", password: "secure-password")
 
 // Insert a record
 let id = try db.insert(BlazeDataRecord([
@@ -118,7 +118,7 @@ chmod 755 ~/.local/share/blazedb
 - Path traversal (`..`) is rejected for security
 
 ### Directory Creation
-Directories are created automatically with `openDefault()`.
+Directories are created automatically with `open(named:password:)`.
 
 If creation fails:
 - Check parent directory permissions
@@ -135,7 +135,7 @@ If creation fails:
 import BlazeDB
 
 // Test basic operations
-let db = try BlazeDB.openDefault(name: "test", password: "test-password")
+let db = try BlazeDBClient.open(named: "test", password: "test-password")
 
 // Insert
 let id = try db.insert(BlazeDataRecord(["test": .string("value")]))
@@ -148,7 +148,7 @@ assert(record?.storage["test"] == .string("value"))
 let dbPath = db.fileURL
 // ... deallocate db ...
 
-let db2 = try BlazeDB.openDefault(name: "test", password: "test-password")
+let db2 = try BlazeDBClient.open(named: "test", password: "test-password")
 let record2 = try db2.fetch(id: id)
 assert(record2?.storage["test"] == .string("value"))
 
@@ -165,11 +165,11 @@ print(" BlazeDB works correctly on Linux!")
 - Check disk space: `df -h`
 
 ### "Path contains '..'"
-- Use absolute paths or `openDefault()`
+- Use absolute paths or `open(named:password:)`
 - Avoid path traversal in database paths
 
 ### "Parent directory does not exist"
-- Use `openDefault()` for automatic directory creation
+- Use `open(named:password:)` for automatic directory creation
 - Or create parent directory manually: `mkdir -p /path/to/parent`
 
 ---
@@ -183,7 +183,7 @@ print(" BlazeDB works correctly on Linux!")
 let customPath = try PathResolver.resolveDatabasePath("./data/mydb.blazedb")
 try PathResolver.validateDatabasePath(customPath)
 
-let db = try BlazeDBClient(name: "mydb", fileURL: customPath, password: "password")
+let db = try BlazeDBClient.open(at: customPath, password: "password")
 ```
 
 ### Check Default Directory
@@ -199,7 +199,7 @@ print("Default directory: \(defaultDir.path)")
 
 **Simplest Usage:**
 ```swift
-let db = try BlazeDB.openDefault(name: "mydb", password: "password")
+let db = try BlazeDBClient.open(named: "mydb", password: "password")
 ```
 
 **What BlazeDB Guarantees:**
@@ -209,7 +209,7 @@ let db = try BlazeDB.openDefault(name: "mydb", password: "password")
 -  Works identically on Linux and macOS
 
 **What BlazeDB Refuses to Guess:**
--  Database location (use `openDefault()` or specify path)
+-  Database location (use `open(named:password:)` or specify path)
 -  Encryption password (you must provide it)
 -  Schema version (use migrations for upgrades)
 

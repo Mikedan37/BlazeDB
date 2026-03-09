@@ -12,7 +12,7 @@ import BlazeDB
 
 /// Example: Auto-generate fields on insert
 func eventTriggersExample() throws {
-    let db = try BlazeDBClient(name: "Triggers", password: "test123")
+    let db = try BlazeDBClient.open(named: "Triggers", password: "TestPass123!")
     
     // Trigger: Auto-generate slug from title
     db.onInsert { record, modified, ctx in
@@ -42,7 +42,7 @@ func eventTriggersExample() throws {
 
 /// Example: Auto-maintain indexes
 func triggerIndexMaintenanceExample() throws {
-    let db = try BlazeDBClient(name: "TriggerIndexes", password: "test123")
+    let db = try BlazeDBClient.open(named: "TriggerIndexes", password: "TestPass123!")
     
     // Enable spatial index
     try db.enableSpatialIndex(latField: "latitude", lonField: "longitude")
@@ -78,7 +78,7 @@ func triggerIndexMaintenanceExample() throws {
 
 /// Example: Auto-logging
 func triggerLoggingExample() throws {
-    let db = try BlazeDBClient(name: "TriggerLogging", password: "test123")
+    let db = try BlazeDBClient.open(named: "TriggerLogging", password: "TestPass123!")
     
     // Trigger: Log all inserts to audit log
     db.onInsert { record, modified, ctx in
@@ -104,7 +104,7 @@ func triggerLoggingExample() throws {
 
 /// Example: Auto-enrichment with AI
 func triggerAIEnrichmentExample() throws {
-    let db = try BlazeDBClient(name: "TriggerAI", password: "test123")
+    let db = try BlazeDBClient.open(named: "TriggerAI", password: "TestPass123!")
     
     // Enable vector index for embeddings
     try db.enableVectorIndex(fieldName: "embedding")

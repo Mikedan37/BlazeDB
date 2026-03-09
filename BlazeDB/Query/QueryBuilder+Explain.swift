@@ -75,6 +75,7 @@ extension QueryBuilder {
     ///     .explainCost()
     /// print(explanation.description)
     /// ```
+    @available(*, deprecated, message: "Use explain() instead, which returns a DetailedQueryPlan you can inspect programmatically.")
     public func explainCost() throws -> QueryExplanation {
         guard let collection = collection else {
             throw BlazeDBError.invalidQuery(

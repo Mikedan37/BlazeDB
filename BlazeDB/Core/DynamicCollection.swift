@@ -17,6 +17,60 @@ private extension DynamicCollection {
         // "AshPileSalt" is ASCII, so UTF-8 encoding cannot fail
         return Data("AshPileSalt".utf8)
     }
+
+    static var writeForensicsEnabled: Bool {
+        ProcessInfo.processInfo.environment["BLAZEDB_FORENSICS"] == "1"
+            || CommandLine.arguments.contains("--forensics-insert-profile")
+    }
+
+    static func monotonicNowMs() -> Double {
+        Double(DispatchTime.now().uptimeNanoseconds) / 1_000_000.0
+    }
+
+    struct InsertTimingRecord: Codable {
+        let schema: Int
+        let encodeMs: Double
+        let lockWaitMs: Double
+        let fileAppendMs: Double
+        let fsyncMs: Double
+        let indexUpdateMs: Double
+        let totalMs: Double
+
+        private enum CodingKeys: String, CodingKey {
+            case schema
+            case encodeMs = "encode_ms"
+            case lockWaitMs = "lock_wait_ms"
+            case fileAppendMs = "file_append_ms"
+            case fsyncMs = "fsync_ms"
+            case indexUpdateMs = "index_update_ms"
+            case totalMs = "total_ms"
+        }
+    }
+
+    static func emitInsertTiming(_ record: InsertTimingRecord) {
+        guard writeForensicsEnabled else { return }
+        let outDir = URL(fileURLWithPath: FileManager.default.currentDirectoryPath, isDirectory: true)
+            .appendingPathComponent(".blaze/forensics", isDirectory: true)
+        try? FileManager.default.createDirectory(at: outDir, withIntermediateDirectories: true)
+        let outFile = outDir.appendingPathComponent("insert_timing.jsonl")
+
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.sortedKeys]
+        guard let lineData = try? encoder.encode(record),
+              let line = String(data: lineData, encoding: .utf8) else {
+            return
+        }
+
+        let payload = (line + "\n").data(using: .utf8) ?? Data()
+        if FileManager.default.fileExists(atPath: outFile.path),
+           let fh = try? FileHandle(forWritingTo: outFile) {
+            defer { try? fh.close() }
+            _ = try? fh.seekToEnd()
+            try? fh.write(contentsOf: payload)
+        } else {
+            try? payload.write(to: outFile)
+        }
+    }
 }
 
 /// DynamicCollection: A fully dynamic, schema-less collection type backed by CBOR pages.
@@ -39,11 +93,18 @@ public final class DynamicCollection {
     internal let store: PageStore
     internal let metaURL: URL
     internal var nextPageIndex: Int = 0
+    internal var cachedDeletedPages: [Int] = []
     internal var secondaryIndexes: [String: [CompoundIndexKey: Set<UUID>]] = [:]
     internal let project: String
     internal let queue = DispatchQueue(label: "com.yourorg.blazedb.dynamiccollection", attributes: .concurrent)
     internal let encryptionKey: SymmetricKey
     internal let password: String?  // Store password for KDF auto-detection in migration and meta operations
+    
+    /// Per-database record cache (isolates rollback effects between databases)
+    public let recordCache: RecordCache
+    
+    /// B-tree indexes for range queries (greaterThan, lessThan, between)
+    public let btreeIndexManager: BTreeIndexManager
     
     // MVCC: Version management for concurrent access
     internal let versionManager: VersionManager
@@ -82,18 +143,19 @@ public final class DynamicCollection {
     
     // Track whether layout signature verification succeeded
     private var layoutSignatureVerified: Bool = true
+    private var closed: Bool = false
     
     private func applyLayoutFromStorage(_ layout: StorageLayout) {
         // StorageLayout.indexMap is already [UUID: [Int]], no conversion needed
         self.indexMap = layout.indexMap
         self.nextPageIndex = layout.nextPageIndex
+        self.cachedDeletedPages = layout.deletedPages
         self.secondaryIndexes = layout.toRuntimeIndexes()
         self.cachedSearchIndex = layout.searchIndex
         self.cachedSearchIndexedFields = layout.searchIndexedFields
         self.encodingFormat = layout.encodingFormat.isEmpty ? "blazeBinary" : layout.encodingFormat
         self.secondaryIndexDefinitions = layout.secondaryIndexDefinitions
-        print("📋 [INIT] applyLayoutFromStorage: Loaded indexMap with \(self.indexMap.count) entries")
-        BlazeLogger.debug("📋 [INIT] applyLayoutFromStorage: Loaded indexMap with \(self.indexMap.count) entries")
+        BlazeLogger.debug("applyLayoutFromStorage: Loaded indexMap with \(self.indexMap.count) entries")
         rebuildMVCCFromIndexMapIfNeeded()
     }
     
@@ -159,8 +221,14 @@ public final class DynamicCollection {
         self.password = password  // Store password for KDF auto-detection
         self.versionManager = VersionManager()  // Initialize MVCC
         
+        // Per-database record cache (isolated from other databases)
+        self.recordCache = RecordCache.forDatabase(store.fileURL.path)
+        
+        // B-tree index manager for range queries
+        self.btreeIndexManager = BTreeIndexManager()
+        
         // Double-check file doesn't exist and remove if it does (defensive)
-        let layoutExistsBeforeCheck = FileManager.default.fileExists(atPath: metaURL.path)
+        _ = FileManager.default.fileExists(atPath: metaURL.path)  // Check existence (result not needed)
         
         // Note: We don't remove existing meta files here - they should be loaded if valid
         // Test cleanup helpers handle aggressive cleanup in test scenarios
@@ -176,16 +244,14 @@ public final class DynamicCollection {
             do {
                 // SECURITY: Load layout with HMAC signature verification
                 // If password is provided, try alternative KDF methods if signature verification fails
-                print("📋 [INIT] Attempting to load secure layout with signature verification...")
-                BlazeLogger.debug("📋 [INIT] Attempting to load secure layout...")
+                BlazeLogger.debug("Attempting to load secure layout with signature verification...")
                 let layout = try StorageLayout.loadSecure(
                     from: metaURL,
                     signingKey: encryptionKey,
                     password: password,
                     salt: DynamicCollection.defaultSalt
                 )
-                print("📋 [INIT] ✅ Layout loaded and verified successfully")
-                BlazeLogger.debug("📋 [INIT] ✅ Layout loaded successfully")
+                BlazeLogger.debug("Layout loaded and verified successfully")
                 layoutSignatureVerified = true
                 applyLayoutFromStorage(layout)
                 
@@ -195,8 +261,7 @@ public final class DynamicCollection {
                     BlazeLogger.info("🔍 [INIT]   Index '\(indexName)': \(inner.count) keys, \(inner.values.reduce(0) { $0 + $1.count }) total UUIDs")
                 }
                 
-                print("🔍 [INIT] Loaded encodingFormat from layout: '\(layout.encodingFormat)' -> stored as '\(self.encodingFormat)'")
-                BlazeLogger.info("🔍 [INIT] Loaded encodingFormat from layout: '\(layout.encodingFormat)' -> stored as '\(self.encodingFormat)'")
+                BlazeLogger.info("Loaded encodingFormat from layout: '\(layout.encodingFormat)' -> stored as '\(self.encodingFormat)'")
                 
                 BlazeLogger.info("🔍 [INIT] Loaded \(self.secondaryIndexDefinitions.count) index definitions: \(self.secondaryIndexDefinitions.keys.joined(separator: ", "))")
                 
@@ -284,6 +349,8 @@ public final class DynamicCollection {
                         if needsRebuild {
                             BlazeLogger.info("Rebuilding index '\(compoundKey)' on fields: \(fields.joined(separator: ", "))")
                             var indexEntries: [CompoundIndexKey: Set<UUID>] = [:]
+                            var unreadableRecords = 0
+                            var abortedRebuild = false
                             for id in self.indexMap.keys {
                                 if let record = try? self._fetchNoSync(id: id) {
                                     let doc = record.storage
@@ -306,7 +373,20 @@ public final class DynamicCollection {
                                     var set = indexEntries[indexKey] ?? Set<UUID>()
                                     set.insert(id)
                                     indexEntries[indexKey] = set
+                                } else {
+                                    unreadableRecords += 1
+                                    // Fail fast: a poisoned store can make init spend seconds rebuilding indexes
+                                    // from unreadable records. Abort rebuild and keep runtime responsive.
+                                    if unreadableRecords >= 1 {
+                                        abortedRebuild = true
+                                        BlazeLogger.warn("⚠️ [INIT] Aborting rebuild for index '\(compoundKey)' after \(unreadableRecords) unreadable records (total records: \(self.indexMap.count))")
+                                        break
+                                    }
                                 }
+                            }
+                            if abortedRebuild {
+                                // Keep existing index state (often empty) and skip persistence churn.
+                                continue
                             }
                             self.secondaryIndexes[compoundKey] = indexEntries
                             didRebuildAny = true
@@ -321,63 +401,38 @@ public final class DynamicCollection {
                 }
                 // --- End: Conditional rebuild ---
             } catch {
-                print("❌ [INIT] ========== ERROR IN DynamicCollection.init ==========")
-                print("❌ [INIT] Failed to load layout from disk")
-                print("❌ [INIT] Error type: \(type(of: error))")
-                print("❌ [INIT] Error description: \(error.localizedDescription)")
-                if let nsError = error as NSError? {
-                    print("❌ [INIT] Error domain: \(nsError.domain)")
-                    print("❌ [INIT] Error code: \(nsError.code)")
-                    print("❌ [INIT] Error userInfo: \(nsError.userInfo)")
-                }
-                print("❌ [INIT] Meta file path: \(metaURL.path)")
-                print("❌ [INIT] Meta file exists: \(FileManager.default.fileExists(atPath: metaURL.path))")
-                
-                BlazeLogger.error("❌ [INIT] Failed to load layout from disk")
-                BlazeLogger.error("❌ [INIT] Error type: \(type(of: error))")
-                BlazeLogger.error("❌ [INIT] Error description: \(error.localizedDescription)")
-                BlazeLogger.error("❌ [INIT] Error domain: \((error as NSError).domain)")
-                BlazeLogger.error("❌ [INIT] Error code: \((error as NSError).code)")
-                BlazeLogger.error("❌ [INIT] Meta file path: \(metaURL.path)")
-                BlazeLogger.error("❌ [INIT] Meta file exists: \(FileManager.default.fileExists(atPath: metaURL.path))")
+                BlazeLogger.error("Failed to load layout from disk: \(error.localizedDescription) (type: \(type(of: error)), domain: \((error as NSError).domain), code: \((error as NSError).code))")
+                BlazeLogger.error("Meta file path: \(metaURL.path), exists: \(FileManager.default.fileExists(atPath: metaURL.path))")
                 
                 // Try to extract index definitions from corrupted meta file BEFORE deleting it
                 // (even if signature verification fails, we can still decode the JSON)
                 var preservedIndexDefinitions: [String: [String]] = [:]
                 var recoveredLayout: StorageLayout? = nil
                 if FileManager.default.fileExists(atPath: metaURL.path) {
-                    print("🔍 [INIT] Attempting to extract index definitions from corrupted meta file...")
-                    BlazeLogger.info("🔍 [INIT] Attempting to extract index definitions from corrupted meta file...")
+                    BlazeLogger.info("Attempting to extract index definitions from corrupted meta file...")
                     do {
                         let metaData = try Data(contentsOf: metaURL)
-                        print("🔍 [INIT] Meta file size: \(metaData.count) bytes")
-                        BlazeLogger.info("🔍 [INIT] Meta file size: \(metaData.count) bytes")
+                        BlazeLogger.info("Meta file size: \(metaData.count) bytes")
                         // Try JSON parsing first (most reliable, doesn't require full decode)
                         if let json = try? JSONSerialization.jsonObject(with: metaData) as? [String: Any] {
-                            print("🔍 [INIT] Successfully parsed JSON, top-level keys: \(json.keys.joined(separator: ", "))")
-                            BlazeLogger.info("🔍 [INIT] Successfully parsed JSON, top-level keys: \(json.keys.joined(separator: ", "))")
+                            BlazeLogger.info("Successfully parsed JSON, top-level keys: \(json.keys.joined(separator: ", "))")
                             
                             // Check if it's a SecureLayout structure (has "layout" key)
                             if let layoutDict = json["layout"] as? [String: Any] {
-                                print("🔍 [INIT] Found 'layout' key in JSON (SecureLayout structure)")
-                                BlazeLogger.info("🔍 [INIT] Found 'layout' key in JSON (SecureLayout structure)")
+                                BlazeLogger.info("Found 'layout' key in JSON (SecureLayout structure)")
                                 if let indexDefs = layoutDict["secondaryIndexDefinitions"] as? [String: [String]] {
                                     preservedIndexDefinitions = indexDefs
-                                    print("✅ [INIT] Preserved \(preservedIndexDefinitions.count) index definitions from SecureLayout JSON: \(preservedIndexDefinitions.keys.joined(separator: ", "))")
-                                    BlazeLogger.info("✅ [INIT] Preserved \(preservedIndexDefinitions.count) index definitions from SecureLayout JSON: \(preservedIndexDefinitions.keys.joined(separator: ", "))")
+                                    BlazeLogger.info("Preserved \(preservedIndexDefinitions.count) index definitions from SecureLayout JSON: \(preservedIndexDefinitions.keys.joined(separator: ", "))")
                                 } else {
-                                    print("⚠️ [INIT] 'layout' dict found but no secondaryIndexDefinitions key")
-                                    BlazeLogger.warn("⚠️ [INIT] 'layout' dict found but no secondaryIndexDefinitions key")
+                                    BlazeLogger.warn("'layout' dict found but no secondaryIndexDefinitions key")
                                     let layoutKeys = Set(layoutDict.keys)
-                                    print("🔍 [INIT] Layout keys: \(layoutKeys.joined(separator: ", "))")
-                                    BlazeLogger.info("🔍 [INIT] Layout keys: \(layoutKeys.joined(separator: ", "))")
+                                    BlazeLogger.info("Layout keys: \(layoutKeys.joined(separator: ", "))")
                                 }
                             }
                             // Or if it's a plain StorageLayout (has secondaryIndexDefinitions at top level)
                             else if let indexDefs = json["secondaryIndexDefinitions"] as? [String: [String]] {
                                 preservedIndexDefinitions = indexDefs
-                                print("✅ [INIT] Preserved \(preservedIndexDefinitions.count) index definitions from plain StorageLayout JSON: \(preservedIndexDefinitions.keys.joined(separator: ", "))")
-                                BlazeLogger.info("✅ [INIT] Preserved \(preservedIndexDefinitions.count) index definitions from plain StorageLayout JSON: \(preservedIndexDefinitions.keys.joined(separator: ", "))")
+                                BlazeLogger.info("Preserved \(preservedIndexDefinitions.count) index definitions from plain StorageLayout JSON: \(preservedIndexDefinitions.keys.joined(separator: ", "))")
                             }
                         }
                         
@@ -389,24 +444,17 @@ public final class DynamicCollection {
                             if let secureLayout = try? decoder.decode(StorageLayout.SecureLayout.self, from: metaData) {
                                 recoveredLayout = secureLayout.layout
                                 preservedIndexDefinitions = secureLayout.layout.secondaryIndexDefinitions
-                                print("✅ [INIT] Preserved \(preservedIndexDefinitions.count) index definitions from SecureLayout: \(preservedIndexDefinitions.keys.joined(separator: ", "))")
-                                BlazeLogger.info("✅ [INIT] Preserved \(preservedIndexDefinitions.count) index definitions from SecureLayout: \(preservedIndexDefinitions.keys.joined(separator: ", "))")
+                                BlazeLogger.info("Preserved \(preservedIndexDefinitions.count) index definitions from SecureLayout: \(preservedIndexDefinitions.keys.joined(separator: ", "))")
                             }
                             // Strategy 2: Try plain StorageLayout (backward compatibility)
                             else if let layout = try? decoder.decode(StorageLayout.self, from: metaData) {
                                 recoveredLayout = layout
                                 preservedIndexDefinitions = layout.secondaryIndexDefinitions
-                                print("✅ [INIT] Decoded as plain StorageLayout")
-                                print("🔍 [INIT] Layout has \(layout.secondaryIndexDefinitions.count) index definitions")
-                                print("🔍 [INIT] Index definition keys: \(layout.secondaryIndexDefinitions.keys.joined(separator: ", "))")
-                                BlazeLogger.info("✅ [INIT] Decoded as plain StorageLayout")
-                                BlazeLogger.info("🔍 [INIT] Layout has \(layout.secondaryIndexDefinitions.count) index definitions")
+                                BlazeLogger.info("Decoded as plain StorageLayout with \(layout.secondaryIndexDefinitions.count) index definitions")
                                 if !layout.secondaryIndexDefinitions.isEmpty {
-                                    print("✅ [INIT] Preserved \(preservedIndexDefinitions.count) index definitions from plain StorageLayout: \(preservedIndexDefinitions.keys.joined(separator: ", "))")
-                                    BlazeLogger.info("✅ [INIT] Preserved \(preservedIndexDefinitions.count) index definitions from plain StorageLayout: \(preservedIndexDefinitions.keys.joined(separator: ", "))")
+                                    BlazeLogger.info("Preserved \(preservedIndexDefinitions.count) index definitions from plain StorageLayout: \(preservedIndexDefinitions.keys.joined(separator: ", "))")
                                 } else {
-                                    print("⚠️ [INIT] Plain StorageLayout decoded but secondaryIndexDefinitions is empty")
-                                    BlazeLogger.warn("⚠️ [INIT] Plain StorageLayout decoded but secondaryIndexDefinitions is empty")
+                                    BlazeLogger.warn("Plain StorageLayout decoded but secondaryIndexDefinitions is empty")
                                 }
                             }
                         }
@@ -456,8 +504,7 @@ public final class DynamicCollection {
                                             }
                                             if !extracted.isEmpty {
                                                 preservedIndexDefinitions = extracted
-                                                print("✅ [INIT] Extracted \(extracted.count) index definitions using string search")
-                                                BlazeLogger.info("✅ [INIT] Extracted \(extracted.count) index definitions using string search")
+                                                BlazeLogger.info("Extracted \(extracted.count) index definitions using string search")
                                             }
                                         }
                                     }
@@ -467,34 +514,25 @@ public final class DynamicCollection {
                             // If still empty, try to see if it's valid JSON at all
                             if preservedIndexDefinitions.isEmpty {
                                 if let jsonString = String(data: metaData.prefix(200), encoding: .utf8) {
-                                    print("⚠️ [INIT] Failed to parse as JSON. First 200 bytes: \(jsonString)")
-                                    BlazeLogger.warn("⚠️ [INIT] Failed to parse as JSON. First 200 bytes: \(jsonString)")
+                                    BlazeLogger.warn("Failed to parse as JSON. First 200 bytes: \(jsonString)")
                                 } else {
-                                    print("⚠️ [INIT] Failed to decode or parse meta file - not valid JSON or UTF-8")
-                                    BlazeLogger.warn("⚠️ [INIT] Failed to decode or parse meta file - not valid JSON or UTF-8")
+                                    BlazeLogger.warn("Failed to decode or parse meta file - not valid JSON or UTF-8")
                                 }
                             }
                         }
                     } catch {
-                        print("⚠️ [INIT] Could not extract index definitions from corrupted meta file: \(error)")
-                        BlazeLogger.warn("⚠️ [INIT] Could not extract index definitions from corrupted meta file: \(error)")
+                        BlazeLogger.warn("Could not extract index definitions from corrupted meta file: \(error)")
                     }
                 } else {
-                    print("⚠️ [INIT] Meta file does not exist, cannot extract index definitions")
-                    BlazeLogger.warn("⚠️ [INIT] Meta file does not exist, cannot extract index definitions")
+                    BlazeLogger.warn("Meta file does not exist, cannot extract index definitions")
                 }
                 
                 let nsError = error as NSError
                 let isSignatureFailure = nsError.domain == "StorageLayout" && nsError.code == 1
                 
                 if isSignatureFailure {
-                    print("❌ [INIT] ========== SIGNATURE VERIFICATION FAILURE ==========")
-                    print("❌ [INIT] The .meta file was created with a different password or is corrupted")
-                    print("❌ [INIT] Solution: Delete the .meta file and recreate the database")
-                    BlazeLogger.error("❌ [INIT] This is a SIGNATURE VERIFICATION FAILURE!")
-                    BlazeLogger.error("❌ [INIT] The .meta file was created with a different password or is corrupted")
-                    BlazeLogger.error("❌ [INIT] Solution: Delete the .meta file and recreate the database")
-                    BlazeLogger.error("❌ [INIT] Running in read-only compatibility mode (layout will not be saved)")
+                    BlazeLogger.error("SIGNATURE VERIFICATION FAILURE: The .meta file was created with a different password or is corrupted. Solution: Delete the .meta file and recreate the database.")
+                    BlazeLogger.error("Running in read-only compatibility mode (layout will not be saved)")
                     
                     layoutSignatureVerified = false
                     
@@ -595,12 +633,10 @@ public final class DynamicCollection {
                         
                         // Restore index definitions and rebuild indexes if we preserved them
                         if !preservedIndexDefinitions.isEmpty {
-                            print("🔍 [INIT] Rebuilding \(preservedIndexDefinitions.count) indexes from preserved definitions...")
-                            BlazeLogger.info("🔍 [INIT] Rebuilding \(preservedIndexDefinitions.count) indexes from preserved definitions...")
+                            BlazeLogger.info("Rebuilding \(preservedIndexDefinitions.count) indexes from preserved definitions...")
                             self.secondaryIndexDefinitions = preservedIndexDefinitions
                             // Rebuild indexes using same normalization as createIndex()
                             for (indexKey, fields) in preservedIndexDefinitions {
-                                print("Rebuilding index '\(indexKey)' on fields: \(fields.joined(separator: ", "))")
                                 BlazeLogger.info("Rebuilding index '\(indexKey)' on fields: \(fields.joined(separator: ", "))")
                                 var rebuilt: [CompoundIndexKey: Set<UUID>] = [:]
                                 for id in rebuiltIndexMap.keys {
@@ -627,14 +663,12 @@ public final class DynamicCollection {
                                     }
                                 }
                                 self.secondaryIndexes[indexKey] = rebuilt
-                                print("✅ Rebuilt index '\(indexKey)' with \(rebuilt.count) keys, \(rebuilt.values.reduce(0) { $0 + $1.count }) total UUIDs")
-                                BlazeLogger.info("✅ Rebuilt index '\(indexKey)' with \(rebuilt.count) keys, \(rebuilt.values.reduce(0) { $0 + $1.count }) total UUIDs")
+                                BlazeLogger.info("Rebuilt index '\(indexKey)' with \(rebuilt.count) keys, \(rebuilt.values.reduce(0) { $0 + $1.count }) total UUIDs")
                             }
                         } else {
                             // Last resort: Try to infer index definitions from data patterns
                             // Look for fields that are commonly indexed (frequently queried fields)
-                            print("⚠️ [INIT] No index definitions preserved, attempting to infer from data...")
-                            BlazeLogger.warn("⚠️ [INIT] No index definitions preserved, attempting to infer from data...")
+                            BlazeLogger.warn("No index definitions preserved, attempting to infer from data...")
                             
                             // Sample a few records to see what fields exist
                             var fieldFrequency: [String: Int] = [:]
@@ -660,8 +694,7 @@ public final class DynamicCollection {
                                    let frequency = fieldFrequency[field],
                                    frequency >= sampleSize / 2 {  // Field exists in at least half of sampled records
                                     inferredDefinitions[field] = [field]
-                                    print("🔍 [INIT] Inferred index on field '\(field)' (found in \(frequency)/\(sampleSize) sampled records)")
-                                    BlazeLogger.info("🔍 [INIT] Inferred index on field '\(field)' (found in \(frequency)/\(sampleSize) sampled records)")
+                                    BlazeLogger.info("Inferred index on field '\(field)' (found in \(frequency)/\(sampleSize) sampled records)")
                                 }
                             }
                             
@@ -669,7 +702,6 @@ public final class DynamicCollection {
                                 self.secondaryIndexDefinitions = inferredDefinitions
                                 // Rebuild indexes using inferred definitions
                                 for (indexKey, fields) in inferredDefinitions {
-                                    print("Rebuilding inferred index '\(indexKey)' on fields: \(fields.joined(separator: ", "))")
                                     BlazeLogger.info("Rebuilding inferred index '\(indexKey)' on fields: \(fields.joined(separator: ", "))")
                                     var rebuilt: [CompoundIndexKey: Set<UUID>] = [:]
                                     for id in rebuiltIndexMap.keys {
@@ -696,12 +728,10 @@ public final class DynamicCollection {
                                         }
                                     }
                                     self.secondaryIndexes[indexKey] = rebuilt
-                                    print("✅ Rebuilt inferred index '\(indexKey)' with \(rebuilt.count) keys, \(rebuilt.values.reduce(0) { $0 + $1.count }) total UUIDs")
-                                    BlazeLogger.info("✅ Rebuilt inferred index '\(indexKey)' with \(rebuilt.count) keys, \(rebuilt.values.reduce(0) { $0 + $1.count }) total UUIDs")
+                                    BlazeLogger.info("Rebuilt inferred index '\(indexKey)' with \(rebuilt.count) keys, \(rebuilt.values.reduce(0) { $0 + $1.count }) total UUIDs")
                                 }
                             } else {
-                                print("⚠️ [INIT] Could not infer index definitions from data, indexes will be empty")
-                                BlazeLogger.warn("⚠️ [INIT] Could not infer index definitions from data, indexes will be empty")
+                                BlazeLogger.warn("Could not infer index definitions from data, indexes will be empty")
                             }
                         }
                         
@@ -742,6 +772,13 @@ public final class DynamicCollection {
             self.encryptionKey = encryptionKey
             self.password = password
             self.versionManager = VersionManager()  // Initialize MVCC
+            
+            // Per-database record cache (isolated from other databases)
+            self.recordCache = RecordCache.forDatabase(store.fileURL.path)
+            
+            // B-tree index manager for range queries
+            self.btreeIndexManager = BTreeIndexManager()
+            
             // Convert [UUID: Int] to [UUID: [Int]] for backward compatibility
             // StorageLayout.indexMap is already [UUID: [Int]], no conversion needed
         self.indexMap = layout.indexMap
@@ -761,13 +798,7 @@ public final class DynamicCollection {
             // Now we can access computed properties (spatial and vector indexes)
             // Cache spatial index (computed property via extension)
             #if !BLAZEDB_LINUX_CORE
-            // These properties are added by extensions in gated files
-            // Access them only when extensions are available
-            if let spatialIndex = (layout as? (any AnyObject)) as? StorageLayout {
-                // Use extension properties if available (computed via extension)
-                // For now, skip - these are handled by extensions in gated files
-            }
-            // Vector and spatial indexes are handled by extensions
+            // Vector and spatial indexes are handled by extensions in gated files
             // They will be rebuilt on first use via enableVectorIndex/enableSpatialIndex
             #endif
             // --- Begin: Rebuild missing or empty secondary indexes after reload ---
@@ -919,8 +950,7 @@ public final class DynamicCollection {
                 // Force save the layout to persist the index definition immediately
                 // This uses saveLayout() which preserves all in-memory state including secondaryIndexDefinitions
                 do {
-                    print("🔧 [CREATEINDEX] Saving index definition for '\(key)' via saveLayout()")
-                    BlazeLogger.info("🔧 [CREATEINDEX] Saving index definition for '\(key)' via saveLayout()")
+                    BlazeLogger.info("Saving index definition for '\(key)'")
                     try saveLayout()
                     
                     // CRITICAL: Force file system sync to ensure layout is fully written before any subsequent reads
@@ -933,18 +963,56 @@ public final class DynamicCollection {
                         fileHandle.synchronizeFile()
                     }
                     
-                    print("🔧 [CREATEINDEX] ✅ Successfully saved index definition for '\(key)'")
-                    BlazeLogger.info("🔧 [CREATEINDEX] ✅ Successfully saved index definition for '\(key)'")
+                    BlazeLogger.info("Successfully saved index definition for '\(key)'")
                 } catch {
-                    print("🔧 [CREATEINDEX] ❌ Failed to save index definition: \(error)")
-                    BlazeLogger.error("🔧 [CREATEINDEX] ❌ Failed to save index definition for '\(key)': \(error)")
-                    throw error
+                    BlazeLogger.error("Failed to persist index definition for '\(key)': \(error)")
+                    throw BlazeDBError.invalidData(
+                        reason: "Failed to create index on field(s) '\(key)': could not persist index definition to disk. Ensure the database file is writable and the disk is not full, then retry createIndex(on:)."
+                    )
                 }
             }
         }
         
         public func createIndex(on field: String) throws {
             try createIndex(on: [field])
+        }
+        
+        /// Creates a B-tree index for range queries on a field
+        /// B-tree indexes support: greaterThan, lessThan, greaterThanOrEqual, lessThanOrEqual, between
+        /// - Parameter field: The field to create a range index on
+        /// - Note: This also creates a regular hash index for equality queries
+        public func createRangeIndex(on field: String) throws {
+            // First create regular hash index for equality
+            try createIndex(on: field)
+            
+            // Then create B-tree index for range queries
+            let btreeIndex = btreeIndexManager.getOrCreateIndex(for: field)
+            
+            // Populate from existing records
+            queue.sync(flags: .barrier) {
+                BlazeLogger.debug("Building B-tree range index for field '\(field)' on \(indexMap.count) records")
+                
+                for (id, pageIndices) in indexMap {
+                    guard let firstPageIndex = pageIndices.first,
+                          let data = try? store.readPageWithOverflow(index: firstPageIndex),
+                          !data.isEmpty,
+                          !data.allSatisfy({ $0 == 0 }),
+                          let record = try? BlazeBinaryDecoder.decode(data) else {
+                        continue
+                    }
+                    
+                    if let value = record.storage[field] {
+                        btreeIndex.insert(key: ComparableField(value), value: id)
+                    }
+                }
+                
+                BlazeLogger.info("✅ B-tree range index created for '\(field)' with \(btreeIndex.count) entries")
+            }
+        }
+        
+        /// Check if a B-tree range index exists for a field
+        public func hasRangeIndex(for field: String) -> Bool {
+            return btreeIndexManager.hasIndex(for: field)
         }
         
         // Insertion logic supports all configured compound indexes (multi-field).
@@ -967,6 +1035,14 @@ public final class DynamicCollection {
                         document["createdAt"] = .date(Date())
                     }
                     document["project"] = .string(project)
+
+                    // INSERT contract: explicit duplicate IDs must fail (use update/upsert for mutation).
+                    if indexMap[id] != nil {
+                        throw BlazeDBError.recordExists(
+                            id: id,
+                            suggestion: "Use upsert() to insert-or-update or update() for existing records."
+                        )
+                    }
                     
                     // Load layout to check for deleted pages that can be reused
                     var layout: StorageLayout
@@ -983,7 +1059,7 @@ public final class DynamicCollection {
                     
                     // Add deleted pages from layout to MVCC PageGarbageCollector for reuse
                     // This ensures pages deleted in legacy mode or persisted to disk are available for MVCC reuse
-                    print("📝 [INSERT] Single record insert: id=\(id.uuidString.prefix(8))")
+                    BlazeLogger.trace("📝 [INSERT] Single record insert: id=\(id.uuidString.prefix(8))")
                     if !layout.deletedPages.isEmpty {
                         for pageIdx in layout.deletedPages {
                             versionManager.pageGC.markPageObsolete(pageIdx)
@@ -1017,22 +1093,21 @@ public final class DynamicCollection {
                     // Use page number from pending writes (most reliable)
                     if let pageNum = pageNumber {
                         indexMap[id] = [pageNum]
-                        print("📝 [INSERT] Single record: id=\(id.uuidString.prefix(8)), page=\(pageNum), indexMap now has \(indexMap.count) entries")
+                        BlazeLogger.trace("📝 [INSERT] Single record: id=\(id.uuidString.prefix(8)), page=\(pageNum), indexMap now has \(indexMap.count) entries")
                     } else {
                         // Fallback: Try to get from version manager after commit
                         let currentVersion = versionManager.getCurrentVersion()
                         if let version = versionManager.getVersion(recordID: id, snapshot: currentVersion) {
                             indexMap[id] = [version.pageNumber]
-                            print("📝 [INSERT] Single record (fallback 1): id=\(id.uuidString.prefix(8)), page=\(version.pageNumber), indexMap now has \(indexMap.count) entries")
+                            BlazeLogger.trace("📝 [INSERT] Single record (fallback 1): id=\(id.uuidString.prefix(8)), page=\(version.pageNumber), indexMap now has \(indexMap.count) entries")
                         } else if let version = versionManager.getVersion(recordID: id, snapshot: transactionID) {
                             indexMap[id] = [version.pageNumber]
-                            print("📝 [INSERT] Single record (fallback 2): id=\(id.uuidString.prefix(8)), page=\(version.pageNumber), indexMap now has \(indexMap.count) entries")
+                            BlazeLogger.trace("📝 [INSERT] Single record (fallback 2): id=\(id.uuidString.prefix(8)), page=\(version.pageNumber), indexMap now has \(indexMap.count) entries")
                         } else if let version = versionManager.getVersion(recordID: id, snapshot: .max) {
                             indexMap[id] = [version.pageNumber]
-                            print("📝 [INSERT] Single record (fallback 3): id=\(id.uuidString.prefix(8)), page=\(version.pageNumber), indexMap now has \(indexMap.count) entries")
+                            BlazeLogger.trace("📝 [INSERT] Single record (fallback 3): id=\(id.uuidString.prefix(8)), page=\(version.pageNumber), indexMap now has \(indexMap.count) entries")
                         } else {
                             // This should never happen, but log a warning
-                            print("⚠️ [INSERT] Could not find version for record \(id.uuidString.prefix(8)) after insert (transactionID=\(transactionID), currentVersion=\(currentVersion)) - indexMap may be out of sync")
                             BlazeLogger.warn("⚠️ [INSERT] Could not find version for record \(id) after insert (transactionID=\(transactionID), currentVersion=\(currentVersion)) - indexMap may be out of sync")
                         }
                     }
@@ -1067,6 +1142,9 @@ public final class DynamicCollection {
                         secondaryIndexes[compound] = inner
                     }
                     
+                    // Update B-tree indexes for range query support
+                    btreeIndexManager.indexRecord(id: id, fields: document)
+                    
                     // Update search index if enabled
                     #if !BLAZEDB_LINUX_CORE
                     try? updateSearchIndexOnInsert(record)
@@ -1079,12 +1157,12 @@ public final class DynamicCollection {
                     #endif
                     
                     unsavedChanges += 1
-                    print("💾 [FLUSH] MVCC: unsavedChanges=\(unsavedChanges) (threshold: \(metadataFlushThreshold))")
+                    BlazeLogger.trace("💾 [FLUSH] MVCC: unsavedChanges=\(unsavedChanges) (threshold: \(metadataFlushThreshold))")
                     if unsavedChanges >= metadataFlushThreshold {
-                        print("💾 [FLUSH] MVCC: Auto-flushing at \(unsavedChanges) unsaved changes")
+                        BlazeLogger.debug("💾 [FLUSH] MVCC: Auto-flushing at \(unsavedChanges) unsaved changes")
                         try saveLayout()
                         unsavedChanges = 0
-                        print("💾 [FLUSH] MVCC: ✅ Auto-flush complete, unsavedChanges reset to 0")
+                        BlazeLogger.debug("💾 [FLUSH] MVCC: ✅ Auto-flush complete, unsavedChanges reset to 0")
                     }
                     
                     return id
@@ -1092,7 +1170,16 @@ public final class DynamicCollection {
             }
             
             // Legacy Path: Original single-version implementation
+            let lockRequestMs = Self.writeForensicsEnabled ? Self.monotonicNowMs() : 0.0
             return try queue.sync(flags: .barrier) {
+                let forensicsEnabled = Self.writeForensicsEnabled
+                let totalStartMs = Self.monotonicNowMs()
+                let lockWaitMs = forensicsEnabled ? (Self.monotonicNowMs() - lockRequestMs) : 0.0
+                var encodeMs = 0.0
+                var fileAppendMs = 0.0
+                var indexUpdateMs = 0.0
+                var fsyncMs = 0.0
+
                 var document = data.storage
                 let id: UUID
                 if let providedID = document["id"]?.uuidValue {
@@ -1108,31 +1195,37 @@ public final class DynamicCollection {
                     document["createdAt"] = .date(Date())
                 }
                 document["project"] = .string(project)
+                // INSERT contract: explicit duplicate IDs must fail (use update/upsert for mutation).
+                if indexMap[id] != nil {
+                    throw BlazeDBError.recordExists(
+                        id: id,
+                        suggestion: "Use upsert() to insert-or-update or update() for existing records."
+                    )
+                }
                 // Use BlazeBinaryEncoder for encoding (matches decoder!)
                 // If lazy decoding is enabled, use v3 format with field table
                 #if !BLAZEDB_LINUX_CORE
-                // Lazy decoding is handled by extensions in gated files
-                // For now, default to false - extensions will enable if needed
-                let isLazyEnabled = false
+                // Lazy decoding handled by extensions when enabled
+                // Currently disabled - use standard encoder
                 #else
-                let isLazyEnabled = false  // Lazy decoding not available on Linux
+                // Lazy decoding not available on Linux
                 #endif
-                let encoded = isLazyEnabled
-                ? try BlazeBinaryEncoder.encodeWithFieldTable(BlazeDataRecord(document))
-                : try BlazeBinaryEncoder.encode(BlazeDataRecord(document))
-                
-                // Load layout to access deletedPages for page reuse
-                var layout: StorageLayout
-                do {
-                    layout = try StorageLayout.loadSecure(
-                        from: metaURL,
-                        signingKey: encryptionKey,
-                        password: password,
-                        salt: Self.defaultSalt
-                    )
-                } catch {
-                    layout = try StorageLayout.load(from: metaURL)
+                let tEncode = forensicsEnabled ? Self.monotonicNowMs() : 0
+                let encoded = try BlazeBinaryEncoder.encode(BlazeDataRecord(document))
+                if forensicsEnabled {
+                    encodeMs += Self.monotonicNowMs() - tEncode
                 }
+
+                // Build a lightweight mutable layout snapshot from in-memory state.
+                // This avoids reloading the signed meta file on every insert.
+                var layout = StorageLayout(
+                    indexMap: indexMap,
+                    nextPageIndex: nextPageIndex,
+                    secondaryIndexes: [:],
+                    searchIndex: nil,
+                    searchIndexedFields: []
+                )
+                layout.deletedPages = cachedDeletedPages
                 
                 // Allocate main page (reuses deleted pages if available)
                 let mainPageIndex = allocatePage(layout: &layout)
@@ -1140,16 +1233,15 @@ public final class DynamicCollection {
                 // CRITICAL: Check if this page is already in use BEFORE writing
                 let conflictingIDs = indexMap.filter { $0.value.contains(mainPageIndex) && $0.key != id }.keys
                 if !conflictingIDs.isEmpty {
-                    print("❌ [INSERT] Legacy CRITICAL: allocatePage returned page \(mainPageIndex) that is already in use by: \(conflictingIDs.map { $0.uuidString.prefix(8) }.joined(separator: ", "))")
-                    BlazeLogger.error("❌ [INSERT] Legacy CRITICAL: Page \(mainPageIndex) conflict - already in use by \(conflictingIDs.count) other IDs")
+                    BlazeLogger.error("allocatePage returned page \(mainPageIndex) that is already in use by: \(conflictingIDs.map { $0.uuidString.prefix(8) }.joined(separator: ", "))")
                     // Remove conflicting entries from indexMap (they're stale)
                     for conflictingID in conflictingIDs {
-                        print("❌ [INSERT] Legacy: Removing stale indexMap entry for \(conflictingID.uuidString.prefix(8))")
+                        BlazeLogger.error("Removing stale indexMap entry for \(conflictingID.uuidString.prefix(8))")
                         indexMap.removeValue(forKey: conflictingID)
                     }
                 }
-                
                 // Use overflow pages for large records - writePageWithOverflow handles splitting across pages
+                let tPageWrite = forensicsEnabled ? Self.monotonicNowMs() : 0
                 let pageIndices = try store.writePageWithOverflow(
                     index: mainPageIndex,
                     plaintext: encoded,
@@ -1160,7 +1252,7 @@ public final class DynamicCollection {
                         // Check for conflicts on overflow pages too
                         let overflowConflicts = self.indexMap.filter { $0.value.contains(overflowPage) }.keys
                         if !overflowConflicts.isEmpty {
-                            print("❌ [INSERT] Legacy: Overflow page \(overflowPage) conflict - removing stale entries")
+                            BlazeLogger.error("Overflow page \(overflowPage) conflict - removing stale entries")
                             for conflictID in overflowConflicts {
                                 self.indexMap.removeValue(forKey: conflictID)
                             }
@@ -1168,14 +1260,18 @@ public final class DynamicCollection {
                         return overflowPage
                     }
                 )
+                if forensicsEnabled {
+                    fileAppendMs += Self.monotonicNowMs() - tPageWrite
+                }
                 
                 // Update nextPageIndex from layout (in case it was incremented by allocatePage)
                 nextPageIndex = layout.nextPageIndex
                 
+                let tMetadata = forensicsEnabled ? Self.monotonicNowMs() : 0
                 // Store all page indices (main page + overflow pages)
                 indexMap[id] = pageIndices
                 let value = document["value"]?.intValue ?? -1
-                print("📝 [INSERT] Legacy: Set indexMap[\(id.uuidString.prefix(8))] = \(pageIndices) (value: \(value))")
+                BlazeLogger.trace("📝 [INSERT] Legacy: Set indexMap[\(id.uuidString.prefix(8))] = \(pageIndices) (value: \(value))")
                 BlazeLogger.debug("📝 [INSERT] Legacy: Set indexMap[\(id.uuidString.prefix(8))] = \(pageIndices) (mainPage: \(mainPageIndex), value: \(value))")
                 
                 // Update all configured secondary indexes in memory immediately
@@ -1208,14 +1304,26 @@ public final class DynamicCollection {
                     secondaryIndexes[compound] = inner
                 }
                 
+                // Update B-tree indexes for range query support
+                btreeIndexManager.indexRecord(id: id, fields: document)
+                
                 // Save layout with updated deletedPages and nextPageIndex
                 layout.indexMap = indexMap
                 layout.secondaryIndexes = StorageLayout.fromRuntimeIndexes(secondaryIndexes)
-                // Use secure save if password is available (matches delete method)
+                if forensicsEnabled {
+                    indexUpdateMs += Self.monotonicNowMs() - tMetadata
+                }
+
+                // Persist per-insert metadata update to preserve crash-prefix durability.
+                let tFsync = forensicsEnabled ? Self.monotonicNowMs() : 0
                 if password != nil {
                     try layout.saveSecure(to: metaURL, signingKey: encryptionKey)
                 } else {
                     try layout.save(to: metaURL)
+                }
+                cachedDeletedPages = layout.deletedPages
+                if forensicsEnabled {
+                    fsyncMs += Self.monotonicNowMs() - tFsync
                 }
                 
                 unsavedChanges += 1
@@ -1227,7 +1335,11 @@ public final class DynamicCollection {
                 
                 // Batch metadata writes for performance (save every N operations)
                 if unsavedChanges >= metadataFlushThreshold {
+                    let tBatchSave = forensicsEnabled ? Self.monotonicNowMs() : 0
                     try saveLayout()
+                    if forensicsEnabled {
+                        fsyncMs += Self.monotonicNowMs() - tBatchSave
+                    }
                     unsavedChanges = 0
                 }
                 
@@ -1242,6 +1354,20 @@ public final class DynamicCollection {
                 // NEW: Update vector index if enabled
                 updateVectorIndexOnInsert(record)
                 #endif
+
+                if forensicsEnabled {
+                    Self.emitInsertTiming(
+                        InsertTimingRecord(
+                            schema: 1,
+                            encodeMs: encodeMs,
+                            lockWaitMs: lockWaitMs,
+                            fileAppendMs: fileAppendMs,
+                            fsyncMs: fsyncMs,
+                            indexUpdateMs: indexUpdateMs,
+                            totalMs: Self.monotonicNowMs() - totalStartMs
+                        )
+                    )
+                }
                 
                 return id
             }
@@ -1287,23 +1413,29 @@ public final class DynamicCollection {
             // This prevents cache hits from other database instances
             guard let pageIndices = indexMapSnapshot[id], let firstPageIndex = pageIndices.first else {
                 // Record not in indexMap - remove from cache if present (might be stale)
-                RecordCache.shared.remove(id: id)
+                recordCache.remove(id: id)
                 return nil
             }
             
             // Check cache after verifying record exists in indexMap (fast path)
             // But verify the record still exists in indexMap before returning cached value
             // This prevents returning cached records that were deleted concurrently
-            if let cached = RecordCache.shared.get(id: id) {
+            if let cached = recordCache.get(id: id) {
                 // Double-check record still exists (might have been deleted after cache lookup)
                 // Use snapshot to avoid concurrent access
                 if indexMapSnapshot[id] != nil {
                     return cached
                 } else {
                     // Record was deleted - remove from cache and return nil
-                    RecordCache.shared.remove(id: id)
+                    recordCache.remove(id: id)
                     return nil
                 }
+            }
+
+            if store.overflowReadDegradedModeEnabled() {
+                // Corruption circuit-breaker: once overflow reads are degraded, avoid disk fetches
+                // for record hydration in this collection. This keeps callers responsive.
+                return nil
             }
             let maxDecodeAttempts = 3
             var attempt = 0
@@ -1330,7 +1462,7 @@ public final class DynamicCollection {
                         // CRITICAL: Don't silently return nil - throw error so developers know read failed
                         // Returning nil makes it impossible to distinguish between "page doesn't exist" and "read failed"
                         BlazeLogger.error("Failed to read page \(firstPageIndex) for record \(id): \(error)")
-                        throw BlazeDBError.corruptedData(location: "readPage(index: \(firstPageIndex))", reason: error.localizedDescription)
+                        throw BlazeDBError.corruptedData(location: "fetch(id: \(id))", reason: "Unable to read record data: \(error.localizedDescription). Try running db.compact() or restoring from backup.")
                     }
                     
                     guard let data = data, !data.allSatisfy({ $0 == 0 }) else {
@@ -1343,14 +1475,10 @@ public final class DynamicCollection {
                         if let actualID = record.storage["id"]?.uuidValue {
                             if actualID != id {
                                 let value = record.storage["value"]?.intValue ?? -1
-                                print("❌ [FETCH] CRITICAL ID MISMATCH: Requested \(id.uuidString.prefix(8)) from page \(firstPageIndex) but got record with ID \(actualID.uuidString.prefix(8)) (value: \(value))")
-                                print("❌ [FETCH] This indicates indexMap corruption - page \(firstPageIndex) contains wrong record!")
-                                print("❌ [FETCH] Current indexMap state:")
+                                BlazeLogger.error("CRITICAL ID MISMATCH: Requested \(id.uuidString.prefix(8)) from page \(firstPageIndex) but got record with ID \(actualID.uuidString.prefix(8)) (value: \(value)). This indicates indexMap corruption.")
                                 for (mapID, mapPages) in indexMapSnapshot where mapPages.contains(firstPageIndex) {
-                                    print("❌ [FETCH]   indexMap[\(mapID.uuidString.prefix(8))] = \(mapPages)")
+                                    BlazeLogger.error("  indexMap[\(mapID.uuidString.prefix(8))] = \(mapPages)")
                                 }
-                                BlazeLogger.error("❌ [FETCH] CRITICAL ID MISMATCH: Requested \(id.uuidString.prefix(8)) from page \(firstPageIndex) but got record with ID \(actualID.uuidString.prefix(8)) (value: \(value))")
-                                BlazeLogger.error("❌ [FETCH] This indicates indexMap corruption - page \(firstPageIndex) contains wrong record!")
                             } else {
                                 BlazeLogger.debug("✅ [FETCH] Record \(id.uuidString.prefix(8)) from page \(firstPageIndex) matches (value: \(record.storage["value"]?.intValue ?? -1))")
                             }
@@ -1358,11 +1486,38 @@ public final class DynamicCollection {
                             BlazeLogger.warn("⚠️ [FETCH] Record from page \(firstPageIndex) has no ID field!")
                         }
                         
-                        RecordCache.shared.set(id: id, record: record)
+                        recordCache.set(id: id, record: record)
                         return record
                     } catch let error as BlazeBinaryError {
                         lastError = error
                         let message = error.localizedDescription
+
+                        // Backward-compatibility fallback: some legacy pages were stored as raw JSON
+                        // documents instead of BlazeBinary. Decode them on read so migration/tests
+                        // can still hydrate records before conversion.
+                        if message.localizedCaseInsensitiveContains("invalid magic bytes")
+                            || message.localizedCaseInsensitiveContains("not blazebinary")
+                            || message.localizedCaseInsensitiveContains("invalid blazebinary") {
+                            if let legacyStorage = try? JSONDecoder().decode([String: BlazeDocumentField].self, from: data) {
+                                let legacyRecord = BlazeDataRecord(legacyStorage)
+                                recordCache.set(id: id, record: legacyRecord)
+                                return legacyRecord
+                            }
+                            if let wrappedRecord = try? JSONDecoder().decode(BlazeDataRecord.self, from: data) {
+                                recordCache.set(id: id, record: wrappedRecord)
+                                return wrappedRecord
+                            }
+                        }
+
+                        if store.overflowReadDegradedModeEnabled(),
+                           (message.localizedCaseInsensitiveContains("data too short")
+                            || message.localizedCaseInsensitiveContains("overflow")
+                            || message.localizedCaseInsensitiveContains("invalid blazebinary")) {
+                            // In degraded overflow mode, retries amplify latency without improving outcomes.
+                            // Treat this record as unreadable and continue.
+                            BlazeLogger.warn("⚠️ [FETCH] Skipping decode retries for record \(id.uuidString.prefix(8)) (page \(firstPageIndex)) while overflow degraded mode is active; incidents=\(store.overflowCorruptionIncidentSnapshot())")
+                            return nil
+                        }
                         if message.localizedCaseInsensitiveContains("data too short") ||
                             message.localizedCaseInsensitiveContains("crc") ||
                             message.localizedCaseInsensitiveContains("overflow") {
@@ -1489,6 +1644,10 @@ public final class DynamicCollection {
                     // Update secondary indexes: remove old entry, add new entry
                     // Remove old keys from indexes
                     let oldDoc = current.storage
+                    
+                    // Deindex from B-tree indexes (Phase 4: range query support)
+                    btreeIndexManager.deindexRecord(id: id, fields: oldDoc)
+                    
                     for (compound, _) in secondaryIndexes {
                         let fields = compound.components(separatedBy: "+")
                         let oldKey = CompoundIndexKey.fromFields(oldDoc, fields: fields)
@@ -1551,8 +1710,11 @@ public final class DynamicCollection {
                         secondaryIndexes[compound] = inner
                     }
                     
+                    // Index in B-tree indexes (Phase 4: range query support)
+                    btreeIndexManager.indexRecord(id: id, fields: merged)
+                    
                     // Invalidate cache (record was updated)
-                    RecordCache.shared.remove(id: id)
+                    recordCache.remove(id: id)
                     
                     // Update search index if enabled
                     #if !BLAZEDB_LINUX_CORE
@@ -1678,26 +1840,30 @@ public final class DynamicCollection {
             do {
                 // Remove from all indexes (persisting mutations)
                 // OPTIMIZATION: Only fetch record if we have indexes to update
-                if !secondaryIndexes.isEmpty {
-                    let recordToUse = record ?? (try? _fetchNoSync(id: id))
-                    if let record = recordToUse {
-                        let oldDoc = record.storage
-                        for (compound, _) in secondaryIndexes {
-                            let fields = compound.components(separatedBy: "+")
-                            let oldKey = CompoundIndexKey.fromFields(oldDoc, fields: fields)
-                            if var inner = secondaryIndexes[compound] {
-                                if var set = inner[oldKey] {
-                                    set.remove(id)
-                                    if set.isEmpty {
-                                        inner.removeValue(forKey: oldKey)
-                                    } else {
-                                        inner[oldKey] = set
-                                    }
-                                    secondaryIndexes[compound] = inner
+                let recordToUse = record ?? (try? _fetchNoSync(id: id))
+                
+                if !secondaryIndexes.isEmpty, let record = recordToUse {
+                    let oldDoc = record.storage
+                    for (compound, _) in secondaryIndexes {
+                        let fields = compound.components(separatedBy: "+")
+                        let oldKey = CompoundIndexKey.fromFields(oldDoc, fields: fields)
+                        if var inner = secondaryIndexes[compound] {
+                            if var set = inner[oldKey] {
+                                set.remove(id)
+                                if set.isEmpty {
+                                    inner.removeValue(forKey: oldKey)
+                                } else {
+                                    inner[oldKey] = set
                                 }
+                                secondaryIndexes[compound] = inner
                             }
                         }
                     }
+                }
+                
+                // Deindex from B-tree indexes
+                if let record = recordToUse {
+                    btreeIndexManager.deindexRecord(id: id, fields: record.storage)
                 }
                 
                 // OPTIMIZATION: Batch delete all pages in a single sync block to reduce overhead
@@ -1717,18 +1883,14 @@ public final class DynamicCollection {
                     layout = try StorageLayout.load(from: metaURL)
                 }
                 
-                do {
-                    // OPTIMIZATION: Batch delete all pages in a single sync block (not barrier)
-                    // Since we're already in DynamicCollection's queue.sync, we use regular sync
-                    // to allow concurrent reads. Barrier would block everything unnecessarily.
-                    // Use public deletePage API (works on both Apple and Linux)
-                    for pageIndex in pageIndices {
-                        try? store.deletePage(index: pageIndex)
-                        markPageForReuse(pageIndex: pageIndex, layout: &layout)
-                    }
-                } catch {
-                    // Page deletion failed - rethrow error
-                    throw error
+                // OPTIMIZATION: Batch delete all pages in a single sync block (not barrier)
+                // Since we're already in DynamicCollection's queue.sync, we use regular sync
+                // to allow concurrent reads. Barrier would block everything unnecessarily.
+                // Use public deletePage API (works on both Apple and Linux)
+                // Note: try? is used intentionally to suppress errors - deletion continues on failure
+                for pageIndex in pageIndices {
+                    try? store.deletePage(index: pageIndex)
+                    markPageForReuse(pageIndex: pageIndex, layout: &layout)
                 }
                 
                 // Remove from indexMap (use removeValue for consistency with MVCC path)
@@ -1752,11 +1914,12 @@ public final class DynamicCollection {
                 layout.secondaryIndexes = StorageLayout.fromRuntimeIndexes(secondaryIndexes)
                 
                 // Invalidate cache (record was deleted)
-                RecordCache.shared.remove(id: id)
+                recordCache.remove(id: id)
                 
-                // OPTIMIZATION: Don't clear fetchAll cache on every delete - it's expensive
-                // Cache will be invalidated naturally or can be cleared in batch operations
-                // clearFetchAllCache()  // Deferred for performance
+                // Clear fetchAll cache to ensure consistency
+                #if !BLAZEDB_LINUX_CORE
+                clearFetchAllCache()
+                #endif
                 
                 unsavedChanges += 1
                 // OPTIMIZATION: Only save layout periodically, not on every delete
@@ -1817,6 +1980,12 @@ public final class DynamicCollection {
                     // Trigger automatic GC (Phase 4)
                     gcManager.onTransactionCommit()
                     
+                    // Deindex from B-tree indexes before removing from indexMap
+                    // Get the record fields if we have them, otherwise fetch
+                    if let recordToDeindex = record ?? (try? _fetchNoSync(id: id)) {
+                        btreeIndexManager.deindexRecord(id: id, fields: recordToDeindex.storage)
+                    }
+                    
                     // Update indexMap (remove from index)
                     let removedPages = indexMap.removeValue(forKey: id)
                     if let pages = removedPages {
@@ -1870,17 +2039,17 @@ public final class DynamicCollection {
                             // This preserves nextPageIndex when it's already higher (e.g., when reusing pages)
                             let calculatedNextPageIndex = maxUsedPage + 1
                             layout.nextPageIndex = max(layout.nextPageIndex, calculatedNextPageIndex)
-                            print("🗑️ [DELETE] MVCC: nextPageIndex check - before: \(nextPageIndexBefore), maxUsedPage: \(maxUsedPage), calculated: \(calculatedNextPageIndex), final: \(layout.nextPageIndex), deletedPages.count: \(layout.deletedPages.count)")
+                            BlazeLogger.trace("🗑️ [DELETE] MVCC: nextPageIndex check - before: \(nextPageIndexBefore), maxUsedPage: \(maxUsedPage), calculated: \(calculatedNextPageIndex), final: \(layout.nextPageIndex), deletedPages.count: \(layout.deletedPages.count)")
                         } else {
                             // No records - preserve nextPageIndex (don't reset to 0)
                             // This ensures we don't lose track of pages that were allocated
                             // layout.nextPageIndex is already correct, don't change it
-                            print("🗑️ [DELETE] MVCC: All records deleted - preserving nextPageIndex at \(layout.nextPageIndex), deletedPages.count: \(layout.deletedPages.count)")
+                            BlazeLogger.trace("🗑️ [DELETE] MVCC: All records deleted - preserving nextPageIndex at \(layout.nextPageIndex), deletedPages.count: \(layout.deletedPages.count)")
                         }
                         if nextPageIndexBefore != layout.nextPageIndex {
-                            print("🗑️ [DELETE] MVCC: ⚠️ Updated nextPageIndex from \(nextPageIndexBefore) to \(layout.nextPageIndex)")
+                            BlazeLogger.debug("🗑️ [DELETE] MVCC: ⚠️ Updated nextPageIndex from \(nextPageIndexBefore) to \(layout.nextPageIndex)")
                         } else {
-                            print("🗑️ [DELETE] MVCC: ✅ Preserved nextPageIndex at \(layout.nextPageIndex)")
+                            BlazeLogger.trace("🗑️ [DELETE] MVCC: ✅ Preserved nextPageIndex at \(layout.nextPageIndex)")
                         }
                         // Update in-memory nextPageIndex to reflect the saved value
                         self.nextPageIndex = layout.nextPageIndex
@@ -1914,7 +2083,7 @@ public final class DynamicCollection {
                     }
                     
                     // Invalidate cache (record was deleted)
-                    RecordCache.shared.remove(id: id)
+                    recordCache.remove(id: id)
                     
                     // Only call saveLayout() if we haven't already saved and threshold is reached
                     if pageIndices == nil && unsavedChanges >= metadataFlushThreshold {
@@ -1964,7 +2133,7 @@ public final class DynamicCollection {
         public func fetch(byIndexedFields fields: [String], values: [AnyHashable]) throws -> [BlazeDataRecord] {
             guard fields.count == values.count else {
                 BlazeLogger.error("Fields and values count mismatch: \(fields.count) fields, \(values.count) values")
-                throw BlazeDBError.transactionFailed("Fields and values count mismatch: \(fields.count) fields, \(values.count) values")
+                throw BlazeDBError.invalidData(reason: "Fields and values count mismatch: \(fields.count) fields, \(values.count) values")
             }
             let compoundKey = fields.joined(separator: "+")
             
@@ -2019,7 +2188,7 @@ public final class DynamicCollection {
                 guard layoutSignatureVerified else {
                     let reason = "Cannot persist metadata: layout signature verification failed (read-only mode). Open the database with the correct password to persist changes."
                     BlazeLogger.error("💾 [PERSIST] \(reason)")
-                    throw BlazeDBError.transactionFailed(reason, underlyingError: nil)
+                    throw BlazeDBError.permissionDenied(operation: "persist", path: nil)
                 }
                 // First, ensure all page writes are flushed to disk
                 try store.synchronize()
@@ -2034,12 +2203,26 @@ public final class DynamicCollection {
                 unsavedChanges = 0
             }
         }
+
+        internal func close() throws {
+            try queue.sync(flags: .barrier) {
+                guard !closed else { return }
+
+                if unsavedChanges > 0, layoutSignatureVerified {
+                    try saveLayout()
+                    unsavedChanges = 0
+                }
+
+                store.close()
+                closed = true
+            }
+        }
         
         internal func saveLayout() throws {
             guard layoutSignatureVerified else {
                 let reason = "Cannot save layout because signature verification failed. Open database with correct password."
                 BlazeLogger.error("💾 [SAVELAYOUT] \(reason)")
-                throw BlazeDBError.transactionFailed(reason, underlyingError: nil)
+                throw BlazeDBError.permissionDenied(operation: "saveLayout", path: nil)
             }
             // Convert secondaryIndexes once
             // CRITICAL: Sort UUID arrays to ensure deterministic encoding for signature verification
@@ -2070,6 +2253,9 @@ public final class DynamicCollection {
                     existingDeletedPages = existingLayout.deletedPages
                     existingMetaData = existingLayout.metaData
                 } catch {
+                    if BlazeDBForensics.enabled {
+                        throw error
+                    }
                     // Log error but try fallback
                     BlazeLogger.warn("⚠️ Failed to load secure layout in saveLayout(), trying regular load: \(error)")
                     do {
@@ -2112,6 +2298,11 @@ public final class DynamicCollection {
             // CRITICAL: Preserve metaData from existing layout (e.g., ordering settings)
             // This ensures metadata set via updateMeta() is not lost when saveLayout() is called
             layout.metaData = existingMetaData
+
+            // Compatibility contract: always persist an explicit on-disk format version.
+            if layout.metaData["formatVersion"] == nil {
+                layout.metaData["formatVersion"] = .string(BlazeDBClient.FormatVersion.current.description)
+            }
             
             // CRITICAL: Ensure nextPageIndex is at least as large as the highest deleted page
             // This ensures nextPageIndex reflects the highest page ever allocated
@@ -2134,6 +2325,7 @@ public final class DynamicCollection {
             do {
                 // SECURITY: Save with HMAC signature for tamper detection
                 try layout.saveSecure(to: metaURL, signingKey: encryptionKey)
+                cachedDeletedPages = layout.deletedPages
                 
                 // OPTIMIZATION: Sync store to flush any unsynchronized deletes/writes
                 // This ensures data is persisted when layout is saved
@@ -2148,15 +2340,7 @@ public final class DynamicCollection {
         
         // Ensure unsaved changes are flushed on cleanup
         deinit {
-            if unsavedChanges > 0 {
-                do {
-                    try saveLayout()
-                    BlazeLogger.debug("Flushed \(unsavedChanges) unsaved changes during deinit")
-                } catch {
-                    BlazeLogger.error("⚠️ CRITICAL: Failed to flush \(unsavedChanges) changes during deinit: \(error)")
-                    BlazeLogger.error("⚠️ Metadata may be inconsistent. Call db.persist() explicitly before deallocation.")
-                }
-            }
+            try? close()
             
             // CRITICAL: Clean up static dictionary references to prevent memory leaks
             // When DynamicCollection is deallocated, remove its cache and pool from static dictionaries
@@ -2232,9 +2416,9 @@ public final class DynamicCollection {
             let indexBackup = secondaryIndexes
             let indexMapBackup = indexMapSnapshot  // Backup indexMap for rollback
             
-            // Track allocation outside do-catch so catch block can access them
-            var allocatedPageCount = 0  // Track how many pages we allocate
-            let nextPageIndexBefore = nextPageIndex  // Save starting value for rollback
+            // Note: Page allocation tracking is done in the inner scope for this code path
+            // The outer scope doesn't allocate pages directly
+            _ = nextPageIndex  // Reference to suppress unused warning
             
             do {
                 // Remove old keys (normalize to match how they were stored)
@@ -2251,6 +2435,10 @@ public final class DynamicCollection {
                 }
                 if let record = record {
                     let oldDoc = record.storage
+                    
+                    // Deindex from B-tree indexes (Phase 4: range query support)
+                    btreeIndexManager.deindexRecord(id: id, fields: oldDoc)
+                    
                     for (compound, _) in secondaryIndexes {
                         let fields = compound.components(separatedBy: "+")
                         let oldKey = CompoundIndexKey.fromFields(oldDoc, fields: fields)
@@ -2316,6 +2504,9 @@ public final class DynamicCollection {
                     secondaryIndexes[compound] = inner
                 }
                 
+                // Index in B-tree indexes (Phase 4: range query support)
+                btreeIndexManager.indexRecord(id: id, fields: document)
+                
                 // 🔒 Write to disk BEFORE committing index changes
                 // Use BlazeBinaryEncoder for encoding (matches decoder!)
                 let encoded = try BlazeBinaryEncoder.encode(BlazeDataRecord(document))
@@ -2366,7 +2557,7 @@ public final class DynamicCollection {
                 // CRITICAL: Invalidate cache AFTER saveLayout() succeeds
                 // This ensures cache is only cleared if the operation is fully persisted
                 // If saveLayout() fails, cache remains valid and operation will rollback
-                RecordCache.shared.remove(id: id)
+                recordCache.remove(id: id)
                 #if !BLAZEDB_LINUX_CORE
                 clearFetchAllCache()
                 
@@ -2407,11 +2598,7 @@ public final class DynamicCollection {
                     indexMap = indexMapBackup
                     BlazeLogger.warn("⚠️ Restored indexMap due to saveLayout() failure")
                 }
-                // Also rollback nextPageIndex if it was incremented
-                if allocatedPageCount > 0 {
-                    nextPageIndex = nextPageIndexBefore
-                    BlazeLogger.warn("⚠️ Rolling back nextPageIndex by \(allocatedPageCount) pages due to update failure")
-                }
+                // Note: Page allocation rollback is handled in inner scope where pages are actually allocated
                 throw error
             }
         }
@@ -2444,10 +2631,6 @@ public final class DynamicCollection {
                 switch value {
                 case let s as String:
                     valuesToTry.append(AnyBlazeCodable(s))
-                    // Try as base64-encoded Data
-                    if let data = Data(base64Encoded: s) {
-                        valuesToTry.append(AnyBlazeCodable(data))
-                    }
                 case let i as Int:
                     valuesToTry.append(AnyBlazeCodable(i))
                     // Ints might be stored as Doubles
@@ -2483,8 +2666,6 @@ public final class DynamicCollection {
                     valuesToTry.append(AnyBlazeCodable(uuid.uuidString))
                 case let data as Data:
                     valuesToTry.append(AnyBlazeCodable(data))
-                    // Data might be stored as base64 String
-                    valuesToTry.append(AnyBlazeCodable(data.base64EncodedString()))
                 default:
                     BlazeLogger.warn("Unsupported index value type: \(type(of: value))")
                     return []

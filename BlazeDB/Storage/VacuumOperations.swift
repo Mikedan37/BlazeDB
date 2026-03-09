@@ -156,6 +156,14 @@ extension BlazeDBClient {
                     let attrsNew = try FileManager.default.attributesOfItem(atPath: tempURL.path)
                     let sizeNew = attrsNew[.size] as? Int64 ?? 0
                     
+                    // Close temporary compacted store before swapping files.
+                    compactedStore.close()
+                    
+                    // Release lock/handles on the live store before reopening the file.
+                    // Without this, opening a new PageStore on the same path can fail with
+                    // concurrent-process/handle lock errors in parallel test execution.
+                    try self.collection.close()
+                    
                     // Replace old file with compacted file
                     BlazeLogger.debug("Replacing old database file...")
                     try FileManager.default.removeItem(at: self.fileURL)

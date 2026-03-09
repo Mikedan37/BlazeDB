@@ -39,7 +39,7 @@ extension BlazeDBClient {
         password: String,
         expectedVersion: SchemaVersion
     ) throws -> BlazeDBClient {
-        let db = try openDefault(name: name, password: password)
+        let db = try open(named: name, password: password)
         try db.validateSchemaVersion(expectedVersion: expectedVersion)
         return db
     }

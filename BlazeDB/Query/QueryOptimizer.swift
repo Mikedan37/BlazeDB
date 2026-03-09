@@ -109,9 +109,55 @@ public class QueryOptimizer {
         let hasLimit = query.limitValue != nil
         let limitValue = query.limitValue ?? estimatedRecordCount
         
+        // Honor forced index hints first
+        let indexHints = query.getIndexHints()
+        if query.shouldForceIndexSelection, let hint = indexHints.first {
+            // User explicitly forced an index - use it unconditionally
+            let indexName = hint.indexName
+            if collection.secondaryIndexes[indexName] != nil {
+                BlazeLogger.debug("🔍 [OPTIMIZER] FORCE INDEX '\(indexName)' honored")
+                let selectivity = estimateSelectivity(
+                    indexName: indexName,
+                    collection: collection,
+                    totalRecords: estimatedRecordCount
+                )
+                return QueryPlan(
+                    useIndex: indexName,
+                    scanOrder: .index,
+                    estimatedCost: 0.0,  // Force always wins
+                    estimatedRows: Int(Double(estimatedRecordCount) * selectivity)
+                )
+            } else {
+                BlazeLogger.warn("⚠️ [OPTIMIZER] FORCE INDEX '\(indexName)' not found, falling back to cost-based selection")
+            }
+        }
+        
         // Check if any filter can use an index
         var bestIndex: String? = nil
         var bestIndexCost: Double = Double.infinity
+        
+        // Apply index hints as preference (but don't force)
+        if !indexHints.isEmpty {
+            for hint in indexHints {
+                if collection.secondaryIndexes[hint.indexName] != nil {
+                    // Give hinted indexes a cost advantage (50% discount)
+                    let selectivity = estimateSelectivity(
+                        indexName: hint.indexName,
+                        collection: collection,
+                        totalRecords: estimatedRecordCount
+                    )
+                    let resultCount = Double(estimatedRecordCount) * selectivity
+                    let baseCost = log2(Double(estimatedRecordCount)) + resultCount
+                    let hintedCost = baseCost * 0.5  // 50% discount for hinted indexes
+                    
+                    if hintedCost < bestIndexCost {
+                        bestIndexCost = hintedCost
+                        bestIndex = hint.indexName
+                        BlazeLogger.debug("🔍 [OPTIMIZER] USE INDEX hint '\(hint.indexName)' applied with cost \(hintedCost)")
+                    }
+                }
+            }
+        }
         
         if hasIndexes {
             let filterFields = extractFilterFields(from: query, collection: collection)
@@ -237,7 +283,7 @@ extension QueryBuilder {
     /// Execute query using optimized plan
     func executeWithOptimizer() throws -> QueryResult {
         guard let collection = collection else {
-            throw BlazeDBError.transactionFailed("Collection deallocated")
+            throw BlazeDBError.invalidData(reason: "Query builder's collection has been deallocated. Recreate the query from a live database.")
         }
         
         let plan = getOptimizedPlan(collection: collection)
@@ -263,9 +309,215 @@ extension QueryBuilder {
     
     /// Execute query using specific index
     private func executeWithIndex(_ indexName: String) throws -> QueryResult {
-        // Index-based execution would go here
-        // For now, fall back to standard execution
+        guard let collection = collection else {
+            throw BlazeDBError.invalidData(reason: "Query builder's collection has been deallocated. Recreate the query from a live database.")
+        }
+        
+        let startTime = Date()
+        
+        // Parse index fields (compound indexes use + separator)
+        let indexFields = indexName.components(separatedBy: "+")
+        
+        // Simple case: single field index with equality filter
+        if indexFields.count == 1, let field = indexFields.first {
+            // Find equality filter for this field
+            if let eqDescriptor = filterDescriptors.first(where: { $0.field == field && $0.operation == "eq" }),
+               let hashableValue = eqDescriptor.hashableValue {
+                
+                BlazeLogger.info("📊 [INDEX] Using index '\(indexName)' for field '\(field)'")
+                
+                // Step 1: Fetch records using index
+                var records = try collection.fetch(byIndexedField: field, value: hashableValue)
+                BlazeLogger.debug("📊 [INDEX] Index lookup returned \(records.count) records")
+                
+                // Step 2: Apply remaining filters (skip the one we used for index lookup)
+                let remainingFilters: [(BlazeDataRecord) -> Bool] = filters.enumerated().compactMap { (index, filter) in
+                    // Skip filter that was used for index lookup
+                    if index < filterDescriptors.count {
+                        let desc = filterDescriptors[index]
+                        if desc.field == field && desc.operation == "eq" {
+                            return nil
+                        }
+                    }
+                    return filter
+                }
+                
+                if !remainingFilters.isEmpty {
+                    let combinedFilter: (BlazeDataRecord) -> Bool = { record in
+                        for filter in remainingFilters {
+                            if !filter(record) { return false }
+                        }
+                        return true
+                    }
+                    let beforeFilter = records.count
+                    records = records.filter(combinedFilter)
+                    BlazeLogger.debug("📊 [INDEX] After remaining filters: \(beforeFilter) → \(records.count) records")
+                }
+                
+                // Step 3: Apply sorts
+                if !sortOperations.isEmpty {
+                    records = applySorts(to: records)
+                }
+                
+                // Step 4: Apply offset
+                if offsetValue > 0 {
+                    records = Array(records.dropFirst(Swift.min(offsetValue, records.count)))
+                }
+                
+                // Step 5: Apply limit
+                if let limit = limitValue {
+                    records = Array(records.prefix(Swift.max(0, limit)))
+                }
+                
+                let duration = Date().timeIntervalSince(startTime)
+                BlazeLogger.info("📊 [INDEX] Query complete: \(records.count) results in \(String(format: "%.2f", duration * 1000))ms (used index '\(indexName)')")
+                
+                return .records(records)
+            }
+        }
+        
+        // Compound index case: multiple fields
+        if indexFields.count > 1 {
+            // Find equality filters for all index fields
+            var fieldValues: [(String, AnyHashable)] = []
+            
+            for field in indexFields {
+                if let eqDescriptor = filterDescriptors.first(where: { $0.field == field && $0.operation == "eq" }),
+                   let hashableValue = eqDescriptor.hashableValue {
+                    fieldValues.append((field, hashableValue))
+                }
+            }
+            
+            // Only use compound index if we have values for ALL fields
+            if fieldValues.count == indexFields.count {
+                BlazeLogger.info("📊 [INDEX] Using compound index '\(indexName)'")
+                
+                let values = fieldValues.map { $0.1 }
+                var records = try collection.fetch(byIndexedFields: indexFields, values: values)
+                BlazeLogger.debug("📊 [INDEX] Compound index lookup returned \(records.count) records")
+                
+                // Apply remaining filters (skip the ones we used for index)
+                let usedFields = Set(indexFields)
+                let remainingFilters: [(BlazeDataRecord) -> Bool] = filters.enumerated().compactMap { (index, filter) in
+                    if index < filterDescriptors.count {
+                        let desc = filterDescriptors[index]
+                        if usedFields.contains(desc.field) && desc.operation == "eq" {
+                            return nil
+                        }
+                    }
+                    return filter
+                }
+                
+                if !remainingFilters.isEmpty {
+                    let combinedFilter: (BlazeDataRecord) -> Bool = { record in
+                        for filter in remainingFilters {
+                            if !filter(record) { return false }
+                        }
+                        return true
+                    }
+                    records = records.filter(combinedFilter)
+                }
+                
+                // Apply sorts, offset, limit
+                if !sortOperations.isEmpty {
+                    records = applySorts(to: records)
+                }
+                if offsetValue > 0 {
+                    records = Array(records.dropFirst(Swift.min(offsetValue, records.count)))
+                }
+                if let limit = limitValue {
+                    records = Array(records.prefix(Swift.max(0, limit)))
+                }
+                
+                let duration = Date().timeIntervalSince(startTime)
+                BlazeLogger.info("📊 [INDEX] Query complete: \(records.count) results in \(String(format: "%.2f", duration * 1000))ms (used compound index)")
+                
+                return .records(records)
+            }
+        }
+        
+        // Fall back to standard execution if index can't be used
+        BlazeLogger.debug("📊 [INDEX] Falling back to standard execution for index '\(indexName)' (no matching equality filters)")
         return try execute()
+    }
+    
+    /// Execute query using index with explicit field/value (for internal use)
+    internal func executeWithIndexedLookup(field: String, value: AnyHashable) throws -> QueryResult {
+        guard let collection = collection else {
+            throw BlazeDBError.invalidData(reason: "Query builder's collection has been deallocated. Recreate the query from a live database.")
+        }
+        
+        let startTime = Date()
+        BlazeLogger.info("📊 [INDEX] Executing with indexed lookup on '\(field)'")
+        
+        // Step 1: Fetch records using index
+        var records = try collection.fetch(byIndexedField: field, value: value)
+        BlazeLogger.debug("📊 [INDEX] Index lookup returned \(records.count) records")
+        
+        // Step 2: Apply remaining filters (skip the one we used for index lookup)
+        if filters.count > 1 {
+            let remainingFilters = filters.enumerated().compactMap { (index, filter) -> ((BlazeDataRecord) -> Bool)? in
+                // Skip filter that was used for index lookup
+                if index < filterDescriptors.count {
+                    let desc = filterDescriptors[index]
+                    if desc.field == field && desc.operation == "eq" {
+                        return nil
+                    }
+                }
+                return filter
+            }
+            
+            if !remainingFilters.isEmpty {
+                let combinedFilter: (BlazeDataRecord) -> Bool = { record in
+                    for filter in remainingFilters {
+                        if !filter(record) { return false }
+                    }
+                    return true
+                }
+                records = records.filter(combinedFilter)
+                BlazeLogger.debug("📊 [INDEX] After remaining filters: \(records.count) records")
+            }
+        }
+        
+        // Step 3: Apply sorts
+        if !sortOperations.isEmpty {
+            records = applySorts(to: records)
+        }
+        
+        // Step 4: Apply offset
+        if offsetValue > 0 {
+            records = Array(records.dropFirst(Swift.min(offsetValue, records.count)))
+        }
+        
+        // Step 5: Apply limit
+        if let limit = limitValue {
+            records = Array(records.prefix(Swift.max(0, limit)))
+        }
+        
+        let duration = Date().timeIntervalSince(startTime)
+        BlazeLogger.info("📊 [INDEX] Query complete: \(records.count) results in \(String(format: "%.2f", duration * 1000))ms (used index)")
+        
+        return .records(records)
+    }
+    
+    /// Sort records (shared helper)
+    private func applySorts(to records: [BlazeDataRecord]) -> [BlazeDataRecord] {
+        return records.sorted { (left: BlazeDataRecord, right: BlazeDataRecord) -> Bool in
+            for sortOp in sortOperations {
+                let leftValue = left.storage[sortOp.field]
+                let rightValue = right.storage[sortOp.field]
+                
+                if leftValue == nil && rightValue == nil { continue }
+                if leftValue == nil { return false }
+                if rightValue == nil { return true }
+                
+                if leftValue == rightValue { continue }
+                
+                let comparison = compareFields(leftValue!, .lessThan, rightValue!)
+                return sortOp.descending ? !comparison : comparison
+            }
+            return false
+        }
     }
 }
 

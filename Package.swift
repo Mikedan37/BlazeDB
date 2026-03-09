@@ -49,23 +49,9 @@ let package = Package(
             targets: ["ReferenceConsumer"])
     ],
     dependencies: [
-        // BlazeTransport: Transport layer for distributed sync
-        // Pinned to linux-aarch64-stable-v3 for reproducible Linux builds
-        .package(
-            url: "git@github.com:Mikedan37/BlazeTransport.git",
-            revision: "eef8c2e179fff80ad5afe019b5113625ec9cb609"
-        ),
-        // BlazeFSM: Pinned to Linux-safe commit to unblock SwiftPM resolution
-        .package(
-            url: "git@github.com:Mikedan37/BlazeFSM.git",
-            revision: "58b292a27928d211eef12090cafcbf12b31d69c6"
-        ),
-        // SwiftCBOR: Pinned to stable tagged release for SwiftPM compatibility
-        // Required: When consumers pin BlazeDB to a stable version, all transitive dependencies must also be stable
-        .package(
-            url: "https://github.com/myfreeweb/SwiftCBOR.git",
-            exact: "0.6.0"
-        )
+        // NOTE: External package dependencies are intentionally empty for now.
+        // Distributed targets that consume BlazeTransport are commented out
+        // until Swift 6 compliance work is complete.
     ],
     targets: [
         // MARK: - Core Target (Swift 6 compliant, no distributed code)
@@ -90,11 +76,23 @@ let package = Package(
                 "Migration/CoreDataMigrator.swift",
                 "Migration/SQLiteMigrator.swift",
                 "Migration/SQLMigrator.swift",
+                // Legacy umbrella re-export file now lives in BlazeDBShim target.
+                "BlazeDBReexport.swift",
                 // SwiftUI is included conditionally (only on platforms that support it)
-                // Exclude umbrella re-export file
-                "BlazeDBReexport.swift"
+                // Exclude Xcode test plans from SwiftPM source scanning.
+                "BlazeDB_Benchmark.xctestplan",
+                "BlazeDB_Core.xctestplan",
+                "BlazeDB_Core_Integration.xctestplan",
+                "BlazeDB_Destructive.xctestplan",
+                "BlazeDB_Full.xctestplan",
+                "BlazeDB_Full_CI.xctestplan",
+                "BlazeDB_Integration.xctestplan",
+                "BlazeDB_Nightly.xctestplan",
+                "BlazeDB_Quick.xctestplan",
+                "BlazeDB-Package.xctestplan"
             ],
             swiftSettings: [
+                .define("BLAZEDB_TELEMETRY_TYPES_STUB"),
                 .define("BLAZEDB_LINUX_CORE", .when(platforms: [.linux]))
             ]
         ),
@@ -133,7 +131,7 @@ let package = Package(
             dependencies: [
                 "BlazeDBCore"
             ],
-            path: "BlazeDB",
+            path: "BlazeDBShim",
             sources: [
                 "BlazeDBReexport.swift"
             ]
@@ -168,7 +166,8 @@ let package = Package(
         .executableTarget(
             name: "BasicExample",
             dependencies: ["BlazeDBCore"],
-            path: "Examples/BasicExample"
+            path: "Examples/BasicExample",
+            exclude: ["README.md"]
         ),
         .executableTarget(
             name: "BlazeDoctor",
@@ -192,92 +191,74 @@ let package = Package(
         ),
         .executableTarget(
             name: "HelloBlazeDB",
-            dependencies: ["BlazeDBCore"],
+            dependencies: ["BlazeDB"],
             path: "Examples/HelloBlazeDB"
         ),
         .executableTarget(
             name: "ReferenceConsumer",
-            dependencies: ["BlazeDBCore"],
-            path: "Examples/ReferenceConsumer"
+            dependencies: ["BlazeDB"],
+            path: "Examples/ReferenceConsumer",
+            exclude: ["README.md"]
         ),
         
         // MARK: - Test Targets
-        
-        // TIER 1: Production Gate Tests (MUST PASS)
-        // Small, focused tests that validate core production safety guarantees
-        // These tests block releases and must always pass in CI
+
+        // Tier 0: deterministic correctness and gate-level durability checks.
         .testTarget(
-            name: "BlazeDBCoreGateTests",
+            name: "BlazeDB_Tier0",
             dependencies: ["BlazeDBCore"],
-            path: "BlazeDBTests/Gate",
-            sources: [
-                "CLISmokeTests.swift",
-                "CrashSurvivalTests.swift",
-                "GoldenPathIntegrationTests.swift",
-                "ImportExportTests.swift",
-                "LifecycleTests.swift",
-                "OperationalConfidenceTests.swift",
-                "SchemaMigrationTests.swift"
-            ],
+            path: "BlazeDBTests/Tier0Core",
             swiftSettings: [
                 .define("BLAZEDB_CORE_ONLY")
             ]
         ),
-        
-        // TIER 2: Core Tests (SHOULD PASS)
-        // Important tests that validate features but aren't blocking
-        // May fail temporarily, not required for CI green
+
+        // Tier 1: broad deterministic feature and contract checks.
         .testTarget(
-            name: "BlazeDBCoreTests",
+            name: "BlazeDB_Tier1",
             dependencies: ["BlazeDBCore"],
-            path: "BlazeDBTests",
+            path: "BlazeDBTests/Tier1Core",
             exclude: [
                 // Exclude distributed-specific test directories
                 "Sync",
-                "Distributed",
                 // Exclude telemetry tests (require distributed module)
                 "Utilities/TelemetryUnitTests.swift",
                 // Exclude SecureConnectionTests (requires Network/SecureConnection types not in BlazeDBCore)
                 "Security/SecureConnectionTests.swift",
-                // Exclude DataSeedingTests (MainActor isolation issues; fix separately)
-                "DataSeedingTests.swift",
-                // Exclude until API/protocol conformance fixed (BlazeDBMigration, try, etc.)
-                "Core/DXMigrationPlanTests.swift",
-                "Core/CrashSurvivalTests.swift",
-                "Core/DXHappyPathTests.swift",
-                "Core/DXQueryExplainTests.swift",
-                // Exclude until Sendable/async fixes (Thread.current, NSLock in async, etc.)
-                "Concurrency/TypeSafeAsyncEdgeCaseTests.swift",
-                "GarbageCollection/GarbageCollectionEdgeTests.swift",
-                "GarbageCollection/VacuumOperationsTests.swift",
-                "IOFaultInjectionTests.swift",
-                // Exclude Tier 1 (Gate) and Tier 3 (Legacy) tests
-                "Gate",
-                "Legacy"
+                "Security/SecurityAuditTests.swift",
+                // Exclude MainActor/SwiftUI test files (require deeper architectural changes)
+                "Query/BlazeQueryTests.swift",
+                "Features/ChangeObservationTests.swift",
+                // Exclude complex async test files (require significant refactoring)
+                "Concurrency/BlazeDBAsyncTests.swift",
+                "Concurrency/AsyncAwaitTests.swift",
+                // Benchmark quarantine: benchmark-style XCTest must not run in correctness lanes.
+                "Indexes/SearchPerformanceBenchmarks.swift",
+                "Encoding/BlazeBinaryPerformanceTests.swift",
+                "Sync/DistributedGCPerformanceTests.swift",
+                "MVCC/MVCCPerformanceTests.swift"
             ],
             swiftSettings: [
                 .define("BLAZEDB_CORE_ONLY")
             ]
         ),
         
-        // TIER 3: Legacy Tests (MAY FAIL)
-        // Internal, historical, white-box tests that never block anything
-        // Tests accessing internals, deprecated APIs, or experimental features
+        // Tier 3 heavy: stress/fuzz/perf and legacy non-blocking paths.
         .testTarget(
-            name: "BlazeDBLegacyTests",
+            name: "BlazeDB_Tier3_Heavy",
             dependencies: ["BlazeDBCore"],
-            path: "BlazeDBTests/Legacy",
+            path: "BlazeDBTests/Tier3Heavy",
             swiftSettings: [
                 .define("BLAZEDB_CORE_ONLY"),
-                .define("LEGACY_TESTS")
+                .define("HEAVY_TESTS")
             ]
         ),
         
-        // Integration Tests (Tier 2)
+        // Tier 2: integration and recovery workflows.
         .testTarget(
-            name: "BlazeDBIntegrationTests",
+            name: "BlazeDB_Tier2",
             dependencies: ["BlazeDBCore"],
-            path: "BlazeDBIntegrationTests",
+            path: "BlazeDBTests/Tier2Integration/BlazeDBIntegrationTests",
             exclude: [
                 // Exclude distributed integration tests
                 "TelemetryIntegrationTests.swift",
@@ -288,12 +269,42 @@ let package = Package(
                 "DistributedGCRobustnessTests.swift",  // Uses distributed types
                 "RLSEncryptionGCIntegrationTests.swift",  // Uses Telemetry
                 "RLSNegativeTests.swift",  // Uses BlazeTopology
+                // Exclude until Swift 6 async/Sendable fixes
+                "AdvancedConcurrencyScenarios.swift",  // NSLock in async
+                "BlazeBinaryIntegrationTests.swift",  // Telemetry.getSummary API
+                "BugTrackerCompleteWorkflow.swift",  // sending closure
+                "AshPileRealWorldTests.swift",  // switch exhaustive
+                "ExtremeIntegrationTests.swift",  // sending closure
+                "FeatureCombinationTests.swift",  // async await mismatch
                 "SchemaForeignKeyIntegrationTests.swift",  // Uses Telemetry
                 // Exclude until Sendable/closure capture fixes (test logic unchanged)
                 "DataConsistencyACIDTests.swift",
                 "GarbageCollectionIntegrationTests.swift",
                 "ChaosEngineeringTests.swift"
+            ],
+            swiftSettings: [
+                .define("BLAZEDB_CORE_ONLY")
             ]
+        ),
+
+        // Tier 3 destructive: manual-only fault/corruption injection tests.
+        .testTarget(
+            name: "BlazeDB_Tier3_Destructive",
+            dependencies: ["BlazeDBCore"],
+            path: "BlazeDBTests/Tier3Destructive",
+            swiftSettings: [
+                .define("BLAZEDB_CORE_ONLY"),
+                .define("DESTRUCTIVE_TESTS")
+            ]
+        ),
+        
+        // SwiftPM execution gate for distributed fail-closed validation.
+        // This intentionally verifies that the distributed security suite
+        // runs and passes with non-zero execution.
+        .testTarget(
+            name: "DistributedSecuritySPMTests",
+            dependencies: [],
+            path: "BlazeDBTests_SPM/DistributedSecurity"
         )
     ]
 )

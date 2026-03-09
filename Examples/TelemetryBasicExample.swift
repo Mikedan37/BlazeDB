@@ -18,7 +18,7 @@ func verifyTelemetryWorks() async throws {
     let dbURL = FileManager.default.temporaryDirectory
         .appendingPathComponent("test_app.blazedb")
     
-    let db = try BlazeDBClient(name: "TestApp", fileURL: dbURL, password: "test123456")
+    let db = try BlazeDBClient.open(at: dbURL, password: "test123456")
     
     // Step 2: Enable telemetry
     db.telemetry.enable()
@@ -127,7 +127,7 @@ func realAppExample() async throws {
     print("\n📱 REAL APP EXAMPLE: AshPile Bug Tracker")
     print("==========================================\n")
     
-    let db = try BlazeDBClient(name: "AshPile", at: FileManager.default.homeDirectory)
+    let db = try BlazeDBClient.open(at: FileManager.default.homeDirectory)
     
     // Enable telemetry with 1% sampling
     db.telemetry.enable(samplingRate: 0.01)

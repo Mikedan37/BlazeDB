@@ -63,10 +63,9 @@ struct SyncExample_Discovery {
                 .appendingPathComponent("blazedb_discovery_client_\(UUID().uuidString)")
             try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
             
-            let clientDB = try BlazeDBClient(
-                name: "DiscoveryClient",
-                fileURL: tempDir.appendingPathComponent("client.blazedb"),
-                password: "test123"
+            let clientDB = try BlazeDBClient.open(
+                at: tempDir.appendingPathComponent("client.blazedb"),
+                password: "TestPass123!"
             )
             
             // Register in topology

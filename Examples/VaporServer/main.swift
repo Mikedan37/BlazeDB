@@ -16,8 +16,8 @@ import Foundation
 
 func configure(_ app: Application) throws {
     // Open database (one per server process)
-    let db = try BlazeDBClient.openForDaemon(
-        name: "vapor-server",
+    let db = try BlazeDBClient.open(
+        named: "vapor-server",
         password: ProcessInfo.processInfo.environment["DB_PASSWORD"] ?? "default-password-change-in-production"
     )
     

@@ -16,8 +16,8 @@ import Foundation
 @preconcurrency import Foundation
 
 /// Advanced query execution plan
-public struct AdvancedQueryPlan {
-    public enum Strategy {
+internal struct AdvancedQueryPlan {
+    internal enum Strategy {
         case spatialIndex(latField: String, lonField: String)
         case vectorIndex(field: String, embedding: [Float])
         case fullTextIndex(field: String, query: String)
@@ -26,12 +26,12 @@ public struct AdvancedQueryPlan {
         case hybrid(spatial: Bool, vector: Bool, fullText: Bool)
     }
     
-    public let strategy: Strategy
-    public let estimatedCost: Double
-    public let estimatedRows: Int
-    public let executionOrder: [String]  // Order of operations
-    
-    public init(strategy: Strategy, estimatedCost: Double, estimatedRows: Int, executionOrder: [String] = []) {
+    internal let strategy: Strategy
+    internal let estimatedCost: Double
+    internal let estimatedRows: Int
+    internal let executionOrder: [String]  // Order of operations
+
+    internal init(strategy: Strategy, estimatedCost: Double, estimatedRows: Int, executionOrder: [String] = []) {
         self.strategy = strategy
         self.estimatedCost = estimatedCost
         self.estimatedRows = estimatedRows
@@ -40,7 +40,7 @@ public struct AdvancedQueryPlan {
 }
 
 /// Advanced query planner
-public class QueryPlanner {
+internal class QueryPlanner {
     
     /// Plan a query with real cost math (SQLite-style)
     static func plan(
@@ -236,7 +236,7 @@ extension QueryBuilder {
     /// Execute query using advanced planner
     func executeWithPlanner() throws -> QueryResult {
         guard let collection = collection else {
-            throw BlazeDBError.transactionFailed("Collection deallocated")
+            throw BlazeDBError.invalidData(reason: "Query builder's collection has been deallocated. Recreate the query from a live database.")
         }
         
         let plan = try getAdvancedPlan(collection: collection)

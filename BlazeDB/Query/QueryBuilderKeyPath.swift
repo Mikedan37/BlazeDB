@@ -82,6 +82,133 @@ public class TypeSafeQueryBuilder<T: BlazeStorable> {
         return self
     }
     
+    /// Filter by KeyPath (not equals)
+    @discardableResult
+    public func `where`<V: Equatable>(_ keyPath: KeyPath<T, V>, notEquals value: V) -> Self {
+        let fieldName = extractFieldName(from: keyPath)
+        filters.append { record in
+            // Match string-based semantics: missing field returns false (not "not equal")
+            guard let fieldValue = record.storage[fieldName] else { return false }
+
+            if let v = value as? String, let recordValue = fieldValue.stringValue {
+                return recordValue != v
+            } else if let v = value as? Int, let recordValue = fieldValue.intValue {
+                return recordValue != v
+            } else if let v = value as? Bool, let recordValue = fieldValue.boolValue {
+                return recordValue != v
+            } else if let v = value as? Double, let recordValue = fieldValue.doubleValue {
+                return recordValue != v
+            } else if let v = value as? UUID, let recordValue = fieldValue.uuidValue {
+                return recordValue != v
+            }
+
+            return false
+        }
+        return self
+    }
+
+    /// Filter by KeyPath (greater than or equal)
+    @discardableResult
+    public func `where`<V: Comparable>(_ keyPath: KeyPath<T, V>, greaterThanOrEqual value: V) -> Self {
+        let fieldName = extractFieldName(from: keyPath)
+        filters.append { record in
+            guard let fieldValue = record.storage[fieldName] else { return false }
+
+            if let v = value as? Int, let recordValue = fieldValue.intValue {
+                return recordValue >= v
+            } else if let v = value as? Double, let recordValue = fieldValue.doubleValue {
+                return recordValue >= v
+            } else if let v = value as? Date, let recordValue = fieldValue.dateValue {
+                return recordValue >= v
+            }
+
+            return false
+        }
+        return self
+    }
+
+    /// Filter by KeyPath (less than or equal)
+    @discardableResult
+    public func `where`<V: Comparable>(_ keyPath: KeyPath<T, V>, lessThanOrEqual value: V) -> Self {
+        let fieldName = extractFieldName(from: keyPath)
+        filters.append { record in
+            guard let fieldValue = record.storage[fieldName] else { return false }
+
+            if let v = value as? Int, let recordValue = fieldValue.intValue {
+                return recordValue <= v
+            } else if let v = value as? Double, let recordValue = fieldValue.doubleValue {
+                return recordValue <= v
+            } else if let v = value as? Date, let recordValue = fieldValue.dateValue {
+                return recordValue <= v
+            }
+
+            return false
+        }
+        return self
+    }
+
+    /// Filter by KeyPath (string contains)
+    @discardableResult
+    public func `where`(_ keyPath: KeyPath<T, String>, contains substring: String) -> Self {
+        let fieldName = extractFieldName(from: keyPath)
+        filters.append { record in
+            guard let stringValue = record.storage[fieldName]?.stringValue else { return false }
+            return stringValue.contains(substring)
+        }
+        return self
+    }
+
+    /// Filter by KeyPath (string optional contains)
+    @discardableResult
+    public func `where`(_ keyPath: KeyPath<T, String?>, contains substring: String) -> Self {
+        let fieldName = extractFieldName(from: keyPath)
+        filters.append { record in
+            guard let stringValue = record.storage[fieldName]?.stringValue else { return false }
+            return stringValue.contains(substring)
+        }
+        return self
+    }
+
+    /// Filter by KeyPath (value in array)
+    @discardableResult
+    public func `where`<V: Equatable>(_ keyPath: KeyPath<T, V>, in values: [V]) -> Self {
+        let fieldName = extractFieldName(from: keyPath)
+        filters.append { record in
+            guard let fieldValue = record.storage[fieldName] else { return false }
+
+            for v in values {
+                if let s = v as? String, fieldValue.stringValue == s { return true }
+                if let i = v as? Int, fieldValue.intValue == i { return true }
+                if let b = v as? Bool, fieldValue.boolValue == b { return true }
+                if let d = v as? Double, fieldValue.doubleValue == d { return true }
+                if let u = v as? UUID, fieldValue.uuidValue == u { return true }
+            }
+            return false
+        }
+        return self
+    }
+
+    /// Filter records where field is nil (key absent from storage)
+    @discardableResult
+    public func whereNil<V>(_ keyPath: KeyPath<T, V?>) -> Self {
+        let fieldName = extractFieldName(from: keyPath)
+        // Match string-based semantics: checks key absence, not .null value
+        filters.append { record in
+            record.storage[fieldName] == nil
+        }
+        return self
+    }
+
+    /// Filter records where field is not nil (key present in storage)
+    @discardableResult
+    public func whereNotNil<V>(_ keyPath: KeyPath<T, V?>) -> Self {
+        let fieldName = extractFieldName(from: keyPath)
+        filters.append { record in
+            record.storage[fieldName] != nil
+        }
+        return self
+    }
+
     /// Filter by custom predicate on typed object
     @discardableResult
     public func filter(_ predicate: @escaping (T) -> Bool) -> Self {
@@ -207,7 +334,7 @@ public class TypeSafeQueryBuilder<T: BlazeStorable> {
     
     private func extractFieldName<V>(from keyPath: KeyPath<T, V>) -> String {
         // Use Mirror to extract property name from KeyPath
-        let mirror = Mirror(reflecting: keyPath)
+        _ = Mirror(reflecting: keyPath)  // Mirror introspection (kept for potential future use)
         
         // Try to get the field name from the KeyPath
         // This is a best-effort approach

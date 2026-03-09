@@ -28,8 +28,8 @@ struct SyncExample_SameApp {
         let db1URL = tempDir.appendingPathComponent("database1.blazedb")
         let db2URL = tempDir.appendingPathComponent("database2.blazedb")
         
-        let db1 = try BlazeDBClient(name: "Database1", fileURL: db1URL, password: "test123")
-        let db2 = try BlazeDBClient(name: "Database2", fileURL: db2URL, password: "test123")
+        let db1 = try BlazeDBClient.open(at: db1URL, password: "TestPass123!")
+        let db2 = try BlazeDBClient.open(at: db2URL, password: "TestPass123!")
         print("✅ Created Database1 and Database2")
         
         // Step 2: Register databases in topology

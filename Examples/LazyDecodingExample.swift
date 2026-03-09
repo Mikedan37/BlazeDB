@@ -12,7 +12,7 @@ import BlazeDB
 
 /// Example: Lazy decoding with field projection
 func lazyDecodingExample() throws {
-    let db = try BlazeDBClient(name: "LazyDecoding", password: "test123")
+    let db = try BlazeDBClient.open(named: "LazyDecoding", password: "TestPass123!")
     
     // Enable lazy decoding
     try db.enableLazyDecoding()
@@ -54,7 +54,7 @@ func lazyDecodingExample() throws {
 
 /// Example: Performance comparison
 func lazyDecodingPerformanceExample() throws {
-    let db = try BlazeDBClient(name: "LazyPerformance", password: "test123")
+    let db = try BlazeDBClient.open(named: "LazyPerformance", password: "TestPass123!")
     
     // Insert 10k records with large fields
     let largeData = Data(repeating: 0xFF, count: 100_000)  // 100KB per record

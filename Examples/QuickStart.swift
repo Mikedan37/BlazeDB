@@ -16,7 +16,7 @@ func quickStartExample() throws {
     
     // 1. Open database (or create if doesn't exist)
     print("1. Opening database...")
-    let db = try BlazeDB.openOrCreate(name: "quickstart", password: "demo-password-123")
+    let db = try BlazeDBClient.open(named: "quickstart", password: "demo-password-123")
     print("   Database opened: \(db.fileURL.path)\n")
     
     // 2. Insert records
@@ -90,7 +90,7 @@ func quickStartExample() throws {
     
     // 9. Restore to new database
     print("9. Restoring to new database...")
-    let restoredDB = try BlazeDB.openTemporary(name: "restored", password: "demo-password-123")
+    let restoredDB = try BlazeDBClient.openForTesting()
     try BlazeDBImporter.restore(from: dumpURL, to: restoredDB, allowSchemaMismatch: false)
     
     let restoredCount = restoredDB.getRecordCount()

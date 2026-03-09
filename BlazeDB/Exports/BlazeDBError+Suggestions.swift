@@ -90,6 +90,14 @@ extension BlazeDBError {
             msg += "."
             msg += "\n💡 Suggestion: Close other instances of the database and try again."
             return msg
+
+        case .concurrentProcessAccessNotSupported(let operation, let path):
+            var msg = "Concurrent process access is not supported (single-process only). Operation: \(operation)."
+            if let path = path {
+                msg += " Path: \(path.path)."
+            }
+            msg += "\n💡 Suggestion: Close the other process or handle holding this database and try again."
+            return msg
             
         case .diskFull(let available):
             var msg = "Disk is full or nearly full."

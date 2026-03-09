@@ -59,7 +59,7 @@ func codableExample() throws {
     let fileURL = FileManager.default.temporaryDirectory
         .appendingPathComponent("codable-example.blazedb")
     
-    guard let db = BlazeDBClient(name: "CodableDemo", at: fileURL, password: "password-123") else {
+    guard let db = try? BlazeDBClient.open(at: fileURL, password: "password-123") else {
         print("❌ Failed to initialize database")
         return
     }

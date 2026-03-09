@@ -6,22 +6,28 @@ import Foundation
 
 // MARK: - Query Explain
 
-/// Detailed query execution plan (explain output)
+/// Query execution plan with step estimates.
+///
+/// **Note:** `candidateIndexes` lists indexes that *exist* on queried fields but does not
+/// guarantee the engine uses them at execution time. The current execution path performs
+/// a full table scan followed by in-memory filtering regardless of indexes.
 public struct DetailedQueryPlan: CustomStringConvertible {
     public let steps: [QueryStep]
     public let estimatedRecords: Int
-    public let usesIndexes: [String]
+    /// Indexes that exist on fields referenced in this query's filters.
+    /// These are *candidates* — the engine may or may not use them at execution time.
+    public let candidateIndexes: [String]
     public let estimatedTime: TimeInterval
     public let warnings: [String]
-    
+
     public var description: String {
         var output = "Query Execution Plan:\n"
         output += "  Estimated records: \(estimatedRecords)\n"
-        
-        if !usesIndexes.isEmpty {
-            output += "  Using indexes: \(usesIndexes.joined(separator: ", "))\n"
+
+        if !candidateIndexes.isEmpty {
+            output += "  Candidate indexes: \(candidateIndexes.joined(separator: ", "))\n"
         } else {
-            output += "  ⚠️  No indexes used (full table scan)\n"
+            output += "  No candidate indexes (full table scan)\n"
         }
         
         output += "  Estimated time: \(String(format: "%.2f", estimatedTime * 1000))ms\n"
@@ -88,13 +94,13 @@ extension QueryBuilder {
     /// - Returns: Detailed query plan with estimates
     public func explain() throws -> DetailedQueryPlan {
         guard let collection = collection else {
-            throw BlazeDBError.transactionFailed("Collection has been deallocated")
+            throw BlazeDBError.invalidData(reason: "Query builder's collection has been deallocated. Recreate the query from a live database.")
         }
         
         var steps: [QueryStep] = []
         var estimatedRecords = collection.count()
         var estimatedTime: TimeInterval = 0
-        var usesIndexes: [String] = []
+        let candidateIndexes: [String] = []
         var warnings: [String] = []
         
         BlazeLogger.info("Generating query execution plan")
@@ -215,39 +221,43 @@ extension QueryBuilder {
         return DetailedQueryPlan(
             steps: steps,
             estimatedRecords: estimatedRecords,
-            usesIndexes: usesIndexes,
+            candidateIndexes: candidateIndexes,
             estimatedTime: estimatedTime,
             warnings: warnings
         )
     }
     
     /// Print query plan to console (convenience)
+    @available(*, deprecated, message: "Use explain() instead, which returns a DetailedQueryPlan you can inspect programmatically.")
     public func explainQuery() throws {
         let plan = try explain()
         print(plan.description)
     }
 }
 
-// MARK: - Index Hints
+// MARK: - Index Hints (Stubs)
 
 extension QueryBuilder {
-    /// Hint to use specific index
-    /// - Parameter indexName: Name of the index to use
+    /// Hint to prefer a specific index during execution.
+    ///
+    /// **Status:** Stub — this method logs the hint but does not influence query execution.
+    /// The engine currently performs full table scans with in-memory filtering.
+    /// - Parameter indexName: Name of the index to prefer
     /// - Returns: QueryBuilder for chaining
     @discardableResult
     public func useIndex(_ indexName: String) -> QueryBuilder {
-        BlazeLogger.debug("Query hint: USE INDEX '\(indexName)'")
-        // Note: Actual index usage would require integration with DynamicCollection
-        // For now, this is a hint for future optimization
+        BlazeLogger.debug("Query hint: USE INDEX '\(indexName)' (not yet implemented)")
         return self
     }
-    
-    /// Force full table scan (ignore all indexes)
+
+    /// Hint to skip indexes and force a full table scan.
+    ///
+    /// **Status:** Stub — this method logs the hint but does not influence query execution.
+    /// The engine currently always performs full table scans.
     /// - Returns: QueryBuilder for chaining
     @discardableResult
     public func forceTableScan() -> QueryBuilder {
-        BlazeLogger.debug("Query hint: FORCE TABLE SCAN")
-        // Note: Actual implementation would bypass index lookups
+        BlazeLogger.debug("Query hint: FORCE TABLE SCAN (not yet implemented)")
         return self
     }
 }

@@ -114,17 +114,21 @@ public class ConflictResolver {
             // Custom merge logic
             // currentRecord = what's in DB now
             // yourRecord = what you're trying to write
-            let currentVersion = versionManager.getVersion(
+            guard let currentVersion = versionManager.getVersion(
                 recordID: conflict.recordID,
                 snapshot: .max
-            )!
+            ) else {
+                // Record was deleted during conflict resolution - use your record
+                BlazeLogger.warn("ConflictResolution: Current version not found for record \(conflict.recordID), using your record")
+                return yourRecord
+            }
             let yourVersion = RecordVersion(
                 recordID: conflict.recordID,
                 version: conflict.yourVersion,
                 pageNumber: 0,  // Placeholder
                 createdByTransaction: conflict.yourVersion
             )
-            let resolved = try handler(yourVersion, currentVersion)
+            _ = try handler(yourVersion, currentVersion)
             
             // Return the merged record (custom logic decides)
             return yourRecord  // Simplified for now
@@ -185,7 +189,7 @@ public class RetryableTransaction {
                     let backoffMs = min(100 * (1 << attempt), 1000)
                     Thread.sleep(forTimeInterval: Double(backoffMs) / 1000.0)
                     
-                    print("⚠️ Transaction conflict, retrying... (attempt \(attempt)/\(maxRetries))")
+                    BlazeLogger.warn("Transaction conflict, retrying... (attempt \(attempt)/\(maxRetries))")
                     continue
                 }
                 

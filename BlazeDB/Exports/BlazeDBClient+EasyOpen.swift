@@ -10,30 +10,62 @@ import Foundation
 
 extension BlazeDBClient {
     
-    /// Open database with default settings (zero configuration)
+    // MARK: - Primary API (Use This)
+
+    /// Open a database by name.
     ///
-    /// This is the simplest way to use BlazeDB. It provides:
-    /// - Safe default data directory (platform-specific)
-    /// - Encryption enabled by default
-    /// - Automatic directory creation
-    /// - Zero configuration required
+    /// BlazeDB always encrypts data. You must provide a password.
     ///
-    /// - Parameters:
-    ///   - name: Database name (used as filename)
-    ///   - password: Encryption password (required for security)
-    /// - Returns: Configured BlazeDB client
-    /// - Throws: Error if database cannot be opened
-    ///
-    /// ## Example
     /// ```swift
-    /// // Simplest possible usage
-    /// let db = try BlazeDB.openDefault(name: "mydb", password: "secure-password")
-    /// try db.insert(BlazeDataRecord(["name": .string("Alice")]))
+    /// let db = try BlazeDBClient.open(named: "myapp", password: "my-secure-password-123")
     /// ```
     ///
-    /// ## Platform Defaults
-    /// - **macOS:** ~/Library/Application Support/BlazeDB/{name}.blazedb
-    /// - **Linux:** ~/.local/share/blazedb/{name}.blazedb
+    /// - Parameters:
+    ///   - name: Database name (becomes the filename)
+    ///   - password: Encryption password (required, minimum 8 characters)
+    /// - Returns: Ready-to-use database client
+    ///
+    /// Database is stored in the platform default location:
+    /// - macOS: `~/Library/Application Support/BlazeDB/`
+    /// - Linux: `~/.local/share/blazedb/`
+    public static func open(
+        named name: String,
+        password: String
+    ) throws -> BlazeDBClient {
+        let baseDirectory = try PathResolver.defaultDatabaseDirectory()
+        let dbURL = baseDirectory.appendingPathComponent("\(name).blazedb")
+        try PathResolver.validateDatabasePath(dbURL)
+        return try BlazeDBClient(name: name, fileURL: dbURL, password: password)
+    }
+
+    /// Open a database at a specific file URL.
+    ///
+    /// Opens or creates an encrypted database at the given location.
+    ///
+    /// ```swift
+    /// let url = URL(fileURLWithPath: "/path/to/my.blazedb")
+    /// let db = try BlazeDBClient.open(at: url, password: "my-secure-password-123")
+    /// ```
+    ///
+    /// - Parameters:
+    ///   - url: File URL for the database
+    ///   - password: Encryption password (required, minimum 8 characters)
+    /// - Returns: Ready-to-use database client
+    public static func open(
+        at url: URL,
+        password: String
+    ) throws -> BlazeDBClient {
+        try PathResolver.validateDatabasePath(url)
+        let name = url.deletingPathExtension().lastPathComponent
+        return try BlazeDBClient(name: name, fileURL: url, password: password)
+    }
+
+    // MARK: - Legacy API (Still Supported)
+
+    /// Open database with explicit password.
+    ///
+    /// Use `open(named:password:)` instead for new code.
+    @available(*, deprecated, message: "Use open(named:password:). Behavior is identical.")
     public static func openDefault(
         name: String,
         password: String
@@ -68,6 +100,7 @@ extension BlazeDBClient {
     /// // Custom path
     /// let db = try BlazeDB.open(name: "mydb", path: "./data/mydb.blazedb", password: "secure-password")
     /// ```
+    @available(*, deprecated, message: "Use open(at:password:) for custom paths.")
     public static func open(
         name: String,
         path: String,
@@ -105,6 +138,7 @@ extension BlazeDBClient {
     /// // CLI tool
     /// let db = try BlazeDB.openForCLI(name: "mytool", password: "secure-password")
     /// ```
+    @available(*, deprecated, message: "Use open(named:password:) for production, openForTesting() for tests.")
     public static func openForCLI(
         name: String,
         password: String
@@ -136,6 +170,7 @@ extension BlazeDBClient {
     /// // Server application
     /// let db = try BlazeDB.openForDaemon(name: "myserver", password: "secure-password")
     /// ```
+    @available(*, deprecated, message: "Use open(named:password:) for production, openForTesting() for tests.")
     public static func openForDaemon(
         name: String,
         password: String
