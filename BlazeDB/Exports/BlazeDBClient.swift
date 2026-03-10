@@ -824,10 +824,18 @@ public final class BlazeDBClient: @unchecked Sendable {
             BlazeLogger.debug("Upsert: Updated existing record \(id)")
             return false
         } catch BlazeDBError.recordNotFound {
-            // Record doesn't exist - insert it
-            try insert(data, id: id)
-            BlazeLogger.debug("Upsert: Inserted new record \(id)")
-            return true
+            // Record doesn't exist - try insert
+            do {
+                try insert(data, id: id)
+                BlazeLogger.debug("Upsert: Inserted new record \(id)")
+                return true
+            } catch BlazeDBError.recordExists {
+                // TOCTOU race: another thread inserted between our fetch and insert.
+                // Retry as update.
+                try update(id: id, with: data)
+                BlazeLogger.debug("Upsert: Updated record \(id) after insert race")
+                return false
+            }
         }
     }
 
