@@ -65,8 +65,8 @@ extension SecurityPolicy {
         return SecurityPolicy(
             name: "user_owns_record",
             operation: .all,
-            type: .restrictive,
-            description: "User can only access their own records"
+            type: .permissive,
+            description: "User can access their own records"
         ) { context, record in
             guard let recordUserID = record.storage[userIDField]?.uuidValue else {
                 return false  // No userId field = deny
@@ -80,7 +80,7 @@ extension SecurityPolicy {
         return SecurityPolicy(
             name: "user_in_team",
             operation: .all,
-            type: .restrictive,
+            type: .permissive,
             description: "User can access records from their teams"
         ) { context, record in
             guard let recordTeamID = record.storage[teamIDField]?.uuidValue else {
@@ -103,12 +103,28 @@ extension SecurityPolicy {
     }
     
     /// Policy: Read-only for viewers
+    ///
+    /// Grants select access and denies insert/update/delete for users with the viewer role.
+    /// Uses `.all` operation so it applies to every operation type, returning true only for selects.
     internal static func viewerReadOnly(viewerRole: String = "viewer") -> SecurityPolicy {
         return SecurityPolicy(
             name: "viewer_read_only",
+            operation: .all,
+            type: .restrictive,
+            description: "Viewers can read but not modify"
+        ) { context, _ in
+            guard context.hasRole(viewerRole) else { return true }  // Non-viewers: don't restrict
+            return false  // Viewers: deny by default (overridden by permissive select policy below)
+        }
+    }
+
+    /// Policy: Viewers can select (companion to viewerReadOnly restrictive policy)
+    internal static func viewerCanSelect(viewerRole: String = "viewer") -> SecurityPolicy {
+        return SecurityPolicy(
+            name: "viewer_can_select",
             operation: .select,
             type: .permissive,
-            description: "Viewers can read but not modify"
+            description: "Viewers can read"
         ) { context, _ in
             return context.hasRole(viewerRole)
         }

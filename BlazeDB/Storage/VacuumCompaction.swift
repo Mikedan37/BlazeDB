@@ -132,9 +132,16 @@ extension BlazeDBClient {
         
         return try collection.queue.sync(flags: .barrier) {
             BlazeLogger.info("🗑️ VACUUM: Starting CRASH-SAFE database compaction...")
-            
+
             let startTime = Date()
-            
+
+            // Flush in-memory state to disk before measuring / copying.
+            // Without this, the .blazedb file may not exist yet if records
+            // are still only in the WAL or in-memory cache.
+            // We're already inside queue.sync(.barrier), so call store/layout directly.
+            try collection.store.synchronize()
+            try collection.saveLayout()
+
             // CRASH SAFETY: Write VACUUM intent log
             let vacuumLogURL = collection.store.fileURL
                 .deletingPathExtension()
