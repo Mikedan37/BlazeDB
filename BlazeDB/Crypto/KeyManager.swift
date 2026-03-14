@@ -91,50 +91,27 @@ public final class KeyManager {
 
     #if canImport(Security) && (os(macOS) || os(iOS) || os(watchOS) || os(tvOS))
     private static func loadSecureEnclaveKey(label: String, createIfMissing: Bool) throws -> SymmetricKey {
-        let access = SecAccessControlCreateWithFlags(nil,
-                                                      kSecAttrAccessibleWhenUnlockedThisDeviceOnly,
-                                                      .privateKeyUsage,
-                                                      nil)
+        guard SecureEnclaveKeyManager.isAvailable() else {
+            throw KeyManagerError.secureEnclaveUnavailable
+        }
 
-        let query: [String: Any] = [
-            kSecClass as String: kSecClassKey,
-            kSecAttrApplicationTag as String: label,
-            kSecAttrKeyType as String: kSecAttrKeyTypeECSECPrimeRandom,
-            kSecReturnRef as String: true,
-            kSecMatchLimit as String: kSecMatchLimitOne
-        ]
+        let manager = try SecureEnclaveKeyManager(
+            keyTag: label,
+            requireBiometry: false,
+            requireDeviceUnlock: true
+        )
 
-        var item: CFTypeRef?
-        let status = SecItemCopyMatching(query as CFDictionary, &item)
-
-        if status == errSecSuccess, let privateKey = item {
-            let dummyKey = SymmetricKey(size: .bits256)
-            return dummyKey
+        if let existing = try manager.retrieveKey() {
+            return existing
         }
 
         guard createIfMissing else {
             throw KeyManagerError.keychainError
         }
 
-        let attributes: [String: Any] = [
-            kSecAttrKeyType as String: kSecAttrKeyTypeECSECPrimeRandom,
-            kSecAttrKeySizeInBits as String: 256,
-            kSecAttrTokenID as String: kSecAttrTokenIDSecureEnclave,
-            kSecAttrLabel as String: label,
-            kSecAttrIsPermanent as String: true,
-            kSecPrivateKeyAttrs as String: [
-                kSecAttrAccessControl as String: access as Any,
-                kSecAttrApplicationTag as String: label
-            ]
-        ]
-
-        var error: Unmanaged<CFError>?
-        guard let privateKey = SecKeyCreateRandomKey(attributes as CFDictionary, &error) else {
-            throw KeyManagerError.secureEnclaveUnavailable
-        }
-
-        let dummyKey = SymmetricKey(size: .bits256)
-        return dummyKey
+        let newKey = SymmetricKey(size: .bits256)
+        try manager.storeKey(newKey)
+        return newKey
     }
     #else
     private static func loadSecureEnclaveKey(label: String, createIfMissing: Bool) throws -> SymmetricKey {
