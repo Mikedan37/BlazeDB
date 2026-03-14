@@ -666,93 +666,86 @@ public final class PageStore: @unchecked Sendable {
         try fileHandle.compatSynchronize()
         BlazeLogger.trace("✅ Page \(index) encrypted and flushed to disk")
     }
-    
-    // Write without fsyncing (for batch operations)
-    internal func _writePageLockedUnsynchronized(index: Int, plaintext: Data) throws {
-        // Invalidate cache on write
-        pageCache.remove(index)
-        BlazeLogger.trace("Writing encrypted page at index \(index) with size \(plaintext.count)")
-        
+
+    /// Encrypt plaintext into a full page-size buffer ready for WAL or pwrite.
+    /// Does NOT write to disk or WAL — caller is responsible for both.
+    /// Must be called under barrier on `queue`.
+    internal func _encryptPageBuffer(plaintext: Data) throws -> Data {
         var buffer = Data()
         guard let magicBytes = "BZDB".data(using: .utf8) else {
             throw NSError(domain: "PageStore", code: -1, userInfo: [
                 NSLocalizedDescriptionKey: "Failed to encode page header magic"
             ])
         }
-        buffer.append(magicBytes)  // 4 bytes: header magic
+        buffer.append(magicBytes)
 
         #if BLAZEDB_BENCHMARK_NO_ENCRYPTION
-        // Benchmark-only plaintext mode (compile-time gated).
         let totalSize = 9 + plaintext.count
         guard totalSize <= pageSize else {
             throw NSError(domain: "PageStore", code: 1, userInfo: [
                 NSLocalizedDescriptionKey: "Page too large (max: \(pageSize - 9) bytes for plaintext benchmark mode)"
             ])
         }
-        buffer.append(0x01) // version 0x01 = plaintext
+        buffer.append(0x01)
         var length = UInt32(plaintext.count).bigEndian
         buffer.append(Data(bytes: &length, count: 4))
         buffer.append(contentsOf: plaintext)
         #else
-        // ✅ ENCRYPT DATA with AES-GCM-256
-        // Generate random nonce (12 bytes)
         let nonce = AES.GCM.Nonce()
-
-        // Encrypt plaintext
         let sealedBox = try AES.GCM.seal(plaintext, using: key, nonce: nonce)
-
-        // Extract ciphertext and tag
         let ciphertext = sealedBox.ciphertext
         let tag = sealedBox.tag
 
-        // Calculate total size: header(4) + version(1) + length(4) + nonce(12) + tag(16) + ciphertext
         let totalSize = 9 + 12 + 16 + ciphertext.count
         guard totalSize <= pageSize else {
             throw NSError(domain: "PageStore", code: 1, userInfo: [
                 NSLocalizedDescriptionKey: "Page too large (max: \(pageSize - 37) bytes for encrypted data)"
             ])
         }
-        // Build encrypted page format:
-        // [BZDB][0x02][length][nonce][tag][ciphertext][padding]
-        buffer.append(0x02) // version 0x02 = encrypted
-
-        // 4 bytes: original plaintext length (UInt32, big-endian)
+        buffer.append(0x02)
         var length = UInt32(plaintext.count).bigEndian
         buffer.append(Data(bytes: &length, count: 4))
-
-        // Encryption components
-        buffer.append(contentsOf: nonce)      // 12 bytes: nonce (IV)
-        buffer.append(contentsOf: tag)        // 16 bytes: authentication tag
-        buffer.append(contentsOf: ciphertext) // Variable: encrypted data
+        buffer.append(contentsOf: nonce)
+        buffer.append(contentsOf: tag)
+        buffer.append(contentsOf: ciphertext)
         #endif
 
-        // Pad with zeros to reach pageSize
         if buffer.count < pageSize {
             buffer.append(Data(repeating: 0, count: pageSize - buffer.count))
         }
 
+        return buffer
+    }
+
+    /// pwrite an already-encrypted page buffer to the main file. No WAL, no fsync.
+    /// Must be called under barrier on `queue`.
+    internal func _writeEncryptedBuffer(index: Int, buffer: Data) throws {
+        pageCache.remove(index)
+        let offset = off_t(index * pageSize)
+        try atomicWrite(offset: offset, data: buffer)
+    }
+
+    // Write without fsyncing (for batch operations)
+    internal func _writePageLockedUnsynchronized(index: Int, plaintext: Data) throws {
+        pageCache.remove(index)
+        BlazeLogger.trace("Writing encrypted page at index \(index) with size \(plaintext.count)")
+
+        let buffer = try _encryptPageBuffer(plaintext: plaintext)
+
         // 📜 WAL: Append to Write-Ahead Log BEFORE writing to main file
-        // This ensures crash safety - if we crash after WAL append but before main write,
-        // the WAL replay on next open will complete the write
         if let wal = wal {
             try wal.append(pageIndex: index, data: buffer)
         } else if let dm = durabilityManager {
             // Unified mode: standalone write (not inside a transaction).
             // Wrap in an auto-transaction so recovery sees a commit record.
-            // The appendCommit call fsyncs the WAL.
             let autoTxID = UUID()
             try dm.appendBegin(transactionID: autoTxID)
             try dm.appendWrite(transactionID: autoTxID, pageIndex: UInt32(index), data: buffer)
             try dm.appendCommit(transactionID: autoTxID)
         }
-        
-        // Write encrypted page to disk (NO fsync yet!)
+
         let offset = off_t(index * pageSize)
-        #if BLAZEDB_BENCHMARK_NO_ENCRYPTION
-        BlazeLogger.trace("Writing plaintext benchmark page at byte offset \(offset)")
-        #else
-        BlazeLogger.trace("Writing encrypted at byte offset \(offset) (nonce: \(nonce.withUnsafeBytes { Data($0).prefix(4).map { String(format: "%02x", $0) }.joined() })...)")
-        #endif
+        BlazeLogger.trace("Writing page at byte offset \(offset)")
         try atomicWrite(offset: offset, data: buffer)
     }
 

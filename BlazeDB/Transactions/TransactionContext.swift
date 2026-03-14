@@ -5,27 +5,30 @@ import Foundation
 
 final class TransactionContext {
     private var log = TransactionLog()
-    private var stagedPages: [Int: Data] = [:] // New: read/write cache
-    private var baselinePages: [Int: Data] = [:] // 🔄 Baseline state for rollback
-    private let store: PageStore
+    private var stagedPages: [Int: Data] = [:]
+    private var baselinePages: [Int: Data] = [:]
+    internal let store: PageStore
+    private let unified: Bool
 
     init(store: PageStore) {
         self.store = store
+        self.unified = store.walMode == .unified
     }
 
     func write(pageID: Int, data: Data) {
-        // Save baseline before first write to this page
-        if baselinePages[pageID] == nil {
+        // Save baseline before first write (needed for legacy rollback)
+        if !unified && baselinePages[pageID] == nil {
             if let existing = try? store.readPage(index: pageID) {
                 baselinePages[pageID] = existing
             } else {
-                // Page doesn't exist yet - mark as "new" with empty data
                 baselinePages[pageID] = Data()
             }
         }
-        
+
         stagedPages[pageID] = data
-        log.recordWrite(pageID: pageID, data: data)
+        if !unified {
+            log.recordWrite(pageID: pageID, data: data)
+        }
     }
 
     func read(pageID: Int) throws -> Data {
@@ -40,39 +43,45 @@ final class TransactionContext {
     }
 
     func delete(pageID: Int) {
-        // Save baseline before delete
-        if baselinePages[pageID] == nil {
+        if !unified && baselinePages[pageID] == nil {
             if let existing = try? store.readPage(index: pageID) {
                 baselinePages[pageID] = existing
             } else {
                 baselinePages[pageID] = Data()
             }
         }
-        
+
         stagedPages[pageID] = Data()
-        log.recordDelete(pageID: pageID)
+        if !unified {
+            log.recordDelete(pageID: pageID)
+        }
     }
 
-    func commit() throws {
+    /// Legacy commit: flush staged writes through TransactionLog to PageStore.
+    func commitLegacy() throws {
         try log.flush(to: store)
         stagedPages.removeAll()
         baselinePages.removeAll()
     }
 
-    func rollback() {
-        guard !stagedPages.isEmpty else {
-            return
-        }
+    /// Unified commit: returns staged pages for the caller (BlazeTransaction) to
+    /// handle WAL-then-pwrite ordering. Does NOT write to disk.
+    func commitUnified() -> [Int: Data] {
+        let pages = stagedPages
+        stagedPages.removeAll()
+        return pages
+    }
 
-        // Restore baseline state for all modified pages
+    /// Legacy rollback: restores baseline pages.
+    func rollbackLegacy() {
+        guard !stagedPages.isEmpty else { return }
+
         for (pageID, _) in stagedPages {
             if let baseline = baselinePages[pageID] {
                 do {
                     if baseline.isEmpty {
-                        // Page was new - delete it
                         try store.deletePage(index: pageID)
                     } else {
-                        // Page existed - restore original data
                         try store.writePage(index: pageID, plaintext: baseline)
                     }
                 } catch {
@@ -86,6 +95,13 @@ final class TransactionContext {
         stagedPages.removeAll()
         baselinePages.removeAll()
     }
+
+    /// Unified rollback: discard staged pages. No disk writes needed because
+    /// pages were never written to the main file in unified mode.
+    func rollbackUnified() {
+        stagedPages.removeAll()
+    }
+
     #if DEBUG
     func flushStagedWritesForTesting() throws {
         BlazeLogger.debug("Flushing staged writes manually (for testing)")
