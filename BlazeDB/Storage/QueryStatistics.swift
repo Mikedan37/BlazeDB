@@ -4,9 +4,6 @@
 //
 //  Statistics collection for query planner
 //
-//  Created by Auto on 1/XX/25.
-//
-
 import Foundation
 
 /// Field statistics for cost-based optimization

@@ -131,8 +131,8 @@ extension BlazeDBClient {
                     for record in allRecords {
                         guard let id = record.storage["id"]?.uuidValue else { continue }
                         
-                        // Encode record
-                        let encoded = try JSONEncoder().encode(record.storage)
+                        // Encode record using canonical BlazeBinary format
+                        let encoded = try BlazeBinaryEncoder.encode(record)
                         
                         // Write to new file
                         try compactedStore.writePage(index: newPageIndex, plaintext: encoded)

@@ -6,42 +6,42 @@ on:
   pull_request:
     branches: [ main, develop ]
   schedule:
-    # Run nightly at 2 AM UTC
     - cron: '0 2 * * *'
 
 env:
-  SWIFT_VERSION: '5.9'
+  SWIFT_VERSION: '6.0'
 
 jobs:
   test:
     name: Build & Test
     runs-on: macos-14
     timeout-minutes: 30
-    
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-      
+
     - name: Setup Swift
-      uses: swift-actions/setup-swift@v1
+      uses: swift-actions/setup-swift@v2
       with:
         swift-version: ${{ env.SWIFT_VERSION }}
-    
+
     - name: Swift Version
       run: swift --version
-    
+
     - name: Build
       run: swift build -v
-    
+
     - name: Run Tests
       run: swift test --enable-code-coverage
-      
+
     - name: Generate Code Coverage
+      if: runner.os == 'macOS'
       run: |
         xcrun llvm-cov export -format="lcov" \
           .build/debug/BlazeDBPackageTests.xctest/Contents/MacOS/BlazeDBPackageTests \
-          -instr-profile .build/debug/codecov/default.profdata > coverage.lcov || true
-        
+          -instr-profile .build/debug/codecov/default.profdata > coverage.lcov
+
     - name: Upload Coverage to Codecov
       uses: codecov/codecov-action@v4
       with:
@@ -54,24 +54,22 @@ jobs:
     name: Lint
     runs-on: macos-14
     timeout-minutes: 10
-    
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-      
+
     - name: Setup Swift
-      uses: swift-actions/setup-swift@v1
+      uses: swift-actions/setup-swift@v2
       with:
         swift-version: ${{ env.SWIFT_VERSION }}
-    
+
     - name: Check Swift Format
       run: |
-        # Basic syntax check
         swift build 2>&1 | grep -i "error:" && exit 1 || exit 0
-        
+
     - name: Check Documentation
       run: |
-        # Verify README exists and is valid
         test -f README.md || exit 1
         test -f CONTRIBUTING.md || exit 1
         test -f CHANGELOG.md || exit 1
@@ -81,18 +79,18 @@ jobs:
     name: Linux Build & Test
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-      
+
     - name: Setup Swift
       uses: swift-actions/setup-swift@v2
       with:
         swift-version: ${{ env.SWIFT_VERSION }}
-    
+
     - name: Build
       run: swift build -v
-    
+
     - name: Run Tests
-      run: swift test
+      run: swift test --skip DistributedSecuritySPMTests

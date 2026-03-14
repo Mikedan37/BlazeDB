@@ -23,7 +23,8 @@
       "containerPath" : "container:BlazeDB.xcodeproj",
       "identifier" : "BlazeDB",
       "name" : "BlazeDB"
-    }
+    },
+    "testPlanDescription" : "Runs all tests via BlazeDBTests. For tiered testing, use SPM: swift test --filter BlazeDB_Tier0"
   },
   "testTargets" : [
     {
@@ -32,30 +33,6 @@
         "containerPath" : "container:BlazeDB.xcodeproj",
         "identifier" : "BlazeDBTests",
         "name" : "BlazeDBTests"
-      }
-    },
-    {
-      "parallelizable" : true,
-      "target" : {
-        "containerPath" : "container:BlazeDB.xcodeproj",
-        "identifier" : "BlazeDBTier1Tests",
-        "name" : "BlazeDBTier1Tests"
-      }
-    },
-    {
-      "parallelizable" : true,
-      "target" : {
-        "containerPath" : "container:BlazeDB.xcodeproj",
-        "identifier" : "BlazeDBTier2Tests",
-        "name" : "BlazeDBTier2Tests"
-      }
-    },
-    {
-      "parallelizable" : true,
-      "target" : {
-        "containerPath" : "container:BlazeDB.xcodeproj",
-        "identifier" : "BlazeDBTier3HeavyTests",
-        "name" : "BlazeDBTier3HeavyTests"
       }
     }
   ],

@@ -4,9 +4,6 @@
 //
 //  Protocol-based RLS policy system (optional convenience layer)
 //  Wraps existing SecurityPolicy system with type-safe protocol
-//  Created by Auto on 1/XX/25.
-//
-
 import Foundation
 
 /// Protocol for defining type-safe RLS policies

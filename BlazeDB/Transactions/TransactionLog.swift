@@ -2,6 +2,11 @@
 //  BlazeDB
 //  Created by Michael Danylchuk on 6/16/25.
 import Foundation
+#if canImport(Darwin)
+import Darwin
+#elseif canImport(Glibc)
+import Glibc
+#endif
 
 struct TransactionLog {
     // Durable Write-Ahead Journal Implementation
@@ -134,9 +139,30 @@ struct TransactionLog {
         }
         defer { try? fh.close() }
         try fh.seekToEnd()
-        try fh.write(contentsOf: data)
-        try fh.write(contentsOf: Data([0x0a]))
-        try fh.synchronize()
+        do {
+            try fh.write(contentsOf: data)
+            try fh.write(contentsOf: Data([0x0a]))
+            try fh.synchronize()
+        } catch {
+            let ns = error as NSError
+            if ns.domain == NSPOSIXErrorDomain, (ns.code == Int(EAGAIN) || ns.code == Int(EWOULDBLOCK)) {
+                let summary = IOTraceSink.dumpTailSummary(
+                    reason: "posix_eagain",
+                    operation: "txlog_write",
+                    path: url.path,
+                    errnoValue: Int32(ns.code)
+                )
+                throw PageStore.IOError.posix(
+                    operation: "txlog_write",
+                    path: url.path,
+                    errnoValue: Int32(ns.code),
+                    nonBlockingLock: false,
+                    ownerHint: IOTraceSink.ownerHint(for: url.path),
+                    traceSummaryPath: summary?.path
+                )
+            }
+            throw error
+        }
     }
 
     // Append to a specific WAL file
@@ -150,10 +176,31 @@ struct TransactionLog {
         }
         let fh = try FileHandle(forWritingTo: url)
         defer { try? fh.close() }
-        try fh.seekToEnd()
-        try fh.write(contentsOf: data)
-        try fh.write(contentsOf: Data([0x0a]))
-        try fh.synchronize()
+        do {
+            try fh.seekToEnd()
+            try fh.write(contentsOf: data)
+            try fh.write(contentsOf: Data([0x0a]))
+            try fh.synchronize()
+        } catch {
+            let ns = error as NSError
+            if ns.domain == NSPOSIXErrorDomain, (ns.code == Int(EAGAIN) || ns.code == Int(EWOULDBLOCK)) {
+                let summary = IOTraceSink.dumpTailSummary(
+                    reason: "posix_eagain",
+                    operation: "txlog_write",
+                    path: url.path,
+                    errnoValue: Int32(ns.code)
+                )
+                throw PageStore.IOError.posix(
+                    operation: "txlog_write",
+                    path: url.path,
+                    errnoValue: Int32(ns.code),
+                    nonBlockingLock: false,
+                    ownerHint: IOTraceSink.ownerHint(for: url.path),
+                    traceSummaryPath: summary?.path
+                )
+            }
+            throw error
+        }
     }
 
     // Convenience methods for transaction control

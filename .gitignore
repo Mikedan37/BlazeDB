@@ -1,6 +1,7 @@
 # Swift Package Manager
 .build/
 .swiftpm/
+Package.resolved
 
 # Xcode junk
 *.xcuserdatad/
@@ -13,3 +14,15 @@ DerivedData/
 
 # macOS
 .DS_Store
+
+# Claude Code / AI tooling
+.claude/
+.artifacts/
+
+# Secrets and certificates
+*.pem
+*.key
+*.p12
+*.cer
+.env
+.env.*

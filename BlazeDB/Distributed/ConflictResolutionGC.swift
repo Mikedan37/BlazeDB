@@ -4,7 +4,6 @@
 //
 //  Garbage collection for conflict resolution data
 //
-//  Created: 2025-01-XX
 //
 
 #if !BLAZEDB_LINUX_CORE
@@ -29,14 +28,14 @@ extension ConflictResolver {
     
     /// Cleanup resolved conflicts older than X days
     public func cleanupResolvedConflicts(olderThan: TimeInterval) throws {
-        // In a real implementation, we'd track resolved conflicts
+        // TODO: Implement when distributed module is enabled
         // For now, this is a placeholder
         BlazeLogger.info("ConflictResolution GC: Cleaned up old resolved conflicts")
     }
     
     /// Remove conflict versions that are no longer needed
     public func cleanupOldConflictVersions() throws {
-        // In a real implementation, we'd track conflict versions
+        // TODO: Implement when distributed module is enabled
         // For now, this is a placeholder
         BlazeLogger.info("ConflictResolution GC: Cleaned up old conflict versions")
     }

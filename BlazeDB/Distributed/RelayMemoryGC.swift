@@ -4,7 +4,6 @@
 //
 //  Garbage collection for relay memory queues
 //
-//  Created: 2025-01-XX
 //
 
 #if !BLAZEDB_LINUX_CORE

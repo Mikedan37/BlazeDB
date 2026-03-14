@@ -4,7 +4,6 @@
 //
 //  Coordinates GC across multiple databases on the same device
 //
-//  Created: 2025-01-XX
 //
 
 import Foundation
@@ -52,7 +51,7 @@ public actor MultiDatabaseGCCoordinator {
             // Get MVCC stats for this database
             if db.isMVCCEnabled() {
                 let stats = db.getMVCCStats()
-                // In a real implementation, we'd track versions per record
+                // TODO: Implement when distributed module is enabled
                 // For now, we'll just coordinate the GC timing
                 BlazeLogger.debug("Database '\(name)': \(stats.totalVersions) versions")
             }
@@ -73,7 +72,7 @@ public actor MultiDatabaseGCCoordinator {
     
     /// Get minimum safe version across all databases for a record
     public func getMinimumSafeVersion(recordID: UUID) -> UInt64? {
-        // In a real implementation, we'd query all databases for their minimum versions
+        // TODO: Implement when distributed module is enabled
         // For now, return nil (no coordination needed)
         return nil
     }

@@ -88,26 +88,28 @@ extension BlazeDBClient {
         }
     }
     
-    /// Print comprehensive MVCC status
-    public func printMVCCStatus() {
+    /// Returns a formatted MVCC status string for diagnostics
+    public func mvccStatusDescription() -> String {
         let mvccEnabled = isMVCCEnabled()
         let versionStats = getMVCCStats()
         let gcStats = getGCStats()
-        
-        print("""
-            
-            ═══════════════════════════════════════
-            🔥 BlazeDB MVCC Status
-            ═══════════════════════════════════════
-            
-            MVCC Enabled:     \(mvccEnabled ? "✅ YES" : "❌ NO")
-            
-            \(versionStats.description)
-            
-            \(gcStats.description)
-            
-            ═══════════════════════════════════════
-            """)
+
+        return """
+        MVCC Status
+        ───────────────────────────────────────
+        MVCC Enabled: \(mvccEnabled ? "YES" : "NO")
+
+        \(versionStats.description)
+
+        \(gcStats.description)
+        ───────────────────────────────────────
+        """
+    }
+
+    /// Print comprehensive MVCC status
+    @available(*, deprecated, message: "Use mvccStatusDescription() instead — printMVCCStatus() writes directly to stdout")
+    public func printMVCCStatus() {
+        print(mvccStatusDescription())
     }
 }
 

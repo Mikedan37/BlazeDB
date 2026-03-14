@@ -377,7 +377,7 @@ Fix — integrate RLS into `QueryExecutor`:
 - All read paths (`distinct`, `fetchPage`, batch reads, export, backup) go through the same filtered pipeline
 - Remove `BlazeRLSRegistry` (System B) entirely — it registers policies that nothing reads. One enforcement mechanism, no duplicates.
 - Add configurable fail-closed mode: `rlsFailClosed: Bool` on `BlazeDBClient` init. When `true` and no security context is set, reads return empty results. Default: `false` (fail-open, matching current embedded DB expectations). Document the security implications of each mode.
-- Write-side enforcement (INSERT/UPDATE/DELETE policy checks) is deferred — read enforcement first, write enforcement in a future iteration.
+- Write-side enforcement (INSERT/UPDATE/DELETE policy checks) is deferred — read enforcement first, write enforcement in a future iteration. **TODO: Without write-side enforcement, User A can insert records owned by User B. Acceptable for embedded use, but must be addressed before any multi-tenant or server deployment. Track as a follow-up item.**
 
 ### Extraction from DynamicCollection
 

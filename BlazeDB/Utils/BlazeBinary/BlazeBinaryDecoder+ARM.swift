@@ -5,9 +5,6 @@
 //  ARM-optimized BlazeBinary decoder with SIMD scanning, zero-copy decoding, and prefetching
 //  100% backwards compatible with existing BlazeBinary format
 //
-//  Created by Auto on 1/XX/25.
-//
-
 import Foundation
 #if canImport(Accelerate)
 import Accelerate
@@ -26,7 +23,6 @@ extension BlazeBinaryDecoder {
         }
         
         // Prefetch next cache line for sequential reads (safe - only if enough data)
-        #if swift(>=5.9)
         if length >= 64 {
             // Safe prefetch - only if we have enough data
             // CRITICAL: Align offset to 8 bytes to avoid misaligned pointer access
@@ -36,7 +32,6 @@ extension BlazeBinaryDecoder {
                 _ = ptr.load(fromByteOffset: alignedOffset, as: UInt64.self)
             }
         }
-        #endif
         
         // PARSE HEADER using SIMD for magic check
         let magicPtr = ptr.assumingMemoryBound(to: UInt8.self)
@@ -108,14 +103,12 @@ extension BlazeBinaryDecoder {
         for i in 0..<fieldCount {
             // Prefetch next field for sequential access (safe bounds check)
             if i < fieldCount - 1 && offset + 64 < dataEnd {
-                #if swift(>=5.9)
                 let prefetchOffset = min(offset + 64, dataEnd - 8)
                 // CRITICAL: Align offset to 8 bytes to avoid misaligned pointer access
                 let alignedOffset = prefetchOffset & ~0x7  // Align to 8 bytes
                 if alignedOffset >= offset && alignedOffset + 8 <= dataEnd {
                     _ = ptr.load(fromByteOffset: alignedOffset, as: UInt64.self)
                 }
-                #endif
             }
             
             let (key, value, bytesRead) = try decodeFieldARM(from: ptr, at: offset, length: dataEnd)

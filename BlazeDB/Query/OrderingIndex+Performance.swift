@@ -4,9 +4,6 @@
 //
 //  Performance optimizations for ordering: index-based sorting, caching
 //
-//  Created by Auto on 1/XX/25.
-//
-
 import Foundation
 
 // MARK: - Sorted Index Cache

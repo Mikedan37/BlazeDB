@@ -5,9 +5,6 @@
 //  Production-grade connection pooling for BlazeServer
 //  Manages connection lifecycle, health checks, and resource limits
 //
-//  Created by Auto on 1/XX/25.
-//
-
 #if !BLAZEDB_LINUX_CORE
 import Foundation
 

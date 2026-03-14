@@ -121,7 +121,7 @@ public struct WALEntry: Sendable, Equatable {
     /// Returns the decoded entry and the index immediately after it.
     public static func readNext(from data: Data, at offset: Int) throws -> (WALEntry, Int) {
         // Check minimum size for header
-        guard data.count - offset >= headerSize + trailerSize else {
+        guard data.endIndex - offset >= headerSize + trailerSize else {
             throw WALError.truncatedEntry
         }
 
@@ -162,7 +162,7 @@ public struct WALEntry: Sendable, Equatable {
             let payloadLen = buf.loadUnaligned(fromByteOffset: rel + 33, as: UInt32.self).littleEndian
             let totalSize = headerSize + Int(payloadLen) + trailerSize
 
-            guard data.count - offset >= totalSize else {
+            guard data.endIndex - offset >= totalSize else {
                 throw WALError.truncatedEntry
             }
 

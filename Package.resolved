@@ -1,31 +1,6 @@
 {
-  "originHash" : "0b29751f7653166e4a2bc7ace0f4647034322831a46c4721162039676ee579da",
+  "originHash" : "8e69908f6e228c46249cafa6cb204e81e93614a8945d708bf6c1528899198c26",
   "pins" : [
-    {
-      "identity" : "blazebinary",
-      "kind" : "remoteSourceControl",
-      "location" : "git@github.com:Mikedan37/BlazeBinary.git",
-      "state" : {
-        "branch" : "main",
-        "revision" : "83e5d3600d5a021c280273ac743abffb3274d9c3"
-      }
-    },
-    {
-      "identity" : "blazefsm",
-      "kind" : "remoteSourceControl",
-      "location" : "git@github.com:Mikedan37/BlazeFSM.git",
-      "state" : {
-        "revision" : "58b292a27928d211eef12090cafcbf12b31d69c6"
-      }
-    },
-    {
-      "identity" : "blazetransport",
-      "kind" : "remoteSourceControl",
-      "location" : "git@github.com:Mikedan37/BlazeTransport.git",
-      "state" : {
-        "revision" : "eef8c2e179fff80ad5afe019b5113625ec9cb609"
-      }
-    },
     {
       "identity" : "swift-asn1",
       "kind" : "remoteSourceControl",
@@ -42,15 +17,6 @@
       "state" : {
         "revision" : "95ba0316a9b733e92bb6b071255ff46263bbe7dc",
         "version" : "3.15.1"
-      }
-    },
-    {
-      "identity" : "swiftcbor",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/myfreeweb/SwiftCBOR.git",
-      "state" : {
-        "revision" : "fd929a6d8f7651ce0f63fc99397fd5762358cc29",
-        "version" : "0.6.0"
       }
     }
   ],

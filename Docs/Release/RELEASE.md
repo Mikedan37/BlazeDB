@@ -20,7 +20,7 @@ Instructions for releasing BlazeDB v1.0.0 to GitHub and Swift Package Index.
 ## Step 1: Tag the Release
 
 ```bash
-cd /Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB
+cd ~/Developer/ProjectBlaze/BlazeDB
 
 # Ensure everything is committed
 git status

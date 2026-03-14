@@ -114,7 +114,7 @@ extension QueryBuilder {
         } else {
             // All fields indexed (or unknown)
             riskLevel = .ok
-            suggestion = "Query should use indexes efficiently."
+            suggestion = "Indexed fields were detected; verify execution details with explain() because some engine paths still use table-scan fallbacks."
         }
         
         return QueryExplanation(

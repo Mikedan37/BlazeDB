@@ -5,14 +5,16 @@
 //  Overflow page support for large records (>4KB)
 //  Implements page chains for records that don't fit in a single page
 //
-//  Created by Auto on 1/XX/25.
-//
-
 import Foundation
 #if canImport(CryptoKit)
 import CryptoKit
 #else
 import Crypto
+#endif
+#if canImport(Darwin)
+import Darwin
+#elseif canImport(Glibc)
+import Glibc
 #endif
 
 // MARK: - Overflow Page Format
@@ -97,9 +99,120 @@ struct OverflowPageHeader {
     }
 }
 
+/// Explicit overflow reference trailer embedded in main-page plaintext.
+/// This replaces heuristic overflow detection for new writes.
+private struct OverflowReferenceV2 {
+    static let magic: UInt32 = 0x4F565232 // "OVR2"
+    static let version: UInt8 = 0x01
+    static let committedFlag: UInt8 = 0x01
+    static let encodedSize: Int = 32
+
+    let flags: UInt8
+    let firstOverflowPageIndex: UInt32
+    let logicalPayloadLength: UInt64
+    let payloadChecksum: UInt64
+    let chainPageCount: UInt32
+
+    func encode() -> Data {
+        var data = Data()
+        var magicBE = Self.magic.bigEndian
+        data.append(Data(bytes: &magicBE, count: 4))
+        data.append(Self.version)
+        data.append(flags)
+        data.append(contentsOf: [0, 0]) // reserved
+
+        var firstBE = firstOverflowPageIndex.bigEndian
+        data.append(Data(bytes: &firstBE, count: 4))
+
+        var lengthBE = logicalPayloadLength.bigEndian
+        data.append(Data(bytes: &lengthBE, count: 8))
+
+        var checksumBE = payloadChecksum.bigEndian
+        data.append(Data(bytes: &checksumBE, count: 8))
+
+        var pagesBE = chainPageCount.bigEndian
+        data.append(Data(bytes: &pagesBE, count: 4))
+        return data
+    }
+
+    static func decodeIfPresent(from plaintextPageData: Data, maxDataPerPage: Int) -> OverflowReferenceV2? {
+        guard plaintextPageData.count == maxDataPerPage, plaintextPageData.count >= encodedSize else {
+            return nil
+        }
+        let start = plaintextPageData.count - encodedSize
+        let trailer = plaintextPageData.subdata(in: start..<plaintextPageData.count)
+        guard trailer.count == encodedSize else { return nil }
+
+        let magic = (UInt32(trailer[0]) << 24)
+            | (UInt32(trailer[1]) << 16)
+            | (UInt32(trailer[2]) << 8)
+            | UInt32(trailer[3])
+        guard magic == Self.magic else { return nil }
+        guard trailer[4] == Self.version else { return nil }
+
+        let flags = trailer[5]
+
+        let firstOverflowPageIndex = (UInt32(trailer[8]) << 24)
+            | (UInt32(trailer[9]) << 16)
+            | (UInt32(trailer[10]) << 8)
+            | UInt32(trailer[11])
+
+        var length: UInt64 = 0
+        for i in 12..<20 {
+            length = (length << 8) | UInt64(trailer[i])
+        }
+
+        var checksum: UInt64 = 0
+        for i in 20..<28 {
+            checksum = (checksum << 8) | UInt64(trailer[i])
+        }
+
+        let chainPageCount = (UInt32(trailer[28]) << 24)
+            | (UInt32(trailer[29]) << 16)
+            | (UInt32(trailer[30]) << 8)
+            | UInt32(trailer[31])
+
+        return OverflowReferenceV2(
+            flags: flags,
+            firstOverflowPageIndex: firstOverflowPageIndex,
+            logicalPayloadLength: length,
+            payloadChecksum: checksum,
+            chainPageCount: chainPageCount
+        )
+    }
+}
+
+public enum OverflowValidationResult: Equatable {
+    case valid
+    case missingPage(Int)
+    case truncatedChain(expectedBytes: Int, actualBytes: Int)
+    case cycleDetected(Int)
+    case orphanPage(Int)
+}
+
+private enum OverflowCrashHook: String {
+    case afterBasePageWrite
+    case afterFirstOverflowPageWrite
+    case afterLastOverflowPageWrite
+    case afterOverflowMetadataUpdate
+    case afterWALAppendBeforeCommitMark
+}
+
 // MARK: - PageStore Overflow Extension
 
 extension PageStore {
+    private static func activeOverflowCrashHook() -> OverflowCrashHook? {
+        guard let raw = ProcessInfo.processInfo.environment["BLAZEDB_OVERFLOW_CRASH_HOOK"] else {
+            return nil
+        }
+        return OverflowCrashHook(rawValue: raw)
+    }
+
+    private static func triggerOverflowCrashIfNeeded(_ hook: OverflowCrashHook) {
+        guard activeOverflowCrashHook() == hook else { return }
+        let code = Int32(ProcessInfo.processInfo.environment["BLAZEDB_OVERFLOW_CRASH_EXIT_CODE"] ?? "86") ?? 86
+        _exit(code)
+    }
     
     // MARK: - Constants
     
@@ -115,6 +228,44 @@ extension PageStore {
         // Overflow page: 16 bytes header + 12 bytes nonce + 16 bytes tag = 44 bytes overhead
         return pageSize - 44
     }
+
+    /// Number of overflow corruption incidents before we degrade reads.
+    private var overflowCorruptionDegradeThreshold: Int { 16 }
+
+    private func isKnownCorruptedOverflowMainPage(_ index: Int) -> Bool {
+        overflowCorruptionLock.lock()
+        defer { overflowCorruptionLock.unlock() }
+        return knownCorruptedOverflowMainPages.contains(index)
+    }
+
+    private func clearKnownCorruptedOverflowMainPage(_ index: Int) {
+        overflowCorruptionLock.lock()
+        knownCorruptedOverflowMainPages.remove(index)
+        overflowCorruptionLock.unlock()
+    }
+
+    private func isOverflowReadDegradedModeEnabled() -> Bool {
+        overflowCorruptionLock.lock()
+        defer { overflowCorruptionLock.unlock() }
+        return overflowReadDegradedMode
+    }
+
+    private func registerOverflowCorruptionIncident(mainPageIndex: Int, reason: String) {
+        overflowCorruptionLock.lock()
+        knownCorruptedOverflowMainPages.insert(mainPageIndex)
+        overflowCorruptionIncidentCount += 1
+        let incidents = overflowCorruptionIncidentCount
+        if incidents >= overflowCorruptionDegradeThreshold {
+            overflowReadDegradedMode = true
+        }
+        let degraded = overflowReadDegradedMode
+        overflowCorruptionLock.unlock()
+
+        BlazeLogger.error("📖 [readPageWithOverflow] ❌ Overflow corruption on main page \(mainPageIndex): \(reason)")
+        if degraded {
+            BlazeLogger.warn("📖 [readPageWithOverflow] ⚠️ Overflow read degraded mode active after \(incidents) corruption incidents; skipping overflow traversal for subsequent reads.")
+        }
+    }
     
     // MARK: - Write with Overflow Support
     
@@ -127,8 +278,9 @@ extension PageStore {
         skipSync: Bool = false
     ) throws -> [Int] {
         var pageIndices = [index]
+        clearKnownCorruptedOverflowMainPage(index)
         
-        // If data fits in one page, write normally
+        // Single-page payload: no overflow trailer needed.
         if plaintext.count <= maxDataPerPage {
             try _writePageLocked(index: index, plaintext: plaintext)
             return pageIndices
@@ -137,8 +289,8 @@ extension PageStore {
         // Data doesn't fit - need overflow pages
         BlazeLogger.debug("Writing large record (\(plaintext.count) bytes) with overflow pages")
         
-        // Reserve 4 bytes at end of main page for overflow pointer
-        let mainPageDataSize = maxDataPerPage - 4
+        // Reserve explicit v2 trailer space at end of main page.
+        let mainPageDataSize = maxDataPerPage - OverflowReferenceV2.encodedSize
         let firstPageData = plaintext.prefix(mainPageDataSize)
         let remainingData = plaintext.dropFirst(mainPageDataSize)
         
@@ -182,18 +334,38 @@ extension PageStore {
                 data: overflowPages[i].data,
                 nextPageIndex: nextIndex
             )
+            if i == 0 {
+                Self.triggerOverflowCrashIfNeeded(.afterFirstOverflowPageWrite)
+            }
+            if isLastPage {
+                Self.triggerOverflowCrashIfNeeded(.afterLastOverflowPageWrite)
+            }
         }
         BlazeLogger.debug("📝 [writePageWithOverflow] ✅ Completed writing overflow chain: main page \(index) -> first overflow \(firstOverflowIndex)")
         
-        // Append overflow pointer to main page data (last 4 bytes)
-        // CRITICAL: Ensure we create a proper Data instance from the subsequence
+        // Append explicit overflow reference trailer to main page payload.
+        // Chain is considered published only once this main page write succeeds.
         let firstPageDataCopy = Data(firstPageData)
         var mainPageDataWithPointer = firstPageDataCopy
-        var overflowPointer = firstOverflowIndex.bigEndian
-        mainPageDataWithPointer.append(Data(bytes: &overflowPointer, count: 4))
+        let payloadChecksum = overflowChecksum64(plaintext)
+        guard let chainPageCount = UInt32(exactly: overflowPages.count) else {
+            throw NSError(domain: "PageStore", code: 4015, userInfo: [
+                NSLocalizedDescriptionKey: "Overflow chain page count exceeds UInt32"
+            ])
+        }
+        let ref = OverflowReferenceV2(
+            flags: OverflowReferenceV2.committedFlag,
+            firstOverflowPageIndex: firstOverflowIndex,
+            logicalPayloadLength: UInt64(plaintext.count),
+            payloadChecksum: payloadChecksum,
+            chainPageCount: chainPageCount
+        )
+        mainPageDataWithPointer.append(ref.encode())
+        Self.triggerOverflowCrashIfNeeded(.afterOverflowMetadataUpdate)
         
         // Write main page with overflow pointer embedded
         try _writePageLocked(index: index, plaintext: mainPageDataWithPointer)
+        Self.triggerOverflowCrashIfNeeded(.afterBasePageWrite)
         
         // Final fsync (skip for batch operations - will sync once at end)
         if !skipSync {
@@ -243,6 +415,13 @@ extension PageStore {
     /// - Returns: Complete data (main page + overflow chain)
     /// - Throws: Error if read fails
     public func readPageWithOverflow(index: Int) throws -> Data? {
+        if isOverflowReadDegradedModeEnabled() {
+            // Degraded mode avoids expensive overflow-chain traversal on poisoned stores.
+            return try readPage(index: index)
+        }
+        if isKnownCorruptedOverflowMainPage(index) {
+            return nil
+        }
         // Help the compiler by explicitly typing the closure result
         let result: Data? = try queue.sync {
             BlazeLogger.debug("📖 [readPageWithOverflow] Starting read for page \(index)")
@@ -276,23 +455,12 @@ extension PageStore {
                 
                 // CRITICAL: Use UInt64 for file size comparison to prevent integer overflow
                 // File sizes can exceed Int.max on large databases
-                let attrs = try FileManager.default.attributesOfItem(atPath: fileURL.path)
-                let fileSize = (attrs[.size] as? NSNumber)?.uint64Value ?? 0
-                guard offset < fileSize else {
+                let currentFileSize = try self.fileSize()
+                guard offset < currentFileSize else {
                     return nil as Data?
                 }
-                // CRITICAL: Don't nest queue.sync - we're already inside queue.sync at line 227!
-                // Nesting causes deadlock when DynamicCollection calls this during createIndex
-                // CRITICAL: Always seek to correct position before reading to ensure file handle position is correct
-                // This is especially important during concurrent reads
-                try fileHandle.compatSeek(toOffset: offset)
-                // Verify we're at the correct position (optional check, but helps catch issues)
-                let currentOffset = try fileHandle.compatOffset()
-                if currentOffset != offset {
-                    BlazeLogger.warn("📖 [readPageWithOverflow] ⚠️ File handle position mismatch: expected \(offset), got \(currentOffset) - reseeking")
-                    try fileHandle.compatSeek(toOffset: offset)
-                }
-                let pageData = try fileHandle.compatRead(upToCount: pageSize)
+                // pread: atomic seek+read, safe for concurrent readers (no shared file offset)
+                let pageData = try atomicRead(offset: off_t(offset), count: pageSize)
                 
                 // Decrypt the page
                 guard pageData.count >= 37 else { // 9 header + 12 nonce + 16 tag minimum
@@ -365,16 +533,53 @@ extension PageStore {
             
             
             // Check if this page has overflow by checking if data is exactly maxDataPerPage
-            // If so, the last 4 bytes contain the overflow pointer
+            // Prefer explicit v2 reference trailer; only fall back to legacy pointer heuristic.
             var completeData = mainPageData
             var currentOverflowIndex: UInt32 = 0
+            var expectedTotalBytes: Int?
+            var expectedChecksum: UInt64?
+            var expectedChainPages: Int?
+            var mainPayloadBytes = mainPageData.count
+            var usingLegacyOverflowReference = false
+
+            if let ref = OverflowReferenceV2.decodeIfPresent(from: mainPageData, maxDataPerPage: maxDataPerPage) {
+                guard (ref.flags & OverflowReferenceV2.committedFlag) != 0 else {
+                    registerOverflowCorruptionIncident(
+                        mainPageIndex: index,
+                        reason: "v2 overflow reference not committed"
+                    )
+                    throw BlazeDBError.corruptedData(
+                        location: "overflow-chain/main:\(index)",
+                        reason: "overflowRefV2 not committed"
+                    )
+                }
+
+                guard ref.logicalPayloadLength <= UInt64(Int.max) else {
+                    registerOverflowCorruptionIncident(
+                        mainPageIndex: index,
+                        reason: "v2 logical payload length exceeds Int.max: \(ref.logicalPayloadLength)"
+                    )
+                    throw BlazeDBError.corruptedData(
+                        location: "overflow-chain/main:\(index)",
+                        reason: "overflowRefV2 logical length out of bounds"
+                    )
+                }
+
+                mainPayloadBytes = maxDataPerPage - OverflowReferenceV2.encodedSize
+                completeData = Data(mainPageData.prefix(mainPayloadBytes))
+                currentOverflowIndex = ref.firstOverflowPageIndex
+                expectedTotalBytes = Int(ref.logicalPayloadLength)
+                expectedChecksum = ref.payloadChecksum
+                expectedChainPages = Int(ref.chainPageCount)
+            }
             
             // If main page data is exactly maxDataPerPage, check if last 4 bytes are overflow pointer
             // CRITICAL: Validate bounds before accessing last 4 bytes
             // IMPORTANT: Only check for overflow if the data is exactly maxDataPerPage AND
             // the potential pointer points to a valid overflow page (has "OVER" magic bytes)
             BlazeLogger.debug("📖 [readPageWithOverflow] Main page data size: \(mainPageData.count), maxDataPerPage: \(maxDataPerPage)")
-            if mainPageData.count == maxDataPerPage && mainPageData.count >= 4 {
+            if currentOverflowIndex == 0 && mainPageData.count == maxDataPerPage && mainPageData.count >= 4 {
+                usingLegacyOverflowReference = true
                 BlazeLogger.debug("📖 [readPageWithOverflow] Main page is exactly maxDataPerPage, checking for overflow pointer")
                 // Extract potential overflow pointer from last 4 bytes
                 // Use safe unaligned read to avoid alignment issues with Data.SubSequence
@@ -418,7 +623,8 @@ extension PageStore {
                         BlazeLogger.debug("Detected overflow pointer \(potentialPointer) for main page \(index)")
                         // Extract pointer and remove from data
                         currentOverflowIndex = potentialPointer
-                        completeData = mainPageData.prefix(maxDataPerPage - 4)
+                        mainPayloadBytes = maxDataPerPage - 4
+                        completeData = Data(mainPageData.prefix(mainPayloadBytes))
                     }
                 } else {
                     // Pointer is 0, no overflow - use full data
@@ -490,8 +696,14 @@ extension PageStore {
                         // Overflow page missing - always return nil to allow retry
                         // Partial data return is only for specific destructive test scenarios, not normal reads
                         if initialOverflowIndex > 0 {
-                            BlazeLogger.error("📖 [readPageWithOverflow] ❌ Overflow page \(currentIndex) missing - incomplete chain detected. Total data so far: \(completeData.count) bytes. Returning nil for retry.")
-                            return nil as Data?
+                            registerOverflowCorruptionIncident(
+                                mainPageIndex: index,
+                                reason: "missing overflow page \(currentIndex) after chain start \(initialOverflowIndex)"
+                            )
+                            throw BlazeDBError.corruptedData(
+                                location: "overflow-chain/main:\(index)",
+                                reason: "truncatedOverflowChain missing page \(currentIndex) after start \(initialOverflowIndex)"
+                            )
                         }
                         BlazeLogger.warn("📖 [readPageWithOverflow] ⚠️ Overflow page \(currentIndex) missing or corrupted - stopping chain. Total data so far: \(completeData.count) bytes")
                         break
@@ -499,7 +711,7 @@ extension PageStore {
                     BlazeLogger.debug("📖 [readPageWithOverflow] ✅ Successfully read overflow page \(currentIndex): \(overflowData.data.count) bytes, nextPageIndex: \(overflowData.nextPageIndex)")
                     
                     completeData.append(overflowData.data)
-                    BlazeLogger.debug("📖 [readPageWithOverflow] Total data after page \(currentIndex): \(completeData.count) bytes (main: \(mainPageData.count - (mainPageData.count == maxDataPerPage ? 4 : 0)), overflow: \(completeData.count - (mainPageData.count - (mainPageData.count == maxDataPerPage ? 4 : 0)))")
+                    BlazeLogger.debug("📖 [readPageWithOverflow] Total data after page \(currentIndex): \(completeData.count) bytes (main: \(mainPayloadBytes), overflow: \(completeData.count - mainPayloadBytes))")
                     
                     // CRITICAL: Validate nextPageIndex before following it
                     // Prevent circular references by checking if we've already visited the next page
@@ -524,8 +736,14 @@ extension PageStore {
                     // CRITICAL: Always return nil on errors if we expected an overflow chain
                     // This ensures we don't return partial data during concurrent reads
                     if initialOverflowIndex > 0 {
-                        BlazeLogger.error("📖 [readPageWithOverflow] ❌ Failed to read overflow page \(currentIndex): \(error) - returning nil (may be transient error, should retry)")
-                        return nil as Data?  // Return nil to allow retry on transient errors
+                        registerOverflowCorruptionIncident(
+                            mainPageIndex: index,
+                            reason: "failed reading overflow page \(currentIndex): \(error.localizedDescription)"
+                        )
+                        throw BlazeDBError.corruptedData(
+                            location: "overflow-chain/main:\(index)",
+                            reason: "truncatedOverflowChain failed reading page \(currentIndex): \(error.localizedDescription)"
+                        )
                     }
                     // If reading overflow page fails and we didn't expect an overflow chain,
                     // it might not actually be an overflow page (could be a regular page for a different record)
@@ -537,19 +755,30 @@ extension PageStore {
             // CRITICAL: If we detected a circular reference, return nil instead of incomplete data
             // This prevents returning corrupted/incomplete data that could cause decoder errors
             if detectedCircularReference && initialOverflowIndex > 0 {
-                BlazeLogger.error("📖 [readPageWithOverflow] ❌ Returning nil due to circular reference in overflow chain starting at page \(initialOverflowIndex). Total data: \(completeData.count) bytes")
-                return nil as Data?
+                registerOverflowCorruptionIncident(
+                    mainPageIndex: index,
+                    reason: "circular overflow chain starting at \(initialOverflowIndex)"
+                )
+                throw BlazeDBError.corruptedData(
+                    location: "overflow-chain/main:\(index)",
+                    reason: "circular overflow chain starting at \(initialOverflowIndex)"
+                )
             }
             
             // If chain length limit was hit, also return nil for safety
             if chainLength >= maxChainLength && currentOverflowIndex > 0 {
-                BlazeLogger.error("📖 [readPageWithOverflow] ❌ Overflow chain length limit (\(maxChainLength)) reached - possible infinite loop or corrupted data. Total data: \(completeData.count) bytes")
-                return nil as Data?
+                registerOverflowCorruptionIncident(
+                    mainPageIndex: index,
+                    reason: "overflow chain length limit reached (\(maxChainLength))"
+                )
+                throw BlazeDBError.corruptedData(
+                    location: "overflow-chain/main:\(index)",
+                    reason: "overflow chain length limit reached (\(maxChainLength))"
+                )
             }
             
-            let mainPageDataSize = mainPageData.count == maxDataPerPage ? mainPageData.count - 4 : mainPageData.count
-            let overflowDataSize = completeData.count - mainPageDataSize
-            BlazeLogger.debug("📖 [readPageWithOverflow] ✅ Successfully read complete page \(index) with overflow chain: \(completeData.count) bytes total (main: \(mainPageDataSize), overflow: \(overflowDataSize) from \(chainLength) pages, initialOverflowIndex: \(initialOverflowIndex))")
+            let overflowDataSize = completeData.count - mainPayloadBytes
+            BlazeLogger.debug("📖 [readPageWithOverflow] ✅ Successfully read complete page \(index) with overflow chain: \(completeData.count) bytes total (main: \(mainPayloadBytes), overflow: \(overflowDataSize) from \(chainLength) pages, initialOverflowIndex: \(initialOverflowIndex))")
             
             // CRITICAL: If we expected an overflow chain but got incomplete data, return nil
             // We should only return completeData if:
@@ -559,8 +788,14 @@ extension PageStore {
             if initialOverflowIndex > 0 && currentOverflowIndex > 0 && !detectedCircularReference {
                 // We expected an overflow chain but didn't reach the end (currentOverflowIndex > 0 means more pages expected)
                 // This indicates an incomplete chain - return nil to allow retry
-                BlazeLogger.error("📖 [readPageWithOverflow] ❌ Incomplete overflow chain detected: expected chain starting at \(initialOverflowIndex), but stopped at page with nextPageIndex \(currentOverflowIndex). Total data: \(completeData.count) bytes. Returning nil for retry.")
-                return nil as Data?
+                registerOverflowCorruptionIncident(
+                    mainPageIndex: index,
+                    reason: "incomplete chain: stopped with nextPageIndex=\(currentOverflowIndex), start=\(initialOverflowIndex)"
+                )
+                throw BlazeDBError.corruptedData(
+                    location: "overflow-chain/main:\(index)",
+                    reason: "truncatedOverflowChain stopped with nextPageIndex=\(currentOverflowIndex), start=\(initialOverflowIndex)"
+                )
             }
             
             // CRITICAL: If we expected an overflow chain but got incomplete data, validate the size
@@ -569,23 +804,71 @@ extension PageStore {
             if initialOverflowIndex > 0 && currentOverflowIndex == 0 && chainLength == 0 {
                 // We expected an overflow chain but didn't read any overflow pages
                 // This means the chain read failed - return nil to allow retry
-                BlazeLogger.error("📖 [readPageWithOverflow] ❌ Expected overflow chain starting at \(initialOverflowIndex) but no overflow pages were read. Returning nil for retry.")
-                return nil as Data?
+                registerOverflowCorruptionIncident(
+                    mainPageIndex: index,
+                    reason: "overflow pointer present (\(initialOverflowIndex)) but zero overflow pages read"
+                )
+                throw BlazeDBError.corruptedData(
+                    location: "overflow-chain/main:\(index)",
+                    reason: "truncatedOverflowChain pointer \(initialOverflowIndex) but zero pages read"
+                )
             }
             
-            // CRITICAL: Additional validation - if we read overflow pages but got suspiciously little data,
-            // it might indicate an incomplete read. For a record that needs overflow, we should have
-            // at least the main page + some overflow data. If we read overflow pages but the total
-            // is less than main page + one full overflow page worth of data, it's likely incomplete.
+            // CRITICAL: Additional validation - overflow chain must contribute at least one byte.
+            // We intentionally DO NOT require a full overflow-page worth of data. Valid records
+            // can spill only a few bytes beyond the main page.
             if initialOverflowIndex > 0 && chainLength > 0 {
-                let mainPageDataSize = mainPageData.count == maxDataPerPage ? mainPageData.count - 4 : mainPageData.count
-                // Minimum expected: main page + at least one overflow page's worth of data
-                // Each overflow page can hold up to (maxDataPerPage - 16) bytes of data
-                let minExpectedSize = mainPageDataSize + (maxDataPerPage - 16)
-                if completeData.count < minExpectedSize {
-                    BlazeLogger.error("📖 [readPageWithOverflow] ❌ Incomplete overflow chain read: got \(completeData.count) bytes total (main: \(mainPageDataSize), overflow: \(completeData.count - mainPageDataSize)) but expected at least \(minExpectedSize) bytes for \(chainLength) overflow pages. Returning nil for retry.")
-                    return nil as Data?
+                let overflowDataSize = completeData.count - mainPayloadBytes
+                if overflowDataSize <= 0 {
+                    registerOverflowCorruptionIncident(
+                        mainPageIndex: index,
+                        reason: "incomplete chain: zero overflow payload bytes, chainLength=\(chainLength)"
+                    )
+                    throw BlazeDBError.corruptedData(
+                        location: "overflow-chain/main:\(index)",
+                        reason: "truncatedOverflowChain zero overflow payload, chainLength=\(chainLength)"
+                    )
                 }
+            }
+
+            // v2 contract validations: length, checksum, and chain page count.
+            if let expectedPages = expectedChainPages, initialOverflowIndex > 0, chainLength != expectedPages {
+                registerOverflowCorruptionIncident(
+                    mainPageIndex: index,
+                    reason: "overflowRefV2 chain page count mismatch expected=\(expectedPages), actual=\(chainLength)"
+                )
+                throw BlazeDBError.corruptedData(
+                    location: "overflow-chain/main:\(index)",
+                    reason: "overflowRefV2 chain page count mismatch expected=\(expectedPages), actual=\(chainLength)"
+                )
+            }
+            if let expectedBytes = expectedTotalBytes, completeData.count != expectedBytes {
+                registerOverflowCorruptionIncident(
+                    mainPageIndex: index,
+                    reason: "overflowRefV2 logical length mismatch expected=\(expectedBytes), actual=\(completeData.count)"
+                )
+                throw BlazeDBError.corruptedData(
+                    location: "overflow-chain/main:\(index)",
+                    reason: "overflowRefV2 logical length mismatch expected=\(expectedBytes), actual=\(completeData.count)"
+                )
+            }
+            if let checksum = expectedChecksum {
+                let actualChecksum = overflowChecksum64(completeData)
+                if checksum != actualChecksum {
+                    registerOverflowCorruptionIncident(
+                        mainPageIndex: index,
+                        reason: "overflowRefV2 checksum mismatch expected=\(checksum), actual=\(actualChecksum)"
+                    )
+                    throw BlazeDBError.corruptedData(
+                        location: "overflow-chain/main:\(index)",
+                        reason: "overflowRefV2 checksum mismatch expected=\(checksum), actual=\(actualChecksum)"
+                    )
+                }
+            }
+
+            // Legacy heuristic path remains read-compatible only.
+            if usingLegacyOverflowReference {
+                BlazeLogger.trace("📖 [readPageWithOverflow] Legacy overflow heuristic path used for page \(index)")
             }
             
             return completeData
@@ -671,9 +954,8 @@ extension PageStore {
         // CRITICAL: Cast to UInt64 before multiplying to prevent integer overflow
         // NOTE: This method is called from _writePageWithOverflowLocked which is already
         // inside a queue.sync(flags: .barrier) block, so we don't need another barrier sync here
-        let offset = UInt64(index) * UInt64(pageSize)
-        try fileHandle.compatSeek(toOffset: offset)
-        try fileHandle.compatWrite(buffer)
+        let offset = off_t(index) * off_t(pageSize)
+        try atomicWrite(offset: offset, data: buffer)
     }
     
     /// Read an overflow page
@@ -686,77 +968,35 @@ extension PageStore {
         }
         
         // CRITICAL: Cast to UInt64 before multiplying to prevent integer overflow
-        let offset = UInt64(index) * UInt64(pageSize)
-        guard FileManager.default.fileExists(atPath: fileURL.path) else {
-            BlazeLogger.error("📄 [_readOverflowPage] ❌ File does not exist at path: \(fileURL.path)")
+        let offset = off_t(index) * off_t(pageSize)
+
+        // Check file size using fstat (no FileManager, no shared state)
+        let currentFileSize = try self.fileSize()
+        BlazeLogger.debug("📄 [_readOverflowPage] File size: \(currentFileSize) bytes, offset: \(offset), pageSize: \(pageSize)")
+        if offset >= currentFileSize {
+            BlazeLogger.error("📄 [_readOverflowPage] ❌ Offset \(offset) >= fileSize \(currentFileSize) for page \(index)")
             return nil
         }
-        
-        // Check file size
-        // CRITICAL: Use UInt64 for file size comparison to prevent integer overflow
-        // File sizes can exceed Int.max on large databases
-        let attrs = try FileManager.default.attributesOfItem(atPath: fileURL.path)
-        let fileSize = (attrs[.size] as? NSNumber)?.uint64Value ?? 0
-        BlazeLogger.debug("📄 [_readOverflowPage] File size: \(fileSize) bytes, offset: \(offset), pageSize: \(pageSize)")
-        if offset >= fileSize {
-            BlazeLogger.error("📄 [_readOverflowPage] ❌ Offset \(offset) >= fileSize \(fileSize) for page \(index)")
-            return nil
-        }
-        
-        // CRITICAL: Don't nest queue.sync - this is called from readPageWithOverflow
-        // which is already inside queue.sync at line 227!
-        // Nesting causes deadlock when DynamicCollection calls readPageWithOverflow during createIndex
-        // CRITICAL: Always seek to correct position before reading to avoid file position corruption
-        // This is especially important during concurrent reads where file position state might be shared
-        do {
-            BlazeLogger.debug("📄 [_readOverflowPage] Seeking to offset \(offset) for page \(index)")
-            try fileHandle.compatSeek(toOffset: offset)
-            // Verify we're at the correct position (helps catch file handle position issues)
-            let currentOffset = try fileHandle.compatOffset()
-            if currentOffset != offset {
-                BlazeLogger.warn("📄 [_readOverflowPage] ⚠️ File handle position mismatch: expected \(offset), got \(currentOffset) - reseeking")
-                try fileHandle.compatSeek(toOffset: offset)
-            }
-        } catch {
-            BlazeLogger.error("📄 [_readOverflowPage] ❌ Failed to seek to overflow page \(index) at offset \(offset): \(error)")
-            throw error
-        }
-        
+
+        // pread: atomic seek+read, safe for concurrent readers (no shared file offset)
         let pageData: Data
         do {
-            BlazeLogger.debug("📄 [_readOverflowPage] Reading up to \(pageSize) bytes from offset \(offset)")
-            pageData = try fileHandle.compatRead(upToCount: pageSize)
+            BlazeLogger.debug("📄 [_readOverflowPage] Reading \(pageSize) bytes at offset \(offset) via pread")
+            pageData = try atomicRead(offset: offset, count: pageSize)
             BlazeLogger.debug("📄 [_readOverflowPage] Read \(pageData.count) bytes (expected \(pageSize))")
         } catch {
             BlazeLogger.error("📄 [_readOverflowPage] ❌ Failed to read overflow page \(index) at offset \(offset): \(error)")
             throw error
         }
-        
-        // CRITICAL: Ensure we read the full page size
-        // If we got less data, the page might be incomplete or we hit EOF
-        // During concurrent reads, file position issues might cause partial reads
-        // Retry once if we get incomplete data - file position might have been corrupted
-        var finalPageData = pageData
+
+        // Check if we got a short read (hit EOF — not a seek race with pread)
+        let finalPageData: Data
         if pageData.count != pageSize {
-            BlazeLogger.warn("📄 [_readOverflowPage] ⚠️ Overflow page \(index) read incomplete: expected \(pageSize) bytes, got \(pageData.count) at offset \(offset) - retrying")
-            do {
-                // Retry: seek to correct position and read again
-                BlazeLogger.debug("📄 [_readOverflowPage] Retrying: seeking to offset \(offset) and reading again")
-                try fileHandle.compatSeek(toOffset: offset)
-                let retryData = try fileHandle.compatRead(upToCount: pageSize)
-                BlazeLogger.debug("📄 [_readOverflowPage] Retry read: got \(retryData.count) bytes (expected \(pageSize))")
-                if retryData.count == pageSize {
-                    finalPageData = retryData
-                    BlazeLogger.debug("📄 [_readOverflowPage] ✅ Overflow page \(index) retry succeeded")
-                } else {
-                    BlazeLogger.error("📄 [_readOverflowPage] ❌ Overflow page \(index) retry also incomplete: got \(retryData.count) bytes")
-                    return nil
-                }
-            } catch {
-                BlazeLogger.error("📄 [_readOverflowPage] ❌ Overflow page \(index) retry failed with error: \(error)")
-                return nil
-            }
+            BlazeLogger.warn("📄 [_readOverflowPage] ⚠️ Overflow page \(index) short read: expected \(pageSize) bytes, got \(pageData.count) at offset \(offset)")
+            // With pread, a short read means we actually hit EOF — no retry will help
+            return nil
         } else {
+            finalPageData = pageData
             BlazeLogger.debug("📄 [_readOverflowPage] ✅ Read complete page \(index): \(pageData.count) bytes")
         }
         
@@ -831,18 +1071,14 @@ extension PageStore {
                 return 0
             }
             
-            // Check file size
-            // CRITICAL: Use UInt64 for file size comparison to prevent integer overflow
-            // File sizes can exceed Int.max on large databases
-            let attrs = try FileManager.default.attributesOfItem(atPath: fileURL.path)
-            let fileSize = (attrs[.size] as? NSNumber)?.uint64Value ?? 0
-            if offset >= fileSize {
+            // Check file size using fstat
+            let currentFileSize = try self.fileSize()
+            if offset >= currentFileSize {
                 return 0
             }
-            
-            // Read first 4 bytes to check magic
-            try fileHandle.compatSeek(toOffset: offset)
-            let magicBytes = try fileHandle.compatRead(upToCount: 4)
+
+            // Read first 4 bytes to check magic (pread — no shared seek state)
+            let magicBytes = try atomicRead(offset: off_t(offset), count: 4)
             
             guard magicBytes.count >= 4 else {
                 return 0
@@ -872,18 +1108,16 @@ extension PageStore {
         
         // Read current page
         // CRITICAL: Cast to UInt64 before multiplying to prevent integer overflow
-        let offset = UInt64(pageIndex) * UInt64(pageSize)
-        try fileHandle.compatSeek(toOffset: offset)
-        var pageData = try fileHandle.compatRead(upToCount: pageSize)
-        
+        let offset = off_t(pageIndex) * off_t(pageSize)
+        var pageData = try atomicRead(offset: offset, count: pageSize)
+
         // Update next page index in header (bytes 8-11)
         var nextPage = nextPageIndex.bigEndian
         let nextPageData = Data(bytes: &nextPage, count: 4)
         pageData.replaceSubrange(8..<12, with: nextPageData)
-        
-        // Write back and sync to ensure the update is visible to concurrent readers
-        try fileHandle.compatSeek(toOffset: offset)
-        try fileHandle.compatWrite(pageData)
+
+        // Write back using pwrite (no shared seek state)
+        try atomicWrite(offset: offset, data: pageData)
         // Note: We don't fsync here to avoid too many syncs, but the final fsync
         // at the end of _writePageWithOverflowLocked will ensure all writes are persisted
     }
@@ -900,6 +1134,146 @@ extension PageStore {
         // main page data is exactly maxDataPerPage and next page is an overflow page
         // This works because we always allocate overflow pages sequentially
         BlazeLogger.debug("Main page \(mainPageIndex) has overflow starting at page \(firstOverflowIndex)")
+    }
+
+    /// Deterministic overflow chain validator for corruption harnesses.
+    public func validateOverflowChain(rootPageID: Int) -> OverflowValidationResult {
+        let mainData: Data
+        do {
+            guard let data = try readPage(index: rootPageID) else {
+                return .missingPage(rootPageID)
+            }
+            mainData = data
+        } catch {
+            return .missingPage(rootPageID)
+        }
+
+        var pointer: UInt32 = 0
+        var bytesRead = mainData.count
+        var expectedBytes: Int?
+        var expectedChecksum: UInt64?
+        var expectedPageCount: Int?
+
+        if let ref = OverflowReferenceV2.decodeIfPresent(from: mainData, maxDataPerPage: maxDataPerPage) {
+            guard (ref.flags & OverflowReferenceV2.committedFlag) != 0 else {
+                return .truncatedChain(expectedBytes: Int(ref.logicalPayloadLength), actualBytes: 0)
+            }
+            pointer = ref.firstOverflowPageIndex
+            bytesRead = maxDataPerPage - OverflowReferenceV2.encodedSize
+            expectedBytes = Int(ref.logicalPayloadLength)
+            expectedChecksum = ref.payloadChecksum
+            expectedPageCount = Int(ref.chainPageCount)
+        } else {
+            let hasPointer = mainData.count == maxDataPerPage && mainData.count >= 4
+            guard hasPointer else { return .valid }
+            let offset = mainData.count - 4
+            pointer = (UInt32(mainData[offset]) << 24)
+                | (UInt32(mainData[offset + 1]) << 16)
+                | (UInt32(mainData[offset + 2]) << 8)
+                | UInt32(mainData[offset + 3])
+            guard pointer > 0 else { return .valid }
+            bytesRead = maxDataPerPage - 4
+        }
+
+        var visited = Set<Int>()
+        var current = pointer
+        var chainLength = 0
+        var completeData = Data(mainData.prefix(bytesRead))
+        while current > 0 {
+            let index = Int(current)
+            if visited.contains(index) {
+                return .cycleDetected(index)
+            }
+            visited.insert(index)
+            chainLength += 1
+            do {
+                guard let next = try _readOverflowPage(index: index) else {
+                    return .truncatedChain(expectedBytes: bytesRead + 1, actualBytes: bytesRead)
+                }
+                bytesRead += next.data.count
+                completeData.append(next.data)
+                current = next.nextPageIndex
+            } catch {
+                return .truncatedChain(expectedBytes: bytesRead + 1, actualBytes: bytesRead)
+            }
+        }
+
+        if let expectedPageCount, chainLength != expectedPageCount {
+            return .truncatedChain(expectedBytes: expectedPageCount, actualBytes: chainLength)
+        }
+        if let expectedBytes, expectedBytes != bytesRead {
+            return .truncatedChain(expectedBytes: expectedBytes, actualBytes: bytesRead)
+        }
+        if let expectedChecksum, overflowChecksum64(completeData) != expectedChecksum {
+            return .truncatedChain(expectedBytes: bytesRead, actualBytes: bytesRead - 1)
+        }
+
+        return .valid
+    }
+
+    /// Scan file for overflow pages unreachable from any main-page root pointer.
+    public func scanForOrphanOverflowPages() -> [Int] {
+        guard let currentFileSize = try? self.fileSize() else { return [] }
+        let totalPages = currentFileSize / pageSize
+        guard totalPages > 0 else { return [] }
+
+        var allOverflowPages = Set<Int>()
+        for i in 0..<totalPages {
+            let offset = off_t(i) * off_t(pageSize)
+            do {
+                let header = try atomicRead(offset: offset, count: 4)
+                if header.count == 4 {
+                    let magic = (UInt32(header[0]) << 24)
+                        | (UInt32(header[1]) << 16)
+                        | (UInt32(header[2]) << 8)
+                        | UInt32(header[3])
+                    if magic == OverflowPageHeader.magic {
+                        allOverflowPages.insert(i)
+                    }
+                }
+            } catch {
+                continue
+            }
+        }
+
+        var reachableOverflowPages = Set<Int>()
+        for root in 0..<totalPages {
+            guard let main = (try? readPage(index: root)) ?? nil else { continue }
+
+            var pointer: UInt32 = 0
+            if let ref = OverflowReferenceV2.decodeIfPresent(from: main, maxDataPerPage: maxDataPerPage) {
+                pointer = ref.firstOverflowPageIndex
+            } else if main.count == maxDataPerPage, main.count >= 4 {
+                let offset = main.count - 4
+                pointer = (UInt32(main[offset]) << 24)
+                    | (UInt32(main[offset + 1]) << 16)
+                    | (UInt32(main[offset + 2]) << 8)
+                    | UInt32(main[offset + 3])
+            } else {
+                continue
+            }
+            var seen = Set<Int>()
+            while pointer > 0 {
+                let idx = Int(pointer)
+                if seen.contains(idx) { break }
+                seen.insert(idx)
+                reachableOverflowPages.insert(idx)
+                guard let page = (try? _readOverflowPage(index: idx)) ?? nil else { break }
+                pointer = page.nextPageIndex
+            }
+        }
+
+        return allOverflowPages.subtracting(reachableOverflowPages).sorted()
+    }
+
+    /// Fast non-cryptographic checksum for overflow payload integrity validation.
+    private func overflowChecksum64(_ data: Data) -> UInt64 {
+        var hash: UInt64 = 0xcbf29ce484222325
+        for byte in data {
+            hash ^= UInt64(byte)
+            hash &*= 0x100000001b3
+        }
+        return hash
     }
 }
 

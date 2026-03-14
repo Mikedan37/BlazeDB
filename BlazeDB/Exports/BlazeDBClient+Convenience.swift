@@ -5,7 +5,6 @@
 //  Convenience initializers for easier database creation
 //  Uses Application Support by default, just provide a name!
 //
-//  Created: 2025-01-XX
 //
 
 import Foundation

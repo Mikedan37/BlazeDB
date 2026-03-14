@@ -5,9 +5,6 @@
 //  Resource bounds and warnings: guardrails for WAL growth, page count, disk usage
 //  Detects resource exhaustion and warns before failures occur
 //
-//  Created by Auto on 1/XX/25.
-//
-
 import Foundation
 
 extension DatabaseHealth {

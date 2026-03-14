@@ -5,9 +5,6 @@
 //  Enhanced Secure Enclave integration for hardware-protected key storage
 //  Provides hardware-level key protection on iOS/macOS devices
 //
-//  Created by Auto on 1/XX/25.
-//
-
 import Foundation
 #if canImport(CryptoKit)
 import CryptoKit
@@ -93,22 +90,32 @@ public final class SecureEnclaveKeyManager {
             throw SecureEnclaveError.keyCreationFailed("Unknown error")
         }
         
-        // Get public key
-        guard SecKeyCopyPublicKey(privateKey) != nil else {
+        // Get public key for encrypting the symmetric key
+        guard let publicKey = SecKeyCopyPublicKey(privateKey) else {
             throw SecureEnclaveError.publicKeyExtractionFailed
         }
-        
-        // Encrypt symmetric key with EC public key
-        // Note: This is a simplified approach - in production, use proper EC encryption
+
+        // Encrypt symmetric key with EC public key using ECIES
         let keyData = key.withUnsafeBytes { Data($0) }
-        
-        // Store encrypted key in Keychain (not Secure Enclave, but protected)
+        let algorithm: SecKeyAlgorithm = .eciesEncryptionCofactorVariableIVX963SHA256AESGCM
+
+        guard SecKeyIsAlgorithmSupported(publicKey, .encrypt, algorithm) else {
+            throw SecureEnclaveError.encryptionFailed("ECIES algorithm not supported")
+        }
+
+        var encryptError: Unmanaged<CFError>?
+        guard let encryptedData = SecKeyCreateEncryptedData(publicKey, algorithm, keyData as CFData, &encryptError) as Data? else {
+            let errorDesc = encryptError?.takeRetainedValue().localizedDescription ?? "Unknown error"
+            throw SecureEnclaveError.encryptionFailed(errorDesc)
+        }
+
+        // Store encrypted key in Keychain (protected by Secure Enclave EC key)
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrAccount as String: "\(keyTag)_encrypted_key",
             kSecAttrService as String: "BlazeDB",
             kSecAttrAccessControl as String: accessControl,
-            kSecValueData as String: keyData,
+            kSecValueData as String: encryptedData,
             kSecAttrAccessible as String: kSecAttrAccessibleWhenUnlockedThisDeviceOnly
         ]
         
@@ -125,6 +132,7 @@ public final class SecureEnclaveKeyManager {
     }
     
     /// Retrieve symmetric key from Secure Enclave
+    /// Decrypts the stored key using the EC private key (requires biometric auth)
     public func retrieveKey() throws -> SymmetricKey? {
         // Retrieve encrypted key from Keychain
         let query: [String: Any] = [
@@ -134,21 +142,53 @@ public final class SecureEnclaveKeyManager {
             kSecReturnData as String: true,
             kSecMatchLimit as String: kSecMatchLimitOne
         ]
-        
+
         var result: AnyObject?
         let status = SecItemCopyMatching(query as CFDictionary, &result)
-        
+
         guard status == errSecSuccess,
-              let keyData = result as? Data else {
+              let encryptedData = result as? Data else {
             return nil
         }
-        
+
+        // Retrieve the EC private key from Secure Enclave
+        guard let tagData = keyTag.data(using: .utf8) else {
+            throw SecureEnclaveError.keychainError(errSecParam)
+        }
+
+        let privateKeyQuery: [String: Any] = [
+            kSecClass as String: kSecClassKey,
+            kSecAttrKeyType as String: kSecAttrKeyTypeECSECPrimeRandom,
+            kSecAttrApplicationTag as String: tagData,
+            kSecAttrKeyClass as String: kSecAttrKeyClassPrivate,
+            kSecReturnRef as String: true
+        ]
+
+        var privateKeyRef: AnyObject?
+        let keyStatus = SecItemCopyMatching(privateKeyQuery as CFDictionary, &privateKeyRef)
+
+        guard keyStatus == errSecSuccess,
+              let privateKey = privateKeyRef else {
+            throw SecureEnclaveError.keychainError(keyStatus)
+        }
+
+        // Decrypt the symmetric key using the EC private key
+        let algorithm: SecKeyAlgorithm = .eciesEncryptionCofactorVariableIVX963SHA256AESGCM
+        // swiftlint:disable:next force_cast
+        let secKey = privateKey as! SecKey
+
+        var decryptError: Unmanaged<CFError>?
+        guard let decryptedData = SecKeyCreateDecryptedData(secKey, algorithm, encryptedData as CFData, &decryptError) as Data? else {
+            let errorDesc = decryptError?.takeRetainedValue().localizedDescription ?? "Unknown error"
+            throw SecureEnclaveError.decryptionFailed(errorDesc)
+        }
+
         // Reconstruct symmetric key
-        guard keyData.count == 32 else {
+        guard decryptedData.count == 32 else {
             throw SecureEnclaveError.invalidKeyData
         }
-        
-        return SymmetricKey(data: keyData)
+
+        return SymmetricKey(data: decryptedData)
     }
     
     /// Check if Secure Enclave is available
@@ -208,6 +248,8 @@ public enum SecureEnclaveError: Error, LocalizedError {
     case publicKeyExtractionFailed
     case keychainError(OSStatus)
     case invalidKeyData
+    case encryptionFailed(String)
+    case decryptionFailed(String)
     case notAvailable
     
     public var errorDescription: String? {
@@ -222,6 +264,10 @@ public enum SecureEnclaveError: Error, LocalizedError {
             return "Keychain error: \(status)"
         case .invalidKeyData:
             return "Invalid key data retrieved from Secure Enclave"
+        case .encryptionFailed(let reason):
+            return "Failed to encrypt key with Secure Enclave: \(reason)"
+        case .decryptionFailed(let reason):
+            return "Failed to decrypt key with Secure Enclave: \(reason)"
         case .notAvailable:
             return "Secure Enclave is not available on this device"
         }

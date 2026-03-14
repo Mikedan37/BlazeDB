@@ -14,12 +14,7 @@ import Darwin
 import Glibc
 #endif
 
-// Import logger for centralized logging
-#if canImport(BlazeDBCore)
-import BlazeDBCore
-#elseif canImport(BlazeDB)
-import BlazeDB
-#endif
+// Note: Logger is available within the same module (BlazeDBCore)
 
 internal extension FileHandle {
     func compatSeek(toOffset offset: UInt64) throws {
@@ -84,21 +79,117 @@ internal extension FileHandle {
 public final class PageStore: @unchecked Sendable {
     public let fileURL: URL
     internal let fileHandle: FileHandle  // Made internal for PageStore+Overflow access
-    internal let key: SymmetricKey  // ✅ ENCRYPTION KEY STORED - Made internal for PageStore+Overflow access
+    internal let fd: Int32  // POSIX file descriptor for pread/pwrite (no shared seek state)
+    internal let key: SymmetricKey  // ENCRYPTION KEY STORED - Made internal for PageStore+Overflow access
     internal let pageSize = 4096  // Made internal for DynamicCollection access
+
+    // MARK: - Write-Ahead Log for crash safety
+    private let wal: WriteAheadLog?
+    private let walEnabled: Bool
     
     // MARK: - Concurrency Invariants
     // Invariants:
-    // - All public methods entering queue.sync must not already be on `queue`
+    // - All reads use pread() — no shared file offset, safe for concurrent readers
+    // - All writes use pwrite() under barrier — no shared file offset
     // - Re-entrancy is guarded via dispatchPrecondition in DEBUG builds
     // - Internal helpers (_writePageLocked, _writePageLockedUnsynchronized) assume caller holds barrier or queue context
     internal let queue = DispatchQueue(label: "com.yourorg.blazedb.pagestore", attributes: .concurrent)  // Made internal for PageStore+Overflow access
     internal let pageCache = PageCache(maxSize: 1000)  // Made internal for DynamicCollection access
+    // Overflow corruption circuit-breaker state (guarded by lock).
+    internal let overflowCorruptionLock = NSLock()
+    internal var knownCorruptedOverflowMainPages: Set<Int> = []
+    internal var overflowCorruptionIncidentCount: Int = 0
+    internal var overflowReadDegradedMode: Bool = false
     private var isLocked: Bool = false  // Track lock state for cleanup
+    private var closed: Bool = false
 
-    public init(fileURL: URL, key: SymmetricKey) throws {
-        self.fileURL = fileURL
+    internal enum IOError: Error, LocalizedError {
+        case posix(
+            operation: String,
+            path: String,
+            errnoValue: Int32,
+            nonBlockingLock: Bool,
+            ownerHint: String?,
+            traceSummaryPath: String?
+        )
+
+        var errorDescription: String? {
+            switch self {
+            case let .posix(operation, path, errnoValue, nonBlockingLock, ownerHint, traceSummaryPath):
+                var msg = "I/O operation failed"
+                msg += " op=\(operation)"
+                msg += " path=\(path)"
+                msg += " errno=\(errnoValue) (\(String(cString: strerror(errnoValue))))"
+                msg += " nonBlockingLock=\(nonBlockingLock)"
+                if let ownerHint {
+                    msg += " ownerHint=\(ownerHint)"
+                }
+                if let traceSummaryPath {
+                    msg += " traceSummary=\(traceSummaryPath)"
+                }
+                return msg
+            }
+        }
+    }
+    
+    internal enum RecoveryError: Error, LocalizedError {
+        case walReplayShortWrite(entryIndex: Int, pageIndex: Int, expected: Int, actual: Int)
+        case walReplayInvalidEntrySize(entryIndex: Int, pageIndex: Int, size: Int, expected: Int)
+        case walReplayFsyncFailed(underlying: Error)
+        case walReplayInjectedFailure(entryIndex: Int)
+        case closeFsyncFailed(underlying: Error)
         
+        var errorDescription: String? {
+            switch self {
+            case .walReplayShortWrite(let entryIndex, let pageIndex, let expected, let actual):
+                return "WAL replay short write at entry \(entryIndex), page \(pageIndex): expected \(expected), wrote \(actual)"
+            case .walReplayInvalidEntrySize(let entryIndex, let pageIndex, let size, let expected):
+                return "WAL replay invalid entry size at entry \(entryIndex), page \(pageIndex): got \(size), expected \(expected)"
+            case .walReplayFsyncFailed(let underlying):
+                return "WAL replay fsync failed: \(underlying.localizedDescription)"
+            case .walReplayInjectedFailure(let entryIndex):
+                return "WAL replay injected failure at entry \(entryIndex)"
+            case .closeFsyncFailed(let underlying):
+                return "Close fsync failed: \(underlying.localizedDescription)"
+            }
+        }
+    }
+    
+    #if DEBUG
+    private static let replayFaultLock = NSLock()
+    nonisolated(unsafe) private static var replayFailAtEntryIndex: Int? = nil
+    nonisolated(unsafe) private static var replayForceFsyncFailure: Bool = false
+    
+    internal static func _setReplayFailureForTests(entryIndex: Int?) {
+        replayFaultLock.lock()
+        replayFailAtEntryIndex = entryIndex
+        replayFaultLock.unlock()
+    }
+    
+    internal static func _setReplayFsyncFailureForTests(_ enabled: Bool) {
+        replayFaultLock.lock()
+        replayForceFsyncFailure = enabled
+        replayFaultLock.unlock()
+    }
+    
+    private static func replayFailureEntryIndexForTests() -> Int? {
+        replayFaultLock.lock()
+        defer { replayFaultLock.unlock() }
+        return replayFailAtEntryIndex
+    }
+    
+    private static func replayFsyncFailureEnabledForTests() -> Bool {
+        replayFaultLock.lock()
+        defer { replayFaultLock.unlock() }
+        return replayForceFsyncFailure
+    }
+    #endif
+
+    public init(fileURL: URL, key: SymmetricKey, enableWAL: Bool = true) throws {
+        self.fileURL = fileURL
+        self.walEnabled = enableWAL
+        IOTraceSink.record(operation: "open_begin", path: fileURL.path)
+
         // Validate key size for AES-GCM
         let bitCount = key.bitCount
         guard [128, 192, 256].contains(bitCount) else {
@@ -106,19 +197,118 @@ public final class PageStore: @unchecked Sendable {
                 NSLocalizedDescriptionKey: "Invalid SymmetricKey bit count: \(bitCount). Expected 128, 192, or 256."
             ])
         }
-        
+
         self.key = key  // ✅ STORE ENCRYPTION KEY
-        
+
         // Create the file if it doesn't exist
         if !FileManager.default.fileExists(atPath: fileURL.path) {
             FileManager.default.createFile(atPath: fileURL.path, contents: nil)
         }
 
         self.fileHandle = try FileHandle(forUpdating: fileURL)
-        
+        self.fd = fileHandle.fileDescriptor
+        IOTraceSink.record(operation: "open_handle", path: fileURL.path, fd: self.fd, resultCode: 0)
+
+        // Initialize WAL if enabled
+        if enableWAL {
+            let walURL = fileURL.deletingPathExtension().appendingPathExtension("wal")
+            self.wal = try WriteAheadLog(logURL: walURL)
+            BlazeLogger.debug("📜 WAL enabled at \(walURL.lastPathComponent)")
+        } else {
+            self.wal = nil
+            BlazeLogger.debug("📜 WAL disabled")
+        }
+
         // CRITICAL: Acquire exclusive file lock to prevent multi-process corruption
         try acquireExclusiveLock()
         
+        // Replay WAL entries if any exist (crash recovery).
+        // Fail closed: never clear WAL unless full replay + fsync succeeds.
+        do {
+            if let wal = self.wal {
+                let entries = try wal.replay()
+                if !entries.isEmpty {
+                    BlazeLogger.info("📜 Replaying \(entries.count) WAL entries from crash recovery")
+                    for (entryIndex, entry) in entries.enumerated() {
+                        #if DEBUG
+                        if let failAt = Self.replayFailureEntryIndexForTests(), failAt == entryIndex {
+                            throw RecoveryError.walReplayInjectedFailure(entryIndex: entryIndex)
+                        }
+                        #endif
+                        
+                        guard entry.data.count == pageSize else {
+                            throw RecoveryError.walReplayInvalidEntrySize(
+                                entryIndex: entryIndex,
+                                pageIndex: entry.pageIndex,
+                                size: entry.data.count,
+                                expected: pageSize
+                            )
+                        }
+                        
+                        // Write directly to file (entry.data is already encrypted)
+                        let offset = off_t(entry.pageIndex * pageSize)
+                        let actualWritten: Int = entry.data.withUnsafeBytes { rawBuffer in
+                            guard let base = rawBuffer.baseAddress else { return 0 }
+                            return pwrite(fd, base, entry.data.count, offset)
+                        }
+                        IOTraceSink.record(
+                            operation: "wal_replay_pwrite",
+                            path: fileURL.path,
+                            fd: fd,
+                            resultCode: Int32(actualWritten),
+                            errnoValue: actualWritten < 0 ? errno : nil,
+                            context: [
+                                "entryIndex": "\(entryIndex)",
+                                "pageIndex": "\(entry.pageIndex)"
+                            ]
+                        )
+                        
+                        guard actualWritten == entry.data.count else {
+                            throw RecoveryError.walReplayShortWrite(
+                                entryIndex: entryIndex,
+                                pageIndex: entry.pageIndex,
+                                expected: entry.data.count,
+                                actual: actualWritten
+                            )
+                        }
+                    }
+                    
+                    #if DEBUG
+                    if Self.replayFsyncFailureEnabledForTests() {
+                        throw RecoveryError.walReplayFsyncFailed(
+                            underlying: NSError(
+                                domain: "PageStore",
+                                code: 99001,
+                                userInfo: [NSLocalizedDescriptionKey: "Injected replay fsync failure"]
+                            )
+                        )
+                    }
+                    #endif
+                    
+                    do {
+                        try fileHandle.compatSynchronize()
+                        IOTraceSink.record(operation: "fsync_main", path: fileURL.path, fd: fd, resultCode: 0)
+                    } catch {
+                        IOTraceSink.record(operation: "fsync_main", path: fileURL.path, fd: fd, resultCode: -1)
+                        throw RecoveryError.walReplayFsyncFailed(underlying: error)
+                    }
+                    
+                    // IMPORTANT: clear WAL only after successful full replay + fsync.
+                    try wal.clear()
+                    BlazeLogger.info("📜 WAL recovery complete, checkpoint cleared")
+                }
+            }
+        } catch {
+            // Recovery failed: preserve WAL for retry/forensics and fail open.
+            BlazeLogger.error("📜 WAL recovery failed; WAL preserved: \(error)")
+            if let wal = self.wal {
+                wal.close()
+            }
+            releaseLock()
+            fileHandle.compatClose()
+            throw error
+        }
+
         BlazeLogger.debug("🔐 PageStore initialized with \(bitCount)-bit encryption and exclusive file lock")
     }
     
@@ -128,18 +318,32 @@ public final class PageStore: @unchecked Sendable {
     /// This prevents multiple processes from writing to the same database file simultaneously.
     /// Lock is automatically released when the file descriptor is closed (process exit or deinit).
     /// 
-    /// - Throws: BlazeDBError.databaseLocked if lock cannot be acquired (another process holds it)
+    /// - Throws: BlazeDBError.concurrentProcessAccessNotSupported if lock cannot be acquired (single-process only)
     /// - Throws: BlazeDBError.permissionDenied if system error occurs (not a lock conflict)
     /// - Precondition: fileHandle must be initialized before calling this method
     /// - Postcondition: If this method returns, isLocked is true and lock is held
     private func acquireExclusiveLock() throws {
         #if canImport(Darwin) || canImport(Glibc)
         let fd = fileHandle.fileDescriptor
+        IOTraceSink.record(
+            operation: "lock_attempt",
+            path: fileURL.path,
+            fd: fd,
+            context: ["type": "LOCK_EX|LOCK_NB", "nonBlocking": "true"]
+        )
         let result = flock(fd, LOCK_EX | LOCK_NB)
         
         if result != 0 {
             // Lock acquisition failed
             let errnoValue = errno
+            IOTraceSink.record(
+                operation: "lock_attempt",
+                path: fileURL.path,
+                fd: fd,
+                resultCode: result,
+                errnoValue: errnoValue,
+                context: ["type": "LOCK_EX|LOCK_NB", "nonBlocking": "true"]
+            )
             // Verify this is actually a lock conflict (EWOULDBLOCK/EAGAIN), not a system error
             // EWOULDBLOCK and EAGAIN are the same value on most systems, but we check both for portability
             let isLockConflict = (errnoValue == EWOULDBLOCK) || (errnoValue == EAGAIN)
@@ -155,18 +359,18 @@ public final class PageStore: @unchecked Sendable {
                 )
             }
             
-            // Lock conflict - another process holds the lock
+            // Lock conflict - another process or handle holds the lock (single-process only)
             // Close the file handle since we failed to acquire lock
             fileHandle.compatClose()
             
-            throw BlazeDBError.databaseLocked(
+            throw BlazeDBError.concurrentProcessAccessNotSupported(
                 operation: "open database",
-                timeout: nil,
                 path: fileURL
             )
         }
         
         isLocked = true
+        IOTraceSink.record(operation: "lock_acquired", path: fileURL.path, fd: fd, resultCode: result)
         BlazeLogger.debug("🔒 Acquired exclusive file lock on \(fileURL.lastPathComponent)")
         #else
         // Platform doesn't support flock() - log warning but continue
@@ -185,6 +389,13 @@ public final class PageStore: @unchecked Sendable {
         #if canImport(Darwin) || canImport(Glibc)
         let fd = fileHandle.fileDescriptor
         let result = flock(fd, LOCK_UN)
+        IOTraceSink.record(
+            operation: "lock_released",
+            path: fileURL.path,
+            fd: fd,
+            resultCode: result,
+            errnoValue: result != 0 ? errno : nil
+        )
         if result != 0 {
             // Log but don't throw - deinit cannot throw
             // Lock will be released by OS when file descriptor closes
@@ -195,6 +406,87 @@ public final class PageStore: @unchecked Sendable {
         #endif
     }
     
+    // MARK: - Atomic I/O (pread/pwrite)
+    // These combine seek+read/write into a single atomic syscall.
+    // No shared file offset — safe for concurrent readers without any lock.
+
+    /// Read `count` bytes at `offset` using pread(). Thread-safe without locking.
+    internal func atomicRead(offset: off_t, count: Int) throws -> Data {
+        var buffer = [UInt8](repeating: 0, count: count)
+        let bytesRead = pread(fd, &buffer, count, offset)
+        IOTraceSink.record(
+            operation: "pread",
+            path: fileURL.path,
+            fd: fd,
+            resultCode: Int32(bytesRead),
+            errnoValue: bytesRead < 0 ? errno : nil,
+            context: ["offset": "\(offset)", "count": "\(count)"]
+        )
+        if bytesRead < 0 {
+            let err = errno
+            throw NSError(domain: "PageStore", code: Int(err), userInfo: [
+                NSLocalizedDescriptionKey: "pread failed at offset \(offset): \(String(cString: strerror(err)))"
+            ])
+        }
+        return Data(buffer.prefix(bytesRead))
+    }
+
+    /// Write `data` at `offset` using pwrite(). Caller must hold barrier.
+    internal func atomicWrite(offset: off_t, data: Data) throws {
+        try data.withUnsafeBytes { rawBuffer in
+            guard let baseAddress = rawBuffer.baseAddress else { return }
+            let bytesWritten = pwrite(fd, baseAddress, data.count, offset)
+            IOTraceSink.record(
+                operation: "pwrite",
+                path: fileURL.path,
+                fd: fd,
+                resultCode: Int32(bytesWritten),
+                errnoValue: bytesWritten < 0 ? errno : nil,
+                context: ["offset": "\(offset)", "count": "\(data.count)"]
+            )
+            if bytesWritten < 0 {
+                let err = errno
+                if err == EAGAIN || err == EWOULDBLOCK {
+                    let ownerHint = IOTraceSink.ownerHint(for: fileURL.path)
+                    let summary = IOTraceSink.dumpTailSummary(
+                        reason: "posix_eagain",
+                        operation: "pwrite",
+                        path: fileURL.path,
+                        errnoValue: err
+                    )
+                    throw IOError.posix(
+                        operation: "pwrite",
+                        path: fileURL.path,
+                        errnoValue: err,
+                        nonBlockingLock: false,
+                        ownerHint: ownerHint,
+                        traceSummaryPath: summary?.path
+                    )
+                }
+                throw NSError(domain: "PageStore", code: Int(err), userInfo: [
+                    NSLocalizedDescriptionKey: "pwrite failed at offset \(offset): \(String(cString: strerror(err)))"
+                ])
+            }
+            if bytesWritten != data.count {
+                throw NSError(domain: "PageStore", code: -1, userInfo: [
+                    NSLocalizedDescriptionKey: "pwrite short write: wrote \(bytesWritten) of \(data.count) bytes"
+                ])
+            }
+        }
+    }
+
+    /// Get current file size using fstat(). No seek needed.
+    internal func fileSize() throws -> Int {
+        var stat = stat()
+        if fstat(fd, &stat) != 0 {
+            let err = errno
+            throw NSError(domain: "PageStore", code: Int(err), userInfo: [
+                NSLocalizedDescriptionKey: "fstat failed: \(String(cString: strerror(err)))"
+            ])
+        }
+        return Int(stat.st_size)
+    }
+
     public func deletePage(index: Int) throws {
         #if DEBUG
         dispatchPrecondition(condition: .notOnQueue(queue))
@@ -203,11 +495,10 @@ public final class PageStore: @unchecked Sendable {
             // Invalidate cache on delete
             pageCache.remove(index)
             
-            let offset = UInt64(index * pageSize)
+            let offset = off_t(index * pageSize)
             BlazeLogger.trace("Deleting page at index \(index), zeroing bytes at offset \(offset)")
-            try fileHandle.compatSeek(toOffset: offset)
             let zeroed = Data(repeating: 0, count: pageSize)
-            try fileHandle.compatWrite(zeroed)
+            try atomicWrite(offset: offset, data: zeroed)
             try fileHandle.compatSynchronize()
             BlazeLogger.trace("Page \(index) deleted (zeroed)")
         }
@@ -234,9 +525,8 @@ public final class PageStore: @unchecked Sendable {
         #endif
         return try queue.sync(flags: .barrier) {
             // Determine next page index from current file size.
-            let attrs = try FileManager.default.attributesOfItem(atPath: fileURL.path)
-            let fileSize = (attrs[.size] as? NSNumber)?.intValue ?? 0
-            let nextIndex = max(0, fileSize / pageSize)
+            let currentSize = try self.fileSize()
+            let nextIndex = max(0, currentSize / pageSize)
             BlazeLogger.trace("Appending plaintext page at index \(nextIndex) with size \(data.count)")
             try _writePageLocked(index: nextIndex, plaintext: data)
             return nextIndex
@@ -263,7 +553,7 @@ public final class PageStore: @unchecked Sendable {
         
         // ✅ ENCRYPT DATA with AES-GCM-256
         // Generate random nonce (12 bytes)
-        let nonce = try AES.GCM.Nonce()
+        let nonce = AES.GCM.Nonce()
         
         // Encrypt plaintext
         let sealedBox = try AES.GCM.seal(plaintext, using: key, nonce: nonce)
@@ -305,11 +595,17 @@ public final class PageStore: @unchecked Sendable {
             buffer.append(Data(repeating: 0, count: pageSize - buffer.count))
         }
 
+        // 📜 WAL: Append to Write-Ahead Log BEFORE writing to main file
+        // This ensures crash safety - if we crash after WAL append but before main write,
+        // the WAL replay on next open will complete the write
+        if let wal = wal {
+            try wal.append(pageIndex: index, data: buffer)
+        }
+        
         // Write encrypted page to disk (NO fsync yet!)
-        let offset = UInt64(index * pageSize)
+        let offset = off_t(index * pageSize)
         BlazeLogger.trace("Writing encrypted at byte offset \(offset) (nonce: \(nonce.withUnsafeBytes { Data($0).prefix(4).map { String(format: "%02x", $0) }.joined() })...)")
-        try fileHandle.compatSeek(toOffset: offset)
-        try fileHandle.compatWrite(buffer)
+        try atomicWrite(offset: offset, data: buffer)
     }
 
     public func writePage(index: Int, plaintext: Data) throws {
@@ -352,27 +648,22 @@ public final class PageStore: @unchecked Sendable {
         #if DEBUG
         dispatchPrecondition(condition: .notOnQueue(queue))
         #endif
-        return try queue.sync {
+        return try queue.sync { () throws -> Data? in
             // Check cache first (MASSIVE speedup for repeated reads!)
             // Note: Cache stores decrypted data for maximum performance
             if let cached = pageCache.get(index) {
                 return cached
             }
-            
-            let offset = UInt64(index * pageSize)
-            guard FileManager.default.fileExists(atPath: fileURL.path) else {
-                BlazeLogger.warn("File missing during read(page \(index)) — returning nil")
-                return nil
-            }
-            // Check file size before seeking
-            let attrs = try FileManager.default.attributesOfItem(atPath: fileURL.path)
-            let fileSizeNum = (attrs[.size] as? NSNumber)?.intValue ?? 0
-            if offset >= fileSizeNum {
+
+            let offset = off_t(index * pageSize)
+            // Check file size using fstat (no seek, no shared state)
+            let currentFileSize = try self.fileSize()
+            if offset >= currentFileSize {
                 BlazeLogger.warn("Offset out of range for page \(index) — returning nil")
                 return nil
             }
-            try fileHandle.compatSeek(toOffset: offset)
-            var page = try fileHandle.compatRead(upToCount: pageSize)
+            // pread: atomic seek+read, safe for concurrent readers
+            var page = try atomicRead(offset: offset, count: pageSize)
             if page.count < pageSize {
                 let padding = Data(repeating: 0, count: pageSize - page.count)
                 page.append(padding)
@@ -476,21 +767,18 @@ public final class PageStore: @unchecked Sendable {
         dispatchPrecondition(condition: .notOnQueue(queue))
         #endif
         return try queue.sync {
-            // Correctly fetch file size from the fileURL
-            let attrs = try FileManager.default.attributesOfItem(atPath: fileURL.path)
-            let fileSizeNum = (attrs[.size] as? NSNumber)?.intValue ?? 0
-            let totalPages = max(0, fileSizeNum / pageSize)
+            let currentFileSize = try self.fileSize()
+            let totalPages = max(0, currentFileSize / pageSize)
 
             var orphanedPages = 0
             let expectedHeader = ("BZDB".data(using: .utf8) ?? Data()) + Data([0x01])
             for i in 0..<totalPages {
-                try fileHandle.compatSeek(toOffset: UInt64(i * pageSize))
-                let header = try fileHandle.compatRead(upToCount: 5)
+                let header = try atomicRead(offset: off_t(i * pageSize), count: 5)
                 if header != expectedHeader {
                     orphanedPages += 1
                 }
             }
-            return (totalPages, orphanedPages, fileSizeNum)
+            return (totalPages, orphanedPages, currentFileSize)
         }
     }
 
@@ -509,22 +797,88 @@ public final class PageStore: @unchecked Sendable {
         #endif
         return queue.sync {
             do {
-                let fileSize = try fileHandle.seekToEnd()
-                let pageIndex = Int(fileSize) / pageSize
-                return pageIndex
+                let currentSize = try self.fileSize()
+                return currentSize / pageSize
             } catch {
-                // Fallback: return 0 and let write handle it
+                BlazeLogger.error("pageCount(): failed to stat file — returning 0: \(error)")
                 return 0
             }
         }
     }
     
-    deinit {
-        // Release file lock before closing file handle
-        releaseLock()
+    // MARK: - WAL Checkpoint
+    
+    /// Checkpoint the WAL - sync main file and clear WAL
+    /// Call this periodically or after batches of writes to limit WAL size
+    public func checkpoint() throws {
+        guard let wal = wal else { return }
         
-        // Ensure final flush before closing
-        try? fileHandle.compatSynchronize()
-        fileHandle.compatClose()
+        try queue.sync(flags: .barrier) {
+            try fileHandle.compatSynchronize()
+            try wal.clear()
+            BlazeLogger.debug("📜 WAL checkpoint complete")
+        }
+    }
+    
+    /// Get WAL statistics
+    public func walStats() -> WALStats? {
+        return wal?.getStats()
+    }
+
+    public func close() {
+        queue.sync(flags: .barrier) {
+            guard !closed else { return }
+
+            if let wal = wal {
+                var mainSyncSucceeded = false
+                do {
+                    try fileHandle.compatSynchronize()
+                    IOTraceSink.record(operation: "fsync_main", path: fileURL.path, fd: fd, resultCode: 0, context: ["phase": "close"])
+                    mainSyncSucceeded = true
+                } catch {
+                    IOTraceSink.record(operation: "fsync_main", path: fileURL.path, fd: fd, resultCode: -1, errnoValue: errno, context: ["phase": "close"])
+                    BlazeLogger.error("📜 Close fsync failed; preserving WAL: \(RecoveryError.closeFsyncFailed(underlying: error).localizedDescription)")
+                }
+                
+                if mainSyncSucceeded {
+                    do {
+                        try wal.clear()
+                    } catch {
+                        BlazeLogger.error("📜 WAL clear failed during close: \(error.localizedDescription)")
+                    }
+                } else {
+                    BlazeLogger.warn("📜 WAL preserved because close fsync did not succeed")
+                }
+                wal.close()
+            }
+
+            // Flush while lock is still held to avoid races with immediate reopen.
+            try? fileHandle.compatSynchronize()
+            IOTraceSink.record(operation: "fsync_main", path: fileURL.path, fd: fd, resultCode: 0, context: ["phase": "close_final"])
+
+            // Release lock and close descriptor deterministically.
+            releaseLock()
+            fileHandle.compatClose()
+            IOTraceSink.record(operation: "close_handle", path: fileURL.path, fd: fd, resultCode: 0)
+            closed = true
+        }
+    }
+    
+    deinit {
+        close()
+    }
+}
+
+extension PageStore {
+    internal func overflowReadDegradedModeEnabled() -> Bool {
+        overflowCorruptionLock.lock()
+        defer { overflowCorruptionLock.unlock() }
+        return overflowReadDegradedMode
+    }
+
+    internal func overflowCorruptionIncidentSnapshot() -> Int {
+        overflowCorruptionLock.lock()
+        defer { overflowCorruptionLock.unlock() }
+        return overflowCorruptionIncidentCount
     }
 }

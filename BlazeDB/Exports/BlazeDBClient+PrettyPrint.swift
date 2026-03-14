@@ -171,32 +171,33 @@ extension BlazeDBClient {
         // Write to file
         try output.write(to: fileURL, atomically: true, encoding: .utf8)
         
-        BlazeLogger.info("✅ Database exported to: \(fileURL.path)")
-        print("✅ Exported \(records.count) records to: \(fileURL.lastPathComponent)")
+        BlazeLogger.info("Exported \(records.count) records to: \(fileURL.path)")
     }
     
-    /// Quick pretty-print to console (for debugging)
+    /// Returns a formatted summary of records for debugging
     ///
-    /// - Parameter limit: Max records to print (default: 10)
-    public func prettyPrint(limit: Int = 10) throws {
+    /// - Parameter limit: Max records to include (default: 10)
+    /// - Returns: Formatted string representation
+    public func prettyPrint(limit: Int = 10) throws -> String {
         let records = try fetchAll().prefix(limit)
-        
-        print("\n╔════════════════════════════════════════════════════════════════╗")
-        print("║                     \(name) - Quick View                      ")
-        print("╚════════════════════════════════════════════════════════════════╝\n")
-        
+        var output = ""
+
+        output += "\n\(name) - Quick View (\(records.count) records)\n"
+        output += String(repeating: "-", count: 50) + "\n"
+
         for (index, record) in records.enumerated() {
-            print("Record #\(index + 1):")
+            output += "Record #\(index + 1):\n"
             for (key, value) in record.storage.sorted(by: { $0.key < $1.key }) {
-                print("  \(key): \(value.prettyString)")
+                output += "  \(key): \(value.prettyString)\n"
             }
-            print("")
+            output += "\n"
         }
-        
+
         let total = try fetchAll().count
         if total > limit {
-            print("... and \(total - limit) more records\n")
+            output += "... and \(total - limit) more records\n"
         }
+        return output
     }
     
     /// Export to Markdown table format
@@ -411,9 +412,7 @@ extension BlazeDBClient {
         
         try output.write(to: fileURL, atomically: true, encoding: .utf8)
         
-        print("✅ Detailed export saved to: \(fileURL.lastPathComponent)")
-        print("   Records: \(records.count)")
-        print("   Size: \(output.utf8.count / 1024) KB")
+        BlazeLogger.info("Detailed export saved to: \(fileURL.lastPathComponent) (\(records.count) records, \(output.utf8.count / 1024) KB)")
     }
     
     /// Export database schema (all unique field names and types)
@@ -464,38 +463,36 @@ extension BlazeDBClient {
         
         try output.write(to: fileURL, atomically: true, encoding: .utf8)
         
-        print("✅ Schema exported to: \(fileURL.lastPathComponent)")
-        print("   Fields: \(schema.count)")
+        BlazeLogger.info("Schema exported to: \(fileURL.lastPathComponent) (\(schema.count) fields)")
     }
     
-    /// Quick debug dump to console (shows structure)
+    /// Returns a debug dump string showing database structure
     ///
-    /// - Parameter limit: Max records to show
-    public func debugDump(limit: Int = 5) throws {
-        print("\n╔════════════════════════════════════════════════════════════════╗")
-        print("║                    \(name) - Quick Dump                       ")
-        print("╚════════════════════════════════════════════════════════════════╝\n")
-        
+    /// - Parameter limit: Max records to include
+    /// - Returns: Formatted debug string
+    public func debugDump(limit: Int = 5) throws -> String {
+        var out = ""
         let stats = try getEncodingStats()
-        print("Records: \(stats.recordCount)")
-        print("Storage: \(stats.blazeBinarySize / 1024) KB")
-        print("Savings: \(String(format: "%.1f", stats.savings))% vs JSON")
-        print("Format: BlazeBinary v1.0\n")
-        
+        out += "\(name) - Debug Dump\n"
+        out += String(repeating: "-", count: 50) + "\n"
+        out += "Records: \(stats.recordCount)\n"
+        out += "Storage: \(stats.blazeBinarySize / 1024) KB\n"
+        out += "Savings: \(String(format: "%.1f", stats.savings))% vs JSON\n\n"
+
         let records = try fetchAll().prefix(limit)
-        
         for (index, record) in records.enumerated() {
-            print("Record #\(index + 1):")
+            out += "Record #\(index + 1):\n"
             for (key, value) in record.storage.sorted(by: { $0.key < $1.key }) {
-                print("  • \(key): \(value.prettyString)")
+                out += "  \(key): \(value.prettyString)\n"
             }
-            print("")
+            out += "\n"
         }
-        
+
         let total = try fetchAll().count
         if total > limit {
-            print("... and \(total - limit) more records\n")
+            out += "... and \(total - limit) more records\n"
         }
+        return out
     }
 }
 

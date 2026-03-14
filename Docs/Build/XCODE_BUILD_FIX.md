@@ -39,7 +39,7 @@ Or use the scheme selector in the toolbar (next to the device selector).
 If Xcode is giving you trouble, use the command line:
 
 ```bash
-cd /Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB
+cd ~/Developer/ProjectBlaze/BlazeDB
 
 # Clean first
 swift package clean
@@ -67,7 +67,7 @@ xcodebuild -scheme BlazeDB -destination 'platform=macOS'
 If you want to use Xcode's GUI, you can generate an Xcode project:
 
 ```bash
-cd /Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB
+cd ~/Developer/ProjectBlaze/BlazeDB
 swift package generate-xcodeproj
 ```
 
@@ -80,7 +80,7 @@ Then open the generated `.xcodeproj` file in Xcode.
 ## **Solution 5: Open Package Directly in Xcode**
 
 1. **Close Xcode** (if open)
-2. **Navigate to** `/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB`
+2. **Navigate to** `~/Developer/ProjectBlaze/BlazeDB`
 3. **Double-click** `Package.swift` (or right-click → Open With → Xcode)
 4. **Xcode will open the package** with proper scheme configuration
 5. **Select a destination** from the toolbar

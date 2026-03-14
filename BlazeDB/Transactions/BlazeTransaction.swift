@@ -2,6 +2,11 @@
 //  BlazeDB
 //  Created by Michael Danylchuk on 6/16/25.
 import Foundation
+#if canImport(Darwin)
+import Darwin
+#elseif canImport(Glibc)
+import Glibc
+#endif
 
 public final class BlazeTransaction {
     private let context: TransactionContext
@@ -68,6 +73,10 @@ public final class BlazeTransaction {
             throw NSError(domain: "BlazeTransaction", code: 1003, userInfo: [NSLocalizedDescriptionKey: "Transaction already finalized"])
         }
         try context.commit()
+        if ProcessInfo.processInfo.environment["BLAZEDB_OVERFLOW_CRASH_HOOK"] == "afterWALAppendBeforeCommitMark" {
+            let code = Int32(ProcessInfo.processInfo.environment["BLAZEDB_OVERFLOW_CRASH_EXIT_CODE"] ?? "86") ?? 86
+            _exit(code)
+        }
         do {
             try TransactionLog().commit(txID: txID.uuidString)
             try TransactionLog().clear()
@@ -96,10 +105,6 @@ public final class BlazeTransaction {
             }
 
             state = .rolledBack
-            return
-
-        default:
-            throw NSError(domain: "BlazeTransaction", code: 1004, userInfo: [NSLocalizedDescriptionKey: "Transaction already finalized"])
         }
     }
     #if DEBUG

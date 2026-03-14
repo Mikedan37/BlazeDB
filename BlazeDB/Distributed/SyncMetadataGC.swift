@@ -4,7 +4,6 @@
 //
 //  Garbage collection for sync metadata
 //
-//  Created: 2025-01-XX
 //
 
 #if !BLAZEDB_LINUX_CORE
@@ -43,7 +42,7 @@ extension BlazeTopology {
     
     /// Remove old sync metadata
     public func cleanupOldSyncMetadata(olderThan: TimeInterval) async throws {
-        // In a real implementation, we'd track metadata creation time
+        // TODO: Implement when distributed module is enabled
         // For now, just cleanup disconnected nodes
         try await cleanupDisconnectedNodeMetadata()
     }

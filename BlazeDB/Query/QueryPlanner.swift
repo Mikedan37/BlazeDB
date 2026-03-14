@@ -9,9 +9,6 @@
 //  - Regular indexes (B-tree)
 //  - Sequential scans
 //
-//  Created by Auto on 1/XX/25.
-//
-
 import Foundation
 @preconcurrency import Foundation
 

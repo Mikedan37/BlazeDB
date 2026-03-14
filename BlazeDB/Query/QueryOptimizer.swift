@@ -5,9 +5,6 @@
 //  Cost-based query optimizer
 //  Selects optimal query plan based on index availability and data statistics
 //
-//  Created by Auto on 1/XX/25.
-//
-
 import Foundation
 
 /// Query execution plan

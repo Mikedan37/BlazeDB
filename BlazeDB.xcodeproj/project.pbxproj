@@ -8,8 +8,6 @@
 
 /* Begin PBXBuildFile section */
 		905445A92DFFA1D300171202 /* BlazeDB.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9054459D2DFFA1D300171202 /* BlazeDB.framework */; };
-		90B808A52E04B2B40046B268 /* SwiftCBOR in Frameworks */ = {isa = PBXBuildFile; productRef = 90B808A42E04B2B40046B268 /* SwiftCBOR */; };
-		90B808A72E04B2C90046B268 /* CryptoSwift in Frameworks */ = {isa = PBXBuildFile; productRef = 90B808A62E04B2C90046B268 /* CryptoSwift */; };
 		90B808AD2E04B72F0046B268 /* BlazeDB.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9054459D2DFFA1D300171202 /* BlazeDB.framework */; };
 		90B808AE2E04B72F0046B268 /* BlazeDB.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 9054459D2DFFA1D300171202 /* BlazeDB.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
@@ -83,8 +81,6 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				90B808A52E04B2B40046B268 /* SwiftCBOR in Frameworks */,
-				90B808A72E04B2C90046B268 /* CryptoSwift in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -166,9 +162,6 @@
 			);
 			name = BlazeDB;
 			packageProductDependencies = (
-				90B808A42E04B2B40046B268 /* SwiftCBOR */,
-				90B808A62E04B2C90046B268 /* CryptoSwift */,
-				90B808A82E04B3100046B268 /* AnyCodable */,
 			);
 			productName = BlazeDB;
 			productReference = 9054459D2DFFA1D300171202 /* BlazeDB.framework */;
@@ -252,9 +245,6 @@
 			mainGroup = 905445932DFFA1D300171202;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
-				908E40962DFFB93D008D1B90 /* XCRemoteSwiftPackageReference "CryptoSwift" */,
-				908E40A22DFFBB79008D1B90 /* XCRemoteSwiftPackageReference "SwiftCBOR" */,
-				908E40E02DFFCE03008D1B90 /* XCRemoteSwiftPackageReference "swift-argument-parser" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 9054459E2DFFA1D300171202 /* Products */;
@@ -479,7 +469,7 @@
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_INSTALL_MODULE = YES;
 				SWIFT_INSTALL_OBJC_HEADER = NO;
-				SWIFT_VERSION = 5.0;
+				SWIFT_VERSION = 6.0;
 			};
 			name = Debug;
 		};
@@ -513,7 +503,7 @@
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_INSTALL_MODULE = YES;
 				SWIFT_INSTALL_OBJC_HEADER = NO;
-				SWIFT_VERSION = 5.0;
+				SWIFT_VERSION = 6.0;
 			};
 			name = Release;
 		};
@@ -528,7 +518,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = DanylchukStudiosLLC.BlazeDBTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_VERSION = 5.0;
+				SWIFT_VERSION = 6.0;
 			};
 			name = Debug;
 		};
@@ -543,7 +533,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = DanylchukStudiosLLC.BlazeDBTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_VERSION = 5.0;
+				SWIFT_VERSION = 6.0;
 			};
 			name = Release;
 		};
@@ -555,7 +545,7 @@
 				DEVELOPMENT_TEAM = 4FN6U9B2Q9;
 				ENABLE_HARDENED_RUNTIME = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SWIFT_VERSION = 5.0;
+				SWIFT_VERSION = 6.0;
 			};
 			name = Debug;
 		};
@@ -567,7 +557,7 @@
 				DEVELOPMENT_TEAM = 4FN6U9B2Q9;
 				ENABLE_HARDENED_RUNTIME = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SWIFT_VERSION = 5.0;
+				SWIFT_VERSION = 6.0;
 			};
 			name = Release;
 		};
@@ -612,49 +602,6 @@
 		};
 /* End XCConfigurationList section */
 
-/* Begin XCRemoteSwiftPackageReference section */
-		908E40962DFFB93D008D1B90 /* XCRemoteSwiftPackageReference "CryptoSwift" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/krzyzanowskim/CryptoSwift";
-			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 1.8.4;
-			};
-		};
-		908E40A22DFFBB79008D1B90 /* XCRemoteSwiftPackageReference "SwiftCBOR" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/myfreeweb/SwiftCBOR";
-			requirement = {
-				branch = master;
-				kind = branch;
-			};
-		};
-		908E40E02DFFCE03008D1B90 /* XCRemoteSwiftPackageReference "swift-argument-parser" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/apple/swift-argument-parser.git";
-			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 1.5.1;
-			};
-		};
-/* End XCRemoteSwiftPackageReference section */
-
-/* Begin XCSwiftPackageProductDependency section */
-		90B808A42E04B2B40046B268 /* SwiftCBOR */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 908E40A22DFFBB79008D1B90 /* XCRemoteSwiftPackageReference "SwiftCBOR" */;
-			productName = SwiftCBOR;
-		};
-		90B808A62E04B2C90046B268 /* CryptoSwift */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 908E40962DFFB93D008D1B90 /* XCRemoteSwiftPackageReference "CryptoSwift" */;
-			productName = CryptoSwift;
-		};
-		90B808A82E04B3100046B268 /* AnyCodable */ = {
-			isa = XCSwiftPackageProductDependency;
-			productName = AnyCodable;
-		};
-/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 905445942DFFA1D300171202 /* Project object */;
 }

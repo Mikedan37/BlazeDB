@@ -4,7 +4,6 @@
 //
 //  Garbage collection for OperationLog to prevent disk exhaustion
 //
-//  Created: 2025-01-XX
 //
 
 #if !BLAZEDB_LINUX_CORE
@@ -75,7 +74,7 @@ extension OperationLog {
         for (id, op) in operations {
             // Check if operation has a timestamp we can use
             // For now, we'll use the Lamport timestamp counter as a proxy
-            // In a real implementation, we'd store actual creation time
+            // TODO: Implement when distributed module is enabled
             if op.timestamp.counter > 0 {
                 // Keep operation if it's recent enough
                 // Note: This is a simplified check - in production, store actual timestamps

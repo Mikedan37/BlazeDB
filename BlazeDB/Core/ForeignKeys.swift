@@ -92,7 +92,7 @@ internal final class ForeignKeyManager {
 extension BlazeDBClient {
     
     nonisolated(unsafe) private static var foreignKeyManagers: [String: ForeignKeyManager] = [:]
-    nonisolated(unsafe) private static let fkManagerLock = NSLock()
+    private static let fkManagerLock = NSLock()
     
     private var foreignKeyManager: ForeignKeyManager {
         let key = "\(name)-\(fileURL.path)"
@@ -160,6 +160,12 @@ extension BlazeDBClient {
             if let referencedID = fieldValue.uuidValue {
                 // Verify it's a valid UUID format (full validation requires multi-collection support)
                 BlazeLogger.trace("🔗 Foreign key '\(fk.name)': \(fk.field) = \(referencedID)")
+            }
+            
+            if operation == "delete" && fk.onDelete != .noAction {
+                throw BlazeDBError.invalidData(
+                    reason: "Foreign key action '\(fk.onDelete)' for '\(fk.name)' is not implemented for delete validation. Use application-level relationship handling."
+                )
             }
         }
     }

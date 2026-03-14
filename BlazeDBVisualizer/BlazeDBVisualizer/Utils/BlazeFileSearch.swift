@@ -1,9 +1,8 @@
-//  UtalizedBitch.swift
+//  BlazeFileSearch.swift
 //  BlazeDBVisualizer
 //  Created by Michael Danylchuk on 6/29/25.
 import Foundation
 
-@MainActor
 func findBlazeFilesAsync(completion: @escaping ([URL]) -> Void) {
     DispatchQueue.global(qos: .background).async {
         let task = Process()
@@ -14,7 +13,7 @@ func findBlazeFilesAsync(completion: @escaping ([URL]) -> Void) {
         task.standardOutput = pipe
         task.standardError = pipe
 
-        task.launch()
+        try? task.run()
 
         let data = pipe.fileHandleForReading.readDataToEndOfFile()
         task.waitUntilExit()

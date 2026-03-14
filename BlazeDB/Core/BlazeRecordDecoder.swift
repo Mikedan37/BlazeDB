@@ -5,9 +5,6 @@
 //  Custom Decoder that converts BlazeDataRecord directly to Codable types
 //  Eliminates JSON intermediate step for better performance!
 //
-//  Created by Auto on 1/XX/25.
-//
-
 import Foundation
 
 /// Custom Decoder that reads directly from BlazeDataRecord.storage

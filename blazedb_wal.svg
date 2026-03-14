@@ -1,0 +1,162 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 700" font-family="'JetBrains Mono', 'SF Mono', 'Fira Code', 'Cascadia Code', monospace">
+  <defs>
+    <marker id="aw" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6" fill="none" stroke="#D97706" stroke-width="1.2"/>
+    </marker>
+    <marker id="ar" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6" fill="none" stroke="#059669" stroke-width="1.2"/>
+    </marker>
+    <marker id="af" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6" fill="none" stroke="#DC2626" stroke-width="1.2"/>
+    </marker>
+  </defs>
+
+  <!-- Background -->
+  <rect width="760" height="700" fill="#FAFAF9"/>
+
+  <!-- Title -->
+  <text x="380" y="34" text-anchor="middle" fill="#1C1917" font-size="13" font-weight="400" letter-spacing="3">WRITE-AHEAD LOG  &amp;  RECOVERY</text>
+  <line x1="120" y1="44" x2="640" y2="44" stroke="#D6D3D1" stroke-width="0.5"/>
+  <text x="380" y="62" text-anchor="middle" fill="#A8A29E" font-size="10" letter-spacing="1">CRASH-SAFE PERSISTENCE MODEL</text>
+
+  <!-- Vertical divider -->
+  <line x1="380" y1="85" x2="380" y2="600" stroke="#E7E5E4" stroke-width="0.5" stroke-dasharray="4,4"/>
+
+  <!-- ===== WRITE PATH (Left) ===== -->
+  <text x="190" y="100" text-anchor="middle" fill="#D97706" font-size="11" letter-spacing="2">WRITE PATH</text>
+
+  <!-- W0: start circle -->
+  <circle cx="190" cy="130" r="6" fill="#D97706"/>
+  <line x1="190" y1="136" x2="190" y2="158" stroke="#D97706" stroke-width="1" marker-end="url(#aw)"/>
+
+  <!-- W1: Application Write -->
+  <rect x="80" y="162" width="220" height="44" fill="none" stroke="#D97706" stroke-width="1.5"/>
+  <text x="92" y="180" fill="#D97706" font-size="9">W1</text>
+  <text x="190" y="180" text-anchor="middle" fill="#1C1917" font-size="12" font-weight="500">APPLICATION WRITE</text>
+  <text x="190" y="196" text-anchor="middle" fill="#78716C" font-size="9">insert | update | delete</text>
+
+  <!-- Transition -->
+  <line x1="190" y1="206" x2="190" y2="240" stroke="#D97706" stroke-width="1" marker-end="url(#aw)"/>
+  <text x="202" y="228" fill="#A8A29E" font-size="8" font-style="italic">append</text>
+
+  <!-- W2: WAL Log -->
+  <rect x="80" y="244" width="220" height="44" fill="none" stroke="#D97706" stroke-width="1.5"/>
+  <text x="92" y="262" fill="#D97706" font-size="9">W2</text>
+  <text x="190" y="262" text-anchor="middle" fill="#1C1917" font-size="12" font-weight="500">WAL LOG</text>
+  <text x="190" y="278" text-anchor="middle" fill="#78716C" font-size="9">sequential entry written first</text>
+
+  <!-- Transition -->
+  <line x1="190" y1="288" x2="190" y2="322" stroke="#D97706" stroke-width="1" marker-end="url(#aw)"/>
+  <text x="202" y="310" fill="#A8A29E" font-size="8" font-style="italic">mutate</text>
+
+  <!-- W3: Page Update -->
+  <rect x="80" y="326" width="220" height="44" fill="none" stroke="#D97706" stroke-width="1.5"/>
+  <text x="92" y="344" fill="#D97706" font-size="9">W3</text>
+  <text x="190" y="344" text-anchor="middle" fill="#1C1917" font-size="12" font-weight="500">PAGE UPDATE</text>
+  <text x="190" y="360" text-anchor="middle" fill="#78716C" font-size="9">4 KB page modified in memory</text>
+
+  <!-- Transition -->
+  <line x1="190" y1="370" x2="190" y2="404" stroke="#D97706" stroke-width="1" marker-end="url(#aw)"/>
+  <text x="202" y="392" fill="#A8A29E" font-size="8" font-style="italic">sync</text>
+
+  <!-- W4: fsync — double border for accept state -->
+  <rect x="80" y="408" width="220" height="44" fill="none" stroke="#D97706" stroke-width="1.5"/>
+  <rect x="84" y="412" width="212" height="36" fill="none" stroke="#D97706" stroke-width="0.5"/>
+  <text x="96" y="434" fill="#D97706" font-size="9">W4</text>
+  <text x="190" y="434" text-anchor="middle" fill="#1C1917" font-size="12" font-weight="500">fsync()</text>
+
+  <!-- Terminal indicator -->
+  <text x="190" y="472" text-anchor="middle" fill="#D97706" font-size="10" font-weight="500">● DURABLE</text>
+
+  <!-- ===== RECOVERY PATH (Right) ===== -->
+  <text x="570" y="100" text-anchor="middle" fill="#059669" font-size="11" letter-spacing="2">RECOVERY PATH</text>
+
+  <!-- R0: start circle -->
+  <circle cx="570" cy="130" r="6" fill="#059669"/>
+  <line x1="570" y1="136" x2="570" y2="158" stroke="#059669" stroke-width="1" marker-end="url(#ar)"/>
+
+  <!-- R1: Startup -->
+  <rect x="460" y="162" width="220" height="44" fill="none" stroke="#059669" stroke-width="1.5"/>
+  <text x="472" y="180" fill="#059669" font-size="9">R1</text>
+  <text x="570" y="180" text-anchor="middle" fill="#1C1917" font-size="12" font-weight="500">DATABASE STARTUP</text>
+  <text x="570" y="196" text-anchor="middle" fill="#78716C" font-size="9">application opens BlazeDB</text>
+
+  <!-- Transition -->
+  <line x1="570" y1="206" x2="570" y2="240" stroke="#059669" stroke-width="1" marker-end="url(#ar)"/>
+  <text x="582" y="228" fill="#A8A29E" font-size="8" font-style="italic">inspect</text>
+
+  <!-- R2: Check WAL -->
+  <rect x="460" y="244" width="220" height="44" fill="none" stroke="#059669" stroke-width="1.5"/>
+  <text x="472" y="262" fill="#059669" font-size="9">R2</text>
+  <text x="570" y="262" text-anchor="middle" fill="#1C1917" font-size="12" font-weight="500">CHECK WAL</text>
+  <text x="570" y="278" text-anchor="middle" fill="#78716C" font-size="9">detect uncommitted entries</text>
+
+  <!-- Decision diamond for "dirty?" -->
+  <line x1="570" y1="288" x2="570" y2="310" stroke="#059669" stroke-width="1"/>
+  <polygon points="570,314 586,330 570,346 554,330" fill="none" stroke="#059669" stroke-width="1.2"/>
+  <text x="570" y="334" text-anchor="middle" fill="#059669" font-size="8" font-weight="500">dirty?</text>
+
+  <!-- Yes path down -->
+  <line x1="570" y1="346" x2="570" y2="370" stroke="#059669" stroke-width="1" marker-end="url(#ar)"/>
+  <text x="582" y="362" fill="#059669" font-size="8">yes</text>
+
+  <!-- No path right — skip to ready -->
+  <line x1="586" y1="330" x2="700" y2="330" stroke="#A8A29E" stroke-width="0.8" stroke-dasharray="3,2"/>
+  <line x1="700" y1="330" x2="700" y2="434" stroke="#A8A29E" stroke-width="0.8" stroke-dasharray="3,2"/>
+  <line x1="700" y1="434" x2="686" y2="434" stroke="#A8A29E" stroke-width="0.8" stroke-dasharray="3,2"/>
+  <text x="706" y="380" fill="#A8A29E" font-size="8" font-style="italic">clean</text>
+
+  <!-- R3: Replay WAL -->
+  <rect x="460" y="374" width="220" height="44" fill="none" stroke="#059669" stroke-width="1.5"/>
+  <text x="472" y="392" fill="#059669" font-size="9">R3</text>
+  <text x="570" y="392" text-anchor="middle" fill="#1C1917" font-size="12" font-weight="500">REPLAY WAL</text>
+  <text x="570" y="408" text-anchor="middle" fill="#78716C" font-size="9">re-apply logged operations</text>
+
+  <!-- Transition -->
+  <line x1="570" y1="418" x2="570" y2="446" stroke="#059669" stroke-width="1"/>
+
+  <!-- R4: Consistent — double border accept state -->
+  <rect x="460" y="450" width="220" height="44" fill="none" stroke="#059669" stroke-width="1.5"/>
+  <rect x="464" y="454" width="212" height="36" fill="none" stroke="#059669" stroke-width="0.5"/>
+  <text x="472" y="476" fill="#059669" font-size="9">R4</text>
+  <text x="570" y="476" text-anchor="middle" fill="#1C1917" font-size="12" font-weight="500">CONSISTENT STATE</text>
+
+  <!-- Terminal indicator -->
+  <text x="570" y="514" text-anchor="middle" fill="#059669" font-size="10" font-weight="500">● READY</text>
+
+  <!-- ===== CRASH ANNOTATION ===== -->
+  <!-- Zigzag line between W2 and W3 going to recovery -->
+  <path d="M304,268 L324,262 L334,274 L344,262 L354,274 L364,262 L380,268" fill="none" stroke="#DC2626" stroke-width="1"/>
+  <line x1="380" y1="268" x2="456" y2="268" stroke="#DC2626" stroke-width="1" stroke-dasharray="3,2" marker-end="url(#af)"/>
+  <text x="418" y="260" text-anchor="middle" fill="#DC2626" font-size="8" font-weight="500">CRASH</text>
+
+  <!-- Bottom annotations -->
+  <line x1="60" y1="570" x2="700" y2="570" stroke="#E7E5E4" stroke-width="0.5"/>
+
+  <text x="80" y="596" fill="#1C1917" font-size="10" font-weight="500">Key invariant:</text>
+  <text x="188" y="596" fill="#78716C" font-size="10">WAL entry is always written before the page mutation.</text>
+  <text x="80" y="616" fill="#1C1917" font-size="10" font-weight="500">Guarantee:</text>
+  <text x="166" y="616" fill="#78716C" font-size="10">If a crash occurs at any point, recovery replays the WAL to</text>
+  <text x="166" y="632" fill="#78716C" font-size="10">restore a consistent page state.</text>
+
+  <!-- Legend -->
+  <g transform="translate(80, 654)">
+    <circle cx="6" cy="6" r="4" fill="#D97706"/>
+    <text x="18" y="10" fill="#78716C" font-size="9">write</text>
+
+    <circle cx="76" cy="6" r="4" fill="#059669"/>
+    <text x="88" y="10" fill="#78716C" font-size="9">recovery</text>
+
+    <path d="M152,3 L160,0 L165,6 L170,0 L175,6" fill="none" stroke="#DC2626" stroke-width="1"/>
+    <text x="184" y="10" fill="#78716C" font-size="9">crash event</text>
+
+    <rect x="260" y="0" width="14" height="12" fill="none" stroke="#1C1917" stroke-width="1"/>
+    <rect x="262" y="2" width="10" height="8" fill="none" stroke="#1C1917" stroke-width="0.5"/>
+    <text x="282" y="10" fill="#78716C" font-size="9">accept state</text>
+
+    <polygon points="378,6 386,0 394,6 386,12" fill="none" stroke="#1C1917" stroke-width="1"/>
+    <text x="402" y="10" fill="#78716C" font-size="9">decision</text>
+  </g>
+
+  <text x="700" y="672" text-anchor="end" fill="#D6D3D1" font-size="9">blazedb.dev</text>
+</svg>

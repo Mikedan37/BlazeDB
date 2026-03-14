@@ -44,7 +44,7 @@ while i < args.count {
         
         Options:
           --db, -d <path>      Database file path
-          --password, -p <pwd> Database password
+          --password, -p <pwd> Database password (or set BLAZEDB_PASSWORD env var)
           --name, -n <name>    Database name (if using default location)
           --help, -h           Show this help
         
@@ -63,8 +63,14 @@ while i < args.count {
     i += 1
 }
 
+// Security: prefer BLAZEDB_PASSWORD env var over command-line argument to avoid
+// password exposure in process listings (visible via `ps`).
+let resolvedPassword = password
+    ?? ProcessInfo.processInfo.environment["BLAZEDB_PASSWORD"]
+    ?? ""
+
 // Initialize database connection
-guard let db = try? initializeDatabase(path: dbPath, name: dbName, password: password ?? "") else {
+guard let db = try? initializeDatabase(path: dbPath, name: dbName, password: resolvedPassword) else {
     let error = """
     {
       "jsonrpc": "2.0",

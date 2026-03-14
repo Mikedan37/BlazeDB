@@ -5,7 +5,6 @@
 //  Immutable snapshot of database state for observability.
 //  Cheap to construct, read-only, no computation.
 //
-//  Created by Auto on 2025-01-23.
 //
 
 import Foundation

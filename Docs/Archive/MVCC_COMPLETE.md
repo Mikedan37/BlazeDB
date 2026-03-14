@@ -393,7 +393,7 @@ db.runGarbageCollection()
 ## **Run The Tests**
 
 ```bash
-cd /Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB
+cd ~/Developer/ProjectBlaze/BlazeDB
 
 # All MVCC tests
 swift test --filter MVCC

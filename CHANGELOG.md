@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.7.0] - 2026-03-13
+
+### Changed
+
+- **Platform requirements:** macOS 15+, iOS 15+ (updated from macOS 14+)
+- **Encryption framing:** Always-on AES-256-GCM encryption (cannot be disabled)
+- **Package cleanup:** Removed all commented-out distributed module references from Package.swift
+- **API improvements:** `softDelete` records are now hidden from `fetch(id:)`, `fetchAll()`, and queries
+- **Bug fix:** `insertMany` records now immediately visible to `query().where()` and `fetchAll()` (fixed stale cache race)
+- **Bug fix:** `deleteMany` now returns count of actually deleted records, not count of requested IDs
+- **New API:** `mvccStatusDescription()` returns formatted string (replaces `printMVCCStatus()` which printed to stdout)
+- **Library hygiene:** All `print()` calls removed from library code; methods now return strings or use BlazeLogger
+
+### Added
+
+- `CODE_OF_CONDUCT.md` (Contributor Covenant v2.1)
+- `SECURITY.md` (vulnerability disclosure policy)
+- `PublicAPIVerificationTests` — 47 tests covering every public API category
+
+### Removed
+
+- Distributed module stubs from Package.swift (code still in repo, excluded from build)
+- `README_NEW.md` (outdated, conflicting version claims)
+
+---
+
 ## [0.1.2] - 2026-01-23
 
 ### Fixed
@@ -99,7 +125,7 @@ When consumers pin BlazeDB to a stable version (e.g., `exact: "0.1.0"`), SwiftPM
 
 ### Platform Support
 
-- **macOS:** 12.0+
+- **macOS:** 12.0+ (updated to 15.0+ in v2.7.0)
 - **iOS:** 15.0+
 - **Linux:** aarch64 (tested on Orange Pi 5 Ultra)
 - **Swift:** 6.0+ (strict concurrency compliant for core modules)

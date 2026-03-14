@@ -9,7 +9,7 @@ dependencies: [
     // BlazeTransport: Transport layer for distributed sync
     // BlazeBinary comes transitively through BlazeTransport
     .package(
-        url: "git@github.com:Mikedan37/BlazeTransport.git",
+        url: "https://github.com/Mikedan37/BlazeTransport.git",
         branch: "main"  // Branch-based resolution only
     )
 ]
@@ -18,7 +18,7 @@ dependencies: [
 **Key Points:**
 -  BlazeDB depends ONLY on BlazeTransport (not BlazeBinary directly)
 -  BlazeBinary comes transitively through BlazeTransport
--  Uses SSH URL format: `git@github.com:Mikedan37/BlazeTransport.git`
+-  Uses SSH URL format: `https://github.com/Mikedan37/BlazeTransport.git`
 -  Branch-based resolution only (no revisions)
 -  Swift tools version: 6.0
 -  Linux support (implicit - works on aarch64/Orange Pi 5 Ultra)
@@ -31,7 +31,7 @@ dependencies: [
 
 **Required Fix in BlazeTransport**: Update BlazeTransport's Package.swift to use BlazeBinary as a remote dependency:
 ```swift
-.package(url: "git@github.com:Mikedan37/BlazeBinary.git", branch: "main")
+.package(url: "https://github.com/Mikedan37/BlazeBinary.git", branch: "main")
 ```
 
 Instead of:
@@ -111,7 +111,7 @@ nc -zv localhost 9090
 
 1. **Clone BlazeDB**:
 ```bash
-git clone git@github.com:Mikedan37/BlazeDB.git
+git clone https://github.com/Mikedan37/BlazeDB.git
 cd BlazeDB
 ```
 

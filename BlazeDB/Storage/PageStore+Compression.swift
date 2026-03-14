@@ -24,7 +24,7 @@ extension PageStore {
     
     // Swift 6: Protected by NSLock, safe for concurrent access
     nonisolated(unsafe) private static var compressionEnabled: [ObjectIdentifier: Bool] = [:]
-    nonisolated(unsafe) private static let compressionLock = NSLock()
+    private static let compressionLock = NSLock()
     
     /// Enable compression for pages > 1KB
     public func enableCompression() {
@@ -70,7 +70,7 @@ extension PageStore {
         // Write compressed data with compression marker (version 0x03)
         try queue.sync(flags: .barrier) {
             // Encrypt compressed data
-            let nonce = try AES.GCM.Nonce()
+            let nonce = AES.GCM.Nonce()
             let sealedBox = try AES.GCM.seal(compressed, using: key, nonce: nonce)
             
             var buffer = Data()
@@ -82,9 +82,13 @@ extension PageStore {
             buffer.append(magicBytes)
             buffer.append(0x03)  // Version 0x03 = compressed + encrypted
             
-            // Store original length (for decompression)
+            // Store original length (for decompression target size)
             var originalLength = UInt32(plaintext.count).bigEndian
             buffer.append(Data(bytes: &originalLength, count: 4))
+            
+            // Store compressed length (for ciphertext bounds) - FIXED in v0x03.1
+            var compressedLength = UInt32(sealedBox.ciphertext.count).bigEndian
+            buffer.append(Data(bytes: &compressedLength, count: 4))
             
             // Encryption components
             buffer.append(contentsOf: nonce)
@@ -96,9 +100,8 @@ extension PageStore {
                 buffer.append(Data(repeating: 0, count: pageSize - buffer.count))
             }
             
-            let offset = UInt64(index * pageSize)
-            try fileHandle.compatSeek(toOffset: offset)
-            try fileHandle.compatWrite(buffer)
+            let offset = off_t(index * pageSize)
+            try atomicWrite(offset: offset, data: buffer)
             try fileHandle.compatSynchronize()
         }
     }
@@ -115,9 +118,7 @@ extension PageStore {
         
         // Read version from stored page
         let storedPage = try queue.sync {
-            let offset = UInt64(index * pageSize)
-            try fileHandle.compatSeek(toOffset: offset)
-            return try fileHandle.compatRead(upToCount: pageSize)
+            try atomicRead(offset: off_t(index * pageSize), count: pageSize)
         }
         
         guard storedPage.count >= 9 else { return page }
@@ -127,13 +128,38 @@ extension PageStore {
             // Compressed + encrypted
             let originalLength = Int(storedPage.subdata(in: 5..<9).withUnsafeBytes { $0.load(as: UInt32.self).bigEndian })
             
-            guard storedPage.count >= 37 else { return page }
+            // Check if this is the new format with compressedLength (41+ byte header)
+            // or old format without it (37 byte header)
+            let hasCompressedLength = storedPage.count >= 41
             
-            let nonceData = storedPage.subdata(in: 9..<21)
+            let compressedLength: Int
+            let nonceOffset: Int
+            let tagOffset: Int
+            let ciphertextOffset: Int
+            
+            if hasCompressedLength {
+                // New format: includes compressedLength field
+                compressedLength = Int(storedPage.subdata(in: 9..<13).withUnsafeBytes { $0.load(as: UInt32.self).bigEndian })
+                nonceOffset = 13
+                tagOffset = 25
+                ciphertextOffset = 41
+            } else {
+                // Old format: no compressedLength field (backward compatibility)
+                // Use remaining data as ciphertext (may include padding)
+                guard storedPage.count >= 37 else { return page }
+                compressedLength = storedPage.count - 37
+                nonceOffset = 9
+                tagOffset = 21
+                ciphertextOffset = 37
+            }
+            
+            guard storedPage.count >= ciphertextOffset else { return page }
+            
+            let nonceData = storedPage.subdata(in: nonceOffset..<(nonceOffset + 12))
             guard let nonce = try? AES.GCM.Nonce(data: nonceData) else { return page }
             
-            let tagData = storedPage.subdata(in: 21..<37)
-            let ciphertext = storedPage.subdata(in: 37..<min(37 + originalLength, storedPage.count))
+            let tagData = storedPage.subdata(in: tagOffset..<(tagOffset + 16))
+            let ciphertext = storedPage.subdata(in: ciphertextOffset..<min(ciphertextOffset + compressedLength, storedPage.count))
             
             guard let sealedBox = try? AES.GCM.SealedBox(nonce: nonce, ciphertext: ciphertext, tag: tagData) else {
                 return page

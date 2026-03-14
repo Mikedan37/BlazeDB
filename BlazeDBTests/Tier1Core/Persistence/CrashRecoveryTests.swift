@@ -23,7 +23,7 @@ import Crypto
 final class CrashRecoveryTests: XCTestCase {
     
     var tempURL: URL!
-    let password = "test-password-123"
+    let password = "TestPassword-123!"
     
     override func setUpWithError() throws {
         tempURL = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".blazedb")

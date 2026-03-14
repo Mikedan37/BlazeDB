@@ -15,21 +15,24 @@ extension PageStore {
     /// 1.5-2x faster for sequential scans!
     public func prefetchPages(_ indices: [Int]) throws {
         let group = DispatchGroup()
-        let queue = DispatchQueue(label: "com.blazedb.prefetch", attributes: .concurrent)
-        var errors: [Error] = []
+        let dispatchQueue = DispatchQueue(label: "com.blazedb.prefetch", attributes: .concurrent)
+        nonisolated(unsafe) var errors: [Error] = []
         let errorLock = NSLock()
+        
+        // Capture self for thread-safe page reading
+        let pageStore = self
         
         for index in indices {
             // Skip if already cached
             if pageCache.get(index) != nil { continue }
             
             group.enter()
-            queue.async {
+            dispatchQueue.async {
                 defer { group.leave() }
                 
                 do {
                     // Read and cache the page
-                    _ = try self.readPage(index: index)
+                    _ = try pageStore.readPage(index: index)
                 } catch {
                     errorLock.lock()
                     errors.append(error)

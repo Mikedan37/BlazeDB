@@ -5,9 +5,6 @@
 //  Health check and monitoring API
 //  Uses existing MetricsCollector for telemetry
 //
-//  Created by Auto on 1/XX/25.
-//
-
 import Foundation
 
 // MARK: - Health Status

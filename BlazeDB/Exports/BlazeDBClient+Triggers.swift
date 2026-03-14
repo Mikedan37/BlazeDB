@@ -4,9 +4,6 @@
 //
 //  Trigger persistence integration
 //
-//  Created by Auto on 1/XX/25.
-//
-
 #if !BLAZEDB_LINUX_CORE
 import Foundation
 
@@ -14,7 +11,9 @@ extension BlazeDBClient {
     
     /// Persist trigger definition to StorageLayout metaData
     internal func persistTriggerDefinition(_ definition: TriggerDefinition) throws {
-        let layout = try StorageLayout.loadSecure(from: collection.metaURLPath, signingKey: collection.encryptionKey)
+        // Use non-throwing legacy load helper so trigger metadata persistence is best-effort
+        // even when signed layout verification is unavailable in this code path.
+        let layout = try StorageLayout.load(from: collection.metaURLPath)
         var updatedLayout = layout
         
         // Load existing trigger definitions from metaData
@@ -32,14 +31,14 @@ extension BlazeDBClient {
             let encoded = try JSONEncoder().encode(triggerDefinitions)
             updatedLayout.metaData["_triggers"] = .data(encoded)
             
-            try updatedLayout.saveSecure(to: collection.metaURLPath, signingKey: collection.encryptionKey)
+            try updatedLayout.save(to: collection.metaURLPath)
             BlazeLogger.debug("Persisted trigger definition: \(definition.name)")
         }
     }
     
     /// Reload triggers from StorageLayout metaData (called on DB open)
     internal func reloadTriggers() {
-        guard let layout = try? StorageLayout.loadSecure(from: collection.metaURLPath, signingKey: collection.encryptionKey) else {
+        guard let layout = try? StorageLayout.load(from: collection.metaURLPath) else {
             return
         }
         

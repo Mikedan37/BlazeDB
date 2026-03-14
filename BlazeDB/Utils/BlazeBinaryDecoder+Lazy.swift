@@ -4,9 +4,6 @@
 //
 //  BlazeBinary v3 decoder with field table support for lazy decoding
 //
-//  Created by Auto on 1/XX/25.
-//
-
 import Foundation
 
 extension BlazeBinaryDecoder {

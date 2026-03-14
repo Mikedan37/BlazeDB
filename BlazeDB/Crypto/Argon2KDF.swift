@@ -5,9 +5,6 @@
 //  Hardened key derivation using Argon2id (memory-hard, GPU-resistant)
 //  Replaces PBKDF2 for better security against brute force attacks
 //
-//  Created by Auto on 1/XX/25.
-//
-
 import Foundation
 #if canImport(CryptoKit)
 import CryptoKit

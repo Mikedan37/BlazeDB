@@ -5,7 +5,6 @@
 //  Workspace-specific query helpers for multi-workspace agent workloads
 //  Provides convenient methods for common workspace queries
 //
-//  Created by Auto on 2025-11-27.
 //
 
 import Foundation

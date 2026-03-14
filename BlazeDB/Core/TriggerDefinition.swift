@@ -4,9 +4,6 @@
 //
 //  Persistent trigger definition for StorageLayout
 //
-//  Created by Auto on 1/XX/25.
-//
-
 import Foundation
 
 /// Persistent trigger definition (metadata only)

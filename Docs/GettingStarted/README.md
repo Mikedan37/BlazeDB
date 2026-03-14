@@ -20,7 +20,7 @@ dependencies: [
     .package(url: "https://github.com/Mikedan37/BlazeDB.git", from: "2.7.0")
 ],
 targets: [
-    .target(name: "YourApp", dependencies: ["BlazeDBCore"])
+    .target(name: "YourApp", dependencies: ["BlazeDB"])
 ]
 ```
 

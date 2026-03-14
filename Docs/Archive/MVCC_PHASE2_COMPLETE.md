@@ -316,7 +316,7 @@ Trigger GC when:
 
 ### **Run Integration Tests**:
 ```bash
-cd /Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB
+cd ~/Developer/ProjectBlaze/BlazeDB
 swift test --filter MVCCIntegrationTests
 ```
 

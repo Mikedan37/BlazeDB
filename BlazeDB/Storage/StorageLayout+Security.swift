@@ -5,9 +5,6 @@
 //  Tamper-proof metadata with HMAC signatures
 //  Prevents unauthorized modification of database structure
 //
-//  Created by Auto on 1/XX/25.
-//
-
 import Foundation
 #if canImport(CryptoKit)
 import CryptoKit

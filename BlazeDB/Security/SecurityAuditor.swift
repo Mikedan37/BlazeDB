@@ -68,6 +68,11 @@ public struct SecurityAuditReport {
 
 /// Security auditor - analyzes database security configuration
 public struct SecurityAuditor {
+    public enum CapabilityState {
+        case enabled
+        case disabled
+        case unknown
+    }
     
     /// Audit database security configuration
     public static func audit(
@@ -78,6 +83,31 @@ public struct SecurityAuditor {
         hasAuditLogging: Bool = false,
         usesTLS: Bool = false,
         hasCertificatePinning: Bool = false,
+        crc32Enabled: Bool = false,
+        passwordRequirements: PasswordStrengthValidator.Requirements? = nil
+    ) -> SecurityAuditReport {
+        return auditWithCapabilityStates(
+            isEncrypted: isEncrypted,
+            password: password,
+            hasRBAC: hasRBAC,
+            hasRLS: hasRLS,
+            hasAuditLoggingState: hasAuditLogging ? .enabled : .disabled,
+            usesTLSState: usesTLS ? .enabled : .disabled,
+            hasCertificatePinningState: hasCertificatePinning ? .enabled : .disabled,
+            crc32Enabled: crc32Enabled,
+            passwordRequirements: passwordRequirements
+        )
+    }
+
+    /// Audit database security configuration using explicit capability states.
+    public static func auditWithCapabilityStates(
+        isEncrypted: Bool,
+        password: String? = nil,
+        hasRBAC: Bool = false,
+        hasRLS: Bool = false,
+        hasAuditLoggingState: CapabilityState = .unknown,
+        usesTLSState: CapabilityState = .unknown,
+        hasCertificatePinningState: CapabilityState = .unknown,
         crc32Enabled: Bool = false,
         passwordRequirements: PasswordStrengthValidator.Requirements? = nil
     ) -> SecurityAuditReport {
@@ -118,7 +148,7 @@ public struct SecurityAuditor {
                 category: .dataIntegrity,
                 title: "CRC32 Not Enabled",
                 description: "Unencrypted database should enable CRC32 for corruption detection.",
-                recommendation: "Enable CRC32: BlazeBinaryEncoder.crc32Mode = .enabled",
+                recommendation: "Enable CRC32 during initialization before any concurrent access: BlazeBinaryEncoder.crc32Mode = .enabled (setting this at runtime while other threads are encoding may cause data races)",
                 fixable: true
             ))
         }
@@ -136,16 +166,31 @@ public struct SecurityAuditor {
         }
         
         // 4. Network security
-        if usesTLS && !hasCertificatePinning {
-            findings.append(SecurityAuditFinding(
-                severity: .medium,
-                category: .network,
-                title: "No Certificate Pinning",
-                description: "TLS is enabled but certificate pinning is not configured. Vulnerable to MITM attacks.",
-                recommendation: "Enable certificate pinning for production: CertificatePinningConfig.fromFile(url)",
-                fixable: true
-            ))
-        } else if !usesTLS {
+        switch usesTLSState {
+        case .enabled:
+            switch hasCertificatePinningState {
+            case .enabled:
+                break
+            case .disabled:
+                findings.append(SecurityAuditFinding(
+                    severity: .medium,
+                    category: .network,
+                    title: "No Certificate Pinning",
+                    description: "TLS is enabled but certificate pinning is not configured. Vulnerable to MITM attacks.",
+                    recommendation: "Enable certificate pinning for production: CertificatePinningConfig.fromFile(url)",
+                    fixable: true
+                ))
+            case .unknown:
+                findings.append(SecurityAuditFinding(
+                    severity: .info,
+                    category: .network,
+                    title: "Certificate Pinning Status Unknown",
+                    description: "The runtime does not track certificate pinning state.",
+                    recommendation: "Report certificate pinning state from connection configuration.",
+                    fixable: true
+                ))
+            }
+        case .disabled:
             findings.append(SecurityAuditFinding(
                 severity: .high,
                 category: .network,
@@ -154,16 +199,37 @@ public struct SecurityAuditor {
                 recommendation: "Enable TLS for all network connections: remote.useTLS = true",
                 fixable: true
             ))
+        case .unknown:
+            findings.append(SecurityAuditFinding(
+                severity: .info,
+                category: .network,
+                title: "TLS Status Unknown",
+                description: "The runtime does not track whether transport security is enabled.",
+                recommendation: "Report TLS state from connection configuration.",
+                fixable: true
+            ))
         }
         
         // 5. Audit logging
-        if !hasAuditLogging {
+        switch hasAuditLoggingState {
+        case .enabled:
+            break
+        case .disabled:
             findings.append(SecurityAuditFinding(
                 severity: .low,
                 category: .audit,
                 title: "No Audit Logging",
                 description: "Audit logging is disabled. Cannot track access or changes.",
                 recommendation: "Enable audit logging for compliance and security monitoring.",
+                fixable: true
+            ))
+        case .unknown:
+            findings.append(SecurityAuditFinding(
+                severity: .info,
+                category: .audit,
+                title: "Audit Logging Status Unknown",
+                description: "The runtime does not track whether audit logging is enabled.",
+                recommendation: "Report application-level audit logging state into security audit.",
                 fixable: true
             ))
         }
@@ -184,7 +250,7 @@ public struct SecurityAuditor {
             recommendations.append("✅ Access control is properly configured.")
         }
         
-        if usesTLS && hasCertificatePinning {
+        if usesTLSState == .enabled && hasCertificatePinningState == .enabled {
             recommendations.append("✅ Network security is properly configured.")
         }
         
@@ -224,7 +290,8 @@ public struct SecurityAuditor {
         hasRBAC: Bool = false,
         usesTLS: Bool = false
     ) -> Bool {
-        return isEncrypted && (hasRBAC || !usesTLS || usesTLS)  // Basic check
+        // Basic signal: encryption is required, plus either access control or secure transport.
+        return isEncrypted && (hasRBAC || usesTLS)
     }
 }
 

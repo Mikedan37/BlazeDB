@@ -68,7 +68,7 @@ VISUALIZER_EDITING_COMPLETE.md
 
 ### **1. Build the Project**
 ```bash
-cd /Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/BlazeDBVisualizer
+cd ~/Developer/ProjectBlaze/BlazeDB/BlazeDBVisualizer
 xcodebuild -scheme BlazeDBVisualizer -configuration Release
 
 # Or in Xcode: ⌘B

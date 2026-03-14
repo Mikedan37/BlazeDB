@@ -5,9 +5,6 @@
 //  Zero-copy field view for lazy decoding from memory-mapped buffers
 //  ARM-optimized with direct pointer access
 //
-//  Created by Auto on 1/XX/25.
-//
-
 import Foundation
 
 /// Zero-copy view into a BlazeBinary field stored in a memory-mapped buffer

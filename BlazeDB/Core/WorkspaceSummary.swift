@@ -5,7 +5,6 @@
 //  Lightweight workspace summary table for multi-workspace agent workloads
 //  Provides fast aggregated statistics without full table scans
 //
-//  Created by Auto on 2025-11-27.
 //
 
 import Foundation

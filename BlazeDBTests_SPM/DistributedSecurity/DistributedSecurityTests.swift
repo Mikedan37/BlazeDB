@@ -1,6 +1,7 @@
 import XCTest
 import Foundation
 
+#if !os(Linux)
 final class DistributedSecurityTests: XCTestCase {
     private func runXcodeDistributedSuite() throws -> (status: Int32, output: String) {
         let process = Process()
@@ -56,3 +57,10 @@ final class DistributedSecurityTests: XCTestCase {
         )
     }
 }
+#else
+final class DistributedSecurityTests: XCTestCase {
+    func testDistributedFailClosedSuiteExecutesAndPasses() throws {
+        throw XCTSkip("xcodebuild is not available on Linux")
+    }
+}
+#endif

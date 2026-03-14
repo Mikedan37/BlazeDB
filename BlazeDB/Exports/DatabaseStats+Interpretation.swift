@@ -72,7 +72,7 @@ extension DatabaseStats {
         }
         
         // Cache hit rate interpretation
-        if cacheHitRate > 0 {
+        if cacheHitRateAvailable {
             output += String(format: "Cache hit rate: %.1f%%", cacheHitRate * 100)
             if cacheHitRate >= 0.9 {
                 output += " (excellent)"
@@ -84,6 +84,8 @@ extension DatabaseStats {
                 output += " (low - expect slower reads)"
             }
             output += "\n"
+        } else {
+            output += "Cache hit rate: unavailable\n"
         }
         
         // Index count interpretation

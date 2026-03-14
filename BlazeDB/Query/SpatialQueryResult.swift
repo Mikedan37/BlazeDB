@@ -4,9 +4,6 @@
 //
 //  Spatial query result with distance information.
 //
-//  Created by Auto on 1/XX/25.
-//
-
 import Foundation
 
 /// A record with its distance from a query point

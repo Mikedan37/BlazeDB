@@ -27,13 +27,13 @@ extension BlazeDBClient {
     
     /// Execute async transaction
     public func transaction(_ block: () async throws -> Void) async throws {
-        try await self.beginTransaction()
+        try self.beginTransaction()
         
         do {
             try await block()
-            try await self.commitTransaction()
+            try self.commitTransaction()
         } catch {
-            try? await self.rollbackTransaction()
+            try? self.rollbackTransaction()
             throw error
         }
     }
@@ -148,7 +148,8 @@ extension QueryBuilder {
     
     /// Find recent (last N days)
     public func recent(days: Int, field: String = "createdAt") -> QueryBuilder {
-        let cutoff = Calendar.current.date(byAdding: .day, value: -days, to: Date())!
+        // Safe unwrap with fallback to distant past if calendar operation fails
+        let cutoff = Calendar.current.date(byAdding: .day, value: -days, to: Date()) ?? Date.distantPast
         return self.where(field, greaterThan: .date(cutoff))
     }
     
@@ -279,6 +280,8 @@ extension BlazeDBError {
             return "Permission denied for operation: \(operation)"
         case .databaseLocked(let operation, _, _):
             return "Database is locked for operation: \(operation)"
+        case .concurrentProcessAccessNotSupported(let operation, _):
+            return "Concurrent process access not supported (single-process only): \(operation)"
         case .corruptedData(let location, let reason):
             return "Data corrupted at \(location): \(reason)"
         case .passwordTooWeak(let requirements):

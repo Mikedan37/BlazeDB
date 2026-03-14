@@ -5,9 +5,6 @@
 //  Geospatial query methods for QueryBuilder.
 //  Provides fluent API for location-based queries.
 //
-//  Created by Auto on 1/XX/25.
-//
-
 #if !BLAZEDB_LINUX_CORE
 import Foundation
 

@@ -5,9 +5,6 @@
 //  Index hints for query optimization
 //  Optimized with index selection logic
 //
-//  Created by Auto on 1/XX/25.
-//
-
 import Foundation
 
 // MARK: - Index Hint

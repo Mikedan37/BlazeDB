@@ -6,9 +6,6 @@
 //  Provides a Swifty, fluent, type-safe API for generating chart-ready datasets
 //  Built on top of existing QueryBuilder, aggregations, and window functions
 //
-//  Created by Auto on 1/XX/25.
-//
-
 import Foundation
 
 // MARK: - Graph Point Result Type
