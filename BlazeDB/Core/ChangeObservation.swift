@@ -80,7 +80,7 @@ internal final class ChangeNotificationManager: @unchecked Sendable {
     private let batchDelay: TimeInterval = 0.05  // 50ms batching
     
     /// Thread-safe singleton (caller must ensure thread safety)
-    nonisolated(unsafe) static let shared = ChangeNotificationManager()
+    static let shared = ChangeNotificationManager()
     
     private init() {}
     
@@ -266,7 +266,7 @@ extension BlazeDBClient {
                         predicate(record) {
                     relevantChanges.append(change)
                 }
-                else if case .delete(let id) = change.type {
+                else if case .delete = change.type {
                     // Can't check deleted record, include all deletes
                     relevantChanges.append(change)
                 }

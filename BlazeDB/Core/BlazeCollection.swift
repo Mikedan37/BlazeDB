@@ -45,47 +45,10 @@ public final class BlazeCollection<Record: BlazeRecord> {
     
     func insertMany(_ records: [Record]) throws {
         try queue.sync(flags: .barrier) {
-            // OPTIMIZED: Use parallel encoding for batches (2-4x faster!)
-            let encodedRecords: [Data]
-            if records.count > 10 {
-                // Parallel encoding for large batches
-                let group = DispatchGroup()
-                let queue = DispatchQueue(label: "com.blazedb.encode.parallel", attributes: .concurrent)
-                var results: [Data?] = Array(repeating: nil, count: records.count)
-                var errors: [Error] = []
-                let errorLock = NSLock()
-                
-                for (index, record) in records.enumerated() {
-                    group.enter()
-                    queue.async {
-                        defer { group.leave() }
-                        do {
-                            // Encode BlazeRecord (Codable) to BlazeBinary via JSON intermediate
-                            // NOTE: Direct BlazeRecord encoding intentionally not implemented.
-                            // JSON intermediate encoding provides compatibility with Codable protocol.
-                            let jsonData = try JSONEncoder().encode(record)
-                            let blazeRecord = try JSONDecoder().decode(BlazeDataRecord.self, from: jsonData)
-                            let encoded = try BlazeBinaryEncoder.encodeOptimized(blazeRecord)
-                            results[index] = encoded
-                        } catch {
-                            errorLock.lock()
-                            errors.append(error)
-                            errorLock.unlock()
-                        }
-                    }
-                }
-                group.wait()
-                
-                if let firstError = errors.first {
-                    throw firstError
-                }
-                encodedRecords = results.compactMap { $0 }
-            } else {
-                // Sequential encoding for small batches (overhead not worth it)
-                encodedRecords = try records.map { record in
-                    let blazeRecord = try encodeToBlazeDataRecord(record)
-                    return try BlazeBinaryEncoder.encodeOptimized(blazeRecord)
-                }
+            // Legacy path: keep batch encoding sequential for Swift 6 Sendable safety.
+            let encodedRecords = try records.map { record in
+                let blazeRecord = try encodeToBlazeDataRecord(record)
+                return try BlazeBinaryEncoder.encodeOptimized(blazeRecord)
             }
             
             // Write all pages (unsynchronized for batch performance)
@@ -165,8 +128,7 @@ public final class BlazeCollection<Record: BlazeRecord> {
 
         // Include any secondary index data if available in the store
         // Use reflection to check for secondaryIndexes in PageStore
-        if let pageStore = store as? PageStore,
-           let mirror = Mirror(reflecting: pageStore).children.first(where: { $0.label == "secondaryIndexes" }),
+        if let mirror = Mirror(reflecting: store).children.first(where: { $0.label == "secondaryIndexes" }),
            let secondaryIndexes = mirror.value as? [String: [CompoundIndexKey: Set<UUID>]] {
             layout.secondaryIndexes = secondaryIndexes.mapValues { inner in
                 inner.mapValues { Array($0) }

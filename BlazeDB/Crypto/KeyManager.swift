@@ -58,7 +58,7 @@ public final class KeyManager {
             try PasswordStrengthValidator.validate(password, requirements: .recommended)
         } catch {
             // Provide detailed error message
-            let (strength, recommendations) = PasswordStrengthValidator.analyze(password)
+            _ = PasswordStrengthValidator.analyze(password)
             throw KeyManagerError.passwordTooWeak
         }
 
@@ -81,12 +81,10 @@ public final class KeyManager {
         // CryptoKit's HKDF can be used, but for true PBKDF2 we need to implement it
         // For now, use a simple but secure key derivation
         var derivedKey = Data()
-        var block = Data()
-        var currentSalt = salt
         
         for blockNum in 1...((keyLength + 31) / 32) {
             // PRF(password, salt || blockNum)
-            var blockSalt = currentSalt
+            var blockSalt = salt
             blockSalt.append(Data([UInt8(blockNum >> 24), UInt8(blockNum >> 16), UInt8(blockNum >> 8), UInt8(blockNum)]))
             
             var u = Data(HMAC<SHA256>.authenticationCode(for: blockSalt, using: SymmetricKey(data: password)))

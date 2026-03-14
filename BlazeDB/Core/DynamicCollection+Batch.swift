@@ -249,7 +249,7 @@ extension DynamicCollection {
                             layout.deletedPages.append(reusedPage)
                         }
                         // Use allocatePage to get a new page (handles nextPageIndex correctly)
-                        currentPageIndex = allocatePage(layout: &layout, )
+                        currentPageIndex = allocatePage(layout: &layout)
                         BlazeLogger.debug("❌ [INSERT] Batch: Using new page \(currentPageIndex) instead of reused page \(reusedPage)")
                     }
                     // If no valid conflicts, we can continue using the reused page (stale entries were removed)
@@ -284,7 +284,7 @@ extension DynamicCollection {
                     if hasValidFinalConflicts {
                         // Use allocatePage to get a new page (handles nextPageIndex correctly)
                         let oldPageIndex = currentPageIndex
-                        currentPageIndex = allocatePage(layout: &layout, )
+                        currentPageIndex = allocatePage(layout: &layout)
                         BlazeLogger.debug("❌ [INSERT] Batch FINAL CHECK: Using new page \(currentPageIndex) instead of \(oldPageIndex)")
                         batchAllocatedPages.remove(oldPageIndex) // Remove old page from tracking
                         batchAllocatedPages.insert(currentPageIndex) // Add new page

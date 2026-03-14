@@ -9,7 +9,7 @@
 
 import Foundation
 
-private final class ParallelDecodeResults {
+private final class ParallelDecodeResults: @unchecked Sendable {
     private let lock = NSLock()
     private var values: [BlazeDataRecord?]
 
@@ -31,7 +31,7 @@ private final class ParallelDecodeResults {
     }
 }
 
-private final class ParallelDecodeErrors {
+private final class ParallelDecodeErrors: @unchecked Sendable {
     private let lock = NSLock()
     private var values: [Error] = []
 

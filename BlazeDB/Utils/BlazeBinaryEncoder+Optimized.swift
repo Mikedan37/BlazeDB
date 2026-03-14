@@ -9,7 +9,7 @@
 
 import Foundation
 
-private final class ParallelEncodeResults {
+private final class ParallelEncodeResults: @unchecked Sendable {
     private let lock = NSLock()
     private var values: [Data?]
 
@@ -31,7 +31,7 @@ private final class ParallelEncodeResults {
     }
 }
 
-private final class ParallelErrorCollector {
+private final class ParallelErrorCollector: @unchecked Sendable {
     private let lock = NSLock()
     private var values: [Error] = []
 

@@ -39,6 +39,7 @@ public struct QueryPlanExplanation {
 extension QueryPlanner {
     
     /// Explain a query plan
+    @available(*, deprecated, message: "Use QueryBuilder.explain() instead, which returns a DetailedQueryPlan.")
     static func explain(
         query: QueryBuilder,
         collection: DynamicCollection
