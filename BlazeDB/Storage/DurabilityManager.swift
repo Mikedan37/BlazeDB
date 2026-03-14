@@ -1,4 +1,9 @@
 import Foundation
+#if canImport(Darwin)
+import Darwin
+#elseif canImport(Glibc)
+import Glibc
+#endif
 
 /// Owns WAL file I/O, monotonic LSN allocation, and checkpoint metadata.
 ///
@@ -124,9 +129,21 @@ public final class DurabilityManager: @unchecked Sendable {
 
         let data = entry.serialize()
 
-        // Seek to end and write
-        fh.seekToEndOfFile()
-        fh.write(data)
+        // Append with positional write to avoid mutating shared file offset state.
+        let fd = fh.fileDescriptor
+        var st = stat()
+        if fstat(fd, &st) != 0 {
+            throw WALError.recoveryFailed("fstat failed while appending WAL entry")
+        }
+        let appendOffset = off_t(st.st_size)
+
+        let written = data.withUnsafeBytes { rawBuffer in
+            guard let base = rawBuffer.baseAddress else { return -1 }
+            return pwrite(fd, base, data.count, appendOffset)
+        }
+        guard written == data.count else {
+            throw WALError.recoveryFailed("pwrite failed while appending WAL entry")
+        }
 
         // Fsync only on commit, abort, or checkpoint
         if operation == .commit || operation == .abort || operation == .checkpoint {
@@ -210,7 +227,13 @@ public final class DurabilityManager: @unchecked Sendable {
         // Persist checkpoint LSN to .wal-meta (8 bytes, UInt64 LE)
         var lsnLE = checkpointLSN.littleEndian
         let metaData = Data(bytes: &lsnLE, count: 8)
-        try metaData.write(to: Self.metaURL(for: walURL), options: .atomic)
+        let metaURL = Self.metaURL(for: walURL)
+        try metaData.write(to: metaURL, options: .atomic)
+        if let metaFH = FileHandle(forWritingAtPath: metaURL.path) {
+            try? metaFH.synchronize()
+            try? metaFH.close()
+        }
+        try Self.fsyncDirectory(at: metaURL.deletingLastPathComponent())
 
         // Truncate WAL file to 0
         fh.truncateFile(atOffset: 0)
@@ -232,12 +255,12 @@ public final class DurabilityManager: @unchecked Sendable {
         }
 
         if let fh = fileHandle {
-            let currentPos = fh.offsetInFile
-            fh.seekToEndOfFile()
-            let size = Int64(fh.offsetInFile)
-            fh.seek(toFileOffset: currentPos)
-            if size >= checkpointSizeThreshold {
-                return true
+            var st = stat()
+            if fstat(fh.fileDescriptor, &st) == 0 {
+                let size = Int64(st.st_size)
+                if size >= checkpointSizeThreshold {
+                    return true
+                }
             }
         }
 
@@ -275,7 +298,13 @@ public final class DurabilityManager: @unchecked Sendable {
     public func close() throws {
         lock.lock()
         defer { lock.unlock() }
-        fileHandle?.closeFile()
+        if let fh = fileHandle {
+            if #available(iOS 13.4, macOS 10.15.4, *) {
+                try fh.close()
+            } else {
+                fh.closeFile()
+            }
+        }
         fileHandle = nil
     }
 
@@ -283,5 +312,22 @@ public final class DurabilityManager: @unchecked Sendable {
 
     private static func metaURL(for walURL: URL) -> URL {
         walURL.deletingPathExtension().appendingPathExtension("wal-meta")
+    }
+
+    private static func fsyncDirectory(at url: URL) throws {
+        let fd = open(url.path, O_RDONLY)
+        guard fd >= 0 else {
+            throw WALError.recoveryFailed("Failed to open directory for fsync")
+        }
+        defer {
+            #if canImport(Darwin)
+            _ = Darwin.close(fd)
+            #elseif canImport(Glibc)
+            _ = Glibc.close(fd)
+            #endif
+        }
+        if fsync(fd) != 0 {
+            throw WALError.recoveryFailed("Directory fsync failed for WAL metadata")
+        }
     }
 }

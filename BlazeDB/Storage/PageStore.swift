@@ -102,6 +102,8 @@ public final class PageStore: @unchecked Sendable {
     // MARK: - Unified WAL (DurabilityManager)
     /// Non-nil when walMode == .unified and WAL is enabled.
     internal private(set) var durabilityManager: DurabilityManager?
+    /// Batches unsynchronized unified-mode writes into one auto-transaction.
+    private var pendingUnifiedAutoTransactionID: UUID?
     
     // MARK: - Concurrency Invariants
     // Invariants:
@@ -676,6 +678,7 @@ public final class PageStore: @unchecked Sendable {
     // Performs a write assuming the caller already holds the barrier on `queue`
     internal func _writePageLocked(index: Int, plaintext: Data) throws {
         try _writePageLockedUnsynchronized(index: index, plaintext: plaintext)
+        try _commitPendingUnifiedAutoTransactionIfNeededLocked()
         try fileHandle.compatSynchronize()
         BlazeLogger.trace("✅ Page \(index) encrypted and flushed to disk")
     }
@@ -738,6 +741,12 @@ public final class PageStore: @unchecked Sendable {
         try atomicWrite(offset: offset, data: buffer)
     }
 
+    private func _commitPendingUnifiedAutoTransactionIfNeededLocked() throws {
+        guard let dm = durabilityManager, let txID = pendingUnifiedAutoTransactionID else { return }
+        try dm.appendCommit(transactionID: txID)
+        pendingUnifiedAutoTransactionID = nil
+    }
+
     // Write without fsyncing (for batch operations)
     internal func _writePageLockedUnsynchronized(index: Int, plaintext: Data) throws {
         pageCache.remove(index)
@@ -749,12 +758,17 @@ public final class PageStore: @unchecked Sendable {
         if let wal = wal {
             try wal.append(pageIndex: index, data: buffer)
         } else if let dm = durabilityManager {
-            // Unified mode: standalone write (not inside a transaction).
-            // Wrap in an auto-transaction so recovery sees a commit record.
-            let autoTxID = UUID()
-            try dm.appendBegin(transactionID: autoTxID)
-            try dm.appendWrite(transactionID: autoTxID, pageIndex: UInt32(index), data: buffer)
-            try dm.appendCommit(transactionID: autoTxID)
+            // Unified mode: group unsynchronized writes in a single auto-transaction.
+            let txID: UUID
+            if let existing = pendingUnifiedAutoTransactionID {
+                txID = existing
+            } else {
+                let created = UUID()
+                try dm.appendBegin(transactionID: created)
+                pendingUnifiedAutoTransactionID = created
+                txID = created
+            }
+            try dm.appendWrite(transactionID: txID, pageIndex: UInt32(index), data: buffer)
         }
 
         let offset = off_t(index * pageSize)
@@ -788,6 +802,7 @@ public final class PageStore: @unchecked Sendable {
         dispatchPrecondition(condition: .notOnQueue(queue))
         #endif
         try queue.sync(flags: .barrier) {
+            try _commitPendingUnifiedAutoTransactionIfNeededLocked()
             try fileHandle.compatSynchronize()
         }
     }
@@ -925,10 +940,11 @@ public final class PageStore: @unchecked Sendable {
             let totalPages = max(0, currentFileSize / pageSize)
 
             var orphanedPages = 0
-            let expectedHeader = ("BZDB".data(using: .utf8) ?? Data()) + Data([0x01])
+            let expectedHeaderV1 = ("BZDB".data(using: .utf8) ?? Data()) + Data([0x01])
+            let expectedHeaderV2 = ("BZDB".data(using: .utf8) ?? Data()) + Data([0x02])
             for i in 0..<totalPages {
                 let header = try atomicRead(offset: off_t(i * pageSize), count: 5)
-                if header != expectedHeader {
+                if header != expectedHeaderV1 && header != expectedHeaderV2 {
                     orphanedPages += 1
                 }
             }
@@ -966,6 +982,7 @@ public final class PageStore: @unchecked Sendable {
     /// Call this periodically or after batches of writes to limit WAL size
     public func checkpoint() throws {
         try queue.sync(flags: .barrier) {
+            try _commitPendingUnifiedAutoTransactionIfNeededLocked()
             try fileHandle.compatSynchronize()
 
             switch walMode {
@@ -1016,6 +1033,11 @@ public final class PageStore: @unchecked Sendable {
 
             case .unified:
                 if let dm = durabilityManager {
+                    do {
+                        try _commitPendingUnifiedAutoTransactionIfNeededLocked()
+                    } catch {
+                        BlazeLogger.error("📜 Failed to commit pending unified auto-transaction during close: \(error.localizedDescription)")
+                    }
                     var mainSyncSucceeded = false
                     do {
                         try fileHandle.compatSynchronize()
