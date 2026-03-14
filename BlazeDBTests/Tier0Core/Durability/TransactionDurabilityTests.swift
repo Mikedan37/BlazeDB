@@ -312,4 +312,50 @@ final class TransactionDurabilityTests: XCTestCase {
             XCTAssertLessThan(maxSize, 100_000, "WAL should not grow unbounded")
         }
     }
+
+    func testStartupRestoresInterruptedTransactionBackup() throws {
+        let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".blz")
+        let metaURL = tempURL.deletingPathExtension().appendingPathExtension("meta")
+        let txnBackupURL = tempURL.deletingLastPathComponent().appendingPathComponent("txn_in_progress.blazedb")
+        let txnMetaBackupURL = tempURL.deletingLastPathComponent().appendingPathComponent("txn_in_progress.meta")
+        let txnStateURL = tempURL.deletingLastPathComponent().appendingPathComponent("txn_in_progress.state")
+
+        defer {
+            try? FileManager.default.removeItem(at: tempURL)
+            try? FileManager.default.removeItem(at: metaURL)
+            try? FileManager.default.removeItem(at: txnBackupURL)
+            try? FileManager.default.removeItem(at: txnMetaBackupURL)
+            try? FileManager.default.removeItem(at: txnStateURL)
+        }
+
+        // Baseline DB content.
+        do {
+            let db = try BlazeDBClient(name: "TxnRestoreBaseline", fileURL: tempURL, password: "TestPassword-123!")
+            _ = try db.insert(BlazeDataRecord(["value": .string("baseline")]))
+            try db.persist()
+            try db.close()
+        }
+
+        // Simulate interrupted transaction artifacts that point to baseline.
+        try FileManager.default.copyItem(at: tempURL, to: txnBackupURL)
+        if FileManager.default.fileExists(atPath: metaURL.path) {
+            try FileManager.default.copyItem(at: metaURL, to: txnMetaBackupURL)
+        }
+        let stateBytes = #"{"phase":"open","startedAtISO8601":"2026-01-01T00:00:00Z"}"#.data(using: .utf8)!
+        try stateBytes.write(to: txnStateURL, options: .atomic)
+
+        // Mutate live DB bytes after backup (simulates uncommitted changes on disk).
+        let fh = try FileHandle(forUpdating: tempURL)
+        try fh.seek(toOffset: 0)
+        try fh.write(contentsOf: Data(repeating: 0x00, count: 4096))
+        try fh.synchronize()
+        try fh.close()
+
+        // Reopen should restore from txn_in_progress backup and discard mutation.
+        let dbRecovered = try BlazeDBClient(name: "TxnRestoreRecovered", fileURL: tempURL, password: "TestPassword-123!")
+        let recoveredRows = try dbRecovered.fetchAll()
+        XCTAssertEqual(recoveredRows.count, 1)
+        XCTAssertEqual(recoveredRows[0].storage["value"]?.stringValue, "baseline")
+        try dbRecovered.close()
+    }
 }
