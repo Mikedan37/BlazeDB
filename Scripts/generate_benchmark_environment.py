@@ -83,8 +83,8 @@ def main() -> int:
         {
             "toggle": "encryption",
             "on_supported": True,
-            "off_supported": False,
-            "notes": "Encryption is always on in current core engine path.",
+            "off_supported": True,
+            "notes": "OFF mode is benchmark-only via compile-time flag BLAZEDB_BENCHMARK_NO_ENCRYPTION.",
         },
     ]
 

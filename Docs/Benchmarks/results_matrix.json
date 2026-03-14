@@ -1,5 +1,5 @@
 {
-  "generated_at_utc": "2026-03-14T08:12:49+00:00",
+  "generated_at_utc": "2026-03-14T09:03:18+00:00",
   "conditions": [
     {
       "id": "baseline",
@@ -28,8 +28,8 @@
       "mvcc": true,
       "wal": true,
       "encryption": false,
-      "run_enabled": false,
-      "reason": "Encryption-off is not supported in current core engine; effective mode remains encryption on."
+      "run_enabled": true,
+      "reason": "Runs in benchmark-only compile-time no-encryption mode."
     },
     {
       "id": "mvcc_off_wal_off_enc_off_requested",
@@ -37,7 +37,7 @@
       "wal": false,
       "encryption": false,
       "run_enabled": false,
-      "reason": "Combination includes unsupported WAL/encryption off toggles; published as requested-but-unavailable."
+      "reason": "Combination includes unsupported WAL off toggle; published as requested-but-unavailable."
     }
   ],
   "runs": [
@@ -51,9 +51,9 @@
       },
       "status": "pass",
       "summary": "Completed successfully",
-      "seconds": 848.9865637080001,
-      "command": "swift run --scratch-path \"/tmp/blazedb-bench-scratch\" BlazeDBBenchmarks",
-      "output_excerpt": "112 |                     results[index] = encoded\n    |                     `- warning: mutation of captured var 'results' in concurrently-executing code [#SendableClosureCaptures]\n113 |                 } catch {\n114 |                     errorLock.lock()\n\n/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/BlazeDB/Utils/BlazeBinaryEncoder+Optimized.swift:115:21: warning: mutation of captured var 'errors' in concurrently-executing code [#SendableClosureCaptures]\n113 |                 } catch {\n114 |                     errorLock.lock()\n115 |                     errors.append(error)\n    |                     `- warning: mutation of captured var 'errors' in concurrently-executing code [#SendableClosureCaptures]\n116 |                     errorLock.unlock()\n117 |                 }\n\n[#SendableClosureCaptures]: <https://docs.swift.org/compiler/documentation/diagnostics/sendable-closure-captures>\n[210/213] Emitting module BlazeDBBenchmarks\n[211/213] Compiling BlazeDBBenchmarks main.swift\n[211/214] Write Objects.LinkFileList\n[212/214] Linking BlazeDBBenchmarks\n[213/214] Applying BlazeDBBenchmarks\nBuild of product 'BlazeDBBenchmarks' complete! (10.40s)",
+      "seconds": 856.9910998329999,
+      "command": "swift run --scratch-path \"/tmp/blazedb-bench-scratch-baseline\" BlazeDBBenchmarks",
+      "output_excerpt": "112 |                     results[index] = encoded\n    |                     `- warning: mutation of captured var 'results' in concurrently-executing code [#SendableClosureCaptures]\n113 |                 } catch {\n114 |                     errorLock.lock()\n\n/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/BlazeDB/Utils/BlazeBinaryEncoder+Optimized.swift:115:21: warning: mutation of captured var 'errors' in concurrently-executing code [#SendableClosureCaptures]\n113 |                 } catch {\n114 |                     errorLock.lock()\n115 |                     errors.append(error)\n    |                     `- warning: mutation of captured var 'errors' in concurrently-executing code [#SendableClosureCaptures]\n116 |                     errorLock.unlock()\n117 |                 }\n\n[#SendableClosureCaptures]: <https://docs.swift.org/compiler/documentation/diagnostics/sendable-closure-captures>\n[212/216] Compiling BlazeDBBenchmarks main.swift\n[213/216] Emitting module BlazeDBBenchmarks\n[213/216] Write Objects.LinkFileList\n[214/216] Linking BlazeDBBenchmarks\n[215/216] Applying BlazeDBBenchmarks\nBuild of product 'BlazeDBBenchmarks' complete! (18.47s)",
       "results_json": "Docs/Benchmarks/results_baseline.json",
       "results_md": "Docs/Benchmarks/results_baseline.md"
     },
@@ -67,9 +67,9 @@
       },
       "status": "pass",
       "summary": "Completed successfully",
-      "seconds": 748.4126885420001,
-      "command": "swift run --scratch-path \"/tmp/blazedb-bench-scratch\" BlazeDBBenchmarks",
-      "output_excerpt": "| mvcc_off | supported | Insert (10K records) | 18 | 54.483 | 51.556 | 99.599 | 107.684 | 578401 | 0.001 | 0.001 | 0.002 | 0.002 | 10000 | Medium records, sequential insert |\n| mvcc_off | supported | Read (1K records) | 291798 | 0.003 | 0.003 | 0.005 | 0.008 | N/A | N/A | N/A | N/A | N/A | 1000 | Indexed reads by UUID |\n| mvcc_off | supported | InsertMany (10K records, batch 100) | 199 | 497.570 | 510.684 | 919.450 | 989.313 | 524167 | 0.190 | 0.182 | 0.212 | 0.245 | 10000 | Throughput in records/sec; latency stats are per insertMany(batch) |\n| mvcc_off | supported | DeleteMany (10K records, batch 100) | 824 | 121.229 | 126.568 | 210.605 | 218.676 | 1296359 | 0.072 | 0.066 | 0.075 | 0.157 | 10000 | Throughput in records/sec; latency stats are per deleteMany(batch) |\n| mvcc_off | supported | InsertMany (durable profile, batch 100) | 168 | 592.995 | 588.620 | 1095.203 | 1154.493 | 526704 | 0.190 | 0.180 | 0.226 | 0.447 | 10000 | Persist after every batch; throughput in records/sec; latency is per insertMany(batch)+persist |\n| mvcc_off | supported | InsertMany (max profile, batch 1000) | 388 | 2535.989 | 2853.968 | 4447.802 | 4447.802 | 574747 | 1.739 | 1.685 | 1.887 | 1.887 | 10000 | Single persist at end; larger batches for peak throughput; latency is per insertMany(batch) |\n| mvcc_off | supported | DeleteMany (durable profile, batch 100) | 434 | 230.155 | 231.546 | 412.358 | 430.712 | 1262299 | 0.074 | 0.067 | 0.074 | 0.215 | 10000 | Persist after every batch; throughput in records/sec; latency is per deleteMany(batch)+persist |\n| mvcc_off | supported | DeleteMany (max profile, batch 1000) | 6910 | 142.878 | 147.137 | 229.467 | 229.467 | 1393341 | 0.681 | 0.629 | 0.715 | 0.715 | 10000 | Single persist at end; larger batches for peak throughput; latency is per deleteMany(batch) |\n| mvcc_off | supported | Cold open | 16 | 62.470 | 52.042 | 52.773 | 52.773 | N/A | N/A | N/A | N/A | N/A | 1000 | Average of 10 opens (opens/sec) |\n\n\nResults saved to:\n  - /Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/Docs/Benchmarks/results_mvcc_off.md\n  - /Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/Docs/Benchmarks/results_mvcc_off.json\n\nwarning: 'blazedb': Invalid Exclude '/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/BlazeDB/BlazeDB_Benchmark.xctestplan': File not found.\n[0/1] Planning build\nBuilding for debugging...\n[0/3] Write swift-version--58304C5D6DBC2206.txt\nBuild of product 'BlazeDBBenchmarks' complete! (1.80s)",
+      "seconds": 765.132255625,
+      "command": "swift run --scratch-path \"/tmp/blazedb-bench-scratch-mvcc_off\" BlazeDBBenchmarks",
+      "output_excerpt": "[200/216] Compiling BlazeDBCore PageStore+Overflow.swift\n[201/216] Compiling BlazeDBCore PageStore+Prefetch.swift\n[202/216] Compiling BlazeDBCore PageStore.swift\n[203/216] Compiling BlazeDBCore QueryStatistics.swift\n[204/216] Compiling BlazeDBCore RecoveryManager.swift\n[205/216] Compiling BlazeDBCore SpatialIndex.swift\n[206/216] Compiling BlazeDBCore StorageDashboardStats.swift\n[207/216] Compiling BlazeDBCore StorageLayout+Security.swift\n[208/216] Compiling BlazeDBCore StorageLayout.swift\n[209/216] Compiling BlazeDBCore StorageManager.swift\n[210/216] Compiling BlazeDBCore VacuumCompaction.swift\n[211/216] Compiling BlazeDBCore VacuumOperations.swift\n[212/216] Compiling BlazeDBCore VacuumRecovery.swift\n[213/216] Compiling BlazeDBCore VectorIndex.swift\n[214/218] Emitting module BlazeDBBenchmarks\n[215/218] Compiling BlazeDBBenchmarks main.swift\n[215/218] Write Objects.LinkFileList\n[216/218] Linking BlazeDBBenchmarks\n[217/218] Applying BlazeDBBenchmarks\nBuild of product 'BlazeDBBenchmarks' complete! (17.23s)",
       "results_json": "Docs/Benchmarks/results_mvcc_off.json",
       "results_md": "Docs/Benchmarks/results_mvcc_off.md"
     },
@@ -96,16 +96,16 @@
         "mvcc": true,
         "wal": true,
         "encryption": false,
-        "run_enabled": false,
-        "reason": "Encryption-off is not supported in current core engine; effective mode remains encryption on."
+        "run_enabled": true,
+        "reason": "Runs in benchmark-only compile-time no-encryption mode."
       },
-      "status": "unavailable",
-      "summary": "Encryption-off is not supported in current core engine; effective mode remains encryption on.",
-      "seconds": 0.0,
-      "command": "not_run",
-      "output_excerpt": "",
-      "results_json": null,
-      "results_md": null
+      "status": "pass",
+      "summary": "Completed successfully",
+      "seconds": 867.5805897500002,
+      "command": "swift run --scratch-path \"/tmp/blazedb-bench-scratch-encryption_off_requested\" -Xswiftc -DBLAZEDB_BENCHMARK_NO_ENCRYPTION BlazeDBBenchmarks",
+      "output_excerpt": "112 |                     results[index] = encoded\n    |                     `- warning: mutation of captured var 'results' in concurrently-executing code [#SendableClosureCaptures]\n113 |                 } catch {\n114 |                     errorLock.lock()\n\n/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/BlazeDB/Utils/BlazeBinaryEncoder+Optimized.swift:115:21: warning: mutation of captured var 'errors' in concurrently-executing code [#SendableClosureCaptures]\n113 |                 } catch {\n114 |                     errorLock.lock()\n115 |                     errors.append(error)\n    |                     `- warning: mutation of captured var 'errors' in concurrently-executing code [#SendableClosureCaptures]\n116 |                     errorLock.unlock()\n117 |                 }\n\n[#SendableClosureCaptures]: <https://docs.swift.org/compiler/documentation/diagnostics/sendable-closure-captures>\n[214/218] Emitting module BlazeDBBenchmarks\n[215/218] Compiling BlazeDBBenchmarks main.swift\n[215/218] Write Objects.LinkFileList\n[216/218] Linking BlazeDBBenchmarks\n[217/218] Applying BlazeDBBenchmarks\nBuild of product 'BlazeDBBenchmarks' complete! (18.77s)",
+      "results_json": "Docs/Benchmarks/results_encryption_off_requested.json",
+      "results_md": "Docs/Benchmarks/results_encryption_off_requested.md"
     },
     {
       "condition": {
@@ -114,10 +114,10 @@
         "wal": false,
         "encryption": false,
         "run_enabled": false,
-        "reason": "Combination includes unsupported WAL/encryption off toggles; published as requested-but-unavailable."
+        "reason": "Combination includes unsupported WAL off toggle; published as requested-but-unavailable."
       },
       "status": "unavailable",
-      "summary": "Combination includes unsupported WAL/encryption off toggles; published as requested-but-unavailable.",
+      "summary": "Combination includes unsupported WAL off toggle; published as requested-but-unavailable.",
       "seconds": 0.0,
       "command": "not_run",
       "output_excerpt": "",
@@ -125,5 +125,5 @@
       "results_md": null
     }
   ],
-  "aggregate_count": 20
+  "aggregate_count": 30
 }

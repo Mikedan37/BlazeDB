@@ -37,7 +37,12 @@ def run_one_condition(
     env["BLAZEDB_BENCH_RESULTS_MD"] = str(md_path.relative_to(repo_root))
     env["BLAZEDB_BENCH_RESULTS_JSON"] = str(json_path.relative_to(repo_root))
 
-    command = f'swift run --scratch-path "{scratch_path}" BlazeDBBenchmarks'
+    condition_scratch = f"{scratch_path}-{condition_id}"
+    swift_flags = ""
+    if not bool(condition["encryption"]):
+        # Compile-time benchmark-only encryption bypass.
+        swift_flags += " -Xswiftc -DBLAZEDB_BENCHMARK_NO_ENCRYPTION"
+    command = f'swift run --scratch-path "{condition_scratch}"{swift_flags} BlazeDBBenchmarks'
     start = time.monotonic()
     proc = subprocess.run(
         command,
@@ -141,8 +146,8 @@ def main() -> int:
             "mvcc": True,
             "wal": True,
             "encryption": False,
-            "run_enabled": False,
-            "reason": "Encryption-off is not supported in current core engine; effective mode remains encryption on.",
+            "run_enabled": True,
+            "reason": "Runs in benchmark-only compile-time no-encryption mode.",
         },
         {
             "id": "mvcc_off_wal_off_enc_off_requested",
@@ -150,7 +155,7 @@ def main() -> int:
             "wal": False,
             "encryption": False,
             "run_enabled": False,
-            "reason": "Combination includes unsupported WAL/encryption off toggles; published as requested-but-unavailable.",
+            "reason": "Combination includes unsupported WAL off toggle; published as requested-but-unavailable.",
         },
     ]
 

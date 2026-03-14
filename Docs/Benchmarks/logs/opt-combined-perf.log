@@ -1,18 +1,18 @@
-Test Suite 'Selected tests' started at 2026-03-14 01:15:46.667.
-Test Suite 'BlazeDBPackageTests.xctest' started at 2026-03-14 01:15:46.668.
-Test Suite 'PerformanceOptimizationTests' started at 2026-03-14 01:15:46.668.
+Test Suite 'Selected tests' started at 2026-03-14 02:07:03.957.
+Test Suite 'BlazeDBPackageTests.xctest' started at 2026-03-14 02:07:03.959.
+Test Suite 'PerformanceOptimizationTests' started at 2026-03-14 02:07:03.959.
 Test Case '-[BlazeDB_Tier3_Heavy.PerformanceOptimizationTests testCombinedOptimizations_MaximumPerformance]' started.
-Test Case '-[BlazeDB_Tier3_Heavy.PerformanceOptimizationTests testCombinedOptimizations_MaximumPerformance]' passed (0.253 seconds).
-Test Suite 'PerformanceOptimizationTests' passed at 2026-03-14 01:15:46.921.
-	 Executed 1 test, with 0 failures (0 unexpected) in 0.253 (0.253) seconds
-Test Suite 'BlazeDBPackageTests.xctest' passed at 2026-03-14 01:15:46.921.
-	 Executed 1 test, with 0 failures (0 unexpected) in 0.253 (0.254) seconds
-Test Suite 'Selected tests' passed at 2026-03-14 01:15:46.922.
-	 Executed 1 test, with 0 failures (0 unexpected) in 0.253 (0.255) seconds
+Test Case '-[BlazeDB_Tier3_Heavy.PerformanceOptimizationTests testCombinedOptimizations_MaximumPerformance]' passed (0.277 seconds).
+Test Suite 'PerformanceOptimizationTests' passed at 2026-03-14 02:07:04.237.
+	 Executed 1 test, with 0 failures (0 unexpected) in 0.277 (0.278) seconds
+Test Suite 'BlazeDBPackageTests.xctest' passed at 2026-03-14 02:07:04.237.
+	 Executed 1 test, with 0 failures (0 unexpected) in 0.277 (0.278) seconds
+Test Suite 'Selected tests' passed at 2026-03-14 02:07:04.237.
+	 Executed 1 test, with 0 failures (0 unexpected) in 0.277 (0.280) seconds
 📊 Combined Optimizations Performance:
   Records: 1000
-  Time: 117.789ms
-  Throughput: 8490 ops/sec
+  Time: 139.666ms
+  Throughput: 7160 ops/sec
 ◇ Test run started.
 ↳ Testing Library Version: 1501
 ↳ Target Platform: x86_64-apple-macos14.0
@@ -20,4 +20,4 @@ Test Suite 'Selected tests' passed at 2026-03-14 01:15:46.922.
 
 Building for debugging...
 [0/18] Write swift-version--58304C5D6DBC2206.txt
-Build complete! (0.23s)
+Build complete! (0.25s)

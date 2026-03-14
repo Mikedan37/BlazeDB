@@ -94,7 +94,7 @@ python3 Scripts/generate_latency_report.py --run-query-percentiles --run-telemet
 
 - `mvcc on/off`: supported and measured.
 - `wal off`: currently not supported in core engine (rows marked `partially_supported` with effective `wal=on`).
-- `encryption off`: currently not supported in core engine (rows marked `partially_supported` with effective `encryption=on`).
+- `encryption off`: supported for benchmarks only via compile-time flag (`BLAZEDB_BENCHMARK_NO_ENCRYPTION`), never as a runtime production toggle.
 
 ### Batch Throughput Profiles
 
