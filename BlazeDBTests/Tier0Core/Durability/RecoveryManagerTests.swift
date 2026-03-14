@@ -148,6 +148,24 @@ final class RecoveryManagerTests: XCTestCase {
         XCTAssertEqual(result.committedWrites[1].pageIndex, 3)
     }
 
+    // begin → delete → commit should be replayed as committed delete
+    func testCommittedDeleteIsRecovered() throws {
+        let walURL = tempDir.appendingPathComponent("test.wal")
+        let dm = try DurabilityManager(walURL: walURL)
+
+        let txID = UUID()
+        _ = try dm.appendBegin(transactionID: txID)
+        _ = try dm.appendDelete(transactionID: txID, pageIndex: 9)
+        _ = try dm.appendCommit(transactionID: txID)
+        try dm.close()
+
+        let result = try RecoveryManager.recover(walURL: walURL)
+        XCTAssertEqual(result.committedWrites.count, 1)
+        XCTAssertEqual(result.committedWrites[0].operation, .delete)
+        XCTAssertEqual(result.committedWrites[0].pageIndex, 9)
+        XCTAssertTrue(result.committedWrites[0].payload.isEmpty)
+    }
+
     // Empty WAL → no-op recovery
     func testEmptyWALRecovery() throws {
         let walURL = tempDir.appendingPathComponent("test.wal")
