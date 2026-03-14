@@ -123,6 +123,27 @@ final class PageStoreUnifiedWALTests: XCTestCase {
         store2.close()
     }
 
+    func testUnifiedRecoveryReplaysCommittedDeleteAsZeroedPage() throws {
+        let dbURL = tempDir.appendingPathComponent("test-delete.db")
+        let walURL = dbURL.deletingPathExtension().appendingPathExtension("wal")
+
+        let store1 = try PageStore(fileURL: dbURL, key: testKey, walMode: .unified)
+        try store1.writePage(index: 4, plaintext: Data(repeating: 0xAB, count: 100))
+        store1.close()
+
+        let dm = try DurabilityManager(walURL: walURL)
+        let txID = UUID()
+        try dm.appendBegin(transactionID: txID)
+        try dm.appendDelete(transactionID: txID, pageIndex: 4)
+        try dm.appendCommit(transactionID: txID)
+        try dm.close()
+
+        let store2 = try PageStore(fileURL: dbURL, key: testKey, walMode: .unified)
+        let readBack = try store2.readPage(index: 4)
+        XCTAssertNil(readBack, "Recovered delete should zero page and read as nil")
+        store2.close()
+    }
+
     // MARK: - Multiple writes
 
     func testMultipleWritesUnifiedMode() throws {

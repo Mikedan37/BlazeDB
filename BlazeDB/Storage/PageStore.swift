@@ -373,19 +373,32 @@ public final class PageStore: @unchecked Sendable {
             }
             #endif
 
-            guard entry.payload.count == pageSize else {
-                throw RecoveryError.walReplayInvalidEntrySize(
-                    entryIndex: entryIndex,
-                    pageIndex: Int(entry.pageIndex),
-                    size: entry.payload.count,
-                    expected: pageSize
-                )
+            let offset = off_t(Int(entry.pageIndex) * pageSize)
+
+            // Unified WAL can contain committed delete records with empty payload.
+            // Replaying delete means zeroing the target page in the main file.
+            let bytesToWrite: Data
+            switch entry.operation {
+            case .write:
+                guard entry.payload.count == pageSize else {
+                    throw RecoveryError.walReplayInvalidEntrySize(
+                        entryIndex: entryIndex,
+                        pageIndex: Int(entry.pageIndex),
+                        size: entry.payload.count,
+                        expected: pageSize
+                    )
+                }
+                bytesToWrite = entry.payload
+            case .delete:
+                bytesToWrite = Data(repeating: 0, count: pageSize)
+            default:
+                // RecoveryManager currently only returns committed write/delete entries.
+                continue
             }
 
-            let offset = off_t(Int(entry.pageIndex) * pageSize)
-            let actualWritten: Int = entry.payload.withUnsafeBytes { rawBuffer in
+            let actualWritten: Int = bytesToWrite.withUnsafeBytes { rawBuffer in
                 guard let base = rawBuffer.baseAddress else { return 0 }
-                return pwrite(fd, base, entry.payload.count, offset)
+                return pwrite(fd, base, bytesToWrite.count, offset)
             }
             IOTraceSink.record(
                 operation: "wal_replay_pwrite",
@@ -399,11 +412,11 @@ public final class PageStore: @unchecked Sendable {
                 ]
             )
 
-            guard actualWritten == entry.payload.count else {
+            guard actualWritten == bytesToWrite.count else {
                 throw RecoveryError.walReplayShortWrite(
                     entryIndex: entryIndex,
                     pageIndex: Int(entry.pageIndex),
-                    expected: entry.payload.count,
+                    expected: bytesToWrite.count,
                     actual: actualWritten
                 )
             }
