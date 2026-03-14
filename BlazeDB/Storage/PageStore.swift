@@ -768,6 +768,11 @@ public final class PageStore: @unchecked Sendable {
                 pendingUnifiedAutoTransactionID = created
                 txID = created
             }
+            guard index >= 0, index <= Int(UInt32.max) else {
+                throw NSError(domain: "PageStore", code: -1, userInfo: [
+                    NSLocalizedDescriptionKey: "Page index \(index) out of UInt32 range for WAL entry"
+                ])
+            }
             try dm.appendWrite(transactionID: txID, pageIndex: UInt32(index), data: buffer)
         }
 

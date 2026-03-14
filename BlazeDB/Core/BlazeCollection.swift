@@ -33,10 +33,8 @@ public final class BlazeCollection<Record: BlazeRecord> {
 
     func insert(_ record: Record) throws {
         try queue.sync(flags: .barrier) {
-            // Use BlazeBinaryEncoder (5-10x faster than JSON!)
-            // Encode BlazeRecord (Codable) to BlazeBinary via JSON intermediate
-            let jsonData = try JSONEncoder().encode(record)
-            let blazeRecord = try JSONDecoder().decode(BlazeDataRecord.self, from: jsonData)
+            // Encode BlazeRecord directly to BlazeDataRecord without JSON intermediate.
+            let blazeRecord = try encodeToBlazeDataRecord(record)
             let encoded = try BlazeBinaryEncoder.encodeOptimized(blazeRecord)
             try store.writePage(index: nextPageIndex, plaintext: encoded)
             indexMap[record.id] = nextPageIndex
@@ -85,9 +83,7 @@ public final class BlazeCollection<Record: BlazeRecord> {
             } else {
                 // Sequential encoding for small batches (overhead not worth it)
                 encodedRecords = try records.map { record in
-                    // Encode BlazeRecord (Codable) to BlazeBinary via JSON intermediate
-                    let jsonData = try JSONEncoder().encode(record)
-                    let blazeRecord = try JSONDecoder().decode(BlazeDataRecord.self, from: jsonData)
+                    let blazeRecord = try encodeToBlazeDataRecord(record)
                     return try BlazeBinaryEncoder.encodeOptimized(blazeRecord)
                 }
             }
@@ -116,8 +112,8 @@ public final class BlazeCollection<Record: BlazeRecord> {
             guard let index = indexMap[id] else { return nil }
             guard let data = try store.readPage(index: index) else { return nil }
             if data.allSatisfy({ $0 == 0 }) || data.isEmpty { return nil }
-            // Use BlazeBinaryDecoder (5-10x faster than JSON!)
-            return try BlazeBinaryDecoder.decode(data) as? Record
+            let blazeRecord = try BlazeBinaryDecoder.decode(data)
+            return try decodeToRecord(blazeRecord)
         }
     }
 
@@ -128,8 +124,8 @@ public final class BlazeCollection<Record: BlazeRecord> {
                 .compactMap { (_, index) in
                     guard let data = try store.readPage(index: index) else { return nil }
                     guard !data.isEmpty && !isDataAllZero(data) else { return nil }
-                    // Use BlazeBinaryDecoder (5-10x faster than JSON!)
-                    return try BlazeBinaryDecoder.decode(data) as? Record
+                    let blazeRecord = try BlazeBinaryDecoder.decode(data)
+                    return try decodeToRecord(blazeRecord)
                 }
         }
     }
@@ -150,10 +146,7 @@ public final class BlazeCollection<Record: BlazeRecord> {
                     NSLocalizedDescriptionKey: "Record not found"
                 ])
             }
-            // Use BlazeBinaryEncoder (5-10x faster than JSON!)
-            // Encode BlazeRecord (Codable) to BlazeBinary via JSON intermediate
-            let jsonData = try JSONEncoder().encode(newRecord)
-            let blazeRecord = try JSONDecoder().decode(BlazeDataRecord.self, from: jsonData)
+            let blazeRecord = try encodeToBlazeDataRecord(newRecord)
             let encoded = try BlazeBinaryEncoder.encodeOptimized(blazeRecord)
             try store.writePage(index: index, plaintext: encoded)
             try saveLayout()
@@ -191,6 +184,17 @@ public final class BlazeCollection<Record: BlazeRecord> {
             }
         }
         return true
+    }
+
+    private func encodeToBlazeDataRecord(_ record: Record) throws -> BlazeDataRecord {
+        let encoder = BlazeRecordEncoder()
+        try record.encode(to: encoder)
+        return encoder.getBlazeDataRecord()
+    }
+
+    private func decodeToRecord(_ record: BlazeDataRecord) throws -> Record {
+        let decoder = BlazeRecordDecoder(storage: record.storage)
+        return try Record(from: decoder)
     }
 }
 
