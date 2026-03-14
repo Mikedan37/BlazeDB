@@ -304,6 +304,18 @@ public final class BlazeDBClient: @unchecked Sendable {
         self.project = UserDefaults.standard.string(forKey: "activeProject") ?? project
         self.password = password  // SECURITY: Store for audit
 
+        // Crash-safe transaction recovery must happen before PageStore opens the files.
+        let startupBackupURL = fileURL.deletingLastPathComponent().appendingPathComponent("txn_in_progress.blazedb")
+        let startupMetaBackupURL = fileURL.deletingLastPathComponent().appendingPathComponent("txn_in_progress.meta")
+        let startupStateURL = fileURL.deletingLastPathComponent().appendingPathComponent("txn_in_progress.state")
+        try Self.restoreDurableTransactionBackupIfPresent(
+            fileURL: fileURL,
+            metaURL: self.metaURL,
+            backupURL: startupBackupURL,
+            metaBackupURL: startupMetaBackupURL,
+            stateURL: startupStateURL
+        )
+
         // 🔑 Derive or reuse key.
         // Use a path-independent password key so backups/restores remain portable
         // across file locations on the same machine.
@@ -511,6 +523,91 @@ public final class BlazeDBClient: @unchecked Sendable {
         fileURL.deletingLastPathComponent().appendingPathComponent("txn_in_progress.meta")
     }
 
+    private var transactionStateURL: URL {
+        fileURL.deletingLastPathComponent().appendingPathComponent("txn_in_progress.state")
+    }
+
+    private struct DurableTransactionState: Codable {
+        let phase: String
+        let startedAtISO8601: String
+    }
+
+    private func writeDurableTransactionState(phase: String) throws {
+        let formatter = ISO8601DateFormatter()
+        let state = DurableTransactionState(phase: phase, startedAtISO8601: formatter.string(from: Date()))
+        let data = try JSONEncoder().encode(state)
+        try data.write(to: transactionStateURL, options: .atomic)
+    }
+
+    private func createDurableTransactionBackups() throws {
+        let fm = FileManager.default
+        if fm.fileExists(atPath: transactionBackupURL.path) {
+            try fm.removeItem(at: transactionBackupURL)
+        }
+        if fm.fileExists(atPath: transactionMetaBackupURL.path) {
+            try fm.removeItem(at: transactionMetaBackupURL)
+        }
+        try fm.copyItem(at: fileURL, to: transactionBackupURL)
+        if fm.fileExists(atPath: metaURL.path) {
+            try fm.copyItem(at: metaURL, to: transactionMetaBackupURL)
+        }
+    }
+
+    private func clearDurableTransactionArtifacts() {
+        let fm = FileManager.default
+        try? fm.removeItem(at: transactionBackupURL)
+        try? fm.removeItem(at: transactionMetaBackupURL)
+        try? fm.removeItem(at: transactionStateURL)
+    }
+
+    private static func restoreDurableTransactionBackupIfPresent(
+        fileURL: URL,
+        metaURL: URL,
+        backupURL: URL,
+        metaBackupURL: URL,
+        stateURL: URL
+    ) throws {
+        let fm = FileManager.default
+        let hasBackup = fm.fileExists(atPath: backupURL.path)
+        let hasState = fm.fileExists(atPath: stateURL.path)
+        guard hasBackup || hasState else { return }
+
+        let state: DurableTransactionState? = {
+            guard fm.fileExists(atPath: stateURL.path),
+                  let data = try? Data(contentsOf: stateURL),
+                  let decoded = try? JSONDecoder().decode(DurableTransactionState.self, from: data)
+            else { return nil }
+            return decoded
+        }()
+
+        if let state {
+            BlazeLogger.warn("Detected interrupted transaction state '\(state.phase)'; restoring pre-transaction backup")
+        } else {
+            BlazeLogger.warn("Detected interrupted transaction artifacts; restoring pre-transaction backup")
+        }
+
+        guard hasBackup else {
+            try? fm.removeItem(at: stateURL)
+            throw BlazeDBError.transactionFailed("Transaction state file exists but backup file is missing")
+        }
+
+        if fm.fileExists(atPath: fileURL.path) {
+            try fm.removeItem(at: fileURL)
+        }
+        try fm.copyItem(at: backupURL, to: fileURL)
+
+        if fm.fileExists(atPath: metaBackupURL.path) {
+            if fm.fileExists(atPath: metaURL.path) {
+                try fm.removeItem(at: metaURL)
+            }
+            try fm.copyItem(at: metaBackupURL, to: metaURL)
+        }
+
+        try? fm.removeItem(at: backupURL)
+        try? fm.removeItem(at: metaBackupURL)
+        try? fm.removeItem(at: stateURL)
+    }
+
     internal func appendToTransactionLog(_ operation: String, payload: [String: BlazeDocumentField]) {  // Internal for AsyncOptimized extension access
         // V1.5: Transaction logging is now a no-op.
         // Crash safety is provided by the WAL (WriteAheadLog) at the page level.
@@ -531,13 +628,7 @@ public final class BlazeDBClient: @unchecked Sendable {
             try? FileManager.default.removeItem(at: logURL)
             BlazeLogger.info("Cleaned up legacy transaction log")
         }
-        // Clean up any leftover file-copy backup artifacts from pre-V1.5
-        if FileManager.default.fileExists(atPath: transactionBackupURL.path) {
-            try? FileManager.default.removeItem(at: transactionBackupURL)
-        }
-        if FileManager.default.fileExists(atPath: transactionMetaBackupURL.path) {
-            try? FileManager.default.removeItem(at: transactionMetaBackupURL)
-        }
+        // Leave active durable transaction artifacts alone unless explicitly restored/cleared.
     }
 
     // MARK: - CRUD
@@ -1380,7 +1471,7 @@ public final class BlazeDBClient: @unchecked Sendable {
     /// ## Important
     /// - Only one transaction can be active at a time
     /// - Always call commit or rollback to clean up transaction state
-    /// - Transactions provide full ACID guarantees
+    /// - Transactions provide ACID guarantees and crash-safe rollback semantics.
     public func beginTransaction() throws {
         try ensureNotClosed()
         guard transactionIndexMapSnapshot == nil else {
@@ -1390,6 +1481,11 @@ public final class BlazeDBClient: @unchecked Sendable {
         // Persist all in-memory changes before snapshotting
         try persist()
         try collection.store.synchronize()
+        try collection.store.checkpoint()
+
+        // Create crash-safe backup and mark transaction as open.
+        try createDurableTransactionBackups()
+        try writeDurableTransactionState(phase: "open")
 
         // Snapshot the indexMap (value-type copy — O(1) COW)
         transactionIndexMapSnapshot = collection.indexMap
@@ -1427,14 +1523,23 @@ public final class BlazeDBClient: @unchecked Sendable {
             throw BlazeDBError.transactionFailed("No transaction in progress")
         }
 
-        // Persist committed state to disk
-        try persist()
-        try collection.store.synchronize()
+        do {
+            // Enter committing phase before durable write; any crash during commit rolls back.
+            try writeDurableTransactionState(phase: "committing")
+
+            // Persist committed state to disk and checkpoint WAL.
+            try persist()
+            try collection.store.synchronize()
+            try collection.store.checkpoint()
+        } catch {
+            throw BlazeDBError.transactionFailed("Commit failed before transaction could be finalized", underlyingError: error)
+        }
 
         // Discard snapshot — changes are now permanent
         transactionIndexMapSnapshot = nil
         transactionRecordSnapshot = nil
         transactionPagesWritten = []
+        clearDurableTransactionArtifacts()
 
         metrics.incrementTransactionsCommitted()
         BlazeLogger.info("Transaction committed successfully")
@@ -1496,6 +1601,7 @@ public final class BlazeDBClient: @unchecked Sendable {
         transactionIndexMapSnapshot = nil
         transactionRecordSnapshot = nil
         transactionPagesWritten = []
+        clearDurableTransactionArtifacts()
 
         metrics.incrementTransactionsAborted()
         BlazeLogger.info("Transaction rolled back (indexMap restored to \(snapshot.count) records)")
@@ -1528,19 +1634,30 @@ extension BlazeDBClient {
         var issues: [IntegrityIssue] = []
         let layout: StorageLayout
         do {
-            layout = try StorageLayout.load(from: metaURL)
+            if FileManager.default.fileExists(atPath: metaURL.path) {
+                layout = try StorageLayout.loadSecure(from: metaURL, signingKey: encryptionKey, password: password, salt: nil)
+            } else {
+                issues.append(.init(severity: .warning, message: "Metadata file is missing; layout validation skipped"))
+                return ValidationReport(ok: true, issues: issues)
+            }
         } catch {
             issues.append(.init(severity: .error, message: "Failed to load layout: \(error)"))
             return ValidationReport(ok: false, issues: issues)
         }
-        if !layout.checksumMatchesStoredValue() {
-            issues.append(.init(severity: .warning, message: "Layout checksum mismatch"))
+        if layout.version < 1 {
+            issues.append(.init(severity: .error, message: "Unsupported layout version: \(layout.version)"))
+        }
+        if layout.nextPageIndex < 0 {
+            issues.append(.init(severity: .error, message: "Invalid nextPageIndex: \(layout.nextPageIndex)"))
+        }
+        if layout.encodingFormat.isEmpty {
+            issues.append(.init(severity: .warning, message: "Layout encoding format is empty"))
         }
         for field in layout.fields where !field.isValidType() {
             issues.append(.init(severity: .warning, message: "Invalid field type: \(field.typeName)"))
         }
-        if !layout.headerIsValid() {
-            issues.append(.init(severity: .warning, message: "Header invalid"))
+        for (id, pages) in layout.indexMap where pages.isEmpty {
+            issues.append(.init(severity: .warning, message: "Record \(id.uuidString) has no page mapping"))
         }
         return ValidationReport(ok: !issues.contains { $0.severity == .error }, issues: issues)
     }
@@ -1591,8 +1708,16 @@ extension BlazeDBClient {
 // MARK: - StorageLayout helpers
 
 extension StorageLayout {
-    func checksumMatchesStoredValue() -> Bool { true }
-    func headerIsValid() -> Bool { true }
+    func checksumMatchesStoredValue() -> Bool {
+        // No dedicated checksum field is currently persisted in StorageLayout;
+        // treat structural invariants as the integrity signal for this helper.
+        if nextPageIndex < 0 { return false }
+        if indexMap.values.contains(where: { $0.contains(where: { $0 < 0 }) }) { return false }
+        return true
+    }
+    func headerIsValid() -> Bool {
+        version >= 1 && !encodingFormat.isEmpty
+    }
 }
 
 extension FieldDefinition {
@@ -1616,16 +1741,21 @@ extension StorageLayout {
         while true {
             do {
                 guard let pageData = try store.readPage(index: i) else { break }
-                // Try to decode a UUID from the first 16 bytes
-                if pageData.count >= 16 {
-                    let uuidData = pageData.prefix(16)
-                    let uuid = UUID(uuid: (
-                        uuidData[0], uuidData[1], uuidData[2], uuidData[3],
-                        uuidData[4], uuidData[5], uuidData[6], uuidData[7],
-                        uuidData[8], uuidData[9], uuidData[10], uuidData[11],
-                        uuidData[12], uuidData[13], uuidData[14], uuidData[15]
-                    ))
-                    indexMap[uuid] = [i]  // Convert to [Int] array for consistency
+                // Decode full record payload and use its explicit "id" field.
+                if let record = try? BlazeBinaryDecoder.decode(pageData),
+                   let idField = record.storage["id"] {
+                    let id: UUID?
+                    switch idField {
+                    case .uuid(let uuid):
+                        id = uuid
+                    case .string(let raw):
+                        id = UUID(uuidString: raw)
+                    default:
+                        id = nil
+                    }
+                    if let id {
+                        indexMap[id] = [i]
+                    }
                 }
                 nextPageIndex = i + 1
                 i += 1
