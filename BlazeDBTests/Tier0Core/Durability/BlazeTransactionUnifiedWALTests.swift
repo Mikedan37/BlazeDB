@@ -186,4 +186,207 @@ final class BlazeTransactionUnifiedWALTests: XCTestCase {
 
         store.close()
     }
+
+    // MARK: - Crash recovery scenarios (pre-Chunk 4 verification)
+
+    /// Crash after WAL commit but before page fsync → recovery replays all pages.
+    /// Simulates: WAL has committed tx, main file pages are stale/zeroed.
+    func testCrashAfterWALCommitBeforePageFsync() throws {
+        let dbURL = tempDir.appendingPathComponent("test.db")
+        let walURL = dbURL.deletingPathExtension().appendingPathExtension("wal")
+
+        // Write a committed transaction
+        let store1 = try PageStore(fileURL: dbURL, key: testKey, walMode: .unified)
+        let tx = BlazeTransaction(store: store1)
+        try tx.write(pageID: 0, data: Data(repeating: 0xAA, count: 100))
+        try tx.write(pageID: 1, data: Data(repeating: 0xBB, count: 100))
+        try tx.commit()
+
+        // Capture WAL entries before close
+        let walEntries = try DurabilityManager.scanEntries(from: walURL)
+        let writeEntries = walEntries.filter { $0.operation == .write }
+        XCTAssertEqual(writeEntries.count, 2)
+
+        store1.close()
+
+        // Simulate crash: corrupt main file pages, then re-inject WAL entries
+        let mainFH = try FileHandle(forUpdating: dbURL)
+        for i in 0..<2 {
+            mainFH.seek(toFileOffset: UInt64(i * 4096))
+            mainFH.write(Data(repeating: 0x00, count: 4096))
+        }
+        try mainFH.synchronize()
+        try mainFH.close()
+
+        // Re-inject committed WAL entries (simulating WAL survived but pages didn't)
+        let dm = try DurabilityManager(walURL: walURL)
+        let fakeTxID = UUID()
+        try dm.appendBegin(transactionID: fakeTxID)
+        for entry in writeEntries {
+            try dm.appendWrite(transactionID: fakeTxID, pageIndex: entry.pageIndex, data: entry.payload)
+        }
+        try dm.appendCommit(transactionID: fakeTxID)
+        try dm.close()
+
+        // Reopen — recovery should replay WAL and restore both pages
+        let store2 = try PageStore(fileURL: dbURL, key: testKey, walMode: .unified)
+        let page0 = try store2.readPage(index: 0)
+        let page1 = try store2.readPage(index: 1)
+        XCTAssertEqual(page0, Data(repeating: 0xAA, count: 100))
+        XCTAssertEqual(page1, Data(repeating: 0xBB, count: 100))
+        store2.close()
+    }
+
+    /// Crash before commit record → staged writes are invisible on recovery.
+    func testCrashBeforeCommitRecordDoesNotReplay() throws {
+        let dbURL = tempDir.appendingPathComponent("test.db")
+        let walURL = dbURL.deletingPathExtension().appendingPathExtension("wal")
+
+        // Write baseline page 0
+        let store1 = try PageStore(fileURL: dbURL, key: testKey, walMode: .unified)
+        try store1.writePage(index: 0, plaintext: Data(repeating: 0x11, count: 100))
+        store1.close()
+
+        // Manually write an incomplete transaction to WAL (begin + write, NO commit)
+        let dm = try DurabilityManager(walURL: walURL)
+        let incompleteTxID = UUID()
+        try dm.appendBegin(transactionID: incompleteTxID)
+        // Encrypt a fake page buffer
+        let fakeStore = try PageStore(fileURL: tempDir.appendingPathComponent("helper.db"), key: testKey, walMode: .unified)
+        let encryptedBuffer = try fakeStore._encryptPageBuffer(plaintext: Data(repeating: 0xFF, count: 100))
+        fakeStore.close()
+        try dm.appendWrite(transactionID: incompleteTxID, pageIndex: 0, data: encryptedBuffer)
+        // NO commit — simulating crash mid-transaction
+        try dm.close()
+
+        // Reopen — the incomplete transaction should be discarded
+        let store2 = try PageStore(fileURL: dbURL, key: testKey, walMode: .unified)
+        let page0 = try store2.readPage(index: 0)
+        XCTAssertEqual(page0, Data(repeating: 0x11, count: 100),
+            "Page should have original data — incomplete tx must not replay")
+        store2.close()
+    }
+
+    /// Multi-page committed transaction: recovery replays ALL pages, not just first/last.
+    func testMultiPageTransactionRecoveryReplaysAllPages() throws {
+        let dbURL = tempDir.appendingPathComponent("test.db")
+        let walURL = dbURL.deletingPathExtension().appendingPathExtension("wal")
+
+        // Write 5 pages in a single transaction
+        let store1 = try PageStore(fileURL: dbURL, key: testKey, walMode: .unified)
+        let tx = BlazeTransaction(store: store1)
+        for i in 0..<5 {
+            try tx.write(pageID: i, data: Data(repeating: UInt8(0x10 + i), count: 100))
+        }
+        try tx.commit()
+
+        // Capture WAL before close
+        let walEntries = try DurabilityManager.scanEntries(from: walURL)
+        let writeEntries = walEntries.filter { $0.operation == .write }
+        XCTAssertEqual(writeEntries.count, 5)
+        store1.close()
+
+        // Zero out ALL main file pages and re-inject the WAL
+        let mainFH = try FileHandle(forUpdating: dbURL)
+        for i in 0..<5 {
+            mainFH.seek(toFileOffset: UInt64(i * 4096))
+            mainFH.write(Data(repeating: 0x00, count: 4096))
+        }
+        try mainFH.synchronize()
+        try mainFH.close()
+
+        let dm = try DurabilityManager(walURL: walURL)
+        let fakeTxID = UUID()
+        try dm.appendBegin(transactionID: fakeTxID)
+        for entry in writeEntries {
+            try dm.appendWrite(transactionID: fakeTxID, pageIndex: entry.pageIndex, data: entry.payload)
+        }
+        try dm.appendCommit(transactionID: fakeTxID)
+        try dm.close()
+
+        // Recovery should restore ALL 5 pages
+        let store2 = try PageStore(fileURL: dbURL, key: testKey, walMode: .unified)
+        for i in 0..<5 {
+            let page = try store2.readPage(index: i)
+            XCTAssertEqual(page, Data(repeating: UInt8(0x10 + i), count: 100),
+                "Page \(i) should be recovered from WAL")
+        }
+        store2.close()
+    }
+
+    /// Transaction-level torn tail: committed tx + partial next tx in WAL.
+    /// Recovery should replay the committed tx and ignore the partial one.
+    func testTransactionLevelTornTail() throws {
+        let dbURL = tempDir.appendingPathComponent("test.db")
+        let walURL = dbURL.deletingPathExtension().appendingPathExtension("wal")
+
+        // Write a committed transaction
+        let store1 = try PageStore(fileURL: dbURL, key: testKey, walMode: .unified)
+        let tx1 = BlazeTransaction(store: store1)
+        try tx1.write(pageID: 0, data: Data(repeating: 0xAA, count: 100))
+        try tx1.commit()
+
+        // Capture the committed WAL entries
+        let committedEntries = try DurabilityManager.scanEntries(from: walURL)
+        store1.close()
+
+        // Zero page 0 in main file
+        let mainFH = try FileHandle(forUpdating: dbURL)
+        mainFH.seek(toFileOffset: 0)
+        mainFH.write(Data(repeating: 0x00, count: 4096))
+        try mainFH.synchronize()
+        try mainFH.close()
+
+        // Re-inject committed tx + add a partial (uncommitted) second tx
+        let dm = try DurabilityManager(walURL: walURL)
+        let tx1ID = UUID()
+        try dm.appendBegin(transactionID: tx1ID)
+        for entry in committedEntries.filter({ $0.operation == .write }) {
+            try dm.appendWrite(transactionID: tx1ID, pageIndex: entry.pageIndex, data: entry.payload)
+        }
+        try dm.appendCommit(transactionID: tx1ID)
+
+        // Partial second tx — begin + write, NO commit (simulates crash)
+        let tx2ID = UUID()
+        try dm.appendBegin(transactionID: tx2ID)
+        let fakeBuffer = try PageStore(
+            fileURL: tempDir.appendingPathComponent("helper2.db"), key: testKey, walMode: .unified
+        )._encryptPageBuffer(plaintext: Data(repeating: 0xFF, count: 100))
+        try dm.appendWrite(transactionID: tx2ID, pageIndex: 0, data: fakeBuffer)
+        try dm.close()
+
+        // Recovery: tx1 committed (replay), tx2 incomplete (discard)
+        let store2 = try PageStore(fileURL: dbURL, key: testKey, walMode: .unified)
+        let page0 = try store2.readPage(index: 0)
+        XCTAssertEqual(page0, Data(repeating: 0xAA, count: 100),
+            "Should recover committed tx, not the incomplete one")
+        store2.close()
+    }
+
+    /// Checkpoint then reopen: data survives, WAL is clean.
+    func testCheckpointThenReopenPreservesData() throws {
+        let dbURL = tempDir.appendingPathComponent("test.db")
+        let walURL = dbURL.deletingPathExtension().appendingPathExtension("wal")
+
+        let store1 = try PageStore(fileURL: dbURL, key: testKey, walMode: .unified)
+        let tx = BlazeTransaction(store: store1)
+        try tx.write(pageID: 0, data: Data(repeating: 0xAA, count: 100))
+        try tx.write(pageID: 1, data: Data(repeating: 0xBB, count: 100))
+        try tx.commit()
+
+        // Explicit checkpoint
+        try store1.checkpoint()
+
+        // WAL should be empty after checkpoint
+        let entries = try DurabilityManager.scanEntries(from: walURL)
+        XCTAssertEqual(entries.count, 0, "WAL should be empty after checkpoint")
+
+        store1.close()
+
+        // Reopen — data should persist from main file (not WAL replay)
+        let store2 = try PageStore(fileURL: dbURL, key: testKey, walMode: .unified)
+        XCTAssertEqual(try store2.readPage(index: 0), Data(repeating: 0xAA, count: 100))
+        XCTAssertEqual(try store2.readPage(index: 1), Data(repeating: 0xBB, count: 100))
+        store2.close()
+    }
 }
