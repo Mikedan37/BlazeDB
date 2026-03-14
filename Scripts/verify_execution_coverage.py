@@ -1,0 +1,133 @@
+#!/usr/bin/env python3
+"""
+Run a SwiftPM test target with execution undercount gating.
+
+Emits JSON artifact with discovered/executed/missing counts and fails if
+executed coverage is below required floor.
+"""
+
+from __future__ import annotations
+
+import argparse
+import os
+import json
+import re
+import subprocess
+import sys
+import xml.etree.ElementTree as ET
+from pathlib import Path
+
+
+TEST_ID_RE = re.compile(r"^([A-Za-z0-9_]+)\.([A-Za-z0-9_]+)/([A-Za-z0-9_]+)$")
+
+
+def run(cmd: list[str], cwd: Path) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(cmd, cwd=str(cwd), capture_output=True, text=True, check=False)
+
+
+def parse_discovered(text: str, target: str) -> set[str]:
+    discovered: set[str] = set()
+    for raw in text.splitlines():
+        line = raw.strip()
+        m = TEST_ID_RE.match(line)
+        if m:
+            ident = f"{m.group(1)}.{m.group(2)}/{m.group(3)}"
+            if ident.startswith(f"{target}."):
+                discovered.add(ident)
+    return discovered
+
+
+def parse_executed_from_xunit(path: Path) -> set[str]:
+    if not path.exists():
+        return set()
+    tree = ET.parse(path)
+    root = tree.getroot()
+    executed: set[str] = set()
+    for tc in root.iter("testcase"):
+        classname = tc.attrib.get("classname", "")
+        name = tc.attrib.get("name", "")
+        if classname and name:
+            executed.add(f"{classname}/{name}")
+    return executed
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--target", required=True, help="SwiftPM test target filter")
+    parser.add_argument("--artifact-dir", required=True)
+    parser.add_argument("--allowed-missing", type=int, default=0)
+    parser.add_argument("--num-workers", type=int, default=1)
+    args = parser.parse_args()
+
+    root = Path(__file__).resolve().parents[1]
+    artifact_dir = Path(args.artifact_dir)
+    artifact_dir.mkdir(parents=True, exist_ok=True)
+
+    # SwiftPM discovery flags vary by toolchain. Prefer modern `swift test list`
+    # and rely on parse_discovered() to filter by target prefix.
+    list_cmd = ["swift", "test", "list", "--skip-build"]
+    list_proc = run(list_cmd, root)
+    if list_proc.returncode != 0:
+        # Fallback for older SwiftPM supporting legacy flag style.
+        list_proc = run(["swift", "test", "--list-tests"], root)
+    if list_proc.returncode != 0:
+        print(list_proc.stdout)
+        print(list_proc.stderr, file=sys.stderr)
+        print(f"DISCOVERY_FAILED:{args.target}", file=sys.stderr)
+        return 20
+
+    discovered = parse_discovered(list_proc.stdout, args.target)
+    xunit_path = artifact_dir / f"{args.target}.xunit.xml"
+    run_cmd = [
+        "swift",
+        "test",
+        "--filter",
+        args.target,
+        "--parallel",
+        "--num-workers",
+        str(args.num_workers),
+        "--xunit-output",
+        str(xunit_path),
+    ]
+    run_proc = run(run_cmd, root)
+
+    executed = parse_executed_from_xunit(xunit_path)
+    missing = sorted(discovered - executed)
+
+    payload = {
+        "target": args.target,
+        "discoveredCount": len(discovered),
+        "executedCount": len(executed),
+        "allowedMissing": args.allowed_missing,
+        "missingCount": len(missing),
+        "missing": missing,
+        "runExitCode": run_proc.returncode,
+        "environment": {
+            "swiftVersion": run(["swift", "--version"], root).stdout.strip(),
+            "xcodeVersion": run(["xcodebuild", "-version"], root).stdout.strip(),
+            "arch": run(["uname", "-m"], root).stdout.strip(),
+            "numWorkers": args.num_workers,
+            "tmpdir": os.environ.get("TMPDIR", ""),
+            "seed": os.environ.get("BLAZEDB_TEST_SEED", ""),
+        },
+    }
+    out_path = artifact_dir / f"{args.target}.execution.json"
+    out_path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+
+    # First honor test execution failure.
+    if run_proc.returncode != 0:
+        sys.stdout.write(run_proc.stdout)
+        sys.stderr.write(run_proc.stderr)
+        return run_proc.returncode
+
+    if len(missing) > args.allowed_missing:
+        print(
+            f"PLAN_EXECUTION_UNDERCOUNT:{args.target}:"
+            f"discovered={len(discovered)} executed={len(executed)} missing={len(missing)}"
+        )
+        return 21
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

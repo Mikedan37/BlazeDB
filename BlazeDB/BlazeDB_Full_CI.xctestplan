@@ -1,0 +1,71 @@
+{
+  "configurations" : [
+    {
+      "id" : "F2E3B4A5-C6D7-4E8F-9123-ABCDEF012345",
+      "name" : "CI Full (T0+T1+T2+T3Heavy)",
+      "options" : {
+        "environmentVariableEntries" : [
+          {
+            "key" : "BLAZEDB_TEST_PROFILE",
+            "value" : "full-ci"
+          },
+          {
+            "key" : "BLAZEDB_TEST_TIER",
+            "value" : "3"
+          },
+          {
+            "key" : "RUN_HEAVY_STRESS",
+            "value" : "1"
+          },
+          {
+            "key" : "CI",
+            "value" : "1"
+          }
+        ]
+      }
+    }
+  ],
+  "defaultOptions" : {
+    "performanceAntipatternCheckerEnabled" : true,
+    "targetForVariableExpansion" : {
+      "containerPath" : "container:BlazeDB.xcodeproj",
+      "identifier" : "BlazeDB",
+      "name" : "BlazeDB"
+    }
+  },
+  "testTargets" : [
+    {
+      "parallelizable" : true,
+      "target" : {
+        "containerPath" : "container:BlazeDB.xcodeproj",
+        "identifier" : "BlazeDBTests",
+        "name" : "BlazeDBTests"
+      }
+    },
+    {
+      "parallelizable" : true,
+      "target" : {
+        "containerPath" : "container:BlazeDB.xcodeproj",
+        "identifier" : "BlazeDBTier1Tests",
+        "name" : "BlazeDBTier1Tests"
+      }
+    },
+    {
+      "parallelizable" : true,
+      "target" : {
+        "containerPath" : "container:BlazeDB.xcodeproj",
+        "identifier" : "BlazeDBTier2Tests",
+        "name" : "BlazeDBTier2Tests"
+      }
+    },
+    {
+      "parallelizable" : true,
+      "target" : {
+        "containerPath" : "container:BlazeDB.xcodeproj",
+        "identifier" : "BlazeDBTier3HeavyTests",
+        "name" : "BlazeDBTier3HeavyTests"
+      }
+    }
+  ],
+  "version" : 1
+}
