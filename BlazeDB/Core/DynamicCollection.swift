@@ -102,7 +102,8 @@ public final class DynamicCollection {
     internal let project: String
     internal let queue = DispatchQueue(label: "com.yourorg.blazedb.dynamiccollection", attributes: .concurrent)
     internal let encryptionKey: SymmetricKey
-    internal let password: String?  // Store password for KDF auto-detection in migration and meta operations
+    internal var password: String?  // Cleared on close to reduce plaintext lifetime
+    internal let kdfSalt: Data
     
     /// Per-database record cache (isolates rollback effects between databases)
     public let recordCache: RecordCache
@@ -204,7 +205,14 @@ public final class DynamicCollection {
         return store.fileURL
     }
     
-    public init(store: PageStore, metaURL: URL, project: String, encryptionKey: SymmetricKey, password: String? = nil) throws {
+    public init(
+        store: PageStore,
+        metaURL: URL,
+        project: String,
+        encryptionKey: SymmetricKey,
+        password: String? = nil,
+        kdfSalt: Data? = nil
+    ) throws {
         // CRITICAL: Validate project name to prevent path traversal attacks
         // Project names should not contain path traversal characters or null bytes
         guard !project.contains("../") && !project.contains("..\\") && !project.contains("\0") else {
@@ -223,6 +231,7 @@ public final class DynamicCollection {
         self.project = project
         self.encryptionKey = encryptionKey
         self.password = password  // Store password for KDF auto-detection
+        self.kdfSalt = kdfSalt ?? Self.defaultSalt
         self.versionManager = VersionManager()  // Initialize MVCC
         
         // Per-database record cache (isolated from other databases)
@@ -253,7 +262,7 @@ public final class DynamicCollection {
                     from: metaURL,
                     signingKey: encryptionKey,
                     password: password,
-                    salt: DynamicCollection.defaultSalt
+                    salt: self.kdfSalt
                 )
                 BlazeLogger.debug("Layout loaded and verified successfully")
                 layoutSignatureVerified = true
@@ -768,13 +777,22 @@ public final class DynamicCollection {
         }
         
         /// Initializes a DynamicCollection using a preloaded StorageLayout.
-        internal init(store: PageStore, layout: StorageLayout, metaURL: URL, project: String, encryptionKey: SymmetricKey, password: String? = nil) {
+        internal init(
+            store: PageStore,
+            layout: StorageLayout,
+            metaURL: URL,
+            project: String,
+            encryptionKey: SymmetricKey,
+            password: String? = nil,
+            kdfSalt: Data? = nil
+        ) {
             // Initialize all stored properties first
             self.store = store
             self.metaURL = metaURL
             self.project = project
             self.encryptionKey = encryptionKey
             self.password = password
+            self.kdfSalt = kdfSalt ?? Self.defaultSalt
             self.versionManager = VersionManager()  // Initialize MVCC
             
             // Per-database record cache (isolated from other databases)
@@ -1055,7 +1073,7 @@ public final class DynamicCollection {
                             from: metaURL,
                             signingKey: encryptionKey,
                             password: password,
-                            salt: Self.defaultSalt
+                            salt: kdfSalt
                         )
                     } catch {
                         layout = try StorageLayout.load(from: metaURL)
@@ -1881,7 +1899,7 @@ public final class DynamicCollection {
                         from: metaURL,
                         signingKey: encryptionKey,
                         password: password,
-                        salt: Self.defaultSalt
+                        salt: kdfSalt
                     )
                 } catch {
                     layout = try StorageLayout.load(from: metaURL)
@@ -2015,7 +2033,7 @@ public final class DynamicCollection {
                                 from: metaURL,
                                 signingKey: encryptionKey,
                                 password: password,
-                                salt: DynamicCollection.defaultSalt
+                                salt: kdfSalt
                             )
                         } catch {
                             layout = try StorageLayout.load(from: metaURL)
@@ -2100,9 +2118,8 @@ public final class DynamicCollection {
             
             // Legacy Path: Original implementation
             // OPTIMIZATION: Pass record to avoid double-fetch
-            // Use regular sync (not barrier) for better performance - barrier is only needed for MVCC
-            // Regular sync allows concurrent reads while deleting
-            try queue.sync {
+            // Legacy delete mutates shared indexes/layout state and must be serialized as a writer.
+            try queue.sync(flags: .barrier) {
                 try _deleteNoSync(id: id, record: record)
             }
         }
@@ -2218,6 +2235,7 @@ public final class DynamicCollection {
                 }
 
                 store.close()
+                password = nil
                 closed = true
             }
         }
@@ -2252,7 +2270,7 @@ public final class DynamicCollection {
                         from: metaURL,
                         signingKey: encryptionKey,
                         password: password,
-                        salt: Self.defaultSalt
+                        salt: kdfSalt
                     )
                     existingDeletedPages = existingLayout.deletedPages
                     existingMetaData = existingLayout.metaData

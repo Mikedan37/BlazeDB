@@ -7,6 +7,9 @@ import CryptoKit
 #else
 import Crypto
 #endif
+#if canImport(Security)
+import Security
+#endif
 
 // MARK: - BlazeDocumentField serialization
 
@@ -210,6 +213,7 @@ public final class BlazeDBClient: @unchecked Sendable {
         cachedKeyLock.lock()
         defer { cachedKeyLock.unlock() }
         _cachedKeys.removeAll()
+        KeyManager.clearKeyCache()
     }
     
     /// Clear cached key for a specific database path
@@ -217,6 +221,38 @@ public final class BlazeDBClient: @unchecked Sendable {
         cachedKeyLock.lock()
         defer { cachedKeyLock.unlock() }
         _cachedKeys.removeValue(forKey: path)
+        KeyManager.clearKeyCache()
+    }
+
+    private static func stablePathDigestHex(_ value: String) -> String {
+        let digest = SHA256.hash(data: Data(value.utf8))
+        return Data(digest).map { String(format: "%02x", $0) }.joined()
+    }
+
+    private static func kdfSaltURL(for fileURL: URL) -> URL {
+        fileURL.deletingPathExtension().appendingPathExtension("salt")
+    }
+
+    private static func loadOrCreateKDFSalt(for fileURL: URL) throws -> Data {
+        let saltURL = kdfSaltURL(for: fileURL)
+        let fm = FileManager.default
+
+        if fm.fileExists(atPath: saltURL.path) {
+            let existing = try Data(contentsOf: saltURL)
+            if !existing.isEmpty {
+                return existing
+            }
+        }
+
+        var bytes = [UInt8](repeating: 0, count: 16)
+        let result = SecRandomCopyBytes(kSecRandomDefault, bytes.count, &bytes)
+        guard result == errSecSuccess else {
+            throw BlazeDBError.transactionFailed("Failed to generate per-database KDF salt")
+        }
+
+        let salt = Data(bytes)
+        try salt.write(to: saltURL, options: .atomic)
+        return salt
     }
 
     // MARK: - Transaction Snapshot (V1.5: replaces file-copy transactions)
@@ -224,6 +260,8 @@ public final class BlazeDBClient: @unchecked Sendable {
     // Pages written during the transaction become garbage (zeroed or overwritten later).
     var transactionIndexMapSnapshot: [UUID: [Int]]?
     var transactionRecordSnapshot: [UUID: BlazeDataRecord]?
+    var transactionSecondaryIndexesSnapshot: [String: [CompoundIndexKey: Set<UUID>]]?
+    var transactionRangeIndexFieldsSnapshot: [String] = []
     var transactionPagesWritten: [Int] = []  // pages allocated during this tx
     
     // BLOCKER #2 FIX: Vacuum state management (internal for extensions)
@@ -253,7 +291,8 @@ public final class BlazeDBClient: @unchecked Sendable {
     
     internal let metaURL: URL
     internal let project: String
-    private let password: String  // SECURITY: Store password for audit
+    internal var password: String?  // Cleared on close to reduce plaintext lifetime
+    internal let kdfSalt: Data
     internal let encryptionKey: SymmetricKey
 
     // MARK: - Init
@@ -302,19 +341,30 @@ public final class BlazeDBClient: @unchecked Sendable {
         self.fileURL = fileURL
         self.metaURL = fileURL.deletingPathExtension().appendingPathExtension("meta")
         self.project = UserDefaults.standard.string(forKey: "activeProject") ?? project
-        self.password = password  // SECURITY: Store for audit
+        self.password = password
+        self.kdfSalt = try Self.loadOrCreateKDFSalt(for: fileURL)
 
         // Crash-safe transaction recovery must happen before PageStore opens the files.
-        let startupBackupURL = fileURL.deletingLastPathComponent().appendingPathComponent("txn_in_progress.blazedb")
-        let startupMetaBackupURL = fileURL.deletingLastPathComponent().appendingPathComponent("txn_in_progress.meta")
-        let startupStateURL = fileURL.deletingLastPathComponent().appendingPathComponent("txn_in_progress.state")
-        try Self.restoreDurableTransactionBackupIfPresent(
-            fileURL: fileURL,
-            metaURL: self.metaURL,
-            backupURL: startupBackupURL,
-            metaBackupURL: startupMetaBackupURL,
-            stateURL: startupStateURL
-        )
+        let startupBase = fileURL.deletingPathExtension().lastPathComponent
+        let startupPrefixes: [String] = {
+            let stable = "\(startupBase)-\(Self.stablePathDigestHex(fileURL.path))"
+            var legacyHasher = Hasher()
+            legacyHasher.combine(fileURL.path)
+            let legacy = "\(startupBase)-\(String(abs(legacyHasher.finalize()), radix: 16))"
+            return stable == legacy ? [stable] : [stable, legacy]
+        }()
+        for startupPrefix in startupPrefixes {
+            let startupBackupURL = fileURL.deletingLastPathComponent().appendingPathComponent("txn_in_progress-\(startupPrefix).blazedb")
+            let startupMetaBackupURL = fileURL.deletingLastPathComponent().appendingPathComponent("txn_in_progress-\(startupPrefix).meta")
+            let startupStateURL = fileURL.deletingLastPathComponent().appendingPathComponent("txn_in_progress-\(startupPrefix).state")
+            try Self.restoreDurableTransactionBackupIfPresent(
+                fileURL: fileURL,
+                metaURL: self.metaURL,
+                backupURL: startupBackupURL,
+                metaBackupURL: startupMetaBackupURL,
+                stateURL: startupStateURL
+            )
+        }
 
         // 🔑 Derive or reuse key.
         // Use a path-independent password key so backups/restores remain portable
@@ -326,7 +376,7 @@ public final class BlazeDBClient: @unchecked Sendable {
             BlazeLogger.debug("Using cached encryption key for \(name)")
         } else {
             do {
-                key = try KeyManager.getKey(from: .password(password))
+                key = try KeyManager.getKey(from: password, salt: kdfSalt)
                 BlazeDBClient.setCachedKey(key, for: dbPath)
                 BlazeLogger.debug("✅ Encryption key derived from password and cached")
             } catch KeyManagerError.passwordTooWeak {
@@ -374,7 +424,8 @@ public final class BlazeDBClient: @unchecked Sendable {
                                                     metaURL: metaURL,
                                                     project: self.project,
                                                     encryptionKey: key,
-                                                    password: password)  // Pass password for KDF auto-detection
+                                                    password: password,
+                                                    kdfSalt: kdfSalt)  // Pass password for KDF auto-detection
             BlazeLogger.debug("✅ DynamicCollection created")
             
             // Validate format version after collection is initialized
@@ -511,20 +562,26 @@ public final class BlazeDBClient: @unchecked Sendable {
 
     // MARK: - Transaction log
 
+    private var transactionArtifactPrefix: String {
+        let digest = Self.stablePathDigestHex(fileURL.path)
+        let base = fileURL.deletingPathExtension().lastPathComponent
+        return "\(base)-\(digest)"
+    }
+
     private var transactionLogURL: URL {
         fileURL.deletingLastPathComponent().appendingPathComponent("txn_log.json")
     }
 
     internal var transactionBackupURL: URL {
-        fileURL.deletingLastPathComponent().appendingPathComponent("txn_in_progress.blazedb")
+        fileURL.deletingLastPathComponent().appendingPathComponent("txn_in_progress-\(transactionArtifactPrefix).blazedb")
     }
 
     private var transactionMetaBackupURL: URL {
-        fileURL.deletingLastPathComponent().appendingPathComponent("txn_in_progress.meta")
+        fileURL.deletingLastPathComponent().appendingPathComponent("txn_in_progress-\(transactionArtifactPrefix).meta")
     }
 
     private var transactionStateURL: URL {
-        fileURL.deletingLastPathComponent().appendingPathComponent("txn_in_progress.state")
+        fileURL.deletingLastPathComponent().appendingPathComponent("txn_in_progress-\(transactionArtifactPrefix).state")
     }
 
     private struct DurableTransactionState: Codable {
@@ -597,9 +654,7 @@ public final class BlazeDBClient: @unchecked Sendable {
         try fm.copyItem(at: backupURL, to: fileURL)
 
         if fm.fileExists(atPath: metaBackupURL.path) {
-            if fm.fileExists(atPath: metaURL.path) {
-                try fm.removeItem(at: metaURL)
-            }
+            try? fm.removeItem(at: metaURL)
             try fm.copyItem(at: metaBackupURL, to: metaURL)
         }
 
@@ -1414,14 +1469,21 @@ public final class BlazeDBClient: @unchecked Sendable {
             if FileManager.default.fileExists(atPath: metaURL.path) {
                 // Use loadSecure to handle HMAC-signed metadata files
                 BlazeLogger.debug("Attempting to load layout from meta file: \(metaURL.path)")
-                let layout = try StorageLayout.loadSecure(from: metaURL, signingKey: encryptionKey)
+                let layout = try StorageLayout.loadSecure(
+                    from: metaURL,
+                    signingKey: encryptionKey,
+                    password: password,
+                    salt: kdfSalt
+                )
                 BlazeLogger.debug("Successfully loaded layout: \(layout.indexMap.count) records in indexMap")
                 self.collection = DynamicCollection(
                     store: store,
                     layout: layout,
                     metaURL: metaURL,
                     project: project,
-                    encryptionKey: encryptionKey
+                    encryptionKey: encryptionKey,
+                    password: password,
+                    kdfSalt: kdfSalt
                 )
                 BlazeLogger.info("✅ Successfully reloaded collection from disk")
                 return
@@ -1447,7 +1509,9 @@ public final class BlazeDBClient: @unchecked Sendable {
             layout: rebuilt,
             metaURL: metaURL,
             project: project,
-            encryptionKey: encryptionKey
+            encryptionKey: encryptionKey,
+            password: password,
+            kdfSalt: kdfSalt
         )
     }
 
@@ -1489,6 +1553,8 @@ public final class BlazeDBClient: @unchecked Sendable {
 
         // Snapshot the indexMap (value-type copy — O(1) COW)
         transactionIndexMapSnapshot = collection.indexMap
+        transactionSecondaryIndexesSnapshot = collection.secondaryIndexes
+        transactionRangeIndexFieldsSnapshot = collection.btreeIndexManager.indexNames
         // Snapshot baseline records so rollback can restore updated/deleted rows.
         var baselineRecords: [UUID: BlazeDataRecord] = [:]
         for id in collection.indexMap.keys {
@@ -1538,6 +1604,8 @@ public final class BlazeDBClient: @unchecked Sendable {
         // Discard snapshot — changes are now permanent
         transactionIndexMapSnapshot = nil
         transactionRecordSnapshot = nil
+        transactionSecondaryIndexesSnapshot = nil
+        transactionRangeIndexFieldsSnapshot = []
         transactionPagesWritten = []
         clearDurableTransactionArtifacts()
 
@@ -1571,6 +1639,9 @@ public final class BlazeDBClient: @unchecked Sendable {
 
         // Restore indexMap to pre-transaction state
         collection.indexMap = snapshot
+        if let secondarySnapshot = transactionSecondaryIndexesSnapshot {
+            collection.secondaryIndexes = secondarySnapshot
+        }
 
         // Restore pre-transaction payloads for records that still exist.
         // Without this, in-place updates can survive rollback even if indexMap is restored.
@@ -1589,6 +1660,13 @@ public final class BlazeDBClient: @unchecked Sendable {
         // Clear caches so reads reflect rolled-back state
         collection.store.pageCache.clear()
         collection.recordCache.clear()
+        collection.btreeIndexManager.clearAll()
+        for field in transactionRangeIndexFieldsSnapshot {
+            _ = collection.btreeIndexManager.getOrCreateIndex(for: field)
+        }
+        for (id, record) in baselineRecords {
+            collection.btreeIndexManager.indexRecord(id: id, fields: record.storage)
+        }
         #if !BLAZEDB_LINUX_CORE
         collection.clearFetchAllCache()
         #endif
@@ -1600,6 +1678,8 @@ public final class BlazeDBClient: @unchecked Sendable {
         // Discard transaction state
         transactionIndexMapSnapshot = nil
         transactionRecordSnapshot = nil
+        transactionSecondaryIndexesSnapshot = nil
+        transactionRangeIndexFieldsSnapshot = []
         transactionPagesWritten = []
         clearDurableTransactionArtifacts()
 
@@ -1635,7 +1715,12 @@ extension BlazeDBClient {
         let layout: StorageLayout
         do {
             if FileManager.default.fileExists(atPath: metaURL.path) {
-                layout = try StorageLayout.loadSecure(from: metaURL, signingKey: encryptionKey, password: password, salt: nil)
+                layout = try StorageLayout.loadSecure(
+                    from: metaURL,
+                    signingKey: encryptionKey,
+                    password: password,
+                    salt: kdfSalt
+                )
             } else {
                 issues.append(.init(severity: .warning, message: "Metadata file is missing; layout validation skipped"))
                 return ValidationReport(ok: true, issues: issues)
@@ -1692,9 +1777,10 @@ extension BlazeDBClient {
         // RLS should reflect policy configuration, not transient request context.
         let hasRLS = rls.isEnabled() && !rls.getPolicies().isEmpty
         
+        let passwordValue = password ?? ""
         return SecurityAuditor.auditWithCapabilityStates(
-            isEncrypted: !password.isEmpty,
-            password: password.isEmpty ? nil : password,
+            isEncrypted: !passwordValue.isEmpty,
+            password: passwordValue.isEmpty ? nil : passwordValue,
             hasRBAC: hasRBAC,
             hasRLS: hasRLS,
             hasAuditLoggingState: .unknown,
