@@ -53,7 +53,7 @@ extension DynamicCollection {
                     from: metaURL,
                     signingKey: encryptionKey,
                     password: password,
-                    salt: Data("AshPileSalt".utf8)  // Use inline salt since defaultSalt is fileprivate
+                    salt: kdfSalt  // Use inline salt since defaultSalt is fileprivate
                 )
             } catch {
                 layout = try StorageLayout.load(from: metaURL)
@@ -472,7 +472,7 @@ extension DynamicCollection {
             let searchStart = Date()
             // CRITICAL: Use loadSecure to maintain signature consistency
             // Use inline salt since defaultSalt is fileprivate
-            if let layout = try? StorageLayout.loadSecure(from: metaURL, signingKey: encryptionKey, password: password, salt: Data("AshPileSalt".utf8)),
+            if let layout = try? StorageLayout.loadSecure(from: metaURL, signingKey: encryptionKey, password: password, salt: kdfSalt),
                let index = layout.searchIndex,
                !layout.searchIndexedFields.isEmpty {
                 // Batch index all records at once

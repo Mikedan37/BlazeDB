@@ -95,7 +95,8 @@ extension BlazeDBClient {
         
         // Remove existing backup if it exists (overwrite behavior)
         if FileManager.default.fileExists(atPath: url.path) {
-            try FileManager.default.removeItem(at: url)
+            // Best-effort remove to avoid TOCTOU races in parallel test environments.
+            try? FileManager.default.removeItem(at: url)
         }
         
         // Copy database file
@@ -105,7 +106,7 @@ extension BlazeDBClient {
         let backupMetaURL = url.deletingPathExtension().appendingPathExtension("meta")
         if FileManager.default.fileExists(atPath: metaURL.path) {
             if FileManager.default.fileExists(atPath: backupMetaURL.path) {
-                try FileManager.default.removeItem(at: backupMetaURL)
+                try? FileManager.default.removeItem(at: backupMetaURL)
             }
             try FileManager.default.copyItem(at: metaURL, to: backupMetaURL)
         }
@@ -115,7 +116,7 @@ extension BlazeDBClient {
         let backupIndexesURL = backupMetaURL.deletingPathExtension().appendingPathExtension("indexes")
         if FileManager.default.fileExists(atPath: indexesURL.path) {
             if FileManager.default.fileExists(atPath: backupIndexesURL.path) {
-                try FileManager.default.removeItem(at: backupIndexesURL)
+                try? FileManager.default.removeItem(at: backupIndexesURL)
             }
             try FileManager.default.copyItem(at: indexesURL, to: backupIndexesURL)
         }
@@ -125,7 +126,7 @@ extension BlazeDBClient {
         let backupSaltURL = url.deletingPathExtension().appendingPathExtension("salt")
         if FileManager.default.fileExists(atPath: saltURL.path) {
             if FileManager.default.fileExists(atPath: backupSaltURL.path) {
-                try FileManager.default.removeItem(at: backupSaltURL)
+                try? FileManager.default.removeItem(at: backupSaltURL)
             }
             try FileManager.default.copyItem(at: saltURL, to: backupSaltURL)
         }
