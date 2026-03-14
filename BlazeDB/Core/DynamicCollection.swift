@@ -89,6 +89,10 @@ public final class DynamicCollection {
         return formatter
     }()
     
+    /// Stable identity for cache keying. ObjectIdentifier (memory address) is unsafe because
+    /// a deallocated collection's address can be reused by a new instance, returning stale cache.
+    internal let instanceID = UUID()
+
     internal var indexMap: [UUID: [Int]] = [:]  // Changed to support overflow chains
     internal let store: PageStore
     internal let metaURL: URL

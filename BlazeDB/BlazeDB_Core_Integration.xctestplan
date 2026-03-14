@@ -1,0 +1,55 @@
+{
+  "configurations" : [
+    {
+      "id" : "DEE795E6-AB58-4E0F-9B37-D3900A56F212",
+      "name" : "Core+Integration (Pre-Release)",
+      "options" : {
+        "environmentVariableEntries" : [
+          {
+            "key" : "BLAZEDB_TEST_PROFILE",
+            "value" : "core-integration"
+          },
+          {
+            "key" : "BLAZEDB_TEST_TIER",
+            "value" : "2"
+          }
+        ]
+      }
+    }
+  ],
+  "defaultOptions" : {
+    "performanceAntipatternCheckerEnabled" : true,
+    "targetForVariableExpansion" : {
+      "containerPath" : "container:BlazeDB.xcodeproj",
+      "identifier" : "BlazeDB",
+      "name" : "BlazeDB"
+    }
+  },
+  "testTargets" : [
+    {
+      "parallelizable" : true,
+      "target" : {
+        "containerPath" : "container:BlazeDB.xcodeproj",
+        "identifier" : "BlazeDBTests",
+        "name" : "BlazeDBTests"
+      }
+    },
+    {
+      "parallelizable" : true,
+      "target" : {
+        "containerPath" : "container:BlazeDB.xcodeproj",
+        "identifier" : "BlazeDBTier1Tests",
+        "name" : "BlazeDBTier1Tests"
+      }
+    },
+    {
+      "parallelizable" : true,
+      "target" : {
+        "containerPath" : "container:BlazeDB.xcodeproj",
+        "identifier" : "BlazeDBTier2Tests",
+        "name" : "BlazeDBTier2Tests"
+      }
+    }
+  ],
+  "version" : 1
+}

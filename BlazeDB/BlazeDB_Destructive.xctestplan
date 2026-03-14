@@ -1,0 +1,43 @@
+{
+  "configurations" : [
+    {
+      "id" : "1D2BFA52-17F3-4907-8CA3-CB700F1892CB",
+      "name" : "Destructive (Manual)",
+      "options" : {
+        "environmentVariableEntries" : [
+          {
+            "key" : "BLAZEDB_TEST_PROFILE",
+            "value" : "destructive"
+          },
+          {
+            "key" : "BLAZEDB_TEST_TIER",
+            "value" : "3"
+          },
+          {
+            "key" : "BLAZEDB_DESTRUCTIVE_MODE",
+            "value" : "1"
+          }
+        ]
+      }
+    }
+  ],
+  "defaultOptions" : {
+    "performanceAntipatternCheckerEnabled" : true,
+    "targetForVariableExpansion" : {
+      "containerPath" : "container:BlazeDB.xcodeproj",
+      "identifier" : "BlazeDB",
+      "name" : "BlazeDB"
+    }
+  },
+  "testTargets" : [
+    {
+      "parallelizable" : false,
+      "target" : {
+        "containerPath" : "container:BlazeDB.xcodeproj",
+        "identifier" : "BlazeDBTier3DestructiveTests",
+        "name" : "BlazeDBTier3DestructiveTests"
+      }
+    }
+  ],
+  "version" : 1
+}

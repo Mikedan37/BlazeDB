@@ -1,0 +1,29 @@
+{
+  "configurations" : [
+    {
+      "id" : "A8A51246-5F4D-4D20-8F59-8A8E6D2BFB88",
+      "name" : "Benchmark Lane (External Runner)",
+      "options" : {
+        "environmentVariableEntries" : [
+          {
+            "key" : "BLAZEDB_BENCH_MODE",
+            "value" : "nightly"
+          },
+          {
+            "key" : "BLAZEDB_BENCH_CONTEXT",
+            "value" : "ci"
+          },
+          {
+            "key" : "BLAZEDB_ENFORCE_BENCHMARK_REGRESSIONS",
+            "value" : "1"
+          }
+        ]
+      }
+    }
+  ],
+  "defaultOptions" : {
+    "performanceAntipatternCheckerEnabled" : true
+  },
+  "testTargets" : [],
+  "version" : 1
+}
