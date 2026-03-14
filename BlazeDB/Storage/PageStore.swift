@@ -551,27 +551,6 @@ public final class PageStore: @unchecked Sendable {
         pageCache.remove(index)
         BlazeLogger.trace("Writing encrypted page at index \(index) with size \(plaintext.count)")
         
-        // ✅ ENCRYPT DATA with AES-GCM-256
-        // Generate random nonce (12 bytes)
-        let nonce = AES.GCM.Nonce()
-        
-        // Encrypt plaintext
-        let sealedBox = try AES.GCM.seal(plaintext, using: key, nonce: nonce)
-        
-        // Extract ciphertext and tag
-        let ciphertext = sealedBox.ciphertext
-        let tag = sealedBox.tag
-        
-        // Calculate total size: header(4) + version(1) + length(4) + nonce(12) + tag(16) + ciphertext
-        let totalSize = 9 + 12 + 16 + ciphertext.count
-        guard totalSize <= pageSize else {
-            throw NSError(domain: "PageStore", code: 1, userInfo: [
-                NSLocalizedDescriptionKey: "Page too large (max: \(pageSize - 37) bytes for encrypted data)"
-            ])
-        }
-
-        // Build encrypted page format:
-        // [BZDB][0x02][length][nonce][tag][ciphertext][padding]
         var buffer = Data()
         guard let magicBytes = "BZDB".data(using: .utf8) else {
             throw NSError(domain: "PageStore", code: -1, userInfo: [
@@ -579,16 +558,51 @@ public final class PageStore: @unchecked Sendable {
             ])
         }
         buffer.append(magicBytes)  // 4 bytes: header magic
-        buffer.append(0x02)                        // 1 byte: version 0x02 = encrypted
-        
+
+        #if BLAZEDB_BENCHMARK_NO_ENCRYPTION
+        // Benchmark-only plaintext mode (compile-time gated).
+        let totalSize = 9 + plaintext.count
+        guard totalSize <= pageSize else {
+            throw NSError(domain: "PageStore", code: 1, userInfo: [
+                NSLocalizedDescriptionKey: "Page too large (max: \(pageSize - 9) bytes for plaintext benchmark mode)"
+            ])
+        }
+        buffer.append(0x01) // version 0x01 = plaintext
+        var length = UInt32(plaintext.count).bigEndian
+        buffer.append(Data(bytes: &length, count: 4))
+        buffer.append(contentsOf: plaintext)
+        #else
+        // ✅ ENCRYPT DATA with AES-GCM-256
+        // Generate random nonce (12 bytes)
+        let nonce = AES.GCM.Nonce()
+
+        // Encrypt plaintext
+        let sealedBox = try AES.GCM.seal(plaintext, using: key, nonce: nonce)
+
+        // Extract ciphertext and tag
+        let ciphertext = sealedBox.ciphertext
+        let tag = sealedBox.tag
+
+        // Calculate total size: header(4) + version(1) + length(4) + nonce(12) + tag(16) + ciphertext
+        let totalSize = 9 + 12 + 16 + ciphertext.count
+        guard totalSize <= pageSize else {
+            throw NSError(domain: "PageStore", code: 1, userInfo: [
+                NSLocalizedDescriptionKey: "Page too large (max: \(pageSize - 37) bytes for encrypted data)"
+            ])
+        }
+        // Build encrypted page format:
+        // [BZDB][0x02][length][nonce][tag][ciphertext][padding]
+        buffer.append(0x02) // version 0x02 = encrypted
+
         // 4 bytes: original plaintext length (UInt32, big-endian)
         var length = UInt32(plaintext.count).bigEndian
         buffer.append(Data(bytes: &length, count: 4))
-        
+
         // Encryption components
-        buffer.append(contentsOf: nonce)           // 12 bytes: nonce (IV)
-        buffer.append(contentsOf: tag)             // 16 bytes: authentication tag
-        buffer.append(contentsOf: ciphertext)      // Variable: encrypted data
+        buffer.append(contentsOf: nonce)      // 12 bytes: nonce (IV)
+        buffer.append(contentsOf: tag)        // 16 bytes: authentication tag
+        buffer.append(contentsOf: ciphertext) // Variable: encrypted data
+        #endif
 
         // Pad with zeros to reach pageSize
         if buffer.count < pageSize {
@@ -604,7 +618,11 @@ public final class PageStore: @unchecked Sendable {
         
         // Write encrypted page to disk (NO fsync yet!)
         let offset = off_t(index * pageSize)
+        #if BLAZEDB_BENCHMARK_NO_ENCRYPTION
+        BlazeLogger.trace("Writing plaintext benchmark page at byte offset \(offset)")
+        #else
         BlazeLogger.trace("Writing encrypted at byte offset \(offset) (nonce: \(nonce.withUnsafeBytes { Data($0).prefix(4).map { String(format: "%02x", $0) }.joined() })...)")
+        #endif
         try atomicWrite(offset: offset, data: buffer)
     }
 
