@@ -10,6 +10,10 @@
 
 **Spec:** `docs/superpowers/specs/2026-03-14-blazedb-oss-cleanup-design.md` — Phase 1
 
+**Kill switch:** During development, `PageStore.init` accepts `walMode: .legacy | .unified` (default `.legacy`). The legacy path uses the existing `WriteAheadLog` + `TransactionLog` unchanged. The unified path uses `DurabilityManager` + `RecoveryManager`. Both paths coexist until Chunk 4 confirms stability, at which point `.legacy` is deleted and `.unified` becomes the only path. This prevents debugging storage corruption at 3 AM.
+
+**Execution order:** Chunk 1 → compile/test → Chunk 2 → compile/test → Chunk 3 → crash simulations → Chunk 4 (only after stability confirmed) → Chunk 5. Do NOT blast through all chunks in one sprint.
+
 ---
 
 ## File Structure
