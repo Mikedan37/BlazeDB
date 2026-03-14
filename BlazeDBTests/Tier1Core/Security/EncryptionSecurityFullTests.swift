@@ -168,7 +168,9 @@ final class EncryptionSecurityFullTests: XCTestCase {
         try fileHandle.write(contentsOf: Data([0xDE, 0xAD, 0xBE, 0xEF]))
         try fileHandle.close()
         
-        // Reload database
+        // Reload database using a fresh handle.
+        try db.close()
+        db = nil
         BlazeDBClient.clearCachedKey()
         let db2 = try BlazeDBClient(name: "EncryptionTest", fileURL: dbURL, password: "SecureTestDB-456!")
         

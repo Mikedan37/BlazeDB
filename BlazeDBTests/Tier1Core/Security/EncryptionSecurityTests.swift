@@ -73,9 +73,12 @@ final class EncryptionSecurityTests: XCTestCase {
         print("🔐 Testing encryption key derivation...")
         
         // Create database with password1
-        let db1 = try BlazeDBClient(name: "Test", fileURL: tempURL, password: "CorrectPassword-123!")
-        let id = try db1.insert(BlazeDataRecord(["secret": .string("sensitive data")]))
-        try db1.persist()
+        let id: UUID
+        do {
+            let db1 = try BlazeDBClient(name: "Test", fileURL: tempURL, password: "CorrectPassword-123!")
+            id = try db1.insert(BlazeDataRecord(["secret": .string("sensitive data")]))
+            try db1.persist()
+        }
         
         print("  Created DB with password 'correct-password-123'")
         
@@ -83,29 +86,14 @@ final class EncryptionSecurityTests: XCTestCase {
         BlazeDBClient.clearCachedKey()
         print("  Cleared cached encryption key")
         
-        // Open with different password (derives different key)
-        let db2 = try BlazeDBClient(name: "Test", fileURL: tempURL, password: "wrong-password-456")
-        
-        print("  Opened DB with password 'wrong-password-456' (different key)")
-        print("  Attempting to read...")
-        
-        // Currently, this will succeed because PageStore doesn't encrypt
-        // In future: should fail with wrong password
-        let fetched = try? db2.fetch(id: id)
-        
-        // NOTE: Currently passes because encryption is not fully implemented
-        // TODO: Implement actual page-level encryption in PageStore
-        if let record = fetched {
-            print("  ⚠️ WARNING: Decryption succeeded with wrong password")
-            print("  ⚠️ This indicates encryption is not yet fully implemented")
-            print("  ⚠️ Data is currently stored in plaintext")
-            
-            // For now, just verify the data is accessible
-            XCTAssertEqual(record.storage["secret"]?.stringValue, "sensitive data",
-                          "Data should be accessible (plaintext storage)")
-        } else {
-            print("  ✅ Decryption failed with wrong password (encryption working!)")
-        }
+        print("  Attempting reopen with wrong password...")
+        XCTAssertThrowsError(
+            try {
+                let db2 = try BlazeDBClient(name: "Test", fileURL: tempURL, password: "wrong-password-456")
+                _ = try db2.fetch(id: id)
+            }(),
+            "Wrong password should not successfully read encrypted metadata/data"
+        )
         
         // Clear cache again to test correct password
         BlazeDBClient.clearCachedKey()
@@ -131,13 +119,16 @@ final class EncryptionSecurityTests: XCTestCase {
         BlazeDBClient.clearCachedKey()
         
         // Create DB with first password
-        let db1 = try BlazeDBClient(name: "Test", fileURL: tempURL, password: "FirstPassword-ABC123!")
         let sensitiveData = "Confidential Information: Account #12345"
-        let id = try db1.insert(BlazeDataRecord([
-            "data": .string(sensitiveData),
-            "level": .string("confidential")
-        ]))
-        try db1.persist()
+        let id: UUID
+        do {
+            let db1 = try BlazeDBClient(name: "Test", fileURL: tempURL, password: "FirstPassword-ABC123!")
+            id = try db1.insert(BlazeDataRecord([
+                "data": .string(sensitiveData),
+                "level": .string("confidential")
+            ]))
+            try db1.persist()
+        }
         
         print("  Created DB with password 'first-password-ABC'")
         
@@ -145,25 +136,13 @@ final class EncryptionSecurityTests: XCTestCase {
         BlazeDBClient.clearCachedKey()
         
         // Try to open with completely different password (different key)
-        let db2 = try BlazeDBClient(name: "Test", fileURL: tempURL, password: "SecondPassword-XYZ789!")
-        
-        print("  Opened DB with password 'second-password-XYZ' (different key)")
-        
-        // Attempt to read
-        let fetchedWithDifferentKey = try? db2.fetch(id: id)
-        
-        // NOTE: Currently succeeds because encryption is not fully implemented
-        // When encryption is implemented, this should fail or return garbage
-        if let record = fetchedWithDifferentKey {
-            let decryptedData = record.storage["data"]?.stringValue
-            print("  ⚠️ WARNING: Data accessible with different password (plaintext storage)")
-            
-            // Currently, data is accessible because it's plaintext
-            XCTAssertEqual(decryptedData, sensitiveData, 
-                          "Data is currently plaintext (encryption pending)")
-        } else {
-            print("  ✅ Different key prevented decryption (encryption working!)")
-        }
+        XCTAssertThrowsError(
+            try {
+                let db2 = try BlazeDBClient(name: "Test", fileURL: tempURL, password: "SecondPassword-XYZ789!")
+                _ = try db2.fetch(id: id)
+            }(),
+            "Different password should not be able to read data"
+        )
         
         // Clear cache again
         BlazeDBClient.clearCachedKey()
@@ -183,7 +162,7 @@ final class EncryptionSecurityTests: XCTestCase {
         
         // These should all work
         let passwords = [
-            "correct-password-123",
+            "Correct-Password-123!",
             "MySecureP@ssw0rd!",
             "!Password123",
             "Str0ng&Secure#Pass"
@@ -326,19 +305,13 @@ final class EncryptionSecurityTests: XCTestCase {
         BlazeDBClient.clearCachedKey()
         
         // Try to read DB1 with DB2's password (different key)
-        let db1WrongPass = try BlazeDBClient(name: "DB1", fileURL: url1, password: "SecurePassword-DB2-BBB!")
-        let wrongRead = try? db1WrongPass.fetch(id: id1)
-        
-        // NOTE: Currently succeeds because encryption is not fully implemented
-        if let record = wrongRead {
-            print("  ⚠️ WARNING: DB1 accessible with DB2's password (plaintext storage)")
-            
-            // Currently accessible because plaintext
-            XCTAssertEqual(record.storage["value"]?.intValue, 111,
-                          "Data is currently plaintext (encryption pending)")
-        } else {
-            print("  ✅ DB1 NOT accessible with DB2's password (encryption working!)")
-        }
+        XCTAssertThrowsError(
+            try {
+                let db1WrongPass = try BlazeDBClient(name: "DB1", fileURL: url1, password: "SecurePassword-DB2-BBB!")
+                _ = try db1WrongPass.fetch(id: id1)
+            }(),
+            "Cross-password access should fail for protected metadata/data"
+        )
         
         print("✅ Multiple databases with different key derivation work (encryption pending)")
     }
@@ -349,10 +322,9 @@ final class EncryptionSecurityTests: XCTestCase {
         
         let specialPasswords = [
             "P@ssw0rd!#$%",
-            "密碼測試123",  // Chinese characters
-            "Пароль123",     // Cyrillic
-            "🔥🔒🔑Database",  // Emoji
-            "Pass\nWith\tEscapes"
+            "密碼🔐Passw0rd!",
+            "🔥🔒🔑DatabaseAa1!",
+            "Pass\nWith\tEscapesA1!"
         ]
         
         for (index, password) in specialPasswords.enumerated() {
@@ -365,13 +337,19 @@ final class EncryptionSecurityTests: XCTestCase {
             }
             
             // Create DB with special password
-            let db1 = try BlazeDBClient(name: "Special\(index)", fileURL: url, password: password)
-            let id = try db1.insert(BlazeDataRecord(["test": .string("works")]))
-            try db1.persist()
+            let id: UUID
+            do {
+                let db1 = try BlazeDBClient(name: "Special\(index)", fileURL: url, password: password)
+                id = try db1.insert(BlazeDataRecord(["test": .string("works")]))
+                try db1.persist()
+            }
             
             // Reopen with same special password
-            let db2 = try BlazeDBClient(name: "Special\(index)", fileURL: url, password: password)
-            let record = try db2.fetch(id: id)
+            let record: BlazeDataRecord?
+            do {
+                let db2 = try BlazeDBClient(name: "Special\(index)", fileURL: url, password: password)
+                record = try db2.fetch(id: id)
+            }
             
             XCTAssertEqual(record?.storage["test"]?.stringValue, "works",
                           "Special password '\(password)' should work")
@@ -390,33 +368,26 @@ final class EncryptionSecurityTests: XCTestCase {
         BlazeDBClient.clearCachedKey()
         
         // Create DB with initial password
-        let db1 = try BlazeDBClient(name: "Test", fileURL: tempURL, password: "InitialPassword-123!")
-        let id = try db1.insert(BlazeDataRecord(["version": .int(1)]))
-        try db1.persist()
+        let id: UUID
+        do {
+            let db1 = try BlazeDBClient(name: "Test", fileURL: tempURL, password: "InitialPassword-123!")
+            id = try db1.insert(BlazeDataRecord(["version": .int(1)]))
+            try db1.persist()
+        }
         
         print("  Created DB with initial password")
         
         // Clear cache to force new key derivation
         BlazeDBClient.clearCachedKey()
         
-        // Open with different password (different key)
-        let db2 = try BlazeDBClient(name: "Test", fileURL: tempURL, password: "NewPassword-456ABC!")
-        
-        print("  Opened with different password")
-        
-        // Try to read data
-        let fetched = try? db2.fetch(id: id)
-        
-        // NOTE: Currently succeeds because encryption is not fully implemented
-        if let record = fetched {
-            print("  ⚠️ WARNING: Data accessible with different password (plaintext storage)")
-            
-            // Currently accessible because plaintext
-            XCTAssertEqual(record.storage["version"]?.intValue, 1,
-                          "Data is currently plaintext (encryption pending)")
-        } else {
-            print("  ✅ Different password cannot access data (encryption working!)")
-        }
+        // Open with different password (different key) must fail for protected store.
+        XCTAssertThrowsError(
+            try {
+                let db2 = try BlazeDBClient(name: "Test", fileURL: tempURL, password: "NewPassword-456ABC!")
+                _ = try db2.fetch(id: id)
+            }(),
+            "Different password should not access existing protected store"
+        )
         
         // Clear cache again
         BlazeDBClient.clearCachedKey()
@@ -488,8 +459,8 @@ final class EncryptionSecurityTests: XCTestCase {
         
         print("  Created DB with 10 records")
         
-        // Multiple concurrent readers with same password
-        let expectation = self.expectation(description: "Concurrent reads")
+        // Single-process model: concurrent opens on the same path should fail for new handles.
+        let expectation = self.expectation(description: "Concurrent open rejections")
         expectation.expectedFulfillmentCount = 10
         
         let queue = DispatchQueue(label: "test.concurrent", attributes: .concurrent)
@@ -498,21 +469,21 @@ final class EncryptionSecurityTests: XCTestCase {
             queue.async {
                 do {
                     // Each thread opens with same password
-                    let threadDB = try BlazeDBClient(name: "Test\(threadID)", 
-                                                    fileURL: self.tempURL, 
-                                                    password: "ConcurrentTest-123!")
-                    let records = try threadDB.fetchAll()
-                    XCTAssertEqual(records.count, 10, "Thread \(threadID) should read all records")
+                    _ = try BlazeDBClient(name: "Test\(threadID)",
+                                          fileURL: self.tempURL,
+                                          password: "ConcurrentTest-123!")
+                    XCTFail("Thread \(threadID) should not be able to open a second handle")
                     expectation.fulfill()
                 } catch {
-                    XCTFail("Thread \(threadID) failed: \(error)")
+                    // Expected under single-process lock enforcement.
+                    expectation.fulfill()
                 }
             }
         }
         
         wait(for: [expectation], timeout: 5.0)
         
-        print("✅ Concurrent access with same password works correctly")
+        print("✅ Concurrent same-path opens correctly rejected in single-process mode")
     }
 }
 
