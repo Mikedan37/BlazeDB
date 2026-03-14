@@ -24,7 +24,6 @@ jobs:
           swift build --target BlazeDoctor
           swift build --target BlazeDump
           swift build --target BlazeInfo
-
       - name: Run Tier 0 (Gate) Tests
         run: swift test --filter BlazeDB_Tier0
 

@@ -31,7 +31,6 @@ jobs:
 
     - name: Build
       run: swift build -v
-
     - name: Run Tests
       run: swift test --enable-code-coverage
 
@@ -77,7 +76,7 @@ jobs:
 
   linux-test:
     name: Linux Build & Test
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     timeout-minutes: 30
 
     steps:
@@ -91,6 +90,5 @@ jobs:
 
     - name: Build
       run: swift build -v
-
     - name: Run Tests
       run: swift test --skip DistributedSecuritySPMTests
