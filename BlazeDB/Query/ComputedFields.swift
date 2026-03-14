@@ -5,9 +5,6 @@
 //  Computed field expressions for field-to-field calculations
 //  Supports: +, -, *, /, %, and functions like abs(), round(), etc.
 //
-//  Created by Auto on 1/XX/25.
-//
-
 import Foundation
 
 // MARK: - Expression Types

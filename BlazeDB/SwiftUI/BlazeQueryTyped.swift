@@ -291,7 +291,6 @@ extension View {
     }
     
     /// Enable pull-to-refresh for a type-safe BlazeQuery
-    @available(iOS 15.0, macOS 12.0, *)
     public func refreshable<T: BlazeDocument>(query: BlazeQueryTypedObserver<T>) -> some View {
         self.refreshable {
             await withCheckedContinuation { continuation in

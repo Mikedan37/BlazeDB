@@ -5,9 +5,6 @@
 //  EXPLAIN query plans for performance analysis
 //  Optimized with detailed execution statistics
 //
-//  Created by Auto on 1/XX/25.
-//
-
 import Foundation
 
 // MARK: - Query Plan

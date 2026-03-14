@@ -5,7 +5,6 @@
 //  Platform-neutral protocol for server transport (TCP listening)
 //  Allows BlazeDB to work on Linux without Network.framework dependency
 //
-//  Created by Auto on 12/15/25.
 //
 
 #if !BLAZEDB_LINUX_CORE

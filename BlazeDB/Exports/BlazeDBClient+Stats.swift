@@ -14,6 +14,7 @@ public struct DatabaseStats: Codable {
     public let walSize: Int64?
     public let lastCheckpoint: Date?
     public let cacheHitRate: Double
+    public let cacheHitRateAvailable: Bool
     public let indexCount: Int
     public let recordCount: Int
     public let databaseSize: Int64
@@ -23,6 +24,7 @@ public struct DatabaseStats: Codable {
         walSize: Int64?,
         lastCheckpoint: Date?,
         cacheHitRate: Double,
+        cacheHitRateAvailable: Bool = true,
         indexCount: Int,
         recordCount: Int,
         databaseSize: Int64
@@ -31,6 +33,7 @@ public struct DatabaseStats: Codable {
         self.walSize = walSize
         self.lastCheckpoint = lastCheckpoint
         self.cacheHitRate = cacheHitRate
+        self.cacheHitRateAvailable = cacheHitRateAvailable
         self.indexCount = indexCount
         self.recordCount = recordCount
         self.databaseSize = databaseSize
@@ -59,8 +62,10 @@ extension DatabaseStats {
             output += "Last Checkpoint: \(formatter.string(from: checkpoint))\n"
         }
         
-        if cacheHitRate > 0 {
+        if cacheHitRateAvailable {
             output += String(format: "Cache Hit Rate: %.1f%%\n", cacheHitRate * 100)
+        } else {
+            output += "Cache Hit Rate: unavailable\n"
         }
         
         return output
@@ -106,6 +111,7 @@ extension BlazeDBClient {
             indexCount = snapshot.performance.indexCount
         } catch {
             // Fallback: estimate from file size
+            BlazeLogger.debug("Stats: Monitoring snapshot failed, estimating from file size: \(error)")
             let attrs = try? FileManager.default.attributesOfItem(atPath: fileURL.path)
             if let fileSize = (attrs?[.size] as? NSNumber)?.int64Value {
                 pageCount = Int(fileSize / 4096) // Approximate
@@ -128,16 +134,16 @@ extension BlazeDBClient {
             lastCheckpoint = walAttrs[.modificationDate] as? Date
         }
         
-        // Cache hit rate - approximate from page cache if accessible
-        // Note: PageCache doesn't expose hit rate directly, so we use a placeholder
-        // In a real implementation, this would track hits/misses
-        let cacheHitRate = 0.0 // Placeholder - would need cache instrumentation
+        // Cache hit rate instrumentation not yet wired — report as unavailable
+        let cacheHitRate = 0.0
+        let cacheHitRateAvailable = false
         
         return DatabaseStats(
             pageCount: pageCount,
             walSize: walSize,
             lastCheckpoint: lastCheckpoint,
             cacheHitRate: cacheHitRate,
+            cacheHitRateAvailable: cacheHitRateAvailable,
             indexCount: indexCount,
             recordCount: recordCount,
             databaseSize: databaseSize

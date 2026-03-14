@@ -4,9 +4,6 @@
 //
 //  Lazy decoding support for DynamicCollection
 //
-//  Created by Auto on 1/XX/25.
-//
-
 #if !BLAZEDB_LINUX_CORE
 
 import Foundation

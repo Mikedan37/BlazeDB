@@ -4,9 +4,6 @@
 //
 //  EXPLAIN API for query plans
 //
-//  Created by Auto on 1/XX/25.
-//
-
 import Foundation
 
 /// Human-readable query plan explanation
@@ -61,17 +58,20 @@ extension QueryPlanner {
         case .vectorIndex(let field, _):
             strategy = "Vector Search (Cosine Similarity)"
             indexesUsed.append("vector(\(field))")
-            notes.append("Using vector index for semantic search")
+            notes.append("Planner selected vector strategy (advisory)")
+            notes.append("Vector execution currently falls back to standard query execution")
             
         case .fullTextIndex(let field, let query):
             strategy = "Full-Text Search"
             indexesUsed.append("fulltext(\(field))")
             notes.append("Searching for: '\(query)'")
+            notes.append("Planner full-text strategy is advisory; execution is handled by standard query paths")
             
         case .regularIndex(let name):
             strategy = "B-Tree Index"
             indexesUsed.append(name)
-            notes.append("Using secondary index for fast lookup")
+            notes.append("Planner selected secondary index (advisory)")
+            notes.append("Execution may still fall back to table-scan code paths for some query shapes")
             
         case .sequential:
             strategy = "Sequential Scan"
@@ -82,7 +82,8 @@ extension QueryPlanner {
             if spatial { indexesUsed.append("spatial") }
             if vector { indexesUsed.append("vector") }
             if fullText { indexesUsed.append("fulltext") }
-            notes.append("Combining multiple index types")
+            notes.append("Combining multiple index types (advisory plan)")
+            notes.append("Hybrid/vector/full-text execution currently relies on fallback execution paths")
         }
         
         return QueryPlanExplanation(

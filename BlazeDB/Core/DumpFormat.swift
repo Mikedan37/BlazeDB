@@ -106,11 +106,20 @@ public struct DatabaseDump: Codable {
     public static func encode(header: DumpHeader, records: [BlazeDataRecord]) throws -> Data {
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601
-        encoder.outputFormatting = []  // No pretty printing for determinism
+        // CRITICAL: Use sortedKeys to ensure deterministic dictionary ordering
+        // Without this, dictionary keys can be in any order, causing hash mismatches
+        encoder.outputFormatting = [.sortedKeys]
+        
+        // Sort records by ID for deterministic ordering
+        let sortedRecords = records.sorted { r1, r2 in
+            let id1 = r1.storage["id"]?.uuidValue ?? UUID()
+            let id2 = r2.storage["id"]?.uuidValue ?? UUID()
+            return id1.uuidString < id2.uuidString
+        }
         
         // Encode header and records separately for hashing
         let headerData = try encoder.encode(header)
-        let recordsData = try encoder.encode(records)
+        let recordsData = try encoder.encode(sortedRecords)
         
         // Compute hashes
         let headerHash = headerData.sha256()
@@ -120,12 +129,12 @@ public struct DatabaseDump: Codable {
         let manifest = DumpManifest(
             headerHash: headerHash,
             payloadHash: payloadHash,
-            recordCount: records.count,
+            recordCount: sortedRecords.count,
             payloadSize: recordsData.count
         )
         
-        // Encode complete dump
-        let dump = DatabaseDump(header: header, records: records, manifest: manifest)
+        // Encode complete dump (use sorted records for consistency)
+        let dump = DatabaseDump(header: header, records: sortedRecords, manifest: manifest)
         return try encoder.encode(dump)
     }
     
@@ -150,11 +159,19 @@ public struct DatabaseDump: Codable {
     public func verify() throws {
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601
-        encoder.outputFormatting = []
+        // CRITICAL: Must match encoding settings used during export
+        encoder.outputFormatting = [.sortedKeys]
+        
+        // Sort records the same way as during export
+        let sortedRecords = records.sorted { r1, r2 in
+            let id1 = r1.storage["id"]?.uuidValue ?? UUID()
+            let id2 = r2.storage["id"]?.uuidValue ?? UUID()
+            return id1.uuidString < id2.uuidString
+        }
         
         // Re-encode header and records
         let headerData = try encoder.encode(header)
-        let recordsData = try encoder.encode(records)
+        let recordsData = try encoder.encode(sortedRecords)
         
         // Compute expected hashes
         let expectedHeaderHash = headerData.sha256()
@@ -188,7 +205,7 @@ public struct DatabaseDump: Codable {
         }
         
         // Verify record count matches
-        guard manifest.recordCount == records.count else {
+        guard manifest.recordCount == sortedRecords.count else {
             throw BlazeDBError.corruptedData(
                 location: "dump manifest",
                 reason: "Record count mismatch"

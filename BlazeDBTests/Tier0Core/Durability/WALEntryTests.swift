@@ -22,7 +22,7 @@ final class WALEntryTests: XCTestCase {
     }
 
     func testBeginCommitAbortCheckpointRoundTrip() throws {
-        for op in [WALOperation.begin, .commit, .abort, .checkpoint] {
+        for op in [WALOperation.begin, .commit, .abort, .checkpoint, .delete] {
             let entry = WALEntry(
                 lsn: 1,
                 transactionID: UUID(),

@@ -2,12 +2,14 @@
 //  ForwardSecrecyManager.swift
 //  BlazeDB
 //
+//  EXPERIMENTAL: Not currently integrated into the BlazeDB encryption pipeline.
+//  Key rotation and forward secrecy are not active. This module provides a
+//  reference implementation that can be wired into the storage encryption path
+//  in a future release.
+//
 //  Forward secrecy implementation with key rotation
 //  Limits exposure from key compromise by rotating keys regularly
 //
-//  Created by Auto on 1/XX/25.
-//
-
 import Foundation
 #if canImport(CryptoKit)
 import CryptoKit
@@ -17,23 +19,30 @@ import Crypto
 
 /// Manages forward secrecy through key rotation
 /// Rotates encryption keys regularly to limit exposure from key compromise
+///
+/// - Important: EXPERIMENTAL. Not currently wired into the BlazeDB encryption path.
 public actor ForwardSecrecyManager {
-    
+
     /// Key rotation interval (default: 1 hour)
     public let rotationInterval: TimeInterval
-    
+
     /// Maximum key age before rotation (default: 24 hours)
     public let maxKeyAge: TimeInterval
-    
+
     /// Current session keys (indexed by session start time)
     private var sessionKeys: [Date: SymmetricKey] = [:]
-    
+
+    /// Random salt generated once per manager lifetime, used for HKDF derivation.
+    /// Using a random salt (instead of a deterministic timestamp) ensures that
+    /// even if two sessions share the same time window, their derived keys differ.
+    private let hkdfSalt: Data
+
     /// Key derivation key (derived from master password)
     private let masterKey: SymmetricKey
-    
+
     /// Current active session start time
     private var currentSessionStart: Date?
-    
+
     public init(
         masterKey: SymmetricKey,
         rotationInterval: TimeInterval = 3600,  // 1 hour
@@ -42,6 +51,10 @@ public actor ForwardSecrecyManager {
         self.masterKey = masterKey
         self.rotationInterval = rotationInterval
         self.maxKeyAge = maxKeyAge
+        // Generate a random 32-byte salt at session start for HKDF
+        var saltBytes = [UInt8](repeating: 0, count: 32)
+        _ = SecRandomCopyBytes(kSecRandomDefault, saltBytes.count, &saltBytes)
+        self.hkdfSalt = Data(saltBytes)
     }
     
     /// Get current encryption key (rotates if needed)
@@ -74,19 +87,22 @@ public actor ForwardSecrecyManager {
     /// Derive session key from master key and session start time
     private func deriveSessionKey(sessionStart: Date) throws -> SymmetricKey {
         // Use HKDF to derive session key from master key + session timestamp
-        let sessionData = withUnsafeBytes(of: sessionStart.timeIntervalSince1970) { Data($0) }
-        
-        guard let infoData = "BlazeDB-Session-Key".data(using: .utf8) else {
-            throw BlazeDBError.invalidData(reason: "Failed to encode session key info as UTF-8")
-        }
-        
+        // The salt is random (generated once at init), not a timestamp, to avoid
+        // deterministic derivation that could be replayed.
+        let sessionTimestamp = withUnsafeBytes(of: sessionStart.timeIntervalSince1970) { Data($0) }
+
+        // Combine random salt with session timestamp for the info parameter
+        // so each time window still produces a distinct key.
+        var info = Data("BlazeDB-Session-Key".utf8)
+        info.append(sessionTimestamp)
+
         let sessionKey = HKDF<SHA256>.deriveKey(
             inputKeyMaterial: masterKey,
-            salt: sessionData,
-            info: infoData,
+            salt: hkdfSalt,
+            info: info,
             outputByteCount: 32
         )
-        
+
         return sessionKey
     }
     

@@ -400,15 +400,15 @@ final class Final100PercentCoverageTests: XCTestCase {
         
         print("  Soft deleted 5 records")
         
-        // Verify all still fetchable
-        XCTAssertEqual(try db.fetchAll().count, 10, "Should have all 10 before purge")
-        
-        // Purge
+        // Soft-deleted records are hidden from fetchAll — only 5 non-deleted visible
+        XCTAssertEqual(try db.fetchAll().count, 5, "Should see only 5 non-deleted before purge")
+
+        // Purge permanently removes soft-deleted records from disk
         try db.purge()
-        
+
         print("  Purged soft-deleted records")
-        
-        // Verify only 5 remain
+
+        // After purge, still 5 visible (disk space reclaimed)
         XCTAssertEqual(try db.fetchAll().count, 5, "Should have 5 after purge")
         
         // Verify the right ones were deleted

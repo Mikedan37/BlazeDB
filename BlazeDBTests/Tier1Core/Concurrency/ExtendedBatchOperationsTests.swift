@@ -234,11 +234,11 @@ final class ExtendedBatchOperationsTests: XCTestCase {
         let deleted = try await db.deleteMany(ids: toDelete)
         
         XCTAssertEqual(deleted, 2, "Should delete only existing records")
-        
+
         let remaining = try await try db.count()
         XCTAssertEqual(remaining, 3)
-        
-        print("  ✅ Deleted 2/3 existing, ignored non-existent")
+
+        print("  ✅ Deleted 2/3 existing, non-existent silently ignored")
     }
     
     // MARK: - UpdateMany by IDs Tests

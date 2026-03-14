@@ -5,9 +5,6 @@
 //  Process lifecycle safety: deterministic shutdown handling
 //  Ensures file handles are closed, operations are idempotent, and failures are safe
 //
-//  Created by Auto on 1/XX/25.
-//
-
 import Foundation
 
 extension BlazeDBClient {
@@ -35,23 +32,45 @@ extension BlazeDBClient {
             BlazeLogger.debug("Database '\(name)' already closed (idempotent call)")
             return
         }
-        
-        // Mark as closed first to prevent new operations
-        _isClosed = true
-        
-        // Flush pending changes
-        do {
-            try persist()
-            BlazeLogger.debug("Flushed pending changes before close for '\(name)'")
-        } catch {
-            BlazeLogger.error("Failed to flush before close for '\(name)': \(error)")
-            // Continue with close even if flush fails - better to release resources
-            // than to leave database in inconsistent state
+
+        // Transaction safety: never implicitly commit active transactions on close.
+        // If a transaction is open, rollback first so close/deinit stays fail-closed.
+        var flushAllowed = true
+        if transactionIndexMapSnapshot != nil {
+            do {
+                try rollbackTransaction()
+                BlazeLogger.info("Rolled back active transaction during close for '\(name)'")
+            } catch {
+                BlazeLogger.error("Failed to rollback active transaction during close for '\(name)': \(error)")
+                // Fail closed: do not flush if rollback could not be guaranteed.
+                flushAllowed = false
+            }
         }
-        
-        // Release file handles via PageStore
-        // Note: PageStore deinit will handle file handle cleanup automatically
-        // but we can't directly access it here. The deinit chain will handle it.
+
+        // Flush pending non-transactional changes while database is still open.
+        // If we mark _isClosed first, persist() becomes a no-op via ensureNotClosed().
+        if flushAllowed {
+            do {
+                try persist()
+                BlazeLogger.debug("Flushed pending changes before close for '\(name)'")
+            } catch {
+                BlazeLogger.error("Failed to flush before close for '\(name)': \(error)")
+                // Continue with close even if flush fails - better to release resources
+                // than to leave database in inconsistent state
+            }
+        } else {
+            BlazeLogger.warn("Skipping persist during close for '\(name)' because transaction rollback failed")
+        }
+
+        // Deterministically release underlying storage resources (locks/file handles).
+        do {
+            try collection.close()
+        } catch {
+            BlazeLogger.error("Failed to close collection resources for '\(name)': \(error)")
+        }
+
+        // Mark closed after cleanup.
+        _isClosed = true
         
         BlazeLogger.debug("Database '\(name)' closed successfully")
     }

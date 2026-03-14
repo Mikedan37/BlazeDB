@@ -1,12 +1,12 @@
 # BlazeDB
 
-**Version:** 2.7.0  
-**Status:** Core modules Swift 6 strict concurrency compliant  
+**Version:** 2.7.0
+**Status:** Core modules Swift 6 strict concurrency compliant
 **License:** MIT
 
-BlazeDB is a Swift database with explicit trust features: query ergonomics, schema migrations, verifiable backups, and operational confidence.
+An encrypted embedded document store for Swift — designed for application state, indexed metadata, and deterministic recovery.
 
-**Embedded database for Swift with ACID transactions, encryption, and schema-less storage.**
+**ACID transactions, AES-256-GCM encryption, zero dependencies.**
 
 [![Swift](https://img.shields.io/badge/Swift-6.0-orange.svg)](https://swift.org)
 [![Platform](https://img.shields.io/badge/Platform-macOS%20%7C%20iOS%20%7C%20Linux-lightgrey.svg)](https://github.com/Mikedan37/BlazeDB)
@@ -52,10 +52,12 @@ Or in Xcode: File → Add Package Dependencies → paste the URL.
 
 ## What You Get
 
-- ACID transactions with crash recovery
-- AES-256-GCM encryption (on by default)
-- Sub-millisecond queries
-- Zero dependencies
+- ACID transactions with WAL-based crash recovery
+- Always-on AES-256-GCM encryption
+- Schema-less document storage with typed queries
+- Sub-millisecond reads, zero external dependencies
+
+> **Note:** Distributed sync and telemetry features are planned for a future release. This version ships the core embedded engine only.
 
 ---
 
@@ -74,8 +76,8 @@ Or in Xcode: File → Add Package Dependencies → paste the URL.
 
 - [API Reference](Docs/DEVELOPER_GUIDE.md)
 - [Architecture](Docs/Architecture/)
-- [Production Readiness](Docs/PRODUCTION_READINESS/INDEX.md)
+- [Performance](Docs/Performance/)
 
-**Requirements:** Swift 5.9+, macOS 12+ / iOS 15+ / Linux
+**Requirements:** Swift 6.0+, macOS 15+ / iOS 15+ / Linux (experimental)
 
 **License:** MIT

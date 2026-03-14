@@ -80,7 +80,7 @@ Show:
 Button("Run Tests in Xcode") {
  // Open BlazeDB.xcodeproj
  NSWorkspace.shared.open(URL(fileURLWithPath:
- "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/BlazeDB.xcodeproj"
+ "~/Developer/ProjectBlaze/BlazeDB/BlazeDB.xcodeproj"
  ))
 }
 ```
@@ -123,7 +123,7 @@ Replace "Run All Tests" button with:
 Button(action: {
  // Open Xcode and run tests
  let projectURL = URL(fileURLWithPath:
- "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/BlazeDB.xcodeproj"
+ "~/Developer/ProjectBlaze/BlazeDB/BlazeDB.xcodeproj"
  )
 
  NSWorkspace.shared.open(projectURL)

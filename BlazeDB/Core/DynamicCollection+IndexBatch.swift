@@ -5,9 +5,6 @@
 //  Enhanced batch index updates for sync operations
 //  Provides 2-5x faster batch index updates
 //
-//  Created by Auto on 1/XX/25.
-//
-
 #if !BLAZEDB_LINUX_CORE
 
 import Foundation

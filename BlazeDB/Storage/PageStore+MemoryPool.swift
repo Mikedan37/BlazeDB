@@ -5,9 +5,6 @@
 //  Integration of MemoryPool into PageStore for buffer reuse
 //  Reduces allocations by 50-70% and improves performance by 20-30%
 //
-//  Created by Auto on 1/XX/25.
-//
-
 import Foundation
 
 extension PageStore {

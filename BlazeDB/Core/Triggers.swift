@@ -4,9 +4,6 @@
 //
 //  Database triggers for BEFORE/AFTER INSERT/UPDATE/DELETE
 //
-//  Created by Auto on 1/XX/25.
-//
-
 import Foundation
 
 // MARK: - Trigger Types
@@ -18,6 +15,19 @@ public enum TriggerEvent {
     case afterUpdate
     case beforeDelete
     case afterDelete
+}
+
+extension TriggerEvent {
+    internal var persistedName: String {
+        switch self {
+        case .beforeInsert: return "beforeInsert"
+        case .afterInsert: return "afterInsert"
+        case .beforeUpdate: return "beforeUpdate"
+        case .afterUpdate: return "afterUpdate"
+        case .beforeDelete: return "beforeDelete"
+        case .afterDelete: return "afterDelete"
+        }
+    }
 }
 
 public typealias TriggerHandler = (BlazeDataRecord, inout BlazeDataRecord?) throws -> Void
@@ -120,28 +130,28 @@ public class EnhancedTriggerManager {
         let startTime = Date()
         let maxDuration: TimeInterval = 5.0
         
-        // Safety: Recursion check (prevent infinite loops)
-        let triggerKey = "\(event)_\(collectionName ?? "all")"
-        if context.isExecutingTrigger(triggerKey) {
-            BlazeLogger.warn("Trigger recursion detected for \(triggerKey), skipping")
-            return
-        }
-        
-        context.markTriggerExecuting(triggerKey)
-        defer { context.unmarkTriggerExecuting(triggerKey) }
-        
         for trigger in eventTriggers {
+            // Safety: Per-trigger recursion check (prevent infinite loops)
+            let triggerKey = "\(trigger.name)_\(event)_\(collectionName ?? "all")"
+            if context.isExecutingTrigger(triggerKey) {
+                BlazeLogger.warn("Trigger recursion detected for '\(trigger.name)' on \(event)_\(collectionName ?? "all"), skipping")
+                continue
+            }
+
             // Check time limit
             if Date().timeIntervalSince(startTime) > maxDuration {
                 BlazeLogger.warn("Trigger execution timeout for \(trigger.name), stopping")
                 break
             }
-            
+
+            context.markTriggerExecuting(triggerKey)
+            defer { context.unmarkTriggerExecuting(triggerKey) }
+
             do {
                 try trigger.handler(record, &modifiedRecord, context)
             } catch {
-                // Triggers run after commit, so failures don't roll back
-                // But we log them for debugging
+                // Triggers execute inside the operation's do block, so errors are logged
+                // but do not roll back the operation. Consider using BEFORE triggers to prevent writes.
                 BlazeLogger.error("Trigger '\(trigger.name)' failed: \(error)")
                 // Continue with other triggers
             }
@@ -194,12 +204,26 @@ extension BlazeDBClient {
     /// Register a trigger
     public func registerTrigger(_ trigger: Trigger) {
         triggerManager.register(trigger)
+        #if !BLAZEDB_LINUX_CORE
+        try? persistTriggerDefinition(TriggerDefinition(
+            name: trigger.name,
+            event: trigger.event.persistedName,
+            collectionName: nil
+        ))
+        #endif
         BlazeLogger.info("Registered trigger '\(trigger.name)' for event \(trigger.event)")
     }
     
     /// Register an enhanced trigger (with context)
     public func registerTrigger(_ trigger: EnhancedTrigger) {
         enhancedTriggerManager.register(trigger)
+        #if !BLAZEDB_LINUX_CORE
+        try? persistTriggerDefinition(TriggerDefinition(
+            name: trigger.name,
+            event: trigger.event.persistedName,
+            collectionName: trigger.collectionName
+        ))
+        #endif
         BlazeLogger.info("Registered enhanced trigger '\(trigger.name)' for event \(trigger.event)")
     }
     

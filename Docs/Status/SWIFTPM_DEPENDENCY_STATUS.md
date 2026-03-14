@@ -2,8 +2,8 @@
 
 ##  Completed
 
-1. **BlazeTransport Added**: Remote dependency using SSH URL `git@github.com:Mikedan37/BlazeTransport.git` with branch-based resolution
-2. **BlazeBinary Added**: Remote dependency using SSH URL `git@github.com:Mikedan37/BlazeBinary.git` with branch-based resolution
+1. **BlazeTransport Added**: Remote dependency using SSH URL `https://github.com/Mikedan37/BlazeTransport.git` with branch-based resolution
+2. **BlazeBinary Added**: Remote dependency using SSH URL `https://github.com/Mikedan37/BlazeBinary.git` with branch-based resolution
 3. **Swift Tools Version**: Updated to 6.0
 4. **Linux Support**: Added (implicit - Linux platform is supported when not explicitly declared)
 5. **All Dependencies Remote**: No local/path dependencies in BlazeDB's Package.swift
@@ -17,7 +17,7 @@
 
 **Required Fix**: BlazeTransport's Package.swift must be updated to use BlazeBinary as a remote dependency:
 ```swift
-.package(url: "git@github.com:Mikedan37/BlazeBinary.git", branch: "main")
+.package(url: "https://github.com/Mikedan37/BlazeBinary.git", branch: "main")
 ```
 
 Instead of:
@@ -30,11 +30,11 @@ Instead of:
 ```swift
 dependencies: [
     .package(
-        url: "git@github.com:Mikedan37/BlazeTransport.git",
+        url: "https://github.com/Mikedan37/BlazeTransport.git",
         branch: "main"
     ),
     .package(
-        url: "git@github.com:Mikedan37/BlazeBinary.git",
+        url: "https://github.com/Mikedan37/BlazeBinary.git",
         branch: "main"
     )
 ]

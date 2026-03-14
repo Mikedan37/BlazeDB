@@ -239,7 +239,7 @@ public actor OperationLog {
     
     public func configureGC(_ config: OperationLogGCConfig) {
         // Store config for periodic cleanup
-        // In a real implementation, we'd store this and use it in periodic cleanup
+        // TODO: Implement when distributed module is enabled
     }
 }
 

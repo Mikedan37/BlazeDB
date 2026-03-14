@@ -10,7 +10,7 @@ Added BlazeFSM as a direct dependency pinned to revision `58b292a27928d211eef120
 
 ```swift
 .package(
-    url: "git@github.com:Mikedan37/BlazeFSM.git",
+    url: "https://github.com/Mikedan37/BlazeFSM.git",
     revision: "58b292a27928d211eef12090cafcbf12b31d69c6"
 )
 ```
@@ -30,7 +30,7 @@ BlazeTransport's Package.swift must be updated to also pin BlazeFSM to the same 
 **Option 1**: Update BlazeTransport to pin BlazeFSM:
 ```swift
 .package(
-    url: "git@github.com:Mikedan37/BlazeFSM.git",
+    url: "https://github.com/Mikedan37/BlazeFSM.git",
     revision: "58b292a27928d211eef12090cafcbf12b31d69c6"
 )
 ```

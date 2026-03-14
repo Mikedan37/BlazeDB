@@ -39,7 +39,7 @@ Product → Build (Cmd+B)
 
 ### **2. Clean Build (Command Line)**
 ```bash
-cd /Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB
+cd ~/Developer/ProjectBlaze/BlazeDB
 swift package clean
 swift build
 ```

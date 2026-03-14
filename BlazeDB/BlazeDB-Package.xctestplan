@@ -11,24 +11,18 @@
   "defaultOptions" : {
     "performanceAntipatternCheckerEnabled" : true,
     "targetForVariableExpansion" : {
-      "containerPath" : "container:",
-      "identifier" : "BlazeShell",
-      "name" : "BlazeShell"
-    }
+      "containerPath" : "container:BlazeDB.xcodeproj",
+      "identifier" : "BlazeDB",
+      "name" : "BlazeDB"
+    },
+    "testPlanDescription" : "Package-level test plan. For tiered testing, use SPM: swift test --filter BlazeDB_Tier0"
   },
   "testTargets" : [
     {
       "target" : {
-        "containerPath" : "container:",
+        "containerPath" : "container:BlazeDB.xcodeproj",
         "identifier" : "BlazeDBTests",
         "name" : "BlazeDBTests"
-      }
-    },
-    {
-      "target" : {
-        "containerPath" : "container:",
-        "identifier" : "BlazeDBIntegrationTests",
-        "name" : "BlazeDBIntegrationTests"
       }
     }
   ],

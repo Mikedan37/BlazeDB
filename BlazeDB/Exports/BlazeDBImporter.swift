@@ -54,23 +54,33 @@ public struct BlazeDBImporter {
                 reason: "Cannot restore to non-empty database. Database has \(existingCount) records. Clear database first or use a new database."
             )
         }
-        
-        // Restore records
-        for record in dump.records {
-            // Insert record (ID preserved if present in storage["id"])
-            try db.insert(record)
-        }
-        
-        // Restore schema version
-        try db.setSchemaVersion(dump.header.schemaVersion)
-        
-        // Verify restore succeeded
-        let restoredCount = db.getRecordCount()
-        guard restoredCount == dump.manifest.recordCount else {
-            throw BlazeDBError.corruptedData(
-                location: "restore verification",
-                reason: "Record count mismatch: expected \(dump.manifest.recordCount), got \(restoredCount)"
-            )
+
+        // Restore in one explicit transaction so large imports avoid per-insert
+        // backup snapshots while keeping rollback semantics.
+        try db.beginTransaction()
+        do {
+            // Restore records
+            for record in dump.records {
+                // Insert record (ID preserved if present in storage["id"])
+                _ = try db.insert(record)
+            }
+
+            // Restore schema version
+            try db.setSchemaVersion(dump.header.schemaVersion)
+
+            // Verify restore succeeded
+            let restoredCount = db.getRecordCount()
+            guard restoredCount == dump.manifest.recordCount else {
+                throw BlazeDBError.corruptedData(
+                    location: "restore verification",
+                    reason: "Record count mismatch: expected \(dump.manifest.recordCount), got \(restoredCount)"
+                )
+            }
+
+            try db.commitTransaction()
+        } catch {
+            try? db.rollbackTransaction()
+            throw error
         }
     }
     

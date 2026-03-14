@@ -8,50 +8,26 @@ on:
 
 jobs:
   core-tests:
-    runs-on: macos-latest
-    name: Core Tests (Swift 6 Compliant)
+    runs-on: macos-14
+    name: Core Tests (Swift 6)
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: swift-actions/setup-swift@v2
         with:
           swift-version: "6.0"
-      
-      - name: Check Frozen Core
-        run: ./Scripts/check-freeze.sh HEAD^
-      
+
       - name: Build Core
         run: swift build --target BlazeDBCore
-      
+
       - name: Build CLI Tools
         run: |
           swift build --target BlazeDoctor
           swift build --target BlazeDump
           swift build --target BlazeInfo
-      
-      - name: Build Tier 1 (Gate) Tests
-        run: swift build --target BlazeDBCoreGateTests
-      
-      - name: Run Tier 1 (Gate) Tests
-        run: swift test --filter BlazeDBCoreGateTests
-        continue-on-error: false
-  
-  tier2-tests:
-    runs-on: macos-latest
-    name: Tier 2 Tests (Non-Blocking)
-    continue-on-error: true
-    steps:
-      - uses: actions/checkout@v3
-      - uses: swift-actions/setup-swift@v2
-        with:
-          swift-version: "6.0"
-      
-      - name: Build Core
-        run: swift build --target BlazeDBCore
-      
-      - name: Run Tier 2 Tests
-        run: swift test --filter BlazeDBCoreTests
-        continue-on-error: true
-      
-      - name: Run Integration Tests
-        run: swift test --filter BlazeDBIntegrationTests
+
+      - name: Run Tier 0 (Gate) Tests
+        run: swift test --filter BlazeDB_Tier0
+
+      - name: Run Tier 1 Tests
+        run: swift test --filter BlazeDB_Tier1
         continue-on-error: true

@@ -4,7 +4,6 @@
 //
 //  Garbage collection for sync state to prevent memory leaks
 //
-//  Created: 2025-01-XX
 //
 
 #if !BLAZEDB_LINUX_CORE
@@ -64,7 +63,7 @@ extension BlazeSyncEngine {
         
         // For now, we'll use a simplified approach:
         // Remove sync state for records that haven't been synced recently
-        // In a real implementation, we'd track last sync time per record
+        // TODO: Implement when distributed module is enabled
         
         // Remove records from syncedRecords if they haven't been synced recently
         // This is a simplified version - in production, track actual sync times

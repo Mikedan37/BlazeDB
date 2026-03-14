@@ -51,15 +51,15 @@ public actor BlazeSyncEngine {
     private var syncTask: Task<Void, Error>?
     private var changeObserverToken: ObserverToken?
     
-    // ULTRA-AGGRESSIVE batching for maximum throughput
+    // Aggressive batching for throughput
     private var operationQueue: [BlazeOperation] = []
     private var batchTimer: Task<Void, Never>?
-    private var batchSize: Int = 10_000  // ULTRA-FAST: 10,000 operations per batch (2x increase!)
-    private let batchDelay: UInt64 = 100_000  // 0.1ms delay (ULTRA fast! 2.5x faster!)
+    private var batchSize: Int = 10_000  // 10,000 operations per batch
+    private let batchDelay: UInt64 = 100_000  // 0.1ms batch delay
     
     // Pipelining: Multiple batches in flight
     private var inFlightBatches: Int = 0
-    private let maxInFlight: Int = 200  // ULTRA-FAST: Send up to 200 batches in parallel (4x increase!)
+    private let maxInFlight: Int = 200  // Up to 200 batches in parallel
     private var pendingBatches: [Task<Void, Never>] = []
     
     // Delta encoding: Track previous state to only send changes
@@ -631,7 +631,7 @@ public actor BlazeSyncEngine {
         // Adjust batch size based on performance
         if avgTime < targetBatchTime / 2 {
             // Too fast - increase batch size (more aggressive!)
-            batchSize = min(batchSize + 1000, 50_000)  // ULTRA-FAST: Max 50K ops (2.5x increase!)
+            batchSize = min(batchSize + 1000, 50_000)  // Max 50K ops
         } else if avgTime > targetBatchTime * 2 {
             // Too slow - decrease batch size (less aggressive)
             batchSize = max(batchSize - 1000, 1000)  // Min 1K ops

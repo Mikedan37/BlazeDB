@@ -5,9 +5,6 @@
 //  Lazy decoding record abstraction
 //  Only decodes fields that are accessed
 //
-//  Created by Auto on 1/XX/25.
-//
-
 import Foundation
 
 /// Lazy record that only decodes fields on-demand

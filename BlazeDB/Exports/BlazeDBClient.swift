@@ -747,15 +747,14 @@ public final class BlazeDBClient: @unchecked Sendable {
             var deletedCount = 0
             try performSafeWrite {
                 #if !BLAZEDB_LINUX_CORE
-                // Use optimized batch delete (much faster!)
-                try collection.deleteBatch(ids)
-                deletedCount = ids.count
+                deletedCount = try collection.deleteBatch(ids)
                 #else
-                // Linux: Fallback to individual deletes
                 for id in ids {
-                    try collection.delete(id: id)
+                    if (try? collection.fetch(id: id)) != nil {
+                        try collection.delete(id: id)
+                        deletedCount += 1
+                    }
                 }
-                deletedCount = ids.count
                 #endif
                 
                 // Log to transaction log
@@ -854,16 +853,26 @@ public final class BlazeDBClient: @unchecked Sendable {
     public func fetch(id: UUID) throws -> BlazeDataRecord? {
         try ensureNotClosed()
         let startTime = Date()
-        
+
         do {
             let record = try collection.fetch(id: id)
-            
+
+            // Filter out soft-deleted records
+            if let record = record,
+               let isDeleted = record.storage["isDeleted"]?.boolValue, isDeleted {
+                #if !BLAZEDB_LINUX_CORE
+                let duration = Date().timeIntervalSince(startTime) * 1000
+                telemetry.record(operation: "fetch", duration: duration, success: true, recordCount: 0)
+                #endif
+                return nil
+            }
+
             #if !BLAZEDB_LINUX_CORE
             // Track telemetry
             let duration = Date().timeIntervalSince(startTime) * 1000
             telemetry.record(operation: "fetch", duration: duration, success: true, recordCount: record == nil ? 0 : 1)
             #endif
-            
+
             return record
         } catch {
             #if !BLAZEDB_LINUX_CORE
@@ -890,16 +899,20 @@ public final class BlazeDBClient: @unchecked Sendable {
     public func fetchAll() throws -> [BlazeDataRecord] {
         try ensureNotClosed()
         let startTime = Date()
-        
+
         do {
-            let records = try collection.fetchAll()
-            
+            let records = try collection.fetchAll().filter { record in
+                // Exclude soft-deleted records
+                guard let isDeleted = record.storage["isDeleted"]?.boolValue else { return true }
+                return !isDeleted
+            }
+
             #if !BLAZEDB_LINUX_CORE
             // Track telemetry
             let duration = Date().timeIntervalSince(startTime) * 1000
             telemetry.record(operation: "fetchAll", duration: duration, success: true, recordCount: records.count)
             #endif
-            
+
             return records
         } catch {
             #if !BLAZEDB_LINUX_CORE
@@ -1557,20 +1570,19 @@ extension BlazeDBClient {
     /// }
     /// ```
     public func performSecurityAudit() -> SecurityAuditReport {
-        let hasRBAC = collection.secondaryIndexes.isEmpty == false
-        let hasRLS = rls.getContext() != nil
+        // RBAC is not currently tracked as a first-class runtime capability.
+        let hasRBAC = false
+        // RLS should reflect policy configuration, not transient request context.
+        let hasRLS = rls.isEnabled() && !rls.getPolicies().isEmpty
         
-        return SecurityAuditor.audit(
+        return SecurityAuditor.auditWithCapabilityStates(
             isEncrypted: !password.isEmpty,
             password: password.isEmpty ? nil : password,
             hasRBAC: hasRBAC,
             hasRLS: hasRLS,
-            hasAuditLogging: false,  // NOTE: Audit logging intentionally not implemented.
-            // Application-level logging should be used for audit trails.
-            usesTLS: false,  // NOTE: TLS detection intentionally not implemented.
-            // TLS usage is determined by connection configuration, not tracked globally.
-            hasCertificatePinning: false,  // NOTE: Certificate pinning detection intentionally not implemented.
-            // Certificate pinning is a connection-level feature, not a global database setting.
+            hasAuditLoggingState: .unknown,
+            usesTLSState: .unknown,
+            hasCertificatePinningState: .unknown,
             crc32Enabled: BlazeBinaryEncoder.crc32Mode == .enabled
         )
     }

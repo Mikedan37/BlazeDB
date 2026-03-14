@@ -5,7 +5,6 @@
 //  Efficient indexing for multi-workspace agent workloads
 //  Provides optimized indexes for workspace-related queries
 //
-//  Created by Auto on 2025-11-27.
 //
 
 import Foundation

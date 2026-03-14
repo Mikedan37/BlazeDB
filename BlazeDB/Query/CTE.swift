@@ -5,9 +5,6 @@
 //  Common Table Expressions (WITH clauses)
 //  Optimized with query caching and lazy evaluation
 //
-//  Created by Auto on 1/XX/25.
-//
-
 import Foundation
 
 // MARK: - CTE Definition

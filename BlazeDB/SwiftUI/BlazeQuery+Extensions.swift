@@ -99,7 +99,6 @@ extension Array where Element == BlazeDataRecord {
 
 // MARK: - Observable Query (SwiftUI State Management)
 
-@available(iOS 15.0, macOS 12.0, *)
 @MainActor
 public class ObservableQuery: ObservableObject {
     @Published public private(set) var records: [BlazeDataRecord] = []

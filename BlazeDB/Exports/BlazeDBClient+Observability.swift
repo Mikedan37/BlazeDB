@@ -5,7 +5,6 @@
 //  Snapshot-based observability API.
 //  Read-only, non-invasive, zero cost if unused.
 //
-//  Created by Auto on 2025-01-23.
 //
 
 import Foundation

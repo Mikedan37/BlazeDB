@@ -1,47 +1,40 @@
 {
-  "configurations": [
+  "configurations" : [
     {
-      "id": "6E8B8A76-1F97-4503-8AD4-9D650D38A4E2",
-      "name": "Core (T0+T1)",
-      "options": {
-        "environmentVariableEntries": [
+      "id" : "6E8B8A76-1F97-4503-8AD4-9D650D38A4E2",
+      "name" : "Core (T0+T1)",
+      "options" : {
+        "environmentVariableEntries" : [
           {
-            "key": "BLAZEDB_TEST_PROFILE",
-            "value": "core"
+            "key" : "BLAZEDB_TEST_PROFILE",
+            "value" : "core"
           },
           {
-            "key": "BLAZEDB_TEST_TIER",
-            "value": "1"
+            "key" : "BLAZEDB_TEST_TIER",
+            "value" : "1"
           }
         ]
       }
     }
   ],
-  "defaultOptions": {
-    "performanceAntipatternCheckerEnabled": true,
-    "targetForVariableExpansion": {
-      "containerPath": "container:BlazeDB.xcodeproj",
-      "identifier": "BlazeDB",
-      "name": "BlazeDB"
-    }
-  },
-  "testTargets": [
-    {
-      "parallelizable": true,
-      "target": {
-        "containerPath": "container:BlazeDB.xcodeproj",
-        "identifier": "BlazeDBTests",
-        "name": "BlazeDBTests"
-      }
+  "defaultOptions" : {
+    "performanceAntipatternCheckerEnabled" : true,
+    "targetForVariableExpansion" : {
+      "containerPath" : "container:BlazeDB.xcodeproj",
+      "identifier" : "BlazeDB",
+      "name" : "BlazeDB"
     },
+    "testPlanDescription" : "Core tests (Tier 0 + Tier 1) via BlazeDBTests. For tiered testing, use SPM: swift test --filter BlazeDB_Tier0"
+  },
+  "testTargets" : [
     {
-      "parallelizable": true,
-      "target": {
-        "containerPath": "container:BlazeDB.xcodeproj",
-        "identifier": "BlazeDBTier1Tests",
-        "name": "BlazeDBTier1Tests"
+      "parallelizable" : true,
+      "target" : {
+        "containerPath" : "container:BlazeDB.xcodeproj",
+        "identifier" : "BlazeDBTests",
+        "name" : "BlazeDBTests"
       }
     }
   ],
-  "version": 1
+  "version" : 1
 }

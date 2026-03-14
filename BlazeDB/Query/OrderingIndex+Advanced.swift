@@ -4,9 +4,6 @@
 //
 //  Advanced ordering features: multiple fields, relative moves, bulk operations
 //
-//  Created by Auto on 1/XX/25.
-//
-
 import Foundation
 
 // MARK: - Multiple Ordering Fields

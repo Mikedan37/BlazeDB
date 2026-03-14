@@ -5,9 +5,6 @@
 //  R-tree spatial index for geospatial queries.
 //  Provides fast location-based queries (distance, radius, bounding box).
 //
-//  Created by Auto on 1/XX/25.
-//
-
 import Foundation
 #if canImport(Darwin)
 import Darwin

@@ -100,10 +100,22 @@ extension QueryBuilder {
         var steps: [QueryStep] = []
         var estimatedRecords = collection.count()
         var estimatedTime: TimeInterval = 0
-        let candidateIndexes: [String] = []
+        var candidateIndexes: [String] = []
         var warnings: [String] = []
         
         BlazeLogger.info("Generating query execution plan")
+        
+        if !filterFields.isEmpty {
+            let availableIndexes = collection.secondaryIndexes.keys
+            candidateIndexes = Array(filterFields).filter { field in
+                availableIndexes.contains { indexName in
+                    indexName == field ||
+                    indexName == "idx_\(field)" ||
+                    indexName.hasPrefix("\(field)+") ||
+                    indexName.hasSuffix("+\(field)")
+                }
+            }
+        }
         
         // Step 1: Scan estimation
         if estimatedRecords < 1000 {
@@ -117,9 +129,7 @@ extension QueryBuilder {
                 estimatedTime += lastStep.estimatedTime
             }
         } else {
-            // Large dataset: check if indexes would help
-            // NOTE: Index matching analysis intentionally not implemented in explain output.
-            // Query planner automatically selects indexes; explain focuses on execution steps.
+            // Large dataset: include candidate indexes for referenced filter fields.
             steps.append(QueryStep(
                 type: .tableScan,
                 estimatedRecords: estimatedRecords,
@@ -130,6 +140,10 @@ extension QueryBuilder {
             }
             
             warnings.append("Large dataset (\(estimatedRecords) records) - consider adding indexes")
+        }
+        
+        if !candidateIndexes.isEmpty {
+            warnings.append("Indexes listed are candidates only; current execution may still use full table scan paths")
         }
         
         // Step 2: Filter estimation

@@ -20,7 +20,7 @@ jobs:
       - name: 🔧 Setup Swift
         uses: swift-actions/setup-swift@v1
         with:
-          swift-version: '5.9'
+          swift-version: '6.0'
       
       - name: 🧪 Run Full Test Suite
         run: |
@@ -61,7 +61,7 @@ jobs:
       - name: 🔧 Setup Swift
         uses: swift-actions/setup-swift@v1
         with:
-          swift-version: '5.9'
+          swift-version: '6.0'
       
       - name: 🏗️ Build Release Configuration
         run: |
@@ -110,29 +110,25 @@ jobs:
           echo "" >> release_notes.md
           echo "### 🧪 Test Results" >> release_notes.md
           echo "" >> release_notes.md
-          echo "- ✅ 907 unit tests passing" >> release_notes.md
-          echo "- ✅ 20+ integration scenarios passing" >> release_notes.md
-          echo "- ✅ 97% code coverage" >> release_notes.md
-          echo "- ✅ All performance benchmarks met" >> release_notes.md
-          echo "- ✅ Thread sanitizer: No issues" >> release_notes.md
-          echo "- ✅ Address sanitizer: No issues" >> release_notes.md
+          echo "- Tier 0 gate tests: passing" >> release_notes.md
+          echo "- Tier 1 contract tests: passing" >> release_notes.md
           echo "" >> release_notes.md
           echo "### 📦 Installation" >> release_notes.md
           echo "" >> release_notes.md
           echo "\`\`\`swift" >> release_notes.md
           echo "dependencies: [" >> release_notes.md
-          echo "    .package(url: \"https://github.com/yourusername/BlazeDB.git\", from: \"${{ github.ref_name }}\")" >> release_notes.md
+          echo "    .package(url: \"https://github.com/Mikedan37/BlazeDB.git\", from: \"${{ github.ref_name }}\")" >> release_notes.md
           echo "]" >> release_notes.md
           echo "\`\`\`" >> release_notes.md
           echo "" >> release_notes.md
           echo "### 📚 Documentation" >> release_notes.md
           echo "" >> release_notes.md
-          echo "- [README](https://github.com/yourusername/BlazeDB/blob/${{ github.ref_name }}/README.md)" >> release_notes.md
-          echo "- [API Docs](https://github.com/yourusername/BlazeDB/tree/${{ github.ref_name }}/Docs)" >> release_notes.md
+          echo "- [README](https://github.com/Mikedan37/BlazeDB/blob/${{ github.ref_name }}/README.md)" >> release_notes.md
+          echo "- [API Docs](https://github.com/Mikedan37/BlazeDB/tree/${{ github.ref_name }}/Docs)" >> release_notes.md
           echo "" >> release_notes.md
           echo "---" >> release_notes.md
           echo "" >> release_notes.md
-          echo "**Full Changelog**: https://github.com/yourusername/BlazeDB/compare/$LAST_TAG...${{ github.ref_name }}" >> release_notes.md
+          echo "**Full Changelog**: https://github.com/Mikedan37/BlazeDB/compare/$LAST_TAG...${{ github.ref_name }}" >> release_notes.md
       
       - name: 📤 Upload Release Notes
         uses: actions/upload-artifact@v4

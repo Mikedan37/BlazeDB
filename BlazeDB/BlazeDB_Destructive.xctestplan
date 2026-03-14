@@ -27,15 +27,16 @@
       "containerPath" : "container:BlazeDB.xcodeproj",
       "identifier" : "BlazeDB",
       "name" : "BlazeDB"
-    }
+    },
+    "testPlanDescription" : "Destructive tests run via BlazeDBTests with BLAZEDB_DESTRUCTIVE_MODE=1. For tiered testing, use SPM: swift test --filter BlazeDB_Tier3Destructive"
   },
   "testTargets" : [
     {
       "parallelizable" : false,
       "target" : {
         "containerPath" : "container:BlazeDB.xcodeproj",
-        "identifier" : "BlazeDBTier3DestructiveTests",
-        "name" : "BlazeDBTier3DestructiveTests"
+        "identifier" : "BlazeDBTests",
+        "name" : "BlazeDBTests"
       }
     }
   ],

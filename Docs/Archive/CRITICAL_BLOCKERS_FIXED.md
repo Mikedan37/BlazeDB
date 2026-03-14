@@ -390,7 +390,7 @@ Overall: PRODUCTION-SAFE
 
 ### **Run All Blocker Tests**:
 ```bash
-cd /Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB
+cd ~/Developer/ProjectBlaze/BlazeDB
 
 # Critical blocker tests
 swift test --filter CriticalBlockerTests
@@ -511,7 +511,7 @@ Confidence: ABSOLUTE
 ## **Run The Validation Tests**
 
 ```bash
-cd /Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB
+cd ~/Developer/ProjectBlaze/BlazeDB
 
 # Run blocker tests
 swift test --filter CriticalBlockerTests

@@ -5,9 +5,6 @@
 //  Field table for lazy decoding support
 //  Maps field names to (offset, length, type) for partial decoding
 //
-//  Created by Auto on 1/XX/25.
-//
-
 import Foundation
 
 /// Field metadata for lazy decoding

@@ -372,7 +372,6 @@ extension View {
     }
     
     /// Enable pull-to-refresh for a BlazeQuery
-    @available(iOS 15.0, macOS 12.0, *)
     public func refreshable(query: BlazeQueryObserver) -> some View {
         self.refreshable {
             await withCheckedContinuation { continuation in

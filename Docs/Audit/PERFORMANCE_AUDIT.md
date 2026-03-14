@@ -459,7 +459,7 @@ BlazeDB is designed for **high-performance embedded database** use cases:
 
 ### **Quick Method: Run Benchmark Script**
 ```bash
-cd /Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB
+cd ~/Developer/ProjectBlaze/BlazeDB
 ./run_benchmarks.sh
 ```
 
@@ -473,7 +473,7 @@ This script will:
 
 #### **Step 1: Run Comprehensive Benchmarks**
 ```bash
-cd /Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB
+cd ~/Developer/ProjectBlaze/BlazeDB
 swift test --filter ComprehensiveBenchmarks
 ```
 

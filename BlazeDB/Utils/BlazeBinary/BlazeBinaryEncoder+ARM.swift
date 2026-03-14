@@ -5,9 +5,6 @@
 //  ARM-optimized BlazeBinary encoder using SIMD, vectorized copying, and prefetching
 //  100% backwards compatible with existing BlazeBinary format
 //
-//  Created by Auto on 1/XX/25.
-//
-
 import Foundation
 #if canImport(Accelerate)
 import Accelerate

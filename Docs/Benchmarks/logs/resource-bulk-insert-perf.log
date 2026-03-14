@@ -1,0 +1,28 @@
+Test Suite 'Selected tests' started at 2026-03-14 01:15:41.554.
+Test Suite 'BlazeDBPackageTests.xctest' started at 2026-03-14 01:15:41.555.
+Test Suite 'BlazeDBPerformanceTests' started at 2026-03-14 01:15:41.556.
+Test Case '-[BlazeDB_Tier3_Heavy.BlazeDBPerformanceTests testBulkInsertPerformance]' started.
+/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/BlazeDBTests/Tier3Heavy/Performance/BlazeDBPerformanceTests.swift:67: Test Case '-[BlazeDB_Tier3_Heavy.BlazeDBPerformanceTests testBulkInsertPerformance]' measured [Disk Logical Writes, kB] average: 13220.528, relative standard deviation: 0.837%, values: [13090.816000, 13209.616000, 13361.152000], performanceMetricID:com.apple.dt.XCTMetric_Disk.logical_writes, baselineName: "", baselineAverage: , polarity: prefers smaller, maxPercentRegression: 10.000%, maxPercentRelativeStandardDeviation: 10.000%, maxRegression: 0.000, maxStandardDeviation: 0.000
+/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/BlazeDBTests/Tier3Heavy/Performance/BlazeDBPerformanceTests.swift:67: Test Case '-[BlazeDB_Tier3_Heavy.BlazeDBPerformanceTests testBulkInsertPerformance]' measured [Clock Monotonic Time, s] average: 0.425, relative standard deviation: 33.859%, values: [0.249662, 0.422338, 0.601787], performanceMetricID:com.apple.dt.XCTMetric_Clock.time.monotonic, baselineName: "", baselineAverage: , polarity: prefers smaller, maxPercentRegression: 10.000%, maxPercentRelativeStandardDeviation: 10.000%, maxRegression: 0.000, maxStandardDeviation: 0.000
+/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/BlazeDBTests/Tier3Heavy/Performance/BlazeDBPerformanceTests.swift:67: Test Case '-[BlazeDB_Tier3_Heavy.BlazeDBPerformanceTests testBulkInsertPerformance]' measured [CPU Time, s] average: 0.010, relative standard deviation: 33.974%, values: [0.005953, 0.010117, 0.014407], performanceMetricID:com.apple.dt.XCTMetric_CPU.time, baselineName: "", baselineAverage: , polarity: prefers smaller, maxPercentRegression: 10.000%, maxPercentRelativeStandardDeviation: 10.000%, maxRegression: 0.000, maxStandardDeviation: 0.000
+/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/BlazeDBTests/Tier3Heavy/Performance/BlazeDBPerformanceTests.swift:67: Test Case '-[BlazeDB_Tier3_Heavy.BlazeDBPerformanceTests testBulkInsertPerformance]' measured [Memory Physical, kB] average: 22238.637, relative standard deviation: 45.882%, values: [28246.184000, 30597.216000, 7872.512000], performanceMetricID:com.apple.dt.XCTMetric_Memory.physical, baselineName: "", baselineAverage: , polarity: prefers smaller, maxPercentRegression: 10.000%, maxPercentRelativeStandardDeviation: 10.000%, maxRegression: 0.000, maxStandardDeviation: 0.000
+/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/BlazeDBTests/Tier3Heavy/Performance/BlazeDBPerformanceTests.swift:67: Test Case '-[BlazeDB_Tier3_Heavy.BlazeDBPerformanceTests testBulkInsertPerformance]' measured [CPU Instructions Retired, kI] average: 8905268.303, relative standard deviation: 36.110%, values: [4984564.053000, 8870036.183000, 12861204.672000], performanceMetricID:com.apple.dt.XCTMetric_CPU.instructions_retired, baselineName: "", baselineAverage: , polarity: prefers smaller, maxPercentRegression: 10.000%, maxPercentRelativeStandardDeviation: 10.000%, maxRegression: 0.000, maxStandardDeviation: 0.000
+/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/BlazeDBTests/Tier3Heavy/Performance/BlazeDBPerformanceTests.swift:67: Test Case '-[BlazeDB_Tier3_Heavy.BlazeDBPerformanceTests testBulkInsertPerformance]' measured [Memory Peak Physical, kB] average: 77775.261, relative standard deviation: 33.716%, values: [46173.160000, 76770.376000, 110382.248000], performanceMetricID:com.apple.dt.XCTMetric_Memory.physical_peak, baselineName: "", baselineAverage: , polarity: prefers smaller, maxPercentRegression: 10.000%, maxPercentRelativeStandardDeviation: 10.000%, maxRegression: 0.000, maxStandardDeviation: 0.000
+/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/BlazeDBTests/Tier3Heavy/Performance/BlazeDBPerformanceTests.swift:67: Test Case '-[BlazeDB_Tier3_Heavy.BlazeDBPerformanceTests testBulkInsertPerformance]' measured [CPU Cycles, kC] average: 1676594.793, relative standard deviation: 34.193%, values: [978626.652000, 1668354.333000, 2382803.394000], performanceMetricID:com.apple.dt.XCTMetric_CPU.cycles, baselineName: "", baselineAverage: , polarity: prefers smaller, maxPercentRegression: 10.000%, maxPercentRelativeStandardDeviation: 10.000%, maxRegression: 0.000, maxStandardDeviation: 0.000
+Test Case '-[BlazeDB_Tier3_Heavy.BlazeDBPerformanceTests testBulkInsertPerformance]' passed (1.641 seconds).
+Test Suite 'BlazeDBPerformanceTests' passed at 2026-03-14 01:15:43.197.
+	 Executed 1 test, with 0 failures (0 unexpected) in 1.641 (1.641) seconds
+Test Suite 'BlazeDBPackageTests.xctest' passed at 2026-03-14 01:15:43.197.
+	 Executed 1 test, with 0 failures (0 unexpected) in 1.641 (1.642) seconds
+Test Suite 'Selected tests' passed at 2026-03-14 01:15:43.197.
+	 Executed 1 test, with 0 failures (0 unexpected) in 1.641 (1.643) seconds
+⚡ Testing BATCH insert performance (500 records)...
+✅ Batch insert performance measured
+◇ Test run started.
+↳ Testing Library Version: 1501
+↳ Target Platform: x86_64-apple-macos14.0
+✔ Test run with 0 tests in 0 suites passed after 0.001 seconds.
+
+Building for debugging...
+[0/18] Write swift-version--58304C5D6DBC2206.txt
+Build complete! (0.23s)

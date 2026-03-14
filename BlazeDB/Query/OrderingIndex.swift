@@ -5,9 +5,6 @@
 //  Optional fractional ordering system for BlazeDB records.
 //  Completely optional and off by default - zero breaking changes.
 //
-//  Created by Auto on 1/XX/25.
-//
-
 import Foundation
 
 // MARK: - Ordering Index Utilities

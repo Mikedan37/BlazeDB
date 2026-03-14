@@ -1,0 +1,73 @@
+{
+  "generated_at_utc": "2026-03-13T23:53:29+00:00",
+  "hard_limits": {
+    "page_size_bytes": 4096,
+    "single_page_plaintext_max_bytes": 4059,
+    "overflow_main_payload_v2_bytes": 4014,
+    "overflow_page_payload_bytes": 4052,
+    "overflow_chain_limit_pages": 10000,
+    "derived_max_overflow_v2_payload_bytes": 40524014
+  },
+  "api_limits": {
+    "batch_insert_max_records": 100000,
+    "batch_update_max_records": 100000,
+    "batch_delete_max_records": 100000,
+    "batch_record_encoded_max_bytes": 104857600
+  },
+  "codec_guards": {
+    "max_string_bytes": 100000000,
+    "max_data_bytes": 100000000,
+    "max_array_count": 100000,
+    "max_dictionary_count": 100000
+  },
+  "resource_warning_defaults": {
+    "max_wal_ratio": 0.5,
+    "max_page_count": 1000000,
+    "max_disk_usage_bytes": 10000000000
+  },
+  "quick_benchmarks": [
+    {
+      "name": "overflow_crash_atomicity",
+      "command": "swift test --filter \"BlazeDB_Tier1.OverflowChainCrashAtomicityTests\"",
+      "seconds": 152.32926858399998,
+      "passed": true,
+      "summary": "Executed 6 tests, with 0 failures"
+    },
+    {
+      "name": "page_store_boundary",
+      "command": "swift test --filter \"BlazeDB_Tier3_Heavy.PageStoreBoundaryTests\"",
+      "seconds": 8.257434708000005,
+      "passed": true,
+      "summary": "Executed 5 tests, with 0 failures"
+    },
+    {
+      "name": "overflow_boundary_fuzz",
+      "command": "swift test --filter \"BlazeDB_Tier3_Heavy.FuzzTests/testFuzz_OverflowBoundaryChurn\"",
+      "seconds": 21.08188470899998,
+      "passed": true,
+      "summary": "Executed 1 test, with 0 failures"
+    }
+  ],
+  "real_measurement": {
+    "command": "BLAZEDB_REAL_LIMIT_TARGET_GIB=1.0 BLAZEDB_REAL_LIMIT_PAYLOAD_BYTES=1000000 BLAZEDB_REAL_LIMIT_BATCH_SIZE=8 swift test --filter \"BlazeDB_Tier3_Heavy.RealLimitsMeasurementTests/testMeasure_RealLimitsAndGrowth\"",
+    "seconds": 63.201417166,
+    "passed": true,
+    "metrics": {
+      "blob_max_bytes": 40523994,
+      "blob_max_mib": 38.647,
+      "string_max_bytes": 40523994,
+      "string_max_mib": 38.647,
+      "db_growth_final_bytes": 1076461568,
+      "db_growth_final_gib": 1.003,
+      "db_growth_records_inserted": 1064,
+      "db_growth_payload_bytes_per_record": 1000000,
+      "db_growth_elapsed_seconds": 8.85
+    },
+    "derived_metrics": {
+      "growth_records_per_second": 120.22598870056498,
+      "growth_mib_per_second": 115.99929378531074,
+      "growth_avg_write_latency_ms": 8.31766917293233
+    },
+    "output_excerpt": "Test Case '-[BlazeDB_Tier3_Heavy.RealLimitsMeasurementTests testMeasure_RealLimitsAndGrowth]' started.\nTest Case '-[BlazeDB_Tier3_Heavy.RealLimitsMeasurementTests testMeasure_RealLimitsAndGrowth]' passed (60.452 seconds).\nREAL_LIMIT_BLOB_MAX_BYTES=40523994\nREAL_LIMIT_BLOB_MAX_MIB=38.647\nREAL_LIMIT_STRING_MAX_BYTES=40523994\nREAL_LIMIT_STRING_MAX_MIB=38.647\nREAL_DB_GROWTH_FINAL_BYTES=1076461568\nREAL_DB_GROWTH_FINAL_GIB=1.003\nREAL_DB_GROWTH_RECORDS_INSERTED=1064\nREAL_DB_GROWTH_PAYLOAD_BYTES_PER_RECORD=1000000\nREAL_DB_GROWTH_ELAPSED_SECONDS=8.850"
+  }
+}

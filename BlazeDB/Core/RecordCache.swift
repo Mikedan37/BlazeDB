@@ -4,9 +4,6 @@
 //
 //  Record-level caching for frequently-read records
 //  Reduces repeated decoding and improves UI performance
-//  Created by Auto on 1/XX/25.
-//
-
 import Foundation
 
 /// Cache for decoded records (reduces repeated decoding)
@@ -18,7 +15,8 @@ import Foundation
 /// 
 /// Usage:
 /// ```swift
-/// let cache = RecordCache.shared
+/// // Per-database cache (recommended)
+/// let cache = db.recordCache
 /// if let cached = cache.get(id: recordID) {
 ///     return cached  // Cache hit - instant!
 /// }
@@ -27,8 +25,42 @@ import Foundation
 /// return decoded
 /// ```
 public final class RecordCache: @unchecked Sendable {
-    /// Shared singleton instance
-    nonisolated(unsafe) public static let shared = RecordCache()
+    /// Shared global instance (for backward compatibility)
+    /// - Note: Prefer per-database caches via BlazeDBClient.recordCache
+    public static let shared = RecordCache(name: "shared")
+    
+    /// Per-database cache registry (keyed by database path)
+    nonisolated(unsafe) private static var perDatabaseCaches: [String: RecordCache] = [:]
+    private static let registryLock = NSLock()
+    
+    /// Get or create a per-database cache
+    /// - Parameter databasePath: The database file path
+    /// - Returns: A RecordCache instance specific to this database
+    public static func forDatabase(_ databasePath: String) -> RecordCache {
+        registryLock.lock()
+        defer { registryLock.unlock() }
+        
+        if let existing = perDatabaseCaches[databasePath] {
+            return existing
+        }
+        
+        let cache = RecordCache(name: databasePath)
+        perDatabaseCaches[databasePath] = cache
+        return cache
+    }
+    
+    /// Remove per-database cache (called when database is closed)
+    public static func removeForDatabase(_ databasePath: String) {
+        registryLock.lock()
+        defer { registryLock.unlock() }
+        
+        if let cache = perDatabaseCaches.removeValue(forKey: databasePath) {
+            cache.clear()
+        }
+    }
+    
+    /// Name/identifier for this cache instance
+    public let name: String
     
     /// Cache entry with timestamp
     private struct CacheEntry {
@@ -59,8 +91,11 @@ public final class RecordCache: @unchecked Sendable {
     private var misses: Int = 0
     private var evictions: Int = 0
     
-    private init() {
-        BlazeLogger.info("RecordCache initialized (maxSize: \(maxSize), maxAge: \(maxAge)s)")
+    /// Initialize a new RecordCache instance
+    /// - Parameter name: Name/identifier for this cache (for logging)
+    public init(name: String = "unnamed") {
+        self.name = name
+        BlazeLogger.info("RecordCache '\(name)' initialized (maxSize: \(maxSize), maxAge: \(maxAge)s)")
     }
     
     // MARK: - Configuration

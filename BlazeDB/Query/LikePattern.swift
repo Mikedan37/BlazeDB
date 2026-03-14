@@ -5,9 +5,6 @@
 //  LIKE and ILIKE pattern matching with wildcards
 //  Optimized with compiled regex patterns and caching
 //
-//  Created by Auto on 1/XX/25.
-//
-
 import Foundation
 
 // MARK: - Pattern Matching

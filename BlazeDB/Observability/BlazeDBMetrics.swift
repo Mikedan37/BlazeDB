@@ -5,7 +5,6 @@
 //  Lightweight metrics container for snapshot-based observability.
 //  Thread-safe via NSLock, zero cost if unused.
 //
-//  Created by Auto on 2025-01-23.
 //
 
 import Foundation

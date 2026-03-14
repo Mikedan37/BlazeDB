@@ -5,7 +5,6 @@
 //  Platform-safe associated object storage
 //  Uses Objective-C runtime on Apple platforms, dictionary storage on Linux
 //
-//  Created by Auto on 12/14/25.
 //
 
 import Foundation
@@ -79,6 +78,16 @@ internal enum AssociatedObjects {
                 storage.removeValue(forKey: id)
             }
         }
+    }
+
+    /// Remove all associated objects for the given object.
+    /// On Linux, this MUST be called in the object's deinit to prevent memory leaks,
+    /// since there is no Objective-C runtime to automatically clean up associated objects.
+    static func removeAllAssociatedObjects(for object: AnyObject) {
+        lock.lock()
+        defer { lock.unlock() }
+        let id = ObjectIdentifier(object)
+        storage.removeValue(forKey: id)
     }
     #endif
 }

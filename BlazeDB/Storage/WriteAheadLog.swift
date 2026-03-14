@@ -2,200 +2,344 @@
 //  WriteAheadLog.swift
 //  BlazeDB
 //
-//  Write-Ahead Logging (WAL) with batching
-//  Provides 2-5x faster writes and 10-100x fewer fsync calls
+//  Write-Ahead Log providing crash-safety for page writes.
 //
-//  Created by Auto on 1/XX/25.
+//  V1.5 rewrite: framed entries with CRC32, fsync on every append, replay on open.
+//
+//  Entry format (on disk):
+//    [magic 4B "WALE"] [pageIndex UInt32 LE] [dataLen UInt32 LE] [crc32 UInt32 LE] [data …]
+//  Total header = 16 bytes, followed by `dataLen` bytes of payload.
+//
+//  Created by Michael Danylchuk.
 //
 
 import Foundation
+#if canImport(Darwin)
+import Darwin
+#elseif canImport(Glibc)
+import Glibc
+#endif
+#if canImport(zlib)
+import zlib // for crc32()
+#endif
 
-/// Write-Ahead Log entry
-struct WALEntry {
-    let pageIndex: Int
-    let data: Data
-    let timestamp: Date
-}
+// MARK: - WAL Entry Format
 
-/// Write-Ahead Logging manager
-actor WriteAheadLog {
-    private var logFile: FileHandle?
-    private var logURL: URL
-    private var pendingWrites: [WALEntry] = []
-    private var checkpointThreshold: Int = 100  // Checkpoint after N writes
-    private var checkpointInterval: TimeInterval = 1.0  // Or after 1 second
-    private var lastCheckpoint: Date = Date()
-    private var isCheckpointing = false
-    private weak var pageStore: PageStore?  // Reference to PageStore for checkpointing
-    
-    init(logURL: URL, pageStore: PageStore? = nil) throws {
+/// On-disk WAL entry header (16 bytes)
+///
+/// Layout:
+///   [0..3]   magic    "WALE" (0x57414C45)
+///   [4..7]   pageIndex  UInt32 little-endian
+///   [8..11]  dataLen    UInt32 little-endian
+///   [12..15] crc32      UInt32 little-endian (CRC of the *data* bytes only)
+private let walEntryMagic: UInt32 = 0x57414C45  // "WALE" in ASCII (big-endian reading)
+private let walEntryHeaderSize = 16
+
+// MARK: - WriteAheadLog
+
+/// Synchronous, crash-safe Write-Ahead Log.
+///
+/// Design:
+///  - Every `append()` writes a framed entry and calls `fsync` before returning.
+///  - On open, `replay()` reads all valid entries and returns them for the caller
+///    to apply to the PageStore.
+///  - After the caller confirms all entries are applied (and the main file is fsynced),
+///    call `clear()` to truncate the WAL.
+///  - NOT an actor: all callers must serialize externally (PageStore's barrier queue).
+internal final class WriteAheadLog: @unchecked Sendable {
+    let logURL: URL
+    private var fd: Int32 = -1
+    private var currentOffset: off_t = 0  // tracks append position
+
+    /// Open (or create) the WAL file.
+    init(logURL: URL) throws {
         self.logURL = logURL
-        self.pageStore = pageStore
-        
-        // Create log file if it doesn't exist
-        if !FileManager.default.fileExists(atPath: logURL.path) {
-            // CRITICAL: Check if file creation succeeded to prevent silent failures
-            guard FileManager.default.createFile(atPath: logURL.path, contents: nil, attributes: nil) else {
+        IOTraceSink.record(operation: "wal_open_begin", path: logURL.path)
+
+        // Open with O_CREAT | O_RDWR so we can both replay (read) and append (write).
+        let flags: Int32 = O_RDWR | O_CREAT
+        let mode: mode_t = 0o644
+        let opened = logURL.path.withCString { path in
+            #if canImport(Darwin)
+            Darwin.open(path, flags, mode)
+            #elseif canImport(Glibc)
+            Glibc.open(path, flags, mode)
+            #else
+            open(path, flags, mode)
+            #endif
+        }
+        guard opened >= 0 else {
+            let err = errno
+            IOTraceSink.record(operation: "wal_open", path: logURL.path, resultCode: opened, errnoValue: err)
+            throw NSError(domain: "WriteAheadLog", code: Int(err), userInfo: [
+                NSLocalizedDescriptionKey: "Failed to open WAL at \(logURL.path): \(String(cString: strerror(err)))"
+            ])
+        }
+        self.fd = opened
+        IOTraceSink.record(operation: "wal_open", path: logURL.path, fd: fd, resultCode: 0)
+
+        // Seek to end so appends go to the right place
+        self.currentOffset = lseek(fd, 0, SEEK_END)
+    }
+
+    // MARK: - Append
+
+    /// Append a page write to the WAL. Fsyncs before returning.
+    ///
+    /// - Parameters:
+    ///   - pageIndex: The page index being written
+    ///   - data: The encrypted page data (already encrypted by PageStore)
+    func append(pageIndex: Int, data: Data) throws {
+        guard fd >= 0 else {
+            throw NSError(domain: "WriteAheadLog", code: -1, userInfo: [
+                NSLocalizedDescriptionKey: "WAL file not open"
+            ])
+        }
+
+        // Build header
+        var header = Data(capacity: walEntryHeaderSize)
+
+        // Magic bytes "WALE"
+        var magic = walEntryMagic.littleEndian
+        header.append(Data(bytes: &magic, count: 4))
+
+        // Page index
+        var idx = UInt32(pageIndex).littleEndian
+        header.append(Data(bytes: &idx, count: 4))
+
+        // Data length
+        var len = UInt32(data.count).littleEndian
+        header.append(Data(bytes: &len, count: 4))
+
+        // CRC32 of data
+        let checksum = crc32Checksum(data)
+        var crc = checksum.littleEndian
+        header.append(Data(bytes: &crc, count: 4))
+
+        // Write header + data as a single pwrite for atomicity
+        var combined = header
+        combined.append(data)
+
+        try combined.withUnsafeBytes { rawBuffer in
+            guard let base = rawBuffer.baseAddress else { return }
+            let written = pwrite(fd, base, combined.count, currentOffset)
+            IOTraceSink.record(
+                operation: "wal_pwrite",
+                path: logURL.path,
+                fd: fd,
+                resultCode: Int32(written),
+                errnoValue: written < 0 ? errno : nil,
+                context: ["offset": "\(currentOffset)", "count": "\(combined.count)"]
+            )
+            if written < 0 {
+                let err = errno
+                if err == EAGAIN || err == EWOULDBLOCK {
+                    let ownerHint = IOTraceSink.ownerHint(for: logURL.path)
+                    let summary = IOTraceSink.dumpTailSummary(
+                        reason: "posix_eagain",
+                        operation: "wal_pwrite",
+                        path: logURL.path,
+                        errnoValue: err
+                    )
+                    throw PageStore.IOError.posix(
+                        operation: "wal_pwrite",
+                        path: logURL.path,
+                        errnoValue: err,
+                        nonBlockingLock: false,
+                        ownerHint: ownerHint,
+                        traceSummaryPath: summary?.path
+                    )
+                }
+                throw NSError(domain: "WriteAheadLog", code: Int(err), userInfo: [
+                    NSLocalizedDescriptionKey: "WAL pwrite failed: \(String(cString: strerror(err)))"
+                ])
+            }
+            if written != combined.count {
                 throw NSError(domain: "WriteAheadLog", code: -1, userInfo: [
-                    NSLocalizedDescriptionKey: "Failed to create WAL file at: \(logURL.path)"
+                    NSLocalizedDescriptionKey: "WAL short write: \(written)/\(combined.count)"
                 ])
             }
         }
-        
-        self.logFile = try FileHandle(forWritingTo: logURL)
-        // CRITICAL: Seek to end of file to append new entries
-        // Use FileManager to get file size since seekToEndOfFile() can fail silently on older APIs
-        if let logFile = logFile {
-            let attrs = try? FileManager.default.attributesOfItem(atPath: logURL.path)
-            let fileSize = (attrs?[.size] as? NSNumber)?.uint64Value ?? 0
-            try logFile.compatSeek(toOffset: fileSize)
-        }
-    }
-    
-    /// Set the PageStore reference (for checkpointing)
-    func setPageStore(_ store: PageStore) {
-        self.pageStore = store
-    }
-    
-    /// Append a write to the WAL
-    func append(pageIndex: Int, data: Data) throws {
-        let entry = WALEntry(pageIndex: pageIndex, data: data, timestamp: Date())
-        pendingWrites.append(entry)
-        
-        // Write to log file immediately (fast, sequential)
-        guard let logFile = logFile else {
-            throw NSError(domain: "WriteAheadLog", code: 1, userInfo: [
-                NSLocalizedDescriptionKey: "Log file not available"
+
+        currentOffset += off_t(combined.count)
+
+        // fsync — the whole point of a WAL
+        if fsync(fd) != 0 {
+            let err = errno
+            IOTraceSink.record(operation: "wal_fsync", path: logURL.path, fd: fd, resultCode: -1, errnoValue: err)
+            throw NSError(domain: "WriteAheadLog", code: Int(err), userInfo: [
+                NSLocalizedDescriptionKey: "WAL fsync failed: \(String(cString: strerror(err)))"
             ])
         }
-        
-        // Write entry header (page index + size)
-        var header = Data()
-        header.append(contentsOf: withUnsafeBytes(of: pageIndex.littleEndian) { Data($0) })
-        header.append(contentsOf: withUnsafeBytes(of: UInt32(data.count).littleEndian) { Data($0) })
-        
-        // CRITICAL: Use compatWrite to handle errors properly
-        // FileHandle.write() can fail silently on older APIs, compatWrite throws on failure
-        try logFile.compatWrite(header)
-        try logFile.compatWrite(data)
-        
-        // Check if we should checkpoint (async, don't await here)
-        if shouldCheckpoint() {
-            Task {
-                try? await checkpoint()
+        IOTraceSink.record(operation: "wal_fsync", path: logURL.path, fd: fd, resultCode: 0)
+    }
+
+    // MARK: - Replay
+
+    /// Replay all valid WAL entries from the beginning of the file.
+    ///
+    /// Stops at the first invalid/corrupt entry (torn write from crash).
+    /// Returns entries in order — caller should apply them to PageStore.
+    func replay() throws -> [(pageIndex: Int, data: Data)] {
+        guard fd >= 0 else { return [] }
+
+        // Get file size
+        var st = stat()
+        guard fstat(fd, &st) == 0 else { return [] }
+        let fileSize = Int(st.st_size)
+        guard fileSize > 0 else { return [] }
+
+        var entries: [(pageIndex: Int, data: Data)] = []
+        var offset: off_t = 0
+
+        while Int(offset) + walEntryHeaderSize <= fileSize {
+            // Read header
+            var headerBuf = [UInt8](repeating: 0, count: walEntryHeaderSize)
+            let hRead = pread(fd, &headerBuf, walEntryHeaderSize, offset)
+            IOTraceSink.record(
+                operation: "wal_pread_header",
+                path: logURL.path,
+                fd: fd,
+                resultCode: Int32(hRead),
+                errnoValue: hRead < 0 ? errno : nil,
+                context: ["offset": "\(offset)", "count": "\(walEntryHeaderSize)"]
+            )
+            guard hRead == walEntryHeaderSize else { break }
+
+            let headerData = Data(headerBuf)
+
+            // Validate magic
+            let magic = headerData.withUnsafeBytes { buf in
+                buf.load(fromByteOffset: 0, as: UInt32.self)
             }
+            guard magic == walEntryMagic.littleEndian else {
+                BlazeLogger.warn("WAL replay: invalid magic at offset \(offset), stopping")
+                break
+            }
+
+            // Parse fields
+            let pageIndex = Int(headerData.withUnsafeBytes { buf in
+                buf.load(fromByteOffset: 4, as: UInt32.self).littleEndian
+            })
+            let dataLen = Int(headerData.withUnsafeBytes { buf in
+                buf.load(fromByteOffset: 8, as: UInt32.self).littleEndian
+            })
+            let storedCRC = headerData.withUnsafeBytes { buf in
+                buf.load(fromByteOffset: 12, as: UInt32.self).littleEndian
+            }
+
+            // Bounds check
+            let entryEnd = Int(offset) + walEntryHeaderSize + dataLen
+            guard entryEnd <= fileSize else {
+                BlazeLogger.warn("WAL replay: entry at offset \(offset) truncated (needs \(entryEnd), file is \(fileSize)), stopping")
+                break
+            }
+
+            // Read data
+            var dataBuf = [UInt8](repeating: 0, count: dataLen)
+            let dRead = pread(fd, &dataBuf, dataLen, offset + off_t(walEntryHeaderSize))
+            IOTraceSink.record(
+                operation: "wal_pread_data",
+                path: logURL.path,
+                fd: fd,
+                resultCode: Int32(dRead),
+                errnoValue: dRead < 0 ? errno : nil,
+                context: ["offset": "\(offset + off_t(walEntryHeaderSize))", "count": "\(dataLen)"]
+            )
+            guard dRead == dataLen else {
+                BlazeLogger.warn("WAL replay: short data read at offset \(offset), stopping")
+                break
+            }
+            let entryData = Data(dataBuf)
+
+            // Validate CRC
+            let computedCRC = crc32Checksum(entryData)
+            guard computedCRC == storedCRC else {
+                BlazeLogger.warn("WAL replay: CRC mismatch at offset \(offset) (stored=\(storedCRC), computed=\(computedCRC)), stopping")
+                break
+            }
+
+            entries.append((pageIndex: pageIndex, data: entryData))
+            offset += off_t(walEntryHeaderSize + dataLen)
         }
+
+        if !entries.isEmpty {
+            BlazeLogger.info("WAL replay: recovered \(entries.count) entries")
+        }
+
+        return entries
     }
-    
-    /// Write a page to WAL (convenience method)
-    func write(pageIndex: Int, data: Data) async throws {
-        try append(pageIndex: pageIndex, data: data)
-        
-        // If threshold reached, checkpoint immediately
-        if pendingWrites.count >= checkpointThreshold {
-            try await checkpoint()
+
+    // MARK: - Clear
+
+    /// Truncate the WAL to zero after a successful checkpoint.
+    func clear() throws {
+        guard fd >= 0 else { return }
+        if ftruncate(fd, 0) != 0 {
+            let err = errno
+            IOTraceSink.record(operation: "wal_truncate", path: logURL.path, fd: fd, resultCode: -1, errnoValue: err)
+            throw NSError(domain: "WriteAheadLog", code: Int(err), userInfo: [
+                NSLocalizedDescriptionKey: "WAL ftruncate failed: \(String(cString: strerror(err)))"
+            ])
         }
+        IOTraceSink.record(operation: "wal_truncate", path: logURL.path, fd: fd, resultCode: 0)
+        if fsync(fd) != 0 {
+            let err = errno
+            IOTraceSink.record(operation: "wal_fsync", path: logURL.path, fd: fd, resultCode: -1, errnoValue: err, context: ["phase": "clear"])
+            throw NSError(domain: "WriteAheadLog", code: Int(err), userInfo: [
+                NSLocalizedDescriptionKey: "WAL fsync after clear failed: \(String(cString: strerror(err)))"
+            ])
+        }
+        IOTraceSink.record(operation: "wal_fsync", path: logURL.path, fd: fd, resultCode: 0, context: ["phase": "clear"])
+        currentOffset = 0
     }
-    
-    /// Check if checkpoint is needed
-    private func shouldCheckpoint() -> Bool {
-        if pendingWrites.count >= checkpointThreshold {
-            return true
-        }
-        
-        if Date().timeIntervalSince(lastCheckpoint) >= checkpointInterval {
-            return true
-        }
-        
-        return false
-    }
-    
-    /// Checkpoint: Apply all pending writes to main file
-    func checkpoint() async throws {
-        guard !isCheckpointing else { return }
-        isCheckpointing = true
-        defer { isCheckpointing = false }
-        
-        guard !pendingWrites.isEmpty else {
-            lastCheckpoint = Date()
-            return
-        }
-        
-        let writes = pendingWrites
-        pendingWrites.removeAll()
-        
-        // Apply writes to main file (batch operation)
-        // Capture store reference to avoid isolation boundary issues
-        let store = pageStore
-        if let store = store {
-            // Use optimized batch write (single fsync for all pages)
-            let pageWrites = writes.map { (index: $0.pageIndex, plaintext: $0.data) }
-            // Call async method directly - actor isolation handles it
-            try await store.writePagesOptimizedBatch(pageWrites)
-        }
-        
-        // Truncate log file after successful checkpoint
-        // CRITICAL: Check for errors - truncateFile can fail silently on older APIs
-        guard let logFile = logFile else {
-            BlazeLogger.warn("⚠️ WAL checkpoint: Log file handle is nil, cannot truncate")
-            return
-        }
-        do {
-            try logFile.compatSeek(toOffset: 0)
-            try logFile.compatTruncate(atOffset: 0)
-            try logFile.compatSeek(toOffset: 0)  // Seek to end (which is now 0 after truncate)
-        } catch {
-            BlazeLogger.error("❌ WAL checkpoint: Failed to truncate log file: \(error)")
-            throw error
-        }
-        
-        lastCheckpoint = Date()
-        
-        BlazeLogger.debug("WAL checkpoint: Applied \(writes.count) writes")
-    }
-    
-    /// Force checkpoint (for shutdown, etc.)
-    func forceCheckpoint() async throws {
-        try await checkpoint()
-    }
-    
-    /// Get WAL statistics
+
+    // MARK: - Stats
+
     func getStats() -> WALStats {
+        var st = stat()
+        let size: Int64 = (fstat(fd, &st) == 0) ? Int64(st.st_size) : 0
         return WALStats(
-            pendingWrites: pendingWrites.count,
-            lastCheckpoint: lastCheckpoint,
-            logFileSize: (try? FileManager.default.attributesOfItem(atPath: logURL.path)[.size] as? Int64) ?? 0
+            pendingWrites: 0,  // No in-memory buffering — everything is fsynced
+            lastCheckpoint: Date(),
+            logFileSize: size
         )
     }
-    
-    /// Close the log file (internal method for cleanup)
-    private func closeFile() {
-        logFile?.closeFile()
-        logFile = nil
+
+    // MARK: - Lifecycle
+
+    func close() {
+        guard fd >= 0 else { return }
+        IOTraceSink.record(operation: "wal_close_begin", path: logURL.path, fd: fd)
+        #if canImport(Darwin)
+        Darwin.close(fd)
+        #elseif canImport(Glibc)
+        Glibc.close(fd)
+        #else
+        _ = Foundation.close(fd)
+        #endif
+        IOTraceSink.record(operation: "wal_close_end", path: logURL.path, fd: fd, resultCode: 0)
+        fd = -1
     }
-    
+
     deinit {
-        // CRITICAL: Close file handle synchronously to prevent resource leak
-        // The file handle must be closed before the object is deallocated
-        // Since this is an actor, we can't call actor methods from deinit, but we can
-        // access stored properties directly and close the file handle synchronously
-        logFile?.closeFile()
-        logFile = nil
-        
-        // Force checkpoint on deinit (best effort, async)
-        // Note: We can't await in deinit, so we use Task
-        // The file is already closed above, so checkpoint will fail gracefully
-        // This is best-effort cleanup - pending writes may be lost
-        Task { [weak self] in
-            try? await self?.forceCheckpoint()
+        close()
+    }
+
+    // MARK: - CRC32
+
+    private func crc32Checksum(_ data: Data) -> UInt32 {
+        return data.withUnsafeBytes { rawBuffer in
+            guard let base = rawBuffer.baseAddress else { return 0 }
+            // zlib crc32: initial value 0, pointer, length
+            return UInt32(zlib.crc32(0, base.assumingMemoryBound(to: UInt8.self), UInt32(data.count)))
         }
     }
 }
 
-/// WAL statistics
-public struct WALStats {
+/// WAL statistics (public — used by observability layer)
+public struct WALStats: Sendable, Codable {
     public let pendingWrites: Int
     public let lastCheckpoint: Date
     public let logFileSize: Int64
 }
-

@@ -5,9 +5,6 @@
 //  Enhanced trigger context with database operations
 //  Like Firebase Functions but local and offline
 //
-//  Created by Auto on 1/XX/25.
-//
-
 import Foundation
 
 /// Context provided to trigger handlers
@@ -44,11 +41,20 @@ public class TriggerContext {
         executingTriggers.remove(key)
     }
     
-    /// Update fields on the record being modified
-    /// Only works in BEFORE triggers
+    /// The mutable record being modified (set by the trigger executor for BEFORE triggers)
+    internal var pendingRecord: BlazeDataRecord?
+
+    /// Update fields on the record being modified.
+    /// Only works in BEFORE triggers. Merges the provided fields into the pending record.
     public func update(fields: [String: BlazeDocumentField]) {
-        // This is called by trigger handlers to modify records
-        // The actual modification happens in the trigger handler
+        guard var record = pendingRecord else {
+            BlazeLogger.warn("TriggerContext.update(fields:) called outside a BEFORE trigger; no record to modify")
+            return
+        }
+        for (key, value) in fields {
+            record.storage[key] = value
+        }
+        self.pendingRecord = record
     }
     
     /// Rebuild spatial index
@@ -59,14 +65,17 @@ public class TriggerContext {
     #endif
     
     /// Rebalance ordering index
+    /// - Note: Not yet implemented. Calling this method logs a warning and returns without effect.
+    // TODO: Not yet implemented - requires OrderingIndex integration
     public func rebalanceOrderIndex() throws {
-        // Trigger rebalancing of ordering index
-        // This would be called after inserts to maintain order
+        BlazeLogger.warn("TriggerContext.rebalanceOrderIndex() is not yet implemented")
     }
-    
+
     /// Update search index
+    /// - Note: Not yet implemented. Calling this method logs a warning and returns without effect.
+    // TODO: Not yet implemented - requires SearchIndex integration
     public func updateSearchIndex() throws {
-        // Trigger search index update
+        BlazeLogger.warn("TriggerContext.updateSearchIndex() is not yet implemented")
     }
     
     /// Insert a new record (for cascading inserts)

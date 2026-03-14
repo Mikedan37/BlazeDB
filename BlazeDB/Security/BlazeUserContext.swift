@@ -4,9 +4,6 @@
 //
 //  Convenience wrapper for user context with role-based access
 //  Integrates with existing SecurityContext system
-//  Created by Auto on 1/XX/25.
-//
-
 import Foundation
 
 /// User role for simplified role-based access control

@@ -5,7 +5,6 @@
 //  Range query optimizations for improved performance
 //  Uses indexes when available for range queries
 //
-//  Created by Auto on 2025-11-27.
 //
 
 import Foundation

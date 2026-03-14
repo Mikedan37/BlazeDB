@@ -602,16 +602,17 @@ extension DynamicCollection {
     /// try collection.deleteBatch([id1, id2, id3])
     /// // Much faster than loop!
     /// ```
-    public func deleteBatch(_ ids: [UUID]) throws {
+    @discardableResult
+    public func deleteBatch(_ ids: [UUID]) throws -> Int {
         // CRITICAL: Validate input size to prevent DoS attacks
         guard ids.count > 0 else {
-            return  // Empty batch is valid, do nothing
+            return 0  // Empty batch is valid
         }
         guard ids.count <= 100_000 else {
             throw BlazeDBError.invalidQuery(reason: "Batch delete too large: \(ids.count) records (max: 100,000). Split into smaller batches.")
         }
         
-        try queue.sync(flags: .barrier) {
+        return try queue.sync(flags: .barrier) {
             BlazeLogger.info("Batch delete: \(ids.count) records")
             let startTime = Date()
             
@@ -717,6 +718,7 @@ extension DynamicCollection {
             
             let duration = Date().timeIntervalSince(startTime)
             BlazeLogger.info("Batch delete complete: \(idsToDelete.count) records in \(String(format: "%.2f", duration * 1000))ms")
+            return idsToDelete.count
         }
     }
 }

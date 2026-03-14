@@ -236,7 +236,7 @@ $ BlazeShell --create-test
  Creating test database for BlazeDBVisualizer...
  Adding 50 test records...
  SUCCESS! Created test.blazedb on Desktop!
- Location: /Users/mdanylchuk/Desktop/test.blazedb
+ Location: /var/folders/.../blazedb-test-visualizer.blazedb
  Password: test1234
  Records: 50
 ```

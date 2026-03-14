@@ -4,9 +4,6 @@
 //
 //  Lazy decoding for large fields only
 //  Decodes small fields immediately, defers large fields until accessed
-//  Created by Auto on 1/XX/25.
-//
-
 import Foundation
 
 /// Record with lazy decoding for large fields

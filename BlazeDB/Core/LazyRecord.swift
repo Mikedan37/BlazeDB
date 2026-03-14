@@ -5,9 +5,6 @@
 //  Zero-copy record access with lazy decoding
 //  Reduces memory usage by 50-70% and improves performance by 20-30%
 //
-//  Created by Auto on 1/XX/25.
-//
-
 import Foundation
 
 /// Lazy record that decodes on-demand from page data

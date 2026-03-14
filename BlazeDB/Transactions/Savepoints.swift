@@ -5,9 +5,6 @@
 //  Transaction savepoints for nested rollbacks
 //  Optimized with efficient state management
 //
-//  Created by Auto on 1/XX/25.
-//
-
 import Foundation
 
 // MARK: - Savepoint
@@ -208,7 +205,7 @@ extension BlazeDBClient {
         #if !BLAZEDB_LINUX_CORE
         oldCollection.clearFetchAllCache()
         #endif
-        RecordCache.shared.clear()
+        oldCollection.recordCache.clear()
         
         // Reset unsavedChanges on old collection BEFORE restoring files to prevent it from saving on deinit
         oldCollection.unsavedChanges = 0
@@ -261,7 +258,7 @@ extension BlazeDBClient {
         collection.clearFetchAllCache()
         #endif
         #endif
-        RecordCache.shared.clear()
+        collection.recordCache.clear()
         // Also clear query cache to ensure queries read fresh data
         QueryCache.shared.clearAll()
         
@@ -296,7 +293,7 @@ extension BlazeDBClient {
         #if !BLAZEDB_LINUX_CORE
         collection.clearFetchAllCache()
         #endif
-        RecordCache.shared.clear()
+        collection.recordCache.clear()
         QueryCache.shared.clearAll()
         
         do {
@@ -322,7 +319,7 @@ extension BlazeDBClient {
         #if !BLAZEDB_LINUX_CORE
         collection.clearFetchAllCache()
         #endif
-        RecordCache.shared.clear()
+        collection.recordCache.clear()
         QueryCache.shared.clearAll()
         
         // Additional small delay to ensure file system and MVCC state are fully synced

@@ -5,7 +5,6 @@
 //  Platform-neutral protocol for peer discovery (mDNS/Bonjour)
 //  Allows BlazeDB to work on Linux without Network.framework dependency
 //
-//  Created by Auto on 12/14/25.
 //
 
 #if !BLAZEDB_LINUX_CORE

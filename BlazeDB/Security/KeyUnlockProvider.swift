@@ -5,7 +5,6 @@
 //  Platform-neutral protocol for key unlocking (biometric/auth)
 //  Allows BlazeDB to work on Linux without LocalAuthentication dependency
 //
-//  Created by Auto on 12/14/25.
 //
 
 import Foundation
