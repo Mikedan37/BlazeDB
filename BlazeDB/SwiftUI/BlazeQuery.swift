@@ -367,7 +367,9 @@ extension View {
     /// Trigger a refresh of a BlazeQuery when this view appears
     public func refreshOnAppear(_ query: BlazeQueryObserver) -> some View {
         self.onAppear {
-            query.refresh()
+            Task { @MainActor in
+                query.refresh()
+            }
         }
     }
     
@@ -375,7 +377,9 @@ extension View {
     public func refreshable(query: BlazeQueryObserver) -> some View {
         self.refreshable {
             await withCheckedContinuation { continuation in
-                query.refresh()
+                Task { @MainActor in
+                    query.refresh()
+                }
                 // Wait for loading to complete
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                     continuation.resume()

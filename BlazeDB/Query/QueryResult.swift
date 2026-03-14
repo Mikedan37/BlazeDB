@@ -167,6 +167,10 @@ public enum QueryResult {
     }
 }
 
+// QueryResult is frequently passed across actor boundaries from async query execution.
+// Payloads are value-centric query outputs and treated as immutable after creation.
+extension QueryResult: @unchecked Sendable {}
+
 // MARK: - CustomStringConvertible
 
 extension QueryResult: CustomStringConvertible {
