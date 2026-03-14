@@ -258,6 +258,17 @@ public final class DurabilityManager: @unchecked Sendable {
         return _lastCheckpointLSN
     }
 
+    // MARK: - Sync
+
+    /// Force fsync on the WAL file.
+    /// Used by PageStore for standalone writes (outside a transaction) where
+    /// there is no commit record to trigger the fsync.
+    public func sync() {
+        lock.lock()
+        defer { lock.unlock() }
+        fileHandle?.synchronizeFile()
+    }
+
     // MARK: - Close
 
     /// Close the WAL file handle.
