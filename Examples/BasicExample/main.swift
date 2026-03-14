@@ -1,5 +1,5 @@
 import Foundation
-import BlazeDB
+import BlazeDBCore
 
 // MARK: - Basic Example
 
