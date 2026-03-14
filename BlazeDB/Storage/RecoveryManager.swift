@@ -45,6 +45,15 @@ public enum RecoveryManager {
                 highestLSN = entry.lsn
             }
 
+            // Basic payload sanity checks before replay classification.
+            if entry.operation == .delete && !entry.payload.isEmpty {
+                continue
+            }
+            if (entry.operation == .begin || entry.operation == .commit || entry.operation == .abort || entry.operation == .checkpoint)
+                && !entry.payload.isEmpty {
+                continue
+            }
+
             switch entry.operation {
             case .begin:
                 allTxIDs.insert(entry.transactionID)

@@ -13,6 +13,7 @@ public final class BlazeTransaction {
     private let store: PageStore
     private let txID: UUID
     private let unified: Bool
+    private var beginFailure: Error?
 
     internal enum State {
         case open, committed, rolledBack
@@ -37,7 +38,8 @@ public final class BlazeTransaction {
                 do {
                     try dm.appendBegin(transactionID: txID)
                 } catch {
-                    BlazeLogger.warn("Failed to WAL begin: \(error)")
+                    beginFailure = error
+                    BlazeLogger.error("Failed to WAL begin: \(error)")
                 }
             }
         } else {
@@ -45,12 +47,27 @@ public final class BlazeTransaction {
             do {
                 try TransactionLog().begin(txID: txID.uuidString)
             } catch {
+                beginFailure = error
                 BlazeLogger.warn("Failed to begin transaction log: \(error)")
             }
         }
     }
 
+    private func ensureBeginSucceeded() throws {
+        if let error = beginFailure {
+            throw NSError(
+                domain: "BlazeTransaction",
+                code: 1007,
+                userInfo: [
+                    NSLocalizedDescriptionKey: "Transaction begin failed; transaction is invalid",
+                    NSUnderlyingErrorKey: error
+                ]
+            )
+        }
+    }
+
     public func read(pageID: Int) throws -> Data {
+        try ensureBeginSucceeded()
         guard state == .open else {
             throw NSError(domain: "BlazeTransaction", code: 1001, userInfo: [NSLocalizedDescriptionKey: "Transaction is closed"])
         }
@@ -60,6 +77,7 @@ public final class BlazeTransaction {
     }
 
     public func write(pageID: Int, data: Data) throws {
+        try ensureBeginSucceeded()
         guard state == .open else {
             throw NSError(domain: "BlazeTransaction", code: 1001, userInfo: [NSLocalizedDescriptionKey: "Transaction is closed"])
         }
@@ -77,6 +95,7 @@ public final class BlazeTransaction {
     }
 
     public func delete(pageID: Int) throws {
+        try ensureBeginSucceeded()
         guard state == .open else {
             throw NSError(domain: "BlazeTransaction", code: 1001, userInfo: [NSLocalizedDescriptionKey: "Transaction is closed"])
         }
@@ -92,6 +111,7 @@ public final class BlazeTransaction {
     }
 
     public func commit() throws {
+        try ensureBeginSucceeded()
         guard state == .open else {
             throw NSError(domain: "BlazeTransaction", code: 1003, userInfo: [NSLocalizedDescriptionKey: "Transaction already finalized"])
         }
@@ -113,18 +133,26 @@ public final class BlazeTransaction {
             ])
         }
 
-        let stagedPages = context.commitUnified()
+        let stagedPages = context.commitUnified().sorted { $0.key < $1.key }
 
         // Phase 1: Encrypt all pages and append to WAL
         var encryptedBuffers: [(index: Int, buffer: Data)] = []
         for (pageID, plaintext) in stagedPages {
+            guard pageID >= 0 && pageID <= Int(UInt32.max) else {
+                throw NSError(
+                    domain: "BlazeTransaction",
+                    code: 1011,
+                    userInfo: [NSLocalizedDescriptionKey: "Invalid page ID out of UInt32 range: \(pageID)"]
+                )
+            }
+            let pageIndex = UInt32(pageID)
             if plaintext.isEmpty {
                 // Delete operation — skip encryption, just record in WAL
-                try dm.appendDelete(transactionID: txID, pageIndex: UInt32(pageID))
+                try dm.appendDelete(transactionID: txID, pageIndex: pageIndex)
                 continue
             }
             let buffer = try store._encryptPageBuffer(plaintext: plaintext)
-            try dm.appendWrite(transactionID: txID, pageIndex: UInt32(pageID), data: buffer)
+            try dm.appendWrite(transactionID: txID, pageIndex: pageIndex, data: buffer)
             encryptedBuffers.append((index: pageID, buffer: buffer))
         }
 
@@ -156,6 +184,7 @@ public final class BlazeTransaction {
     }
 
     public func rollback() throws {
+        try ensureBeginSucceeded()
         switch state {
         case .rolledBack:
             throw NSError(domain: "BlazeTransaction", code: 1005, userInfo: [NSLocalizedDescriptionKey: "Transaction already rolled back"])
