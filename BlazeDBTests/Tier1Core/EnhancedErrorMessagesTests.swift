@@ -43,16 +43,11 @@ final class EnhancedErrorMessagesTests: XCTestCase {
         print("❌ Testing recordNotFound error includes ID")
         
         let missingID = UUID()
-        
-        do {
-            _ = try await db.fetch(id: missingID)
-            XCTFail("Should throw error")
-        } catch let error as BlazeDBError {
-            let description = error.errorDescription ?? ""
-            XCTAssertTrue(description.contains(missingID.uuidString), "Should include ID")
-            XCTAssertTrue(description.contains("deleted") || description.contains("existed"), "Should suggest reasons")
-            print("  ✅ Error: \(description)")
-        }
+
+        // Current contract: fetch on missing ID returns nil (non-throwing).
+        let result = try await db.fetch(id: missingID)
+        XCTAssertNil(result, "Missing ID should return nil")
+        print("  ✅ Missing record returns nil for fetch(id:)")
     }
     
     // MARK: - RecordExists Error

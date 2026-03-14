@@ -316,9 +316,14 @@ final class TransactionDurabilityTests: XCTestCase {
     func testStartupRestoresInterruptedTransactionBackup() throws {
         let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".blz")
         let metaURL = tempURL.deletingPathExtension().appendingPathExtension("meta")
-        let txnBackupURL = tempURL.deletingLastPathComponent().appendingPathComponent("txn_in_progress.blazedb")
-        let txnMetaBackupURL = tempURL.deletingLastPathComponent().appendingPathComponent("txn_in_progress.meta")
-        let txnStateURL = tempURL.deletingLastPathComponent().appendingPathComponent("txn_in_progress.state")
+        var hasher = Hasher()
+        hasher.combine(tempURL.path)
+        let digest = String(abs(hasher.finalize()), radix: 16)
+        let base = tempURL.deletingPathExtension().lastPathComponent
+        let prefix = "\(base)-\(digest)"
+        let txnBackupURL = tempURL.deletingLastPathComponent().appendingPathComponent("txn_in_progress-\(prefix).blazedb")
+        let txnMetaBackupURL = tempURL.deletingLastPathComponent().appendingPathComponent("txn_in_progress-\(prefix).meta")
+        let txnStateURL = tempURL.deletingLastPathComponent().appendingPathComponent("txn_in_progress-\(prefix).state")
 
         defer {
             try? FileManager.default.removeItem(at: tempURL)
