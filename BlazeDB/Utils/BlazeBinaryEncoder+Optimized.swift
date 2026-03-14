@@ -9,6 +9,46 @@
 
 import Foundation
 
+private final class ParallelEncodeResults {
+    private let lock = NSLock()
+    private var values: [Data?]
+
+    init(count: Int) {
+        self.values = Array(repeating: nil, count: count)
+    }
+
+    func set(_ value: Data, at index: Int) {
+        lock.lock()
+        values[index] = value
+        lock.unlock()
+    }
+
+    func compactValues() -> [Data] {
+        lock.lock()
+        let snapshot = values
+        lock.unlock()
+        return snapshot.compactMap { $0 }
+    }
+}
+
+private final class ParallelErrorCollector {
+    private let lock = NSLock()
+    private var values: [Error] = []
+
+    func append(_ error: Error) {
+        lock.lock()
+        values.append(error)
+        lock.unlock()
+    }
+
+    var first: Error? {
+        lock.lock()
+        let value = values.first
+        lock.unlock()
+        return value
+    }
+}
+
 extension BlazeBinaryEncoder {
     
     /// Memory pool for reusable Data buffers (reduces allocations)
@@ -98,9 +138,8 @@ extension BlazeBinaryEncoder {
     public static func encodeBatchParallel(_ records: [BlazeDataRecord]) throws -> [Data] {
         let group = DispatchGroup()
         let queue = DispatchQueue(label: "com.blazedb.encode.parallel", attributes: .concurrent)
-        var results: [Data?] = Array(repeating: nil, count: records.count)
-        var errors: [Error] = []
-        let errorLock = NSLock()
+        let results = ParallelEncodeResults(count: records.count)
+        let errors = ParallelErrorCollector()
         
         for (index, record) in records.enumerated() {
             group.enter()
@@ -109,11 +148,9 @@ extension BlazeBinaryEncoder {
                 
                 do {
                     let encoded = try encodeOptimized(record)
-                    results[index] = encoded
+                    results.set(encoded, at: index)
                 } catch {
-                    errorLock.lock()
                     errors.append(error)
-                    errorLock.unlock()
                 }
             }
         }
@@ -124,7 +161,7 @@ extension BlazeBinaryEncoder {
             throw firstError
         }
         
-        return results.compactMap { $0 }
+        return results.compactValues()
     }
 }
 

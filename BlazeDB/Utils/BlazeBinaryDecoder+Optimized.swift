@@ -9,6 +9,46 @@
 
 import Foundation
 
+private final class ParallelDecodeResults {
+    private let lock = NSLock()
+    private var values: [BlazeDataRecord?]
+
+    init(count: Int) {
+        self.values = Array(repeating: nil, count: count)
+    }
+
+    func set(_ value: BlazeDataRecord, at index: Int) {
+        lock.lock()
+        values[index] = value
+        lock.unlock()
+    }
+
+    func compactValues() -> [BlazeDataRecord] {
+        lock.lock()
+        let snapshot = values
+        lock.unlock()
+        return snapshot.compactMap { $0 }
+    }
+}
+
+private final class ParallelDecodeErrors {
+    private let lock = NSLock()
+    private var values: [Error] = []
+
+    func append(_ error: Error) {
+        lock.lock()
+        values.append(error)
+        lock.unlock()
+    }
+
+    var first: Error? {
+        lock.lock()
+        let value = values.first
+        lock.unlock()
+        return value
+    }
+}
+
 extension BlazeBinaryDecoder {
     
     /// Cached ISO8601DateFormatter (created once, reused forever)
@@ -48,9 +88,8 @@ extension BlazeBinaryDecoder {
     public static func decodeBatchParallel(_ dataArray: [Data]) throws -> [BlazeDataRecord] {
         let group = DispatchGroup()
         let queue = DispatchQueue(label: "com.blazedb.decode.parallel", attributes: .concurrent)
-        var results: [BlazeDataRecord?] = Array(repeating: nil, count: dataArray.count)
-        var errors: [Error] = []
-        let errorLock = NSLock()
+        let results = ParallelDecodeResults(count: dataArray.count)
+        let errors = ParallelDecodeErrors()
         
         for (index, data) in dataArray.enumerated() {
             group.enter()
@@ -59,11 +98,9 @@ extension BlazeBinaryDecoder {
                 
                 do {
                     let decoded = try decode(data)
-                    results[index] = decoded
+                    results.set(decoded, at: index)
                 } catch {
-                    errorLock.lock()
                     errors.append(error)
-                    errorLock.unlock()
                 }
             }
         }
@@ -74,7 +111,7 @@ extension BlazeBinaryDecoder {
             throw firstError
         }
         
-        return results.compactMap { $0 }
+        return results.compactValues()
     }
 }
 
