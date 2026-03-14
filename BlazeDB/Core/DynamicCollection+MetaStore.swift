@@ -10,7 +10,7 @@ extension DynamicCollection: MetaStore {
             from: metaURLPath,
             signingKey: encryptionKey,
             password: password,
-            salt: Data("AshPileSalt".utf8)
+            salt: kdfSalt
         )
         if !layout.metaData.isEmpty {
             return layout.metaData
@@ -22,9 +22,7 @@ extension DynamicCollection: MetaStore {
             return [:]
         }
         
-        guard let salt = "AshPileSalt".data(using: .utf8) else {
-            throw BlazeDBError.invalidData(reason: "Failed to encode salt as UTF-8")
-        }
+        let salt = kdfSalt
         do {
             let layout = try StorageLayout.loadSecure(
                 from: metaURLPath,
@@ -55,9 +53,7 @@ extension DynamicCollection: MetaStore {
     }
     
     public func updateMeta(_ newMeta: [String: BlazeDocumentField]) throws {
-        guard let salt = "AshPileSalt".data(using: .utf8) else {
-            throw BlazeDBError.invalidData(reason: "Failed to encode salt as UTF-8")
-        }
+        let salt = kdfSalt
         var layout: StorageLayout
         
         // Handle case where layout file doesn't exist yet (new database)

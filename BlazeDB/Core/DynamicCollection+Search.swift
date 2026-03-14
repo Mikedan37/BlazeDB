@@ -47,7 +47,7 @@ extension DynamicCollection {
                     from: metaURL,
                     signingKey: encryptionKey,
                     password: password,
-                    salt: Data("AshPileSalt".utf8)
+                    salt: kdfSalt
                 )
             } catch {
                 layout = try StorageLayout.load(from: metaURL)
@@ -91,7 +91,7 @@ extension DynamicCollection {
                     from: metaURL,
                     signingKey: encryptionKey,
                     password: password,
-                    salt: Data("AshPileSalt".utf8)
+                    salt: kdfSalt
                 )
             } catch {
                 layout = try StorageLayout.load(from: metaURL)
@@ -119,7 +119,7 @@ extension DynamicCollection {
                     from: metaURL,
                     signingKey: encryptionKey,
                     password: password,
-                    salt: Data("AshPileSalt".utf8)
+                    salt: kdfSalt
                 )
             } catch {
                 layout = try StorageLayout.load(from: metaURL)
@@ -137,7 +137,7 @@ extension DynamicCollection {
                     from: metaURL,
                     signingKey: encryptionKey,
                     password: password,
-                    salt: Data("AshPileSalt".utf8)
+                    salt: kdfSalt
                 )
             } catch {
                 layout = try StorageLayout.load(from: metaURL)
@@ -158,7 +158,7 @@ extension DynamicCollection {
                     from: metaURL,
                     signingKey: encryptionKey,
                     password: password,
-                    salt: Data("AshPileSalt".utf8)
+                    salt: kdfSalt
                 )
             } catch {
                 layout = try StorageLayout.load(from: metaURL)
@@ -352,7 +352,7 @@ extension DynamicCollection {
                     from: metaURL,
                     signingKey: encryptionKey,
                     password: password,
-                    salt: Data("AshPileSalt".utf8)
+                    salt: kdfSalt
                 )
             } catch {
                 layout = try StorageLayout.load(from: metaURL)
@@ -375,7 +375,7 @@ extension DynamicCollection {
                 from: metaURL,
                 signingKey: encryptionKey,
                 password: password,
-                salt: Data("AshPileSalt".utf8)
+                salt: kdfSalt
             )
         } catch {
             layout = try StorageLayout.load(from: metaURL)

@@ -39,12 +39,10 @@ public final class KeyManager {
             return try loadSecureEnclaveKey(label: label, createIfMissing: createIfMissing)
 
         case .password(let pass):
-            // Legacy fallback for older call sites.
-            // New code should pass a per-database salt directly to getKey(from:salt:).
-            guard let salt = "AshPileSalt".data(using: .utf8) else {
-                throw KeyManagerError.keychainError
-            }
-            return try getKey(from: pass, salt: salt)
+            // DEPRECATED: Legacy fallback using static salt. Only used by tests.
+            // Production code must use getKey(from:salt:) with a per-database salt.
+            let legacySalt = Data("AshPileSalt".utf8)
+            return try getKey(from: pass, salt: legacySalt)
         }
     }
 
