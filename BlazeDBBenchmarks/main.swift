@@ -59,6 +59,12 @@ func parseOnOffEnv(_ key: String, defaultValue: Bool) -> Bool {
     return defaultValue
 }
 
+#if BLAZEDB_BENCHMARK_NO_ENCRYPTION
+let benchmarkEncryptionEnabled = false
+#else
+let benchmarkEncryptionEnabled = true
+#endif
+
 let benchmarkCondition = {
     let mvccRequested = parseOnOffEnv("BLAZEDB_BENCH_MVCC", defaultValue: true)
     let walRequested = parseOnOffEnv("BLAZEDB_BENCH_WAL", defaultValue: true)
@@ -70,7 +76,7 @@ let benchmarkCondition = {
         encryptionRequested: encryptionRequested,
         mvccEffective: mvccRequested, // TODO: Query actual MVCC state from BlazeDBClient after construction to confirm effective value
         walEffective: true,
-        encryptionEffective: true
+        encryptionEffective: benchmarkEncryptionEnabled
     )
 }()
 

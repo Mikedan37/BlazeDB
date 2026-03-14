@@ -50,7 +50,10 @@ final class WALEntryTests: XCTestCase {
         data[payloadStart] ^= 0xFF
 
         XCTAssertThrowsError(try WALEntry.deserialize(from: data)) { error in
-            XCTAssertTrue("\(error)".contains("crc"), "Expected CRC error, got: \(error)")
+            guard case WALError.crcMismatch = error else {
+                XCTFail("Expected crcMismatch, got: \(error)")
+                return
+            }
         }
     }
 
@@ -66,5 +69,25 @@ final class WALEntryTests: XCTestCase {
         let truncated = data.prefix(data.count - 5)
 
         XCTAssertThrowsError(try WALEntry.deserialize(from: Data(truncated)))
+    }
+
+    func testReadNextSequential() throws {
+        let e1 = WALEntry(lsn: 1, transactionID: UUID(), operation: .write, pageIndex: 0, payload: Data([0xAA]))
+        let e2 = WALEntry(lsn: 2, transactionID: UUID(), operation: .commit, pageIndex: 0, payload: Data())
+        var log = e1.serialize()
+        log.append(e2.serialize())
+
+        let (decoded1, next1) = try WALEntry.readNext(from: log, at: log.startIndex)
+        XCTAssertEqual(decoded1.lsn, 1)
+        let (decoded2, next2) = try WALEntry.readNext(from: log, at: next1)
+        XCTAssertEqual(decoded2.lsn, 2)
+        XCTAssertEqual(next2, log.endIndex)
+    }
+
+    func testZeroLSNRoundTrip() throws {
+        let entry = WALEntry(lsn: 0, transactionID: UUID(), operation: .begin, pageIndex: 0, payload: Data())
+        let data = entry.serialize()
+        let decoded = try WALEntry.deserialize(from: data)
+        XCTAssertEqual(decoded.lsn, 0)
     }
 }

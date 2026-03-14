@@ -120,6 +120,10 @@ public struct WALEntry: Sendable, Equatable {
     /// Read the next WAL entry from `data` starting at absolute index `offset`.
     /// Returns the decoded entry and the index immediately after it.
     public static func readNext(from data: Data, at offset: Int) throws -> (WALEntry, Int) {
+        guard offset >= data.startIndex else {
+            throw WALError.truncatedEntry
+        }
+
         // Check minimum size for header
         guard data.endIndex - offset >= headerSize + trailerSize else {
             throw WALError.truncatedEntry
@@ -179,7 +183,7 @@ public struct WALEntry: Sendable, Equatable {
             let computedCRC = computeCRC32(messageData)
 
             guard storedCRC == computedCRC else {
-                throw WALError.crcMismatch(expected: storedCRC, actual: computedCRC)
+                throw WALError.crcMismatch(expected: computedCRC, actual: storedCRC)
             }
 
             let entry = WALEntry(
@@ -197,10 +201,14 @@ public struct WALEntry: Sendable, Equatable {
     // MARK: - CRC32
 
     private static func computeCRC32(_ data: Data) -> UInt32 {
+        #if canImport(zlib)
         data.withUnsafeBytes { buf in
-            let bytes = buf.bindMemory(to: UInt8.self)
-            let result = zlib.crc32(0, bytes.baseAddress, UInt32(bytes.count))
+            let base = buf.baseAddress!.assumingMemoryBound(to: UInt8.self)
+            let result = zlib.crc32(0, base, UInt32(buf.count))
             return UInt32(result)
         }
+        #else
+        fatalError("BlazeDB requires zlib for CRC32 integrity checks")
+        #endif
     }
 }
