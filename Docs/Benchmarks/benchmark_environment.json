@@ -1,5 +1,5 @@
 {
-  "generated_at_utc": "2026-03-14T08:12:50+00:00",
+  "generated_at_utc": "2026-03-14T09:03:19+00:00",
   "run_fingerprint": {
     "device_id": "ae4ee458c66596a255d5",
     "platform_uuid_source": "IOPlatformUUID",
@@ -11,7 +11,7 @@
     "processor": "i386",
     "memory_bytes": 38654705664,
     "git_branch": "week1/stabilization-20260308",
-    "git_commit": "b551dd5d58d9232e5e9452c903ef4a00cb1882b2"
+    "git_commit": "8664b1bef7245963965b65cd510e94f35e9bc116"
   },
   "condition_support_matrix": [
     {
@@ -29,8 +29,8 @@
     {
       "toggle": "encryption",
       "on_supported": true,
-      "off_supported": false,
-      "notes": "Encryption is always on in current core engine path."
+      "off_supported": true,
+      "notes": "OFF mode is benchmark-only via compile-time flag BLAZEDB_BENCHMARK_NO_ENCRYPTION."
     }
   ]
 }

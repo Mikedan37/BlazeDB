@@ -1,14 +1,14 @@
-Test Suite 'Selected tests' started at 2026-03-14 01:15:35.205.
-Test Suite 'BlazeDBPackageTests.xctest' started at 2026-03-14 01:15:35.207.
-Test Suite 'PageGCTests' started at 2026-03-14 01:15:35.207.
+Test Suite 'Selected tests' started at 2026-03-14 02:06:51.416.
+Test Suite 'BlazeDBPackageTests.xctest' started at 2026-03-14 02:06:51.417.
+Test Suite 'PageGCTests' started at 2026-03-14 02:06:51.417.
 Test Case '-[BlazeDB_Tier1.PageGCTests testPageGC_MultiplePages]' started.
-Test Case '-[BlazeDB_Tier1.PageGCTests testPageGC_MultiplePages]' passed (0.213 seconds).
-Test Suite 'PageGCTests' passed at 2026-03-14 01:15:35.420.
-	 Executed 1 test, with 0 failures (0 unexpected) in 0.213 (0.213) seconds
-Test Suite 'BlazeDBPackageTests.xctest' passed at 2026-03-14 01:15:35.420.
-	 Executed 1 test, with 0 failures (0 unexpected) in 0.213 (0.213) seconds
-Test Suite 'Selected tests' passed at 2026-03-14 01:15:35.420.
-	 Executed 1 test, with 0 failures (0 unexpected) in 0.213 (0.214) seconds
+Test Case '-[BlazeDB_Tier1.PageGCTests testPageGC_MultiplePages]' passed (0.223 seconds).
+Test Suite 'PageGCTests' passed at 2026-03-14 02:06:51.640.
+	 Executed 1 test, with 0 failures (0 unexpected) in 0.223 (0.223) seconds
+Test Suite 'BlazeDBPackageTests.xctest' passed at 2026-03-14 02:06:51.640.
+	 Executed 1 test, with 0 failures (0 unexpected) in 0.223 (0.223) seconds
+Test Suite 'Selected tests' passed at 2026-03-14 02:06:51.640.
+	 Executed 1 test, with 0 failures (0 unexpected) in 0.223 (0.225) seconds
 ✅ Multiple page reuse works!
 ◇ Test run started.
 ↳ Testing Library Version: 1501
@@ -17,4 +17,4 @@ Test Suite 'Selected tests' passed at 2026-03-14 01:15:35.420.
 
 Building for debugging...
 [0/18] Write swift-version--58304C5D6DBC2206.txt
-Build complete! (0.23s)
+Build complete! (0.25s)
