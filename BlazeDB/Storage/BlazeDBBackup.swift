@@ -119,10 +119,30 @@ extension BlazeDBClient {
             }
             try FileManager.default.copyItem(at: indexesURL, to: backupIndexesURL)
         }
+
+        // Copy per-database KDF salt sidecar (required to derive the same key after restore/open).
+        let saltURL = fileURL.deletingPathExtension().appendingPathExtension("salt")
+        let backupSaltURL = url.deletingPathExtension().appendingPathExtension("salt")
+        if FileManager.default.fileExists(atPath: saltURL.path) {
+            if FileManager.default.fileExists(atPath: backupSaltURL.path) {
+                try FileManager.default.removeItem(at: backupSaltURL)
+            }
+            try FileManager.default.copyItem(at: saltURL, to: backupSaltURL)
+        }
         
-        // Get file size
-        let attributes = try FileManager.default.attributesOfItem(atPath: url.path)
-        let fileSize = attributes[.size] as? Int64 ?? 0
+        // Get aggregate backup size (main + metadata + optional indexes + optional salt).
+        func fileSize(at path: String) -> Int64 {
+            guard let attrs = try? FileManager.default.attributesOfItem(atPath: path),
+                  let size = attrs[.size] as? Int64 else {
+                return 0
+            }
+            return size
+        }
+        let fileSize =
+            fileSize(at: url.path) +
+            fileSize(at: backupMetaURL.path) +
+            fileSize(at: backupIndexesURL.path) +
+            fileSize(at: backupSaltURL.path)
         
         let duration = Date().timeIntervalSince(startTime)
         
@@ -212,6 +232,10 @@ extension BlazeDBClient {
         if FileManager.default.fileExists(atPath: indexesURL.path) {
             try? FileManager.default.removeItem(at: indexesURL)
         }
+        let saltURL = fileURL.deletingPathExtension().appendingPathExtension("salt")
+        if FileManager.default.fileExists(atPath: saltURL.path) {
+            try? FileManager.default.removeItem(at: saltURL)
+        }
         
         // Copy backup files
         try FileManager.default.copyItem(at: url, to: fileURL)
@@ -221,6 +245,10 @@ extension BlazeDBClient {
         if FileManager.default.fileExists(atPath: backupIndexesURL.path) {
             try FileManager.default.copyItem(at: backupIndexesURL, to: indexesURL)
         }
+        let backupSaltURL = url.deletingPathExtension().appendingPathExtension("salt")
+        if FileManager.default.fileExists(atPath: backupSaltURL.path) {
+            try FileManager.default.copyItem(at: backupSaltURL, to: saltURL)
+        }
         
         // Reload collection with restored files
         // This will use the same encryption key, so backup must have been created with same key
@@ -229,7 +257,8 @@ extension BlazeDBClient {
             store: newStore,
             metaURL: metaURL,
             project: project,
-            encryptionKey: encryptionKey
+            encryptionKey: encryptionKey,
+            kdfSalt: kdfSalt
         )
         
         BlazeLogger.info("Database restored from backup")
