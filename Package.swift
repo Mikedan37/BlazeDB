@@ -52,12 +52,12 @@ let package = Package(
         // BlazeTransport: Transport layer for distributed sync
         // Pinned to linux-aarch64-stable-v3 for reproducible Linux builds
         .package(
-            url: "git@github.com:Mikedan37/BlazeTransport.git",
+            url: "https://github.com/Mikedan37/BlazeTransport.git",
             revision: "eef8c2e179fff80ad5afe019b5113625ec9cb609"
         ),
         // BlazeFSM: Pinned to Linux-safe commit to unblock SwiftPM resolution
         .package(
-            url: "git@github.com:Mikedan37/BlazeFSM.git",
+            url: "https://github.com/Mikedan37/BlazeFSM.git",
             revision: "58b292a27928d211eef12090cafcbf12b31d69c6"
         ),
         // SwiftCBOR: Pinned to stable tagged release for SwiftPM compatibility

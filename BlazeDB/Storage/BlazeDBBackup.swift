@@ -257,8 +257,7 @@ extension BlazeDBClient {
             store: newStore,
             metaURL: metaURL,
             project: project,
-            encryptionKey: encryptionKey,
-            kdfSalt: kdfSalt
+            encryptionKey: encryptionKey
         )
         
         BlazeLogger.info("Database restored from backup")
