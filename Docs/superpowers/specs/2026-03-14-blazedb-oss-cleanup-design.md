@@ -367,6 +367,18 @@ Note: this Phase 4 fix operates on the pre-MVCC conflict model (record-level las
 
 Rule: if a parameter does nothing, delete it. Remove the silent-swallow methods. If full-text filtering is implemented later, add the parameters back with real behavior.
 
+### RLS integration into read pipeline
+
+The RLS `PolicyEngine` is correctly implemented but disconnected from every public read path. `fetchWithRLS`/`fetchAllWithRLS` exist as `internal` methods but are never called from `BlazeDBClient.fetch`, `fetchAll`, `QueryBuilder`, or any other public API. The only enforcement point is `GraphQuery.injectRLSFilter`.
+
+Fix — integrate RLS into `QueryExecutor`:
+- `QueryExecutor` applies RLS policies as a filter stage after data retrieval and before returning results
+- `BlazeDBClient.fetch(id:)` and `fetchAll()` route through `QueryExecutor` when a security context is set
+- All read paths (`distinct`, `fetchPage`, batch reads, export, backup) go through the same filtered pipeline
+- Remove `BlazeRLSRegistry` (System B) entirely — it registers policies that nothing reads. One enforcement mechanism, no duplicates.
+- Add configurable fail-closed mode: `rlsFailClosed: Bool` on `BlazeDBClient` init. When `true` and no security context is set, reads return empty results. Default: `false` (fail-open, matching current embedded DB expectations). Document the security implications of each mode.
+- Write-side enforcement (INSERT/UPDATE/DELETE policy checks) is deferred — read enforcement first, write enforcement in a future iteration.
+
 ### Extraction from DynamicCollection
 
 - Query execution dispatch -> `QueryExecutor`
@@ -379,6 +391,10 @@ Rule: if a parameter does nothing, delete it. Remove the silent-swallow methods.
 4. Window function: 10K records, 100 partitions -> double to 20K -> verify linear growth
 5. Conflict resolution with custom handler -> handler's returned version is the one persisted
 6. Hybrid full-text: method with fullTextField parameter either filters or does not compile
+7. RLS enforcement: set context as user A with policy restricting to own records -> `fetchAll()` returns only user A's records
+8. RLS bypass without context: no context set, `rlsFailClosed: false` -> all records returned
+9. RLS fail-closed: no context set, `rlsFailClosed: true` -> empty results
+10. RLS via QueryBuilder: query with active context -> results filtered by policy
 
 ---
 
@@ -608,6 +624,22 @@ Produce a disposition table. For each class, one of:
 
 Make `state` private. Synchronize mutations with a lock. Remove the redundant `internal var state` / `internal var debugState` split.
 
+### RLS context: replace global with per-query
+
+`RLS.currentContext` is a single global value behind an `NSLock`. Two concurrent callers with different user identities will race — queries can execute under the wrong user context.
+
+Fix: security context flows through `TransactionContext` or `QueryContext`, not a global variable. Each query/transaction carries its own user identity. The `RLS` manager reads the context from the execution context, not from a global.
+
+```
+query(context: SecurityContext)
+     |
+QueryExecutor(context)
+     |
+PolicyEngine.isAllowed(context, record)
+```
+
+This naturally integrates with the Phase 6 MVCC work — transactions already carry a snapshot LSN, adding a security context to the same execution scope is a clean fit.
+
 ### WriteBatch keyed by ObjectIdentifier
 
 Switch to `UUID` keys. `ObjectIdentifier` reuse after deallocation causes silent `WriteBatch` sharing between unrelated `PageStore` instances.
@@ -638,6 +670,7 @@ Remove all `try?` in recovery, commit, and checkpoint paths. `try?` is acceptabl
 3. Concurrent read during commit -> no crash, read sees consistent state
 4. Concurrent stats/health call during write path -> no crash
 5. Error type consistency: catch `BlazeDBError` at `BlazeDBClient` level -> no `NSError` leaks from storage
+6. RLS context isolation: two concurrent queries with different security contexts -> each sees only its own policy-filtered results
 
 ---
 
