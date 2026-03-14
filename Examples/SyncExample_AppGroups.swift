@@ -55,8 +55,8 @@ struct SyncExample_AppGroups {
         let app1DBURL = containerURL.appendingPathComponent("app1_db.blazedb")
         let app2DBURL = containerURL.appendingPathComponent("app2_db.blazedb")
         
-        let app1DB = try BlazeDBClient(name: "App1DB", fileURL: app1DBURL, password: "test123")
-        let app2DB = try BlazeDBClient(name: "App2DB", fileURL: app2DBURL, password: "test123")
+        let app1DB = try BlazeDBClient.open(at: app1DBURL, password: "TestPass123!")
+        let app2DB = try BlazeDBClient.open(at: app2DBURL, password: "TestPass123!")
         
         print("✅ App1DB created: \(app1DBURL.path)")
         print("✅ App2DB created: \(app2DBURL.path)")

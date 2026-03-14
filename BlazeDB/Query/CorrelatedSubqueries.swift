@@ -5,9 +5,6 @@
 //  Correlated subqueries (subqueries that reference outer query)
 //  Optimized with caching and lazy evaluation
 //
-//  Created by Auto on 1/XX/25.
-//
-
 import Foundation
 
 // MARK: - Correlated Subquery

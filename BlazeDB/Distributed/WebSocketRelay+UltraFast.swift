@@ -2,7 +2,7 @@
 //  WebSocketRelay+UltraFast.swift
 //  BlazeDB Distributed
 //
-//  ULTRA-AGGRESSIVE data transfer optimizations
+//  Data transfer optimizations
 //  Maximum throughput and bandwidth!
 //
 //  Created by Michael Danylchuk on 1/15/25.

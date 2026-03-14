@@ -282,7 +282,7 @@ class DatabaseManager: ObservableObject {
             try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
             
             // Initialize database
-            db = try BlazeDBClient(name: "AshPile", fileURL: dbURL, password: "your-secure-password")
+            db = try BlazeDBClient.open(at: dbURL, password: "your-secure-password")
             
             // Enable telemetry with 1% sampling
             db?.telemetry.enable(samplingRate: 0.01)

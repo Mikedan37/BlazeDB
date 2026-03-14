@@ -169,6 +169,202 @@ struct StorageLayout: Codable {
         case deletedPages
     }
 
+    private enum IndexMapValue: Decodable {
+        case int(Int)
+        case double(Double)
+        case string(String)
+        case array([IndexMapValue])
+        case object([String: IndexMapValue])
+        case null
+
+        private struct DynamicKey: CodingKey {
+            var stringValue: String
+            var intValue: Int?
+            init?(stringValue: String) {
+                self.stringValue = stringValue
+                self.intValue = nil
+            }
+            init?(intValue: Int) {
+                self.stringValue = "\(intValue)"
+                self.intValue = intValue
+            }
+        }
+
+        init(from decoder: Decoder) throws {
+            // Best-effort tolerant parsing: never throw on legacy/corrupted shapes.
+            if var unkeyed = try? decoder.unkeyedContainer() {
+                var array: [IndexMapValue] = []
+                while !unkeyed.isAtEnd {
+                    let nested = (try? unkeyed.decode(IndexMapValue.self)) ?? .null
+                    array.append(nested)
+                }
+                self = .array(array)
+                return
+            }
+
+            if let keyed = try? decoder.container(keyedBy: DynamicKey.self) {
+                var object: [String: IndexMapValue] = [:]
+                for key in keyed.allKeys {
+                    object[key.stringValue] = (try? keyed.decode(IndexMapValue.self, forKey: key)) ?? .null
+                }
+                self = .object(object)
+                return
+            }
+
+            if let container = try? decoder.singleValueContainer() {
+                if container.decodeNil() {
+                    self = .null
+                    return
+                }
+                if let value = try? container.decode(Int.self) {
+                    self = .int(value)
+                    return
+                }
+                if let value = try? container.decode(Double.self) {
+                    self = .double(value)
+                    return
+                }
+                if let value = try? container.decode(String.self) {
+                    self = .string(value)
+                    return
+                }
+            }
+
+            self = .null
+        }
+    }
+
+    private static func flattenIndexMapValues(_ value: IndexMapValue) -> [Int] {
+        switch value {
+        case .int(let i):
+            return [i]
+        case .double(let d):
+            guard d.rounded(.towardZero) == d else { return [] }
+            return [Int(d)]
+        case .string(let s):
+            guard let i = Int(s) else { return [] }
+            return [i]
+        case .array(let values):
+            return values.flatMap(flattenIndexMapValues)
+        case .object(let object):
+            if let pages = object["pages"] {
+                return flattenIndexMapValues(pages)
+            }
+            if let value = object["value"] {
+                return flattenIndexMapValues(value)
+            }
+            return []
+        case .null:
+            return []
+        }
+    }
+
+    private static func extractUUID(from value: IndexMapValue) -> UUID? {
+        switch value {
+        case .string(let id):
+            return UUID(uuidString: id)
+        case .array(let values):
+            for element in values {
+                if let uuid = extractUUID(from: element) {
+                    return uuid
+                }
+            }
+            return nil
+        case .object(let object):
+            if let idValue = object["id"], let uuid = extractUUID(from: idValue) {
+                return uuid
+            }
+            if let keyValue = object["key"], let uuid = extractUUID(from: keyValue) {
+                return uuid
+            }
+            return nil
+        case .int, .double, .null:
+            return nil
+        }
+    }
+
+    private static func decodeIndexMap(from container: KeyedDecodingContainer<CodingKeys>) throws -> [UUID: [Int]] {
+        let raw = try container.decodeIfPresent(IndexMapValue.self, forKey: .indexMap) ?? .object([:])
+        var parsed: [UUID: [Int]] = [:]
+
+        switch raw {
+        case .object(let map):
+            // Shape: { "<uuid>": 1 | [1,2] | [[1],[2]] }
+            for (key, value) in map {
+                guard let uuid = UUID(uuidString: key) else { continue }
+                parsed[uuid] = flattenIndexMapValues(value)
+            }
+        case .array(let entries):
+            // Flat legacy shape: [ "<uuid>", [1,2], "<uuid>", [3], ... ]
+            var flatCursor = 0
+            while flatCursor + 1 < entries.count {
+                if let uuid = extractUUID(from: entries[flatCursor]) {
+                    parsed[uuid] = flattenIndexMapValues(entries[flatCursor + 1])
+                }
+                flatCursor += 2
+            }
+
+            // Legacy/canonical shape: [ { "id": "<uuid>", "pages": [...] }, ... ]
+            // Also supports tuple-ish shape: [ ["<uuid>", ...], ... ]
+            for entry in entries {
+                switch entry {
+                case .object(let obj):
+                    guard
+                        let idValue = obj["id"] ?? obj["key"],
+                        let uuid = extractUUID(from: idValue)
+                    else { continue }
+                    let value = obj["pages"] ?? obj["value"] ?? .null
+                    parsed[uuid] = flattenIndexMapValues(value)
+                case .array(let pair):
+                    guard pair.count >= 2 else { continue }
+                    guard let uuid = extractUUID(from: pair[0]) else { continue }
+                    parsed[uuid] = flattenIndexMapValues(pair[1])
+                default:
+                    continue
+                }
+            }
+        default:
+            break
+        }
+        return parsed
+    }
+
+    private struct CanonicalSecondaryIndexEntry: Decodable {
+        let name: String
+        let entries: [CanonicalSecondaryEntry]
+    }
+
+    private struct CanonicalSecondaryEntry: Decodable {
+        let key: CompoundIndexKey
+        let ids: [String]
+    }
+
+    private static func decodeSecondaryIndexes(
+        from container: KeyedDecodingContainer<CodingKeys>
+    ) -> [String: [CompoundIndexKey: [UUID]]] {
+        do {
+            if let decoded = try container.decodeIfPresent([String: [CompoundIndexKey: [UUID]]].self, forKey: .secondaryIndexes) {
+                return decoded
+            }
+        } catch {
+            // Fall through to canonical format.
+        }
+
+        do {
+            if let canonical = try container.decodeIfPresent([CanonicalSecondaryIndexEntry].self, forKey: .secondaryIndexes) {
+                return canonical.reduce(into: [String: [CompoundIndexKey: [UUID]]]()) { acc, entry in
+                    let inner = entry.entries.reduce(into: [CompoundIndexKey: [UUID]]()) { innerAcc, item in
+                        innerAcc[item.key] = item.ids.compactMap(UUID.init(uuidString:))
+                    }
+                    acc[entry.name] = inner
+                }
+            }
+        } catch {
+            // Ignore malformed legacy/canonical secondary index payloads.
+        }
+        return [:]
+    }
+
     // Convert from runtime [String: [AnyHashable: Set<UUID>]]
     init(indexMap: [UUID: [Int]], nextPageIndex: Int, secondaryIndexes: [String: [AnyHashable: Set<UUID>]]) {
         self.indexMap = indexMap
@@ -248,15 +444,15 @@ struct StorageLayout: Codable {
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
 
-        // Handle backward compatibility: old format [UUID: Int] vs new format [UUID: [Int]]
-        if let oldFormat = try? container.decodeIfPresent([UUID: Int].self, forKey: .indexMap) {
-            // Convert old format to new format
-            indexMap = oldFormat.mapValues { [$0] }
-        } else {
-            indexMap = try container.decodeIfPresent([UUID: [Int]].self, forKey: .indexMap) ?? [:]
+        do {
+            indexMap = try Self.decodeIndexMap(from: container)
+        } catch {
+            // Be tolerant to historical/corrupted indexMap encodings and let recovery paths rebuild state.
+            BlazeLogger.warn("indexMap decode failed; continuing with empty indexMap for recovery: \(error)")
+            indexMap = [:]
         }
         nextPageIndex = try container.decodeIfPresent(Int.self, forKey: .nextPageIndex) ?? 0
-        secondaryIndexes = try container.decodeIfPresent([String: [CompoundIndexKey: [UUID]]].self, forKey: .secondaryIndexes) ?? [:]
+        secondaryIndexes = Self.decodeSecondaryIndexes(from: container)
         version = try container.decodeIfPresent(Int.self, forKey: .version) ?? 1
         encodingFormat = try container.decodeIfPresent(String.self, forKey: .encodingFormat) ?? "blazeBinary"  // ✅ Default to blazeBinary
         metaData = try container.decodeIfPresent([String: BlazeDocumentField].self, forKey: .metaData) ?? [:]
@@ -338,8 +534,14 @@ struct StorageLayout: Codable {
             let data = try Data(contentsOf: url)
             let decoder = JSONDecoder()
             decoder.dateDecodingStrategy = .iso8601
-            let layout = try decoder.decode(StorageLayout.self, from: data)
-            return layout
+
+            // Prefer secure-wrapper decode when present, but do not verify signature
+            // in this legacy helper (verification is handled by loadSecure()).
+            if let secureLayout = try? decoder.decode(StorageLayout.SecureLayout.self, from: data) {
+                return secureLayout.layout
+            }
+
+            return try decoder.decode(StorageLayout.self, from: data)
         } catch {
             // Check if file simply doesn't exist (new database) vs actual corruption
             if !FileManager.default.fileExists(atPath: url.path) {
@@ -358,10 +560,12 @@ struct StorageLayout: Codable {
         let data = try encoder.encode(self)
         BlazeLogger.debug("Saving layout JSON size: \(data.count)")
         
-        // Use atomic write with data protection to prevent corruption
-        // .atomic writes to temp file first, then renames (safe from crashes)
-        // .completeFileProtection ensures data is flushed before returning
+        // Use atomic write to prevent partial/corrupt metadata files.
+        #if os(iOS) || os(tvOS) || os(watchOS)
         try data.write(to: url, options: [.atomic, .completeFileProtection])
+        #else
+        try data.write(to: url, options: [.atomic])
+        #endif
         
         BlazeLogger.debug("Atomically saved layout to \(url.lastPathComponent)")
     }

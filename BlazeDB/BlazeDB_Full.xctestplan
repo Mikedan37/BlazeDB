@@ -1,0 +1,40 @@
+{
+  "configurations" : [
+    {
+      "id" : "9A1B1E3E-8D5A-4058-88F9-4A5A390C3E7D",
+      "name" : "Full (T0+T1+T2+T3Heavy)",
+      "options" : {
+        "environmentVariableEntries" : [
+          {
+            "key" : "BLAZEDB_TEST_PROFILE",
+            "value" : "full"
+          },
+          {
+            "key" : "BLAZEDB_TEST_TIER",
+            "value" : "3"
+          }
+        ]
+      }
+    }
+  ],
+  "defaultOptions" : {
+    "performanceAntipatternCheckerEnabled" : true,
+    "targetForVariableExpansion" : {
+      "containerPath" : "container:BlazeDB.xcodeproj",
+      "identifier" : "BlazeDB",
+      "name" : "BlazeDB"
+    },
+    "testPlanDescription" : "Runs all tests via BlazeDBTests. For tiered testing, use SPM: swift test --filter BlazeDB_Tier0"
+  },
+  "testTargets" : [
+    {
+      "parallelizable" : true,
+      "target" : {
+        "containerPath" : "container:BlazeDB.xcodeproj",
+        "identifier" : "BlazeDBTests",
+        "name" : "BlazeDBTests"
+      }
+    }
+  ],
+  "version" : 1
+}

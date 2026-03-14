@@ -5,9 +5,6 @@
 //  Unique constraint enforcement at database level
 //  Optimized with index-based lookups
 //
-//  Created by Auto on 1/XX/25.
-//
-
 import Foundation
 
 // MARK: - Unique Constraint Manager

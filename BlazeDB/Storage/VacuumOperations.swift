@@ -131,8 +131,8 @@ extension BlazeDBClient {
                     for record in allRecords {
                         guard let id = record.storage["id"]?.uuidValue else { continue }
                         
-                        // Encode record
-                        let encoded = try JSONEncoder().encode(record.storage)
+                        // Encode record using canonical BlazeBinary format
+                        let encoded = try BlazeBinaryEncoder.encode(record)
                         
                         // Write to new file
                         try compactedStore.writePage(index: newPageIndex, plaintext: encoded)
@@ -155,6 +155,14 @@ extension BlazeDBClient {
                     
                     let attrsNew = try FileManager.default.attributesOfItem(atPath: tempURL.path)
                     let sizeNew = attrsNew[.size] as? Int64 ?? 0
+                    
+                    // Close temporary compacted store before swapping files.
+                    compactedStore.close()
+                    
+                    // Release lock/handles on the live store before reopening the file.
+                    // Without this, opening a new PageStore on the same path can fail with
+                    // concurrent-process/handle lock errors in parallel test execution.
+                    try self.collection.close()
                     
                     // Replace old file with compacted file
                     BlazeLogger.debug("Replacing old database file...")

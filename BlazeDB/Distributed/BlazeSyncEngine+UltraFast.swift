@@ -2,8 +2,7 @@
 //  BlazeSyncEngine+UltraFast.swift
 //  BlazeDB Distributed
 //
-//  ULTRA-AGGRESSIVE performance optimizations
-//  Maximum throughput and data transfer!
+//  Performance optimizations for sync engine
 //
 //  Created by Michael Danylchuk on 1/15/25.
 //
@@ -20,9 +19,9 @@ extension BlazeSyncEngine {
     /// Ultra-fast mode: Maximum performance settings
     public static func ultraFastConfiguration() -> (batchSize: Int, batchDelay: UInt64, maxInFlight: Int) {
         return (
-            batchSize: 10_000,      // 2x increase! (was 5,000)
-            batchDelay: 100_000,    // 0.1ms delay (was 0.25ms)
-            maxInFlight: 100        // 2x increase! (was 50)
+            batchSize: 10_000,
+            batchDelay: 100_000,    // 0.1ms
+            maxInFlight: 100
         )
     }
     
@@ -34,20 +33,18 @@ extension BlazeSyncEngine {
         // This method is kept for API compatibility
     }
     
-    // MARK: - Zero-Copy Operations
-    
-    /// Zero-copy batch encoding (reuse buffers)
-    private func encodeBatchZeroCopy(_ operations: [BlazeOperation]) throws -> Data {
-        // Pre-allocate buffer (reuse instead of allocating)
-        let estimatedSize = operations.count * 256  // Estimate 256 bytes per operation
+    // MARK: - Batch Encoding
+
+    /// Pre-allocated batch encoding
+    private func encodeBatchPreallocated(_ operations: [BlazeOperation]) throws -> Data {
+        let estimatedSize = operations.count * 256
         var buffer = Data(capacity: estimatedSize)
-        
-        // Encode directly into buffer (zero-copy)
+
         for op in operations {
             let encoded = try JSONEncoder().encode(op)
             buffer.append(encoded)
         }
-        
+
         return buffer
     }
     

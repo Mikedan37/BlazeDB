@@ -89,10 +89,12 @@ public struct DatabaseSchema {
         }
         
         // Strict mode: reject unknown fields
+        // Skip auto-injected fields: "id" and "createdAt" are added by BlazeDBClient.insert()
         if strict {
             let knownFields = Set(fields.map { $0.name })
+            let autoInjectedFields: Set<String> = ["id", "createdAt"]
             for key in record.storage.keys {
-                if !knownFields.contains(key) && key != "id" {
+                if !knownFields.contains(key) && !autoInjectedFields.contains(key) {
                     throw BlazeDBError.invalidField(
                         name: key,
                         expectedType: "not in schema",
@@ -137,7 +139,7 @@ public struct DatabaseSchema {
 extension BlazeDBClient {
     
     nonisolated(unsafe) private static var schemas: [String: DatabaseSchema] = [:]
-    nonisolated(unsafe) private static let schemaLock = NSLock()
+    private static let schemaLock = NSLock()
     
     /// Define a schema for this database
     ///

@@ -5,9 +5,6 @@
 //  Regular expression query support
 //  Optimized with compiled regex cache
 //
-//  Created by Auto on 1/XX/25.
-//
-
 import Foundation
 
 // MARK: - Regex Cache (Performance Optimization)

@@ -6,9 +6,6 @@
 //  Provides a Swifty, fluent, type-safe API for generating chart-ready datasets
 //  Built on top of existing QueryBuilder, aggregations, and window functions
 //
-//  Created by Auto on 1/XX/25.
-//
-
 import Foundation
 
 // MARK: - Graph Point Result Type
@@ -159,8 +156,8 @@ public final class GraphQuery<T> {
         }
         
         // OPTIMIZATION 5: Pre-compute team membership set (O(1) lookup instead of O(n))
-        let teamIDSet = Set(userContext.teamIDs)
-        let userID = userContext.userID
+        // Note: teamIDSet and userID available through userContext in the filter closure
+        _ = Set(userContext.teamIDs)  // Pre-computed for potential future optimization
         
         // OPTIMIZATION 6: Create optimized filter closure
         // - Pre-computes checks that don't depend on record
@@ -369,9 +366,8 @@ public final class GraphQuery<T> {
             throw BlazeDBError.invalidQuery(reason: "Y-axis not specified. Call .y() first.", suggestion: "Use .y(.count) or .y(.sum(field)) to set Y-axis")
         }
         
-        BlazeLogger.info("Executing graph query: X=\(xField), Y=\(yAggregation)")
         let dateBinStr = xDateBin?.rawValue ?? "nil"
-        print("📊 [GRAPHQUERY] Executing graph query: X=\(xField), Y=\(yAggregation), dateBin=\(dateBinStr)")
+        BlazeLogger.info("Executing graph query: X=\(xField), Y=\(yAggregation), dateBin=\(dateBinStr)")
         
         // Validate that the X field exists in at least one record
         // This helps catch typos in field names early
@@ -383,17 +379,17 @@ public final class GraphQuery<T> {
         }
         
         let sampleRecords = try collection.fetchAll()
-        print("📊 [GRAPHQUERY] Validation: Found \(sampleRecords.count) records, checking for field '\(xField)'")
+        BlazeLogger.debug("Graph query validation: Found \(sampleRecords.count) records, checking for field '\(xField)'")
         
         if sampleRecords.isEmpty {
             // If no records exist, we can't validate the field exists
             // But we allow empty queries to return empty result sets (no error)
-            print("📊 [GRAPHQUERY] Validation: Collection is empty, will return empty result set")
+            BlazeLogger.debug("Graph query: Collection is empty, will return empty result set")
         } else {
             let hasField = sampleRecords.contains { record in
                 record.storage[xField] != nil
             }
-            print("📊 [GRAPHQUERY] Validation: Field '\(xField)' exists: \(hasField)")
+            BlazeLogger.debug("Graph query: Field '\(xField)' exists: \(hasField)")
             if !hasField {
                 let availableFields = sampleRecords.first?.storage.keys.sorted().joined(separator: ", ") ?? "none"
                 throw BlazeDBError.invalidQuery(
@@ -476,17 +472,17 @@ public final class GraphQuery<T> {
         }
         
         guard case .grouped(let groupedResult) = result else {
-            print("❌ [GRAPHQUERY] Query result is not grouped! Result type: \(result)")
+            BlazeLogger.error("Graph query result is not grouped! Result type: \(result)")
             throw BlazeDBError.invalidQuery(reason: "Graph query must use GROUP BY", suggestion: "Ensure X-axis is set with .x()")
         }
         
-        print("📊 [GRAPHQUERY] Grouped result has \(groupedResult.groups.count) groups")
+        BlazeLogger.debug("Graph query: Grouped result has \(groupedResult.groups.count) groups")
         
         // Convert grouped results to graph points
         var points: [BlazeGraphPoint<any Sendable, any Sendable>] = []
         
         for (groupKey, aggregationResult) in groupedResult.groups {
-            print("📊 [GRAPHQUERY] Processing group: key=\(groupKey), aggregationResult=\(aggregationResult)")
+            BlazeLogger.trace("Graph query: Processing group: key=\(groupKey), aggregationResult=\(aggregationResult)")
             // Extract X value (must be Sendable)
             let xValue: any Sendable
             
@@ -506,8 +502,7 @@ public final class GraphQuery<T> {
             
             // Extract Y value (must be Sendable)
             guard let yField = aggregationResult.values["y_value"] else {
-                print("⚠️ [GRAPHQUERY] Missing y_value in aggregation result. Available keys: \(aggregationResult.values.keys.joined(separator: ", "))")
-                BlazeLogger.warn("Graph: Missing y_value in aggregation result. Available keys: \(aggregationResult.values.keys.joined(separator: ", "))")
+                BlazeLogger.warn("Graph query: Missing y_value in aggregation result. Available keys: \(aggregationResult.values.keys.joined(separator: ", "))")
                 continue
             }
             
@@ -735,7 +730,7 @@ extension BlazeDBClient {
     ///       .filter { $0.status == "active" }
     /// }
     /// ```
-    public func graph(
+    internal func graph(
         for user: BlazeUserContext?,
         @GraphQueryBuilder _ builder: (GraphQuery<BlazeDataRecord>) -> GraphQuery<BlazeDataRecord>
     ) -> GraphQuery<BlazeDataRecord> {
@@ -753,7 +748,7 @@ extension BlazeDBClient {
     ///       .y(.count)
     /// }
     /// ```
-    public func graph<T>(
+    internal func graph<T>(
         _ type: T.Type,
         for user: BlazeUserContext?,
         @GraphQueryBuilder _ builder: (GraphQuery<T>) -> GraphQuery<T>

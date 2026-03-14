@@ -32,7 +32,7 @@ struct SyncExample_CrossApp {
         // === APP 1 (Server/Publisher) ===
         print("\n📱 App 1: Setting up server...")
         let app1DBURL = tempDir.appendingPathComponent("app1_db.blazedb")
-        let app1DB = try BlazeDBClient(name: "App1DB", fileURL: app1DBURL, password: "test123")
+        let app1DB = try BlazeDBClient.open(at: app1DBURL, password: "TestPass123!")
         
         let topology1 = BlazeTopology()
         let app1Id = try await topology1.register(db: app1DB, name: "App1DB", role: .server)
@@ -41,7 +41,7 @@ struct SyncExample_CrossApp {
         // === APP 2 (Client/Subscriber) ===
         print("\n📱 App 2: Setting up client...")
         let app2DBURL = tempDir.appendingPathComponent("app2_db.blazedb")
-        let app2DB = try BlazeDBClient(name: "App2DB", fileURL: app2DBURL, password: "test123")
+        let app2DB = try BlazeDBClient.open(at: app2DBURL, password: "TestPass123!")
         
         let topology2 = BlazeTopology()
         let app2Id = try await topology2.register(db: app2DB, name: "App2DB", role: .client)

@@ -4,9 +4,6 @@
 //
 //  Optimized fetch and filter methods
 //
-//  Created by Auto on 1/XX/25.
-//
-
 #if !BLAZEDB_LINUX_CORE
 
 import Foundation
@@ -15,37 +12,44 @@ extension DynamicCollection {
     
     // MARK: - Fetch All Cache
     
-    nonisolated(unsafe) private static var fetchAllCache: [ObjectIdentifier: ([BlazeDataRecord], Date)] = [:]
-    nonisolated(unsafe) private static let cacheLock = NSLock()
+    /// Cache keyed by DynamicCollection.instanceID (UUID) instead of ObjectIdentifier.
+    /// ObjectIdentifier uses the memory address which can be reused after deallocation,
+    /// causing stale cache hits when a new collection lands at the same address.
+    nonisolated(unsafe) private static var fetchAllCache: [UUID: ([BlazeDataRecord], Date)] = [:]
+    private static let cacheLock = NSLock()
     private static let cacheMaxAge: TimeInterval = 5.0  // 5 seconds
-    
-    /// Clear fetchAll cache (called after writes)
+
+    /// Clear fetchAll cache for this instance (called after writes)
     internal func clearFetchAllCache() {
-        let id = ObjectIdentifier(self)
         Self.cacheLock.lock()
         defer { Self.cacheLock.unlock() }
-        Self.fetchAllCache.removeValue(forKey: id)
+        Self.fetchAllCache.removeValue(forKey: instanceID)
     }
-    
+
+    /// Clear all fetchAll caches globally (used in tests to prevent cross-test leakage)
+    internal static func clearAllFetchAllCaches() {
+        cacheLock.lock()
+        defer { cacheLock.unlock() }
+        fetchAllCache.removeAll()
+    }
+
     /// Get cached fetchAll result if available
     private func getCachedFetchAll() -> [BlazeDataRecord]? {
-        let id = ObjectIdentifier(self)
         Self.cacheLock.lock()
         defer { Self.cacheLock.unlock() }
-        
-        guard let (records, timestamp) = Self.fetchAllCache[id],
+
+        guard let (records, timestamp) = Self.fetchAllCache[instanceID],
               Date().timeIntervalSince(timestamp) < Self.cacheMaxAge else {
             return nil
         }
         return records
     }
-    
+
     /// Cache fetchAll result
     private func setCachedFetchAll(_ records: [BlazeDataRecord]) {
-        let id = ObjectIdentifier(self)
         Self.cacheLock.lock()
         defer { Self.cacheLock.unlock() }
-        Self.fetchAllCache[id] = (records, Date())
+        Self.fetchAllCache[instanceID] = (records, Date())
     }
     
     // MARK: - Optimized Fetch All
@@ -56,17 +60,19 @@ extension DynamicCollection {
         if let cached = getCachedFetchAll() {
             return cached
         }
-        
-        // Use batch fetching for optimal performance
-        // This prefetches all pages in parallel and decodes records efficiently
+
+        // Fetch records and cache the result inside the queue.sync block
+        // to prevent a stale cache write racing with insertBatch's clearFetchAllCache().
         let records = try queue.sync {
-            // _fetchAllNoSync already uses batch fetching internally
-            return try _fetchAllNoSync()
+            // Double-check cache (another thread may have populated it while we waited)
+            if let cached = getCachedFetchAll() {
+                return cached
+            }
+            let result = try _fetchAllNoSync()
+            setCachedFetchAll(result)
+            return result
         }
-        
-        // Cache result
-        setCachedFetchAll(records)
-        
+
         return records
     }
     

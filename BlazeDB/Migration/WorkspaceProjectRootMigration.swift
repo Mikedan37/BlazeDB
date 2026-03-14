@@ -5,7 +5,6 @@
 //  Migration to add projectRoot field to Workspace records
 //  Defaults projectRoot to the previous shared workspace path for existing records
 //
-//  Created by Auto on 2025-11-27.
 //
 
 import Foundation

@@ -7,18 +7,15 @@
 //
 
 import Foundation
-import BlazeDBCore
+import BlazeDB
 
 print("=== Hello BlazeDB ===\n")
 
 do {
-    // STEP 1: Open database (zero config)
+    // STEP 1: Open database (one line, zero config)
     print("1. Opening database...")
-    let dbPath = FileManager.default.temporaryDirectory
-        .appendingPathComponent("hello-blazedb.db")
-    
-    let db = try BlazeDBClient(name: "hello", fileURL: dbPath, password: "Demo-Password-123!")
-    print("   ✓ Database opened: \(dbPath.path)\n")
+    let db = try BlazeDBClient.open(named: "hello-blazedb", password: "hello-blazedb-demo-2024!")
+    print("   Database opened\n")
     
     // STEP 2: Insert data
     print("2. Inserting records...")
@@ -37,7 +34,7 @@ do {
         ])
         let id = try db.insert(record)
         insertedIDs.append(id)
-        print("   ✓ Inserted: \(name) (ID: \(id.uuidString.prefix(8))...)")
+        print("   Inserted: \(name) (ID: \(id.uuidString.prefix(8))...)")
     }
     print()
     
@@ -50,10 +47,9 @@ do {
     
     print("   Found \(activeUsers.count) active users:")
     for user in activeUsers {
-        if let name = try? user.string("name"),
-           let age = try? user.int("age") {
-            print("   - \(name), age \(age)")
-        }
+        let name = user.string("name", default: "")
+        let age = user.int("age", default: 0)
+        print("   - \(name), age \(age)")
     }
     print()
     
@@ -61,9 +57,8 @@ do {
     print("4. Fetching record by ID...")
     if let firstID = insertedIDs.first,
        let record = try db.fetch(id: firstID) {
-        if let name = try? record.string("name") {
-            print("   ✓ Found: \(name)")
-        }
+        let name = record.string("name", default: "unknown")
+        print("   Found: \(name)")
     }
     print()
     
@@ -73,11 +68,11 @@ do {
         .appendingPathComponent("hello-export.blazedump")
     
     try db.export(to: exportPath)
-    print("   ✓ Exported to: \(exportPath.path)")
+    print("   Exported to: \(exportPath.path)")
     
     // Verify export
     let dumpHeader = try BlazeDBImporter.verify(exportPath)
-    print("   ✓ Export verified (schema version: \(dumpHeader.schemaVersion))")
+    print("   Export verified (schema version: \(dumpHeader.schemaVersion))")
     print()
     
     // STEP 6: Get statistics
@@ -93,17 +88,17 @@ do {
     print("   Status: \(health.status.rawValue)")
     if !health.reasons.isEmpty {
         for reason in health.reasons {
-            print("   ⚠️  \(reason)")
+            print("   Warning: \(reason)")
         }
     } else {
-        print("   ✓ All systems healthy")
+        print("   All systems healthy")
     }
     print()
     
     // STEP 8: Close database
     print("8. Closing database...")
     try db.close()
-    print("   ✓ Database closed cleanly\n")
+    print("   Database closed cleanly\n")
     
     print("=== Success! ===")
     print("BlazeDB is working correctly.")
@@ -113,10 +108,10 @@ do {
     print("  - Run 'blazedb doctor' for diagnostics")
     
 } catch {
-    print("\n❌ Error: \(error)")
+    print("\nError: \(error)")
     
     if let blazeError = error as? BlazeDBError {
-        print("\n💡 Guidance: \(blazeError.guidance)")
+        print("\nGuidance: \(blazeError.guidance)")
     }
     
     print("\nIf this failed, here's why:")

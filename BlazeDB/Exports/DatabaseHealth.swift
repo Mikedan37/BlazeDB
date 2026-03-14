@@ -80,7 +80,7 @@ public struct HealthAnalyzer {
         }
         
         // Check cache hit rate
-        if stats.cacheHitRate > 0 {
+        if stats.cacheHitRateAvailable {
             if stats.cacheHitRate < 0.5 {
                 status = status == .error ? .error : .warn
                 reasons.append("Cache hit rate is low (\(Int(stats.cacheHitRate * 100))%)")

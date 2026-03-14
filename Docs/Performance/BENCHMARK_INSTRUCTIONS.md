@@ -5,7 +5,7 @@
 Run this command in your terminal:
 
 ```bash
-cd /Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB
+cd ~/Developer/ProjectBlaze/BlazeDB
 swift test --filter ComprehensiveBenchmarks
 ```
 

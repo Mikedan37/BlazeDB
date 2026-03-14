@@ -1,0 +1,23 @@
+Test Suite 'Selected tests' started at 2026-03-14 02:07:05.408.
+Test Suite 'BlazeDBPackageTests.xctest' started at 2026-03-14 02:07:05.410.
+Test Suite 'PerformanceOptimizationTests' started at 2026-03-14 02:07:05.410.
+Test Case '-[BlazeDB_Tier3_Heavy.PerformanceOptimizationTests testCompression_StorageSavings]' started.
+Test Case '-[BlazeDB_Tier3_Heavy.PerformanceOptimizationTests testCompression_StorageSavings]' passed (0.146 seconds).
+Test Suite 'PerformanceOptimizationTests' passed at 2026-03-14 02:07:05.556.
+	 Executed 1 test, with 0 failures (0 unexpected) in 0.146 (0.146) seconds
+Test Suite 'BlazeDBPackageTests.xctest' passed at 2026-03-14 02:07:05.557.
+	 Executed 1 test, with 0 failures (0 unexpected) in 0.146 (0.146) seconds
+Test Suite 'Selected tests' passed at 2026-03-14 02:07:05.557.
+	 Executed 1 test, with 0 failures (0 unexpected) in 0.146 (0.148) seconds
+📊 Compression Performance:
+  Without compression: 85 KB
+  With compression: 167 KB
+  Savings: -96.4%
+◇ Test run started.
+↳ Testing Library Version: 1501
+↳ Target Platform: x86_64-apple-macos14.0
+✔ Test run with 0 tests in 0 suites passed after 0.001 seconds.
+
+Building for debugging...
+[0/18] Write swift-version--58304C5D6DBC2206.txt
+Build complete! (0.25s)

@@ -5,9 +5,6 @@
 //  Performance optimizations: Write-ahead batching, deferred fsync, parallel I/O
 //  Provides 2-5x faster writes and 10-100x faster batch operations
 //
-//  Created by Auto on 1/XX/25.
-//
-
 import Foundation
 #if canImport(CryptoKit)
 import CryptoKit
@@ -114,7 +111,7 @@ extension PageStore {
         } else {
             // Schedule delayed flush (10ms)
             // Capture writeAheadBatch (actor, Sendable) instead of self
-            let batch = writeAheadBatch
+            _ = writeAheadBatch  // Reference kept for potential future use
             Task.detached(priority: .utility) {
                 try? await Task.sleep(nanoseconds: 10_000_000)  // 10ms
                 // Note: Cannot call flushWriteAheadBatch from here without self

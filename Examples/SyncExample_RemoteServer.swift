@@ -24,7 +24,7 @@ struct SyncExample_RemoteServer {
         defer { try? FileManager.default.removeItem(at: tempDir) }
         
         let dbURL = tempDir.appendingPathComponent("server_db.blazedb")
-        let serverDB = try BlazeDBClient(name: "ServerDB", fileURL: dbURL, password: "serverpass123")
+        let serverDB = try BlazeDBClient.open(at: dbURL, password: "serverpass123")
         
         print("\n📦 Database created: \(dbURL.path)")
         

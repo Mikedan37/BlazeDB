@@ -1,0 +1,85 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 500" font-family="'JetBrains Mono', 'SF Mono', 'Fira Code', 'Cascadia Code', monospace">
+
+  <!-- Background -->
+  <rect width="720" height="500" fill="#FAFAF9"/>
+
+  <!-- Title block -->
+  <text x="360" y="34" text-anchor="middle" fill="#1C1917" font-size="13" font-weight="400" letter-spacing="3">THROUGHPUT  COMPARISON</text>
+  <line x1="140" y1="44" x2="580" y2="44" stroke="#D6D3D1" stroke-width="0.5"/>
+  <text x="360" y="62" text-anchor="middle" fill="#A8A29E" font-size="10" letter-spacing="1">GROWTH TEST ~1 GiB  ·  1 MB RECORDS  ·  BATCH 8</text>
+
+  <!-- Chart area -->
+  <g transform="translate(100, 90)">
+    <!-- Y axis -->
+    <line x1="60" y1="0" x2="60" y2="300" stroke="#1C1917" stroke-width="1"/>
+    <!-- X axis -->
+    <line x1="60" y1="300" x2="520" y2="300" stroke="#1C1917" stroke-width="1"/>
+
+    <!-- Tick marks and grid (light dashes) -->
+    <line x1="56" y1="0" x2="60" y2="0" stroke="#1C1917" stroke-width="1"/>
+    <line x1="60" y1="0" x2="520" y2="0" stroke="#E7E5E4" stroke-width="0.5" stroke-dasharray="2,4"/>
+    <text x="50" y="4" text-anchor="end" fill="#78716C" font-size="10">600</text>
+
+    <line x1="56" y1="50" x2="60" y2="50" stroke="#1C1917" stroke-width="1"/>
+    <line x1="60" y1="50" x2="520" y2="50" stroke="#E7E5E4" stroke-width="0.5" stroke-dasharray="2,4"/>
+    <text x="50" y="54" text-anchor="end" fill="#78716C" font-size="10">500</text>
+
+    <line x1="56" y1="100" x2="60" y2="100" stroke="#1C1917" stroke-width="1"/>
+    <line x1="60" y1="100" x2="520" y2="100" stroke="#E7E5E4" stroke-width="0.5" stroke-dasharray="2,4"/>
+    <text x="50" y="104" text-anchor="end" fill="#78716C" font-size="10">400</text>
+
+    <line x1="56" y1="150" x2="60" y2="150" stroke="#1C1917" stroke-width="1"/>
+    <line x1="60" y1="150" x2="520" y2="150" stroke="#E7E5E4" stroke-width="0.5" stroke-dasharray="2,4"/>
+    <text x="50" y="154" text-anchor="end" fill="#78716C" font-size="10">300</text>
+
+    <line x1="56" y1="200" x2="60" y2="200" stroke="#1C1917" stroke-width="1"/>
+    <line x1="60" y1="200" x2="520" y2="200" stroke="#E7E5E4" stroke-width="0.5" stroke-dasharray="2,4"/>
+    <text x="50" y="204" text-anchor="end" fill="#78716C" font-size="10">200</text>
+
+    <line x1="56" y1="250" x2="60" y2="250" stroke="#1C1917" stroke-width="1"/>
+    <line x1="60" y1="250" x2="520" y2="250" stroke="#E7E5E4" stroke-width="0.5" stroke-dasharray="2,4"/>
+    <text x="50" y="254" text-anchor="end" fill="#78716C" font-size="10">100</text>
+
+    <text x="50" y="304" text-anchor="end" fill="#78716C" font-size="10">0</text>
+
+    <!-- Y label -->
+    <text x="-4" y="150" text-anchor="middle" fill="#A8A29E" font-size="9" letter-spacing="1" transform="rotate(-90, -4, 150)">records/sec</text>
+
+    <!-- BlazeDB bar — solid fill, no gradients, no rounded corners -->
+    <rect x="130" y="237" width="80" height="63" fill="#D97706"/>
+    <!-- Crosshatch pattern for texture -->
+    <line x1="130" y1="247" x2="210" y2="247" stroke="#FAFAF9" stroke-width="0.3" opacity="0.3"/>
+    <line x1="130" y1="257" x2="210" y2="257" stroke="#FAFAF9" stroke-width="0.3" opacity="0.3"/>
+    <line x1="130" y1="267" x2="210" y2="267" stroke="#FAFAF9" stroke-width="0.3" opacity="0.3"/>
+    <line x1="130" y1="277" x2="210" y2="277" stroke="#FAFAF9" stroke-width="0.3" opacity="0.3"/>
+    <line x1="130" y1="287" x2="210" y2="287" stroke="#FAFAF9" stroke-width="0.3" opacity="0.3"/>
+
+    <!-- BlazeDB value + label -->
+    <text x="170" y="228" text-anchor="middle" fill="#1C1917" font-size="14" font-weight="500">~126</text>
+    <text x="170" y="320" text-anchor="middle" fill="#1C1917" font-size="11">BlazeDB</text>
+    <text x="170" y="335" text-anchor="middle" fill="#A8A29E" font-size="9">8.42 sec</text>
+
+    <!-- SQLite bar -->
+    <rect x="330" y="29" width="80" height="271" fill="#1C1917"/>
+
+    <!-- SQLite value + label -->
+    <text x="370" y="20" text-anchor="middle" fill="#1C1917" font-size="14" font-weight="500">~543</text>
+    <text x="370" y="320" text-anchor="middle" fill="#1C1917" font-size="11">SQLite</text>
+    <text x="370" y="335" text-anchor="middle" fill="#A8A29E" font-size="9">1.99 sec</text>
+
+    <!-- 4.3x annotation -->
+    <line x1="216" y1="268" x2="324" y2="268" stroke="#A8A29E" stroke-width="0.8" stroke-dasharray="3,2"/>
+    <line x1="216" y1="160" x2="324" y2="160" stroke="#A8A29E" stroke-width="0.8" stroke-dasharray="3,2"/>
+    <line x1="270" y1="268" x2="270" y2="160" stroke="#A8A29E" stroke-width="0.8"/>
+    <!-- Arrow tips -->
+    <path d="M266,264 L270,272 L274,264" fill="none" stroke="#A8A29E" stroke-width="0.8"/>
+    <path d="M266,164 L270,156 L274,164" fill="none" stroke="#A8A29E" stroke-width="0.8"/>
+    <text x="270" y="218" text-anchor="middle" fill="#78716C" font-size="10" font-weight="500">4.3×</text>
+  </g>
+
+  <!-- Bottom note — plain, no box -->
+  <line x1="80" y1="448" x2="640" y2="448" stroke="#E7E5E4" stroke-width="0.5"/>
+  <text x="360" y="470" text-anchor="middle" fill="#78716C" font-size="10">SQLite remains stronger in raw throughput. BlazeDB prioritizes Swift-native</text>
+  <text x="360" y="484" text-anchor="middle" fill="#78716C" font-size="10">design, encryption defaults, and transparent reproducible behavior.</text>
+  <text x="640" y="484" text-anchor="end" fill="#D6D3D1" font-size="9">blazedb.dev</text>
+</svg>

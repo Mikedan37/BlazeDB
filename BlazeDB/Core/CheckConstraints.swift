@@ -5,9 +5,6 @@
 //  Check constraints for data validation
 //  Optimized with compiled predicates and caching
 //
-//  Created by Auto on 1/XX/25.
-//
-
 import Foundation
 
 // MARK: - Check Constraint

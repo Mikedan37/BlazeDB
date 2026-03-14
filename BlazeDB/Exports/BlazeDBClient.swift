@@ -7,6 +7,9 @@ import CryptoKit
 #else
 import Crypto
 #endif
+#if canImport(Security)
+import Security
+#endif
 
 // MARK: - BlazeDocumentField serialization
 
@@ -58,6 +61,8 @@ public enum BlazeDBError: Error, LocalizedError, CustomStringConvertible {
     case diskFull(availableSpace: Int64? = nil)
     case permissionDenied(operation: String, path: String? = nil)
     case databaseLocked(operation: String, timeout: TimeInterval? = nil, path: URL? = nil)
+    /// Single-process only: another process (or a second handle in the same process) already holds the DB lock.
+    case concurrentProcessAccessNotSupported(operation: String, path: URL? = nil)
     case corruptedData(location: String, reason: String)
     case passwordTooWeak(requirements: String)
     case invalidData(reason: String)
@@ -111,7 +116,7 @@ public enum BlazeDBError: Error, LocalizedError, CustomStringConvertible {
             if !available.isEmpty {
                 msg += " Available indexes: \(available.joined(separator: ", "))."
             }
-            msg += " Create an index with: db.collection.createIndex(on: \"\(field)\") for better performance."
+            msg += " Create an index with: db.createIndex(on: \"\(field)\") for better performance."
             return msg
             
         case .invalidField(let name, let expected, let actual):
@@ -141,9 +146,17 @@ public enum BlazeDBError: Error, LocalizedError, CustomStringConvertible {
             if let timeout = timeout {
                 msg += " (timeout: \(timeout)s)"
             }
-            msg += ". Another process is using the database. Close other instances and try again."
             return msg
-            
+
+        case .concurrentProcessAccessNotSupported(let operation, let path):
+            var msg = "Concurrent process access is not supported (single-process only)."
+            msg += " Operation: \(operation)."
+            if let path = path {
+                msg += " Path: \(path.path)."
+            }
+            msg += " The database is held by another process or handle. Close other instances and try again."
+            return msg
+
         case .corruptedData(let location, let reason):
             return "Data corruption detected at \(location): \(reason). Database integrity may be compromised. Restore from backup if available."
             
@@ -174,18 +187,82 @@ public enum BlazeCorruptionError: Error {
 public final class BlazeDBClient: @unchecked Sendable {
     internal var collection: DynamicCollection
     public let name: String
-    nonisolated(unsafe) private static var cachedKey: SymmetricKey?
-    private let writeLock = NSLock()
+    
+    // Thread-safe per-database cached key storage
+    nonisolated(unsafe) private static var _cachedKeys: [String: SymmetricKey] = [:]
+    private static let cachedKeyLock = NSLock()
+    
+    private static func getCachedKey(for path: String) -> SymmetricKey? {
+        cachedKeyLock.lock()
+        defer { cachedKeyLock.unlock() }
+        return _cachedKeys[path]
+    }
+    
+    private static func setCachedKey(_ key: SymmetricKey, for path: String) {
+        cachedKeyLock.lock()
+        defer { cachedKeyLock.unlock() }
+        _cachedKeys[path] = key
+    }
+    
+    private let writeLock = NSRecursiveLock()
     private let transactionLogLock = NSLock()  // 🔒 Dedicated lock for WAL writes
     
-    /// Clear the cached encryption key (useful for testing)
+    /// Clear all cached encryption keys (useful for testing)
     /// Also clears KeyManager's password key cache to ensure fresh key derivation
     public static func clearCachedKey() {
-        cachedKey = nil
-        // Note: KeyManager.passwordKeyCache is private, so we can't clear it directly
-        // The cache will be naturally cleared when memory is freed
+        cachedKeyLock.lock()
+        defer { cachedKeyLock.unlock() }
+        _cachedKeys.removeAll()
+        KeyManager.clearKeyCache()
     }
-    private var inSafeWrite = false
+    
+    /// Clear cached key for a specific database path
+    public static func clearCachedKey(for path: String) {
+        cachedKeyLock.lock()
+        defer { cachedKeyLock.unlock() }
+        _cachedKeys.removeValue(forKey: path)
+        KeyManager.clearKeyCache()
+    }
+
+    private static func stablePathDigestHex(_ value: String) -> String {
+        let digest = SHA256.hash(data: Data(value.utf8))
+        return Data(digest).map { String(format: "%02x", $0) }.joined()
+    }
+
+    private static func kdfSaltURL(for fileURL: URL) -> URL {
+        fileURL.deletingPathExtension().appendingPathExtension("salt")
+    }
+
+    private static func loadOrCreateKDFSalt(for fileURL: URL) throws -> Data {
+        let saltURL = kdfSaltURL(for: fileURL)
+        let fm = FileManager.default
+
+        if fm.fileExists(atPath: saltURL.path) {
+            let existing = try Data(contentsOf: saltURL)
+            if !existing.isEmpty {
+                return existing
+            }
+        }
+
+        var bytes = [UInt8](repeating: 0, count: 16)
+        let result = SecRandomCopyBytes(kSecRandomDefault, bytes.count, &bytes)
+        guard result == errSecSuccess else {
+            throw BlazeDBError.transactionFailed("Failed to generate per-database KDF salt")
+        }
+
+        let salt = Data(bytes)
+        try salt.write(to: saltURL, options: .atomic)
+        return salt
+    }
+
+    // MARK: - Transaction Snapshot (V1.5: replaces file-copy transactions)
+    // On beginTransaction, we snapshot the indexMap. On rollback, we restore it.
+    // Pages written during the transaction become garbage (zeroed or overwritten later).
+    var transactionIndexMapSnapshot: [UUID: [Int]]?
+    var transactionRecordSnapshot: [UUID: BlazeDataRecord]?
+    var transactionSecondaryIndexesSnapshot: [String: [CompoundIndexKey: Set<UUID>]]?
+    var transactionRangeIndexFieldsSnapshot: [String] = []
+    var transactionPagesWritten: [Int] = []  // pages allocated during this tx
     
     // BLOCKER #2 FIX: Vacuum state management (internal for extensions)
     internal var isVacuuming: Bool = false
@@ -194,11 +271,28 @@ public final class BlazeDBClient: @unchecked Sendable {
     // For reloads
     internal let fileURL: URL
     
-    /// Internal flag tracking close state
-    internal var _isClosed: Bool = false
+    /// Thread-safe close state management
+    private var _isClosedValue: Bool = false
+    private let closedStateLock = NSLock()
+    
+    /// Internal flag tracking close state (thread-safe)
+    internal var _isClosed: Bool {
+        get {
+            closedStateLock.lock()
+            defer { closedStateLock.unlock() }
+            return _isClosedValue
+        }
+        set {
+            closedStateLock.lock()
+            defer { closedStateLock.unlock() }
+            _isClosedValue = newValue
+        }
+    }
+    
     internal let metaURL: URL
     internal let project: String
-    private let password: String  // SECURITY: Store password for audit
+    internal var password: String?  // Cleared on close to reduce plaintext lifetime
+    internal let kdfSalt: Data
     internal let encryptionKey: SymmetricKey
 
     // MARK: - Init
@@ -247,18 +341,44 @@ public final class BlazeDBClient: @unchecked Sendable {
         self.fileURL = fileURL
         self.metaURL = fileURL.deletingPathExtension().appendingPathExtension("meta")
         self.project = UserDefaults.standard.string(forKey: "activeProject") ?? project
-        self.password = password  // SECURITY: Store for audit
+        self.password = password
+        self.kdfSalt = try Self.loadOrCreateKDFSalt(for: fileURL)
 
-        // 🔑 Derive or reuse key
+        // Crash-safe transaction recovery must happen before PageStore opens the files.
+        let startupBase = fileURL.deletingPathExtension().lastPathComponent
+        let startupPrefixes: [String] = {
+            let stable = "\(startupBase)-\(Self.stablePathDigestHex(fileURL.path))"
+            var legacyHasher = Hasher()
+            legacyHasher.combine(fileURL.path)
+            let legacy = "\(startupBase)-\(String(abs(legacyHasher.finalize()), radix: 16))"
+            return stable == legacy ? [stable] : [stable, legacy]
+        }()
+        for startupPrefix in startupPrefixes {
+            let startupBackupURL = fileURL.deletingLastPathComponent().appendingPathComponent("txn_in_progress-\(startupPrefix).blazedb")
+            let startupMetaBackupURL = fileURL.deletingLastPathComponent().appendingPathComponent("txn_in_progress-\(startupPrefix).meta")
+            let startupStateURL = fileURL.deletingLastPathComponent().appendingPathComponent("txn_in_progress-\(startupPrefix).state")
+            try Self.restoreDurableTransactionBackupIfPresent(
+                fileURL: fileURL,
+                metaURL: self.metaURL,
+                backupURL: startupBackupURL,
+                metaBackupURL: startupMetaBackupURL,
+                stateURL: startupStateURL
+            )
+        }
+
+        // 🔑 Derive or reuse key.
+        // Use a path-independent password key so backups/restores remain portable
+        // across file locations on the same machine.
+        let dbPath = fileURL.path
         let key: SymmetricKey
-        if let cached = BlazeDBClient.cachedKey {
+        if let cached = BlazeDBClient.getCachedKey(for: dbPath) {
             key = cached
-            BlazeLogger.debug("Using cached encryption key")
+            BlazeLogger.debug("Using cached encryption key for \(name)")
         } else {
             do {
-                key = try KeyManager.getKey(from: .password(password))
-                BlazeDBClient.cachedKey = key
-                BlazeLogger.debug("✅ Encryption key derived and cached")
+                key = try KeyManager.getKey(from: password, salt: kdfSalt)
+                BlazeDBClient.setCachedKey(key, for: dbPath)
+                BlazeLogger.debug("✅ Encryption key derived from password and cached")
             } catch KeyManagerError.passwordTooWeak {
                 // SECURITY AUDIT: Enhanced password error with recommendations
                 let (strength, recommendations) = PasswordStrengthValidator.analyze(password)
@@ -279,42 +399,33 @@ public final class BlazeDBClient: @unchecked Sendable {
 
         // CRASH SAFETY: Recover from incomplete VACUUM AFTER initializing collection
         // Note: recoverFromVacuumCrashIfNeeded is an instance method, called after collection is created
-        // This will be called after collection initialization below
-        do {
-            // Recovery will be attempted after collection is initialized
-        } catch {
-            BlazeLogger.error("⚠️ VACUUM recovery check failed: \(error.localizedDescription)")
-            // Don't fail initialization if recovery check fails - continue anyway
-        }
+        // Recovery will be attempted after collection initialization below
         
         // Init store + collection
         do {
             // Verify files don't exist before initialization
             let mainExists = FileManager.default.fileExists(atPath: fileURL.path)
             let metaExists = FileManager.default.fileExists(atPath: metaURL.path)
-            print("🔷 [INIT] BlazeDBClient.init: Before PageStore init")
-            print("🔷 [INIT]   Main file exists: \(mainExists)")
-            print("🔷 [INIT]   Meta file exists: \(metaExists)")
-            BlazeLogger.debug("🔷 [INIT] Before PageStore init: main=\(mainExists), meta=\(metaExists)")
+            BlazeLogger.debug("BlazeDBClient.init: Before PageStore init: main=\(mainExists), meta=\(metaExists)")
             
             // Note: We don't remove existing meta files here - they should be loaded by DynamicCollection
             // Test cleanup helpers handle aggressive cleanup in test scenarios
             
-            print("🔷 [INIT] Creating PageStore...")
+            BlazeLogger.debug("Creating PageStore...")
             let store = try PageStore(fileURL: fileURL, key: key)
-            print("🔷 [INIT] ✅ PageStore created")
+            BlazeLogger.debug("PageStore created")
             
             // Check again after PageStore init
             let metaExistsAfter = FileManager.default.fileExists(atPath: metaURL.path)
-            print("🔷 [INIT] After PageStore init: meta=\(metaExistsAfter)")
-            BlazeLogger.debug("🔷 [INIT] After PageStore init: meta=\(metaExistsAfter)")
+            BlazeLogger.debug("After PageStore init: meta=\(metaExistsAfter)")
             
-            print("🔷 [INIT] Creating DynamicCollection...")
+            BlazeLogger.debug("Creating DynamicCollection...")
             self.collection = try DynamicCollection(store: store,
                                                     metaURL: metaURL,
                                                     project: self.project,
                                                     encryptionKey: key,
-                                                    password: password)  // Pass password for KDF auto-detection
+                                                    password: password,
+                                                    kdfSalt: kdfSalt)  // Pass password for KDF auto-detection
             BlazeLogger.debug("✅ DynamicCollection created")
             
             // Validate format version after collection is initialized
@@ -332,6 +443,9 @@ public final class BlazeDBClient: @unchecked Sendable {
                 if !nsError.userInfo.isEmpty {
                     BlazeLogger.error("❌ Error userInfo: \(nsError.userInfo)")
                 }
+            }
+            if let blazeError = error as? BlazeDBError {
+                throw blazeError
             }
             throw BlazeDBError.transactionFailed(errorMsg)
         }
@@ -351,14 +465,30 @@ public final class BlazeDBClient: @unchecked Sendable {
             // CRASH SAFETY: Recover from incomplete VACUUM first
             try recoverFromVacuumCrashIfNeeded()
             
+            // Update metrics: recovery started
+            metrics.setRecoveryState(.inProgress)
+            
             try replayTransactionLogIfNeeded()
             BlazeLogger.debug("✅ Transaction log replay complete")
+            
+            // Update metrics: recovery completed
+            metrics.setRecoveryState(.completed)
+            
+            // Log lifecycle event (structured)
+            BlazeLogger.info("📊 [LIFECYCLE] recovery_completed")
         } catch {
             let errorMsg = "❌ Recovery failed: \(error.localizedDescription)"
             BlazeLogger.error(errorMsg)
+            
+            // Update metrics: recovery failed
+            metrics.setRecoveryState(.failed)
+            
+            // Log lifecycle event (structured)
+            BlazeLogger.error("📊 [LIFECYCLE] recovery_failed reason=\(error.localizedDescription)")
+
             throw BlazeDBError.transactionFailed(errorMsg)
         }
-        
+
         BlazeLogger.info("✅ BlazeDB '\(name)' initialized successfully")
         
         #if !BLAZEDB_LINUX_CORE
@@ -423,67 +553,120 @@ public final class BlazeDBClient: @unchecked Sendable {
         // When BlazeDBClient is deallocated, the timer must be invalidated and removed from static dictionary
         // Otherwise, the timer will remain in memory indefinitely
         cleanupAutoVacuumTimer()
-        
-        // If not explicitly closed, attempt to flush and mark as closed
+
+        // Ensure deterministic resource release (file locks/handles) on deallocation.
         if !_isClosed {
-            do {
-                try persist()
-                BlazeLogger.debug("Auto-flushed unsaved changes in deinit for '\(name)'")
-            } catch {
-                BlazeLogger.error("Failed to flush in deinit for '\(name)': \(error)")
-            }
-            _isClosed = true
+            try? close()
         }
     }
 
     // MARK: - Transaction log
+
+    private var transactionArtifactPrefix: String {
+        let digest = Self.stablePathDigestHex(fileURL.path)
+        let base = fileURL.deletingPathExtension().lastPathComponent
+        return "\(base)-\(digest)"
+    }
 
     private var transactionLogURL: URL {
         fileURL.deletingLastPathComponent().appendingPathComponent("txn_log.json")
     }
 
     internal var transactionBackupURL: URL {
-        fileURL.deletingLastPathComponent().appendingPathComponent("txn_in_progress.blazedb")
+        fileURL.deletingLastPathComponent().appendingPathComponent("txn_in_progress-\(transactionArtifactPrefix).blazedb")
     }
 
     private var transactionMetaBackupURL: URL {
-        fileURL.deletingLastPathComponent().appendingPathComponent("txn_in_progress.meta")
+        fileURL.deletingLastPathComponent().appendingPathComponent("txn_in_progress-\(transactionArtifactPrefix).meta")
+    }
+
+    private var transactionStateURL: URL {
+        fileURL.deletingLastPathComponent().appendingPathComponent("txn_in_progress-\(transactionArtifactPrefix).state")
+    }
+
+    private struct DurableTransactionState: Codable {
+        let phase: String
+        let startedAtISO8601: String
+    }
+
+    private func writeDurableTransactionState(phase: String) throws {
+        let formatter = ISO8601DateFormatter()
+        let state = DurableTransactionState(phase: phase, startedAtISO8601: formatter.string(from: Date()))
+        let data = try JSONEncoder().encode(state)
+        try data.write(to: transactionStateURL, options: .atomic)
+    }
+
+    private func createDurableTransactionBackups() throws {
+        let fm = FileManager.default
+        if fm.fileExists(atPath: transactionBackupURL.path) {
+            try fm.removeItem(at: transactionBackupURL)
+        }
+        if fm.fileExists(atPath: transactionMetaBackupURL.path) {
+            try fm.removeItem(at: transactionMetaBackupURL)
+        }
+        try fm.copyItem(at: fileURL, to: transactionBackupURL)
+        if fm.fileExists(atPath: metaURL.path) {
+            try fm.copyItem(at: metaURL, to: transactionMetaBackupURL)
+        }
+    }
+
+    private func clearDurableTransactionArtifacts() {
+        let fm = FileManager.default
+        try? fm.removeItem(at: transactionBackupURL)
+        try? fm.removeItem(at: transactionMetaBackupURL)
+        try? fm.removeItem(at: transactionStateURL)
+    }
+
+    private static func restoreDurableTransactionBackupIfPresent(
+        fileURL: URL,
+        metaURL: URL,
+        backupURL: URL,
+        metaBackupURL: URL,
+        stateURL: URL
+    ) throws {
+        let fm = FileManager.default
+        let hasBackup = fm.fileExists(atPath: backupURL.path)
+        let hasState = fm.fileExists(atPath: stateURL.path)
+        guard hasBackup || hasState else { return }
+
+        let state: DurableTransactionState? = {
+            guard fm.fileExists(atPath: stateURL.path),
+                  let data = try? Data(contentsOf: stateURL),
+                  let decoded = try? JSONDecoder().decode(DurableTransactionState.self, from: data)
+            else { return nil }
+            return decoded
+        }()
+
+        if let state {
+            BlazeLogger.warn("Detected interrupted transaction state '\(state.phase)'; restoring pre-transaction backup")
+        } else {
+            BlazeLogger.warn("Detected interrupted transaction artifacts; restoring pre-transaction backup")
+        }
+
+        guard hasBackup else {
+            try? fm.removeItem(at: stateURL)
+            throw BlazeDBError.transactionFailed("Transaction state file exists but backup file is missing")
+        }
+
+        if fm.fileExists(atPath: fileURL.path) {
+            try fm.removeItem(at: fileURL)
+        }
+        try fm.copyItem(at: backupURL, to: fileURL)
+
+        if fm.fileExists(atPath: metaBackupURL.path) {
+            try? fm.removeItem(at: metaURL)
+            try fm.copyItem(at: metaBackupURL, to: metaURL)
+        }
+
+        try? fm.removeItem(at: backupURL)
+        try? fm.removeItem(at: metaBackupURL)
+        try? fm.removeItem(at: stateURL)
     }
 
     internal func appendToTransactionLog(_ operation: String, payload: [String: BlazeDocumentField]) {  // Internal for AsyncOptimized extension access
-        guard FileManager.default.fileExists(atPath: transactionBackupURL.path) else {
-            // Silently skip - this is expected for non-transactional operations
-            return
-        }
-        let entry: [String: Any] = [
-            "operation": operation,
-            "payload": payload.mapValues { $0.serializedString() },
-            "timestamp": Date().iso8601
-        ]
-        
-        // 🔒 Thread-safe WAL writes
-        transactionLogLock.lock()
-        defer { transactionLogLock.unlock() }
-        
-        do {
-            let data = try JSONSerialization.data(withJSONObject: entry, options: [])
-            if FileManager.default.fileExists(atPath: transactionLogURL.path) {
-                let handle = try FileHandle(forWritingTo: transactionLogURL)
-                handle.seekToEndOfFile()
-                if let newlineData = "\n".data(using: .utf8) {
-                    handle.write(data + newlineData)
-                } else {
-                    handle.write(data)  // Fallback (should never happen)
-                }
-                try handle.close()
-            } else {
-                try data.write(to: transactionLogURL)
-                try FileManager.default.setAttributes([.posixPermissions: 0o600],
-                                                     ofItemAtPath: transactionLogURL.path)
-            }
-        } catch {
-            BlazeLogger.error("Failed to log transaction: \(error)")
-        }
+        // V1.5: Transaction logging is now a no-op.
+        // Crash safety is provided by the WAL (WriteAheadLog) at the page level.
+        // Transaction rollback uses in-memory indexMap snapshots.
     }
 
     /// Replays any uncommitted transactions from the write-ahead log (WAL).
@@ -493,40 +676,14 @@ public final class BlazeDBClient: @unchecked Sendable {
     ///
     /// - Throws: BlazeDBError if replay fails
     public func replayTransactionLogIfNeeded() throws {
+        // V1.5: Clean up legacy transaction log files if they exist.
+        // New WAL replay happens at the PageStore level.
         let logURL = transactionLogURL
-        guard FileManager.default.fileExists(atPath: logURL.path) else {
-            return
+        if FileManager.default.fileExists(atPath: logURL.path) {
+            try? FileManager.default.removeItem(at: logURL)
+            BlazeLogger.info("Cleaned up legacy transaction log")
         }
-        
-        guard let data = try? Data(contentsOf: logURL),
-              let contents = String(data: data, encoding: .utf8) else {
-            return
-        }
-
-        for entryString in contents.split(separator: "\n").map(String.init) {
-            guard let entryData = entryString.data(using: .utf8) else { continue }
-            do {
-                guard let json = try JSONSerialization.jsonObject(with: entryData) as? [String: Any],
-                      let op = json["operation"] as? String,
-                      let payload = json["payload"] as? [String: String] else { continue }
-                let restored = payload.mapValues { BlazeDocumentField.string($0) }
-                switch op {
-                case "insert": _ = try? insert(BlazeDataRecord(restored))
-                case "update":
-                    if case let .string(idStr)? = restored["id"], let id = UUID(uuidString: idStr) {
-                        try? update(id: id, with: BlazeDataRecord(restored))
-                    }
-                case "delete":
-                    if case let .string(idStr)? = restored["id"], let id = UUID(uuidString: idStr) {
-                        try? delete(id: id)
-                    }
-                default: continue
-                }
-            } catch {
-                BlazeLogger.warn("Skipping corrupted log entry: \(error)")
-            }
-        }
-        try? FileManager.default.removeItem(at: logURL)
+        // Leave active durable transaction artifacts alone unless explicitly restored/cleared.
     }
 
     // MARK: - CRUD
@@ -736,15 +893,14 @@ public final class BlazeDBClient: @unchecked Sendable {
             var deletedCount = 0
             try performSafeWrite {
                 #if !BLAZEDB_LINUX_CORE
-                // Use optimized batch delete (much faster!)
-                try collection.deleteBatch(ids)
-                deletedCount = ids.count
+                deletedCount = try collection.deleteBatch(ids)
                 #else
-                // Linux: Fallback to individual deletes
                 for id in ids {
-                    try collection.delete(id: id)
+                    if (try? collection.fetch(id: id)) != nil {
+                        try collection.delete(id: id)
+                        deletedCount += 1
+                    }
                 }
-                deletedCount = ids.count
                 #endif
                 
                 // Log to transaction log
@@ -813,10 +969,18 @@ public final class BlazeDBClient: @unchecked Sendable {
             BlazeLogger.debug("Upsert: Updated existing record \(id)")
             return false
         } catch BlazeDBError.recordNotFound {
-            // Record doesn't exist - insert it
-            try insert(data, id: id)
-            BlazeLogger.debug("Upsert: Inserted new record \(id)")
-            return true
+            // Record doesn't exist - try insert
+            do {
+                try insert(data, id: id)
+                BlazeLogger.debug("Upsert: Inserted new record \(id)")
+                return true
+            } catch BlazeDBError.recordExists {
+                // TOCTOU race: another thread inserted between our fetch and insert.
+                // Retry as update.
+                try update(id: id, with: data)
+                BlazeLogger.debug("Upsert: Updated record \(id) after insert race")
+                return false
+            }
         }
     }
 
@@ -835,16 +999,26 @@ public final class BlazeDBClient: @unchecked Sendable {
     public func fetch(id: UUID) throws -> BlazeDataRecord? {
         try ensureNotClosed()
         let startTime = Date()
-        
+
         do {
             let record = try collection.fetch(id: id)
-            
+
+            // Filter out soft-deleted records
+            if let record = record,
+               let isDeleted = record.storage["isDeleted"]?.boolValue, isDeleted {
+                #if !BLAZEDB_LINUX_CORE
+                let duration = Date().timeIntervalSince(startTime) * 1000
+                telemetry.record(operation: "fetch", duration: duration, success: true, recordCount: 0)
+                #endif
+                return nil
+            }
+
             #if !BLAZEDB_LINUX_CORE
             // Track telemetry
             let duration = Date().timeIntervalSince(startTime) * 1000
             telemetry.record(operation: "fetch", duration: duration, success: true, recordCount: record == nil ? 0 : 1)
             #endif
-            
+
             return record
         } catch {
             #if !BLAZEDB_LINUX_CORE
@@ -869,17 +1043,22 @@ public final class BlazeDBClient: @unchecked Sendable {
     /// print("Total records: \(allRecords.count)")
     /// ```
     public func fetchAll() throws -> [BlazeDataRecord] {
+        try ensureNotClosed()
         let startTime = Date()
-        
+
         do {
-            let records = try collection.fetchAll()
-            
+            let records = try collection.fetchAll().filter { record in
+                // Exclude soft-deleted records
+                guard let isDeleted = record.storage["isDeleted"]?.boolValue else { return true }
+                return !isDeleted
+            }
+
             #if !BLAZEDB_LINUX_CORE
             // Track telemetry
             let duration = Date().timeIntervalSince(startTime) * 1000
             telemetry.record(operation: "fetchAll", duration: duration, success: true, recordCount: records.count)
             #endif
-            
+
             return records
         } catch {
             #if !BLAZEDB_LINUX_CORE
@@ -895,6 +1074,7 @@ public final class BlazeDBClient: @unchecked Sendable {
     /// - Parameter field: Field name to get unique values for
     /// - Returns: Array of unique field values
     public func distinct(field: String) throws -> [BlazeDocumentField] {
+        try ensureNotClosed()
         let records = try collection.fetchAll()
         let values = records.compactMap { $0.storage[field] }
         let uniqueValues = Array(Set(values))
@@ -910,20 +1090,23 @@ public final class BlazeDBClient: @unchecked Sendable {
     ///   - limit: Maximum number of records to return
     /// - Returns: Array of records for the requested page
     public func fetchPage(offset: Int, limit: Int) throws -> [BlazeDataRecord] {
-        try collection.fetchPage(offset: offset, limit: limit)
+        try ensureNotClosed()
+        return try collection.fetchPage(offset: offset, limit: limit)
     }
     
     /// Get total count of records without loading them all
     /// - Returns: Total number of records
-    public func count() -> Int {
-        collection.count()
+    public func count() throws -> Int {
+        try ensureNotClosed()
+        return collection.count()
     }
     
     /// Fetch multiple records by their IDs
     /// - Parameter ids: Array of UUIDs to fetch
     /// - Returns: Dictionary mapping UUID to record
     public func fetchBatch(ids: [UUID]) throws -> [UUID: BlazeDataRecord] {
-        try collection.fetchBatch(ids: ids)
+        try ensureNotClosed()
+        return try collection.fetchBatch(ids: ids)
     }
 
     /// Updates an existing record by its UUID.
@@ -1109,7 +1292,10 @@ public final class BlazeDBClient: @unchecked Sendable {
     /// // Call purge() to permanently remove all soft-deleted records
     /// ```
     public func softDelete(id: UUID) throws {
-        try collection.update(id: id, with: BlazeDataRecord(["isDeleted": .bool(true)]))
+        try ensureNotClosed()
+        try performSafeWrite {
+            try collection.update(id: id, with: BlazeDataRecord(["isDeleted": .bool(true)]))
+        }
     }
 
     /// Permanently removes all soft-deleted records from disk.
@@ -1126,7 +1312,10 @@ public final class BlazeDBClient: @unchecked Sendable {
     /// try db.purge()  // Both records now permanently deleted
     /// ```
     public func purge() throws {
-        try collection.purge()
+        try ensureNotClosed()
+        try performSafeWrite {
+            try collection.purge()
+        }
     }
 
     public func rawDump() throws -> [Int: Data] {
@@ -1150,6 +1339,7 @@ public final class BlazeDBClient: @unchecked Sendable {
     }
     
     /// Alias for persist() - flushes pending metadata to disk
+    @available(*, deprecated, message: "Use persist() instead. persist() syncs data to disk and finalizes the transaction log. flush() did the same sync but left the transaction log in place, which is rarely the intended behavior.")
     public func flush() throws {
         try collection.persist()
     }
@@ -1223,77 +1413,47 @@ public final class BlazeDBClient: @unchecked Sendable {
 
     // MARK: - Safe Write / Rollback
 
+    /// Execute a write-critical section under the client write gate.
+    ///
+    /// Contract:
+    /// - `block` MUST remain synchronous.
+    /// - Do not introduce `await` or async hop semantics while the lock is held.
+    ///
+    /// Why:
+    /// `NSRecursiveLock` recursion is thread-based, not task-based. If this critical
+    /// section ever awaited and resumed on a different thread, recursion assumptions
+    /// would no longer hold.
+    ///
+    /// Note:
+    /// The non-async, non-escaping closure type gives compile-time protection against
+    /// direct `await` usage inside this critical section.
     internal func performSafeWrite(_ block: () throws -> Void) throws {
-        if inSafeWrite { try block(); return }
+        try ensureNotClosed()
         writeLock.lock()
-        inSafeWrite = true
-        defer { inSafeWrite = false; writeLock.unlock() }
+        defer { writeLock.unlock() }
 
-        let dir = fileURL.deletingLastPathComponent()
-        // Use unique backup names to avoid concurrent write collisions
-        let backupID = UUID().uuidString
-        let backupURL = dir.appendingPathComponent("transaction_backup_\(backupID).blazedb")
-        let backupMetaURL = dir.appendingPathComponent("transaction_backup_\(backupID).meta")
+        // When an explicit transaction is active, rollback is handled by
+        // the transaction snapshot. Skip per-write overhead.
+        if transactionIndexMapSnapshot != nil {
+            try block()
+            QueryCache.shared.notifyWrite()
+            return
+        }
 
-        // 🔑 Backup both db and meta *before the write begins* (only if they exist)
-        if FileManager.default.fileExists(atPath: fileURL.path) {
-            try FileManager.default.copyItem(at: fileURL, to: backupURL)
-        }
-        if FileManager.default.fileExists(atPath: metaURL.path) {
-            try FileManager.default.copyItem(at: metaURL, to: backupMetaURL)
-        }
+        // For non-transactional writes: snapshot indexMap for rollback on error
+        let indexMapBackup = collection.indexMap
 
         do {
             try block()
-            // Success → clean up
-            try? FileManager.default.removeItem(at: backupURL)
-            try? FileManager.default.removeItem(at: backupMetaURL)
+            // Invalidate query cache after successful write
+            QueryCache.shared.notifyWrite()
         } catch {
-            BlazeLogger.error("Rolling back to backup due to error: \(error)")
-            var rollbackSucceeded = false
-            
-            // Restore DB
-            do {
-                if FileManager.default.fileExists(atPath: backupURL.path) {
-                    try FileManager.default.removeItem(at: fileURL)
-                    try FileManager.default.copyItem(at: backupURL, to: fileURL)
-                }
-                
-                // Restore meta
-                if FileManager.default.fileExists(atPath: backupMetaURL.path) {
-                    try FileManager.default.removeItem(at: metaURL)
-                    try FileManager.default.copyItem(at: backupMetaURL, to: metaURL)
-                }
-                
-                rollbackSucceeded = true
-            } catch let rollbackError {
-                BlazeLogger.error("❌ CRITICAL: Failed to restore from backup: \(rollbackError)")
-                BlazeLogger.error("❌ Backup files may still exist: \(backupURL.lastPathComponent), \(backupMetaURL.lastPathComponent)")
-                // Continue to try reloadFromDisk even if rollback failed
-            }
-
-            // Reload in-memory state to match restored files
-            do {
-                try reloadFromDisk()
-            } catch {
-                BlazeLogger.warn("Meta layout invalid after rollback, regenerating fresh layout...")
-                let store = try PageStore(fileURL: fileURL, key: encryptionKey)
-                let freshLayout = try StorageLayout.rebuild(from: store)
-                self.collection = DynamicCollection(
-                    store: store,
-                    layout: freshLayout,
-                    metaURL: metaURL,
-                    project: project,
-                    encryptionKey: encryptionKey
-                )
-            }
-            
-            // Clean up backup files after rollback (best effort)
-            if rollbackSucceeded {
-                try? FileManager.default.removeItem(at: backupURL)
-                try? FileManager.default.removeItem(at: backupMetaURL)
-            }
-            
+            BlazeLogger.error("Rolling back write due to error: \(error)")
+            // Restore indexMap to pre-write state
+            collection.indexMap = indexMapBackup
+            collection.store.pageCache.clear()
+            collection.recordCache.clear()
+            QueryCache.shared.clearAll()
             throw error
         }
     }
@@ -1309,14 +1469,21 @@ public final class BlazeDBClient: @unchecked Sendable {
             if FileManager.default.fileExists(atPath: metaURL.path) {
                 // Use loadSecure to handle HMAC-signed metadata files
                 BlazeLogger.debug("Attempting to load layout from meta file: \(metaURL.path)")
-                let layout = try StorageLayout.loadSecure(from: metaURL, signingKey: encryptionKey)
+                let layout = try StorageLayout.loadSecure(
+                    from: metaURL,
+                    signingKey: encryptionKey,
+                    password: password,
+                    salt: kdfSalt
+                )
                 BlazeLogger.debug("Successfully loaded layout: \(layout.indexMap.count) records in indexMap")
                 self.collection = DynamicCollection(
                     store: store,
                     layout: layout,
                     metaURL: metaURL,
                     project: project,
-                    encryptionKey: encryptionKey
+                    encryptionKey: encryptionKey,
+                    password: password,
+                    kdfSalt: kdfSalt
                 )
                 BlazeLogger.info("✅ Successfully reloaded collection from disk")
                 return
@@ -1342,7 +1509,9 @@ public final class BlazeDBClient: @unchecked Sendable {
             layout: rebuilt,
             metaURL: metaURL,
             project: project,
-            encryptionKey: encryptionKey
+            encryptionKey: encryptionKey,
+            password: password,
+            kdfSalt: kdfSalt
         )
     }
 
@@ -1366,37 +1535,38 @@ public final class BlazeDBClient: @unchecked Sendable {
     /// ## Important
     /// - Only one transaction can be active at a time
     /// - Always call commit or rollback to clean up transaction state
-    /// - Transactions provide full ACID guarantees
+    /// - Transactions provide ACID guarantees and crash-safe rollback semantics.
     public func beginTransaction() throws {
-        if FileManager.default.fileExists(atPath: transactionBackupURL.path) {
+        try ensureNotClosed()
+        guard transactionIndexMapSnapshot == nil else {
             throw BlazeDBError.transactionFailed("Transaction already in progress")
         }
-        
-        // CRITICAL: Persist all in-memory changes before creating backup
-        // This ensures the backup includes all committed data
+
+        // Persist all in-memory changes before snapshotting
         try persist()
-        
-        // Ensure store is fully synced before backup
         try collection.store.synchronize()
-        
-        // Ensure files are fully synced before backup
-        if let fileHandle = FileHandle(forWritingAtPath: fileURL.path) {
-            fileHandle.synchronizeFile()
-            fileHandle.closeFile()
-        }
-        if let metaHandle = FileHandle(forWritingAtPath: metaURL.path) {
-            metaHandle.synchronizeFile()
-            metaHandle.closeFile()
-        }
-        
-        try FileManager.default.copyItem(at: fileURL, to: transactionBackupURL)
-        // Also backup meta file if it exists
-        if FileManager.default.fileExists(atPath: metaURL.path) {
-            if FileManager.default.fileExists(atPath: transactionMetaBackupURL.path) {
-                try FileManager.default.removeItem(at: transactionMetaBackupURL)
+        try collection.store.checkpoint()
+
+        // Create crash-safe backup and mark transaction as open.
+        try createDurableTransactionBackups()
+        try writeDurableTransactionState(phase: "open")
+
+        // Snapshot the indexMap (value-type copy — O(1) COW)
+        transactionIndexMapSnapshot = collection.indexMap
+        transactionSecondaryIndexesSnapshot = collection.secondaryIndexes
+        transactionRangeIndexFieldsSnapshot = collection.btreeIndexManager.indexNames
+        // Snapshot baseline records so rollback can restore updated/deleted rows.
+        var baselineRecords: [UUID: BlazeDataRecord] = [:]
+        for id in collection.indexMap.keys {
+            if let record = try collection.fetch(id: id) {
+                baselineRecords[id] = record
             }
-            try FileManager.default.copyItem(at: metaURL, to: transactionMetaBackupURL)
         }
+        transactionRecordSnapshot = baselineRecords
+        transactionPagesWritten = []
+
+        metrics.incrementTransactionsStarted()
+        BlazeLogger.debug("Transaction started (indexMap snapshot: \(collection.indexMap.count) records)")
     }
 
     /// Commits the current transaction, making all changes permanent.
@@ -1414,22 +1584,33 @@ public final class BlazeDBClient: @unchecked Sendable {
     /// try db.commitTransaction()  // Both operations persisted atomically
     /// ```
     public func commitTransaction() throws {
-        if FileManager.default.fileExists(atPath: transactionBackupURL.path) {
-            // Persist current in-memory state to disk BEFORE deleting backups
-            // This ensures the committed state is saved
-            try persist()
-            BlazeLogger.info("Persisted transaction changes to disk")
-            
-            // Now delete the backup files (transaction is committed)
-            try FileManager.default.removeItem(at: transactionBackupURL)
-            if FileManager.default.fileExists(atPath: transactionMetaBackupURL.path) {
-                try FileManager.default.removeItem(at: transactionMetaBackupURL)
-            }
-            
-            BlazeLogger.info("Transaction committed successfully")
-        } else {
+        try ensureNotClosed()
+        guard transactionIndexMapSnapshot != nil else {
             throw BlazeDBError.transactionFailed("No transaction in progress")
         }
+
+        do {
+            // Enter committing phase before durable write; any crash during commit rolls back.
+            try writeDurableTransactionState(phase: "committing")
+
+            // Persist committed state to disk and checkpoint WAL.
+            try persist()
+            try collection.store.synchronize()
+            try collection.store.checkpoint()
+        } catch {
+            throw BlazeDBError.transactionFailed("Commit failed before transaction could be finalized", underlyingError: error)
+        }
+
+        // Discard snapshot — changes are now permanent
+        transactionIndexMapSnapshot = nil
+        transactionRecordSnapshot = nil
+        transactionSecondaryIndexesSnapshot = nil
+        transactionRangeIndexFieldsSnapshot = []
+        transactionPagesWritten = []
+        clearDurableTransactionArtifacts()
+
+        metrics.incrementTransactionsCommitted()
+        BlazeLogger.info("Transaction committed successfully")
     }
 
     /// Rolls back the current transaction, discarding all changes.
@@ -1450,141 +1631,60 @@ public final class BlazeDBClient: @unchecked Sendable {
     /// }
     /// ```
     public func rollbackTransaction() throws {
-        if FileManager.default.fileExists(atPath: transactionBackupURL.path) {
-            // NOTE: We don't clear the key cache here because we're using the same encryptionKey
-            // instance variable that was set during init. Clearing the cache could cause
-            // key derivation issues if the key needs to be re-derived.
-            // The encryptionKey instance variable should be consistent throughout the object's lifetime.
-            
-            // Extract index definitions from backup BEFORE restoring (backup will be deleted later)
-            var preservedIndexDefinitions: [String: [String]] = [:]
-            if FileManager.default.fileExists(atPath: transactionMetaBackupURL.path) {
-                do {
-                    let backupData = try Data(contentsOf: transactionMetaBackupURL)
-                    let decoder = JSONDecoder()
-                    if let secureLayout = try? decoder.decode(StorageLayout.SecureLayout.self, from: backupData) {
-                        preservedIndexDefinitions = secureLayout.layout.secondaryIndexDefinitions
-                        BlazeLogger.info("✅ Preserved \(preservedIndexDefinitions.count) index definitions from backup")
-                    }
-                } catch {
-                    BlazeLogger.warn("⚠️ Could not extract index definitions from backup: \(error)")
-                }
-            }
-            
-            try FileManager.default.removeItem(at: fileURL)
-            try FileManager.default.copyItem(at: transactionBackupURL, to: fileURL)
-            if FileManager.default.fileExists(atPath: transactionMetaBackupURL.path) {
-                // Replace meta with its backup
-                try? FileManager.default.removeItem(at: metaURL)
-                try FileManager.default.copyItem(at: transactionMetaBackupURL, to: metaURL)
-            }
-            
-            // Ensure restored files are fully synced before loading
-            if let fileHandle = FileHandle(forWritingAtPath: fileURL.path) {
-                fileHandle.synchronizeFile()
-                fileHandle.closeFile()
-            }
-            if let metaHandle = FileHandle(forWritingAtPath: metaURL.path) {
-                metaHandle.synchronizeFile()
-                metaHandle.closeFile()
-            }
-            
-            // NOTE: Thread.sleep is intentional here. This synchronous function must block
-            // to ensure file system operations complete before proceeding. File system
-            // synchronization requires blocking waits; converting to async would require
-            // API changes and may not provide benefits for this use case.
-            Thread.sleep(forTimeInterval: 0.05)
-            
-            try FileManager.default.removeItem(at: transactionBackupURL)
-            if FileManager.default.fileExists(atPath: transactionMetaBackupURL.path) {
-                try? FileManager.default.removeItem(at: transactionMetaBackupURL)
-            }
-            do {
-                // CRITICAL: Store reference to old collection to reset its unsavedChanges
-                // This prevents the old instance from saving on deinit and overwriting the restored file
-                let oldCollection = self.collection
-                
-                try reloadFromDisk()
-                
-                // Reset unsavedChanges on old collection to prevent it from saving on deinit
-                // The old collection will be deallocated, but we don't want it to overwrite the restored file
-                oldCollection.unsavedChanges = 0
-                
-                // Clear caches after rollback to ensure fresh data is read
-                #if !BLAZEDB_LINUX_CORE
-                collection.clearFetchAllCache()
-                #endif
-                RecordCache.shared.clear()
-                BlazeLogger.info("✅ Rollback completed successfully - layout reloaded from backup")
-            } catch let reloadError {
-                BlazeLogger.warn("⚠️ Meta layout invalid after rollback, regenerating fresh layout... Error: \(reloadError)")
-                
-                // Try to rebuild from the restored data file using the proper rebuild logic
-                // that decodes BlazeBinary records (not the simple StorageLayout.rebuild)
-                let store = try PageStore(fileURL: fileURL, key: encryptionKey)
-                // Create a new DynamicCollection which will rebuild the layout properly
-                // by decoding BlazeBinary records to extract IDs
-                let tempCollection = try DynamicCollection(
-                    store: store,
-                    metaURL: metaURL,
-                    project: project,
-                    encryptionKey: encryptionKey
-                )
-                
-                // Restore the preserved index definitions
-                if !preservedIndexDefinitions.isEmpty {
-                    tempCollection.secondaryIndexDefinitions = preservedIndexDefinitions
-                    // Rebuild the indexes from the data (using same normalization as createIndex)
-                    for (indexKey, fields) in preservedIndexDefinitions {
-                        BlazeLogger.info("Rebuilding index '\(indexKey)' on fields: \(fields.joined(separator: ", "))")
-                        var rebuilt: [CompoundIndexKey: Set<UUID>] = [:]
-                        for id in tempCollection.indexMap.keys {
-                            if let record = try? tempCollection._fetchNoSync(id: id) {
-                                let doc = record.storage
-                                // Use same normalization logic as createIndex() to ensure key format matches
-                                let rawKey = CompoundIndexKey.fromFields(doc, fields: fields)
-                                let normalizedComponents = rawKey.components.map { component -> AnyBlazeCodable in
-                                    switch component {
-                                    case .string(let s): return AnyBlazeCodable(s)
-                                    case .int(let i): return AnyBlazeCodable(i)
-                                    case .double(let d): return AnyBlazeCodable(d)
-                                    case .bool(let b): return AnyBlazeCodable(b)
-                                    case .date(let d): return AnyBlazeCodable(d)
-                                    case .uuid(let u): return AnyBlazeCodable(u)
-                                    case .data(let data): return AnyBlazeCodable(data)
-                                    case .vector(let v): return AnyBlazeCodable(v)
-                                    case .null: return AnyBlazeCodable("")  // Use empty string as sentinel for null
-                                    case .array: return AnyBlazeCodable("")  // Arrays not supported in compound indexes
-                                    case .dictionary: return AnyBlazeCodable("")  // Dictionaries not supported in compound indexes
-                                    }
-                                }
-                                let normalizedKey = CompoundIndexKey(normalizedComponents)
-                                rebuilt[normalizedKey, default: []].insert(id)
-                            }
-                        }
-                        tempCollection.secondaryIndexes[indexKey] = rebuilt
-                    }
-                    // Save the layout with the restored index definitions
-                    try tempCollection.saveLayout()
-                    BlazeLogger.info("✅ Rebuilt and saved indexes after rollback")
-                }
-                
-                // CRITICAL: Reset unsavedChanges on old collection before replacing it
-                // This prevents the old instance from saving on deinit and overwriting the rebuilt file
-                let oldCollection = self.collection
-                oldCollection.unsavedChanges = 0
-                
-                self.collection = tempCollection
-                // Clear caches after rebuild
-                #if !BLAZEDB_LINUX_CORE
-                collection.clearFetchAllCache()
-                #endif
-                RecordCache.shared.clear()
-                BlazeLogger.info("✅ Rollback completed - layout rebuilt from data file")
-            }
-        } else {
+        try ensureNotClosed()
+        guard let snapshot = transactionIndexMapSnapshot else {
             throw BlazeDBError.transactionFailed("No transaction to roll back")
         }
+        let baselineRecords = transactionRecordSnapshot ?? [:]
+
+        // Restore indexMap to pre-transaction state
+        collection.indexMap = snapshot
+        if let secondarySnapshot = transactionSecondaryIndexesSnapshot {
+            collection.secondaryIndexes = secondarySnapshot
+        }
+
+        // Restore pre-transaction payloads for records that still exist.
+        // Without this, in-place updates can survive rollback even if indexMap is restored.
+        for (id, pages) in snapshot {
+            guard let pageIndex = pages.first, let baseline = baselineRecords[id] else { continue }
+            let encoded = try BlazeBinaryEncoder.encodeOptimized(baseline)
+            try collection.store.writePage(index: pageIndex, data: encoded)
+        }
+
+        // Zero out pages that were allocated during this transaction
+        // (they contain data that should not be visible after rollback)
+        for pageIndex in transactionPagesWritten {
+            try? collection.store.deletePage(index: pageIndex)
+        }
+
+        // Clear caches so reads reflect rolled-back state
+        collection.store.pageCache.clear()
+        collection.recordCache.clear()
+        collection.btreeIndexManager.clearAll()
+        for field in transactionRangeIndexFieldsSnapshot {
+            _ = collection.btreeIndexManager.getOrCreateIndex(for: field)
+        }
+        for (id, record) in baselineRecords {
+            collection.btreeIndexManager.indexRecord(id: id, fields: record.storage)
+        }
+        #if !BLAZEDB_LINUX_CORE
+        collection.clearFetchAllCache()
+        #endif
+
+        // Persist the rolled-back layout
+        try collection.saveLayout()
+        try collection.store.synchronize()
+
+        // Discard transaction state
+        transactionIndexMapSnapshot = nil
+        transactionRecordSnapshot = nil
+        transactionSecondaryIndexesSnapshot = nil
+        transactionRangeIndexFieldsSnapshot = []
+        transactionPagesWritten = []
+        clearDurableTransactionArtifacts()
+
+        metrics.incrementTransactionsAborted()
+        BlazeLogger.info("Transaction rolled back (indexMap restored to \(snapshot.count) records)")
     }
 
     // MARK: - Migration
@@ -1614,19 +1714,35 @@ extension BlazeDBClient {
         var issues: [IntegrityIssue] = []
         let layout: StorageLayout
         do {
-            layout = try StorageLayout.load(from: metaURL)
+            if FileManager.default.fileExists(atPath: metaURL.path) {
+                layout = try StorageLayout.loadSecure(
+                    from: metaURL,
+                    signingKey: encryptionKey,
+                    password: password,
+                    salt: kdfSalt
+                )
+            } else {
+                issues.append(.init(severity: .warning, message: "Metadata file is missing; layout validation skipped"))
+                return ValidationReport(ok: true, issues: issues)
+            }
         } catch {
             issues.append(.init(severity: .error, message: "Failed to load layout: \(error)"))
             return ValidationReport(ok: false, issues: issues)
         }
-        if !layout.checksumMatchesStoredValue() {
-            issues.append(.init(severity: .warning, message: "Layout checksum mismatch"))
+        if layout.version < 1 {
+            issues.append(.init(severity: .error, message: "Unsupported layout version: \(layout.version)"))
+        }
+        if layout.nextPageIndex < 0 {
+            issues.append(.init(severity: .error, message: "Invalid nextPageIndex: \(layout.nextPageIndex)"))
+        }
+        if layout.encodingFormat.isEmpty {
+            issues.append(.init(severity: .warning, message: "Layout encoding format is empty"))
         }
         for field in layout.fields where !field.isValidType() {
             issues.append(.init(severity: .warning, message: "Invalid field type: \(field.typeName)"))
         }
-        if !layout.headerIsValid() {
-            issues.append(.init(severity: .warning, message: "Header invalid"))
+        for (id, pages) in layout.indexMap where pages.isEmpty {
+            issues.append(.init(severity: .warning, message: "Record \(id.uuidString) has no page mapping"))
         }
         return ValidationReport(ok: !issues.contains { $0.severity == .error }, issues: issues)
     }
@@ -1656,20 +1772,20 @@ extension BlazeDBClient {
     /// }
     /// ```
     public func performSecurityAudit() -> SecurityAuditReport {
-        let hasRBAC = collection.secondaryIndexes.isEmpty == false
-        let hasRLS = rls.getContext() != nil
+        // RBAC is not currently tracked as a first-class runtime capability.
+        let hasRBAC = false
+        // RLS should reflect policy configuration, not transient request context.
+        let hasRLS = rls.isEnabled() && !rls.getPolicies().isEmpty
         
-        return SecurityAuditor.audit(
-            isEncrypted: !password.isEmpty,
-            password: password.isEmpty ? nil : password,
+        let passwordValue = password ?? ""
+        return SecurityAuditor.auditWithCapabilityStates(
+            isEncrypted: !passwordValue.isEmpty,
+            password: passwordValue.isEmpty ? nil : passwordValue,
             hasRBAC: hasRBAC,
             hasRLS: hasRLS,
-            hasAuditLogging: false,  // NOTE: Audit logging intentionally not implemented.
-            // Application-level logging should be used for audit trails.
-            usesTLS: false,  // NOTE: TLS detection intentionally not implemented.
-            // TLS usage is determined by connection configuration, not tracked globally.
-            hasCertificatePinning: false,  // NOTE: Certificate pinning detection intentionally not implemented.
-            // Certificate pinning is a connection-level feature, not a global database setting.
+            hasAuditLoggingState: .unknown,
+            usesTLSState: .unknown,
+            hasCertificatePinningState: .unknown,
             crc32Enabled: BlazeBinaryEncoder.crc32Mode == .enabled
         )
     }
@@ -1678,8 +1794,16 @@ extension BlazeDBClient {
 // MARK: - StorageLayout helpers
 
 extension StorageLayout {
-    func checksumMatchesStoredValue() -> Bool { true }
-    func headerIsValid() -> Bool { true }
+    func checksumMatchesStoredValue() -> Bool {
+        // No dedicated checksum field is currently persisted in StorageLayout;
+        // treat structural invariants as the integrity signal for this helper.
+        if nextPageIndex < 0 { return false }
+        if indexMap.values.contains(where: { $0.contains(where: { $0 < 0 }) }) { return false }
+        return true
+    }
+    func headerIsValid() -> Bool {
+        version >= 1 && !encodingFormat.isEmpty
+    }
 }
 
 extension FieldDefinition {
@@ -1703,16 +1827,21 @@ extension StorageLayout {
         while true {
             do {
                 guard let pageData = try store.readPage(index: i) else { break }
-                // Try to decode a UUID from the first 16 bytes
-                if pageData.count >= 16 {
-                    let uuidData = pageData.prefix(16)
-                    let uuid = UUID(uuid: (
-                        uuidData[0], uuidData[1], uuidData[2], uuidData[3],
-                        uuidData[4], uuidData[5], uuidData[6], uuidData[7],
-                        uuidData[8], uuidData[9], uuidData[10], uuidData[11],
-                        uuidData[12], uuidData[13], uuidData[14], uuidData[15]
-                    ))
-                    indexMap[uuid] = [i]  // Convert to [Int] array for consistency
+                // Decode full record payload and use its explicit "id" field.
+                if let record = try? BlazeBinaryDecoder.decode(pageData),
+                   let idField = record.storage["id"] {
+                    let id: UUID?
+                    switch idField {
+                    case .uuid(let uuid):
+                        id = uuid
+                    case .string(let raw):
+                        id = UUID(uuidString: raw)
+                    default:
+                        id = nil
+                    }
+                    if let id {
+                        indexMap[id] = [i]
+                    }
                 }
                 nextPageIndex = i + 1
                 i += 1
@@ -1749,7 +1878,9 @@ extension BlazeDBClient {
     /// ```
     public func enableOrdering(fieldName: String = "orderingIndex") throws {
         BlazeLogger.info("BlazeDBClient.enableOrdering: enabling ordering with field '\(fieldName)'")
-        try collection.enableOrdering(fieldName: fieldName)
+        try performSafeWrite {
+            try collection.enableOrdering(fieldName: fieldName)
+        }
         BlazeLogger.info("BlazeDBClient.enableOrdering: ordering enabled successfully")
     }
     
@@ -1775,7 +1906,7 @@ extension BlazeDBClient {
         
         guard collection.supportsOrdering() else {
             BlazeLogger.error("BlazeDBClient.moveBefore: ordering not enabled")
-            throw BlazeDBError.transactionFailed("Ordering not enabled. Call enableOrdering() first.")
+            throw BlazeDBError.invalidQuery(reason: "Ordering not enabled", suggestion: "Call enableOrdering() first.")
         }
         
         let fieldName = collection.orderingFieldName()
@@ -1843,7 +1974,7 @@ extension BlazeDBClient {
         
         guard collection.supportsOrdering() else {
             BlazeLogger.error("BlazeDBClient.moveAfter: ordering not enabled")
-            throw BlazeDBError.transactionFailed("Ordering not enabled. Call enableOrdering() first.")
+            throw BlazeDBError.invalidQuery(reason: "Ordering not enabled", suggestion: "Call enableOrdering() first.")
         }
         
         let fieldName = collection.orderingFieldName()
@@ -1910,7 +2041,7 @@ extension BlazeDBClient {
         
         guard collection.supportsOrdering() else {
             BlazeLogger.error("BlazeDBClient.moveToIndex: ordering not enabled")
-            throw BlazeDBError.transactionFailed("Ordering not enabled. Call enableOrdering() first.")
+            throw BlazeDBError.invalidQuery(reason: "Ordering not enabled", suggestion: "Call enableOrdering() first.")
         }
         
         let fieldName = collection.orderingFieldName()
@@ -1952,7 +2083,7 @@ extension BlazeDBClient {
         
         guard collection.supportsOrdering() else {
             BlazeLogger.error("BlazeDBClient.moveUp: ordering not enabled")
-            throw BlazeDBError.transactionFailed("Ordering not enabled. Call enableOrdering() first.")
+            throw BlazeDBError.invalidQuery(reason: "Ordering not enabled", suggestion: "Call enableOrdering() first.")
         }
         
         let fieldName = collection.orderingFieldName()
@@ -1997,7 +2128,7 @@ extension BlazeDBClient {
         
         guard collection.supportsOrdering() else {
             BlazeLogger.error("BlazeDBClient.moveDown: ordering not enabled")
-            throw BlazeDBError.transactionFailed("Ordering not enabled. Call enableOrdering() first.")
+            throw BlazeDBError.invalidQuery(reason: "Ordering not enabled", suggestion: "Call enableOrdering() first.")
         }
         
         let fieldName = collection.orderingFieldName()
@@ -2041,7 +2172,7 @@ extension BlazeDBClient {
         
         guard collection.supportsOrdering() else {
             BlazeLogger.error("BlazeDBClient.bulkReorder: ordering not enabled")
-            throw BlazeDBError.transactionFailed("Ordering not enabled. Call enableOrdering() first.")
+            throw BlazeDBError.invalidQuery(reason: "Ordering not enabled", suggestion: "Call enableOrdering() first.")
         }
         
         let fieldName = collection.orderingFieldName()
@@ -2101,13 +2232,15 @@ extension BlazeDBClient {
         BlazeLogger.info("BlazeDBClient.enableOrderingWithCategories: enabling with category field '\(categoryField)'")
         
         #if !BLAZEDB_LINUX_CORE
-        var meta = try collection.fetchMeta()
-        meta["supportsOrdering"] = .bool(true)
-        meta["orderingFieldName"] = .string(fieldName)
-        meta["orderingCategoryField"] = .string(categoryField)
-        meta["supportsMultipleOrdering"] = .bool(true)
-        
-        try collection.updateMeta(meta)
+        try performSafeWrite {
+            var meta = try collection.fetchMeta()
+            meta["supportsOrdering"] = .bool(true)
+            meta["orderingFieldName"] = .string(fieldName)
+            meta["orderingCategoryField"] = .string(categoryField)
+            meta["supportsMultipleOrdering"] = .bool(true)
+            
+            try collection.updateMeta(meta)
+        }
         #endif
         BlazeLogger.info("BlazeDBClient.enableOrderingWithCategories: enabled with category field '\(categoryField)'")
     }
@@ -2131,12 +2264,12 @@ extension BlazeDBClient {
         BlazeLogger.info("BlazeDBClient.moveInCategory: moving record \(recordId) in category '\(categoryValue)'")
         
         guard collection.supportsOrdering() else {
-            throw BlazeDBError.transactionFailed("Ordering not enabled. Call enableOrdering() first.")
+            throw BlazeDBError.invalidQuery(reason: "Ordering not enabled", suggestion: "Call enableOrdering() first.")
         }
         
         // Check if category ordering is enabled (not just regular ordering)
         guard collection.supportsMultipleOrdering(), let categoryField = collection.orderingCategoryField() else {
-            throw BlazeDBError.transactionFailed("Category ordering not enabled. Call enableOrderingWithCategories() first.")
+            throw BlazeDBError.invalidQuery(reason: "Category ordering not enabled", suggestion: "Call enableOrderingWithCategories() first.")
         }
         
         let fieldName = collection.orderingFieldName()

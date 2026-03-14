@@ -203,7 +203,7 @@ extension PageStore {
         
         // Try memory-mapped read first (10-100x faster!)
         let mapped = memoryMappedFile
-        if let page = await mapped.readPage(index: index, pageSize: pageSize) {
+        if mapped.readPage(index: index, pageSize: pageSize) != nil {
             // Decrypt the page (memory-mapped read is fast, decryption still needed)
             // For now, use regular read for decryption (TODO: optimize memory-mapped decryption)
             // But we've already saved the disk I/O time!

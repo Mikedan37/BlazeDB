@@ -5,9 +5,6 @@
 //  On-disk compatibility contract: format versioning and validation
 //  Ensures database format compatibility and provides actionable errors
 //
-//  Created by Auto on 1/XX/25.
-//
-
 import Foundation
 
 extension BlazeDBClient {

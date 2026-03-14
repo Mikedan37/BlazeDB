@@ -4,9 +4,6 @@
 //
 //  Selective field decoding for lazy records
 //
-//  Created by Auto on 1/XX/25.
-//
-
 import Foundation
 
 extension BlazeBinaryDecoder {

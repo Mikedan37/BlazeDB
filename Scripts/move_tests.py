@@ -3,7 +3,7 @@ import os
 import shutil
 from pathlib import Path
 
-base = Path("/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB")
+base = Path(__file__).resolve().parent.parent
 tests_dest = base / "Tests" / "BlazeDBTests"
 
 # Create directories

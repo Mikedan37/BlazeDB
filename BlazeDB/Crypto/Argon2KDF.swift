@@ -2,12 +2,10 @@
 //  Argon2KDF.swift
 //  BlazeDB
 //
-//  Hardened key derivation using Argon2id (memory-hard, GPU-resistant)
-//  Replaces PBKDF2 for better security against brute force attacks
+//  Memory-hard key derivation helper (Argon2-inspired, NOT Argon2id).
+//  This implementation keeps backward compatibility but should not be
+//  represented as standards-compliant Argon2.
 //
-//  Created by Auto on 1/XX/25.
-//
-
 import Foundation
 #if canImport(CryptoKit)
 import CryptoKit
@@ -15,8 +13,11 @@ import CryptoKit
 import Crypto
 #endif
 
-/// Argon2id key derivation function
-/// Memory-hard and GPU-resistant, recommended by OWASP and NIST
+/// Argon2-inspired key derivation function.
+///
+/// IMPORTANT:
+/// This is not a standards-compliant Argon2id implementation.
+/// Use a real Argon2 library when strict Argon2id compliance is required.
 public enum Argon2KDF {
     
     /// Default parameters (balanced security/performance)

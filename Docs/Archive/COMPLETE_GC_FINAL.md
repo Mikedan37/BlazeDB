@@ -362,7 +362,7 @@ db.configureGC(config)
 ## **Run The Tests**
 
 ```bash
-cd /Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB
+cd ~/Developer/ProjectBlaze/BlazeDB
 
 # All GC tests (38 tests)
 swift test --filter GC
@@ -668,7 +668,7 @@ SHIP-READY: YES
 ## **Test It NOW**
 
 ```bash
-cd /Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB
+cd ~/Developer/ProjectBlaze/BlazeDB
 
 # Run all GC tests
 swift test --filter GC

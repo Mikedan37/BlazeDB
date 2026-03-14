@@ -5,9 +5,6 @@
 //  SQL command execution and migration tool
 //  For users with SQL commands (CREATE TABLE, INSERT, etc.)
 //
-//  Created by Auto on 1/XX/25.
-//
-
 import Foundation
 
 #if canImport(SQLite3)

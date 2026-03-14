@@ -9,7 +9,7 @@
 import Foundation
 
 /// Type of operation the policy applies to
-public enum PolicyOperation: String, Codable {
+internal enum PolicyOperation: String, Codable {
     case select  // Read/fetch operations
     case insert  // Insert operations
     case update  // Update operations
@@ -18,30 +18,30 @@ public enum PolicyOperation: String, Codable {
 }
 
 /// Type of policy check
-public enum PolicyType: String, Codable {
+internal enum PolicyType: String, Codable {
     case permissive  // Allow by default, policies can grant
     case restrictive  // Deny by default, policies can grant
 }
 
 /// A security policy that controls access to records
-public struct SecurityPolicy {
+internal struct SecurityPolicy {
     /// Unique policy name
-    public let name: String
+    internal let name: String
     
     /// Operation this policy applies to
-    public let operation: PolicyOperation
+    internal let operation: PolicyOperation
     
     /// Type of policy (permissive or restrictive)
-    public let type: PolicyType
+    internal let type: PolicyType
     
     /// Check function: (context, record) -> Bool
     /// Returns true if access should be granted
-    public let check: (SecurityContext, BlazeDataRecord) -> Bool
+    internal let check: (SecurityContext, BlazeDataRecord) -> Bool
     
     /// Optional description for debugging
-    public let description: String?
+    internal let description: String?
     
-    public init(
+    internal init(
         name: String,
         operation: PolicyOperation = .all,
         type: PolicyType = .restrictive,
@@ -61,12 +61,12 @@ public struct SecurityPolicy {
 extension SecurityPolicy {
     
     /// Policy: User can only access their own records
-    public static func userOwnsRecord(userIDField: String = "userId") -> SecurityPolicy {
+    internal static func userOwnsRecord(userIDField: String = "userId") -> SecurityPolicy {
         return SecurityPolicy(
             name: "user_owns_record",
             operation: .all,
-            type: .restrictive,
-            description: "User can only access their own records"
+            type: .permissive,
+            description: "User can access their own records"
         ) { context, record in
             guard let recordUserID = record.storage[userIDField]?.uuidValue else {
                 return false  // No userId field = deny
@@ -76,11 +76,11 @@ extension SecurityPolicy {
     }
     
     /// Policy: User can access records in their teams
-    public static func userInTeam(teamIDField: String = "teamId") -> SecurityPolicy {
+    internal static func userInTeam(teamIDField: String = "teamId") -> SecurityPolicy {
         return SecurityPolicy(
             name: "user_in_team",
             operation: .all,
-            type: .restrictive,
+            type: .permissive,
             description: "User can access records from their teams"
         ) { context, record in
             guard let recordTeamID = record.storage[teamIDField]?.uuidValue else {
@@ -91,7 +91,7 @@ extension SecurityPolicy {
     }
     
     /// Policy: Admins can access everything
-    public static func adminFullAccess(adminRole: String = "admin") -> SecurityPolicy {
+    internal static func adminFullAccess(adminRole: String = "admin") -> SecurityPolicy {
         return SecurityPolicy(
             name: "admin_full_access",
             operation: .all,
@@ -103,19 +103,35 @@ extension SecurityPolicy {
     }
     
     /// Policy: Read-only for viewers
-    public static func viewerReadOnly(viewerRole: String = "viewer") -> SecurityPolicy {
+    ///
+    /// Grants select access and denies insert/update/delete for users with the viewer role.
+    /// Uses `.all` operation so it applies to every operation type, returning true only for selects.
+    internal static func viewerReadOnly(viewerRole: String = "viewer") -> SecurityPolicy {
         return SecurityPolicy(
             name: "viewer_read_only",
+            operation: .all,
+            type: .restrictive,
+            description: "Viewers can read but not modify"
+        ) { context, _ in
+            guard context.hasRole(viewerRole) else { return true }  // Non-viewers: don't restrict
+            return false  // Viewers: deny by default (overridden by permissive select policy below)
+        }
+    }
+
+    /// Policy: Viewers can select (companion to viewerReadOnly restrictive policy)
+    internal static func viewerCanSelect(viewerRole: String = "viewer") -> SecurityPolicy {
+        return SecurityPolicy(
+            name: "viewer_can_select",
             operation: .select,
             type: .permissive,
-            description: "Viewers can read but not modify"
+            description: "Viewers can read"
         ) { context, _ in
             return context.hasRole(viewerRole)
         }
     }
     
     /// Policy: Public read access (anyone can read)
-    public static var publicRead: SecurityPolicy {
+    internal static var publicRead: SecurityPolicy {
         return SecurityPolicy(
             name: "public_read",
             operation: .select,
@@ -127,7 +143,7 @@ extension SecurityPolicy {
     }
     
     /// Policy: Authenticated users only
-    public static var authenticatedOnly: SecurityPolicy {
+    internal static var authenticatedOnly: SecurityPolicy {
         return SecurityPolicy(
             name: "authenticated_only",
             operation: .all,

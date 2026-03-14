@@ -36,7 +36,7 @@ Make BlazeDB:
 **Status:** COMPLETE
 
 **Deliverables:**
--  `BlazeDB.openDefault(name:password:)` - Zero configuration
+-  `BlazeDBClient.open(named:password:)` - Zero configuration
 -  `BlazeDB.open(name:path:password:)` - Custom path
 -  Automatic directory creation
 -  Platform-specific defaults
@@ -85,8 +85,8 @@ Make BlazeDB:
 - `BlazeDB/Exports/BlazeDBError+Categories.swift` (enhanced)
 
 **Examples:**
-- "BlazeDB guarantees: directories are created automatically with openDefault()"
-- "BlazeDB refuses to guess: you must provide a valid path or use openDefault()"
+- "BlazeDB guarantees: directories are created automatically with open(named:password:)"
+- "BlazeDB refuses to guess: you must provide a valid path or use open(named:password:)"
 
 ---
 
@@ -172,7 +172,7 @@ Make BlazeDB:
 ## Summary
 
 **What Changed:**
-- Easy entrypoint API (`openDefault()`)
+- Easy entrypoint API (`open(named:password:)`)
 - Platform-safe path handling
 - Better error messages
 - Linux verification tests

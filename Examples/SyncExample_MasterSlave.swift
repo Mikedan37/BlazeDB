@@ -25,13 +25,13 @@ struct SyncExample_MasterSlave {
         // Create master database (writes only)
         print("\n👑 Creating Master database...")
         let masterURL = tempDir.appendingPathComponent("master.blazedb")
-        let master = try BlazeDBClient(name: "Master", fileURL: masterURL, password: "test123")
+        let master = try BlazeDBClient.open(at: masterURL, password: "TestPass123!")
         print("✅ Master database created")
         
         // Create slave database (reads only)
         print("\n📖 Creating Slave database...")
         let slaveURL = tempDir.appendingPathComponent("slave.blazedb")
-        let slave = try BlazeDBClient(name: "Slave", fileURL: slaveURL, password: "test123")
+        let slave = try BlazeDBClient.open(at: slaveURL, password: "TestPass123!")
         print("✅ Slave database created")
         
         // Register in topology

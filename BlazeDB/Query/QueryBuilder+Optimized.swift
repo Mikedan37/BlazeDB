@@ -5,9 +5,6 @@
 //  Query execution optimizations: Early exits, lazy evaluation, index hints
 //  Provides 2-10x faster queries
 //
-//  Created by Auto on 1/XX/25.
-//
-
 import Foundation
 
 // MARK: - Query Optimizations

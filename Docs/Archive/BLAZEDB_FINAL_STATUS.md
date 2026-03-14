@@ -304,7 +304,7 @@ let stats = db.getMVCCStats()
 ## **Test Everything**
 
 ```bash
-cd /Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB
+cd ~/Developer/ProjectBlaze/BlazeDB
 
 # All tests
 swift test

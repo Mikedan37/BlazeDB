@@ -37,7 +37,7 @@ func runShell(dbPath: String, password: String) {
                 let idStr = input.replacingOccurrences(of: "fetch ", with: "")
                 if let id = UUID(uuidString: idStr),
                    let record = try? client.fetch(id: id) {
-                    print(record ?? "❌ Record not found")
+                    print(record)
                 } else {
                     print("❌ Invalid UUID or record not found")
                 }
@@ -106,8 +106,12 @@ if args.contains("--manager") {
                 }
             case "mount":
                 if parts.count == 4 {
-                    try? manager.mountDatabase(named: parts[1], fileURL: URL(fileURLWithPath: parts[2]), password: parts[3])
-                    print("✅ Mounted \(parts[1])")
+                    do {
+                        try manager.mountDatabase(named: parts[1], fileURL: URL(fileURLWithPath: parts[2]), password: parts[3])
+                        print("✅ Mounted \(parts[1])")
+                    } catch {
+                        print("❌ Failed to mount: \(error.localizedDescription)")
+                    }
                 } else {
                     print("❌ Usage: mount <name> <path> <password>")
                 }
@@ -141,9 +145,11 @@ if args.contains("--manager") {
 if args.contains("--create-test") {
     print("📦 Creating test database for BlazeDBVisualizer...")
     
+    let testPath = FileManager.default.temporaryDirectory
+        .appendingPathComponent("blazedb-test-visualizer.blazedb")
     let testDB = try BlazeDBClient(
         name: "test_visualizer",
-        fileURL: URL(fileURLWithPath: "/Users/mdanylchuk/Desktop/test.blazedb"),
+        fileURL: testPath,
         password: "test1234"  // ✅ 8 characters minimum!
     )
     
@@ -164,8 +170,8 @@ if args.contains("--create-test") {
     try testDB.persist()
     
     print("")
-    print("✅ SUCCESS! Created test.blazedb on Desktop!")
-    print("📍 Location: /Users/mdanylchuk/Desktop/test.blazedb")
+    print("✅ SUCCESS! Created test.blazedb!")
+    print("📍 Location: \(testPath.path)")
     print("🔑 Password: test1234")
     print("📊 Records: 50")
     print("")
@@ -179,12 +185,25 @@ if args.contains("--create-test") {
     exit(0)
 }
 
-guard args.count >= 3 else {
-    print("Usage: BlazeShell <db-path> <password>")
+guard args.count >= 2 else {
+    print("Usage: BlazeShell <db-path> [password]")
+    print("  Password can also be provided via BLAZEDB_PASSWORD environment variable")
     exit(1)
 }
 
-runShell(dbPath: args[1], password: args[2])
+// Security: prefer BLAZEDB_PASSWORD env var over command-line argument to avoid
+// password exposure in process listings (visible via `ps`).
+let shellPassword: String
+if let envPassword = ProcessInfo.processInfo.environment["BLAZEDB_PASSWORD"] {
+    shellPassword = envPassword
+} else if args.count >= 3 {
+    shellPassword = args[2]
+} else {
+    print("Error: password required. Set BLAZEDB_PASSWORD env var or pass as argument.")
+    exit(1)
+}
+
+runShell(dbPath: args[1], password: shellPassword)
 
 // MARK: - Recovery CLI Tool
 

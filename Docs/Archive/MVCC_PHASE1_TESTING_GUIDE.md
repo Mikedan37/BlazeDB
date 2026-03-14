@@ -36,7 +36,7 @@
 
 ### **Run All MVCC Tests**:
 ```bash
-cd /Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB
+cd ~/Developer/ProjectBlaze/BlazeDB
 swift test --filter MVCCFoundationTests
 ```
 

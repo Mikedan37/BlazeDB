@@ -26,7 +26,7 @@ extension BlazeDBClient {
         let hasVacuumIntent = FileManager.default.fileExists(atPath: vacuumLogURL.path)
         
         if hasVacuumIntent {
-            print("⚠️ Detected incomplete VACUUM operation, recovering...")
+            BlazeLogger.warn("Detected incomplete VACUUM operation, recovering...")
             
             // Check for backup files
             let dataBackupURL = baseURL.appendingPathExtension("vacuum_backup.blazedb")
@@ -40,7 +40,7 @@ extension BlazeDBClient {
             
             if hasSuccess {
                 // VACUUM completed successfully but cleanup didn't finish
-                print("   ✅ VACUUM was successful, cleaning up...")
+                BlazeLogger.info("VACUUM was successful, cleaning up...")
                 
                 try? FileManager.default.removeItem(at: dataBackupURL)
                 try? FileManager.default.removeItem(at: metaBackupURL)
@@ -50,7 +50,7 @@ extension BlazeDBClient {
             } else if hasBackup {
                 // VACUUM was in progress when crash happened
                 // Restore from backup to be safe
-                print("   ⚠️ VACUUM was interrupted, restoring from backup...")
+                BlazeLogger.warn("VACUUM was interrupted, restoring from backup...")
                 
                 let currentDataURL = collection.store.fileURL
                 let currentMetaURL = collection.metaURL
@@ -70,15 +70,15 @@ extension BlazeDBClient {
                 // Clean up
                 try? FileManager.default.removeItem(at: vacuumLogURL)
                 
-                print("   ✅ Restored from backup successfully")
+                BlazeLogger.info("Restored from VACUUM backup successfully")
                 
             } else {
                 // No backup, VACUUM probably failed early - just clean up marker
                 try? FileManager.default.removeItem(at: vacuumLogURL)
-                print("   ✅ Cleaned up incomplete VACUUM marker")
+                BlazeLogger.info("Cleaned up incomplete VACUUM marker")
             }
             
-            print("   ✅ VACUUM crash recovery complete")
+            BlazeLogger.info("VACUUM crash recovery complete")
         }
     }
 }

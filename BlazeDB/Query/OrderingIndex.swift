@@ -5,9 +5,6 @@
 //  Optional fractional ordering system for BlazeDB records.
 //  Completely optional and off by default - zero breaking changes.
 //
-//  Created by Auto on 1/XX/25.
-//
-
 import Foundation
 
 // MARK: - Ordering Index Utilities
@@ -194,7 +191,7 @@ extension DynamicCollection {
         }
         #else
         // Linux: MetaStore not available, ordering not supported
-        throw BlazeDBError.transactionFailed("Ordering support requires MetaStore (not available on Linux)")
+        throw BlazeDBError.invalidQuery(reason: "Ordering support requires MetaStore (not available on Linux)", suggestion: "Use macOS/iOS for ordering support, or sort results in-memory")
         #endif
     }
 }

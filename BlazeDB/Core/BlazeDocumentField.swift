@@ -57,31 +57,7 @@ public enum BlazeDocumentField: Codable, Equatable, Hashable, Sendable {
         } else if let v = try? container.decode([String: BlazeDocumentField].self) {
             self = .dictionary(v)
         } else if let stringValue = try? container.decode(String.self) {
-            if !stringValue.isEmpty {
-                let hasPadding = stringValue.hasSuffix("=") || stringValue.hasSuffix("==")
-                let isBase64Chars = stringValue.allSatisfy { char in
-                    char.isLetter || char.isNumber || char == "+" || char == "/" || char == "="
-                }
-                let uniqueChars = Set(stringValue)
-                let hasLowEntropy = uniqueChars.count < 4
-                
-                let isLikelyBase64: Bool
-                if hasPadding && isBase64Chars && !hasLowEntropy {
-                    isLikelyBase64 = true
-                } else if !hasPadding && isBase64Chars && stringValue.count > 16 && !hasLowEntropy {
-                    isLikelyBase64 = true
-                } else {
-                    isLikelyBase64 = false
-                }
-                
-                if isLikelyBase64, let data = Data(base64Encoded: stringValue) {
-                    self = .data(data)
-                } else {
-                    self = .string(stringValue)
-                }
-            } else {
-                self = .string(stringValue)
-            }
+            self = .string(stringValue)
         } else {
             throw DecodingError.typeMismatch(
                 BlazeDocumentField.self,
@@ -151,14 +127,6 @@ public extension BlazeDocumentField {
     
     var dataValue: Data? {
         if case let .data(value) = self { return value }
-        if case let .string(value) = self {
-            if value.isEmpty {
-                return Data()
-            }
-            if let data = Data(base64Encoded: value) {
-                return data
-            }
-        }
         return nil
     }
     

@@ -4,9 +4,6 @@
 //
 //  EXISTS and NOT EXISTS subquery support
 //
-//  Created by Auto on 1/XX/25.
-//
-
 import Foundation
 
 // MARK: - Subquery Types

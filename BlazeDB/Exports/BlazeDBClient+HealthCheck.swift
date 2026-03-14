@@ -5,9 +5,6 @@
 //  Health check and monitoring API
 //  Uses existing MetricsCollector for telemetry
 //
-//  Created by Auto on 1/XX/25.
-//
-
 import Foundation
 
 // MARK: - Health Status
@@ -63,6 +60,7 @@ extension BlazeDBClient {
     }
     
     /// Get health status
+    @available(*, deprecated, message: "Use health() instead, which returns HealthReport.")
     public func getHealthStatus() throws -> HealthStatus {
         var issues: [String] = []
         
@@ -89,7 +87,7 @@ extension BlazeDBClient {
         }
         
         // Get record count
-        let recordCount = count()
+        let recordCount = try count()
         
         // Check telemetry for slow queries (if enabled) - async check
         // Note: This is a sync method, so we can't await telemetry here

@@ -1,0 +1,39 @@
+{
+  "configurations": [
+    {
+      "id": "2A58CA4D-2A72-4E8A-A286-0508CFB2D5B1",
+      "name": "Quick (Tier 0)",
+      "options": {
+        "environmentVariableEntries": [
+          {
+            "key": "BLAZEDB_TEST_PROFILE",
+            "value": "quick"
+          },
+          {
+            "key": "BLAZEDB_TEST_TIER",
+            "value": "0"
+          }
+        ]
+      }
+    }
+  ],
+  "defaultOptions": {
+    "performanceAntipatternCheckerEnabled": true,
+    "targetForVariableExpansion": {
+      "containerPath": "container:BlazeDB.xcodeproj",
+      "identifier": "BlazeDB",
+      "name": "BlazeDB"
+    }
+  },
+  "testTargets": [
+    {
+      "parallelizable": false,
+      "target": {
+        "containerPath": "container:BlazeDB.xcodeproj",
+        "identifier": "BlazeDBTests",
+        "name": "BlazeDBTests"
+      }
+    }
+  ],
+  "version": 1
+}

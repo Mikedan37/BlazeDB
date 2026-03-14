@@ -5,9 +5,6 @@
 //  SQLite to BlazeDB migration tool
 //  Integrated into main BlazeDB package
 //
-//  Created by Auto on 1/XX/25.
-//
-
 import Foundation
 
 #if canImport(SQLite3)
@@ -146,7 +143,14 @@ public struct SQLiteMigrator {
     }
     
     // MARK: - Private Helpers
-    
+
+    /// Quote a SQL identifier to prevent SQL injection.
+    /// Doubles any embedded double-quote characters and wraps in double quotes.
+    private static func quotedIdentifier(_ name: String) -> String {
+        let escaped = name.replacingOccurrences(of: "\"", with: "\"\"")
+        return "\"\(escaped)\""
+    }
+
     private static func getAllTables(from db: OpaquePointer) throws -> [String] {
         var tables: [String] = []
         let query = "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'"
@@ -168,7 +172,7 @@ public struct SQLiteMigrator {
     }
     
     private static func getTableRecordCount(from db: OpaquePointer, tableName: String) throws -> Int {
-        let countQuery = "SELECT COUNT(*) FROM \(tableName)"
+        let countQuery = "SELECT COUNT(*) FROM \(quotedIdentifier(tableName))"
         var statement: OpaquePointer?
         guard sqlite3_prepare_v2(db, countQuery, -1, &statement, nil) == SQLITE_OK else {
             return 0  // If count fails, return 0 (will still migrate)
@@ -191,7 +195,7 @@ public struct SQLiteMigrator {
         BlazeLogger.debug("🔍 Getting column info for table '\(tableName)'...")
         
         // Get column info
-        let columnQuery = "PRAGMA table_info(\(tableName))"
+        let columnQuery = "PRAGMA table_info(\(quotedIdentifier(tableName)))"
         var statement: OpaquePointer?
         guard sqlite3_prepare_v2(db, columnQuery, -1, &statement, nil) == SQLITE_OK else {
             let error = "Failed to get column info for \(tableName)"
@@ -214,7 +218,7 @@ public struct SQLiteMigrator {
         
         // Fetch all rows with efficient batching
         BlazeLogger.debug("📥 Fetching rows from '\(tableName)'...")
-        let selectQuery = "SELECT * FROM \(tableName)"
+        let selectQuery = "SELECT * FROM \(quotedIdentifier(tableName))"
         var selectStatement: OpaquePointer?
         guard sqlite3_prepare_v2(db, selectQuery, -1, &selectStatement, nil) == SQLITE_OK else {
             let error = "Failed to select from \(tableName)"

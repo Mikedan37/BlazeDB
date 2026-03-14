@@ -5,9 +5,6 @@
 //  UNION, UNION ALL, INTERSECT, EXCEPT operations
 //  Optimized with lazy evaluation and memory efficiency
 //
-//  Created by Auto on 1/XX/25.
-//
-
 import Foundation
 
 // MARK: - Union Operation Types

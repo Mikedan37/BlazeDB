@@ -1,0 +1,312 @@
+{
+  "generated_at_utc": "2026-03-14T09:07:05+00:00",
+  "steps": [
+    {
+      "name": "gc_mark_reuse",
+      "status": "pass",
+      "seconds": 29.484593417,
+      "summary": "Executed 1 test, with 0 failures",
+      "command": "swift test --scratch-path \"/tmp/blazedb-test-scratch\" --filter \"BlazeDB_Tier1.PageGCTests/testPageGC_MarkAndReuse\"",
+      "log_file": "Docs/Benchmarks/logs/gc-mark-reuse.log"
+    },
+    {
+      "name": "gc_multiple_pages",
+      "status": "pass",
+      "seconds": 1.384882375,
+      "summary": "Executed 1 test, with 0 failures",
+      "command": "swift test --scratch-path \"/tmp/blazedb-test-scratch\" --filter \"BlazeDB_Tier1.PageGCTests/testPageGC_MultiplePages\"",
+      "log_file": "Docs/Benchmarks/logs/gc-multiple-pages.log"
+    },
+    {
+      "name": "gc_reuse_rate",
+      "status": "pass",
+      "seconds": 1.365081166999996,
+      "summary": "Executed 1 test, with 0 failures",
+      "command": "swift test --scratch-path \"/tmp/blazedb-test-scratch\" --filter \"BlazeDB_Tier1.PageGCTests/testPageGC_ReuseRate\"",
+      "log_file": "Docs/Benchmarks/logs/gc-reuse-rate.log"
+    },
+    {
+      "name": "resource_insert_perf",
+      "status": "pass",
+      "seconds": 4.165064416,
+      "summary": "Executed 1 test, with 0 failures",
+      "command": "swift test --scratch-path \"/tmp/blazedb-test-scratch\" --filter \"BlazeDB_Tier3_Heavy.BlazeDBPerformanceTests/testInsertPerformance\"",
+      "log_file": "Docs/Benchmarks/logs/resource-insert-perf.log"
+    },
+    {
+      "name": "resource_bulk_insert_perf",
+      "status": "pass",
+      "seconds": 3.010452541999996,
+      "summary": "Executed 1 test, with 0 failures",
+      "command": "swift test --scratch-path \"/tmp/blazedb-test-scratch\" --filter \"BlazeDB_Tier3_Heavy.BlazeDBPerformanceTests/testBulkInsertPerformance\"",
+      "log_file": "Docs/Benchmarks/logs/resource-bulk-insert-perf.log"
+    },
+    {
+      "name": "opt_async_io_perf",
+      "status": "pass",
+      "seconds": 1.2962899579999956,
+      "summary": "Executed 1 test, with 0 failures",
+      "command": "swift test --scratch-path \"/tmp/blazedb-test-scratch\" --filter \"BlazeDB_Tier3_Heavy.PerformanceOptimizationTests/testAsyncFileIO_FasterThanSync\"",
+      "log_file": "Docs/Benchmarks/logs/opt-async-io-perf.log"
+    },
+    {
+      "name": "opt_write_batching_perf",
+      "status": "pass",
+      "seconds": 1.313947290999998,
+      "summary": "Executed 1 test, with 0 failures",
+      "command": "swift test --scratch-path \"/tmp/blazedb-test-scratch\" --filter \"BlazeDB_Tier3_Heavy.PerformanceOptimizationTests/testWriteBatching_FasterThanIndividual\"",
+      "log_file": "Docs/Benchmarks/logs/opt-write-batching-perf.log"
+    },
+    {
+      "name": "opt_combined_perf",
+      "status": "pass",
+      "seconds": 1.4360089580000022,
+      "summary": "Executed 1 test, with 0 failures",
+      "command": "swift test --scratch-path \"/tmp/blazedb-test-scratch\" --filter \"BlazeDB_Tier3_Heavy.PerformanceOptimizationTests/testCombinedOptimizations_MaximumPerformance\"",
+      "log_file": "Docs/Benchmarks/logs/opt-combined-perf.log"
+    },
+    {
+      "name": "opt_compression_storage",
+      "status": "pass",
+      "seconds": 1.3157359590000013,
+      "summary": "Executed 1 test, with 0 failures",
+      "command": "swift test --scratch-path \"/tmp/blazedb-test-scratch\" --filter \"BlazeDB_Tier3_Heavy.PerformanceOptimizationTests/testCompression_StorageSavings\"",
+      "log_file": "Docs/Benchmarks/logs/opt-compression-storage.log"
+    }
+  ],
+  "power_metrics": {
+    "resource_insert_perf": {
+      "status": "pass",
+      "summary": "Executed 1 test, with 0 failures",
+      "seconds": 4.165064416,
+      "xct_metrics": [
+        {
+          "metric": "Memory Physical",
+          "unit": "kB",
+          "average": 10901.19,
+          "samples": [
+            7045.216,
+            6221.968,
+            13910.184,
+            16343.088,
+            10985.496
+          ],
+          "sample_count": 5
+        },
+        {
+          "metric": "CPU Cycles",
+          "unit": "kC",
+          "average": 1830281.195,
+          "samples": [
+            936627.093,
+            1376569.053,
+            1829977.381,
+            2416160.81,
+            2592071.64
+          ],
+          "sample_count": 5
+        },
+        {
+          "metric": "Clock Monotonic Time",
+          "unit": "s",
+          "average": 0.479,
+          "samples": [
+            0.251235,
+            0.362641,
+            0.475848,
+            0.628847,
+            0.675415
+          ],
+          "sample_count": 5
+        },
+        {
+          "metric": "CPU Time",
+          "unit": "s",
+          "average": 0.011,
+          "samples": [
+            0.005771,
+            0.008469,
+            0.011216,
+            0.014818,
+            0.015895
+          ],
+          "sample_count": 5
+        },
+        {
+          "metric": "CPU Instructions Retired",
+          "unit": "kI",
+          "average": 9035924.813,
+          "samples": [
+            4281673.327,
+            6673020.795,
+            8936914.306,
+            12212378.847,
+            13075636.789
+          ],
+          "sample_count": 5
+        },
+        {
+          "metric": "Memory Peak Physical",
+          "unit": "kB",
+          "average": 44102.558,
+          "samples": [
+            21986.376,
+            28212.44,
+            42372.48,
+            58465.712,
+            69475.784
+          ],
+          "sample_count": 5
+        }
+      ],
+      "custom_metrics": {}
+    },
+    "resource_bulk_insert_perf": {
+      "status": "pass",
+      "summary": "Executed 1 test, with 0 failures",
+      "seconds": 3.010452541999996,
+      "xct_metrics": [
+        {
+          "metric": "Disk Logical Writes",
+          "unit": "kB",
+          "average": 13307.909,
+          "samples": [
+            13123.584,
+            13398.032,
+            13402.112
+          ],
+          "sample_count": 3
+        },
+        {
+          "metric": "Clock Monotonic Time",
+          "unit": "s",
+          "average": 0.485,
+          "samples": [
+            0.279749,
+            0.501217,
+            0.672581
+          ],
+          "sample_count": 3
+        },
+        {
+          "metric": "CPU Time",
+          "unit": "s",
+          "average": 0.011,
+          "samples": [
+            0.006533,
+            0.011352,
+            0.015814
+          ],
+          "sample_count": 3
+        },
+        {
+          "metric": "Memory Physical",
+          "unit": "kB",
+          "average": 31278.541,
+          "samples": [
+            28536.952,
+            46366.912,
+            18931.76
+          ],
+          "sample_count": 3
+        },
+        {
+          "metric": "CPU Instructions Retired",
+          "unit": "kI",
+          "average": 8942682.843,
+          "samples": [
+            4992016.412,
+            8940082.241,
+            12895949.877
+          ],
+          "sample_count": 3
+        },
+        {
+          "metric": "Memory Peak Physical",
+          "unit": "kB",
+          "average": 87390.115,
+          "samples": [
+            47336.52,
+            93736.224,
+            121097.6
+          ],
+          "sample_count": 3
+        },
+        {
+          "metric": "CPU Cycles",
+          "unit": "kC",
+          "average": 1814995.708,
+          "samples": [
+            1059030.717,
+            1826293.139,
+            2559663.268
+          ],
+          "sample_count": 3
+        }
+      ],
+      "custom_metrics": {}
+    },
+    "opt_async_io_perf": {
+      "status": "pass",
+      "summary": "Executed 1 test, with 0 failures",
+      "seconds": 1.2962899579999956,
+      "xct_metrics": [],
+      "custom_metrics": {
+        "async_sync_ms": 5.94,
+        "async_async_ms": 0.42,
+        "speedup_x": 14.14
+      }
+    },
+    "opt_write_batching_perf": {
+      "status": "pass",
+      "summary": "Executed 1 test, with 0 failures",
+      "seconds": 1.313947290999998,
+      "xct_metrics": [],
+      "custom_metrics": {
+        "speedup_x": 4.64,
+        "batch_individual_ms": 46.462,
+        "batch_batch_ms": 10.017
+      }
+    },
+    "opt_combined_perf": {
+      "status": "pass",
+      "summary": "Executed 1 test, with 0 failures",
+      "seconds": 1.4360089580000022,
+      "xct_metrics": [],
+      "custom_metrics": {
+        "combined_records": 1000.0,
+        "combined_time_ms": 139.666,
+        "combined_ops_per_sec": 7160.0
+      }
+    },
+    "opt_compression_storage": {
+      "status": "pass",
+      "summary": "Executed 1 test, with 0 failures",
+      "seconds": 1.3157359590000013,
+      "xct_metrics": [],
+      "custom_metrics": {
+        "compression_without": "85 KB",
+        "compression_with": "167 KB",
+        "compression_savings_percent": -96.4
+      }
+    }
+  },
+  "doc_outputs": [
+    "Docs/Benchmarks/RESULTS.md",
+    "Docs/Benchmarks/results.json",
+    "Docs/Benchmarks/results_matrix.json",
+    "Docs/Benchmarks/BENCHMARK_ENVIRONMENT.md",
+    "Docs/Benchmarks/benchmark_environment.json",
+    "Docs/Benchmarks/LIMITS.md",
+    "Docs/Benchmarks/limits_measurements.json",
+    "Docs/Benchmarks/SQLITE_LIMITS_COMPARISON.md",
+    "Docs/Benchmarks/LATENCY.md",
+    "Docs/Benchmarks/latency_measurements.json",
+    "Docs/Benchmarks/GC_BENCHMARKS.md",
+    "Docs/Benchmarks/POWER_BENCHMARKS.md",
+    "Docs/Benchmarks/ENERGY.md",
+    "Docs/Benchmarks/OBSERVABILITY_BENCHMARKS.md",
+    "Docs/Benchmarks/FULL_BENCHMARK_SUMMARY.md",
+    "Docs/Benchmarks/RUN_STATUS.md"
+  ]
+}

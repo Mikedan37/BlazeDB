@@ -127,7 +127,6 @@ func runDoctor(dbPath: String, password: String, jsonOutput: Bool) {
         
         // Check 4: Read/Write cycle
         do {
-            let testID = UUID()
             let testRecord = BlazeDataRecord([
                 "_doctor_test": .bool(true),
                 "_timestamp": .date(Date())
@@ -277,59 +276,7 @@ func runDoctor(dbPath: String, password: String, jsonOutput: Bool) {
         }
         
         exit(report.healthy ? 0 : 1)
-        
-        } catch {
-            // Build error report
-            let report = DoctorReport(
-                healthy: false,
-                database: "",
-                path: dbPath,
-                checks: [],
-                stats: nil,
-                errors: [error.localizedDescription]
-            )
-            
-            let errorMsg: String
-            let errorGuidance: String
-            
-            if let blazeError = error as? BlazeDBError {
-                errorMsg = blazeError.errorDescription ?? error.localizedDescription
-                errorGuidance = blazeError.guidance
-            } else {
-                errorMsg = error.localizedDescription
-                errorGuidance = "See error details above."
-            }
-            
-            errors.append(errorMsg)
-            
-            // Build error report
-            let errorReport = DoctorReport(
-                healthy: false,
-                database: "",
-                path: dbPath,
-                checks: [],
-                stats: nil,
-                errors: errors
-            )
-            
-            if jsonOutput {
-                let encoder = JSONEncoder()
-                encoder.outputFormatting = .prettyPrinted
-                if let data = try? encoder.encode(errorReport),
-                   let json = String(data: data, encoding: .utf8) {
-                    print(json)
-                }
-            } else {
-                if let blazeError = error as? BlazeDBError {
-                    print(blazeError.formattedDescription)
-                } else {
-                    print("❌ Error: \(errorMsg)")
-                    print("   💡 \(errorGuidance)")
-                }
-            }
-            
-            exit(1)
-        }
+    }
 }
 
 func formatBytes(_ bytes: Int64) -> String {

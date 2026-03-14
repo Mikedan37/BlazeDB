@@ -1,0 +1,44 @@
+{
+  "configurations" : [
+    {
+      "id" : "1D2BFA52-17F3-4907-8CA3-CB700F1892CB",
+      "name" : "Destructive (Manual)",
+      "options" : {
+        "environmentVariableEntries" : [
+          {
+            "key" : "BLAZEDB_TEST_PROFILE",
+            "value" : "destructive"
+          },
+          {
+            "key" : "BLAZEDB_TEST_TIER",
+            "value" : "3"
+          },
+          {
+            "key" : "BLAZEDB_DESTRUCTIVE_MODE",
+            "value" : "1"
+          }
+        ]
+      }
+    }
+  ],
+  "defaultOptions" : {
+    "performanceAntipatternCheckerEnabled" : true,
+    "targetForVariableExpansion" : {
+      "containerPath" : "container:BlazeDB.xcodeproj",
+      "identifier" : "BlazeDB",
+      "name" : "BlazeDB"
+    },
+    "testPlanDescription" : "Destructive tests run via BlazeDBTests with BLAZEDB_DESTRUCTIVE_MODE=1. For tiered testing, use SPM: swift test --filter BlazeDB_Tier3Destructive"
+  },
+  "testTargets" : [
+    {
+      "parallelizable" : false,
+      "target" : {
+        "containerPath" : "container:BlazeDB.xcodeproj",
+        "identifier" : "BlazeDBTests",
+        "name" : "BlazeDBTests"
+      }
+    }
+  ],
+  "version" : 1
+}

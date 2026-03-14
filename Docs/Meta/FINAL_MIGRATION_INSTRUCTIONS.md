@@ -23,7 +23,7 @@ Due to the large number of files (100+), you need to:
 ### Option 1: Use File System Commands (Recommended)
 
 ```bash
-cd /Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB
+cd ~/Developer/ProjectBlaze/BlazeDB
 
 # Copy all remaining Codec tests
 cp BlazeDBTests/Encoding/BlazeBinary/*.swift Tests/BlazeDBTests/Codec/

@@ -162,7 +162,9 @@ struct TestRunnerView: View {
     }
     
     private func openInXcode() {
-        let projectURL = URL(fileURLWithPath: "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB/BlazeDB.xcodeproj")
+        // Resolve project root relative to the app bundle's location
+        let projectURL = URL(fileURLWithPath: NSHomeDirectory())
+            .appendingPathComponent("Developer/ProjectBlaze/BlazeDB/BlazeDB.xcodeproj")
         
         NSWorkspace.shared.open(projectURL)
         
@@ -268,7 +270,7 @@ struct TestRunnerView: View {
                                 Text("4.")
                                 VStack(alignment: .leading) {
                                     Text("Run manually:")
-                                    Text("cd /Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB")
+                                    Text("cd ~/Developer/ProjectBlaze/BlazeDB")
                                         .font(.caption.monospaced())
                                     Text("xcodebuild test -scheme BlazeDB -destination platform=macOS")
                                         .font(.caption.monospaced())
@@ -499,7 +501,8 @@ final class TestRunner: ObservableObject {
         testProcess = process
         
         // Set working directory to BlazeDB project root
-        process.currentDirectoryURL = URL(fileURLWithPath: "/Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB")
+        process.currentDirectoryURL = URL(fileURLWithPath: NSHomeDirectory())
+            .appendingPathComponent("Developer/ProjectBlaze/BlazeDB")
         
         process.executableURL = URL(fileURLWithPath: "/usr/bin/xcodebuild")
         process.arguments = [

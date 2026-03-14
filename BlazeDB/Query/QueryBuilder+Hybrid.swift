@@ -3,11 +3,8 @@
 //  BlazeDB
 //
 //  Combined vector + spatial queries
-//  The "insane" feature: semantic search + location
+//  Hybrid search: semantic + location
 //
-//  Created by Auto on 1/XX/25.
-//
-
 import Foundation
 
 extension QueryBuilder {

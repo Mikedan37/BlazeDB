@@ -11,7 +11,7 @@ import Foundation
 // MARK: - RLS Manager
 
 /// RLS manager for a BlazeDBClient
-public final class RLS {
+internal final class RLS {
     internal let policyEngine: PolicyEngine
     private let accessManager: AccessManager
     private weak var client: BlazeDBClient?
@@ -27,26 +27,26 @@ public final class RLS {
     // MARK: - Enable/Disable
     
     /// Enable RLS enforcement
-    public func enable() {
+    internal func enable() {
         policyEngine.setEnabled(true)
         BlazeLogger.info("🔐 RLS enabled for '\(client?.name ?? "unknown")'")
     }
     
     /// Disable RLS enforcement
-    public func disable() {
+    internal func disable() {
         policyEngine.setEnabled(false)
         BlazeLogger.info("🔐 RLS disabled for '\(client?.name ?? "unknown")'")
     }
     
     /// Check if RLS is enabled
-    public func isEnabled() -> Bool {
+    internal func isEnabled() -> Bool {
         return policyEngine.isEnabled()
     }
     
     // MARK: - Context Management
     
     /// Set security context for current operations
-    public func setContext(_ context: SecurityContext) {
+    internal func setContext(_ context: SecurityContext) {
         lock.lock()
         defer { lock.unlock() }
         
@@ -55,7 +55,7 @@ public final class RLS {
     }
     
     /// Clear security context
-    public func clearContext() {
+    internal func clearContext() {
         lock.lock()
         defer { lock.unlock() }
         
@@ -64,7 +64,7 @@ public final class RLS {
     }
     
     /// Get current security context
-    public func getContext() -> SecurityContext? {
+    internal func getContext() -> SecurityContext? {
         lock.lock()
         defer { lock.unlock() }
         
@@ -74,22 +74,22 @@ public final class RLS {
     // MARK: - Policy Management
     
     /// Add a security policy
-    public func addPolicy(_ policy: SecurityPolicy) {
+    internal func addPolicy(_ policy: SecurityPolicy) {
         policyEngine.addPolicy(policy)
     }
     
     /// Remove a policy
-    public func removePolicy(named name: String) {
+    internal func removePolicy(named name: String) {
         policyEngine.removePolicy(named: name)
     }
     
     /// Clear all policies
-    public func clearPolicies() {
+    internal func clearPolicies() {
         policyEngine.clearPolicies()
     }
     
     /// Get all policies
-    public func getPolicies() -> [SecurityPolicy] {
+    internal func getPolicies() -> [SecurityPolicy] {
         return policyEngine.getPolicies()
     }
     
@@ -97,27 +97,27 @@ public final class RLS {
     
     /// Create a new user
     @discardableResult
-    public func createUser(_ user: User) -> UUID {
+    internal func createUser(_ user: User) -> UUID {
         return accessManager.createUser(user)
     }
     
     /// Get user
-    public func getUser(id: UUID) -> User? {
+    internal func getUser(id: UUID) -> User? {
         return accessManager.getUser(id: id)
     }
     
     /// Update user
-    public func updateUser(_ user: User) {
+    internal func updateUser(_ user: User) {
         accessManager.updateUser(user)
     }
     
     /// Delete user
-    public func deleteUser(id: UUID) {
+    internal func deleteUser(id: UUID) {
         accessManager.deleteUser(id: id)
     }
     
     /// List all users
-    public func listUsers() -> [User] {
+    internal func listUsers() -> [User] {
         return accessManager.listUsers()
     }
     
@@ -125,51 +125,51 @@ public final class RLS {
     
     /// Create a new team
     @discardableResult
-    public func createTeam(_ team: Team) -> UUID {
+    internal func createTeam(_ team: Team) -> UUID {
         return accessManager.createTeam(team)
     }
     
     /// Get team
-    public func getTeam(id: UUID) -> Team? {
+    internal func getTeam(id: UUID) -> Team? {
         return accessManager.getTeam(id: id)
     }
     
     /// Update team
-    public func updateTeam(_ team: Team) {
+    internal func updateTeam(_ team: Team) {
         accessManager.updateTeam(team)
     }
     
     /// Delete team
-    public func deleteTeam(id: UUID) {
+    internal func deleteTeam(id: UUID) {
         accessManager.deleteTeam(id: id)
     }
     
     /// List all teams
-    public func listTeams() -> [Team] {
+    internal func listTeams() -> [Team] {
         return accessManager.listTeams()
     }
     
     // MARK: - Team Membership
     
     /// Add user to team
-    public func addUserToTeam(userID: UUID, teamID: UUID, asAdmin: Bool = false) {
+    internal func addUserToTeam(userID: UUID, teamID: UUID, asAdmin: Bool = false) {
         accessManager.addUserToTeam(userID: userID, teamID: teamID, asAdmin: asAdmin)
     }
     
     /// Remove user from team
-    public func removeUserFromTeam(userID: UUID, teamID: UUID) {
+    internal func removeUserFromTeam(userID: UUID, teamID: UUID) {
         accessManager.removeUserFromTeam(userID: userID, teamID: teamID)
     }
     
     // MARK: - Role Management
     
     /// Add role to user
-    public func addRole(_ role: String, to userID: UUID) {
+    internal func addRole(_ role: String, to userID: UUID) {
         accessManager.addRole(role, to: userID)
     }
     
     /// Remove role from user
-    public func removeRole(_ role: String, from userID: UUID) {
+    internal func removeRole(_ role: String, from userID: UUID) {
         accessManager.removeRole(role, from: userID)
     }
     
@@ -203,7 +203,7 @@ extension BlazeDBClient {
     private static let rlsLock = NSLock()
     
     /// RLS manager for this database
-    public var rls: RLS {
+    internal var rls: RLS {
         let key = "\(name)-\(fileURL.path)"
         
         Self.rlsLock.lock()

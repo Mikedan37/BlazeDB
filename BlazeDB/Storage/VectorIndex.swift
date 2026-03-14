@@ -5,9 +5,6 @@
 //  Vector embeddings index for semantic search
 //  Uses cosine similarity for nearest neighbor search
 //
-//  Created by Auto on 1/XX/25.
-//
-
 import Foundation
 
 /// Vector embedding (array of floats)

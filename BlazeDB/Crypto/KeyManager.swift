@@ -21,6 +21,17 @@ enum KeyManagerError: Error {
 
 public final class KeyManager {
     nonisolated(unsafe) private static var passwordKeyCache = [String: SymmetricKey]()
+    private static let passwordKeyCacheLock = NSLock()
+    internal static var pbkdf2Iterations: Int {
+        if let override = ProcessInfo.processInfo.environment["BLAZEDB_PBKDF2_ITERATIONS"],
+           let parsed = Int(override), parsed > 0 {
+            return parsed
+        }
+        if ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil {
+            return 100_000
+        }
+        return 600_000
+    }
 
     public static func getKey(from source: KeySource, createIfMissing: Bool = false) throws -> SymmetricKey {
         switch source {
@@ -28,6 +39,8 @@ public final class KeyManager {
             return try loadSecureEnclaveKey(label: label, createIfMissing: createIfMissing)
 
         case .password(let pass):
+            // Legacy fallback for older call sites.
+            // New code should pass a per-database salt directly to getKey(from:salt:).
             guard let salt = "AshPileSalt".data(using: .utf8) else {
                 throw KeyManagerError.keychainError
             }
@@ -36,8 +49,8 @@ public final class KeyManager {
     }
 
     public static func getKey(from password: String, salt: Data) throws -> SymmetricKey {
-        let cacheKey = password + salt.base64EncodedString()
-        if let cached = passwordKeyCache[cacheKey] {
+        let cacheKey = cacheKeyDigest(password: password, salt: salt)
+        if let cached = cachedKey(for: cacheKey) {
             return cached
         }
 
@@ -53,10 +66,15 @@ public final class KeyManager {
 
         // Use CryptoKit's native PBKDF2 (SHA256)
         let passwordData = Data(password.utf8)
-        let derivedKey = try deriveKeyPBKDF2(password: passwordData, salt: salt, iterations: 10_000, keyLength: 32)
+        let derivedKey = try deriveKeyPBKDF2(
+            password: passwordData,
+            salt: salt,
+            iterations: pbkdf2Iterations,
+            keyLength: 32
+        )
 
         let symmetricKey = SymmetricKey(data: derivedKey)
-        passwordKeyCache[cacheKey] = symmetricKey
+        setCachedKey(symmetricKey, for: cacheKey)
         return symmetricKey
     }
     
@@ -91,50 +109,27 @@ public final class KeyManager {
 
     #if canImport(Security) && (os(macOS) || os(iOS) || os(watchOS) || os(tvOS))
     private static func loadSecureEnclaveKey(label: String, createIfMissing: Bool) throws -> SymmetricKey {
-        let access = SecAccessControlCreateWithFlags(nil,
-                                                      kSecAttrAccessibleWhenUnlockedThisDeviceOnly,
-                                                      .privateKeyUsage,
-                                                      nil)
+        guard SecureEnclaveKeyManager.isAvailable() else {
+            throw KeyManagerError.secureEnclaveUnavailable
+        }
 
-        let query: [String: Any] = [
-            kSecClass as String: kSecClassKey,
-            kSecAttrApplicationTag as String: label,
-            kSecAttrKeyType as String: kSecAttrKeyTypeECSECPrimeRandom,
-            kSecReturnRef as String: true,
-            kSecMatchLimit as String: kSecMatchLimitOne
-        ]
+        let manager = try SecureEnclaveKeyManager(
+            keyTag: label,
+            requireBiometry: false,
+            requireDeviceUnlock: true
+        )
 
-        var item: CFTypeRef?
-        let status = SecItemCopyMatching(query as CFDictionary, &item)
-
-        if status == errSecSuccess, let privateKey = item {
-            let dummyKey = SymmetricKey(size: .bits256)
-            return dummyKey
+        if let existing = try manager.retrieveKey() {
+            return existing
         }
 
         guard createIfMissing else {
             throw KeyManagerError.keychainError
         }
 
-        let attributes: [String: Any] = [
-            kSecAttrKeyType as String: kSecAttrKeyTypeECSECPrimeRandom,
-            kSecAttrKeySizeInBits as String: 256,
-            kSecAttrTokenID as String: kSecAttrTokenIDSecureEnclave,
-            kSecAttrLabel as String: label,
-            kSecAttrIsPermanent as String: true,
-            kSecPrivateKeyAttrs as String: [
-                kSecAttrAccessControl as String: access as Any,
-                kSecAttrApplicationTag as String: label
-            ]
-        ]
-
-        var error: Unmanaged<CFError>?
-        guard let privateKey = SecKeyCreateRandomKey(attributes as CFDictionary, &error) else {
-            throw KeyManagerError.secureEnclaveUnavailable
-        }
-
-        let dummyKey = SymmetricKey(size: .bits256)
-        return dummyKey
+        let newKey = SymmetricKey(size: .bits256)
+        try manager.storeKey(newKey)
+        return newKey
     }
     #else
     private static func loadSecureEnclaveKey(label: String, createIfMissing: Bool) throws -> SymmetricKey {
@@ -149,7 +144,37 @@ public final class KeyManager {
         }
 
         let passwordData = Data(password.utf8)
-        let derivedKey = try deriveKeyPBKDF2(password: passwordData, salt: salt, iterations: 10_000, keyLength: 32)
+        let derivedKey = try deriveKeyPBKDF2(
+            password: passwordData,
+            salt: salt,
+            iterations: pbkdf2Iterations,
+            keyLength: 32
+        )
         return SymmetricKey(data: derivedKey)
+    }
+
+    public static func clearKeyCache() {
+        passwordKeyCacheLock.lock()
+        defer { passwordKeyCacheLock.unlock() }
+        passwordKeyCache.removeAll()
+    }
+
+    private static func cachedKey(for cacheKey: String) -> SymmetricKey? {
+        passwordKeyCacheLock.lock()
+        defer { passwordKeyCacheLock.unlock() }
+        return passwordKeyCache[cacheKey]
+    }
+
+    private static func setCachedKey(_ key: SymmetricKey, for cacheKey: String) {
+        passwordKeyCacheLock.lock()
+        defer { passwordKeyCacheLock.unlock() }
+        passwordKeyCache[cacheKey] = key
+    }
+
+    private static func cacheKeyDigest(password: String, salt: Data) -> String {
+        var material = Data(password.utf8)
+        material.append(salt)
+        let digest = SHA256.hash(data: material)
+        return Data(digest).base64EncodedString()
     }
 }

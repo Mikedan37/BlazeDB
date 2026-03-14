@@ -188,7 +188,6 @@ extension BlazeDBClient {
             DispatchQueue.global(qos: .userInitiated).async {
                 do {
                     var results: [UUID: Bool] = [:]
-                    let idSet = Set(ids)
                     
                     // Single scan
                     let allRecords = try self.fetchAll()
@@ -236,23 +235,14 @@ extension BlazeDBClient {
     /// ```
     public func deleteMany(ids: [UUID]) async throws -> Int {
         BlazeLogger.debug("Deleting \(ids.count) records by ID...")
-        
+
         return try await withCheckedThrowingContinuation { continuation in
             DispatchQueue.global(qos: .userInitiated).async {
                 do {
-                    var count = 0
-                    try self.performSafeWrite {
-                        for id in ids {
-                            do {
-                                try self.delete(id: id)
-                                count += 1
-                            } catch BlazeDBError.recordNotFound {
-                                // Already deleted, skip
-                                BlazeLogger.trace("Record \(id) not found, skipping")
-                            }
-                        }
-                    }
-                    
+                    // Use the sync deleteMany which delegates to deleteBatch
+                    // and returns the actual count of records that existed
+                    let count = try self.deleteMany(ids: ids) as Int
+
                     BlazeLogger.info("✅ Deleted \(count)/\(ids.count) records")
                     continuation.resume(returning: count)
                 } catch {

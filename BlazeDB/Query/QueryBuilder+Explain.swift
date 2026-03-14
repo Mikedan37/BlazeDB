@@ -75,6 +75,7 @@ extension QueryBuilder {
     ///     .explainCost()
     /// print(explanation.description)
     /// ```
+    @available(*, deprecated, message: "Use explain() instead, which returns a DetailedQueryPlan you can inspect programmatically.")
     public func explainCost() throws -> QueryExplanation {
         guard let collection = collection else {
             throw BlazeDBError.invalidQuery(
@@ -113,7 +114,7 @@ extension QueryBuilder {
         } else {
             // All fields indexed (or unknown)
             riskLevel = .ok
-            suggestion = "Query should use indexes efficiently."
+            suggestion = "Indexed fields were detected; verify execution details with explain() because some engine paths still use table-scan fallbacks."
         }
         
         return QueryExplanation(

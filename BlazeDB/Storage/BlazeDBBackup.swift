@@ -353,7 +353,7 @@ extension BlazeDBClient {
     /// )
     /// ```
     public func export(
-        where predicate: @escaping (BlazeDataRecord) -> Bool,
+        where predicate: @escaping @Sendable (BlazeDataRecord) -> Bool,
         format: ExportFormat = .json
     ) async throws -> Data {
         BlazeLogger.info("📤 Exporting filtered records in \(format) format")
@@ -427,7 +427,7 @@ extension BlazeDBClient {
                         records = try JSONDecoder().decode([BlazeDataRecord].self, from: data)
                     case .blazedb:
                         // Native format import not supported in this mode
-                        throw BlazeDBError.transactionFailed("Native .blazedb format requires restore() method", underlyingError: nil)
+                        throw BlazeDBError.invalidData(reason: "Native .blazedb format requires restore() method")
                     }
                     
                     var imported = 0
@@ -568,17 +568,28 @@ extension BlazeDBClient {
         return try await withCheckedThrowingContinuation { continuation in
             DispatchQueue.global(qos: .utility).async {
                 do {
-                    // Try to open backup as a temporary database
-                    let tempDB = try BlazeDBClient(
-                        name: "BackupVerification",
-                        fileURL: url,
-                        password: "" // Will fail if wrong password
-                    )
-                    
-                    // Try to count records
-                    let count = try tempDB.count()
-                    
-                    BlazeLogger.info("✅ Backup verified: \(count) records")
+                    let backupMetaURL = url.deletingPathExtension().appendingPathExtension("meta")
+
+                    // Structural validation: required files must exist and be readable.
+                    guard FileManager.default.fileExists(atPath: url.path),
+                          FileManager.default.fileExists(atPath: backupMetaURL.path) else {
+                        BlazeLogger.warn("❌ Backup verification failed: missing main or meta file")
+                        continuation.resume(returning: false)
+                        return
+                    }
+
+                    let dataFile = try Data(contentsOf: url)
+                    let metaFile = try Data(contentsOf: backupMetaURL)
+                    guard !metaFile.isEmpty else {
+                        BlazeLogger.warn("❌ Backup verification failed: empty meta file")
+                        continuation.resume(returning: false)
+                        return
+                    }
+
+                    // Ensure metadata can be decoded (secure or plain layout).
+                    _ = try StorageLayout.load(from: backupMetaURL)
+
+                    BlazeLogger.info("✅ Backup verified: data=\(dataFile.count) bytes, meta=\(metaFile.count) bytes")
                     continuation.resume(returning: true)
                     
                 } catch {

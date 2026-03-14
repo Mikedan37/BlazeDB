@@ -5,9 +5,6 @@
 //  Custom Encoder that converts Codable Record types directly to BlazeDataRecord
 //  Eliminates JSON intermediate step for better performance!
 //
-//  Created by Auto on 1/XX/25.
-//
-
 import Foundation
 
 /// Custom Encoder that builds BlazeDataRecord directly from Codable types

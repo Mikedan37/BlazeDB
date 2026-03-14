@@ -9,18 +9,18 @@
 import Foundation
 
 /// User account for access management
-public struct User: Codable {
-    public let id: UUID
-    public var name: String
-    public var email: String
-    public var roles: Set<String>
-    public var teamIDs: [UUID]
-    public var customClaims: [String: String]
-    public var isActive: Bool
-    public let createdAt: Date
-    public var updatedAt: Date
+internal struct User: Codable {
+    internal let id: UUID
+    internal var name: String
+    internal var email: String
+    internal var roles: Set<String>
+    internal var teamIDs: [UUID]
+    internal var customClaims: [String: String]
+    internal var isActive: Bool
+    internal let createdAt: Date
+    internal var updatedAt: Date
     
-    public init(
+    internal init(
         id: UUID = UUID(),
         name: String,
         email: String,
@@ -41,7 +41,7 @@ public struct User: Codable {
     }
     
     /// Convert to SecurityContext
-    public func toSecurityContext() -> SecurityContext {
+    internal func toSecurityContext() -> SecurityContext {
         return SecurityContext(
             userID: id,
             teamIDs: teamIDs,
@@ -52,15 +52,15 @@ public struct User: Codable {
 }
 
 /// Team/Organization for multi-tenant access
-public struct Team: Codable {
-    public let id: UUID
-    public var name: String
-    public var memberIDs: [UUID]
-    public var adminIDs: [UUID]
-    public let createdAt: Date
-    public var updatedAt: Date
+internal struct Team: Codable {
+    internal let id: UUID
+    internal var name: String
+    internal var memberIDs: [UUID]
+    internal var adminIDs: [UUID]
+    internal let createdAt: Date
+    internal var updatedAt: Date
     
-    public init(
+    internal init(
         id: UUID = UUID(),
         name: String,
         memberIDs: [UUID] = [],
@@ -76,18 +76,18 @@ public struct Team: Codable {
 }
 
 /// Manages users, teams, and access control
-public final class AccessManager {
+internal final class AccessManager {
     private var users: [UUID: User] = [:]
     private var teams: [UUID: Team] = [:]
     private let lock = NSLock()
     
-    public init() {}
+    internal init() {}
     
     // MARK: - User Management
     
     /// Create a new user
     @discardableResult
-    public func createUser(_ user: User) -> UUID {
+    internal func createUser(_ user: User) -> UUID {
         lock.lock()
         defer { lock.unlock() }
         
@@ -97,7 +97,7 @@ public final class AccessManager {
     }
     
     /// Get user by ID
-    public func getUser(id: UUID) -> User? {
+    internal func getUser(id: UUID) -> User? {
         lock.lock()
         defer { lock.unlock() }
         
@@ -105,7 +105,7 @@ public final class AccessManager {
     }
     
     /// Update user
-    public func updateUser(_ user: User) {
+    internal func updateUser(_ user: User) {
         lock.lock()
         defer { lock.unlock() }
         
@@ -116,7 +116,7 @@ public final class AccessManager {
     }
     
     /// Delete user
-    public func deleteUser(id: UUID) {
+    internal func deleteUser(id: UUID) {
         lock.lock()
         defer { lock.unlock() }
         
@@ -125,7 +125,7 @@ public final class AccessManager {
     }
     
     /// List all users
-    public func listUsers() -> [User] {
+    internal func listUsers() -> [User] {
         lock.lock()
         defer { lock.unlock() }
         
@@ -136,7 +136,7 @@ public final class AccessManager {
     
     /// Create a new team
     @discardableResult
-    public func createTeam(_ team: Team) -> UUID {
+    internal func createTeam(_ team: Team) -> UUID {
         lock.lock()
         defer { lock.unlock() }
         
@@ -146,7 +146,7 @@ public final class AccessManager {
     }
     
     /// Get team by ID
-    public func getTeam(id: UUID) -> Team? {
+    internal func getTeam(id: UUID) -> Team? {
         lock.lock()
         defer { lock.unlock() }
         
@@ -154,7 +154,7 @@ public final class AccessManager {
     }
     
     /// Update team
-    public func updateTeam(_ team: Team) {
+    internal func updateTeam(_ team: Team) {
         lock.lock()
         defer { lock.unlock() }
         
@@ -165,7 +165,7 @@ public final class AccessManager {
     }
     
     /// Delete team
-    public func deleteTeam(id: UUID) {
+    internal func deleteTeam(id: UUID) {
         lock.lock()
         defer { lock.unlock() }
         
@@ -174,7 +174,7 @@ public final class AccessManager {
     }
     
     /// List all teams
-    public func listTeams() -> [Team] {
+    internal func listTeams() -> [Team] {
         lock.lock()
         defer { lock.unlock() }
         
@@ -184,7 +184,7 @@ public final class AccessManager {
     // MARK: - Team Membership
     
     /// Add user to team
-    public func addUserToTeam(userID: UUID, teamID: UUID, asAdmin: Bool = false) {
+    internal func addUserToTeam(userID: UUID, teamID: UUID, asAdmin: Bool = false) {
         lock.lock()
         defer { lock.unlock() }
         
@@ -214,7 +214,7 @@ public final class AccessManager {
     }
     
     /// Remove user from team
-    public func removeUserFromTeam(userID: UUID, teamID: UUID) {
+    internal func removeUserFromTeam(userID: UUID, teamID: UUID) {
         lock.lock()
         defer { lock.unlock() }
         
@@ -236,7 +236,7 @@ public final class AccessManager {
     // MARK: - Role Management
     
     /// Add role to user
-    public func addRole(_ role: String, to userID: UUID) {
+    internal func addRole(_ role: String, to userID: UUID) {
         lock.lock()
         defer { lock.unlock() }
         
@@ -248,7 +248,7 @@ public final class AccessManager {
     }
     
     /// Remove role from user
-    public func removeRole(_ role: String, from userID: UUID) {
+    internal func removeRole(_ role: String, from userID: UUID) {
         lock.lock()
         defer { lock.unlock() }
         
@@ -262,7 +262,7 @@ public final class AccessManager {
     // MARK: - Helper Methods
     
     /// Get security context for a user
-    public func getSecurityContext(for userID: UUID) -> SecurityContext? {
+    internal func getSecurityContext(for userID: UUID) -> SecurityContext? {
         lock.lock()
         defer { lock.unlock() }
         
@@ -274,7 +274,7 @@ public final class AccessManager {
     }
     
     /// Check if user exists and is active
-    public func isUserActive(id: UUID) -> Bool {
+    internal func isUserActive(id: UUID) -> Bool {
         lock.lock()
         defer { lock.unlock() }
         

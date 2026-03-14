@@ -132,9 +132,16 @@ extension BlazeDBClient {
         
         return try collection.queue.sync(flags: .barrier) {
             BlazeLogger.info("🗑️ VACUUM: Starting CRASH-SAFE database compaction...")
-            
+
             let startTime = Date()
-            
+
+            // Flush in-memory state to disk before measuring / copying.
+            // Without this, the .blazedb file may not exist yet if records
+            // are still only in the WAL or in-memory cache.
+            // We're already inside queue.sync(.barrier), so call store/layout directly.
+            try collection.store.synchronize()
+            try collection.saveLayout()
+
             // CRASH SAFETY: Write VACUUM intent log
             let vacuumLogURL = collection.store.fileURL
                 .deletingPathExtension()
@@ -149,8 +156,23 @@ extension BlazeDBClient {
             // Get current file size
             let oldSize = try collection.store.fileURL.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0
             
-            // Fetch all active records
-            let activeRecords = try collection.fetchAll()
+            // Fetch all active records without re-entering collection.queue sync.
+            // We are already executing inside collection.queue.sync(flags: .barrier).
+            // Calling collection.fetchAll() here can trigger nested queue.sync and
+            // crash with "dispatch_sync called on queue already owned by current thread".
+            let activeRecords: [BlazeDataRecord]
+            if collection.mvccEnabled {
+                let tx = MVCCTransaction(versionManager: collection.versionManager, pageStore: collection.store)
+                let mvccRecords = try tx.readAll()
+                if mvccRecords.isEmpty && !collection.indexMap.isEmpty {
+                    BlazeLogger.warn("⚠️ VACUUM: MVCC returned 0 records while indexMap has \(collection.indexMap.count) entries; falling back to no-sync legacy fetch.")
+                    activeRecords = try collection._fetchAllNoSync()
+                } else {
+                    activeRecords = mvccRecords
+                }
+            } else {
+                activeRecords = try collection._fetchAllNoSync()
+            }
             BlazeLogger.info("   📊 Found \(activeRecords.count) active records")
             
             // Create temporary database

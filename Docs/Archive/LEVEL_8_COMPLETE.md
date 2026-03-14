@@ -243,7 +243,7 @@ BlazeDB now has a **world-class testing infrastructure** that would make any dat
 
 ### **Run All Tests**
 ```bash
-cd /Users/mdanylchuk/Developer/ProjectBlaze/BlazeDB
+cd ~/Developer/ProjectBlaze/BlazeDB
 swift test
 ```
 

@@ -4,7 +4,6 @@
 //
 //  MVCC version GC coordination across distributed nodes
 //
-//  Created: 2025-01-XX
 //
 
 #if !BLAZEDB_LINUX_CORE
@@ -49,7 +48,7 @@ public actor DistributedVersionGC {
     /// Request version cleanup from other nodes
     public func requestVersionCleanup(recordID: UUID, minVersion: UInt64) async throws {
         // Broadcast cleanup request to all connected nodes
-        // In a real implementation, this would send a message through the relay
+        // TODO: Implement when distributed module is enabled
         BlazeLogger.debug("Requesting version cleanup for record \(recordID) (min version: \(minVersion))")
         
         // Update our minimum version

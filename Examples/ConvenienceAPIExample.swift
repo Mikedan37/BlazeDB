@@ -18,7 +18,7 @@ func convenienceAPIExample() throws {
     // MARK: - 1. Create Database by Name (Super Simple!)
     
     print("1. Creating database by name...")
-    let db = try BlazeDBClient(name: "MyApp", password: "secure-password-123")
+    let db = try BlazeDBClient.open(named: "MyApp", password: "secure-password-123")
     print("✅ Database created at: \(db.fileURL.path)\n")
     
     // Database is automatically stored in:
@@ -85,8 +85,8 @@ func convenienceAPIExample() throws {
     // MARK: - 7. Multiple Databases
     
     print("7. Creating multiple databases...")
-    let userDB = try BlazeDBClient(name: "UserData", password: "password1")
-    let cacheDB = try BlazeDBClient(name: "Cache", password: "password2")
+    let userDB = try BlazeDBClient.open(named: "UserData", password: "password1")
+    let cacheDB = try BlazeDBClient.open(named: "Cache", password: "password2")
     
     // Insert data in each
     _ = try userDB.insert(BlazeDataRecord(["type": .string("user")]))

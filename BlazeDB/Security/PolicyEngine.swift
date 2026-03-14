@@ -9,17 +9,17 @@
 import Foundation
 
 /// Engine that evaluates security policies
-public final class PolicyEngine {
+internal final class PolicyEngine {
     private var policies: [SecurityPolicy] = []
     private let lock = NSLock()
     private var enabled: Bool = false
     
-    public init() {}
+    internal init() {}
     
     // MARK: - Policy Management
     
     /// Add a security policy
-    public func addPolicy(_ policy: SecurityPolicy) {
+    internal func addPolicy(_ policy: SecurityPolicy) {
         lock.lock()
         defer { lock.unlock() }
         
@@ -28,7 +28,7 @@ public final class PolicyEngine {
     }
     
     /// Remove a policy by name
-    public func removePolicy(named name: String) {
+    internal func removePolicy(named name: String) {
         lock.lock()
         defer { lock.unlock() }
         
@@ -37,7 +37,7 @@ public final class PolicyEngine {
     }
     
     /// Clear all policies
-    public func clearPolicies() {
+    internal func clearPolicies() {
         lock.lock()
         defer { lock.unlock() }
         
@@ -46,7 +46,7 @@ public final class PolicyEngine {
     }
     
     /// Get all policies
-    public func getPolicies() -> [SecurityPolicy] {
+    internal func getPolicies() -> [SecurityPolicy] {
         lock.lock()
         defer { lock.unlock() }
         
@@ -54,7 +54,7 @@ public final class PolicyEngine {
     }
     
     /// Enable/disable policy enforcement
-    public func setEnabled(_ enabled: Bool) {
+    internal func setEnabled(_ enabled: Bool) {
         lock.lock()
         defer { lock.unlock() }
         
@@ -63,7 +63,7 @@ public final class PolicyEngine {
     }
     
     /// Check if policy enforcement is enabled
-    public func isEnabled() -> Bool {
+    internal func isEnabled() -> Bool {
         lock.lock()
         defer { lock.unlock() }
         
@@ -73,7 +73,7 @@ public final class PolicyEngine {
     // MARK: - Policy Evaluation
     
     /// Check if operation is allowed on a record
-    public func isAllowed(
+    internal func isAllowed(
         operation: PolicyOperation,
         context: SecurityContext,
         record: BlazeDataRecord
@@ -139,7 +139,7 @@ public final class PolicyEngine {
     }
     
     /// Filter records based on policies
-    public func filterRecords(
+    internal func filterRecords(
         operation: PolicyOperation,
         context: SecurityContext,
         records: [BlazeDataRecord]
@@ -154,7 +154,7 @@ public final class PolicyEngine {
     }
     
     /// Check if operation is allowed (for operations without record)
-    public func canPerformOperation(
+    internal func canPerformOperation(
         operation: PolicyOperation,
         context: SecurityContext
     ) -> Bool {

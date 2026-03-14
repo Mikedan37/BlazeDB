@@ -5,9 +5,6 @@
 //  Progress monitoring API for migration operations
 //  Can be polled for UI updates
 //
-//  Created by Auto on 1/XX/25.
-//
-
 import Foundation
 
 // MARK: - Migration Progress
@@ -80,8 +77,12 @@ public class MigrationProgressMonitor {
     private var progress: MigrationProgress
     private let lock = NSLock()
     private var observers: [UUID: (MigrationProgress) -> Void] = [:]
-    
-    public init() {
+
+    /// The queue on which observer callbacks are dispatched. Defaults to `.main`.
+    public var callbackQueue: DispatchQueue
+
+    public init(callbackQueue: DispatchQueue = .main) {
+        self.callbackQueue = callbackQueue
         self.progress = MigrationProgress(
             currentTable: nil,
             currentTableIndex: 0,
@@ -203,7 +204,7 @@ public class MigrationProgressMonitor {
     
     private func notifyObservers(_ progress: MigrationProgress) {
         let currentObservers = observers
-        DispatchQueue.main.async {
+        callbackQueue.async {
             for observer in currentObservers.values {
                 observer(progress)
             }

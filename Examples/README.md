@@ -1,251 +1,114 @@
-# 🔥 BlazeDB Examples
+# BlazeDB Examples
 
-**Complete, runnable examples for BlazeDB - from basic usage to advanced sync scenarios.**
-
----
-
-## **🎯 Convenience API Example (NEW!)**
-
-**Super simple database creation - just a name!**
-
-```swift
-import BlazeDB
-
-// Create database by name (no file paths needed!)
-let db = try BlazeDBClient(name: "MyApp", password: "secure-password-123")
-
-// Database automatically stored in:
-// ~/Library/Application Support/BlazeDB/MyApp.blazedb
-
-// Discover databases
-let databases = try BlazeDBClient.discoverDatabases()
-for dbInfo in databases {
-    print("Found: \(dbInfo.name) at \(dbInfo.path)")
-}
-```
-
-**See:** `ConvenienceAPIExample.swift` for complete example.
+Runnable examples from basic to advanced.
 
 ---
 
-## **📚 Table of Contents:**
+## Start Here (Recommended Order)
 
-1. [Convenience API](#convenience-api-example) - Easy database creation by name
-2. [Sync Examples](#sync-examples) - Database synchronization
-3. [Basic Examples](#basic-examples) - Core BlazeDB features
-4. [Advanced Examples](#advanced-examples) - Advanced features
-
----
-
-## **🔄 Sync Examples**
-
-**Complete examples for all sync scenarios - the game-changing feature!**
+| Order | Example | What You'll Learn | Run Command |
+|-------|---------|-------------------|-------------|
+| 1 | HelloBlazeDB | Open, insert, query, close | `swift run HelloBlazeDB` |
+| 2 | BasicExample | CRUD operations | `swift run BasicExample` |
+| 3 | QueryBuilderExample | Queries and filters | See file |
+| 4 | MigrationExamples | Schema migrations | See file |
 
 ---
 
-## **Quick Start:**
+## All Examples by Category
 
-1. **Choose your scenario** from the list below
-2. **Copy the example file** to your project
-3. **Run it!** All examples are self-contained and ready to use
+### Getting Started
+| File | Description |
+|------|-------------|
+| `HelloBlazeDB/main.swift` | Complete walkthrough (best first example) |
+| `BasicExample/main.swift` | Basic CRUD operations |
+| `QuickStart.swift` | Minimal working example |
+| `BasicUsageExample.swift` | Common patterns |
+
+### Queries
+| File | Description |
+|------|-------------|
+| `QueryBuilderExample.swift` | Fluent query builder |
+| `KeyPathQueriesExample.swift` | Type-safe queries with key paths |
+| `JoinExample.swift` | Joining data from multiple queries |
+
+### Data Modeling
+| File | Description |
+|------|-------------|
+| `CodableExample.swift` | Using Codable types |
+| `TypeSafeModels.swift` | Defining type-safe models |
+| `TypeSafeUsageExample.swift` | Using type-safe models |
+| `DynamicSchemaExample.swift` | Schema-less flexible storage |
+
+### Advanced Features
+| File | Description |
+|------|-------------|
+| `MigrationExamples.swift` | Schema migrations |
+| `EventTriggersExample.swift` | Database triggers |
+| `LazyDecodingExample.swift` | Lazy field loading |
+| `VectorIndexExample.swift` | Vector similarity search |
+| `DataSeedingExample.swift` | Generating test data |
+
+### Monitoring and Debugging
+| File | Description |
+|------|-------------|
+| `MonitorDatabases.swift` | Health monitoring |
+| `PrettyPrintExample.swift` | Debug output |
+| `TelemetryBasicExample.swift` | Performance metrics |
+| `ProgressMonitorExample.swift` | Long operation progress |
+
+### Sync (Experimental)
+| File | Description |
+|------|-------------|
+| `SyncExample_SameApp.swift` | In-memory sync (same process) |
+| `SyncExample_CrossApp.swift` | Unix socket sync (cross-process) |
+| `SyncExample_RemoteServer.swift` | TCP server |
+| `SyncExample_RemoteClient.swift` | TCP client |
+
+See `SYNC_EXAMPLES_INDEX.md` for complete sync documentation.
+
+### Integration
+| File | Description |
+|------|-------------|
+| `SwiftUIExample.swift` | SwiftUI integration |
+| `VaporServer/main.swift` | Vapor web server |
+| `ReferenceConsumer/main.swift` | Production lifecycle example |
+
+### Security
+| File | Description |
+|------|-------------|
+| `RLSExample.swift` | Row-level security (under development; not available in this release) |
+| `AshPileWithRLS.swift` | RLS with real app patterns (under development; not available in this release) |
 
 ---
 
-## **Available Examples:**
+## How to Run
 
-### **1. Same App Sync** (`SyncExample_SameApp.swift`)
-**Fastest sync method** - Multiple databases in the same app
-- ⚡ Latency: <0.1ms
-- 🚀 Throughput: 10K-50K ops/sec
-- 💾 Transport: In-Memory Queue
-
-**Use when:** You have multiple databases in the same app that need to sync
-
+**Executable examples** (in Package.swift):
 ```bash
-swift run SyncExample_SameApp
+swift run HelloBlazeDB
+swift run BasicExample
+swift run ReferenceConsumer
 ```
 
----
-
-### **2. Cross-App Sync** (`SyncExample_CrossApp.swift`)
-**Cross-app sync** - Different apps on the same device
-- ⚡ Latency: ~0.3-0.5ms
-- 🚀 Throughput: 5K-20K ops/sec
-- 💾 Transport: Unix Domain Sockets
-- 📦 Encoding: BlazeBinary (5-10x faster than JSON!)
-
-**Use when:** You have multiple apps that need to share data
-
+**Single-file examples:**
 ```bash
-swift run SyncExample_CrossApp
+# Copy into your project or run with swift-sh
+swift Examples/QuickStart.swift
 ```
 
 ---
 
-### **3. Remote Server** (`SyncExample_RemoteServer.swift`)
-**Sync server** - Accepts connections from remote clients
-- ⚡ Latency: ~5ms
-- 🚀 Throughput: 1K-10K ops/sec
-- 🔒 Security: E2E encryption (AES-256-GCM)
-- 📦 Encoding: BlazeBinary
+## Adding Examples to Your Project
 
-**Use when:** You need a central server for multiple clients
-
-```bash
-swift run SyncExample_RemoteServer
-```
+1. Copy the example file to your project
+2. Add `import BlazeDB` at the top
+3. Ensure your target depends on `BlazeDB`
 
 ---
 
-### **4. Remote Client** (`SyncExample_RemoteClient.swift`)
-**Sync client** - Connects to a remote server
-- ⚡ Latency: ~5ms
-- 🔒 Security: E2E encryption
-- 📦 Encoding: BlazeBinary
+## Need Help?
 
-**Use when:** You need to connect to a remote BlazeDB server
-
-```bash
-# First, start the server:
-swift run SyncExample_RemoteServer
-
-# Then, in another terminal, run the client:
-swift run SyncExample_RemoteClient
-```
-
----
-
-### **5. Automatic Discovery** (`SyncExample_Discovery.swift`)
-**mDNS/Bonjour discovery** - Automatically find BlazeDB servers
-- 🔍 Automatic server discovery
-- 📱 Works on Mac and iOS
-- 🌐 Network-wide discovery
-
-**Use when:** You want clients to automatically find servers
-
-```bash
-swift run SyncExample_Discovery
-```
-
----
-
-### **6. Master-Slave Pattern** (`SyncExample_MasterSlave.swift`)
-**One-way sync** - Master writes, Slave reads only
-- 👑 Master database (writes)
-- 📖 Slave database (reads)
-- 🔄 One-way sync
-
-**Use when:** You need read replicas or backup databases
-
-```bash
-swift run SyncExample_MasterSlave
-```
-
----
-
-### **7. Hub-and-Spoke Pattern** (`SyncExample_HubAndSpoke.swift`)
-**Centralized distribution** - One server, multiple clients
-- 🔄 Hub (server)
-- 📡 Multiple Spokes (clients)
-- 📊 Broadcast to all
-
-**Use when:** You need to distribute data from one central database to multiple clients
-
-```bash
-swift run SyncExample_HubAndSpoke
-```
-
----
-
-### **8. App Groups (iOS/macOS)** (`SyncExample_AppGroups.swift`)
-**App Groups sync** - Recommended for Apple platforms
-- 📱 iOS/macOS App Groups
-- 🔒 Secure shared container
-- 📦 Unix Domain Sockets
-
-**Use when:** You have multiple apps on iOS/macOS that need to share data
-
-**Note:** Requires App Groups configuration in Xcode
-
-```bash
-swift run SyncExample_AppGroups
-```
-
----
-
-## **How to Run:**
-
-### **Option 1: Direct Swift Execution**
-```bash
-cd Examples
-swift SyncExample_SameApp.swift
-```
-
-### **Option 2: Add to Xcode Project**
-1. Add example files to your Xcode project
-2. Set one as the main target
-3. Run from Xcode
-
-### **Option 3: Create Executable Package**
-Add to your `Package.swift`:
-```swift
-.executableTarget(
-    name: "SyncExample_SameApp",
-    dependencies: ["BlazeDB"],
-    path: "Examples"
-)
-```
-
----
-
-## **Example Features:**
-
-✅ **Self-contained** - No external dependencies
-✅ **Commented** - Clear explanations throughout
-✅ **Production-ready** - Real-world patterns
-✅ **Performance tested** - Includes throughput measurements
-✅ **Error handling** - Proper error handling examples
-
----
-
-## **Performance Reference:**
-
-| Example | Latency | Throughput | Transport |
-|---------|---------|------------|-----------|
-| Same App | <0.1ms | 10K-50K ops/sec | In-Memory |
-| Cross-App | ~0.3-0.5ms | 5K-20K ops/sec | Unix Domain Socket |
-| Remote | ~5ms | 1K-10K ops/sec | TCP |
-
----
-
-## **Next Steps:**
-
-1. **Run an example** to see sync in action
-2. **Modify it** for your use case
-3. **Check documentation:**
-   - `SYNC_TRANSPORT_GUIDE.md` - Detailed guide
-   - `SYNC_EXAMPLES.md` - More examples
-   - `SYNC_SIMPLE_GUIDE.md` - Quick start
-
----
-
-## **Troubleshooting:**
-
-### **Example won't run?**
-- ✅ Make sure BlazeDB is imported
-- ✅ Check file paths exist
-- ✅ Verify Swift version (5.9+)
-
-### **Sync not working?**
-- ✅ Check BlazeLogger output (set level to `.debug`)
-- ✅ Wait longer (sync is async)
-- ✅ Verify both databases are connected
-
-### **Need help?**
-- 📖 Check `SYNC_TRANSPORT_GUIDE.md`
-- 📖 Read `SYNC_EXAMPLES.md`
-- 🐛 Open an issue on GitHub
-
----
-
-**Happy syncing! 🔥**
+- [Getting Started Guide](../Docs/GettingStarted/README.md) - 5-minute setup
+- [Complete Reference](../Docs/GettingStarted/HOW_TO_USE_BLAZEDB.md) - Full usage guide
+- [Developer Guide](../Docs/DEVELOPER_GUIDE.md) - API reference
