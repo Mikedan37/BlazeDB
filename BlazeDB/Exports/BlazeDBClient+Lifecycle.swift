@@ -69,6 +69,10 @@ extension BlazeDBClient {
             BlazeLogger.error("Failed to close collection resources for '\(name)': \(error)")
         }
 
+        // Reduce plaintext secret lifetime after shutdown.
+        password = nil
+        BlazeDBClient.clearCachedKey(for: fileURL.path)
+
         // Mark closed after cleanup.
         _isClosed = true
         

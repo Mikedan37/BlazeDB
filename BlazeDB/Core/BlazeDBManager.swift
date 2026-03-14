@@ -8,6 +8,9 @@ import CryptoKit
 #else
 import Crypto
 #endif
+#if canImport(Security)
+import Security
+#endif
 
 /// Manages multiple BlazeDB instances for fast DB switching.
 /// Thread-safe: Uses nonisolated(unsafe) for singleton (caller must ensure thread safety)
@@ -43,7 +46,8 @@ public var mountedDatabases: [String: DynamicCollection] = [:]
             ])
         }
         
-        let key = Self.keyFromPassword(password)
+        let kdfSalt = try Self.loadOrCreateKDFSalt(for: fileURL)
+        let key = try Self.keyFromPassword(password, salt: kdfSalt)
         let metaURL = fileURL.deletingPathExtension().appendingPathExtension("meta")
         let store = try PageStore(fileURL: fileURL, key: key)
         
@@ -54,7 +58,14 @@ public var mountedDatabases: [String: DynamicCollection] = [:]
         BlazeLogger.info("Recovered journal for \(name)")
         
         // CRITICAL: Pass password to DynamicCollection so migration can access password-protected layouts
-        let collection = try DynamicCollection(store: store, metaURL: metaURL, project: name, encryptionKey: key, password: password)
+        let collection = try DynamicCollection(
+            store: store,
+            metaURL: metaURL,
+            project: name,
+            encryptionKey: key,
+            password: password,
+            kdfSalt: kdfSalt
+        )
         mountedDatabases[name] = collection
         currentKey = key
         currentName = name
@@ -95,14 +106,35 @@ public var mountedDatabases: [String: DynamicCollection] = [:]
     }
 
     /// Create a key from a user-provided password.
-    private static func keyFromPassword(_ password: String) -> SymmetricKey {
-        guard let passwordData = password.data(using: .utf8) else {
-            // Fallback: use UTF-8 view directly
-            let hashed = SHA256.hash(data: Data(password.utf8))
-            return SymmetricKey(data: Data(hashed))
+    private static func keyFromPassword(_ password: String, salt: Data) throws -> SymmetricKey {
+        try KeyManager.getKey(from: password, salt: salt)
+    }
+
+    private static func kdfSaltURL(for fileURL: URL) -> URL {
+        fileURL.deletingPathExtension().appendingPathExtension("salt")
+    }
+
+    private static func loadOrCreateKDFSalt(for fileURL: URL) throws -> Data {
+        let saltURL = kdfSaltURL(for: fileURL)
+        let fm = FileManager.default
+
+        if fm.fileExists(atPath: saltURL.path) {
+            let existing = try Data(contentsOf: saltURL)
+            if !existing.isEmpty {
+                return existing
+            }
         }
-        let hashed = SHA256.hash(data: passwordData)
-        return SymmetricKey(data: hashed)
+
+        var bytes = [UInt8](repeating: 0, count: 16)
+        let result = SecRandomCopyBytes(kSecRandomDefault, bytes.count, &bytes)
+        guard result == errSecSuccess else {
+            throw NSError(domain: "BlazeDBManager", code: 5001, userInfo: [
+                NSLocalizedDescriptionKey: "Failed to generate KDF salt"
+            ])
+        }
+        let salt = Data(bytes)
+        try salt.write(to: saltURL, options: .atomic)
+        return salt
     }
 
     @discardableResult
@@ -133,12 +165,14 @@ public var mountedDatabases: [String: DynamicCollection] = [:]
     }
     
     public func reloadDatabase(named name: String) throws {
-        guard let fileURL = dbFileURLs[name], let metaURL = dbMetaURLs[name], let key = currentKey else {
-            throw NSError(domain: "BlazeDBManager", code: 404, userInfo: [NSLocalizedDescriptionKey: "Database file or meta URL or encryption key not found"])
+        guard let fileURL = dbFileURLs[name], let metaURL = dbMetaURLs[name] else {
+            throw NSError(domain: "BlazeDBManager", code: 404, userInfo: [NSLocalizedDescriptionKey: "Database file or meta URL not found"])
         }
         // CRITICAL: Retrieve stored password for password-protected databases
         // Without password, migration will fail when trying to access encrypted layouts
         let password = dbPasswords[name]
+        let kdfSalt = try Self.loadOrCreateKDFSalt(for: fileURL)
+        let key = try Self.keyFromPassword(password ?? "", salt: kdfSalt)
         let store = try PageStore(fileURL: fileURL, key: key)
         
         // Use correct transaction log URL (txn_log.json, not .meta)
@@ -148,7 +182,14 @@ public var mountedDatabases: [String: DynamicCollection] = [:]
         BlazeLogger.info("Recovered journal for \(name)")
         
         // CRITICAL: Pass password to DynamicCollection so migration can access password-protected layouts
-        let collection = try DynamicCollection(store: store, metaURL: metaURL, project: name, encryptionKey: key, password: password)
+        let collection = try DynamicCollection(
+            store: store,
+            metaURL: metaURL,
+            project: name,
+            encryptionKey: key,
+            password: password,
+            kdfSalt: kdfSalt
+        )
         mountedDatabases[name] = collection
     }
     /// Unmounts all mounted databases, performing cleanup and resetting manager state.

@@ -580,8 +580,8 @@ extension StorageLayout {
             do {
                 let expectedSignature = try expectedSignature(using: signingKey)
                 
-                // Compare signatures
-                let matches = expectedSignature == signature
+                // Compare signatures using constant-time semantics.
+                let matches = StorageLayout.constantTimeEquals(expectedSignature, signature)
                 
                 if !matches && !BlazeDBForensics.enabled {
                     BlazeLogger.error("❌ [VERIFY] Signature verification failed")
@@ -748,7 +748,6 @@ extension StorageLayout {
                 // CRITICAL: Also try the provided signingKey's raw data to see if it matches
                 // This handles the case where the key was derived correctly but verification failed for another reason
                 let signingKeyData = signingKey.withUnsafeBytes { Data($0) }
-                BlazeLogger.debug("🔍 Provided signingKey data (first 16 bytes): \(signingKeyData.prefix(16).map { String(format: "%02x", $0) }.joined())")
                 
                 // Try Argon2 key (if current key was from PBKDF2)
                 do {
@@ -759,7 +758,6 @@ extension StorageLayout {
                         parameters: Argon2KDF.Parameters.default
                     )
                     let argon2KeyData = argon2Key.withUnsafeBytes { Data($0) }
-                    BlazeLogger.debug("🔍 Argon2 key data (first 16 bytes): \(argon2KeyData.prefix(16).map { String(format: "%02x", $0) }.joined())")
                     
                     if secureLayout.verify(using: argon2Key) {
                         BlazeLogger.debug("✅ Signature verified with Argon2 key (auto-detected KDF method)")
@@ -787,28 +785,27 @@ extension StorageLayout {
                 }
                 
                 // Try PBKDF2 key (if current key was from Argon2)
-                // CRITICAL: Try both 10,000 and 100,000 iterations to match KeyManager.getKey()
+                // Try current and legacy PBKDF2 iteration counts for compatibility.
                 do {
-                    BlazeLogger.debug("🔍 Trying PBKDF2 key derivation with 10,000 iterations (KeyManager default)...")
+                    BlazeLogger.debug("🔍 Trying PBKDF2 key derivation with current iteration policy...")
                     let passwordData = Data(password.utf8)
                     let pbkdf2KeyData10k = try KeyManager.deriveKeyPBKDF2(
                         password: passwordData,
                         salt: salt,
-                        iterations: 10_000,
+                        iterations: KeyManager.pbkdf2Iterations,
                         keyLength: 32
                     )
                     let pbkdf2Key10k = SymmetricKey(data: pbkdf2KeyData10k)
                     let pbkdf2KeyDataForCompare10k = pbkdf2Key10k.withUnsafeBytes { Data($0) }
-                    BlazeLogger.debug("🔍 PBKDF2 (10k) key data (first 16 bytes): \(pbkdf2KeyDataForCompare10k.prefix(16).map { String(format: "%02x", $0) }.joined())")
                     
                     if secureLayout.verify(using: pbkdf2Key10k) {
-                        BlazeLogger.debug("✅ Signature verified with PBKDF2 (10k) key (auto-detected KDF method)")
+                        BlazeLogger.debug("✅ Signature verified with PBKDF2 key (auto-detected KDF method)")
                         return try secureLayout.resolvedLayout(using: decoder)
                     } else {
-                        BlazeLogger.debug("❌ PBKDF2 (10k) key did not match signature")
-                        // Check if PBKDF2 (10k) key matches the provided signingKey
+                        BlazeLogger.debug("❌ PBKDF2 key did not match signature")
+                        // Check if PBKDF2 key matches the provided signingKey
                         if pbkdf2KeyDataForCompare10k == signingKeyData {
-                            BlazeLogger.debug("⚠️ PBKDF2 (10k) key matches provided signingKey but signature verification still failed")
+                            BlazeLogger.debug("⚠️ PBKDF2 key matches provided signingKey but signature verification still failed")
                             if secureLayout.secureLayoutVersion >= 2 {
                                 throw NSError(
                                     domain: "StorageLayout",
@@ -831,7 +828,6 @@ extension StorageLayout {
                     )
                     let pbkdf2Key100k = SymmetricKey(data: pbkdf2KeyData100k)
                     let pbkdf2KeyDataForCompare100k = pbkdf2Key100k.withUnsafeBytes { Data($0) }
-                    BlazeLogger.debug("🔍 PBKDF2 (100k) key data (first 16 bytes): \(pbkdf2KeyDataForCompare100k.prefix(16).map { String(format: "%02x", $0) }.joined())")
                     
                     if secureLayout.verify(using: pbkdf2Key100k) {
                         BlazeLogger.debug("✅ Signature verified with PBKDF2 (100k) key (auto-detected KDF method)")
@@ -908,6 +904,17 @@ extension StorageLayout {
             }
         }
         return false
+    }
+
+    private static func constantTimeEquals(_ lhs: Data, _ rhs: Data) -> Bool {
+        let maxLen = max(lhs.count, rhs.count)
+        var diff = UInt8(lhs.count ^ rhs.count)
+        for i in 0..<maxLen {
+            let l = i < lhs.count ? lhs[lhs.index(lhs.startIndex, offsetBy: i)] : 0
+            let r = i < rhs.count ? rhs[rhs.index(rhs.startIndex, offsetBy: i)] : 0
+            diff |= l ^ r
+        }
+        return diff == 0
     }
 }
 
