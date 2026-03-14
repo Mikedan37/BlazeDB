@@ -75,6 +75,17 @@ internal extension FileHandle {
     }
 }
 
+/// Controls which WAL implementation PageStore uses.
+///
+/// `.legacy` uses the original `WriteAheadLog` + `TransactionLog` path (default).
+/// `.unified` uses `DurabilityManager` + `RecoveryManager` (new WAL subsystem).
+/// Both paths coexist until `.unified` is confirmed stable, at which point
+/// `.legacy` will be deleted.
+public enum WALMode: Sendable {
+    case legacy
+    case unified
+}
+
 // Swift 6: Thread-safe via internal DispatchQueue synchronization
 public final class PageStore: @unchecked Sendable {
     public let fileURL: URL
@@ -86,6 +97,11 @@ public final class PageStore: @unchecked Sendable {
     // MARK: - Write-Ahead Log for crash safety
     private let wal: WriteAheadLog?
     private let walEnabled: Bool
+    public let walMode: WALMode
+
+    // MARK: - Unified WAL (DurabilityManager)
+    /// Non-nil when walMode == .unified and WAL is enabled.
+    internal private(set) var durabilityManager: DurabilityManager?
     
     // MARK: - Concurrency Invariants
     // Invariants:
@@ -185,9 +201,10 @@ public final class PageStore: @unchecked Sendable {
     }
     #endif
 
-    public init(fileURL: URL, key: SymmetricKey, enableWAL: Bool = true) throws {
+    public init(fileURL: URL, key: SymmetricKey, enableWAL: Bool = true, walMode: WALMode = .legacy) throws {
         self.fileURL = fileURL
         self.walEnabled = enableWAL
+        self.walMode = walMode
         IOTraceSink.record(operation: "open_begin", path: fileURL.path)
 
         // Validate key size for AES-GCM
@@ -209,100 +226,52 @@ public final class PageStore: @unchecked Sendable {
         self.fd = fileHandle.fileDescriptor
         IOTraceSink.record(operation: "open_handle", path: fileURL.path, fd: self.fd, resultCode: 0)
 
-        // Initialize WAL if enabled
-        if enableWAL {
-            let walURL = fileURL.deletingPathExtension().appendingPathExtension("wal")
-            self.wal = try WriteAheadLog(logURL: walURL)
-            BlazeLogger.debug("📜 WAL enabled at \(walURL.lastPathComponent)")
-        } else {
+        // Initialize WAL based on mode
+        let walURL = fileURL.deletingPathExtension().appendingPathExtension("wal")
+
+        switch walMode {
+        case .legacy:
+            if enableWAL {
+                self.wal = try WriteAheadLog(logURL: walURL)
+                BlazeLogger.debug("📜 WAL enabled (legacy) at \(walURL.lastPathComponent)")
+            } else {
+                self.wal = nil
+                BlazeLogger.debug("📜 WAL disabled")
+            }
+            self.durabilityManager = nil
+
+        case .unified:
             self.wal = nil
-            BlazeLogger.debug("📜 WAL disabled")
+            if enableWAL {
+                self.durabilityManager = try DurabilityManager(walURL: walURL)
+                BlazeLogger.debug("📜 WAL enabled (unified) at \(walURL.lastPathComponent)")
+            } else {
+                self.durabilityManager = nil
+                BlazeLogger.debug("📜 WAL disabled")
+            }
         }
 
         // CRITICAL: Acquire exclusive file lock to prevent multi-process corruption
         try acquireExclusiveLock()
-        
+
         // Replay WAL entries if any exist (crash recovery).
         // Fail closed: never clear WAL unless full replay + fsync succeeds.
         do {
-            if let wal = self.wal {
-                let entries = try wal.replay()
-                if !entries.isEmpty {
-                    BlazeLogger.info("📜 Replaying \(entries.count) WAL entries from crash recovery")
-                    for (entryIndex, entry) in entries.enumerated() {
-                        #if DEBUG
-                        if let failAt = Self.replayFailureEntryIndexForTests(), failAt == entryIndex {
-                            throw RecoveryError.walReplayInjectedFailure(entryIndex: entryIndex)
-                        }
-                        #endif
-                        
-                        guard entry.data.count == pageSize else {
-                            throw RecoveryError.walReplayInvalidEntrySize(
-                                entryIndex: entryIndex,
-                                pageIndex: entry.pageIndex,
-                                size: entry.data.count,
-                                expected: pageSize
-                            )
-                        }
-                        
-                        // Write directly to file (entry.data is already encrypted)
-                        let offset = off_t(entry.pageIndex * pageSize)
-                        let actualWritten: Int = entry.data.withUnsafeBytes { rawBuffer in
-                            guard let base = rawBuffer.baseAddress else { return 0 }
-                            return pwrite(fd, base, entry.data.count, offset)
-                        }
-                        IOTraceSink.record(
-                            operation: "wal_replay_pwrite",
-                            path: fileURL.path,
-                            fd: fd,
-                            resultCode: Int32(actualWritten),
-                            errnoValue: actualWritten < 0 ? errno : nil,
-                            context: [
-                                "entryIndex": "\(entryIndex)",
-                                "pageIndex": "\(entry.pageIndex)"
-                            ]
-                        )
-                        
-                        guard actualWritten == entry.data.count else {
-                            throw RecoveryError.walReplayShortWrite(
-                                entryIndex: entryIndex,
-                                pageIndex: entry.pageIndex,
-                                expected: entry.data.count,
-                                actual: actualWritten
-                            )
-                        }
-                    }
-                    
-                    #if DEBUG
-                    if Self.replayFsyncFailureEnabledForTests() {
-                        throw RecoveryError.walReplayFsyncFailed(
-                            underlying: NSError(
-                                domain: "PageStore",
-                                code: 99001,
-                                userInfo: [NSLocalizedDescriptionKey: "Injected replay fsync failure"]
-                            )
-                        )
-                    }
-                    #endif
-                    
-                    do {
-                        try fileHandle.compatSynchronize()
-                        IOTraceSink.record(operation: "fsync_main", path: fileURL.path, fd: fd, resultCode: 0)
-                    } catch {
-                        IOTraceSink.record(operation: "fsync_main", path: fileURL.path, fd: fd, resultCode: -1)
-                        throw RecoveryError.walReplayFsyncFailed(underlying: error)
-                    }
-                    
-                    // IMPORTANT: clear WAL only after successful full replay + fsync.
-                    try wal.clear()
-                    BlazeLogger.info("📜 WAL recovery complete, checkpoint cleared")
-                }
+            switch walMode {
+            case .legacy:
+                try _replayLegacyWAL()
+
+            case .unified:
+                try _replayUnifiedWAL(walURL: walURL)
             }
         } catch {
-            // Recovery failed: preserve WAL for retry/forensics and fail open.
+            // Recovery failed: preserve WAL for retry/forensics and fail closed.
             BlazeLogger.error("📜 WAL recovery failed; WAL preserved: \(error)")
-            if let wal = self.wal {
-                wal.close()
+            switch walMode {
+            case .legacy:
+                if let wal = self.wal { wal.close() }
+            case .unified:
+                try? durabilityManager?.close()
             }
             releaseLock()
             fileHandle.compatClose()
@@ -310,6 +279,159 @@ public final class PageStore: @unchecked Sendable {
         }
 
         BlazeLogger.debug("🔐 PageStore initialized with \(bitCount)-bit encryption and exclusive file lock")
+    }
+
+    // MARK: - Legacy WAL Recovery
+
+    private func _replayLegacyWAL() throws {
+        guard let wal = self.wal else { return }
+        let entries = try wal.replay()
+        guard !entries.isEmpty else { return }
+
+        BlazeLogger.info("📜 Replaying \(entries.count) WAL entries from crash recovery (legacy)")
+        for (entryIndex, entry) in entries.enumerated() {
+            #if DEBUG
+            if let failAt = Self.replayFailureEntryIndexForTests(), failAt == entryIndex {
+                throw RecoveryError.walReplayInjectedFailure(entryIndex: entryIndex)
+            }
+            #endif
+
+            guard entry.data.count == pageSize else {
+                throw RecoveryError.walReplayInvalidEntrySize(
+                    entryIndex: entryIndex,
+                    pageIndex: entry.pageIndex,
+                    size: entry.data.count,
+                    expected: pageSize
+                )
+            }
+
+            let offset = off_t(entry.pageIndex * pageSize)
+            let actualWritten: Int = entry.data.withUnsafeBytes { rawBuffer in
+                guard let base = rawBuffer.baseAddress else { return 0 }
+                return pwrite(fd, base, entry.data.count, offset)
+            }
+            IOTraceSink.record(
+                operation: "wal_replay_pwrite",
+                path: fileURL.path,
+                fd: fd,
+                resultCode: Int32(actualWritten),
+                errnoValue: actualWritten < 0 ? errno : nil,
+                context: [
+                    "entryIndex": "\(entryIndex)",
+                    "pageIndex": "\(entry.pageIndex)"
+                ]
+            )
+
+            guard actualWritten == entry.data.count else {
+                throw RecoveryError.walReplayShortWrite(
+                    entryIndex: entryIndex,
+                    pageIndex: entry.pageIndex,
+                    expected: entry.data.count,
+                    actual: actualWritten
+                )
+            }
+        }
+
+        #if DEBUG
+        if Self.replayFsyncFailureEnabledForTests() {
+            throw RecoveryError.walReplayFsyncFailed(
+                underlying: NSError(
+                    domain: "PageStore",
+                    code: 99001,
+                    userInfo: [NSLocalizedDescriptionKey: "Injected replay fsync failure"]
+                )
+            )
+        }
+        #endif
+
+        do {
+            try fileHandle.compatSynchronize()
+            IOTraceSink.record(operation: "fsync_main", path: fileURL.path, fd: fd, resultCode: 0)
+        } catch {
+            IOTraceSink.record(operation: "fsync_main", path: fileURL.path, fd: fd, resultCode: -1)
+            throw RecoveryError.walReplayFsyncFailed(underlying: error)
+        }
+
+        try wal.clear()
+        BlazeLogger.info("📜 WAL recovery complete, checkpoint cleared (legacy)")
+    }
+
+    // MARK: - Unified WAL Recovery
+
+    private func _replayUnifiedWAL(walURL: URL) throws {
+        guard durabilityManager != nil else { return }
+
+        let result = try RecoveryManager.recover(walURL: walURL)
+        guard !result.committedWrites.isEmpty else { return }
+
+        BlazeLogger.info("📜 Replaying \(result.committedWrites.count) committed writes from crash recovery (unified), \(result.uncommittedTransactions) uncommitted transactions discarded")
+
+        for (entryIndex, entry) in result.committedWrites.enumerated() {
+            #if DEBUG
+            if let failAt = Self.replayFailureEntryIndexForTests(), failAt == entryIndex {
+                throw RecoveryError.walReplayInjectedFailure(entryIndex: entryIndex)
+            }
+            #endif
+
+            guard entry.payload.count == pageSize else {
+                throw RecoveryError.walReplayInvalidEntrySize(
+                    entryIndex: entryIndex,
+                    pageIndex: Int(entry.pageIndex),
+                    size: entry.payload.count,
+                    expected: pageSize
+                )
+            }
+
+            let offset = off_t(Int(entry.pageIndex) * pageSize)
+            let actualWritten: Int = entry.payload.withUnsafeBytes { rawBuffer in
+                guard let base = rawBuffer.baseAddress else { return 0 }
+                return pwrite(fd, base, entry.payload.count, offset)
+            }
+            IOTraceSink.record(
+                operation: "wal_replay_pwrite",
+                path: fileURL.path,
+                fd: fd,
+                resultCode: Int32(actualWritten),
+                errnoValue: actualWritten < 0 ? errno : nil,
+                context: [
+                    "entryIndex": "\(entryIndex)",
+                    "pageIndex": "\(entry.pageIndex)"
+                ]
+            )
+
+            guard actualWritten == entry.payload.count else {
+                throw RecoveryError.walReplayShortWrite(
+                    entryIndex: entryIndex,
+                    pageIndex: Int(entry.pageIndex),
+                    expected: entry.payload.count,
+                    actual: actualWritten
+                )
+            }
+        }
+
+        #if DEBUG
+        if Self.replayFsyncFailureEnabledForTests() {
+            throw RecoveryError.walReplayFsyncFailed(
+                underlying: NSError(
+                    domain: "PageStore",
+                    code: 99001,
+                    userInfo: [NSLocalizedDescriptionKey: "Injected replay fsync failure"]
+                )
+            )
+        }
+        #endif
+
+        do {
+            try fileHandle.compatSynchronize()
+            IOTraceSink.record(operation: "fsync_main", path: fileURL.path, fd: fd, resultCode: 0)
+        } catch {
+            IOTraceSink.record(operation: "fsync_main", path: fileURL.path, fd: fd, resultCode: -1)
+            throw RecoveryError.walReplayFsyncFailed(underlying: error)
+        }
+
+        // Checkpoint: truncate WAL now that all committed writes are durable in the main file
+        try durabilityManager?.checkpoint()
+        BlazeLogger.info("📜 WAL recovery complete, checkpoint cleared (unified)")
     }
     
     // MARK: - File Locking
@@ -614,6 +736,14 @@ public final class PageStore: @unchecked Sendable {
         // the WAL replay on next open will complete the write
         if let wal = wal {
             try wal.append(pageIndex: index, data: buffer)
+        } else if let dm = durabilityManager {
+            // Unified mode: standalone write (not inside a transaction).
+            // Wrap in an auto-transaction so recovery sees a commit record.
+            // The appendCommit call fsyncs the WAL.
+            let autoTxID = UUID()
+            try dm.appendBegin(transactionID: autoTxID)
+            try dm.appendWrite(transactionID: autoTxID, pageIndex: UInt32(index), data: buffer)
+            try dm.appendCommit(transactionID: autoTxID)
         }
         
         // Write encrypted page to disk (NO fsync yet!)
@@ -829,11 +959,17 @@ public final class PageStore: @unchecked Sendable {
     /// Checkpoint the WAL - sync main file and clear WAL
     /// Call this periodically or after batches of writes to limit WAL size
     public func checkpoint() throws {
-        guard let wal = wal else { return }
-        
         try queue.sync(flags: .barrier) {
             try fileHandle.compatSynchronize()
-            try wal.clear()
+
+            switch walMode {
+            case .legacy:
+                guard let wal = wal else { return }
+                try wal.clear()
+            case .unified:
+                guard let dm = durabilityManager else { return }
+                try dm.checkpoint()
+            }
             BlazeLogger.debug("📜 WAL checkpoint complete")
         }
     }
@@ -847,27 +983,54 @@ public final class PageStore: @unchecked Sendable {
         queue.sync(flags: .barrier) {
             guard !closed else { return }
 
-            if let wal = wal {
-                var mainSyncSucceeded = false
-                do {
-                    try fileHandle.compatSynchronize()
-                    IOTraceSink.record(operation: "fsync_main", path: fileURL.path, fd: fd, resultCode: 0, context: ["phase": "close"])
-                    mainSyncSucceeded = true
-                } catch {
-                    IOTraceSink.record(operation: "fsync_main", path: fileURL.path, fd: fd, resultCode: -1, errnoValue: errno, context: ["phase": "close"])
-                    BlazeLogger.error("📜 Close fsync failed; preserving WAL: \(RecoveryError.closeFsyncFailed(underlying: error).localizedDescription)")
-                }
-                
-                if mainSyncSucceeded {
+            switch walMode {
+            case .legacy:
+                if let wal = wal {
+                    var mainSyncSucceeded = false
                     do {
-                        try wal.clear()
+                        try fileHandle.compatSynchronize()
+                        IOTraceSink.record(operation: "fsync_main", path: fileURL.path, fd: fd, resultCode: 0, context: ["phase": "close"])
+                        mainSyncSucceeded = true
                     } catch {
-                        BlazeLogger.error("📜 WAL clear failed during close: \(error.localizedDescription)")
+                        IOTraceSink.record(operation: "fsync_main", path: fileURL.path, fd: fd, resultCode: -1, errnoValue: errno, context: ["phase": "close"])
+                        BlazeLogger.error("📜 Close fsync failed; preserving WAL: \(RecoveryError.closeFsyncFailed(underlying: error).localizedDescription)")
                     }
-                } else {
-                    BlazeLogger.warn("📜 WAL preserved because close fsync did not succeed")
+
+                    if mainSyncSucceeded {
+                        do {
+                            try wal.clear()
+                        } catch {
+                            BlazeLogger.error("📜 WAL clear failed during close: \(error.localizedDescription)")
+                        }
+                    } else {
+                        BlazeLogger.warn("📜 WAL preserved because close fsync did not succeed")
+                    }
+                    wal.close()
                 }
-                wal.close()
+
+            case .unified:
+                if let dm = durabilityManager {
+                    var mainSyncSucceeded = false
+                    do {
+                        try fileHandle.compatSynchronize()
+                        IOTraceSink.record(operation: "fsync_main", path: fileURL.path, fd: fd, resultCode: 0, context: ["phase": "close"])
+                        mainSyncSucceeded = true
+                    } catch {
+                        IOTraceSink.record(operation: "fsync_main", path: fileURL.path, fd: fd, resultCode: -1, errnoValue: errno, context: ["phase": "close"])
+                        BlazeLogger.error("📜 Close fsync failed; preserving WAL: \(RecoveryError.closeFsyncFailed(underlying: error).localizedDescription)")
+                    }
+
+                    if mainSyncSucceeded {
+                        do {
+                            try dm.checkpoint()
+                        } catch {
+                            BlazeLogger.error("📜 WAL checkpoint failed during close: \(error.localizedDescription)")
+                        }
+                    } else {
+                        BlazeLogger.warn("📜 WAL preserved because close fsync did not succeed")
+                    }
+                    try? dm.close()
+                }
             }
 
             // Flush while lock is still held to avoid races with immediate reopen.
