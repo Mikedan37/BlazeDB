@@ -193,7 +193,7 @@ extension BlazeDBClient {
         }
         
         // Transaction log
-        let txnLogURL = fileURL.deletingPathExtension().appendingPathExtension("txn_log.json")
+        let txnLogURL = transactionLogURL
         if FileManager.default.fileExists(atPath: txnLogURL.path) {
             files.append(txnLogURL.path)
         }
