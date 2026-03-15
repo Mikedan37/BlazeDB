@@ -8,59 +8,50 @@ This guide explains how to add tests, what will be accepted, and what will be re
 
 ## Test Tiers
 
-BlazeDB uses a three-tier test structure:
+BlazeDB uses a tiered test model:
 
-### Tier 1: Production Gate Tests (`BlazeDBCoreGateTests`)
+### Tier 0: PR Gate (`BlazeDB_Tier0`)
 
-**Location:** `BlazeDBTests/Gate/`
+**Location:** `BlazeDBTests/Tier0Core/`
 
 **What goes here:**
-- Tests that validate core production safety guarantees
-- Tests that MUST pass for any release
-- Tests using only public APIs
-- End-to-end behavior validation
+- Fast deterministic correctness checks
+- Tests that must pass for PR merge
+- Public API and critical behavior coverage
 
-**Examples:**
-- Database lifecycle (open/close)
-- Crash recovery
-- Export/restore integrity
-- Schema migrations
-
-**Run:**
+**Run (preferred):**
 ```bash
-swift test --filter BlazeDBCoreGateTests
-# or
-./Scripts/test-gate.sh
+./Scripts/preflight.sh
 ```
 
-### Tier 2: Core Tests (`BlazeDBCoreTests`)
-
-**Location:** `BlazeDBTests/` (not in Gate or Legacy)
-
-**What goes here:**
-- Tests for important features
-- Tests that should pass but aren't blocking
-- Edge cases and stress tests
-
-**Examples:**
-- Query ergonomics
-- Error messages
-- Platform compatibility
-
-### Tier 3: Legacy Tests (`BlazeDBLegacyTests`)
-
-**Location:** `BlazeDBTests/Legacy/`
-
-**What goes here:**
-- Tests accessing internal APIs
-- Tests using deprecated APIs
-- Performance benchmarks (not correctness)
-
-**Header required:**
-```swift
-// TIER 3 — Legacy / Internal / Non-blocking
-// This test accesses internal APIs and may fail without blocking releases.
+**Run (direct):**
+```bash
+swift test --filter BlazeDB_Tier0
 ```
+
+### Tier 1: Core Contracts (`BlazeDB_Tier1`)
+
+**Location:** `BlazeDBTests/Tier1Core/`
+
+**What goes here:**
+- Deeper correctness contracts (persistence/security/features)
+- Non-trivial behavior that should remain stable release-to-release
+
+### Tier 2: Integration/Recovery (`BlazeDB_Tier2`)
+
+**Location:** `BlazeDBTests/Tier2Integration/`
+
+**What goes here:**
+- Integration, recovery, cross-feature interactions
+- Longer-running scenarios
+
+### Tier 3: Heavy/Destructive (`BlazeDB_Tier3_Heavy`, `BlazeDB_Tier3_Destructive`)
+
+**Location:** `BlazeDBTests/Tier3Heavy/`, `BlazeDBTests/Tier3Destructive/`
+
+**What goes here:**
+- Stress/fuzz/performance and destructive fault-injection
+- Manual/explicit lanes, not normal PR gate
 
 ---
 
@@ -69,24 +60,29 @@ swift test --filter BlazeDBCoreGateTests
 ### Step 1: Determine Tier
 
 **Ask yourself:**
-- Does this test validate production safety? → Tier 1
-- Does this test validate an important feature? → Tier 2
-- Does this test access internals? → Tier 3
+- Does this test validate fast deterministic gate behavior? → Tier 0
+- Does this test validate deeper core contracts? → Tier 1
+- Does this test validate integration/recovery scenarios? → Tier 2
+- Does this test belong to heavy/destructive/manual lanes? → Tier 3
 
-**When in doubt, choose Tier 2.**
+**When in doubt, choose Tier 1.**
 
 ### Step 2: Write Test
 
-**For Tier 1 tests:**
+**For Tier 0 tests:**
 - Use only public APIs
 - Test end-to-end behavior
 - No access to internals
-- Must always pass
+- Must always pass and stay fast
+
+**For Tier 1 tests:**
+- May test edge cases
+- Should pass in deep CI lanes
+- Can use public APIs freely
 
 **For Tier 2 tests:**
-- May test edge cases
-- Should pass but not blocking
-- Can use public APIs freely
+- Focus on integration/recovery and longer scenarios
+- Keep deterministic where possible
 
 **For Tier 3 tests:**
 - Add Tier 3 header comment
@@ -95,16 +91,14 @@ swift test --filter BlazeDBCoreGateTests
 
 ### Step 3: Add to Package.swift
 
-**If Tier 1:**
-- Add to `BlazeDBCoreGateTests` target sources list
+Tier targets are already declared in `Package.swift`.
 
-**If Tier 2:**
-- Place in `BlazeDBTests/` (not Gate or Legacy)
-- Will be included automatically
-
-**If Tier 3:**
-- Place in `BlazeDBTests/Legacy/`
-- Will be included automatically
+Place test files under the correct `BlazeDBTests/Tier*` path and keep naming aligned with:
+- `BlazeDB_Tier0`
+- `BlazeDB_Tier1`
+- `BlazeDB_Tier2`
+- `BlazeDB_Tier3_Heavy`
+- `BlazeDB_Tier3_Destructive`
 
 ---
 
@@ -154,11 +148,12 @@ swift test --filter BlazeDBCoreGateTests
 # Make your changes
 # ...
 
-# Run Tier 1 tests (required)
-./Scripts/test-gate.sh
+# Run local preflight (required)
+./Scripts/preflight.sh
 
-# Run all tests (optional)
-./Scripts/test-all.sh
+# Run deeper lanes (optional)
+./Scripts/run-tier1.sh
+./Scripts/run-tier2.sh
 ```
 
 ### 2. Verify Frozen Core
@@ -174,6 +169,18 @@ swift test --filter BlazeDBCoreGateTests
 git add -A
 git commit -m "Description of changes"
 ```
+
+---
+
+## Before Opening A PR
+
+Run:
+
+```bash
+./Scripts/preflight.sh
+```
+
+If this fails locally, fix it before pushing.
 
 ---
 
@@ -219,7 +226,7 @@ git commit -m "Description of changes"
 
 ## Questions?
 
-- Check `Docs/Status/TEST_STABILIZATION_COMPLETE.md` for test structure
+- Check `Docs/Testing/CI_AND_TEST_TIERS.md` for authoritative CI and tier mapping
 - Check `Docs/Guarantees/SAFETY_MODEL.md` for safety guarantees
 - Check `Docs/PHASE_1_FREEZE.md` for frozen core details
 
