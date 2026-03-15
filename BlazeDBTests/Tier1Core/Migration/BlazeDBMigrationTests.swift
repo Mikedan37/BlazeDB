@@ -9,7 +9,6 @@ import XCTest
 @testable import BlazeDB
 #endif
 
-@MainActor
 final class BlazeDBMigrationTests: XCTestCase {
     
     override func setUp() {

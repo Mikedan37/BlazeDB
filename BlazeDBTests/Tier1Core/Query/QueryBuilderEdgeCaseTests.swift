@@ -10,7 +10,6 @@ import XCTest
 @testable import BlazeDB
 #endif
 
-@MainActor
 final class QueryBuilderEdgeCaseTests: XCTestCase {
     
     var tempURL: URL!
@@ -283,6 +282,7 @@ final class QueryBuilderEdgeCaseTests: XCTestCase {
     
     // MARK: - Concurrent Query Tests
     
+    @MainActor
     func testConcurrentQueries() throws {
         for i in 0..<100 {
             _ = try db.insert(BlazeDataRecord([

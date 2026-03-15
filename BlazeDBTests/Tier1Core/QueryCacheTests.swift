@@ -10,7 +10,6 @@ import XCTest
 @testable import BlazeDB
 #endif
 
-@MainActor
 final class QueryCacheTests: XCTestCase {
     
     var tempURL: URL!
@@ -217,6 +216,7 @@ final class QueryCacheTests: XCTestCase {
     
     // MARK: - Thread Safety
     
+    @MainActor
     func testConcurrentCacheAccess() throws {
         for i in 0..<100 {
             _ = try db.insert(BlazeDataRecord(["index": .int(i)]))
