@@ -10,26 +10,57 @@ import Crypto
 #endif
 
 /// Manages multiple BlazeDB instances for fast DB switching.
-/// Thread-safe: Uses nonisolated(unsafe) for singleton (caller must ensure thread safety)
+/// Thread-safe for manager-owned mutable state via `stateLock`.
 public final class BlazeDBManager {
-public var mountedDatabases: [String: DynamicCollection] = [:]
+    public private(set) var mountedDatabases: [String: DynamicCollection] = [:]
     private var currentKey: SymmetricKey?
     nonisolated(unsafe) public static let shared = BlazeDBManager()
-    public var currentName: String?
+    public private(set) var currentName: String?
     private var dbFileURLs: [String: URL] = [:]
     private var dbMetaURLs: [String: URL] = [:]
     private var dbPasswords: [String: String] = [:]  // Store passwords per database for reload/migration
+    private let stateLock = NSRecursiveLock()
     
     /// Public accessor for the current database (for CLI/UI/testing)
     public var current: DynamicCollection? {
-        return currentDatabase
+        stateLock.lock()
+        defer { stateLock.unlock() }
+        return currentName.flatMap { mountedDatabases[$0] }
     }
 
     public init() {}
 
+    private static func stablePathDigestHex(_ value: String) -> String {
+        let digest = SHA256.hash(data: Data(value.utf8))
+        return Data(digest).map { String(format: "%02x", $0) }.joined()
+    }
+
+    private static func transactionLogURLs(for fileURL: URL) -> [URL] {
+        let base = fileURL.deletingPathExtension().lastPathComponent
+        let digest = stablePathDigestHex(fileURL.path)
+        let namespaced = fileURL.deletingLastPathComponent().appendingPathComponent("txn_log-\(base)-\(digest).json")
+        let legacy = fileURL.deletingLastPathComponent().appendingPathComponent("txn_log.json")
+        return [namespaced, legacy]
+    }
+
+    private static func preferredTransactionLogURL(for fileURL: URL) -> URL {
+        transactionLogURLs(for: fileURL).first!
+    }
+
+    private static func recoverTransactionLogIfPresent(into store: PageStore, fileURL: URL) throws {
+        let fm = FileManager.default
+        let candidates = transactionLogURLs(for: fileURL)
+        let chosen = candidates.first(where: { fm.fileExists(atPath: $0.path) }) ?? preferredTransactionLogURL(for: fileURL)
+        let log = TransactionLog(logFileURL: chosen)
+        try log.recover(into: store, from: chosen)
+        BlazeLogger.info("Recovered journal: \(chosen.lastPathComponent)")
+    }
+
     /// Mount a DB from the given file path.
     @discardableResult
     public func mountDatabase(named name: String, fileURL: URL, password: String) throws -> DynamicCollection {
+        stateLock.lock()
+        defer { stateLock.unlock() }
         // CRITICAL: Validate database name to prevent path traversal attacks
         // Database names should not contain path traversal characters or null bytes
         guard !name.contains("../") && !name.contains("..\\") && !name.contains("\0") else {
@@ -47,12 +78,7 @@ public var mountedDatabases: [String: DynamicCollection] = [:]
         let key = try Self.keyFromPassword(password, salt: kdfSalt)
         let metaURL = fileURL.deletingPathExtension().appendingPathExtension("meta")
         let store = try PageStore(fileURL: fileURL, key: key)
-        
-        // Use correct transaction log URL (txn_log.json, not .meta)
-        let txnLogURL = fileURL.deletingLastPathComponent().appendingPathComponent("txn_log.json")
-        let log = TransactionLog(logFileURL: txnLogURL)
-        try log.recover(into: store, from: txnLogURL)
-        BlazeLogger.info("Recovered journal for \(name)")
+        try Self.recoverTransactionLogIfPresent(into: store, fileURL: fileURL)
         
         // CRITICAL: Pass password to DynamicCollection so migration can access password-protected layouts
         let collection = try DynamicCollection(
@@ -74,31 +100,43 @@ public var mountedDatabases: [String: DynamicCollection] = [:]
 
     /// Unmount a DB by name.
     public func unmountDatabase(named name: String) {
+        stateLock.lock()
+        defer { stateLock.unlock() }
         mountedDatabases.removeValue(forKey: name)
     }
 
     /// Get a mounted DB by name.
     public func database(named name: String) -> DynamicCollection? {
+        stateLock.lock()
+        defer { stateLock.unlock() }
         return mountedDatabases[name]
     }
 
     /// List all currently mounted DB names.
     public var mountedNames: [String] {
+        stateLock.lock()
+        defer { stateLock.unlock() }
         return Array(mountedDatabases.keys)
     }
 
     /// Public accessor for mounted database names (for CLI/UI/testing)
     public var mountedDatabaseNames: [String] {
+        stateLock.lock()
+        defer { stateLock.unlock() }
         return Array(mountedDatabases.keys)
     }
 
     /// Set a new encryption key globally.
     public func setEncryptionKey(_ key: SymmetricKey) {
+        stateLock.lock()
+        defer { stateLock.unlock() }
         currentKey = key
     }
 
     /// Access the current active encryption key (if any).
     public func getCurrentKey() -> SymmetricKey? {
+        stateLock.lock()
+        defer { stateLock.unlock() }
         return currentKey
     }
 
@@ -129,6 +167,8 @@ public var mountedDatabases: [String: DynamicCollection] = [:]
 
     @discardableResult
     public func useDatabase(named name: String) throws -> DynamicCollection {
+        stateLock.lock()
+        defer { stateLock.unlock() }
         guard let db = mountedDatabases[name] else {
             throw NSError(domain: "BlazeDBManager", code: 404,
                           userInfo: [NSLocalizedDescriptionKey: "Database not found"])
@@ -138,6 +178,8 @@ public var mountedDatabases: [String: DynamicCollection] = [:]
     }
 
     public var currentDatabase: DynamicCollection? {
+        stateLock.lock()
+        defer { stateLock.unlock() }
         guard let name = currentName else { return nil }
         return mountedDatabases[name]
     }
@@ -147,6 +189,8 @@ public var mountedDatabases: [String: DynamicCollection] = [:]
     }
     
     public var currentDatabaseName: String? {
+        stateLock.lock()
+        defer { stateLock.unlock() }
         return currentName
     }
     /// Synonym for useDatabase(named:) for consistency with test expectations.
@@ -155,6 +199,8 @@ public var mountedDatabases: [String: DynamicCollection] = [:]
     }
     
     public func reloadDatabase(named name: String) throws {
+        stateLock.lock()
+        defer { stateLock.unlock() }
         guard let fileURL = dbFileURLs[name], let metaURL = dbMetaURLs[name] else {
             throw NSError(domain: "BlazeDBManager", code: 404, userInfo: [NSLocalizedDescriptionKey: "Database file or meta URL not found"])
         }
@@ -164,12 +210,7 @@ public var mountedDatabases: [String: DynamicCollection] = [:]
         let kdfSalt = try Self.loadOrCreateKDFSalt(for: fileURL)
         let key = try Self.keyFromPassword(password ?? "", salt: kdfSalt)
         let store = try PageStore(fileURL: fileURL, key: key)
-        
-        // Use correct transaction log URL (txn_log.json, not .meta)
-        let txnLogURL = fileURL.deletingLastPathComponent().appendingPathComponent("txn_log.json")
-        let log = TransactionLog(logFileURL: txnLogURL)
-        try log.recover(into: store, from: txnLogURL)
-        BlazeLogger.info("Recovered journal for \(name)")
+        try Self.recoverTransactionLogIfPresent(into: store, fileURL: fileURL)
         
         // CRITICAL: Pass password to DynamicCollection so migration can access password-protected layouts
         let collection = try DynamicCollection(
@@ -184,6 +225,8 @@ public var mountedDatabases: [String: DynamicCollection] = [:]
     }
     /// Unmounts all mounted databases, performing cleanup and resetting manager state.
     public func unmountAllDatabases() {
+        stateLock.lock()
+        defer { stateLock.unlock() }
         // Attempt to call close() on each mounted DynamicCollection if available
         for (_, _) in mountedDatabases {
             // If DynamicCollection has a close() method, call it
@@ -200,22 +243,26 @@ public var mountedDatabases: [String: DynamicCollection] = [:]
     
     /// Recover all transactions for all mounted databases.
     public func recoverAllTransactions() throws {
+        stateLock.lock()
+        defer { stateLock.unlock() }
         for (name, collection) in mountedDatabases {
             guard let fileURL = dbFileURLs[name] else {
                 BlazeLogger.warn("Missing file URL for \(name); skipping recovery")
                 continue
             }
-            // CRITICAL: Use correct transaction log URL (txn_log.json, not .meta)
-            // This matches mountDatabase() and reloadDatabase() behavior
-            let txnLogURL = fileURL.deletingLastPathComponent().appendingPathComponent("txn_log.json")
-            let log = TransactionLog(logFileURL: txnLogURL)
-            try log.recover(into: collection.store, from: txnLogURL)
-            BlazeLogger.info("Recovered journal for \(name)")
+            let candidates = Self.transactionLogURLs(for: fileURL)
+            let fm = FileManager.default
+            let chosen = candidates.first(where: { fm.fileExists(atPath: $0.path) }) ?? Self.preferredTransactionLogURL(for: fileURL)
+            let log = TransactionLog(logFileURL: chosen)
+            try log.recover(into: collection.store, from: chosen)
+            BlazeLogger.info("Recovered journal for \(name): \(chosen.lastPathComponent)")
         }
     }
     
     /// Flush all mounted PageStores to disk.
     public func flushAll() {
+        stateLock.lock()
+        defer { stateLock.unlock() }
         for (_, collection) in mountedDatabases {
             if let flushable = collection.store as? Flushable {
                 flushable.flush()

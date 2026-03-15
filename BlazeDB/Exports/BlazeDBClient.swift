@@ -563,8 +563,12 @@ public final class BlazeDBClient: @unchecked Sendable {
         return "\(base)-\(digest)"
     }
 
-    private var transactionLogURL: URL {
+    private var legacyTransactionLogURL: URL {
         fileURL.deletingLastPathComponent().appendingPathComponent("txn_log.json")
+    }
+
+    internal var transactionLogURL: URL {
+        fileURL.deletingLastPathComponent().appendingPathComponent("txn_log-\(transactionArtifactPrefix).json")
     }
 
     internal var transactionBackupURL: URL {
@@ -673,10 +677,11 @@ public final class BlazeDBClient: @unchecked Sendable {
     public func replayTransactionLogIfNeeded() throws {
         // V1.5: Clean up legacy transaction log files if they exist.
         // New WAL replay happens at the PageStore level.
-        let logURL = transactionLogURL
-        if FileManager.default.fileExists(atPath: logURL.path) {
-            try? FileManager.default.removeItem(at: logURL)
-            BlazeLogger.info("Cleaned up legacy transaction log")
+        let fm = FileManager.default
+        let candidates = [transactionLogURL, legacyTransactionLogURL]
+        for logURL in candidates where fm.fileExists(atPath: logURL.path) {
+            try? fm.removeItem(at: logURL)
+            BlazeLogger.info("Cleaned up transaction log: \(logURL.lastPathComponent)")
         }
         // Leave active durable transaction artifacts alone unless explicitly restored/cleared.
     }

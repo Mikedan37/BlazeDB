@@ -1,123 +1,33 @@
 # BlazeDB Release Readiness Checklist
 
-**Date:** 2025-01-XX
-**Status:** **READY FOR BETA RELEASE** (with notes)
+Use this checklist before tagging any `vX.Y.Z` release.
 
----
+## Required
 
-## **COMPLETED FEATURES**
+- [ ] `main` is clean (`git status` shows clean working tree)
+- [ ] PR gate passed (`Build & Test` in `ci.yml`)
+- [ ] `CHANGELOG.md` has an entry for the release
+- [ ] install snippets in `README.md` and `Docs/GettingStarted/*` are current
+- [ ] `Docs/Testing/CI_AND_TEST_TIERS.md` matches workflow behavior
 
-### **Core Functionality**
-- **CRUD Operations** - Insert, fetch, update, delete
-- **Query API** - Filtering, sorting, limiting
-- **Indexes** - Single and compound indexes
-- **Transactions** - ACID-compliant transactions with rollback
-- **MVCC** - Multi-version concurrency control (disabled by default)
-- **Encryption** - Field-level and E2E encryption
-- **BlazeBinary** - Custom encoding (53% smaller, 48% faster)
-- **Auto-Migration** - Automatic format migration
+## Test Validation
 
-### **Overflow Pages** **JUST COMPLETED**
-- Overflow page format (`OverflowPageHeader`)
-- Write path with overflow support (`writePageWithOverflow`)
-- Read path with overflow support (`readPageWithOverflow`)
-- DynamicCollection integration
-- Delete path cleans up overflow chains
-- Backward compatibility with existing databases
-- **90+ tests** covering all scenarios
+- [ ] `./Scripts/preflight.sh` passes locally
+- [ ] `swift test --filter BlazeDB_Tier0` passes
+- [ ] `swift test --filter BlazeDB_Tier1` passes (or documented reason if lane is time-bounded)
+- [ ] release workflow checks pass for the tag
 
-### **Reactive Queries**
-- `@BlazeQuery` property wrapper
-- `@BlazeQueryTyped` type-safe wrapper
-- Change observation integration
-- Automatic view updates
-- Batching (50ms delay)
+## Release Execution
 
-### **Distributed Sync**
-- In-Memory Queue relay
-- Unix Domain Socket relay
-- TCP relay with BlazeBinary
-- Secure connections (shared secret)
-- Operation log
-- Conflict resolution
-- Sync state management
+- [ ] create annotated tag: `git tag -a vX.Y.Z -m "BlazeDB vX.Y.Z"`
+- [ ] push tag: `git push origin vX.Y.Z`
+- [ ] confirm `.github/workflows/release.yml` completes successfully
 
-### **Garbage Collection**
-- Version GC (in-memory)
-- Page GC (disk page reuse)
-- VACUUM operation (compaction)
-- Automatic GC triggers
-- Storage health monitoring
+## Post-Release
 
-### **Developer Experience**
-- Convenience API (name-based database creation)
-- Database discovery
-- Database registry
-- Consistent logging (`BlazeLogger`)
-- Comprehensive documentation
-- **200+ tests** (unit + integration)
-
-### **Tools**
-- BlazeShell (CLI)
-- BlazeDBVisualizer (macOS app)
-- BlazeStudio (Visual editor)
-- BlazeServer (Standalone executable)
-
----
-
-##  **KNOWN LIMITATIONS (Non-Blockers)**
-
-### **1. MVCC Disabled by Default**
-- **Status:** MVCC exists but disabled (`mvccEnabled: Bool = false`)
-- **Reason:** Version persistence to disk not yet implemented
-- **Impact:** No snapshot isolation until enabled
-- **Workaround:** Use transactions for consistency
-- **Priority:** Medium (can enable later)
-
-### **2. Distributed MVCC Coordination**
-- **Status:** Partially implemented
-- **Issue:** No coordination between nodes for version cleanup
-- **Impact:** Versions may accumulate in long-running distributed sync
-- **Workaround:** Periodic VACUUM operations
-- **Priority:** Medium (for long-running distributed apps)
-
-### **3. Operation Log GC Verification**
-- **Status:** GC exists but needs verification
-- **Issue:** May not run automatically
-- **Impact:** Logs may grow over time
-- **Workaround:** Manual cleanup or periodic restarts
-- **Priority:** Low (for very long-running sync)
-
-### **4. SQL-Like Features**
-- **Status:** Not implemented
-- **Missing:** Subqueries, window functions, triggers, stored procedures
-- **Impact:** Complex SQL queries not supported
-- **Workaround:** Use query builder API
-- **Priority:** Low (not core feature)
-
-### **5. Query Optimization**
-- **Status:** Basic optimization only
-- **Missing:** Cost-based optimizer, query plans
-- **Impact:** Some queries may be slower than optimal
-- **Workaround:** Use indexes effectively
-- **Priority:** Low (performance is already good)
-
----
-
-## **RELEASE READINESS ASSESSMENT**
-
-### **For Single-Device Apps:**
- **PRODUCTION READY**
-- All core features work
-- Overflow pages support large records
-- Reactive queries work
-- Comprehensive test coverage
-- Good performance
-
-### **For Multi-Device Sync:**
- **BETA READY** (with monitoring)
-- Sync works but needs monitoring
-- GC exists but verify it runs
+- [ ] GitHub Release exists with generated notes
+- [ ] artifact upload exists for the release
+- [ ] quick install test succeeds in a clean sample project
 - Long-running sync may need periodic VACUUM
 - Monitor memory usage
 

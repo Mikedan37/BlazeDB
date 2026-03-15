@@ -6,7 +6,7 @@ This document defines which BlazeDB APIs are stable vs experimental, and our com
 
 ---
 
-## Stable APIs (v0.1.0+)
+## Stable APIs (v2.x)
 
 These APIs are **stable** and will not change in breaking ways:
 
@@ -132,15 +132,15 @@ We follow [Semantic Versioning](https://semver.org/):
 - **MINOR:** New features, backward compatible
 - **PATCH:** Bug fixes, backward compatible
 
-### Current Version: 0.1.0
-- **0.x:** Pre-1.0, may include breaking changes
+### Current Version: 2.7.x
+- **2.x:** Stable line, no planned breaking changes for stable APIs
 - **Breaking changes:** Documented in CHANGELOG.md
 - **Migration paths:** Provided where possible
 
-### v1.0.0 Target
-- **Stable APIs:** Locked, no breaking changes
-- **Experimental APIs:** Clearly marked
-- **Breaking changes:** Major version bump only
+### Major Version Policy
+- **Stable APIs:** Breaking changes require a major version bump
+- **Experimental APIs:** Clearly marked and may change
+- **Breaking changes:** Documented with migration guidance
 
 ---
 
@@ -154,7 +154,7 @@ We follow [Semantic Versioning](https://semver.org/):
 
 ### Example
 ```swift
-@available(*, deprecated, message: "Use newMethod() instead. Will be removed in v0.2.0")
+@available(*, deprecated, message: "Use newMethod() instead. Will be removed in a future major release")
 func oldMethod() { ... }
 ```
 
@@ -198,21 +198,20 @@ func oldMethod() { ... }
 
 ## Stability Timeline
 
-### v0.1.0 (Current)
+### v2.7.x (Current)
 - Core APIs: Stable
 - Migration system: Stable
 - Import/export: Stable
 - Health API: Stable
 
-### v0.2.0 (Planned)
+### v2.8.x (Planned)
 - No breaking changes planned
 - May add new features
 - May improve error messages
 
-### v1.0.0 (Target)
-- All stable APIs locked
-- Breaking changes require major version
-- Long-term support begins
+### v3.0.0 (Major Changes Only)
+- Any breaking change requires this major bump
+- Migration notes required for affected stable APIs
 
 ---
 
