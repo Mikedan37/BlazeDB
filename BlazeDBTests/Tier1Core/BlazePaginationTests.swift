@@ -3,6 +3,9 @@
 //  Tests pagination API and memory characteristics with large datasets
 
 import XCTest
+#if canImport(Darwin)
+@preconcurrency import Darwin
+#endif
 #if canImport(CryptoKit)
 #if canImport(CryptoKit)
 import CryptoKit

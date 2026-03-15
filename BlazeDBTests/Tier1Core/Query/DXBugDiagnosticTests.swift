@@ -20,7 +20,6 @@ import XCTest
 /// two queries had the same number of WHERE clauses but different conditions.
 ///
 /// These tests verify the fix holds — different queries must produce different cache keys.
-@MainActor
 final class CacheKeyBugTests: XCTestCase {
 
     var tempURL: URL!
@@ -197,7 +196,6 @@ final class DatabaseLockedMessageBugTests: XCTestCase {
 ///
 /// This ensures `catch .transactionFailed` only catches actual transaction conflicts,
 /// not unrelated query builder mistakes.
-@MainActor
 final class TransactionFailedMisuseBugTests: XCTestCase {
 
     var tempURL: URL!
@@ -306,7 +304,6 @@ final class TransactionFailedMisuseBugTests: XCTestCase {
 /// FIXED: `usesIndexes` renamed to `candidateIndexes` to honestly reflect that these
 /// are indexes that *exist* on queried fields, not indexes the engine actually uses.
 /// The `useIndex()` and `forceTableScan()` stubs are now documented as unimplemented.
-@MainActor
 final class QueryExplainBugTests: XCTestCase {
 
     var tempURL: URL!
@@ -405,7 +402,6 @@ final class QueryExplainBugTests: XCTestCase {
 ///
 /// Added: notEquals, greaterThanOrEqual, lessThanOrEqual, contains, in, whereNil, whereNotNil
 /// Already existed: equals, greaterThan, lessThan, filter() (custom closure)
-@MainActor
 final class TypeSafeQueryBuilderGapTests: XCTestCase {
 
     var tempURL: URL!
