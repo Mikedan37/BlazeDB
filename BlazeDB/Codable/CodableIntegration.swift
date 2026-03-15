@@ -1,4 +1,5 @@
 import Foundation
+import CoreFoundation
 
 // MARK: - Direct Codable Support for BlazeDB
 

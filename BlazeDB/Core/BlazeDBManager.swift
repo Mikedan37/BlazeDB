@@ -8,9 +8,6 @@ import CryptoKit
 #else
 import Crypto
 #endif
-#if canImport(Security)
-import Security
-#endif
 
 /// Manages multiple BlazeDB instances for fast DB switching.
 /// Thread-safe: Uses nonisolated(unsafe) for singleton (caller must ensure thread safety)
@@ -125,14 +122,7 @@ public var mountedDatabases: [String: DynamicCollection] = [:]
             }
         }
 
-        var bytes = [UInt8](repeating: 0, count: 16)
-        let result = SecRandomCopyBytes(kSecRandomDefault, bytes.count, &bytes)
-        guard result == errSecSuccess else {
-            throw NSError(domain: "BlazeDBManager", code: 5001, userInfo: [
-                NSLocalizedDescriptionKey: "Failed to generate KDF salt"
-            ])
-        }
-        let salt = Data(bytes)
+        let salt = try SecureRandom.bytesStrict(count: 16)
         try salt.write(to: saltURL, options: .atomic)
         return salt
     }

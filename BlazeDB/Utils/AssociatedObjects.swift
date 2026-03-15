@@ -28,7 +28,7 @@ internal enum AssociatedObjects {
     }
     #else
     // Linux: use static dictionary storage with type-erased values
-    private static var storage: [ObjectIdentifier: [UnsafeRawPointer: Any]] = [:]
+    nonisolated(unsafe) private static var storage: [ObjectIdentifier: [UnsafeRawPointer: Any]] = [:]
     private static let lock = NSLock()
     
     static func get<T: AnyObject>(_ object: AnyObject, key: UnsafeRawPointer) -> T? {
