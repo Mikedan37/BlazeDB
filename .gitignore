@@ -20,6 +20,7 @@ DerivedData/
 
 # Claude Code / AI tooling
 .claude/
+.cursor/
 .artifacts/
 
 # Secrets and certificates
