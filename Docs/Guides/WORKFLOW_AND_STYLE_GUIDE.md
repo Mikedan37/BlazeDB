@@ -1,113 +1,59 @@
 # Workflow And Style Guide
 
-This guide defines the expected day-to-day development workflow for BlazeDB.
+## Quick Workflow
 
-Use it to keep `main` stable, avoid CI drift, and keep PRs reviewable.
+1. `git switch main && git pull --ff-only`
+2. `git switch -c <feature|test|ci|docs>/<name>`
+3. Implement one scoped change
+4. `./Scripts/preflight.sh`
+5. `git status && git diff` (no unrelated changes)
+6. Commit, push, open PR
+7. Wait for CI to pass
+8. Squash merge
 
-## Core Model
+## Containment Rule
 
-- `main` is stable and releasable.
-- Branches are isolated experiments.
-- Pull requests are the only path to `main`.
-- CI is the safety gate, not the debugging environment.
+Before you commit, make sure only intentional changes are included.
+Run `git status` and `git diff` to double-check.
 
-## Branching Style
+## 1) Rule Of `main`
 
-Use one concern per branch.
+`main` is always releasable.  
+Please keep experimental work on a branch, not directly on `main`.
 
-Recommended prefixes:
+## 2) Branch Rule
 
-- `feature/<name>` for product/engine changes
-- `test/<name>` for test stabilization/refactors
-- `ci/<name>` for workflow/pipeline changes
-- `docs/<name>` for documentation-only updates
+One branch = one concern.
+
+Use:
+
+- `feature/`
+- `test/`
+- `ci/`
+- `docs/`
+
+## Commit Scope Rule
+
+Try to keep each commit focused on one subsystem.
 
 Examples:
 
-- `feature/page-cache-lru`
-- `test/fix-encryption-roundtrip`
-- `ci/linux-tier0-gate`
-- `docs/ci-inventory-refresh`
+- `feature/wal-batching`
+- `test/encryption-roundtrip`
+- `ci/pipeline-simplification`
 
-## One Branch, One Idea
+## 3) Preflight Rule
 
-Good:
-
-- branch contains one coherent change set
-- commits are explainable and scoped
-
-Bad:
-
-- branch mixes feature logic + CI edits + broad test rewrites
-- branch accumulates unrelated changes from multiple sessions
-
-## Standard Flow
-
-```bash
-git switch main
-git pull --ff-only
-git switch -c <prefix>/<topic>
-```
-
-Then iterate locally:
+Before opening a PR, run:
 
 ```bash
 ./Scripts/preflight.sh
 ```
 
-Preflight must pass before opening a PR.
+If it fails, fix it locally before pushing.
 
-## Local vs CI Responsibilities
+## 4) CI Gates
 
-- Local preflight (`Scripts/preflight.sh`):
-  - `swift build`
-  - Tier 0 gate (`Scripts/run-tier0.sh`)
-- PR CI (`.github/workflows/ci.yml`):
-  - build + Tier 0 gate
-- Deep validation (`core-tests.yml`):
-  - Tier 0 + Tier 1 (nightly/manual)
-
-## Commit Style
-
-- Keep commits small and intention-revealing.
-- Prefer subject format:
-  - `fix(...)`
-  - `ci(...)`
-  - `test(...)`
-  - `docs(...)`
-- Do not bundle unrelated file changes into one commit.
-
-## PR Style
-
-A PR should state:
-
-- what changed
-- why it changed
-- what was intentionally out of scope
-- how it was validated
-
-If the PR is docs-only, say so explicitly.
-
-## Containment Rule
-
-Before commit:
-
-```bash
-git status
-git diff
-```
-
-If unexpected files appear:
-
-- stop
-- inspect
-- restore or stash unrelated changes
-- continue only with intentional files
-
-## CI Drift Rule
-
-Any workflow behavior change must update:
-
-- `Docs/Testing/CI_AND_TEST_TIERS.md`
-- `.github/workflows/README.md`
-- `CONTRIBUTING.md` (if contributor behavior changes)
+- **Local**: `./Scripts/preflight.sh` (build + Tier0)
+- **PR CI**: `ci.yml` (build + Tier0)
+- **Nightly**: `core-tests.yml` (deeper Tier1 validation)
