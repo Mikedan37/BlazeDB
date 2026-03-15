@@ -6,7 +6,7 @@
 
 An encrypted embedded document store for Swift — designed for application state, indexed metadata, and deterministic recovery.
 
-**ACID transactions, AES-256-GCM encryption, zero dependencies.**
+**ACID transactions, AES-256-GCM encryption, no external service dependencies.**
 
 [![Swift](https://img.shields.io/badge/Swift-6.0-orange.svg)](https://swift.org)
 [![Platform](https://img.shields.io/badge/Platform-macOS%20%7C%20iOS%20%7C%20Linux-lightgrey.svg)](https://github.com/Mikedan37/BlazeDB)
@@ -55,7 +55,7 @@ Or in Xcode: File → Add Package Dependencies → paste the URL.
 - ACID transactions with WAL-based crash recovery
 - Always-on AES-256-GCM encryption
 - Schema-less document storage with typed queries
-- Sub-millisecond reads, zero external dependencies
+- Sub-millisecond reads, no external service dependencies
 
 > **Note:** Distributed sync and telemetry features are planned for a future release. This version ships the core embedded engine only.
 

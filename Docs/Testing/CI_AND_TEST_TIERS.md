@@ -28,9 +28,6 @@ For branch discipline and PR hygiene, see `Docs/Guides/WORKFLOW_AND_STYLE_GUIDE.
   - Behavior: validate, release build, release notes, publish release
   - Blocking: release-only
 
-- `.github/workflows/test.yml`
-  - Placeholder workflow (non-authoritative; retained only if still required by maintainers)
-
 ## Tier Purposes
 
 - `BlazeDB_Tier0`

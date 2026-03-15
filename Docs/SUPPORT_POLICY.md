@@ -1,8 +1,8 @@
 # Support Policy
 
-## Early Adopter Support (v0.1.0)
+## Current Support Scope (v2.7.x)
 
-BlazeDB is in early adopter phase. This policy defines what we support and how.
+This policy defines what we support and how to report issues.
 
 ---
 
@@ -36,9 +36,9 @@ BlazeDB is in early adopter phase. This policy defines what we support and how.
 -  Cross-app sync failures
 
 ### Performance Optimization
--  "Make it faster" requests (Phase 2 not started)
--  Parallelism requests (explicitly deferred)
--  Query optimization requests (manual indexing required)
+-  Broad "make it faster" requests without reproducible workload details
+-  Parallelism requests that bypass current safety constraints
+-  Query optimization requests without schema/query examples
 
 ### Experimental Features
 -  Advanced query features (spatial, vector on Linux)
@@ -52,7 +52,7 @@ BlazeDB is in early adopter phase. This policy defines what we support and how.
 Use GitHub Issues with this template:
 
 ```
-**BlazeDB Version:** [e.g., 0.1.0]
+**BlazeDB Version:** [e.g., 2.7.0]
 **Swift Version:** [e.g., 6.0]
 **Platform:** [macOS/iOS/Linux]
 
@@ -110,31 +110,9 @@ Feature requests are welcome but may be deferred:
 
 ---
 
-## Early Adopter Program
-
-### Who Qualifies
-- 1-3 selected early adopters
-- Clear use case
-- Willing to provide feedback
-- Can test real workloads
-
-### What You Get
-- Direct support channel
-- Priority bug fixes
-- Early access to new features
-- Input on API design
-
-### What We Ask
-- Regular feedback
-- Bug reports with details
-- Real-world usage testing
-- Patience with limitations
-
----
-
 ## API Stability Commitment
 
-### Stable APIs (v0.1.0+)
+### Stable APIs (v2.x)
 We commit to:
 - No breaking changes without major version bump
 - Deprecation warnings before removal
@@ -162,10 +140,10 @@ See GitHub Issues for current known issues.
 ## Getting Help
 
 ### Documentation
-- `README.md` - Quick start
-- `QUERY_PERFORMANCE.md` - Query guidance
-- `OPERATIONAL_CONFIDENCE.md` - Health monitoring
-- `PRE_USER_HARDENING.md` - Trust features
+- `../README.md` - Quick start
+- `GettingStarted/QUERY_PERFORMANCE.md` - Query guidance
+- `GettingStarted/OPERATIONAL_CONFIDENCE.md` - Health monitoring
+- `Compliance/PRE_USER_HARDENING.md` - Trust features
 
 ### Tools
 - `blazedb doctor` - Health checks
@@ -176,7 +154,6 @@ See GitHub Issues for current known issues.
 ### Community
 - GitHub Issues for bugs
 - GitHub Discussions for questions
-- Early adopter channel (by invitation)
 
 ---
 
@@ -198,7 +175,6 @@ See GitHub Issues for current known issues.
 - Medium: 1 week
 - Low: 2 weeks
 
-**Early Adopters:**
-- Direct support
-- Priority fixes
-- Real-world testing
+**Lifecycle:**
+- Active support for current release line
+- Older release lines are best-effort unless otherwise announced

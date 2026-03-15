@@ -39,14 +39,6 @@ For tier intent and local equivalents, see `Docs/Testing/CI_AND_TEST_TIERS.md`.
   - generate release notes
   - create GitHub release
 
-### `test.yml` (Placeholder)
-- Trigger:
-  - push/manual
-- Current role:
-  - placeholder workflow
-- Note:
-  - keep only if explicitly needed; otherwise remove in a dedicated CI behavior PR
-
 ## Rules
 
 - Do not change workflow behavior in docs-only cleanup PRs.
