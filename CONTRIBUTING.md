@@ -182,6 +182,11 @@ Run:
 
 If this fails locally, fix it before pushing.
 
+## Release Tagging Policy
+
+- Use semantic tags in `vX.Y.Z` format only.
+- Do not publish non-`v` release tags; release automation triggers on `v*`.
+
 ---
 
 ## Code Style

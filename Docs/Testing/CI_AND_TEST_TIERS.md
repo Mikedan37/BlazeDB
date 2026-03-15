@@ -25,7 +25,11 @@ For branch discipline and PR hygiene, see `Docs/Guides/WORKFLOW_AND_STYLE_GUIDE.
 
 - `.github/workflows/release.yml`
   - Trigger: tag push `v*`
-  - Behavior: validate, release build, release notes, publish release
+  - Behavior:
+    - Run `BlazeDB_Tier0`, `BlazeDB_Tier1`, `BlazeDB_Tier3_Heavy`
+    - Build release artifact
+    - Generate release notes
+    - Publish GitHub release
   - Blocking: release-only
 
 ## Tier Purposes

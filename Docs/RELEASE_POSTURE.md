@@ -1,8 +1,8 @@
 # Release Posture
 
-**Version:** 0.1.0 (Pre-User Hardening Release)  
-**Status:** Ready for early adopters  
-**Date:** Pre-User Hardening Phase Complete
+**Version Line:** 2.7.x  
+**Status:** Active stable line  
+**Tag Policy:** `vX.Y.Z` tags drive release workflow
 
 ---
 
@@ -44,15 +44,14 @@
 
 ## Version Strategy
 
-### Current: v0.1.0
-- **Type:** Pre-1.0 release
-- **Breaking Changes:** May occur (documented in CHANGELOG)
-- **Stability:** Core APIs stable, experimental APIs marked
+### Current: v2.7.x
+- **Type:** Stable release line
+- **Breaking Changes:** Not allowed for stable APIs inside 2.x
+- **Stability:** Core APIs stable, experimental APIs explicitly marked
 
-### Target: v1.0.0
-- **Timeline:** After early adopter feedback
-- **Breaking Changes:** None (major version bump only)
-- **Stability:** All stable APIs locked
+### Future Major: v3.0.0+
+- **Breaking Changes:** Allowed only with major version bump
+- **Migration:** Required notes and migration guidance in `CHANGELOG.md`
 
 ---
 
@@ -133,37 +132,22 @@ See `API_STABILITY.md` for details.
 3. Use `blazedb doctor` for health checks
 4. Use `blazedb dump` for backups
 
-### For Early Adopters
-1. Test real workloads
-2. Report friction points
-3. Provide feedback on APIs
-4. Help identify polish needs
-
 ### For Maintainers
-1. Monitor early adopter feedback
-2. Fix critical issues quickly
-3. Document common patterns
-4. Plan v1.0.0 based on usage
+1. Keep PR gate green (`ci.yml`)
+2. Keep deep lane healthy (`core-tests.yml`)
+3. Publish releases from `v*` tags only
+4. Document all behavior-impacting changes in `CHANGELOG.md`
 
 ---
 
 ## Summary
 
-**This Release:**
-- Complete trust envelope
-- Swift 6 compliant core
-- Comprehensive tooling
-- Ready for early adopters
+**This Line (2.x):**
+- Swift 6 core engine with tiered CI gates
+- Stable API commitment for core APIs
+- Release automation from signed/tagged workflow
 
-**Not Included:**
-- Distributed sync
-- Performance optimization
-- Automatic tuning
+**Excluded from core line:**
+- Distributed sync modules (staging/experimental)
 
-**Next Phase:**
-- Real-world usage
-- Early adopter feedback
-- Polish based on friction
-- v1.0.0 planning
-
-**Status:** Ready for controlled early adoption.
+**Status:** Stable and actively maintained.

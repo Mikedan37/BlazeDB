@@ -52,7 +52,7 @@
 ## Platform Support
 
 ### macOS
-- **Minimum:** macOS 14.0
+- **Minimum:** macOS 15.0
 - **Status:**  Fully supported
 - **Notes:** All features available
 
@@ -84,7 +84,7 @@
 
 ## API Stability
 
-### Stable APIs (v0.1.0+)
+### Stable APIs (v2.x)
 These APIs are stable and will not change in breaking ways:
 
 - Core CRUD operations (`insert`, `fetch`, `update`, `delete`)
@@ -146,15 +146,14 @@ See `CONTRIBUTING.md` for bug report templates and guidelines.
 
 ## Breaking Changes Policy
 
-### v0.x Releases
-- May include breaking changes
-- Will be documented in CHANGELOG.md
-- Migration paths provided where possible
-
-### v1.0+ Releases
-- Stable APIs will not break
-- Breaking changes will increment major version
+### Stable Release Policy (2.x)
+- Stable APIs do not break within the major line
 - Deprecation warnings before removal
+- Migration paths provided when behavior changes
+
+### Major Release Policy (3.x+)
+- Breaking changes require a major version bump
+- Breaking changes must be documented in `CHANGELOG.md`
 
 ---
 

@@ -34,7 +34,7 @@ For tier intent and local equivalents, see `Docs/Testing/CI_AND_TEST_TIERS.md`.
 - Trigger:
   - tag push `v*`
 - Behavior:
-  - validate release tests
+  - run `BlazeDB_Tier0`, `BlazeDB_Tier1`, and `BlazeDB_Tier3_Heavy`
   - build/package release artifact
   - generate release notes
   - create GitHub release
