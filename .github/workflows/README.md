@@ -1,53 +1,54 @@
 # GitHub Actions Workflows
 
-This directory contains GitHub Actions workflow files for CI/CD.
+This directory defines BlazeDB CI/CD entry points.
 
-## Workflows
+For tier intent and local equivalents, see `Docs/Testing/CI_AND_TEST_TIERS.md`.
 
-### `ci.yml` - Main CI/CD Pipeline
-Runs on:
-- Push to `main` or `develop` branches
-- Pull requests to `main` or `develop`
-- Scheduled (nightly at 2 AM UTC)
+## Active Workflow Map
 
-Jobs:
-- **test** - Build & run unit tests
-- **benchmarks** - Performance benchmarks
-- **chaos** - Chaos engineering tests
-- **advanced** - Property-based & fuzzing tests
-- **quality** - Code quality checks
-- **stress** - Stress tests (CI/CD only)
-- **integration** - Integration tests
-- **notify** - Final status notification
+### `ci.yml` (Primary Gate)
+- Triggers:
+  - push: `main`, `develop`
+  - pull_request: `main`, `develop`
+- Job:
+  - `Build & Test` on `macos-15`
+- Behavior:
+  - push: `swift test` (full suite)
+  - pull_request: `swift test --filter BlazeDB_Tier0` (fast gate)
+- Merge impact:
+  - primary blocking check
 
-### `release.yml` - Release Pipeline
-Runs on:
-- Push of tags matching `v*` (e.g., `v1.0.0`)
+### `core-tests.yml` (Deep Lane)
+- Triggers:
+  - nightly schedule
+  - manual dispatch
+- Job:
+  - `Core Tests (Swift 6)` on `macos-14`
+- Behavior:
+  - build `BlazeDBCore` and CLI targets
+  - run `BlazeDB_Tier0` and `BlazeDB_Tier1`
+- Merge impact:
+  - non-blocking deep validation lane
 
-## Setup Instructions
+### `release.yml` (Tag Releases)
+- Trigger:
+  - tag push `v*`
+- Behavior:
+  - validate release tests
+  - build/package release artifact
+  - generate release notes
+  - create GitHub release
 
-1. **Ensure workflows are committed:**
-   ```bash
-   git add .github/workflows/*.yml
-   git commit -m "Add GitHub Actions workflows"
-   git push origin main
-   ```
+### `test.yml` (Placeholder)
+- Trigger:
+  - push/manual
+- Current role:
+  - placeholder workflow
+- Note:
+  - keep only if explicitly needed; otherwise remove in a dedicated CI behavior PR
 
-2. **Enable GitHub Actions:**
-   - Go to your repository on GitHub
-   - Click **Settings** → **Actions** → **General**
-   - Under "Workflow permissions", select "Read and write permissions"
-   - Click **Save**
+## Rules
 
-3. **Verify workflow runs:**
-   - Go to the **Actions** tab in your repository
-   - You should see workflows running after pushing
-
-## Troubleshooting
-
-If workflows don't appear:
-- Check that `.github/workflows/` directory exists
-- Verify YAML syntax is correct (no tabs, proper indentation)
-- Ensure you're pushing to `main` or `develop` branch
-- Check repository Settings → Actions to ensure Actions are enabled
+- Do not change workflow behavior in docs-only cleanup PRs.
+- Any workflow trigger/job/command change must update this README and `Docs/Testing/CI_AND_TEST_TIERS.md` in the same PR.
 
