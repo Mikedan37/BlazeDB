@@ -286,7 +286,9 @@ extension View {
     /// Trigger a refresh of a type-safe BlazeQuery when this view appears
     public func refreshOnAppear<T: BlazeDocument>(_ query: BlazeQueryTypedObserver<T>) -> some View {
         self.onAppear {
-            query.refresh()
+            Task { @MainActor in
+                query.refresh()
+            }
         }
     }
     
@@ -294,7 +296,9 @@ extension View {
     public func refreshable<T: BlazeDocument>(query: BlazeQueryTypedObserver<T>) -> some View {
         self.refreshable {
             await withCheckedContinuation { continuation in
-                query.refresh()
+                Task { @MainActor in
+                    query.refresh()
+                }
                 // Wait for loading to complete
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                     continuation.resume()

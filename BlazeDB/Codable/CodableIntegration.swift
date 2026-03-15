@@ -1,4 +1,5 @@
 import Foundation
+import CoreFoundation
 
 // MARK: - Direct Codable Support for BlazeDB
 
@@ -80,12 +81,17 @@ private func convertToBlazeField(_ value: Any) throws -> BlazeDocumentField {
     switch value {
     case let str as String:
         return .string(str)
-    case let num as Int:
-        return .int(num)
-    case let num as Double:
-        return .double(num)
-    case let bool as Bool:
-        return .bool(bool)
+    case let number as NSNumber:
+        // JSONSerialization bridges numbers/bools through NSNumber.
+        // Distinguish true booleans from numeric values explicitly.
+        if CFGetTypeID(number) == CFBooleanGetTypeID() {
+            return .bool(number.boolValue)
+        }
+        let decimal = Decimal(string: number.stringValue) ?? Decimal(number.doubleValue)
+        if NSDecimalNumber(decimal: decimal).doubleValue.rounded(.towardZero) == number.doubleValue {
+            return .int(number.intValue)
+        }
+        return .double(number.doubleValue)
     case let date as Date:
         return .date(date)
     case let uuid as UUID:

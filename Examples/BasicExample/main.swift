@@ -1,5 +1,5 @@
 import Foundation
-import BlazeDB
+import BlazeDBCore
 
 // MARK: - Basic Example
 
@@ -9,8 +9,8 @@ struct BasicExample {
         print("🔥 BlazeDB Basic Example\n")
         
         // Create or open a database
-        let db = try BlazeDBClient(
-            name: "BasicExample",
+        let db = try BlazeDBClient.open(
+            named: "BasicExample",
             password: "example-password-123"
         )
         

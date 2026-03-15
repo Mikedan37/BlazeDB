@@ -52,9 +52,7 @@ public actor ForwardSecrecyManager {
         self.rotationInterval = rotationInterval
         self.maxKeyAge = maxKeyAge
         // Generate a random 32-byte salt at session start for HKDF
-        var saltBytes = [UInt8](repeating: 0, count: 32)
-        _ = SecRandomCopyBytes(kSecRandomDefault, saltBytes.count, &saltBytes)
-        self.hkdfSalt = Data(saltBytes)
+        self.hkdfSalt = SecureRandom.bytes(count: 32)
     }
     
     /// Get current encryption key (rotates if needed)

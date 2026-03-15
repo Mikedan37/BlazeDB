@@ -19,6 +19,7 @@ final class BlazeDBBackupTests: XCTestCase {
     
     override func setUp() async throws {
         try await super.setUp()
+        BlazeDBClient.clearCachedKey()
         dbURL = FileManager.default.temporaryDirectory
             .appendingPathComponent("BackupTest-\(UUID().uuidString).blazedb")
         db = try BlazeDBClient(name: "BackupTest", fileURL: dbURL, password: "SecureTestDB-456!")
@@ -29,6 +30,9 @@ final class BlazeDBBackupTests: XCTestCase {
             super.tearDown()
             return
         }
+        try? db?.close()
+        db = nil
+        BlazeDBClient.clearCachedKey()
         let extensions = ["", "meta", "indexes", "wal", "backup"]
         for ext in extensions {
             let url = ext.isEmpty ? dbURL : dbURL.deletingPathExtension().appendingPathExtension(ext)
@@ -147,6 +151,10 @@ final class BlazeDBBackupTests: XCTestCase {
             fileURL: backupURL,
             password: "SecureTestDB-456!"
         )
+        defer {
+            try? correctDB.close()
+            BlazeDBClient.clearCachedKey()
+        }
         
         let restored = try await correctDB.fetchAll()
         XCTAssertEqual(restored.count, 1)
@@ -585,6 +593,10 @@ final class BlazeDBBackupTests: XCTestCase {
         // Open backup and verify indexes work
         BlazeDBClient.clearCachedKey()
         let restoredDB = try BlazeDBClient(name: "Restored", fileURL: backupURL, password: "SecureTestDB-456!")
+        defer {
+            try? restoredDB.close()
+            BlazeDBClient.clearCachedKey()
+        }
         
         // Query using index (should be fast)
         let openBugs = try await restoredDB.query()

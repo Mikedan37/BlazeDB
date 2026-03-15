@@ -7,9 +7,6 @@ import CryptoKit
 #else
 import Crypto
 #endif
-#if canImport(Security)
-import Security
-#endif
 
 // MARK: - BlazeDocumentField serialization
 
@@ -244,13 +241,7 @@ public final class BlazeDBClient: @unchecked Sendable {
             }
         }
 
-        var bytes = [UInt8](repeating: 0, count: 16)
-        let result = SecRandomCopyBytes(kSecRandomDefault, bytes.count, &bytes)
-        guard result == errSecSuccess else {
-            throw BlazeDBError.transactionFailed("Failed to generate per-database KDF salt")
-        }
-
-        let salt = Data(bytes)
+        let salt = try SecureRandom.bytesStrict(count: 16)
         try salt.write(to: saltURL, options: .atomic)
         return salt
     }
@@ -558,6 +549,10 @@ public final class BlazeDBClient: @unchecked Sendable {
         if !_isClosed {
             try? close()
         }
+#if !canImport(ObjectiveC)
+        // Linux fallback associated-object storage uses explicit cleanup.
+        AssociatedObjects.removeAllAssociatedObjects(for: self)
+#endif
     }
 
     // MARK: - Transaction log

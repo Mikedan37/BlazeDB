@@ -41,23 +41,24 @@ final class CrashRecoveryTests: XCTestCase {
     
     /// Test: Database survives unclean shutdown and recovers all committed data
     func testCrashRecovery_UncleanShutdown() throws {
-        let testRecords: [UUID: BlazeDataRecord] = [
-            UUID(): BlazeDataRecord(["id": .int(1), "name": .string("Record 1"), "value": .double(10.5)]),
-            UUID(): BlazeDataRecord(["id": .int(2), "name": .string("Record 2"), "value": .double(20.5)]),
-            UUID(): BlazeDataRecord(["id": .int(3), "name": .string("Record 3"), "value": .double(30.5)]),
+        let testRecords: [BlazeDataRecord] = [
+            BlazeDataRecord(["id": .int(1), "name": .string("Record 1"), "value": .double(10.5)]),
+            BlazeDataRecord(["id": .int(2), "name": .string("Record 2"), "value": .double(20.5)]),
+            BlazeDataRecord(["id": .int(3), "name": .string("Record 3"), "value": .double(30.5)]),
         ]
         
         var insertedIDs: [UUID] = []
+        var insertedRecordsByID: [UUID: BlazeDataRecord] = [:]
         
         // Phase 1: Create database and insert records
         do {
             let client = try BlazeDBClient(name: "crash-test", fileURL: tempURL, password: password)
             
             // Insert test records
-            for (expectedID, record) in testRecords {
+            for record in testRecords {
                 let id = try client.insert(record)
                 insertedIDs.append(id)
-                XCTAssertEqual(id, expectedID, "Record IDs should match")
+                insertedRecordsByID[id] = record
             }
             
             // Explicitly persist to ensure durability
@@ -85,11 +86,11 @@ final class CrashRecoveryTests: XCTestCase {
             XCTAssertNotNil(record, "Record \(id) should persist after crash recovery")
             
             if let record = record {
-                let expectedRecord = testRecords[id]
+                let expectedRecord = insertedRecordsByID[id]
                 XCTAssertNotNil(expectedRecord, "Expected record should exist for \(id)")
                 
                 if let expected = expectedRecord {
-                    XCTAssertEqual(record.storage["id"], expected.storage["id"], "Record \(id) id field should match")
+                    XCTAssertEqual(record.storage["id"], .uuid(id), "Record \(id) id field should be normalized to UUID")
                     XCTAssertEqual(record.storage["name"], expected.storage["name"], "Record \(id) name field should match")
                     XCTAssertEqual(record.storage["value"], expected.storage["value"], "Record \(id) value field should match")
                 }
@@ -103,15 +104,19 @@ final class CrashRecoveryTests: XCTestCase {
     
     /// Test: WAL recovery works correctly after crash
     func testCrashRecovery_WALRecovery() throws {
-        // Create database with WAL enabled (if applicable)
-        let client = try BlazeDBClient(name: "wal-test", fileURL: tempURL, password: password)
-        
-        // Insert records
-        let id1 = try client.insert(BlazeDataRecord(["test": .string("WAL test 1")]))
-        let id2 = try client.insert(BlazeDataRecord(["test": .string("WAL test 2")]))
-        
-        // Persist (this should flush WAL if it exists)
-        try client.persist()
+        var id1: UUID!
+        var id2: UUID!
+        do {
+            // Create database with WAL enabled (if applicable)
+            let client = try BlazeDBClient(name: "wal-test", fileURL: tempURL, password: password)
+            
+            // Insert records
+            id1 = try client.insert(BlazeDataRecord(["test": .string("WAL test 1")]))
+            id2 = try client.insert(BlazeDataRecord(["test": .string("WAL test 2")]))
+            
+            // Persist (this should flush WAL if it exists)
+            try client.persist()
+        }
         
         // Simulate crash (deallocate client)
         // In a real crash, WAL might have uncommitted entries
@@ -136,17 +141,21 @@ final class CrashRecoveryTests: XCTestCase {
     
     /// Test: Database recovers even with transaction log present
     func testCrashRecovery_WithTransactionLog() throws {
-        let client = try BlazeDBClient(name: "txn-test", fileURL: tempURL, password: password)
-        
-        // Start transaction
-        try client.beginTransaction()
-        
-        // Insert records in transaction
-        let id1 = try client.insert(BlazeDataRecord(["txn": .string("test 1")]))
-        let id2 = try client.insert(BlazeDataRecord(["txn": .string("test 2")]))
-        
-        // Commit transaction
-        try client.commitTransaction()
+        var id1: UUID!
+        var id2: UUID!
+        do {
+            let client = try BlazeDBClient(name: "txn-test", fileURL: tempURL, password: password)
+            
+            // Start transaction
+            try client.beginTransaction()
+            
+            // Insert records in transaction
+            id1 = try client.insert(BlazeDataRecord(["txn": .string("test 1")]))
+            id2 = try client.insert(BlazeDataRecord(["txn": .string("test 2")]))
+            
+            // Commit transaction
+            try client.commitTransaction()
+        }
         
         // Simulate crash after commit but before full flush
         // (In reality, commitTransaction should have persisted, but test the recovery path)
@@ -164,11 +173,14 @@ final class CrashRecoveryTests: XCTestCase {
     
     /// Test: Database recovers from corrupted page header
     func testCrashRecovery_CorruptedPageHeader() throws {
-        let client = try BlazeDBClient(name: "corruption-test", fileURL: tempURL, password: password)
-        
-        // Insert record
-        let id = try client.insert(BlazeDataRecord(["test": .string("corruption test")]))
-        try client.persist()
+        var id: UUID!
+        do {
+            let client = try BlazeDBClient(name: "corruption-test", fileURL: tempURL, password: password)
+            
+            // Insert record
+            id = try client.insert(BlazeDataRecord(["test": .string("corruption test")]))
+            try client.persist()
+        }
         
         // Simulate corrupted page header by writing invalid magic bytes
         // This tests error handling, not actual corruption (we can't safely corrupt encrypted pages)
@@ -182,17 +194,19 @@ final class CrashRecoveryTests: XCTestCase {
     
     /// Test: Database recovers with partial WAL writes
     func testCrashRecovery_PartialWALWrite() throws {
-        let client = try BlazeDBClient(name: "wal-partial-test", fileURL: tempURL, password: password)
-        
-        // Insert multiple records to potentially trigger WAL
         var ids: [UUID] = []
-        for i in 0..<10 {
-            let id = try client.insert(BlazeDataRecord(["batch": .int(i), "data": .string("test \(i)")]))
-            ids.append(id)
+        do {
+            let client = try BlazeDBClient(name: "wal-partial-test", fileURL: tempURL, password: password)
+            
+            // Insert multiple records to potentially trigger WAL
+            for i in 0..<10 {
+                let id = try client.insert(BlazeDataRecord(["batch": .int(i), "data": .string("test \(i)")]))
+                ids.append(id)
+            }
+            
+            // Persist (should flush WAL if it exists)
+            try client.persist()
         }
-        
-        // Persist (should flush WAL if it exists)
-        try client.persist()
         
         // Simulate crash before full flush (deallocate client)
         
@@ -208,26 +222,27 @@ final class CrashRecoveryTests: XCTestCase {
     
     /// Test: Randomized crash points (fuzz-style)
     func testCrashRecovery_RandomizedCrashPoints() throws {
-        // Insert records at different stages
-        let client = try BlazeDBClient(name: "random-crash-test", fileURL: tempURL, password: password)
-        
         var committedIDs: [UUID] = []
-        
-        // Insert and commit in batches
-        for batch in 0..<5 {
-            var batchIDs: [UUID] = []
-            for i in 0..<5 {
-                let id = try client.insert(BlazeDataRecord([
-                    "batch": .int(batch),
-                    "index": .int(i),
-                    "data": .string("batch \(batch) item \(i)")
-                ]))
-                batchIDs.append(id)
-            }
+        do {
+            // Insert records at different stages
+            let client = try BlazeDBClient(name: "random-crash-test", fileURL: tempURL, password: password)
             
-            // Commit this batch
-            try client.persist()
-            committedIDs.append(contentsOf: batchIDs)
+            // Insert and commit in batches
+            for batch in 0..<5 {
+                var batchIDs: [UUID] = []
+                for i in 0..<5 {
+                    let id = try client.insert(BlazeDataRecord([
+                        "batch": .int(batch),
+                        "index": .int(i),
+                        "data": .string("batch \(batch) item \(i)")
+                    ]))
+                    batchIDs.append(id)
+                }
+                
+                // Commit this batch
+                try client.persist()
+                committedIDs.append(contentsOf: batchIDs)
+            }
         }
         
         // Simulate crash

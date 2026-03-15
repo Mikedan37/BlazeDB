@@ -17,7 +17,7 @@ final class BlazeDBManagerTests: XCTestCase {
 
         let dbName = "TestDB"
         let url = FileManager.default.temporaryDirectory.appendingPathComponent("testDB.blaze")
-        let password = "pass123"
+        let password = "SecurePass-123!"
         try? FileManager.default.removeItem(at: url)
         try manager.mountDatabase(named: dbName, fileURL: url, password: password)
         

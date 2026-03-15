@@ -157,7 +157,6 @@ public enum BlazeBinaryDecoder {
         let hasCRC = (version == 0x02)
         
         // ✅ VERIFY CRC32 CHECKSUM IF PRESENT (v2 format)
-        var dataToDecodeEnd: Int
         if hasCRC {
             guard data.count >= 12 else {
                 throw BlazeBinaryError.invalidFormat("Data too short for v2 format (need at least 12 bytes)")
@@ -173,10 +172,7 @@ public enum BlazeBinaryDecoder {
                 )
             }
             
-            dataToDecodeEnd = data.count - 4  // Exclude CRC32 from field decoding
             BlazeLogger.trace("CRC32 verified ✅")
-        } else {
-            dataToDecodeEnd = data.count
         }
         
         var offset = 0

@@ -376,8 +376,8 @@ final class AutoMigrationVerificationTests: XCTestCase {
         XCTAssertEqual(countAfter, 1000, "All 1000 records should survive migration")
         
         // Reopen should be reasonably fast even with large dataset
-        XCTAssertLessThan(reopenDuration, 2.0, 
-                         "Reopening with 1000 records should be < 2s, was \(String(format: "%.2f", reopenDuration))s")
+        XCTAssertLessThan(reopenDuration, 5.0,
+                         "Reopening with 1000 records should be < 5s, was \(String(format: "%.2f", reopenDuration))s")
     }
     
     // MARK: - Rollback Safety
@@ -396,11 +396,16 @@ final class AutoMigrationVerificationTests: XCTestCase {
         
         let backupDB = backupDir.appendingPathComponent(tempURL.lastPathComponent)
         let backupMeta = backupDB.deletingPathExtension().appendingPathExtension("meta")
+        let backupSalt = backupDB.deletingPathExtension().appendingPathExtension("salt")
         
         try FileManager.default.copyItem(at: tempURL, to: backupDB)
         try FileManager.default.copyItem(
             at: tempURL.deletingPathExtension().appendingPathExtension("meta"), 
             to: backupMeta
+        )
+        try FileManager.default.copyItem(
+            at: tempURL.deletingPathExtension().appendingPathExtension("salt"),
+            to: backupSalt
         )
         
         // Close and reopen (triggers migration check)

@@ -229,6 +229,12 @@ final class ForeignKeyTests: XCTestCase {
     
     func testForeignKey_ThreadSafety() throws {
         print("🔗 Testing foreign key thread safety")
+
+        final class SendableDBRef: @unchecked Sendable {
+            let db: BlazeDBClient
+            init(_ db: BlazeDBClient) { self.db = db }
+        }
+        let dbRef = SendableDBRef(bugsDB)
         
         // Add/remove foreign keys concurrently
         DispatchQueue.concurrentPerform(iterations: 10) { i in
@@ -238,8 +244,8 @@ final class ForeignKeyTests: XCTestCase {
                 referencedCollection: "collection\(i)"
             )
             
-            self.bugsDB.addForeignKey(fk)
-            self.bugsDB.removeForeignKey(named: "fk_\(i)")
+            dbRef.db.addForeignKey(fk)
+            dbRef.db.removeForeignKey(named: "fk_\(i)")
         }
         
         // Should not crash

@@ -1,15 +1,19 @@
 name: Core Tests
 
 on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
+  workflow_dispatch:
+  schedule:
+    - cron: '0 3 * * *'
+
+concurrency:
+  group: core-tests-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   core-tests:
     runs-on: macos-14
     name: Core Tests (Swift 6)
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
       - uses: swift-actions/setup-swift@v2
@@ -29,4 +33,3 @@ jobs:
 
       - name: Run Tier 1 Tests
         run: swift test --filter BlazeDB_Tier1
-        continue-on-error: true

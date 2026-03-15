@@ -78,7 +78,6 @@ let package = Package(
                 "BlazeDBReexport.swift",
                 // SwiftUI is included conditionally (only on platforms that support it)
                 // Exclude Xcode test plans from SwiftPM source scanning.
-                "BlazeDB_Benchmark.xctestplan",
                 "BlazeDB_Core.xctestplan",
                 "BlazeDB_Core_Integration.xctestplan",
                 "BlazeDB_Destructive.xctestplan",

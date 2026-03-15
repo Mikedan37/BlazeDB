@@ -13,11 +13,11 @@ extension BlazeDBClient {
     
     /// Internal metrics container (lazy, zero cost if never accessed)
     internal var metrics: BlazeDBMetrics {
-        if let existing = objc_getAssociatedObject(self, &AssociatedKeys.metrics) as? BlazeDBMetrics {
+        if let existing: BlazeDBMetrics = AssociatedObjects.get(self, key: &AssociatedKeys.metrics) {
             return existing
         }
         let new = BlazeDBMetrics()
-        objc_setAssociatedObject(self, &AssociatedKeys.metrics, new, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
+        AssociatedObjects.set(self, key: &AssociatedKeys.metrics, value: new)
         return new
     }
     
@@ -96,22 +96,3 @@ private struct AssociatedKeys {
     nonisolated(unsafe) static var metrics: UInt8 = 0
 }
 
-#if !canImport(ObjectiveC)
-// Fallback for non-ObjectiveC platforms
-extension BlazeDBClient {
-    private static var metricsStorage: [ObjectIdentifier: BlazeDBMetrics] = [:]
-    private static let metricsLock = NSLock()
-    
-    internal var metrics: BlazeDBMetrics {
-        let id = ObjectIdentifier(self)
-        metricsLock.lock()
-        defer { metricsLock.unlock() }
-        if let existing = Self.metricsStorage[id] {
-            return existing
-        }
-        let new = BlazeDBMetrics()
-        Self.metricsStorage[id] = new
-        return new
-    }
-}
-#endif

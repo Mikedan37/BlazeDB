@@ -5,90 +5,30 @@ on:
     branches: [ main, develop ]
   pull_request:
     branches: [ main, develop ]
-  schedule:
-    - cron: '0 2 * * *'
 
-env:
-  SWIFT_VERSION: '6.0'
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   test:
     name: Build & Test
-    runs-on: macos-14
+    runs-on: macos-15
     timeout-minutes: 30
 
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Setup Swift
-      uses: swift-actions/setup-swift@v2
-      with:
-        swift-version: ${{ env.SWIFT_VERSION }}
-
-    - name: Swift Version
-      run: swift --version
-
     - name: Build
       run: swift build -v
+
     - name: Run Tests
-      run: swift test --enable-code-coverage
-
-    - name: Generate Code Coverage
-      if: runner.os == 'macOS'
       run: |
-        xcrun llvm-cov export -format="lcov" \
-          .build/debug/BlazeDBPackageTests.xctest/Contents/MacOS/BlazeDBPackageTests \
-          -instr-profile .build/debug/codecov/default.profdata > coverage.lcov
-
-    - name: Upload Coverage to Codecov
-      uses: codecov/codecov-action@v4
-      with:
-        file: coverage.lcov
-        flags: unittests
-        name: codecov-umbrella
-        fail_ci_if_error: false
-
-  lint:
-    name: Lint
-    runs-on: macos-14
-    timeout-minutes: 10
-
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Setup Swift
-      uses: swift-actions/setup-swift@v2
-      with:
-        swift-version: ${{ env.SWIFT_VERSION }}
-
-    - name: Check Swift Format
-      run: |
-        swift build 2>&1 | grep -i "error:" && exit 1 || exit 0
-
-    - name: Check Documentation
-      run: |
-        test -f README.md || exit 1
-        test -f CONTRIBUTING.md || exit 1
-        test -f CHANGELOG.md || exit 1
-        test -f LICENSE || exit 1
-
-  linux-test:
-    name: Linux Build & Test
-    runs-on: ubuntu-22.04
-    timeout-minutes: 30
-
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Setup Swift
-      uses: swift-actions/setup-swift@v2
-      with:
-        swift-version: ${{ env.SWIFT_VERSION }}
-
-    - name: Build
-      run: swift build -v
-    - name: Run Tests
-      run: swift test --skip DistributedSecuritySPMTests
+        if [[ "${{ github.event_name }}" == "push" ]]; then
+          echo "Push lane: full test suite"
+          swift test
+        else
+          echo "PR lane: fast gate suite"
+          swift test --filter BlazeDB_Tier0
+        fi

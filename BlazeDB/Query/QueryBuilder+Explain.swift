@@ -128,7 +128,7 @@ extension QueryBuilder {
     
     /// Execute query with performance warnings
     ///
-    /// Wrapper that calls explainCost() first, logs warnings if needed, then executes.
+    /// Wrapper that calls explain() first, logs warnings if needed, then executes.
     /// No semantic changes to query execution - just adds explainability.
     ///
     /// - Returns: Query result (same as execute())
@@ -142,19 +142,16 @@ extension QueryBuilder {
     /// // Warnings logged if query is slow
     /// ```
     public func executeWithWarnings() throws -> QueryResult {
-        // Explain first
-        let explanation = try explainCost()
+        // Explain first using the non-deprecated API.
+        let plan = try explain()
         
-        // Log warnings if needed
-        switch explanation.riskLevel {
-        case .warnFullScan, .warnUnindexedFilter:
-            BlazeLogger.warn("Query performance warning: \(explanation.suggestion)")
-            BlazeLogger.debug(explanation.description)
-        case .ok:
-            // No warning needed
-            break
-        case .unknown:
-            BlazeLogger.debug("Query explanation: Index detection unavailable")
+        if plan.warnings.isEmpty {
+            BlazeLogger.debug("Query explanation: no performance warnings")
+        } else {
+            for warning in plan.warnings {
+                BlazeLogger.warn("Query performance warning: \(warning)")
+            }
+            BlazeLogger.debug(plan.description)
         }
         
         // Execute normally (no behavior changes)

@@ -39,12 +39,10 @@ public final class KeyManager {
             return try loadSecureEnclaveKey(label: label, createIfMissing: createIfMissing)
 
         case .password(let pass):
-            // Legacy fallback for older call sites.
-            // New code should pass a per-database salt directly to getKey(from:salt:).
-            guard let salt = "AshPileSalt".data(using: .utf8) else {
-                throw KeyManagerError.keychainError
-            }
-            return try getKey(from: pass, salt: salt)
+            // DEPRECATED: Legacy fallback using static salt. Only used by tests.
+            // Production code must use getKey(from:salt:) with a per-database salt.
+            let legacySalt = Data("AshPileSalt".utf8)
+            return try getKey(from: pass, salt: legacySalt)
         }
     }
 
@@ -60,7 +58,7 @@ public final class KeyManager {
             try PasswordStrengthValidator.validate(password, requirements: .recommended)
         } catch {
             // Provide detailed error message
-            let (strength, recommendations) = PasswordStrengthValidator.analyze(password)
+            _ = PasswordStrengthValidator.analyze(password)
             throw KeyManagerError.passwordTooWeak
         }
 
@@ -83,12 +81,10 @@ public final class KeyManager {
         // CryptoKit's HKDF can be used, but for true PBKDF2 we need to implement it
         // For now, use a simple but secure key derivation
         var derivedKey = Data()
-        var block = Data()
-        var currentSalt = salt
         
         for blockNum in 1...((keyLength + 31) / 32) {
             // PRF(password, salt || blockNum)
-            var blockSalt = currentSalt
+            var blockSalt = salt
             blockSalt.append(Data([UInt8(blockNum >> 24), UInt8(blockNum >> 16), UInt8(blockNum >> 8), UInt8(blockNum)]))
             
             var u = Data(HMAC<SHA256>.authenticationCode(for: blockSalt, using: SymmetricKey(data: password)))
