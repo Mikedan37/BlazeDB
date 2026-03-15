@@ -69,7 +69,7 @@
 - Compatibility documented (`Docs/COMPATIBILITY.md`)
 - API stability defined (`Docs/API_STABILITY.md`)
 - Support policy established (`Docs/SUPPORT_POLICY.md`)
-- Changelog maintained (`Docs/CHANGELOG.md`)
+- Changelog maintained (`CHANGELOG.md`)
 - Release posture documented (`Docs/RELEASE_POSTURE.md`)
 
 ### Usability & Adoption Hardening

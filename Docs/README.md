@@ -32,7 +32,7 @@ Welcome to the BlazeDB documentation. This directory contains all documentation 
 - **[Compatibility](COMPATIBILITY.md)** - Platform compatibility
 - **[Support Policy](SUPPORT_POLICY.md)** - Support expectations
 - **[Release Posture](RELEASE_POSTURE.md)** - Release status
-- **[Changelog](CHANGELOG.md)** - Version history
+- **[Changelog](../CHANGELOG.md)** - Version history
 
 ### Other Resources
 - **[Archive](Archive/)** - Historical documentation
