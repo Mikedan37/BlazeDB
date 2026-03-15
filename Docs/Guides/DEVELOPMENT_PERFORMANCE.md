@@ -33,7 +33,7 @@
 - Encryption/decryption overhead
 
 **What's normal:**
-- Tier 1 tests: 5-15 seconds (expected)
+- Tier 0 gate tests: 5-15 seconds (expected)
 - All tests: 30-60 seconds (normal)
 - CPU usage spikes during tests (normal)
 
@@ -191,14 +191,14 @@ BlazeBinaryEncoder.crc32Mode = .disabled  // Faster, less validation
 
 ## Reducing Development Friction
 
-### Use Tier 1 Tests Only
+### Use Tier 0 Gate Only
 
 **For quick feedback:**
 ```bash
-./Scripts/test-gate.sh
+./Scripts/preflight.sh
 ```
 
-**Runs only production-critical tests (fast).**
+**Runs build + Tier 0 gate (fast).**
 
 ### Use Smaller Datasets
 
@@ -248,7 +248,7 @@ try db.insertMany(records)  // 3-5x faster
 **Fans spinning during builds/tests is normal.**
 
 **Focus on:**
-- Using Tier 1 tests for quick feedback
+- Using Tier 0 gate for quick feedback
 - Batching operations when possible
 - Keeping development datasets small
 
