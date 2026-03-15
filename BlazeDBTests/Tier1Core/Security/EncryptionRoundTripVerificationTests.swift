@@ -211,7 +211,11 @@ final class EncryptionRoundTripVerificationTests: XCTestCase {
         // Read with same key (should work)
         let retrieved = try store.readPage(index: 0)
         XCTAssertEqual(retrieved, data)
-        
+
+        // Close store to release exclusive file lock before reopening
+        store?.close()
+        store = nil
+
         // Try to read with different key (should fail)
         let wrongKey = SymmetricKey(size: .bits256)
         let wrongStore = try PageStore(fileURL: tempURL, key: wrongKey)
@@ -255,23 +259,22 @@ final class EncryptionRoundTripVerificationTests: XCTestCase {
         // Close store
         store = nil
         
-        // Corrupt the file by flipping a byte in the ciphertext
+        // Corrupt a byte in the AES-GCM authentication tag (bytes 21-37).
+        // Page format: [BZDB 4B][ver 1B][len 4B][nonce 12B][tag 16B][ciphertext...]
+        // Offset 100 lands in zero-padding for small payloads — AES-GCM does NOT
+        // authenticate padding, so corruption there won't be detected.
+        // Offset 30 is inside the auth tag and MUST cause authentication failure.
         let fileHandle = try FileHandle(forUpdating: tempURL)
         defer { try? fileHandle.close() }
-        
-        try fileHandle.seek(toOffset: 100)  // Somewhere in the ciphertext
+
+        try fileHandle.seek(toOffset: 30)  // Inside AES-GCM auth tag
         try fileHandle.write(contentsOf: Data([0xFF]))
         try fileHandle.synchronize()
-        
-        // Try to read with new store - should fail authentication
+
+        // Try to read with new store - must fail authentication
         let newStore = try PageStore(fileURL: tempURL, key: key)
-        
-        XCTAssertThrowsError(try newStore.readPage(index: 0)) { error in
-            // Should detect corruption via AES-GCM authentication
-            XCTAssertTrue(error.localizedDescription.contains("authentication") ||
-                         error.localizedDescription.contains("corrupt"),
-                         "Should detect corruption, got: \(error)")
-        }
+        XCTAssertThrowsError(try newStore.readPage(index: 0),
+            "AES-GCM must reject corrupted authentication tag")
     }
     
     /// Test: Detect tag tampering

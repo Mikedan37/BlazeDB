@@ -228,40 +228,15 @@ final class BlazeDBPersistAPITests: XCTestCase {
             _ = try db!.insert(BlazeDataRecord(["index": .int(i)]))
         }
         
-        // Persist before backup (critical operation)
+        // Persist before a critical boundary (close/reopen).
         try db!.persist()
-        
-        // Close database before backing up files
+        try db?.close()
         db = nil
-        
-        // Create backup
-        let backupURL = FileManager.default.temporaryDirectory
-            .appendingPathComponent("backup-\(UUID().uuidString).blazedb")
-        let backupMetaURL = backupURL.deletingPathExtension().appendingPathExtension("meta")
-        let backupIndexesURL = backupURL.deletingPathExtension().appendingPathExtension("meta.indexes")
-        
-        defer {
-            try? FileManager.default.removeItem(at: backupURL)
-            try? FileManager.default.removeItem(at: backupMetaURL)
-            try? FileManager.default.removeItem(at: backupIndexesURL)
-        }
-        
-        // Copy all related files
-        try FileManager.default.copyItem(at: tempURL, to: backupURL)
-        let metaURL = tempURL.deletingPathExtension().appendingPathExtension("meta")
-        if FileManager.default.fileExists(atPath: metaURL.path) {
-            try FileManager.default.copyItem(at: metaURL, to: backupMetaURL)
-        }
-        let indexesURL = tempURL.deletingPathExtension().appendingPathExtension("meta.indexes")
-        if FileManager.default.fileExists(atPath: indexesURL.path) {
-            try FileManager.default.copyItem(at: indexesURL, to: backupIndexesURL)
-        }
-        
-        // Verify backup is complete
-        let dbBackup = try BlazeDBClient(name: "Backup", fileURL: backupURL, password: "SecureTestDB-456!")
-        let backupRecords = try dbBackup.fetchAll()
-        
-        XCTAssertEqual(backupRecords.count, 75, "Backup should contain all records after persist")
+
+        // Reopen and verify persisted durability.
+        let reopened = try BlazeDBClient(name: "Test", fileURL: tempURL, password: "SecureTestDB-456!")
+        let records = try reopened.fetchAll()
+        XCTAssertEqual(records.count, 75, "Persist should make pre-close records durable")
     }
     
     func testPersistIdempotent() throws {

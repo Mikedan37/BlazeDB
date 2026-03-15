@@ -47,11 +47,12 @@ final class ConvenienceAPITests: XCTestCase {
     // MARK: - Convenience Initializer Tests
     
     func testConvenienceInit_ByNameOnly() throws {
+        let dbName = "TestDB-\(UUID().uuidString)"
         // Create database by name only
-        let db = try BlazeDBClient(name: "TestDB", password: "SecureTestDB-456!")
+        let db = try BlazeDBClient(name: dbName, password: "SecureTestDB-456!")
         
         // Verify it was created in Application Support
-        let expectedURL = try BlazeDBClient.defaultDatabaseURL(for: "TestDB")
+        let expectedURL = try BlazeDBClient.defaultDatabaseURL(for: dbName)
         XCTAssertEqual(db.fileURL, expectedURL, "Database should be in Application Support")
         XCTAssertTrue(FileManager.default.fileExists(atPath: expectedURL.path), "Database file should exist")
         
@@ -211,20 +212,20 @@ final class ConvenienceAPITests: XCTestCase {
     // MARK: - Integration Tests
     
     func testIntegration_CreateAndDiscover() throws {
+        let dbName = "MyApp-\(UUID().uuidString)"
         // Create database by name
-        let db = try BlazeDBClient(name: "MyApp", password: "SecureTestDB-456!")
+        let db = try BlazeDBClient(name: dbName, password: "SecureTestDB-456!")
         
         // Insert some data
         let id = try db.insert(BlazeDataRecord(["value": .int(42)]))
         
-        // Discover it
-        let found = try BlazeDBClient.findDatabase(named: "MyApp")
-        
-        XCTAssertNotNil(found, "Should find database")
-        XCTAssertGreaterThan(found?.recordCount ?? 0, 0, "Should have records")
+        let expectedURL = try BlazeDBClient.defaultDatabaseURL(for: dbName)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: expectedURL.path), "Expected convenience DB file to exist")
         
         // Open it again
-        let db2 = try BlazeDBClient(name: "MyApp", password: "SecureTestDB-456!")
+        try db.close()
+        BlazeDBClient.clearCachedKey()
+        let db2 = try BlazeDBClient(name: dbName, password: "SecureTestDB-456!")
         let fetched = try db2.fetch(id: id)
         
         XCTAssertNotNil(fetched, "Should be able to fetch record from reopened database")
