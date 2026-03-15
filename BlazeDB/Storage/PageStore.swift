@@ -104,6 +104,9 @@ public final class PageStore: @unchecked Sendable {
     internal private(set) var durabilityManager: DurabilityManager?
     /// Batches unsynchronized unified-mode writes into one auto-transaction.
     private var pendingUnifiedAutoTransactionID: UUID?
+    /// Encrypted page buffers staged for unified unsynchronized writes.
+    /// These are flushed to the main file only after a durable WAL commit.
+    private var pendingUnifiedBufferedWrites: [(index: Int, buffer: Data)] = []
     
     // MARK: - Concurrency Invariants
     // Invariants:
@@ -677,8 +680,32 @@ public final class PageStore: @unchecked Sendable {
 
     // Performs a write assuming the caller already holds the barrier on `queue`
     internal func _writePageLocked(index: Int, plaintext: Data) throws {
-        try _writePageLockedUnsynchronized(index: index, plaintext: plaintext)
+        // Ensure previously staged unified unsynchronized writes are durably committed
+        // and applied before issuing an immediate synchronized write.
         try _commitPendingUnifiedAutoTransactionIfNeededLocked()
+        try _flushPendingUnifiedBufferedWritesLocked()
+
+        pageCache.remove(index)
+        BlazeLogger.trace("Writing encrypted page at index \(index) with size \(plaintext.count)")
+        let buffer = try _encryptPageBuffer(plaintext: plaintext)
+
+        if let wal = wal {
+            // Legacy mode: append WAL entry first, then apply to main file.
+            try wal.append(pageIndex: index, data: buffer)
+        } else if let dm = durabilityManager {
+            // Unified mode: durable WAL commit before writing main file.
+            let txID = UUID()
+            try dm.appendBegin(transactionID: txID)
+            guard index >= 0, index <= Int(UInt32.max) else {
+                throw NSError(domain: "PageStore", code: -1, userInfo: [
+                    NSLocalizedDescriptionKey: "Page index \(index) out of UInt32 range for WAL entry"
+                ])
+            }
+            try dm.appendWrite(transactionID: txID, pageIndex: UInt32(index), data: buffer)
+            try dm.appendCommit(transactionID: txID)
+        }
+
+        try _writeEncryptedBuffer(index: index, buffer: buffer)
         try fileHandle.compatSynchronize()
         BlazeLogger.trace("✅ Page \(index) encrypted and flushed to disk")
     }
@@ -747,6 +774,14 @@ public final class PageStore: @unchecked Sendable {
         pendingUnifiedAutoTransactionID = nil
     }
 
+    private func _flushPendingUnifiedBufferedWritesLocked() throws {
+        guard pendingUnifiedBufferedWrites.isEmpty == false else { return }
+        for entry in pendingUnifiedBufferedWrites {
+            try _writeEncryptedBuffer(index: entry.index, buffer: entry.buffer)
+        }
+        pendingUnifiedBufferedWrites.removeAll(keepingCapacity: false)
+    }
+
     // Write without fsyncing (for batch operations)
     internal func _writePageLockedUnsynchronized(index: Int, plaintext: Data) throws {
         pageCache.remove(index)
@@ -759,6 +794,8 @@ public final class PageStore: @unchecked Sendable {
             try wal.append(pageIndex: index, data: buffer)
         } else if let dm = durabilityManager {
             // Unified mode: group unsynchronized writes in a single auto-transaction.
+            // IMPORTANT: We stage main-file writes in memory and flush only after
+            // a durable commit to preserve crash atomicity boundaries.
             let txID: UUID
             if let existing = pendingUnifiedAutoTransactionID {
                 txID = existing
@@ -774,6 +811,8 @@ public final class PageStore: @unchecked Sendable {
                 ])
             }
             try dm.appendWrite(transactionID: txID, pageIndex: UInt32(index), data: buffer)
+            pendingUnifiedBufferedWrites.append((index: index, buffer: buffer))
+            return
         }
 
         let offset = off_t(index * pageSize)
@@ -808,6 +847,7 @@ public final class PageStore: @unchecked Sendable {
         #endif
         try queue.sync(flags: .barrier) {
             try _commitPendingUnifiedAutoTransactionIfNeededLocked()
+            try _flushPendingUnifiedBufferedWritesLocked()
             try fileHandle.compatSynchronize()
         }
     }
@@ -988,6 +1028,7 @@ public final class PageStore: @unchecked Sendable {
     public func checkpoint() throws {
         try queue.sync(flags: .barrier) {
             try _commitPendingUnifiedAutoTransactionIfNeededLocked()
+            try _flushPendingUnifiedBufferedWritesLocked()
             try fileHandle.compatSynchronize()
 
             switch walMode {
@@ -1040,6 +1081,7 @@ public final class PageStore: @unchecked Sendable {
                 if let dm = durabilityManager {
                     do {
                         try _commitPendingUnifiedAutoTransactionIfNeededLocked()
+                        try _flushPendingUnifiedBufferedWritesLocked()
                     } catch {
                         BlazeLogger.error("📜 Failed to commit pending unified auto-transaction during close: \(error.localizedDescription)")
                     }
