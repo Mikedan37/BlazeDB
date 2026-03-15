@@ -227,6 +227,7 @@ If this fails locally, fix it before pushing.
 ## Questions?
 
 - Check `Docs/Testing/CI_AND_TEST_TIERS.md` for authoritative CI and tier mapping
+- Check `Docs/Guides/WORKFLOW_AND_STYLE_GUIDE.md` for branch/PR workflow and style expectations
 - Check `Docs/Guarantees/SAFETY_MODEL.md` for safety guarantees
 - Check `Docs/PHASE_1_FREEZE.md` for frozen core details
 

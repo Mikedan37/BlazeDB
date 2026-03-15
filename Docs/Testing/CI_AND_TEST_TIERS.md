@@ -4,6 +4,8 @@ This file is the single source of truth for BlazeDB CI lanes and test-tier inten
 
 If this file conflicts with other docs, treat this file and `.github/workflows/*.yml` as authoritative.
 
+For branch discipline and PR hygiene, see `Docs/Guides/WORKFLOW_AND_STYLE_GUIDE.md`.
+
 ## Workflow Inventory
 
 - `.github/workflows/ci.yml`
