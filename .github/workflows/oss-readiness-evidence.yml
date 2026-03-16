@@ -14,11 +14,16 @@ concurrency:
 jobs:
   local-evidence:
     name: Clean Snapshot Evidence
-    runs-on: macos-15
+    runs-on: ubuntu-22.04
     timeout-minutes: 90
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Setup Swift
+        uses: swift-actions/setup-swift@v2
+        with:
+          swift-version: "6.0"
 
       - name: Verify clean-checkout flow
         run: ./Scripts/verify-clean-checkout.sh
@@ -28,12 +33,17 @@ jobs:
 
   legacy-tag-repro-scan:
     name: Legacy Tag Repro Scan
-    runs-on: macos-15
+    runs-on: ubuntu-22.04
     timeout-minutes: 30
     continue-on-error: true
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Setup Swift
+        uses: swift-actions/setup-swift@v2
+        with:
+          swift-version: "6.0"
 
       - name: Run legacy tag probe
         run: ./Scripts/check-release-tag-builds.sh

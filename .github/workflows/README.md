@@ -11,7 +11,7 @@ For tier intent and local equivalents, see `Docs/Testing/CI_AND_TEST_TIERS.md`.
   - push: `main`, `develop`
   - pull_request: `main`, `develop`
 - Job:
-  - `Build & Test` on `macos-15`
+  - `Build & Test` on `ubuntu-22.04`
 - Behavior:
   - build on clean runner
   - `swift test --filter BlazeDB_Tier0`
