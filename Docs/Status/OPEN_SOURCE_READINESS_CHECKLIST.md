@@ -7,6 +7,7 @@ Use this checklist to decide if the current branch is ready for a public OSS rel
 - [x] Tier0 golden-path gate test is enabled and passing.
 - [x] Tier1 golden-path integration test is passing.
 - [ ] Tier0 + Tier1 full suites are green in CI on a clean runner.
+  - Current external blocker: hosted Actions jobs are prevented from starting until repository billing/spending-limit status is resolved.
 - [x] Next public release tag candidate build passes from a fresh clone.
   - Verified locally via `Scripts/verify-clean-checkout.sh` and `Scripts/verify-readme-quickstart.sh`.
   - CI evidence lane added: `.github/workflows/oss-readiness-evidence.yml`.

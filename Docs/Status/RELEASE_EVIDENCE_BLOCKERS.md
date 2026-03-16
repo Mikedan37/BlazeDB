@@ -33,6 +33,8 @@ This document records blockers discovered while executing OSS readiness evidence
 - Legacy-tag reproducibility remains blocked for historical pre-OSS tags until those tags are rebuilt from public dependencies (not possible in-place on immutable historical tags).
 - Next-release (core-only) confidence is now covered by clean-snapshot verification and CI evidence workflows.
 - Compatibility harness evidence now exists for two released lines (`v0.1.3`, `v2.7.0`) in `Tests/CompatibilityFixtures/`.
+- Hosted Actions evidence is currently blocked by repository billing state:
+  - `The job was not started because recent account payments have failed or your spending limit needs to be increased.`
 - Main-branch local evidence improved:
   - `Scripts/verify-clean-checkout.sh` passes with concise per-step logs.
   - `Scripts/verify-readme-quickstart.sh` confirms README quickstart behavior in a clean snapshot.

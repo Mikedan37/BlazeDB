@@ -48,3 +48,7 @@ This re-audit captures current evidence after transport deferral gating and loca
 2. Cut next public tag from current core-only graph.
 3. Keep legacy tags explicitly marked archival/non-reproducible unless re-cut from public dependencies.
 4. Execute external security review per plan and publish report summary.
+
+## Operational Blocker Note
+
+Current PR checks for CI/evidence can fail before job start if hosted Actions billing is not active. In that case, resolve repository billing/spending-limit status and re-run checks to produce final green evidence artifacts.
