@@ -248,4 +248,34 @@ final class TransactionRecoveryTests: XCTestCase {
         XCTAssertEqual(try restartedStore.readPage(index: pageA), dataA, "Committed tx must apply")
         XCTAssertNil(tryRead(restartedStore, index: pageB), "Uncommitted tx must not apply")
     }
+
+    /// Regression guard: if an uncommitted tx overwrites an existing committed page,
+    /// recovery must preserve the previously committed page content.
+    func testUncommittedOverwriteDoesNotDeletePreviouslyCommittedPage() throws {
+        let env = try makeEnv()
+        let page = 6
+        let committedData = randomData(32)
+        let uncommittedOverwrite = randomData(32)
+
+        let log = TransactionLog(logFileURL: env.logURL)
+
+        let txCommitted = UUID()
+        try log.appendBegin(txID: txCommitted)
+        try log.appendWrite(pageID: page, data: committedData)
+        try log.appendCommit(txID: txCommitted)
+
+        let txUncommitted = UUID()
+        try log.appendBegin(txID: txUncommitted)
+        try log.appendWrite(pageID: page, data: uncommittedOverwrite)
+        // no commit: simulate crash before commit
+
+        let restartedStore: PageStore = try .init(fileURL: env.dbURL, key: env.key)
+        try log.recover(into: restartedStore)
+
+        XCTAssertEqual(
+            try restartedStore.readPage(index: page),
+            committedData,
+            "Recovery must keep the last committed version and ignore uncommitted overwrite"
+        )
+    }
 }

@@ -5,6 +5,11 @@
 //  Platform-neutral protocol for server transport (TCP listening)
 //  Allows BlazeDB to work on Linux without Network.framework dependency
 //
+//  NOTE: Core OSS builds intentionally ship without BlazeTransport wiring.
+//  TODO(distributed-transport): Re-enable concrete distributed transport
+//  providers once a public transport dependency is restored and
+//  BLAZEDB_DISTRIBUTED_TRANSPORT is enabled.
+//
 //
 
 #if !BLAZEDB_LINUX_CORE

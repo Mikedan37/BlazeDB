@@ -12,6 +12,19 @@ public enum BlazeDocumentField: Codable, Equatable, Hashable, Sendable {
     case dictionary([String: BlazeDocumentField])
     case vector([Double])
     case null
+
+    private struct DynamicKey: CodingKey {
+        var stringValue: String
+        var intValue: Int?
+        init?(stringValue: String) {
+            self.stringValue = stringValue
+            self.intValue = nil
+        }
+        init?(intValue: Int) {
+            self.stringValue = String(intValue)
+            self.intValue = intValue
+        }
+    }
     
     public var value: Any {
         switch self {
@@ -30,43 +43,112 @@ public enum BlazeDocumentField: Codable, Equatable, Hashable, Sendable {
     }
     
     public init(from decoder: Decoder) throws {
-        let container = try decoder.singleValueContainer()
-        
-        if container.decodeNil() {
-            self = .null
+        // Prefer single-value decoding first so scalar payloads do not fail on
+        // eager keyed/unkeyed container probes.
+        if let container = try? decoder.singleValueContainer() {
+            if container.decodeNil() {
+                self = .null
+                return
+            }
+            if let v = try? container.decode(Int.self) { self = .int(v); return }
+            if let v = try? container.decode(Bool.self) { self = .bool(v); return }
+            if let v = try? container.decode(Double.self) { self = .double(v); return }
+            if let v = try? container.decode(UUID.self) { self = .uuid(v); return }
+            if let v = try? container.decode(Date.self) { self = .date(v); return }
+            if let v = try? container.decode(String.self) { self = .string(v); return }
+            if let v = try? container.decode(Data.self) { self = .data(v); return }
+            if let dict = try? container.decode([String: BlazeDocumentField].self) {
+                self = .dictionary(dict)
+                return
+            }
+            if let arr = try? container.decode([BlazeDocumentField].self) {
+                var doubles: [Double] = []
+                var isNumericVector = true
+                for item in arr {
+                    if case .double(let d) = item {
+                        doubles.append(d)
+                    } else if case .int(let i) = item {
+                        doubles.append(Double(i))
+                    } else {
+                        isNumericVector = false
+                        break
+                    }
+                }
+                self = isNumericVector ? .vector(doubles) : .array(arr)
+                return
+            }
+        }
+
+        if let keyed = try? decoder.container(keyedBy: DynamicKey.self) {
+            var dict: [String: BlazeDocumentField] = [:]
+            for key in keyed.allKeys {
+                if let nested = try? keyed.decode(BlazeDocumentField.self, forKey: key) {
+                    dict[key.stringValue] = nested
+                    continue
+                }
+                if let intValue = try? keyed.decode(Int.self, forKey: key) {
+                    dict[key.stringValue] = .int(intValue)
+                    continue
+                }
+                if let boolValue = try? keyed.decode(Bool.self, forKey: key) {
+                    dict[key.stringValue] = .bool(boolValue)
+                    continue
+                }
+                if let doubleValue = try? keyed.decode(Double.self, forKey: key) {
+                    dict[key.stringValue] = .double(doubleValue)
+                    continue
+                }
+                if let stringValue = try? keyed.decode(String.self, forKey: key) {
+                    dict[key.stringValue] = .string(stringValue)
+                }
+            }
+            self = .dictionary(dict)
             return
         }
-        
-        // Try to decode as Int first (most common type, and avoids Bool false positives)
-        // Then try Bool, then Double, etc.
-        // This order prevents issues where numbers are incorrectly decoded as Bool
-        if let v = try? container.decode(Int.self) {
-            self = .int(v)
-        } else if let v = try? container.decode(Bool.self) {
-            self = .bool(v)
-        } else if let v = try? container.decode(Double.self) {
-            self = .double(v)
-        } else if let v = try? container.decode(UUID.self) {
-            self = .uuid(v)
-        } else if let v = try? container.decode(Date.self) {
-            self = .date(v)
-        } else if let v = try? container.decode([Double].self) {
-            self = .vector(v)
-        } else if let v = try? container.decode([BlazeDocumentField].self) {
-            self = .array(v)
-        } else if let v = try? container.decode([String: BlazeDocumentField].self) {
-            self = .dictionary(v)
-        } else if let stringValue = try? container.decode(String.self) {
-            self = .string(stringValue)
-        } else {
-            throw DecodingError.typeMismatch(
-                BlazeDocumentField.self,
-                DecodingError.Context(
-                    codingPath: decoder.codingPath,
-                    debugDescription: "Invalid value type for BlazeDocumentField"
-                )
-            )
+
+        if var unkeyed = try? decoder.unkeyedContainer() {
+            var values: [BlazeDocumentField] = []
+            var doubles: [Double] = []
+            var isNumericVector = true
+
+            while !unkeyed.isAtEnd {
+                let nested: BlazeDocumentField
+                if let decoded = try? unkeyed.decode(BlazeDocumentField.self) {
+                    nested = decoded
+                } else if let intValue = try? unkeyed.decode(Int.self) {
+                    nested = .int(intValue)
+                } else if let boolValue = try? unkeyed.decode(Bool.self) {
+                    nested = .bool(boolValue)
+                } else if let doubleValue = try? unkeyed.decode(Double.self) {
+                    nested = .double(doubleValue)
+                } else if let stringValue = try? unkeyed.decode(String.self) {
+                    nested = .string(stringValue)
+                } else if (try? unkeyed.decodeNil()) == true {
+                    nested = .null
+                } else {
+                    nested = .null
+                }
+                values.append(nested)
+                if case .double(let d) = nested {
+                    doubles.append(d)
+                } else if case .int(let i) = nested {
+                    doubles.append(Double(i))
+                } else {
+                    isNumericVector = false
+                }
+            }
+
+            self = isNumericVector ? .vector(doubles) : .array(values)
+            return
         }
+
+        throw DecodingError.typeMismatch(
+            BlazeDocumentField.self,
+            DecodingError.Context(
+                codingPath: decoder.codingPath,
+                debugDescription: "Invalid value type for BlazeDocumentField"
+            )
+        )
     }
     
     public func encode(to encoder: Encoder) throws {

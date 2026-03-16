@@ -7,6 +7,53 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ## [Unreleased]
 
+### Added
+
+- OSS readiness documentation:
+  - `Docs/Status/OPEN_SOURCE_READINESS_CHECKLIST.md`
+  - `Docs/Status/RELEASE_ROLLBACK.md`
+  - `Docs/Status/KEY_MANAGEMENT_AND_COMPATIBILITY.md`
+- One-command local OSS verification script: `Scripts/oss-readiness-local.sh`.
+- Clean-checkout verification script: `Scripts/verify-clean-checkout.sh`.
+- Release-tag buildability probe script: `Scripts/check-release-tag-builds.sh`.
+- Cross-version compatibility harness docs and fixture contract:
+  - `Docs/Status/COMPATIBILITY_HARNESS.md`
+  - `Tests/CompatibilityFixtures/README.md`
+  - `BlazeDB_Tier2.CrossVersionExportRestoreHarnessTests`
+- Released compatibility fixtures:
+  - `Tests/CompatibilityFixtures/v0.1.3/dump.blazedump`
+  - `Tests/CompatibilityFixtures/v2.7.0/dump.blazedump`
+- Release-evidence blocker ledger for fresh-clone/tag validation:
+  - `Docs/Status/RELEASE_EVIDENCE_BLOCKERS.md`
+- External security-review planning and tracking:
+  - `Docs/Status/EXTERNAL_SECURITY_REVIEW_PLAN.md`
+  - `.github/ISSUE_TEMPLATE/security_review_tracking.md`
+- README quickstart verification script:
+  - `Scripts/verify-readme-quickstart.sh`
+- OSS readiness CI evidence workflow:
+  - `.github/workflows/oss-readiness-evidence.yml`
+
+### Changed
+
+- Golden-path gate coverage:
+  - Tier0 golden-path test is enabled (no explicit skip).
+  - Tier0/Tier1 golden-path tests now use deterministic restore verification on the restored handle.
+  - Health assertion accepts `ok` or `warn` (e.g., post-restore vacuum suggestion).
+- `README.md` now links OSS readiness docs and includes explicit non-production warning for `BLAZEDB_BENCHMARK_NO_ENCRYPTION`.
+- `CONTRIBUTING.md` now includes `./Scripts/oss-readiness-local.sh` and `./Scripts/verify-clean-checkout.sh` in contributor workflow.
+- `Scripts/verify-clean-checkout.sh` now validates a clean worktree snapshot synced from local branch changes.
+- `Examples/HelloBlazeDB/main.swift` now uses a password that satisfies the current password policy, so quickstart succeeds from a clean snapshot.
+- `ci.yml` now runs Tier0 and Tier1 suites on both push and pull_request clean runners.
+- OSS scripts now summarize warning counts and keep full logs in files to reduce terminal noise.
+- Dump verification now includes a legacy hash compatibility path behind explicit opt-in (`allowLegacyHashMismatch`) for cross-version restore validation.
+- `SECURITY.md` now includes explicit disclosure/response SLA targets.
+
+### Upgrade Notes
+
+- If your CI expected Tier0 golden-path to be skipped, update it; the test now executes.
+- If your automation expected health status to be strictly `ok`, allow `warn` where suggested actions are non-fatal.
+- Prefer running `./Scripts/oss-readiness-local.sh` before PR or release tagging.
+
 ### Planned
 
 - Distributed modules Swift 6 compliance

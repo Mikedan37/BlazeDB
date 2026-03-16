@@ -10,7 +10,8 @@ extension DynamicCollection: MetaStore {
             from: metaURLPath,
             signingKey: encryptionKey,
             password: password,
-            salt: kdfSalt
+            salt: kdfSalt,
+            allowUnsignedLayoutFallback: true
         )
         if !layout.metaData.isEmpty {
             return layout.metaData
@@ -28,7 +29,8 @@ extension DynamicCollection: MetaStore {
                 from: metaURLPath,
                 signingKey: encryptionKey,
                 password: password,
-                salt: salt
+                salt: salt,
+                allowUnsignedLayoutFallback: true
             )
             // metaData is stored in StorageLayout, not DynamicCollection
             return layout.metaData
@@ -40,7 +42,8 @@ extension DynamicCollection: MetaStore {
                     from: metaURLPath,
                     signingKey: encryptionKey,
                     password: password,
-                    salt: salt
+                    salt: salt,
+                    allowUnsignedLayoutFallback: true
                 )
                 BlazeLogger.info("✅ [FETCHMETA] Retry succeeded")
                 // metaData is stored in StorageLayout, not DynamicCollection
@@ -63,7 +66,8 @@ extension DynamicCollection: MetaStore {
                     from: metaURLPath,
                     signingKey: encryptionKey,
                     password: password,
-                    salt: salt
+                    salt: salt,
+                    allowUnsignedLayoutFallback: true
                 )
             } catch {
                 BlazeLogger.warn("⚠️ [UPDATEMETA] Failed to load existing layout, creating new one: \(error)")

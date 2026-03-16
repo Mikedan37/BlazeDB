@@ -22,6 +22,8 @@ DerivedData/
 .claude/
 .cursor/
 .artifacts/
+.logs/
+.tagcheck-*.log
 
 # Secrets and certificates
 *.pem

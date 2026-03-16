@@ -104,23 +104,14 @@ public enum AnyBlazeCodable: Codable, Hashable {
 
     public init(from decoder: Decoder) throws {
         let container = try decoder.singleValueContainer()
-        if let v = try? container.decode(String.self) {
-            self = .string(v)
-        } else if let v = try? container.decode(Int.self) {
-            self = .int(v)
-        } else if let v = try? container.decode(Double.self) {
-            self = .double(v)
-        } else if let v = try? container.decode(Bool.self) {
-            self = .bool(v)
-        } else if let v = try? container.decode(Date.self) {
-            self = .date(v)
-        } else if let v = try? container.decode(UUID.self) {
-            self = .uuid(v)
-        } else if let v = try? container.decode(Data.self) {
-            self = .data(v)
-        } else {
-            throw DecodingError.dataCorruptedError(in: container, debugDescription: "Invalid type for AnyBlazeCodable")
-        }
+        do { self = .string(try container.decode(String.self)); return } catch {}
+        do { self = .int(try container.decode(Int.self)); return } catch {}
+        do { self = .double(try container.decode(Double.self)); return } catch {}
+        do { self = .bool(try container.decode(Bool.self)); return } catch {}
+        do { self = .date(try container.decode(Date.self)); return } catch {}
+        do { self = .uuid(try container.decode(UUID.self)); return } catch {}
+        do { self = .data(try container.decode(Data.self)); return } catch {}
+        throw DecodingError.dataCorruptedError(in: container, debugDescription: "Invalid type for AnyBlazeCodable")
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -339,6 +330,11 @@ struct StorageLayout: Codable {
         let ids: [String]
     }
 
+    private struct CanonicalKVEntry<T: Decodable>: Decodable {
+        let key: String
+        let value: T
+    }
+
     private static func decodeSecondaryIndexes(
         from container: KeyedDecodingContainer<CodingKeys>
     ) -> [String: [CompoundIndexKey: [UUID]]] {
@@ -361,6 +357,63 @@ struct StorageLayout: Codable {
             }
         } catch {
             // Ignore malformed legacy/canonical secondary index payloads.
+        }
+        return [:]
+    }
+
+    private static func decodeMetaData(
+        from container: KeyedDecodingContainer<CodingKeys>
+    ) -> [String: BlazeDocumentField] {
+        if let decoded = try? container.decode([String: BlazeDocumentField].self, forKey: .metaData) {
+            return decoded
+        }
+        if let canonical = try? container.decode([CanonicalKVEntry<BlazeDocumentField>].self, forKey: .metaData) {
+            return canonical.reduce(into: [String: BlazeDocumentField]()) { acc, entry in
+                acc[entry.key] = entry.value
+            }
+        }
+        if let scalarCanonical = try? container.decode([CanonicalKVEntry<AnyBlazeCodable>].self, forKey: .metaData) {
+            return scalarCanonical.reduce(into: [String: BlazeDocumentField]()) { acc, entry in
+                let value: BlazeDocumentField
+                switch entry.value {
+                case .string(let v): value = .string(v)
+                case .int(let v): value = .int(v)
+                case .double(let v): value = .double(v)
+                case .bool(let v): value = .bool(v)
+                case .date(let v): value = .date(v)
+                case .uuid(let v): value = .uuid(v)
+                case .data(let v): value = .data(v)
+                }
+                acc[entry.key] = value
+            }
+        }
+        return [:]
+    }
+
+    private static func decodeFieldTypes(
+        from container: KeyedDecodingContainer<CodingKeys>
+    ) -> [String: String] {
+        if let decoded = try? container.decode([String: String].self, forKey: .fieldTypes) {
+            return decoded
+        }
+        if let canonical = try? container.decode([CanonicalKVEntry<String>].self, forKey: .fieldTypes) {
+            return canonical.reduce(into: [String: String]()) { acc, entry in
+                acc[entry.key] = entry.value
+            }
+        }
+        return [:]
+    }
+
+    private static func decodeSecondaryIndexDefinitions(
+        from container: KeyedDecodingContainer<CodingKeys>
+    ) -> [String: [String]] {
+        if let decoded = try? container.decode([String: [String]].self, forKey: .secondaryIndexDefinitions) {
+            return decoded
+        }
+        if let canonical = try? container.decode([CanonicalKVEntry<[String]>].self, forKey: .secondaryIndexDefinitions) {
+            return canonical.reduce(into: [String: [String]]()) { acc, entry in
+                acc[entry.key] = entry.value
+            }
         }
         return [:]
     }
@@ -455,9 +508,9 @@ struct StorageLayout: Codable {
         secondaryIndexes = Self.decodeSecondaryIndexes(from: container)
         version = try container.decodeIfPresent(Int.self, forKey: .version) ?? 1
         encodingFormat = try container.decodeIfPresent(String.self, forKey: .encodingFormat) ?? "blazeBinary"  // ✅ Default to blazeBinary
-        metaData = try container.decodeIfPresent([String: BlazeDocumentField].self, forKey: .metaData) ?? [:]
-        fieldTypes = try container.decodeIfPresent([String: String].self, forKey: .fieldTypes) ?? [:]
-        secondaryIndexDefinitions = try container.decodeIfPresent([String: [String]].self, forKey: .secondaryIndexDefinitions) ?? [:]
+        metaData = Self.decodeMetaData(from: container)
+        fieldTypes = Self.decodeFieldTypes(from: container)
+        secondaryIndexDefinitions = Self.decodeSecondaryIndexDefinitions(from: container)
         searchIndex = try container.decodeIfPresent(InvertedIndex.self, forKey: .searchIndex)
         searchIndexedFields = try container.decodeIfPresent([String].self, forKey: .searchIndexedFields) ?? []
         deletedPages = try container.decodeIfPresent([Int].self, forKey: .deletedPages) ?? []  // ✅ Decode deletedPages

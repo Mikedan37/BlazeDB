@@ -390,7 +390,7 @@ extension StorageLayout {
     }
 
     private static func canonicalLayout(from layout: StorageLayout) -> CanonicalStorageLayout {
-        CanonicalStorageLayout(
+        return CanonicalStorageLayout(
             indexMap: layout.indexMap
                 .map { CanonicalStorageLayout.IndexEntry(id: $0.key.uuidString, pages: $0.value.sorted()) }
                 .sorted { $0.id < $1.id },
@@ -690,7 +690,8 @@ extension StorageLayout {
         from url: URL,
         signingKey: SymmetricKey,
         password: String? = nil,
-        salt: Data? = nil
+        salt: Data? = nil,
+        allowUnsignedLayoutFallback: Bool = false
     ) throws -> StorageLayout {
         let data = try Data(contentsOf: url)
         guard looksLikeJSONLayout(data) else {
@@ -866,22 +867,23 @@ extension StorageLayout {
             )
         }
         
-        // Fallback: Try to decode as plain layout (backward compatibility)
-        // This allows migration from unsigned layouts
-        if let layout = try? decoder.decode(StorageLayout.self, from: data) {
-            BlazeLogger.warn("Loaded unsigned layout (backward compatibility mode)")
-            return layout
-        }
-
-        // Last-chance tolerant path for legacy/tuple-style JSON payloads.
-        if let raw = try? JSONSerialization.jsonObject(with: data, options: []) as? [String: Any] {
-            if let rawLayout = raw["layout"], let normalized = decodeLayoutFromRawJSON(rawLayout) {
-                BlazeLogger.warn("Loaded layout via tolerant secure-wrapper normalization path")
-                return normalized
+        if allowUnsignedLayoutFallback {
+            // Backward compatibility mode for controlled one-time migrations only.
+            if let layout = try? decoder.decode(StorageLayout.self, from: data) {
+                BlazeLogger.warn("Loaded unsigned layout (explicit fallback enabled)")
+                return layout
             }
-            if let normalized = decodeLayoutFromRawJSON(raw) {
-                BlazeLogger.warn("Loaded layout via tolerant plain-layout normalization path")
-                return normalized
+
+            // Last-chance tolerant path for legacy/tuple-style JSON payloads.
+            if let raw = try? JSONSerialization.jsonObject(with: data, options: []) as? [String: Any] {
+                if let rawLayout = raw["layout"], let normalized = decodeLayoutFromRawJSON(rawLayout) {
+                    BlazeLogger.warn("Loaded layout via tolerant secure-wrapper normalization path")
+                    return normalized
+                }
+                if let normalized = decodeLayoutFromRawJSON(raw) {
+                    BlazeLogger.warn("Loaded layout via tolerant plain-layout normalization path")
+                    return normalized
+                }
             }
         }
         

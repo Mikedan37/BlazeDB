@@ -13,8 +13,9 @@ For tier intent and local equivalents, see `Docs/Testing/CI_AND_TEST_TIERS.md`.
 - Job:
   - `Build & Test` on `macos-15`
 - Behavior:
-  - push: `swift test` (full suite)
-  - pull_request: `swift test --filter BlazeDB_Tier0` (fast gate)
+  - build on clean runner
+  - `swift test --filter BlazeDB_Tier0`
+  - `swift test --skip-build --filter BlazeDB_Tier1`
 - Merge impact:
   - primary blocking check
 
@@ -38,6 +39,17 @@ For tier intent and local equivalents, see `Docs/Testing/CI_AND_TEST_TIERS.md`.
   - build/package release artifact
   - generate release notes
   - create GitHub release
+
+### `oss-readiness-evidence.yml` (Evidence Lane)
+- Triggers:
+  - push: `main`
+  - manual dispatch
+- Behavior:
+  - runs `./Scripts/verify-clean-checkout.sh`
+  - runs `./Scripts/verify-readme-quickstart.sh`
+  - runs legacy tag reproducibility probe and uploads `.tagcheck-*.log` artifacts
+- Merge impact:
+  - evidence lane (diagnostic and release-confidence focused)
 
 ## Rules
 

@@ -21,6 +21,13 @@ jobs:
         uses: swift-actions/setup-swift@v2
         with:
           swift-version: '6.0'
+
+      - name: 🏷️ Validate SemVer Tag
+        run: |
+          if [[ ! "${{ github.ref_name }}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Release tags must be stable SemVer in the form vX.Y.Z"
+            exit 1
+          fi
       
       - name: 🧪 Run Full Test Suite
         run: |
@@ -39,8 +46,13 @@ jobs:
       
       - name: 🔬 Run Sanitizer Tests
         run: |
-          echo "Running thread sanitizer..."
-          swift test -Xswiftc -sanitize=thread --filter '!Stress|!Heavy'
+          echo "Running thread sanitizer on Tier 0..."
+          SANITIZER_LOG=$(mktemp)
+          swift test -Xswiftc -sanitize=thread --filter BlazeDB_Tier0 | tee "$SANITIZER_LOG"
+          if grep -q "Executed 0 tests" "$SANITIZER_LOG"; then
+            echo "Sanitizer lane ran zero tests"
+            exit 1
+          fi
       
       - name: ✅ All Tests Passed
         run: |
@@ -129,7 +141,11 @@ jobs:
           echo "" >> release_notes.md
           echo "---" >> release_notes.md
           echo "" >> release_notes.md
-          echo "**Full Changelog**: https://github.com/Mikedan37/BlazeDB/compare/$LAST_TAG...${{ github.ref_name }}" >> release_notes.md
+          if [ -n "$LAST_TAG" ]; then
+            echo "**Full Changelog**: https://github.com/Mikedan37/BlazeDB/compare/$LAST_TAG...${{ github.ref_name }}" >> release_notes.md
+          else
+            echo "**Full Changelog**: https://github.com/Mikedan37/BlazeDB/releases/tag/${{ github.ref_name }}" >> release_notes.md
+          fi
       
       - name: 📤 Upload Release Notes
         uses: actions/upload-artifact@v4

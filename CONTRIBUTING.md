@@ -148,6 +148,15 @@ Place test files under the correct `BlazeDBTests/Tier*` path and keep naming ali
 # Make your changes
 # ...
 
+# Run OSS readiness local checks (recommended before PR)
+./Scripts/oss-readiness-local.sh
+
+# Run clean-checkout verification (recommended before release)
+./Scripts/verify-clean-checkout.sh
+
+# Verify README quickstart behavior and runtime budget
+./Scripts/verify-readme-quickstart.sh
+
 # Run local preflight (required)
 ./Scripts/preflight.sh
 
@@ -234,7 +243,7 @@ If this fails locally, fix it before pushing.
 - Check `Docs/Testing/CI_AND_TEST_TIERS.md` for authoritative CI and tier mapping
 - Check `Docs/Guides/WORKFLOW_AND_STYLE_GUIDE.md` for branch/PR workflow and style expectations
 - Check `Docs/Guarantees/SAFETY_MODEL.md` for safety guarantees
-- Check `Docs/PHASE_1_FREEZE.md` for frozen core details
+- Check `Docs/Compliance/PHASE_1_FREEZE.md` for frozen core details
 
 ---
 

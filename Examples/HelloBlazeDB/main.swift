@@ -14,7 +14,8 @@ print("=== Hello BlazeDB ===\n")
 do {
     // STEP 1: Open database (one line, zero config)
     print("1. Opening database...")
-    let db = try BlazeDBClient.open(named: "hello-blazedb", password: "hello-blazedb-demo-2024!")
+    // Keep example password policy-compliant so quickstart works from a clean clone.
+    let db = try BlazeDBClient.open(named: "hello-blazedb", password: "Hello-BlazeDB-Demo-2026A!")
     print("   Database opened\n")
     
     // STEP 2: Insert data

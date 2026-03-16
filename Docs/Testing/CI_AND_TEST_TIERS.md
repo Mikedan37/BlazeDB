@@ -12,8 +12,9 @@ For branch discipline and PR hygiene, see `Docs/Guides/WORKFLOW_AND_STYLE_GUIDE.
   - Triggers: push and pull_request on `main`, `develop`
   - Check name: `Build & Test`
   - Behavior:
-    - Push: `swift test` (full suite)
-    - PR: `swift test --filter BlazeDB_Tier0` (fast gate)
+    - `swift build -v`
+    - `swift test --filter BlazeDB_Tier0`
+    - `swift test --skip-build --filter BlazeDB_Tier1`
   - Blocking: yes
 
 - `.github/workflows/core-tests.yml`
@@ -31,6 +32,14 @@ For branch discipline and PR hygiene, see `Docs/Guides/WORKFLOW_AND_STYLE_GUIDE.
     - Generate release notes
     - Publish GitHub release
   - Blocking: release-only
+
+- `.github/workflows/oss-readiness-evidence.yml`
+  - Trigger: push on `main` + manual dispatch
+  - Behavior:
+    - `./Scripts/verify-clean-checkout.sh`
+    - `./Scripts/verify-readme-quickstart.sh`
+    - `./Scripts/check-release-tag-builds.sh` (legacy tag diagnostic logs)
+  - Blocking: no (evidence lane)
 
 ## Tier Purposes
 

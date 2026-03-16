@@ -12,6 +12,20 @@ import Foundation
 ///
 /// Restores databases from dump files with integrity verification.
 public struct BlazeDBImporter {
+    // Backward-compatible overload retained for existing call sites and
+    // previously-compiled clients.
+    public static func restore(
+        from dumpURL: URL,
+        to db: BlazeDBClient,
+        allowSchemaMismatch: Bool = false
+    ) throws {
+        try restore(
+            from: dumpURL,
+            to: db,
+            allowSchemaMismatch: allowSchemaMismatch,
+            allowLegacyHashMismatch: false
+        )
+    }
     
     /// Restore database from dump file
     ///
@@ -29,13 +43,17 @@ public struct BlazeDBImporter {
     public static func restore(
         from dumpURL: URL,
         to db: BlazeDBClient,
-        allowSchemaMismatch: Bool = false
+        allowSchemaMismatch: Bool = false,
+        allowLegacyHashMismatch: Bool = false
     ) throws {
         // Read dump file
         let dumpData = try Data(contentsOf: dumpURL)
         
         // Decode and verify integrity
-        let dump = try DatabaseDump.decodeAndVerify(dumpData)
+        let dump = try DatabaseDump.decodeAndVerify(
+            dumpData,
+            allowLegacyHashMismatch: allowLegacyHashMismatch
+        )
         
         // Verify schema compatibility
         let dbSchemaVersion = try db.getSchemaVersion() ?? SchemaVersion(major: 0, minor: 0)
@@ -89,9 +107,21 @@ public struct BlazeDBImporter {
     /// - Parameter dumpURL: URL of dump file
     /// - Returns: Dump header if valid
     /// - Throws: Error if verification fails
-    public static func verify(_ dumpURL: URL) throws -> DumpHeader {
+    public static func verify(
+        _ dumpURL: URL
+    ) throws -> DumpHeader {
+        try verify(dumpURL, allowLegacyHashMismatch: false)
+    }
+
+    public static func verify(
+        _ dumpURL: URL,
+        allowLegacyHashMismatch: Bool = false
+    ) throws -> DumpHeader {
         let dumpData = try Data(contentsOf: dumpURL)
-        let dump = try DatabaseDump.decodeAndVerify(dumpData)
+        let dump = try DatabaseDump.decodeAndVerify(
+            dumpData,
+            allowLegacyHashMismatch: allowLegacyHashMismatch
+        )
         return dump.header
     }
 }

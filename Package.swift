@@ -45,6 +45,8 @@ let package = Package(
             targets: ["ReferenceConsumer"])
     ],
     dependencies: [
+        // Core OSS dependency set only. Distributed transport dependencies
+        // (for example BlazeTransport) are intentionally deferred.
         .package(url: "https://github.com/apple/swift-crypto.git", from: "3.0.0"),
     ],
     targets: [

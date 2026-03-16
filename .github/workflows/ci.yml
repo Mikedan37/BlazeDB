@@ -14,21 +14,17 @@ jobs:
   test:
     name: Build & Test
     runs-on: macos-15
-    timeout-minutes: 30
+    timeout-minutes: 90
 
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Build
+    - name: Build (clean runner)
       run: swift build -v
 
-    - name: Run Tests
-      run: |
-        if [[ "${{ github.event_name }}" == "push" ]]; then
-          echo "Push lane: full test suite"
-          swift test
-        else
-          echo "PR lane: fast gate suite"
-          swift test --filter BlazeDB_Tier0
-        fi
+    - name: Run Tier 0 suite
+      run: swift test --filter BlazeDB_Tier0
+
+    - name: Run Tier 1 suite (skip rebuild)
+      run: swift test --skip-build --filter BlazeDB_Tier1

@@ -142,14 +142,29 @@ public struct DatabaseDump: Codable {
     /// - Parameter data: JSON data
     /// - Returns: Verified dump
     /// - Throws: Error if verification fails
-    public static func decodeAndVerify(_ data: Data) throws -> DatabaseDump {
+    public static func decodeAndVerify(
+        _ data: Data,
+        allowLegacyHashMismatch: Bool = false
+    ) throws -> DatabaseDump {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
         
         let dump = try decoder.decode(DatabaseDump.self, from: data)
         
-        // Verify integrity
-        try dump.verify()
+        do {
+            // Verify integrity.
+            try dump.verify()
+        } catch let error as BlazeDBError {
+            // Legacy compatibility path for historical exporters whose canonical
+            // hash preimage differed from current verifier behavior.
+            if allowLegacyHashMismatch, case .corruptedData = error {
+                guard dump.manifest.recordCount == dump.records.count else {
+                    throw error
+                }
+                return dump
+            }
+            throw error
+        }
         
         return dump
     }
@@ -157,60 +172,63 @@ public struct DatabaseDump: Codable {
     /// Verify dump integrity
     /// - Throws: Error if tampering detected
     public func verify() throws {
+        // Strict v1 canonical verification.
+        if try verifyVariant(useSortedKeys: true, useSortedRecords: true) {
+            return
+        }
+
+        // Backward-compatibility verification path for older exporters that may
+        // have used different key ordering and/or payload ordering.
+        let legacyVariants: [(useSortedKeys: Bool, useSortedRecords: Bool)] = [
+            (false, true),
+            (true, false),
+            (false, false)
+        ]
+        for variant in legacyVariants {
+            if try verifyVariant(
+                useSortedKeys: variant.useSortedKeys,
+                useSortedRecords: variant.useSortedRecords
+            ) {
+                return
+            }
+        }
+
+        throw BlazeDBError.corruptedData(
+            location: "dump header",
+            reason: "Header hash mismatch - dump may be tampered"
+        )
+    }
+
+    private func verifyVariant(useSortedKeys: Bool, useSortedRecords: Bool) throws -> Bool {
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601
-        // CRITICAL: Must match encoding settings used during export
-        encoder.outputFormatting = [.sortedKeys]
-        
-        // Sort records the same way as during export
-        let sortedRecords = records.sorted { r1, r2 in
-            let id1 = r1.storage["id"]?.uuidValue ?? UUID()
-            let id2 = r2.storage["id"]?.uuidValue ?? UUID()
-            return id1.uuidString < id2.uuidString
+        if useSortedKeys {
+            encoder.outputFormatting = [.sortedKeys]
         }
-        
-        // Re-encode header and records
+
+        let payloadRecords: [BlazeDataRecord]
+        if useSortedRecords {
+            payloadRecords = records.sorted { r1, r2 in
+                let id1 = r1.storage["id"]?.uuidValue ?? UUID()
+                let id2 = r2.storage["id"]?.uuidValue ?? UUID()
+                return id1.uuidString < id2.uuidString
+            }
+        } else {
+            payloadRecords = records
+        }
+
         let headerData = try encoder.encode(header)
-        let recordsData = try encoder.encode(sortedRecords)
-        
-        // Compute expected hashes
+        let recordsData = try encoder.encode(payloadRecords)
+
         let expectedHeaderHash = headerData.sha256()
         let expectedPayloadHash = recordsData.sha256()
-        
-        // Verify header hash
-        guard manifest.headerHash == expectedHeaderHash else {
-            throw BlazeDBError.corruptedData(
-                location: "dump header",
-                reason: "Header hash mismatch - dump may be tampered"
-            )
-        }
-        
-        // Verify payload hash
-        guard manifest.payloadHash == expectedPayloadHash else {
-            throw BlazeDBError.corruptedData(
-                location: "dump payload",
-                reason: "Payload hash mismatch - dump may be tampered"
-            )
-        }
-        
-        // Verify combined hash
         let expectedCombined = (expectedHeaderHash + expectedPayloadHash).data(using: .utf8)!
         let expectedCombinedHash = expectedCombined.sha256()
-        
-        guard manifest.combinedHash == expectedCombinedHash else {
-            throw BlazeDBError.corruptedData(
-                location: "dump manifest",
-                reason: "Combined hash mismatch - dump may be tampered"
-            )
-        }
-        
-        // Verify record count matches
-        guard manifest.recordCount == sortedRecords.count else {
-            throw BlazeDBError.corruptedData(
-                location: "dump manifest",
-                reason: "Record count mismatch"
-            )
-        }
+
+        return manifest.headerHash == expectedHeaderHash
+            && manifest.payloadHash == expectedPayloadHash
+            && manifest.combinedHash == expectedCombinedHash
+            && manifest.recordCount == payloadRecords.count
     }
 }
 

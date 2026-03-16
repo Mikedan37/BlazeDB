@@ -104,5 +104,41 @@ final class SecureLayoutSignatureTests: XCTestCase {
         XCTAssertEqual(loaded.nextPageIndex, layout.nextPageIndex)
         XCTAssertEqual(loaded.indexMap.count, layout.indexMap.count)
     }
+
+    func testLoadSecureRejectsUnsignedPlainLayoutByDefault() throws {
+        let key = SymmetricKey(data: Data(repeating: 0x11, count: 32))
+        let layout = makeLayout()
+
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        let unsignedData = try encoder.encode(layout)
+
+        let url = tempMetaURL("unsigned-default-reject")
+        defer { try? FileManager.default.removeItem(at: url) }
+        try unsignedData.write(to: url, options: .atomic)
+
+        XCTAssertThrowsError(try StorageLayout.loadSecure(from: url, signingKey: key))
+    }
+
+    func testLoadSecureCanAllowUnsignedPlainLayoutForMigration() throws {
+        let key = SymmetricKey(data: Data(repeating: 0x12, count: 32))
+        let layout = makeLayout()
+
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        let unsignedData = try encoder.encode(layout)
+
+        let url = tempMetaURL("unsigned-allowed-explicit")
+        defer { try? FileManager.default.removeItem(at: url) }
+        try unsignedData.write(to: url, options: .atomic)
+
+        let loaded = try StorageLayout.loadSecure(
+            from: url,
+            signingKey: key,
+            allowUnsignedLayoutFallback: true
+        )
+        XCTAssertEqual(loaded.nextPageIndex, layout.nextPageIndex)
+        XCTAssertEqual(loaded.indexMap.count, layout.indexMap.count)
+    }
 }
 

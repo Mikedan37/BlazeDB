@@ -277,23 +277,11 @@ struct TransactionLog {
             }
         }
 
-        // Cleanup uncommitted transactions by deleting or zeroing affected pages
-        let uncommittedTxIDs = Set(buffers.keys).subtracting(committed)
-        for txID in uncommittedTxIDs {
-            guard let txOps = buffers[txID] else { continue }
-            for op in txOps {
-                switch op {
-                case .write(let pageID, _):
-                    // Clean uncommitted write
-                    try store.deletePage(index: pageID)
-                case .delete:
-                    // Clean uncommitted delete - no action needed
-                    break
-                default:
-                    break
-                }
-            }
-        }
+        // Ignore uncommitted transactions during recovery.
+        //
+        // Deleting pages touched by uncommitted writes is unsafe because those writes can target
+        // pages that already contain previously committed data. Without before-images we cannot
+        // safely "undo" uncommitted operations here, so we only replay committed transactions.
 
         // Truncate WAL after recovery
         try clear(url)

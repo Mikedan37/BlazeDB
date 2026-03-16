@@ -16,9 +16,9 @@ BlazeDB is a page-based embedded database designed for predictable performance a
 
 **What guarantees it provides:** ACID compliance, encryption at rest, snapshot isolation via MVCC, crash recovery through write-ahead logging, deterministic encoding, and transparent corruption detection. Performance invariants are maintained through automated regression testing.
 
-**Current Version:** 2.5.0-alpha
+**Current Version:** 2.7.x
 **Platform Support:** macOS 12+, iOS 15+, Linux
-**Language:** Swift 5.9+
+**Language:** Swift 6.0+
 
 ---
 
@@ -159,7 +159,7 @@ These limitations are intentional design decisions that allow BlazeDB to optimiz
 
 ## Stability & Maturity
 
-**Current Status:** 2.5.0-alpha
+**Current Status:** 2.7.x stable line
 
 The on-disk format is stable. Databases created with version 2.5.0 can be opened by future versions. Forward compatibility is maintained through version markers and migration paths.
 
@@ -1450,7 +1450,7 @@ GraphQL query interface, REST API for remote access, additional migration tools.
 
 ## Versioning & Stability
 
-**Current Version:** 2.5.0-alpha
+**Current Version:** 2.7.x
 
 **Versioning Strategy:**
 Semantic versioning (MAJOR.MINOR.PATCH). Alpha releases mean APIs may change. Beta releases mean APIs are stable but implementation may change. Stable releases (1.0.0+) have full compatibility guarantees.

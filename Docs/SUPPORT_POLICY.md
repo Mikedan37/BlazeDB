@@ -118,6 +118,21 @@ We commit to:
 - Deprecation warnings before removal
 - Migration paths for breaking changes
 
+## Maintenance and Deprecation Cadence
+
+### Supported Release Lines
+
+- Current stable minor line (for example: `2.7.x`): actively maintained.
+- Previous stable minor line: best-effort security and critical fixes only.
+- Older lines: unsupported unless explicitly announced.
+- Legacy pre-OSS tags that depended on private SSH transport repositories are treated as archival and are not guaranteed to be reproducible in public clean-clone environments.
+
+### Deprecation Cadence
+
+- New deprecations are announced in `CHANGELOG.md`.
+- Deprecated APIs receive at least one minor release of warning-only period before removal.
+- Removals are performed only in a major release unless a severe security issue requires faster action.
+
 ### Experimental APIs
 - May change without notice
 - No stability guarantees

@@ -102,7 +102,7 @@ public actor BlazeServer {
             return
         }
         
-        #if canImport(Network)
+        #if canImport(Network) && BLAZEDB_DISTRIBUTED_TRANSPORT
         // On Apple platforms, extract NWConnection for SecureConnection
         guard let nwConnection = serverConnection.getNWConnection() else {
             BlazeLogger.error("Connection \(connectionId): Unable to get NWConnection")
@@ -148,8 +148,12 @@ public actor BlazeServer {
             serverConnection.cancel()
         }
         #else
-        // On Linux/headless platforms, SecureConnection is not available
-        BlazeLogger.warn("Connection \(connectionId): SecureConnection not available on this platform")
+        // Distributed transport is intentionally gated off in core-only OSS builds.
+        // TODO(distributed-transport): When BlazeTransport (or equivalent public
+        // transport dependency) is reintroduced, enable
+        // BLAZEDB_DISTRIBUTED_TRANSPORT in build settings and restore the
+        // Network/SecureConnection/TCPRelay connection pipeline above.
+        BlazeLogger.warn("Connection \(connectionId): distributed transport disabled in core-only build")
         serverConnection.cancel()
         #endif
     }

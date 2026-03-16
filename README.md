@@ -19,7 +19,7 @@ An encrypted embedded document store for Swift — designed for application stat
 ```swift
 import BlazeDB
 
-let db = try BlazeDBClient.open(named: "myapp", password: "your-password")
+let db = try BlazeDBClient.open(named: "myapp", password: "MyApp-Password-2026A!")
 
 try db.insert(BlazeDataRecord(["name": .string("Alice"), "role": .string("engineer")]))
 
@@ -57,7 +57,7 @@ Or in Xcode: File → Add Package Dependencies → paste the URL.
 - Schema-less document storage with typed queries
 - Sub-millisecond reads, no external service dependencies
 
-> **Note:** Distributed sync and telemetry features are planned for a future release. This version ships the core embedded engine only.
+> **Note:** Distributed sync and telemetry features are planned for a future release. This version ships the core embedded engine only, and transport integration is intentionally gated off until a public transport dependency is reintroduced.
 
 ---
 
@@ -77,7 +77,22 @@ Or in Xcode: File → Add Package Dependencies → paste the URL.
 - [API Reference](Docs/DEVELOPER_GUIDE.md)
 - [Architecture](Docs/Architecture/)
 - [Performance](Docs/Performance/)
+- [Open-Source Readiness Checklist](Docs/Status/OPEN_SOURCE_READINESS_CHECKLIST.md)
+- [Release Rollback Procedure](Docs/Status/RELEASE_ROLLBACK.md)
+- [Key Management and Compatibility Modes](Docs/Status/KEY_MANAGEMENT_AND_COMPATIBILITY.md)
+- [Legacy Layout Migration Guidance](Docs/Status/LEGACY_LAYOUT_MIGRATION_GUIDANCE.md)
+- [Durability Mode Support Policy](Docs/Status/DURABILITY_MODE_SUPPORT.md)
+- [Cross-Version Compatibility Harness](Docs/Status/COMPATIBILITY_HARNESS.md)
+- [Release Evidence Blockers](Docs/Status/RELEASE_EVIDENCE_BLOCKERS.md)
+- [Open-Source Re-Audit (2026-03-16)](Docs/Status/OPEN_SOURCE_REAUDIT_2026-03-16.md)
+- [External Security Review Plan](Docs/Status/EXTERNAL_SECURITY_REVIEW_PLAN.md)
+- [Distributed Transport Deferred Status](Docs/Status/DISTRIBUTED_TRANSPORT_DEFERRED.md)
+- [Compatibility Matrix](Docs/COMPATIBILITY.md)
 
 **Requirements:** Swift 6.0+, macOS 15+ / iOS 15+ / Linux (experimental)
+
+### Security and Benchmark Mode Note
+
+BlazeDB is encryption-on by default. The benchmark-only flag `BLAZEDB_BENCHMARK_NO_ENCRYPTION` is for performance isolation and must not be used with production data.
 
 **License:** MIT

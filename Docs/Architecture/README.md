@@ -9,6 +9,7 @@ This directory contains architecture documentation for BlazeDB.
 - **ARCHITECTURE_DETAILED.md** - Detailed architecture documentation
 - **BLAZEDB_ARCHITECTURE_AND_LIMITS.md** - Architecture and limitations
 - **BLAZEDB_SYSTEM_DESIGN_DIAGRAM.md** - System design diagrams
+- **STORAGE_ENGINE_NOTES.md** - WAL/encryption/page interaction and recovery design
 
 ## Related Documentation
 
