@@ -14,8 +14,13 @@ print("=== Hello BlazeDB ===\n")
 do {
     // STEP 1: Open database (one line, zero config)
     print("1. Opening database...")
+    // Use an isolated temp path per run so example output is deterministic
+    // and does not accumulate records across repeated executions.
+    let runID = UUID().uuidString
+    let dbPath = FileManager.default.temporaryDirectory
+        .appendingPathComponent("hello-blazedb-\(runID).blaze")
     // Keep example password policy-compliant so quickstart works from a clean clone.
-    let db = try BlazeDBClient.open(named: "hello-blazedb", password: "Hello-BlazeDB-Demo-2026A!")
+    let db = try BlazeDBClient.open(at: dbPath, password: "Hello-BlazeDB-Demo-2026A!")
     print("   Database opened\n")
     
     // STEP 2: Insert data
