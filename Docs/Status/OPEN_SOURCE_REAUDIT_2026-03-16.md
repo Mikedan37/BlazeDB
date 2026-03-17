@@ -17,8 +17,10 @@ This re-audit captures current evidence after transport deferral gating and loca
 2. **README quickstart verification**
    - Command: `./Scripts/verify-readme-quickstart.sh`
    - Result: PASS
-   - Measured runtime: **25 seconds** (target: <= 300 seconds)
-   - Fix included: `Examples/HelloBlazeDB/main.swift` now uses a password that passes current policy.
+   - Measured runtime: **35 seconds** (target: <= 300 seconds)
+   - Fixes included:
+     - `Examples/HelloBlazeDB/main.swift` now uses a password that passes current policy.
+     - `Examples/HelloBlazeDB/main.swift` now uses an isolated temp database path per run so quickstart output stays deterministic.
 
 3. **Release-tag reproducibility probe**
    - Command: `./Scripts/check-release-tag-builds.sh`
@@ -52,3 +54,7 @@ This re-audit captures current evidence after transport deferral gating and loca
 ## Operational Blocker Note
 
 Current PR checks for CI/evidence can fail before job start if hosted Actions billing is not active. In that case, resolve repository billing/spending-limit status and re-run checks to produce final green evidence artifacts.
+
+Latest observed blocked runs on `main` (same billing blocker):
+- `CI`: https://github.com/Mikedan37/BlazeDB/actions/runs/23174801316
+- `OSS Readiness Evidence`: https://github.com/Mikedan37/BlazeDB/actions/runs/23174801313

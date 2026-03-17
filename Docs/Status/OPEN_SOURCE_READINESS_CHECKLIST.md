@@ -37,7 +37,8 @@ Use this checklist to decide if the current branch is ready for a public OSS rel
 ## 4) Contributor Experience
 
 - [x] Ensure `README.md` quickstart works from scratch in under 5 minutes.
-  - Verified by `Scripts/verify-readme-quickstart.sh` (clean snapshot + `swift run HelloBlazeDB`, measured 25s on local run).
+  - Verified by `Scripts/verify-readme-quickstart.sh` (clean snapshot + `swift run HelloBlazeDB`, measured 35s on latest local run).
+  - `HelloBlazeDB` now uses an isolated temp database path per run to keep quickstart behavior deterministic.
 - [x] Publish a one-command local verification script (build + core tests).
 - [x] Reduce high-noise warnings in test output for clearer signal.
   - `Scripts/oss-readiness-local.sh` and `Scripts/verify-clean-checkout.sh` now summarize per-step warning counts and write full logs to files instead of flooding terminal output.
