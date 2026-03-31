@@ -75,17 +75,21 @@ internal extension FileHandle {
     }
 }
 
-/// Controls which WAL implementation PageStore uses.
+/// Controls which WAL implementation a `PageStore` instance uses. Each store picks one mode at initialization.
 ///
-/// `.legacy` uses the original `WriteAheadLog` + `TransactionLog` path (default).
-/// `.unified` uses `DurabilityManager` + `RecoveryManager` (new WAL subsystem).
-/// Both paths coexist until `.unified` is confirmed stable, at which point
-/// `.legacy` will be deleted.
+/// - `.legacy` — Binary `WriteAheadLog` entries are appended before corresponding main-file page writes (default for `PageStore(fileURL:key:)`).
+/// - `.unified` — Uses `DurabilityManager` and `RecoveryManager` instead of the legacy binary WAL type.
+///
+/// The default `BlazeDBClient` path uses `.legacy`. High-level NDJSON `TransactionLog` is not the default document durability mechanism for the client API.
 public enum WALMode: Sendable {
     case legacy
     case unified
 }
 
+/// **Advanced API:** low-level encrypted page file access and WAL integration. Typical application code
+/// should use `BlazeDBClient` instead of talking to `PageStore` directly.
+///
+/// Application code should normally use `BlazeDBClient`. This type is public for benchmarks, tests, and tooling that need direct page-level control.
 // Swift 6: Thread-safe via internal DispatchQueue synchronization
 public final class PageStore: @unchecked Sendable {
     public let fileURL: URL

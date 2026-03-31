@@ -53,8 +53,8 @@ extension BlazeDBClient {
             // Use true async insert
             let insertedId = try await collection.insertAsync(record)
             
-            // Log to transaction log (synchronously - thread-safe method)
-            appendToTransactionLog("insert", payload: record.storage)
+            // Legacy NDJSON hook (no-op; durability is PageStore WAL)
+            legacyTransactionLogNoOp("insert", payload: record.storage)
             
             // Track telemetry
             #if BLAZEDB_DISTRIBUTED
@@ -81,10 +81,10 @@ extension BlazeDBClient {
             // Use true async batch insert
             let ids = try await collection.insertBatchAsync(records)
             
-            // Log to transaction log (synchronously - thread-safe method)
+            // Legacy NDJSON hook (no-op; durability is PageStore WAL)
             for (index, _) in ids.enumerated() {
                 if index < records.count {
-                    appendToTransactionLog("insert", payload: records[index].storage)
+                    legacyTransactionLogNoOp("insert", payload: records[index].storage)
                 }
             }
             
@@ -170,8 +170,8 @@ extension BlazeDBClient {
             // Use true async update
             try await collection.updateAsync(id: id, with: data)
             
-            // Log to transaction log (synchronously - thread-safe method)
-            appendToTransactionLog("update", payload: data.storage)
+            // Legacy NDJSON hook (no-op; durability is PageStore WAL)
+            legacyTransactionLogNoOp("update", payload: data.storage)
             
             let duration = Date().timeIntervalSince(startTime) * 1000
             telemetry.record(operation: "updateAsync", duration: duration, success: true, recordCount: 1)
@@ -191,8 +191,8 @@ extension BlazeDBClient {
             // Use true async delete
             try await collection.deleteAsync(id: id)
             
-            // Log to transaction log (synchronously - thread-safe method)
-            appendToTransactionLog("delete", payload: ["id": .string(id.uuidString)])
+            // Legacy NDJSON hook (no-op; durability is PageStore WAL)
+            legacyTransactionLogNoOp("delete", payload: ["id": .string(id.uuidString)])
             
             let duration = Date().timeIntervalSince(startTime) * 1000
             telemetry.record(operation: "deleteAsync", duration: duration, success: true, recordCount: 1)

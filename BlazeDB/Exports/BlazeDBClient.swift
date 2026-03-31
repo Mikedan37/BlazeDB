@@ -459,8 +459,8 @@ public final class BlazeDBClient: @unchecked Sendable {
             // Update metrics: recovery started
             metrics.setRecoveryState(.inProgress)
             
-            try replayTransactionLogIfNeeded()
-            BlazeLogger.debug("✅ Transaction log replay complete")
+            try removeLegacyNDJSONTransactionLogFilesIfPresent()
+            BlazeLogger.debug("✅ Legacy NDJSON transaction log cleanup complete (binary WAL replay is in PageStore init)")
             
             // Update metrics: recovery completed
             metrics.setRecoveryState(.completed)
@@ -662,19 +662,20 @@ public final class BlazeDBClient: @unchecked Sendable {
         try? fm.removeItem(at: stateURL)
     }
 
-    internal func appendToTransactionLog(_ operation: String, payload: [String: BlazeDocumentField]) {  // Internal for AsyncOptimized extension access
-        // V1.5: Transaction logging is now a no-op.
-        // Crash safety is provided by the WAL (WriteAheadLog) at the page level.
-        // Transaction rollback uses in-memory indexMap snapshots.
+    internal func legacyTransactionLogNoOp(_ operation: String, payload: [String: BlazeDocumentField]) {
+        // V1.5+: Intentionally empty. Document durability uses binary WAL in PageStore, not NDJSON logs.
+        // Rollback for non-transactional writes uses in-memory indexMap snapshots (see performSafeWrite).
     }
 
-    /// Replays any uncommitted transactions from the write-ahead log (WAL).
+    /// Removes obsolete **legacy NDJSON** transaction log sidecar files, if present.
     ///
-    /// This method is automatically called during initialization to ensure crash recovery.
-    /// If the database crashed mid-transaction, this will replay logged operations.
+    /// This does **not** replay the binary write-ahead log. **Binary WAL replay** happens inside
+    /// `PageStore` initialization (`WALMode.legacy` default) before the client runs recovery.
+    /// Pre-V1.5 NDJSON logs are not part of current high-level document durability; this method
+    /// only deletes known legacy filenames to avoid stale files confusing operators.
     ///
-    /// - Throws: BlazeDBError if replay fails
-    public func replayTransactionLogIfNeeded() throws {
+    /// - Throws: Only if file removal fails in a way surfaced by `FileManager` (rare).
+    public func removeLegacyNDJSONTransactionLogFilesIfPresent() throws {
         // V1.5: Clean up legacy transaction log files if they exist.
         // New WAL replay happens at the PageStore level.
         let fm = FileManager.default
@@ -684,6 +685,14 @@ public final class BlazeDBClient: @unchecked Sendable {
             BlazeLogger.info("Cleaned up transaction log: \(logURL.lastPathComponent)")
         }
         // Leave active durable transaction artifacts alone unless explicitly restored/cleared.
+    }
+
+    /// Deprecated. Use ``removeLegacyNDJSONTransactionLogFilesIfPresent()`` instead.
+    ///
+    /// This name incorrectly suggested WAL or operation replay; behavior is legacy NDJSON file cleanup only.
+    @available(*, deprecated, renamed: "removeLegacyNDJSONTransactionLogFilesIfPresent")
+    public func replayTransactionLogIfNeeded() throws {
+        try removeLegacyNDJSONTransactionLogFilesIfPresent()
     }
 
     // MARK: - CRUD
@@ -745,7 +754,7 @@ public final class BlazeDBClient: @unchecked Sendable {
             try validateUniqueConstraints(in: recordToInsert)
 
             try performSafeWrite { _ = try collection.insert(recordToInsert) }
-            appendToTransactionLog("insert", payload: recordToInsert.storage)
+            legacyTransactionLogNoOp("insert", payload: recordToInsert.storage)
             
             // Execute AFTER INSERT triggers
             try triggerManager.executeTriggers(for: .afterInsert, record: recordToInsert, modifiedRecord: &modifiedRecord)
@@ -780,7 +789,7 @@ public final class BlazeDBClient: @unchecked Sendable {
             record.storage["createdAt"] = .date(Date())
         }
         try performSafeWrite { _ = try collection.insert(record) }
-        appendToTransactionLog("insert", payload: record.storage)
+        legacyTransactionLogNoOp("insert", payload: record.storage)
         
         // Notify change observers (for sync)
         notifyInsert(id: id)
@@ -813,7 +822,7 @@ public final class BlazeDBClient: @unchecked Sendable {
                 // Log to transaction log
                 for (index, _) in ids.enumerated() {
                     if index < records.count {
-                        appendToTransactionLog("insert", payload: records[index].storage)
+                        legacyTransactionLogNoOp("insert", payload: records[index].storage)
                     }
                 }
             }
@@ -905,7 +914,7 @@ public final class BlazeDBClient: @unchecked Sendable {
                 
                 // Log to transaction log
                 for id in ids {
-                    appendToTransactionLog("delete", payload: ["id": .uuid(id)])
+                    legacyTransactionLogNoOp("delete", payload: ["id": .uuid(id)])
                 }
             }
             
@@ -1160,7 +1169,7 @@ public final class BlazeDBClient: @unchecked Sendable {
             try validateAgainstSchema(recordToUpdate)
             
             try performSafeWrite { try collection.update(id: id, with: recordToUpdate) }
-            appendToTransactionLog("update", payload: recordToUpdate.storage)
+            legacyTransactionLogNoOp("update", payload: recordToUpdate.storage)
             
             // Execute AFTER UPDATE triggers
             try triggerManager.executeTriggers(for: .afterUpdate, record: recordToUpdate, modifiedRecord: &modifiedRecord)
@@ -1252,7 +1261,7 @@ public final class BlazeDBClient: @unchecked Sendable {
                 // Pass the record to avoid re-fetching in _deleteNoSync
                 try collection.delete(id: id, record: existingRecord)
             }
-            appendToTransactionLog("delete", payload: ["id": .string(id.uuidString)])
+            legacyTransactionLogNoOp("delete", payload: ["id": .string(id.uuidString)])
             
             // Execute AFTER DELETE triggers
             try triggerManager.executeTriggers(for: .afterDelete, record: existingRecord, modifiedRecord: &modifiedRecord)

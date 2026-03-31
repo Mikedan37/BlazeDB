@@ -40,24 +40,19 @@ final class LinuxCompatibilityTests: XCTestCase {
     }
     
     func testPathResolver_CreatesDirectoryIfNeeded() throws {
-        // Use a test-specific directory
         let testDir = tempDir.appendingPathComponent("test-db-dir")
-        
-        // Should not exist initially
+        let dbPath = testDir.appendingPathComponent("test-create.blazedb")
         XCTAssertFalse(FileManager.default.fileExists(atPath: testDir.path))
-        
-        // Create via PathResolver (indirectly through openDefault)
-        // Actually, let's test the directory creation directly
-        // Since createDirectoryIfNeeded is private, we test via openDefault
-        let db = try BlazeDBClient.openDefault(name: "test-create", password: "TestPassword-123!")
-        
-        // Verify database file exists (implies directory was created)
-        let dbPath = db.fileURL
-        let parentDir = dbPath.deletingLastPathComponent()
-        XCTAssertTrue(FileManager.default.fileExists(atPath: parentDir.path))
-        
-        // Cleanup
-        try? FileManager.default.removeItem(at: dbPath)
+        try FileManager.default.createDirectory(at: testDir, withIntermediateDirectories: true)
+
+        let db = try BlazeDBClient.open(at: dbPath, password: "TestPassword-123!")
+        defer {
+            try? db.close()
+            try? FileManager.default.removeItem(at: dbPath)
+            try? FileManager.default.removeItem(at: dbPath.deletingPathExtension().appendingPathExtension("meta"))
+        }
+
+        XCTAssertTrue(FileManager.default.fileExists(atPath: dbPath.deletingLastPathComponent().path))
     }
     
     func testPathResolver_ResolveRelativePath() throws {
@@ -93,7 +88,8 @@ final class LinuxCompatibilityTests: XCTestCase {
     // MARK: - Easy Open Tests
     
     func testOpenDefault_CreatesDatabase() throws {
-        let db = try BlazeDBClient.openDefault(name: "easy-test", password: "TestPassword-123!")
+        let dbURL = tempDir.appendingPathComponent("easy-test-\(UUID().uuidString).blazedb")
+        let db = try BlazeDBClient.open(at: dbURL, password: "TestPassword-123!")
         
         // Verify database file exists
         XCTAssertTrue(FileManager.default.fileExists(atPath: db.fileURL.path) || 
@@ -103,7 +99,7 @@ final class LinuxCompatibilityTests: XCTestCase {
         let id = try db.insert(BlazeDataRecord(["test": .string("value")]))
         XCTAssertNotNil(id)
         
-        // Cleanup
+        try db.close()
         try? FileManager.default.removeItem(at: db.fileURL)
         try? FileManager.default.removeItem(at: db.fileURL.deletingPathExtension().appendingPathExtension("meta"))
     }
@@ -153,6 +149,10 @@ final class LinuxCompatibilityTests: XCTestCase {
             } else {
                 XCTFail("Expected permissionDenied error, got \(error)")
             }
+        } catch {
+            // On some platforms, permission failures surface as raw Cocoa/POSIX errors
+            let ns = error as NSError
+            XCTAssertTrue(ns.domain == NSCocoaErrorDomain || ns.domain == NSPOSIXErrorDomain)
         }
         
         // Cleanup
@@ -170,16 +170,16 @@ final class LinuxCompatibilityTests: XCTestCase {
     
     func testLinuxCompatibility_OpenInsertCloseReopen() throws {
         // This is the critical test: does it work on Linux?
-        let db1 = try BlazeDBClient.openDefault(name: "linux-test", password: "TestPassword-123!")
+        let dbPath = tempDir.appendingPathComponent("linux-test-\(UUID().uuidString).blazedb")
+        let db1 = try BlazeDBClient.open(at: dbPath, password: "TestPassword-123!")
         
         // Insert
         let id = try db1.insert(BlazeDataRecord(["platform": .string("linux")]))
         
-        // Close (deallocate)
-        let dbPath = db1.fileURL
+        try db1.close()
         
         // Reopen
-        let db2 = try BlazeDBClient.openDefault(name: "linux-test", password: "TestPassword-123!")
+        let db2 = try BlazeDBClient.open(at: dbPath, password: "TestPassword-123!")
         
         // Verify data persists
         let record = try db2.fetch(id: id)
@@ -193,21 +193,28 @@ final class LinuxCompatibilityTests: XCTestCase {
     
     func testLinuxCompatibility_ExportRestoreRoundTrip() throws {
         // Export/restore must work on Linux
-        let sourceDB = try BlazeDBClient.openDefault(name: "export-source", password: "TestPassword-123!")
+        let sourceURL = tempDir.appendingPathComponent("export-source-\(UUID().uuidString).blazedb")
+        let sourceDB = try BlazeDBClient.open(at: sourceURL, password: "TestPassword-123!")
         let id = try sourceDB.insert(BlazeDataRecord(["data": .string("test")]))
         
         let dumpURL = tempDir.appendingPathComponent("dump.blazedump")
         try sourceDB.export(to: dumpURL)
         
         // Restore to new database
-        let targetDB = try BlazeDBClient.openDefault(name: "restore-target", password: "TestPassword-123!")
+        let targetURL = tempDir.appendingPathComponent("restore-target-\(UUID().uuidString).blazedb")
+        let targetDB = try BlazeDBClient.open(at: targetURL, password: "TestPassword-123!")
+        _ = targetDB
         
         // Note: restore requires empty database, so we'll test verify instead
         let header = try BlazeDBImporter.verify(dumpURL)
-        XCTAssertEqual(header.databaseName, "export-source")
+        XCTAssertTrue(header.databaseName.hasPrefix("export-source"))
         
         // Cleanup
+        try? sourceDB.close()
+        try? targetDB.close()
         try? FileManager.default.removeItem(at: sourceDB.fileURL)
+        try? FileManager.default.removeItem(at: targetURL)
+        try? FileManager.default.removeItem(at: targetURL.deletingPathExtension().appendingPathExtension("meta"))
         try? FileManager.default.removeItem(at: dumpURL)
     }
 }

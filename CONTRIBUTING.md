@@ -4,9 +4,15 @@
 
 This guide explains how to add tests, what will be accepted, and what will be rejected.
 
+## CI gate (GitHub Actions)
+
+The default branch workflow (`.github/workflows/ci.yml`) runs **`swift build`**, then **`BlazeDB_Tier0`**, then **`BlazeDB_Tier1`**. That combination is the routine gate; it is **not** every test target or every test file under `BlazeDBTests/` (some files are excluded per tier in `Package.swift`). Authoritative detail: [CI and test tiers](Docs/Testing/CI_AND_TEST_TIERS.md).
+
 ---
 
 ## Test Tiers
+
+Also see [Tests directory layout (BlazeDBTests vs Tests/)](Docs/Testing/TESTS_DIRECTORY.md).
 
 BlazeDB uses a tiered test model:
 

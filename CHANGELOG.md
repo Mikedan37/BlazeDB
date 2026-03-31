@@ -7,8 +7,13 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ## [Unreleased]
 
+### Deprecated
+
+- `BlazeDBClient.replayTransactionLogIfNeeded()` — use `removeLegacyNDJSONTransactionLogFilesIfPresent()` instead (same behavior: removes legacy NDJSON sidecar files only; does not replay binary WAL). The old symbol remains as a forwarding shim with a `renamed:` deprecation fix-it.
+
 ### Added
 
+- `BlazeDBClient.removeLegacyNDJSONTransactionLogFilesIfPresent()` — public name for legacy NDJSON sidecar cleanup (replaces misleading `replayTransactionLogIfNeeded()` name; old method deprecated).
 - OSS readiness documentation:
   - `Docs/Status/OPEN_SOURCE_READINESS_CHECKLIST.md`
   - `Docs/Status/RELEASE_ROLLBACK.md`

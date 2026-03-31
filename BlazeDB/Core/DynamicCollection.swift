@@ -111,11 +111,11 @@ public final class DynamicCollection {
     /// B-tree indexes for range queries (greaterThan, lessThan, between)
     public let btreeIndexManager: BTreeIndexManager
     
-    // MVCC: Version management for concurrent access
+    // MVCC: Version management for concurrent access (optional / experimental).
     internal let versionManager: VersionManager
-    // MVCC is enabled by default for better concurrency and data integrity
-    // Version persistence to disk is implemented, so MVCC is safe to use
-    internal var mvccEnabled: Bool = false  // Disabled by default; opt-in via setMVCCEnabled(_:)
+    // MVCC is OFF by default. Enable only via BlazeDBClient.setMVCCEnabled(_:) (experimental API).
+    // When mvccEnabled is false, insert/fetch use the legacy single-version paths below.
+    internal var mvccEnabled: Bool = false  // Opt-in; see BlazeDBClient+MVCC.swift
     internal lazy var gcManager: AutomaticGCManager = {
         AutomaticGCManager(versionManager: versionManager)
     }()

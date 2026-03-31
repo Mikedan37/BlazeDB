@@ -8,6 +8,15 @@ import Darwin
 import Glibc
 #endif
 
+/// Low-level page read/write transaction scoped to a `PageStore`.
+///
+/// `BlazeDBClient` document CRUD does not use this type for normal operations. Prefer `BlazeDBClient`
+/// for application code; use `BlazeTransaction` for tests or advanced page-level scenarios.
+///
+/// In legacy WAL mode (when `store.walMode != .unified`), this type can persist transaction activity
+/// to a newline-delimited JSON `TransactionLog` on disk. Those NDJSON artifacts contain plaintext
+/// page payloads and are intended for legacy/debug/advanced workflows, not the default encrypted-at-rest
+/// durability path used by `BlazeDBClient`.
 public final class BlazeTransaction {
     private let context: TransactionContext
     private let store: PageStore

@@ -87,12 +87,19 @@ final class CompatibilityTests: XCTestCase {
     func testIncompatibleVersion_RefusesToOpen() throws {
         // Create database
         let db1 = try BlazeDBClient(name: "test", fileURL: dbURL, password: "TestPassword-123!")
+        let signingKey = db1.encryptionKey
+        let kdfSalt = db1.kdfSalt
         try db1.close()
         
-        // Manually modify format version to incompatible version
-        var layout = try StorageLayout.load(from: metaURL)
+        // Manually modify format version to incompatible version while preserving signature validity
+        var layout = try StorageLayout.loadSecure(
+            from: metaURL,
+            signingKey: signingKey,
+            password: "TestPassword-123!",
+            salt: kdfSalt
+        )
         layout.metaData["formatVersion"] = .string("2.0.0") // Incompatible major version
-        try layout.save(to: metaURL)
+        try layout.saveSecure(to: metaURL, signingKey: signingKey)
         
         // Attempt to open should fail
         XCTAssertThrowsError(try BlazeDBClient(name: "test", fileURL: dbURL, password: "TestPassword-123!")) { error in
@@ -110,12 +117,19 @@ final class CompatibilityTests: XCTestCase {
     func testLegacyDatabase_AssumesCompatibleVersion() throws {
         // Create database without format version (legacy)
         let db1 = try BlazeDBClient(name: "test", fileURL: dbURL, password: "TestPassword-123!")
+        let signingKey = db1.encryptionKey
+        let kdfSalt = db1.kdfSalt
         try db1.close()
         
-        // Remove format version from metadata
-        var layout = try StorageLayout.load(from: metaURL)
+        // Remove format version from metadata while preserving signature validity
+        var layout = try StorageLayout.loadSecure(
+            from: metaURL,
+            signingKey: signingKey,
+            password: "TestPassword-123!",
+            salt: kdfSalt
+        )
         layout.metaData.removeValue(forKey: "formatVersion")
-        try layout.save(to: metaURL)
+        try layout.saveSecure(to: metaURL, signingKey: signingKey)
         
         // Should still be able to open (assumes 1.0.0)
         let db2 = try BlazeDBClient(name: "test", fileURL: dbURL, password: "TestPassword-123!")

@@ -22,18 +22,20 @@ BlazeDB is designed to survive crashes, power loss, and unclean shutdowns withou
 - WAL is flushed to disk before acknowledging writes
 - On recovery, WAL is replayed to restore committed state
 
-**Code:** `BlazeDB/Storage/WriteAheadLog.swift`, `BlazeDB/Exports/BlazeDBClient.swift:replayTransactionLogIfNeeded()`
+**Code:** `BlazeDB/Storage/WriteAheadLog.swift`, `BlazeDB/Storage/PageStore.swift` (WAL replay during `PageStore` initialization).
 
-### 2. Transaction Log Replay
+> For the full durability contract (WAL ordering, overflow publish-last behavior, metadata visibility, and orphan-page caveats), see `Docs/Status/DURABILITY_MODE_SUPPORT.md`. This file focuses on crash scenarios and validation steps rather than restating the entire contract.
 
-**Purpose:** Replays uncommitted operations after crash.
+### 2. Legacy NDJSON sidecar files (optional cleanup)
+
+**Purpose:** Remove obsolete newline-delimited JSON transaction log files left from older releases or non-client code paths.
 
 **How it works:**
-- Transaction log records all operations
-- On startup, log is replayed
-- Uncommitted transactions are rolled back
+- `BlazeDBClient.removeLegacyNDJSONTransactionLogFilesIfPresent()` **deletes** known legacy NDJSON filenames when present; it does **not** replay operations into the document engine. (The old name `replayTransactionLogIfNeeded()` is deprecated but forwards to the same implementation.)
+- **Binary WAL replay** for pages is separate (see section 1).
+- `BlazeDBManager` and other paths may still use `TransactionLog` NDJSON recovery when mounting databases; that is distinct from the default `BlazeDBClient` document durability path.
 
-**Code:** `BlazeDB/Transactions/TransactionLog.swift`
+**Code:** `BlazeDB/Exports/BlazeDBClient.swift` (`removeLegacyNDJSONTransactionLogFilesIfPresent`), `BlazeDB/Transactions/TransactionLog.swift`
 
 ### 3. Metadata Rebuild
 

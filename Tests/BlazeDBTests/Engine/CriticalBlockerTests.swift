@@ -4,7 +4,7 @@
 //
 //  Tests for the 3 critical production blockers
 //
-//  1. MVCC enabled by default and working
+//  1. MVCC opt-in / experimental path behaves correctly when exercised
 //  2. File handle management during VACUUM
 //  3. VACUUM crash safety
 //

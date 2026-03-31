@@ -80,10 +80,10 @@ BlazeDB provides strong cryptographic guarantees on Linux using platform-agnosti
    - BlazeDB assumes standard Linux process isolation
    - No additional sandboxing beyond OS defaults
 
-5. **WAL Encryption**
-   - Transaction log (`txn_log.json`) is stored as plaintext JSON
-   - **Code Evidence**: `BlazeDBClient.appendToTransactionLog()` writes plaintext JSON (lines 433-467)
-   - WAL entries are not encrypted; only pages in `.blazedb` files are encrypted
+5. **Legacy NDJSON vs binary WAL**
+   - Document durability uses the **binary** `WriteAheadLog` in `PageStore` (encrypted page payloads). See `Docs/Status/DURABILITY_MODE_SUPPORT.md`.
+   - `BlazeDBClient.legacyTransactionLogNoOp` is intentionally a **no-op**; it does not write NDJSON for CRUD, and the client removes any `txn_log*.json` sidecars it finds on open.
+   - Manager-style APIs (for example `BlazeDBManager`) can replay pre-existing `txn_log*.json` files as plaintext page-level journals for migration or advanced recovery only; normal client usage does not generate these artifacts, and if present they should be treated as sensitive cleartext.
 
 ### Assumptions
 
@@ -95,7 +95,7 @@ BlazeDB provides strong cryptographic guarantees on Linux using platform-agnosti
 2. **Filesystem Security**
    - Database files are stored on a filesystem with standard permissions
    - Filesystem encryption (e.g., LUKS, dm-crypt) is optional but recommended for defense-in-depth
-   - WAL file (`txn_log.json`) is stored with `0o600` permissions (owner read/write only)
+   - Binary WAL file (`*.wal`) should use restrictive permissions (e.g. `0o600`); any legacy NDJSON sidecars should likewise be owner-only if present
 
 3. **Process Isolation**
    - Database process runs with appropriate user permissions
@@ -286,23 +286,15 @@ All data is encrypted at rest using AES-256-GCM with per-page granularity:
 
 ### Write-Ahead Log (WAL) Encryption
 
-**Status**: **WAL IS NOT ENCRYPTED**
+**Status**: **Binary page WAL is encrypted payloads; NDJSON is not the default document durability path**
 
-Transaction log entries are stored as **plaintext JSON**:
-
-- **Format**: Newline-delimited JSON entries
-- **Encryption**: **NONE** - entries are plaintext JSON
-- **File**: `txn_log.json`
-- **Permissions**: `0o600` (owner read/write only)
-- **Implementation**: `BlazeDBClient.appendToTransactionLog()` (lines 433-467)
-- **Content**: Operation type, payload (as serialized strings), timestamp
-- **Recovery**: Plaintext WAL entries are read and replayed during crash recovery
+- **Default `BlazeDBClient` path**: Page durability uses **binary** `WriteAheadLog` with **encrypted** page buffers (`PageStore`); see `Docs/Status/DURABILITY_MODE_SUPPORT.md`.
+- **Legacy NDJSON** (`txn_log*.json`) may exist from older tooling or alternate entry points; `BlazeDBClient` uses `legacyTransactionLogNoOp` (no-op) for CRUD — it does **not** persist NDJSON for normal document operations.
+- **If** legacy NDJSON files are present on disk from older behavior, treat them like any sensitive file at rest: filesystem permissions and full-disk encryption apply.
 
 **Security Implications:**
-- WAL entries contain operation data in plaintext
-- If an attacker gains filesystem access, WAL entries are readable
-- WAL is intended for crash recovery only; should be cleaned up after successful commit
-- **Recommendation**: Use filesystem encryption (LUKS, dm-crypt) to protect WAL files
+- Prefer understanding **which files** your deployment creates (binary `.wal` vs any legacy NDJSON sidecars).
+- **Recommendation**: Filesystem encryption (LUKS, dm-crypt) for defense in depth on the volume storing database files.
 
 ### Key Lifetime and Scope
 
@@ -328,15 +320,15 @@ Transaction log entries are stored as **plaintext JSON**:
 ### Crash Recovery Guarantees
 
 1. **Encrypted State Persistence**
-   - All pages written to disk are encrypted (`.blazedb` files)
-   - WAL entries are **NOT encrypted** (plaintext JSON in `txn_log.json`)
-   - No plaintext data is written to `.blazedb` files
+   - Main data pages (`.blazedb`) are encrypted at rest (AES-GCM per page)
+   - **Binary** WAL (`*.wal`) stores encrypted page payloads for durability — it is **not** NDJSON `txn_log.json` as the default path
+   - Legacy NDJSON sidecars, if present from older releases, are plaintext JSON and are not the current default CRUD durability mechanism
 
 2. **Recovery Process**
    - Encrypted pages are read and decrypted using master key
    - Decryption failures indicate corruption or tampering
-   - Plaintext WAL entries are read and replayed
-   - Recovery proceeds only if page decryption succeeds
+   - Binary WAL replay restores committed page state as implemented in `PageStore` initialization
+   - Recovery proceeds only if page decryption and WAL replay succeed per engine rules
 
 3. **Atomicity**
    - Transaction commits are atomic at the encryption layer
@@ -510,17 +502,15 @@ BlazeDB's end-to-end encryption for distributed sync is **unavailable on Linux**
 - Use Let's Encrypt or other CA for certificates
 - Monitor certificate expiration and rotation
 
-### No WAL Encryption
+### Binary WAL vs legacy NDJSON
 
-**What's Missing:**
-- Transaction log entries are stored as plaintext JSON
-- WAL contains operation data in readable format
+**Default path:** The binary `WriteAheadLog` (`.wal`) carries **encrypted** page payloads — it is not NDJSON `txn_log.json` as the primary client durability mechanism, and `BlazeDBClient` does not write NDJSON during normal CRUD.
+
+**Legacy NDJSON:** If obsolete `txn_log*.json` sidecars exist from older releases, or if advanced tooling (`BlazeDBManager`, legacy page-level `BlazeTransaction`) is used, those entries are plaintext JSON; treat them like any other sensitive cleartext file (permissions, full-disk encryption).
 
 **Compensation:**
-- Use filesystem encryption (LUKS, dm-crypt) to protect WAL files
-- Restrict filesystem permissions (`0o600` is set, but additional isolation recommended)
-- Clean up WAL files after successful commit (if supported)
-- Monitor filesystem access to WAL files
+- Use filesystem encryption (LUKS, dm-crypt) for defense in depth on the database volume
+- Restrict permissions on `*.wal`, `*.blazedb`, `*.meta`, and any legacy sidecars
 
 ### No Compression
 
@@ -545,12 +535,11 @@ BlazeDB's end-to-end encryption for distributed sync is **unavailable on Linux**
 - AES-256-GCM encryption at rest (per-page)
 - Per-page encryption with unique nonces
 - Keys never written to disk
-- **Limitation**: WAL entries are plaintext JSON
+- **Limitation**: Legacy NDJSON sidecars (if present) are plaintext; default binary WAL uses encrypted payloads
 
 **Limitations:**
 - Keys stored in process memory (not hardware-backed)
 - No protection against memory dumps if process is compromised
-- WAL entries are not encrypted
 
 ### Integrity
 
@@ -565,7 +554,7 @@ BlazeDB's end-to-end encryption for distributed sync is **unavailable on Linux**
 **Limitations:**
 - No cryptographic signatures for metadata (future enhancement)
 - Corruption detection is reactive, not preventive
-- WAL entries have no integrity protection (plaintext JSON)
+- Legacy NDJSON sidecars (if present) lack the same protections as encrypted pages; binary WAL replay integrity follows `WriteAheadLog` / `PageStore` rules
 
 ### Replay Protection
 
@@ -700,7 +689,7 @@ sudo mount /dev/mapper/blazedb-encrypted /var/lib/blazedb
 **Benefits:**
 - Defense-in-depth: Even if BlazeDB encryption is compromised, filesystem encryption provides additional layer
 - Protects against physical disk theft
-- Protects WAL files (which are plaintext JSON)
+- Protects database files at rest including `*.wal` and main data files
 - Transparent to BlazeDB (operates at filesystem level)
 - Standard Linux tooling (LUKS, dm-crypt)
 
@@ -782,7 +771,8 @@ let db = try BlazeDBClient(
    # Restrict database file access
    sudo chmod 600 /var/lib/blazedb/*.blazedb
    sudo chmod 600 /var/lib/blazedb/*.meta
-   sudo chmod 600 /var/lib/blazedb/txn_log.json
+   sudo chmod 600 /var/lib/blazedb/*.wal
+   # If legacy NDJSON sidecars exist: chmod 600 those paths too
    ```
 
 3. **SELinux/AppArmor**
@@ -885,17 +875,9 @@ let db = try BlazeDBClient(
 
 ### WAL Encryption
 
-**Proposal:** Encrypt WAL entries using AES-256-GCM
+**Current default:** The binary `WriteAheadLog` stores **encrypted** page payloads (not NDJSON). Default client CRUD does not use plaintext `txn_log.json` as the primary WAL.
 
-**Benefits:**
-- WAL entries protected from filesystem-level access
-- Consistent encryption across all database files
-- Defense-in-depth security
-
-**Implementation:**
-- Encrypt WAL entries before writing to `txn_log.json`
-- Use master key with WAL-specific context for key derivation
-- Decrypt during crash recovery
+**Historical note:** Any proposal to “encrypt WAL before `txn_log.json`” applies to **legacy NDJSON** sidecars only; the OSS default durability story is the binary `.wal` + encrypted pages path.
 
 ### Per-Page Key Derivation
 
@@ -921,12 +903,12 @@ BlazeDB provides strong cryptographic guarantees on Linux using platform-agnosti
 - **Confidentiality**: AES-256-GCM encryption at rest (per-page)
 - **Integrity**: GCM authentication tags and CRC32 checksums
 - **Replay Protection**: Unique nonces per page
-- **Limitations**: No hardware-backed key storage, no OS-level certificate validation, no encrypted transport, no WAL encryption
+- **Limitations**: No hardware-backed key storage, no OS-level certificate validation, no encrypted transport; legacy NDJSON sidecars (if any) are not encrypted like page data
 - **Compensation**: External TLS termination, filesystem encryption, secrets management
 
 **Critical Gaps on Linux:**
 - **No Encrypted Transport**: SecureConnection unavailable; use TLS termination
-- **No WAL Encryption**: WAL entries are plaintext JSON; use filesystem encryption
+- **Legacy NDJSON**: Plaintext if present; not the default CRUD path — use filesystem encryption and permissions; binary `.wal` uses encrypted page payloads
 - **No Hardware Key Storage**: Keys in process memory only; use HSM if required
 - **No Certificate Validation**: Use external TLS termination with certificate validation
 

@@ -9,7 +9,13 @@ import CryptoKit
 import Crypto
 #endif
 
-/// Manages multiple BlazeDB instances for fast DB switching.
+/// **Advanced API:** multi-database mount and switching helper (for example CLI or migration tooling that
+/// juggles several files).
+///
+/// Typical applications should **not** use `BlazeDBManager` as their primary entrypoint. Instead, open a
+/// single database via `BlazeDBClient` and keep that instance in your app. Recovery and journaling behavior
+/// can differ from the single-client path; see `Docs/Status/DURABILITY_MODE_SUPPORT.md`.
+///
 /// Thread-safe for manager-owned mutable state via `stateLock`.
 public final class BlazeDBManager {
     public private(set) var mountedDatabases: [String: DynamicCollection] = [:]
@@ -35,6 +41,9 @@ public final class BlazeDBManager {
         return Data(digest).map { String(format: "%02x", $0) }.joined()
     }
 
+    // Legacy NDJSON transaction log locations for migration/recovery tooling.
+    // Default `BlazeDBClient` CRUD does not create these files; if they exist,
+    // they contain plaintext page-level operations from older or advanced paths.
     private static func transactionLogURLs(for fileURL: URL) -> [URL] {
         let base = fileURL.deletingPathExtension().lastPathComponent
         let digest = stablePathDigestHex(fileURL.path)
@@ -47,6 +56,11 @@ public final class BlazeDBManager {
         transactionLogURLs(for: fileURL).first!
     }
 
+    /// Legacy NDJSON recovery hook used by manager-style tooling.
+    /// If a `txn_log-*.json` or `txn_log.json` exists next to the database file, this will
+    /// treat it as a plaintext page-level journal and replay it into the encrypted `PageStore`.
+    /// Normal `BlazeDBClient` usage does not generate these logs; they are strictly for
+    /// legacy migration / advanced recovery scenarios and should be treated as sensitive.
     private static func recoverTransactionLogIfPresent(into store: PageStore, fileURL: URL) throws {
         let fm = FileManager.default
         let candidates = transactionLogURLs(for: fileURL)
@@ -241,7 +255,10 @@ public final class BlazeDBManager {
         dbPasswords.removeAll()  // Clear stored passwords
     }
     
-    /// Recover all transactions for all mounted databases.
+    /// Recover all transactions for all mounted databases from any legacy NDJSON journals.
+    /// This walks `txn_log-*.json` / `txn_log.json` sidecars (if present) and replays
+    /// their plaintext page operations into the mounted stores. Default `BlazeDBClient`
+    /// CRUD does not emit these files; this is an advanced migration / operator tool.
     public func recoverAllTransactions() throws {
         stateLock.lock()
         defer { stateLock.unlock() }

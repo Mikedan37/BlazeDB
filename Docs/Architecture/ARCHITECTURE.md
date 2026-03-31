@@ -50,10 +50,11 @@ Each database collection is stored as a set of files in the database directory:
 
 | File | Format | Purpose |
 |------|--------|---------|
-| `<collection>.blaze` | BlazeBinary | Main data file containing 4KB pages with BlazeBinary-encoded records |
-| `<collection>.meta` | JSON | Layout metadata and page index mappings |
+| `<collection>.blazedb` | Encrypted pages | Main data file: 4KB pages, BlazeBinary payload, AES-GCM |
+| `<collection>.meta` | Signed JSON | Layout metadata and page index mappings |
 | `<collection>.meta.indexes` | JSON | Secondary index definitions and data |
-| `txn_log.json` | JSON | Write-ahead log for transaction durability |
+| `<collection>.wal` | Binary | **Default** write-ahead log (`WriteAheadLog`; `enableWAL` true, `WALMode.legacy` by default) |
+| `txn_log*.json` (optional / legacy) | NDJSON | Obsolete sidecar files — **not** the default client CRUD durability path; may be cleaned up on open |
 
 ### Metadata Format
 

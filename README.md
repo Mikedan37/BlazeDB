@@ -31,6 +31,12 @@ try db.close()
 
 If this runs, BlazeDB is working. [Next: HelloBlazeDB example](Examples/HelloBlazeDB/)
 
+### New here? Start with this path
+
+1. **Run the 60-second quick start** above (or `swift run HelloBlazeDB` from this repo).
+2. **Explore `Examples/HelloBlazeDB/`** to see an end-to-end open → insert → query → export → health → close flow using `BlazeDBClient`.
+3. **Read `Docs/GettingStarted/HOW_TO_USE_BLAZEDB.md`** for the complete guide (schema, queries, backups, health, sharp edges).
+
 ---
 
 ## Install
@@ -57,6 +63,14 @@ Or in Xcode: File → Add Package Dependencies → paste the URL.
 - Schema-less document storage with typed queries
 - Sub-millisecond reads, no external service dependencies
 
+### Default durability (BlazeDBClient)
+
+- **Binary WAL:** The default client path uses `PageStore` with `WALMode.legacy` and a page-level binary `WriteAheadLog` before writes hit the main data file. Crash recovery replays that WAL during `PageStore` initialization (see `Docs/Status/DURABILITY_MODE_SUPPORT.md`).
+- **Unified WAL:** An optional `WALMode.unified` path exists for callers that construct `PageStore` explicitly; it is **not** selected by `BlazeDBClient`’s default initializer.
+- **NDJSON transaction logs:** High-level NDJSON transaction logs are **not** part of normal document durability for the client API; obsolete legacy sidecar files may be removed on open.
+
+BlazeDB encrypts data and overflow pages at rest using AES-GCM, and the page-level write-ahead log stores only those encrypted page frames. Metadata is HMAC-signed for tamper detection but remains in plaintext, and rollback to older valid snapshots is not cryptographically prevented. Legacy NDJSON transaction logs are not used by the default `BlazeDBClient` path and, when present from older or advanced tooling (`BlazeDBManager`, legacy page-level `BlazeTransaction`), are plaintext artifacts that should be treated as sensitive cleartext.
+
 > **Note:** Distributed sync and telemetry features are planned for a future release. This version ships the core embedded engine only, and transport integration is intentionally gated off until a public transport dependency is reintroduced.
 
 ---
@@ -69,6 +83,7 @@ Or in Xcode: File → Add Package Dependencies → paste the URL.
 | [Complete Reference](Docs/GettingStarted/HOW_TO_USE_BLAZEDB.md) | Migrations, backups, health checks |
 | [Examples](Examples/) | Working code for common patterns |
 | [Linux Guide](Docs/GettingStarted/LINUX_GETTING_STARTED.md) | Linux-specific setup |
+| [Design overview (Medium, March 2026, updated)](https://medium.com/@DanylchukStudiosLLC/blazedb-a-swift-native-embedded-application-database-c0c762dee311) | Narrative architecture and durability overview; see this repo’s `Docs/` and `Docs/Benchmarks/` for current guarantees and measurements |
 
 ---
 
@@ -82,6 +97,8 @@ Or in Xcode: File → Add Package Dependencies → paste the URL.
 - [Key Management and Compatibility Modes](Docs/Status/KEY_MANAGEMENT_AND_COMPATIBILITY.md)
 - [Legacy Layout Migration Guidance](Docs/Status/LEGACY_LAYOUT_MIGRATION_GUIDANCE.md)
 - [Durability Mode Support Policy](Docs/Status/DURABILITY_MODE_SUPPORT.md)
+- [Tests directory layout (BlazeDBTests vs Tests/)](Docs/Testing/TESTS_DIRECTORY.md)
+- [OSS core build excludes](Docs/Contributing/OSS_CORE_BUILD_EXCLUDES.md)
 - [Cross-Version Compatibility Harness](Docs/Status/COMPATIBILITY_HARNESS.md)
 - [Release Evidence Blockers](Docs/Status/RELEASE_EVIDENCE_BLOCKERS.md)
 - [Open-Source Re-Audit (2026-03-16)](Docs/Status/OPEN_SOURCE_REAUDIT_2026-03-16.md)

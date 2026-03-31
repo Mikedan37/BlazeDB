@@ -24,6 +24,16 @@ final class ConvenienceAPITests: XCTestCase {
         tempDir = FileManager.default.temporaryDirectory
             .appendingPathComponent(UUID().uuidString)
         try? FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
+
+        // Ensure default convenience location is writable for this test process.
+        if let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first {
+            let blazeDBDir = appSupport.appendingPathComponent("BlazeDB")
+            try? FileManager.default.createDirectory(
+                at: blazeDBDir,
+                withIntermediateDirectories: true,
+                attributes: [.posixPermissions: 0o700]
+            )
+        }
     }
     
     override func tearDown() {
@@ -47,11 +57,13 @@ final class ConvenienceAPITests: XCTestCase {
     // MARK: - Convenience Initializer Tests
     
     func testConvenienceInit_ByNameOnly() throws {
+        let uniqueName = "TestDB-\(UUID().uuidString)"
         // Create database by name only
-        let db = try BlazeDBClient(name: "TestDB", password: "SecureTestDB-456!")
+        let db = try BlazeDBClient(name: uniqueName, password: "SecureTestDB-456!")
+        defer { try? db.close() }
         
         // Verify it was created in Application Support
-        let expectedURL = try BlazeDBClient.defaultDatabaseURL(for: "TestDB")
+        let expectedURL = try BlazeDBClient.defaultDatabaseURL(for: uniqueName)
         XCTAssertEqual(db.fileURL, expectedURL, "Database should be in Application Support")
         XCTAssertTrue(FileManager.default.fileExists(atPath: expectedURL.path), "Database file should exist")
         
@@ -79,6 +91,7 @@ final class ConvenienceAPITests: XCTestCase {
     func testConvenienceInit_WithProject() throws {
         // Create with project namespace
         let db = try BlazeDBClient(name: "MyApp", password: "SecureTestDB-456!", project: "MyProject")
+        defer { try? db.close() }
         
         XCTAssertEqual(db.name, "MyApp", "Database name should match")
         // Project is stored internally, verify it works
@@ -124,8 +137,12 @@ final class ConvenienceAPITests: XCTestCase {
     
     func testDiscoverDatabases() throws {
         // Create a few databases
-        _ = try BlazeDBClient(name: "MyApp", password: "SecureTestDB-456!")
-        _ = try BlazeDBClient(name: "UserData", password: "SecureTestDB-456!")
+        let db1 = try BlazeDBClient(name: "MyApp", password: "SecureTestDB-456!")
+        let db2 = try BlazeDBClient(name: "UserData", password: "SecureTestDB-456!")
+        defer {
+            try? db1.close()
+            try? db2.close()
+        }
         
         // Discover them
         let databases = try BlazeDBClient.discoverDatabases()
@@ -139,7 +156,8 @@ final class ConvenienceAPITests: XCTestCase {
     
     func testFindDatabase() throws {
         // Create a database
-        _ = try BlazeDBClient(name: "MyApp", password: "SecureTestDB-456!")
+        let db = try BlazeDBClient(name: "MyApp", password: "SecureTestDB-456!")
+        defer { try? db.close() }
         
         // Find it
         let found = try BlazeDBClient.findDatabase(named: "MyApp")
@@ -168,6 +186,7 @@ final class ConvenienceAPITests: XCTestCase {
     
     func testRegisterDatabase() throws {
         let db = try BlazeDBClient(name: "MyApp", password: "SecureTestDB-456!")
+        defer { try? db.close() }
         
         // Register it
         BlazeDBClient.registerDatabase(name: "MyApp", client: db)
@@ -181,6 +200,7 @@ final class ConvenienceAPITests: XCTestCase {
     
     func testUnregisterDatabase() throws {
         let db = try BlazeDBClient(name: "MyApp", password: "SecureTestDB-456!")
+        defer { try? db.close() }
         
         // Register it
         BlazeDBClient.registerDatabase(name: "MyApp", client: db)
@@ -197,6 +217,10 @@ final class ConvenienceAPITests: XCTestCase {
         // Register multiple databases
         let db1 = try BlazeDBClient(name: "MyApp", password: "SecureTestDB-456!")
         let db2 = try BlazeDBClient(name: "UserData", password: "SecureTestDB-456!")
+        defer {
+            try? db1.close()
+            try? db2.close()
+        }
         
         BlazeDBClient.registerDatabase(name: "MyApp", client: db1)
         BlazeDBClient.registerDatabase(name: "UserData", client: db2)
@@ -211,20 +235,27 @@ final class ConvenienceAPITests: XCTestCase {
     // MARK: - Integration Tests
     
     func testIntegration_CreateAndDiscover() throws {
+        let uniqueName = "MyApp-\(UUID().uuidString)"
+
         // Create database by name
-        let db = try BlazeDBClient(name: "MyApp", password: "SecureTestDB-456!")
+        var db: BlazeDBClient? = try BlazeDBClient(name: uniqueName, password: "SecureTestDB-456!")
         
         // Insert some data
-        let id = try db.insert(BlazeDataRecord(["value": .int(42)]))
+        let id = try db!.insert(BlazeDataRecord(["value": .int(42)]))
+
+        // Flush and release file handles before discover/reopen checks.
+        try db!.persist()
+        try db!.close()
+        db = nil
         
         // Discover it
-        let found = try BlazeDBClient.findDatabase(named: "MyApp")
+        let found = try BlazeDBClient.findDatabase(named: uniqueName)
         
         XCTAssertNotNil(found, "Should find database")
         XCTAssertGreaterThan(found?.recordCount ?? 0, 0, "Should have records")
         
         // Open it again
-        let db2 = try BlazeDBClient(name: "MyApp", password: "SecureTestDB-456!")
+        let db2 = try BlazeDBClient(name: uniqueName, password: "SecureTestDB-456!")
         let fetched = try db2.fetch(id: id)
         
         XCTAssertNotNil(fetched, "Should be able to fetch record from reopened database")

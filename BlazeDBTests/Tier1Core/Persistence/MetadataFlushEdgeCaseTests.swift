@@ -18,6 +18,11 @@ import Crypto
 #else
 import Crypto
 #endif
+#if canImport(Darwin)
+import Darwin
+#elseif canImport(Glibc)
+import Glibc
+#endif
 #if canImport(BlazeDBCore)
 @testable import BlazeDBCore
 #else
@@ -231,6 +236,51 @@ final class MetadataFlushEdgeCaseTests: XCTestCase {
         
         print("✅ Concurrent flush boundary handling works correctly")
     }
+
+    /// Test that a forced metadata save failure does not publish the record in-memory or after reopen.
+    func testInsert_MetadataSaveFailure_DoesNotPublishRecord_InMemoryOrAfterReopen() throws {
+        // Use a deterministic explicit ID so we can safely re-insert later.
+        let fixedID = UUID()
+        let record = BlazeDataRecord([
+            "id": .uuid(fixedID),
+            "value": .int(42)
+        ])
+
+        // Insert should throw due to forced layout save failure, with the fault only enabled
+        // around the insert itself to avoid impacting later metadata writes in this test.
+        setenv("BLAZEDB_FORCE_LAYOUT_SAVE_FAILURE", "1", 1)
+        XCTAssertThrowsError(try db.insert(record), "Insert should throw when layout save failure is forced")
+        unsetenv("BLAZEDB_FORCE_LAYOUT_SAVE_FAILURE")
+
+        // Record should not be visible via normal API in the same process.
+        let missing = try db.fetch(id: fixedID)
+        XCTAssertNil(missing, "Record must not be visible after failed insert with forced layout save failure")
+
+        // Reopen and ensure record is still absent.
+        try? db.close()
+        db = nil
+        let reopened = try reopenWithRetry(name: "FlushTest", fileURL: tempURL, password: "TestPassword-123!")
+        let reopenedMissing = try reopened.fetch(id: fixedID)
+        XCTAssertNil(reopenedMissing, "Record must not be visible after reopen when insert failed before metadata commit")
+
+        // Now ensure there is no lingering uniqueness/index residue by re-inserting with the same ID.
+        let secondRecord = BlazeDataRecord([
+            "id": .uuid(fixedID),
+            "value": .int(99)
+        ])
+        let newID = try reopened.insert(secondRecord)
+        XCTAssertEqual(newID, fixedID, "Re-insert with same explicit ID should succeed and return that ID")
+
+        let fetched = try reopened.fetch(id: fixedID)
+        XCTAssertNotNil(fetched, "Record should be visible after successful re-insert")
+
+        // Reopen again and verify the record is still visible.
+        try? reopened.close()
+        let reopened2 = try reopenWithRetry(name: "FlushTest", fileURL: tempURL, password: "TestPassword-123!")
+        let fetched2 = try reopened2.fetch(id: fixedID)
+        XCTAssertNotNil(fetched2, "Record should remain visible after reopen following successful re-insert")
+    }
+
     
     /// Test flush with indexes (indexes should also be flushed)
     func testFlushWithIndexesPersistsBoth() throws {

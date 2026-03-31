@@ -1,5 +1,12 @@
 # BlazeDB
 
+> **Status (2026 OSS core):** This page contains historical and architecture-level context. For the **current, supported OSS onboarding path**, start with:
+> 1. `README.md` (60‑second quick start)
+> 2. `Examples/HelloBlazeDB/` (end‑to‑end `BlazeDBClient` example)
+> 3. `Docs/GettingStarted/HOW_TO_USE_BLAZEDB.md` (complete guide)
+>
+> The default public API for new applications is **`BlazeDBClient`** via `import BlazeDB`. Older references to `BlazeDB.open`, CBOR, or GitBlaze integration in this document are historical and not the primary OSS entrypoint.
+
 **Swift-native. Encrypted. Fast. Yours.**  
 BlazeDB is a blazing fast embedded database engine written entirely in Swift. It's designed for security-conscious apps, cryptographic commit storage, and total local control.
 
@@ -38,58 +45,51 @@ BlazeDB is a blazing fast embedded database engine written entirely in Swift. It
     ↓ Method Calls & Data Serialization
 
 🧠 CORE ENGINE LAYER
-├── DynamicCollection (Schema-less document storage)
-├── BlazeTransaction (ACID compliance)
-└── TransactionContext (Write-ahead logging)
+├── DynamicCollection (documents, index maps, queries)
+├── BlazeBinary encode/decode (record bytes on the default insert/fetch path)
+└── Optional: MVCC, explicit client transactions when enabled
 
-    ↓ JSON Encoding & Index Management
+    ↓ Encoding, index updates, staged page writes
 
 📊 METADATA LAYER
-├── StorageLayout (Index maps, page tracking)
-├── SecondaryIndexes (Compound & single-field)
-└── TransactionLog (Crash recovery)
+├── StorageLayout (signed layout, index maps, secondary indexes)
+└── Persistence to `.meta` (and `.meta.indexes` when used)
 
-    ↓ Layout Persistence & Index Updates
+    ↓ Encrypted pages + binary WAL (default durability)
 
 💾 STORAGE LAYER
-├── PageStore (4KB page management)
-├── File I/O (Raw disk operations)
+├── PageStore (4KB pages, queue-synchronized I/O)
+├── WriteAheadLog (binary `.wal` — default `WALMode.legacy`)
+├── File I/O (pread/pwrite)
 └── Encryption (AES-GCM per page)
 
-    ↓ Binary Data & File Headers
-
-🗄️ PERSISTENT STORAGE
-├── database.blaze (Main data file)
-├── database.meta (Layout & indexes)
-└── txn_log.json (Transaction log)
+🗄️ TYPICAL ON-DISK FILES (default client path)
+├── `<name>.blazedb` — encrypted main data pages
+├── `<name>.meta` — signed layout / indexes
+├── `<name>.wal` — binary write-ahead log (crash recovery replay on open)
+└── Legacy / optional: NDJSON `txn_log*.json` sidecars — **not** the default CRUD durability mechanism (see `Docs/Status/DURABILITY_MODE_SUPPORT.md`)
 ```
 
 ## File Data Flow Details
 
-### 1. WRITE OPERATION FLOW
+### 1. WRITE OPERATION FLOW (default `BlazeDBClient`, MVCC off)
 ```
 User Call: db.insert(record)
     ↓
 BlazeDBClient.insert()
     ↓
-DynamicCollection.insert()
+DynamicCollection.insert()  (legacy single-version path)
     ↓
-JSONEncoder.encode(document) → Data
+BlazeBinaryEncoder.encode(record) → Data
     ↓
-PageStore.writePage(index, plaintext)
+PageStore.writePageWithOverflow / writePage
+    → encrypt page (AES-GCM, "BZDB" header) → append to binary WriteAheadLog → pwrite main .blazedb
     ↓
-[Header: "BZDB" + Version: 0x01] + [JSON Data] + [Padding to 4KB]
+Update indexMap, secondaryIndexes
     ↓
-FileHandle.write() → disk.blaze
-    ↓
-Update indexMap[UUID: pageIndex]
-    ↓
-Update secondaryIndexes[field: CompoundIndexKey: Set<UUID>]
-    ↓
-StorageLayout.save() → disk.meta
-    ↓
-TransactionLog.append() → txn_log.json
+StorageLayout.saveSecure (or save) → .meta
 ```
+NDJSON `txn_log.json` is **not** written on this path for normal CRUD. Optional legacy sidecar cleanup may run at open (`removeLegacyNDJSONTransactionLogFilesIfPresent()`; `replayTransactionLogIfNeeded()` is deprecated).
 
 ### 2. READ OPERATION FLOW
 ```
@@ -101,17 +101,9 @@ DynamicCollection.fetch()
     ↓
 indexMap[id] → pageIndex
     ↓
-PageStore.readPage(pageIndex)
+PageStore.readPage / readPageWithOverflow → decrypt AES-GCM → BlazeBinary payload
     ↓
-FileHandle.read(4KB) → [Header + Data + Padding]
-    ↓
-Validate "BZDB" header
-    ↓
-Extract JSON data (skip 5-byte header)
-    ↓
-JSONDecoder.decode() → BlazeDocumentField
-    ↓
-Return BlazeDataRecord
+BlazeBinaryDecoder.decode → BlazeDataRecord
 ```
 
 ### 3. INDEX QUERY FLOW
@@ -144,43 +136,19 @@ PageStore.readPage(pageIndex) → BlazeDataRecord
 Return indexed results (no full table scan!)
 ```
 
-### 5. TRANSACTION FLOW
-```
-User Call: db.beginTransaction()
-    ↓
-BlazeDBClient.beginTransaction()
-    ↓
-FileManager.copyItem(db.blaze → txn_in_progress.blaze)
-    ↓
-All subsequent writes logged to txn_log.json
-    ↓
-User Call: db.commitTransaction()
-    ↓
-FileManager.removeItem(txn_in_progress.blaze)
-    ↓
-FileManager.removeItem(txn_log.json)
-```
+### 5. DURABILITY AND TRANSACTIONS (summary)
 
-### 6. CRASH RECOVERY FLOW
-```
-App Startup
-    ↓
-BlazeDBClient.replayTransactionLogIfNeeded()
-    ↓
-Check if txn_log.json exists
-    ↓
-If exists: txn_in_progress.blaze exists → ROLLBACK
-    ↓
-FileManager.removeItem(txn_log.json)
-    ↓
-If exists: txn_log.json only → REPLAY
-    ↓
-Parse txn_log.json operations
-    ↓
-Replay insert/update/delete operations
-    ↓
-FileManager.removeItem(txn_log.json)
-```
+**Default document path:** Durability is **page-level**: binary `WriteAheadLog` + encrypted `.blazedb` pages + signed `.meta`, as in §1. Normal CRUD does **not** append to NDJSON `txn_log.json`.
+
+**Explicit `BlazeDBClient` transactions** (when used) may use `txn_in_progress-*` backup files and related lifecycle; see client transaction implementation.
+
+**Legacy NDJSON:** Obsolete sidecar files may be deleted on open; they are not the engine’s primary replay source for default CRUD. Details: `Docs/Status/DURABILITY_MODE_SUPPORT.md`.
+
+### 6. CRASH RECOVERY (summary)
+
+- **Binary WAL:** On open, `PageStore` replays the legacy binary `WriteAheadLog` so committed encrypted pages are restored after a crash. See `WriteAheadLog.swift` and `PageStore` initialization.
+- **Legacy NDJSON files:** `BlazeDBClient.removeLegacyNDJSONTransactionLogFilesIfPresent()` removes obsolete newline-delimited JSON transaction log sidecars when present; it does **not** replay document operations into the engine. (`replayTransactionLogIfNeeded()` is deprecated.) See `Docs/Status/DURABILITY_MODE_SUPPORT.md`.
+- **Explicit transactions:** Separate durable transaction backup restore may run during client init when `txn_in_progress-*` artifacts exist (see client initialization and vacuum recovery).
 
 ## Structure
 
@@ -193,34 +161,41 @@ BlazeDB/
 ├── Exports/        # Optional backup format
 └── BlazeDB.swift   # Public interface
 
-## Usage Example
+## Usage Example (current `BlazeDBClient` API)
 
 ```swift
-let db = try BlazeDB.open(at: "/Users/me/gitblaze.db", keySource: .secureEnclave)
+import BlazeDB
 
-try db.collection("commits")
-    .insert(CommitObject(...))
+// Open database (creates if needed, always encrypted)
+let db = try BlazeDBClient.open(named: "myapp", password: "your-secure-password")
 
-let recent = db.collection("commits")
-    .query()
-    .where("author" == .string("michael"))
-    .order(by: "timestamp", descending: true)
+// Insert a record
+let id = try db.insert(BlazeDataRecord([
+    "name": .string("Alice"),
+    "role": .string("engineer")
+]))
+
+// Query records
+let recent = try db.query()
+    .where("role", equals: .string("engineer"))
+    .orderBy("created", descending: true)
     .limit(25)
-    .run()
+    .execute()
+    .records
+```
 
-Encryption Model
-    •    Each database has a master key
-    •    Stored in Secure Enclave (Touch ID required), or
-    •    Encrypted with a password-derived key (PBKDF2)
-    •    Every page is encrypted with AES-GCM, individually IV'd
-    •    Backups use a .blazeexport file (fully encrypted)
+Encryption Model (current core engine)
+    •    Each database is encrypted with AES-GCM at the page level
+    •    Keys are derived from a password (or key material) via KDF
+    •    Every page is encrypted individually with its own nonce
+    •    Default durability uses a binary write-ahead log (`.wal`) plus signed metadata
 
-GitBlaze Integration
+Historical GitBlaze Integration (legacy context)
 
-BlazeDB is the primary storage engine for GitBlaze:
-    •    Commits are stored as CBOR-encoded encrypted records
-    •    Drag-and-merge, decrypt-on-touch, all driven by BlazeDB
-    •    Local-first with optional Raspberry Pi syncing
+BlazeDB originated as the primary storage engine for GitBlaze:
+    •    Commits stored as encrypted records
+    •    Local-first workflows with optional sync
+    •    Product-specific integrations built on top of the core engine, not part of the OSS default path
 
 Roadmap
     •    Page-level encryption with AES-GCM

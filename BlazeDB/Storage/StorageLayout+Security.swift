@@ -658,6 +658,16 @@ extension StorageLayout {
         to url: URL,
         signingKey: SymmetricKey
     ) throws {
+#if DEBUG
+        if ProcessInfo.processInfo.environment["BLAZEDB_FORCE_LAYOUT_SAVE_FAILURE"] == "1" {
+            throw NSError(
+                domain: "BlazeDBTestFault",
+                code: 1,
+                userInfo: [NSLocalizedDescriptionKey: "Forced layout save failure for tests"]
+            )
+        }
+#endif
+
         let secureLayout = try SecureLayout.create(
             layout: self,
             signingKey: signingKey

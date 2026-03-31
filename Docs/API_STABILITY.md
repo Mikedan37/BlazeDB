@@ -158,6 +158,10 @@ We follow [Semantic Versioning](https://semver.org/):
 func oldMethod() { ... }
 ```
 
+### Current deprecations (non-breaking)
+
+- `BlazeDBClient.replayTransactionLogIfNeeded()` — deprecated in favor of `removeLegacyNDJSONTransactionLogFilesIfPresent()` (`@available(*, deprecated, renamed:)`). Same behavior; removal no sooner than a future major release per policy above.
+
 ---
 
 ## Migration Guarantees

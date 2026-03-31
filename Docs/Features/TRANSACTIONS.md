@@ -26,77 +26,48 @@ Database never enters invalid state:
 
 ### Isolation
 
-Snapshot isolation via MVCC:
-- Readers see consistent snapshot
-- Writers create new versions
-- No read-write blocking
+**Default:** MVCC is **off**; readers and writers follow the engine’s current single-version behavior.
+
+**When MVCC is enabled (opt-in / experimental):** snapshot-style isolation becomes available — readers can see a consistent view while writers create new versions (see MVCC documentation).
 
 ### Durability
 
-Committed transactions survive crashes:
-- Write-ahead logging (WAL)
-- fsync before commit acknowledgment
-- Automatic recovery on startup
+**Default `BlazeDBClient` path:** Durability is **page-level** via the binary `WriteAheadLog` (typically `<collection>.wal`, `WALMode.legacy` by default) plus encrypted `.blazedb` pages and signed `.meta` persistence. Normal insert/update/delete does **not** use NDJSON transaction logging as the primary mechanism.
+
+**Explicit client transactions** (when used) add their own backup/rollback behavior on top of the same storage stack; see implementation and `Docs/Status/DURABILITY_MODE_SUPPORT.md`.
+
+> For the exact durability contract (including WAL ordering, overflow-chain behavior, metadata visibility, and orphan-page caveats), see `Docs/Status/DURABILITY_MODE_SUPPORT.md`. The short version: binary page-level WAL protects the main page write path, and large records use a publish-last overflow scheme that prevents catalog-visible torn records while allowing unused overflow pages to be reclaimed over time.
 
 ---
 
 ## Write-Ahead Logging (WAL)
 
-### WAL Flow
+### Default binary WAL (normal CRUD)
+
+For the default `BlazeDBClient` → `PageStore` → `DynamicCollection` spine:
+
+- `PageStore` enables the binary WAL by default (`enableWAL: true`).
+- Committed page writes are recorded in the **binary** WAL file (alongside encrypted main-file pages).
+- On database open, `PageStore` replays the binary WAL as needed so committed encrypted pages are consistent after a crash.
+- Layout and indexes are persisted via `.meta` (signed metadata), not via NDJSON `txn_log.json`.
+
+This is the mechanism that should be understood as “WAL-backed durability” for typical app usage.
+
+### Legacy / alternate NDJSON artifacts
+
+Older or alternate code paths may have created newline-delimited JSON files (e.g. `txn_log*.json`). These are **not** the default write path for current client CRUD. `BlazeDBClient.removeLegacyNDJSONTransactionLogFilesIfPresent()` performs **cleanup** of obsolete NDJSON sidecars when present — it does **not** define default document durability. (`replayTransactionLogIfNeeded()` is deprecated but equivalent.) Do not describe `txn_log.json` as the primary WAL for the OSS default runtime. The remaining NDJSON producers/consumers live in advanced/legacy tooling paths such as `BlazeTransaction` (page-level transactions in legacy mode) and `BlazeDBManager` migration/recovery helpers; normal `BlazeDBClient` usage does not rely on NDJSON logs at all.
+
+### Conceptual commit flow (high level)
 
 ```
-1. BEGIN
- > Create transaction context
- > Initialize WAL entry
- > Save baseline state for rollback
-
-2. WRITE(pageID, data)
- > Check transaction state (must be OPEN)
- > Save baseline if first write to this page
- > Stage write in memory
- > Record in WAL
-
-3. COMMIT
- > Flush staged writes to PageStore
- > Update indexes
- > Persist layout to.meta
- > Write COMMIT to WAL
- > fsync WAL (durability guarantee)
- > Clear WAL
- > Clear baselines
- > Mark transaction COMMITTED
-
-4. ROLLBACK (if error)
- > Restore baseline for each page
- > Delete new pages
- > Clear staged writes
- > Write ABORT to WAL
- > Mark transaction ROLLED_BACK
+1. Record encoded → page encrypt → append to binary WAL → write main file
+2. Index / layout updates → persist .meta
+3. fsync / durability as implemented in PageStore + WAL
 ```
 
-### WAL Structure
+### Durability Guarantee (default path)
 
-The WAL file (`txn_log.json`) uses newline-delimited JSON format. Each entry is a JSON object:
-
-```json
-{"type":"begin","txID":"550e8400-e29b-41d4-a716-446655440000"}
-{"type":"write","pageID":0,"data":"<base64-encoded-data>"}
-{"type":"commit","txID":"550e8400-e29b-41d4-a716-446655440000"}
-```
-
-**Entry Types:**
-- `begin(txID: String)` - Transaction start
-- `write(pageID: Int, data: Data)` - Page write operation
-- `delete(pageID: Int)` - Page deletion
-- `commit(txID: String)` - Transaction commit
-- `abort(txID: String)` - Transaction rollback
-
-### Durability Guarantee
-
-WAL entries are fsync'd before commit acknowledgment. This ensures:
-- Committed transactions survive process crashes
-- Uncommitted transactions are discarded
-- No data loss on power failure
+For the binary WAL + encrypted pages path: committed work is designed to survive process crashes to the extent implemented by `PageStore` / `WriteAheadLog` and metadata persistence. Uncommitted or partial work is discarded or rolled back per engine rules. See `Docs/Status/DURABILITY_MODE_SUPPORT.md` and `Docs/Status/CRASH_SURVIVAL.md` for precise semantics.
 
 ---
 
@@ -104,20 +75,12 @@ WAL entries are fsync'd before commit acknowledgment. This ensures:
 
 ### Recovery Process
 
-On startup:
+On startup (default path):
 
-```
-1. Check for WAL file
-2. If exists:
- > Parse all operations
- > Group by transaction ID
- > Find COMMITTED transactions
- > Replay committed writes
- > Discard uncommitted writes
- > Clear WAL
-3. Load.meta file
-4. Rebuild indexes if needed
-```
+1. Open `PageStore` — **binary** WAL replay runs as implemented in initialization (restore committed encrypted pages).
+2. Load and validate `.meta` (signed layout / indexes).
+3. **Legacy NDJSON:** If obsolete `txn_log*.json` sidecars exist, client cleanup may remove them; they are not the primary replay source for default CRUD.
+4. Rebuild or repair indexes if metadata or implementation requires it.
 
 ### Recovery Guarantees
 
@@ -138,12 +101,11 @@ Automatic detection and recovery:
 
 ## Transaction Isolation Levels
 
-### Snapshot Isolation (Default)
+### Snapshot Isolation (when MVCC is enabled)
 
-- Readers see consistent snapshot
-- Writers create new versions
-- No read-write blocking
-- Serializable for most workloads
+- Opt-in / experimental MVCC path only
+- When enabled: readers can use snapshot semantics; writers create new versions
+- Not the default for a plain `BlazeDBClient` open
 
 ### Read Committed (Future)
 
@@ -170,8 +132,8 @@ Automatic detection and recovery:
 
 ### Concurrency
 
-- **Multiple readers**: No blocking
-- **Readers + writers**: No blocking (MVCC)
+- **Multiple readers**: As implemented for the default engine
+- **Readers + writers**: Without MVCC, behavior follows single-version rules; with MVCC (opt-in), snapshot isolation applies
 - **Multiple writers**: Serialized (future: concurrent writes)
 
 ---

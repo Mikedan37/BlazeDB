@@ -559,15 +559,21 @@ func rollbackTransaction() throws
 func transaction<T>(_ block: (BlazeDBClient) throws -> T) throws -> T
 ```
 
-### **Transaction Log:**
+### **Legacy NDJSON transaction log cleanup**
 
-**Used for:** Crash recovery - replaying uncommitted transactions after app restart.
+**Used for:** Removing obsolete pre–V1.5 newline-delimited JSON transaction log **sidecar files** on open, if they still exist on disk.
+
+**Not used for:** Replaying the **binary** write-ahead log. Binary WAL replay happens during `PageStore` initialization (default `WALMode.legacy`). This method does **not** replay high-level document operations into the engine.
+
+For the full default durability story, see `Docs/Status/DURABILITY_MODE_SUPPORT.md`.
 
 ```swift
-// Replay transaction log (auto-called on init)
-// USAGE: Automatically replays any uncommitted transactions after crash (ensures data integrity)
-public func replayTransactionLogIfNeeded() throws
+// Primary API — called during client initialization. Deletes legacy NDJSON log files when present.
+// Binary WAL recovery is handled inside PageStore, not here.
+public func removeLegacyNDJSONTransactionLogFilesIfPresent() throws
 ```
+
+The former name `replayTransactionLogIfNeeded()` remains available as a deprecated compatibility alias (same behavior; use the replacement above).
 
 ---
 

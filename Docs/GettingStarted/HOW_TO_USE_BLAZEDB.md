@@ -31,6 +31,8 @@ If you need multiple processes writing to the same database, BlazeDB is not the 
 import BlazeDB
 
 // Open database (creates if needed, always encrypted)
+// Applications should import the `BlazeDB` product; the `BlazeDBCore` target is primarily used
+// internally by tools and examples in this repository.
 let db = try BlazeDBClient.open(named: "myapp", password: "your-secure-password")
 
 // Insert records
@@ -342,6 +344,20 @@ let backupURL = FileManager.default.temporaryDirectory
 try db.export(to: backupURL)
 print("Exported to: \(backupURL.path)")
 ```
+
+---
+
+## 9. Advanced APIs (non-default surfaces)
+
+For most applications, **`BlazeDBClient` is the only API you need**. The following types are public
+primarily for tooling, diagnostics, or migration and are **not** the default entrypoints:
+
+- `PageStore` — low-level encrypted page I/O and WAL integration, used by `BlazeDBClient` and tests.
+- `BlazeDBManager` — multi-database mount/switch helper for CLI and migration-style tools.
+- `BlazeTransaction` — page-level transaction wrapper used in advanced/legacy tooling paths.
+
+If you are building a normal app, stay on `BlazeDBClient` and ignore these unless the docs explicitly
+tell you otherwise.
 
 **Verify backup:**
 ```swift

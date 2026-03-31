@@ -35,7 +35,7 @@ This document summarizes the resolution of audit gaps identified in `VALIDATION_
 **Problem:** `BlazeDBClient+AsyncOptimized.swift` contained `Task.detached` calls, violating Swift 6 strict concurrency compliance.
 
 **Solution:**
-- Replaced all `Task.detached` calls with direct synchronous calls to `appendToTransactionLog()`
+- Replaced all `Task.detached` calls with direct synchronous calls to `legacyTransactionLogNoOp` (no-op; V1.5+ document durability uses binary WAL only)
 - The method is already thread-safe (uses `transactionLogLock`), so detached tasks were unnecessary
 - All 4 instances removed (insertAsync, insertManyAsync, updateAsync, deleteAsync)
 

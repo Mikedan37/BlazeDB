@@ -212,6 +212,9 @@ final class EncryptionRoundTripVerificationTests: XCTestCase {
         let retrieved = try store.readPage(index: 0)
         XCTAssertEqual(retrieved, data)
         
+        // Release the original handle before opening the same file with a different key.
+        store = nil
+
         // Try to read with different key (should fail)
         let wrongKey = SymmetricKey(size: .bits256)
         let wrongStore = try PageStore(fileURL: tempURL, key: wrongKey)
@@ -249,7 +252,7 @@ final class EncryptionRoundTripVerificationTests: XCTestCase {
     
     /// Test: Detect file corruption
     func testDetectFileCorruption() throws {
-        let data = "Original data".data(using: .utf8)!
+        let data = Data(repeating: 0xAB, count: 512)
         try store.writePage(index: 0, plaintext: data)
         
         // Close store
@@ -259,7 +262,9 @@ final class EncryptionRoundTripVerificationTests: XCTestCase {
         let fileHandle = try FileHandle(forUpdating: tempURL)
         defer { try? fileHandle.close() }
         
-        try fileHandle.seek(toOffset: 100)  // Somewhere in the ciphertext
+        // Page layout: [magic/version/length][nonce][tag][ciphertext...]
+        // For 512-byte plaintext, offset 100 is guaranteed inside ciphertext.
+        try fileHandle.seek(toOffset: 100)
         try fileHandle.write(contentsOf: Data([0xFF]))
         try fileHandle.synchronize()
         
@@ -268,8 +273,10 @@ final class EncryptionRoundTripVerificationTests: XCTestCase {
         
         XCTAssertThrowsError(try newStore.readPage(index: 0)) { error in
             // Should detect corruption via AES-GCM authentication
+            let description = String(describing: error)
             XCTAssertTrue(error.localizedDescription.contains("authentication") ||
-                         error.localizedDescription.contains("corrupt"),
+                         error.localizedDescription.contains("corrupt") ||
+                         description.contains("authenticationFailure"),
                          "Should detect corruption, got: \(error)")
         }
     }

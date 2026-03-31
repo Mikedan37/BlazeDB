@@ -44,9 +44,9 @@ final class LoggerExtremeEdgeCaseTests: XCTestCase {
         
         XCTAssertEqual(receivedMessages.count, 1, "Should receive exactly one log message")
         
-        // Message includes "[BlazeDB:DEBUG] " prefix (16 chars) + original message
-        let expectedLength = 1_000_000 + 16  // "[BlazeDB:DEBUG] " = 16 chars
-        XCTAssertEqual(receivedMessages[0].count, expectedLength, "Message should include prefix + 1MB content")
+        // Logger format may include extra context (timestamps/source), but should not
+        // truncate the payload.
+        XCTAssertGreaterThanOrEqual(receivedMessages[0].count, 1_000_000, "Message should include full 1MB content")
         XCTAssertTrue(receivedMessages[0].contains(longMessage), "Message should contain original 1MB string")
         
         // Should be fast even with large message

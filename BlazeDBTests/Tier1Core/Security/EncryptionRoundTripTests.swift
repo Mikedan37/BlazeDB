@@ -34,6 +34,9 @@ final class EncryptionRoundTripTests: XCTestCase {
     }
     
     override func tearDown() {
+        try? db?.close()
+        db = nil
+
         guard let dbURL = dbURL else {
             super.tearDown()
             return
@@ -179,6 +182,8 @@ final class EncryptionRoundTripTests: XCTestCase {
         ]))
         
         try db.persist()
+        try db.close()
+        db = nil
         
         // Corrupt the database file
         let fileHandle = try FileHandle(forUpdating: dbURL)
@@ -188,10 +193,9 @@ final class EncryptionRoundTripTests: XCTestCase {
         
         // Clear and reload
         BlazeDBClient.clearCachedKey()
-        let db2 = try BlazeDBClient(name: "EncryptionTest", fileURL: dbURL, password: "SecureTestDB-456!")
-        
-        // Try to fetch - should fail authentication
+        // Corruption can be detected either at open time or at first read.
         do {
+            let db2 = try BlazeDBClient(name: "EncryptionTest", fileURL: dbURL, password: "SecureTestDB-456!")
             _ = try db2.fetch(id: id)
             XCTFail("Should detect corrupted data")
         } catch {
