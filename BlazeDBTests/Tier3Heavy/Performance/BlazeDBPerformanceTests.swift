@@ -38,22 +38,27 @@ final class BlazeDBPerformanceTests: XCTestCase {
     
     /// Measure single insert performance
     func testInsertPerformance() throws {
-        let options = XCTMeasureOptions()
-        options.iterationCount = 5
-        
-        measure(metrics: [XCTClockMetric(), XCTCPUMetric(), XCTMemoryMetric()], options: options) {
+        let runWorkload: () -> Void = {
             for i in 0..<100 {
                 let record = BlazeDataRecord([
                     "index": .int(i),
                     "title": .string("Record \(i)"),
                     "timestamp": .date(Date())
                 ])
-                _ = try! db.insert(record)
+                _ = try! self.db.insert(record)
             }
             
             // Flush for accurate measurement
-            try! db.persist()
+            try! self.db.persist()
         }
+        #if os(Linux)
+        runWorkload()
+        #else
+        let options = XCTMeasureOptions()
+        options.iterationCount = 5
+        
+        measure(metrics: [XCTClockMetric(), XCTCPUMetric(), XCTMemoryMetric()], options: options, block: runWorkload)
+        #endif
     }
     
     /// Measure bulk insert performance
@@ -61,15 +66,7 @@ final class BlazeDBPerformanceTests: XCTestCase {
     func testBulkInsertPerformance() throws {
         print("⚡ Testing BATCH insert performance (500 records)...")
         
-        let options = XCTMeasureOptions()
-        options.iterationCount = 3
-        
-        measure(metrics: [
-            XCTClockMetric(),
-            XCTCPUMetric(),
-            XCTMemoryMetric(),
-            XCTStorageMetric()
-        ], options: options) {
+        let runWorkload: () -> Void = {
             // Create 500 records
             let records = (0..<500).map { i in
                 BlazeDataRecord([
@@ -79,9 +76,22 @@ final class BlazeDBPerformanceTests: XCTestCase {
             }
             
             // Insert in ONE batch operation (50-100x faster!)
-            _ = try! db.insertMany(records)
-            try! db.persist()
+            _ = try! self.db.insertMany(records)
+            try! self.db.persist()
         }
+        #if os(Linux)
+        runWorkload()
+        #else
+        let options = XCTMeasureOptions()
+        options.iterationCount = 3
+        
+        measure(metrics: [
+            XCTClockMetric(),
+            XCTCPUMetric(),
+            XCTMemoryMetric(),
+            XCTStorageMetric()
+        ], options: options, block: runWorkload)
+        #endif
         
         print("✅ Batch insert performance measured")
     }
@@ -90,18 +100,23 @@ final class BlazeDBPerformanceTests: XCTestCase {
     func testIndividualInsertPerformance() throws {
         print("⚡ Testing INDIVIDUAL insert performance (100 records)...")
         
-        let options = XCTMeasureOptions()
-        options.iterationCount = 3
-        
-        measure(metrics: [XCTClockMetric()], options: options) {
+        let runWorkload: () -> Void = {
             // Insert one-by-one (slower, but sometimes necessary)
             for i in 0..<100 {  // Reduced to 100 for faster tests
-                _ = try! db.insert(BlazeDataRecord([
+                _ = try! self.db.insert(BlazeDataRecord([
                     "index": .int(i),
                     "data": .string(String(repeating: "A", count: 200))
                 ]))
             }
         }
+        #if os(Linux)
+        runWorkload()
+        #else
+        let options = XCTMeasureOptions()
+        options.iterationCount = 3
+        
+        measure(metrics: [XCTClockMetric()], options: options, block: runWorkload)
+        #endif
         
         print("✅ Individual insert performance measured")
     }
@@ -118,16 +133,21 @@ final class BlazeDBPerformanceTests: XCTestCase {
             ids.append(id)
         }
         
-            try db.persist()
+        try db.persist()
         
+        let runWorkload: () -> Void = {
+            for id in ids.prefix(100) {
+                _ = try! self.db.fetch(id: id)
+            }
+        }
+        #if os(Linux)
+        runWorkload()
+        #else
         let options = XCTMeasureOptions()
         options.iterationCount = 10
         
-        measure(metrics: [XCTClockMetric(), XCTCPUMetric()], options: options) {
-            for id in ids.prefix(100) {
-                _ = try! db.fetch(id: id)
-            }
-        }
+        measure(metrics: [XCTClockMetric(), XCTCPUMetric()], options: options, block: runWorkload)
+        #endif
     }
     
     /// Measure fetchAll performance
@@ -143,15 +163,20 @@ final class BlazeDBPerformanceTests: XCTestCase {
         try db.persist()
         print("  Setup: Inserted 500 records via batch")
         
+        let runWorkload: () -> Void = {
+            _ = try! self.db.fetchAll()
+        }
+        #if os(Linux)
+        runWorkload()
+        #else
         let options = XCTMeasureOptions()
         options.iterationCount = 5
         
         measure(metrics: [
             XCTClockMetric(),
             XCTMemoryMetric()
-        ], options: options) {
-            _ = try! db.fetchAll()
-        }
+        ], options: options, block: runWorkload)
+        #endif
     }
     
     /// Measure pagination performance
@@ -162,14 +187,19 @@ final class BlazeDBPerformanceTests: XCTestCase {
             _ = try db.insert(record)
         }
         
-            try db.persist()
+        try db.persist()
         
+        let runWorkload: () -> Void = {
+            _ = try! self.db.fetchPage(offset: 0, limit: 100)
+        }
+        #if os(Linux)
+        runWorkload()
+        #else
         let options = XCTMeasureOptions()
         options.iterationCount = 10
         
-        measure(metrics: [XCTClockMetric(), XCTMemoryMetric()], options: options) {
-            _ = try! db.fetchPage(offset: 0, limit: 100)
-        }
+        measure(metrics: [XCTClockMetric(), XCTMemoryMetric()], options: options, block: runWorkload)
+        #endif
     }
     
     // MARK: - Update Performance
@@ -184,19 +214,24 @@ final class BlazeDBPerformanceTests: XCTestCase {
             ids.append(id)
         }
         
-            try db.persist()
+        try db.persist()
         
+        let runWorkload: () -> Void = {
+            for (index, id) in ids.prefix(100).enumerated() {
+                let updated = BlazeDataRecord(["value": .int(index + 1000)])
+                try! self.db.update(id: id, with: updated)
+            }
+            
+            try! self.db.persist()
+        }
+        #if os(Linux)
+        runWorkload()
+        #else
         let options = XCTMeasureOptions()
         options.iterationCount = 5
         
-        measure(metrics: [XCTClockMetric(), XCTCPUMetric(), XCTStorageMetric()], options: options) {
-            for (index, id) in ids.prefix(100).enumerated() {
-                let updated = BlazeDataRecord(["value": .int(index + 1000)])
-                try! db.update(id: id, with: updated)
-            }
-            
-            try! db.persist()
-        }
+        measure(metrics: [XCTClockMetric(), XCTCPUMetric(), XCTStorageMetric()], options: options, block: runWorkload)
+        #endif
     }
     
     // MARK: - Delete Performance
@@ -211,18 +246,23 @@ final class BlazeDBPerformanceTests: XCTestCase {
             ids.append(id)
         }
         
-            try db.persist()
+        try db.persist()
         
+        let runWorkload: () -> Void = {
+            for id in ids.prefix(100) {
+                try! self.db.delete(id: id)
+            }
+            
+            try! self.db.persist()
+        }
+        #if os(Linux)
+        runWorkload()
+        #else
         let options = XCTMeasureOptions()
         options.iterationCount = 5
         
-        measure(metrics: [XCTClockMetric(), XCTCPUMetric()], options: options) {
-            for id in ids.prefix(100) {
-                try! db.delete(id: id)
-            }
-            
-            try! db.persist()
-        }
+        measure(metrics: [XCTClockMetric(), XCTCPUMetric()], options: options, block: runWorkload)
+        #endif
     }
     
     // MARK: - Index Performance
@@ -249,89 +289,106 @@ final class BlazeDBPerformanceTests: XCTestCase {
         db = try BlazeDBClient(name: "PerfTest", fileURL: tempURL, password: "TestPassword-123!")
         let rebuiltCollection = db.collection
         
+        let runWorkload: () -> Void = {
+            _ = try! rebuiltCollection.fetch(byIndexedField: "category", value: "cat_5")
+        }
+        #if os(Linux)
+        runWorkload()
+        #else
         let options = XCTMeasureOptions()
         options.iterationCount = 10
         
-        measure(metrics: [XCTClockMetric()], options: options) {
-            _ = try! rebuiltCollection.fetch(byIndexedField: "category", value: "cat_5")
-        }
+        measure(metrics: [XCTClockMetric()], options: options, block: runWorkload)
+        #endif
     }
     
     // MARK: - Transaction Performance
     
     /// Measure transaction commit performance
     func testTransactionPerformance() throws {
-        let options = XCTMeasureOptions()
-        options.iterationCount = 5
-        
-        measure(metrics: [XCTClockMetric(), XCTCPUMetric()], options: options) {
+        let runWorkload: () -> Void = {
             for i in 0..<50 {
                 // Database inserts are internally transactional
                 let record = BlazeDataRecord([
                     "index": .int(i),
                     "data": .string("Transactional \(i)")
                 ])
-                _ = try! db.insert(record)
+                _ = try! self.db.insert(record)
             }
             
-            try! db.persist()
+            try! self.db.persist()
         }
+        #if os(Linux)
+        runWorkload()
+        #else
+        let options = XCTMeasureOptions()
+        options.iterationCount = 5
+        
+        measure(metrics: [XCTClockMetric(), XCTCPUMetric()], options: options, block: runWorkload)
+        #endif
     }
     
     // MARK: - Encryption Performance
     
     /// Measure encryption overhead
     func testEncryptionPerformance() throws {
-        let options = XCTMeasureOptions()
-        options.iterationCount = 5
-        
         let largeData = String(repeating: "X", count: 3000)  // ~3KB payload
         
-        measure(metrics: [XCTClockMetric(), XCTCPUMetric()], options: options) {
+        let runWorkload: () -> Void = {
             for i in 0..<100 {
                 let record = BlazeDataRecord([
                     "index": .int(i),
                     "payload": .string(largeData)
                 ])
-                _ = try! db.insert(record)
+                _ = try! self.db.insert(record)
             }
             
-            try! db.persist()
+            try! self.db.persist()
         }
+        #if os(Linux)
+        runWorkload()
+        #else
+        let options = XCTMeasureOptions()
+        options.iterationCount = 5
+        
+        measure(metrics: [XCTClockMetric(), XCTCPUMetric()], options: options, block: runWorkload)
+        #endif
     }
     
     // MARK: - Memory Efficiency
     
     /// Measure memory usage during operations
     func testMemoryEfficiency() throws {
-        let options = XCTMeasureOptions()
-        options.iterationCount = 3
-        
-        measure(metrics: [XCTMemoryMetric()], options: options) {
+        let runWorkload: () -> Void = {
             // Insert 300 records (enough to measure memory, fast enough for 3 iterations)
             for i in 0..<300 {
                 let record = BlazeDataRecord([
                     "index": .int(i),
                     "data": .string(String(repeating: "A", count: 100))
                 ])
-                _ = try! db.insert(record)
+                _ = try! self.db.insert(record)
             }
             
-            try! db.persist()
+            try! self.db.persist()
             
             // Fetch all
-            _ = try! db.fetchAll()
+            _ = try! self.db.fetchAll()
         }
+        #if os(Linux)
+        runWorkload()
+        #else
+        let options = XCTMeasureOptions()
+        options.iterationCount = 3
+        
+        measure(metrics: [XCTMemoryMetric()], options: options, block: runWorkload)
+        #endif
     }
     
     // MARK: - Storage I/O
     
     /// Measure disk I/O performance
     func testStorageIOPerformance() throws {
-        let options = XCTMeasureOptions()
-        options.iterationCount = 3
-        
-        measure(metrics: [XCTStorageMetric()], options: options) {
+        let runWorkload: () -> Void = {
             // Use batch insert for faster, more realistic test
             let records = (0..<200).map { i in
                 BlazeDataRecord([
@@ -339,9 +396,16 @@ final class BlazeDBPerformanceTests: XCTestCase {
                     "payload": .string(String(repeating: "X", count: 500))
                 ])
             }
-            _ = try! db.insertMany(records)
-            try! db.persist()
+            _ = try! self.db.insertMany(records)
+            try! self.db.persist()
         }
+        #if os(Linux)
+        runWorkload()
+        #else
+        let options = XCTMeasureOptions()
+        options.iterationCount = 3
+        
+        measure(metrics: [XCTStorageMetric()], options: options, block: runWorkload)
+        #endif
     }
 }
-

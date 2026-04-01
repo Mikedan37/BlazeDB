@@ -42,8 +42,11 @@ final class PerformanceProfilingTests: XCTestCase {
     
     // MARK: - Profiling Infrastructure
     
-    /// Profile with all metrics
+    /// Profile with all metrics (Apple XCTest metrics; Linux runs the workload once without XCTMetric APIs)
     private func profileWithMetrics(name: String, block: () throws -> Void) rethrows {
+        #if os(Linux)
+        try block()
+        #else
         let metrics: [XCTMetric] = [
             XCTClockMetric(),           // Wall clock time
             XCTCPUMetric(),             // CPU usage
@@ -57,6 +60,7 @@ final class PerformanceProfilingTests: XCTestCase {
         measure(metrics: metrics, options: options) {
             try? block()
         }
+        #endif
     }
     
     // MARK: - Insert Performance Profiling
