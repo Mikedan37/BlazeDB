@@ -384,41 +384,6 @@ final class VacuumOperationsTests: XCTestCase {
     }
     
     // MARK: - Performance
-    
-    func testPerformance_Vacuum() async throws {
-        let db = self.db!
-        measure(metrics: [XCTClockMetric(), XCTMemoryMetric(), XCTStorageMetric()]) {
-            Task {
-                do {
-                    // Insert 100 records
-                    let ids = try await db.insertMany((0..<100).map { i in BlazeDataRecord(["value": .int(i)]) })
-                    
-                    // Delete 50
-                    for i in 0..<50 {
-                        try await db.delete(id: ids[i])
-                    }
-                    
-                    // VACUUM
-                    _ = try await db.vacuum()
-                } catch {
-                    XCTFail("VACUUM performance test failed: \(error)")
-                }
-            }
-        }
-    }
-    
-    func testPerformance_StorageStats() async throws {
-        let db = self.db!
-        measure(metrics: [XCTClockMetric()]) {
-            Task {
-                do {
-                    _ = try await db.insertMany((0..<100).map { i in BlazeDataRecord(["value": .int(i)]) })
-                    _ = try await db.getStorageStats()
-                } catch {
-                    XCTFail("Storage stats performance test failed: \(error)")
-                }
-            }
-        }
-    }
+    // Moved to Tier3Heavy vacuum performance suite.
 }
 

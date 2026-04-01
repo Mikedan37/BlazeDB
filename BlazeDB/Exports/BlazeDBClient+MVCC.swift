@@ -29,14 +29,16 @@ extension BlazeDBClient {
     /// - Parameter enabled: true to enable MVCC, false for legacy mode
     public func setMVCCEnabled(_ enabled: Bool) {
         collection.queue.sync(flags: .barrier) {
+            let previous = collection.mvccEnabled
             collection.mvccEnabled = enabled
-            
-            if enabled {
-                BlazeLogger.info("🚀 MVCC ENABLED: Concurrent access active")
-                BlazeLogger.info("   - Reads are now concurrent")
-                BlazeLogger.info("   - Snapshot isolation enabled")
-                BlazeLogger.info("   - Automatic GC running")
-            } else {
+
+            if enabled, previous == false {
+                // Enabling MVCC on an existing database: rebuild version state from authoritative indexMap.
+                // This ensures records persisted before MVCC was enabled remain visible under MVCC.
+                BlazeLogger.info("🚀 MVCC ENABLED: Concurrent access active — rebuilding MVCC state from indexMap")
+                collection.versionManager.reset()
+                collection.rebuildMVCCFromIndexMapIfNeeded()
+            } else if !enabled, previous == true {
                 BlazeLogger.info("⚠️  MVCC DISABLED: Using legacy serial mode")
             }
         }

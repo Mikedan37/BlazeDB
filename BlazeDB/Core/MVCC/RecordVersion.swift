@@ -112,6 +112,16 @@ public class VersionManager {
         self.pageGC = pageGC
     }
     
+    /// Reset all MVCC state. Used when enabling MVCC on an existing database to rebuild
+    /// version information from the authoritative indexMap.
+    public func reset() {
+        lock.lock()
+        defer { lock.unlock() }
+        versions.removeAll()
+        currentVersion = 0
+        activeSnapshots.removeAll()
+        pageGC.reset()
+    }
     // MARK: - Version Management
     
     /// Get the next version number

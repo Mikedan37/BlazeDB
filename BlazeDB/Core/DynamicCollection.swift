@@ -164,7 +164,7 @@ public final class DynamicCollection {
         rebuildMVCCFromIndexMapIfNeeded()
     }
     
-    private func rebuildMVCCFromIndexMapIfNeeded() {
+    internal func rebuildMVCCFromIndexMapIfNeeded() {
         guard mvccEnabled, !self.indexMap.isEmpty else { return }
         
         BlazeLogger.debug("🔄 [MVCC] Rebuilding version manager from \(self.indexMap.count) records in indexMap...")
