@@ -24,7 +24,7 @@ For tier intent and local equivalents, see `Docs/Testing/CI_AND_TEST_TIERS.md`.
   - nightly schedule
   - manual dispatch
 - Job:
-  - `Core Tests (Swift 6)` on `macos-14`
+  - `Core Tests (Swift 6)` on `macos-15` (aligned with `Package.swift` macOS 15 minimum)
 - Behavior:
   - build `BlazeDBCore` and CLI targets
   - run `BlazeDB_Tier0` and `BlazeDB_Tier1`

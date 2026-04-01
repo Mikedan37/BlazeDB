@@ -201,14 +201,6 @@ public struct WALEntry: Sendable, Equatable {
     // MARK: - CRC32
 
     private static func computeCRC32(_ data: Data) -> UInt32 {
-        #if canImport(zlib)
-        data.withUnsafeBytes { buf in
-            let base = buf.baseAddress!.assumingMemoryBound(to: UInt8.self)
-            let result = zlib.crc32(0, base, UInt32(buf.count))
-            return UInt32(result)
-        }
-        #else
-        fatalError("BlazeDB requires zlib for CRC32 integrity checks")
-        #endif
+        BlazeBinaryEncoder.calculateCRC32(data)
     }
 }

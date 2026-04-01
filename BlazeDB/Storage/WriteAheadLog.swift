@@ -19,9 +19,6 @@ import Darwin
 #elseif canImport(Glibc)
 import Glibc
 #endif
-#if canImport(zlib)
-import zlib // for crc32()
-#endif
 
 // MARK: - WAL Entry Format
 
@@ -329,11 +326,8 @@ internal final class WriteAheadLog: @unchecked Sendable {
     // MARK: - CRC32
 
     private func crc32Checksum(_ data: Data) -> UInt32 {
-        return data.withUnsafeBytes { rawBuffer in
-            guard let base = rawBuffer.baseAddress else { return 0 }
-            // zlib crc32: initial value 0, pointer, length
-            return UInt32(zlib.crc32(0, base.assumingMemoryBound(to: UInt8.self), UInt32(data.count)))
-        }
+        // Must match zlib CRC32 / BlazeBinary paths; use shared implementation so Linux CI builds without Swift `zlib` module.
+        BlazeBinaryEncoder.calculateCRC32(data)
     }
 }
 

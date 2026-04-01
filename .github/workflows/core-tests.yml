@@ -11,7 +11,8 @@ concurrency:
 
 jobs:
   core-tests:
-    runs-on: macos-14
+    # Must match Package.swift platforms (.macOS(.v15)); macos-14 runners cannot load test bundles built for macOS 15.
+    runs-on: macos-15
     name: Core Tests (Swift 6)
     timeout-minutes: 90
     steps:
