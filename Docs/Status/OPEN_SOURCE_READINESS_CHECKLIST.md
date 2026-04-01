@@ -1,5 +1,8 @@
 # BlazeDB Open Source Readiness Checklist
 
+> This document is an internal OSS release/process checklist. Most users should start with `README.md`
+> and `Docs/GettingStarted/`.
+
 Use this checklist to decide if the current branch is ready for a public OSS release.
 
 ## 1) Core Quality Gates

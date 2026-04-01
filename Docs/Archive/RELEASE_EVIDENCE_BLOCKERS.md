@@ -51,3 +51,4 @@ This document records blockers discovered while executing OSS readiness evidence
 - `Scripts/check-release-tag-builds.sh` performs reproducible tag buildability checks and emits per-tag logs.
 - `Scripts/verify-clean-checkout.sh` performs clean worktree validation and stores logs under `.logs/clean-checkout/`.
 - `Scripts/verify-readme-quickstart.sh` validates `HelloBlazeDB` quickstart from a clean snapshot within a 5-minute target.
+
