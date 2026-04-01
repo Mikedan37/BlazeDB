@@ -14,6 +14,48 @@ import Crypto
 #endif
 @testable import BlazeDBCore
 
+// MARK: - Swift 6 concurrency (strict isolation on Linux CI)
+
+private final class StressThreadSafeInt: @unchecked Sendable {
+    private let lock = NSLock()
+    private var value = 0
+    func increment() {
+        lock.lock()
+        value += 1
+        lock.unlock()
+    }
+    func get() -> Int {
+        lock.lock()
+        defer { lock.unlock() }
+        return value
+    }
+}
+
+private final class StressErrorBag: @unchecked Sendable {
+    private let lock = NSLock()
+    private var items: [Error] = []
+    func append(_ e: Error) {
+        lock.lock()
+        items.append(e)
+        lock.unlock()
+    }
+    var count: Int {
+        lock.lock()
+        defer { lock.unlock() }
+        return items.count
+    }
+    var first: Error? {
+        lock.lock()
+        defer { lock.unlock() }
+        return items.first
+    }
+    var all: [Error] {
+        lock.lock()
+        defer { lock.unlock() }
+        return items
+    }
+}
+
 final class BlazeDBStressTests: XCTestCase {
     var tempURL: URL!
     var db: BlazeDBClient!
@@ -162,10 +204,9 @@ final class BlazeDBStressTests: XCTestCase {
         
         let group = DispatchGroup()
         let queue = DispatchQueue(label: "stress.concurrent", attributes: .concurrent)
-        var errors: [Error] = []
-        let errorLock = NSLock()
-        var successCount = 0
-        let successLock = NSLock()
+        let errorBag = StressErrorBag()
+        let successCount = StressThreadSafeInt()
+        let db = self.db!
         
         let startTime = Date()
         
@@ -181,15 +222,10 @@ final class BlazeDBStressTests: XCTestCase {
                             "index": .int(i),
                             "timestamp": .date(Date())
                         ])
-                        _ = try self.db.insert(record)
-                        
-                        successLock.lock()
-                        successCount += 1
-                        successLock.unlock()
+                        _ = try db.insert(record)
+                        successCount.increment()
                     } catch {
-                        errorLock.lock()
-                        errors.append(error)
-                        errorLock.unlock()
+                        errorBag.append(error)
                     }
                 }
             }
@@ -197,14 +233,15 @@ final class BlazeDBStressTests: XCTestCase {
         
         group.wait()
         let duration = Date().timeIntervalSince(startTime)
+        let successes = successCount.get()
         
         print("✅ Completed \(writerCount) concurrent writers in \(String(format: "%.2f", duration))s")
-        print("   Success: \(successCount)/\(writerCount * recordsPerWriter)")
-        print("   Errors: \(errors.count)")
-        print("   Throughput: \(String(format: "%.0f", Double(successCount) / duration)) writes/sec")
+        print("   Success: \(successes)/\(writerCount * recordsPerWriter)")
+        print("   Errors: \(errorBag.count)")
+        print("   Throughput: \(String(format: "%.0f", Double(successes) / duration)) writes/sec")
         
-        XCTAssertEqual(errors.count, 0, "Should have no errors from concurrent writes")
-        XCTAssertEqual(successCount, writerCount * recordsPerWriter, "All writes should succeed")
+        XCTAssertEqual(errorBag.count, 0, "Should have no errors from concurrent writes")
+        XCTAssertEqual(successes, writerCount * recordsPerWriter, "All writes should succeed")
     }
     
     /// Test concurrent reads and writes
@@ -227,6 +264,8 @@ final class BlazeDBStressTests: XCTestCase {
         }
         
         print("✅ Pre-populated \(seedIDs.count) seed records")
+        let seeds = Array(seedIDs)
+        let db = self.db!
         
         // Test basic write before starting concurrent test
         print("🔍 Testing single write before concurrent test...")
@@ -243,12 +282,9 @@ final class BlazeDBStressTests: XCTestCase {
         let queue = DispatchQueue(label: "stress.mixed", attributes: .concurrent)
         // ✅ OPTIMIZED: Use DispatchTime instead of Date() for more accurate timing
         let deadline = DispatchTime.now() + duration
-        var readCount = 0
-        var writeCount = 0
-        let readLock = NSLock()
-        let writeLock = NSLock()
-        var errors: [Error] = []
-        let errorLock = NSLock()
+        let readCount = StressThreadSafeInt()
+        let writeCount = StressThreadSafeInt()
+        let errorBag = StressErrorBag()
         
         // Start readers
         for readerID in 0..<readerCount {
@@ -257,12 +293,10 @@ final class BlazeDBStressTests: XCTestCase {
                 defer { group.leave() }
                 var localReads = 0
                 while DispatchTime.now() < deadline {
-                    let randomID = seedIDs.randomElement()!
-                    _ = try? self.db.fetch(id: randomID)
-                    readLock.lock()
-                    readCount += 1
+                    let randomID = seeds.randomElement()!
+                    _ = try? db.fetch(id: randomID)
+                    readCount.increment()
                     localReads += 1
-                    readLock.unlock()
                     // Optimized: shorter delay for default tests, longer for thorough testing
                     let readDelay = ProcessInfo.processInfo.environment["TEST_SLOW_CONCURRENCY"] == "1" ? 1000 : 100
                     usleep(UInt32(readDelay))
@@ -288,19 +322,15 @@ final class BlazeDBStressTests: XCTestCase {
                         "timestamp": .date(Date())
                     ])
                     do {
-                        _ = try self.db.insert(record)
-                        writeLock.lock()
-                        writeCount += 1
+                        _ = try db.insert(record)
+                        writeCount.increment()
                         localWrites += 1
-                        writeLock.unlock()
                         // Optimized: shorter delay for default tests
                         let writeDelay = ProcessInfo.processInfo.environment["TEST_SLOW_CONCURRENCY"] == "1" ? 5000 : 500
                         usleep(UInt32(writeDelay))
                     } catch {
-                        errorLock.lock()
-                        errors.append(error)
+                        errorBag.append(error)
                         print("❌ Writer \(writerID) error: \(error)")
-                        errorLock.unlock()
                         break  // Stop this writer on error
                     }
                 }
@@ -312,24 +342,26 @@ final class BlazeDBStressTests: XCTestCase {
         
         group.wait()
         
+        let reads = readCount.get()
+        let writes = writeCount.get()
         print("✅ Concurrent test completed:")
-        print("   Reads: \(readCount) (\(String(format: "%.0f", Double(readCount) / duration)) ops/sec)")
-        print("   Writes: \(writeCount) (\(String(format: "%.0f", Double(writeCount) / duration)) ops/sec)")
-        print("   Errors: \(errors.count)")
+        print("   Reads: \(reads) (\(String(format: "%.0f", Double(reads) / duration)) ops/sec)")
+        print("   Writes: \(writes) (\(String(format: "%.0f", Double(writes) / duration)) ops/sec)")
+        print("   Errors: \(errorBag.count)")
         
-        if errors.count > 0 {
+        if errorBag.count > 0 {
             print("❌ Write errors encountered:")
-            for (index, error) in errors.prefix(5).enumerated() {
+            for (index, error) in errorBag.all.prefix(5).enumerated() {
                 print("   \(index + 1). \(error)")
             }
-            XCTFail("Concurrent writes failed with \(errors.count) errors. First error: \(errors.first!)")
+            XCTFail("Concurrent writes failed with \(errorBag.count) errors. First error: \(errorBag.first!)")
         }
         
-        XCTAssertGreaterThan(readCount, 0, "Should have performed reads")
+        XCTAssertGreaterThan(reads, 0, "Should have performed reads")
         
         // More lenient assertion for writes - at least some should succeed
-        if writeCount == 0 {
-            XCTFail("No writes completed. Errors: \(errors.count). First error: \(errors.first?.localizedDescription ?? "unknown")")
+        if writes == 0 {
+            XCTFail("No writes completed. Errors: \(errorBag.count). First error: \(errorBag.first?.localizedDescription ?? "unknown")")
         }
     }
     

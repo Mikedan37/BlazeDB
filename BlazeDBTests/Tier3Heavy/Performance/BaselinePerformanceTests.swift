@@ -323,6 +323,7 @@ final class BaselinePerformanceTests: XCTestCase {
     
     /// BASELINE: Concurrent inserts (100 threads × 10 records)
     func testBaseline_ConcurrentInserts() throws {
+        let db = self.db!
         try measure(name: "Concurrent_Inserts_1000", allowedRegression: 0.30) {
             let group = DispatchGroup()
             
@@ -332,7 +333,7 @@ final class BaselinePerformanceTests: XCTestCase {
                     defer { group.leave() }
                     
                     for j in 0..<10 {
-                        try? self.db.insert(BlazeDataRecord([
+                        try? db.insert(BlazeDataRecord([
                             "thread": .int(i),
                             "index": .int(j)
                         ]))

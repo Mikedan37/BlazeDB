@@ -198,16 +198,26 @@ final class StorageStatsTests: XCTestCase {
             }
         }
         // Concurrently poll stats
-        var errors = 0
+        final class PollErrors: @unchecked Sendable {
+            private let lock = NSLock()
+            private var n = 0
+            func add() { lock.lock(); n += 1; lock.unlock() }
+            func get() -> Int { lock.lock(); defer { lock.unlock() }; return n }
+        }
+        let pollErrors = PollErrors()
         let polls = 100
+        let pollGrp = DispatchGroup()
         for _ in 0..<polls {
+            pollGrp.enter()
             DispatchQueue.global().async {
-                do { _ = try store.getStorageStats() } catch { errors += 1 }
+                defer { pollGrp.leave() }
+                do { _ = try store.getStorageStats() } catch { pollErrors.add() }
             }
         }
         grp.wait()
+        pollGrp.wait()
         // Ensure no errors were thrown by stats under concurrent writes
-        XCTAssertEqual(errors, 0)
+        XCTAssertEqual(pollErrors.get(), 0)
         // And we wrote at least writers*writesPer pages (plus any created to probe size if called)
         let stats = try store.getStorageStats()
         XCTAssertGreaterThanOrEqual(stats.totalPages, writers * writesPer)
