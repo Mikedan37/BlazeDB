@@ -61,12 +61,14 @@ internal class QueryPlanner {
         _ = false  // Vector index check (not implemented)
         let hasRegularIndexes = !collection.secondaryIndexes.isEmpty
         
-        // Detect query types
+        // Detect query types (spatial/vector builder state is omitted on Linux core builds)
+        #if !BLAZEDB_LINUX_CORE
         let hasSpatialQuery = query.sortByDistanceCenter != nil
-        // NOTE: Vector query detection intentionally not implemented.
-        // Vector search requires specialized query builder support.
-        let hasVectorQuery = query.hasVectorQuery  // Flag exists but vector execution not implemented
-        _ = false  // Vector query detection (not implemented)
+        let hasVectorQuery = query.hasVectorQuery
+        #else
+        let hasSpatialQuery = false
+        let hasVectorQuery = false
+        #endif
         
         // Calculate costs for each strategy
         var candidatePlans: [(plan: AdvancedQueryPlan, cost: Double)] = []

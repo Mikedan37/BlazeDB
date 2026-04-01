@@ -7,6 +7,8 @@
 //
 import Foundation
 
+#if !BLAZEDB_LINUX_CORE
+
 extension QueryBuilder {
     
     /// Combined vector + spatial query (pipelined execution)
@@ -89,4 +91,6 @@ extension QueryBuilder {
         return self
     }
 }
+
+#endif // !BLAZEDB_LINUX_CORE
 

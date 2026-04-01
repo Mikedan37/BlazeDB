@@ -1,5 +1,3 @@
-#if !BLAZEDB_LINUX_CORE
-
 import Foundation
 
 extension DynamicCollection: MetaStore {
@@ -86,5 +84,3 @@ extension DynamicCollection: MetaStore {
         // It will be loaded from disk when needed
     }
 }
-
-#endif // !BLAZEDB_LINUX_CORE
