@@ -449,6 +449,15 @@ final class FailureRecoveryScenarios: XCTestCase {
         print("  ⚙️  Performing 20 open/close cycles...")
         
         for cycle in 0..<20 {
+            #if os(Linux)
+            do {
+                let db = try BlazeDBClient(name: "CycleTest", fileURL: dbURL, password: self.testPassword)
+                _ = try db.insert(BlazeDataRecord(["cycle": .int(cycle)]))
+                try db.persist()
+            } catch {
+                XCTFail("Cycle \(cycle) failed: \(error)")
+            }
+            #else
             autoreleasepool {
                 do {
                     let db = try BlazeDBClient(name: "CycleTest", fileURL: dbURL, password: self.testPassword)
@@ -462,6 +471,7 @@ final class FailureRecoveryScenarios: XCTestCase {
                     XCTFail("Cycle \(cycle) failed: \(error)")
                 }
             }
+            #endif
             
             if cycle % 5 == 0 {
                 print("    ✓ Completed \(cycle) cycles...")
@@ -558,14 +568,12 @@ final class FailureRecoveryScenarios: XCTestCase {
     func testPerformance_CompleteWorkflowUnderLoad() async throws {
         guard let url = dbURL else { XCTFail("dbURL not set"); return }
         let password = testPassword
-        measure(metrics: [XCTClockMetric(), XCTMemoryMetric(), XCTStorageMetric()]) {
+        let runLoadOnce: () -> Void = {
             do {
                 let runURL = url.deletingPathExtension()
                     .appendingPathExtension("perf-\(UUID().uuidString).blazedb")
                 let db = try BlazeDBClient(name: "LoadTest", fileURL: runURL, password: password)
                 
-                // Simulate production load
-                // 1. Initial data import
                 let initial = (0..<500).map { i in
                     BlazeDataRecord([
                         "title": .string("Item \(i)"),
@@ -575,29 +583,23 @@ final class FailureRecoveryScenarios: XCTestCase {
                 }
                 _ = try db.insertMany(initial)
                 
-                // 2. Create indexes
                 try db.collection.createIndex(on: "status")
                 try db.collection.enableSearch(fields: ["title"])
                 
-                // 3. Perform queries
                 for _ in 0..<10 {
                     _ = try db.query().where("status", equals: .string("active")).execute()
                 }
                 
-                // 4. Bulk update in transaction
                 try db.beginTransaction()
                 _ = try db.insert(BlazeDataRecord(["flag": .bool(true)]))
                 try db.commitTransaction()
                 
-                // 5. Search operations
                 for _ in 0..<5 {
                     _ = try db.collection.search(query: "Item")
                 }
                 
-                // 6. Export
                 _ = try db.fetchAll()
                 
-                // 7. Persist
                 try db.persist()
                 try db.close()
                 try? FileManager.default.removeItem(at: runURL)
@@ -606,6 +608,11 @@ final class FailureRecoveryScenarios: XCTestCase {
                 XCTFail("Load test failed: \(error)")
             }
         }
+        #if os(Linux)
+        runLoadOnce()
+        #else
+        measure(metrics: [XCTClockMetric(), XCTMemoryMetric(), XCTStorageMetric()], block: runLoadOnce)
+        #endif
     }
 }
 

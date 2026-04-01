@@ -478,14 +478,13 @@ final class MultiDatabasePatterns: XCTestCase {
     func testPerformance_CrossDatabaseJOINs() async throws {
         guard let dir = tempDir else { XCTFail("tempDir not set"); return }
         let password = testPassword
-        measure(metrics: [XCTClockMetric(), XCTMemoryMetric()]) {
+        let runJoinOnce: () -> Void = {
             do {
                 let leftURL = dir.appendingPathComponent("left.db")
                 let rightURL = dir.appendingPathComponent("right.db")
                 let db1 = try BlazeDBClient(name: "Left", fileURL: leftURL, password: password)
                 let db2 = try BlazeDBClient(name: "Right", fileURL: rightURL, password: password)
                 
-                // Setup
                 let ids = (0..<20).map { i -> UUID in
                     try! db2.insert(BlazeDataRecord(["value": .int(i)]))
                 }
@@ -498,12 +497,16 @@ final class MultiDatabasePatterns: XCTestCase {
                 }
                 _ = try db1.insertMany(records)
                 
-                // Perform JOIN
                 _ = try db1.join(with: db2, on: "ref_id", equals: "id", type: .inner)
             } catch {
                 XCTFail("Cross-database JOIN failed: \(error)")
             }
         }
+        #if os(Linux)
+        runJoinOnce()
+        #else
+        measure(metrics: [XCTClockMetric(), XCTMemoryMetric()], block: runJoinOnce)
+        #endif
     }
 }
 

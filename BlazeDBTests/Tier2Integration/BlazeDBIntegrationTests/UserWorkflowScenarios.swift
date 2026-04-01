@@ -719,7 +719,7 @@ final class UserWorkflowScenarios: XCTestCase {
     /// Measure realistic workflow performance
     func testPerformance_RealWorldWorkflow() async throws {
         guard let url = dbURL else { XCTFail("dbURL not set"); return }
-        measure(metrics: [XCTClockMetric(), XCTMemoryMetric(), XCTStorageMetric()]) {
+        let runWork: () -> Void = {
             let done = expectation(description: "real-world workflow")
             Task {
                 do {
@@ -727,7 +727,6 @@ final class UserWorkflowScenarios: XCTestCase {
                         .appendingPathExtension("perf-\(UUID().uuidString).blazedb")
                     let db = try BlazeDBClient(name: "RealWorld", fileURL: runURL, password: "Perf-Test-123Aa!")
                     
-                    // Complete workflow: Setup → Insert → Query → Update → Export
                     try await db.collection.createIndex(on: "category")
                     try await db.collection.enableSearch(fields: ["title"])
                     
@@ -759,6 +758,11 @@ final class UserWorkflowScenarios: XCTestCase {
             }
             wait(for: [done], timeout: 20)
         }
+        #if os(Linux)
+        runWork()
+        #else
+        measure(metrics: [XCTClockMetric(), XCTMemoryMetric(), XCTStorageMetric()], block: runWork)
+        #endif
     }
 }
 
