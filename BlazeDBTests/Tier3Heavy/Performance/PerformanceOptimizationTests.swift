@@ -39,6 +39,7 @@ final class PerformanceOptimizationTests: XCTestCase {
     
     // MARK: - Async File I/O Tests
     
+    #if !BLAZEDB_LINUX_CORE
     func testAsyncFileIO_FasterThanSync() async throws {
         // Create test data
         let records = (0..<100).map { i in
@@ -75,6 +76,7 @@ final class PerformanceOptimizationTests: XCTestCase {
         // Async should be at least as fast (often faster due to non-blocking)
         XCTAssertLessThanOrEqual(asyncTime, syncTime * 1.1, "Async should be at least as fast as sync")
     }
+    #endif
     
     // MARK: - Write Batching Tests
     
@@ -162,6 +164,7 @@ final class PerformanceOptimizationTests: XCTestCase {
     
     // MARK: - Compression Tests
     
+    #if !BLAZEDB_LINUX_CORE
     func testCompression_StorageSavings() throws {
         // Create large records
         let largeRecords = (0..<20).map { i in
@@ -203,6 +206,7 @@ final class PerformanceOptimizationTests: XCTestCase {
         let growthFactor = Double(sizeWithCompression) / Double(max(sizeWithoutCompression, 1))
         XCTAssertLessThan(growthFactor, 3.0, "Compression path should not inflate storage excessively")
     }
+    #endif
     
     // MARK: - Memory-Mapped I/O Tests (if available)
     
@@ -247,6 +251,7 @@ final class PerformanceOptimizationTests: XCTestCase {
     
     // MARK: - Combined Optimizations Test
     
+    #if !BLAZEDB_LINUX_CORE
     func testCombinedOptimizations_MaximumPerformance() async throws {
         // Large batch with all optimizations
         let records = (0..<1000).map { i in
@@ -281,6 +286,7 @@ final class PerformanceOptimizationTests: XCTestCase {
         // Should achieve high throughput
         XCTAssertGreaterThan(opsPerSecond, 1000.0, "Should achieve at least 1000 ops/sec with optimizations")
     }
+    #endif
     
     // MARK: - Helper Methods
     

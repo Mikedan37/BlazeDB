@@ -304,6 +304,10 @@ final class PerformanceProfilingTests: XCTestCase {
     
     /// PROFILE: Concurrent inserts (100 threads × 10 records)
     func testProfile_ConcurrentInserts() throws {
+        guard let client = db else {
+            XCTFail("db not set")
+            return
+        }
         try profileWithMetrics(name: "Concurrent Inserts") {
             let group = DispatchGroup()
             
@@ -313,7 +317,7 @@ final class PerformanceProfilingTests: XCTestCase {
                     defer { group.leave() }
                     
                     for j in 0..<10 {
-                        try? self.db.insert(BlazeDataRecord([
+                        try? client.insert(BlazeDataRecord([
                             "thread": .int(i),
                             "index": .int(j)
                         ]))
@@ -334,6 +338,11 @@ final class PerformanceProfilingTests: XCTestCase {
             ids.append(id)
         }
         
+        let idSnapshot = Array(ids)
+        guard let client = db else {
+            XCTFail("db not set")
+            return
+        }
         try profileWithMetrics(name: "Concurrent Reads") {
             let group = DispatchGroup()
             
@@ -342,8 +351,8 @@ final class PerformanceProfilingTests: XCTestCase {
                 DispatchQueue.global().async {
                     defer { group.leave() }
                     
-                    if let id = ids.randomElement() {
-                        _ = try? self.db.fetch(id: id)
+                    if let id = idSnapshot.randomElement() {
+                        _ = try? client.fetch(id: id)
                     }
                 }
             }
