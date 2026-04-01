@@ -6,9 +6,6 @@ import XCTest
 #if canImport(Darwin)
 @preconcurrency import Darwin
 #endif
-#if os(Linux)
-import Glibc
-#endif
 #if canImport(CryptoKit)
 #if canImport(CryptoKit)
 import CryptoKit
@@ -360,9 +357,10 @@ final class BlazeDBMemoryTests: XCTestCase {
     
     private func getMemoryUsage() -> Int {
         #if os(Linux)
-        var usage = rusage()
-        if getrusage(RUSAGE_SELF, &usage) != 0 { return 0 }
-        return Int(usage.ru_maxrss) * 1024
+        guard let statm = try? String(contentsOfFile: "/proc/self/statm", encoding: .utf8) else { return 0 }
+        let parts = statm.split { $0 == " " || $0 == "\n" }
+        guard parts.count >= 2, let residentPages = Int(parts[1]) else { return 0 }
+        return residentPages * 4096
         #else
         var info = mach_task_basic_info()
         var count = mach_msg_type_number_t(MemoryLayout<mach_task_basic_info>.size) / 4

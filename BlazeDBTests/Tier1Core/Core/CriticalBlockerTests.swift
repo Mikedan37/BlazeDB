@@ -46,6 +46,79 @@ final class CriticalBlockerTests: XCTestCase {
         BlazeDBClient.clearCachedKey()
         super.tearDown()
     }
+
+    private final class LockedCounts: @unchecked Sendable {
+        private let lock = NSLock()
+        private(set) var success = 0
+        private(set) var errors = 0
+        func recordSuccess() {
+            lock.lock()
+            success += 1
+            lock.unlock()
+        }
+        func recordError() {
+            lock.lock()
+            errors += 1
+            lock.unlock()
+        }
+    }
+    
+    private final class LockedInt: @unchecked Sendable {
+        private let lock = NSLock()
+        private var value = 0
+        func add(_ delta: Int) {
+            lock.lock()
+            value += delta
+            lock.unlock()
+        }
+        func get() -> Int {
+            lock.lock()
+            defer { lock.unlock() }
+            return value
+        }
+    }
+    
+    private final class VacuumGate: @unchecked Sendable {
+        private let lock = NSLock()
+        private var started = false
+        private var blocked = false
+        func markStarted() {
+            lock.lock()
+            started = true
+            lock.unlock()
+        }
+        func pollStarted() -> Bool {
+            lock.lock()
+            defer { lock.unlock() }
+            return started
+        }
+        func markBlocked() {
+            lock.lock()
+            blocked = true
+            lock.unlock()
+        }
+    }
+    
+    private final class VacuumOutcome: @unchecked Sendable {
+        private let lock = NSLock()
+        private(set) var done = false
+        private(set) var error: Error?
+        func complete() {
+            lock.lock()
+            done = true
+            lock.unlock()
+        }
+        func fail(_ e: Error) {
+            lock.lock()
+            error = e
+            lock.unlock()
+        }
+        func snapshot() -> (done: Bool, error: Error?) {
+            lock.lock()
+            defer { lock.unlock() }
+            return (done, error)
+        }
+    }
     
     // MARK: - BLOCKER #1: MVCC Enabled Tests
     
@@ -108,9 +181,11 @@ final class CriticalBlockerTests: XCTestCase {
         
         // 100 concurrent reads
         let group = DispatchGroup()
-        var successCount = 0
-        var errorCount = 0
-        let lock = NSLock()
+        guard let dbRef = db else {
+            XCTFail("db not set")
+            return
+        }
+        let counts = LockedCounts()
         
         for id in ids {
             group.enter()
@@ -118,14 +193,10 @@ final class CriticalBlockerTests: XCTestCase {
                 defer { group.leave() }
                 
                 do {
-                    _ = try self.db.fetch(id: id)
-                    lock.lock()
-                    successCount += 1
-                    lock.unlock()
+                    _ = try dbRef.fetch(id: id)
+                    counts.recordSuccess()
                 } catch {
-                    lock.lock()
-                    errorCount += 1
-                    lock.unlock()
+                    counts.recordError()
                     print("   ❌ Error: \(error)")
                 }
             }
@@ -133,11 +204,11 @@ final class CriticalBlockerTests: XCTestCase {
         
         group.wait()
         
-        print("   📊 Success: \(successCount)/100")
-        print("   📊 Errors: \(errorCount)/100")
+        print("   📊 Success: \(counts.success)/100")
+        print("   📊 Errors: \(counts.errors)/100")
         
-        XCTAssertGreaterThanOrEqual(successCount, 95, "Concurrent reads should be highly reliable")
-        XCTAssertLessThanOrEqual(errorCount, 5, "Concurrent read errors should stay rare")
+        XCTAssertGreaterThanOrEqual(counts.success, 95, "Concurrent reads should be highly reliable")
+        XCTAssertLessThanOrEqual(counts.errors, 5, "Concurrent read errors should stay rare")
         
         print("   ✅ Concurrent reads work perfectly!")
     }
@@ -195,21 +266,21 @@ final class CriticalBlockerTests: XCTestCase {
         }
         
         let group = DispatchGroup()
-        var vacuumStarted = false
-        var concurrentOperationBlocked = false
-        let lock = NSLock()
+        let gate = VacuumGate()
+        guard let dbRef = db else {
+            XCTFail("db not set")
+            return
+        }
         
         // Thread 1: Start VACUUM
         group.enter()
         DispatchQueue.global().async {
             defer { group.leave() }
             
-            lock.lock()
-            vacuumStarted = true
-            lock.unlock()
+            gate.markStarted()
             
             do {
-                try self.db.vacuum()
+                try dbRef.vacuum()
             } catch {
                 print("   VACUUM error: \(error)")
             }
@@ -225,22 +296,15 @@ final class CriticalBlockerTests: XCTestCase {
             
             // Wait for VACUUM to start
             while true {
-                lock.lock()
-                if vacuumStarted { 
-                    lock.unlock()
-                    break 
-                }
-                lock.unlock()
+                if gate.pollStarted() { break }
                 Thread.sleep(forTimeInterval: 0.01)
             }
             
             // Try to insert (should either wait or fail gracefully)
             do {
-                _ = try self.db.insert(BlazeDataRecord(["test": .string("concurrent")]))
+                _ = try dbRef.insert(BlazeDataRecord(["test": .string("concurrent")]))
             } catch {
-                lock.lock()
-                concurrentOperationBlocked = true
-                lock.unlock()
+                gate.markBlocked()
             }
         }
         
@@ -471,12 +535,16 @@ final class CriticalBlockerTests: XCTestCase {
         
         // Concurrent reads while inserting
         let group = DispatchGroup()
+        guard let dbRef = db else {
+            XCTFail("db not set")
+            return
+        }
         
         for _ in 0..<50 {
             group.enter()
             DispatchQueue.global().async {
                 defer { group.leave() }
-                _ = try? self.db.fetchAll()
+                _ = try? dbRef.fetchAll()
             }
         }
         
@@ -499,25 +567,22 @@ final class CriticalBlockerTests: XCTestCase {
         XCTAssertEqual(try db.count(), 100)
         
         // Concurrent reads after VACUUM
-        var successCount = 0
-        let lock = NSLock()
+        let readSuccess = LockedInt()
         
         for id in ids.suffix(100) {
             group.enter()
             DispatchQueue.global().async {
                 defer { group.leave() }
                 
-                if let _ = try? self.db.fetch(id: id) {
-                    lock.lock()
-                    successCount += 1
-                    lock.unlock()
+                if let _ = try? dbRef.fetch(id: id) {
+                    readSuccess.add(1)
                 }
             }
         }
         
         group.wait()
         
-        XCTAssertEqual(successCount, 100, "All reads after VACUUM should work")
+        XCTAssertEqual(readSuccess.get(), 100, "All reads after VACUUM should work")
         
         print("\n   ✅ ALL 3 BLOCKERS PASS INTEGRATION TEST!")
     }
@@ -536,9 +601,13 @@ final class CriticalBlockerTests: XCTestCase {
         }
         
         let group = DispatchGroup()
-        var totalOps = 0
-        var errors = 0
-        let lock = NSLock()
+        let totalOps = LockedInt()
+        let errors = LockedInt()
+        let idSnapshot = ids
+        guard let dbRef = db else {
+            XCTFail("db not set")
+            return
+        }
         
         // 2000 concurrent operations
         for _ in 0..<2000 {
@@ -551,43 +620,39 @@ final class CriticalBlockerTests: XCTestCase {
                     
                     switch op {
                     case 0:  // Insert
-                        _ = try self.db.insert(BlazeDataRecord([
+                        _ = try dbRef.insert(BlazeDataRecord([
                             "random": .int(Int.random(in: 0...1000))
                         ]))
                     case 1:  // Fetch
-                        if let id = ids.randomElement() {
-                            _ = try self.db.fetch(id: id)
+                        if let id = idSnapshot.randomElement() {
+                            _ = try dbRef.fetch(id: id)
                         }
                     case 2:  // Update
-                        if let id = ids.randomElement() {
-                            try self.db.update(id: id, with: BlazeDataRecord([
+                        if let id = idSnapshot.randomElement() {
+                            try dbRef.update(id: id, with: BlazeDataRecord([
                                 "updated": .bool(true)
                             ]))
                         }
                     case 3:  // Delete (keep some records)
-                        if ids.count > 100, let id = ids.randomElement() {
-                            try self.db.delete(id: id)
+                        if idSnapshot.count > 100, let id = idSnapshot.randomElement() {
+                            try dbRef.delete(id: id)
                         }
                     default:
                         break
                     }
                     
-                    lock.lock()
-                    totalOps += 1
-                    lock.unlock()
+                    totalOps.add(1)
                     
                 } catch {
-                    lock.lock()
-                    errors += 1
-                    lock.unlock()
+                    errors.add(1)
                 }
             }
         }
         
         group.wait()
         
-        print("   📊 Total operations: \(totalOps)")
-        print("   📊 Errors: \(errors)")
+        print("   📊 Total operations: \(totalOps.get())")
+        print("   📊 Errors: \(errors.get())")
         
         // Database should still be functional
         XCTAssertNoThrow(try db.fetchAll())
@@ -611,9 +676,11 @@ final class CriticalBlockerTests: XCTestCase {
         db.runGarbageCollection()
         
         let group = DispatchGroup()
-        var vacuumDone = false
-        var vacuumError: Error?
-        let lock = NSLock()
+        let outcome = VacuumOutcome()
+        guard let dbRef = db else {
+            XCTFail("db not set")
+            return
+        }
         
         // Thread 1: VACUUM
         group.enter()
@@ -621,14 +688,10 @@ final class CriticalBlockerTests: XCTestCase {
             defer { group.leave() }
             
             do {
-                _ = try self.db.vacuum()
-                lock.lock()
-                vacuumDone = true
-                lock.unlock()
+                _ = try dbRef.vacuum()
+                outcome.complete()
             } catch {
-                lock.lock()
-                vacuumError = error
-                lock.unlock()
+                outcome.fail(error)
                 print("   VACUUM error: \(error)")
             }
         }
@@ -643,16 +706,15 @@ final class CriticalBlockerTests: XCTestCase {
                 Thread.sleep(forTimeInterval: 0.05)
                 
                 // Operations during VACUUM (may succeed after it finishes)
-                _ = try? self.db.fetchAll()
+                _ = try? dbRef.fetchAll()
             }
         }
         
         group.wait()
         
-        lock.lock()
-        let done = vacuumDone
-        let error = vacuumError
-        lock.unlock()
+        let snap = outcome.snapshot()
+        let done = snap.done
+        let error = snap.error
         
         // Under heavy concurrent load, VACUUM may fail to acquire resources transiently.
         // This test enforces fail-safe behavior: completion OR explicit error, never silent corruption.
