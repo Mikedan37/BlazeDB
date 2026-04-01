@@ -9,6 +9,22 @@
 import XCTest
 @testable import BlazeDBCore
 
+/// Thread-safe counter for concurrent test harnesses (Swift 6 `Sendable` / isolation clean).
+private final class ThreadSafeInt: @unchecked Sendable {
+    private let lock = NSLock()
+    private var value = 0
+    func increment() {
+        lock.lock()
+        value += 1
+        lock.unlock()
+    }
+    func get() -> Int {
+        lock.lock()
+        defer { lock.unlock() }
+        return value
+    }
+}
+
 final class FailureInjectionTests: XCTestCase {
     
     var tempURL: URL!
@@ -228,18 +244,16 @@ final class FailureInjectionTests: XCTestCase {
         }
         
         let group = DispatchGroup()
-        var successCount = 0
-        let lock = NSLock()
+        let successCount = ThreadSafeInt()
+        let db = self.db!
         
         // Concurrent inserts (some might fail)
         for i in 50..<100 {
             group.enter()
             DispatchQueue.global().async {
                 defer { group.leave() }
-                if (try? self.db.insert(BlazeDataRecord(["value": .int(i)]))) != nil {
-                    lock.lock()
-                    successCount += 1
-                    lock.unlock()
+                if (try? db.insert(BlazeDataRecord(["value": .int(i)]))) != nil {
+                    successCount.increment()
                 }
             }
         }
@@ -247,7 +261,7 @@ final class FailureInjectionTests: XCTestCase {
         group.wait()
         
         // At least some should succeed
-        XCTAssertGreaterThan(successCount, 0, "At least some concurrent inserts should succeed")
+        XCTAssertGreaterThan(successCount.get(), 0, "At least some concurrent inserts should succeed")
         
         // Database should remain in consistent state
         XCTAssertNoThrow({

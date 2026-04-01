@@ -5,6 +5,8 @@
 // Ensure Commit conforms to Codable & Equatable:
 // struct Commit: Codable, Equatable { ... }
 
+#if !BLAZEDB_LINUX_CORE
+
 import XCTest
 
 #if canImport(BlazeDBCore)
@@ -83,3 +85,5 @@ final class BlazeCollectionTests: XCTestCase {
         XCTAssertEqual(fetched?.message, "Updated")
     }
 }
+
+#endif // !BLAZEDB_LINUX_CORE

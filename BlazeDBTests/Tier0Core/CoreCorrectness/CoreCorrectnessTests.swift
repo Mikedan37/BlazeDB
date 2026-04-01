@@ -38,7 +38,9 @@ final class CoreCorrectnessTests: XCTestCase {
         BlazeDBClient.clearCachedKey()
         RecordCache.shared.clear()
         QueryCache.shared.clearAll()
+        #if !BLAZEDB_LINUX_CORE
         DynamicCollection.clearAllFetchAllCaches()
+        #endif
         tempDir = FileManager.default.temporaryDirectory
             .appendingPathComponent("CoreCorrectness-\(UUID().uuidString)")
         try? FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)

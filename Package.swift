@@ -171,7 +171,8 @@ let package = Package(
             dependencies: ["BlazeDBCore"],
             path: "BlazeDBTests/Tier0Core",
             swiftSettings: [
-                .define("BLAZEDB_CORE_ONLY")
+                .define("BLAZEDB_CORE_ONLY"),
+                .define("BLAZEDB_LINUX_CORE", .when(platforms: [.linux]))
             ]
         ),
 
@@ -204,7 +205,8 @@ let package = Package(
                 "GarbageCollection/CompleteGCValidationTests.swift"
             ],
             swiftSettings: [
-                .define("BLAZEDB_CORE_ONLY")
+                .define("BLAZEDB_CORE_ONLY"),
+                .define("BLAZEDB_LINUX_CORE", .when(platforms: [.linux]))
             ]
         ),
         
@@ -215,7 +217,8 @@ let package = Package(
             path: "BlazeDBTests/Tier3Heavy",
             swiftSettings: [
                 .define("BLAZEDB_CORE_ONLY"),
-                .define("HEAVY_TESTS")
+                .define("HEAVY_TESTS"),
+                .define("BLAZEDB_LINUX_CORE", .when(platforms: [.linux]))
             ]
         ),
         
@@ -248,7 +251,8 @@ let package = Package(
                 "ChaosEngineeringTests.swift"
             ],
             swiftSettings: [
-                .define("BLAZEDB_CORE_ONLY")
+                .define("BLAZEDB_CORE_ONLY"),
+                .define("BLAZEDB_LINUX_CORE", .when(platforms: [.linux]))
             ]
         ),
 
@@ -259,7 +263,8 @@ let package = Package(
             path: "BlazeDBTests/Tier3Destructive",
             swiftSettings: [
                 .define("BLAZEDB_CORE_ONLY"),
-                .define("DESTRUCTIVE_TESTS")
+                .define("DESTRUCTIVE_TESTS"),
+                .define("BLAZEDB_LINUX_CORE", .when(platforms: [.linux]))
             ]
         ),
         
