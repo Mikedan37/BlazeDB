@@ -104,8 +104,9 @@ BlazeDB encrypts data and overflow pages at rest using AES-GCM, and the page-lev
 - [Distributed Transport Deferred Status](Docs/Status/DISTRIBUTED_TRANSPORT_DEFERRED.md)
 - [Compatibility Matrix](Docs/COMPATIBILITY.md)
 
-> **Note:** This repository also includes `BlazeStudio/`, an optional visual companion app and tooling surface
-> built on BlazeDB. It is **not required** to use the core embedded database engine.
+> **Note:** This repository also includes `BlazeStudio/`, an optional, experimental visual companion app built on
+> BlazeDB. It is **not required** to use the core embedded database engine and is less battle-tested than the core
+> library.
 
 **Requirements:** Swift 6.0+, macOS 15+ / iOS 15+ / Linux (experimental)
 

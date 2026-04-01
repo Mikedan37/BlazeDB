@@ -2,10 +2,9 @@
 //  main.swift
 //  BlazeMCP
 //
-//  MCP (Model Context Protocol) server for BlazeDB
-//  Allows AI tools to safely interact with BlazeDB databases
-//
-//  Created by Auto on 1/XX/25.
+//  Advanced / experimental MCP (Model Context Protocol) server for BlazeDB.
+//  Intended for AI tooling and power users, not typical application code.
+//  Allows external tools to safely interact with BlazeDB databases over JSON‑RPC.
 //
 
 import Foundation

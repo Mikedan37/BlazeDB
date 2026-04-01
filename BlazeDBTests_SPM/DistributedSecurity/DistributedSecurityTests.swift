@@ -1,6 +1,9 @@
 import XCTest
 import Foundation
 
+/// Legacy/staging distributed security harness.
+/// Not wired into the primary SwiftPM test targets; kept for future integration work via Xcode.
+
 #if !os(Linux)
 final class DistributedSecurityTests: XCTestCase {
     private func runXcodeDistributedSuite() throws -> (status: Int32, output: String) {
