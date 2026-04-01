@@ -452,8 +452,9 @@ final class FailureRecoveryScenarios: XCTestCase {
             #if os(Linux)
             do {
                 let db = try BlazeDBClient(name: "CycleTest", fileURL: dbURL, password: self.testPassword)
-                _ = try db.insert(BlazeDataRecord(["cycle": .int(cycle)]))
-                try db.persist()
+                // In async tests, async overloads are preferred; use await on Linux.
+                _ = try await db.insert(BlazeDataRecord(["cycle": .int(cycle)]))
+                try await db.persist()
             } catch {
                 XCTFail("Cycle \(cycle) failed: \(error)")
             }
