@@ -188,20 +188,36 @@ final class TransactionDurabilityTests: XCTestCase {
         exp.expectedFulfillmentCount = 2
 
         let q = DispatchQueue(label: "txq", attributes: .concurrent)
-        var resultA: Error?
-        var resultB: Error?
+        final class CommitResults: @unchecked Sendable {
+            private let lock = NSLock()
+            var resultA: Error?
+            var resultB: Error?
+            func setA(_ e: Error?) {
+                lock.lock()
+                resultA = e
+                lock.unlock()
+            }
+            func setB(_ e: Error?) {
+                lock.lock()
+                resultB = e
+                lock.unlock()
+            }
+        }
+        let results = CommitResults()
 
         q.async {
             var tx = BlazeTransaction(store: store)
             try? tx.write(pageID: 0, data: Data("AAAA".utf8))
-            resultA = (try? tx.commit()).map { _ in nil } ?? NSError(domain: "commitA", code: 1)
+            let e: Error? = (try? tx.commit()).map { _ in nil } ?? NSError(domain: "commitA", code: 1)
+            results.setA(e)
             exp.fulfill()
         }
 
         q.async {
             var tx = BlazeTransaction(store: store)
             try? tx.write(pageID: 0, data: Data("BBBB".utf8))
-            resultB = (try? tx.commit()).map { _ in nil } ?? NSError(domain: "commitB", code: 1)
+            let e: Error? = (try? tx.commit()).map { _ in nil } ?? NSError(domain: "commitB", code: 1)
+            results.setB(e)
             exp.fulfill()
         }
 

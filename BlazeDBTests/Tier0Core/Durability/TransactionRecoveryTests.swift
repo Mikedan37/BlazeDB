@@ -44,9 +44,7 @@ final class TransactionRecoveryTests: XCTestCase {
     }
 
     private func randomData(_ count: Int = 64) -> Data {
-        var bytes = [UInt8](repeating: 0, count: count)
-        _ = SecRandomCopyBytes(kSecRandomDefault, count, &bytes)
-        return Data(bytes)
+        Data((0..<count).map { _ in UInt8.random(in: 0...255) })
     }
 
     /// Deterministic digest of selected page contents for replay-idempotence checks.
@@ -277,5 +275,17 @@ final class TransactionRecoveryTests: XCTestCase {
             committedData,
             "Recovery must keep the last committed version and ignore uncommitted overwrite"
         )
+    }
+
+    /// Recovery must not swallow `Data(contentsOf:)` failures (e.g. path is a directory), which would hint
+    /// at an empty WAL and truncate without surfacing the real I/O problem.
+    func testRecover_propagatesFailureWhenLogIsNotAReadableFile() throws {
+        let env = try makeEnv()
+        let store = try PageStore(fileURL: env.dbURL, key: env.key)
+        let log = TransactionLog(logFileURL: env.logURL)
+        XCTAssertThrowsError(try log.recover(into: store, from: env.dir)) { err in
+            let ns = err as NSError
+            XCTAssertFalse(ns.domain.isEmpty)
+        }
     }
 }

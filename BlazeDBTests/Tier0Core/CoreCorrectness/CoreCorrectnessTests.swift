@@ -152,32 +152,26 @@ final class CoreCorrectnessTests: XCTestCase {
 
         // 32 concurrent readers, each reading all 50 records 10 times
         let group = DispatchGroup()
-        let errorLock = NSLock()
-        var errors: [String] = []
+        let errors = StringErrorCollector()
+        let recordSnapshot = records
 
         for readerID in 0..<32 {
             group.enter()
             DispatchQueue.global(qos: .userInitiated).async {
                 defer { group.leave() }
                 for _ in 0..<10 {
-                    for (id, expectedPayload) in records {
+                    for (id, expectedPayload) in recordSnapshot {
                         do {
                             guard let fetched = try db.fetch(id: id) else {
-                                errorLock.lock()
                                 errors.append("Reader \(readerID): record \(id) returned nil")
-                                errorLock.unlock()
                                 continue
                             }
                             let actualPayload = try fetched.string("payload")
                             if actualPayload != expectedPayload {
-                                errorLock.lock()
                                 errors.append("Reader \(readerID): MISMATCH for \(id) — got '\(actualPayload.prefix(20))...' expected '\(expectedPayload.prefix(20))...'")
-                                errorLock.unlock()
                             }
                         } catch {
-                            errorLock.lock()
                             errors.append("Reader \(readerID): threw \(error)")
-                            errorLock.unlock()
                         }
                     }
                 }
@@ -186,8 +180,8 @@ final class CoreCorrectnessTests: XCTestCase {
 
         group.wait()
 
-        XCTAssertEqual(errors.count, 0,
-                      "Concurrent readers must never get wrong data. Errors:\n\(errors.prefix(10).joined(separator: "\n"))")
+        XCTAssertEqual(errors.items.count, 0,
+                      "Concurrent readers must never get wrong data. Errors:\n\(errors.items.prefix(10).joined(separator: "\n"))")
     }
 
     // MARK: - Test 3: Durability Across Restart
@@ -298,9 +292,22 @@ final class CoreCorrectnessTests: XCTestCase {
 
         let writerCount = 100
         let group = DispatchGroup()
-        let idLock = NSLock()
-        var insertedIDs: [UUID] = []
-        var insertErrors: [Error] = []
+        final class WriterAccumulator: @unchecked Sendable {
+            private let lock = NSLock()
+            var insertedIDs: [UUID] = []
+            var insertErrors: [Error] = []
+            func addID(_ id: UUID) {
+                lock.lock()
+                insertedIDs.append(id)
+                lock.unlock()
+            }
+            func addError(_ e: Error) {
+                lock.lock()
+                insertErrors.append(e)
+                lock.unlock()
+            }
+        }
+        let acc = WriterAccumulator()
 
         for i in 0..<writerCount {
             group.enter()
@@ -311,27 +318,48 @@ final class CoreCorrectnessTests: XCTestCase {
                         "writer": .int(i),
                         "data": .string("from-writer-\(i)")
                     ]))
-                    idLock.lock()
-                    insertedIDs.append(id)
-                    idLock.unlock()
+                    acc.addID(id)
                 } catch {
-                    idLock.lock()
-                    insertErrors.append(error)
-                    idLock.unlock()
+                    acc.addError(error)
                 }
             }
         }
 
         group.wait()
 
-        XCTAssertEqual(insertErrors.count, 0,
-                      "No insert should fail. Errors: \(insertErrors.prefix(5))")
-        XCTAssertEqual(insertedIDs.count, writerCount,
+        XCTAssertEqual(acc.insertErrors.count, 0,
+                      "No insert should fail. Errors: \(acc.insertErrors.prefix(5))")
+        XCTAssertEqual(acc.insertedIDs.count, writerCount,
                       "Must have exactly \(writerCount) successful inserts")
 
         let allRecords = try db.fetchAll()
         XCTAssertEqual(allRecords.count, writerCount,
                       "Must have exactly \(writerCount) records in DB, got \(allRecords.count)")
+    }
+
+    private final class StopFlagBox: @unchecked Sendable {
+        private let lock = NSLock()
+        private var stopped = false
+        func shouldStop() -> Bool {
+            lock.lock()
+            defer { lock.unlock() }
+            return stopped
+        }
+        func stop() {
+            lock.lock()
+            stopped = true
+            lock.unlock()
+        }
+    }
+
+    private final class StringErrorCollector: @unchecked Sendable {
+        private let lock = NSLock()
+        private(set) var items: [String] = []
+        func append(_ s: String) {
+            lock.lock()
+            items.append(s)
+            lock.unlock()
+        }
     }
 
     // MARK: - Test 6: Key Derivation Roundtrip
@@ -582,20 +610,16 @@ final class CoreCorrectnessTests: XCTestCase {
         try db.persist()
 
         let group = DispatchGroup()
-        let errorLock = NSLock()
-        var readErrors: [String] = []
-        let stopFlag = NSLock()
-        var shouldStop = false
+        let readErrors = StringErrorCollector()
+        let knownSnapshot = knownIDs
+        let stopBox = StopFlagBox()
 
         // Writer thread: continuously insert new records
         group.enter()
         DispatchQueue.global(qos: .userInitiated).async {
             defer { group.leave() }
             for i in 0..<200 {
-                stopFlag.lock()
-                let stop = shouldStop
-                stopFlag.unlock()
-                if stop { break }
+                if stopBox.shouldStop() { break }
 
                 _ = try? db.insert(BlazeDataRecord([
                     "writer_data": .string("new-\(i)"),
@@ -610,7 +634,7 @@ final class CoreCorrectnessTests: XCTestCase {
             DispatchQueue.global(qos: .userInitiated).async {
                 defer { group.leave() }
                 for _ in 0..<50 {
-                    for (idx, id) in knownIDs.enumerated() {
+                    for (idx, id) in knownSnapshot.enumerated() {
                         do {
                             guard let fetched = try db.fetch(id: id) else {
                                 // nil is acceptable (record might be in flux)
@@ -619,9 +643,7 @@ final class CoreCorrectnessTests: XCTestCase {
                             // The record must have correct field names and valid types
                             if let stable = try? fetched.string("stable") {
                                 if !stable.hasPrefix("original-") {
-                                    errorLock.lock()
                                     readErrors.append("Reader \(readerID): record \(idx) has corrupt 'stable' field: '\(stable)'")
-                                    errorLock.unlock()
                                 }
                             }
                         } catch {
@@ -630,16 +652,14 @@ final class CoreCorrectnessTests: XCTestCase {
                         }
                     }
                 }
-                stopFlag.lock()
-                shouldStop = true
-                stopFlag.unlock()
+                stopBox.stop()
             }
         }
 
         group.wait()
 
-        XCTAssertEqual(readErrors.count, 0,
-                      "Concurrent reads during writes must never return corrupt data.\nErrors:\n\(readErrors.prefix(10).joined(separator: "\n"))")
+        XCTAssertEqual(readErrors.items.count, 0,
+                      "Concurrent reads during writes must never return corrupt data.\nErrors:\n\(readErrors.items.prefix(10).joined(separator: "\n"))")
     }
 
     // MARK: - Test 12: Record Count Consistency
