@@ -6,6 +6,9 @@ import XCTest
 #if canImport(Darwin)
 @preconcurrency import Darwin
 #endif
+#if os(Linux)
+import Glibc
+#endif
 #if canImport(CryptoKit)
 #if canImport(CryptoKit)
 import CryptoKit
@@ -20,6 +23,15 @@ import Crypto
 #else
 @testable import BlazeDB
 #endif
+
+/// Darwin autoreleasepool has no equivalent on Linux; run body directly.
+private func runMemoryPool(_ body: () -> Void) {
+    #if os(Linux)
+    body()
+    #else
+    autoreleasepool(invoking: body)
+    #endif
+}
 
 final class BlazeDBMemoryTests: XCTestCase {
     var tempURL: URL!
@@ -41,7 +53,7 @@ final class BlazeDBMemoryTests: XCTestCase {
     func testDatabaseDeallocation() throws {
         weak var weakDB: BlazeDBClient?
         
-        autoreleasepool {
+        runMemoryPool {
             var db: BlazeDBClient? = try! BlazeDBClient(
                 name: "LeakTest",
                 fileURL: tempURL,
@@ -68,7 +80,7 @@ final class BlazeDBMemoryTests: XCTestCase {
     func testCollectionDeallocation() throws {
         weak var weakCollection: DynamicCollection?
         
-        autoreleasepool {
+        runMemoryPool {
             let key = SymmetricKey(size: .bits256)
             let store = try! PageStore(fileURL: tempURL, key: key)
             let metaURL = tempURL.deletingPathExtension().appendingPathExtension("meta")
@@ -100,7 +112,7 @@ final class BlazeDBMemoryTests: XCTestCase {
     func testPageStoreDeallocation() throws {
         weak var weakStore: PageStore?
         
-        autoreleasepool {
+        runMemoryPool {
             let key = SymmetricKey(size: .bits256)
             var store: PageStore? = try! PageStore(fileURL: tempURL, key: key)
             
@@ -134,7 +146,7 @@ final class BlazeDBMemoryTests: XCTestCase {
         
         // Perform multiple transaction rollbacks
         for _ in 0..<10 {
-            autoreleasepool {
+            runMemoryPool {
                 try! db!.beginTransaction()
                 _ = try! db!.insert(BlazeDataRecord(["test": .string("data")]))
                 try! db!.rollbackTransaction()
@@ -216,7 +228,7 @@ final class BlazeDBMemoryTests: XCTestCase {
         
         let beforeFetch = getMemoryUsage()
         
-        autoreleasepool {
+        runMemoryPool {
             _ = try! db.fetchAll()
         }
         
@@ -257,7 +269,7 @@ final class BlazeDBMemoryTests: XCTestCase {
         
         // Measure fetchAll memory
         let beforeFetchAll = getMemoryUsage()
-        autoreleasepool {
+        runMemoryPool {
             _ = try! db.fetchAll()
         }
         let fetchAllPeak = getMemoryUsage()
@@ -268,7 +280,7 @@ final class BlazeDBMemoryTests: XCTestCase {
         
         // Measure pagination memory
         let beforePagination = getMemoryUsage()
-        autoreleasepool {
+        runMemoryPool {
             _ = try! db.fetchPage(offset: 0, limit: 50)
         }
         let paginationPeak = getMemoryUsage()
@@ -296,7 +308,7 @@ final class BlazeDBMemoryTests: XCTestCase {
         
         // Perform 10 rounds of operations
         for round in 0..<10 {
-            autoreleasepool {
+            runMemoryPool {
                 // Insert 100 records
                 for i in 0..<100 {
                     let record = BlazeDataRecord([
@@ -347,6 +359,11 @@ final class BlazeDBMemoryTests: XCTestCase {
     // MARK: - Helper Methods
     
     private func getMemoryUsage() -> Int {
+        #if os(Linux)
+        var usage = rusage()
+        if getrusage(RUSAGE_SELF, &usage) != 0 { return 0 }
+        return Int(usage.ru_maxrss) * 1024
+        #else
         var info = mach_task_basic_info()
         var count = mach_msg_type_number_t(MemoryLayout<mach_task_basic_info>.size) / 4
         
@@ -358,6 +375,7 @@ final class BlazeDBMemoryTests: XCTestCase {
         
         guard result == KERN_SUCCESS else { return 0 }
         return Int(info.resident_size)
+        #endif
     }
     
     private func formatBytes(_ bytes: Int) -> String {
