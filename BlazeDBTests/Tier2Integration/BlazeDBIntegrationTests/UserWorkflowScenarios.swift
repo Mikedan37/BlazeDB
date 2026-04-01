@@ -720,7 +720,7 @@ final class UserWorkflowScenarios: XCTestCase {
     func testPerformance_RealWorldWorkflow() async throws {
         guard let url = dbURL else { XCTFail("dbURL not set"); return }
         let runWork: () -> Void = {
-            let done = expectation(description: "real-world workflow")
+            let done = self.expectation(description: "real-world workflow")
             Task {
                 do {
                     let runURL = url.deletingPathExtension()
@@ -756,7 +756,7 @@ final class UserWorkflowScenarios: XCTestCase {
                 }
                 done.fulfill()
             }
-            wait(for: [done], timeout: 20)
+            self.wait(for: [done], timeout: 20)
         }
         #if os(Linux)
         runWork()
