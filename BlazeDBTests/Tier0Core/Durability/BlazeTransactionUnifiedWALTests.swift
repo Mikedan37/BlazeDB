@@ -1,5 +1,9 @@
 import XCTest
+#if canImport(CryptoKit)
 import CryptoKit
+#else
+import Crypto
+#endif
 @testable import BlazeDBCore
 
 /// Tests for BlazeTransaction with unified WAL mode.

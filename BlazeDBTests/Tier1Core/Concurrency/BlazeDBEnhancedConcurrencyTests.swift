@@ -72,11 +72,15 @@ final class BlazeDBEnhancedConcurrencyTests: XCTestCase {
         
         let queue = DispatchQueue(label: "test.safeWrite.concurrent", attributes: .concurrent)
         let state = OverlapState()
+        guard let dbRef = db else {
+            XCTFail("db not set")
+            return
+        }
         
         for _ in 0..<2 {
             queue.async {
                 do {
-                    try self.db.performSafeWrite {
+                    try dbRef.performSafeWrite {
                         state.enter()
                         
                         // Hold section long enough to expose races.
@@ -97,10 +101,14 @@ final class BlazeDBEnhancedConcurrencyTests: XCTestCase {
     
     /// Regression: nested performSafeWrite must not deadlock.
     func testPerformSafeWrite_NestedReentrancyDoesNotDeadlock() throws {
+        guard let dbRef = db else {
+            XCTFail("db not set")
+            return
+        }
         XCTAssertNoThrow(
-            try db.performSafeWrite {
-                try self.db.performSafeWrite {
-                    _ = try self.db.insert(BlazeDataRecord(["reentrant": .bool(true)]))
+            try dbRef.performSafeWrite {
+                try dbRef.performSafeWrite {
+                    _ = try dbRef.insert(BlazeDataRecord(["reentrant": .bool(true)]))
                 }
             }
         )
@@ -138,11 +146,15 @@ final class BlazeDBEnhancedConcurrencyTests: XCTestCase {
         let done = expectation(description: "all writers complete under pressure")
         done.expectedFulfillmentCount = 16
         let queue = DispatchQueue(label: "test.safeWrite.pressure", attributes: .concurrent)
+        guard let dbRef = db else {
+            XCTFail("db not set")
+            return
+        }
         
         for i in 0..<16 {
             queue.async {
                 do {
-                    try self.db.performSafeWrite {
+                    try dbRef.performSafeWrite {
                         state.enter()
                         // Randomized critical-section duration creates scheduling churn.
                         usleep(useconds_t(5_000 + (i % 5) * 7_000))
@@ -166,6 +178,10 @@ final class BlazeDBEnhancedConcurrencyTests: XCTestCase {
         
         let queue = DispatchQueue(label: "test.concurrent", attributes: .concurrent)
         var insertedIDs = ThreadSafeArray<UUID>()
+        guard let dbRef = db else {
+            XCTFail("db not set")
+            return
+        }
         
         for i in 0..<50 {
             queue.async {
@@ -176,7 +192,7 @@ final class BlazeDBEnhancedConcurrencyTests: XCTestCase {
                 ])
                 
                 do {
-                    let id = try self.db.insert(record)
+                    let id = try dbRef.insert(record)
                     insertedIDs.append(id)
                     expectation.fulfill()
                 } catch {
@@ -214,11 +230,16 @@ final class BlazeDBEnhancedConcurrencyTests: XCTestCase {
         expectation.expectedFulfillmentCount = 100
         
         let queue = DispatchQueue(label: "test.concurrent", attributes: .concurrent)
+        let idList = ids
+        guard let dbRef = db else {
+            XCTFail("db not set")
+            return
+        }
         
         // 10 threads updating 10 records each
         for _ in 0..<100 {
             queue.async {
-                guard let randomID = ids.randomElement() else {
+                guard let randomID = idList.randomElement() else {
                     expectation.fulfill()
                     return
                 }
@@ -228,7 +249,7 @@ final class BlazeDBEnhancedConcurrencyTests: XCTestCase {
                 ])
                 
                 do {
-                    try self.db.update(id: randomID, with: record)
+                    try dbRef.update(id: randomID, with: record)
                     expectation.fulfill()
                 } catch {
                     XCTFail("Update failed: \(error)")
@@ -263,11 +284,15 @@ final class BlazeDBEnhancedConcurrencyTests: XCTestCase {
         expectation.expectedFulfillmentCount = 100
         
         let queue = DispatchQueue(label: "test.concurrent", attributes: .concurrent)
+        guard let dbRef = db else {
+            XCTFail("db not set")
+            return
+        }
         
         for id in ids {
             queue.async {
                 do {
-                    try self.db.delete(id: id)
+                    try dbRef.delete(id: id)
                     expectation.fulfill()
                 } catch {
                     // Deleting already-deleted record is OK
@@ -294,6 +319,10 @@ final class BlazeDBEnhancedConcurrencyTests: XCTestCase {
         expectation.expectedFulfillmentCount = 50
         
         let queue = DispatchQueue(label: "test.concurrent", attributes: .concurrent)
+        guard let dbRef = db else {
+            XCTFail("db not set")
+            return
+        }
         
         for i in 0..<50 {
             queue.async {
@@ -303,7 +332,7 @@ final class BlazeDBEnhancedConcurrencyTests: XCTestCase {
                 ])
                 
                 do {
-                    _ = try self.db.insert(record)
+                    _ = try dbRef.insert(record)
                     expectation.fulfill()
                 } catch {
                     XCTFail("Indexed insert failed: \(error)")
@@ -341,13 +370,17 @@ final class BlazeDBEnhancedConcurrencyTests: XCTestCase {
         
         let queue = DispatchQueue(label: "test.concurrent", attributes: .concurrent)
         let lock = NSLock()
+        guard let dbRef = db else {
+            XCTFail("db not set")
+            return
+        }
         
         for _ in 0..<100 {
             queue.async {
                 do {
                     // Read-modify-write with lock to prevent race
                     lock.lock()
-                    guard let current = try? self.db.fetch(id: counterID),
+                    guard let current = try? dbRef.fetch(id: counterID),
                           let value = current.storage["counter"]?.intValue else {
                         lock.unlock()
                         XCTFail("Failed to read counter")
@@ -355,7 +388,7 @@ final class BlazeDBEnhancedConcurrencyTests: XCTestCase {
                     }
                     
                     let updated = BlazeDataRecord(["counter": .int(value + 1)])
-                    try self.db.update(id: counterID, with: updated)
+                    try dbRef.update(id: counterID, with: updated)
                     lock.unlock()
                     
                     expectation.fulfill()
@@ -382,6 +415,10 @@ final class BlazeDBEnhancedConcurrencyTests: XCTestCase {
         expectation.expectedFulfillmentCount = 20
         
         let queue = DispatchQueue(label: "test.concurrent", attributes: .concurrent)
+        guard let dbRef = db else {
+            XCTFail("db not set")
+            return
+        }
         
         for i in 0..<20 {
             queue.async {
@@ -391,7 +428,7 @@ final class BlazeDBEnhancedConcurrencyTests: XCTestCase {
                         "transaction": .int(i),
                         "data": .string("TX \(i)")
                     ])
-                    _ = try self.db.insert(record)
+                    _ = try dbRef.insert(record)
                     
                     // Small delay to increase chance of interleaving (optimized for tests)
                     let maxDelay = ProcessInfo.processInfo.environment["TEST_SLOW_CONCURRENCY"] == "1" ? 1000 : 200
@@ -430,6 +467,11 @@ final class BlazeDBEnhancedConcurrencyTests: XCTestCase {
         expectation.expectedFulfillmentCount = 100
         
         let queue = DispatchQueue(label: "test.concurrent", attributes: .concurrent)
+        let idList = ids
+        guard let dbRef = db else {
+            XCTFail("db not set")
+            return
+        }
         
         for i in 0..<100 {
             queue.async {
@@ -439,22 +481,22 @@ final class BlazeDBEnhancedConcurrencyTests: XCTestCase {
                     switch operation {
                     case 0:  // Insert
                         let record = BlazeDataRecord(["new": .int(i)])
-                        _ = try self.db.insert(record)
+                        _ = try dbRef.insert(record)
                     case 1:  // Read
-                        if let randomID = ids.randomElement() {
-                            _ = try self.db.fetch(id: randomID)
+                        if let randomID = idList.randomElement() {
+                            _ = try dbRef.fetch(id: randomID)
                         }
                     case 2:  // Update
-                        if let randomID = ids.randomElement() {
+                        if let randomID = idList.randomElement() {
                             let updated = BlazeDataRecord(["updated": .int(i)])
-                            try self.db.update(id: randomID, with: updated)
+                            try dbRef.update(id: randomID, with: updated)
                         }
                     case 3:  // Delete then re-insert
-                        if let randomID = ids.randomElement() {
-                            try? self.db.delete(id: randomID)
+                        if let randomID = idList.randomElement() {
+                            try? dbRef.delete(id: randomID)
                         }
                         let newRecord = BlazeDataRecord(["reinserted": .int(i)])
-                        _ = try self.db.insert(newRecord)
+                        _ = try dbRef.insert(newRecord)
                     default:
                         break
                     }
@@ -482,6 +524,10 @@ final class BlazeDBEnhancedConcurrencyTests: XCTestCase {
         
         let queue = DispatchQueue(label: "test.concurrent", attributes: .concurrent)
         var successCount = ThreadSafeCounter()
+        guard let dbRef = db else {
+            XCTFail("db not set")
+            return
+        }
         
         for i in 0..<iterations {
             queue.async {
@@ -490,7 +536,7 @@ final class BlazeDBEnhancedConcurrencyTests: XCTestCase {
                         "index": .int(i),
                         "data": .string("Load \(i)")
                     ])
-                    _ = try self.db.insert(record)
+                    _ = try dbRef.insert(record)
                     successCount.increment()
                     expectation.fulfill()
                 } catch {
