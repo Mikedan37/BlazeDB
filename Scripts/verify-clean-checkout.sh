@@ -89,7 +89,7 @@ step_test() {
     "Tier2 CrossVersion harness" \
     "$RUN_LOG_DIR/step2_tier2_crossversion.log" \
     env -i PATH="$PATH" HOME="$HOME" TERM="${TERM:-dumb}" \
-    swift test --skip-build --filter BlazeDB_Tier2.CrossVersionExportRestoreHarnessTests
+    bash -c 'cd BlazeDBExtraTests && swift test --filter BlazeDB_Tier2.CrossVersionExportRestoreHarnessTests'
 )
 
 echo "Step 3/3: report"

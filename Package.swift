@@ -215,73 +215,8 @@ let package = Package(
                 .define("BLAZEDB_LINUX_CORE", .when(platforms: [.linux]))
             ]
         ),
-        
-        // Tier 3 heavy: stress/fuzz/perf and legacy non-blocking paths.
-        .testTarget(
-            name: "BlazeDB_Tier3_Heavy",
-            dependencies: ["BlazeDBCore"],
-            path: "BlazeDBTests/Tier3Heavy",
-            swiftSettings: [
-                .define("BLAZEDB_CORE_ONLY"),
-                .define("HEAVY_TESTS"),
-                .define("BLAZEDB_LINUX_CORE", .when(platforms: [.linux]))
-            ]
-        ),
-        
-        // Tier 2: integration and recovery workflows.
-        .testTarget(
-            name: "BlazeDB_Tier2",
-            dependencies: ["BlazeDBCore"],
-            path: "BlazeDBTests/Tier2Integration/BlazeDBIntegrationTests",
-            exclude: [
-                // Exclude distributed integration tests
-                "TelemetryIntegrationTests.swift",
-                "DistributedGCIntegrationTests.swift",
-                "DistributedGCStressTests.swift",
-                "MixedVersionSyncTests.swift",
-                "SoakStressTests.swift",  // Uses BlazeTopology
-                "DistributedGCRobustnessTests.swift",  // Uses distributed types
-                "RLSEncryptionGCIntegrationTests.swift",  // Uses Telemetry
-                "RLSNegativeTests.swift",  // Uses BlazeTopology
-                // Exclude until Swift 6 async/Sendable fixes
-                "AdvancedConcurrencyScenarios.swift",  // NSLock in async
-                "BlazeBinaryIntegrationTests.swift",  // Telemetry.getSummary API
-                "BugTrackerCompleteWorkflow.swift",  // sending closure
-                "AshPileRealWorldTests.swift",  // switch exhaustive
-                "ExtremeIntegrationTests.swift",  // sending closure
-                "FeatureCombinationTests.swift",  // async await mismatch
-                "SchemaForeignKeyIntegrationTests.swift",  // Uses Telemetry
-                // Exclude until Sendable/closure capture fixes (test logic unchanged)
-                "DataConsistencyACIDTests.swift",
-                "GarbageCollectionIntegrationTests.swift",
-                "ChaosEngineeringTests.swift"
-            ],
-            swiftSettings: [
-                .define("BLAZEDB_CORE_ONLY"),
-                .define("BLAZEDB_LINUX_CORE", .when(platforms: [.linux]))
-            ]
-        ),
-
-        // Tier 3 destructive: manual-only fault/corruption injection tests.
-        .testTarget(
-            name: "BlazeDB_Tier3_Destructive",
-            dependencies: ["BlazeDBCore"],
-            path: "BlazeDBTests/Tier3Destructive",
-            swiftSettings: [
-                .define("BLAZEDB_CORE_ONLY"),
-                .define("DESTRUCTIVE_TESTS"),
-                .define("BLAZEDB_LINUX_CORE", .when(platforms: [.linux]))
-            ]
-        ),
-        
-        // SwiftPM execution gate for distributed fail-closed validation.
-        // This intentionally verifies that the distributed security suite
-        // runs and passes with non-zero execution.
-        .testTarget(
-            name: "DistributedSecuritySPMTests",
-            dependencies: [],
-            path: "BlazeDBTests_SPM/DistributedSecurity"
-        ),
+        // Tier 2 / Tier 3 heavy+destructive / DistributedSecurity SPM harness live under
+        // BlazeDBExtraTests/ (separate package) so root `swift test` does not compile them.
         .testTarget(
             name: "BlazeDB_Staging",
             dependencies: ["BlazeDBSyncStaging", "BlazeDBTelemetryStaging"],

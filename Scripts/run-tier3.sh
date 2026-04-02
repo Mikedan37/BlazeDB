@@ -5,6 +5,6 @@
 set -e
 echo "=== Tier 3: Manual only (destructive / I/O fault injection) ==="
 echo "These tests must be run explicitly. They are excluded from all automation."
-echo "  >> BlazeDB_Tier3_Destructive"
-swift test --filter BlazeDB_Tier3_Destructive
+echo "  >> BlazeDB_Tier3_Destructive (BlazeDBExtraTests package)"
+(cd BlazeDBExtraTests && swift test --filter BlazeDB_Tier3_Destructive)
 echo "=== Tier 3 complete ==="

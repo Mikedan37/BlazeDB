@@ -45,10 +45,12 @@ For branch discipline and PR hygiene, see `Docs/Guides/WORKFLOW_AND_STYLE_GUIDE.
 
 - `BlazeDB_Tier2`
   - Integration and recovery scenarios.
+  - **Built from nested package** `BlazeDBExtraTests/` (not part of root `swift test` graph).
   - Non-blocking lane by default.
 
 - `BlazeDB_Tier3_Heavy` / `BlazeDB_Tier3_Destructive`
   - Stress, fuzz, and destructive/fault-injection lanes.
+  - Declared under `BlazeDBExtraTests/Package.swift`; run via `cd BlazeDBExtraTests && swift test …`.
   - Manual/explicit use only; never default PR gate.
 
 ## Local Entry Points

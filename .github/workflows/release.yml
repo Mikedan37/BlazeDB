@@ -42,7 +42,7 @@ jobs:
           RUN_HEAVY_STRESS: "1"
         run: |
           echo "Running Tier 3 heavy tests..."
-          swift test --filter BlazeDB_Tier3_Heavy
+          cd BlazeDBExtraTests && swift test --filter BlazeDB_Tier3_Heavy
       
       - name: 🔬 Run Sanitizer Tests
         run: |

@@ -54,22 +54,29 @@ def parse_executed_from_xunit(path: Path) -> set[str]:
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--target", required=True, help="SwiftPM test target filter")
+    parser.add_argument(
+        "--package-path",
+        type=str,
+        default=None,
+        help="Subdirectory (under repo root) with Package.swift, e.g. BlazeDBExtraTests",
+    )
     parser.add_argument("--artifact-dir", required=True)
     parser.add_argument("--allowed-missing", type=int, default=0)
     parser.add_argument("--num-workers", type=int, default=1)
     args = parser.parse_args()
 
     root = Path(__file__).resolve().parents[1]
+    pkg_root = (root / args.package_path).resolve() if args.package_path else root
     artifact_dir = Path(args.artifact_dir)
     artifact_dir.mkdir(parents=True, exist_ok=True)
 
     # SwiftPM discovery flags vary by toolchain. Prefer modern `swift test list`
     # and rely on parse_discovered() to filter by target prefix.
     list_cmd = ["swift", "test", "list", "--skip-build"]
-    list_proc = run(list_cmd, root)
+    list_proc = run(list_cmd, pkg_root)
     if list_proc.returncode != 0:
         # Fallback for older SwiftPM supporting legacy flag style.
-        list_proc = run(["swift", "test", "--list-tests"], root)
+        list_proc = run(["swift", "test", "--list-tests"], pkg_root)
     if list_proc.returncode != 0:
         print(list_proc.stdout)
         print(list_proc.stderr, file=sys.stderr)
@@ -89,7 +96,7 @@ def main() -> int:
         "--xunit-output",
         str(xunit_path),
     ]
-    run_proc = run(run_cmd, root)
+    run_proc = run(run_cmd, pkg_root)
 
     executed = parse_executed_from_xunit(xunit_path)
     missing = sorted(discovered - executed)

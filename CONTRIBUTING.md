@@ -95,16 +95,14 @@ swift test --filter BlazeDB_Tier0
 - Document why it's Tier 3
 - May fail without blocking
 
-### Step 3: Add to Package.swift
+### Step 3: Wire the test target
 
-Tier targets are already declared in `Package.swift`.
+- **Tier 0 / Tier 1 / `BlazeDB_Staging`:** declared in root `Package.swift`.
+- **Tier 2, Tier 3 heavy/destructive, `DistributedSecuritySPMTests`:** declared in `BlazeDBExtraTests/Package.swift` (nested package). Run them with `cd BlazeDBExtraTests && swift test …` or `./Scripts/run-tier2.sh` / `./Scripts/run-tier3.sh`.
 
-Place test files under the correct `BlazeDBTests/Tier*` path and keep naming aligned with:
-- `BlazeDB_Tier0`
-- `BlazeDB_Tier1`
-- `BlazeDB_Tier2`
-- `BlazeDB_Tier3_Heavy`
-- `BlazeDB_Tier3_Destructive`
+Place test files under the correct `BlazeDBTests/...` paths; target names remain:
+- `BlazeDB_Tier0`, `BlazeDB_Tier1` (root package)
+- `BlazeDB_Tier2`, `BlazeDB_Tier3_Heavy`, `BlazeDB_Tier3_Destructive`, `DistributedSecuritySPMTests` (extra package)
 
 ---
 

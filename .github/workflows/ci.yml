@@ -80,8 +80,8 @@ jobs:
         with:
           swift-version: "6.0"
 
-      - name: Build
-        run: swift build
+      - name: Build core
+        run: swift build --target BlazeDBCore
 
       - name: Test Tier 0
         run: swift test --filter BlazeDB_Tier0

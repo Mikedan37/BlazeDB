@@ -9,7 +9,7 @@ This repo includes a fixture-driven harness test for dump restore compatibility:
 ## Run Locally
 
 ```bash
-swift test --filter BlazeDB_Tier2.CrossVersionExportRestoreHarnessTests
+cd BlazeDBExtraTests && swift test --filter BlazeDB_Tier2.CrossVersionExportRestoreHarnessTests
 ```
 
 ## What It Verifies
