@@ -91,7 +91,13 @@ let package = Package(
                 "BlazeDB-Package.xctestplan"
             ],
             swiftSettings: [
-                .define("BLAZEDB_LINUX_CORE", .when(platforms: [.linux]))
+                .define("BLAZEDB_LINUX_CORE", .when(platforms: [.linux])),
+                // Swift 6.0.x: IRGen can abort on SwiftUI Binding<> debug reconstruction (e.g. BlazeQuery+Extensions.swift).
+                // Matches swiftc hint: -Xfrontend -disable-round-trip-debug-types
+                .unsafeFlags(
+                    ["-Xfrontend", "-disable-round-trip-debug-types"],
+                    .when(configuration: .debug)
+                )
             ]
         ),
         
