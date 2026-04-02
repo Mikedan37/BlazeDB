@@ -1,35 +1,90 @@
+# Single workflow for push/PR: macOS gate + optional Linux. No duplicate OSS workflows.
+# See Docs/Testing/CI_AND_TEST_TIERS.md
+
 name: CI
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [main, develop]
   pull_request:
-    branches: [ main, develop ]
+    branches: [main, develop]
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
-  test:
-    name: Build & Test
-    runs-on: ubuntu-22.04
-    timeout-minutes: 90
+  macos-15:
+    name: macOS 15 — build, CLI, tests, clean-checkout, quickstart
+    runs-on: macos-15
+    timeout-minutes: 180
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-    - name: Setup Swift
-      uses: swift-actions/setup-swift@v2
-      with:
-        swift-version: "6.0"
+      - name: Setup Swift 6.0
+        uses: swift-actions/setup-swift@v2
+        with:
+          swift-version: "6.0"
 
-    - name: Build (clean runner)
-      run: swift build -v
+      - name: Build BlazeDBCore
+        run: swift build --target BlazeDBCore
 
-    - name: Run Tier 0 suite
-      run: swift test --filter BlazeDB_Tier0
+      - name: Build CLI tools
+        run: |
+          swift build --target BlazeDoctor
+          swift build --target BlazeDump
+          swift build --target BlazeInfo
 
-    - name: Run Tier 1 suite (skip rebuild)
-      run: swift test --skip-build --filter BlazeDB_Tier1
+      - name: Test Tier 0
+        run: swift test --filter BlazeDB_Tier0
+
+      - name: Test Tier 1
+        run: swift test --skip-build --filter BlazeDB_Tier1
+
+      - name: Install ripgrep (verification scripts)
+        env:
+          HOMEBREW_NO_AUTO_UPDATE: 1
+        run: |
+          command -v rg >/dev/null 2>&1 || brew install ripgrep
+
+      - name: Verify clean-checkout flow
+        run: ./Scripts/verify-clean-checkout.sh
+
+      - name: Verify README quickstart
+        run: ./Scripts/verify-readme-quickstart.sh
+
+  linux:
+    name: Linux (Swift 6) — best-effort
+    runs-on: ubuntu-22.04
+    timeout-minutes: 120
+    continue-on-error: true
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Swift 6.0
+        uses: swift-actions/setup-swift@v2
+        with:
+          swift-version: "6.0"
+
+      - name: Build
+        run: swift build
+
+      - name: Test Tier 0
+        run: swift test --filter BlazeDB_Tier0
+
+      - name: Test Tier 1
+        run: swift test --skip-build --filter BlazeDB_Tier1

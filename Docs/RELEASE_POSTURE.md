@@ -133,10 +133,9 @@ See `API_STABILITY.md` for details.
 4. Use `blazedb dump` for backups
 
 ### For Maintainers
-1. Keep PR gate green (`ci.yml`)
-2. Keep deep lane healthy (`core-tests.yml`)
-3. Publish releases from `v*` tags only
-4. Document all behavior-impacting changes in `CHANGELOG.md`
+1. Keep PR gate green (`ci.yml` — macOS 15 primary job)
+2. Publish releases from `v*` tags only
+3. Document all behavior-impacting changes in `CHANGELOG.md`
 
 ---
 

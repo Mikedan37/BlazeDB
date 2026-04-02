@@ -1,58 +1,22 @@
 # GitHub Actions Workflows
 
-This directory defines BlazeDB CI/CD entry points.
+Authoritative detail: `Docs/Testing/CI_AND_TEST_TIERS.md`.
 
-For tier intent and local equivalents, see `Docs/Testing/CI_AND_TEST_TIERS.md`.
+## `ci.yml` — only automatic workflow for `main` / `develop`
 
-## Active Workflow Map
+Checkouts use **`fetch-depth: 0`**.
 
-### `ci.yml` (Primary Gate)
-- Triggers:
-  - push: `main`, `develop`
-  - pull_request: `main`, `develop`
-- Job:
-  - `Build & Test` on `ubuntu-22.04`
-- Behavior:
-  - build on clean runner
-  - `swift test --filter BlazeDB_Tier0`
-  - `swift test --skip-build --filter BlazeDB_Tier1`
-- Merge impact:
-  - primary blocking check
+| Job | Blocking |
+|-----|----------|
+| `macOS 15 — build, CLI, tests, clean-checkout, quickstart` | yes |
+| `Linux (Swift 6) — best-effort` | no (`continue-on-error`) |
 
-### `core-tests.yml` (Deep Lane)
-- Triggers:
-  - nightly schedule
-  - manual dispatch
-- Job:
-  - `Core Tests (Swift 6)` on `macos-15` (aligned with `Package.swift` macOS 15 minimum)
-- Behavior:
-  - build `BlazeDBCore` and CLI targets
-  - run `BlazeDB_Tier0` and `BlazeDB_Tier1`
-- Merge impact:
-  - non-blocking deep validation lane
+**Deleted from the repo (must not return on `main`):** `oss-readiness-evidence.yml`, duplicate CI files. If GitHub still shows “OSS Readiness Evidence” or “Build & Test”, `main` has not picked up the latest workflow commits — merge and push.
 
-### `release.yml` (Tag Releases)
-- Trigger:
-  - tag push `v*`
-- Behavior:
-  - run `BlazeDB_Tier0`, `BlazeDB_Tier1`, and `BlazeDB_Tier3_Heavy`
-  - build/package release artifact
-  - generate release notes
-  - create GitHub release
+## `tag-probe.yml`
 
-### `oss-readiness-evidence.yml` (Evidence Lane)
-- Triggers:
-  - push: `main`
-  - manual dispatch
-- Behavior:
-  - runs `./Scripts/verify-clean-checkout.sh`
-  - runs `./Scripts/verify-readme-quickstart.sh`
-  - runs legacy tag reproducibility probe and uploads `.tagcheck-*.log` artifacts
-- Merge impact:
-  - evidence lane (diagnostic and release-confidence focused)
+Manual only: legacy `v*` tag release builds. Not run on push.
 
-## Rules
+## `release.yml`
 
-- Do not change workflow behavior in docs-only cleanup PRs.
-- Any workflow trigger/job/command change must update this README and `Docs/Testing/CI_AND_TEST_TIERS.md` in the same PR.
-
+Tag `v*` releases.

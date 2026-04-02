@@ -13,7 +13,7 @@ Use this checklist to decide if the current branch is ready for a public OSS rel
   - Current external blocker: hosted Actions jobs are prevented from starting until repository billing/spending-limit status is resolved.
 - [x] Next public release tag candidate build passes from a fresh clone.
   - Verified locally via `Scripts/verify-clean-checkout.sh` and `Scripts/verify-readme-quickstart.sh`.
-  - CI evidence lane added: `.github/workflows/oss-readiness-evidence.yml`.
+  - OSS verification runs on **macOS** in `.github/workflows/ci.yml` (clean checkout + README quickstart on every push/PR).
   - Note: legacy pre-OSS tags are tracked separately in `Docs/Status/RELEASE_EVIDENCE_BLOCKERS.md`.
   - Tooling in place: `Scripts/verify-clean-checkout.sh` (release build + clean-worktree validation path).
   - Tag build probe: `Scripts/check-release-tag-builds.sh`.

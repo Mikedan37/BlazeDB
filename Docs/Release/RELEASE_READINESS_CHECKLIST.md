@@ -5,7 +5,7 @@ Use this checklist before tagging any `vX.Y.Z` release.
 ## Required
 
 - [ ] `main` is clean (`git status` shows clean working tree)
-- [ ] PR gate passed (`Build & Test` in `ci.yml`)
+- [ ] PR gate passed (`macOS 15 — build, CLI, tests, clean-checkout, quickstart` in `ci.yml`)
 - [ ] `CHANGELOG.md` has an entry for the release
 - [ ] install snippets in `README.md` and `Docs/GettingStarted/*` are current
 - [ ] `Docs/Testing/CI_AND_TEST_TIERS.md` matches workflow behavior

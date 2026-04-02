@@ -55,5 +55,4 @@ If it fails, fix it locally before pushing.
 ## 4) CI Gates
 
 - **Local**: `./Scripts/preflight.sh` (build + Tier0)
-- **PR CI**: `ci.yml` (build + Tier0)
-- **Nightly**: `core-tests.yml` (deeper Tier1 validation)
+- **PR CI**: `ci.yml` on **macOS 15** (BlazeDBCore + CLI builds, Tier0, Tier1); Linux job is best-effort and non-blocking

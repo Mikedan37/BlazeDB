@@ -6,7 +6,7 @@ This guide explains how to add tests, what will be accepted, and what will be re
 
 ## CI gate (GitHub Actions)
 
-The default branch workflow (`.github/workflows/ci.yml`) runs **`swift build`**, then **`BlazeDB_Tier0`**, then **`BlazeDB_Tier1`**. That combination is the routine gate; it is **not** every test target or every test file under `BlazeDBTests/` (some files are excluded per tier in `Package.swift`). Authoritative detail: [CI and test tiers](Docs/Testing/CI_AND_TEST_TIERS.md).
+The default branch workflow (`.github/workflows/ci.yml`) runs on every push/PR: a single **macOS 15** job (core + CLI + Tier0 + Tier1 + `verify-clean-checkout.sh` + README quickstart), plus **Linux** best-effort (`continue-on-error`) and a non-blocking **legacy tag** probe. Checkouts use **full git history** (`fetch-depth: 0`). OSS scripts run on macOS so CI matches the primary platform. The gate is **not** every test target or every file under `BlazeDBTests/` (some files are excluded per tier in `Package.swift`). Authoritative detail: [CI and test tiers](Docs/Testing/CI_AND_TEST_TIERS.md).
 
 ---
 

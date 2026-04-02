@@ -1,0 +1,42 @@
+# Optional: probe last v* tags for release-build health. Manual only — not on every push.
+name: Legacy tag probe
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  probe:
+    name: Last 3 v* tags — release build
+    runs-on: ubuntu-22.04
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Swift 6.0
+        uses: swift-actions/setup-swift@v2
+        with:
+          swift-version: "6.0"
+
+      - name: Install ripgrep
+        run: sudo apt-get update && sudo apt-get install -y ripgrep
+
+      - name: Probe release tags
+        run: ./Scripts/check-release-tag-builds.sh
+
+      - name: Upload logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: legacy-tag-probe-logs
+          path: .tagcheck-*.log
+          if-no-files-found: ignore

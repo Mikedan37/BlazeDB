@@ -10,7 +10,7 @@ This runbook describes the current release process for BlazeDB.
 ## Pre-Tag Checklist
 
 - `main` is clean and synced.
-- PR gate (`Build & Test`) is green.
+- PR gate (`macOS 15 — build, CLI, tests, clean-checkout, quickstart`) is green.
 - `CHANGELOG.md` updated for the target version.
 - Version snippets in user-facing docs are consistent.
 

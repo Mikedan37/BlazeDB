@@ -10,19 +10,19 @@ For branch discipline and PR hygiene, see `Docs/Guides/WORKFLOW_AND_STYLE_GUIDE.
 
 - `.github/workflows/ci.yml`
   - Triggers: push and pull_request on `main`, `develop`
-  - Check name: `Build & Test`
-  - Behavior:
-    - `swift build -v`
-    - `swift test --filter BlazeDB_Tier0`
-    - `swift test --skip-build --filter BlazeDB_Tier1`
-  - Blocking: yes
+  - All jobs use **`actions/checkout` with `fetch-depth: 0`** so tags and worktree scripts match a full clone.
+  - **Primary check (blocking):** `macOS 15 — build, CLI, tests, clean-checkout, quickstart`
+    - Runner: `macos-15`
+    - `swift build --target BlazeDBCore`, CLI targets (`BlazeDoctor`, `BlazeDump`, `BlazeInfo`)
+    - `swift test --filter BlazeDB_Tier0`, then `swift test --skip-build --filter BlazeDB_Tier1`
+    - `ripgrep` (brew if needed) + `./Scripts/verify-clean-checkout.sh` + `./Scripts/verify-readme-quickstart.sh` (same toolchain as local dev — not on Linux)
+  - **Secondary (non-blocking):** `Linux (Swift 6) — best-effort`
+    - Runner: `ubuntu-22.04`
+    - Same test tiers after `swift build`; `continue-on-error: true`
 
-- `.github/workflows/core-tests.yml`
-  - Triggers: nightly schedule + manual dispatch
-  - Behavior:
-    - Build `BlazeDBCore` and CLI tools
-    - Run `BlazeDB_Tier0` and `BlazeDB_Tier1`
-  - Blocking: no (deep lane)
+- `.github/workflows/tag-probe.yml`
+  - Trigger: **manual** (`workflow_dispatch`) only
+  - Runs `./Scripts/check-release-tag-builds.sh` (last three `v*` tags) on Ubuntu; use when you care about old tag buildability, not on every push
 
 - `.github/workflows/release.yml`
   - Trigger: tag push `v*`
@@ -32,14 +32,6 @@ For branch discipline and PR hygiene, see `Docs/Guides/WORKFLOW_AND_STYLE_GUIDE.
     - Generate release notes
     - Publish GitHub release
   - Blocking: release-only
-
-- `.github/workflows/oss-readiness-evidence.yml`
-  - Trigger: push on `main` + manual dispatch
-  - Behavior:
-    - `./Scripts/verify-clean-checkout.sh`
-    - `./Scripts/verify-readme-quickstart.sh`
-    - `./Scripts/check-release-tag-builds.sh` (legacy tag diagnostic logs)
-  - Blocking: no (evidence lane)
 
 ## Tier Purposes
 
@@ -76,7 +68,7 @@ For branch discipline and PR hygiene, see `Docs/Guides/WORKFLOW_AND_STYLE_GUIDE.
 
 - Confirm working tree is intentional (`git status`, `git diff`).
 - Run `./Scripts/preflight.sh`.
-- Ensure required checks are green on PR (`Build & Test`).
+- Ensure required checks are green on PR (primary: `macOS 15 — build, CLI, tests, clean-checkout, quickstart`).
 - Do not mix workflow behavior changes with docs-only cleanup in the same PR unless explicitly scoped.
 
 ## Maintenance Policy
