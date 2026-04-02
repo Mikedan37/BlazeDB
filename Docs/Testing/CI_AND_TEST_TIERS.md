@@ -12,7 +12,7 @@ For branch discipline and PR hygiene, see `Docs/Guides/WORKFLOW_AND_STYLE_GUIDE.
   - Triggers: push and pull_request on `main`, `develop`
   - All jobs use **`actions/checkout` with `fetch-depth: 0`** so tags and worktree scripts match a full clone.
   - **Primary check (blocking):** `macOS 15 — build, CLI, tests, clean-checkout, quickstart`
-    - Runner: `macos-15`
+    - Runner: `macos-15`; **does not** use `swift-actions/setup-swift` — tests run with **Xcode’s** `swift` so XCTest/`XCTestCore` resolves (OSS Swift on macOS does not).
     - `swift build --target BlazeDBCore`, CLI targets (`BlazeDoctor`, `BlazeDump`, `BlazeInfo`)
     - `swift test --filter BlazeDB_Tier0`, then `swift test --skip-build --filter BlazeDB_Tier1`
     - `ripgrep` (brew if needed) + `./Scripts/verify-clean-checkout.sh` + `./Scripts/verify-readme-quickstart.sh` (same toolchain as local dev — not on Linux)

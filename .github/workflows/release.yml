@@ -16,11 +16,11 @@ jobs:
     steps:
       - name: 📥 Checkout Code
         uses: actions/checkout@v4
-      
-      - name: 🔧 Setup Swift
-        uses: swift-actions/setup-swift@v2
-        with:
-          swift-version: '6.0'
+
+      - name: Xcode Swift toolchain
+        run: |
+          xcodebuild -version
+          swift --version
 
       - name: 🏷️ Validate SemVer Tag
         run: |
@@ -69,11 +69,11 @@ jobs:
     steps:
       - name: 📥 Checkout Code
         uses: actions/checkout@v4
-      
-      - name: 🔧 Setup Swift
-        uses: swift-actions/setup-swift@v2
-        with:
-          swift-version: '6.0'
+
+      - name: Xcode Swift toolchain
+        run: |
+          xcodebuild -version
+          swift --version
       
       - name: 🏗️ Build Release Configuration
         run: |
