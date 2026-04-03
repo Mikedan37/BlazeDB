@@ -788,6 +788,7 @@ let tags = tagsArray.stringValues // ["swift", "database"]
 ### @BlazeQuery (Dynamic)
 
 Reactive property wrapper for database queries.
+BlazeDB change notifications can trigger query refreshes for SwiftUI-bound results.
 
 ```swift
 struct BugListView: View {
@@ -850,6 +851,9 @@ struct BugListView: View {
  }
 }
 ```
+
+`enableAutoRefresh(interval:)` is optional polling on top of notification-driven refresh.
+Use it when you want periodic safety refreshes; rely on default change observation for normal app-local writes.
 
 ### Manual Refresh
 

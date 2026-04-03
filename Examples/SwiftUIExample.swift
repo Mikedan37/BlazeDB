@@ -3,7 +3,7 @@
 //  BlazeDB Examples
 //
 //  Real-world examples of using BlazeDB with SwiftUI.
-//  Shows the power of @BlazeQuery property wrapper for reactive database views.
+//  Shows @BlazeQuery wrappers refreshing from DB change notifications.
 //
 //  Created by Michael Danylchuk on 7/1/25.
 //

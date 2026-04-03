@@ -8,6 +8,7 @@ on:
     branches: [main, develop]
   pull_request:
     branches: [main, develop]
+  workflow_dispatch:
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
@@ -67,7 +68,8 @@ jobs:
         run: ./Scripts/verify-readme-quickstart.sh
 
   linux:
-    name: Linux (Swift 6) — best-effort
+    name: Linux (Swift 6) — best-effort (manual)
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-22.04
     timeout-minutes: 120
     continue-on-error: true

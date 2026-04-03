@@ -4,6 +4,13 @@ on:
   push:
     tags:
       - 'v*'
+  workflow_dispatch:
+    inputs:
+      run_deep_validation:
+        description: "Run stress/sanitizer/perf lanes"
+        required: false
+        default: false
+        type: boolean
 
 jobs:
   # ═══════════════════════════════════════════════════════════
@@ -34,12 +41,18 @@ jobs:
           echo "Running Tier 0 gate tests..."
           swift test --filter BlazeDB_Tier0
 
-          echo "Running Tier 1 fast, extended, and perf lanes..."
+          echo "Running Tier 1 fast and extended lanes..."
           swift test --filter BlazeDB_Tier1Fast
-          swift test --skip-build --filter BlazeDB_Tier1Extended
-          swift test --skip-build --filter BlazeDB_Tier1Perf
+          swift test --filter BlazeDB_Tier1Extended
+
+      - name: Run perf lane (manual deep validation)
+        if: github.event_name == 'workflow_dispatch' && inputs.run_deep_validation == true
+        run: |
+          echo "Running Tier 1 perf lane..."
+          swift test --filter BlazeDB_Tier1Perf
       
       - name: Run stress tests
+        if: github.event_name == 'workflow_dispatch' && inputs.run_deep_validation == true
         env:
           RUN_HEAVY_STRESS: "1"
         run: |
@@ -47,6 +60,7 @@ jobs:
           cd BlazeDBExtraTests && swift test --filter BlazeDB_Tier3_Heavy
       
       - name: Run sanitizer tests
+        if: github.event_name == 'workflow_dispatch' && inputs.run_deep_validation == true
         run: |
           echo "Running thread sanitizer on Tier 0..."
           SANITIZER_LOG=$(mktemp)

@@ -76,7 +76,7 @@ internal final class ChangeNotificationManager: @unchecked Sendable {
     private var observers: [UUID: ChangeObserver] = [:]
     private let lock = NSLock()
     private var pendingChanges: [DatabaseChange] = []
-    private var batchNotificationTimer: Timer?
+    private var pendingFlushWorkItem: DispatchWorkItem?
     private let batchDelay: TimeInterval = 0.05  // 50ms batching
     
     /// Thread-safe singleton (caller must ensure thread safety)
@@ -113,14 +113,13 @@ internal final class ChangeNotificationManager: @unchecked Sendable {
         pendingChanges.append(contentsOf: changes)
         
         // Schedule batch notification if not already scheduled
-        if batchNotificationTimer == nil {
+        if pendingFlushWorkItem == nil {
             let manager = self
-            batchNotificationTimer = Timer.scheduledTimer(
-                withTimeInterval: batchDelay,
-                repeats: false
-            ) { _ in
+            let workItem = DispatchWorkItem {
                 manager.flushPendingChanges()
             }
+            pendingFlushWorkItem = workItem
+            DispatchQueue.main.asyncAfter(deadline: .now() + batchDelay, execute: workItem)
         }
         lock.unlock()
     }
@@ -131,7 +130,7 @@ internal final class ChangeNotificationManager: @unchecked Sendable {
         let changesToNotify = pendingChanges
         let currentObservers = observers
         pendingChanges.removeAll()
-        batchNotificationTimer = nil
+        pendingFlushWorkItem = nil
         lock.unlock()
         
         guard !changesToNotify.isEmpty && !currentObservers.isEmpty else { return }

@@ -48,7 +48,7 @@ Runnable examples from basic to advanced.
 | `SyncExample_*.swift` | Sync/distributed examples; deferred from default OSS runtime packaging |
 | `TelemetryBasicExample.swift` | Telemetry API walkthrough; full telemetry behavior is build-configuration dependent |
 | `VectorIndexExample.swift` | Advanced indexing with platform/build caveats |
-| `SwiftUIExample.swift` | UI integration path, not part of minimal core onboarding |
+| `SwiftUIExample.swift` | SwiftUI integration with `@BlazeQuery` / `@BlazeQueryTyped` and DB-change-driven query refresh |
 | `VaporServer/main.swift` | Server integration example; optional deployment model |
 
 See `SYNC_EXAMPLES_INDEX.md` for full sync design docs and caveats.

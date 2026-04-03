@@ -158,6 +158,7 @@ public final class BlazeQueryTypedObserver<T: BlazeDocument>: ObservableObject {
     private let limitCount: Int?
     
     private var refreshTask: Task<Void, Never>?
+    private var changeObserverToken: ObserverToken?
     @MainActor private var autoRefreshTimer: Timer?
     
     // MARK: - Initialization
@@ -177,6 +178,14 @@ public final class BlazeQueryTypedObserver<T: BlazeDocument>: ObservableObject {
         
         // Initial fetch
         refresh()
+
+        // Subscribe to DB change events so wrappers refresh on writes without polling.
+        self.changeObserverToken = db.observe { [weak self] _ in
+            guard let self = self else { return }
+            Task { @MainActor in
+                self.refresh()
+            }
+        }
     }
     
     deinit {
