@@ -14,6 +14,38 @@
 import SwiftUI
 import AppKit
 
+/// Resolves the local BlazeDB clone for opening `BlazeDB.xcodeproj` and for `xcodebuild` (no maintainer-specific paths).
+private enum BlazeDBVisualizerPaths {
+    static let repoRootUserDefaultsKey = "BlazeDBVisualizer.BlazeDBRepoRootPath"
+
+    static func storedRepoRoot() -> URL? {
+        guard let path = UserDefaults.standard.string(forKey: repoRootUserDefaultsKey) else { return nil }
+        let root = URL(fileURLWithPath: path, isDirectory: true)
+        let proj = root.appendingPathComponent("BlazeDB.xcodeproj", isDirectory: true)
+        guard FileManager.default.fileExists(atPath: proj.path) else { return nil }
+        return root
+    }
+
+    private static func storeRepoRoot(forXcodeproj url: URL) {
+        let root = url.deletingLastPathComponent()
+        UserDefaults.standard.set(root.path, forKey: repoRootUserDefaultsKey)
+    }
+
+    @discardableResult
+    static func promptSelectBlazeDBXcodeprojIfNeeded() -> URL? {
+        let panel = NSOpenPanel()
+        panel.title = "Select BlazeDB.xcodeproj"
+        panel.message = "Choose BlazeDB.xcodeproj from your local BlazeDB repository clone."
+        panel.canChooseFiles = true
+        panel.canChooseDirectories = false
+        panel.allowsMultipleSelection = false
+        panel.allowedFileTypes = ["xcodeproj"]
+        guard panel.runModal() == .OK, let url = panel.url else { return nil }
+        storeRepoRoot(forXcodeproj: url)
+        return url
+    }
+}
+
 struct TestRunnerView: View {
     @StateObject private var runner = TestRunner()
     
@@ -162,10 +194,15 @@ struct TestRunnerView: View {
     }
     
     private func openInXcode() {
-        // Resolve project root relative to the app bundle's location
-        let projectURL = URL(fileURLWithPath: NSHomeDirectory())
-            .appendingPathComponent("Developer/ProjectBlaze/BlazeDB/BlazeDB.xcodeproj")
-        
+        let projectURL: URL
+        if let root = BlazeDBVisualizerPaths.storedRepoRoot() {
+            projectURL = root.appendingPathComponent("BlazeDB.xcodeproj", isDirectory: true)
+        } else if let picked = BlazeDBVisualizerPaths.promptSelectBlazeDBXcodeprojIfNeeded() {
+            projectURL = picked
+        } else {
+            return
+        }
+
         NSWorkspace.shared.open(projectURL)
         
         // Show helper alert
@@ -269,8 +306,8 @@ struct TestRunnerView: View {
                             HStack(alignment: .top, spacing: 8) {
                                 Text("4.")
                                 VStack(alignment: .leading) {
-                                    Text("Run manually:")
-                                    Text("cd ~/Developer/ProjectBlaze/BlazeDB")
+                                    Text("Run manually from your clone root:")
+                                    Text("cd /path/to/your/BlazeDB/clone")
                                         .font(.caption.monospaced())
                                     Text("xcodebuild test -scheme BlazeDB -destination platform=macOS")
                                         .font(.caption.monospaced())
@@ -500,9 +537,22 @@ final class TestRunner: ObservableObject {
         let process = Process()
         testProcess = process
         
-        // Set working directory to BlazeDB project root
-        process.currentDirectoryURL = URL(fileURLWithPath: NSHomeDirectory())
-            .appendingPathComponent("Developer/ProjectBlaze/BlazeDB")
+        if BlazeDBVisualizerPaths.storedRepoRoot() == nil {
+            _ = BlazeDBVisualizerPaths.promptSelectBlazeDBXcodeprojIfNeeded()
+        }
+        guard let repoRoot = BlazeDBVisualizerPaths.storedRepoRoot() else {
+            currentTest = "Cancelled: choose BlazeDB.xcodeproj (clone root) to run tests"
+            elapsedTime = Date().timeIntervalSince(startTime)
+            results = TestResults(
+                total: 0,
+                passed: 0,
+                failed: 0,
+                duration: elapsedTime,
+                categories: []
+            )
+            return
+        }
+        process.currentDirectoryURL = repoRoot
         
         process.executableURL = URL(fileURLWithPath: "/usr/bin/xcodebuild")
         process.arguments = [

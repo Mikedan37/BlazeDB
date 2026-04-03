@@ -116,14 +116,13 @@ BlazeDB encrypts data and overflow pages at rest using AES-GCM, and the page-lev
 - [Release Rollback Procedure](Docs/Status/RELEASE_ROLLBACK.md)
 - [Cross-Version Compatibility Harness](Docs/Status/COMPATIBILITY_HARNESS.md)
 - [OSS Core Build Excludes](Docs/Contributing/OSS_CORE_BUILD_EXCLUDES.md)
-- [Open-Source Readiness Checklist](Docs/Status/OPEN_SOURCE_READINESS_CHECKLIST.md)
 - [External Security Review Plan](Docs/Status/EXTERNAL_SECURITY_REVIEW_PLAN.md)
 
 > **Note:** This repository also includes `BlazeStudio/`, an optional, experimental visual companion app built on
 > BlazeDB. It is **not required** to use the core embedded database engine and is less battle-tested than the core
 > library.
 
-**Requirements:** Swift 6.0+, macOS 15+ / iOS 15+ / Linux (experimental)
+**Requirements:** Swift 6.0+, macOS 15+ / iOS 15+ / Linux (core engine supported; automated CI validation is lighter than on macOS — see [Linux guide](Docs/GettingStarted/LINUX_GETTING_STARTED.md) and [Compatibility](Docs/COMPATIBILITY.md))
 
 ### Security and Benchmark Mode Note
 

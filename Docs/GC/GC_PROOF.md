@@ -211,7 +211,7 @@ AFTER GC:
 ## **Run The Tests Yourself**
 
 ```bash
-cd ~/Developer/ProjectBlaze/BlazeDB
+cd /path/to/your/BlazeDB/clone
 
 # Run GC tests specifically
 swift test --filter MVCCFoundationTests.testGarbageCollection
@@ -336,7 +336,7 @@ Solution: Don't hold version references manually
 Copy/paste this into your terminal:
 
 ```bash
-cd ~/Developer/ProjectBlaze/BlazeDB
+cd /path/to/your/BlazeDB/clone
 
 # Run ALL MVCC tests
 swift test --filter MVCCFoundationTests

@@ -2,7 +2,7 @@
 
 **Platform:** Linux (aarch64 tested on Orange Pi 5 Ultra)
 **Swift:** 6.0+
-**Status:** Core functionality fully supported
+**Status:** Core engine runs on Linux; hosted CI for Linux is best-effort compared to macOS. See [Compatibility matrix](../COMPATIBILITY.md) for platform detail.
 
 ---
 

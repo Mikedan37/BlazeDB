@@ -32,8 +32,6 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 - Released compatibility fixtures:
   - `Tests/CompatibilityFixtures/v0.1.3/dump.blazedump`
   - `Tests/CompatibilityFixtures/v2.7.0/dump.blazedump`
-- Release-evidence blocker ledger for fresh-clone/tag validation:
-  - `Docs/Status/RELEASE_EVIDENCE_BLOCKERS.md`
 - External security-review planning and tracking:
   - `Docs/Status/EXTERNAL_SECURITY_REVIEW_PLAN.md`
   - `.github/ISSUE_TEMPLATE/security_review_tracking.md`

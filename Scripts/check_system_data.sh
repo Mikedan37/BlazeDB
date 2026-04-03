@@ -2,6 +2,9 @@
 # Diagnostic script to check what's using System Data space
 # Run this to see where your disk space is going
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+
 echo "🔍 Checking System Data Usage..."
 echo "=================================="
 echo ""
@@ -89,12 +92,8 @@ echo "🧪 Test Database Files in /tmp:"
 find /tmp -name "*blazedb*" -o -name "*BlazeDB*" 2>/dev/null | wc -l | xargs echo "  Found files:"
 echo ""
 
-echo "🧪 Test Database Files in Project:"
-if [ -d ~/Developer/ProjectBlaze/BlazeDB ]; then
-    find ~/Developer/ProjectBlaze/BlazeDB -name "*.blazedb" -type f 2>/dev/null | wc -l | xargs echo "  Found files:"
-else
-    echo "  Project directory not found"
-fi
+echo "🧪 Test Database Files in this repo clone (${REPO_ROOT}):"
+find "$REPO_ROOT" -name "*.blazedb" -type f 2>/dev/null | wc -l | xargs echo "  Found files:"
 echo ""
 
 echo "🐳 Docker (if installed):"

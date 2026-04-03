@@ -5,7 +5,7 @@
 Run this command in your terminal:
 
 ```bash
-cd ~/Developer/ProjectBlaze/BlazeDB
+cd /path/to/your/BlazeDB/clone
 swift test --filter ComprehensiveBenchmarks
 ```
 

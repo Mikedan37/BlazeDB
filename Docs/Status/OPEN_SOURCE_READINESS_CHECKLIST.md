@@ -26,10 +26,9 @@ BlazeDB includes GitHub Actions workflows under `.github/workflows/` for CI vali
 - [x] Next public release tag candidate build passes from a fresh clone.
 - Verified locally via `Scripts/verify-clean-checkout.sh` and `Scripts/verify-readme-quickstart.sh`.
 - OSS verification runs on **macOS** in `.github/workflows/ci.yml` (clean checkout + README quickstart on every push/PR).
-- Note: legacy pre-OSS tags are tracked separately in `Docs/Status/RELEASE_EVIDENCE_BLOCKERS.md`.
+- Legacy **`v*` tag buildability** (optional): manual workflow `.github/workflows/tag-probe.yml` and helper `Scripts/check-release-tag-builds.sh` (not run on every push/PR; see `Docs/Testing/CI_AND_TEST_TIERS.md`).
 - Tooling in place: `Scripts/verify-clean-checkout.sh` (release build + clean-worktree validation path).
 - Tag build probe: `Scripts/check-release-tag-builds.sh`.
-- Current blocker evidence: `Docs/Status/RELEASE_EVIDENCE_BLOCKERS.md`.
 
 ## 2) Security and Trust
 

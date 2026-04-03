@@ -5,7 +5,7 @@
 | README.md | onboarding | CHUNK1 | AUDITED | Core entry, aligned with BlazeDBClient, durability/security truth, sidecar labels. |
 | SECURITY.md | security | CHUNK1 | AUDITED | Disclosure policy and scope match current security posture. |
 | CONTRIBUTING.md | testing/contrib | CHUNK1 | AUDITED | CI tier descriptions and scripts match Package.swift and Scripts/. |
-| CHANGELOG.md | release/status | CHUNK1 | AUDITED | Release history and unreleased notes consistent with current repo; one reference to archived RELEASE_EVIDENCE_BLOCKERS left as historical. |
+| CHANGELOG.md | release/status | CHUNK1 | AUDITED | Release history and unreleased notes consistent with current repo; legacy tag validation called out via manual `tag-probe` workflow / scripts where relevant. |
 | CODE_OF_CONDUCT.md | other | CHUNK1 | AUDITED | Standard Contributor Covenant; no code claims. |
 | Docs/GettingStarted/README.md | onboarding | CHUNK1 | AUDITED | Install/run examples and starter code use current BlazeDBClient API. |
 | Docs/GettingStarted/HOW_TO_USE_BLAZEDB.md | onboarding/api | CHUNK1 | AUDITED | Complete guide uses BlazeDBClient, advanced API fencing matches core code. |

@@ -27,7 +27,7 @@ This ensures the scheme is available to xcodebuild.
 Open Terminal and run:
 
 ```bash
-cd ~/Developer/ProjectBlaze/BlazeDB
+cd /path/to/your/BlazeDB/clone
 xcodebuild test -scheme BlazeDB -destination 'platform=macOS'
 ```
 
@@ -119,7 +119,7 @@ Already fixed! Entitlements have:
 **Solution:**
 Check the path in `TestRunnerView.swift`:
 ```swift
-process.currentDirectoryURL = URL(fileURLWithPath: "~/Developer/ProjectBlaze/BlazeDB")
+process.currentDirectoryURL = URL(fileURLWithPath: "/path/to/your/BlazeDB/clone")
 ```
 
 Make sure this matches YOUR actual project location!
@@ -143,7 +143,7 @@ xcodebuild -version
 ### **Step 2: Check if scheme exists**
 
 ```bash
-cd ~/Developer/ProjectBlaze/BlazeDB
+cd /path/to/your/BlazeDB/clone
 xcodebuild -list
 ```
 
@@ -158,7 +158,7 @@ Schemes:
 ### **Step 3: Try running tests manually**
 
 ```bash
-cd ~/Developer/ProjectBlaze/BlazeDB
+cd /path/to/your/BlazeDB/clone
 xcodebuild test -scheme BlazeDB -destination 'platform=macOS' | head -50
 ```
 
@@ -178,7 +178,7 @@ When you click "Run Tests" in BlazeDBVisualizer:
 3. Search for "xcodebuild" or "BlazeDBVisualizer"
 4. Look for these debug lines:
  Executing: xcodebuild test -scheme BlazeDB -destination platform=macOS
- Working directory: ~/Developer/ProjectBlaze/BlazeDB
+ Working directory: /path/to/your/BlazeDB/clone
  xcodebuild started successfully
 
  OR
@@ -280,7 +280,7 @@ which xcodebuild
 xcodebuild -version
 
 # List schemes
-cd ~/Developer/ProjectBlaze/BlazeDB
+cd /path/to/your/BlazeDB/clone
 xcodebuild -list
 
 # Test command (copy from Console output)
