@@ -58,16 +58,18 @@ extension BlazeDBClient {
         return try collection.queue.sync {
             // Get file size
             let fileSize = try collection.store.fileURL.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0
+            let layout = try collection.loadLayoutForMutation()
             
-            // Get active version count
-            let versionStats = collection.versionManager.getStats()
+            let activePages = Set(collection.indexMap.values.flatMap { $0 }).count
             let pageGCStats = collection.versionManager.pageGC.getStats()
+            let persistedDeletedPages = layout.deletedPages.count
             
-            // Estimate active data (versions × avg page size)
+            // Account for both persisted deleted pages and MVCC free pages. These pools are
+            // populated by different code paths, so health checks must consider both before
+            // deciding whether auto-vacuum should run.
             let pageSize = 4096
-            let activePages = versionStats.totalVersions
             let totalPages = fileSize / pageSize
-            let obsoletePages = pageGCStats.freePagesAvailable
+            let obsoletePages = persistedDeletedPages + pageGCStats.freePagesAvailable
             
             let activeDataBytes = activePages * pageSize
             let wastedBytes = obsoletePages * pageSize
@@ -129,8 +131,12 @@ extension BlazeDBClient {
             isVacuuming = false
             vacuumLock.unlock()
         }
-        
-        return try collection.queue.sync(flags: .barrier) {
+
+        let activeCollection = collection
+        var retiredCollection: DynamicCollection? = activeCollection
+
+        let reclaimed = try activeCollection.queue.sync(flags: .barrier) {
+            let collection = activeCollection
             BlazeLogger.info("🗑️ VACUUM: Starting CRASH-SAFE database compaction...")
 
             let startTime = Date()
@@ -149,8 +155,7 @@ extension BlazeDBClient {
             try Data().write(to: vacuumLogURL, options: .atomic)
             
             defer {
-                // Always clean up intent log
-                try? FileManager.default.removeItem(at: vacuumLogURL)
+                BlazeAuthoritativeFileOps.removeItemIfExists(at: vacuumLogURL, context: "VACUUM(intent log)")
             }
             
             // Get current file size
@@ -184,8 +189,8 @@ extension BlazeDBClient {
                 .appendingPathExtension("vacuum.meta")
             
             // Clean up any existing temp files
-            try? FileManager.default.removeItem(at: tempURL)
-            try? FileManager.default.removeItem(at: tempMetaURL)
+            BlazeAuthoritativeFileOps.removeItemIfExists(at: tempURL, context: "VACUUM(temp data)")
+            BlazeAuthoritativeFileOps.removeItemIfExists(at: tempMetaURL, context: "VACUUM(temp meta)")
             
             // Create new store
             let tempStore = try PageStore(fileURL: tempURL, key: collection.encryptionKey)
@@ -209,6 +214,7 @@ extension BlazeDBClient {
             
             // Persist and FSYNC the new database (CRASH SAFETY!)
             try tempCollection.persist()
+            try tempCollection.close()
             
             // CRITICAL: Ensure all data is on disk before replacing files
             // This is the "barrier" - if we crash before this, old DB is still intact
@@ -230,14 +236,23 @@ extension BlazeDBClient {
             let metaBackupURL = collection.metaURL
                 .deletingPathExtension()
                 .appendingPathExtension("vacuum_backup.meta")
+            let originalDataURL = collection.store.fileURL
+            let originalMetaURL = collection.metaURL
+            let originalProject = collection.project
+            let originalKey = collection.encryptionKey
+            let originalPassword = collection.password
+            let originalSalt = collection.kdfSalt
             
             // Clean up any old backups first
-            try? FileManager.default.removeItem(at: dataBackupURL)
-            try? FileManager.default.removeItem(at: metaBackupURL)
+            BlazeAuthoritativeFileOps.removeItemIfExists(at: dataBackupURL, context: "VACUUM(stale data backup)")
+            BlazeAuthoritativeFileOps.removeItemIfExists(at: metaBackupURL, context: "VACUUM(stale meta backup)")
+
+            // Release the live file handles before swapping files in place.
+            collection.store.close()
             
             // ATOMIC: Rename old → backup (if crash here, old file still exists)
-            try FileManager.default.moveItem(at: collection.store.fileURL, to: dataBackupURL)
-            try FileManager.default.moveItem(at: collection.metaURL, to: metaBackupURL)
+            try FileManager.default.moveItem(at: originalDataURL, to: dataBackupURL)
+            try FileManager.default.moveItem(at: originalMetaURL, to: metaBackupURL)
             
             BlazeLogger.info("   ✅ Old files backed up")
             
@@ -250,21 +265,31 @@ extension BlazeDBClient {
                     throw BlazeDBError.transactionFailed("Simulated VACUUM rename failure")
                 }
 
-                try FileManager.default.moveItem(at: tempURL, to: collection.store.fileURL)
-                try FileManager.default.moveItem(at: tempMetaURL, to: collection.metaURL)
+                try FileManager.default.moveItem(at: tempURL, to: originalDataURL)
+                try FileManager.default.moveItem(at: tempMetaURL, to: originalMetaURL)
                 
                 BlazeLogger.info("   ✅ New files activated")
+
+                let reloadedStore = try PageStore(fileURL: originalDataURL, key: originalKey)
+                self.collection = try DynamicCollection(
+                    store: reloadedStore,
+                    metaURL: originalMetaURL,
+                    project: originalProject,
+                    encryptionKey: originalKey,
+                    password: originalPassword,
+                    kdfSalt: originalSalt
+                )
                 
                 // Step 3: Success! Create success marker
-                let successMarkerURL = collection.store.fileURL
+                let successMarkerURL = originalDataURL
                     .deletingPathExtension()
                     .appendingPathExtension("vacuum_success")
                 try Data().write(to: successMarkerURL, options: .atomic)
                 
                 // Step 4: Safe to delete backups now
-                try? FileManager.default.removeItem(at: dataBackupURL)
-                try? FileManager.default.removeItem(at: metaBackupURL)
-                try? FileManager.default.removeItem(at: successMarkerURL)
+                BlazeAuthoritativeFileOps.removeItemIfExists(at: dataBackupURL, context: "VACUUM(post-success data backup)")
+                BlazeAuthoritativeFileOps.removeItemIfExists(at: metaBackupURL, context: "VACUUM(post-success meta backup)")
+                BlazeAuthoritativeFileOps.removeItemIfExists(at: successMarkerURL, context: "VACUUM(success marker)")
                 
                 BlazeLogger.info("   ✅ Backup files cleaned up")
                 
@@ -273,14 +298,24 @@ extension BlazeDBClient {
                 BlazeLogger.error("   ❌ VACUUM failed during file replacement, rolling back...")
                 
                 // Restore old files
-                try? FileManager.default.removeItem(at: collection.store.fileURL)
-                try? FileManager.default.removeItem(at: collection.metaURL)
-                try? FileManager.default.moveItem(at: dataBackupURL, to: collection.store.fileURL)
-                try? FileManager.default.moveItem(at: metaBackupURL, to: collection.metaURL)
+                BlazeAuthoritativeFileOps.removeItemIfExists(at: originalDataURL, context: "VACUUM(rollback partial)")
+                BlazeAuthoritativeFileOps.removeItemIfExists(at: originalMetaURL, context: "VACUUM(rollback partial meta)")
+                do {
+                    try FileManager.default.moveItem(at: dataBackupURL, to: originalDataURL)
+                } catch {
+                    BlazeLogger.error("VACUUM rollback: could not restore data from backup: \(error.localizedDescription)")
+                    throw BlazeDBError.transactionFailed("VACUUM rollback failed", underlyingError: error)
+                }
+                do {
+                    try FileManager.default.moveItem(at: metaBackupURL, to: originalMetaURL)
+                } catch {
+                    BlazeLogger.error("VACUUM rollback: could not restore meta from backup: \(error.localizedDescription)")
+                    throw BlazeDBError.transactionFailed("VACUUM rollback failed", underlyingError: error)
+                }
                 
                 // Clean up temp files
-                try? FileManager.default.removeItem(at: tempURL)
-                try? FileManager.default.removeItem(at: tempMetaURL)
+                BlazeAuthoritativeFileOps.removeItemIfExists(at: tempURL, context: "VACUUM(rollback temp)")
+                BlazeAuthoritativeFileOps.removeItemIfExists(at: tempMetaURL, context: "VACUUM(rollback temp meta)")
                 
                 throw BlazeDBError.transactionFailed(
                     "VACUUM rollback: \(error.localizedDescription)",
@@ -301,6 +336,9 @@ extension BlazeDBClient {
             
             return reclaimed
         }
+
+        retiredCollection = nil
+        return reclaimed
     }
     
     /// Auto-vacuum if storage health is poor

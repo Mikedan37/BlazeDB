@@ -56,9 +56,12 @@ public class SecureConnection {
         let tlsOptions = remote.useTLS ? NWProtocolTLS.Options() : nil
         
         let parameters = NWParameters(tls: tlsOptions, tcp: tcpOptions)
+        guard let port = NWEndpoint.Port(rawValue: remote.port) else {
+            throw ConnectionError.invalidRemotePort(remote.port)
+        }
         let connection = NWConnection(
             host: NWEndpoint.Host(remote.host),
-            port: NWEndpoint.Port(rawValue: remote.port)!,
+            port: port,
             using: parameters
         )
         
@@ -150,7 +153,10 @@ public class SecureConnection {
         guard let challenge = welcome.challenge else {
             throw HandshakeError.invalidResponse
         }
-        let keyData = groupKey!.withUnsafeBytes { Data($0) }
+        guard let derivedKey = groupKey else {
+            throw HandshakeError.invalidResponse
+        }
+        let keyData = derivedKey.withUnsafeBytes { Data($0) }
         let response = HMAC<SHA256>.authenticationCode(
             for: challenge,
             using: SymmetricKey(data: keyData)
@@ -263,7 +269,10 @@ public class SecureConnection {
         )
         
         // STEP 8: Verify challenge response
-        let keyData = groupKey!.withUnsafeBytes { Data($0) }
+        guard let derivedKey = groupKey else {
+            throw HandshakeError.invalidResponse
+        }
+        let keyData = derivedKey.withUnsafeBytes { Data($0) }
         let expectedResponse = HMAC<SHA256>.authenticationCode(
             for: challenge,
             using: SymmetricKey(data: keyData)
@@ -290,7 +299,9 @@ public class SecureConnection {
         
         // Encrypt with AES-256-GCM
         let sealed = try AES.GCM.seal(data, using: key)
-        let encrypted = sealed.combined!
+        guard let encrypted = sealed.combined else {
+            throw ConnectionError.encryptionFormattingFailed
+        }
         
         // Send encrypted frame
         try await sendFrame(type: .encryptedData, payload: encrypted)
@@ -463,52 +474,70 @@ public class SecureConnection {
     
     func decodeHandshake(_ data: Data) throws -> HandshakeMessage {
         var offset = 0
+        guard !data.isEmpty else { throw HandshakeError.invalidResponse }
         
         // Protocol
         let protocolLen = Int(data[offset])
         offset += 1
-        let `protocol` = String(data: data[offset..<offset+protocolLen], encoding: .utf8)!
+        guard offset + protocolLen <= data.count,
+              let `protocol` = String(data: data[offset..<offset+protocolLen], encoding: .utf8) else {
+            throw HandshakeError.invalidResponse
+        }
         offset += protocolLen
         
         // Node ID
+        guard offset + 16 <= data.count else { throw HandshakeError.invalidResponse }
         let nodeId = UUID(uuid: data[offset..<offset+16].withUnsafeBytes { $0.load(as: uuid_t.self) })
         offset += 16
         
         // Database
+        guard offset < data.count else { throw HandshakeError.invalidResponse }
         let dbLen = Int(data[offset])
         offset += 1
-        let database = String(data: data[offset..<offset+dbLen], encoding: .utf8)!
+        guard offset + dbLen <= data.count,
+              let database = String(data: data[offset..<offset+dbLen], encoding: .utf8) else {
+            throw HandshakeError.invalidResponse
+        }
         offset += dbLen
         
-        // Public Key
-        let publicKey = data[offset..<offset+65]
+        // Public Key (P-256 raw format from encoder)
+        guard offset + 65 <= data.count else { throw HandshakeError.invalidResponse }
+        let publicKey = data.subdata(in: offset..<(offset + 65))
         offset += 65
         
         // Capabilities
+        guard offset < data.count else { throw HandshakeError.invalidResponse }
         let capabilities = HandshakeMessage.Capabilities(rawValue: data[offset])
         offset += 1
         
         // Timestamp
+        guard offset + 8 <= data.count else { throw HandshakeError.invalidResponse }
         let millis = data[offset..<offset+8].withUnsafeBytes { $0.load(as: UInt64.self).bigEndian }
         let timestamp = Date(timeIntervalSince1970: Double(millis) / 1000.0)
         offset += 8
         
-        // Challenge (if present)
+        // Challenge (legacy framing): if at least 16 trailing bytes remain before auth length, consume as challenge.
+        // Avoids range traps on truncated payloads (2...15 bytes after timestamp would previously crash).
         let challenge: Data?
-        if data.count > offset {
-            challenge = data[offset..<offset+16]
+        if data.count - offset >= 16 {
+            challenge = data.subdata(in: offset..<(offset + 16))
             offset += 16
         } else {
             challenge = nil
         }
         
-        // Auth Token (if present)
-        let authTokenLen = offset < data.count ? Int(data[offset]) : 0
+        // Auth token length + UTF-8 payload (encoder always emits length byte)
+        guard offset < data.count else { throw HandshakeError.invalidResponse }
+        let authTokenLen = Int(data[offset])
         offset += 1
         let authToken: String?
-        if authTokenLen > 0 && offset + authTokenLen <= data.count {
-            authToken = String(data: data[offset..<offset+authTokenLen], encoding: .utf8)
+        if authTokenLen > 0 {
+            guard offset + authTokenLen <= data.count,
+                  let token = String(data: data[offset..<offset+authTokenLen], encoding: .utf8) else {
+                throw HandshakeError.invalidResponse
+            }
             offset += authTokenLen
+            authToken = token
         } else {
             authToken = nil
         }
@@ -532,6 +561,10 @@ enum ConnectionError: Error {
     case waiting(Error)
     case failed(Error)
     case notHandshaked
+    /// Remote advertised a port number that `Network.framework` cannot represent.
+    case invalidRemotePort(UInt16)
+    /// Sealed box did not produce a combined nonce+ciphertext+tag payload (unexpected for AES-GCM here).
+    case encryptionFormattingFailed
 }
 
 enum HandshakeError: Error {

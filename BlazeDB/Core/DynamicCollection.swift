@@ -146,8 +146,8 @@ public final class DynamicCollection {
     // This prevents signature verification failures when createIndex saves, then persist() saves again
     internal var secondaryIndexDefinitions: [String: [String]] = [:]
     
-    // Track whether layout signature verification succeeded
-    private var layoutSignatureVerified: Bool = true
+    // Track whether layout signature verification succeeded (`internal` for init recovery helper in extension file)
+    internal var layoutSignatureVerified: Bool = true
     private var closed: Bool = false
     
     private func applyLayoutFromStorage(_ layout: StorageLayout) {
@@ -162,6 +162,18 @@ public final class DynamicCollection {
         self.secondaryIndexDefinitions = layout.secondaryIndexDefinitions
         BlazeLogger.debug("applyLayoutFromStorage: Loaded indexMap with \(self.indexMap.count) entries")
         rebuildMVCCFromIndexMapIfNeeded()
+    }
+
+    internal func loadLayoutForMutation() throws -> StorageLayout {
+        var layout = try StorageLayout.loadSecure(
+            from: metaURL,
+            signingKey: encryptionKey,
+            password: password,
+            salt: kdfSalt,
+            allowUnsignedLayoutFallback: true
+        )
+        layout.deletedPages = cachedDeletedPages
+        return layout
     }
     
     internal func rebuildMVCCFromIndexMapIfNeeded() {
@@ -420,7 +432,6 @@ public final class DynamicCollection {
                 // Try to extract index definitions from corrupted meta file BEFORE deleting it
                 // (even if signature verification fails, we can still decode the JSON)
                 var preservedIndexDefinitions: [String: [String]] = [:]
-                var recoveredLayout: StorageLayout? = nil
                 if FileManager.default.fileExists(atPath: metaURL.path) {
                     BlazeLogger.info("Attempting to extract index definitions from corrupted meta file...")
                     do {
@@ -455,13 +466,11 @@ public final class DynamicCollection {
                             
                             // Strategy 1: Try SecureLayout
                             if let secureLayout = try? decoder.decode(StorageLayout.SecureLayout.self, from: metaData) {
-                                recoveredLayout = secureLayout.layout
                                 preservedIndexDefinitions = secureLayout.layout.secondaryIndexDefinitions
                                 BlazeLogger.info("Preserved \(preservedIndexDefinitions.count) index definitions from SecureLayout: \(preservedIndexDefinitions.keys.joined(separator: ", "))")
                             }
                             // Strategy 2: Try plain StorageLayout (backward compatibility)
                             else if let layout = try? decoder.decode(StorageLayout.self, from: metaData) {
-                                recoveredLayout = layout
                                 preservedIndexDefinitions = layout.secondaryIndexDefinitions
                                 BlazeLogger.info("Decoded as plain StorageLayout with \(layout.secondaryIndexDefinitions.count) index definitions")
                                 if !layout.secondaryIndexDefinitions.isEmpty {
@@ -542,227 +551,36 @@ public final class DynamicCollection {
                 
                 let nsError = error as NSError
                 let isSignatureFailure = nsError.domain == "StorageLayout" && nsError.code == 1
-                
+
                 if isSignatureFailure {
-                    BlazeLogger.error("SIGNATURE VERIFICATION FAILURE: The .meta file was created with a different password or is corrupted. Solution: Delete the .meta file and recreate the database.")
-                    BlazeLogger.error("Running in read-only compatibility mode (layout will not be saved)")
-                    
+                    BlazeLogger.error("SIGNATURE VERIFICATION FAILURE: .meta signing key mismatch or tampering. Refusing to mutate metadata during open; caller must reopen with the correct password.")
                     layoutSignatureVerified = false
-                    
-                    var fallbackLayout = recoveredLayout ?? StorageLayout.empty()
-                    if !preservedIndexDefinitions.isEmpty {
-                        fallbackLayout.secondaryIndexDefinitions = preservedIndexDefinitions
-                    }
-                    applyLayoutFromStorage(fallbackLayout)
+                    throw error
                 } else {
-                    // Non-signature corruption: delete and rebuild
-                    BlazeLogger.error("❌ [INIT] Deleting corrupted file and rebuilding from data...")
-                    do {
-                        try FileManager.default.removeItem(at: metaURL)
-                        BlazeLogger.info("✅ [INIT] Successfully deleted corrupted meta file")
-                    } catch let deleteError {
-                        BlazeLogger.error("❌ [INIT] Failed to delete meta file: \(deleteError)")
-                    }
-                    
-                    // Try to rebuild layout from data file by scanning and decoding all records
-                    BlazeLogger.info("📋 [INIT] Attempting to rebuild layout from data file...")
-                    do {
-                        var rebuiltIndexMap: [UUID: [Int]] = [:]
-                        var rebuiltNextPageIndex = 0
-                        var pageIndex = 0
-                        
-                        // Scan all pages and decode records to rebuild indexMap
-                        // Use a more efficient approach: scan until we hit consecutive empty pages
-                        var consecutiveEmptyPages = 0
-                        let maxConsecutiveEmpty = 10  // Stop after 10 consecutive empty pages
-                        
-                        while consecutiveEmptyPages < maxConsecutiveEmpty {
-                            do {
-                                // Try to read page (with overflow support)
-                                guard let data = try store.readPageWithOverflow(index: pageIndex),
-                                      !data.isEmpty,
-                                      !data.allSatisfy({ $0 == 0 }) else {
-                                    // Empty page
-                                    consecutiveEmptyPages += 1
-                                    rebuiltNextPageIndex = max(rebuiltNextPageIndex, pageIndex + 1)
-                                    pageIndex += 1
-                                    continue
-                                }
-                                
-                                // Found non-empty page, reset counter
-                                consecutiveEmptyPages = 0
-                                
-                                // Try to decode the record to get its ID
-                                do {
-                                    let record = try BlazeBinaryDecoder.decode(data)
-                                    // Extract UUID from record - try "id" field first
-                                    var recordID: UUID? = record.storage["id"]?.uuidValue
-                                    
-                                    // If no "id" field, check if record was inserted with auto-generated ID
-                                    // (This shouldn't happen, but handle it gracefully)
-                                    if recordID == nil {
-                                        // Try to find any UUID field that might be the ID
-                                        for (key, field) in record.storage {
-                                            if key.lowercased() == "id" || key.lowercased().hasSuffix("id") {
-                                                recordID = field.uuidValue
-                                                break
-                                            }
-                                        }
-                                    }
-                                    
-                                    if let id = recordID {
-                                        if rebuiltIndexMap[id] == nil {
-                                            rebuiltIndexMap[id] = [pageIndex]
-                                        } else {
-                                            rebuiltIndexMap[id]?.append(pageIndex)
-                                        }
-                                    } else {
-                                        BlazeLogger.debug("Page \(pageIndex) decoded but has no ID field")
-                                    }
-                                } catch {
-                                    // Not a valid record, skip this page
-                                    BlazeLogger.debug("Page \(pageIndex) is not a valid record: \(error)")
-                                }
-                                
-                                rebuiltNextPageIndex = max(rebuiltNextPageIndex, pageIndex + 1)
-                                pageIndex += 1
-                            } catch {
-                                // Can't read page - might be end of file or invalid index
-                                consecutiveEmptyPages += 1
-                                if consecutiveEmptyPages >= maxConsecutiveEmpty {
-                                    break
-                                }
-                                pageIndex += 1
-                            }
-                        }
-                        
-                        // Update properties from rebuilt layout
-                        self.indexMap = rebuiltIndexMap
-                        self.nextPageIndex = rebuiltNextPageIndex
-                        // Secondary indexes will be empty after rebuild (will be rebuilt below if definitions exist)
-                        self.secondaryIndexes = [:]
-                        self.cachedSearchIndex = nil
-                        self.cachedSearchIndexedFields = []
-                        
-                        // Restore index definitions and rebuild indexes if we preserved them
-                        if !preservedIndexDefinitions.isEmpty {
-                            BlazeLogger.info("Rebuilding \(preservedIndexDefinitions.count) indexes from preserved definitions...")
-                            self.secondaryIndexDefinitions = preservedIndexDefinitions
-                            // Rebuild indexes using same normalization as createIndex()
-                            for (indexKey, fields) in preservedIndexDefinitions {
-                                BlazeLogger.info("Rebuilding index '\(indexKey)' on fields: \(fields.joined(separator: ", "))")
-                                var rebuilt: [CompoundIndexKey: Set<UUID>] = [:]
-                                for id in rebuiltIndexMap.keys {
-                                    if let record = try? self._fetchNoSync(id: id) {
-                                        let doc = record.storage
-                                        // Use same normalization logic as createIndex() to ensure key format matches
-                                        let rawKey = CompoundIndexKey.fromFields(doc, fields: fields)
-                                        let normalizedComponents = rawKey.components.map { component -> AnyBlazeCodable in
-                                            switch component {
-                                            case .string(let s): return AnyBlazeCodable(s)
-                                            case .int(let i): return AnyBlazeCodable(i)
-                                            case .double(let d): return AnyBlazeCodable(d)
-                                            case .bool(let b): return AnyBlazeCodable(b)
-                                            case .date(let d): return AnyBlazeCodable(d)
-                                            case .uuid(let u): return AnyBlazeCodable(u)
-                                            case .data(let data): return AnyBlazeCodable(data)
-                                            case .vector(let v): return AnyBlazeCodable(v)
-                                            case .null: return AnyBlazeCodable("")
-                                            case .array, .dictionary: return AnyBlazeCodable("")  // Arrays/dicts not supported in compound indexes
-                                            }
-                                        }
-                                        let normalizedKey = CompoundIndexKey(normalizedComponents)
-                                        rebuilt[normalizedKey, default: []].insert(id)
-                                    }
-                                }
-                                self.secondaryIndexes[indexKey] = rebuilt
-                                BlazeLogger.info("Rebuilt index '\(indexKey)' with \(rebuilt.count) keys, \(rebuilt.values.reduce(0) { $0 + $1.count }) total UUIDs")
-                            }
-                        } else {
-                            // Last resort: Try to infer index definitions from data patterns
-                            // Look for fields that are commonly indexed (frequently queried fields)
-                            BlazeLogger.warn("No index definitions preserved, attempting to infer from data...")
-                            
-                            // Sample a few records to see what fields exist
-                            var fieldFrequency: [String: Int] = [:]
-                            let sampleSize = min(10, rebuiltIndexMap.count)
-                            let sampleIDs = Array(rebuiltIndexMap.keys.prefix(sampleSize))
-                            
-                            for id in sampleIDs {
-                                if let record = try? self._fetchNoSync(id: id) {
-                                    for field in record.storage.keys {
-                                        fieldFrequency[field, default: 0] += 1
-                                    }
-                                }
-                            }
-                            
-                            // Common indexable field names (excluding system fields)
-                            let systemFields = Set(["id", "createdAt", "updatedAt", "project", "deletedAt"])
-                            let commonIndexFields = ["name", "email", "category", "type", "status", "userId", "user_id"]
-                            
-                            // Try to infer indexes for common field names that exist in most records
-                            var inferredDefinitions: [String: [String]] = [:]
-                            for field in commonIndexFields {
-                                if !systemFields.contains(field),
-                                   let frequency = fieldFrequency[field],
-                                   frequency >= sampleSize / 2 {  // Field exists in at least half of sampled records
-                                    inferredDefinitions[field] = [field]
-                                    BlazeLogger.info("Inferred index on field '\(field)' (found in \(frequency)/\(sampleSize) sampled records)")
-                                }
-                            }
-                            
-                            if !inferredDefinitions.isEmpty {
-                                self.secondaryIndexDefinitions = inferredDefinitions
-                                // Rebuild indexes using inferred definitions
-                                for (indexKey, fields) in inferredDefinitions {
-                                    BlazeLogger.info("Rebuilding inferred index '\(indexKey)' on fields: \(fields.joined(separator: ", "))")
-                                    var rebuilt: [CompoundIndexKey: Set<UUID>] = [:]
-                                    for id in rebuiltIndexMap.keys {
-                                        if let record = try? self._fetchNoSync(id: id) {
-                                            let doc = record.storage
-                                            guard fields.allSatisfy({ doc[$0] != nil }) else { continue }
-                                            let rawKey = CompoundIndexKey.fromFields(doc, fields: fields)
-                                            let normalizedComponents = rawKey.components.map { component -> AnyBlazeCodable in
-                                                switch component {
-                                                case .string(let s): return AnyBlazeCodable(s)
-                                                case .int(let i): return AnyBlazeCodable(i)
-                                                case .double(let d): return AnyBlazeCodable(d)
-                                                case .bool(let b): return AnyBlazeCodable(b)
-                                                case .date(let d): return AnyBlazeCodable(d)
-                                                case .uuid(let u): return AnyBlazeCodable(u)
-                                                case .data(let data): return AnyBlazeCodable(data)
-                            case .vector(let v): return AnyBlazeCodable(v)
-                            case .null: return AnyBlazeCodable("")
-                                            case .array, .dictionary: return AnyBlazeCodable("")  // Arrays/dicts not supported in compound indexes
-                            }
-                                            }
-                                            let normalizedKey = CompoundIndexKey(normalizedComponents)
-                                            rebuilt[normalizedKey, default: []].insert(id)
-                                        }
-                                    }
-                                    self.secondaryIndexes[indexKey] = rebuilt
-                                    BlazeLogger.info("Rebuilt inferred index '\(indexKey)' with \(rebuilt.count) keys, \(rebuilt.values.reduce(0) { $0 + $1.count }) total UUIDs")
-                                }
-                            } else {
-                                BlazeLogger.warn("Could not infer index definitions from data, indexes will be empty")
-                            }
-                        }
-                        
-                        BlazeLogger.info("✅ [INIT] Successfully rebuilt layout from data file: \(rebuiltIndexMap.count) records found")
-                        // Save the rebuilt layout
-                        try saveLayout()
-                        BlazeLogger.info("✅ [INIT] Rebuilt layout saved successfully")
-                    } catch let rebuildError {
-                        BlazeLogger.error("❌ [INIT] Failed to rebuild layout: \(rebuildError)")
-                        BlazeLogger.warn("⚠️ [INIT] Starting with empty layout (data may be lost)")
-                        // Fallback to empty layout if rebuild fails
-                        self.indexMap = [:]
-                        self.nextPageIndex = 0
-                        self.secondaryIndexes = [:]
-                        self.cachedSearchIndex = nil
-                        self.cachedSearchIndexedFields = []
-                        try saveLayout()
-                    }
+                    BlazeLogger.error("❌ [INIT] Metadata load failed — removing .meta and rebuilding from data pages...")
+                }
+
+                do {
+                    try FileManager.default.removeItem(at: metaURL)
+                    BlazeLogger.info("✅ [INIT] Removed meta file prior to authoritative page-scan rebuild")
+                } catch let deleteError {
+                    BlazeLogger.error("❌ [INIT] Failed to delete meta file (may already be missing): \(deleteError)")
+                }
+
+                BlazeLogger.info("📋 [INIT] Rebuilding metadata from data file...")
+                do {
+                    try performInitMetadataRebuildFromPages(preservedIndexDefinitions: preservedIndexDefinitions)
+                } catch let rebuildError {
+                    BlazeLogger.error("❌ [INIT] Failed to rebuild layout: \(rebuildError)")
+                    BlazeLogger.warn("⚠️ [INIT] Starting with empty layout (data may be lost)")
+                    self.indexMap = [:]
+                    self.nextPageIndex = 0
+                    self.secondaryIndexes = [:]
+                    self.cachedSearchIndex = nil
+                    self.cachedSearchIndexedFields = []
+                    self.secondaryIndexDefinitions = preservedIndexDefinitions
+                    layoutSignatureVerified = false
+                    try saveLayout()
                 }
             }
         } else {
@@ -1067,17 +885,7 @@ public final class DynamicCollection {
                     }
                     
                     // Load layout to check for deleted pages that can be reused
-                    var layout: StorageLayout
-                    do {
-                        layout = try StorageLayout.loadSecure(
-                            from: metaURL,
-                            signingKey: encryptionKey,
-                            password: password,
-                            salt: kdfSalt
-                        )
-                    } catch {
-                        layout = try StorageLayout.load(from: metaURL)
-                    }
+                    var layout = try loadLayoutForMutation()
                     
                     // Add deleted pages from layout to MVCC PageGarbageCollector for reuse
                     // This ensures pages deleted in legacy mode or persisted to disk are available for MVCC reuse
@@ -1893,17 +1701,7 @@ public final class DynamicCollection {
                 // Note: We already checked indexMapSnapshot[id] at the start, so we proceed with deletion
                 
                 // Load layout to track deleted pages for reuse
-                var layout: StorageLayout
-                do {
-                    layout = try StorageLayout.loadSecure(
-                        from: metaURL,
-                        signingKey: encryptionKey,
-                        password: password,
-                        salt: kdfSalt
-                    )
-                } catch {
-                    layout = try StorageLayout.load(from: metaURL)
-                }
+                var layout = try loadLayoutForMutation()
                 
                 // OPTIMIZATION: Batch delete all pages in a single sync block (not barrier)
                 // Since we're already in DynamicCollection's queue.sync, we use regular sync
@@ -2027,17 +1825,7 @@ public final class DynamicCollection {
                         
                         // Load existing layout to update nextPageIndex (but don't add to deletedPages in MVCC mode)
                         // Try secure load first, fallback to regular if needed
-                        var layout: StorageLayout
-                        do {
-                            layout = try StorageLayout.loadSecure(
-                                from: metaURL,
-                                signingKey: encryptionKey,
-                                password: password,
-                                salt: kdfSalt
-                            )
-                        } catch {
-                            layout = try StorageLayout.load(from: metaURL)
-                        }
+                        var layout = try loadLayoutForMutation()
                         BlazeLogger.debug("🗑️ [DELETE] Loaded layout: nextPageIndex=\(layout.nextPageIndex), deletedPages.count=\(layout.deletedPages.count)")
                         
                         // MVCC: Remove pages from layout.deletedPages if they're there (they should be in pageGC now)
@@ -2259,7 +2047,6 @@ public final class DynamicCollection {
             // CRITICAL: Preserve deletedPages and metaData from existing layout on disk
             // This ensures deleted pages are tracked for garbage collection
             // and metadata (like ordering settings) is preserved
-            var existingDeletedPages: [Int] = []
             var existingMetaData: [String: BlazeDocumentField] = [:]
             if FileManager.default.fileExists(atPath: metaURL.path) {
                 // Try secure load first, fallback to regular if needed
@@ -2272,7 +2059,6 @@ public final class DynamicCollection {
                         password: password,
                         salt: kdfSalt
                     )
-                    existingDeletedPages = existingLayout.deletedPages
                     existingMetaData = existingLayout.metaData
                 } catch {
                     if BlazeDBForensics.enabled {
@@ -2282,7 +2068,6 @@ public final class DynamicCollection {
                     BlazeLogger.warn("⚠️ Failed to load secure layout in saveLayout(), trying regular load: \(error)")
                     do {
                         let existingLayout = try StorageLayout.load(from: metaURL)
-                        existingDeletedPages = existingLayout.deletedPages
                         existingMetaData = existingLayout.metaData
                     } catch {
                         // Log fallback failure but continue - might be a new database
@@ -2314,8 +2099,10 @@ public final class DynamicCollection {
             // This ensures signature verification passes when createIndex saves, then persist() saves again
             layout.secondaryIndexDefinitions = secondaryIndexDefinitions
             
-            // CRITICAL: Preserve deletedPages from existing layout
-            layout.deletedPages = existingDeletedPages
+            // `cachedDeletedPages` tracks the current in-memory free-list across unsaved writes.
+            // Using the on-disk list here drops freshly deleted pages on persist(), which breaks
+            // page reuse and causes file growth after delete/insert churn.
+            layout.deletedPages = cachedDeletedPages
             
             // CRITICAL: Preserve metaData from existing layout (e.g., ordering settings)
             // This ensures metadata set via updateMeta() is not lost when saveLayout() is called
@@ -2328,7 +2115,7 @@ public final class DynamicCollection {
             
             // CRITICAL: Ensure nextPageIndex is at least as large as the highest deleted page
             // This ensures nextPageIndex reflects the highest page ever allocated
-            if let maxDeletedPage = existingDeletedPages.max() {
+            if let maxDeletedPage = layout.deletedPages.max() {
                 layout.nextPageIndex = max(layout.nextPageIndex, nextPageIndex, maxDeletedPage + 1)
                 // Update in-memory nextPageIndex to reflect the saved value
                 self.nextPageIndex = layout.nextPageIndex

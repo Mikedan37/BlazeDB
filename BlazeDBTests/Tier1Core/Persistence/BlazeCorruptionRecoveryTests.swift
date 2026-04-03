@@ -22,18 +22,32 @@ import Crypto
 private typealias RealPageStore = PageStore
 
 final class BlazeCorruptionRecoveryTests: XCTestCase {
-    var tempURL: URL!
-    var key: SymmetricKey!
+    private var tempURL: URL?
+    private var key: SymmetricKey?
+    
+    private func corruptTestsFileURL() throws -> URL {
+        try XCTUnwrap(tempURL, "tempURL should be set in setUpWithError")
+    }
+    
+    private func corruptTestsKey() throws -> SymmetricKey {
+        try XCTUnwrap(key, "key should be set in setUpWithError")
+    }
     
     override func setUpWithError() throws {
+        try super.setUpWithError()
         tempURL = FileManager.default.temporaryDirectory
             .appendingPathComponent("BlazeCorruption-\(UUID().uuidString).blazedb")
         key = SymmetricKey(size: .bits256)
     }
     
     override func tearDownWithError() throws {
-        try? FileManager.default.removeItem(at: tempURL)
-        try? FileManager.default.removeItem(at: tempURL.deletingPathExtension().appendingPathExtension("meta"))
+        if let url = tempURL {
+            try? FileManager.default.removeItem(at: url)
+            try? FileManager.default.removeItem(at: url.deletingPathExtension().appendingPathExtension("meta"))
+        }
+        tempURL = nil
+        key = nil
+        try super.tearDownWithError()
     }
     
     // MARK: - Partial Write Tests
@@ -43,19 +57,17 @@ final class BlazeCorruptionRecoveryTests: XCTestCase {
         print("📊 Testing recovery from truncated file...")
         
         // Write some valid data
-        var db: BlazeDBClient? = try BlazeDBClient(name: "Test", fileURL: tempURL, password: "SecureTestDB-456!")
+        var db: BlazeDBClient? = try BlazeDBClient(name: "Test", fileURL: try corruptTestsFileURL(), password: "SecureTestDB-456!")
         for i in 0..<10 {
-            _ = try db!.insert(BlazeDataRecord(["index": .int(i)]))
+            _ = try XCTUnwrap(db).insert(BlazeDataRecord(["index": .int(i)]))
         }
         
         // Flush metadata before corruption
-        if let collection = db!.collection as? DynamicCollection {
-            try collection.persist()
-        }
+        try XCTUnwrap(db).collection.persist()
         db = nil  // Release database to close file handles
         
         // Get file size
-        let attrs = try FileManager.default.attributesOfItem(atPath: tempURL.path)
+        let attrs = try FileManager.default.attributesOfItem(atPath: try corruptTestsFileURL().path)
         let fullSize = (attrs[.size] as? NSNumber)?.intValue ?? 0
         
         // Truncate file to simulate partial write (remove last page)
@@ -63,7 +75,7 @@ final class BlazeCorruptionRecoveryTests: XCTestCase {
         print("  Original size: \(fullSize) bytes")
         print("  Truncating to: \(truncatedSize) bytes")
         
-        let fileHandle = try FileHandle(forWritingTo: tempURL)
+        let fileHandle = try FileHandle(forWritingTo: try corruptTestsFileURL())
         try fileHandle.truncate(atOffset: UInt64(truncatedSize))
         try fileHandle.close()
         
@@ -71,7 +83,7 @@ final class BlazeCorruptionRecoveryTests: XCTestCase {
         print("🔄 Reopening truncated database...")
         
         do {
-            let recovered = try BlazeDBClient(name: "Test", fileURL: tempURL, password: "SecureTestDB-456!")
+            let recovered = try BlazeDBClient(name: "Test", fileURL: try corruptTestsFileURL(), password: "SecureTestDB-456!")
             let records = try recovered.fetchAll()
             print("✅ Recovered \(records.count) records from truncated file")
             XCTAssertGreaterThan(records.count, 0, "Should recover some records")
@@ -87,10 +99,10 @@ final class BlazeCorruptionRecoveryTests: XCTestCase {
         print("📊 Testing recovery from random data corruption...")
         
         // Create database with data
-        var db: BlazeDBClient? = try BlazeDBClient(name: "Test", fileURL: tempURL, password: "SecureTestDB-456!")
+        var db: BlazeDBClient? = try BlazeDBClient(name: "Test", fileURL: try corruptTestsFileURL(), password: "SecureTestDB-456!")
         var insertedIDs: [UUID] = []
         for i in 0..<20 {
-            let id = try db!.insert(BlazeDataRecord([
+            let id = try XCTUnwrap(db).insert(BlazeDataRecord([
                 "index": .int(i),
                 "data": .string("Record \(i)")
             ]))
@@ -98,22 +110,20 @@ final class BlazeCorruptionRecoveryTests: XCTestCase {
         }
         
         // Flush metadata before corruption
-        if let collection = db!.collection as? DynamicCollection {
-            try collection.persist()
-        }
+        try XCTUnwrap(db).collection.persist()
         db = nil  // Release database to close file handles
         
         // Corrupt a random page in the middle
         print("  Corrupting random page...")
         let corruptData = Data(repeating: 0xFF, count: 4096)  // Invalid data
-        let fileHandle = try FileHandle(forWritingTo: tempURL)
+        let fileHandle = try FileHandle(forWritingTo: try corruptTestsFileURL())
         try fileHandle.seek(toOffset: 8192)  // Corrupt 3rd page
         try fileHandle.write(contentsOf: corruptData)
         try fileHandle.close()
         
         // Reopen and test
         print("🔄 Reopening corrupted database...")
-        let recovered = try BlazeDBClient(name: "Test", fileURL: tempURL, password: "SecureTestDB-456!")
+        let recovered = try BlazeDBClient(name: "Test", fileURL: try corruptTestsFileURL(), password: "SecureTestDB-456!")
         
         var recoveredCount = 0
         var corruptedCount = 0
@@ -139,7 +149,7 @@ final class BlazeCorruptionRecoveryTests: XCTestCase {
     func testInvalidPageHeaderDetection() throws {
         print("📊 Testing invalid page header detection...")
         
-        let store = try RealPageStore(fileURL: tempURL, key: key)
+        let store = try RealPageStore(fileURL: try corruptTestsFileURL(), key: try corruptTestsKey())
         
         // Write valid page
         let validData = try JSONEncoder().encode(BlazeDataRecord(["test": .string("data")]).storage)
@@ -147,7 +157,7 @@ final class BlazeCorruptionRecoveryTests: XCTestCase {
         
         // Manually corrupt the header
         print("  Corrupting page header...")
-        let fileHandle = try FileHandle(forWritingTo: tempURL)
+        let fileHandle = try FileHandle(forWritingTo: try corruptTestsFileURL())
         try fileHandle.seek(toOffset: 0)
         try fileHandle.write(contentsOf: Data([0x58, 0x58, 0x58, 0x58]))  // "XXXX" instead of "BZDB"
         try fileHandle.close()
@@ -164,7 +174,7 @@ final class BlazeCorruptionRecoveryTests: XCTestCase {
     func testOrphanedPageDetection() throws {
         print("📊 Testing orphaned page detection...")
         
-        let store = try RealPageStore(fileURL: tempURL, key: key)
+        let store = try RealPageStore(fileURL: try corruptTestsFileURL(), key: try corruptTestsKey())
         
         // Write several pages
         for i in 0..<5 {
@@ -174,7 +184,7 @@ final class BlazeCorruptionRecoveryTests: XCTestCase {
         
         // Corrupt one page header (creates orphan)
         print("  Creating orphaned page...")
-        let fileHandle = try FileHandle(forWritingTo: tempURL)
+        let fileHandle = try FileHandle(forWritingTo: try corruptTestsFileURL())
         try fileHandle.seek(toOffset: 8192)  // 2nd page
         try fileHandle.write(contentsOf: Data(repeating: 0, count: 5))  // Zero out header
         try fileHandle.close()
@@ -196,22 +206,20 @@ final class BlazeCorruptionRecoveryTests: XCTestCase {
     func testTornPageWrite() throws {
         print("📊 Simulating torn page write (power loss)...")
         
-        var db: BlazeDBClient? = try BlazeDBClient(name: "Test", fileURL: tempURL, password: "SecureTestDB-456!")
+        var db: BlazeDBClient? = try BlazeDBClient(name: "Test", fileURL: try corruptTestsFileURL(), password: "SecureTestDB-456!")
         
         // Insert some data
         for i in 0..<5 {
-            _ = try db!.insert(BlazeDataRecord(["index": .int(i)]))
+            _ = try XCTUnwrap(db).insert(BlazeDataRecord(["index": .int(i)]))
         }
         
         // Flush metadata before corruption
-        if let collection = db!.collection as? DynamicCollection {
-            try collection.persist()
-        }
+        try XCTUnwrap(db).collection.persist()
         db = nil  // Release database to close file handles
         
         // Simulate torn write by partially overwriting a page
         print("  Simulating power loss during write...")
-        let fileHandle = try FileHandle(forWritingTo: tempURL)
+        let fileHandle = try FileHandle(forWritingTo: try corruptTestsFileURL())
         try fileHandle.seek(toOffset: 4096)
         // Write only partial page (half corrupted, half old data)
         let partialData = Data(repeating: 0xAA, count: 2048)
@@ -222,7 +230,7 @@ final class BlazeCorruptionRecoveryTests: XCTestCase {
         print("🔄 Reopening after torn write...")
         
         do {
-            let recovered = try BlazeDBClient(name: "Test", fileURL: tempURL, password: "SecureTestDB-456!")
+            let recovered = try BlazeDBClient(name: "Test", fileURL: try corruptTestsFileURL(), password: "SecureTestDB-456!")
             let records = try recovered.fetchAll()
             print("✅ Recovered \(records.count) records after torn write")
             XCTAssertGreaterThan(records.count, 0, "Should recover some records")
@@ -238,10 +246,10 @@ final class BlazeCorruptionRecoveryTests: XCTestCase {
     func testRecoveryFromCorruptedMeta() throws {
         print("📊 Testing recovery from corrupted .meta file...")
         
-        let metaURL = tempURL.deletingPathExtension().appendingPathExtension("meta")
+        let metaURL = try corruptTestsFileURL().deletingPathExtension().appendingPathExtension("meta")
         
         // Create database with data
-        let db = try BlazeDBClient(name: "Test", fileURL: tempURL, password: "SecureTestDB-456!")
+        let db = try BlazeDBClient(name: "Test", fileURL: try corruptTestsFileURL(), password: "SecureTestDB-456!")
         for i in 0..<10 {
             _ = try db.insert(BlazeDataRecord(["index": .int(i)]))
         }
@@ -254,7 +262,7 @@ final class BlazeCorruptionRecoveryTests: XCTestCase {
         print("🔄 Reopening with corrupted meta...")
         
         do {
-            let recovered = try BlazeDBClient(name: "Test", fileURL: tempURL, password: "SecureTestDB-456!")
+            let recovered = try BlazeDBClient(name: "Test", fileURL: try corruptTestsFileURL(), password: "SecureTestDB-456!")
             let records = try recovered.fetchAll()
             print("✅ Recovered after meta corruption:")
             print("   Records found: \(records.count)")
@@ -271,18 +279,16 @@ final class BlazeCorruptionRecoveryTests: XCTestCase {
     func testRecoveryFromMissingMeta() throws {
         print("📊 Testing recovery from missing .meta file...")
         
-        let metaURL = tempURL.deletingPathExtension().appendingPathExtension("meta")
+        let metaURL = try corruptTestsFileURL().deletingPathExtension().appendingPathExtension("meta")
         
         // Create database
-        var db: BlazeDBClient? = try BlazeDBClient(name: "Test", fileURL: tempURL, password: "SecureTestDB-456!")
+        var db: BlazeDBClient? = try BlazeDBClient(name: "Test", fileURL: try corruptTestsFileURL(), password: "SecureTestDB-456!")
         for i in 0..<10 {
-            _ = try db!.insert(BlazeDataRecord(["index": .int(i)]))
+            _ = try XCTUnwrap(db).insert(BlazeDataRecord(["index": .int(i)]))
         }
         
         // Flush metadata first, then close database
-        if let collection = db!.collection as? DynamicCollection {
-            try collection.persist()
-        }
+        try XCTUnwrap(db).collection.persist()
         db = nil  // Release database before deleting meta
         
         // Delete meta file
@@ -295,7 +301,7 @@ final class BlazeCorruptionRecoveryTests: XCTestCase {
         
         // Reopen
         print("🔄 Reopening without meta file...")
-        let recovered = try BlazeDBClient(name: "Test", fileURL: tempURL, password: "SecureTestDB-456!")
+        let recovered = try BlazeDBClient(name: "Test", fileURL: try corruptTestsFileURL(), password: "SecureTestDB-456!")
         let records = try recovered.fetchAll()
         
         print("⚠️  Recovered \(records.count) records (v1.1 doesn't auto-rebuild indexes)")
@@ -315,12 +321,12 @@ final class BlazeCorruptionRecoveryTests: XCTestCase {
         print("📊 Testing recovery from zeroed file...")
         
         // Create valid database
-        let db = try BlazeDBClient(name: "Test", fileURL: tempURL, password: "SecureTestDB-456!")
+        let db = try BlazeDBClient(name: "Test", fileURL: try corruptTestsFileURL(), password: "SecureTestDB-456!")
         _ = try db.insert(BlazeDataRecord(["test": .string("data")]))
         
         // Zero out middle section
         print("  Zeroing file section...")
-        let fileHandle = try FileHandle(forWritingTo: tempURL)
+        let fileHandle = try FileHandle(forWritingTo: try corruptTestsFileURL())
         try fileHandle.seek(toOffset: 8192)
         try fileHandle.write(contentsOf: Data(repeating: 0, count: 8192))
         try fileHandle.close()
@@ -328,7 +334,7 @@ final class BlazeCorruptionRecoveryTests: XCTestCase {
         // Try recovery
         print("🔄 Attempting recovery...")
         do {
-            let recovered = try BlazeDBClient(name: "Test", fileURL: tempURL, password: "SecureTestDB-456!")
+            let recovered = try BlazeDBClient(name: "Test", fileURL: try corruptTestsFileURL(), password: "SecureTestDB-456!")
             _ = try recovered.fetchAll()
             print("✅ Database handled zeroed sections")
         } catch {
@@ -342,8 +348,8 @@ final class BlazeCorruptionRecoveryTests: XCTestCase {
     func testIndexAtomicityOnUpdateFailure() throws {
         print("📊 Testing index consistency during updates...")
         
-        var db: BlazeDBClient? = try BlazeDBClient(name: "Test", fileURL: tempURL, password: "SecureTestDB-456!")
-        let collection = db!.collection as! DynamicCollection
+        var db: BlazeDBClient? = try BlazeDBClient(name: "Test", fileURL: try corruptTestsFileURL(), password: "SecureTestDB-456!")
+        let collection = try XCTUnwrap(db).collection
         
         // Create index
         try collection.createIndex(on: "status")
@@ -353,7 +359,7 @@ final class BlazeCorruptionRecoveryTests: XCTestCase {
             "status": .string("pending"),
             "value": .int(100)
         ])
-        let id = try db!.insert(record)
+        let id = try XCTUnwrap(db).insert(record)
         
         // Verify initial index state
         let initialResults = try collection.fetch(byIndexedField: "status", value: "pending")
@@ -376,8 +382,8 @@ final class BlazeCorruptionRecoveryTests: XCTestCase {
         try collection.persist()
         db = nil
         
-        let recovered = try BlazeDBClient(name: "Test", fileURL: tempURL, password: "SecureTestDB-456!")
-        let recoveredCollection = recovered.collection as! DynamicCollection
+        let recovered = try BlazeDBClient(name: "Test", fileURL: try corruptTestsFileURL(), password: "SecureTestDB-456!")
+        let recoveredCollection = recovered.collection
         
         let persistedResults = try recoveredCollection.fetch(byIndexedField: "status", value: "done")
         XCTAssertEqual(persistedResults.count, 1, "Index should persist correctly")
@@ -389,15 +395,15 @@ final class BlazeCorruptionRecoveryTests: XCTestCase {
     func testIndexAtomicityOnDeleteFailure() throws {
         print("📊 Testing index consistency during deletes...")
         
-        var db: BlazeDBClient? = try BlazeDBClient(name: "Test", fileURL: tempURL, password: "SecureTestDB-456!")
-        let collection = db!.collection as! DynamicCollection
+        var db: BlazeDBClient? = try BlazeDBClient(name: "Test", fileURL: try corruptTestsFileURL(), password: "SecureTestDB-456!")
+        let collection = try XCTUnwrap(db).collection
         
         // Create index
         try collection.createIndex(on: "category")
         
         // Insert records
-        let id1 = try db!.insert(BlazeDataRecord(["category": .string("important")]))
-        let id2 = try db!.insert(BlazeDataRecord(["category": .string("important")]))
+        let id1 = try XCTUnwrap(db).insert(BlazeDataRecord(["category": .string("important")]))
+        let id2 = try XCTUnwrap(db).insert(BlazeDataRecord(["category": .string("important")]))
         
         // Verify initial state
         let initialResults = try collection.fetch(byIndexedField: "category", value: "important")
@@ -414,8 +420,8 @@ final class BlazeCorruptionRecoveryTests: XCTestCase {
         try collection.persist()
         db = nil
         
-        let recovered = try BlazeDBClient(name: "Test", fileURL: tempURL, password: "SecureTestDB-456!")
-        let recoveredCollection = recovered.collection as! DynamicCollection
+        let recovered = try BlazeDBClient(name: "Test", fileURL: try corruptTestsFileURL(), password: "SecureTestDB-456!")
+        let recoveredCollection = recovered.collection
         
         let persistedResults = try recoveredCollection.fetch(byIndexedField: "category", value: "important")
         XCTAssertEqual(persistedResults.count, 1, "Index should persist correctly after delete")

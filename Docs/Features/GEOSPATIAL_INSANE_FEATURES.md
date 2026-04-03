@@ -6,7 +6,7 @@
 
 ## **CRITICAL ENHANCEMENTS (Just Implemented)**
 
-### 1. **Distance-Based Sorting** 
+### 1. **Distance-Based Sorting**
 **Status:** **IMPLEMENTED**
 
 **What it does:**
@@ -32,7 +32,7 @@ let nearest = try db.query()
 
 ---
 
-### 2. **Distance in Results** 
+### 2. **Distance in Results**
 **Status:** **IMPLEMENTED**
 
 **What it does:**
@@ -60,7 +60,7 @@ for record in records {
 
 ---
 
-### 3. **True k-NN (Nearest Neighbor)** 
+### 3. **True k-NN (Nearest Neighbor)**
 **Status:** **IMPLEMENTED**
 
 **What it does:**
@@ -84,7 +84,7 @@ let nearest = try db.query()
 
 ---
 
-### 4. **Auto-Sorting with `.near()`** 
+### 4. **Auto-Sorting with `.near()`**
 **Status:** **IMPLEMENTED**
 
 **What it does:**
@@ -250,24 +250,24 @@ let nearest = try db.query()
 ### **Future Enhancements (Optional):**
 
 1. **Geohash Support** (6 hours)
- - 10-100x faster for some queries
- - Prefix-based lookups
- - Ultra-fast cell queries
+- 10-100x faster for some queries
+- Prefix-based lookups
+- Ultra-fast cell queries
 
 2. **Spatial Clustering** (4-6 hours)
- - Group nearby points
- - Map visualization support
- - Density calculations
+- Group nearby points
+- Map visualization support
+- Density calculations
 
 3. **Route Calculations** (3-4 hours)
- - Distance along paths
- - Route optimization
- - Multi-point distances
+- Distance along paths
+- Route optimization
+- Multi-point distances
 
 4. **Spatial Aggregations** (3-4 hours)
- - Count per grid cell
- - Density maps
- - Heat maps
+- Count per grid cell
+- Density maps
+- Heat maps
 
 **But honestly, what we have now is already "insane" for an embedded database.**
 

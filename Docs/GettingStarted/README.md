@@ -17,10 +17,10 @@ Add to your `Package.swift`:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/Mikedan37/BlazeDB.git", from: "2.7.0")
+ .package(url: "https://github.com/Mikedan37/BlazeDB.git", from: "2.7.2")
 ],
 targets: [
-    .target(name: "YourApp", dependencies: ["BlazeDB"])
+ .target(name: "YourApp", dependencies: ["BlazeDB"])
 ]
 ```
 
@@ -52,19 +52,19 @@ let db = try BlazeDBClient.open(named: "myapp", password: "your-password")
 
 // Insert data
 let id = try db.insert(BlazeDataRecord([
-    "name": .string("Alice"),
-    "age": .int(30),
-    "active": .bool(true)
+ "name": .string("Alice"),
+ "age": .int(30),
+ "active": .bool(true)
 ]))
 
 // Query data
 let results = try db.query()
-    .where("active", equals: .bool(true))
-    .execute()
-    .records
+ .where("active", equals: .bool(true))
+ .execute()
+ .records
 
 for record in results {
-    print(record.string("name", default: ""))
+ print(record.string("name", default: ""))
 }
 
 // Always close when done
@@ -83,13 +83,13 @@ BlazeDB stores typed values:
 
 ```swift
 BlazeDataRecord([
-    "name": .string("Alice"),      // String
-    "age": .int(30),               // Integer
-    "score": .double(95.5),        // Double
-    "active": .bool(true),         // Boolean
-    "created": .date(Date()),      // Date
-    "id": .uuid(UUID()),           // UUID
-    "tags": .array([.string("a")]) // Array
+ "name": .string("Alice"), // String
+ "age": .int(30), // Integer
+ "score": .double(95.5), // Double
+ "active": .bool(true), // Boolean
+ "created": .date(Date()), // Date
+ "id": .uuid(UUID()), // UUID
+ "tags": .array([.string("a")]) // Array
 ])
 ```
 
@@ -115,23 +115,23 @@ try db.delete(id: id)
 ```swift
 // Filter
 let admins = try db.query()
-    .where("role", equals: .string("admin"))
-    .execute()
-    .records
+ .where("role", equals: .string("admin"))
+ .execute()
+ .records
 
 // Sort and limit
 let recent = try db.query()
-    .orderBy("created", descending: true)
-    .limit(10)
-    .execute()
-    .records
+ .orderBy("created", descending: true)
+ .limit(10)
+ .execute()
+ .records
 
 // Multiple conditions
 let activeAdmins = try db.query()
-    .where("role", equals: .string("admin"))
-    .where("active", equals: .bool(true))
-    .execute()
-    .records
+ .where("role", equals: .string("admin"))
+ .where("active", equals: .bool(true))
+ .execute()
+ .records
 ```
 
 ---

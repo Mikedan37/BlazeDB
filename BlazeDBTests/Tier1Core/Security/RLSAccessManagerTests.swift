@@ -16,8 +16,8 @@ final class RLSAccessManagerTests: XCTestCase {
     
     var accessManager: AccessManager!
     
-    override func setUp() {
-        super.setUp()
+    override func setUpWithError() throws {
+        try super.setUpWithError()
         accessManager = AccessManager()
     }
     

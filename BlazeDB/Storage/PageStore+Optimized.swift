@@ -172,8 +172,12 @@ extension PageStore {
         var results: [Int: Data?] = [:]
         
         for index in indices {
-            let data = try? readPage(index: index)
-            results[index] = data
+            do {
+                results[index] = try readPage(index: index)
+            } catch {
+                BlazeLogger.warn("readPagesParallel: could not read page \(index): \(error.localizedDescription)")
+                results[index] = nil
+            }
         }
         
         return results

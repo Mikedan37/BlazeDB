@@ -273,7 +273,7 @@ BlazeDB queries are sub-millisecond with indexes. That's **fast enough for real-
 
 ---
 
-##  **SKILLSET ASSESSMENT:**
+## **SKILLSET ASSESSMENT:**
 
 ### **What BlazeDB Demonstrates:**
 

@@ -226,9 +226,9 @@ for workspace in workspaces {
 
 ## Constraints Maintained
 
- **Encryption by default** - All data remains encrypted
- **Binary storage format** - No breaking changes to storage
- **API stability** - All changes are additive, existing code continues to work
+**Encryption by default** - All data remains encrypted
+**Binary storage format** - No breaking changes to storage
+**API stability** - All changes are additive, existing code continues to work
 
 ## Example: Complete Workflow
 

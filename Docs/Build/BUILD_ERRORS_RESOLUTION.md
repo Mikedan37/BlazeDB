@@ -105,7 +105,7 @@ All extension files are properly structured:
 
 ---
 
-##  **Actor Isolation Warnings (Safe to Ignore)**
+## **Actor Isolation Warnings (Safe to Ignore)**
 
 The warnings about `BlazeSyncRelay` conformance crossing actor boundaries are **expected** and **safe to ignore**. The protocol already has `@preconcurrency` annotation, which is the correct solution for this Swift concurrency pattern.
 

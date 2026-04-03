@@ -360,7 +360,7 @@ extension QueryBuilder {
             if let value = sortedPartition[i].storage[field] {
                 if minValue == nil {
                     minValue = value
-                } else if compareFields(value, minValue!, isLessThan: true) {
+                } else if let currentMin = minValue, compareFields(value, currentMin, isLessThan: true) {
                     minValue = value
                 }
             }
@@ -385,7 +385,7 @@ extension QueryBuilder {
             if let value = sortedPartition[i].storage[field] {
                 if maxValue == nil {
                     maxValue = value
-                } else if compareFields(value, maxValue!, isLessThan: false) {
+                } else if let currentMax = maxValue, compareFields(value, currentMax, isLessThan: false) {
                     maxValue = value
                 }
             }

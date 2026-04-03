@@ -123,54 +123,54 @@ USE CASES:
 
 ```
 
- BlazeDB Platform 
+ BlazeDB Platform
 
- 
- CLIENT LAYER 
-     
-  iPhone   iPad   Android   Web  
-         
-  BlazeDB   BlazeDB   BlazeDB   BlazeDB  
-  + gRPC   + gRPC   + gRPC   + gRPC  
-     
-     
-  
-  
-  
-  
-  gRPC + BlazeBinary Protocol  
-  (60% more efficient than JSON)  
-  
-  
-  
- SERVER LAYER (Vapor + Swift) 
-  
-  BlazeDB gRPC Service  
-  • Handles all clients  
-  • Runs BlazeDB server-side  
-  • Executes queries  
-  • Coordinates sync  
-  • Real-time streaming  
-  
-  
-  
-  
-  Server BlazeDB Instance  
-  • Same code as client!  
-  • Same queries!  
-  • Same operations!  
-  • Persistent storage  
-  
- 
- MANAGEMENT LAYER 
-  
-  BlazeDB Visualizer  
-  • Monitors local + remote DBs  
-  • Visual queries  
-  • Access control  
-  • Performance monitoring  
-  
- 
+
+ CLIENT LAYER
+
+ iPhone iPad Android Web
+
+ BlazeDB BlazeDB BlazeDB BlazeDB
+ + gRPC + gRPC + gRPC + gRPC
+
+
+
+
+
+
+ gRPC + BlazeBinary Protocol
+ (60% more efficient than JSON)
+
+
+
+ SERVER LAYER (Vapor + Swift)
+
+ BlazeDB gRPC Service
+ • Handles all clients
+ • Runs BlazeDB server-side
+ • Executes queries
+ • Coordinates sync
+ • Real-time streaming
+
+
+
+
+ Server BlazeDB Instance
+ • Same code as client!
+ • Same queries!
+ • Same operations!
+ • Persistent storage
+
+
+ MANAGEMENT LAYER
+
+ BlazeDB Visualizer
+ • Monitors local + remote DBs
+ • Visual queries
+ • Access control
+ • Performance monitoring
+
+
 
 ```
 
@@ -435,12 +435,12 @@ PROFIT: ~$89k/month (90% margin!)
 |---------|----------|-------|----------|-------------|
 | **Protocol** | REST/JSON | Binary | REST/JSON | **gRPC + BlazeBinary** |
 | **Efficiency** | 1x | 1.5x | 1x | **2.5x** |
-| **Offline** |  Limited | |  Limited | **Native** |
-| **Real-Time** |  Polling | | | **<50ms** |
+| **Offline** | Limited | | Limited | **Native** |
+| **Real-Time** | Polling | | | **<50ms** |
 | **Self-Host** | | | | |
-| **Server-Side Queries** |  Limited | | | **Full BlazeDB** |
-| **Type-Safe** | |  | | **KeyPaths** |
-| **SwiftUI** | |  | | **@BlazeQuery** |
+| **Server-Side Queries** | Limited | | | **Full BlazeDB** |
+| **Type-Safe** | | | | **KeyPaths** |
+| **SwiftUI** | | | | **@BlazeQuery** |
 | **Conflicts** | Manual | Automatic | Manual | **CRDT** |
 | **Open Source** | | | | |
 | **Same Code Client/Server** | | | | **Unique!** |
@@ -1168,21 +1168,21 @@ let results = try await db.query().where(...).all()
 **I can start with:**
 
 1. **Phase 1: Local Multi-DB Sync** (3-4 days)
- - Finish operation log
- - Test local coordination
- - Demo in Visualizer
+- Finish operation log
+- Test local coordination
+- Demo in Visualizer
 
 2. **Phase 2: gRPC Service** (4-5 days)
- - Write.proto file
- - Implement server
- - Implement client
- - Test iPhone ↔ Server
+- Write.proto file
+- Implement server
+- Implement client
+- Test iPhone ↔ Server
 
 3. **Phase 3: Production** (1 week)
- - Add auth
- - Deploy to Fly.io
- - Load testing
- - Documentation
+- Add auth
+- Deploy to Fly.io
+- Load testing
+- Documentation
 
 **Timeline: 3 weeks from start to production**
 

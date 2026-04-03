@@ -27,28 +27,31 @@ import Crypto
 
 final class EncryptionRoundTripVerificationTests: XCTestCase {
     
-    var tempURL: URL!
+    private var tempURL: URL?
     var store: PageStore!
     var key: SymmetricKey!
     
-    override func setUp() {
-        super.setUp()
+    override func setUpWithError() throws {
+        try super.setUpWithError()
         
         let testID = UUID().uuidString
-        tempURL = FileManager.default.temporaryDirectory
+        let url = FileManager.default.temporaryDirectory
             .appendingPathComponent("EncRoundTrip-\(testID).blazedb")
+        tempURL = url
         
         // Clean up
-        try? FileManager.default.removeItem(at: tempURL)
+        try? FileManager.default.removeItem(at: url)
         
         // Generate test key
         key = SymmetricKey(size: .bits256)
-        store = try! PageStore(fileURL: tempURL, key: key)
+        store = try PageStore(fileURL: url, key: key)
     }
     
     override func tearDown() {
         store = nil
-        try? FileManager.default.removeItem(at: tempURL)
+        if let url = tempURL {
+            try? FileManager.default.removeItem(at: url)
+        }
         super.tearDown()
     }
     
@@ -125,7 +128,7 @@ final class EncryptionRoundTripVerificationTests: XCTestCase {
         try store.writePage(index: 0, plaintext: plaintext)
         
         // Read the raw page to inspect ciphertext
-        let fileHandle = try FileHandle(forReadingFrom: tempURL)
+        let fileHandle = try FileHandle(forReadingFrom: try requireFixture(tempURL))
         defer { try? fileHandle.close() }
         
         let page = try fileHandle.read(upToCount: 4096)!
@@ -217,7 +220,7 @@ final class EncryptionRoundTripVerificationTests: XCTestCase {
 
         // Try to read with different key (should fail)
         let wrongKey = SymmetricKey(size: .bits256)
-        let wrongStore = try PageStore(fileURL: tempURL, key: wrongKey)
+        let wrongStore = try PageStore(fileURL: try requireFixture(tempURL), key: wrongKey)
         
         XCTAssertThrowsError(try wrongStore.readPage(index: 0)) { error in
             // Should get authentication failure
@@ -259,7 +262,7 @@ final class EncryptionRoundTripVerificationTests: XCTestCase {
         store = nil
         
         // Corrupt the file by flipping a byte in the ciphertext
-        let fileHandle = try FileHandle(forUpdating: tempURL)
+        let fileHandle = try FileHandle(forUpdating: try requireFixture(tempURL))
         defer { try? fileHandle.close() }
         
         // Page layout: [magic/version/length][nonce][tag][ciphertext...]
@@ -269,7 +272,7 @@ final class EncryptionRoundTripVerificationTests: XCTestCase {
         try fileHandle.synchronize()
         
         // Try to read with new store - should fail authentication
-        let newStore = try PageStore(fileURL: tempURL, key: key)
+        let newStore = try PageStore(fileURL: try requireFixture(tempURL), key: key)
         
         XCTAssertThrowsError(try newStore.readPage(index: 0)) { error in
             // Should detect corruption via AES-GCM authentication
@@ -289,7 +292,7 @@ final class EncryptionRoundTripVerificationTests: XCTestCase {
         store = nil
         
         // Corrupt the authentication tag (bytes 21-37)
-        let fileHandle = try FileHandle(forUpdating: tempURL)
+        let fileHandle = try FileHandle(forUpdating: try requireFixture(tempURL))
         defer { try? fileHandle.close() }
         
         try fileHandle.seek(toOffset: 25)  // Middle of tag
@@ -297,7 +300,7 @@ final class EncryptionRoundTripVerificationTests: XCTestCase {
         try fileHandle.synchronize()
         
         // Should fail authentication
-        let newStore = try PageStore(fileURL: tempURL, key: key)
+        let newStore = try PageStore(fileURL: try requireFixture(tempURL), key: key)
         XCTAssertThrowsError(try newStore.readPage(index: 0), "Tampered tag should be detected")
     }
     

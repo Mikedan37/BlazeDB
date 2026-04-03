@@ -28,7 +28,7 @@
   "quick_benchmarks": [
     {
       "name": "overflow_crash_atomicity",
-      "command": "swift test --filter \"BlazeDB_Tier1.OverflowChainCrashAtomicityTests\"",
+      "command": "swift test --filter \"BlazeDB_Tier1Fast.OverflowChainCrashAtomicityTests\"",
       "seconds": 152.32926858399998,
       "passed": true,
       "summary": "Executed 6 tests, with 0 failures"

@@ -6,29 +6,29 @@ import XCTest
 #endif
 
 final class GraphQueryAPITests: XCTestCase {
-    private var dbURL: URL!
-    private var db: BlazeDBClient!
+    private var dbURL: URL?
+    private var db: BlazeDBClient?
 
     override func setUpWithError() throws {
         dbURL = FileManager.default.temporaryDirectory
             .appendingPathComponent("graph-query-\(UUID().uuidString).blazedb")
-        db = try BlazeDBClient(name: "graph-query", fileURL: dbURL, password: "GraphPass-123!")
+        db = try BlazeDBClient(name: "graph-query", fileURL: try requireFixture(dbURL), password: "GraphPass-123!")
     }
 
     override func tearDownWithError() throws {
-        try? db.close()
+        try? try requireFixture(db).close()
         db = nil
-        let metaURL = dbURL.deletingPathExtension().appendingPathExtension("meta")
-        try? FileManager.default.removeItem(at: dbURL)
-        try? FileManager.default.removeItem(at: metaURL)
+        let metaURL = try requireFixture(dbURL).deletingPathExtension().appendingPathExtension("meta")
+        try? FileManager.default.removeItem(at: try requireFixture(dbURL))
+        try? FileManager.default.removeItem(at: try requireFixture(metaURL))
     }
 
     func testGraphCountByCategory_ReturnsGroupedPoints() throws {
-        _ = try db.insert(BlazeDataRecord(["status": .string("open"), "value": .int(1)]))
-        _ = try db.insert(BlazeDataRecord(["status": .string("open"), "value": .int(2)]))
-        _ = try db.insert(BlazeDataRecord(["status": .string("closed"), "value": .int(3)]))
+        _ = try requireFixture(db).insert(BlazeDataRecord(["status": .string("open"), "value": .int(1)]))
+        _ = try requireFixture(db).insert(BlazeDataRecord(["status": .string("open"), "value": .int(2)]))
+        _ = try requireFixture(db).insert(BlazeDataRecord(["status": .string("closed"), "value": .int(3)]))
 
-        let points = try db.graph()
+        let points = try requireFixture(db).graph()
             .x("status")
             .y(.count)
             .toPoints()
@@ -39,11 +39,11 @@ final class GraphQueryAPITests: XCTestCase {
     }
 
     func testGraphSumByCategory_ReturnsNumericYValues() throws {
-        _ = try db.insert(BlazeDataRecord(["status": .string("open"), "value": .double(1.5)]))
-        _ = try db.insert(BlazeDataRecord(["status": .string("open"), "value": .double(2.5)]))
-        _ = try db.insert(BlazeDataRecord(["status": .string("closed"), "value": .double(3.0)]))
+        _ = try requireFixture(db).insert(BlazeDataRecord(["status": .string("open"), "value": .double(1.5)]))
+        _ = try requireFixture(db).insert(BlazeDataRecord(["status": .string("open"), "value": .double(2.5)]))
+        _ = try requireFixture(db).insert(BlazeDataRecord(["status": .string("closed"), "value": .double(3.0)]))
 
-        let points = try db.graph()
+        let points = try requireFixture(db).graph()
             .x("status")
             .y(.sum("value"))
             .toPoints()

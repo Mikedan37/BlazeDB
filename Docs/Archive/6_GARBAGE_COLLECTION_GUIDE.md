@@ -9,19 +9,19 @@
 BlazeDB has 3-tier garbage collection:
 
 1. **Page Reuse** (Automatic, always on)
- - Deleted pages are reused immediately
- - < 0.5% overhead
- - Prevents file growth
+- Deleted pages are reused immediately
+- < 0.5% overhead
+- Prevents file growth
 
 2. **Manual VACUUM** (On-demand)
- - Compacts database file
- - Reclaims fragmented space
- - ~1s per 1K records
+- Compacts database file
+- Reclaims fragmented space
+- ~1s per 1K records
 
 3. **Auto-VACUUM** (Optional background)
- - Automatic maintenance
- - Configurable thresholds
- - Hands-off operation
+- Automatic maintenance
+- Configurable thresholds
+- Hands-off operation
 
 ---
 

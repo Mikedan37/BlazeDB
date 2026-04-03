@@ -18,33 +18,33 @@ import Crypto
 #endif
 
 final class BlazeDBClientTests: XCTestCase {
-    var tempURL: URL!
+    private var tempURL: URL?
     var store: PageStore!
-    var client: BlazeDBClient!
+    private var client: BlazeDBClient?
     var key: SymmetricKey!
 
     override func setUpWithError() throws {
         tempURL = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".blz")
         key = try KeyManager.getKey(from: .password("TestPassword-123!"))
-        client = try BlazeDBClient(name: "test-name", fileURL: tempURL, password: "TestPassword-123!")
+        client = try BlazeDBClient(name: "test-name", fileURL: try requireFixture(tempURL), password: "TestPassword-123!")
     }
 
     override func tearDownWithError() throws {
         try? client?.close()
         client = nil
-        try? FileManager.default.removeItem(at: tempURL)
-        try? FileManager.default.removeItem(at: tempURL.deletingPathExtension().appendingPathExtension("meta"))
+        try? FileManager.default.removeItem(at: try requireFixture(tempURL))
+        try? FileManager.default.removeItem(at: try requireFixture(tempURL).deletingPathExtension().appendingPathExtension("meta"))
     }
 
     func testInsertAndFetchDynamicRecord() throws {
         let idString = UUID().uuidString
-        let id = try client.insert(BlazeDataRecord([
+        let id = try requireFixture(client).insert(BlazeDataRecord([
             "id": .string(idString),
             "type": .string("note"),
             "content": .string("Hello, Blaze!"),
             "author": .string("Michael")
         ]))
-        let record = try client.fetch(id: id)
+        let record = try requireFixture(client).fetch(id: id)
         XCTAssertEqual(record?.storage["content"], .some(.string("Hello, Blaze!")))
     }
     
@@ -52,15 +52,15 @@ final class BlazeDBClientTests: XCTestCase {
     /// Tests: open → insert → commit → close → reopen → verify record exists
     /// Stress test: writes enough records to force page flush and layout save
     func testDurabilityAfterConcurrencyChanges() throws {
-        let fileURL = tempURL!
-        let metaURL = tempURL.deletingPathExtension().appendingPathExtension("meta")
+        let fileURL = try requireFixture(tempURL)
+        let metaURL = try requireFixture(tempURL).deletingPathExtension().appendingPathExtension("meta")
         let testContentPrefix = "Durability test - \(UUID().uuidString)"
         var insertedIDs: [UUID] = []
         
         // Insert multiple records to force at least one page flush / layout save
         // Page size is 4096 bytes, so ~10-20 records should force a flush
         for i in 0..<25 {
-            let id = try client.insert(BlazeDataRecord([
+            let id = try requireFixture(client).insert(BlazeDataRecord([
                 "type": .string("test"),
                 "content": .string("\(testContentPrefix) - record \(i)"),
                 "timestamp": .date(Date()),
@@ -71,7 +71,7 @@ final class BlazeDBClientTests: XCTestCase {
         }
         
         // Explicitly persist to ensure durability (forces layout save)
-        try client.persist()
+        try requireFixture(client).persist()
         
         // Close database (deallocate client) - force new instance
         client = nil
@@ -106,7 +106,7 @@ final class BlazeDBClientTests: XCTestCase {
     func testPerformance_SingleInsert() throws {
         measure {
             do {
-                _ = try client.insert(BlazeDataRecord([
+                _ = try requireFixture(client).insert(BlazeDataRecord([
                     "type": .string("note"),
                     "content": .string("Performance test"),
                     "timestamp": .date(Date())
@@ -120,13 +120,13 @@ final class BlazeDBClientTests: XCTestCase {
     /// Measure fetch performance by ID
     func testPerformance_FetchByID() throws {
         // Setup: Insert test record
-        let id = try client.insert(BlazeDataRecord([
+        let id = try requireFixture(client).insert(BlazeDataRecord([
             "content": .string("Test data")
         ]))
         
         measure {
             do {
-                _ = try client.fetch(id: id)
+                _ = try requireFixture(client).fetch(id: id)
             } catch {
                 XCTFail("Fetch failed: \(error)")
             }
@@ -136,13 +136,13 @@ final class BlazeDBClientTests: XCTestCase {
     /// Measure update performance
     func testPerformance_Update() throws {
         // Setup: Insert test record
-        let id = try client.insert(BlazeDataRecord([
+        let id = try requireFixture(client).insert(BlazeDataRecord([
             "content": .string("Original")
         ]))
         
         measure {
             do {
-                try client.update(id: id, with: BlazeDataRecord([
+                try requireFixture(client).update(id: id, with: BlazeDataRecord([
                     "content": .string("Updated")
                 ]))
             } catch {
@@ -156,10 +156,10 @@ final class BlazeDBClientTests: XCTestCase {
         measure {
             do {
                 // Insert and delete in one measure block
-                let id = try client.insert(BlazeDataRecord([
+                let id = try requireFixture(client).insert(BlazeDataRecord([
                     "content": .string("To delete")
                 ]))
-                try client.delete(id: id)
+                try requireFixture(client).delete(id: id)
             } catch {
                 XCTFail("Delete failed: \(error)")
             }
@@ -176,7 +176,7 @@ final class BlazeDBClientTests: XCTestCase {
                         "data": .string("Record \(i)")
                     ])
                 }
-                _ = try client.insertMany(records)
+                _ = try requireFixture(client).insertMany(records)
             } catch {
                 XCTFail("Batch insert failed: \(error)")
             }
@@ -192,11 +192,11 @@ final class BlazeDBClientTests: XCTestCase {
                 "data": .string("Record \(i)")
             ])
         }
-        _ = try client.insertMany(records)
+        _ = try requireFixture(client).insertMany(records)
         
         measure {
             do {
-                _ = try client.fetchAll()
+                _ = try requireFixture(client).fetchAll()
             } catch {
                 XCTFail("FetchAll failed: \(error)")
             }
@@ -210,32 +210,32 @@ final class BlazeDBClientTests: XCTestCase {
             "type": .string("note"),
             "content": .string("To be deleted")
         ])
-        let insertedID = try client.insert(record)
+        let insertedID = try requireFixture(client).insert(record)
         XCTAssertEqual(insertedID, id)
 
-        try client.softDelete(id: insertedID)
-        try client.purge()
+        try requireFixture(client).softDelete(id: insertedID)
+        try requireFixture(client).purge()
 
-        let result = try client.fetch(id: insertedID)
+        let result = try requireFixture(client).fetch(id: insertedID)
         XCTAssertNil(result, "Expected fetch to return nil after purge")
     }
 
     func testRawDump() throws {
         let idString = UUID().uuidString
-        _ = try client.insert(BlazeDataRecord([
+        _ = try requireFixture(client).insert(BlazeDataRecord([
             "id": .string(idString),
             "type": .string("blob"),
             "data": .string("xyz")
         ]))
-        let dump = try client.rawDump()
+        let dump = try requireFixture(client).rawDump()
         XCTAssertFalse(dump.isEmpty)
         XCTAssertTrue(dump.values.contains { !$0.isEmpty })
     }
 
     func testSecondaryIndexPersistsAfterRestart() throws {
         let dbURL = tempDBURL()
-        let store = try PageStore(fileURL: dbURL, key: key)
-        let metaURL = dbURL.deletingPathExtension().appendingPathExtension("meta")
+        let store = try PageStore(fileURL: try requireFixture(dbURL), key: key)
+        let metaURL = try requireFixture(dbURL).deletingPathExtension().appendingPathExtension("meta")
 
         var collection = try DynamicCollection(
             store: store,
@@ -259,7 +259,7 @@ final class BlazeDBClientTests: XCTestCase {
         store.close()
 
         // simulate restart
-        let reopenedStore = try PageStore(fileURL: dbURL, key: key)
+        let reopenedStore = try PageStore(fileURL: try requireFixture(dbURL), key: key)
         let collectionReloaded = try DynamicCollection(
             store: reopenedStore,
             metaURL: metaURL,
@@ -275,8 +275,8 @@ final class BlazeDBClientTests: XCTestCase {
 
     func testCompoundIndexPersists() throws {
         let dbURL = tempDBURL()
-        let store = try PageStore(fileURL: dbURL, key: key)
-        let metaURL = dbURL.deletingPathExtension().appendingPathExtension("meta")
+        let store = try PageStore(fileURL: try requireFixture(dbURL), key: key)
+        let metaURL = try requireFixture(dbURL).deletingPathExtension().appendingPathExtension("meta")
 
         var collection = try DynamicCollection(
             store: store,
@@ -300,7 +300,7 @@ final class BlazeDBClientTests: XCTestCase {
         // Release file lock before simulating restart.
         store.close()
 
-        let reopenedStore = try PageStore(fileURL: dbURL, key: key)
+        let reopenedStore = try PageStore(fileURL: try requireFixture(dbURL), key: key)
         let reloaded = try DynamicCollection(
             store: reopenedStore,
             metaURL: metaURL,
@@ -318,20 +318,20 @@ final class BlazeDBClientTests: XCTestCase {
 
     func testCheckIntegrityReturnValues() throws {
         let dbURL = tempDBURL()
-        let db = try BlazeDBClient(name: "IntegrityTest", fileURL: dbURL, password: "TestPassword-123!")
+        let db = try BlazeDBClient(name: "IntegrityTest", fileURL: try requireFixture(dbURL), password: "TestPassword-123!")
         
-        _ = try db.insert(BlazeDataRecord(["valid": .string("data")]))
+        _ = try requireFixture(db).insert(BlazeDataRecord(["valid": .string("data")]))
         
-        if let collection = db.collection as? DynamicCollection {
+        if let collection = try requireFixture(db).collection as? DynamicCollection {
             try collection.persist()
         }
         
-        let report = db.checkDatabaseIntegrity()
+        let report = try requireFixture(db).checkDatabaseIntegrity()
         
         XCTAssertTrue(report.ok, "Integrity check should pass for valid database")
         XCTAssertTrue(report.issues.isEmpty, "Should have no issues for valid database")
         
-        try? FileManager.default.removeItem(at: dbURL)
+        try? FileManager.default.removeItem(at: try requireFixture(dbURL))
     }
     
     private func tempDBURL() -> URL {

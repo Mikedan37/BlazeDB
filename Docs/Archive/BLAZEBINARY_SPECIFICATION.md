@@ -23,17 +23,17 @@
 
 ```
 
- HEADER (8 bytes) 
+ HEADER (8 bytes)
 
- FIELD_COUNT (2 bytes) 
+ FIELD_COUNT (2 bytes)
 
- FIELD_1 (variable) 
+ FIELD_1 (variable)
 
- FIELD_2 (variable) 
+ FIELD_2 (variable)
 
-... 
+...
 
- FIELD_N (variable) 
+ FIELD_N (variable)
 
 ```
 

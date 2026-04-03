@@ -18,7 +18,7 @@ import Crypto
 #endif
 
 final class BlazeDBTodaysFeaturesTests: XCTestCase {
-    var tempURL: URL!
+    private var tempURL: URL?
     
     override func setUpWithError() throws {
         tempURL = FileManager.default.temporaryDirectory
@@ -26,66 +26,65 @@ final class BlazeDBTodaysFeaturesTests: XCTestCase {
     }
     
     override func tearDownWithError() throws {
-        try? FileManager.default.removeItem(at: tempURL)
-        try? FileManager.default.removeItem(at: tempURL.deletingPathExtension().appendingPathExtension("meta"))
-        try? FileManager.default.removeItem(at: tempURL.deletingPathExtension().appendingPathExtension("meta.indexes"))
+        try? FileManager.default.removeItem(at: try requireFixture(tempURL))
+        try? FileManager.default.removeItem(at: try requireFixture(tempURL).deletingPathExtension().appendingPathExtension("meta"))
+        try? FileManager.default.removeItem(at: try requireFixture(tempURL).deletingPathExtension().appendingPathExtension("meta.indexes"))
     }
     
     // MARK: - Metadata Batching Tests
     
     /// Test that metadata batching reduces disk writes
     func testMetadataBatchingReducesDiskWrites() throws {
-        let db = try BlazeDBClient(name: "BatchingTest", fileURL: tempURL, password: "TestPassword-123!")
-        let metaURL = tempURL.deletingPathExtension().appendingPathExtension("meta")
+        let db = try BlazeDBClient(name: "BatchingTest", fileURL: try requireFixture(tempURL), password: "TestPassword-123!")
+        let metaURL = try requireFixture(tempURL).deletingPathExtension().appendingPathExtension("meta")
         
         // Insert 50 records (below 100 threshold)
         for i in 0..<50 {
-            _ = try db.insert(BlazeDataRecord(["index": .int(i)]))
+            _ = try requireFixture(db).insert(BlazeDataRecord(["index": .int(i)]))
         }
         
         // Metadata should NOT be written yet (< 100 threshold)
-        let metaExists1 = FileManager.default.fileExists(atPath: metaURL.path)
+        let metaExists1 = FileManager.default.fileExists(atPath: try requireFixture(metaURL).path)
         
         // Insert 60 more (total 110, exceeds threshold)
         for i in 50..<110 {
-            _ = try db.insert(BlazeDataRecord(["index": .int(i)]))
+            _ = try requireFixture(db).insert(BlazeDataRecord(["index": .int(i)]))
         }
         
         // Metadata should now be written (>= 100)
-        let metaExists2 = FileManager.default.fileExists(atPath: metaURL.path)
+        let metaExists2 = FileManager.default.fileExists(atPath: try requireFixture(metaURL).path)
         
         XCTAssertTrue(metaExists2, "Metadata should be flushed after 100 operations")
     }
     
     /// Test explicit persist() forces immediate flush
     func testExplicitPersistFlushesImmediately() throws {
-        let db = try BlazeDBClient(name: "PersistTest", fileURL: tempURL, password: "TestPassword-123!")
-        let collection = db.collection as! DynamicCollection
-        
+        let db = try BlazeDBClient(name: "PersistTest", fileURL: try requireFixture(tempURL), password: "TestPassword-123!")
+        let collection = try requireFixture(db).collection         
         // Insert 10 records (below threshold)
         for i in 0..<10 {
-            _ = try db.insert(BlazeDataRecord(["index": .int(i)]))
+            _ = try requireFixture(db).insert(BlazeDataRecord(["index": .int(i)]))
         }
         
         // Force flush
         try collection.persist()
-        try db.close()
+        try requireFixture(db).close()
         
         // Reopen and verify data persisted
-        let db2 = try BlazeDBClient(name: "PersistTest", fileURL: tempURL, password: "TestPassword-123!")
-        let records = try db2.fetchAll()
+        let db2 = try BlazeDBClient(name: "PersistTest", fileURL: try requireFixture(tempURL), password: "TestPassword-123!")
+        let records = try requireFixture(db2).fetchAll()
         
         XCTAssertEqual(records.count, 10, "Explicit persist should flush metadata immediately")
     }
     
     /// Test deinit flushes pending changes
     func testDeinitFlushesMetadata() throws {
-        autoreleasepool {
-            let db = try! BlazeDBClient(name: "DeinitTest", fileURL: tempURL, password: "TestPassword-123!")
+        try autoreleasepool {
+            let db = try BlazeDBClient(name: "DeinitTest", fileURL: try requireFixture(tempURL), password: "TestPassword-123!")
             
             // Insert 50 records (below threshold)
             for i in 0..<50 {
-                _ = try! db.insert(BlazeDataRecord(["index": .int(i)]))
+                _ = try requireFixture(db).insert(BlazeDataRecord(["index": .int(i)]))
             }
             
             // db will deinit here, should flush pending changes
@@ -95,8 +94,8 @@ final class BlazeDBTodaysFeaturesTests: XCTestCase {
         RunLoop.current.run(until: Date(timeIntervalSinceNow: 0.2))
         
         // Reopen and verify
-        let db = try BlazeDBClient(name: "DeinitTest", fileURL: tempURL, password: "TestPassword-123!")
-        let records = try db.fetchAll()
+        let db = try BlazeDBClient(name: "DeinitTest", fileURL: try requireFixture(tempURL), password: "TestPassword-123!")
+        let records = try requireFixture(db).fetchAll()
         
         XCTAssertEqual(records.count, 50, "Deinit should flush pending metadata changes")
     }
@@ -105,46 +104,46 @@ final class BlazeDBTodaysFeaturesTests: XCTestCase {
     
     /// Test rollback restores original data (not deletes)
     func testRollbackRestoresBaseline() throws {
-        let db = try BlazeDBClient(name: "BaselineTest", fileURL: tempURL, password: "TestPassword-123!")
+        let db = try BlazeDBClient(name: "BaselineTest", fileURL: try requireFixture(tempURL), password: "TestPassword-123!")
         
-        let id = try db.insert(BlazeDataRecord(["value": .int(100)]))
+        let id = try requireFixture(db).insert(BlazeDataRecord(["value": .int(100)]))
         
-        if let collection = db.collection as? DynamicCollection {
+        if let collection = try requireFixture(db).collection as? DynamicCollection {
             try collection.persist()
         }
         
         // Start transaction and modify
-        try db.beginTransaction()
-        try db.update(id: id, with: BlazeDataRecord(["value": .int(999)]))
+        try requireFixture(db).beginTransaction()
+        try requireFixture(db).update(id: id, with: BlazeDataRecord(["value": .int(999)]))
         
         // Rollback
-        try db.rollbackTransaction()
+        try requireFixture(db).rollbackTransaction()
         
         // Verify original data restored (not deleted)
-        let record = try db.fetch(id: id)
+        let record = try requireFixture(db).fetch(id: id)
         XCTAssertNotNil(record, "Rollback should restore record, not delete it")
         XCTAssertEqual(record?.storage["value"], .int(100), "Rollback should restore original value")
     }
     
     /// Test delete then rollback restores deleted record
     func testDeleteRollbackRestoresRecord() throws {
-        let db = try BlazeDBClient(name: "DeleteRollbackTest", fileURL: tempURL, password: "TestPassword-123!")
+        let db = try BlazeDBClient(name: "DeleteRollbackTest", fileURL: try requireFixture(tempURL), password: "TestPassword-123!")
         
-        let id = try db.insert(BlazeDataRecord(["value": .int(42)]))
+        let id = try requireFixture(db).insert(BlazeDataRecord(["value": .int(42)]))
         
-        if let collection = db.collection as? DynamicCollection {
+        if let collection = try requireFixture(db).collection as? DynamicCollection {
             try collection.persist()
         }
         
         // Start transaction and delete
-        try db.beginTransaction()
-        try db.delete(id: id)
+        try requireFixture(db).beginTransaction()
+        try requireFixture(db).delete(id: id)
         
         // Rollback
-        try db.rollbackTransaction()
+        try requireFixture(db).rollbackTransaction()
         
         // Verify record restored
-        let record = try db.fetch(id: id)
+        let record = try requireFixture(db).fetch(id: id)
         XCTAssertNotNil(record, "Rollback should restore deleted record")
         XCTAssertEqual(record?.storage["value"], .int(42), "Rollback should restore original data")
     }
@@ -153,7 +152,7 @@ final class BlazeDBTodaysFeaturesTests: XCTestCase {
     
     /// Test concurrent WAL writes don't corrupt log
     func testConcurrentWALWritesThreadSafe() throws {
-        let db = try BlazeDBClient(name: "WALLockTest", fileURL: tempURL, password: "TestPassword-123!")
+        let db = try BlazeDBClient(name: "WALLockTest", fileURL: try requireFixture(tempURL), password: "TestPassword-123!")
         
         let expectation = expectation(description: "50 concurrent inserts")
         expectation.expectedFulfillmentCount = 50
@@ -161,7 +160,7 @@ final class BlazeDBTodaysFeaturesTests: XCTestCase {
         let queue = DispatchQueue(label: "test.wal", attributes: .concurrent)
         
         for i in 0..<50 {
-            queue.async {
+            queue.async { [db] in
                 do {
                     _ = try db.insert(BlazeDataRecord(["index": .int(i)]))
                     expectation.fulfill()
@@ -174,11 +173,11 @@ final class BlazeDBTodaysFeaturesTests: XCTestCase {
         wait(for: [expectation], timeout: 10.0)
         
         // Verify all records inserted without corruption
-        if let collection = db.collection as? DynamicCollection {
+        if let collection = try requireFixture(db).collection as? DynamicCollection {
             try collection.persist()
         }
         
-        let records = try db.fetchAll()
+        let records = try requireFixture(db).fetchAll()
         XCTAssertEqual(records.count, 50, "All concurrent inserts should succeed")
     }
     
@@ -187,7 +186,7 @@ final class BlazeDBTodaysFeaturesTests: XCTestCase {
     /// Test new 9-byte header format preserves trailing zeros
     func testNewPageFormatPreservesTrailingZeros() throws {
         let key = SymmetricKey(size: .bits256)
-        let store = try PageStore(fileURL: tempURL, key: key)
+        let store = try PageStore(fileURL: try requireFixture(tempURL), key: key)
         
         // Create data ending with zeros
         let data = Data([0x01, 0x02, 0x03, 0x00, 0x00, 0x00])
@@ -202,7 +201,7 @@ final class BlazeDBTodaysFeaturesTests: XCTestCase {
     /// Test payload length field works correctly
     func testPayloadLengthHeaderWorks() throws {
         let key = SymmetricKey(size: .bits256)
-        let store = try PageStore(fileURL: tempURL, key: key)
+        let store = try PageStore(fileURL: try requireFixture(tempURL), key: key)
         
         // Write various sizes
         let sizes = [1, 10, 100, 1000, 4059]  // Max encrypted payload is 4059 (4096 - 37 bytes)
@@ -220,12 +219,11 @@ final class BlazeDBTodaysFeaturesTests: XCTestCase {
     
     /// Test index backup/restore on update failure
     func testIndexBackupRestoreOnFailure() throws {
-        let db = try BlazeDBClient(name: "IndexAtomicTest", fileURL: tempURL, password: "TestPassword-123!")
-        let collection = db.collection as! DynamicCollection
-        
+        let db = try BlazeDBClient(name: "IndexAtomicTest", fileURL: try requireFixture(tempURL), password: "TestPassword-123!")
+        let collection = try requireFixture(db).collection         
         try collection.createIndex(on: "status")
         
-        let id = try db.insert(BlazeDataRecord([
+        let id = try requireFixture(db).insert(BlazeDataRecord([
             "status": .string("pending"),
             "value": .int(1)
         ]))
@@ -237,7 +235,7 @@ final class BlazeDBTodaysFeaturesTests: XCTestCase {
         XCTAssertEqual(initialResults.count, 1)
         
         // Update successfully
-        try db.update(id: id, with: BlazeDataRecord([
+        try requireFixture(db).update(id: id, with: BlazeDataRecord([
             "status": .string("done"),
             "value": .int(2)
         ]))
@@ -269,11 +267,11 @@ final class BlazeDBTodaysFeaturesTests: XCTestCase {
         // Insert 100 records rapidly (tests UUID uniqueness)
         var insertedIDs: [UUID] = []
         for i in 0..<100 {
-            let id = try db.insert(BlazeDataRecord(["index": .int(i)]))
+            let id = try requireFixture(db).insert(BlazeDataRecord(["index": .int(i)]))
             insertedIDs.append(id)
         }
         
-        if let collection = db.collection as? DynamicCollection {
+        if let collection = try requireFixture(db).collection as? DynamicCollection {
             try collection.persist()
         }
         
@@ -282,7 +280,7 @@ final class BlazeDBTodaysFeaturesTests: XCTestCase {
         XCTAssertEqual(uniqueIDs.count, 100, "All 100 record IDs should be unique (no UUID collisions)")
         
         // All records should persist
-        let records = try db.fetchAll()
+        let records = try requireFixture(db).fetchAll()
         XCTAssertEqual(records.count, 100, "All 100 records should persist")
     }
     
@@ -290,16 +288,15 @@ final class BlazeDBTodaysFeaturesTests: XCTestCase {
     
     /// End-to-end test of today's improvements
     func testTodaysImprovementsIntegration() throws {
-        let db = try BlazeDBClient(name: "IntegrationTest", fileURL: tempURL, password: "TestPassword-123!")
-        let collection = db.collection as! DynamicCollection
-        
+        let db = try BlazeDBClient(name: "IntegrationTest", fileURL: try requireFixture(tempURL), password: "TestPassword-123!")
+        let collection = try requireFixture(db).collection         
         // 1. Create index (atomicity)
         try collection.createIndex(on: "category")
         
         // 2. Insert < 100 records (metadata batching)
         var ids: [UUID] = []
         for i in 0..<50 {
-            let id = try db.insert(BlazeDataRecord([
+            let id = try requireFixture(db).insert(BlazeDataRecord([
                 "category": .string("cat_\(i % 5)"),
                 "value": .int(i)
             ]))
@@ -310,22 +307,21 @@ final class BlazeDBTodaysFeaturesTests: XCTestCase {
         try collection.persist()
         
         // 4. Transaction with rollback (baseline restore)
-        try db.beginTransaction()
-        try db.update(id: ids[0], with: BlazeDataRecord([
+        try requireFixture(db).beginTransaction()
+        try requireFixture(db).update(id: ids[0], with: BlazeDataRecord([
             "category": .string("modified"),
             "value": .int(999)
         ]))
-        try db.rollbackTransaction()
+        try requireFixture(db).rollbackTransaction()
         
         // 5. Verify rollback restored original
-        let record = try db.fetch(id: ids[0])
+        let record = try requireFixture(db).fetch(id: ids[0])
         XCTAssertEqual(record?.storage["value"], .int(0), "Rollback should restore original")
         
         // 6. Reopen database (index rebuild)
-        try db.close()
-        let db2 = try BlazeDBClient(name: "IntegrationTest", fileURL: tempURL, password: "TestPassword-123!")
-        let collection2 = db2.collection as! DynamicCollection
-        
+        try requireFixture(db).close()
+        let db2 = try BlazeDBClient(name: "IntegrationTest", fileURL: try requireFixture(tempURL), password: "TestPassword-123!")
+        let collection2 = try requireFixture(db2).collection         
         // 7. Query index (atomicity validated)
         let results = try collection2.fetch(byIndexedField: "category", value: "cat_0")
         XCTAssertGreaterThan(results.count, 0, "Indexes should survive all operations")

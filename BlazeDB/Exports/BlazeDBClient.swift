@@ -610,10 +610,9 @@ public final class BlazeDBClient: @unchecked Sendable {
     }
 
     private func clearDurableTransactionArtifacts() {
-        let fm = FileManager.default
-        try? fm.removeItem(at: transactionBackupURL)
-        try? fm.removeItem(at: transactionMetaBackupURL)
-        try? fm.removeItem(at: transactionStateURL)
+        BlazeAuthoritativeFileOps.removeItemIfExists(at: transactionBackupURL, context: "clearDurableTransactionArtifacts(backup)")
+        BlazeAuthoritativeFileOps.removeItemIfExists(at: transactionMetaBackupURL, context: "clearDurableTransactionArtifacts(metaBackup)")
+        BlazeAuthoritativeFileOps.removeItemIfExists(at: transactionStateURL, context: "clearDurableTransactionArtifacts(state)")
     }
 
     private static func restoreDurableTransactionBackupIfPresent(
@@ -629,11 +628,14 @@ public final class BlazeDBClient: @unchecked Sendable {
         guard hasBackup || hasState else { return }
 
         let state: DurableTransactionState? = {
-            guard fm.fileExists(atPath: stateURL.path),
-                  let data = try? Data(contentsOf: stateURL),
-                  let decoded = try? JSONDecoder().decode(DurableTransactionState.self, from: data)
-            else { return nil }
-            return decoded
+            guard fm.fileExists(atPath: stateURL.path) else { return nil }
+            do {
+                let data = try Data(contentsOf: stateURL)
+                return try JSONDecoder().decode(DurableTransactionState.self, from: data)
+            } catch {
+                BlazeLogger.warn("restoreDurableTransactionBackupIfPresent: unreadable state file \(stateURL.path): \(error.localizedDescription)")
+                return nil
+            }
         }()
 
         if let state {
@@ -643,7 +645,7 @@ public final class BlazeDBClient: @unchecked Sendable {
         }
 
         guard hasBackup else {
-            try? fm.removeItem(at: stateURL)
+            BlazeAuthoritativeFileOps.removeItemIfExists(at: stateURL, context: "restoreDurableTransactionBackupIfPresent(orphan state)")
             throw BlazeDBError.transactionFailed("Transaction state file exists but backup file is missing")
         }
 
@@ -653,13 +655,13 @@ public final class BlazeDBClient: @unchecked Sendable {
         try fm.copyItem(at: backupURL, to: fileURL)
 
         if fm.fileExists(atPath: metaBackupURL.path) {
-            try? fm.removeItem(at: metaURL)
+            BlazeAuthoritativeFileOps.removeItemIfExists(at: metaURL, context: "restoreDurableTransactionBackupIfPresent(meta replace)")
             try fm.copyItem(at: metaBackupURL, to: metaURL)
         }
 
-        try? fm.removeItem(at: backupURL)
-        try? fm.removeItem(at: metaBackupURL)
-        try? fm.removeItem(at: stateURL)
+        BlazeAuthoritativeFileOps.removeItemIfExists(at: backupURL, context: "restoreDurableTransactionBackupIfPresent(backup)")
+        BlazeAuthoritativeFileOps.removeItemIfExists(at: metaBackupURL, context: "restoreDurableTransactionBackupIfPresent(metaBackup)")
+        BlazeAuthoritativeFileOps.removeItemIfExists(at: stateURL, context: "restoreDurableTransactionBackupIfPresent(state)")
     }
 
     internal func legacyTransactionLogNoOp(_ operation: String, payload: [String: BlazeDocumentField]) {
@@ -681,8 +683,12 @@ public final class BlazeDBClient: @unchecked Sendable {
         let fm = FileManager.default
         let candidates = [transactionLogURL, legacyTransactionLogURL]
         for logURL in candidates where fm.fileExists(atPath: logURL.path) {
-            try? fm.removeItem(at: logURL)
-            BlazeLogger.info("Cleaned up transaction log: \(logURL.lastPathComponent)")
+            do {
+                try fm.removeItem(at: logURL)
+                BlazeLogger.info("Cleaned up transaction log: \(logURL.lastPathComponent)")
+            } catch {
+                BlazeLogger.warn("removeLegacyNDJSONTransactionLogFilesIfPresent: could not remove \(logURL.path): \(error.localizedDescription)")
+            }
         }
         // Leave active durable transaction artifacts alone unless explicitly restored/cleared.
     }
@@ -860,7 +866,14 @@ public final class BlazeDBClient: @unchecked Sendable {
             // Fetch all records WITH their IDs
             let allIDs = collection.indexMap.keys
             for id in allIDs {
-                guard let record = try? collection.fetch(id: id) else { continue }
+                let record: BlazeDataRecord
+                do {
+                    guard let r = try collection.fetch(id: id) else { continue }
+                    record = r
+                } catch {
+                    BlazeLogger.warn("updateMany: could not fetch \(id): \(error.localizedDescription)")
+                    continue
+                }
                 
                 // Check if record matches predicate
                 guard predicate(record) else { continue }
@@ -905,9 +918,13 @@ public final class BlazeDBClient: @unchecked Sendable {
                 deletedCount = try collection.deleteBatch(ids)
                 #else
                 for id in ids {
-                    if (try? collection.fetch(id: id)) != nil {
-                        try collection.delete(id: id)
-                        deletedCount += 1
+                    do {
+                        if try collection.fetch(id: id) != nil {
+                            try collection.delete(id: id)
+                            deletedCount += 1
+                        }
+                    } catch {
+                        BlazeLogger.warn("deleteMany(Linux): could not process \(id): \(error.localizedDescription)")
                     }
                 }
                 #endif
@@ -950,7 +967,14 @@ public final class BlazeDBClient: @unchecked Sendable {
             // Fetch all records WITH their IDs
             let allIDs = collection.indexMap.keys
             for id in allIDs {
-                guard let record = try? collection.fetch(id: id) else { continue }
+                let record: BlazeDataRecord
+                do {
+                    guard let r = try collection.fetch(id: id) else { continue }
+                    record = r
+                } catch {
+                    BlazeLogger.warn("deleteMany(where): could not fetch \(id): \(error.localizedDescription)")
+                    continue
+                }
                 
                 // Check if record matches predicate
                 guard predicate(record) else { continue }
@@ -1342,9 +1366,7 @@ public final class BlazeDBClient: @unchecked Sendable {
         // ✅ FIX: Delete transaction log after successful persist
         // This prevents replaying already-persisted operations on next open
         let logURL = transactionLogURL
-        if FileManager.default.fileExists(atPath: logURL.path) {
-            try? FileManager.default.removeItem(at: logURL)
-        }
+        BlazeAuthoritativeFileOps.removeItemIfExists(at: logURL, context: "persist(legacy NDJSON txn log after successful persist)")
     }
     
     /// Alias for persist() - flushes pending metadata to disk
@@ -1663,7 +1685,11 @@ public final class BlazeDBClient: @unchecked Sendable {
         // Zero out pages that were allocated during this transaction
         // (they contain data that should not be visible after rollback)
         for pageIndex in transactionPagesWritten {
-            try? collection.store.deletePage(index: pageIndex)
+            do {
+                try collection.store.deletePage(index: pageIndex)
+            } catch {
+                BlazeLogger.warn("rollbackTransaction: could not delete staged page \(pageIndex): \(error.localizedDescription)")
+            }
         }
 
         // Clear caches so reads reflect rolled-back state
@@ -1837,8 +1863,16 @@ extension StorageLayout {
             do {
                 guard let pageData = try store.readPage(index: i) else { break }
                 // Decode full record payload and use its explicit "id" field.
-                if let record = try? BlazeBinaryDecoder.decode(pageData),
-                   let idField = record.storage["id"] {
+                let record: BlazeDataRecord
+                do {
+                    record = try BlazeBinaryDecoder.decode(pageData)
+                } catch {
+                    BlazeLogger.debug("StorageLayout.rebuild: skip page \(i) (decode failed): \(error.localizedDescription)")
+                    nextPageIndex = i + 1
+                    i += 1
+                    continue
+                }
+                if let idField = record.storage["id"] {
                     let id: UUID?
                     switch idField {
                     case .uuid(let uuid):
@@ -1935,7 +1969,8 @@ extension BlazeDBClient {
             if leftIndex == nil && rightIndex == nil { return false }
             if leftIndex == nil { return false }
             if rightIndex == nil { return true }
-            return leftIndex! < rightIndex!
+            guard let li = leftIndex, let ri = rightIndex else { return false }
+            return li < ri
         }
         
         guard let targetPosition = sortedRecords.firstIndex(where: { $0.storage["id"]?.uuidValue == beforeId }) else {
@@ -2003,7 +2038,8 @@ extension BlazeDBClient {
             if leftIndex == nil && rightIndex == nil { return false }
             if leftIndex == nil { return false }
             if rightIndex == nil { return true }
-            return leftIndex! < rightIndex!
+            guard let li = leftIndex, let ri = rightIndex else { return false }
+            return li < ri
         }
         
         guard let targetPosition = sortedRecords.firstIndex(where: { $0.storage["id"]?.uuidValue == afterId }) else {
@@ -2298,7 +2334,8 @@ extension BlazeDBClient {
             if leftIndex == nil && rightIndex == nil { return false }
             if leftIndex == nil { return false }
             if rightIndex == nil { return true }
-            return leftIndex! < rightIndex!
+            guard let li = leftIndex, let ri = rightIndex else { return false }
+            return li < ri
         }
         
         guard let targetId = beforeId ?? afterId else {

@@ -7,7 +7,7 @@
 >
 > The default public API for new applications is **`BlazeDBClient`** via `import BlazeDB`. Older references to `BlazeDB.open`, CBOR, or GitBlaze integration in this document are historical and not the primary OSS entrypoint.
 
-**Swift-native. Encrypted. Fast. Yours.**  
+**Swift-native. Encrypted. Fast. Yours.**
 BlazeDB is a blazing fast embedded database engine written entirely in Swift. It's designed for security-conscious apps, cryptographic commit storage, and total local control.
 
 > "The database Apple would build if it wasn't scared of raw power." — you, probably
@@ -26,44 +26,44 @@ BlazeDB is a blazing fast embedded database engine written entirely in Swift. It
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────┐
-│                              BLAZEDB DATA FLOW                                 │
+│ BLAZEDB DATA FLOW │
 └─────────────────────────────────────────────────────────────────────────────────┘
 
-📱 APPLICATION LAYER
+ APPLICATION LAYER
 ├── AshPile Bug Tracker
-├── BlazeDBVisualizer  
+├── BlazeDBVisualizer
 ├── BlazeStudio
 └── Custom Swift Apps
 
-    ↓ API Calls (insert, fetch, update, delete, query)
+ ↓ API Calls (insert, fetch, update, delete, query)
 
-🔌 CLIENT INTERFACE LAYER
+ CLIENT INTERFACE LAYER
 ├── BlazeDBClient (Public API)
 ├── BlazeDBManager (Multi-DB Management)
 └── BlazeQuery DSL (Type-safe queries)
 
-    ↓ Method Calls & Data Serialization
+ ↓ Method Calls & Data Serialization
 
-🧠 CORE ENGINE LAYER
+ CORE ENGINE LAYER
 ├── DynamicCollection (documents, index maps, queries)
 ├── BlazeBinary encode/decode (record bytes on the default insert/fetch path)
 └── Optional: MVCC, explicit client transactions when enabled
 
-    ↓ Encoding, index updates, staged page writes
+ ↓ Encoding, index updates, staged page writes
 
-📊 METADATA LAYER
+ METADATA LAYER
 ├── StorageLayout (signed layout, index maps, secondary indexes)
 └── Persistence to `.meta` (and `.meta.indexes` when used)
 
-    ↓ Encrypted pages + binary WAL (default durability)
+ ↓ Encrypted pages + binary WAL (default durability)
 
-💾 STORAGE LAYER
+ STORAGE LAYER
 ├── PageStore (4KB pages, queue-synchronized I/O)
 ├── WriteAheadLog (binary `.wal` — default `WALMode.legacy`)
 ├── File I/O (pread/pwrite)
 └── Encryption (AES-GCM per page)
 
-🗄️ TYPICAL ON-DISK FILES (default client path)
+ TYPICAL ON-DISK FILES (default client path)
 ├── `<name>.blazedb` — encrypted main data pages
 ├── `<name>.meta` — signed layout / indexes
 ├── `<name>.wal` — binary write-ahead log (crash recovery replay on open)
@@ -75,18 +75,18 @@ BlazeDB is a blazing fast embedded database engine written entirely in Swift. It
 ### 1. WRITE OPERATION FLOW (default `BlazeDBClient`, MVCC off)
 ```
 User Call: db.insert(record)
-    ↓
+ ↓
 BlazeDBClient.insert()
-    ↓
-DynamicCollection.insert()  (legacy single-version path)
-    ↓
+ ↓
+DynamicCollection.insert() (legacy single-version path)
+ ↓
 BlazeBinaryEncoder.encode(record) → Data
-    ↓
+ ↓
 PageStore.writePageWithOverflow / writePage
-    → encrypt page (AES-GCM, "BZDB" header) → append to binary WriteAheadLog → pwrite main .blazedb
-    ↓
+ → encrypt page (AES-GCM, "BZDB" header) → append to binary WriteAheadLog → pwrite main .blazedb
+ ↓
 Update indexMap, secondaryIndexes
-    ↓
+ ↓
 StorageLayout.saveSecure (or save) → .meta
 ```
 NDJSON `txn_log.json` is **not** written on this path for normal CRUD. Optional legacy sidecar cleanup may run at open (`removeLegacyNDJSONTransactionLogFilesIfPresent()`; `replayTransactionLogIfNeeded()` is deprecated).
@@ -94,45 +94,45 @@ NDJSON `txn_log.json` is **not** written on this path for normal CRUD. Optional 
 ### 2. READ OPERATION FLOW
 ```
 User Call: db.fetch(id)
-    ↓
+ ↓
 BlazeDBClient.fetch()
-    ↓
+ ↓
 DynamicCollection.fetch()
-    ↓
+ ↓
 indexMap[id] → pageIndex
-    ↓
+ ↓
 PageStore.readPage / readPageWithOverflow → decrypt AES-GCM → BlazeBinary payload
-    ↓
+ ↓
 BlazeBinaryDecoder.decode → BlazeDataRecord
 ```
 
 ### 3. INDEX QUERY FLOW
 ```
 User Call: db.query().where("status" == "open")
-    ↓
+ ↓
 BlazeQuery.apply()
-    ↓
+ ↓
 DynamicCollection.fetchAll()
-    ↓
+ ↓
 For each record: indexMap[id] → pageIndex → PageStore.readPage()
-    ↓
+ ↓
 Filter by predicate: record["status"] == "open"
-    ↓
+ ↓
 Return filtered results
 ```
 
 ### 4. INDEXED QUERY FLOW (Fast Path)
 ```
 User Call: db.fetch(byIndexedField: "status", value: "open")
-    ↓
+ ↓
 DynamicCollection.fetch(byIndexedField)
-    ↓
+ ↓
 secondaryIndexes["status"]["open"] → Set<UUID>
-    ↓
+ ↓
 For each UUID in Set: indexMap[UUID] → pageIndex
-    ↓
+ ↓
 PageStore.readPage(pageIndex) → BlazeDataRecord
-    ↓
+ ↓
 Return indexed results (no full table scan!)
 ```
 
@@ -153,13 +153,13 @@ Return indexed results (no full table scan!)
 ## Structure
 
 BlazeDB/
-├── Core/           # Record management and DB logic
-├── Query/          # Swift-native DSL for blazing queries
-├── Storage/        # Encrypted page system (mmap-based)
-├── Crypto/         # Key handling, AES-GCM
-├── Utils/          # CBOR and low-level helpers
-├── Exports/        # Optional backup format
-└── BlazeDB.swift   # Public interface
+├── Core/ # Record management and DB logic
+├── Query/ # Swift-native DSL for blazing queries
+├── Storage/ # Encrypted page system (mmap-based)
+├── Crypto/ # Key handling, AES-GCM
+├── Utils/ # CBOR and low-level helpers
+├── Exports/ # Optional backup format
+└── BlazeDB.swift # Public interface
 
 ## Usage Example (current `BlazeDBClient` API)
 
@@ -171,40 +171,40 @@ let db = try BlazeDBClient.open(named: "myapp", password: "your-secure-password"
 
 // Insert a record
 let id = try db.insert(BlazeDataRecord([
-    "name": .string("Alice"),
-    "role": .string("engineer")
+ "name": .string("Alice"),
+ "role": .string("engineer")
 ]))
 
 // Query records
 let recent = try db.query()
-    .where("role", equals: .string("engineer"))
-    .orderBy("created", descending: true)
-    .limit(25)
-    .execute()
-    .records
+ .where("role", equals: .string("engineer"))
+ .orderBy("created", descending: true)
+ .limit(25)
+ .execute()
+ .records
 ```
 
 Encryption Model (current core engine)
-    •    Each database is encrypted with AES-GCM at the page level
-    •    Keys are derived from a password (or key material) via KDF
-    •    Every page is encrypted individually with its own nonce
-    •    Default durability uses a binary write-ahead log (`.wal`) plus signed metadata
+ • Each database is encrypted with AES-GCM at the page level
+ • Keys are derived from a password (or key material) via KDF
+ • Every page is encrypted individually with its own nonce
+ • Default durability uses a binary write-ahead log (`.wal`) plus signed metadata
 
 Historical GitBlaze Integration (legacy context)
 
 BlazeDB originated as the primary storage engine for GitBlaze:
-    •    Commits stored as encrypted records
-    •    Local-first workflows with optional sync
-    •    Product-specific integrations built on top of the core engine, not part of the OSS default path
+ • Commits stored as encrypted records
+ • Local-first workflows with optional sync
+ • Product-specific integrations built on top of the core engine, not part of the OSS default path
 
 Roadmap
-    •    Page-level encryption with AES-GCM
-    •    CBOR-backed record format
-    •    Record-level indexing
-    •    Transaction log for rollback/replay
-    •    Encrypted search support
-    •    WAL mode for durability
-    •    Query compiler for blazing fast filters
+ • Page-level encryption with AES-GCM
+ • CBOR-backed record format
+ • Record-level indexing
+ • Transaction log for rollback/replay
+ • Encrypted search support
+ • WAL mode for durability
+ • Query compiler for blazing fast filters
 
 Disclaimer
 

@@ -95,17 +95,17 @@ services:
  build:.
  container_name: blazedb-server
  ports:
- - "9090:9090"
+- "9090:9090"
  environment:
- - BLAZEDB_DB_NAME=ServerMainDB
- - BLAZEDB_PASSWORD=secure-password-123
- - BLAZEDB_PROJECT=Production
- - BLAZEDB_PORT=9090
- - BLAZEDB_AUTH_TOKEN=secret-token-123 # Optional
- - BLAZEDB_SHARED_SECRET= # Optional
+- BLAZEDB_DB_NAME=ServerMainDB
+- BLAZEDB_PASSWORD=secure-password-123
+- BLAZEDB_PROJECT=Production
+- BLAZEDB_PORT=9090
+- BLAZEDB_AUTH_TOKEN=secret-token-123 # Optional
+- BLAZEDB_SHARED_SECRET= # Optional
  restart: unless-stopped
  volumes:
- -./data:/root/Library/Application Support/BlazeDB # Persist database
+-./data:/root/Library/Application Support/BlazeDB # Persist database
 ```
 
 Start with:
@@ -128,14 +128,14 @@ docker build -t blazedb-server.
 
 # Run server
 docker run -d \
- --name blazedb-server \
- -p 9090:9090 \
- -e BLAZEDB_DB_NAME=ServerMainDB \
- -e BLAZEDB_PASSWORD=secure-password-123 \
- -e BLAZEDB_PROJECT=Production \
- -e BLAZEDB_PORT=9090 \
- -e BLAZEDB_AUTH_TOKEN=secret-token-123 \
- -v $(pwd)/data:/root/Library/Application\ Support/BlazeDB \
+--name blazedb-server \
+-p 9090:9090 \
+-e BLAZEDB_DB_NAME=ServerMainDB \
+-e BLAZEDB_PASSWORD=secure-password-123 \
+-e BLAZEDB_PROJECT=Production \
+-e BLAZEDB_PORT=9090 \
+-e BLAZEDB_AUTH_TOKEN=secret-token-123 \
+-v $(pwd)/data:/root/Library/Application\ Support/BlazeDB \
  blazedb-server
 
 # View logs
@@ -564,10 +564,10 @@ let breakdown = try await db.telemetry.getOperationBreakdown()
 2. Review telemetry data
 3. Test with minimal reproduction case
 4. File issue on GitHub with:
- - Error messages
- - Telemetry summary
- - System information
- - Steps to reproduce
+- Error messages
+- Telemetry summary
+- System information
+- Steps to reproduce
 
 ## Best Practices
 

@@ -51,7 +51,7 @@ BlazeDB is **production-ready** for your use case with the following assessment:
 - Cached sorted order for performance
 
 **Known Issue:**
--  **Sorting bug in large datasets** - Test `testIndexBasedSortingForLargeDatasets` is failing
+- **Sorting bug in large datasets** - Test `testIndexBasedSortingForLargeDatasets` is failing
 - Issue: Records not properly sorted when using `insertMany` with 1500+ records
 - Impact: Kanban boards with many items may show incorrect order
 - Fix: Need to investigate `OrderingIndex.sortWithIndex()` implementation
@@ -61,7 +61,7 @@ BlazeDB is **production-ready** for your use case with the following assessment:
 2. Test with your expected dataset size (how many items per kanban column?)
 3. Consider using `insertMany` for bulk imports (already implemented)
 
-**Status:**  **FIX NEEDED** - Core feature works but has a bug with large datasets
+**Status:** **FIX NEEDED** - Core feature works but has a bug with large datasets
 
 ---
 
@@ -158,25 +158,25 @@ let results = try db.query()
 ### **Critical Issues**
 
 1. **Ordering Sort Bug (Large Datasets)**
- - **File:** `BlazeDBTests/OrderingIndexAdvancedTests.swift`
- - **Test:** `testIndexBasedSortingForLargeDatasets`
- - **Issue:** Records not properly sorted when using `insertMany` with 1500+ records
- - **Impact:** Kanban boards with many items may show incorrect order
- - **Priority:** **HIGH** - Must fix before production
- - **Fix:** Investigate `OrderingIndex.sortWithIndex()` and `insertMany` interaction
+- **File:** `BlazeDBTests/OrderingIndexAdvancedTests.swift`
+- **Test:** `testIndexBasedSortingForLargeDatasets`
+- **Issue:** Records not properly sorted when using `insertMany` with 1500+ records
+- **Impact:** Kanban boards with many items may show incorrect order
+- **Priority:** **HIGH** - Must fix before production
+- **Fix:** Investigate `OrderingIndex.sortWithIndex()` and `insertMany` interaction
 
 ### **Non-Critical Issues**
 
 1. **MVCC Disabled by Default**
- - Status: MVCC exists but disabled by default
- - Impact: No snapshot isolation (but transactions still work)
- - Workaround: Use transactions for consistency
- - Priority: Low (can enable later if needed)
+- Status: MVCC exists but disabled by default
+- Impact: No snapshot isolation (but transactions still work)
+- Workaround: Use transactions for consistency
+- Priority: Low (can enable later if needed)
 
 2. **No External Security Audit**
- - Status: Security features exist but not audited by third party
- - Impact: Production apps may want external validation
- - Priority: Medium (for enterprise deployments)
+- Status: Security features exist but not audited by third party
+- Impact: Production apps may want external validation
+- Priority: Medium (for enterprise deployments)
 
 ---
 
@@ -345,9 +345,9 @@ Based on documentation:
 - Package configuration
 
 ### **What Needs Attention:**
--  Ordering sort bug (must fix)
--  Test with your data volume
--  Set up monitoring/logging
+- Ordering sort bug (must fix)
+- Test with your data volume
+- Set up monitoring/logging
 
 ### **What's Optional:**
 - MVCC (can enable later if needed)
@@ -359,21 +359,21 @@ Based on documentation:
 ## **Next Steps**
 
 1. **Fix ordering bug:**
- - Investigate `OrderingIndex.sortWithIndex()`
- - Test with `insertMany` and large datasets
- - Verify fix with test case
+- Investigate `OrderingIndex.sortWithIndex()`
+- Test with `insertMany` and large datasets
+- Verify fix with test case
 
 2. **Create test suite for your use case:**
- - Test kanban operations
- - Test search with your data
- - Test relationships
- - Test performance with your data volume
+- Test kanban operations
+- Test search with your data
+- Test relationships
+- Test performance with your data volume
 
 3. **Set up production infrastructure:**
- - Backup strategy
- - Error handling
- - Logging/monitoring
- - Performance tracking
+- Backup strategy
+- Error handling
+- Logging/monitoring
+- Performance tracking
 
 ---
 

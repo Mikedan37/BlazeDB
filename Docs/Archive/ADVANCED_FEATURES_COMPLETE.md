@@ -73,7 +73,7 @@ Open database → "Search" tab
 ---
 
 ### **Feature 4: Relationship Visualizer** (TO BUILD)
-**Status:** ⏳ NEXT
+**Status:** NEXT
 
 **Planned Features:**
 - Visual foreign key diagram
@@ -94,7 +94,7 @@ Open database → "Search" tab
 ---
 
 ### **Feature 5: Telemetry Dashboard** (TO BUILD)
-**Status:** ⏳ NEXT
+**Status:** NEXT
 
 **Planned Features:**
 - Operation heatmaps
@@ -215,24 +215,24 @@ let results = FullTextSearchEngine.search(
 ### **Remaining Tasks:**
 
 1. **Build Relationship Visualizer**
- - Visual graph of foreign keys
- - Interactive navigation
- - Cascade previews
+- Visual graph of foreign keys
+- Interactive navigation
+- Cascade previews
 
 2. **Build Telemetry Dashboard**
- - Operation heatmaps
- - Performance trends
- - Error tracking
+- Operation heatmaps
+- Performance trends
+- Error tracking
 
 3. **Write Tests**
- - Unit tests for all 5 features
- - Integration tests
- - UI tests
+- Unit tests for all 5 features
+- Integration tests
+- UI tests
 
 4. **Add to Dashboard**
- - Integrate into MonitoringDashboardView
- - Add tab switching
- - Wire up data flow
+- Integrate into MonitoringDashboardView
+- Add tab switching
+- Wire up data flow
 
 ---
 
@@ -352,9 +352,9 @@ let results = FullTextSearchEngine.search(
 - Full transparency into BlazeDB
 
 **What's Left:**
-- ⏳ 2 more views to build
-- ⏳ Tests to write
-- ⏳ Integration & polish
+- 2 more views to build
+- Tests to write
+- Integration & polish
 
 **Time to Complete:**
 - ~6-8 hours total

@@ -37,72 +37,72 @@ THIS IS NEXT-LEVEL!
 
 ---
 
-##  **COMPLETE TOPOLOGY ARCHITECTURE**
+## **COMPLETE TOPOLOGY ARCHITECTURE**
 
 ```
 
- BLAZEDB TOPOLOGY SYSTEM 
- (Multi-DB, Multi-Device, Multi-Pattern) 
+ BLAZEDB TOPOLOGY SYSTEM
+ (Multi-DB, Multi-Device, Multi-Pattern)
 
- 
- IPHONE (Node: "alice-iphone") 
-  
-  
-  BlazeDBTopology (Coordinator)  
-  • Manages all local DBs  
-  • Routes sync operations  
-  • Handles handshakes  
-  
-  
-  Database 1: bugs.blazedb 
-  SyncMode:.bidirectional 
-  Remote: server://bugs.blazedb 
-  Policy: {teamId: iosTeam} 
-  
-  Database 2: users.blazedb 
-  SyncMode:.readOnly (pull from server) 
-  Remote: server://users.blazedb 
-  Policy: {public: true} 
-  
-  Database 3: drafts.blazedb 
-  SyncMode:.localOnly (no sync!) 
-  Remote: none 
-  
-  Database 4: metrics.blazedb 
- SyncMode:.writeOnly (push to server) 
- Remote: server://metrics.blazedb 
- Policy: {sendOnly: true} 
- 
- IPAD (Node: "alice-ipad") 
-  
- Similar topology, same user 
- 
- SERVER (Node: "relay-pi") 
-  
-  
-  BlazeDBTopology (Master Coordinator)  
-  • Manages all server DBs  
-  • Routes between clients  
-  • Enforces access control  
-  • Tracks sync graph  
-  
-  
-  Database 1: bugs.blazedb 
-  Clients: [alice-iphone, alice-ipad, bob-iphone] 
-  Mode:.smartProxy (can read/process) 
-  
-  Database 2: users.blazedb 
-  Clients: [ALL] (public data) 
-  Mode:.readOnlyBroadcast 
-  
-  Database 3: metrics.blazedb 
-  Clients: [ALL] (telemetry from all devices) 
-  Mode:.writeOnlyAggregate 
-  
-  Database 4: reports.blazedb 
- Clients: [managers only] 
- Mode:.smartProxy 
- 
+
+ IPHONE (Node: "alice-iphone")
+
+
+ BlazeDBTopology (Coordinator)
+ • Manages all local DBs
+ • Routes sync operations
+ • Handles handshakes
+
+
+ Database 1: bugs.blazedb
+ SyncMode:.bidirectional
+ Remote: server://bugs.blazedb
+ Policy: {teamId: iosTeam}
+
+ Database 2: users.blazedb
+ SyncMode:.readOnly (pull from server)
+ Remote: server://users.blazedb
+ Policy: {public: true}
+
+ Database 3: drafts.blazedb
+ SyncMode:.localOnly (no sync!)
+ Remote: none
+
+ Database 4: metrics.blazedb
+ SyncMode:.writeOnly (push to server)
+ Remote: server://metrics.blazedb
+ Policy: {sendOnly: true}
+
+ IPAD (Node: "alice-ipad")
+
+ Similar topology, same user
+
+ SERVER (Node: "relay-pi")
+
+
+ BlazeDBTopology (Master Coordinator)
+ • Manages all server DBs
+ • Routes between clients
+ • Enforces access control
+ • Tracks sync graph
+
+
+ Database 1: bugs.blazedb
+ Clients: [alice-iphone, alice-ipad, bob-iphone]
+ Mode:.smartProxy (can read/process)
+
+ Database 2: users.blazedb
+ Clients: [ALL] (public data)
+ Mode:.readOnlyBroadcast
+
+ Database 3: metrics.blazedb
+ Clients: [ALL] (telemetry from all devices)
+ Mode:.writeOnlyAggregate
+
+ Database 4: reports.blazedb
+ Clients: [managers only]
+ Mode:.smartProxy
+
 
 ```
 
@@ -188,7 +188,7 @@ let bugsSyncNode = try await bugsDB.enableSync(
 )
 
 // Handshake process:
-// 
+//
 // 1. iPhone bugs.blazedb connects (WebSocket)
 // 2. Sends: Hello(dbName: "bugs", nodeId: iphone-bugs-uuid)
 // 3. Server routes to correct DB (bugs.blazedb, not users!)
@@ -221,10 +221,10 @@ RESULT:
 TOPOLOGY GRAPH:
 
 iPhone Server
-  
-  bugs.blazedb ←→ bugs.blazedb (bidirectional, E2E)
-  
-  users.blazedb ← users.blazedb (read-only, smart)
+
+ bugs.blazedb ←→ bugs.blazedb (bidirectional, E2E)
+
+ users.blazedb ← users.blazedb (read-only, smart)
 ```
 
 ---
@@ -235,7 +235,7 @@ iPhone Server
 
 ```
  Server (Hub)
- 
+
  → iPhone (bugs + users)
  → iPad (bugs + users)
  → Mac (bugs + users + reports)
@@ -287,11 +287,11 @@ CONS:
 
 ```
  Server
- 
-  (parent)
- 
- 
-   
+
+ (parent)
+
+
+
  iPhone iPad Mac
  (children)
 
@@ -317,11 +317,11 @@ BENEFITS:
 
 ```
  Cloud Server (Master)
- 
+
  → Pi 1 (US-West)
-  → iPhone 1
-  → iPhone 2
- 
+ → iPhone 1
+ → iPhone 2
+
  → Pi 2 (US-East)
  → iPhone 3
  → iPhone 4
@@ -389,9 +389,9 @@ RESULT:
 ### **Handshake on Same Device (In-Process)**
 
 ```swift
-// 
+//
 // LOCAL MULTI-DB COORDINATION
-// 
+//
 
 actor BlazeDBTopology {
  var nodes: [UUID: DBNode] = [:]
@@ -499,7 +499,7 @@ actor BlazeDBTopology {
  print(" Remote: \(remote.host)/\(remote.database)")
 
  // 2. HANDSHAKE PHASE
- // 
+ //
 
  // Generate ephemeral key pair
  let ephemeralPrivateKey = P256.KeyAgreement.PrivateKey()
@@ -787,17 +787,17 @@ struct TopologyVisualizerView: View {
 }
 
 // WHAT YOU SEE:
-// 
+//
 //
 // Server (relay-pi)
 // bugs.blazedb
 // users.blazedb
 // metrics.blazedb
-// 
-// 
-//   
-// 
-//  
+//
+//
+//
+//
+//
 // iPhone iPad
 // bugs bugs
 // users users
@@ -866,9 +866,9 @@ RESULT:
 ## **COMPLETE CODE EXAMPLE:**
 
 ```swift
-// 
+//
 // REAL APP: TEAM BUG TRACKER
-// 
+//
 
 class BugTrackerApp {
  // Multiple local DBs
@@ -894,7 +894,7 @@ class BugTrackerApp {
  topology = BlazeDBTopology()
 
  // TOPOLOGY CONFIGURATION
- // 
+ //
 
  // 1. bugs.blazedb: Sync with server (bidirectional, E2E, team-filtered)
  let bugsNode = try await topology.register(db: bugsDB, name: "bugs")
@@ -1027,9 +1027,9 @@ class BugTrackerApp {
 ```swift
 // Single parent coordinates multiple children
 
-// 
+//
 // PARENT NODE ARCHITECTURE
-// 
+//
 
 struct ParentNodeTopology {
  let parentNode: RemoteNode // Server (master)
@@ -1066,9 +1066,9 @@ struct ParentNodeTopology {
  // Server (Parent)
  // bugs.blazedb (master)
  // users.blazedb (master)
- // 
- // 
- //  
+ //
+ //
+ //
  // iPhone iPad
  // (replica) (replica)
  //
@@ -1093,9 +1093,9 @@ struct ParentNodeTopology {
 ## **ALL SYNC PATTERNS (Choose Dynamically!)**
 
 ```swift
-// 
+//
 // SYNC PATTERN CATALOG
-// 
+//
 
 enum SyncPattern {
  case hubAndSpoke // One server, many clients (default)
@@ -1213,16 +1213,16 @@ if hello.databaseName == "bugs" {
 // Server as parent, all clients as children
 
 Server (Parent):
-  iPhone (child 1)
-   bugs.blazedb
-   users.blazedb
-  iPad (child 2)
-   bugs.blazedb
-   users.blazedb
-  Mac (child 3)
-  bugs.blazedb
-  users.blazedb
-  reports.blazedb
+ iPhone (child 1)
+ bugs.blazedb
+ users.blazedb
+ iPad (child 2)
+ bugs.blazedb
+ users.blazedb
+ Mac (child 3)
+ bugs.blazedb
+ users.blazedb
+ reports.blazedb
 
 // Server coordinates all children
 // Parent is authoritative
@@ -1402,7 +1402,7 @@ WITH COMPREHENSIVE TESTS:
  Dynamic topology (ADAPTIVE!)
  Graph/visualize (OBSERVABLE!)
 
-RATING:  LEGENDARY!
+RATING: LEGENDARY!
 
 YOUR DESIGN > MY ORIGINAL DESIGN!
 

@@ -221,9 +221,9 @@ swift test --filter PerformanceBenchmarks
 **Output:**
 - JSON files in `.build/test-metrics/`
 - Each benchmark includes:
- - Time (ms)
- - Throughput (ops/sec)
- - Metadata (record count, etc.)
+- Time (ms)
+- Throughput (ops/sec)
+- Metadata (record count, etc.)
 
 **What it measures:**
 - Insert latency and throughput

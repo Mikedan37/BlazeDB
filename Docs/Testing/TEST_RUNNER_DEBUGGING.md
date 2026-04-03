@@ -47,9 +47,9 @@ xcodebuild test -scheme BlazeDB -destination 'platform=macOS'
 2. Search for "xcodebuild" or "BlazeDBVisualizer"
 3. Look for error messages
 4. Common errors:
- - "Scheme BlazeDB is not configured"
- - "Unable to find scheme"
- - "Build failed"
+- "Scheme BlazeDB is not configured"
+- "Unable to find scheme"
+- "Build failed"
 ```
 
 ---
@@ -212,16 +212,16 @@ When you click "Run Tests" in BlazeDBVisualizer:
 If xcodebuild doesn't work from BlazeDBVisualizer, we could:
 
 1. **Show Recent Test Results**
- - Parse test results from DerivedData
- - Display last run results
+- Parse test results from DerivedData
+- Display last run results
 
 2. **Open in Xcode Button**
- - One-click to open project
- - Run tests there
+- One-click to open project
+- Run tests there
 
 3. **Alternative Test Runner**
- - Use `swift test` instead
- - Or parse test logs from file
+- Use `swift test` instead
+- Or parse test logs from file
 
 ---
 
@@ -300,7 +300,7 @@ When working, you'll see:
 BlazeDB Test Suite Runner
 
 Running tests... [Cancel]
-Progress:  82%
+Progress: 82%
 
 Running: "PerformanceTests"
 745 / 907 tests

@@ -959,13 +959,13 @@ private static func discoverAllDatabases() -> [DatabaseDiscoveryInfo] {
 Create these in BlazeDBVisualizer:
 ```
 Services/
-  PasswordVaultService.swift (Keychain integration)
+ PasswordVaultService.swift (Keychain integration)
 
 Views/
-  PasswordPromptView.swift (Unlock UI)
-  MonitoringDashboardView.swift (Real-time stats)
-  HealthSectionView.swift (Health cards)
-  SchemaSectionView.swift (Field browser)
+ PasswordPromptView.swift (Unlock UI)
+ MonitoringDashboardView.swift (Real-time stats)
+ HealthSectionView.swift (Health cards)
+ SchemaSectionView.swift (Field browser)
 ```
 
 ---
@@ -1080,11 +1080,11 @@ final class MonitoringService: ObservableObject {
 2. Show: records, size, health, last modified
 3. Click → Password/Face ID prompt
 4. BOOM → Real-time monitoring dashboard!
-  Live record counts
-  Health indicators
-  Schema browser
-  Performance metrics
-  One-click maintenance
+ Live record counts
+ Health indicators
+ Schema browser
+ Performance metrics
+ One-click maintenance
 ```
 
 ---

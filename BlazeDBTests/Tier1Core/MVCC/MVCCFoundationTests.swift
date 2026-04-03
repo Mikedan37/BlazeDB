@@ -18,8 +18,8 @@ final class MVCCFoundationTests: XCTestCase {
     
     var versionManager: VersionManager!
     
-    override func setUp() {
-        super.setUp()
+    override func setUpWithError() throws {
+        try super.setUpWithError()
         versionManager = VersionManager()
     }
     
@@ -133,7 +133,7 @@ final class MVCCFoundationTests: XCTestCase {
         XCTAssertTrue(read3 == nil || read3?.version == 1)
     }
     
-    func testDeletedVersionNotVisible() {
+    func testDeletedVersionNotVisible() throws {
         let recordID = UUID()
         
         // Create version 1
@@ -147,7 +147,7 @@ final class MVCCFoundationTests: XCTestCase {
         versionManager.addVersion(v1)
         
         // Delete it in transaction 2
-        try! versionManager.deleteVersion(
+        try versionManager.deleteVersion(
             recordID: recordID,
             atSnapshot: 1,
             byTransaction: 2

@@ -1,6 +1,6 @@
 # BlazeDB
 
-**Version:** 2.7.0
+**Version:** 2.7.2
 **Status:** Core modules Swift 6 strict concurrency compliant
 **License:** MIT
 
@@ -45,7 +45,7 @@ Add to `Package.swift`:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/Mikedan37/BlazeDB.git", from: "2.7.0")
+    .package(url: "https://github.com/Mikedan37/BlazeDB.git", from: "2.7.2")
 ],
 targets: [
     .target(name: "YourApp", dependencies: ["BlazeDB"])
@@ -87,22 +87,37 @@ BlazeDB encrypts data and overflow pages at rest using AES-GCM, and the page-lev
 
 ---
 
+## Community
+
+- [Contributing Guide](CONTRIBUTING.md)
+- [Code of Conduct](CODE_OF_CONDUCT.md)
+- [Security Policy](SECURITY.md)
+- [Third-Party Notices](THIRD_PARTY_NOTICES.md)
+
+---
+
 ## Documentation
 
-- [API Reference](Docs/DEVELOPER_GUIDE.md)
-- [Architecture](Docs/Architecture/)
-- [Performance](Docs/Performance/)
-- [Open-Source Readiness Checklist](Docs/Status/OPEN_SOURCE_READINESS_CHECKLIST.md) _(internal process checklist)_
-- [Release Rollback Procedure](Docs/Status/RELEASE_ROLLBACK.md)
+- [Docs Index](Docs/README.md)
+- [Developer Guide](Docs/DEVELOPER_GUIDE.md)
+- [API Reference](Docs/API/API_REFERENCE.md)
+- [Compatibility Matrix](Docs/COMPATIBILITY.md)
+- [Durability Mode Support Policy](Docs/Status/DURABILITY_MODE_SUPPORT.md)
 - [Key Management and Compatibility Modes](Docs/Status/KEY_MANAGEMENT_AND_COMPATIBILITY.md)
 - [Legacy Layout Migration Guidance](Docs/Status/LEGACY_LAYOUT_MIGRATION_GUIDANCE.md)
-- [Durability Mode Support Policy](Docs/Status/DURABILITY_MODE_SUPPORT.md)
-- [Tests directory layout (BlazeDBTests vs Tests/)](Docs/Testing/TESTS_DIRECTORY.md)
-- [OSS core build excludes](Docs/Contributing/OSS_CORE_BUILD_EXCLUDES.md)
-- [Cross-Version Compatibility Harness](Docs/Status/COMPATIBILITY_HARNESS.md)
-- [External Security Review Plan](Docs/Status/EXTERNAL_SECURITY_REVIEW_PLAN.md)
 - [Distributed Transport Deferred Status](Docs/Status/DISTRIBUTED_TRANSPORT_DEFERRED.md)
-- [Compatibility Matrix](Docs/COMPATIBILITY.md)
+- [Architecture](Docs/Architecture/)
+- [Performance](Docs/Performance/)
+
+### Maintainer Docs
+
+- [Open-Source Readiness Checklist](Docs/Status/OPEN_SOURCE_READINESS_CHECKLIST.md) (hosted CI expectations and local validation)
+- [CI and Test Tiers](Docs/Testing/CI_AND_TEST_TIERS.md)
+- [Release Rollback Procedure](Docs/Status/RELEASE_ROLLBACK.md)
+- [Cross-Version Compatibility Harness](Docs/Status/COMPATIBILITY_HARNESS.md)
+- [OSS Core Build Excludes](Docs/Contributing/OSS_CORE_BUILD_EXCLUDES.md)
+- [Open-Source Readiness Checklist](Docs/Status/OPEN_SOURCE_READINESS_CHECKLIST.md)
+- [External Security Review Plan](Docs/Status/EXTERNAL_SECURITY_REVIEW_PLAN.md)
 
 > **Note:** This repository also includes `BlazeStudio/`, an optional, experimental visual companion app built on
 > BlazeDB. It is **not required** to use the core embedded database engine and is less battle-tested than the core

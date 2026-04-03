@@ -322,7 +322,7 @@ print(" Transferred \(allRecords.count) records")
 
 ---
 
-##  **CONFIGURATION OPTIONS**
+## **CONFIGURATION OPTIONS**
 
 ### **Roles:**
 
@@ -430,31 +430,31 @@ let remoteNode = RemoteNode(
 
 ```
 DB1 (Server) Topology DB2 (Client)
-   
-  Register > 
-   
-  < Register 
-   
-   
- < Connect  Connect >
-   
-   
-  Insert  Sync >
-   
+
+ Register >
+
+ < Register
+
+
+ < Connect Connect >
+
+
+ Insert Sync >
+
 ```
 
 ### **Remote Sync Flow:**
 
 ```
 Client (iPhone) Server (Mac)
-  
-  Connect >
-  
- < Handshake 
-  
-  Insert >
-  
- < Sync 
+
+ Connect >
+
+ < Handshake
+
+ Insert >
+
+ < Sync
 ```
 
 ---

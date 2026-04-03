@@ -78,22 +78,22 @@ try collection.insert(bug) // Direct encoding via BlazeRecordEncoder!
 ### DynamicCollection (Already Optimal)
 ```
 
- BlazeDataRecord 
+ BlazeDataRecord
 
- 
- 
+
+
 
  BlazeBinaryEncoder
 
- 
- 
 
- BlazeBinary 
 
- 
- 
 
- File 
+ BlazeBinary
+
+
+
+
+ File
 
 ```
 
@@ -102,30 +102,30 @@ try collection.insert(bug) // Direct encoding via BlazeRecordEncoder!
 
  Record (Codable)
 
- 
- 
+
+
 
  BlazeRecordEncoder (NEW - no JSON!)
 
- 
- 
 
- BlazeDataRecord 
 
- 
- 
+
+ BlazeDataRecord
+
+
+
 
  BlazeBinaryEncoder
 
- 
- 
 
- BlazeBinary 
 
- 
- 
 
- File 
+ BlazeBinary
+
+
+
+
+ File
 
 ```
 

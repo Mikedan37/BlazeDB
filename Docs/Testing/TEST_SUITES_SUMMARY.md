@@ -84,40 +84,40 @@
 ```
 BlazeDBTests/
  Core/ # Core database engine
-  BlazeDBTests.swift
-  DynamicCollectionTests.swift
-  Storage/ # Storage layer
-  PageStoreTests.swift
-  StorageLayoutTests.swift
+ BlazeDBTests.swift
+ DynamicCollectionTests.swift
+ Storage/ # Storage layer
+ PageStoreTests.swift
+ StorageLayoutTests.swift
  MVCC/ # Multi-Version Concurrency Control
-  MVCCFoundationTests.swift
-  MVCCAdvancedTests.swift
+ MVCCFoundationTests.swift
+ MVCCAdvancedTests.swift
  Query/ # Query engine
-  QueryBuilderTests.swift
-  GraphQueryTests.swift
+ QueryBuilderTests.swift
+ GraphQueryTests.swift
  Indexes/ # All index types
-  IndexConsistencyTests.swift
-  FullTextSearchTests.swift
-  VectorIndexIntegrationTests.swift
+ IndexConsistencyTests.swift
+ FullTextSearchTests.swift
+ VectorIndexIntegrationTests.swift
  Security/ # Security features
-  EncryptionSecurityTests.swift
-  RLSAccessManagerTests.swift
+ EncryptionSecurityTests.swift
+ RLSAccessManagerTests.swift
  Sync/ # Distributed sync
-  DistributedSyncTests.swift
-  UnixDomainSocketTests.swift
+ DistributedSyncTests.swift
+ UnixDomainSocketTests.swift
  GarbageCollection/ # GC system
-  PageGCTests.swift
-  VacuumOperationsTests.swift
+ PageGCTests.swift
+ VacuumOperationsTests.swift
  Performance/ # Performance tests
-  PerformanceBenchmarks.swift
+ PerformanceBenchmarks.swift
  Concurrency/ # Concurrency tests
-  ConcurrencyStressTests.swift
+ ConcurrencyStressTests.swift
  Chaos/ # Chaos testing
-  ChaosEngineTests.swift
+ ChaosEngineTests.swift
  Recovery/ # Recovery tests
-  ReplayTests.swift
+ ReplayTests.swift
  ModelBased/ # Model-based tests
-  StateModelTests.swift
+ StateModelTests.swift
  [30+ component directories]
 
 Docs/Testing/

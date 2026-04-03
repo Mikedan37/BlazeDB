@@ -424,14 +424,14 @@ Visual block-based editor for building database schemas and queries.
 ### **Block Types:**
 
 - **Structure Blocks:**
- - Class blocks
- - Connector blocks
+- Class blocks
+- Connector blocks
 
 - **Logic Blocks:**
- - Function blocks
- - Variable blocks
- - Condition blocks
- - Loop blocks
+- Function blocks
+- Variable blocks
+- Condition blocks
+- Loop blocks
 
 ---
 

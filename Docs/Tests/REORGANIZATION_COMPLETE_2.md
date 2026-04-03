@@ -11,58 +11,58 @@ The BlazeDBTests directory has been reorganized into a clean, logical structure 
 ```
 BlazeDBTests/
  Codec/ # All BlazeBinary codec tests
-  CodecValidation.swift
-  BlazeBinaryCompatibilityTests.swift
-  BlazeBinaryCorruptionRecoveryTests.swift
-  BlazeBinaryEncoderTests.swift
-  BlazeBinaryEdgeCaseTests.swift
-  BlazeBinaryExhaustiveVerificationTests.swift
-  BlazeBinaryDirectVerificationTests.swift
-  BlazeBinaryReliabilityTests.swift
-  BlazeBinaryUltimateBulletproofTests.swift
-  BlazeBinaryPerformanceTests.swift
-  BlazeBinaryFuzzTests.swift
-  BlazeBinaryFieldViewTests.swift
-  BlazeBinaryLargeRecordTests.swift
-  BlazeBinaryMMapTests.swift
-  BlazeBinaryPointerIntegrityTests.swift
+ CodecValidation.swift
+ BlazeBinaryCompatibilityTests.swift
+ BlazeBinaryCorruptionRecoveryTests.swift
+ BlazeBinaryEncoderTests.swift
+ BlazeBinaryEdgeCaseTests.swift
+ BlazeBinaryExhaustiveVerificationTests.swift
+ BlazeBinaryDirectVerificationTests.swift
+ BlazeBinaryReliabilityTests.swift
+ BlazeBinaryUltimateBulletproofTests.swift
+ BlazeBinaryPerformanceTests.swift
+ BlazeBinaryFuzzTests.swift
+ BlazeBinaryFieldViewTests.swift
+ BlazeBinaryLargeRecordTests.swift
+ BlazeBinaryMMapTests.swift
+ BlazeBinaryPointerIntegrityTests.swift
 
  Engine/ # Engine integration tests
-  Core/ # Core engine tests
-  Integration/ # Integration tests
-  CollectionCodecIntegrationTests.swift
-  PageStoreCodecIntegrationTests.swift
-  WALCodecIntegrationTests.swift
-  IndexingCodecIntegrationTests.swift
-  QueryCodecIntegrationTests.swift
-  TransactionCodecIntegrationTests.swift
-  MVCCCodecIntegrationTests.swift
+ Core/ # Core engine tests
+ Integration/ # Integration tests
+ CollectionCodecIntegrationTests.swift
+ PageStoreCodecIntegrationTests.swift
+ WALCodecIntegrationTests.swift
+ IndexingCodecIntegrationTests.swift
+ QueryCodecIntegrationTests.swift
+ TransactionCodecIntegrationTests.swift
+ MVCCCodecIntegrationTests.swift
 
  Stress/ # Stress and fuzz tests
-  Chaos/ # Chaos engineering tests
-  PropertyBased/ # Property-based tests
-  [stress test files]
+ Chaos/ # Chaos engineering tests
+ PropertyBased/ # Property-based tests
+ [stress test files]
 
  Performance/ # Performance benchmarks
-  BlazeBinaryARMBenchmarks.swift
-  BlazeBinaryPerformanceRegressionTests.swift
-  BlazeDBEngineBenchmarks.swift
-  [other performance tests]
+ BlazeBinaryARMBenchmarks.swift
+ BlazeBinaryPerformanceRegressionTests.swift
+ BlazeDBEngineBenchmarks.swift
+ [other performance tests]
 
  Fixtures/ # Test fixtures
-  FixtureLoader.swift
-  FixtureValidationTests.swift
+ FixtureLoader.swift
+ FixtureValidationTests.swift
 
  CI/ # CI-specific tests
-  CIMatrix.swift
-  CodecDualPathTestSuite.swift
+ CIMatrix.swift
+ CodecDualPathTestSuite.swift
 
  Docs/ # Documentation
-  [all.md files]
+ [all.md files]
 
  Helpers/ # Shared test helpers (unchanged)
-  CodecValidation.swift (moved to Codec/)
-  [other helpers]
+ CodecValidation.swift (moved to Codec/)
+ [other helpers]
 ```
 
 ---
@@ -116,19 +116,19 @@ BlazeDBTests/
 
 ## Import Path Updates
 
- **No import path changes needed** - All tests use `@testable import BlazeDB` which works regardless of file location.
+**No import path changes needed** - All tests use `@testable import BlazeDB` which works regardless of file location.
 
- **CodecValidation.swift helper functions** - Available to all Codec tests via direct function calls (no import needed).
+**CodecValidation.swift helper functions** - Available to all Codec tests via direct function calls (no import needed).
 
 ---
 
 ## Test Discovery
 
- **SwiftPM** - Automatically discovers all `.swift` files in `BlazeDBTests/` regardless of subdirectory structure.
+**SwiftPM** - Automatically discovers all `.swift` files in `BlazeDBTests/` regardless of subdirectory structure.
 
- **Xcode** - Will automatically recognize all test files after reorganization.
+**Xcode** - Will automatically recognize all test files after reorganization.
 
- **No Package.swift changes needed** - The test target path remains `BlazeDBTests`.
+**No Package.swift changes needed** - The test target path remains `BlazeDBTests`.
 
 ---
 

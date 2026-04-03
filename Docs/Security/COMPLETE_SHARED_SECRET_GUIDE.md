@@ -8,15 +8,15 @@
 
 ```
 
- BLAZEDB PACKAGE (Same Code!) 
+ BLAZEDB PACKAGE (Same Code!)
 
- 
- macOS (CryptoKit) 
- iOS (CryptoKit) 
- Linux / Raspberry Pi (Swift Crypto) 
- Vapor Server (Swift Crypto) 
- 
- Same API, same code, works everywhere! 
+
+ macOS (CryptoKit)
+ iOS (CryptoKit)
+ Linux / Raspberry Pi (Swift Crypto)
+ Vapor Server (Swift Crypto)
+
+ Same API, same code, works everywhere!
 
 ```
 
@@ -342,11 +342,11 @@ try await db.sync(
 
 ### **Token Derivation:**
 
- **Different token per database pair**
- **Even with same secret, tokens are different**
- **Compromising one token doesn't affect others**
- **Derived with HKDF (cryptographically secure)**
- **No token storage needed (derived on demand)**
+**Different token per database pair**
+**Even with same secret, tokens are different**
+**Compromising one token doesn't affect others**
+**Derived with HKDF (cryptographically secure)**
+**No token storage needed (derived on demand)**
 
 ### **Example:**
 
@@ -417,12 +417,12 @@ print(" Connected!")
 
 ### **What Works:**
 
- **Same package** → Works on Vapor server AND client devices
- **Shared secret** → User enters one password
- **Token derivation** → Different token per database pair
- **Cross-platform** → macOS, iOS, Linux, Vapor
- **Auto-discovery** → Automatically finds servers
- **Auto-connect** → One line to connect
+**Same package** → Works on Vapor server AND client devices
+**Shared secret** → User enters one password
+**Token derivation** → Different token per database pair
+**Cross-platform** → macOS, iOS, Linux, Vapor
+**Auto-discovery** → Automatically finds servers
+**Auto-connect** → One line to connect
 
 ### **API:**
 

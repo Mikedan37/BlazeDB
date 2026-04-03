@@ -18,11 +18,11 @@
 - BlazeBinary encoding (fully implemented, optimized)
 
 **What's Incomplete:**
--  Compression (stubbed - returns data as-is)
--  Unix Domain Socket server-side listening (throws `notImplemented`)
--  Full database snapshot sync (NOT implemented - op-log only)
--  Chunked/streaming transfers (NOT implemented)
--  Large data transfer optimization (NOT implemented)
+- Compression (stubbed - returns data as-is)
+- Unix Domain Socket server-side listening (throws `notImplemented`)
+- Full database snapshot sync (NOT implemented - op-log only)
+- Chunked/streaming transfers (NOT implemented)
+- Large data transfer optimization (NOT implemented)
 
 **What's Missing:**
 - Snapshot-based initial sync
@@ -48,7 +48,7 @@
 - **Incremental sync works** - only changed operations are transferred
 - **Initial sync is slow** - must replay entire operation log (could be 100K+ operations)
 - **No fast bootstrap** - new devices must download all historical operations
--  **Memory pressure** - large operation logs consume memory
+- **Memory pressure** - large operation logs consume memory
 
 **Code References:**
 - `BlazeSyncEngine.swift:192-224` - `synchronize()` method
@@ -66,9 +66,9 @@
 - Batch size is configurable (10K ops) but entire batch sent atomically
 
 **What This Means:**
--  **Memory risk** - large batches (10K ops × ~200 bytes = 2MB) sent in one go
--  **Network timeout risk** - large transfers may timeout
--  **No progress tracking** - can't show progress for large syncs
+- **Memory risk** - large batches (10K ops × ~200 bytes = 2MB) sent in one go
+- **Network timeout risk** - large transfers may timeout
+- **No progress tracking** - can't show progress for large syncs
 - **Works for small/medium datasets** - fine for <100K operations
 
 **Code References:**
@@ -88,9 +88,9 @@
 
 **What This Means:**
 - **No compression** - all data sent uncompressed
--  **Bandwidth waste** - 2-3x larger transfers than needed
+- **Bandwidth waste** - 2-3x larger transfers than needed
 - **Safe** - no unsafe pointer usage
--  **Performance impact** - especially on slow networks
+- **Performance impact** - especially on slow networks
 
 **Code References:**
 - `TCPRelay+Compression.swift` - entire file is stubs
@@ -111,114 +111,114 @@
 
 ```
 
- STAGE 1: LOCAL CHANGE DETECTION 
+ STAGE 1: LOCAL CHANGE DETECTION
 
  IMPLEMENTED: BlazeSyncEngine.handleLocalChanges()
- - Observes database changes via BlazeDBClient.observe()
- - Creates BlazeOperation for each change
- - Tracks record versions for incremental sync
- - Implements delta encoding (only changed fields)
+- Observes database changes via BlazeDBClient.observe()
+- Creates BlazeOperation for each change
+- Tracks record versions for incremental sync
+- Implements delta encoding (only changed fields)
 
 
- STAGE 2: OPERATION LOGGING 
+ STAGE 2: OPERATION LOGGING
 
  IMPLEMENTED: OperationLog.recordOperation()
- - Stores operation in memory dictionary
- - Increments Lamport clock
- - Persists to disk in BlazeBinary format
- - Tracks operation history
+- Stores operation in memory dictionary
+- Increments Lamport clock
+- Persists to disk in BlazeBinary format
+- Tracks operation history
 
 
- STAGE 3: OPERATION BATCHING 
+ STAGE 3: OPERATION BATCHING
 
  IMPLEMENTED: BlazeSyncEngine.flushBatch()
- - Queues operations (default: 10K ops)
- - Implements operation merging (Insert+Update → Update)
- - Adaptive batching (adjusts based on performance)
- - Pipelining (up to 200 batches in flight)
+- Queues operations (default: 10K ops)
+- Implements operation merging (Insert+Update → Update)
+- Adaptive batching (adjusts based on performance)
+- Pipelining (up to 200 batches in flight)
 
 
- STAGE 4: OPERATION ENCODING 
+ STAGE 4: OPERATION ENCODING
 
  IMPLEMENTED: TCPRelay.encodeOperations()
- - BlazeBinary encoding (variable-length, bit-packed)
- - Smart caching (caches encoded operations by hash)
- - Parallel encoding (concurrentMap for multiple ops)
- - Deduplication (removes duplicate operations)
+- BlazeBinary encoding (variable-length, bit-packed)
+- Smart caching (caches encoded operations by hash)
+- Parallel encoding (concurrentMap for multiple ops)
+- Deduplication (removes duplicate operations)
 
 
- STAGE 5: COMPRESSION 
+ STAGE 5: COMPRESSION
 
  STUBBED: TCPRelay.compress()
- - Returns data unchanged
- - Magic bytes checked but ignored
- - No actual compression
+- Returns data unchanged
+- Magic bytes checked but ignored
+- No actual compression
 
 
- STAGE 6: ENCRYPTION 
+ STAGE 6: ENCRYPTION
 
  IMPLEMENTED: SecureConnection.send()
- - AES-256-GCM encryption
- - E2E encryption (server blind)
- - Frame-based protocol (type + length + payload + HMAC)
+- AES-256-GCM encryption
+- E2E encryption (server blind)
+- Frame-based protocol (type + length + payload + HMAC)
 
 
- STAGE 7: NETWORK TRANSPORT 
+ STAGE 7: NETWORK TRANSPORT
 
  IMPLEMENTED: TCPRelay.pushOperations()
- - Raw TCP connection (not WebSocket)
- - SecureConnection wrapper
- - Pipelined sends (no ACK waiting)
+- Raw TCP connection (not WebSocket)
+- SecureConnection wrapper
+- Pipelined sends (no ACK waiting)
 
 
- STAGE 8: REMOTE RECEIVING 
+ STAGE 8: REMOTE RECEIVING
 
  IMPLEMENTED: TCPRelay.connect() → receiveTask
- - Continuous receive loop
- - Decrypts frames
- - Decodes operations
- - Calls operationHandler
+- Continuous receive loop
+- Decrypts frames
+- Decodes operations
+- Calls operationHandler
 
 
- STAGE 9: DECOMPRESSION 
+ STAGE 9: DECOMPRESSION
 
  STUBBED: TCPRelay.decompressIfNeeded()
- - Returns data unchanged
- - Magic bytes checked but ignored
+- Returns data unchanged
+- Magic bytes checked but ignored
 
 
- STAGE 10: OPERATION DECODING 
+ STAGE 10: OPERATION DECODING
 
  IMPLEMENTED: TCPRelay.decodeOperations()
- - BlazeBinary decoding
- - Variable-length decoding
- - Handles legacy formats
+- BlazeBinary decoding
+- Variable-length decoding
+- Handles legacy formats
 
 
- STAGE 11: SECURITY VALIDATION 
+ STAGE 11: SECURITY VALIDATION
 
  IMPLEMENTED: SecurityValidator.validateOperationsBatch()
- - Replay attack protection (nonce + expiry)
- - Signature verification (HMAC-SHA256)
- - Batch validation (optimized)
+- Replay attack protection (nonce + expiry)
+- Signature verification (HMAC-SHA256)
+- Batch validation (optimized)
 
 
- STAGE 12: OPERATION APPLICATION 
+ STAGE 12: OPERATION APPLICATION
 
  IMPLEMENTED: BlazeSyncEngine.applyRemoteOperations()
- - Sorts by Lamport timestamp (causal order)
- - Idempotent (skips already-applied operations)
- - CRDT merging (server priority, Last-Write-Wins)
- - Tracks versions for incremental sync
+- Sorts by Lamport timestamp (causal order)
+- Idempotent (skips already-applied operations)
+- CRDT merging (server priority, Last-Write-Wins)
+- Tracks versions for incremental sync
 
 
- STAGE 13: SYNC STATE TRACKING 
+ STAGE 13: SYNC STATE TRACKING
 
  IMPLEMENTED: BlazeSyncEngine.saveSyncState()
- - Tracks which records synced to which nodes
- - Tracks record versions
- - Persists to disk (sync_state.json)
- - Enables incremental sync (only changed records)
+- Tracks which records synced to which nodes
+- Tracks record versions
+- Persists to disk (sync_state.json)
+- Enables incremental sync (only changed records)
 ```
 
 ### 2.2 Pipeline Completeness
@@ -296,7 +296,7 @@
 - Static shared state (cache, pools) protected by `NSLock`
 
 **Potential Issues:**
--  **Static cache/pools** use `NSLock` - safe but not Swift concurrency native
+- **Static cache/pools** use `NSLock` - safe but not Swift concurrency native
 - **Actor isolation** - prevents data races on instance state
 - **Protocol conformance** - `BlazeSyncRelay: Actor` ensures isolation
 
@@ -329,7 +329,7 @@
 - Tasks properly isolated
 
 **Potential Issues:**
--  **Static cache** - shared across all `TCPRelay` instances (intentional, but could cause memory growth)
+- **Static cache** - shared across all `TCPRelay` instances (intentional, but could cause memory growth)
 - **Operation queue** - isolated to `BlazeSyncEngine` actor
 - **Connection state** - isolated to `TCPRelay` actor
 
@@ -347,7 +347,7 @@
 - `TCPRelay.swift:39-50` - Receive loop with cancellation check
 - `BlazeSyncEngine.swift:146-151` - Periodic sync with cancellation check
 
-### 4.5 Retry Logic:  PARTIAL
+### 4.5 Retry Logic: PARTIAL
 
 **FINDING:** Retry logic exists but is limited.
 
@@ -359,8 +359,8 @@
 - **NO max retry limit** - could retry forever
 
 **What This Means:**
--  **Network failures** - operations requeued but no backoff
--  **Connection failures** - retries but no limit
+- **Network failures** - operations requeued but no backoff
+- **Connection failures** - retries but no limit
 - **Operation failures** - requeued for retry
 
 **Code References:**
@@ -378,7 +378,7 @@
 - No circular dependencies between actors
 
 **Potential Issues:**
--  **Static cache lock** - could block if cache operations are slow (unlikely)
+- **Static cache lock** - could block if cache operations are slow (unlikely)
 - **Actor isolation** - prevents deadlocks between actors
 
 ---
@@ -425,9 +425,9 @@ encodeOperations() → compress() → encrypt() → send()
 - Re-implement using safe Swift patterns
 
 **Is Compression Needed Now?**
--  **For small datasets (<10K ops):** Not critical - BlazeBinary is already 53% smaller than JSON
+- **For small datasets (<10K ops):** Not critical - BlazeBinary is already 53% smaller than JSON
 - **For large datasets (>100K ops):** Yes - could save 50-70% bandwidth
--  **For slow networks:** Yes - compression would help significantly
+- **For slow networks:** Yes - compression would help significantly
 - **For fast networks (LAN):** Less critical - encoding speed more important
 
 **Verdict:** Compression is **nice-to-have** for large syncs, but **not blocking** for core functionality.
@@ -512,7 +512,7 @@ encodeOperations() → compress() → encrypt() → send()
 - `BlazeOperation.swift:111-169` - `OperationLog` with Lamport clock
 - `BlazeSyncEngine.swift:284-286` - Sorts by timestamp
 
-### 6.5 SyncState Messages:  PARTIAL STATE
+### 6.5 SyncState Messages: PARTIAL STATE
 
 **FINDING:** `SyncState` contains **metadata only**, not full database state.
 
@@ -646,51 +646,51 @@ encodeOperations() → compress() → encrypt() → send()
 
 ** Easy Wins (Low Effort, High Value):**
 1. **Compression re-implementation** - Use `Data.withUnsafeMutableBytes` (safe)
- - Effort: 2-3 days
- - Impact: 50-70% bandwidth reduction
- - Risk: Low (safe Swift patterns)
+- Effort: 2-3 days
+- Impact: 50-70% bandwidth reduction
+- Risk: Low (safe Swift patterns)
 
 2. **Retry with exponential backoff** - Add to `requeueBatch()`
- - Effort: 1 day
- - Impact: Better network resilience
- - Risk: Low
+- Effort: 1 day
+- Impact: Better network resilience
+- Risk: Low
 
 3. **Progress callbacks** - Add to `pushOperations()` / `pullOperations()`
- - Effort: 1 day
- - Impact: Better UX for large syncs
- - Risk: Low
+- Effort: 1 day
+- Impact: Better UX for large syncs
+- Risk: Low
 
 ** Medium Effort:**
 4. **Chunked transfers** - Add pagination to `pullOperations()`
- - Effort: 3-5 days
- - Impact: Memory efficiency for large syncs
- - Risk: Medium (protocol change)
+- Effort: 3-5 days
+- Impact: Memory efficiency for large syncs
+- Risk: Medium (protocol change)
 
 5. **Unix Domain Socket server** - Use POSIX sockets instead of NWListener
- - Effort: 3-5 days
- - Impact: Cross-app sync on same device
- - Risk: Medium (different API)
+- Effort: 3-5 days
+- Impact: Cross-app sync on same device
+- Risk: Medium (different API)
 
 ### 8.5 What Needs Architectural Changes
 
 ** Major Changes Required:**
 1. **Snapshot-based initial sync** - Requires new protocol messages
- - Effort: 2-3 weeks
- - Impact: 20x faster initial sync
- - Risk: High (protocol change, backward compatibility)
- - **Architecture:** Add `getSnapshot()`, `loadSnapshot()` methods to protocol
+- Effort: 2-3 weeks
+- Impact: 20x faster initial sync
+- Risk: High (protocol change, backward compatibility)
+- **Architecture:** Add `getSnapshot()`, `loadSnapshot()` methods to protocol
 
 2. **Peer-to-peer mesh sync** - Requires topology changes
- - Effort: 3-4 weeks
- - Impact: Direct client-to-client sync
- - Risk: High (conflict resolution complexity)
- - **Architecture:** Add peer discovery, peer connections, mesh routing
+- Effort: 3-4 weeks
+- Impact: Direct client-to-client sync
+- Risk: High (conflict resolution complexity)
+- **Architecture:** Add peer discovery, peer connections, mesh routing
 
 3. **Streaming transfers** - Requires protocol changes
- - Effort: 1-2 weeks
- - Impact: Memory efficiency
- - Risk: Medium (protocol change)
- - **Architecture:** Add `hasMore` flags, chunking protocol
+- Effort: 1-2 weeks
+- Impact: Memory efficiency
+- Risk: Medium (protocol change)
+- **Architecture:** Add `hasMore` flags, chunking protocol
 
 ### 8.6 Compression: Needed Now or Later?
 
@@ -699,8 +699,8 @@ encodeOperations() → compress() → encrypt() → send()
 **Reasoning:**
 - **BlazeBinary is already 53% smaller than JSON** - good compression ratio
 - **System works without compression** - functional for most use cases
--  **Large syncs (>100K ops) would benefit** - but not common
--  **Slow networks would benefit** - but most users have fast networks
+- **Large syncs (>100K ops) would benefit** - but not common
+- **Slow networks would benefit** - but most users have fast networks
 - **Can be added later** - doesn't break existing functionality
 
 **When to Add:**
@@ -722,7 +722,7 @@ encodeOperations() → compress() → encrypt() → send()
 - Protocol requires Actor conformance
 - No cross-isolation issues
 
-### 9.2 Static Shared State:  ACCEPTABLE
+### 9.2 Static Shared State: ACCEPTABLE
 
 - Cache and pools use `NSLock` (not Swift concurrency native)
 - Short critical sections (low contention risk)
@@ -760,9 +760,9 @@ A **fully functional op-log based incremental sync system** with:
 - Peer-to-peer mesh (hub-and-spoke only)
 
 ### What Needs Work:
--  Compression re-implementation (stubbed)
--  Unix Domain Socket server (throws notImplemented)
--  Retry logic (basic, needs backoff)
+- Compression re-implementation (stubbed)
+- Unix Domain Socket server (throws notImplemented)
+- Retry logic (basic, needs backoff)
 
 ### Overall Assessment:
 **The system is production-ready for small-to-medium databases (<100K operations) with fast networks.** For large databases or slow networks, compression and snapshot sync would significantly improve performance, but are not blocking issues.

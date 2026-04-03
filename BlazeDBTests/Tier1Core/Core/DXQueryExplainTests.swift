@@ -14,7 +14,7 @@ import XCTest
 
 final class DXQueryExplainTests: XCTestCase {
     
-    var db: BlazeDBClient!
+    var db: BlazeDBClient?
     
     override func setUpWithError() throws {
         try super.setUpWithError()
@@ -23,16 +23,19 @@ final class DXQueryExplainTests: XCTestCase {
     }
     
     override func tearDownWithError() throws {
-        let fileURL = db.fileURL
-        try db.close()
-        db = nil
-        try? FileManager.default.removeItem(at: fileURL)
-        try? FileManager.default.removeItem(at: fileURL.deletingPathExtension().appendingPathExtension("meta"))
+        if let db = db {
+            let fileURL = db.fileURL
+            try db.close()
+            self.db = nil
+            try? FileManager.default.removeItem(at: fileURL)
+            try? FileManager.default.removeItem(at: fileURL.deletingPathExtension().appendingPathExtension("meta"))
+        }
         BlazeDBClient.clearCachedKey()
         try super.tearDownWithError()
     }
     
     func testExplain_IncludesCorrectFilterCount() throws {
+        let db = try XCTUnwrap(self.db, "db should be set in setUp")
         // Insert test data
         try db.insert(BlazeDataRecord(["name": .string("Alice"), "age": .int(30)]))
         
@@ -45,6 +48,7 @@ final class DXQueryExplainTests: XCTestCase {
     }
     
     func testExplain_WarnsForUnindexedFilter() throws {
+        let db = try XCTUnwrap(self.db, "db should be set in setUp")
         // Insert test data
         try db.insert(BlazeDataRecord(["name": .string("Alice"), "status": .string("active")]))
         
@@ -62,6 +66,7 @@ final class DXQueryExplainTests: XCTestCase {
     }
     
     func testExecuteWithWarnings_ReturnsSameResultsAsExecute() throws {
+        let db = try XCTUnwrap(self.db, "db should be set in setUp")
         // Insert test data
         let id1 = try db.insert(BlazeDataRecord(["name": .string("Alice"), "age": .int(30)]))
         let id2 = try db.insert(BlazeDataRecord(["name": .string("Bob"), "age": .int(25)]))
@@ -83,6 +88,7 @@ final class DXQueryExplainTests: XCTestCase {
     }
     
     func testExplain_HandlesEmptyQuery() throws {
+        let db = try XCTUnwrap(self.db, "db should be set in setUp")
         let explanation = try db.query().explainCost()
         
         XCTAssertEqual(explanation.filterCount, 0)

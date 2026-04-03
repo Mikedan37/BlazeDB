@@ -6,6 +6,7 @@
 //
 
 #if !BLAZEDB_LINUX_CORE
+import BlazeDBCore
 import Foundation
 
 /// In-memory relay for coordinating databases on the same device (in-memory queue, not Unix Domain Sockets)

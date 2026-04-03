@@ -253,7 +253,7 @@ await multiplexer.connect(host: "server.com", port: 8080)
 • CPU: 20% (waiting for I/O)
 • Memory: Low (one at a time)
 
-Result: Works, but limited! 
+Result: Works, but limited!
 ```
 
 ### **With Async Improvements:**

@@ -32,16 +32,16 @@ WEBSOCKET CONNECTION:
  = ~150 bytes overhead!
 
 3. WebSocket Frame (per message):
- 
-  FIN  RSV  Opcode  Mask 
- (1bit)(3bit) (4 bits)  (1 bit) 
- 
-  Payload Length (7/16/64 bits) 
- 
-  Masking Key (4 bytes, if client) 
- 
-  Payload (N bytes) 
- 
+
+ FIN RSV Opcode Mask
+ (1bit)(3bit) (4 bits) (1 bit)
+
+ Payload Length (7/16/64 bits)
+
+ Masking Key (4 bytes, if client)
+
+ Payload (N bytes)
+
 
  = 2-14 bytes per frame!
 
@@ -59,7 +59,7 @@ WebSocket: 165 + 31 = 196 bytes
 vs Raw TCP: 165 + 7 = 172 bytes
 SAVINGS: 12% (not huge, but...)
 
-BUT WAIT! There's MORE overhead! 
+BUT WAIT! There's MORE overhead!
 ```
 
 ---
@@ -111,13 +111,13 @@ CLIENT → SERVER: Connect
 
 
 
- Magic: 0xBF02 (2 bytes) 
- Version: 1 (1 byte) 
- Capabilities: [bitflags] (1 byte) 
- Node ID: UUID (16 bytes) 
- Database: "bugs" (varint + string) 
- Public Key: P256 (65 bytes) 
- Timestamp: Unix millis (8 bytes) 
+ Magic: 0xBF02 (2 bytes)
+ Version: 1 (1 byte)
+ Capabilities: [bitflags] (1 byte)
+ Node ID: UUID (16 bytes)
+ Database: "bugs" (varint + string)
+ Public Key: P256 (65 bytes)
+ Timestamp: Unix millis (8 bytes)
 
 
 Total: ~95 bytes (vs 200 for WebSocket!)
@@ -126,12 +126,12 @@ SERVER → CLIENT: Accept
 
 
 
- Magic: 0xBF02 (2 bytes) 
- Status: OK (1 byte) 
- Node ID: UUID (16 bytes) 
- Database: "bugs" (varint + string) 
- Public Key: P256 (65 bytes) 
- Challenge: Random (16 bytes) 
+ Magic: 0xBF02 (2 bytes)
+ Status: OK (1 byte)
+ Node ID: UUID (16 bytes)
+ Database: "bugs" (varint + string)
+ Public Key: P256 (65 bytes)
+ Challenge: Random (16 bytes)
 
 
 Total: ~100 bytes
@@ -140,8 +140,8 @@ CLIENT → SERVER: Verify
 
 
 
- Magic: 0xBF02 (2 bytes) 
- Challenge Response: HMAC (32 bytes) 
+ Magic: 0xBF02 (2 bytes)
+ Challenge Response: HMAC (32 bytes)
 
 
 Total: 34 bytes
@@ -157,13 +157,13 @@ OPERATION MESSAGE:
 
 
 
- Type: u8 (1 byte) 
- 0x01 = Operation 
- 0x02 = Query 
- 0x03 = Subscribe 
- 0x04 = Batch (multiple ops) 
- Length: u32 (4 bytes, big-endian) 
- Payload: BlazeBinary (N bytes) 
+ Type: u8 (1 byte)
+ 0x01 = Operation
+ 0x02 = Query
+ 0x03 = Subscribe
+ 0x04 = Batch (multiple ops)
+ Length: u32 (4 bytes, big-endian)
+ Payload: BlazeBinary (N bytes)
 
 
 TOTAL OVERHEAD: 5 BYTES! (vs 31-43 WebSocket!)
@@ -184,9 +184,9 @@ BUT WAIT! We can do BETTER!
 ### **1. Direct Memory Mapping:**
 
 ```swift
-// 
+//
 // ZERO-COPY BLAZEBINARY ENCODING
-// 
+//
 
 import Foundation
 import Network
@@ -261,9 +261,9 @@ TOTAL: 5.18ms (was 20.3ms)
 ### **2. Batching (Multiple Ops in One Frame):**
 
 ```swift
-// 
+//
 // BATCH OPERATIONS (MASSIVE SPEEDUP!)
-// 
+//
 
 class BlazeProtocolConnection {
  var operationQueue: [BlazeOperation] = []
@@ -341,9 +341,9 @@ BATCHING = MASSIVE WIN!
 ### **1. Raw TCP (Fastest for Reliable):**
 
 ```
-SPEED:  (5/5)
-RELIABILITY:  (5/5)
-COMPLEXITY:  (3/5)
+SPEED: (5/5)
+RELIABILITY: (5/5)
+COMPLEXITY: (3/5)
 
 LATENCY:
 • Connection: 10ms
@@ -360,9 +360,9 @@ USE CASE: Your primary protocol!
 ### **2. Unix Domain Sockets (Fastest for Local!):**
 
 ```
-SPEED:  (5/5) - FASTEST!
-RELIABILITY:  (5/5)
-COMPLEXITY:  (4/5)
+SPEED: (5/5) - FASTEST!
+RELIABILITY: (5/5)
+COMPLEXITY: (4/5)
 
 LATENCY:
 • Connection: <1ms
@@ -390,9 +390,9 @@ AUTOMATIC: Fastest path!
 ### **3. QUIC (Modern Alternative):**
 
 ```
-SPEED:  (4/5)
-RELIABILITY:  (5/5)
-COMPLEXITY:  (2/5)
+SPEED: (4/5)
+RELIABILITY: (5/5)
+COMPLEXITY: (2/5)
 
 LATENCY:
 • Connection: 15ms (0-RTT possible!)
@@ -409,9 +409,9 @@ USE CASE: Future option (HTTP/3)
 ### **4. UDP + Reliability Layer (Fastest, but...):**
 
 ```
-SPEED:  (5/5)
-RELIABILITY:  (3/5) - Need to build!
-COMPLEXITY:  (1/5) - Very complex!
+SPEED: (5/5)
+RELIABILITY: (3/5) - Need to build!
+COMPLEXITY: (1/5) - Very complex!
 
 LATENCY:
 • Connection: 0ms (connectionless!)
@@ -432,9 +432,9 @@ USE CASE: Gaming, real-time (too complex for now)
 ### **Best of All Worlds:**
 
 ```swift
-// 
+//
 // SMART PROTOCOL SELECTION
-// 
+//
 
 enum BlazeProtocol {
  case unixDomainSocket // Same device (<1ms!)
@@ -489,9 +489,9 @@ vs WebSocket: 20ms
 ### **Optimized BlazeBinary:**
 
 ```swift
-// 
+//
 // ZERO-COPY BLAZEBINARY ENCODER
-// 
+//
 
 class BlazeBinaryEncoder {
  // Pre-allocated buffer (reuse!)
@@ -583,9 +583,9 @@ New encoder: 0.05ms (zero-copy!)
 ### **Optimized Decoder:**
 
 ```swift
-// 
+//
 // ZERO-COPY BLAZEBINARY DECODER
-// 
+//
 
 class BlazeBinaryDecoder {
  // Decode directly from network buffer (no copy!)
@@ -701,7 +701,7 @@ WebSocket (WSS) 50ms 20ms 70ms
 Raw TCP (TLS) 10ms 5ms 15ms
 Unix Domain Socket 0.5ms 0.5ms 1ms
 QUIC 15ms 8ms 23ms
-UDP (unreliable) 0ms 3ms 3ms 
+UDP (unreliable) 0ms 3ms 3ms
 
 WINNER: Unix Domain Socket (same device)!
  Raw TCP (different device)!
@@ -740,9 +740,9 @@ WINNER: Unix Domain Socket!
 ### **Hybrid Protocol (Best Performance!):**
 
 ```swift
-// 
+//
 // SMART PROTOCOL SELECTION
-// 
+//
 
 class BlazeConnection {
  enum Transport {

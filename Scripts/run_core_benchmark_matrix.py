@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import subprocess
 import sys
 import time
@@ -17,6 +18,14 @@ from typing import Any
 
 def iso_now() -> str:
     return datetime.now(timezone.utc).replace(microsecond=0).isoformat()
+
+
+def sanitize_output_excerpt(text: str) -> str:
+    sanitized = text
+    sanitized = re.sub(r"/Users/[^/\s]+", "/Users/<redacted>", sanitized)
+    sanitized = re.sub(r"/private/var/folders/[^\s]+", "/private/var/folders/<redacted>", sanitized)
+    sanitized = re.sub(r'--scratch-path\s+"[^"]+"', '--scratch-path "<redacted>"', sanitized)
+    return sanitized
 
 
 def run_one_condition(
@@ -64,7 +73,7 @@ def run_one_condition(
         "summary": summary,
         "seconds": elapsed,
         "command": command,
-        "output_excerpt": "\n".join(out.splitlines()[-20:]),
+        "output_excerpt": sanitize_output_excerpt("\n".join(out.splitlines()[-20:])),
         "results_json": str(json_path.relative_to(repo_root)),
         "results_md": str(md_path.relative_to(repo_root)),
     }

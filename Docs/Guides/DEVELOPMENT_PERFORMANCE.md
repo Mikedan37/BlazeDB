@@ -93,7 +93,7 @@ Add to your test/debug build settings:
 ```swift
 #if DEBUG
 // Reduce validation during development
-BlazeBinaryEncoder.crc32Mode = .disabled  // Faster, less validation
+BlazeBinaryEncoder.crc32Mode = .disabled // Faster, less validation
 #endif
 ```
 
@@ -213,11 +213,11 @@ BlazeBinaryEncoder.crc32Mode = .disabled  // Faster, less validation
 ```swift
 // Instead of:
 for record in records {
-    try db.insert(record)
+ try db.insert(record)
 }
 
 // Use:
-try db.insertMany(records)  // 3-5x faster
+try db.insertMany(records) // 3-5x faster
 ```
 
 ---

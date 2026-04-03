@@ -23,39 +23,39 @@ BlazeDB now has a **world-class testing infrastructure** that would make any dat
 **Tests**: 7 advanced chaos scenarios
 
 1. **Process Kill Mid-Transaction**
- - Simulates SIGKILL during active writes
- - Verifies transaction log recovery
- - Tests: No data corruption after unclean shutdown
+- Simulates SIGKILL during active writes
+- Verifies transaction log recovery
+- Tests: No data corruption after unclean shutdown
 
 2. **Disk Full During Write**
- - Simulates out-of-space conditions
- - Verifies graceful failure handling
- - Tests: Database remains readable
+- Simulates out-of-space conditions
+- Verifies graceful failure handling
+- Tests: Database remains readable
 
 3. **Read-Only Filesystem**
- - Simulates permission errors
- - Verifies proper error messages
- - Tests: No crash on write failure
+- Simulates permission errors
+- Verifies proper error messages
+- Tests: No crash on write failure
 
 4. **File Descriptor Exhaustion**
- - Opens 100+ databases simultaneously
- - Tests FD limit handling
- - Verifies cleanup on close
+- Opens 100+ databases simultaneously
+- Tests FD limit handling
+- Verifies cleanup on close
 
 5. **Concurrent File Corruption**
- - Injects random bytes during operations
- - Tests recovery mechanisms
- - Verifies data integrity checks
+- Injects random bytes during operations
+- Tests recovery mechanisms
+- Verifies data integrity checks
 
 6. **Power Loss Mid-Write**
- - Simulates abrupt termination
- - Tests write-ahead logging
- - Verifies no partial writes
+- Simulates abrupt termination
+- Tests write-ahead logging
+- Verifies no partial writes
 
 7. **Rapid Memory Pressure**
- - Inserts massive records repeatedly
- - Tests memory management
- - Verifies no leaks or bloat
+- Inserts massive records repeatedly
+- Tests memory management
+- Verifies no leaks or bloat
 
 ---
 
@@ -66,79 +66,79 @@ BlazeDB now has a **world-class testing infrastructure** that would make any dat
 **Philosophy**: Instead of testing specific cases, we test **properties that should ALWAYS be true**, then throw thousands of random inputs at them.
 
 1. **Insert → Fetch Round-Trip** (1,000 random records)
- - Property: ANY inserted record should be fetchable
- - Generates random data structures
- - Verifies byte-perfect round-trips
+- Property: ANY inserted record should be fetchable
+- Generates random data structures
+- Verifies byte-perfect round-trips
 
 2. **Persistence Round-Trip** (500 random records)
- - Property: persist() should preserve ALL data
- - Tests across database restarts
- - Verifies no data loss
+- Property: persist() should preserve ALL data
+- Tests across database restarts
+- Verifies no data loss
 
 3. **Query Determinism** (100 random queries)
- - Property: Same query = Same results
- - Runs each query twice
- - Verifies consistency
+- Property: Same query = Same results
+- Runs each query twice
+- Verifies consistency
 
 4. **Aggregation Correctness** (50 iterations)
- - Property: Aggregations match manual calculation
- - Tests sum, count, avg
- - Verifies mathematical correctness
+- Property: Aggregations match manual calculation
+- Tests sum, count, avg
+- Verifies mathematical correctness
 
 5. **Update Preserves Other Fields** (200 tests)
- - Property: Updating field A doesn't affect field B
- - Tests field isolation
- - Verifies no unexpected mutations
+- Property: Updating field A doesn't affect field B
+- Tests field isolation
+- Verifies no unexpected mutations
 
 6. **Delete Idempotence** (100 tests)
- - Property: delete(x) twice = delete(x) once
- - Tests idempotent behavior
- - Verifies no errors on double-delete
+- Property: delete(x) twice = delete(x) once
+- Tests idempotent behavior
+- Verifies no errors on double-delete
 
 7. **Count Consistency** (100 operations)
- - Property: count() == fetchAll().count
- - Tests after random operations
- - Verifies metadata consistency
+- Property: count() == fetchAll().count
+- Tests after random operations
+- Verifies metadata consistency
 
 8. **Insert Order Independence** (50 records)
- - Property: Insert order doesn't affect final state
- - Tests commutativity
- - Verifies set semantics
+- Property: Insert order doesn't affect final state
+- Tests commutativity
+- Verifies set semantics
 
 9. **Filter Correctness** (100 queries)
- - Property: Query results match manual filtering
- - Tests all filter operators
- - Verifies query engine correctness
+- Property: Query results match manual filtering
+- Tests all filter operators
+- Verifies query engine correctness
 
 10. **Update Commutativity** (50 sequences)
- - Property: Last write wins
- - Tests update sequences
- - Verifies ordering guarantees
+- Property: Last write wins
+- Tests update sequences
+- Verifies ordering guarantees
 
 11. **Transaction Atomicity** (100 batches)
- - Property: All succeed or none do
- - Tests batch operations
- - Verifies ACID guarantees
+- Property: All succeed or none do
+- Tests batch operations
+- Verifies ACID guarantees
 
 12. **Field Type Preservation** (500 fields)
- - Property: Types are preserved exactly
- - Tests all field types
- - Verifies no type coercion
+- Property: Types are preserved exactly
+- Tests all field types
+- Verifies no type coercion
 
 13. **Concurrent Safety** (1,000 operations)
- - Property: Concurrent ops don't corrupt data
- - Tests race conditions
- - Verifies thread safety
+- Property: Concurrent ops don't corrupt data
+- Tests race conditions
+- Verifies thread safety
 
 14. **Data Size Bounds** (100 sizes)
- - Property: Database handles reasonable sizes
- - Tests 1 byte to 10KB
- - Verifies size limits
+- Property: Database handles reasonable sizes
+- Tests 1 byte to 10KB
+- Verifies size limits
 
 15. **Query Result Consistency**
- - Property: Results are deterministic
- - Tests query caching
- - Verifies repeatability
+- Property: Results are deterministic
+- Tests query caching
+- Verifies repeatability
 
 ---
 
@@ -149,70 +149,70 @@ BlazeDB now has a **world-class testing infrastructure** that would make any dat
 **Philosophy**: Throw **garbage, malicious, and extreme inputs** at the database. It should NEVER crash or corrupt data.
 
 1. **Random Strings** (10,000 inputs)
- - Tests: Empty, whitespace, control chars, emoji
- - Verifies: String handling robustness
+- Tests: Empty, whitespace, control chars, emoji
+- Verifies: String handling robustness
 
 2. **Unicode Edge Cases** (5,000 inputs)
- - Tests: Emoji, RTL text, zero-width, combining chars
- - Edge cases: Surrogate pairs, homoglyphs, normalization
- - Verifies: Unicode round-trip correctness
+- Tests: Emoji, RTL text, zero-width, combining chars
+- Edge cases: Surrogate pairs, homoglyphs, normalization
+- Verifies: Unicode round-trip correctness
 
 3. **Random Binary Data** (5,000 blobs)
- - Tests: 0 bytes to 10KB of random data
- - Verifies: Byte-perfect storage
+- Tests: 0 bytes to 10KB of random data
+- Verifies: Byte-perfect storage
 
 4. **Extreme Numbers** (1,000 values)
- - Tests: Int.max, Int.min, Infinity, NaN, subnormals
- - Edge cases: 0.0, -0.0, 1e308, 1e-308
- - Verifies: Numeric precision
+- Tests: Int.max, Int.min, Infinity, NaN, subnormals
+- Edge cases: 0.0, -0.0, 1e308, 1e-308
+- Verifies: Numeric precision
 
 5. **Deeply Nested Structures** (100 depths)
- - Tests: Arrays in arrays in arrays...
- - Tests: Dicts in dicts in dicts...
- - Verifies: Recursion limits
+- Tests: Arrays in arrays in arrays...
+- Tests: Dicts in dicts in dicts...
+- Verifies: Recursion limits
 
 6. **Malicious Field Names** (100 cases)
- - Tests: Empty, null bytes, SQL injection, MongoDB operators
- - Edge cases: `__proto__`, `$where`, `.`, `..`
- - Verifies: Field name sanitization
+- Tests: Empty, null bytes, SQL injection, MongoDB operators
+- Edge cases: `__proto__`, `$where`, `.`, `..`
+- Verifies: Field name sanitization
 
 7. **Record Size Extremes**
- - Tests: Empty record, 1 field, 1000 fields
- - Tests: 1MB string, 1MB blob
- - Verifies: Size limit handling
+- Tests: Empty record, 1 field, 1000 fields
+- Tests: 1MB string, 1MB blob
+- Verifies: Size limit handling
 
 8. **Concurrent Chaos** (5,000 operations)
- - Tests: Thousands of concurrent random ops
- - Verifies: No race conditions or deadlocks
+- Tests: Thousands of concurrent random ops
+- Verifies: No race conditions or deadlocks
 
 9. **Query Injection** (100 payloads)
- - Tests: SQL injection attempts
- - Tests: NoSQL injection (MongoDB-style)
- - Verifies: Query parameterization
+- Tests: SQL injection attempts
+- Tests: NoSQL injection (MongoDB-style)
+- Verifies: Query parameterization
 
 10. **Memory Stress** (1,000 cycles)
- - Tests: Insert/delete large records repeatedly
- - Verifies: No memory leaks
+- Tests: Insert/delete large records repeatedly
+- Verifies: No memory leaks
 
 11. **Transaction Chaos** (200 batches)
- - Tests: Random batch operations
- - Verifies: Transaction integrity
+- Tests: Random batch operations
+- Verifies: Transaction integrity
 
 12. **Date Edge Cases**
- - Tests: Unix epoch, Year 2038, distant past/future
- - Verifies: Timestamp handling
+- Tests: Unix epoch, Year 2038, distant past/future
+- Verifies: Timestamp handling
 
 13. **Path Traversal Attempts**
- - Tests: `../../etc/passwd`, Windows paths
- - Verifies: Filesystem security
+- Tests: `../../etc/passwd`, Windows paths
+- Verifies: Filesystem security
 
 14. **Format String Attacks**
- - Tests: `%s%s%s`, `%@%@%@`
- - Verifies: Safe string handling
+- Tests: `%s%s%s`, `%@%@%@`
+- Verifies: Safe string handling
 
 15. **Injection Payloads**
- - Tests: JSON injection, XML entities
- - Verifies: Input sanitization
+- Tests: JSON injection, XML entities
+- Verifies: Input sanitization
 
 ---
 

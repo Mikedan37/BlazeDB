@@ -473,7 +473,7 @@ let remoteNode = RemoteNode(
 
 ---
 
-##  **SYNC CONFIGURATION:**
+## **SYNC CONFIGURATION:**
 
 ### **Sync Roles:**
 

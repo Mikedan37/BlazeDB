@@ -158,38 +158,38 @@ TOTAL OVERHEAD: 15 bytes Good!
 
 ```
 
- BLAZEBINARY WEBSOCKET FRAME 
- (ULTRA-MINIMIZED!) 
+ BLAZEBINARY WEBSOCKET FRAME
+ (ULTRA-MINIMIZED!)
 
- 
- HEADER (7 bytes): 
-  
-  Magic  Flags  Length  Payload  
-  (2 bytes)(1 byte)(4 bytes)  (N bytes)  
-  
- 
- DETAILS: 
-  
- Magic (2 bytes): 0xBF01 
- • BF = BlazeBinary (191) 
- • 01 = Protocol version 1 
- • Instant validation 
- 
- Flags (1 byte): [CEVVTTTT] 
- • C = Compressed (1 bit) 
- • E = Encrypted (1 bit) 
- • VV = Reserved (2 bits) 
- • TTTT = Message type (4 bits, 16 types) 
- 
- Length (4 bytes): Payload length (u32 big-endian) 
- • Max: 4GB (way more than needed!) 
- • Could use 2 bytes (64KB max) if we want! 
- 
- Payload (N bytes): Actual data 
- • BlazeBinary encoded operation 
- • Or handshake message 
- • Or control message 
- 
+
+ HEADER (7 bytes):
+
+ Magic Flags Length Payload
+ (2 bytes)(1 byte)(4 bytes) (N bytes)
+
+
+ DETAILS:
+
+ Magic (2 bytes): 0xBF01
+ • BF = BlazeBinary (191)
+ • 01 = Protocol version 1
+ • Instant validation
+
+ Flags (1 byte): [CEVVTTTT]
+ • C = Compressed (1 bit)
+ • E = Encrypted (1 bit)
+ • VV = Reserved (2 bits)
+ • TTTT = Message type (4 bits, 16 types)
+
+ Length (4 bytes): Payload length (u32 big-endian)
+ • Max: 4GB (way more than needed!)
+ • Could use 2 bytes (64KB max) if we want!
+
+ Payload (N bytes): Actual data
+ • BlazeBinary encoded operation
+ • Or handshake message
+ • Or control message
+
 
 
 OVERHEAD: 7 BYTES! (was 15, now 7!)
@@ -247,19 +247,19 @@ Frame:
  Flags: 0x40 (encrypted=0, type=0x0 = Handshake)
  Length: [payload length]
  Payload:
- 
-  Protocol: "blazedb/1.0" (varint length + string)
-  Node ID: UUID (16 bytes)
-  Database: "bugs" (varint length + string)
-  Public Key: P256 (65 bytes uncompressed)
-  Capabilities: [bitflags] (1 byte)
-  • bit 0: E2E encryption
-  • bit 1: Compression
-  • bit 2: Selective sync
-  • bit 3: RLS
-  • bits 4-7: Reserved
-  Timestamp: Unix millis (8 bytes, u64)
- 
+
+ Protocol: "blazedb/1.0" (varint length + string)
+ Node ID: UUID (16 bytes)
+ Database: "bugs" (varint length + string)
+ Public Key: P256 (65 bytes uncompressed)
+ Capabilities: [bitflags] (1 byte)
+ • bit 0: E2E encryption
+ • bit 1: Compression
+ • bit 2: Selective sync
+ • bit 3: RLS
+ • bits 4-7: Reserved
+ Timestamp: Unix millis (8 bytes, u64)
+
 
 Total: ~120 bytes (once!)
 
@@ -271,14 +271,14 @@ Frame:
  Flags: 0x41 (encrypted=0, type=0x1 = HandshakeAck)
  Length: [payload length]
  Payload:
- 
-  Node ID: UUID (16 bytes)
-  Database: "bugs" (varint length + string)
-  Public Key: P256 (65 bytes)
-  Capabilities: [bitflags] (1 byte)
-  Timestamp: Unix millis (8 bytes)
-  Challenge: Random (16 bytes) ← for verification
- 
+
+ Node ID: UUID (16 bytes)
+ Database: "bugs" (varint length + string)
+ Public Key: P256 (65 bytes)
+ Capabilities: [bitflags] (1 byte)
+ Timestamp: Unix millis (8 bytes)
+ Challenge: Random (16 bytes) ← for verification
+
 
 Total: ~110 bytes (once!)
 
@@ -290,10 +290,10 @@ Frame:
  Flags: 0x41 (type=0x1)
  Length: [payload length]
  Payload:
- 
-  Challenge Response: HMAC-SHA256(challenge, sharedSecret)
-  (32 bytes)
- 
+
+ Challenge Response: HMAC-SHA256(challenge, sharedSecret)
+ (32 bytes)
+
 
 Total: 32 bytes (once!)
 
@@ -310,31 +310,31 @@ CLIENT → SERVER: Operation (Encrypted)
 Frame:
  Magic: 0xBF01
  Flags: 0x52 (encrypted=1, type=0x2 = Operation)
- 
-  Type: 0x2 (Operation)
-  Reserved: 0
-  Encrypted: 1
+
+ Type: 0x2 (Operation)
+ Reserved: 0
+ Encrypted: 1
  Length: [encrypted payload length]
  Payload:
- 
-  ENCRYPTED with AES-256-GCM: 
-  
-  Nonce (12 bytes) ← included in plaintext! 
-  Ciphertext: 
-   
-   Operation Type: u8 (1 byte)  
-   0 = Insert  
-   1 = Update  
-   2 = Delete  
-   Collection: varint len + string  
-   Record ID: UUID (16 bytes)  
-   Timestamp: Lamport (12 bytes)  
-   Counter: u64 (8 bytes)  
-   Node ID: u32 (4 bytes, hash)  
-   Changes: BlazeBinary record  
-   
-  Authentication Tag (16 bytes) 
- 
+
+ ENCRYPTED with AES-256-GCM:
+
+ Nonce (12 bytes) ← included in plaintext!
+ Ciphertext:
+
+ Operation Type: u8 (1 byte)
+ 0 = Insert
+ 1 = Update
+ 2 = Delete
+ Collection: varint len + string
+ Record ID: UUID (16 bytes)
+ Timestamp: Lamport (12 bytes)
+ Counter: u64 (8 bytes)
+ Node ID: u32 (4 bytes, hash)
+ Changes: BlazeBinary record
+
+ Authentication Tag (16 bytes)
+
 
 Example (Bug Insert):
 
@@ -361,22 +361,22 @@ CLIENT → SERVER: Operation (Compressed + Encrypted)
 Frame:
  Magic: 0xBF01
  Flags: 0xD2 (compressed=1, encrypted=1, type=0x2)
- 
-  Type: 0x2 (Operation)
-  Reserved: 0
-  Encrypted: 1
-  Compressed: 1
+
+ Type: 0x2 (Operation)
+ Reserved: 0
+ Encrypted: 1
+ Compressed: 1
  Length: [encrypted payload length]
  Payload:
- 
-  Nonce (12 bytes) 
-  Ciphertext (COMPRESSED THEN ENCRYPTED): 
-   
-   zstd compressed BlazeBinary  
-   Typical: 165 → 80 bytes (50%)  
-   
-  Auth Tag (16 bytes) 
- 
+
+ Nonce (12 bytes)
+ Ciphertext (COMPRESSED THEN ENCRYPTED):
+
+ zstd compressed BlazeBinary
+ Typical: 165 → 80 bytes (50%)
+
+ Auth Tag (16 bytes)
+
 
 Example (Bug Insert, Compressed):
 
@@ -515,9 +515,9 @@ SECURITY LEVEL: NSA Suite B!
 ### **Swift Implementation:**
 
 ```swift
-// 
+//
 // BLAZEBINARY WEBSOCKET PROTOCOL
-// 
+//
 
 import Foundation
 import CryptoKit

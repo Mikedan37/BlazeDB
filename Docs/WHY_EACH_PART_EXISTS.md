@@ -41,41 +41,41 @@ With pages: Page ID → byte offset = O(1) lookup
 **Problem 2: Atomic Writes**
 ```
 Without pages: Writing a 500-byte record requires:
-  - Read existing file
-  - Modify in memory
-  - Write entire file back
-  - If crash happens mid-write → corruption
+- Read existing file
+- Modify in memory
+- Write entire file back
+- If crash happens mid-write → corruption
 
 With pages: Writing a record:
-  - Calculate page index
-  - Write exactly one 4KB page
-  - If crash happens → only that page is affected (can detect via magic bytes)
+- Calculate page index
+- Write exactly one 4KB page
+- If crash happens → only that page is affected (can detect via magic bytes)
 ```
 
 **Problem 3: Encryption Granularity**
 ```
 Without pages: Encrypt entire file
-  - Must decrypt entire file to read one record
-  - No selective access
-  - Slow for large databases
+- Must decrypt entire file to read one record
+- No selective access
+- Slow for large databases
 
 With pages: Encrypt per-page
-  - Only decrypt pages you read
-  - Parallel encryption/decryption
-  - Fast selective access
+- Only decrypt pages you read
+- Parallel encryption/decryption
+- Fast selective access
 ```
 
 **Problem 4: Cache Management**
 ```
 Without pages: Variable-size records
-  - Complex cache eviction
-  - Unpredictable memory usage
-  - Hard to prefetch
+- Complex cache eviction
+- Unpredictable memory usage
+- Hard to prefetch
 
 With pages: Fixed-size pages
-  - Simple LRU cache (1000 pages = 4MB)
-  - Predictable memory usage
-  - Easy prefetching (read N pages ahead)
+- Simple LRU cache (1000 pages = 4MB)
+- Predictable memory usage
+- Easy prefetching (read N pages ahead)
 ```
 
 ### How It Enables Everything Else
@@ -104,9 +104,9 @@ With pages: Fixed-size pages
 **Without WAL:**
 ```
 Scenario: Insert 3 records
-1. Write record 1 to page 5 ✅
-2. Write record 2 to page 6 ✅
-3. Write record 3 to page 7... 💥 CRASH
+1. Write record 1 to page 5
+2. Write record 2 to page 6
+3. Write record 3 to page 7... CRASH
 
 Result: Database is in inconsistent state
 - Records 1 and 2 are written
@@ -118,12 +118,12 @@ Result: Database is in inconsistent state
 **With WAL:**
 ```
 Scenario: Insert 3 records
-1. Append "write page 5" to WAL ✅
-2. Append "write page 6" to WAL ✅
-3. Append "write page 7" to WAL ✅
-4. Append "commit" to WAL ✅
-5. Flush WAL to disk ✅
-6. Apply writes to main file... 💥 CRASH
+1. Append "write page 5" to WAL
+2. Append "write page 6" to WAL
+3. Append "write page 7" to WAL
+4. Append "commit" to WAL
+5. Flush WAL to disk
+6. Apply writes to main file... CRASH
 
 Result: On recovery
 - Read WAL
@@ -166,8 +166,8 @@ Result: On recovery
 **Example: Transfer money between accounts**
 ```
 Without transactions:
-1. Debit account A ($100) ✅
-2. Credit account B ($100)... 💥 CRASH
+1. Debit account A ($100)
+2. Credit account B ($100)... CRASH
 
 Result: $100 disappeared! (Account A debited, Account B not credited)
 ```
@@ -286,13 +286,13 @@ If crash after commit: Both operations replayed from WAL (all-or-nothing)
 Record: {"name": "Alice", "age": 30}
 
 JSON encoding (non-deterministic):
-  Option 1: {"name":"Alice","age":30}
-  Option 2: {"age":30,"name":"Alice"}
-  → Different hashes → sync conflicts!
+ Option 1: {"name":"Alice","age":30}
+ Option 2: {"age":30,"name":"Alice"}
+ → Different hashes → sync conflicts!
 
 BlazeBinary encoding (deterministic):
-  Always: [BLAZE][version][count][name][string][Alice][age][int][30]
-  → Same hash → no false conflicts
+ Always: [BLAZE][version][count][name][string][Alice][age][int][30]
+ → Same hash → no false conflicts
 ```
 
 **Without deterministic encoding:**
@@ -363,9 +363,9 @@ Receive: Read length (10), then read exactly 10 bytes
 // Manual filtering (error-prone)
 let allRecords = try db.fetchAll()
 let filtered = allRecords.filter { record in
-    guard let status = record["status"]?.stringValue else { return false }
-    guard let priority = record["priority"]?.intValue else { return false }
-    return status == "open" && priority > 5
+ guard let status = record["status"]?.stringValue else { return false }
+ guard let priority = record["priority"]?.intValue else { return false }
+ return status == "open" && priority > 5
 }
 // Problems:
 // - String typos ("statis" instead of "status") → runtime error
@@ -377,10 +377,10 @@ let filtered = allRecords.filter { record in
 ```swift
 // Type-safe, compile-time checked
 let results = try db.query()
-    .where("status", equals: .string("open"))
-    .where("priority", greaterThan: .int(5))
-    .execute()
-    .records
+ .where("status", equals: .string("open"))
+ .where("priority", greaterThan: .int(5))
+ .execute()
+ .records
 // Benefits:
 // - Compiler catches typos
 // - Type-safe (can't mix types)
@@ -483,78 +483,78 @@ Write 100 records:
 
 ```
 1. User calls: db.insert(record)
-   ↓
+ ↓
 2. Serialization: BlazeBinaryEncoder.encode(record)
-   → Converts Swift object → bytes
-   → Why: Need bytes to store on disk
-   ↓
+ → Converts Swift object → bytes
+ → Why: Need bytes to store on disk
+ ↓
 3. Page Store: Allocate page index
-   → Calculate offset = pageIndex × 4096
-   → Why: Need to know where to write
-   ↓
+ → Calculate offset = pageIndex × 4096
+ → Why: Need to know where to write
+ ↓
 4. Encryption: AES-GCM encrypt page
-   → Generate unique nonce, encrypt, get auth tag
-   → Why: Protect data at rest, detect tampering
-   ↓
+ → Generate unique nonce, encrypt, get auth tag
+ → Why: Protect data at rest, detect tampering
+ ↓
 5. WAL: Append write operation to WAL
-   → Log "write page X" before applying
-   → Why: Crash recovery - can replay if crash happens
-   ↓
+ → Log "write page X" before applying
+ → Why: Crash recovery - can replay if crash happens
+ ↓
 6. Page Store: Write encrypted page to disk
-   → Write at calculated offset
-   → Why: Actually persist the data
-   ↓
+ → Write at calculated offset
+ → Why: Actually persist the data
+ ↓
 7. Transaction: If in transaction, buffer operation
-   → If not committed, changes are in WAL only
-   → Why: All-or-nothing guarantee
-   ↓
+ → If not committed, changes are in WAL only
+ → Why: All-or-nothing guarantee
+ ↓
 8. Commit: If transaction, flush WAL, apply to main file
-   → fsync WAL, then checkpoint to main file
-   → Why: Durability - ensure changes survive crash
+ → fsync WAL, then checkpoint to main file
+ → Why: Durability - ensure changes survive crash
 ```
 
 ### What Breaks If You Remove a Component
 
 **Remove Page Store:**
-- ❌ No random access (must scan entire file)
-- ❌ No atomic writes (can't guarantee all-or-nothing)
-- ❌ No per-page encryption (must encrypt entire file)
-- ❌ No efficient caching (unpredictable memory usage)
+- No random access (must scan entire file)
+- No atomic writes (can't guarantee all-or-nothing)
+- No per-page encryption (must encrypt entire file)
+- No efficient caching (unpredictable memory usage)
 
 **Remove WAL:**
-- ❌ No crash recovery (committed writes lost on crash)
-- ❌ No atomic commits (can't distinguish committed vs uncommitted)
-- ❌ Poor performance (must fsync every write)
+- No crash recovery (committed writes lost on crash)
+- No atomic commits (can't distinguish committed vs uncommitted)
+- Poor performance (must fsync every write)
 
 **Remove Transactions:**
-- ❌ No all-or-nothing guarantee (partial updates possible)
-- ❌ No isolation (concurrent reads see inconsistent state)
-- ❌ No rollback (can't undo failed operations)
+- No all-or-nothing guarantee (partial updates possible)
+- No isolation (concurrent reads see inconsistent state)
+- No rollback (can't undo failed operations)
 
 **Remove Encryption:**
-- ❌ Data vulnerable (anyone with file access can read)
-- ❌ No tamper detection (modifications go undetected)
-- ❌ Compliance issues (HIPAA, GDPR require encryption)
+- Data vulnerable (anyone with file access can read)
+- No tamper detection (modifications go undetected)
+- Compliance issues (HIPAA, GDPR require encryption)
 
 **Remove Serialization:**
-- ❌ Can't store Swift objects (no persistence)
-- ❌ Can't send over network (no transmission format)
-- ❌ No deterministic encoding (sync conflicts)
+- Can't store Swift objects (no persistence)
+- Can't send over network (no transmission format)
+- No deterministic encoding (sync conflicts)
 
 **Remove TCP Protocol:**
-- ❌ Can't reliably send operations over network
-- ❌ Partial reads corrupt data
-- ❌ Vulnerable to buffer overflows
+- Can't reliably send operations over network
+- Partial reads corrupt data
+- Vulnerable to buffer overflows
 
 **Remove Query DSL:**
-- ❌ Developers write error-prone manual filtering
-- ❌ No type safety (runtime errors)
-- ❌ Not refactor-friendly (breaks on field renames)
+- Developers write error-prone manual filtering
+- No type safety (runtime errors)
+- Not refactor-friendly (breaks on field renames)
 
 **Remove Performance Optimizations:**
-- ❌ Slow reads (10-100x slower without mmap)
-- ❌ Slow writes (10-100x slower without batched fsync)
-- ❌ Poor user experience (laggy apps)
+- Slow reads (10-100x slower without mmap)
+- Slow writes (10-100x slower without batched fsync)
+- Poor user experience (laggy apps)
 
 ---
 
@@ -617,7 +617,7 @@ Layer 4: Performance (Required for scale)
 **Without WAL:**
 ```
 1. User inserts record
-2. Write to page 5... 💥 CRASH
+2. Write to page 5... CRASH
 3. User reopens app
 4. Database opens, but record is missing
 5. User confused: "Where did my data go?"
@@ -626,12 +626,12 @@ Layer 4: Performance (Required for scale)
 **With WAL:**
 ```
 1. User inserts record
-2. Append to WAL: "write page 5" ✅
-3. Append to WAL: "commit" ✅
-4. Flush WAL ✅
-5. Apply to main file... 💥 CRASH
+2. Append to WAL: "write page 5"
+3. Append to WAL: "commit"
+4. Flush WAL
+5. Apply to main file... CRASH
 6. User reopens app
-7. WAL replay: See "commit" → replay write → record restored ✅
+7. WAL replay: See "commit" → replay write → record restored
 8. User sees their data (they never knew it was lost)
 ```
 
@@ -648,7 +648,7 @@ User B: Update record (status = "closed")
 ```
 User A: Begin transaction, update record (version 1 → 2)
 User B: Begin transaction, update record (version 1 → 2)
-User A: Commit ✅
+User A: Commit
 User B: Commit → Conflict detected! (version 2 > snapshot version 1)
 → User B's transaction fails with error
 → User B can retry with latest version
@@ -680,55 +680,55 @@ Thief: Needs password to decrypt
 ### Why 4KB Pages (Not 1KB or 8KB)?
 
 **1KB Pages:**
-- ❌ Too small - most records need multiple pages
-- ❌ More overhead (more headers, nonces, tags per record)
-- ❌ More I/O operations (slower)
+- Too small - most records need multiple pages
+- More overhead (more headers, nonces, tags per record)
+- More I/O operations (slower)
 
 **8KB Pages:**
-- ❌ Less alignment (not all systems use 8KB)
-- ❌ More waste (small records waste more space)
-- ❌ Larger cache (1000 pages = 8MB, less efficient)
+- Less alignment (not all systems use 8KB)
+- More waste (small records waste more space)
+- Larger cache (1000 pages = 8MB, less efficient)
 
 **4KB Pages:**
-- ✅ Sweet spot (not too small, not too large)
-- ✅ Universal alignment (macOS, Linux, Windows all use 4KB)
-- ✅ Efficient cache (1000 pages = 4MB, manageable)
+- Sweet spot (not too small, not too large)
+- Universal alignment (macOS, Linux, Windows all use 4KB)
+- Efficient cache (1000 pages = 4MB, manageable)
 
 ### Why WAL (Not Direct Writes)?
 
 **Direct Writes:**
-- ❌ Must fsync every write (slow)
-- ❌ No crash recovery (committed writes lost)
-- ❌ No atomic commits (can't distinguish committed vs uncommitted)
+- Must fsync every write (slow)
+- No crash recovery (committed writes lost)
+- No atomic commits (can't distinguish committed vs uncommitted)
 
 **WAL:**
-- ✅ Batch fsync (10-100x fewer calls)
-- ✅ Crash recovery (replay committed transactions)
-- ✅ Atomic commits (commit marker = boundary)
+- Batch fsync (10-100x fewer calls)
+- Crash recovery (replay committed transactions)
+- Atomic commits (commit marker = boundary)
 
 ### Why MVCC (Not Lock-Based)?
 
 **Lock-Based:**
-- ❌ Read-write blocking (poor concurrency)
-- ❌ Deadlock risk
-- ❌ Lower throughput
+- Read-write blocking (poor concurrency)
+- Deadlock risk
+- Lower throughput
 
 **MVCC:**
-- ✅ Non-blocking reads (50-100x faster concurrent reads)
-- ✅ No deadlocks (optimistic concurrency)
-- ✅ High throughput (readers never block writers)
+- Non-blocking reads (50-100x faster concurrent reads)
+- No deadlocks (optimistic concurrency)
+- High throughput (readers never block writers)
 
 ### Why BlazeBinary (Not JSON)?
 
 **JSON:**
-- ❌ 53% larger (string overhead)
-- ❌ 48% slower (string parsing)
-- ❌ Non-deterministic (field order matters)
+- 53% larger (string overhead)
+- 48% slower (string parsing)
+- Non-deterministic (field order matters)
 
 **BlazeBinary:**
-- ✅ 53% smaller (binary encoding)
-- ✅ 48% faster (direct encoding)
-- ✅ Deterministic (sorted fields, same data → same encoding)
+- 53% smaller (binary encoding)
+- 48% faster (direct encoding)
+- Deterministic (sorted fields, same data → same encoding)
 
 ---
 
@@ -738,67 +738,67 @@ Thief: Needs password to decrypt
 
 ```
 User: db.insert(record)
-  ↓
+ ↓
 1. BlazeBinaryEncoder.encode(record)
-   → Swift object → bytes
-   → Why: Need bytes for storage
-  ↓
+ → Swift object → bytes
+ → Why: Need bytes for storage
+ ↓
 2. PageStore.allocatePage()
-   → Get page index (e.g., page 42)
-   → Why: Need to know where to write
-  ↓
+ → Get page index (e.g., page 42)
+ → Why: Need to know where to write
+ ↓
 3. AES-GCM.encrypt(page data)
-   → Generate nonce, encrypt, get tag
-   → Why: Protect data, detect tampering
-  ↓
+ → Generate nonce, encrypt, get tag
+ → Why: Protect data, detect tampering
+ ↓
 4. WriteAheadLog.append(pageIndex, data)
-   → Log "write page 42" to WAL
-   → Why: Crash recovery
-  ↓
+ → Log "write page 42" to WAL
+ → Why: Crash recovery
+ ↓
 5. PageStore.writePage(index: 42, encrypted data)
-   → Write to offset 42 × 4096 = 172,032
-   → Why: Actually persist the data
-  ↓
+ → Write to offset 42 × 4096 = 172,032
+ → Why: Actually persist the data
+ ↓
 6. Transaction.commit() (if in transaction)
-   → Flush WAL, checkpoint to main file
-   → Why: Durability guarantee
-  ↓
+ → Flush WAL, checkpoint to main file
+ → Why: Durability guarantee
+ ↓
 7. Update indexMap[recordID] = [42]
-   → Store record → page mapping
-   → Why: Fast lookup later
+ → Store record → page mapping
+ → Why: Fast lookup later
 ```
 
 ### Query Flow (All Components Working Together)
 
 ```
 User: db.query().where("status", equals: .string("open")).execute()
-  ↓
+ ↓
 1. QueryBuilder builds filter predicate
-   → Closure: { record in record["status"] == "open" }
-   → Why: Type-safe, refactor-friendly
-  ↓
+ → Closure: { record in record["status"] == "open" }
+ → Why: Type-safe, refactor-friendly
+ ↓
 2. DynamicCollection.fetchAll() (or use index)
-   → Load all records (or indexed subset)
-   → Why: Need data to filter
-  ↓
+ → Load all records (or indexed subset)
+ → Why: Need data to filter
+ ↓
 3. For each record ID in indexMap:
-   a. PageStore.readPage(index: pageIndex)
-      → Read encrypted page from disk (or cache)
-      → Why: Get the actual data
-   b. AES-GCM.decrypt(page)
-      → Verify auth tag, decrypt
-      → Why: Get plaintext data
-   c. BlazeBinaryDecoder.decode(data)
-      → Convert bytes → Swift object
-      → Why: Use data in code
-  ↓
+ a. PageStore.readPage(index: pageIndex)
+ → Read encrypted page from disk (or cache)
+ → Why: Get the actual data
+ b. AES-GCM.decrypt(page)
+ → Verify auth tag, decrypt
+ → Why: Get plaintext data
+ c. BlazeBinaryDecoder.decode(data)
+ → Convert bytes → Swift object
+ → Why: Use data in code
+ ↓
 4. Apply filter predicate
-   → Check if record matches
-   → Why: Return only matching records
-  ↓
+ → Check if record matches
+ → Why: Return only matching records
+ ↓
 5. Sort, limit, return results
-   → Apply query operations
-   → Why: Return correct subset
+ → Apply query operations
+ → Why: Return correct subset
 ```
 
 ---

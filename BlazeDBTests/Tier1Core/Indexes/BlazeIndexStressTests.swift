@@ -19,20 +19,20 @@ import Crypto
 #endif
 
 final class BlazeIndexStressTests: XCTestCase {
-    var tempURL: URL!
-    var db: BlazeDBClient!
+    private var tempURL: URL?
+    private var db: BlazeDBClient?
     
     override func setUpWithError() throws {
         tempURL = FileManager.default.temporaryDirectory
             .appendingPathComponent("BlazeIndexStress-\(UUID().uuidString).blazedb")
-        db = try BlazeDBClient(name: "IndexStressTest", fileURL: tempURL, password: "TestPassword-123!")
+        db = try BlazeDBClient(name: "IndexStressTest", fileURL: try requireFixture(tempURL), password: "TestPassword-123!")
     }
     
     override func tearDownWithError() throws {
         db = nil
-        try? FileManager.default.removeItem(at: tempURL)
-        try? FileManager.default.removeItem(at: tempURL.deletingPathExtension().appendingPathExtension("meta"))
-        try? FileManager.default.removeItem(at: tempURL.deletingPathExtension().appendingPathExtension("meta.indexes"))
+        try? FileManager.default.removeItem(at: try requireFixture(tempURL))
+        try? FileManager.default.removeItem(at: try requireFixture(tempURL).deletingPathExtension().appendingPathExtension("meta"))
+        try? FileManager.default.removeItem(at: try requireFixture(tempURL).deletingPathExtension().appendingPathExtension("meta.indexes"))
     }
     
     // MARK: - Single-Field Index Stress
@@ -49,12 +49,12 @@ final class BlazeIndexStressTests: XCTestCase {
                 "priority": .int(i % 5),                 // 5 unique values
                 "value": .double(Double(i))
             ])
-            _ = try db.insert(record)
+            _ = try requireFixture(db).insert(record)
         }
         
         // Flush metadata before creating index
         do {
-            let collection = db.collection as! DynamicCollection
+            let collection = try requireFixture(db).collection
             try collection.persist()
             print("🔨 Creating index on 'category'...")
             try collection.createIndex(on: "category")
@@ -64,7 +64,7 @@ final class BlazeIndexStressTests: XCTestCase {
         print("🔄 Reopening database to trigger index rebuild...")
         db = nil
         let startTime = Date()
-        db = try BlazeDBClient(name: "IndexStressTest", fileURL: tempURL, password: "TestPassword-123!")
+        db = try BlazeDBClient(name: "IndexStressTest", fileURL: try requireFixture(tempURL), password: "TestPassword-123!")
         let rebuildDuration = Date().timeIntervalSince(startTime)
         
         print("✅ Index rebuilt in \(String(format: "%.3f", rebuildDuration))s")
@@ -73,7 +73,7 @@ final class BlazeIndexStressTests: XCTestCase {
         // Verify index works
         print("🔍 Testing index query...")
         let queryStart = Date()
-        let rebuiltCollection = db.collection as! DynamicCollection
+        let rebuiltCollection = try requireFixture(db).collection
         let results = try rebuiltCollection.fetch(byIndexedField: "category", value: "cat_50")
         let queryDuration = Date().timeIntervalSince(queryStart)
         
@@ -88,7 +88,7 @@ final class BlazeIndexStressTests: XCTestCase {
         
         print("📊 Creating high cardinality index with \(count) unique values...")
         
-        let collection = db.collection as! DynamicCollection
+        let collection = try requireFixture(db).collection
         try collection.createIndex(on: "uniqueID")
         
         for i in 0..<count {
@@ -96,13 +96,13 @@ final class BlazeIndexStressTests: XCTestCase {
                 "uniqueID": .string(UUID().uuidString),  // Every value is unique!
                 "data": .int(i)
             ])
-            _ = try db.insert(record)
+            _ = try requireFixture(db).insert(record)
         }
         
         print("✅ Inserted \(count) records with unique indexed values")
         
         // Flush metadata to ensure records are visible
-        try db.persist()
+        try requireFixture(db).persist()
         
         // Query performance should still be good
         let allRecords = try collection.fetchAll()
@@ -130,7 +130,7 @@ final class BlazeIndexStressTests: XCTestCase {
         
         print("📊 Testing compound index with 3 fields on \(count) records...")
         
-        let collection = db.collection as! DynamicCollection
+        let collection = try requireFixture(db).collection
         try collection.createIndex(on: ["status", "priority", "category"])
         
         let statuses = ["open", "closed", "pending"]
@@ -145,7 +145,7 @@ final class BlazeIndexStressTests: XCTestCase {
                 "category": .string(categories[i % categories.count]),
                 "description": .string("Item \(i)")
             ])
-            _ = try db.insert(record)
+            _ = try requireFixture(db).insert(record)
         }
         
         // Test compound query
@@ -176,7 +176,7 @@ final class BlazeIndexStressTests: XCTestCase {
         
         print("📊 Testing index maintenance with \(count) records x \(updateRounds) update rounds...")
         
-        let collection = db.collection as! DynamicCollection
+        let collection = try requireFixture(db).collection
         try collection.createIndex(on: "status")
         try collection.createIndex(on: ["status", "priority"])
         
@@ -188,7 +188,7 @@ final class BlazeIndexStressTests: XCTestCase {
                 "priority": .int(1),
                 "index": .int(i)
             ])
-            let id = try db.insert(record)
+            let id = try requireFixture(db).insert(record)
             recordIDs.append(id)
         }
         
@@ -238,28 +238,27 @@ final class BlazeIndexStressTests: XCTestCase {
                 "searchField": .string(i % 10 == 0 ? searchValue : "other_\(i)"),
                 "data": .int(i)
             ])
-            _ = try db.insert(record)
+            _ = try requireFixture(db).insert(record)
         }
         
         // Flush metadata before testing (ensure all records are indexed)
-        try (db.collection as! DynamicCollection).persist()
+        try requireFixture(db).collection.persist()
         
         // Full scan (no index)
         print("  Testing full scan...")
         var fullScanStart = Date()
-        let fullScanResults = try (db.collection as! DynamicCollection).filter { record in
+        let fullScanResults = try requireFixture(db).collection.filter { record in
             record.storage["searchField"]?.stringValue == searchValue
         }
         var fullScanDuration = Date().timeIntervalSince(fullScanStart)
         
         // Create index definition
-        try (db.collection as! DynamicCollection).createIndex(on: "searchField")
+        try requireFixture(db).collection.createIndex(on: "searchField")
         
         // Reopen to trigger index rebuild
         db = nil
-        db = try BlazeDBClient(name: "IndexStressTest", fileURL: tempURL, password: "TestPassword-123!")
-        let rebuiltCollection = db.collection as! DynamicCollection
-        
+        db = try BlazeDBClient(name: "IndexStressTest", fileURL: try requireFixture(tempURL), password: "TestPassword-123!")
+        let rebuiltCollection = try requireFixture(db).collection
         print("  Testing indexed query...")
         let indexedStart = Date()
         let indexedResults = try rebuiltCollection.fetch(byIndexedField: "searchField", value: searchValue)
@@ -283,8 +282,8 @@ final class BlazeIndexStressTests: XCTestCase {
         
         print("📊 Testing index persistence with \(count) records...")
         
-        try (db.collection as! DynamicCollection).createIndex(on: "category")
-        try (db.collection as! DynamicCollection).createIndex(on: ["status", "priority"])
+        try requireFixture(db).collection.createIndex(on: "category")
+        try requireFixture(db).collection.createIndex(on: ["status", "priority"])
         
         // Insert data
         for i in 0..<count {
@@ -293,20 +292,19 @@ final class BlazeIndexStressTests: XCTestCase {
                 "status": .string(["open", "closed"][i % 2]),
                 "priority": .int((i % 5) + 1)
             ])
-            _ = try db.insert(record)
+            _ = try requireFixture(db).insert(record)
         }
         
         print("  Inserted \(count) records with indexes")
         
         // Flush metadata before closing (ensure indexes are persisted)
-        try (db.collection as! DynamicCollection).persist()
+        try requireFixture(db).collection.persist()
         
         // Close and reopen
         print("🔄 Closing and reopening database...")
         db = nil
-        db = try BlazeDBClient(name: "IndexStressTest", fileURL: tempURL, password: "TestPassword-123!")
-        let collection = db.collection as! DynamicCollection
-        
+        db = try BlazeDBClient(name: "IndexStressTest", fileURL: try requireFixture(tempURL), password: "TestPassword-123!")
+        let collection = try requireFixture(db).collection
         // Test indexes still work
         print("🔍 Testing single-field index after reload...")
         let singleResults = try collection.fetch(byIndexedField: "category", value: "cat_25")

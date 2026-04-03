@@ -12,31 +12,31 @@ import XCTest
 
 final class QueryBuilderEdgeCaseTests: XCTestCase {
     
-    var tempURL: URL!
-    var db: BlazeDBClient!
+    private var tempURL: URL?
+    private var db: BlazeDBClient?
     
-    override func setUp() {
-        super.setUp()
+    override func setUpWithError() throws {
+        try super.setUpWithError()
         tempURL = FileManager.default.temporaryDirectory
             .appendingPathComponent("QBEdge-\(UUID().uuidString).blazedb")
-        db = try! BlazeDBClient(name: "qb_edge", fileURL: tempURL, password: "SecureTestDB-456!")
+        db = try BlazeDBClient(name: "qb_edge", fileURL: try requireFixture(tempURL), password: "SecureTestDB-456!")
     }
     
     override func tearDown() {
         db = nil
-        try? FileManager.default.removeItem(at: tempURL)
-        try? FileManager.default.removeItem(at: tempURL.deletingPathExtension().appendingPathExtension("meta"))
+        try? FileManager.default.removeItem(at: try requireFixture(tempURL))
+        try? FileManager.default.removeItem(at: try requireFixture(tempURL).deletingPathExtension().appendingPathExtension("meta"))
         super.tearDown()
     }
     
     // MARK: - Null/Nil Edge Cases
     
     func testWhereOnMissingField() throws {
-        _ = try db.insert(BlazeDataRecord(["title": .string("Has title")]))
-        _ = try db.insert(BlazeDataRecord(["other": .string("No title")]))
+        _ = try requireFixture(db).insert(BlazeDataRecord(["title": .string("Has title")]))
+        _ = try requireFixture(db).insert(BlazeDataRecord(["other": .string("No title")]))
         
         // Filter on field that doesn't exist in all records
-        let results = try db.query()
+        let results = try requireFixture(db).query()
             .where("title", equals: .string("Has title"))
             .execute()
         
@@ -44,11 +44,11 @@ final class QueryBuilderEdgeCaseTests: XCTestCase {
     }
     
     func testComparisonWithNilFields() throws {
-        _ = try db.insert(BlazeDataRecord(["priority": .int(5)]))
-        _ = try db.insert(BlazeDataRecord(["title": .string("No priority")]))
+        _ = try requireFixture(db).insert(BlazeDataRecord(["priority": .int(5)]))
+        _ = try requireFixture(db).insert(BlazeDataRecord(["title": .string("No priority")]))
         
         // Greater than on field that's missing in one record
-        let results = try db.query()
+        let results = try requireFixture(db).query()
             .where("priority", greaterThan: .int(3))
             .execute()
         
@@ -56,10 +56,10 @@ final class QueryBuilderEdgeCaseTests: XCTestCase {
     }
     
     func testEmptyStringEquals() throws {
-        _ = try db.insert(BlazeDataRecord(["title": .string("")]))
-        _ = try db.insert(BlazeDataRecord(["title": .string("Not empty")]))
+        _ = try requireFixture(db).insert(BlazeDataRecord(["title": .string("")]))
+        _ = try requireFixture(db).insert(BlazeDataRecord(["title": .string("Not empty")]))
         
-        let results = try db.query()
+        let results = try requireFixture(db).query()
             .where("title", equals: .string(""))
             .execute()
         
@@ -67,10 +67,10 @@ final class QueryBuilderEdgeCaseTests: XCTestCase {
     }
     
     func testContainsOnEmptyString() throws {
-        _ = try db.insert(BlazeDataRecord(["title": .string("")]))
-        _ = try db.insert(BlazeDataRecord(["title": .string("Bug")]))
+        _ = try requireFixture(db).insert(BlazeDataRecord(["title": .string("")]))
+        _ = try requireFixture(db).insert(BlazeDataRecord(["title": .string("Bug")]))
         
-        let results = try db.query()
+        let results = try requireFixture(db).query()
             .where("title", contains: "Bug")
             .execute()
         
@@ -78,9 +78,9 @@ final class QueryBuilderEdgeCaseTests: XCTestCase {
     }
     
     func testWhereInWithEmptyArray() throws {
-        _ = try db.insert(BlazeDataRecord(["status": .string("open")]))
+        _ = try requireFixture(db).insert(BlazeDataRecord(["status": .string("open")]))
         
-        let results = try db.query()
+        let results = try requireFixture(db).query()
             .where("status", in: [])
             .execute()
         
@@ -90,11 +90,11 @@ final class QueryBuilderEdgeCaseTests: XCTestCase {
     // MARK: - Type Mismatch Edge Cases
     
     func testCompareIntWithDouble() throws {
-        _ = try db.insert(BlazeDataRecord(["value": .int(10)]))
-        _ = try db.insert(BlazeDataRecord(["value": .double(20.5)]))
+        _ = try requireFixture(db).insert(BlazeDataRecord(["value": .int(10)]))
+        _ = try requireFixture(db).insert(BlazeDataRecord(["value": .double(20.5)]))
         
         // Should handle mixed types
-        let results = try db.query()
+        let results = try requireFixture(db).query()
             .where("value", greaterThan: .double(15.0))
             .execute()
         
@@ -102,10 +102,10 @@ final class QueryBuilderEdgeCaseTests: XCTestCase {
     }
     
     func testCompareDoubleWithInt() throws {
-        _ = try db.insert(BlazeDataRecord(["value": .double(10.5)]))
-        _ = try db.insert(BlazeDataRecord(["value": .int(20)]))
+        _ = try requireFixture(db).insert(BlazeDataRecord(["value": .double(10.5)]))
+        _ = try requireFixture(db).insert(BlazeDataRecord(["value": .int(20)]))
         
-        let results = try db.query()
+        let results = try requireFixture(db).query()
             .where("value", greaterThan: .int(15))
             .execute()
         
@@ -113,11 +113,11 @@ final class QueryBuilderEdgeCaseTests: XCTestCase {
     }
     
     func testCompareIncompatibleTypes() throws {
-        _ = try db.insert(BlazeDataRecord(["value": .string("text")]))
-        _ = try db.insert(BlazeDataRecord(["value": .int(10)]))
+        _ = try requireFixture(db).insert(BlazeDataRecord(["value": .string("text")]))
+        _ = try requireFixture(db).insert(BlazeDataRecord(["value": .int(10)]))
         
         // Comparing string to int should not crash
-        let results = try db.query()
+        let results = try requireFixture(db).query()
             .where("value", greaterThan: .int(5))
             .execute()
         
@@ -128,9 +128,9 @@ final class QueryBuilderEdgeCaseTests: XCTestCase {
     // MARK: - Boundary Value Tests
     
     func testLimitZero() throws {
-        _ = try db.insert(BlazeDataRecord(["id": .int(1)]))
+        _ = try requireFixture(db).insert(BlazeDataRecord(["id": .int(1)]))
         
-        let results = try db.query()
+        let results = try requireFixture(db).query()
             .limit(0)
             .execute()
         
@@ -138,10 +138,10 @@ final class QueryBuilderEdgeCaseTests: XCTestCase {
     }
     
     func testLimitLargerThanDataset() throws {
-        _ = try db.insert(BlazeDataRecord(["id": .int(1)]))
-        _ = try db.insert(BlazeDataRecord(["id": .int(2)]))
+        _ = try requireFixture(db).insert(BlazeDataRecord(["id": .int(1)]))
+        _ = try requireFixture(db).insert(BlazeDataRecord(["id": .int(2)]))
         
-        let results = try db.query()
+        let results = try requireFixture(db).query()
             .limit(1000)
             .execute()
         
@@ -149,9 +149,9 @@ final class QueryBuilderEdgeCaseTests: XCTestCase {
     }
     
     func testOffsetLargerThanDataset() throws {
-        _ = try db.insert(BlazeDataRecord(["id": .int(1)]))
+        _ = try requireFixture(db).insert(BlazeDataRecord(["id": .int(1)]))
         
-        let results = try db.query()
+        let results = try requireFixture(db).query()
             .offset(1000)
             .execute()
         
@@ -159,10 +159,10 @@ final class QueryBuilderEdgeCaseTests: XCTestCase {
     }
     
     func testNegativeLimit() throws {
-        _ = try db.insert(BlazeDataRecord(["id": .int(1)]))
+        _ = try requireFixture(db).insert(BlazeDataRecord(["id": .int(1)]))
         
         // Negative limit should be treated as 0
-        let results = try db.query()
+        let results = try requireFixture(db).query()
             .limit(-5)
             .execute()
         
@@ -170,10 +170,10 @@ final class QueryBuilderEdgeCaseTests: XCTestCase {
     }
     
     func testNegativeOffset() throws {
-        _ = try db.insert(BlazeDataRecord(["id": .int(1)]))
+        _ = try requireFixture(db).insert(BlazeDataRecord(["id": .int(1)]))
         
         // Negative offset should be treated as 0
-        let results = try db.query()
+        let results = try requireFixture(db).query()
             .offset(-5)
             .execute()
         
@@ -183,10 +183,10 @@ final class QueryBuilderEdgeCaseTests: XCTestCase {
     // MARK: - Unicode & Special Characters
     
     func testUnicodeInContains() throws {
-        _ = try db.insert(BlazeDataRecord(["title": .string("🐛 Login broken")]))
-        _ = try db.insert(BlazeDataRecord(["title": .string("Bug report")]))
+        _ = try requireFixture(db).insert(BlazeDataRecord(["title": .string("🐛 Login broken")]))
+        _ = try requireFixture(db).insert(BlazeDataRecord(["title": .string("Bug report")]))
         
-        let results = try db.query()
+        let results = try requireFixture(db).query()
             .where("title", contains: "🐛")
             .execute()
         
@@ -194,10 +194,10 @@ final class QueryBuilderEdgeCaseTests: XCTestCase {
     }
     
     func testSpecialCharactersInWhere() throws {
-        _ = try db.insert(BlazeDataRecord(["path": .string("/api/v1/users")]))
-        _ = try db.insert(BlazeDataRecord(["path": .string("/api/v2/users")]))
+        _ = try requireFixture(db).insert(BlazeDataRecord(["path": .string("/api/v1/users")]))
+        _ = try requireFixture(db).insert(BlazeDataRecord(["path": .string("/api/v2/users")]))
         
-        let results = try db.query()
+        let results = try requireFixture(db).query()
             .where("path", contains: "/api/v1/")
             .execute()
         
@@ -205,10 +205,10 @@ final class QueryBuilderEdgeCaseTests: XCTestCase {
     }
     
     func testCaseSenitivityInContains() throws {
-        _ = try db.insert(BlazeDataRecord(["title": .string("LOGIN broken")]))
-        _ = try db.insert(BlazeDataRecord(["title": .string("login broken")]))
+        _ = try requireFixture(db).insert(BlazeDataRecord(["title": .string("LOGIN broken")]))
+        _ = try requireFixture(db).insert(BlazeDataRecord(["title": .string("login broken")]))
         
-        let results = try db.query()
+        let results = try requireFixture(db).query()
             .where("title", contains: "LOGIN")
             .execute()
         
@@ -218,20 +218,20 @@ final class QueryBuilderEdgeCaseTests: XCTestCase {
     // MARK: - Array Field Edge Cases
     
     func testQueryOnArrayField() throws {
-        _ = try db.insert(BlazeDataRecord([
+        _ = try requireFixture(db).insert(BlazeDataRecord([
             "tags": .array([.string("urgent"), .string("backend")])
         ]))
         
         // Can't directly compare array equality, but shouldn't crash
-        XCTAssertNoThrow(try db.query().whereNotNil("tags").execute())
+        XCTAssertNoThrow(try requireFixture(db).query().whereNotNil("tags").execute())
     }
     
     func testQueryOnDictionaryField() throws {
-        _ = try db.insert(BlazeDataRecord([
+        _ = try requireFixture(db).insert(BlazeDataRecord([
             "metadata": .dictionary(["key": .string("value")])
         ]))
         
-        XCTAssertNoThrow(try db.query().whereNotNil("metadata").execute())
+        XCTAssertNoThrow(try requireFixture(db).query().whereNotNil("metadata").execute())
     }
     
     // MARK: - Large Dataset Edge Cases
@@ -244,9 +244,9 @@ final class QueryBuilderEdgeCaseTests: XCTestCase {
                 "status": .string(i % 2 == 0 ? "open" : "closed")
             ])
         }
-        _ = try db.insertMany(records)
+        _ = try requireFixture(db).insertMany(records)
         
-        let results = try db.query()
+        let results = try requireFixture(db).query()
             .where("status", equals: .string("open"))
             .execute()
         
@@ -258,9 +258,9 @@ final class QueryBuilderEdgeCaseTests: XCTestCase {
         let records = (0..<10000).map { i in
             BlazeDataRecord(["index": .int(i)])
         }
-        _ = try db.insertMany(records)
+        _ = try requireFixture(db).insertMany(records)
         
-        let results = try db.query()
+        let results = try requireFixture(db).query()
             .limit(100)
             .execute()
         
@@ -269,10 +269,10 @@ final class QueryBuilderEdgeCaseTests: XCTestCase {
     
     func testOffsetNearEnd() throws {
         for i in 0..<100 {
-            _ = try db.insert(BlazeDataRecord(["index": .int(i)]))
+            _ = try requireFixture(db).insert(BlazeDataRecord(["index": .int(i)]))
         }
         
-        let results = try db.query()
+        let results = try requireFixture(db).query()
             .orderBy("index", descending: false)
             .offset(95)
             .execute()
@@ -285,7 +285,7 @@ final class QueryBuilderEdgeCaseTests: XCTestCase {
     @MainActor
     func testConcurrentQueries() throws {
         for i in 0..<100 {
-            _ = try db.insert(BlazeDataRecord([
+            _ = try requireFixture(db).insert(BlazeDataRecord([
                 "index": .int(i),
                 "status": .string(i % 2 == 0 ? "open" : "closed")
             ]))
@@ -295,10 +295,10 @@ final class QueryBuilderEdgeCaseTests: XCTestCase {
         expectation.expectedFulfillmentCount = 10
         
         let queue = DispatchQueue(label: "test", attributes: .concurrent)
-        let db = self.db!
+        let db = try XCTUnwrap(self.db)
         
         for _ in 0..<10 {
-            queue.async {
+            queue.async { [db] in
                 do {
                     let results = try db.query()
                         .where("status", equals: .string("open"))
@@ -326,16 +326,16 @@ final class QueryBuilderEdgeCaseTests: XCTestCase {
                 "category": .string(i < 100 ? "A" : "B")
             ])
         }
-        _ = try db.insertMany(records)
+        _ = try requireFixture(db).insertMany(records)
         
         // Selective filter first (better performance)
-        let results1 = try db.query()
+        let results1 = try requireFixture(db).query()
             .where("category", equals: .string("A"))  // Filters to 100
             .where("value", greaterThan: .int(50))    // Then filters to ~50
             .execute()
         
         // Less selective filter first
-        let results2 = try db.query()
+        let results2 = try requireFixture(db).query()
             .where("value", greaterThan: .int(50))    // Filters to 950
             .where("category", equals: .string("A"))  // Then filters to ~50
             .execute()
@@ -351,11 +351,11 @@ final class QueryBuilderEdgeCaseTests: XCTestCase {
         let past = Date(timeIntervalSinceNow: -3600)
         let future = Date(timeIntervalSinceNow: 3600)
         
-        _ = try db.insert(BlazeDataRecord(["created_at": .date(past)]))
-        _ = try db.insert(BlazeDataRecord(["created_at": .date(now)]))
-        _ = try db.insert(BlazeDataRecord(["created_at": .date(future)]))
+        _ = try requireFixture(db).insert(BlazeDataRecord(["created_at": .date(past)]))
+        _ = try requireFixture(db).insert(BlazeDataRecord(["created_at": .date(now)]))
+        _ = try requireFixture(db).insert(BlazeDataRecord(["created_at": .date(future)]))
         
-        let recent = try db.query()
+        let recent = try requireFixture(db).query()
             .where("created_at", greaterThan: .date(now))
             .execute()
         
@@ -365,11 +365,11 @@ final class QueryBuilderEdgeCaseTests: XCTestCase {
     func testDateEqualityExact() throws {
         let exactDate = Date(timeIntervalSince1970: 1700000000)
         
-        _ = try db.insert(BlazeDataRecord(["created_at": .date(exactDate)]))
-        _ = try db.insert(BlazeDataRecord(["created_at": .date(Date())]))
+        _ = try requireFixture(db).insert(BlazeDataRecord(["created_at": .date(exactDate)]))
+        _ = try requireFixture(db).insert(BlazeDataRecord(["created_at": .date(Date())]))
         
         // Debug: Check what was stored
-        let allRecords = try db.fetchAll()
+        let allRecords = try requireFixture(db).fetchAll()
         print("📅 Date equality test:")
         print("  exactDate = \(exactDate) (1970 epoch: 1700000000)")
         print("  exactDate.timeIntervalSinceReferenceDate = \(exactDate.timeIntervalSinceReferenceDate)")
@@ -378,7 +378,7 @@ final class QueryBuilderEdgeCaseTests: XCTestCase {
             print("  Stored: \(String(describing: field))")
         }
         
-        let results = try db.query()
+        let results = try requireFixture(db).query()
             .where("created_at", equals: .date(exactDate))
             .execute()
         
@@ -390,10 +390,10 @@ final class QueryBuilderEdgeCaseTests: XCTestCase {
     // MARK: - Boolean Logic Edge Cases
     
     func testBooleanEquals() throws {
-        _ = try db.insert(BlazeDataRecord(["is_active": .bool(true)]))
-        _ = try db.insert(BlazeDataRecord(["is_active": .bool(false)]))
+        _ = try requireFixture(db).insert(BlazeDataRecord(["is_active": .bool(true)]))
+        _ = try requireFixture(db).insert(BlazeDataRecord(["is_active": .bool(false)]))
         
-        let active = try db.query()
+        let active = try requireFixture(db).query()
             .where("is_active", equals: .bool(true))
             .execute()
         
@@ -401,10 +401,10 @@ final class QueryBuilderEdgeCaseTests: XCTestCase {
     }
     
     func testBooleanNotEquals() throws {
-        _ = try db.insert(BlazeDataRecord(["is_active": .bool(true)]))
-        _ = try db.insert(BlazeDataRecord(["is_active": .bool(false)]))
+        _ = try requireFixture(db).insert(BlazeDataRecord(["is_active": .bool(true)]))
+        _ = try requireFixture(db).insert(BlazeDataRecord(["is_active": .bool(false)]))
         
-        let results = try db.query()
+        let results = try requireFixture(db).query()
             .where("is_active", notEquals: .bool(false))
             .execute()
         
@@ -417,10 +417,10 @@ final class QueryBuilderEdgeCaseTests: XCTestCase {
         let uuid1 = UUID()
         let uuid2 = UUID()
         
-        _ = try db.insert(BlazeDataRecord(["id": .uuid(uuid1)]))
-        _ = try db.insert(BlazeDataRecord(["id": .uuid(uuid2)]))
+        _ = try requireFixture(db).insert(BlazeDataRecord(["id": .uuid(uuid1)]))
+        _ = try requireFixture(db).insert(BlazeDataRecord(["id": .uuid(uuid2)]))
         
-        let results = try db.query()
+        let results = try requireFixture(db).query()
             .where("id", equals: .uuid(uuid1))
             .execute()
         
@@ -432,11 +432,11 @@ final class QueryBuilderEdgeCaseTests: XCTestCase {
         let uuid2 = UUID()
         let uuid3 = UUID()
         
-        _ = try db.insert(BlazeDataRecord(["id": .uuid(uuid1)]))
-        _ = try db.insert(BlazeDataRecord(["id": .uuid(uuid2)]))
-        _ = try db.insert(BlazeDataRecord(["id": .uuid(uuid3)]))
+        _ = try requireFixture(db).insert(BlazeDataRecord(["id": .uuid(uuid1)]))
+        _ = try requireFixture(db).insert(BlazeDataRecord(["id": .uuid(uuid2)]))
+        _ = try requireFixture(db).insert(BlazeDataRecord(["id": .uuid(uuid3)]))
         
-        let results = try db.query()
+        let results = try requireFixture(db).query()
             .where("id", in: [.uuid(uuid1), .uuid(uuid3)])
             .execute()
         
@@ -448,13 +448,13 @@ final class QueryBuilderEdgeCaseTests: XCTestCase {
     func testSortStability() throws {
         // Insert records with same sort key
         for i in 0..<10 {
-            _ = try db.insert(BlazeDataRecord([
+            _ = try requireFixture(db).insert(BlazeDataRecord([
                 "priority": .int(1),
                 "index": .int(i)
             ]))
         }
         
-        let results = try db.query()
+        let results = try requireFixture(db).query()
             .orderBy("priority", descending: false)
             .execute()
         
@@ -463,11 +463,11 @@ final class QueryBuilderEdgeCaseTests: XCTestCase {
     }
     
     func testMultipleSortsWithNils() throws {
-        _ = try db.insert(BlazeDataRecord(["a": .int(1), "b": .int(1)]))
-        _ = try db.insert(BlazeDataRecord(["a": .int(1)])) // b is nil
-        _ = try db.insert(BlazeDataRecord(["a": .int(2), "b": .int(1)]))
+        _ = try requireFixture(db).insert(BlazeDataRecord(["a": .int(1), "b": .int(1)]))
+        _ = try requireFixture(db).insert(BlazeDataRecord(["a": .int(1)])) // b is nil
+        _ = try requireFixture(db).insert(BlazeDataRecord(["a": .int(2), "b": .int(1)]))
         
-        let results = try db.query()
+        let results = try requireFixture(db).query()
             .orderBy("a", descending: false)
             .orderBy("b", descending: false)
             .execute()
@@ -481,7 +481,7 @@ final class QueryBuilderEdgeCaseTests: XCTestCase {
     // MARK: - Complex WHERE Combinations
     
     func testManyWhereClauses() throws {
-        _ = try db.insert(BlazeDataRecord([
+        _ = try requireFixture(db).insert(BlazeDataRecord([
             "f1": .int(1),
             "f2": .int(2),
             "f3": .int(3),
@@ -489,7 +489,7 @@ final class QueryBuilderEdgeCaseTests: XCTestCase {
             "f5": .int(5)
         ]))
         
-        _ = try db.insert(BlazeDataRecord([
+        _ = try requireFixture(db).insert(BlazeDataRecord([
             "f1": .int(10),
             "f2": .int(20),
             "f3": .int(30),
@@ -498,7 +498,7 @@ final class QueryBuilderEdgeCaseTests: XCTestCase {
         ]))
         
         // 5 where clauses
-        let results = try db.query()
+        let results = try requireFixture(db).query()
             .where("f1", greaterThan: .int(5))
             .where("f2", greaterThan: .int(15))
             .where("f3", greaterThan: .int(25))
@@ -510,10 +510,10 @@ final class QueryBuilderEdgeCaseTests: XCTestCase {
     }
     
     func testConflictingWhereClauses() throws {
-        _ = try db.insert(BlazeDataRecord(["value": .int(10)]))
+        _ = try requireFixture(db).insert(BlazeDataRecord(["value": .int(10)]))
         
         // Impossible condition
-        let results = try db.query()
+        let results = try requireFixture(db).query()
             .where("value", greaterThan: .int(5))
             .where("value", lessThan: .int(5))
             .execute()
@@ -527,13 +527,13 @@ final class QueryBuilderEdgeCaseTests: XCTestCase {
         let usersURL = FileManager.default.temporaryDirectory
             .appendingPathComponent("Users-\(UUID().uuidString).blazedb")
         defer { 
-            try? FileManager.default.removeItem(at: usersURL)
-            try? FileManager.default.removeItem(at: usersURL.deletingPathExtension().appendingPathExtension("meta"))
+            try? FileManager.default.removeItem(at: try requireFixture(usersURL))
+            try? FileManager.default.removeItem(at: try requireFixture(usersURL).deletingPathExtension().appendingPathExtension("meta"))
         }
-        let usersDB = try BlazeDBClient(name: "users", fileURL: usersURL, password: "SecureTestDB-456!")
+        let usersDB = try BlazeDBClient(name: "users", fileURL: try requireFixture(usersURL), password: "SecureTestDB-456!")
         
         let userID = UUID()
-        _ = try usersDB.insert(BlazeDataRecord(["id": .uuid(userID), "name": .string("Alice")]))
+        _ = try requireFixture(usersDB).insert(BlazeDataRecord(["id": .uuid(userID), "name": .string("Alice")]))
         
         // Insert 1000 bugs (batch insert - 10x faster!), only 1 matches filter
         let bugRecords = (0..<1000).map { i in
@@ -543,12 +543,12 @@ final class QueryBuilderEdgeCaseTests: XCTestCase {
                 "author_id": .uuid(userID)
             ])
         }
-        _ = try db.insertMany(bugRecords)
+        _ = try requireFixture(db).insertMany(bugRecords)
         
         // Heavy filter before join
-        let results = try db.query()
+        let results = try requireFixture(db).query()
             .where("title", equals: .string("Special Bug"))
-            .join(usersDB.collection, on: "author_id")
+            .join(try requireFixture(usersDB).collection, on: "author_id")
             .executeJoin()
         
         XCTAssertEqual(results.count, 1)
@@ -559,18 +559,18 @@ final class QueryBuilderEdgeCaseTests: XCTestCase {
         let usersURL = FileManager.default.temporaryDirectory
             .appendingPathComponent("Users2-\(UUID().uuidString).blazedb")
         defer { 
-            try? FileManager.default.removeItem(at: usersURL)
-            try? FileManager.default.removeItem(at: usersURL.deletingPathExtension().appendingPathExtension("meta"))
+            try? FileManager.default.removeItem(at: try requireFixture(usersURL))
+            try? FileManager.default.removeItem(at: try requireFixture(usersURL).deletingPathExtension().appendingPathExtension("meta"))
         }
-        let usersDB = try BlazeDBClient(name: "users", fileURL: usersURL, password: "SecureTestDB-456!")
+        let usersDB = try BlazeDBClient(name: "users", fileURL: try requireFixture(usersURL), password: "SecureTestDB-456!")
         
-        _ = try usersDB.insert(BlazeDataRecord(["id": .uuid(UUID()), "name": .string("Alice")]))
-        _ = try db.insert(BlazeDataRecord(["status": .string("open"), "author_id": .uuid(UUID())]))
+        _ = try requireFixture(usersDB).insert(BlazeDataRecord(["id": .uuid(UUID()), "name": .string("Alice")]))
+        _ = try requireFixture(db).insert(BlazeDataRecord(["status": .string("open"), "author_id": .uuid(UUID())]))
         
         // Filter eliminates all records
-        let results = try db.query()
+        let results = try requireFixture(db).query()
             .where("status", equals: .string("nonexistent"))
-            .join(usersDB.collection, on: "author_id")
+            .join(try requireFixture(usersDB).collection, on: "author_id")
             .executeJoin()
         
         XCTAssertEqual(results.count, 0)
@@ -586,9 +586,9 @@ final class QueryBuilderEdgeCaseTests: XCTestCase {
                 "special": .bool(i == 5000)
             ])
         }
-        _ = try db.insertMany(records)
+        _ = try requireFixture(db).insertMany(records)
         
-        let results = try db.query()
+        let results = try requireFixture(db).query()
             .where("special", equals: .bool(true))
             .execute()
         
@@ -605,10 +605,10 @@ final class QueryBuilderEdgeCaseTests: XCTestCase {
                 "status": .string("open")
             ])
         }
-        _ = try db.insertMany(records)
+        _ = try requireFixture(db).insertMany(records)
         
         // Query with limit (should not load all 5000 into final array)
-        let results = try db.query()
+        let results = try requireFixture(db).query()
             .where("status", equals: .string("open"))
             .orderBy("index", descending: true)
             .limit(10)
@@ -624,13 +624,13 @@ final class QueryBuilderEdgeCaseTests: XCTestCase {
     func testWhereAfterOrderBy() throws {
         // This shouldn't make sense but should not crash
         for i in 0..<10 {
-            _ = try db.insert(BlazeDataRecord([
+            _ = try requireFixture(db).insert(BlazeDataRecord([
                 "value": .int(i),
                 "status": .string("open")
             ]))
         }
         
-        XCTAssertNoThrow(try db.query()
+        XCTAssertNoThrow(try requireFixture(db).query()
             .orderBy("value", descending: false)
             .where("status", equals: .string("open"))
             .execute())
@@ -638,11 +638,11 @@ final class QueryBuilderEdgeCaseTests: XCTestCase {
     
     func testMultipleLimits() throws {
         for i in 0..<20 {
-            _ = try db.insert(BlazeDataRecord(["index": .int(i)]))
+            _ = try requireFixture(db).insert(BlazeDataRecord(["index": .int(i)]))
         }
         
         // Last limit should win
-        let results = try db.query()
+        let results = try requireFixture(db).query()
             .limit(15)
             .limit(5)
             .execute()
@@ -652,11 +652,11 @@ final class QueryBuilderEdgeCaseTests: XCTestCase {
     
     func testMultipleOffsets() throws {
         for i in 0..<20 {
-            _ = try db.insert(BlazeDataRecord(["index": .int(i)]))
+            _ = try requireFixture(db).insert(BlazeDataRecord(["index": .int(i)]))
         }
         
         // Last offset should win
-        let results = try db.query()
+        let results = try requireFixture(db).query()
             .offset(5)
             .offset(10)
             .execute()
@@ -667,26 +667,26 @@ final class QueryBuilderEdgeCaseTests: XCTestCase {
     // MARK: - Error Recovery Tests
     
     func testQueryAfterFailedQuery() throws {
-        _ = try db.insert(BlazeDataRecord(["status": .string("open")]))
+        _ = try requireFixture(db).insert(BlazeDataRecord(["status": .string("open")]))
         
         // First query with non-existent field (should work but return empty)
-        let noResults = try db.query()
+        let noResults = try requireFixture(db).query()
             .where("nonexistent", equals: .string("value"))
             .execute()
         XCTAssertEqual(noResults.count, 0)
         
         // Second query should still work
-        let results = try db.query()
+        let results = try requireFixture(db).query()
             .where("status", equals: .string("open"))
             .execute()
         XCTAssertEqual(results.count, 1)
     }
     
     func testQueryBuilderReuse() throws {
-        _ = try db.insert(BlazeDataRecord(["status": .string("open")]))
+        _ = try requireFixture(db).insert(BlazeDataRecord(["status": .string("open")]))
         
         // Create builder
-        let builder = db.query().where("status", equals: .string("open"))
+        let builder = try requireFixture(db).query().where("status", equals: .string("open"))
         
         // Execute multiple times
         let results1 = try builder.execute()
@@ -698,9 +698,9 @@ final class QueryBuilderEdgeCaseTests: XCTestCase {
     // MARK: - Field Name Edge Cases
     
     func testFieldNameWithSpaces() throws {
-        _ = try db.insert(BlazeDataRecord(["field name": .string("value")]))
+        _ = try requireFixture(db).insert(BlazeDataRecord(["field name": .string("value")]))
         
-        let results = try db.query()
+        let results = try requireFixture(db).query()
             .where("field name", equals: .string("value"))
             .execute()
         
@@ -708,9 +708,9 @@ final class QueryBuilderEdgeCaseTests: XCTestCase {
     }
     
     func testFieldNameWithDots() throws {
-        _ = try db.insert(BlazeDataRecord(["user.name": .string("Alice")]))
+        _ = try requireFixture(db).insert(BlazeDataRecord(["user.name": .string("Alice")]))
         
-        let results = try db.query()
+        let results = try requireFixture(db).query()
             .where("user.name", equals: .string("Alice"))
             .execute()
         
@@ -718,9 +718,9 @@ final class QueryBuilderEdgeCaseTests: XCTestCase {
     }
     
     func testEmptyFieldName() throws {
-        _ = try db.insert(BlazeDataRecord(["": .string("Empty key")]))
+        _ = try requireFixture(db).insert(BlazeDataRecord(["": .string("Empty key")]))
         
-        XCTAssertNoThrow(try db.query().where("", equals: .string("Empty key")).execute())
+        XCTAssertNoThrow(try requireFixture(db).query().where("", equals: .string("Empty key")).execute())
     }
 }
 

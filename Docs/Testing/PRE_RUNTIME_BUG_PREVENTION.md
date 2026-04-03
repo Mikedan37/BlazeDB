@@ -4,7 +4,7 @@
 
 ---
 
-##  **MULTI-LAYER PROTECTION**
+## **MULTI-LAYER PROTECTION**
 
 ### **Layer 1: Compile-Time Safety**
 
@@ -88,41 +88,41 @@ guard offset + 16 <= data.count else { throw BlazeOperationDecodeError.invalidDa
 **Production-Grade Test Suites:**
 
 1. **Chaos Engine Tests** (4 tests)
- - 1,000+ random operations per test
- - Schema change simulation
- - Trigger firing simulation
- - Post-operation consistency validation
- - **Catches:** Random operation bugs, schema corruption, trigger failures
+- 1,000+ random operations per test
+- Schema change simulation
+- Trigger firing simulation
+- Post-operation consistency validation
+- **Catches:** Random operation bugs, schema corruption, trigger failures
 
 2. **Concurrency Torture Tests** (7 tests)
- - 50-200 concurrent writers
- - Deadlock detection
- - Starvation detection
- - Index corruption validation
- - **Catches:** Race conditions, deadlocks, index corruption
+- 50-200 concurrent writers
+- Deadlock detection
+- Starvation detection
+- Index corruption validation
+- **Catches:** Race conditions, deadlocks, index corruption
 
 3. **Model-Based Tests** (6 tests)
- - Dictionary ground truth model
- - Operation mirroring
- - Divergence detection
- - **Catches:** Data inconsistency, missing rows, index mismatch
+- Dictionary ground truth model
+- Operation mirroring
+- Divergence detection
+- **Catches:** Data inconsistency, missing rows, index mismatch
 
 4. **Index Consistency Tests** (12 tests)
- - All index types validated
- - Cross-index validation
- - Index drift detection
- - **Catches:** Index corruption, drift, inconsistency
+- All index types validated
+- Cross-index validation
+- Index drift detection
+- **Catches:** Index corruption, drift, inconsistency
 
 5. **Replay & Crash Recovery Tests** (8 tests)
- - Operation log replay
- - Crash simulation
- - Orphaned page detection
- - **Catches:** Corruption after crash, orphaned data, recovery failures
+- Operation log replay
+- Crash simulation
+- Orphaned page detection
+- **Catches:** Corruption after crash, orphaned data, recovery failures
 
 6. **Performance Baselines** (8 tests)
- - Microbenchmarks for all operations
- - Performance regression detection
- - **Catches:** Performance degradation, memory leaks
+- Microbenchmarks for all operations
+- Performance regression detection
+- **Catches:** Performance degradation, memory leaks
 
 **Result:** **97% code coverage, 2,167+ test methods catch bugs before deployment**
 
@@ -221,10 +221,10 @@ guard isRunning else { return } // Catches invalid state
 - Runtime guards
 
 ### **Optional Enhancements:**
--  **Static analysis** - SwiftLint, SwiftFormat
--  **Fuzzing** - AFL, libFuzzer integration
--  **Property-based testing** - QuickCheck-style generators
--  **Mutation testing** - Verify test quality
+- **Static analysis** - SwiftLint, SwiftFormat
+- **Fuzzing** - AFL, libFuzzer integration
+- **Property-based testing** - QuickCheck-style generators
+- **Mutation testing** - Verify test quality
 
 ---
 

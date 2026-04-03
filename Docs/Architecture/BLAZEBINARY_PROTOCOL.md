@@ -119,21 +119,21 @@ User comes online after 24 hours offline:
 
 ```
 
- Frame Header (8 bytes) 
+ Frame Header (8 bytes)
 
- Magic: "BLAZE" (5 bytes) 
- Version: 1 (1 byte) 
- MessageType: enum (1 byte) 
- Length: payload size (4 bytes) 
+ Magic: "BLAZE" (5 bytes)
+ Version: 1 (1 byte)
+ MessageType: enum (1 byte)
+ Length: payload size (4 bytes)
 
- Payload (BlazeBinary encoded) 
- • Handshake 
- • SyncState 
- • Operations 
- • Query 
- • Etc. 
+ Payload (BlazeBinary encoded)
+ • Handshake
+ • SyncState
+ • Operations
+ • Query
+ • Etc.
 
- CRC32 Checksum (4 bytes) 
+ CRC32 Checksum (4 bytes)
 
 ```
 
@@ -555,14 +555,14 @@ DELIVERABLE: Universal sync system
 
 ### **BlazeDB Relay Solution:**
 
- **Open Protocol** - Anyone can implement
- **Self-Hosted** - Full control, zero cost
- **Efficient** - 60% less bandwidth, 4x faster
- **Cross-Platform** - Works everywhere
- **Simple** - One line to enable
- **Smart** - Server-side queries
- **Secure** - E2E encryption
- **Scalable** - Operation log + CRDT
+**Open Protocol** - Anyone can implement
+**Self-Hosted** - Full control, zero cost
+**Efficient** - 60% less bandwidth, 4x faster
+**Cross-Platform** - Works everywhere
+**Simple** - One line to enable
+**Smart** - Server-side queries
+**Secure** - E2E encryption
+**Scalable** - Operation log + CRDT
 
 ---
 

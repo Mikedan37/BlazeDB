@@ -510,7 +510,8 @@ extension QueryBuilder {
                 
                 if leftValue == rightValue { continue }
                 
-                let comparison = compareFields(leftValue!, .lessThan, rightValue!)
+                guard let lv = leftValue, let rv = rightValue else { continue }
+                let comparison = compareFields(lv, .lessThan, rv)
                 return sortOp.descending ? !comparison : comparison
             }
             return false

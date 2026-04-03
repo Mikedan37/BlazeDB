@@ -44,40 +44,40 @@ All decisions were made during brainstorming and are locked in:
 
 ```
 BlazeTransaction
-      |
+ |
 TransactionContext (in-memory staged write set)
-      |
+ |
 DurabilityManager
-  +-- WAL append (with LSN, txID, op, pageID, payload)
-  +-- fsync
-  +-- page mutation (only after fsync)
-      |
+ +-- WAL append (with LSN, txID, op, pageID, payload)
+ +-- fsync
+ +-- page mutation (only after fsync)
+ |
 RecoveryManager (on open)
-  +-- WAL scan from lastCheckpointLSN
-  +-- skip torn/partial trailing entries
-  +-- fail loudly on mid-log corruption
-  +-- redo committed entries only
+ +-- WAL scan from lastCheckpointLSN
+ +-- skip torn/partial trailing entries
+ +-- fail loudly on mid-log corruption
+ +-- redo committed entries only
 ```
 
 ### WAL entry schema
 
 ```swift
 struct WALEntry {
-    let lsn: UInt64
-    let transactionID: UUID
-    let operation: WALOperation
-    let pageIndex: UInt32
-    let payload: Data
-    let crc32: UInt32
+ let lsn: UInt64
+ let transactionID: UUID
+ let operation: WALOperation
+ let pageIndex: UInt32
+ let payload: Data
+ let crc32: UInt32
 }
 
 enum WALOperation {
-    case begin
-    case write
-    case delete
-    case commit
-    case abort
-    case checkpoint
+ case begin
+ case write
+ case delete
+ case commit
+ case abort
+ case checkpoint
 }
 ```
 
@@ -156,9 +156,9 @@ These are configurable. Checkpointing too rarely means long recovery times; too 
 Fix:
 - `validateForeignKeys(for:operation:)` queries the referenced collection and rejects if the referenced key does not exist
 - `handleCascadeDeletes` performs the actual operation:
-  - `.cascade` -> delete related records
-  - `.restrict` -> throw error if children exist
-  - `.setNull` -> null the FK field (only if field is nullable and null is representable in the type)
+- `.cascade` -> delete related records
+- `.restrict` -> throw error if children exist
+- `.setNull` -> null the FK field (only if field is nullable and null is representable in the type)
 - FK checks must use PK lookup on the referenced side, not full collection scan
 - Cascade deletes on the child side must use indexed lookup if available
 - All cascade/restrict/setNull operations must occur within the same transaction boundary as the triggering operation. The constraint engine produces a deterministic write set that becomes part of one atomic commit
@@ -242,20 +242,20 @@ New binary layout (format version bump v2 -> v3):
 
 ```
 [RecordHeader]
-  version: UInt8
-  fieldCount: UInt16
-  offsetTableOffset: UInt32
+ version: UInt8
+ fieldCount: UInt16
+ offsetTableOffset: UInt32
 
 [FieldData...]
-  raw field bytes, packed sequentially
+ raw field bytes, packed sequentially
 
 [OffsetTable]
-  for each field:
-    fieldNameLength: UInt16
-    fieldName: UTF8 bytes
-    offset: UInt32
-    length: UInt32
-    type: UInt8
+ for each field:
+ fieldNameLength: UInt16
+ fieldName: UTF8 bytes
+ offset: UInt32
+ length: UInt32
+ type: UInt8
 ```
 
 Design decisions:
@@ -283,8 +283,8 @@ Extract `"AshPileSalt"` (18 occurrences, 6 files) into a single constant. But mo
 
 ```
 DB metadata:
-  salt (generated on creation or user-provided)
-  KDF parameters
+ salt (generated on creation or user-provided)
+ KDF parameters
 ```
 
 User provides password -> engine derives key using stored salt. Salt must not need to be manually provided on reopen.
@@ -518,12 +518,12 @@ Concrete version record structure:
 
 ```swift
 struct RecordVersion {
-    let recordKey: UUID
-    let createLSN: UInt64
-    let commitLSN: UInt64?      // nil if uncommitted
-    let tombstone: Bool
-    let previousVersion: UUID?  // pointer to prior version
-    let data: Data
+ let recordKey: UUID
+ let createLSN: UInt64
+ let commitLSN: UInt64? // nil if uncommitted
+ let tombstone: Bool
+ let previousVersion: UUID? // pointer to prior version
+ let data: Data
 }
 ```
 
@@ -632,9 +632,9 @@ Fix: security context flows through `TransactionContext` or `QueryContext`, not 
 
 ```
 query(context: SecurityContext)
-     |
+ |
 QueryExecutor(context)
-     |
+ |
 PolicyEngine.isAllowed(context, record)
 ```
 
@@ -650,10 +650,10 @@ Replace 61 raw `NSError` throws with `BlazeDBError` cases. Preserve underlying c
 
 ```swift
 enum BlazeDBError: Error {
-    case storage(StorageError, underlyingError: Error?)
-    case transaction(TransactionError, underlyingError: Error?)
-    case constraint(ConstraintError)
-    // ... domain-specific cases with context
+ case storage(StorageError, underlyingError: Error?)
+ case transaction(TransactionError, underlyingError: Error?)
+ case constraint(ConstraintError)
+ // ... domain-specific cases with context
 }
 ```
 
@@ -730,7 +730,7 @@ Every CI workflow must reference real targets and fail meaningfully on real regr
 
 ### Fixes
 
-- **`CONTRIBUTING.md`**: Replace nonexistent script references (`test-gate.sh`, `test-all.sh`, `check-freeze.sh`) with `swift test --filter` commands. Fix tier names to match `Package.swift` (`BlazeDB_Tier0`, `BlazeDB_Tier1`).
+- **`CONTRIBUTING.md`**: Replace nonexistent script references (`test-gate.sh`, `test-all.sh`, `check-freeze.sh`) with `swift test --filter` commands. Fix tier names to match `Package.swift` (`BlazeDB_Tier0`, `BlazeDB_Tier1Fast`, `BlazeDB_Tier1Extended`, `BlazeDB_Tier1Perf`).
 - **`release.yml`**: Change filter from `BlazeDBTests` (matches nothing) to actual target names. Match `swift-actions/setup-swift` version with `ci.yml`.
 - **`core-tests.yml`**: Remove `continue-on-error: true` on Tier1 or document why failures are non-blocking.
 - **`test.yml`**: Delete the "GitHub Actions is working" placeholder workflow.
@@ -769,23 +769,23 @@ Fix or delete permanently-skipped `GoldenPathIntegrationTests`.
 
 ```
 Phase 1 (WAL/Transaction) ─── HARD DEPENDENCY for all phases
-  |
-  +──── Phase 2 (Constraints) ── independent of 3, 4, 5
-  |
-  +──── Phase 3 (Storage/Encoding) ── independent of 2, 4, 5
-  |
-  +──── Phase 4 (Query Engine) ── independent of 2, 3
-  |       |
-  |       +──── Phase 5A (Spatial) ── needs QueryExecutor from Phase 4
-  |       +──── Phase 5B (Vector) ── needs QueryExecutor from Phase 4
-  |
-  +──── Phase 6 (MVCC/Savepoints) ── depends on Phase 1 LSN infrastructure
-  |
-  +──── Phase 7 (Concurrency) ── best after 2-6, audits final state
-  |
-  +──── Phase 8 (API Surface) ── after all feature phases
-  |
-  +──── Phase 9 (Repo/Docs/CI) ── can run in parallel with anything
+ |
+ +──── Phase 2 (Constraints) ── independent of 3, 4, 5
+ |
+ +──── Phase 3 (Storage/Encoding) ── independent of 2, 4, 5
+ |
+ +──── Phase 4 (Query Engine) ── independent of 2, 3
+ | |
+ | +──── Phase 5A (Spatial) ── needs QueryExecutor from Phase 4
+ | +──── Phase 5B (Vector) ── needs QueryExecutor from Phase 4
+ |
+ +──── Phase 6 (MVCC/Savepoints) ── depends on Phase 1 LSN infrastructure
+ |
+ +──── Phase 7 (Concurrency) ── best after 2-6, audits final state
+ |
+ +──── Phase 8 (API Surface) ── after all feature phases
+ |
+ +──── Phase 9 (Repo/Docs/CI) ── can run in parallel with anything
 ```
 
 ### Parallelization opportunities

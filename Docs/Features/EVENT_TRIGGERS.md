@@ -123,13 +123,13 @@ Trigger definitions are stored in `StorageLayout`:
 
 ## Best Practices
 
- **Do:**
+**Do:**
 - Keep triggers lightweight
 - Use for index maintenance
 - Use for computed fields
 - Log operations
 
- **Don't:**
+**Don't:**
 - Do heavy work in triggers
 - Create infinite loops
 - Block on network calls

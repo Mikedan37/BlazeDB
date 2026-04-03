@@ -259,13 +259,13 @@ The following files and directories are entirely gated on Linux:
 
 **Distributed Sync (Entire Directory):**
 - `Distributed/` - All files in this directory (28 files)
- - `BlazeSyncEngine.swift` - Multi-database synchronization
- - `BlazeTopology.swift` - Connection topology management
- - `BlazeServer.swift` - Remote database server
- - `BlazeDiscovery.swift` - mDNS/Bonjour peer discovery
- - `SecureConnection.swift` - E2E encrypted connections
- - `TCPRelay.swift`, `WebSocketRelay.swift` - Transport implementations
- - All GC, validation, and relay implementations
+- `BlazeSyncEngine.swift` - Multi-database synchronization
+- `BlazeTopology.swift` - Connection topology management
+- `BlazeServer.swift` - Remote database server
+- `BlazeDiscovery.swift` - mDNS/Bonjour peer discovery
+- `SecureConnection.swift` - E2E encrypted connections
+- `TCPRelay.swift`, `WebSocketRelay.swift` - Transport implementations
+- All GC, validation, and relay implementations
 
 **Deprecated:**
 - `BlazeCollection.swift` - Legacy collection type (use `DynamicCollection` instead)
@@ -308,20 +308,20 @@ For Apple platforms, BlazeDB provides a complete, integrated database solution w
 When adding new features to BlazeDB, you must declare the platform support:
 
 1. **Core Feature**: Works on all platforms (Apple + Linux)
- - Must not use Apple-only frameworks
- - Must not use Swift 6 concurrency patterns that violate Sendable
- - Must not use static mutable state
- - Must compile cleanly on Linux
+- Must not use Apple-only frameworks
+- Must not use Swift 6 concurrency patterns that violate Sendable
+- Must not use static mutable state
+- Must compile cleanly on Linux
 
 2. **Apple-Only Feature**: Works only on Apple platforms
- - Wrap entire file/extension with `#if!BLAZEDB_LINUX_CORE`
- - Document in this file's feature matrix
- - No Linux stubs or fallbacks
+- Wrap entire file/extension with `#if!BLAZEDB_LINUX_CORE`
+- Document in this file's feature matrix
+- No Linux stubs or fallbacks
 
 3. **Future Linux Support**: Optional future Linux support
- - Mark as "Future Linux Support" in feature matrix
- - Do not gate with `#if!BLAZEDB_LINUX_CORE` if Linux support is planned
- - Document Linux requirements/limitations
+- Mark as "Future Linux Support" in feature matrix
+- Do not gate with `#if!BLAZEDB_LINUX_CORE` if Linux support is planned
+- Document Linux requirements/limitations
 
 ### Gating Rules
 

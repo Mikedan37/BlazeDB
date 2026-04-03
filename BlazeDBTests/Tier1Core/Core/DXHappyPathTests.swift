@@ -14,16 +14,19 @@ import XCTest
 
 final class DXHappyPathTests: XCTestCase {
     
-    var tempDir: URL!
+    private var tempDir: URL?
     
-    override func setUp() {
-        super.setUp()
-        tempDir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
-        try? FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
+    override func setUpWithError() throws {
+        try super.setUpWithError()
+        let dir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        tempDir = dir
+        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
     }
     
     override func tearDown() {
-        try? FileManager.default.removeItem(at: tempDir)
+        if let dir = tempDir {
+            try? FileManager.default.removeItem(at: dir)
+        }
         super.tearDown()
     }
     
@@ -50,7 +53,7 @@ final class DXHappyPathTests: XCTestCase {
         let db = try BlazeDBClient.openOrCreate(name: "testdb", password: "TestPassword-123!")
         
         // Verify database file exists
-        XCTAssertTrue(FileManager.default.fileExists(atPath: db.fileURL.path))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: try db.fileURL.path))
         
         // Can insert records
         let id = try db.insert(BlazeDataRecord(["name": .string("Test")]))

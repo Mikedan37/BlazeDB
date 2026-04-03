@@ -8,10 +8,10 @@ Create one directory per release line/version label, each containing a determini
 
 ```text
 Tests/CompatibilityFixtures/
-  2.6.0/
-    dump.blazedump
-  2.7.0/
-    dump.blazedump
+ 2.6.0/
+ dump.blazedump
+ 2.7.0/
+ dump.blazedump
 ```
 
 ## Validation Contract

@@ -14,7 +14,7 @@ iPhone:
  Record (plain) → BlazeBinary encode → TLS tunnel → Server
 
 SERVER CAN READ DATA: Yes
-COMPLEXITY:  (Simple)
+COMPLEXITY: (Simple)
 SECURITY: (Good)
 PERFORMANCE: (Fast)
 
@@ -53,7 +53,7 @@ iPhone:
 
 SERVER CAN READ DATA: No (if different keys per user)
  Yes (if shared key)
-COMPLEXITY:  (Medium)
+COMPLEXITY: (Medium)
 SECURITY: (Excellent)
 PERFORMANCE: (Good, small overhead)
 
@@ -84,7 +84,7 @@ CONS:
  Server still has access
  One key for all users (privacy issue)
 
-VERDICT:  Not much better than TLS only
+VERDICT: Not much better than TLS only
 
 
 APPROACH B: Per-User Keys (Better!)
@@ -114,7 +114,7 @@ CONS:
  Key management complexity
  Extra encryption overhead
 
-VERDICT:  Better, but still not true E2E
+VERDICT: Better, but still not true E2E
 ```
 
 ---
@@ -131,7 +131,7 @@ iPhone:
  → Server
 
 SERVER CAN READ DATA: NO! (True E2E!)
-COMPLEXITY:  (Complex)
+COMPLEXITY: (Complex)
 SECURITY: (Maximum)
 PERFORMANCE: (Slower, asymmetric crypto is expensive)
 
@@ -180,63 +180,63 @@ VERDICT: Best for privacy-critical apps (healthcare, legal)
 
 ```
 
- ENCRYPTION LAYERS 
+ ENCRYPTION LAYERS
 
- 
- iPhone: 
-  
-  1. Record (plain text in RAM)  
-  "title": "Secret bug"  
-  
-  
-  
-  
-  2. BlazeBinary encode  
-  Binary format (compact, NOT encrypted)  
-  165 bytes  
-  
-  
-  
-  
-  3. LAYER 1: Local Storage  
-  AES-256-GCM(binary)  
-  Encrypted on iPhone disk  
-  Password: Your password  
-  
-  
-  
-  
-  4. LAYER 2: Network Transport  
-  TLS 1.3 tunnel (MUST ADD!)  
-  Encrypted in transit  
-  Certificate: Let's Encrypt  
-  
-  
-  
- INTERNET (encrypted tunnel) 
-  
-  
- Raspberry Pi:  
-  
-  5. TLS decrypt  
-  Binary (plain) in server RAM  
-  Server CAN read this  
-  
-  
-  
-  
-  6. LAYER 3: Server Storage  
-  AES-256-GCM(binary)  
-  Encrypted on Pi disk  
-  Password: Server password  
-  
- 
- OPTIONAL: Add LAYER 4 (E2E) 
-  
-  Encrypt with public keys BEFORE step 2  
-  Server can't decrypt (no private keys!)  
-  
- 
+
+ iPhone:
+
+ 1. Record (plain text in RAM)
+ "title": "Secret bug"
+
+
+
+
+ 2. BlazeBinary encode
+ Binary format (compact, NOT encrypted)
+ 165 bytes
+
+
+
+
+ 3. LAYER 1: Local Storage
+ AES-256-GCM(binary)
+ Encrypted on iPhone disk
+ Password: Your password
+
+
+
+
+ 4. LAYER 2: Network Transport
+ TLS 1.3 tunnel (MUST ADD!)
+ Encrypted in transit
+ Certificate: Let's Encrypt
+
+
+
+ INTERNET (encrypted tunnel)
+
+
+ Raspberry Pi:
+
+ 5. TLS decrypt
+ Binary (plain) in server RAM
+ Server CAN read this
+
+
+
+
+ 6. LAYER 3: Server Storage
+ AES-256-GCM(binary)
+ Encrypted on Pi disk
+ Password: Server password
+
+
+ OPTIONAL: Add LAYER 4 (E2E)
+
+ Encrypt with public keys BEFORE step 2
+ Server can't decrypt (no private keys!)
+
+
 
 ```
 
@@ -389,35 +389,35 @@ DELIVERABLE:
 // Combine the best of both worlds!
 
 
- RECOMMENDED ENCRYPTION ARCHITECTURE 
+ RECOMMENDED ENCRYPTION ARCHITECTURE
 
- 
- LAYER 1: TLS (Transport) 
-  
- • Encrypts ALL network traffic 
- • Hardware accelerated (fast!) 
- • Free (Let's Encrypt) 
- • Industry standard 
- 
- LAYER 2: Per-User AES-GCM (Application) 
-  
- • Each user has unique key 
- • Derived from user password 
- • Server stores encrypted 
- • Can be decrypted by server for queries 
- 
- LAYER 3: Master Key (Server) 
-  
- • Server's user keys encrypted with master key 
- • Master key stored in secrets manager 
- • Rotatable 
- 
- OPTIONAL LAYER 4: E2E (Maximum Privacy) 
-  
- • Public/private key pairs 
- • Server can NEVER decrypt 
- • For ultra-sensitive data only 
- 
+
+ LAYER 1: TLS (Transport)
+
+ • Encrypts ALL network traffic
+ • Hardware accelerated (fast!)
+ • Free (Let's Encrypt)
+ • Industry standard
+
+ LAYER 2: Per-User AES-GCM (Application)
+
+ • Each user has unique key
+ • Derived from user password
+ • Server stores encrypted
+ • Can be decrypted by server for queries
+
+ LAYER 3: Master Key (Server)
+
+ • Server's user keys encrypted with master key
+ • Master key stored in secrets manager
+ • Rotatable
+
+ OPTIONAL LAYER 4: E2E (Maximum Privacy)
+
+ • Public/private key pairs
+ • Server can NEVER decrypt
+ • For ultra-sensitive data only
+
 
 ```
 
@@ -520,7 +520,7 @@ CONS:
  Server still has access (can decrypt with master key)
  More complex than TLS only
 
-VERDICT:  BEST BALANCE for most apps!
+VERDICT: BEST BALANCE for most apps!
 ```
 
 ---
@@ -820,9 +820,9 @@ POTENTIAL: BlazeDB as a Service ($$$$)
 ```
 
 **Don't do AES-GCM before sending (yet):**
--  Key distribution is hard
--  TLS already encrypts transport
--  Adds complexity for little benefit
+- Key distribution is hard
+- TLS already encrypts transport
+- Adds complexity for little benefit
 - Add E2E later if users demand privacy
 
 **Just use:**

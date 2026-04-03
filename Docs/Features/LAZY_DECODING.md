@@ -111,13 +111,13 @@ if let lazyRecord = try db.collection?.fetchLazy(id: recordId) {
 
 ## Best Practices
 
- **Enable when:**
+**Enable when:**
 - Records have many fields (>10)
 - Records have large fields (>1KB)
 - You frequently query with projection
 - Memory is constrained
 
- **Skip when:**
+**Skip when:**
 - Records are small (<10 fields, <1KB total)
 - You always need all fields
 - Memory is not a concern

@@ -13,6 +13,9 @@ import Foundation
 // MARK: - DynamicCollection Page Reuse Extension
 
 extension DynamicCollection {
+    private func loadPageReuseLayout() throws -> StorageLayout {
+        try loadLayoutForMutation()
+    }
     
     // MARK: - Page Allocation with Reuse
     
@@ -28,9 +31,15 @@ extension DynamicCollection {
     /// - Automatic (no maintenance)
     /// - Handles 95% of cases
     internal func allocatePage(layout: inout StorageLayout) -> Int {
+        if mvccEnabled, let reusablePage = versionManager.pageGC.getFreePage() {
+            BlazeLogger.trace("♻️  Reusing MVCC free page \(reusablePage)")
+            return reusablePage
+        }
+
         // Try to reuse deleted page first (FIFO for better locality)
         if !layout.deletedPages.isEmpty {
             let reusablePage = layout.deletedPages.removeFirst()
+            cachedDeletedPages = layout.deletedPages
             BlazeLogger.trace("♻️  Reusing deleted page \(reusablePage)")
             return reusablePage
         }
@@ -48,13 +57,14 @@ extension DynamicCollection {
     internal func markPageForReuse(pageIndex: Int, layout: inout StorageLayout) {
         // Add to end of array (FIFO reuse)
         layout.deletedPages.append(pageIndex)
+        cachedDeletedPages = layout.deletedPages
         BlazeLogger.trace("🗑️  Marked page \(pageIndex) for reuse")
     }
     
     /// Get garbage collection statistics
     public func getGCStats() throws -> GCStats {
         return try queue.sync {
-            let layout = try StorageLayout.load(from: metaURL)
+            let layout = try loadPageReuseLayout()
             
             let totalPages = layout.nextPageIndex
             let usedPages = layout.indexMap.count
@@ -108,7 +118,7 @@ extension DynamicCollection {
         let id = document["id"]?.uuidValue ?? UUID()
         
         // Load layout
-        var layout = try StorageLayout.load(from: metaURL)
+        var layout = try loadPageReuseLayout()
         
         // Allocate page (reuses deleted if available!)
         let pageIndex = allocatePage(layout: &layout)
@@ -138,7 +148,7 @@ extension DynamicCollection {
         // Save layout with updated deletedPages (StorageLayout now expects [UUID: [Int]])
         layout.indexMap = indexMap
         layout.secondaryIndexes = StorageLayout.fromRuntimeIndexes(secondaryIndexes)
-        try layout.save(to: metaURL)
+        try layout.saveSecure(to: metaURL, signingKey: encryptionKey)
         
         unsavedChanges += 1
         
@@ -155,7 +165,7 @@ extension DynamicCollection {
         }
         
         // Load layout
-        var layout = try StorageLayout.load(from: metaURL)
+        var layout = try loadPageReuseLayout()
         
         // Remove from indexes
         if let record = try? _fetchNoSync(id: id) {
@@ -190,7 +200,7 @@ extension DynamicCollection {
         // Save layout (StorageLayout now expects [UUID: [Int]])
         layout.indexMap = indexMap
         layout.secondaryIndexes = StorageLayout.fromRuntimeIndexes(secondaryIndexes)
-        try layout.save(to: metaURL)
+        try layout.saveSecure(to: metaURL, signingKey: encryptionKey)
         
         unsavedChanges += 1
     }

@@ -7,6 +7,10 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ## [Unreleased]
 
+---
+
+## [2.7.2] - 2026-04-03
+
 ### Deprecated
 
 - `BlazeDBClient.replayTransactionLogIfNeeded()` — use `removeLegacyNDJSONTransactionLogFilesIfPresent()` instead (same behavior: removes legacy NDJSON sidecar files only; does not replay binary WAL). The old symbol remains as a forwarding shim with a `renamed:` deprecation fix-it.
@@ -35,8 +39,9 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
   - `.github/ISSUE_TEMPLATE/security_review_tracking.md`
 - README quickstart verification script:
   - `Scripts/verify-readme-quickstart.sh`
-- OSS readiness CI evidence workflow:
-  - `.github/workflows/oss-readiness-evidence.yml`
+- Tier1 depth workflow and release-validation workflow updates:
+  - `.github/workflows/tier1-depth.yml`
+  - `.github/workflows/release.yml`
 
 ### Changed
 
@@ -46,9 +51,12 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
   - Health assertion accepts `ok` or `warn` (e.g., post-restore vacuum suggestion).
 - `README.md` now links OSS readiness docs and includes explicit non-production warning for `BLAZEDB_BENCHMARK_NO_ENCRYPTION`.
 - `CONTRIBUTING.md` now includes `./Scripts/oss-readiness-local.sh` and `./Scripts/verify-clean-checkout.sh` in contributor workflow.
+- `Docs/README.md` now distinguishes canonical docs, forward-looking design docs, and archived material; `Docs/Archive/README.md` marks historical content as non-authoritative.
+- Hosted CI expectations are now documented as conditional on repository configuration, with local verification commands called out as the fallback source of truth.
+- Tier1 naming is now consistently split as `BlazeDB_Tier1Fast`, `BlazeDB_Tier1Extended`, and `BlazeDB_Tier1Perf` in active scripts and maintainer docs.
 - `Scripts/verify-clean-checkout.sh` now validates a clean worktree snapshot synced from local branch changes.
 - `Examples/HelloBlazeDB/main.swift` now uses a password that satisfies the current password policy, so quickstart succeeds from a clean snapshot.
-- `ci.yml` now runs Tier0 and Tier1 suites on both push and pull_request clean runners.
+- `ci.yml` now runs Tier0 and `BlazeDB_Tier1Fast` on push and pull_request clean runners; deeper Tier1 lanes moved to depth/release workflows.
 - OSS scripts now summarize warning counts and keep full logs in files to reduce terminal noise.
 - Dump verification now includes a legacy hash compatibility path behind explicit opt-in (`allowLegacyHashMismatch`) for cross-version restore validation.
 - `SECURITY.md` now includes explicit disclosure/response SLA targets.

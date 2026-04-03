@@ -2,24 +2,24 @@
 
 ## Status
 
- **Completed:**
+**Completed:**
 - Created new directory structure (Codec/, Engine/, Stress/, Performance/, Fixtures/, CI/, Docs/)
 - Moved critical Codec test files:
- - CodecValidation.swift
- - BlazeBinaryCompatibilityTests.swift
- - BlazeBinaryFuzzTests.swift
- - BlazeBinaryCorruptionRecoveryTests.swift
- - BlazeBinaryFieldViewTests.swift
- - BlazeBinaryLargeRecordTests.swift
- - BlazeBinaryMMapTests.swift
- - BlazeBinaryPointerIntegrityTests.swift
- - BlazeBinaryEncoderTests.swift
+- CodecValidation.swift
+- BlazeBinaryCompatibilityTests.swift
+- BlazeBinaryFuzzTests.swift
+- BlazeBinaryCorruptionRecoveryTests.swift
+- BlazeBinaryFieldViewTests.swift
+- BlazeBinaryLargeRecordTests.swift
+- BlazeBinaryMMapTests.swift
+- BlazeBinaryPointerIntegrityTests.swift
+- BlazeBinaryEncoderTests.swift
 - Moved CI test files:
- - CIMatrix.swift
- - CodecDualPathTestSuite.swift
+- CIMatrix.swift
+- CodecDualPathTestSuite.swift
 - Moved Fixtures:
- - FixtureValidationTests.swift
- - Updated FixtureLoader.swift bundle references
+- FixtureValidationTests.swift
+- Updated FixtureLoader.swift bundle references
 
 ## Remaining Files to Move
 
@@ -82,12 +82,12 @@ After moving files:
  ```
 
 2. **Verify test discovery:**
- - Xcode should show all tests in test navigator
- - SwiftPM should discover all tests automatically
+- Xcode should show all tests in test navigator
+- SwiftPM should discover all tests automatically
 
 3. **Check for broken imports:**
- - All tests use `@testable import BlazeDB` (no changes needed)
- - CodecValidation.swift functions are available via direct calls
+- All tests use `@testable import BlazeDB` (no changes needed)
+- CodecValidation.swift functions are available via direct calls
 
 ## Notes
 

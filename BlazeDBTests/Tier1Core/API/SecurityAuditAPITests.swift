@@ -6,7 +6,7 @@ import XCTest
 #endif
 
 final class SecurityAuditAPITests: XCTestCase {
-    private var dbURL: URL!
+    private var dbURL: URL?
 
     override func setUpWithError() throws {
         dbURL = FileManager.default.temporaryDirectory
@@ -14,9 +14,9 @@ final class SecurityAuditAPITests: XCTestCase {
     }
 
     override func tearDownWithError() throws {
-        let metaURL = dbURL.deletingPathExtension().appendingPathExtension("meta")
-        try? FileManager.default.removeItem(at: dbURL)
-        try? FileManager.default.removeItem(at: metaURL)
+        let metaURL = try requireFixture(dbURL).deletingPathExtension().appendingPathExtension("meta")
+        try? FileManager.default.removeItem(at: try requireFixture(dbURL))
+        try? FileManager.default.removeItem(at: try requireFixture(metaURL))
     }
 
     func testQuickCheck_NotTautological() {
@@ -31,13 +31,13 @@ final class SecurityAuditAPITests: XCTestCase {
     }
 
     func testPerformSecurityAudit_RLSPoliciesCountAsAccessControl() throws {
-        let db = try BlazeDBClient(name: "audit-rls", fileURL: dbURL, password: "AuditRLS-123!")
-        defer { try? db.close() }
+        let db = try BlazeDBClient(name: "audit-rls", fileURL: try requireFixture(dbURL), password: "AuditRLS-123!")
+        defer { try? try requireFixture(db).close() }
 
-        db.rls.enable()
-        db.rls.addPolicy(.publicRead)
+        try requireFixture(db).rls.enable()
+        try requireFixture(db).rls.addPolicy(.publicRead)
 
-        let report = db.performSecurityAudit()
+        let report = try requireFixture(db).performSecurityAudit()
         let noAccessControlFinding = report.findings.first { $0.title == "No Access Control" }
         XCTAssertNil(noAccessControlFinding, "Enabled RLS policies should count as access control in security audit")
     }

@@ -8,25 +8,25 @@ import XCTest
 /// Comprehensive tests for Codable integration
 final class CodableIntegrationTests: XCTestCase {
     
-    var db: BlazeDBClient!
-    var tempURL: URL!
+    private var db: BlazeDBClient?
+    private var tempURL: URL?
     
-    override func setUp() {
-        super.setUp()
+    override func setUpWithError() throws {
+        try super.setUpWithError()
         
         tempURL = FileManager.default.temporaryDirectory
             .appendingPathComponent(UUID().uuidString + ".blazedb")
         
-        db = try! BlazeDBClient(
+        db = try BlazeDBClient(
             name: "CodableTest",
-            fileURL: tempURL,
+            fileURL: try requireFixture(tempURL),
             password: "TestPassword-123!"
         )
     }
     
     override func tearDown() {
         db = nil
-        try? FileManager.default.removeItem(at: tempURL)
+        try? FileManager.default.removeItem(at: try requireFixture(tempURL))
         super.tearDown()
     }
     
@@ -99,15 +99,15 @@ final class CodableIntegrationTests: XCTestCase {
     func testCodableInsert() throws {
         let bug = SimpleBug(title: "Login broken", priority: 5)
         
-        let id = try db.insert(bug)
+        let id = try requireFixture(db).insert(bug)
         XCTAssertEqual(id, bug.id)
     }
     
     func testCodableFetch() throws {
         let bug = SimpleBug(title: "Test Bug", priority: 3)
-        _ = try db.insert(bug)
+        _ = try requireFixture(db).insert(bug)
         
-        let fetched = try db.fetch(SimpleBug.self, id: bug.id)
+        let fetched = try requireFixture(db).fetch(SimpleBug.self, id: bug.id)
         
         XCTAssertNotNil(fetched)
         XCTAssertEqual(fetched?.id, bug.id)
@@ -117,24 +117,24 @@ final class CodableIntegrationTests: XCTestCase {
     
     func testCodableUpdate() throws {
         var bug = SimpleBug(title: "Original", priority: 1)
-        _ = try db.insert(bug)
+        _ = try requireFixture(db).insert(bug)
         
         bug.title = "Updated"
         bug.priority = 10
-        try db.update(bug)
+        try requireFixture(db).update(bug)
         
-        let fetched = try db.fetch(SimpleBug.self, id: bug.id)
+        let fetched = try requireFixture(db).fetch(SimpleBug.self, id: bug.id)
         XCTAssertEqual(fetched?.title, "Updated")
         XCTAssertEqual(fetched?.priority, 10)
     }
     
     func testCodableDelete() throws {
         let bug = SimpleBug(title: "To Delete", priority: 1)
-        _ = try db.insert(bug)
+        _ = try requireFixture(db).insert(bug)
         
-        try db.delete(id: bug.id)
+        try requireFixture(db).delete(id: bug.id)
         
-        let fetched = try db.fetch(SimpleBug.self, id: bug.id)
+        let fetched = try requireFixture(db).fetch(SimpleBug.self, id: bug.id)
         XCTAssertNil(fetched)
     }
     
@@ -153,8 +153,8 @@ final class CodableIntegrationTests: XCTestCase {
         )
         
         // Capture the returned ID
-        let id = try db.insert(bug)
-        let fetched = try db.fetch(ComplexBug.self, id: id)
+        let id = try requireFixture(db).insert(bug)
+        let fetched = try requireFixture(db).fetch(ComplexBug.self, id: id)
         
         XCTAssertNotNil(fetched)
         XCTAssertEqual(fetched?.title, "Complex Bug")
@@ -169,9 +169,9 @@ final class CodableIntegrationTests: XCTestCase {
     func testOptionalFields() throws {
         // With optional fields nil
         let bug1 = OptionalFieldsBug(title: "Bug 1")
-        _ = try db.insert(bug1)
+        _ = try requireFixture(db).insert(bug1)
         
-        let fetched1 = try db.fetch(OptionalFieldsBug.self, id: bug1.id)
+        let fetched1 = try requireFixture(db).fetch(OptionalFieldsBug.self, id: bug1.id)
         XCTAssertNil(fetched1?.description)
         XCTAssertNil(fetched1?.assignee)
         XCTAssertNil(fetched1?.dueDate)
@@ -183,9 +183,9 @@ final class CodableIntegrationTests: XCTestCase {
             assignee: "Alice",
             dueDate: Date()
         )
-        _ = try db.insert(bug2)
+        _ = try requireFixture(db).insert(bug2)
         
-        let fetched2 = try db.fetch(OptionalFieldsBug.self, id: bug2.id)
+        let fetched2 = try requireFixture(db).fetch(OptionalFieldsBug.self, id: bug2.id)
         XCTAssertEqual(fetched2?.description, "Has description")
         XCTAssertEqual(fetched2?.assignee, "Alice")
         XCTAssertNotNil(fetched2?.dueDate)
@@ -200,10 +200,10 @@ final class CodableIntegrationTests: XCTestCase {
             SimpleBug(title: "Bug 3", priority: 3)
         ]
         
-        let ids = try db.insertMany(bugs)
+        let ids = try requireFixture(db).insertMany(bugs)
         XCTAssertEqual(ids.count, 3)
         
-        let all = try db.fetchAll(SimpleBug.self)
+        let all = try requireFixture(db).fetchAll(SimpleBug.self)
         XCTAssertEqual(all.count, 3)
     }
     
@@ -213,9 +213,9 @@ final class CodableIntegrationTests: XCTestCase {
             SimpleBug(title: "Bug 2", priority: 2)
         ]
         
-        _ = try db.insertMany(bugs)
+        _ = try requireFixture(db).insertMany(bugs)
         
-        let fetched = try db.fetchAll(SimpleBug.self)
+        let fetched = try requireFixture(db).fetchAll(SimpleBug.self)
         XCTAssertEqual(fetched.count, 2)
         XCTAssertTrue(fetched.contains { $0.title == "Bug 1" })
         XCTAssertTrue(fetched.contains { $0.title == "Bug 2" })
@@ -229,10 +229,10 @@ final class CodableIntegrationTests: XCTestCase {
             SimpleBug(title: "Closed Bug", priority: 3)
         ]
         
-        _ = try db.insertMany(bugs)
+        _ = try requireFixture(db).insertMany(bugs)
         
         // Use Codable query builder with KeyPaths
-        let highPriority = try db.query(SimpleBug.self)
+        let highPriority = try requireFixture(db).query(SimpleBug.self)
             .where(\.priority, greaterThan: 4)
             .all()
         
@@ -246,9 +246,9 @@ final class CodableIntegrationTests: XCTestCase {
             SimpleBug(title: "B", priority: 2)
         ]
         
-        _ = try db.insertMany(bugs)
+        _ = try requireFixture(db).insertMany(bugs)
         
-        let first = try db.query(SimpleBug.self)
+        let first = try requireFixture(db).query(SimpleBug.self)
             .where(\.priority, equals: 2)
             .first()
         
@@ -258,15 +258,15 @@ final class CodableIntegrationTests: XCTestCase {
     
     func testCodableQueryExists() throws {
         let bug = SimpleBug(title: "Test", priority: 5)
-        _ = try db.insert(bug)
+        _ = try requireFixture(db).insert(bug)
         
-        let exists = try db.query(SimpleBug.self)
+        let exists = try requireFixture(db).query(SimpleBug.self)
             .where(\.priority, greaterThan: 4)
             .exists()
         
         XCTAssertTrue(exists)
         
-        let notExists = try db.query(SimpleBug.self)
+        let notExists = try requireFixture(db).query(SimpleBug.self)
             .where(\.priority, greaterThan: 10)
             .exists()
         
@@ -280,9 +280,9 @@ final class CodableIntegrationTests: XCTestCase {
             SimpleBug(title: "C", priority: 10)
         ]
         
-        _ = try db.insertMany(bugs)
+        _ = try requireFixture(db).insertMany(bugs)
         
-        let count = try db.query(SimpleBug.self)
+        let count = try requireFixture(db).query(SimpleBug.self)
             .where(\.priority, greaterThan: 3)
             .count()
         
@@ -294,7 +294,7 @@ final class CodableIntegrationTests: XCTestCase {
     func testMixedCodableAndDynamic() throws {
         // Insert Codable
         let codableBug = SimpleBug(title: "Codable Bug", priority: 5)
-        _ = try db.insert(codableBug)
+        _ = try requireFixture(db).insert(codableBug)
         
         // Insert Dynamic
         let dynamicBug = BlazeDataRecord {
@@ -302,19 +302,19 @@ final class CodableIntegrationTests: XCTestCase {
             "priority" => 3
             "extraField" => "This doesn't exist in SimpleBug"
         }
-        let dynamicID = try db.insert(dynamicBug)
+        let dynamicID = try requireFixture(db).insert(dynamicBug)
         
         // Fetch as Codable (should only get valid SimpleBug)
-        let codableFetched = try db.fetch(SimpleBug.self, id: codableBug.id)
+        let codableFetched = try requireFixture(db).fetch(SimpleBug.self, id: codableBug.id)
         XCTAssertNotNil(codableFetched)
         
         // Fetch dynamic as dynamic
-        let dynamicFetched = try db.fetch(id: dynamicID)
+        let dynamicFetched = try requireFixture(db).fetch(id: dynamicID)
         XCTAssertNotNil(dynamicFetched)
         XCTAssertEqual(dynamicFetched?.storage["extraField"]?.stringValue, "This doesn't exist in SimpleBug")
         
         // FetchAll should return valid Codable objects only (or throw on invalid)
-        let allDynamic = try db.fetchAll()
+        let allDynamic = try requireFixture(db).fetchAll()
         XCTAssertEqual(allDynamic.count, 2)
     }
     
@@ -329,8 +329,8 @@ final class CodableIntegrationTests: XCTestCase {
             createdAt: now
         )
         
-        _ = try db.insert(bug)
-        let fetched = try db.fetch(ComplexBug.self, id: bug.id)
+        _ = try requireFixture(db).insert(bug)
+        let fetched = try requireFixture(db).fetch(ComplexBug.self, id: bug.id)
         
         // Dates should match within 1 second (ISO8601 precision)
         XCTAssertNotNil(fetched?.createdAt)
@@ -351,8 +351,8 @@ final class CodableIntegrationTests: XCTestCase {
             tags: ["tag1", "tag2", "tag3"]
         )
         
-        _ = try db.insert(bug)
-        let fetched = try db.fetch(ComplexBug.self, id: bug.id)
+        _ = try requireFixture(db).insert(bug)
+        let fetched = try requireFixture(db).fetch(ComplexBug.self, id: bug.id)
         
         XCTAssertEqual(fetched?.tags.count, 3)
         XCTAssertTrue(fetched?.tags.contains("tag1") ?? false)
@@ -364,10 +364,10 @@ final class CodableIntegrationTests: XCTestCase {
     func testCodableAsyncInsert() async throws {
         let bug = SimpleBug(title: "Async Bug", priority: 5)
         
-        let id = try await db.insert(bug)
+        let id = try await requireFixture(db).insert(bug)
         XCTAssertEqual(id, bug.id)
         
-        let fetched = try await db.fetch(SimpleBug.self, id: bug.id)
+        let fetched = try await requireFixture(db).fetch(SimpleBug.self, id: bug.id)
         XCTAssertEqual(fetched?.title, "Async Bug")
     }
     
@@ -378,9 +378,9 @@ final class CodableIntegrationTests: XCTestCase {
             SimpleBug(title: "C", priority: 10)
         ]
         
-        _ = try await db.insertMany(bugs)
+        _ = try await requireFixture(db).insertMany(bugs)
         
-        let highPriority = try await db.query(SimpleBug.self)
+        let highPriority = try await requireFixture(db).query(SimpleBug.self)
             .where(\.priority, greaterThan: 3)
             .all()
         
@@ -391,9 +391,9 @@ final class CodableIntegrationTests: XCTestCase {
     
     func testEmptyOptionalFields() throws {
         let bug = OptionalFieldsBug(title: "Minimal")
-        _ = try db.insert(bug)
+        _ = try requireFixture(db).insert(bug)
         
-        let fetched = try db.fetch(OptionalFieldsBug.self, id: bug.id)
+        let fetched = try requireFixture(db).fetch(OptionalFieldsBug.self, id: bug.id)
         
         XCTAssertNotNil(fetched)
         XCTAssertEqual(fetched?.title, "Minimal")
@@ -410,8 +410,8 @@ final class CodableIntegrationTests: XCTestCase {
             tags: []  // Empty array
         )
         
-        _ = try db.insert(bug)
-        let fetched = try db.fetch(ComplexBug.self, id: bug.id)
+        _ = try requireFixture(db).insert(bug)
+        let fetched = try requireFixture(db).fetch(ComplexBug.self, id: bug.id)
         
         XCTAssertEqual(fetched?.tags.count, 0)
     }
@@ -419,8 +419,8 @@ final class CodableIntegrationTests: XCTestCase {
     func testUnicodeInCodable() throws {
         let bug = SimpleBug(title: "🐛 Bug with emoji and 中文", priority: 1)
         
-        _ = try db.insert(bug)
-        let fetched = try db.fetch(SimpleBug.self, id: bug.id)
+        _ = try requireFixture(db).insert(bug)
+        let fetched = try requireFixture(db).fetch(SimpleBug.self, id: bug.id)
         
         XCTAssertEqual(fetched?.title, "🐛 Bug with emoji and 中文")
     }
@@ -432,10 +432,10 @@ final class CodableIntegrationTests: XCTestCase {
             SimpleBug(title: "Bug \(i)", priority: i % 10)
         }
         
-        let ids = try db.insertMany(bugs)
+        let ids = try requireFixture(db).insertMany(bugs)
         XCTAssertEqual(ids.count, 100)
         
-        let all = try db.fetchAll(SimpleBug.self)
+        let all = try requireFixture(db).fetchAll(SimpleBug.self)
         XCTAssertEqual(all.count, 100)
     }
     
@@ -446,16 +446,16 @@ final class CodableIntegrationTests: XCTestCase {
             SimpleBug(title: "C", priority: 3)
         ]
         
-        _ = try db.insertMany(bugs)
+        _ = try requireFixture(db).insertMany(bugs)
         
         // Update all priorities
         for i in 0..<bugs.count {
             bugs[i].priority = 10
         }
         
-        try db.updateMany(bugs)
+        try requireFixture(db).updateMany(bugs)
         
-        let fetched = try db.fetchAll(SimpleBug.self)
+        let fetched = try requireFixture(db).fetchAll(SimpleBug.self)
         XCTAssertTrue(fetched.allSatisfy { $0.priority == 10 })
     }
     
@@ -469,9 +469,9 @@ final class CodableIntegrationTests: XCTestCase {
             ComplexBug(title: "D", description: "Test", priority: 7, status: "open")
         ]
         
-        _ = try db.insertMany(bugs)
+        _ = try requireFixture(db).insertMany(bugs)
         
-        let filtered = try db.query(ComplexBug.self)
+        let filtered = try requireFixture(db).query(ComplexBug.self)
             .where(\.status, equals: "open")
             .where(\.priority, greaterThan: 3)
             .all()
@@ -488,9 +488,9 @@ final class CodableIntegrationTests: XCTestCase {
             SimpleBug(title: "Medium", priority: 5)
         ]
         
-        _ = try db.insertMany(bugs)
+        _ = try requireFixture(db).insertMany(bugs)
         
-        let sorted = try db.query(SimpleBug.self)
+        let sorted = try requireFixture(db).query(SimpleBug.self)
             .orderBy(\.priority, descending: true)
             .all()
         
@@ -501,15 +501,15 @@ final class CodableIntegrationTests: XCTestCase {
     
     func testCodableQueryLimitOffset() throws {
         let bugs = (0..<10).map { SimpleBug(title: "Bug \($0)", priority: $0) }
-        _ = try db.insertMany(bugs)
+        _ = try requireFixture(db).insertMany(bugs)
         
-        let page1 = try db.query(SimpleBug.self)
+        let page1 = try requireFixture(db).query(SimpleBug.self)
             .limit(3)
             .all()
         
         XCTAssertEqual(page1.count, 3)
         
-        let page2 = try db.query(SimpleBug.self)
+        let page2 = try requireFixture(db).query(SimpleBug.self)
             .offset(3)
             .limit(3)
             .all()
@@ -538,8 +538,8 @@ final class CodableIntegrationTests: XCTestCase {
             bigDouble: Double.pi * 1_000_000
         )
         
-        _ = try db.insert(test)
-        let fetched = try db.fetch(NumberTest.self, id: test.id)
+        _ = try requireFixture(db).insert(test)
+        let fetched = try requireFixture(db).fetch(NumberTest.self, id: test.id)
         
         XCTAssertEqual(fetched?.bigInt, Int.max - 1000)
         XCTAssertEqual(fetched?.bigDouble ?? 0, Double.pi * 1_000_000, accuracy: 0.001)
@@ -551,8 +551,8 @@ final class CodableIntegrationTests: XCTestCase {
             priority: 1
         )
         
-        _ = try db.insert(bug)
-        let fetched = try db.fetch(SimpleBug.self, id: bug.id)
+        _ = try requireFixture(db).insert(bug)
+        let fetched = try requireFixture(db).fetch(SimpleBug.self, id: bug.id)
         
         XCTAssertEqual(fetched?.title, bug.title)
     }
@@ -562,11 +562,13 @@ final class CodableIntegrationTests: XCTestCase {
     func testCodablePerformance() throws {
         // Measure Codable insert
         measure {
-            let bugs = (0..<100).map { SimpleBug(title: "Bug \($0)", priority: $0 % 10) }
-            _ = try! db.insertMany(bugs)
-            
-            // Cleanup
-            _ = try! db.deleteMany { _ in true }
+            do {
+                let bugs = (0..<100).map { SimpleBug(title: "Bug \($0)", priority: $0 % 10) }
+                _ = try requireFixture(db).insertMany(bugs)
+                _ = try requireFixture(db).deleteMany { _ in true }
+            } catch {
+                XCTFail("measure block failed: \(error)")
+            }
         }
     }
     
@@ -574,10 +576,10 @@ final class CodableIntegrationTests: XCTestCase {
         // Codable approach
         let codableStart = Date()
         let codableBugs = (0..<100).map { SimpleBug(title: "Bug \($0)", priority: $0) }
-        _ = try db.insertMany(codableBugs)
+        _ = try requireFixture(db).insertMany(codableBugs)
         let codableTime = Date().timeIntervalSince(codableStart)
         
-        _ = try db.deleteMany { _ in true }
+        _ = try requireFixture(db).deleteMany { _ in true }
         
         // Dynamic approach
         let dynamicStart = Date()
@@ -587,7 +589,7 @@ final class CodableIntegrationTests: XCTestCase {
                 "priority" => i
             }
         }
-        _ = try db.insertMany(dynamicBugs)
+        _ = try requireFixture(db).insertMany(dynamicBugs)
         let dynamicTime = Date().timeIntervalSince(dynamicStart)
         
         // Codable should be within 20% of dynamic
@@ -605,10 +607,10 @@ final class CodableIntegrationTests: XCTestCase {
             // Missing 'priority' required field
         }
         
-        let id = try db.insert(invalidRecord)
+        let id = try requireFixture(db).insert(invalidRecord)
         
         // Fetching as SimpleBug should throw or return nil
-        XCTAssertThrowsError(try db.fetch(SimpleBug.self, id: id))
+        XCTAssertThrowsError(try requireFixture(db).fetch(SimpleBug.self, id: id))
     }
 }
 

@@ -7,14 +7,14 @@
 ## **SETUP OVERVIEW:**
 
 ```
-  
- iPhone   Raspberry Pi   Mac 
- (Client)  (Vapor +  (Client) 
-   BlazeDB)   
-  
-   
-   
- 
+
+ iPhone Raspberry Pi Mac
+ (Client) (Vapor + (Client)
+ BlazeDB)
+
+
+
+
  Shared Secret: "my-password-123"
 ```
 
@@ -483,11 +483,11 @@ try await Task.sleep(nanoseconds: 1_000_000_000)
 
 ### **What Works:**
 
- **Shared Secret** → Works on all platforms (macOS, iOS, Linux)
- **Token Derivation** → HKDF works on Linux (Swift Crypto)
- **Vapor Integration** → BlazeDB works with Vapor
- **Raspberry Pi** → Full support for Linux
- **Auto-Discovery** → mDNS/Bonjour works on Linux
+**Shared Secret** → Works on all platforms (macOS, iOS, Linux)
+**Token Derivation** → HKDF works on Linux (Swift Crypto)
+**Vapor Integration** → BlazeDB works with Vapor
+**Raspberry Pi** → Full support for Linux
+**Auto-Discovery** → mDNS/Bonjour works on Linux
 
 ### **Setup Steps:**
 
@@ -500,10 +500,10 @@ try await Task.sleep(nanoseconds: 1_000_000_000)
 
 ### **Security:**
 
- **Shared Secret** → Different token per database pair
- **Environment Variables** → Secure secret storage
- **TLS** → Optional but recommended
- **Firewall** → Limit to local network
+**Shared Secret** → Different token per database pair
+**Environment Variables** → Secure secret storage
+**TLS** → Optional but recommended
+**Firewall** → Limit to local network
 
 ---
 

@@ -36,74 +36,74 @@ BlazeDB provides strong cryptographic guarantees on Linux using platform-agnosti
 ### What BlazeDB Protects Against
 
 1. **Physical Access to Storage**
-   - **Threat**: Attacker gains access to database files on disk
-   - **Mitigation**: AES-256-GCM encryption at rest with per-page granularity
-   - **Guarantee**: Without the encryption key, stored data is computationally infeasible to decrypt
-   - **Implementation**: `PageStore.swift` encrypts all pages before writing to disk
+- **Threat**: Attacker gains access to database files on disk
+- **Mitigation**: AES-256-GCM encryption at rest with per-page granularity
+- **Guarantee**: Without the encryption key, stored data is computationally infeasible to decrypt
+- **Implementation**: `PageStore.swift` encrypts all pages before writing to disk
 
 2. **Storage Corruption**
-   - **Threat**: Accidental or malicious modification of encrypted pages
-   - **Mitigation**: GCM authentication tags detect tampering; CRC32 checksums detect corruption
-   - **Guarantee**: Modified pages fail to decrypt; corruption triggers recovery procedures
-   - **Implementation**: GCM tag verification in `PageStore.swift` decryption path
+- **Threat**: Accidental or malicious modification of encrypted pages
+- **Mitigation**: GCM authentication tags detect tampering; CRC32 checksums detect corruption
+- **Guarantee**: Modified pages fail to decrypt; corruption triggers recovery procedures
+- **Implementation**: GCM tag verification in `PageStore.swift` decryption path
 
 3. **Memory Dumps**
-   - **Threat**: Process memory dump reveals encryption keys
-   - **Mitigation**: Keys stored in process memory with standard OS memory protection
-   - **Limitation**: No hardware-backed key isolation (Secure Enclave unavailable on Linux)
-   - **Implementation**: Master key stored in `PageStore.key` property (process memory only)
+- **Threat**: Process memory dump reveals encryption keys
+- **Mitigation**: Keys stored in process memory with standard OS memory protection
+- **Limitation**: No hardware-backed key isolation (Secure Enclave unavailable on Linux)
+- **Implementation**: Master key stored in `PageStore.key` property (process memory only)
 
 4. **Unauthorized Data Access**
-   - **Threat**: Compromised application process attempts to read encrypted data
-   - **Mitigation**: Encryption keys required for decryption; row-level security (RLS) policies filter data
-   - **Guarantee**: Encrypted data cannot be read without keys; RLS enforces access policies
-   - **Implementation**: All page reads require decryption using master key
+- **Threat**: Compromised application process attempts to read encrypted data
+- **Mitigation**: Encryption keys required for decryption; row-level security (RLS) policies filter data
+- **Guarantee**: Encrypted data cannot be read without keys; RLS enforces access policies
+- **Implementation**: All page reads require decryption using master key
 
 ### What Is Out of Scope
 
 1. **Hardware-Backed Key Storage**
-   - Secure Enclave is Apple hardware; not available on Linux
-   - Keys reside in process memory with standard OS protection only
-   - **Code Evidence**: `SecureEnclaveKeyManager.swift` is wrapped in `#if canImport(Security) && (os(macOS) || os(iOS) || os(watchOS) || os(tvOS))`
+- Secure Enclave is Apple hardware; not available on Linux
+- Keys reside in process memory with standard OS protection only
+- **Code Evidence**: `SecureEnclaveKeyManager.swift` is wrapped in `#if canImport(Security) && (os(macOS) || os(iOS) || os(watchOS) || os(tvOS))`
 
 2. **OS-Level Certificate Validation**
-   - Security.framework certificate pinning is Apple-only
-   - BlazeDB does not perform certificate validation on Linux
-   - **Code Evidence**: `CertificatePinning.swift` is wrapped in `#if canImport(Security) && (os(macOS) || os(iOS) || os(watchOS) || os(tvOS))`
+- Security.framework certificate pinning is Apple-only
+- BlazeDB does not perform certificate validation on Linux
+- **Code Evidence**: `CertificatePinning.swift` is wrapped in `#if canImport(Security) && (os(macOS) || os(iOS) || os(watchOS) || os(tvOS))`
 
 3. **Network Transport Security**
-   - Network.framework TLS features are Apple-only
-   - BlazeDB does not provide TLS termination on Linux
-   - **Code Evidence**: `SecureConnection.swift` is wrapped in `#if canImport(Network)`, making it unavailable on Linux
+- Network.framework TLS features are Apple-only
+- BlazeDB does not provide TLS termination on Linux
+- **Code Evidence**: `SecureConnection.swift` is wrapped in `#if canImport(Network)`, making it unavailable on Linux
 
 4. **Process Isolation**
-   - BlazeDB assumes standard Linux process isolation
-   - No additional sandboxing beyond OS defaults
+- BlazeDB assumes standard Linux process isolation
+- No additional sandboxing beyond OS defaults
 
 5. **Legacy NDJSON vs binary WAL**
-   - Document durability uses the **binary** `WriteAheadLog` in `PageStore` (encrypted page payloads). See `Docs/Status/DURABILITY_MODE_SUPPORT.md`.
-   - `BlazeDBClient.legacyTransactionLogNoOp` is intentionally a **no-op**; it does not write NDJSON for CRUD, and the client removes any `txn_log*.json` sidecars it finds on open.
-   - Manager-style APIs (for example `BlazeDBManager`) can replay pre-existing `txn_log*.json` files as plaintext page-level journals for migration or advanced recovery only; normal client usage does not generate these artifacts, and if present they should be treated as sensitive cleartext.
+- Document durability uses the **binary** `WriteAheadLog` in `PageStore` (encrypted page payloads). See `Docs/Status/DURABILITY_MODE_SUPPORT.md`.
+- `BlazeDBClient.legacyTransactionLogNoOp` is intentionally a **no-op**; it does not write NDJSON for CRUD, and the client removes any `txn_log*.json` sidecars it finds on open.
+- Manager-style APIs (for example `BlazeDBManager`) can replay pre-existing `txn_log*.json` files as plaintext page-level journals for migration or advanced recovery only; normal client usage does not generate these artifacts, and if present they should be treated as sensitive cleartext.
 
 ### Assumptions
 
 1. **Host OS Security**
-   - Linux kernel provides process isolation
-   - Filesystem permissions are enforced
-   - No root-level compromise of the host
+- Linux kernel provides process isolation
+- Filesystem permissions are enforced
+- No root-level compromise of the host
 
 2. **Filesystem Security**
-   - Database files are stored on a filesystem with standard permissions
-   - Filesystem encryption (e.g., LUKS, dm-crypt) is optional but recommended for defense-in-depth
-   - Binary WAL file (`*.wal`) should use restrictive permissions (e.g. `0o600`); any legacy NDJSON sidecars should likewise be owner-only if present
+- Database files are stored on a filesystem with standard permissions
+- Filesystem encryption (e.g., LUKS, dm-crypt) is optional but recommended for defense-in-depth
+- Binary WAL file (`*.wal`) should use restrictive permissions (e.g. `0o600`); any legacy NDJSON sidecars should likewise be owner-only if present
 
 3. **Process Isolation**
-   - Database process runs with appropriate user permissions
-   - No unauthorized processes can read database files or process memory
+- Database process runs with appropriate user permissions
+- No unauthorized processes can read database files or process memory
 
 4. **Key Management**
-   - Encryption keys are provided via secure channels (environment variables, secrets management)
-   - Keys are not stored in plaintext in configuration files or logs
+- Encryption keys are provided via secure channels (environment variables, secrets management)
+- Keys are not stored in plaintext in configuration files or logs
 
 ---
 
@@ -139,7 +139,7 @@ BlazeDB provides strong cryptographic guarantees on Linux using platform-agnosti
 **Page Encryption Format:**
 ```
 [BZDB][0x02][length][nonce][tag][ciphertext][padding]
-  4B    1B      4B      12B    16B    var        var
+ 4B 1B 4B 12B 16B var var
 ```
 - Magic bytes: "BZDB" (4 bytes)
 - Version: 0x02 (1 byte) = encrypted
@@ -212,29 +212,29 @@ BlazeDB provides strong cryptographic guarantees on Linux using platform-agnosti
 ### Apple-Only Primitives (Not Available on Linux)
 
 1. **Secure Enclave**
-   - Hardware-backed key storage
-   - Keys never leave hardware
-   - Protected by device passcode/biometrics
-   - **Linux Alternative**: Software-based key storage with OS memory protection
-   - **Code Evidence**: `SecureEnclaveKeyManager.swift` wrapped in `#if canImport(Security) && (os(macOS) || os(iOS) || os(watchOS) || os(tvOS))`
+- Hardware-backed key storage
+- Keys never leave hardware
+- Protected by device passcode/biometrics
+- **Linux Alternative**: Software-based key storage with OS memory protection
+- **Code Evidence**: `SecureEnclaveKeyManager.swift` wrapped in `#if canImport(Security) && (os(macOS) || os(iOS) || os(watchOS) || os(tvOS))`
 
 2. **Security.framework Certificate Pinning**
-   - OS-level certificate validation
-   - Trust store integration
-   - Certificate chain validation
-   - **Linux Alternative**: External TLS termination, manual certificate validation
-   - **Code Evidence**: `CertificatePinning.swift` wrapped in `#if canImport(Security) && (os(macOS) || os(iOS) || os(watchOS) || os(tvOS))`
+- OS-level certificate validation
+- Trust store integration
+- Certificate chain validation
+- **Linux Alternative**: External TLS termination, manual certificate validation
+- **Code Evidence**: `CertificatePinning.swift` wrapped in `#if canImport(Security) && (os(macOS) || os(iOS) || os(watchOS) || os(tvOS))`
 
 3. **Network.framework TLS**
-   - Integrated TLS/SSL with certificate pinning
-   - Automatic certificate validation
-   - **Linux Alternative**: External TLS termination (nginx, HAProxy, etc.)
-   - **Code Evidence**: `SecureConnection.swift` wrapped in `#if canImport(Network)`
+- Integrated TLS/SSL with certificate pinning
+- Automatic certificate validation
+- **Linux Alternative**: External TLS termination (nginx, HAProxy, etc.)
+- **Code Evidence**: `SecureConnection.swift` wrapped in `#if canImport(Network)`
 
 4. **Compression Framework**
-   - Apple's Compression framework (LZ4, etc.)
-   - **Linux Alternative**: Compression unavailable (wrapped in `#if canImport(Compression)`)
-   - **Code Evidence**: `TCPRelay+Compression.swift`, `PageStore+Compression.swift` wrapped in `#if canImport(Compression)`
+- Apple's Compression framework (LZ4, etc.)
+- **Linux Alternative**: Compression unavailable (wrapped in `#if canImport(Compression)`)
+- **Code Evidence**: `TCPRelay+Compression.swift`, `PageStore+Compression.swift` wrapped in `#if canImport(Compression)`
 
 ---
 
@@ -245,37 +245,37 @@ BlazeDB provides strong cryptographic guarantees on Linux using platform-agnosti
 All data is encrypted at rest using AES-256-GCM with per-page granularity:
 
 1. **Page Structure**
-   - **Size**: 4KB fixed-size pages
-   - **Format**: BlazeBinary-encoded records (or JSON in legacy format)
-   - **Encryption**: Each page encrypted independently
-   - **Implementation**: `PageStore.swift` `_writePageLockedUnsynchronized()` method (lines 225-279)
+- **Size**: 4KB fixed-size pages
+- **Format**: BlazeBinary-encoded records (or JSON in legacy format)
+- **Encryption**: Each page encrypted independently
+- **Implementation**: `PageStore.swift` `_writePageLockedUnsynchronized()` method (lines 225-279)
 
 2. **Encryption Process**
-   ```
-   Plaintext Page (4KB)
-     ↓
-   Generate Unique Nonce (12 bytes) via AES.GCM.Nonce()
-     ↓
-   AES-256-GCM Encrypt (key: master key, not per-page derived)
-     ↓
-   Ciphertext + Authentication Tag (16 bytes)
-     ↓
-   Write to Disk (with header: BZDB + 0x02 + length + nonce + tag + ciphertext)
-   ```
+ ```
+ Plaintext Page (4KB)
+ ↓
+ Generate Unique Nonce (12 bytes) via AES.GCM.Nonce()
+ ↓
+ AES-256-GCM Encrypt (key: master key, not per-page derived)
+ ↓
+ Ciphertext + Authentication Tag (16 bytes)
+ ↓
+ Write to Disk (with header: BZDB + 0x02 + length + nonce + tag + ciphertext)
+ ```
 
 3. **Key Derivation Flow**
-   ```
-   User Password (UTF-8 encoded)
-     ↓
-   PBKDF2-HMAC-SHA256 (10,000 iterations)
-   Salt: Fixed "AshPileSalt" (KNOWN LIMITATION: not per-database)
-     ↓
-   Master Key (256 bits / 32 bytes)
-   Stored: Process memory only (PageStore.key property), never on disk
-     ↓
-   Direct Use for All Pages
-   (NOTE: Per-page key derivation via HKDF is not implemented)
-   ```
+ ```
+ User Password (UTF-8 encoded)
+ ↓
+ PBKDF2-HMAC-SHA256 (10,000 iterations)
+ Salt: Fixed "AshPileSalt" (KNOWN LIMITATION: not per-database)
+ ↓
+ Master Key (256 bits / 32 bytes)
+ Stored: Process memory only (PageStore.key property), never on disk
+ ↓
+ Direct Use for All Pages
+ (NOTE: Per-page key derivation via HKDF is not implemented)
+ ```
 
 **Key Derivation Details:**
 - **Master Key Lifetime**: Derived once per database session, exists in process memory for session duration
@@ -299,41 +299,41 @@ All data is encrypted at rest using AES-256-GCM with per-page granularity:
 ### Key Lifetime and Scope
 
 1. **Master Key**
-   - **Derivation**: Once per database session (when `BlazeDBClient` is initialized)
-   - **Storage**: Process memory only (`PageStore.key` property, line 65)
-   - **Persistence**: Never written to disk in any form
-   - **Lifetime**: Exists for duration of database session
-   - **Cleanup**: Cleared from memory on process termination (OS-managed)
-   - **Note**: Explicit key clearing from memory is not performed (known limitation)
+- **Derivation**: Once per database session (when `BlazeDBClient` is initialized)
+- **Storage**: Process memory only (`PageStore.key` property, line 65)
+- **Persistence**: Never written to disk in any form
+- **Lifetime**: Exists for duration of database session
+- **Cleanup**: Cleared from memory on process termination (OS-managed)
+- **Note**: Explicit key clearing from memory is not performed (known limitation)
 
 2. **Per-Page Keys**
-   - **Status**: **NOT IMPLEMENTED** - master key used directly for all pages
-   - **Intended Design**: Per-page keys derived via HKDF with page-specific context
-   - **Current Implementation**: Master key used directly for all page encryption/decryption
+- **Status**: **NOT IMPLEMENTED** - master key used directly for all pages
+- **Intended Design**: Per-page keys derived via HKDF with page-specific context
+- **Current Implementation**: Master key used directly for all page encryption/decryption
 
 3. **Key Scope**
-   - **Database Isolation**: Each database instance has a unique master key
-   - **Process Isolation**: Keys are not shared between processes (enforced by OS process isolation)
-   - **Session Isolation**: Keys are not shared between database sessions (new key derived per session)
-   - **Collection Isolation**: All collections within a database share the same master key (not isolated at collection level)
+- **Database Isolation**: Each database instance has a unique master key
+- **Process Isolation**: Keys are not shared between processes (enforced by OS process isolation)
+- **Session Isolation**: Keys are not shared between database sessions (new key derived per session)
+- **Collection Isolation**: All collections within a database share the same master key (not isolated at collection level)
 
 ### Crash Recovery Guarantees
 
 1. **Encrypted State Persistence**
-   - Main data pages (`.blazedb`) are encrypted at rest (AES-GCM per page)
-   - **Binary** WAL (`*.wal`) stores encrypted page payloads for durability — it is **not** NDJSON `txn_log.json` as the default path
-   - Legacy NDJSON sidecars, if present from older releases, are plaintext JSON and are not the current default CRUD durability mechanism
+- Main data pages (`.blazedb`) are encrypted at rest (AES-GCM per page)
+- **Binary** WAL (`*.wal`) stores encrypted page payloads for durability — it is **not** NDJSON `txn_log.json` as the default path
+- Legacy NDJSON sidecars, if present from older releases, are plaintext JSON and are not the current default CRUD durability mechanism
 
 2. **Recovery Process**
-   - Encrypted pages are read and decrypted using master key
-   - Decryption failures indicate corruption or tampering
-   - Binary WAL replay restores committed page state as implemented in `PageStore` initialization
-   - Recovery proceeds only if page decryption and WAL replay succeed per engine rules
+- Encrypted pages are read and decrypted using master key
+- Decryption failures indicate corruption or tampering
+- Binary WAL replay restores committed page state as implemented in `PageStore` initialization
+- Recovery proceeds only if page decryption and WAL replay succeed per engine rules
 
 3. **Atomicity**
-   - Transaction commits are atomic at the encryption layer
-   - Partial writes are detected via authentication tag verification
-   - Corrupted pages fail to decrypt and trigger recovery
+- Transaction commits are atomic at the encryption layer
+- Partial writes are detected via authentication tag verification
+- Corrupted pages fail to decrypt and trigger recovery
 
 ---
 
@@ -346,23 +346,23 @@ All data is encrypted at rest using AES-256-GCM with per-page granularity:
 BlazeDB's end-to-end encryption for distributed sync is **unavailable on Linux**:
 
 1. **Handshake Protocol**
-   - ECDH P-256 key exchange establishes shared secret
-   - Ephemeral key pairs generated per session
-   - Perfect forward secrecy: compromised long-term keys don't affect past sessions
-   - **Availability**: Only in `SecureConnection.swift`, which is wrapped in `#if canImport(Network)` and unavailable on Linux
+- ECDH P-256 key exchange establishes shared secret
+- Ephemeral key pairs generated per session
+- Perfect forward secrecy: compromised long-term keys don't affect past sessions
+- **Availability**: Only in `SecureConnection.swift`, which is wrapped in `#if canImport(Network)` and unavailable on Linux
 
 2. **Frame Encryption**
-   - Operations encoded to BlazeBinary
-   - Encrypted with AES-256-GCM using shared secret
-   - Authentication tag prevents tampering
-   - Frame format: `[nonce][ciphertext][tag]`
-   - **Availability**: Only in `SecureConnection.swift`, which is unavailable on Linux
+- Operations encoded to BlazeBinary
+- Encrypted with AES-256-GCM using shared secret
+- Authentication tag prevents tampering
+- Frame format: `[nonce][ciphertext][tag]`
+- **Availability**: Only in `SecureConnection.swift`, which is unavailable on Linux
 
 3. **Transport Layer**
-   - **Apple Platforms**: Network.framework TLS (optional, for certificate pinning via Security.framework)
-   - **Linux**: BlazeTransport (UDP-based) or custom TCP connections - **NO ENCRYPTION PROVIDED BY BLAZEDB**
-   - **Note**: BlazeDB does not provide TLS termination on Linux. `SecureConnection` is conditionally compiled and unavailable on Linux.
-   - **Linux Alternative**: Operators must provide TLS termination at infrastructure level (reverse proxy, VPN, etc.)
+- **Apple Platforms**: Network.framework TLS (optional, for certificate pinning via Security.framework)
+- **Linux**: BlazeTransport (UDP-based) or custom TCP connections - **NO ENCRYPTION PROVIDED BY BLAZEDB**
+- **Note**: BlazeDB does not provide TLS termination on Linux. `SecureConnection` is conditionally compiled and unavailable on Linux.
+- **Linux Alternative**: Operators must provide TLS termination at infrastructure level (reverse proxy, VPN, etc.)
 
 ### Authentication of Peers
 
@@ -390,20 +390,20 @@ BlazeDB's end-to-end encryption for distributed sync is **unavailable on Linux**
 **Current Status on Linux**: **BLAZEDB DOES NOT ENCRYPT DATA IN TRANSIT ON LINUX**
 
 1. **Encryption Before Transport**
-   - **Apple Platforms**: All operations are encrypted with AES-256-GCM before transmission via `SecureConnection`
-   - **Linux**: **NO ENCRYPTION PROVIDED** - data is sent in plaintext over BlazeTransport (UDP) or TCP
-   - Encryption keys are established via ECDH key exchange (unavailable on Linux)
-   - **Recommendation**: Use TLS termination (nginx, HAProxy, etc.) for encryption layer
+- **Apple Platforms**: All operations are encrypted with AES-256-GCM before transmission via `SecureConnection`
+- **Linux**: **NO ENCRYPTION PROVIDED** - data is sent in plaintext over BlazeTransport (UDP) or TCP
+- Encryption keys are established via ECDH key exchange (unavailable on Linux)
+- **Recommendation**: Use TLS termination (nginx, HAProxy, etc.) for encryption layer
 
 2. **Transport Security**
-   - **Recommended**: Use TLS termination (nginx, HAProxy, etc.) for additional layer
-   - **BlazeDB Layer**: **NO ENCRYPTION ON LINUX** - operators must provide transport security
-   - **Defense in Depth**: TLS termination provides encryption layer that BlazeDB does not provide
+- **Recommended**: Use TLS termination (nginx, HAProxy, etc.) for additional layer
+- **BlazeDB Layer**: **NO ENCRYPTION ON LINUX** - operators must provide transport security
+- **Defense in Depth**: TLS termination provides encryption layer that BlazeDB does not provide
 
 3. **Network Isolation**
-   - Deploy BlazeDB on private networks when possible
-   - Use VPNs for remote access
-   - Firewall rules restrict access to authorized peers only
+- Deploy BlazeDB on private networks when possible
+- Use VPNs for remote access
+- Firewall rules restrict access to authorized peers only
 
 ---
 
@@ -411,37 +411,37 @@ BlazeDB's end-to-end encryption for distributed sync is **unavailable on Linux**
 
 | Feature | Apple Platforms | Linux | Notes |
 |---------|----------------|-------|-------|
-| **Certificate Pinning** |  Yes (Security.framework) |  No | Linux: External TLS termination required |
-| **Secure Enclave** |  Yes (Hardware-backed) |  No | Linux: Software-based key storage |
-| **OS Trust Store** |  Yes (Security.framework) |  No | Linux: External trust store management |
-| **Software Crypto** |  Yes (CryptoKit/swift-crypto) |  Yes (swift-crypto) | Cross-platform |
-| **Network.framework TLS** |  Yes |  No | Linux: External TLS termination |
-| **Hardware Key Storage** |  Yes (Secure Enclave) |  No | Linux: Process memory only |
-| **Certificate Validation** |  Yes (Automatic) |  No | Linux: Manual validation required |
-| **AES-256-GCM Encryption** |  Yes |  Yes | Cross-platform (data at rest only) |
-| **ECDH Key Exchange** |  Yes (SecureConnection) |  No | Linux: SecureConnection unavailable |
-| **Perfect Forward Secrecy** |  Yes (SecureConnection) |  No | Linux: SecureConnection unavailable |
-| **Row-Level Security** |  Yes |  Yes | Cross-platform |
-| **WAL Encryption** |  No |  No | Plaintext JSON on all platforms |
-| **Compression** |  Yes (Compression.framework) |  No | Linux: Compression unavailable |
+| **Certificate Pinning** | Yes (Security.framework) | No | Linux: External TLS termination required |
+| **Secure Enclave** | Yes (Hardware-backed) | No | Linux: Software-based key storage |
+| **OS Trust Store** | Yes (Security.framework) | No | Linux: External trust store management |
+| **Software Crypto** | Yes (CryptoKit/swift-crypto) | Yes (swift-crypto) | Cross-platform |
+| **Network.framework TLS** | Yes | No | Linux: External TLS termination |
+| **Hardware Key Storage** | Yes (Secure Enclave) | No | Linux: Process memory only |
+| **Certificate Validation** | Yes (Automatic) | No | Linux: Manual validation required |
+| **AES-256-GCM Encryption** | Yes | Yes | Cross-platform (data at rest only) |
+| **ECDH Key Exchange** | Yes (SecureConnection) | No | Linux: SecureConnection unavailable |
+| **Perfect Forward Secrecy** | Yes (SecureConnection) | No | Linux: SecureConnection unavailable |
+| **Row-Level Security** | Yes | Yes | Cross-platform |
+| **WAL Encryption** | No | No | Plaintext JSON on all platforms |
+| **Compression** | Yes (Compression.framework) | No | Linux: Compression unavailable |
 
 ### Why These Differences Exist
 
 1. **Intentional Feature Gating**
-   - BlazeDB does not emulate Apple-specific features on Linux
-   - Missing features are excluded via conditional compilation, not weakened
-   - This ensures correctness and transparency
+- BlazeDB does not emulate Apple-specific features on Linux
+- Missing features are excluded via conditional compilation, not weakened
+- This ensures correctness and transparency
 
 2. **Platform Capabilities**
-   - Secure Enclave is Apple hardware; cannot be emulated
-   - Security.framework is Apple-specific; no Linux equivalent
-   - Network.framework is Apple-specific; Linux uses standard sockets
-   - Compression.framework is Apple-specific; no Linux equivalent
+- Secure Enclave is Apple hardware; cannot be emulated
+- Security.framework is Apple-specific; no Linux equivalent
+- Network.framework is Apple-specific; Linux uses standard sockets
+- Compression.framework is Apple-specific; no Linux equivalent
 
 3. **Composability**
-   - BlazeDB integrates with Linux-native security tools
-   - TLS termination handled by nginx, HAProxy, etc.
-   - Key management handled by external secrets management systems
+- BlazeDB integrates with Linux-native security tools
+- TLS termination handled by nginx, HAProxy, etc.
+- Key management handled by external secrets management systems
 
 ---
 
@@ -592,42 +592,42 @@ BlazeDB's end-to-end encryption for distributed sync is **unavailable on Linux**
 ### Why Feature-Gating Instead of Emulation
 
 1. **Correctness**
-   - Emulating Secure Enclave would provide false sense of security
-   - Weakened implementations are worse than explicit exclusions
-   - Clear boundaries prevent security misconceptions
+- Emulating Secure Enclave would provide false sense of security
+- Weakened implementations are worse than explicit exclusions
+- Clear boundaries prevent security misconceptions
 
 2. **Transparency**
-   - Operators know exactly what security features are available
-   - No hidden assumptions about platform capabilities
-   - Explicit limitations enable proper risk assessment
+- Operators know exactly what security features are available
+- No hidden assumptions about platform capabilities
+- Explicit limitations enable proper risk assessment
 
 3. **Composability**
-   - BlazeDB integrates with Linux-native security tools
-   - TLS termination handled by proven, audited software (nginx, HAProxy)
-   - Key management handled by external secrets management systems
-   - Operators choose appropriate security layers for their threat model
+- BlazeDB integrates with Linux-native security tools
+- TLS termination handled by proven, audited software (nginx, HAProxy)
+- Key management handled by external secrets management systems
+- Operators choose appropriate security layers for their threat model
 
 4. **Maintainability**
-   - Platform-specific code is clearly separated via conditional compilation
-   - Conditional compilation prevents accidental cross-platform assumptions
-   - Security features are either fully available or explicitly excluded
+- Platform-specific code is clearly separated via conditional compilation
+- Conditional compilation prevents accidental cross-platform assumptions
+- Security features are either fully available or explicitly excluded
 
 ### Why Not Weaken Security for Cross-Platform Compatibility
 
 1. **Security Degradation**
-   - Weakened implementations provide false security guarantees
-   - Operators may assume features work when they don't
-   - Better to exclude than to mislead
+- Weakened implementations provide false security guarantees
+- Operators may assume features work when they don't
+- Better to exclude than to mislead
 
 2. **Correctness Over Convenience**
-   - Security is not a convenience feature
-   - Explicit limitations are better than implicit failures
-   - Operators can compensate with infrastructure-level solutions
+- Security is not a convenience feature
+- Explicit limitations are better than implicit failures
+- Operators can compensate with infrastructure-level solutions
 
 3. **Auditability**
-   - Clear feature boundaries enable security audits
-   - No hidden assumptions about platform capabilities
-   - Security reviewers can assess actual guarantees
+- Clear feature boundaries enable security audits
+- No hidden assumptions about platform capabilities
+- Security reviewers can assess actual guarantees
 
 ---
 
@@ -642,19 +642,19 @@ Use nginx or HAProxy as a TLS termination layer in front of BlazeDB:
 ```nginx
 # nginx configuration example
 server {
-    listen 443 ssl http2;
-    server_name blazedb.example.com;
-    
-    ssl_certificate /etc/ssl/certs/blazedb.crt;
-    ssl_certificate_key /etc/ssl/private/blazedb.key;
-    ssl_protocols TLSv1.2 TLSv1.3;
-    ssl_ciphers HIGH:!aNULL:!MD5;
-    
-    location / {
-        proxy_pass http://localhost:9090;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-    }
+ listen 443 ssl http2;
+ server_name blazedb.example.com;
+
+ ssl_certificate /etc/ssl/certs/blazedb.crt;
+ ssl_certificate_key /etc/ssl/private/blazedb.key;
+ ssl_protocols TLSv1.2 TLSv1.3;
+ ssl_ciphers HIGH:!aNULL:!MD5;
+
+ location / {
+ proxy_pass http://localhost:9090;
+ proxy_set_header Host $host;
+ proxy_set_header X-Real-IP $remote_addr;
+ }
 }
 ```
 
@@ -724,8 +724,8 @@ export BLAZEDB_PASSWORD
 
 # BlazeDB reads from environment
 let db = try BlazeDBClient(
-    name: "production",
-    password: ProcessInfo.processInfo.environment["BLAZEDB_PASSWORD"] ?? ""
+ name: "production",
+ password: ProcessInfo.processInfo.environment["BLAZEDB_PASSWORD"] ?? ""
 )
 ```
 
@@ -734,98 +734,98 @@ let db = try BlazeDBClient(
 **Recommended: Private Network Deployment**
 
 1. **Deploy on Private Network**
-   - BlazeDB listens on private IP addresses only
-   - No public internet exposure
-   - Access via VPN or bastion host
+- BlazeDB listens on private IP addresses only
+- No public internet exposure
+- Access via VPN or bastion host
 
 2. **Firewall Rules**
-   ```bash
-   # Allow only specific IPs to connect
-   sudo ufw allow from 10.0.0.0/8 to any port 9090
-   sudo ufw deny 9090
-   ```
+ ```bash
+ # Allow only specific IPs to connect
+ sudo ufw allow from 10.0.0.0/8 to any port 9090
+ sudo ufw deny 9090
+ ```
 
 3. **Network Segmentation**
-   - Separate database network from application network
-   - Use network policies (Kubernetes NetworkPolicy, AWS Security Groups)
-   - Restrict outbound connections from database servers
+- Separate database network from application network
+- Use network policies (Kubernetes NetworkPolicy, AWS Security Groups)
+- Restrict outbound connections from database servers
 
 4. **Monitoring**
-   - Monitor network traffic for anomalies
-   - Alert on unexpected connection attempts
-   - Log all network access
+- Monitor network traffic for anomalies
+- Alert on unexpected connection attempts
+- Log all network access
 
 ### Process Security
 
 **Recommended: Least Privilege**
 
 1. **Run as Non-Root User**
-   ```bash
-   # Create dedicated user
-   sudo useradd -r -s /bin/false blazedb
-   sudo chown -R blazedb:blazedb /var/lib/blazedb
-   ```
+ ```bash
+ # Create dedicated user
+ sudo useradd -r -s /bin/false blazedb
+ sudo chown -R blazedb:blazedb /var/lib/blazedb
+ ```
 
 2. **File Permissions**
-   ```bash
-   # Restrict database file access
-   sudo chmod 600 /var/lib/blazedb/*.blazedb
-   sudo chmod 600 /var/lib/blazedb/*.meta
-   sudo chmod 600 /var/lib/blazedb/*.wal
-   # If legacy NDJSON sidecars exist: chmod 600 those paths too
-   ```
+ ```bash
+ # Restrict database file access
+ sudo chmod 600 /var/lib/blazedb/*.blazedb
+ sudo chmod 600 /var/lib/blazedb/*.meta
+ sudo chmod 600 /var/lib/blazedb/*.wal
+ # If legacy NDJSON sidecars exist: chmod 600 those paths too
+ ```
 
 3. **SELinux/AppArmor**
-   - Use SELinux or AppArmor to restrict process capabilities
-   - Prevent process from accessing unauthorized files
-   - Restrict network access to authorized peers only
+- Use SELinux or AppArmor to restrict process capabilities
+- Prevent process from accessing unauthorized files
+- Restrict network access to authorized peers only
 
 4. **Memory Protection**
-   - Use `mlock()` to prevent key material from being swapped to disk
-   - Consider using `madvise()` to mark key memory as sensitive
-   - Note: Explicit key clearing from memory is not performed (known limitation)
+- Use `mlock()` to prevent key material from being swapped to disk
+- Consider using `madvise()` to mark key memory as sensitive
+- Note: Explicit key clearing from memory is not performed (known limitation)
 
 ### Key Rotation
 
 **Recommended: Periodic Key Rotation**
 
 1. **Backup Before Rotation**
-   ```swift
-   // Backup encrypted database
-   try db.backup(to: backupURL)
-   ```
+ ```swift
+ // Backup encrypted database
+ try db.backup(to: backupURL)
+ ```
 
 2. **Re-encrypt with New Key**
-   - Export all data
-   - Create new database with new password
-   - Import data into new database
-   - Verify data integrity
-   - Replace old database
+- Export all data
+- Create new database with new password
+- Import data into new database
+- Verify data integrity
+- Replace old database
 
 3. **Rotation Schedule**
-   - Production: Every 90 days or after security incidents
-   - Development: As needed
-   - Document rotation dates and procedures
+- Production: Every 90 days or after security incidents
+- Development: As needed
+- Document rotation dates and procedures
 
 ### Monitoring and Auditing
 
 **Recommended: Comprehensive Logging**
 
 1. **Security Events**
-   - Log all authentication attempts
-   - Log all database access
-   - Log encryption/decryption failures
-   - Alert on suspicious activity
+- Log all authentication attempts
+- Log all database access
+- Log encryption/decryption failures
+- Alert on suspicious activity
 
 2. **Performance Monitoring**
-   - Monitor encryption/decryption performance
-   - Track key derivation time
-   - Monitor memory usage (key storage)
+- Monitor encryption/decryption performance
+- Track key derivation time
+- Monitor memory usage (key storage)
 
 3. **Compliance**
-   - Maintain audit logs for compliance requirements
-   - Retain logs for required duration
-   - Encrypt audit logs at rest
+- Maintain audit logs for compliance requirements
+- Retain logs for required duration
+- Encrypt audit logs at rest
 
 ---
 
@@ -912,6 +912,6 @@ BlazeDB provides strong cryptographic guarantees on Linux using platform-agnosti
 - **No Hardware Key Storage**: Keys in process memory only; use HSM if required
 - **No Certificate Validation**: Use external TLS termination with certificate validation
 
-For architecture details, see [ARCHITECTURE.md](Docs/ARCHITECTURE.md).  
+For architecture details, see [ARCHITECTURE.md](Docs/ARCHITECTURE.md).
 For general security documentation, see [SECURITY.md](Docs/SECURITY.md).
 

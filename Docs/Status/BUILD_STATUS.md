@@ -1,16 +1,16 @@
 # Build Status
 
-## Core Modules:  Compiles Successfully
+## Core Modules: Compiles Successfully
 
 All core modules compile cleanly under Swift 6 strict concurrency:
--  Core (DynamicCollection, BlazeDBClient)
--  Query (QueryBuilder, QueryBuilder+Validation)
--  Storage (PageStore, PageCache)
--  Utils
--  Transactions
--  Encoding (BlazeBinaryEncoder, BlazeBinaryDecoder)
+- Core (DynamicCollection, BlazeDBClient)
+- Query (QueryBuilder, QueryBuilder+Validation)
+- Storage (PageStore, PageCache)
+- Utils
+- Transactions
+- Encoding (BlazeBinaryEncoder, BlazeBinaryDecoder)
 
-## Hardening Features:  Compile Successfully
+## Hardening Features: Compile Successfully
 
 All hardening improvements compile:
 - **BlazeDBClient+Lifecycle.swift** (explicit close(), idempotency, resource cleanup)
@@ -21,36 +21,36 @@ All hardening improvements compile:
 - **ResourceLimitsTests.swift** (resource limit tests)
 - **CompatibilityTests.swift** (format version tests)
 
-## New Features:  Compile Successfully
+## New Features: Compile Successfully
 
 All Phase 1 feature work compiles:
--  **BlazeDoctor** CLI tool
--  **BlazeDump** CLI tool (dump/restore/verify)
--  **BlazeInfo** CLI tool (database info)
--  **BlazeDBClient+Stats.swift** (diagnostics API with prettyPrint)
--  **BlazeDBClient+Health.swift** (health reporting)
--  **BlazeDBClient+Migration.swift** (schema versioning)
--  **BlazeDBClient+Export.swift** (export API)
--  **BlazeDBImporter.swift** (import/restore API)
--  **BlazeDBError+Categories.swift** (error categorization and guidance)
--  **PathResolver.swift** (platform-safe paths)
--  **BlazeDBClient+EasyOpen.swift** (zero-config entrypoint)
--  **DumpFormat.swift** (deterministic dump format)
--  **SchemaVersion.swift** (schema versioning)
--  **DatabaseHealth.swift** (health classification)
+- **BlazeDoctor** CLI tool
+- **BlazeDump** CLI tool (dump/restore/verify)
+- **BlazeInfo** CLI tool (database info)
+- **BlazeDBClient+Stats.swift** (diagnostics API with prettyPrint)
+- **BlazeDBClient+Health.swift** (health reporting)
+- **BlazeDBClient+Migration.swift** (schema versioning)
+- **BlazeDBClient+Export.swift** (export API)
+- **BlazeDBImporter.swift** (import/restore API)
+- **BlazeDBError+Categories.swift** (error categorization and guidance)
+- **PathResolver.swift** (platform-safe paths)
+- **BlazeDBClient+EasyOpen.swift** (zero-config entrypoint)
+- **DumpFormat.swift** (deterministic dump format)
+- **SchemaVersion.swift** (schema versioning)
+- **DatabaseHealth.swift** (health classification)
 
-## Test Suites:  Compile Successfully
+## Test Suites: Compile Successfully
 
 All new test suites compile:
--  **QueryErgonomicsTests** (query validation, error messages)
--  **SchemaMigrationTests** (migration planning, execution)
--  **ImportExportTests** (round-trip, integrity verification)
--  **OperationalConfidenceTests** (health classification)
--  **LinuxCompatibilityTests** (platform-safe paths)
--  **CrashRecoveryTests** (durability across close/reopen)
--  **ErrorSurfaceTests** (error message stability)
+- **QueryErgonomicsTests** (query validation, error messages)
+- **SchemaMigrationTests** (migration planning, execution)
+- **ImportExportTests** (round-trip, integrity verification)
+- **OperationalConfidenceTests** (health classification)
+- **LinuxCompatibilityTests** (platform-safe paths)
+- **CrashRecoveryTests** (durability across close/reopen)
+- **ErrorSurfaceTests** (error message stability)
 
-## Distributed Modules:  Build Failures (Out of Scope)
+## Distributed Modules: Build Failures (Out of Scope)
 
 Distributed modules currently fail to compile under Swift 6:
 - BlazeSyncEngine
@@ -59,11 +59,11 @@ Distributed modules currently fail to compile under Swift 6:
 - Telemetry (actor isolation issues)
 - Discovery (Sendable conformance issues)
 
-**Impact:** 
-- Core functionality:  Works independently
-- New features:  Compile
-- Full test suite:  Blocked by distributed module errors
-- CLI tools:  Build successfully (BlazeDoctor, BlazeDump, BlazeInfo)
+**Impact:**
+- Core functionality: Works independently
+- New features: Compile
+- Full test suite: Blocked by distributed module errors
+- CLI tools: Build successfully (BlazeDoctor, BlazeDump, BlazeInfo)
 
 ## Testing Status
 
@@ -84,10 +84,10 @@ swift test --filter CrashRecoveryTests
 ## CI Configuration
 
 The `.github/workflows/core-tests.yml` workflow:
--  Builds core independently (`swift build --target BlazeDB`)
--  Runs core tests with filters (distributed errors filtered from output)
--  Builds CLI tools (BlazeDoctor, BlazeDump, BlazeInfo)
--  Distributed tests allowed to fail (visible but non-blocking)
+- Builds core independently (`swift build --target BlazeDB`)
+- Runs core tests with filters (distributed errors filtered from output)
+- Builds CLI tools (BlazeDoctor, BlazeDump, BlazeInfo)
+- Distributed tests allowed to fail (visible but non-blocking)
 
 This provides clean CI signals for core while maintaining visibility on distributed compliance.
 
@@ -116,16 +116,16 @@ swift test --filter QueryErgonomicsTests
 
 ### Full Build (Includes Distributed - Will Fail)
 ```bash
-swift build  # Will show distributed module errors (expected)
+swift build # Will show distributed module errors (expected)
 ```
 
 ## Summary
 
-**Core:**  Compiles cleanly  
-**Features:**  All compile successfully  
-**Tests:**  All compile, can run with filters  
-**CLI Tools:**  All build successfully  
-**Distributed:**  Fails to compile (out of scope, documented)
+**Core:** Compiles cleanly
+**Features:** All compile successfully
+**Tests:** All compile, can run with filters
+**CLI Tools:** All build successfully
+**Distributed:** Fails to compile (out of scope, documented)
 
-For detailed concurrency compliance status, see `CONCURRENCY_COMPLIANCE.md`.  
+For detailed concurrency compliance status, see `CONCURRENCY_COMPLIANCE.md`.
 For testing instructions, see `TESTING_GUIDE.md`.

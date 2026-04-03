@@ -31,44 +31,44 @@ BlazeDB uses a **7-layer architecture** with clear separation of concerns:
 
 ```
 ┌─────────────────────────────────────────┐
-│ APPLICATION LAYER                        │
-│ BlazeDBClient, SwiftUI (@BlazeQuery)     │
+│ APPLICATION LAYER │
+│ BlazeDBClient, SwiftUI (@BlazeQuery) │
 └─────────────────────────────────────────┘
-              ↓
+ ↓
 ┌─────────────────────────────────────────┐
-│ QUERY & INDEX LAYER                      │
-│ QueryBuilder, Optimizer, Planner         │
-│ Secondary, Full-Text, Spatial, Vector   │
+│ QUERY & INDEX LAYER │
+│ QueryBuilder, Optimizer, Planner │
+│ Secondary, Full-Text, Spatial, Vector │
 └─────────────────────────────────────────┘
-              ↓
+ ↓
 ┌─────────────────────────────────────────┐
-│ MVCC & CONCURRENCY LAYER                 │
-│ VersionManager, MVCCTransaction          │
-│ Snapshot Isolation, Non-blocking Reads  │
+│ MVCC & CONCURRENCY LAYER │
+│ VersionManager, MVCCTransaction │
+│ Snapshot Isolation, Non-blocking Reads │
 └─────────────────────────────────────────┘
-              ↓
+ ↓
 ┌─────────────────────────────────────────┐
-│ TRANSACTION & WAL LAYER                  │
-│ WriteAheadLog, TransactionLog            │
-│ Crash Recovery, Durability              │
+│ TRANSACTION & WAL LAYER │
+│ WriteAheadLog, TransactionLog │
+│ Crash Recovery, Durability │
 └─────────────────────────────────────────┘
-              ↓
+ ↓
 ┌─────────────────────────────────────────┐
-│ STORAGE ENGINE LAYER                     │
+│ STORAGE ENGINE LAYER │
 │ PageStore (4KB pages), DynamicCollection │
-│ Overflow Pages, Page Reuse               │
+│ Overflow Pages, Page Reuse │
 └─────────────────────────────────────────┘
-              ↓
+ ↓
 ┌─────────────────────────────────────────┐
-│ ENCODING & SERIALIZATION                 │
-│ BlazeBinary (53% smaller than JSON)      │
-│ Type-safe field encoding                 │
+│ ENCODING & SERIALIZATION │
+│ BlazeBinary (53% smaller than JSON) │
+│ Type-safe field encoding │
 └─────────────────────────────────────────┘
-              ↓
+ ↓
 ┌─────────────────────────────────────────┐
-│ SECURITY & ENCRYPTION                    │
+│ SECURITY & ENCRYPTION │
 │ AES-256-GCM per-page, ECDH key exchange │
-│ Row-Level Security (RLS)                 │
+│ Row-Level Security (RLS) │
 └─────────────────────────────────────────┘
 ```
 
@@ -130,9 +130,9 @@ Record Insert Flow:
 **How it works:**
 ```swift
 // Version tracking
-versions: [UUID: [RecordVersion]]  // All versions of all records
-currentVersion: UInt64              // Global version counter
-activeSnapshots: [UInt64: Int]      // Active transaction snapshots
+versions: [UUID: [RecordVersion]] // All versions of all records
+currentVersion: UInt64 // Global version counter
+activeSnapshots: [UInt64: Int] // Active transaction snapshots
 
 // Transaction flow
 1. Begin transaction → capture snapshot version
@@ -167,9 +167,9 @@ Write Flow:
 1. Write operation → append to WAL (sequential, no fsync)
 2. Buffer in memory (pendingWrites array)
 3. When threshold reached (100 writes or 1.0s):
-   - Batch write all pages to main file
-   - Single fsync for entire batch
-   - Truncate WAL
+- Batch write all pages to main file
+- Single fsync for entire batch
+- Truncate WAL
 
 Recovery Flow (on startup):
 1. Read WAL file
@@ -282,12 +282,12 @@ Decryption Flow:
 **Decision:** Fixed 4KB pages
 
 **Trade-offs:**
-- ✅ **Predictable I/O:** Fixed-size operations = consistent performance
-- ✅ **OS alignment:** Matches file system block size
-- ✅ **Encryption efficiency:** AES-GCM works optimally with fixed blocks
-- ✅ **Simple allocation:** Sequential with page reuse
-- ❌ **Space waste:** Small records waste padding (mitigated by page reuse)
-- ❌ **Overflow overhead:** Large records need multiple I/O operations
+- **Predictable I/O:** Fixed-size operations = consistent performance
+- **OS alignment:** Matches file system block size
+- **Encryption efficiency:** AES-GCM works optimally with fixed blocks
+- **Simple allocation:** Sequential with page reuse
+- **Space waste:** Small records waste padding (mitigated by page reuse)
+- **Overflow overhead:** Large records need multiple I/O operations
 
 **Why not variable-size:**
 - Complex allocation algorithms
@@ -302,11 +302,11 @@ Decryption Flow:
 **Decision:** MVCC with snapshot isolation
 
 **Trade-offs:**
-- ✅ **Non-blocking reads:** Readers never block writers
-- ✅ **High concurrency:** 50-100x faster concurrent reads
-- ✅ **Conflict detection:** Automatic optimistic conflict detection
-- ❌ **Memory overhead:** +50-100% (stores multiple versions)
-- ❌ **GC complexity:** Must track active snapshots
+- **Non-blocking reads:** Readers never block writers
+- **High concurrency:** 50-100x faster concurrent reads
+- **Conflict detection:** Automatic optimistic conflict detection
+- **Memory overhead:** +50-100% (stores multiple versions)
+- **GC complexity:** Must track active snapshots
 
 **Why not lock-based:**
 - Read-write blocking (poor concurrency)
@@ -320,11 +320,11 @@ Decryption Flow:
 **Decision:** Schema-less with optional type safety
 
 **Trade-offs:**
-- ✅ **Zero migrations:** Add fields without schema changes
-- ✅ **Flexibility:** Rapid iteration, no downtime
-- ✅ **Type safety:** Optional `BlazeDocument` protocol for compile-time safety
-- ❌ **Runtime errors:** Type mismatches caught at runtime (unless using `BlazeDocument`)
-- ❌ **No foreign keys:** Must enforce relationships in application code
+- **Zero migrations:** Add fields without schema changes
+- **Flexibility:** Rapid iteration, no downtime
+- **Type safety:** Optional `BlazeDocument` protocol for compile-time safety
+- **Runtime errors:** Type mismatches caught at runtime (unless using `BlazeDocument`)
+- **No foreign keys:** Must enforce relationships in application code
 
 **Why not schema-first:**
 - Migration complexity
@@ -338,11 +338,11 @@ Decryption Flow:
 **Decision:** Write-ahead logging with batched checkpoints
 
 **Trade-offs:**
-- ✅ **Crash safety:** All committed writes survive
-- ✅ **Performance:** 10-100x fewer fsync calls
-- ✅ **Durability:** WAL replay restores state
-- ❌ **Recovery time:** 50-200ms for 10K operations on startup
-- ❌ **WAL file growth:** Grows until checkpoint
+- **Crash safety:** All committed writes survive
+- **Performance:** 10-100x fewer fsync calls
+- **Durability:** WAL replay restores state
+- **Recovery time:** 50-200ms for 10K operations on startup
+- **WAL file growth:** Grows until checkpoint
 
 **Why not direct writes:**
 - Too many fsync calls (slow)
@@ -356,11 +356,11 @@ Decryption Flow:
 **Decision:** Per-page AES-256-GCM encryption
 
 **Trade-offs:**
-- ✅ **Selective decryption:** Only decrypt pages you read
-- ✅ **Parallel encryption:** Pages encrypted independently
-- ✅ **Tamper detection:** Authentication tag per page
-- ❌ **Overhead:** ~37 bytes per page (nonce + tag)
-- ❌ **Key management:** Must derive key from password
+- **Selective decryption:** Only decrypt pages you read
+- **Parallel encryption:** Pages encrypted independently
+- **Tamper detection:** Authentication tag per page
+- **Overhead:** ~37 bytes per page (nonce + tag)
+- **Key management:** Must derive key from password
 
 **Why not file-level:**
 - Must decrypt entire file to read one record
@@ -374,11 +374,11 @@ Decryption Flow:
 **Decision:** BlazeBinary custom format
 
 **Trade-offs:**
-- ✅ **Size efficiency:** 53% smaller than JSON
-- ✅ **Speed:** 48% faster encode/decode
-- ✅ **Type safety:** Native Swift type support
-- ❌ **Not human-readable:** Requires tools to inspect
-- ❌ **Platform-specific:** Swift-only (though format is documented)
+- **Size efficiency:** 53% smaller than JSON
+- **Speed:** 48% faster encode/decode
+- **Type safety:** Native Swift type support
+- **Not human-readable:** Requires tools to inspect
+- **Platform-specific:** Swift-only (though format is documented)
 
 **Why not JSON:**
 - Too large (53% overhead)
@@ -396,142 +396,142 @@ Decryption Flow:
 ### Strengths
 
 1. **Encryption by Default**
-   - AES-256-GCM per-page encryption
-   - Zero configuration required
-   - Secure Enclave integration (iOS/macOS)
+- AES-256-GCM per-page encryption
+- Zero configuration required
+- Secure Enclave integration (iOS/macOS)
 
 2. **Schema Flexibility**
-   - No migrations needed
-   - Add fields without downtime
-   - Optional type safety via `BlazeDocument`
+- No migrations needed
+- Add fields without downtime
+- Optional type safety via `BlazeDocument`
 
 3. **Predictable Performance**
-   - Fixed-size I/O (4KB pages)
-   - Sub-millisecond latency
-   - Linear scaling with CPU cores
+- Fixed-size I/O (4KB pages)
+- Sub-millisecond latency
+- Linear scaling with CPU cores
 
 4. **Swift-Native**
-   - Idiomatic Swift APIs
-   - Type-safe query builder
-   - SwiftUI integration (`@BlazeQuery`)
+- Idiomatic Swift APIs
+- Type-safe query builder
+- SwiftUI integration (`@BlazeQuery`)
 
 5. **MVCC Concurrency**
-   - Non-blocking reads
-   - Snapshot isolation
-   - High concurrent throughput
+- Non-blocking reads
+- Snapshot isolation
+- High concurrent throughput
 
 6. **Crash Safety**
-   - WAL-based recovery
-   - Atomic operations
-   - No partial records
+- WAL-based recovery
+- Atomic operations
+- No partial records
 
 ---
 
 ### Weaknesses
 
 1. **Single-Process Only**
-   - Cannot share database across processes
-   - File-level locking prevents multi-process access
-   - Not suitable for multi-process applications
+- Cannot share database across processes
+- File-level locking prevents multi-process access
+- Not suitable for multi-process applications
 
 2. **No SQL Compatibility**
-   - Fluent Swift API only
-   - No SQL queries
-   - Learning curve for SQL users
+- Fluent Swift API only
+- No SQL queries
+- Learning curve for SQL users
 
 3. **Newer Technology**
-   - Less battle-tested than SQLite (20+ years)
-   - Smaller community
-   - Fewer Stack Overflow answers
+- Less battle-tested than SQLite (20+ years)
+- Smaller community
+- Fewer Stack Overflow answers
 
 4. **Swift-Only**
-   - Requires Swift runtime
-   - Not suitable for non-Swift applications
-   - Platform-specific (macOS/iOS/Linux)
+- Requires Swift runtime
+- Not suitable for non-Swift applications
+- Platform-specific (macOS/iOS/Linux)
 
 5. **Network Filesystem Limitations**
-   - File locking doesn't work on NFS/SMB
-   - Performance degrades on network mounts
-   - Not recommended for cloud storage mounts
+- File locking doesn't work on NFS/SMB
+- Performance degrades on network mounts
+- Not recommended for cloud storage mounts
 
 6. **Limited Distributed Sync**
-   - Distributed modules are experimental
-   - Not production-ready for multi-node sync
-   - Single-writer authority model
+- Distributed modules are experimental
+- Not production-ready for multi-node sync
+- Single-writer authority model
 
 ---
 
 ## When to Use vs. Not Use
 
-### ✅ Use BlazeDB When:
+### Use BlazeDB When:
 
 1. **Building Swift Applications**
-   - macOS, iOS, Linux Swift apps
-   - Want idiomatic Swift APIs
-   - Need type-safe query builder
+- macOS, iOS, Linux Swift apps
+- Want idiomatic Swift APIs
+- Need type-safe query builder
 
 2. **Encryption Required**
-   - Sensitive data storage
-   - Compliance requirements (HIPAA, GDPR)
-   - User privacy concerns
+- Sensitive data storage
+- Compliance requirements (HIPAA, GDPR)
+- User privacy concerns
 
 3. **Schema Flexibility Needed**
-   - Rapid iteration
-   - No downtime for schema changes
-   - Dynamic field requirements
+- Rapid iteration
+- No downtime for schema changes
+- Dynamic field requirements
 
 4. **Predictable Performance**
-   - Sub-millisecond latency requirements
-   - Consistent performance under load
-   - Real-time applications
+- Sub-millisecond latency requirements
+- Consistent performance under load
+- Real-time applications
 
 5. **Single-Process Applications**
-   - Desktop apps
-   - Mobile apps
-   - CLI tools
-   - Single-process server applications
+- Desktop apps
+- Mobile apps
+- CLI tools
+- Single-process server applications
 
 6. **Local-First Architecture**
-   - Offline-first apps
-   - Multi-device sync (experimental)
-   - No external database server
+- Offline-first apps
+- Multi-device sync (experimental)
+- No external database server
 
 ---
 
-### ❌ Don't Use BlazeDB When:
+### Don't Use BlazeDB When:
 
 1. **Multi-Process Applications**
-   - Multiple processes accessing same database
-   - Shared database across services
-   - Use PostgreSQL, MySQL instead
+- Multiple processes accessing same database
+- Shared database across services
+- Use PostgreSQL, MySQL instead
 
 2. **SQL Compatibility Required**
-   - Need SQL queries
-   - Complex joins and subqueries
-   - Team familiar with SQL
-   - Use SQLite, PostgreSQL instead
+- Need SQL queries
+- Complex joins and subqueries
+- Team familiar with SQL
+- Use SQLite, PostgreSQL instead
 
 3. **Network Filesystems**
-   - NFS, SMB, cloud storage mounts
-   - File locking doesn't work
-   - Use network databases instead
+- NFS, SMB, cloud storage mounts
+- File locking doesn't work
+- Use network databases instead
 
 4. **Maximum Compatibility**
-   - Need C API
-   - Cross-platform (non-Swift)
-   - Universal platform support
-   - Use SQLite instead
+- Need C API
+- Cross-platform (non-Swift)
+- Universal platform support
+- Use SQLite instead
 
 5. **Battle-Tested Stability**
-   - Critical production systems
-   - Need 20+ years of validation
-   - Large community support
-   - Use SQLite, PostgreSQL instead
+- Critical production systems
+- Need 20+ years of validation
+- Large community support
+- Use SQLite, PostgreSQL instead
 
 6. **Distributed Workloads**
-   - Multi-node distributed systems
-   - Need distributed consensus
-   - Use distributed databases instead
+- Multi-node distributed systems
+- Need distributed consensus
+- Use distributed databases instead
 
 ---
 
@@ -628,12 +628,12 @@ Decryption Flow:
 ```swift
 // Sequential allocation with reuse
 func allocatePage() -> Int {
-    if let reused = deletedPages.popFirst() {
-        return reused  // Reuse deleted page
-    }
-    let page = nextPageIndex
-    nextPageIndex += 1
-    return page  // Allocate new page
+ if let reused = deletedPages.popFirst() {
+ return reused // Reuse deleted page
+ }
+ let page = nextPageIndex
+ nextPageIndex += 1
+ return page // Allocate new page
 }
 ```
 
@@ -648,8 +648,8 @@ Overflow Page 2: [Header (16)][Data (remaining)][Next Pointer = 0]
 **Index Map:**
 ```swift
 // Tracks record → pages mapping
-indexMap: [UUID: [Int]]  // Record ID → array of page indices
-// Example: [recordID: [5, 6, 7]]  // Main page + 2 overflow pages
+indexMap: [UUID: [Int]] // Record ID → array of page indices
+// Example: [recordID: [5, 6, 7]] // Main page + 2 overflow pages
 ```
 
 ---
@@ -659,15 +659,15 @@ indexMap: [UUID: [Int]]  // Record ID → array of page indices
 **Version Tracking:**
 ```swift
 struct RecordVersion {
-    let recordID: UUID
-    let version: UInt64  // Global version counter
-    let pageNumber: Int
-    let createdByTransaction: UInt64
-    let deletedByTransaction: UInt64
+ let recordID: UUID
+ let version: UInt64 // Global version counter
+ let pageNumber: Int
+ let createdByTransaction: UInt64
+ let deletedByTransaction: UInt64
 }
 
 // All versions of all records
-versions: [UUID: [RecordVersion]]  // Sorted by version number
+versions: [UUID: [RecordVersion]] // Sorted by version number
 ```
 
 **Snapshot Isolation:**
@@ -677,21 +677,21 @@ let snapshotVersion = currentVersion
 
 // Reads see consistent snapshot
 func read(recordID: UUID) -> Record? {
-    let recordVersions = versions[recordID]
-    // Find version <= snapshotVersion
-    return recordVersions.last { $0.version <= snapshotVersion }
+ let recordVersions = versions[recordID]
+ // Find version <= snapshotVersion
+ return recordVersions.last { $0.version <= snapshotVersion }
 }
 
 // Writes create new version
 func write(recordID: UUID, data: Data) {
-    currentVersion += 1
-    let newVersion = RecordVersion(
-        recordID: recordID,
-        version: currentVersion,
-        pageNumber: allocatePage(),
-        createdByTransaction: transactionID
-    )
-    versions[recordID].append(newVersion)
+ currentVersion += 1
+ let newVersion = RecordVersion(
+ recordID: recordID,
+ version: currentVersion,
+ pageNumber: allocatePage(),
+ createdByTransaction: transactionID
+ )
+ versions[recordID].append(newVersion)
 }
 ```
 
@@ -699,13 +699,13 @@ func write(recordID: UUID, data: Data) {
 ```swift
 // On commit, check for conflicts
 func commit() throws {
-    for modifiedRecord in modifiedRecords {
-        let currentVersion = versions[modifiedRecord.id].last?.version ?? 0
-        if currentVersion > snapshotVersion {
-            throw ConflictError()  // Someone else modified it!
-        }
-    }
-    // No conflicts, commit succeeds
+ for modifiedRecord in modifiedRecords {
+ let currentVersion = versions[modifiedRecord.id].last?.version ?? 0
+ if currentVersion > snapshotVersion {
+ throw ConflictError() // Someone else modified it!
+ }
+ }
+ // No conflicts, commit succeeds
 }
 ```
 
@@ -718,13 +718,13 @@ func commit() throws {
 // Argon2id + HKDF for key derivation
 let salt = generateSalt()
 let derivedKey = Argon2id.derive(
-    password: password,
-    salt: salt,
-    iterations: 100_000
+ password: password,
+ salt: salt,
+ iterations: 100_000
 )
 let encryptionKey = HKDF.derive(
-    inputKeyMaterial: derivedKey,
-    info: "BlazeDB Encryption Key"
+ inputKeyMaterial: derivedKey,
+ info: "BlazeDB Encryption Key"
 )
 ```
 
@@ -732,16 +732,16 @@ let encryptionKey = HKDF.derive(
 ```swift
 // Each page encrypted independently
 func encryptPage(data: Data) -> EncryptedPage {
-    let nonce = AES.GCM.Nonce()  // Unique per page
-    let sealedBox = try AES.GCM.seal(data, using: key, nonce: nonce)
-    return EncryptedPage(
-        header: "BZDB",
-        version: 0x02,
-        nonce: nonce,
-        tag: sealedBox.tag,
-        ciphertext: sealedBox.ciphertext,
-        padding: zerosTo4KB()
-    )
+ let nonce = AES.GCM.Nonce() // Unique per page
+ let sealedBox = try AES.GCM.seal(data, using: key, nonce: nonce)
+ return EncryptedPage(
+ header: "BZDB",
+ version: 0x02,
+ nonce: nonce,
+ tag: sealedBox.tag,
+ ciphertext: sealedBox.ciphertext,
+ padding: zerosTo4KB()
+ )
 }
 ```
 

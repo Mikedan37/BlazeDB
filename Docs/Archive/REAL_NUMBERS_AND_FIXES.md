@@ -27,21 +27,21 @@ Batch Fetch: 0.1-0.3ms → 3,333-10,000 ops/sec
 
 ```
 1. Index Persistence: Already optimized!
- - Uses `metadataFlushThreshold` (batches saves)
- - Saves every N operations, not every operation
+- Uses `metadataFlushThreshold` (batches saves)
+- Saves every N operations, not every operation
 
 2. Encoding: Already optimized!
- - Uses BlazeBinaryEncoder (5-10x faster than JSON)
- - Line 679: `BlazeBinaryEncoder.encode()`
+- Uses BlazeBinaryEncoder (5-10x faster than JSON)
+- Line 679: `BlazeBinaryEncoder.encode()`
 
-3. File I/O: PARTIALLY optimized 
- - Synchronous writes (blocks thread)
- - `fileHandle.compatSynchronize()` on every write
- - Can be optimized with async I/O
+3. File I/O: PARTIALLY optimized
+- Synchronous writes (blocks thread)
+- `fileHandle.compatSynchronize()` on every write
+- Can be optimized with async I/O
 
-4. Encryption: Minor bottleneck 
- - AES-GCM per page (~0.05-0.1ms)
- - Hardware accelerated, but still overhead
+4. Encryption: Minor bottleneck
+- AES-GCM per page (~0.05-0.1ms)
+- Hardware accelerated, but still overhead
 ```
 
 ---

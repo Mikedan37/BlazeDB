@@ -8,18 +8,38 @@
 import Foundation
 
 extension BlazeDBClient {
+
+    private func loadTriggerPersistenceLayout() throws -> StorageLayout {
+        try StorageLayout.loadSecure(
+            from: collection.metaURLPath,
+            signingKey: collection.encryptionKey,
+            password: collection.password,
+            salt: collection.kdfSalt,
+            allowUnsignedLayoutFallback: true
+        )
+    }
+
+    private func triggerMetadataEncoder() -> JSONEncoder {
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        return encoder
+    }
+
+    private func triggerMetadataDecoder() -> JSONDecoder {
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        return decoder
+    }
     
     /// Persist trigger definition to StorageLayout metaData
     internal func persistTriggerDefinition(_ definition: TriggerDefinition) throws {
-        // Use non-throwing legacy load helper so trigger metadata persistence is best-effort
-        // even when signed layout verification is unavailable in this code path.
-        let layout = try StorageLayout.load(from: collection.metaURLPath)
+        let layout = try loadTriggerPersistenceLayout()
         var updatedLayout = layout
         
         // Load existing trigger definitions from metaData
         var triggerDefinitions: [TriggerDefinition] = []
         if let triggersData = updatedLayout.metaData["_triggers"]?.dataValue,
-           let decoded = try? JSONDecoder().decode([TriggerDefinition].self, from: triggersData) {
+           let decoded = try? triggerMetadataDecoder().decode([TriggerDefinition].self, from: triggersData) {
             triggerDefinitions = decoded
         }
         
@@ -28,24 +48,28 @@ extension BlazeDBClient {
             triggerDefinitions.append(definition)
             
             // Encode and store in metaData
-            let encoded = try JSONEncoder().encode(triggerDefinitions)
+            let encoded = try triggerMetadataEncoder().encode(triggerDefinitions)
             updatedLayout.metaData["_triggers"] = .data(encoded)
             
-            try updatedLayout.save(to: collection.metaURLPath)
+            try updatedLayout.saveSecure(to: collection.metaURLPath, signingKey: collection.encryptionKey)
             BlazeLogger.debug("Persisted trigger definition: \(definition.name)")
         }
     }
     
     /// Reload triggers from StorageLayout metaData (called on DB open)
     internal func reloadTriggers() {
-        guard let layout = try? StorageLayout.load(from: collection.metaURLPath) else {
+        let layout: StorageLayout
+        do {
+            layout = try loadTriggerPersistenceLayout()
+        } catch {
+            BlazeLogger.warn("reloadTriggers: could not load layout from \(collection.metaURLPath): \(error.localizedDescription)")
             return
         }
         
         // Load trigger definitions from metaData
         var triggerCount = 0
         if let triggersData = layout.metaData["_triggers"]?.dataValue,
-           let decoded = try? JSONDecoder().decode([TriggerDefinition].self, from: triggersData) {
+           let decoded = try? triggerMetadataDecoder().decode([TriggerDefinition].self, from: triggersData) {
             triggerCount = decoded.count
         }
         
@@ -57,7 +81,11 @@ extension BlazeDBClient {
     /// Hook into onInsert to persist trigger definition
     /// This is called from the Triggers extension
     internal func persistTriggerOnInsert(_ definition: TriggerDefinition) {
-        try? persistTriggerDefinition(definition)
+        do {
+            try persistTriggerDefinition(definition)
+        } catch {
+            BlazeLogger.warn("persistTriggerOnInsert: failed for '\(definition.name)': \(error.localizedDescription)")
+        }
     }
 }
 #endif // !BLAZEDB_LINUX_CORE

@@ -30,19 +30,19 @@
 
 **JSON Approach:**
 1. `JSONEncoder.encode(record)` - Serializes to JSON string
- - String formatting: ~5-10ms per record
- - Escaping/quotes: ~2-5ms per record
- - Memory allocation: ~2x record size
+- String formatting: ~5-10ms per record
+- Escaping/quotes: ~2-5ms per record
+- Memory allocation: ~2x record size
 2. `JSONDecoder.decode(BlazeDataRecord.self)` - Parses JSON
- - Tokenization: ~3-8ms per record
- - Validation: ~1-3ms per record
- - Memory allocation: ~1x record size
+- Tokenization: ~3-8ms per record
+- Validation: ~1-3ms per record
+- Memory allocation: ~1x record size
 
 **Direct Approach:**
 1. `BlazeRecordEncoder` - Direct dictionary building
- - Direct field access: ~1-2ms per record
- - Type conversion: ~0.5-1ms per record
- - Memory allocation: ~1x record size
+- Direct field access: ~1-2ms per record
+- Type conversion: ~0.5-1ms per record
+- Memory allocation: ~1x record size
 
 **Time Saved:** ~10-20ms per record (40-50% faster)
 **Memory Saved:** ~1x record size (50% less)
@@ -51,19 +51,19 @@
 
 **JSON Approach:**
 1. Convert `BlazeDataRecord` to JSON dictionary
- - Field iteration: ~2-4ms per record
- - Type conversion: ~3-6ms per record
- - JSON serialization: ~5-10ms per record
+- Field iteration: ~2-4ms per record
+- Type conversion: ~3-6ms per record
+- JSON serialization: ~5-10ms per record
 2. `JSONDecoder.decode(Record.self)` - Parse JSON
- - Tokenization: ~3-8ms per record
- - Validation: ~1-3ms per record
- - Memory allocation: ~1x record size
+- Tokenization: ~3-8ms per record
+- Validation: ~1-3ms per record
+- Memory allocation: ~1x record size
 
 **Direct Approach:**
 1. `BlazeRecordDecoder` - Direct field access
- - Direct field access: ~1-2ms per record
- - Type conversion: ~0.5-1ms per record
- - Memory allocation: Minimal
+- Direct field access: ~1-2ms per record
+- Type conversion: ~0.5-1ms per record
+- Memory allocation: Minimal
 
 **Time Saved:** ~12-20ms per record (50-60% faster)
 **Memory Saved:** ~1x record size (50% less)

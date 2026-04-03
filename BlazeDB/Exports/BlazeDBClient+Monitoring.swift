@@ -348,7 +348,14 @@ extension BlazeDBClient {
         let sampleIDs = Array(collection.indexMap.keys.prefix(sampleSize))
         
         for id in sampleIDs {
-            guard let record = try? collection.fetch(id: id) else { continue }
+            let record: BlazeDataRecord
+            do {
+                guard let r = try collection.fetch(id: id) else { continue }
+                record = r
+            } catch {
+                BlazeLogger.warn("getSchemaInfo: could not fetch sample \(id): \(error.localizedDescription)")
+                continue
+            }
             
             for (key, value) in record.storage {
                 fieldSet.insert(key)

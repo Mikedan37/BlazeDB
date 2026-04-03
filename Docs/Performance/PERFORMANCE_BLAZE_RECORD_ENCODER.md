@@ -53,12 +53,12 @@ Record → BlazeRecordEncoder → BlazeDataRecord → BlazeBinary → File
 
 ### Overall Pipeline
 - **Store**: Record → BlazeDataRecord → BlazeBinary → File
- - Eliminates JSON encoding step
- - Direct conversion is faster
+- Eliminates JSON encoding step
+- Direct conversion is faster
 
 - **Load**: File → BlazeBinary → BlazeDataRecord → Record
- - Eliminates JSON decoding step
- - Direct conversion is faster
+- Eliminates JSON decoding step
+- Direct conversion is faster
 
 ## Crash Safety
 

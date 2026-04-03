@@ -16,29 +16,35 @@ import XCTest
 #endif
 
 final class ConcurrentJoinTests: XCTestCase {
-    var tempURL1: URL!
-    var tempURL2: URL!
-    var db1: BlazeDBClient!
-    var db2: BlazeDBClient!
+    private var tempURL1: URL?
+    private var tempURL2: URL?
+    private var db1: BlazeDBClient?
+    private var db2: BlazeDBClient?
     
-    override func setUp() {
-        super.setUp()
+    override func setUpWithError() throws {
+        try super.setUpWithError()
         tempURL1 = FileManager.default.temporaryDirectory
             .appendingPathComponent("Join1-\(UUID().uuidString).blazedb")
         tempURL2 = FileManager.default.temporaryDirectory
             .appendingPathComponent("Join2-\(UUID().uuidString).blazedb")
         
-        db1 = try! BlazeDBClient(name: "JoinDB1", fileURL: tempURL1, password: "TestPassword-123!")
-        db2 = try! BlazeDBClient(name: "JoinDB2", fileURL: tempURL2, password: "TestPassword-123!")
+        db1 = try BlazeDBClient(name: "JoinDB1", fileURL: try requireFixture(tempURL1), password: "TestPassword-123!")
+        db2 = try BlazeDBClient(name: "JoinDB2", fileURL: try requireFixture(tempURL2), password: "TestPassword-123!")
     }
     
     override func tearDown() {
         db1 = nil
         db2 = nil
-        try? FileManager.default.removeItem(at: tempURL1)
-        try? FileManager.default.removeItem(at: tempURL1.deletingPathExtension().appendingPathExtension("meta"))
-        try? FileManager.default.removeItem(at: tempURL2)
-        try? FileManager.default.removeItem(at: tempURL2.deletingPathExtension().appendingPathExtension("meta"))
+        if let u1 = tempURL1 {
+            try? FileManager.default.removeItem(at: u1)
+            try? FileManager.default.removeItem(at: u1.deletingPathExtension().appendingPathExtension("meta"))
+        }
+        if let u2 = tempURL2 {
+            try? FileManager.default.removeItem(at: u2)
+            try? FileManager.default.removeItem(at: u2.deletingPathExtension().appendingPathExtension("meta"))
+        }
+        tempURL1 = nil
+        tempURL2 = nil
         super.tearDown()
     }
     
@@ -51,7 +57,7 @@ final class ConcurrentJoinTests: XCTestCase {
         // Setup: Insert test data
         var userIDs: [UUID] = []
         for i in 0..<10 {
-            let id = try db2.insert(BlazeDataRecord([
+            let id = try requireFixture(db2).insert(BlazeDataRecord([
                 "name": .string("User \(i)"),
                 "email": .string("user\(i)@test.com")
             ]))
@@ -59,14 +65,14 @@ final class ConcurrentJoinTests: XCTestCase {
         }
         
         for i in 0..<50 {
-            _ = try db1.insert(BlazeDataRecord([
+            _ = try requireFixture(db1).insert(BlazeDataRecord([
                 "title": .string("Post \(i)"),
                 "author_id": .uuid(userIDs[i % 10])
             ]))
         }
         
-        try db1.persist()
-        try db2.persist()
+        try requireFixture(db1).persist()
+        try requireFixture(db2).persist()
         
         print("  Setup: 50 posts, 10 users")
         
@@ -78,8 +84,8 @@ final class ConcurrentJoinTests: XCTestCase {
         var allResults: [[JoinedRecord]] = []
         
         for iteration in 0..<10 {
-            let joined = try db1.join(
-                with: db2,
+            let joined = try requireFixture(db1).join(
+                with: try requireFixture(db2),
                 on: "author_id",
                 equals: "id",
                 type: .inner
@@ -105,14 +111,14 @@ final class ConcurrentJoinTests: XCTestCase {
         print("🔗 Testing JOIN during concurrent inserts...")
         
         // Setup initial data
-        let userId1 = try db2.insert(BlazeDataRecord(["name": .string("Alice")]))
-        let userId2 = try db2.insert(BlazeDataRecord(["name": .string("Bob")]))
+        let userId1 = try requireFixture(db2).insert(BlazeDataRecord(["name": .string("Alice")]))
+        let userId2 = try requireFixture(db2).insert(BlazeDataRecord(["name": .string("Bob")]))
         
-        _ = try db1.insert(BlazeDataRecord(["post": .string("Post 1"), "author": .uuid(userId1)]))
-        _ = try db1.insert(BlazeDataRecord(["post": .string("Post 2"), "author": .uuid(userId2)]))
+        _ = try requireFixture(db1).insert(BlazeDataRecord(["post": .string("Post 1"), "author": .uuid(userId1)]))
+        _ = try requireFixture(db1).insert(BlazeDataRecord(["post": .string("Post 2"), "author": .uuid(userId2)]))
         
-        try db1.persist()
-        try db2.persist()
+        try requireFixture(db1).persist()
+        try requireFixture(db2).persist()
         
         print("  Initial: 2 posts, 2 users")
         
@@ -126,7 +132,7 @@ final class ConcurrentJoinTests: XCTestCase {
         for threadID in 0..<3 {
             queue.async {
                 do {
-                    _ = try self.db1.insert(BlazeDataRecord([
+                    _ = try self.requireFixture(self.db1).insert(BlazeDataRecord([
                         "post": .string("Concurrent Post \(threadID)"),
                         "author": .uuid(userId1)
                     ]))
@@ -147,13 +153,13 @@ final class ConcurrentJoinTests: XCTestCase {
         
         // Verify JOINs work correctly after concurrent inserts
         for iteration in 0..<3 {
-            let joined = try db1.join(with: db2, on: "author", equals: "id")
+            let joined = try requireFixture(db1).join(with: try requireFixture(db2), on: "author", equals: "id")
             XCTAssertGreaterThanOrEqual(joined.count, 5, "JOIN iteration \(iteration) should find at least 5")
             print("  JOIN iteration \(iteration): \(joined.count) results")
         }
         
         // Verify no corruption
-        let finalJoin = try db1.join(with: db2, on: "author", equals: "id")
+        let finalJoin = try requireFixture(db1).join(with: try requireFixture(db2), on: "author", equals: "id")
         XCTAssertEqual(finalJoin.count, 5, "Should have exactly 5 posts after concurrent inserts")
         
         print("✅ JOIN during concurrent inserts works correctly")
@@ -168,7 +174,7 @@ final class ConcurrentJoinTests: XCTestCase {
         // Insert users
         var userIDs: [UUID] = []
         for i in 0..<10 {
-            let id = try db2.insert(BlazeDataRecord([
+            let id = try requireFixture(db2).insert(BlazeDataRecord([
                 "name": .string("User \(i)"),
                 "role": .string("developer")
             ]))
@@ -177,20 +183,20 @@ final class ConcurrentJoinTests: XCTestCase {
         
         // Insert many posts
         for i in 0..<recordCount {
-            _ = try db1.insert(BlazeDataRecord([
+            _ = try requireFixture(db1).insert(BlazeDataRecord([
                 "title": .string("Post \(i)"),
                 "author_id": .uuid(userIDs[i % 10])
             ]))
         }
         
-        try db1.persist()
-        try db2.persist()
+        try requireFixture(db1).persist()
+        try requireFixture(db2).persist()
         
         print("  Setup: \(recordCount) posts, 10 users")
         
         // Perform JOIN and measure performance
         let startTime = Date()
-        let joined = try db1.join(with: db2, on: "author_id", equals: "id", type: .inner)
+        let joined = try requireFixture(db1).join(with: try requireFixture(db2), on: "author_id", equals: "id", type: .inner)
         let duration = Date().timeIntervalSince(startTime)
         
         print("  Joined \(recordCount) posts with 10 users in \(String(format: "%.3f", duration))s")
@@ -210,37 +216,37 @@ final class ConcurrentJoinTests: XCTestCase {
         print("🔗 Testing JOIN during index operations...")
         
         // Setup data
-        let userId = try db2.insert(BlazeDataRecord(["name": .string("John")]))
+        let userId = try requireFixture(db2).insert(BlazeDataRecord(["name": .string("John")]))
         
         for i in 0..<20 {
-            _ = try db1.insert(BlazeDataRecord([
+            _ = try requireFixture(db1).insert(BlazeDataRecord([
                 "post": .string("Post \(i)"),
                 "author": .uuid(userId),
                 "category": .string("cat_\(i % 5)")
             ]))
         }
         
-        try db1.persist()
-        try db2.persist()
+        try requireFixture(db1).persist()
+        try requireFixture(db2).persist()
         
         // Create index on db1 (will rebuild)
-        try db1.collection.createIndex(on: "category")
+        try requireFixture(db1).collection.createIndex(on: "category")
         print("  Created index on db1")
         
         // NOTE: Running sequentially to avoid concurrent join race conditions
         
         // Perform JOIN
-        let joined = try db1.join(with: db2, on: "author", equals: "id")
+        let joined = try requireFixture(db1).join(with: try requireFixture(db2), on: "author", equals: "id")
         XCTAssertEqual(joined.count, 20, "JOIN should find all records")
         print("  JOIN found \(joined.count) records")
         
         // Verify index works
-        let indexed = try db1.collection.fetch(byIndexedField: "category", value: "cat_0")
+        let indexed = try requireFixture(db1).collection.fetch(byIndexedField: "category", value: "cat_0")
         XCTAssertGreaterThan(indexed.count, 0, "Index fetch should work")
         print("  Index fetch found \(indexed.count) records")
         
         // Verify JOIN still works after index operations
-        let joined2 = try db1.join(with: db2, on: "author", equals: "id")
+        let joined2 = try requireFixture(db1).join(with: try requireFixture(db2), on: "author", equals: "id")
         XCTAssertEqual(joined2.count, 20, "JOIN should still find all records")
         
         print("✅ JOIN during index operations works correctly")
@@ -251,34 +257,34 @@ final class ConcurrentJoinTests: XCTestCase {
         print("🔗 Testing different JOIN types (sequential due to concurrency limitations)...")
         
         // Setup
-        let user1 = try db2.insert(BlazeDataRecord(["name": .string("Alice")]))
-        let user2 = try db2.insert(BlazeDataRecord(["name": .string("Bob")]))
+        let user1 = try requireFixture(db2).insert(BlazeDataRecord(["name": .string("Alice")]))
+        let user2 = try requireFixture(db2).insert(BlazeDataRecord(["name": .string("Bob")]))
         
-        _ = try db1.insert(BlazeDataRecord(["post": .string("P1"), "author": .uuid(user1)]))
-        _ = try db1.insert(BlazeDataRecord(["post": .string("P2"), "author": .uuid(user2)]))
-        _ = try db1.insert(BlazeDataRecord(["post": .string("P3"), "author": .uuid(UUID())])) // No match
+        _ = try requireFixture(db1).insert(BlazeDataRecord(["post": .string("P1"), "author": .uuid(user1)]))
+        _ = try requireFixture(db1).insert(BlazeDataRecord(["post": .string("P2"), "author": .uuid(user2)]))
+        _ = try requireFixture(db1).insert(BlazeDataRecord(["post": .string("P3"), "author": .uuid(UUID())])) // No match
         
-        try db1.persist()
-        try db2.persist()
+        try requireFixture(db1).persist()
+        try requireFixture(db2).persist()
         
         // NOTE: Running sequentially instead of concurrently
         // Concurrent joins on the same collections can cause race conditions
         // where _fetchAllNoSync() returns duplicate IDs during iteration
         
         // Different JOIN types
-        let inner = try db1.join(with: db2, on: "author", equals: "id", type: .inner)
+        let inner = try requireFixture(db1).join(with: try requireFixture(db2), on: "author", equals: "id", type: .inner)
         XCTAssertEqual(inner.count, 2, "Inner JOIN should find 2")
         print("  ✓ Inner JOIN: \(inner.count) results")
         
-        let left = try db1.join(with: db2, on: "author", equals: "id", type: .left)
+        let left = try requireFixture(db1).join(with: try requireFixture(db2), on: "author", equals: "id", type: .left)
         XCTAssertEqual(left.count, 3, "Left JOIN should find 3 (including null)")
         print("  ✓ Left JOIN: \(left.count) results")
         
-        let right = try db1.join(with: db2, on: "author", equals: "id", type: .right)
+        let right = try requireFixture(db1).join(with: try requireFixture(db2), on: "author", equals: "id", type: .right)
         XCTAssertGreaterThanOrEqual(right.count, 2, "Right JOIN should find at least 2")
         print("  ✓ Right JOIN: \(right.count) results")
         
-        let full = try db1.join(with: db2, on: "author", equals: "id", type: .full)
+        let full = try requireFixture(db1).join(with: try requireFixture(db2), on: "author", equals: "id", type: .full)
         XCTAssertGreaterThanOrEqual(full.count, 3, "Full JOIN should find at least 3")
         print("  ✓ Full JOIN: \(full.count) results")
         

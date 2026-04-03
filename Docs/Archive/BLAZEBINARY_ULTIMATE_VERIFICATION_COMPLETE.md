@@ -396,40 +396,40 @@
 **Why:**
 
 1. **Mathematically Verified**
- - Size calculations match reality
- - Every byte has purpose
- - Encoding logic verified manually
+- Size calculations match reality
+- Every byte has purpose
+- Encoding logic verified manually
 
 2. **Byte-Level Verified**
- - 16 tests verify exact bytes
- - Header, type tags, values all correct
- - Manual construction matches encoder
+- 16 tests verify exact bytes
+- Header, type tags, values all correct
+- Manual construction matches encoder
 
 3. **Exhaustively Tested**
- - All boundaries tested (256+)
- - All combinations tested (206+)
- - All edge cases tested (50+)
+- All boundaries tested (256+)
+- All combinations tested (206+)
+- All edge cases tested (50+)
 
 4. **Stress Tested**
- - 100,000 round-trips (0 failures)
- - 10,000 concurrent ops (0 failures)
- - 10MB records work
- - 10,000 fields work
+- 100,000 round-trips (0 failures)
+- 10,000 concurrent ops (0 failures)
+- 10MB records work
+- 10,000 fields work
 
 5. **Corruption-Proof**
- - >95% single-byte corruption detected
- - >90% truncation detected
- - >90% bit flips detected
- - 100% invalid headers rejected
+- >95% single-byte corruption detected
+- >90% truncation detected
+- >90% bit flips detected
+- 100% invalid headers rejected
 
 6. **Battle-Tested**
- - The Gauntlet: 20/20 passed
- - The Ultimate Test: passed
- - THE FINAL BOSS: DEFEATED!
+- The Gauntlet: 20/20 passed
+- The Ultimate Test: passed
+- THE FINAL BOSS: DEFEATED!
 
 ---
 
-##  **BADGES OF HONOR:**
+## **BADGES OF HONOR:**
 
 - **Byte-Perfect**: Every byte verified
 - **Mathematically Sound**: Size calculations proven
@@ -457,7 +457,7 @@
 **Boundaries tested:** 256+ (ALL work!)
 **Corruption tests:** 1,000+ (>95% detected!)
 
-### **Verdict: BULLETPROOF!** 
+### **Verdict: BULLETPROOF!**
 
 **Grade: A+++ (Perfect reliability!)**
 

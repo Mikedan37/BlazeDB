@@ -8,18 +8,18 @@ import XCTest
 /// Comprehensive tests for data seeding and fixtures
 final class DataSeedingTests: XCTestCase {
     
-    var db: BlazeDBClient!
-    var tempURL: URL!
+    private var db: BlazeDBClient?
+    private var tempURL: URL?
     
-    override func setUp() {
-        super.setUp()
+    override func setUpWithError() throws {
+        try super.setUpWithError()
         
         tempURL = FileManager.default.temporaryDirectory
             .appendingPathComponent(UUID().uuidString + ".blazedb")
         
-        db = try! BlazeDBClient(
+        db = try BlazeDBClient(
             name: "SeedTest",
-            fileURL: tempURL,
+            fileURL: try requireFixture(tempURL),
             password: "TestPassword-123!"
         )
         
@@ -29,7 +29,7 @@ final class DataSeedingTests: XCTestCase {
     
     override func tearDown() {
         db = nil
-        try? FileManager.default.removeItem(at: tempURL)
+        try? FileManager.default.removeItem(at: try requireFixture(tempURL))
         FactoryRegistry.shared.clear()
         super.tearDown()
     }
@@ -53,18 +53,18 @@ final class DataSeedingTests: XCTestCase {
     // MARK: - Basic Seeding
     
     func testSeedBasic() throws {
-        let bugs = try db.seed(Bug.self, count: 10) { i in
+        let bugs = try requireFixture(db).seed(Bug.self, count: 10) { i in
             Bug(title: "Bug \(i)", priority: i % 5)
         }
         
         XCTAssertEqual(bugs.count, 10)
         
-        let all = try db.fetchAll(Bug.self)
+        let all = try requireFixture(db).fetchAll(Bug.self)
         XCTAssertEqual(all.count, 10)
     }
     
     func testSeedWithRandomData() throws {
-        let bugs = try db.seed(Bug.self, count: 20) { i in
+        let bugs = try requireFixture(db).seed(Bug.self, count: 20) { i in
             Bug(
                 title: "Bug \(i)",
                 priority: Int.random(in: 1...10),
@@ -83,7 +83,7 @@ final class DataSeedingTests: XCTestCase {
     }
     
     func testSeedDynamicRecords() throws {
-        let ids = try db.seed(count: 15) { i in
+        let ids = try requireFixture(db).seed(count: 15) { i in
             BlazeDataRecord {
                 "index" => i
                 "title" => "Record \(i)"
@@ -93,7 +93,7 @@ final class DataSeedingTests: XCTestCase {
         
         XCTAssertEqual(ids.count, 15)
         
-        let all = try db.fetchAll()
+        let all = try requireFixture(db).fetchAll()
         XCTAssertEqual(all.count, 15)
     }
     
@@ -102,12 +102,12 @@ final class DataSeedingTests: XCTestCase {
     @MainActor
     func testFactoryRegistration() throws {
         // Register factory
-        db.factory(Bug.self) { i in
+        try requireFixture(db).factory(Bug.self) { i in
             Bug(title: "Factory Bug \(i)", priority: 5, status: "open")
         }
         
         // Create using factory
-        let bugs = try db.create(Bug.self, count: 10)
+        let bugs = try requireFixture(db).create(Bug.self, count: 10)
         
         XCTAssertEqual(bugs.count, 10)
         XCTAssertTrue(bugs.allSatisfy { $0.priority == 5 })
@@ -116,37 +116,37 @@ final class DataSeedingTests: XCTestCase {
     
     @MainActor
     func testFactorySingleCreate() throws {
-        db.factory(Bug.self) { i in
+        try requireFixture(db).factory(Bug.self) { i in
             Bug(title: "Single Bug", priority: 1)
         }
         
-        let bug = try db.create(Bug.self)  // Create just one
+        let bug = try requireFixture(db).create(Bug.self)  // Create just one
         
         XCTAssertEqual(bug.title, "Single Bug")
         
-        let all = try db.fetchAll(Bug.self)
+        let all = try requireFixture(db).fetchAll(Bug.self)
         XCTAssertEqual(all.count, 1)
     }
     
     @MainActor
     func testFactoryWithoutRegistration() throws {
         // Should throw if no factory registered
-        XCTAssertThrowsError(try db.create(Bug.self))
+        XCTAssertThrowsError(try requireFixture(db).create(Bug.self))
     }
     
     @MainActor
     func testFactoryOverride() throws {
         // Register first factory
-        db.factory(Bug.self) { i in
+        try requireFixture(db).factory(Bug.self) { i in
             Bug(title: "First", priority: 1)
         }
         
         // Override with new factory
-        db.factory(Bug.self) { i in
+        try requireFixture(db).factory(Bug.self) { i in
             Bug(title: "Second", priority: 2)
         }
         
-        let bug = try db.create(Bug.self)
+        let bug = try requireFixture(db).create(Bug.self)
         XCTAssertEqual(bug.title, "Second")
         XCTAssertEqual(bug.priority, 2)
     }
@@ -167,7 +167,7 @@ final class DataSeedingTests: XCTestCase {
         
         try json.data(using: .utf8)?.write(to: jsonURL)
         
-        let bugs = try db.loadFixtures(Bug.self, from: jsonURL)
+        let bugs = try requireFixture(db).loadFixtures(Bug.self, from: jsonURL)
         
         XCTAssertEqual(bugs.count, 2)
         XCTAssertEqual(bugs[0].title, "Bug 1")
@@ -190,11 +190,11 @@ final class DataSeedingTests: XCTestCase {
         
         try json.data(using: .utf8)?.write(to: jsonURL)
         
-        let ids = try db.loadFixtures(from: jsonURL)
+        let ids = try requireFixture(db).loadFixtures(from: jsonURL)
         
         XCTAssertEqual(ids.count, 2)
         
-        let all = try db.fetchAll()
+        let all = try requireFixture(db).fetchAll()
         XCTAssertEqual(all.count, 2)
         
         try? FileManager.default.removeItem(at: jsonURL)
@@ -204,37 +204,37 @@ final class DataSeedingTests: XCTestCase {
     
     func testSnapshot() throws {
         // Insert initial data
-        _ = try db.seed(Bug.self, count: 5) { i in
+        _ = try requireFixture(db).seed(Bug.self, count: 5) { i in
             Bug(title: "Bug \(i)", priority: i)
         }
         
         // Create snapshot
-        let snapshot = try db.snapshot()
+        let snapshot = try requireFixture(db).snapshot()
         
         XCTAssertEqual(snapshot.records.count, 5)
     }
     
     func testSnapshotRestore() throws {
         // Insert initial data
-        _ = try db.seed(Bug.self, count: 3) { i in
+        _ = try requireFixture(db).seed(Bug.self, count: 3) { i in
             Bug(title: "Original \(i)", priority: i)
         }
         
         // Create snapshot
-        let snapshot = try db.snapshot()
+        let snapshot = try requireFixture(db).snapshot()
         
         // Modify database
-        _ = try db.seed(Bug.self, count: 5) { i in
+        _ = try requireFixture(db).seed(Bug.self, count: 5) { i in
             Bug(title: "New \(i)", priority: i)
         }
         
-        let beforeRestore = try db.fetchAll()
+        let beforeRestore = try requireFixture(db).fetchAll()
         XCTAssertEqual(beforeRestore.count, 8)  // 3 + 5
         
         // Restore snapshot
-        try db.restore(snapshot)
+        try requireFixture(db).restore(snapshot)
         
-        let afterRestore = try db.fetchAll(Bug.self)
+        let afterRestore = try requireFixture(db).fetchAll(Bug.self)
         XCTAssertEqual(afterRestore.count, 3)  // Back to original
         XCTAssertTrue(afterRestore.allSatisfy { $0.title.starts(with: "Original") })
     }
@@ -242,7 +242,7 @@ final class DataSeedingTests: XCTestCase {
     // MARK: - Random Data Generators
     
     func testRandomDataGenerators() throws {
-        let ids = try db.seedRandom(count: 20, fields: [
+        let ids = try requireFixture(db).seedRandom(count: 20, fields: [
             "title": { .string(RandomData.bugTitle()) },
             "priority": { .int(RandomData.priority()) },
             "status": { .string(RandomData.status()) },
@@ -253,7 +253,7 @@ final class DataSeedingTests: XCTestCase {
         
         XCTAssertEqual(ids.count, 20)
         
-        let all = try db.fetchAll()
+        let all = try requireFixture(db).fetchAll()
         XCTAssertEqual(all.count, 20)
         
         // Verify randomness (should have variety)
@@ -267,48 +267,48 @@ final class DataSeedingTests: XCTestCase {
     // MARK: - Async Operations
     
     func testAsyncSeed() async throws {
-        let bugs = try await db.seed(Bug.self, count: 10) { i in
+        let bugs = try await requireFixture(db).seed(Bug.self, count: 10) { i in
             Bug(title: "Async Bug \(i)", priority: i)
         }
         
         XCTAssertEqual(bugs.count, 10)
         
-        let all = try await db.fetchAll(Bug.self)
+        let all = try await requireFixture(db).fetchAll(Bug.self)
         XCTAssertEqual(all.count, 10)
     }
     
     @MainActor
     func testAsyncFactory() async throws {
-        db.factory(Bug.self) { i in
+        try requireFixture(db).factory(Bug.self) { i in
             Bug(title: "Async Factory \(i)", priority: 3)
         }
         
-        let bugs = try await db.create(Bug.self, count: 5)
+        let bugs = try await requireFixture(db).create(Bug.self, count: 5)
         XCTAssertEqual(bugs.count, 5)
     }
     
     func testAsyncSnapshot() async throws {
-        _ = try await db.seed(Bug.self, count: 3) { i in
+        _ = try await requireFixture(db).seed(Bug.self, count: 3) { i in
             Bug(title: "Test \(i)", priority: i)
         }
         
-        let snapshot = try await db.snapshot()
+        let snapshot = try await requireFixture(db).snapshot()
         XCTAssertEqual(snapshot.records.count, 3)
         
-        _ = try await db.seed(Bug.self, count: 5) { i in
+        _ = try await requireFixture(db).seed(Bug.self, count: 5) { i in
             Bug(title: "More \(i)", priority: i)
         }
         
-        try await db.restore(snapshot)
+        try await requireFixture(db).restore(snapshot)
         
-        let restored = try await db.fetchAll(Bug.self)
+        let restored = try await requireFixture(db).fetchAll(Bug.self)
         XCTAssertEqual(restored.count, 3)
     }
     
     // MARK: - Large Data Seeding
     
     func testSeedLargeDataset() throws {
-        let bugs = try db.seed(Bug.self, count: 1000) { i in
+        let bugs = try requireFixture(db).seed(Bug.self, count: 1000) { i in
             Bug(
                 title: "Bug \(i)",
                 priority: i % 10,
@@ -318,7 +318,7 @@ final class DataSeedingTests: XCTestCase {
         
         XCTAssertEqual(bugs.count, 1000)
         
-        let openCount = try db.query(Bug.self)
+        let openCount = try requireFixture(db).query(Bug.self)
             .where(\.status, equals: "open")
             .count()
         
@@ -327,31 +327,33 @@ final class DataSeedingTests: XCTestCase {
     
     func testSeedPerformance() throws {
         measure {
-            _ = try! db.seed(Bug.self, count: 100) { i in
-                Bug(title: "Perf Bug \(i)", priority: i % 10)
+            do {
+                _ = try requireFixture(db).seed(Bug.self, count: 100) { i in
+                    Bug(title: "Perf Bug \(i)", priority: i % 10)
+                }
+                _ = try requireFixture(db).deleteMany { _ in true }
+            } catch {
+                XCTFail("measure block failed: \(error)")
             }
-            
-            // Cleanup
-            _ = try! db.deleteMany { _ in true }
         }
     }
     
     // MARK: - Edge Cases
     
     func testSeedZeroCount() throws {
-        let bugs = try db.seed(Bug.self, count: 0) { i in
+        let bugs = try requireFixture(db).seed(Bug.self, count: 0) { i in
             Bug(title: "Should not create", priority: 1)
         }
         
         XCTAssertEqual(bugs.count, 0)
         
-        let all = try db.fetchAll()
+        let all = try requireFixture(db).fetchAll()
         XCTAssertEqual(all.count, 0)
     }
     
     func testSeedWithThrowingGenerator() throws {
         XCTAssertThrowsError(
-            try db.seed(Bug.self, count: 10) { i in
+            try requireFixture(db).seed(Bug.self, count: 10) { i in
                 if i == 5 {
                     throw NSError(domain: "test", code: 1)
                 }
@@ -361,15 +363,15 @@ final class DataSeedingTests: XCTestCase {
     }
     
     func testSnapshotEmptyDatabase() throws {
-        let snapshot = try db.snapshot()
+        let snapshot = try requireFixture(db).snapshot()
         XCTAssertEqual(snapshot.records.count, 0)
         
         // Restore empty snapshot
-        _ = try db.insert(BlazeDataRecord { "title" => "Test" })
+        _ = try requireFixture(db).insert(BlazeDataRecord { "title" => "Test" })
         
-        try db.restore(snapshot)
+        try requireFixture(db).restore(snapshot)
         
-        let all = try db.fetchAll()
+        let all = try requireFixture(db).fetchAll()
         XCTAssertEqual(all.count, 0)
     }
 }

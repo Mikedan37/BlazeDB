@@ -16,29 +16,29 @@ import XCTest
 
 final class QueryErgonomicsTests: XCTestCase {
     
-    var tempURL: URL!
-    var db: BlazeDBClient!
+    private var tempURL: URL?
+    private var db: BlazeDBClient?
     let password = "TestPassword-123!"
     
     override func setUpWithError() throws {
         tempURL = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".blazedb")
-        db = try BlazeDBClient(name: "test", fileURL: tempURL, password: password)
+        db = try BlazeDBClient(name: "test", fileURL: try requireFixture(tempURL), password: password)
         
         // Insert test records
-        try db.insert(BlazeDataRecord(["name": .string("Alice"), "age": .int(30), "active": .bool(true)]))
-        try db.insert(BlazeDataRecord(["name": .string("Bob"), "age": .int(25), "active": .bool(false)]))
-        try db.insert(BlazeDataRecord(["name": .string("Charlie"), "age": .int(35), "role": .string("admin")]))
+        try requireFixture(db).insert(BlazeDataRecord(["name": .string("Alice"), "age": .int(30), "active": .bool(true)]))
+        try requireFixture(db).insert(BlazeDataRecord(["name": .string("Bob"), "age": .int(25), "active": .bool(false)]))
+        try requireFixture(db).insert(BlazeDataRecord(["name": .string("Charlie"), "age": .int(35), "role": .string("admin")]))
     }
     
     override func tearDownWithError() throws {
-        try? FileManager.default.removeItem(at: tempURL)
+        try? FileManager.default.removeItem(at: try requireFixture(tempURL))
     }
     
     // MARK: - Field Name Validation
     
     func testInvalidSortField_ProvidesSuggestions() throws {
         do {
-            _ = try db.query()
+            _ = try requireFixture(db).query()
                 .orderBy("agge", descending: false)  // Typo: "agge" instead of "age"
                 .execute()
             XCTFail("Should have thrown error for invalid sort field")
@@ -56,7 +56,7 @@ final class QueryErgonomicsTests: XCTestCase {
     
     func testInvalidGroupByField_FailsWithHelpfulMessage() throws {
         do {
-            _ = try db.query()
+            _ = try requireFixture(db).query()
                 .groupBy("namme")  // Typo: "namme" instead of "name"
                 .count()
                 .execute()
@@ -73,13 +73,13 @@ final class QueryErgonomicsTests: XCTestCase {
     
     func testValidFields_Succeed() throws {
         // Valid sort field
-        let result1 = try db.query()
+        let result1 = try requireFixture(db).query()
             .orderBy("age", descending: false)
             .execute()
         XCTAssertNotNil(result1)
         
         // Valid groupBy field
-        let result2 = try db.query()
+        let result2 = try requireFixture(db).query()
             .groupBy("name")
             .count()
             .execute()
@@ -91,7 +91,7 @@ final class QueryErgonomicsTests: XCTestCase {
     func testErrorMessagesAreStable() throws {
         // Test that error messages don't change unexpectedly
         do {
-            _ = try db.query()
+            _ = try requireFixture(db).query()
                 .orderBy("nonexistent", descending: false)
                 .execute()
             XCTFail("Should have thrown error")
@@ -105,7 +105,7 @@ final class QueryErgonomicsTests: XCTestCase {
     
     func testErrorMessagesIncludeGuidance() throws {
         do {
-            _ = try db.query()
+            _ = try requireFixture(db).query()
                 .groupBy("invalid_field_xyz")
                 .count()
                 .execute()

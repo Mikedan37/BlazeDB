@@ -10,24 +10,25 @@ import XCTest
 #endif
 
 final class BlazeTransactionTests: XCTestCase {
-    var dbURL: URL!
-    var db: BlazeDBClient!
+    private var dbURL: URL?
+    private var db: BlazeDBClient?
     private let testPassword = "TxnPass-1234!"
 
     override func setUpWithError() throws {
         BlazeDBClient.clearCachedKey()
         let tempDir = FileManager.default.temporaryDirectory
         let testID = UUID().uuidString
-        dbURL = tempDir.appendingPathComponent("testdb-\(testID).blz")
-        try? FileManager.default.removeItem(at: dbURL)
-        try? FileManager.default.removeItem(at: dbURL.deletingPathExtension().appendingPathExtension("meta"))
-        try? FileManager.default.removeItem(at: dbURL.deletingPathExtension().appendingPathExtension("wal"))
-        db = try BlazeDBClient(name: "testdb-\(testID)", fileURL: dbURL, password: testPassword)
+        let url = tempDir.appendingPathComponent("testdb-\(testID).blz")
+        dbURL = url
+        try? FileManager.default.removeItem(at: url)
+        try? FileManager.default.removeItem(at: url.deletingPathExtension().appendingPathExtension("meta"))
+        try? FileManager.default.removeItem(at: url.deletingPathExtension().appendingPathExtension("wal"))
+        db = try BlazeDBClient(name: "testdb-\(testID)", fileURL: url, password: testPassword)
     }
     
     override func tearDownWithError() throws {
-        if let dbURL {
-            cleanupBlazeDB(&db, at: dbURL)
+        if let url = dbURL {
+            cleanupBlazeDB(&db, at: url)
         }
         BlazeDBClient.clearCachedKey()
     }
@@ -36,42 +37,42 @@ final class BlazeTransactionTests: XCTestCase {
         let id1 = UUID()
         // Insert data
         let record = BlazeDataRecord(["message": .string("First")])
-        try db.insert(record, id: id1)
-        let readBack: BlazeDataRecord? = try db.fetch(id: id1)
+        try requireFixture(db).insert(record, id: id1)
+        let readBack: BlazeDataRecord? = try requireFixture(db).fetch(id: id1)
         XCTAssertEqual(readBack?.storage["message"]?.stringValue, "First")
 
         // Flush metadata before reopening (only 1 record, < 100 threshold)
-        try db.collection.persist()
-        try db.close()
+        try requireFixture(db).collection.persist()
+        try requireFixture(db).close()
         db = nil
 
         // Reinitialize db to test persistence
-        db = try BlazeDBClient(name: "testdb-reopen", fileURL: dbURL, password: testPassword)
-        let persisted: BlazeDataRecord? = try db.fetch(id: id1)
+        db = try BlazeDBClient(name: "testdb-reopen", fileURL: try requireFixture(dbURL), password: testPassword)
+        let persisted: BlazeDataRecord? = try requireFixture(db).fetch(id: id1)
         XCTAssertEqual(persisted?.storage["message"]?.stringValue, "First")
 
         // Overwrite with new data
         let updatedRecord = BlazeDataRecord(["message": .string("Second")])
-        try db.update(id: id1, with: updatedRecord)
+        try requireFixture(db).update(id: id1, with: updatedRecord)
 
         // Flush metadata again before final check
-        try db.collection.persist()
-        try db.close()
+        try requireFixture(db).collection.persist()
+        try requireFixture(db).close()
         db = nil
 
         // Final check after overwrite
-        db = try BlazeDBClient(name: "testdb-reopen-2", fileURL: dbURL, password: testPassword)
-        let finalData: BlazeDataRecord? = try db.fetch(id: id1)
+        db = try BlazeDBClient(name: "testdb-reopen-2", fileURL: try requireFixture(dbURL), password: testPassword)
+        let finalData: BlazeDataRecord? = try requireFixture(db).fetch(id: id1)
         XCTAssertEqual(finalData?.storage["message"]?.stringValue, "Second")
     }
 
     func testRollbackDiscardsChanges() throws {
         let id2 = UUID()
         let record = BlazeDataRecord(["message": .string("Temp")])
-        try db.insert(record, id: id2)
-        try db.delete(id: id2)
+        try requireFixture(db).insert(record, id: id2)
+        try requireFixture(db).delete(id: id2)
 
-        let fetched: BlazeDataRecord? = try db.fetch(id: id2)
+        let fetched: BlazeDataRecord? = try requireFixture(db).fetch(id: id2)
         XCTAssertNil(fetched, "Record should be nil after delete (rollback confirmed)")
     }
 
@@ -86,7 +87,7 @@ final class BlazeTransactionTests: XCTestCase {
 
         DispatchQueue.global().async {
             do {
-                try self.db.insert(record1, id: id3)
+                try self.requireFixture(self.db).insert(record1, id: id3)
                 expectation1.fulfill()
             } catch {
                 XCTFail("Write Data1 failed: \(error)")
@@ -95,7 +96,7 @@ final class BlazeTransactionTests: XCTestCase {
 
         DispatchQueue.global().async {
             do {
-                try self.db.insert(record2, id: id4)
+                try self.requireFixture(self.db).insert(record2, id: id4)
                 expectation2.fulfill()
             } catch {
                 XCTFail("Write Data2 failed: \(error)")
@@ -105,8 +106,8 @@ final class BlazeTransactionTests: XCTestCase {
         wait(for: [expectation1, expectation2], timeout: 5.0)
 
         // Verify data
-        let readData1: BlazeDataRecord? = try db.fetch(id: id3)
-        let readData2: BlazeDataRecord? = try db.fetch(id: id4)
+        let readData1: BlazeDataRecord? = try requireFixture(db).fetch(id: id3)
+        let readData2: BlazeDataRecord? = try requireFixture(db).fetch(id: id4)
         XCTAssertEqual(readData1?.storage["message"]?.stringValue, "Data1")
         XCTAssertEqual(readData2?.storage["message"]?.stringValue, "Data2")
     }

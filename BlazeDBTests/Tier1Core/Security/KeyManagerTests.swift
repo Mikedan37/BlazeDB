@@ -21,7 +21,7 @@ import Crypto
 final class KeyManagerTests: XCTestCase {
     
     let testText = "🔥 Blaze it. Don't lose it.".data(using: .utf8)!
-    var tempFile: URL!
+    private var tempFile: URL?
     var store: PageStore!
 
     override func setUpWithError() throws {
@@ -30,13 +30,13 @@ final class KeyManagerTests: XCTestCase {
     }
 
     override func tearDownWithError() throws {
-        try? FileManager.default.removeItem(at: tempFile)
+        try? FileManager.default.removeItem(at: try requireFixture(tempFile))
     }
 
 
     func testPasswordKeyEncryptDecrypt() throws {
         let key = try KeyManager.getKey(from: .password("my-secure-password-🔥"))
-        let store = try PageStore(fileURL: tempFile, key: key)
+        let store = try PageStore(fileURL: try requireFixture(tempFile), key: key)
 
         try store.writePage(index: 1, plaintext: testText)
         let readBack = try store.readPage(index: 1)

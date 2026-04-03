@@ -7,7 +7,7 @@ _Generated: 2026-03-13T23:53:34+00:00_
 ### BlazeDB real measurement input
 - Source: `Docs/Benchmarks/limits_measurements.json`
 - Command:
-  - `cd BlazeDBExtraTests && BLAZEDB_REAL_LIMIT_TARGET_GIB=1.0 BLAZEDB_REAL_LIMIT_PAYLOAD_BYTES=1000000 BLAZEDB_REAL_LIMIT_BATCH_SIZE=8 swift test --filter "BlazeDB_Tier3_Heavy.RealLimitsMeasurementTests/testMeasure_RealLimitsAndGrowth"`
+- `cd BlazeDBExtraTests && BLAZEDB_REAL_LIMIT_TARGET_GIB=1.0 BLAZEDB_REAL_LIMIT_PAYLOAD_BYTES=1000000 BLAZEDB_REAL_LIMIT_BATCH_SIZE=8 swift test --filter "BlazeDB_Tier3_Heavy.RealLimitsMeasurementTests/testMeasure_RealLimitsAndGrowth"`
 
 ### SQLite comparison input (matched to BlazeDB)
 - Target DB size: `1.003 GiB`

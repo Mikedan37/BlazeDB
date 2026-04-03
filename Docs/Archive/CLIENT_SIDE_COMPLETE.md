@@ -99,32 +99,32 @@ try await bugsDB.enableSync(
 
 ## **CLIENT-SIDE FEATURES:**
 
- **Local Sync**
+**Local Sync**
 - Unix Domain Socket
 - <1ms latency
 - In-memory relay
 - Bidirectional/read-only/write-only
 
- **Cross-App Sync**
+**Cross-App Sync**
 - App Groups support
 - File coordination
 - Export policies
 - Permission model
 
- **Secure Connection**
+**Secure Connection**
 - Diffie-Hellman (P256)
 - HKDF key derivation
 - AES-256-GCM encryption
 - Perfect Forward Secrecy
 - Challenge-response
 
- **Operation Log**
+**Operation Log**
 - Crash-safe persistence
 - Replay on reconnect
 - ACK tracking
 - Idempotent operations
 
- **Topology Management**
+**Topology Management**
 - Multi-DB coordination
 - Connection management
 - Graph visualization
@@ -143,11 +143,11 @@ CLIENT-SIDE: COMPLETE
  Ready for cross-app sync
  Ready for server sync (when server is ready)
 
-SERVER-SIDE: ⏳ PENDING
+SERVER-SIDE: PENDING
 
-⏳ Vapor server (later)
-⏳ WebSocket handlers (later)
-⏳ Database routing (later)
+ Vapor server (later)
+ WebSocket handlers (later)
+ Database routing (later)
 
 CLIENT IS READY!
 ```
@@ -170,7 +170,7 @@ CLIENT IS READY!
 - Testing local sync
 - Testing cross-app sync
 - Building example apps
-- ⏳ Server implementation (later)
+- Server implementation (later)
 
 ---
 

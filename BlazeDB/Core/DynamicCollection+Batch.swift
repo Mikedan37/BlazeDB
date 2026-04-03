@@ -47,17 +47,7 @@ extension DynamicCollection {
             var seenIDs = Set<UUID>()
             
             // Load layout at start to access deletedPages for page reuse
-            var layout: StorageLayout
-            do {
-                layout = try StorageLayout.loadSecure(
-                    from: metaURL,
-                    signingKey: encryptionKey,
-                    password: password,
-                    salt: kdfSalt  // Use inline salt since defaultSalt is fileprivate
-                )
-            } catch {
-                layout = try StorageLayout.load(from: metaURL)
-            }
+            var layout = try loadLayoutForMutation()
             
             // MVCC Path: Transfer deleted pages from layout to pageGC for reuse
             // This ensures pages deleted in legacy mode or persisted to disk are available for MVCC reuse

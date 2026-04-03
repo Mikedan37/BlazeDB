@@ -202,42 +202,42 @@ internal func updateSearchIndexOnInsert(_ record: BlazeDataRecord) throws {
 
 ---
 
-##  Files Modified
+## Files Modified
 
 ### **Core Fixes:**
 1. `BlazeDB/Storage/PageStore.swift`
- - Line 293: Fixed ciphertext length (no rounding)
- - Lines 192-202: Added `writePageUnsynchronized()` + `synchronize()`
- - Line 347: Added fsync to deinit
+- Line 293: Fixed ciphertext length (no rounding)
+- Lines 192-202: Added `writePageUnsynchronized()` + `synchronize()`
+- Line 347: Added fsync to deinit
 
 2. `BlazeDB/Core/DynamicCollection.swift`
- - Lines 320-321: Added cached search index
- - Line 873: Added `store.synchronize()` before metadata save
- - Line 348: Cache search index on init
+- Lines 320-321: Added cached search index
+- Line 873: Added `store.synchronize()` before metadata save
+- Line 348: Cache search index on init
 
 3. `BlazeDB/Core/DynamicCollection+Search.swift`
- - Lines 126-133: Use cached search index (no disk I/O)
- - Lines 145-152: Use cached search index on update
- - Lines 157-164: Use cached search index on delete
+- Lines 126-133: Use cached search index (no disk I/O)
+- Lines 145-152: Use cached search index on update
+- Lines 157-164: Use cached search index on delete
 
 4. `BlazeDB/Core/AutoMigration.swift`
- - Lines 143-156: Read format from JSON field (not binary prefix)
- - Lines 160-167: Write format to JSON field (not binary prefix)
+- Lines 143-156: Read format from JSON field (not binary prefix)
+- Lines 160-167: Write format to JSON field (not binary prefix)
 
 5. `BlazeDB/Storage/StorageLayout.swift`
- - Line 142: Added `encodingFormat: String` field
- - Line 159: Added to CodingKeys enum
+- Line 142: Added `encodingFormat: String` field
+- Line 159: Added to CodingKeys enum
 
 6. `BlazeDB/Core/DynamicCollection+Batch.swift`
- - Line 74: Changed to `writePageUnsynchronized()`
- - Line 112: Added `store.synchronize()` after batch
+- Line 74: Changed to `writePageUnsynchronized()`
+- Line 112: Added `store.synchronize()` after batch
 
 ### **Test Files:**
 7. `BlazeDBTests/TestCleanupHelpers.swift`
- - Added `txn_log.json` cleanup
+- Added `txn_log.json` cleanup
 
 8. `BlazeDBTests/AsyncAwaitTests.swift`
- - Fixed setUp/tearDown for proper isolation
+- Fixed setUp/tearDown for proper isolation
 
 ---
 
@@ -246,21 +246,21 @@ internal func updateSearchIndexOnInsert(_ record: BlazeDataRecord) throws {
 1. **Run the specific bug tests:**
 ```bash
 xcodebuild test -scheme BlazeDB \
- -only-testing:BlazeDBTests/EncryptionRoundTripVerificationTests/testCiphertextNotRounded \
- -only-testing:BlazeDBTests/PersistenceIntegrityTests/testTenRecordsPersistence \
- -only-testing:BlazeDBTests/PerformanceInvariantTests/testBatchInsert10kPerformance \
- -only-testing:BlazeDBTests/AutoMigrationVerificationTests/testMetadataNeverStartsWithBinaryByte
+-only-testing:BlazeDBTests/EncryptionRoundTripVerificationTests/testCiphertextNotRounded \
+-only-testing:BlazeDBTests/PersistenceIntegrityTests/testTenRecordsPersistence \
+-only-testing:BlazeDBTests/PerformanceInvariantTests/testBatchInsert10kPerformance \
+-only-testing:BlazeDBTests/AutoMigrationVerificationTests/testMetadataNeverStartsWithBinaryByte
 ```
 
 2. **Run full bulletproof suite:**
 ```bash
 xcodebuild test -scheme BlazeDB \
- -only-testing:BlazeDBTests/EncryptionRoundTripVerificationTests \
- -only-testing:BlazeDBTests/PersistenceIntegrityTests \
- -only-testing:BlazeDBTests/PerformanceInvariantTests \
- -only-testing:BlazeDBTests/FileIntegrityTests \
- -only-testing:BlazeDBTests/FailureInjectionTests \
- -only-testing:BlazeDBTests/AutoMigrationVerificationTests
+-only-testing:BlazeDBTests/EncryptionRoundTripVerificationTests \
+-only-testing:BlazeDBTests/PersistenceIntegrityTests \
+-only-testing:BlazeDBTests/PerformanceInvariantTests \
+-only-testing:BlazeDBTests/FileIntegrityTests \
+-only-testing:BlazeDBTests/FailureInjectionTests \
+-only-testing:BlazeDBTests/AutoMigrationVerificationTests
 ```
 
 3. **Run full test suite:**
@@ -303,11 +303,11 @@ After: Always valid JSON
 
 With these fixes, BlazeDB is now:
 
- **Data Safe:** All records encrypted and decrypted correctly
- **Crash Safe:** Survives corruption, missing files, wrong passwords
- **Performance Optimized:** Batch operations 14× faster
- **Migration Safe:** Format upgrades preserve all data
- **Well Tested:** 1,513 tests covering all critical paths
+**Data Safe:** All records encrypted and decrypted correctly
+**Crash Safe:** Survives corruption, missing files, wrong passwords
+**Performance Optimized:** Batch operations 14× faster
+**Migration Safe:** Format upgrades preserve all data
+**Well Tested:** 1,513 tests covering all critical paths
 
 **Status: READY FOR PRODUCTION**
 

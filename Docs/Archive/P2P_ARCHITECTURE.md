@@ -36,9 +36,9 @@ RESULT: Bidirectional sync, but asymmetric connection (one server, one client)
 CONNECTION:
 
 Device A (Server) ← TCP Connection → Device B (Client)
-  
-  
-  E2E Encryption 
+
+
+ E2E Encryption
 
 SYNC (Bidirectional):
 
@@ -74,7 +74,7 @@ DEVICE B (iOS):
 CONNECTION:
 
 Device A ← Connection 1 → Device B
-Device A  Connection 2 → Device B
+Device A Connection 2 → Device B
 
 SYNC:
 

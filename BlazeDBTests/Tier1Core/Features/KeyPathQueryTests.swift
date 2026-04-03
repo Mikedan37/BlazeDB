@@ -8,25 +8,25 @@ import XCTest
 /// Comprehensive tests for type-safe KeyPath queries
 final class KeyPathQueryTests: XCTestCase {
     
-    var db: BlazeDBClient!
-    var tempURL: URL!
+    private var db: BlazeDBClient?
+    private var tempURL: URL?
     
-    override func setUp() {
-        super.setUp()
+    override func setUpWithError() throws {
+        try super.setUpWithError()
         
         tempURL = FileManager.default.temporaryDirectory
             .appendingPathComponent(UUID().uuidString + ".blazedb")
         
-        db = try! BlazeDBClient(
+        db = try BlazeDBClient(
             name: "KeyPathTest",
-            fileURL: tempURL,
+            fileURL: try requireFixture(tempURL),
             password: "TestPassword-123!"
         )
     }
     
     override func tearDown() {
         db = nil
-        try? FileManager.default.removeItem(at: tempURL)
+        try? FileManager.default.removeItem(at: try requireFixture(tempURL))
         super.tearDown()
     }
     
@@ -69,9 +69,9 @@ final class KeyPathQueryTests: XCTestCase {
             Bug(title: "C", priority: 3, status: "open")
         ]
         
-        _ = try db.insertMany(bugs)
+        _ = try requireFixture(db).insertMany(bugs)
         
-        let openBugs = try db.query(Bug.self)
+        let openBugs = try requireFixture(db).query(Bug.self)
             .where(\.status, equals: "open")  // KeyPath!
             .all()
         
@@ -86,9 +86,9 @@ final class KeyPathQueryTests: XCTestCase {
             Bug(title: "Medium", priority: 5)
         ]
         
-        _ = try db.insertMany(bugs)
+        _ = try requireFixture(db).insertMany(bugs)
         
-        let highPriority = try db.query(Bug.self)
+        let highPriority = try requireFixture(db).query(Bug.self)
             .where(\.priority, equals: 10)  // KeyPath!
             .all()
         
@@ -102,9 +102,9 @@ final class KeyPathQueryTests: XCTestCase {
             Bug(title: "Inactive", priority: 2, isActive: false)
         ]
         
-        _ = try db.insertMany(bugs)
+        _ = try requireFixture(db).insertMany(bugs)
         
-        let active = try db.query(Bug.self)
+        let active = try requireFixture(db).query(Bug.self)
             .where(\.isActive, equals: true)  // KeyPath!
             .all()
         
@@ -121,9 +121,9 @@ final class KeyPathQueryTests: XCTestCase {
             Bug(title: "High", priority: 10)
         ]
         
-        _ = try db.insertMany(bugs)
+        _ = try requireFixture(db).insertMany(bugs)
         
-        let filtered = try db.query(Bug.self)
+        let filtered = try requireFixture(db).query(Bug.self)
             .where(\.priority, greaterThan: 3)  // KeyPath!
             .all()
         
@@ -138,9 +138,9 @@ final class KeyPathQueryTests: XCTestCase {
             Bug(title: "C", priority: 10)
         ]
         
-        _ = try db.insertMany(bugs)
+        _ = try requireFixture(db).insertMany(bugs)
         
-        let filtered = try db.query(Bug.self)
+        let filtered = try requireFixture(db).query(Bug.self)
             .where(\.priority, lessThan: 6)  // KeyPath!
             .all()
         
@@ -158,18 +158,18 @@ final class KeyPathQueryTests: XCTestCase {
             Bug(title: "New", priority: 2, createdAt: tomorrow)
         ]
         
-        _ = try db.insertMany(bugs)
+        _ = try requireFixture(db).insertMany(bugs)
         
         // KeyPath Date filtering currently has platform-dependent behavior for Date
         // serialization precision. Ensure query path is valid, then assert correctness
         // via closure predicate fallback.
-        let recent = try db.query(Bug.self)
+        let recent = try requireFixture(db).query(Bug.self)
             .where(\.createdAt, greaterThan: now)  // KeyPath date comparison
             .all()
 
         XCTAssertLessThanOrEqual(recent.count, 2)
 
-        let closureRecent = try db.query(Bug.self)
+        let closureRecent = try requireFixture(db).query(Bug.self)
             .all()
             .filter { $0.createdAt > now }
         XCTAssertEqual(closureRecent.count, 1, "Closure-based date comparison should return tomorrow record")
@@ -186,9 +186,9 @@ final class KeyPathQueryTests: XCTestCase {
             Bug(title: "D", priority: 7, status: "open")
         ]
         
-        _ = try db.insertMany(bugs)
+        _ = try requireFixture(db).insertMany(bugs)
         
-        let filtered = try db.query(Bug.self)
+        let filtered = try requireFixture(db).query(Bug.self)
             .where(\.status, equals: "open")      // KeyPath 1
             .where(\.priority, greaterThan: 3)    // KeyPath 2
             .all()
@@ -206,9 +206,9 @@ final class KeyPathQueryTests: XCTestCase {
             Bug(title: "B", priority: 2)
         ]
         
-        _ = try db.insertMany(bugs)
+        _ = try requireFixture(db).insertMany(bugs)
         
-        let sorted = try db.query(Bug.self)
+        let sorted = try requireFixture(db).query(Bug.self)
             .orderBy(\.priority, descending: false)  // KeyPath!
             .all()
         
@@ -224,9 +224,9 @@ final class KeyPathQueryTests: XCTestCase {
             Bug(title: "Medium", priority: 5)
         ]
         
-        _ = try db.insertMany(bugs)
+        _ = try requireFixture(db).insertMany(bugs)
         
-        let sorted = try db.query(Bug.self)
+        let sorted = try requireFixture(db).query(Bug.self)
             .orderBy(\.priority, descending: true)  // KeyPath!
             .all()
         
@@ -246,9 +246,9 @@ final class KeyPathQueryTests: XCTestCase {
             Bug(title: "E", priority: 3, status: "open")
         ]
         
-        _ = try db.insertMany(bugs)
+        _ = try requireFixture(db).insertMany(bugs)
         
-        let result = try db.query(Bug.self)
+        let result = try requireFixture(db).query(Bug.self)
             .where(\.status, equals: "open")
             .where(\.priority, greaterThan: 3)
             .orderBy(\.priority, descending: true)
@@ -268,9 +268,9 @@ final class KeyPathQueryTests: XCTestCase {
             Bug(title: "B", priority: 5)
         ]
         
-        _ = try db.insertMany(bugs)
+        _ = try requireFixture(db).insertMany(bugs)
         
-        let first = try db.query(Bug.self)
+        let first = try requireFixture(db).query(Bug.self)
             .where(\.priority, greaterThan: 3)
             .first()
         
@@ -280,15 +280,15 @@ final class KeyPathQueryTests: XCTestCase {
     
     func testKeyPathExists() throws {
         let bug = Bug(title: "Test", priority: 10)
-        _ = try db.insert(bug)
+        _ = try requireFixture(db).insert(bug)
         
-        let exists = try db.query(Bug.self)
+        let exists = try requireFixture(db).query(Bug.self)
             .where(\.priority, equals: 10)
             .exists()
         
         XCTAssertTrue(exists)
         
-        let notExists = try db.query(Bug.self)
+        let notExists = try requireFixture(db).query(Bug.self)
             .where(\.priority, equals: 99)
             .exists()
         
@@ -302,9 +302,9 @@ final class KeyPathQueryTests: XCTestCase {
             Bug(title: "C", priority: 10)
         ]
         
-        _ = try db.insertMany(bugs)
+        _ = try requireFixture(db).insertMany(bugs)
         
-        let count = try db.query(Bug.self)
+        let count = try requireFixture(db).query(Bug.self)
             .where(\.priority, greaterThan: 3)
             .count()
         
@@ -320,9 +320,9 @@ final class KeyPathQueryTests: XCTestCase {
             Bug(title: "C", priority: 10, isActive: true)
         ]
         
-        _ = try db.insertMany(bugs)
+        _ = try requireFixture(db).insertMany(bugs)
         
-        let filtered = try db.query(Bug.self)
+        let filtered = try requireFixture(db).query(Bug.self)
             .filter { bug in
                 bug.priority > 3 && bug.isActive
             }
@@ -341,9 +341,9 @@ final class KeyPathQueryTests: XCTestCase {
             Bug(title: "C", priority: 10)
         ]
         
-        _ = try await db.insertMany(bugs)
+        _ = try await requireFixture(db).insertMany(bugs)
         
-        let filtered = try await db.query(Bug.self)
+        let filtered = try await requireFixture(db).query(Bug.self)
             .where(\.priority, greaterThan: 3)
             .orderBy(\.priority, descending: true)
             .all()
@@ -355,9 +355,9 @@ final class KeyPathQueryTests: XCTestCase {
     
     func testKeyPathAsyncFirst() async throws {
         let bug = Bug(title: "Test", priority: 5)
-        _ = try await db.insert(bug)
+        _ = try await requireFixture(db).insert(bug)
         
-        let found = try await db.query(Bug.self)
+        let found = try await requireFixture(db).query(Bug.self)
             .where(\.priority, equals: 5)
             .first()
         
@@ -369,18 +369,18 @@ final class KeyPathQueryTests: XCTestCase {
     
     func testKeyPathPerformance() throws {
         let bugs = (0..<100).map { Bug(title: "Bug \($0)", priority: $0 % 10) }
-        _ = try db.insertMany(bugs)
+        _ = try requireFixture(db).insertMany(bugs)
         
         // Measure KeyPath query
         let keyPathStart = Date()
-        _ = try db.query(Bug.self)
+        _ = try requireFixture(db).query(Bug.self)
             .where(\.priority, greaterThan: 5)
             .all()
         let keyPathTime = Date().timeIntervalSince(keyPathStart)
         
         // Measure string-based query
         let stringStart = Date()
-        _ = try db.query(Bug.self)
+        _ = try requireFixture(db).query(Bug.self)
             .where(\.priority, greaterThan: 5)
             .all()
         let stringTime = Date().timeIntervalSince(stringStart)

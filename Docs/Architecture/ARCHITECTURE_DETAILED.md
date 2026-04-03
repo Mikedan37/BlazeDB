@@ -6,7 +6,7 @@
 
 ## Executive Summary
 
-BlazeDB is a page-based embedded database designed for predictable performance and operational simplicity. It provides ACID transaction guarantees, multi-version concurrency control, and per-page encryption using AES-256-GCM. The system runs entirely in-process with zero external dependencies.
+BlazeDB is a page-based embedded database designed for predictable performance and operational simplicity. It provides ACID transaction guarantees, multi-version concurrency control, and per-page encryption using AES-256-GCM. The system runs entirely in-process with no external database/service dependency and a minimal SwiftPM dependency surface.
 
 **What problem it solves:** BlazeDB addresses the need for a local-first, encrypted storage engine that offers better performance predictability than SQLite, more flexibility than Core Data, and stronger encryption guarantees than most embedded databases. It targets use cases requiring sub-millisecond query latency, deterministic behavior, and strong data protection.
 
@@ -44,44 +44,44 @@ Key constraints that shaped the architecture: latency requirements demanded care
 - [Limitations & Tradeoffs](#limitations--tradeoffs)
 - [Stability & Maturity](#stability--maturity)
 - [Architecture](#architecture)
- - [System Architecture Layers](#system-architecture-layers)
+- [System Architecture Layers](#system-architecture-layers)
 - [Prior Art & Influences](#prior-art--influences)
 - [Why Not SQLite / Core Data / Realm / LMDB?](#why-not-sqlite--core-data--realm--lmdb)
 - [Storage Engine](#storage-engine)
- - [Page Structure](#page-structure)
+- [Page Structure](#page-structure)
 - [BlazeBinary Protocol](#blazebinary-protocol)
- - [Protocol Overview](#protocol-overview)
- - [High-Level Characteristics](#high-level-characteristics)
+- [Protocol Overview](#protocol-overview)
+- [High-Level Characteristics](#high-level-characteristics)
 - [Concurrency Model](#concurrency-model)
- - [MVCC Architecture](#mvcc-architecture)
+- [MVCC Architecture](#mvcc-architecture)
 - [Security Model](#security-model)
- - [Encryption Architecture](#encryption-architecture)
+- [Encryption Architecture](#encryption-architecture)
 - [Threat Model](#threat-model)
- - [Threat Actors & Attack Surfaces](#threat-actors--attack-surfaces)
- - [Security Control Matrix](#security-control-matrix)
+- [Threat Actors & Attack Surfaces](#threat-actors--attack-surfaces)
+- [Security Control Matrix](#security-control-matrix)
 - [Cryptographic Architecture](#cryptographic-architecture)
- - [Data at Rest: Local Encryption Pipeline](#data-at-rest-local-encryption-pipeline)
- - [Data in Transit: Sync & Protocol Encryption](#data-in-transit-sync--protocol-encryption)
- - [Putting It Together](#putting-it-together)
+- [Data at Rest: Local Encryption Pipeline](#data-at-rest-local-encryption-pipeline)
+- [Data in Transit: Sync & Protocol Encryption](#data-in-transit-sync--protocol-encryption)
+- [Putting It Together](#putting-it-together)
 - [Transaction Model](#transaction-model)
- - [Write-Ahead Logging](#write-ahead-logging)
+- [Write-Ahead Logging](#write-ahead-logging)
 - [Query System](#query-system)
- - [Query Execution](#query-execution)
+- [Query Execution](#query-execution)
 - [Performance Characteristics](#performance-characteristics)
- - [Core Operations](#core-operations)
- - [Multi-Core Performance](#multi-core-performance)
- - [Query Performance](#query-performance)
- - [Network Sync Performance](#network-sync-performance)
- - [Performance Invariants](#performance-invariants)
+- [Core Operations](#core-operations)
+- [Multi-Core Performance](#multi-core-performance)
+- [Query Performance](#query-performance)
+- [Network Sync Performance](#network-sync-performance)
+- [Performance Invariants](#performance-invariants)
 - [Benchmark Methodology](#benchmark-methodology)
 - [Testing & Validation](#testing--validation)
- - [Fault Injection & Crash Testing](#fault-injection--crash-testing)
- - [Data Integrity Guarantees](#data-integrity-guarantees)
+- [Fault Injection & Crash Testing](#fault-injection--crash-testing)
+- [Data Integrity Guarantees](#data-integrity-guarantees)
 - [Recommended Use Cases](#recommended-use-cases)
 - [API & Integration](#api--integration)
- - [Installation](#installation)
- - [Basic Usage](#basic-usage)
- - [Distributed Sync](#distributed-sync)
+- [Installation](#installation)
+- [Basic Usage](#basic-usage)
+- [Distributed Sync](#distributed-sync)
 - [Future Work](#future-work)
 - [Versioning & Stability](#versioning--stability)
 - [Documentation](#documentation)
@@ -90,12 +90,12 @@ Key constraints that shaped the architecture: latency requirements demanded care
 - [Contributing](#contributing)
 - [License](#license)
 - [Appendix](#appendix)
- - [BlazeBinary Protocol Specification](#blazebinary-protocol-specification)
- - [Record Format Structure](#record-format-structure)
- - [Field Encoding Details](#field-encoding-details)
- - [Type System Reference](#type-system-reference)
- - [Value Encoding Examples](#value-encoding-examples)
- - [Network Frame Structure](#network-frame-structure)
+- [BlazeBinary Protocol Specification](#blazebinary-protocol-specification)
+- [Record Format Structure](#record-format-structure)
+- [Field Encoding Details](#field-encoding-details)
+- [Type System Reference](#type-system-reference)
+- [Value Encoding Examples](#value-encoding-examples)
+- [Network Frame Structure](#network-frame-structure)
 
 ---
 
@@ -117,7 +117,7 @@ When building BlazeDB, these priorities shaped the architecture:
 
 4. **Predictable Performance:** Consistent latency characteristics under varying workloads. Early testing showed unpredictable spikes degraded user experience, so this received significant attention.
 
-5. **Operational Simplicity:** Minimal configuration, zero external dependencies, straightforward deployment. The goal was something you could integrate and have working quickly.
+5. **Operational Simplicity:** Minimal configuration, no external database/service dependency, straightforward deployment. The goal was something you could integrate and have working quickly.
 
 ---
 
@@ -708,11 +708,11 @@ graph TB
 | **Perfect Forward Secrecy** | Ephemeral ECDH keys | Implemented | LOW |
 | **Secure Enclave** | Hardware-backed keys | Implemented (iOS/macOS) | LOW |
 | **Replay Protection** | Nonces + timestamps | Implemented | LOW |
-| **Rate Limiting** | 1000 ops/min per user |  Not enforced everywhere | MEDIUM |
+| **Rate Limiting** | 1000 ops/min per user | Not enforced everywhere | MEDIUM |
 | **RLS Policies** | Policy engine | Implemented | LOW |
 | **HMAC Signatures** | Metadata signatures | Implemented | LOW |
-| **Certificate Pinning** | TLS certificate validation |  Stubbed | MEDIUM |
-| **Operation Signatures** | Optional HMAC |  Optional | MEDIUM |
+| **Certificate Pinning** | TLS certificate validation | Stubbed | MEDIUM |
+| **Operation Signatures** | Optional HMAC | Optional | MEDIUM |
 
 **Risk Assessment Summary:**
 
@@ -755,9 +755,9 @@ Local database encryption protects stored data from physical access, device thef
 3. **Argon2id KDF:** The password and salt are fed into Argon2id, a memory-hard key derivation function. Argon2id parameters are tuned to balance security (resistance to GPU/ASIC attacks) with acceptable unlock latency. The output is a strong key material stream, typically 256 bits or more.
 
 4. **HKDF Expansion:** HKDF (HMAC-based Key Derivation Function) expands the Argon2id output into separate keys:
- - `db_enc_key` (256 bits): Primary encryption key for AES-256-GCM page encryption
- - `db_auth_key` (256 bits): Reserved for future authentication operations or metadata signing
- - Additional keys can be derived as needed using different HKDF info parameters
+- `db_enc_key` (256 bits): Primary encryption key for AES-256-GCM page encryption
+- `db_auth_key` (256 bits): Reserved for future authentication operations or metadata signing
+- Additional keys can be derived as needed using different HKDF info parameters
 
 5. **Secure Enclave Storage (Optional):** On iOS/macOS, the derived `db_enc_key` can be wrapped using Secure Enclave and stored in the Keychain. The wrapper key remains in hardware, never exposed to application memory. On unlock, the wrapped key is unwrapped by Secure Enclave, used for decryption, and ideally cleared from memory after use (explicit clearing is a known gap). When Secure Enclave is unavailable, keys remain in application memory with standard OS memory protection.
 
@@ -851,17 +851,17 @@ Network sync encryption protects data during transmission between BlazeDB nodes.
 **Handshake and Key Establishment:**
 
 1. **Ephemeral Key Generation:** Each peer (client/server or node A/node B) generates a fresh ECDH P-256 keypair for each session:
- - Private key `a` (or `b`) is a random 256-bit scalar
- - Public key `A = a·G` (or `B = b·G`) where `G` is the P-256 generator point
+- Private key `a` (or `b`) is a random 256-bit scalar
+- Public key `A = a·G` (or `B = b·G`) where `G` is the P-256 generator point
 
 2. **Public Key Exchange:** Peers exchange public keys over the transport layer (TCP, Unix socket, or in-memory queue). Public keys are sent in plaintext during the handshake phase.
 
 3. **Shared Secret Computation:** Both peers compute the same shared secret `S = a·B = b·A = ab·G` using their private key and the peer's public key. This is the ECDH key agreement.
 
 4. **Session Key Derivation:** HKDF is applied to the shared secret with session-specific context:
- - HKDF-Extract: `salt = session_id || timestamp || random` (prevents replay of old handshakes)
- - HKDF-Expand: Derives `sess_enc_key` and `sess_auth_key` using different info parameters
- - These session keys are 256 bits each and are used only for the current session
+- HKDF-Extract: `salt = session_id || timestamp || random` (prevents replay of old handshakes)
+- HKDF-Expand: Derives `sess_enc_key` and `sess_auth_key` using different info parameters
+- These session keys are 256 bits each and are used only for the current session
 
 5. **Key Lifecycle:** Session keys are ephemeral—they exist only in memory for the duration of the connection. They are never written to disk and are cleared from memory when the session ends. This provides perfect forward secrecy: compromise of long-term storage keys does not reveal past session traffic.
 
@@ -1543,26 +1543,26 @@ BlazeBinary records use a fixed 8-byte header followed by variable-length fields
 
 ```
 
- HEADER (8 bytes, aligned) 
+ HEADER (8 bytes, aligned)
 
- Offset Size Type Description 
- 0 5 char[5] Magic: "BLAZE" (0x42 0x4C 0x41...) 
- 5 1 uint8 Version: 0x01 (v1) or 0x02 (v2) 
- 6 2 uint16 Field count (big-endian) 
+ Offset Size Type Description
+ 0 5 char[5] Magic: "BLAZE" (0x42 0x4C 0x41...)
+ 5 1 uint8 Version: 0x01 (v1) or 0x02 (v2)
+ 6 2 uint16 Field count (big-endian)
 
- FIELD_1 (variable length) 
- [KEY_ENCODING][VALUE_ENCODING] 
+ FIELD_1 (variable length)
+ [KEY_ENCODING][VALUE_ENCODING]
 
- FIELD_2 (variable length) 
- [KEY_ENCODING][VALUE_ENCODING] 
+ FIELD_2 (variable length)
+ [KEY_ENCODING][VALUE_ENCODING]
 
-... 
+...
 
- FIELD_N (variable length) 
- [KEY_ENCODING][VALUE_ENCODING] 
+ FIELD_N (variable length)
+ [KEY_ENCODING][VALUE_ENCODING]
 
- CRC32 (4 bytes, v2 only, big-endian) 
- Only present if version == 0x02 
+ CRC32 (4 bytes, v2 only, big-endian)
+ Only present if version == 0x02
 
 ```
 
@@ -1580,7 +1580,7 @@ Each field has a key encoding followed by a value encoding.
 **Variant A: Common Field (1 byte)**
 ```
 
- 1 byte: Field ID (0x01-0x7F) 
+ 1 byte: Field ID (0x01-0x7F)
 
 ```
 
@@ -1589,9 +1589,9 @@ Top 127 most common field names (e.g., "id", "createdAt", "title") encoded as si
 **Variant B: Custom Field (3+N bytes)**
 ```
 
- 1 byte: Marker (0xFF) 
- 2 bytes: Key length (big-endian) 
- N bytes: UTF-8 key string 
+ 1 byte: Marker (0xFF)
+ 2 bytes: Key length (big-endian)
+ N bytes: UTF-8 key string
 
 ```
 
@@ -1720,14 +1720,14 @@ For network sync, BlazeBinary records are wrapped in frames:
 
 ```
 
- FRAME HEADER (5 bytes) 
+ FRAME HEADER (5 bytes)
 
- 1 byte: Frame Type (0x01-0x06) 
- 4 bytes: Payload Length (big-endian UInt32) 
+ 1 byte: Frame Type (0x01-0x06)
+ 4 bytes: Payload Length (big-endian UInt32)
 
- PAYLOAD (variable length) 
- Encrypted with AES-256-GCM (if handshaked) 
- Or plaintext (during handshake) 
+ PAYLOAD (variable length)
+ Encrypted with AES-256-GCM (if handshaked)
+ Or plaintext (during handshake)
 
 ```
 

@@ -56,14 +56,14 @@ public func writePage(index: Int, plaintext: Data) throws {
  ```
 
 2. **Record Spanning Logic:**
- - Split large records across multiple pages
- - Create overflow page chains
- - Update read path to traverse chains
- - Update write path to allocate chains
+- Split large records across multiple pages
+- Create overflow page chains
+- Update read path to traverse chains
+- Update write path to allocate chains
 
 3. **Storage Layout:**
- - Main page: Record header + first N bytes
- - Overflow pages: Continuation data + next page pointer
+- Main page: Record header + first N bytes
+- Overflow pages: Continuation data + next page pointer
 
 #### **Impact:**
 - **Current:** Cannot store large documents, images, or binary data
@@ -147,7 +147,7 @@ struct BugListView: View {
 - `AutomaticGCManager` exists
 - Periodic GC timer implemented
 - Configurable retention policies
--  **Needs verification:** Auto-run on startup
+- **Needs verification:** Auto-run on startup
 
 **Code:**
 ```swift
@@ -178,7 +178,7 @@ let config = MVCCGCConfiguration(
 - `OperationLogGC` exists
 - Cleanup methods implemented
 - Configurable retention policies
--  **Needs verification:** Auto-run on sync startup
+- **Needs verification:** Auto-run on sync startup
 
 **Code:**
 ```swift
@@ -232,7 +232,7 @@ private func startPeriodicGC() {
 - MVCC GC: **IMPLEMENTED** (periodic timer exists)
 - Operation Log GC: **IMPLEMENTED** (cleanup methods exist)
 - Sync State GC: **IMPLEMENTED** (runs automatically in sync engine)
--  **Verification needed:** Confirm GC runs on startup without manual trigger
+- **Verification needed:** Confirm GC runs on startup without manual trigger
 
 #### **What's Verified:**
 1. GC classes exist and are functional
@@ -241,9 +241,9 @@ private func startPeriodicGC() {
 4. Cleanup methods work correctly
 
 #### **What Needs Verification:**
-1.  MVCC GC auto-starts on database open
-2.  Operation Log GC auto-runs on sync startup
-3.  GC actually prevents memory/disk growth in long-running apps
+1. MVCC GC auto-starts on database open
+2. Operation Log GC auto-runs on sync startup
+3. GC actually prevents memory/disk growth in long-running apps
 
 ---
 
@@ -310,7 +310,7 @@ swift test --filter FeatureVerificationTests
 | Feature | Before | After | Status |
 |---------|--------|-------|--------|
 | **Overflow Pages** | Not implemented | Not implemented | **Needs work** |
-| **Reactive Queries** |  Manual refresh | Auto-updates | ** FIXED!** |
+| **Reactive Queries** | Manual refresh | Auto-updates | ** FIXED!** |
 | **Version + Log GC** | Implemented | Implemented | ** Verified** |
 
 ---
@@ -322,10 +322,10 @@ swift test --filter FeatureVerificationTests
 3. **Operation Log GC** - Cleanup methods exist and work
 4. **Sync State GC** - Runs automatically in sync engine
 
-##  **WHAT NEEDS WORK**
+## **WHAT NEEDS WORK**
 
 1. **Overflow Pages** - Large records (>4KB) will fail
-2.  **GC Verification** - Need to confirm auto-run on startup
+2. **GC Verification** - Need to confirm auto-run on startup
 
 ---
 

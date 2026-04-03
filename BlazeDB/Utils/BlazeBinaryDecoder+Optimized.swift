@@ -66,9 +66,11 @@ extension BlazeBinaryDecoder {
             throw BlazeBinaryError.invalidFormat("Data too short for UUID at offset \(offset)")
         }
         
-        // Direct construction from bytes (zero-copy!)
-        return data.withUnsafeBytes { bytes in
-            let uuidBytes = bytes.baseAddress!.advanced(by: offset).assumingMemoryBound(to: UInt8.self)
+        return try data.withUnsafeBytes { (raw: UnsafeRawBufferPointer) throws -> UUID in
+            guard let base = raw.baseAddress else {
+                throw BlazeBinaryError.invalidFormat("uuidFromBytes: buffer has no base address")
+            }
+            let uuidBytes = base.advanced(by: offset).assumingMemoryBound(to: UInt8.self)
             return UUID(uuid: (
                 uuidBytes[0], uuidBytes[1], uuidBytes[2], uuidBytes[3],
                 uuidBytes[4], uuidBytes[5], uuidBytes[6], uuidBytes[7],

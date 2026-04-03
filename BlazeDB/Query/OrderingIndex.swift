@@ -95,7 +95,7 @@ public enum OrderingIndex {
         switch field {
         case .int(let value):
             result = Double(value)
-            BlazeLogger.trace("OrderingIndex.getIndex: extracted int \(value) -> double \(result!)")
+            BlazeLogger.trace("OrderingIndex.getIndex: extracted int \(value) -> double \(Double(value))")
         case .double(let value):
             result = value
             BlazeLogger.trace("OrderingIndex.getIndex: extracted double \(value)")

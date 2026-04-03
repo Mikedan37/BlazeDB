@@ -17,33 +17,33 @@
 
 ---
 
-##  **Architecture Overview**
+## **Architecture Overview**
 
 ```
 
- BlazeDB Distributed 
+ BlazeDB Distributed
 
- 
-    
-  iPhone  iPad  Mac  
-       
-  Local   Local   Local  
-  BlazeDB   BlazeDB   BlazeDB  
-    
-    
-  
-  
-  
-  
-  BlazeDB Relay  
-  (CloudKit/Server)  
-  
-  
-  
-  
-  Other Users'  
-  Devices  
-  
+
+
+ iPhone iPad Mac
+
+ Local Local Local
+ BlazeDB BlazeDB BlazeDB
+
+
+
+
+
+
+ BlazeDB Relay
+ (CloudKit/Server)
+
+
+
+
+ Other Users'
+ Devices
+
 
 ```
 
@@ -55,15 +55,15 @@
 
 ```
 
- Application Layer  BlazeDB API (CRUD, Queries)
+ Application Layer BlazeDB API (CRUD, Queries)
 
- CRDT Layer  Conflict Resolution
+ CRDT Layer Conflict Resolution
 
- Operation Log Layer  OpLog Replication
+ Operation Log Layer OpLog Replication
 
- Transport Layer  WebSocket/gRPC/CloudKit
+ Transport Layer WebSocket/gRPC/CloudKit
 
- Security Layer  E2E Encryption
+ Security Layer E2E Encryption
 
 ```
 
@@ -726,14 +726,14 @@ try await syncGroup.transact {
 
 ## **Why This Design?**
 
- **Offline-First** - Apps work without network
- **Real-Time** - Sub-100ms sync latency
- **Conflict-Free** - CRDTs resolve automatically
- **Secure** - End-to-end encryption
- **Fast** - Local operations unaffected
- **Scalable** - Millions of ops, thousands of nodes
- **Simple API** - Same CRUD operations work everywhere
- **Battle-Tested** - Based on proven techniques (Riak, Cassandra, IPFS)
+**Offline-First** - Apps work without network
+**Real-Time** - Sub-100ms sync latency
+**Conflict-Free** - CRDTs resolve automatically
+**Secure** - End-to-end encryption
+**Fast** - Local operations unaffected
+**Scalable** - Millions of ops, thousands of nodes
+**Simple API** - Same CRUD operations work everywhere
+**Battle-Tested** - Based on proven techniques (Riak, Cassandra, IPFS)
 
 ---
 

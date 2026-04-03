@@ -331,9 +331,11 @@ public enum BlazeBinaryDecoder {
             guard currentOffset + 16 <= data.count else {
                 throw BlazeBinaryError.invalidFormat("Data too short for UUID: need 16 bytes")
             }
-            // Zero-copy UUID construction from bytes
-            let uuid = data.withUnsafeBytes { bytes in
-                let uuidBytes = bytes.baseAddress!.advanced(by: currentOffset).assumingMemoryBound(to: UInt8.self)
+            let uuid = try data.withUnsafeBytes { (raw: UnsafeRawBufferPointer) throws -> UUID in
+                guard let base = raw.baseAddress else {
+                    throw BlazeBinaryError.invalidFormat("UUID decode: buffer has no base address")
+                }
+                let uuidBytes = base.advanced(by: currentOffset).assumingMemoryBound(to: UInt8.self)
                 return UUID(uuid: (
                     uuidBytes[0], uuidBytes[1], uuidBytes[2], uuidBytes[3],
                     uuidBytes[4], uuidBytes[5], uuidBytes[6], uuidBytes[7],

@@ -1,4 +1,4 @@
-#  Garbage Collection Enhancements Needed
+# Garbage Collection Enhancements Needed
 
 **Critical GC features missing for distributed sync, MVCC, and multi-database scenarios.**
 
@@ -328,30 +328,30 @@ extension BlazeSyncEngine {
 ## **Recommended Implementation Order**
 
 1. **Phase 1: Operation Log GC** (1-2 days)
- - Add cleanup methods to `OperationLog`
- - Add periodic cleanup task
- - Add configuration options
+- Add cleanup methods to `OperationLog`
+- Add periodic cleanup task
+- Add configuration options
 
 2. **Phase 2: Sync State GC** (1-2 days)
- - Add cleanup methods to `BlazeSyncEngine`
- - Clean up on record deletion
- - Add periodic cleanup task
+- Add cleanup methods to `BlazeSyncEngine`
+- Clean up on record deletion
+- Add periodic cleanup task
 
 3. **Phase 3: MVCC Distributed GC** (3-5 days)
- - Add version tracking across nodes
- - Add coordination protocol
- - Integrate with `AutomaticGCManager`
+- Add version tracking across nodes
+- Add coordination protocol
+- Integrate with `AutomaticGCManager`
 
 4. **Phase 4: Cross-Database Coordination** (2-3 days)
- - Add `MultiDatabaseGCCoordinator`
- - Integrate with `BlazeDBManager`
- - Add shared state management
+- Add `MultiDatabaseGCCoordinator`
+- Integrate with `BlazeDBManager`
+- Add shared state management
 
 5. **Phase 5: Remaining Features** (3-5 days)
- - Relay memory GC
- - Conflict resolution GC
- - Sync metadata GC
- - Incremental sync state GC
+- Relay memory GC
+- Conflict resolution GC
+- Sync metadata GC
+- Incremental sync state GC
 
 ---
 

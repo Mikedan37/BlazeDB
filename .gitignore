@@ -24,6 +24,7 @@ DerivedData/
 .artifacts/
 .logs/
 .tagcheck-*.log
+Docs/Benchmarks/logs/
 
 # Secrets and certificates
 *.pem

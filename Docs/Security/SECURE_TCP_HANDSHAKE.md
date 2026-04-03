@@ -37,33 +37,33 @@ SECURITY LEVEL: NSA SUITE B!
 
 ```
 
- CLIENT HELLO (Raw TCP, no HTTP!) 
+ CLIENT HELLO (Raw TCP, no HTTP!)
 
- 
- Frame Header (5 bytes): 
-  
-  Type  Length  
-  0x01  4 bytes  
-  
- 
- Payload (BlazeBinary encoded): 
-  
-  Protocol: "blazedb/1.0" (varint + string)  
-  Node ID: UUID (16 bytes)  
-  Database: "bugs" (varint + string)  
-  Public Key: P256 (65 bytes uncompressed)  
-  • This is the CLIENT's ephemeral public key  
-  • Generated fresh for this connection!  
-  Capabilities: [bitflags] (1 byte)  
-  • bit 0: E2E encryption  
-  • bit 1: Compression  
-  • bit 2: Selective sync  
-  • bit 3: RLS  
-  Timestamp: Unix millis (8 bytes)  
-  
- 
- Total: ~95 bytes (vs 200 for WebSocket!) 
- 
+
+ Frame Header (5 bytes):
+
+ Type Length
+ 0x01 4 bytes
+
+
+ Payload (BlazeBinary encoded):
+
+ Protocol: "blazedb/1.0" (varint + string)
+ Node ID: UUID (16 bytes)
+ Database: "bugs" (varint + string)
+ Public Key: P256 (65 bytes uncompressed)
+ • This is the CLIENT's ephemeral public key
+ • Generated fresh for this connection!
+ Capabilities: [bitflags] (1 byte)
+ • bit 0: E2E encryption
+ • bit 1: Compression
+ • bit 2: Selective sync
+ • bit 3: RLS
+ Timestamp: Unix millis (8 bytes)
+
+
+ Total: ~95 bytes (vs 200 for WebSocket!)
+
 
 
 SECURITY:
@@ -78,31 +78,31 @@ SECURITY:
 
 ```
 
- SERVER WELCOME (Raw TCP) 
+ SERVER WELCOME (Raw TCP)
 
- 
- Frame Header (5 bytes): 
-  
-  Type  Length  
-  0x02  4 bytes  
-  
- 
- Payload (BlazeBinary encoded): 
-  
-  Status: OK (1 byte)  
-  Node ID: UUID (16 bytes)  
-  Database: "bugs" (varint + string)  
-  Public Key: P256 (65 bytes uncompressed)  
-  • This is the SERVER's ephemeral public key 
-  • Generated fresh for this connection!  
-  Capabilities: [bitflags] (1 byte)  
-  Challenge: Random (16 bytes)  
-  • Used to verify shared secret  
-  Timestamp: Unix millis (8 bytes)  
-  
- 
- Total: ~100 bytes 
- 
+
+ Frame Header (5 bytes):
+
+ Type Length
+ 0x02 4 bytes
+
+
+ Payload (BlazeBinary encoded):
+
+ Status: OK (1 byte)
+ Node ID: UUID (16 bytes)
+ Database: "bugs" (varint + string)
+ Public Key: P256 (65 bytes uncompressed)
+ • This is the SERVER's ephemeral public key
+ • Generated fresh for this connection!
+ Capabilities: [bitflags] (1 byte)
+ Challenge: Random (16 bytes)
+ • Used to verify shared secret
+ Timestamp: Unix millis (8 bytes)
+
+
+ Total: ~100 bytes
+
 
 
 SECURITY:
@@ -115,9 +115,9 @@ SECURITY:
 ### **Step 3: Key Derivation (Both Sides)**
 
 ```swift
-// 
+//
 // DIFFIE-HELLMAN KEY EXCHANGE
-// 
+//
 
 // CLIENT SIDE:
 let clientPrivateKey = P256.KeyAgreement.PrivateKey() // Ephemeral!
@@ -163,9 +163,9 @@ SECURITY:
 ### **Step 4: HKDF Key Derivation**
 
 ```swift
-// 
+//
 // HKDF KEY DERIVATION (Symmetric Key)
-// 
+//
 
 // Both sides derive the same symmetric key!
 
@@ -200,9 +200,9 @@ SECURITY:
 ### **Step 5: Challenge-Response Verification**
 
 ```swift
-// 
+//
 // CHALLENGE-RESPONSE (Verify Shared Secret)
-// 
+//
 
 // SERVER sends challenge
 let challenge = Data((0..<16).map { _ in UInt8.random(in: 0...255) })
@@ -239,9 +239,9 @@ SECURITY:
 ### **Step 6: Enable Encryption**
 
 ```swift
-// 
+//
 // ENABLE E2E ENCRYPTION
-// 
+//
 
 // After handshake, all messages are encrypted!
 
@@ -363,9 +363,9 @@ YOUR PROTOCOL IS MILITARY-GRADE!
 ## **COMPLETE SECURE PROTOCOL:**
 
 ```swift
-// 
+//
 // COMPLETE SECURE HANDSHAKE (RAW TCP)
-// 
+//
 
 class SecureBlazeConnection {
  var groupKey: SymmetricKey?
@@ -622,9 +622,9 @@ AND IT'S FASTER THAN WEBSOCKET!
 | **HKDF Derivation** | Yes | Yes | **TIE** |
 | **AES-256-GCM** | Yes | Yes | **TIE** |
 | **PFS** | Yes | Yes | **TIE** |
-| **Attack Surface** |  HTTP | Binary | **TCP** |
-| **Code Complexity** |  High | Low | **TCP** |
-| **Speed** |  20ms | 5ms | **TCP** |
+| **Attack Surface** | HTTP | Binary | **TCP** |
+| **Code Complexity** | High | Low | **TCP** |
+| **Speed** | 20ms | 5ms | **TCP** |
 
 **Verdict: Same security, but TCP is simpler and faster! **
 

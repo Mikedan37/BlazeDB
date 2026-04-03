@@ -10,8 +10,8 @@
 Are the databases in the same app?
  YES → Use In-Memory Queue (fastest: <0.1ms)
  NO → Are they on the same device?
-  YES → Use Unix Domain Sockets (~0.3-0.5ms)
-  NO → Use TCP (~5ms)
+ YES → Use Unix Domain Sockets (~0.3-0.5ms)
+ NO → Use TCP (~5ms)
 ```
 
 ---

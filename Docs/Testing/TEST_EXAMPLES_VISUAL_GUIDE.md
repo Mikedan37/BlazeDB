@@ -83,8 +83,8 @@ Step 3: Reopen database
 ### 7. **Rapid Memory Pressure**
 ```
 Loop 10,000 times:
- - Insert 1MB record
- - Immediately delete it
+- Insert 1MB record
+- Immediately delete it
 
  Verify: Memory usage stays constant (no leak)
  Verify: No crashes or slowdowns
@@ -278,11 +278,11 @@ Fetch:.string("hello") ← Still String (not Array)
 ### 13. **Concurrent Safety** (1,000 operations)
 ```
 1000 threads, each does random operation:
- - Thread 1: Insert
- - Thread 2: Delete
- - Thread 3: Update
- - Thread 4: Fetch
- -... (all simultaneously)
+- Thread 1: Insert
+- Thread 2: Delete
+- Thread 3: Update
+- Thread 4: Fetch
+-... (all simultaneously)
 
  Verify: No crashes, no corruption, no deadlocks
 ```
@@ -294,12 +294,12 @@ Fetch:.string("hello") ← Still String (not Array)
 ### 14. **Data Size Bounds** (100 sizes)
 ```
 Test random sizes:
- - 1 byte
- - 100 bytes
- - 1 KB
- - 10 KB
- - 100 KB
- - 1 MB
+- 1 byte
+- 100 bytes
+- 1 KB
+- 10 KB
+- 100 KB
+- 1 MB
 
  Verify: 90%+ succeed (reasonable limits)
 ```
@@ -324,14 +324,14 @@ All return identical results (no caching bugs)
 ### 1. **Random Strings** (10,000 inputs)
 ```
 Test inputs:
- - "" (empty)
- - " " (whitespace)
- - "\n\r\t" (control chars)
- - "" (emoji)
- - "مرحبا" (Arabic RTL)
- - "a" * 1_000_000 (1MB string)
- - "\0" (null byte)
- - "Test\u{200B}Data" (zero-width space)
+- "" (empty)
+- " " (whitespace)
+- "\n\r\t" (control chars)
+- "" (emoji)
+- "مرحبا" (Arabic RTL)
+- "a" * 1_000_000 (1MB string)
+- "\0" (null byte)
+- "Test\u{200B}Data" (zero-width space)
 
  All must survive round-trip
 ```
@@ -354,11 +354,11 @@ Test inputs:
 ### 3. **Random Binary Data** (5,000 blobs)
 ```
 Generate random bytes:
- - 0 bytes
- - 1 byte
- - 1000 bytes
- - 10,000 bytes
- - All random values (0x00 to 0xFF)
+- 0 bytes
+- 1 byte
+- 1000 bytes
+- 10,000 bytes
+- All random values (0x00 to 0xFF)
 
 Insert → Fetch → Compare
 
@@ -533,17 +533,17 @@ Script tags: "<script>alert('xss')</script>"
 
 ```
 
- CHAOS ENGINEERING: 7 tests 
- Scenarios tested: ~1,000 
+ CHAOS ENGINEERING: 7 tests
+ Scenarios tested: ~1,000
 
- PROPERTY-BASED: 15 tests 
- Random inputs: ~20,000 
+ PROPERTY-BASED: 15 tests
+ Random inputs: ~20,000
 
- FUZZING: 15 tests 
- Adversarial inputs: ~50,000 
+ FUZZING: 15 tests
+ Adversarial inputs: ~50,000
 
- TOTAL: 37 tests 
- TOTAL INPUTS: ~71,000 
+ TOTAL: 37 tests
+ TOTAL INPUTS: ~71,000
 
 ```
 

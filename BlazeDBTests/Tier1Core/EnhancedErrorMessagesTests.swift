@@ -14,14 +14,14 @@ import XCTest
 
 final class EnhancedErrorMessagesTests: XCTestCase {
     
-    var dbURL: URL!
-    var db: BlazeDBClient!
+    private var dbURL: URL?
+    private var db: BlazeDBClient?
     
     override func setUp() async throws {
         try await super.setUp()
         dbURL = FileManager.default.temporaryDirectory
             .appendingPathComponent("ErrorTest-\(UUID().uuidString).blazedb")
-        db = try BlazeDBClient(name: "ErrorTest", fileURL: dbURL, password: "SecureTestDB-456!")
+        db = try BlazeDBClient(name: "ErrorTest", fileURL: try requireFixture(dbURL), password: "SecureTestDB-456!")
     }
     
     override func tearDown() {
@@ -45,7 +45,7 @@ final class EnhancedErrorMessagesTests: XCTestCase {
         let missingID = UUID()
 
         // Current contract: fetch on missing ID returns nil (non-throwing).
-        let result = try await db.fetch(id: missingID)
+        let result = try await requireFixture(db).fetch(id: missingID)
         XCTAssertNil(result, "Missing ID should return nil")
         print("  ✅ Missing record returns nil for fetch(id:)")
     }
@@ -56,10 +56,10 @@ final class EnhancedErrorMessagesTests: XCTestCase {
         print("❌ Testing recordExists error includes ID")
         
         let id = UUID()
-        _ = try await db.insert(BlazeDataRecord(["value": .int(1)]), id: id)
+        _ = try await requireFixture(db).insert(BlazeDataRecord(["value": .int(1)]), id: id)
         
         do {
-            _ = try await db.insert(BlazeDataRecord(["value": .int(2)]), id: id)
+            _ = try await requireFixture(db).insert(BlazeDataRecord(["value": .int(2)]), id: id)
             XCTFail("Should throw error for duplicate")
         } catch let error as BlazeDBError {
             let description = error.errorDescription ?? ""

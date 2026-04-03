@@ -1,10 +1,12 @@
 # BlazeDB: Server/Client Architecture with Priority
 
-**Optional distributed sync layer with server priority! **
+> **OSS core positioning:** This document describes **target architecture for distributed sync** (server/client roles, hub-and-spoke, conflict rules). It is **not** documentation for the default open-source `BlazeDB` runtime today: **distributed transport is deferred** and not part of the normal SwiftPM consumer path. See `Docs/Status/DISTRIBUTED_TRANSPORT_DEFERRED.md`. Snippets below are **illustrative** of intended design; they may not match symbols available in the core-only package you get from `Package.swift`.
+
+**Optional distributed sync layer — design reference (non-default, deferred for OSS core)**
 
 ---
 
-## **WHAT WE IMPLEMENTED:**
+## **Design intent (when distributed sync is enabled in a given build):**
 
 ### **1. Optional Sync Layer:**
 ```
@@ -92,17 +94,17 @@ Result: Server always has final say!
 
 ### **Hub-and-Spoke (Server-Centric):**
 ```
- 
-  SERVER 
-  (Priority) 
- 
- 
- 
-   
-   
-  CLIENT 1   CLIENT 2   CLIENT 3 
-  (Defers)   (Defers)   (Defers) 
-   
+
+ SERVER
+ (Priority)
+
+
+
+
+
+ CLIENT 1 CLIENT 2 CLIENT 3
+ (Defers) (Defers) (Defers)
+
 
 • Server coordinates all clients
 • Clients sync with server only
@@ -112,10 +114,10 @@ Result: Server always has final say!
 
 ### **Peer-to-Peer (Equal Roles):**
 ```
-   
-  NODE 1  NODE 2  NODE 3 
-  (Client)   (Client)   (Client) 
-   
+
+ NODE 1 NODE 2 NODE 3
+ (Client) (Client) (Client)
+
 
 • All nodes are clients (no server)
 • Timestamp-based conflict resolution
@@ -320,7 +322,7 @@ Result: Efficient distributed sync when needed!
 
 ## **BOTTOM LINE:**
 
-### **What We Implemented:**
+### **What this architecture specifies (for sync-enabled builds):**
 ```
  Optional sync layer (opt-in, not forced)
  Server/Client roles with priority
@@ -329,7 +331,7 @@ Result: Efficient distributed sync when needed!
  Configurable per database
 ```
 
-### **Key Features:**
+### **Key properties (when sync is available):**
 ```
  Sync is OPTIONAL - database works without it
  Server has priority in conflicts
@@ -338,15 +340,15 @@ Result: Efficient distributed sync when needed!
  Easy to configure (role parameter)
 ```
 
-### **Use Cases:**
+### **Use cases (when sync is available):**
 ```
  Centralized server with multiple clients
  Team collaboration (server coordinates)
  Offline-first apps (server sync)
  Multi-device sync (hub-and-spoke)
 
-Result: Flexible distributed sync with clear hierarchy!
+Result: Flexible distributed sync with clear hierarchy (in builds that ship the sync layer).
 ```
 
-**BlazeDB: Optional distributed sync with server priority! **
+**BlazeDB core today:** embedded engine first. **Distributed sync:** follow `README.md` and status docs for what is actually packaged in OSS releases.
 

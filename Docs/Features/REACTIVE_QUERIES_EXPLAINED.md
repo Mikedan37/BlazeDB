@@ -6,30 +6,30 @@
 
 ```
 
- BlazeDBClient 
- (Database) 
+ BlazeDBClient
+ (Database)
 
- 
-  notifyChanges()
- 
+
+ notifyChanges()
+
 
  ChangeNotificationManager ← Batches changes (50ms delay)
- (Singleton) 
+ (Singleton)
 
- 
-  flushPendingChanges()
-  (batched, on main thread)
- 
 
- BlazeQueryObserver  ← Subscribed via db.observe()
- (@Published results) 
+ flushPendingChanges()
+ (batched, on main thread)
 
- 
-  results updated
- 
 
- SwiftUI View  ← Automatically re-renders!
- (@BlazeQuery) 
+ BlazeQueryObserver ← Subscribed via db.observe()
+ (@Published results)
+
+
+ results updated
+
+
+ SwiftUI View ← Automatically re-renders!
+ (@BlazeQuery)
 
 ```
 
@@ -223,21 +223,21 @@ CPU: ~0.1ms (notification) + ~100ms (queries) = ~100ms
 
 ---
 
-##  **Performance Considerations**
+## **Performance Considerations**
 
 ### **When Performance Might Degrade:**
 
 1. **Too Many Active Queries:**
- - 1000+ queries refreshing simultaneously
- - **Solution:** Use query limits, pagination
+- 1000+ queries refreshing simultaneously
+- **Solution:** Use query limits, pagination
 
 2. **Expensive Queries:**
- - Complex JOINs, aggregations
- - **Solution:** Optimize queries, add indexes
+- Complex JOINs, aggregations
+- **Solution:** Optimize queries, add indexes
 
 3. **Rapid Changes:**
- - 1000+ changes/second
- - **Solution:** Batching already handles this (50ms delay)
+- 1000+ changes/second
+- **Solution:** Batching already handles this (50ms delay)
 
 ### **Best Practices:**
 
@@ -277,10 +277,10 @@ CPU: ~0.1ms (notification) + ~100ms (queries) = ~100ms
 
 ### **Key Features:**
 
- **Batched notifications** (50ms delay) - 10-100x faster
- **Weak references** - No memory leaks
- **Main thread safety** - Safe for SwiftUI
- **Automatic cleanup** - Observers auto-unregister
+**Batched notifications** (50ms delay) - 10-100x faster
+**Weak references** - No memory leaks
+**Main thread safety** - Safe for SwiftUI
+**Automatic cleanup** - Observers auto-unregister
 
 ### **Bottom Line:**
 

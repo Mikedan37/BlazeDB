@@ -129,7 +129,7 @@ let inArea = try db.query()
 - "Find points in this region"
 - "Filter by geographic area"
 
-#### Near (Auto-Sorted by Distance)  **NEW**
+#### Near (Auto-Sorted by Distance) **NEW**
 
 Find records near a point, **automatically sorted by distance**.
 
@@ -147,7 +147,7 @@ for record in records {
 }
 ```
 
-#### Nearest (True k-NN)  **NEW**
+#### Nearest (True k-NN) **NEW**
 
 Find the nearest N records using true k-nearest neighbor algorithm.
 
@@ -160,7 +160,7 @@ let records = try nearest.records
 // Returns exactly 10 nearest records, sorted by distance
 ```
 
-#### Order By Distance  **NEW**
+#### Order By Distance **NEW**
 
 Explicitly sort results by distance from a point.
 
@@ -176,7 +176,7 @@ let results = try db.query()
 
 ---
 
-## Distance in Results  **NEW**
+## Distance in Results **NEW**
 
 When using `.near()`, `.nearest()`, or `.orderByDistance()`, **distance is automatically included** in each result:
 
@@ -352,12 +352,12 @@ let records = try nearest.records
 
 ### When to Enable Spatial Index
 
- **Enable when:**
+**Enable when:**
 - You have 100+ location records
 - You frequently query by location
 - You need fast location queries
 
- **Skip when:**
+**Skip when:**
 - You have < 100 records (full scan is fast enough)
 - You rarely query by location
 - Memory is very constrained

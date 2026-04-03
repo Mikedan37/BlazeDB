@@ -16,22 +16,22 @@ import XCTest
 #endif
 
 final class AsyncAwaitEdgeCaseTests: XCTestCase {
-    var tempURL: URL!
-    var db: BlazeDBClient!
+    private var tempURL: URL?
+    private var db: BlazeDBClient?
     
     override func setUp() async throws {
         tempURL = FileManager.default.temporaryDirectory
             .appendingPathComponent("AsyncEdge-\(UUID().uuidString).blazedb")
-        db = try BlazeDBClient(name: "AsyncEdgeTest", fileURL: tempURL, password: "TestPassword-123!")
+        db = try BlazeDBClient(name: "AsyncEdgeTest", fileURL: try requireFixture(tempURL), password: "TestPassword-123!")
         
         // IMPORTANT: Disable MVCC until version persistence is implemented
-        db.collection.mvccEnabled = false
+        try requireFixture(db).collection.mvccEnabled = false
     }
     
     override func tearDown() async throws {
         db = nil
-        try? FileManager.default.removeItem(at: tempURL)
-        try? FileManager.default.removeItem(at: tempURL.deletingPathExtension().appendingPathExtension("meta"))
+        try? FileManager.default.removeItem(at: try requireFixture(tempURL))
+        try? FileManager.default.removeItem(at: try requireFixture(tempURL).deletingPathExtension().appendingPathExtension("meta"))
     }
     
     // MARK: - Async Error Path Tests
@@ -43,7 +43,7 @@ final class AsyncAwaitEdgeCaseTests: XCTestCase {
         let randomID = UUID()
         
         do {
-            try await db.update(id: randomID, data: BlazeDataRecord(["value": .int(1)]))
+            try await requireFixture(db).update(id: randomID, data: BlazeDataRecord(["value": .int(1)]))
             XCTFail("Should throw error for non-existent record")
         } catch {
             // Expected error
@@ -60,7 +60,7 @@ final class AsyncAwaitEdgeCaseTests: XCTestCase {
         let randomID = UUID()
         
         // Should not throw (delete is idempotent)
-        try await db.delete(id: randomID)
+        try await requireFixture(db).delete(id: randomID)
         
         print("✅ Async delete non-existent handled gracefully")
     }
@@ -69,7 +69,7 @@ final class AsyncAwaitEdgeCaseTests: XCTestCase {
     func testAsyncInsertManyEmpty() async throws {
         print("⚡ Testing async insertMany with empty array...")
         
-        let ids = try await db.insertMany([])
+        let ids = try await requireFixture(db).insertMany([])
         
         XCTAssertEqual(ids.count, 0, "Empty batch should return empty IDs")
         
@@ -80,7 +80,7 @@ final class AsyncAwaitEdgeCaseTests: XCTestCase {
     func testAsyncQueryNoResults() async throws {
         print("⚡ Testing async query with no results...")
         
-        let results = try await db.query()
+        let results = try await requireFixture(db).query()
             .where("field", equals: .string("nonexistent"))
             .execute()
             .records
@@ -94,7 +94,7 @@ final class AsyncAwaitEdgeCaseTests: XCTestCase {
     func testAsyncFetchAllEmpty() async throws {
         print("⚡ Testing async fetchAll on empty database...")
         
-        let records = try await db.fetchAll()
+        let records = try await requireFixture(db).fetchAll()
         
         XCTAssertEqual(records.count, 0, "Empty database should return empty array")
         
@@ -107,22 +107,22 @@ final class AsyncAwaitEdgeCaseTests: XCTestCase {
         
         // Insert base records
         for i in 0..<10 {
-            _ = try await db.insert(BlazeDataRecord(["index": .int(i)]))
+            _ = try await requireFixture(db).insert(BlazeDataRecord(["index": .int(i)]))
         }
         
         // Concurrent async operations
-        let db = self.db!
+        let db = try XCTUnwrap(self.db)
         try await withThrowingTaskGroup(of: Void.self) { group in
             // Concurrent reads
             for _ in 0..<5 {
-                group.addTask {
+                group.addTask { [db] in
                     let _ = try await db.fetchAll()
                 }
             }
             
             // Concurrent writes
             for i in 10..<15 {
-                group.addTask {
+                group.addTask { [db] in
                     _ = try await db.insert(BlazeDataRecord(["index": .int(i)]))
                 }
             }
@@ -131,7 +131,7 @@ final class AsyncAwaitEdgeCaseTests: XCTestCase {
             try await group.waitForAll()
         }
         
-        let final = try await db.fetchAll()
+        let final = try await requireFixture(db).fetchAll()
         XCTAssertEqual(final.count, 15, "Should have 15 records after concurrent ops")
         
         print("✅ Concurrent async operations work correctly")

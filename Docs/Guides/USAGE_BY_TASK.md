@@ -18,7 +18,7 @@ let id = try db.insert(BlazeDataRecord(["name": .string("Alice")]))
 
 // Batch insert (faster)
 let records = (1...100).map { i in
-    BlazeDataRecord(["id": .int(i), "name": .string("Item \(i)")])
+ BlazeDataRecord(["id": .int(i), "name": .string("Item \(i)")])
 }
 let ids = try db.insertBatch(records)
 ```
@@ -34,17 +34,17 @@ let ids = try db.insertBatch(records)
 ```swift
 // Simple filter
 let results = try db.query()
-    .where("status", equals: .string("active"))
-    .execute()
-    .records
+ .where("status", equals: .string("active"))
+ .execute()
+ .records
 
 // With sorting
 let sorted = try db.query()
-    .where("age", greaterThan: .int(18))
-    .orderBy("age", descending: true)
-    .limit(10)
-    .execute()
-    .records
+ .where("age", greaterThan: .int(18))
+ .orderBy("age", descending: true)
+ .limit(10)
+ .execute()
+ .records
 ```
 
 **Performance:** Queries on indexed fields are fast. Unindexed queries scan all records.
@@ -60,20 +60,20 @@ let sorted = try db.query()
 ```swift
 // 1. Declare your schema version
 struct MyAppSchema: BlazeSchema {
-    static var version = SchemaVersion(major: 1, minor: 0)
+ static var version = SchemaVersion(major: 1, minor: 0)
 }
 
 // 2. Open with validation
 let db = try BlazeDB.openWithSchemaValidation(
-    name: "mydb",
-    password: "secure-password",
-    expectedVersion: MyAppSchema.version
+ name: "mydb",
+ password: "secure-password",
+ expectedVersion: MyAppSchema.version
 )
 
 // 3. Plan migrations if needed
 let plan = try db.planMigration(
-    targetVersion: SchemaVersion(major: 1, minor: 1),
-    migrations: [MyMigration()]
+ targetVersion: SchemaVersion(major: 1, minor: 1),
+ migrations: [MyMigration()]
 )
 
 // 4. Execute migrations
@@ -91,7 +91,7 @@ try db.executeMigration(plan: plan, dryRun: false)
 ```swift
 // Export database
 let dumpURL = FileManager.default.temporaryDirectory
-    .appendingPathComponent("backup.blazedump")
+ .appendingPathComponent("backup.blazedump")
 try db.export(to: dumpURL)
 
 // Restore later
@@ -111,9 +111,9 @@ try BlazeDBImporter.restore(from: dumpURL, to: db, allowSchemaMismatch: false)
 ```swift
 // Health summary
 let health = try db.health()
-print("Status: \(health.status)")  // OK, WARN, or ERROR
+print("Status: \(health.status)") // OK, WARN, or ERROR
 for reason in health.reasons {
-    print("- \(reason)")
+ print("- \(reason)")
 }
 
 // Detailed statistics

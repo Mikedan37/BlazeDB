@@ -16,22 +16,22 @@ import XCTest
 #endif
 
 final class TypeSafetyEdgeCaseTests: XCTestCase {
-    var db: BlazeDBClient!
-    var tempURL: URL!
+    private var db: BlazeDBClient?
+    private var tempURL: URL?
     
-    override func setUp() {
-        super.setUp()
+    override func setUpWithError() throws {
+        try super.setUpWithError()
         continueAfterFailure = false
         tempURL = FileManager.default.temporaryDirectory
             .appendingPathComponent("TypeSafe-\(UUID().uuidString).blazedb")
-        db = try! BlazeDBClient(name: "test", fileURL: tempURL, password: "TestPassword-123!")
+        db = try BlazeDBClient(name: "test", fileURL: try requireFixture(tempURL), password: "TestPassword-123!")
         BlazeLogger.enableSilentMode()
     }
     
     override func tearDown() {
         db = nil
-        try? FileManager.default.removeItem(at: tempURL)
-        try? FileManager.default.removeItem(at: tempURL.deletingPathExtension().appendingPathExtension("meta"))
+        try? FileManager.default.removeItem(at: try requireFixture(tempURL))
+        try? FileManager.default.removeItem(at: try requireFixture(tempURL).deletingPathExtension().appendingPathExtension("meta"))
         BlazeLogger.reset()
         super.tearDown()
     }
@@ -40,15 +40,15 @@ final class TypeSafetyEdgeCaseTests: XCTestCase {
     
     func testTypeSafeDocumentPersistedAfterReopen() async throws {
         let bug = TestBug(title: "Persisted", priority: 1, status: "open")
-        try await db.insert(bug)
-        try await db.persist()
+        try await requireFixture(db).insert(bug)
+        try await requireFixture(db).persist()
         
         // Reopen database
         db = nil
-        db = try! BlazeDBClient(name: "test", fileURL: tempURL, password: "TestPassword-123!")
+        db = try BlazeDBClient(name: "test", fileURL: try requireFixture(tempURL), password: "TestPassword-123!")
         
         // Fetch and verify
-        let fetched = try await db.fetch(TestBug.self, id: bug.id)
+        let fetched = try await requireFixture(db).fetch(TestBug.self, id: bug.id)
         XCTAssertNotNil(fetched)
         XCTAssertEqual(fetched?.title, "Persisted")
     }
@@ -81,12 +81,12 @@ final class TypeSafetyEdgeCaseTests: XCTestCase {
         let bug = TestBug(title: "Bug", priority: 1, status: "open")
         let doc = SimpleDoc(value: "test")
         
-        try await db.insert(bug)
-        try await db.insert(doc)
+        try await requireFixture(db).insert(bug)
+        try await requireFixture(db).insert(doc)
         
         // Fetch both types
-        let fetchedBug = try await db.fetch(TestBug.self, id: bug.id)
-        let fetchedDoc = try await db.fetch(SimpleDoc.self, id: doc.id)
+        let fetchedBug = try await requireFixture(db).fetch(TestBug.self, id: bug.id)
+        let fetchedDoc = try await requireFixture(db).fetch(SimpleDoc.self, id: doc.id)
         
         XCTAssertNotNil(fetchedBug)
         XCTAssertNotNil(fetchedDoc)
@@ -108,16 +108,16 @@ final class TypeSafetyEdgeCaseTests: XCTestCase {
             "extraField1": .string("extra"),  // Extra!
             "extraField2": .int(999)          // Extra!
         ])
-        let id = try await db.insert(record)
+        let id = try await requireFixture(db).insert(record)
         
         // Fetch as typed (extra fields ignored)
-        let bug = try await db.fetch(TestBug.self, id: id)
+        let bug = try await requireFixture(db).fetch(TestBug.self, id: id)
         XCTAssertNotNil(bug)
         XCTAssertEqual(bug?.title, "Bug")
         
         // Extra fields not accessible via typed interface
         // But still in storage!
-        let recordAgain = try await db.fetch(id: id)
+        let recordAgain = try await requireFixture(db).fetch(id: id)
         XCTAssertNotNil(recordAgain?["extraField1"])
         XCTAssertNotNil(recordAgain?["extraField2"])
     }
@@ -133,10 +133,10 @@ final class TypeSafetyEdgeCaseTests: XCTestCase {
             "createdAt": .date(Date())
             // No assignee field
         ])
-        let id = try await db.insert(record)
+        let id = try await requireFixture(db).insert(record)
         
         // Fetch as typed (should use nil for assignee)
-        let bug = try await db.fetch(TestBug.self, id: id)
+        let bug = try await requireFixture(db).fetch(TestBug.self, id: id)
         XCTAssertNotNil(bug)
         XCTAssertNil(bug?.assignee)
     }
@@ -151,9 +151,9 @@ final class TypeSafetyEdgeCaseTests: XCTestCase {
             "tags": .array([]),
             "createdAt": .date(Date())
         ])
-        let id = try await db.insert(record)
+        let id = try await requireFixture(db).insert(record)
         
-        let bug = try await db.fetch(TestBug.self, id: id)
+        let bug = try await requireFixture(db).fetch(TestBug.self, id: id)
         XCTAssertNil(bug?.assignee)
     }
     
@@ -168,16 +168,16 @@ final class TypeSafetyEdgeCaseTests: XCTestCase {
             assignee: "Alice",
             tags: ["tag1"]
         )
-        try await db.insert(bug)
+        try await requireFixture(db).insert(bug)
         
         // Update only some fields
         var updated = bug
         updated.priority = 10
         // Keep title, status, assignee, tags unchanged
-        try await db.update(updated)
+        try await requireFixture(db).update(updated)
         
         // Verify selective update
-        let fetched = try await db.fetch(TestBug.self, id: bug.id)
+        let fetched = try await requireFixture(db).fetch(TestBug.self, id: bug.id)
         XCTAssertEqual(fetched?.title, "Original")  // Unchanged
         XCTAssertEqual(fetched?.priority, 10)  // Changed
         XCTAssertEqual(fetched?.status, "open")  // Unchanged
@@ -194,7 +194,7 @@ final class TypeSafetyEdgeCaseTests: XCTestCase {
             assignee: "Alice",
             tags: ["old"]
         )
-        try await db.insert(bug)
+        try await requireFixture(db).insert(bug)
         
         // Update all fields
         bug.title = "New Title"
@@ -202,10 +202,10 @@ final class TypeSafetyEdgeCaseTests: XCTestCase {
         bug.status = "closed"
         bug.assignee = "Bob"
         bug.tags = ["new", "updated"]
-        try await db.update(bug)
+        try await requireFixture(db).update(bug)
         
         // Verify all changed
-        let fetched = try await db.fetch(TestBug.self, id: bug.id)
+        let fetched = try await requireFixture(db).fetch(TestBug.self, id: bug.id)
         XCTAssertEqual(fetched?.title, "New Title")
         XCTAssertEqual(fetched?.priority, 10)
         XCTAssertEqual(fetched?.status, "closed")
@@ -217,7 +217,7 @@ final class TypeSafetyEdgeCaseTests: XCTestCase {
         let bug = TestBug(title: "Non-existent", priority: 1, status: "open")
         
         do {
-            try await db.update(bug)
+            try await requireFixture(db).update(bug)
             XCTFail("Should have thrown error for non-existent document")
         } catch {
             // Expected
@@ -228,13 +228,13 @@ final class TypeSafetyEdgeCaseTests: XCTestCase {
     
     func testInsertManyEmpty() async throws {
         let bugs: [TestBug] = []
-        let ids = try await db.insertMany(bugs)
+        let ids = try await requireFixture(db).insertMany(bugs)
         XCTAssertEqual(ids.count, 0)
     }
     
     func testInsertManySingleItem() async throws {
         let bugs = [TestBug(title: "Solo", priority: 1, status: "open")]
-        let ids = try await db.insertMany(bugs)
+        let ids = try await requireFixture(db).insertMany(bugs)
         XCTAssertEqual(ids.count, 1)
     }
     
@@ -243,11 +243,11 @@ final class TypeSafetyEdgeCaseTests: XCTestCase {
             TestBug(title: "Bug \(i)", priority: i % 10, status: "open")
         }
         
-        let ids = try await db.insertMany(bugs)
+        let ids = try await requireFixture(db).insertMany(bugs)
         XCTAssertEqual(ids.count, 1000)
         
         // Verify all inserted
-        let count = try await try db.count()
+        let count = try await requireFixture(db).count()
         XCTAssertEqual(count, 1000)
     }
     
@@ -259,7 +259,7 @@ final class TypeSafetyEdgeCaseTests: XCTestCase {
         ]
         
         do {
-            let _ = try await db.insertMany(bugs)
+            let _ = try await requireFixture(db).insertMany(bugs)
             XCTFail("Should have thrown error for duplicate ID")
         } catch {
             // Expected
@@ -269,19 +269,19 @@ final class TypeSafetyEdgeCaseTests: XCTestCase {
     // MARK: - Fetch Edge Cases
     
     func testFetchNonExistent_ReturnsNil() async throws {
-        let bug = try await db.fetch(TestBug.self, id: UUID())
+        let bug = try await requireFixture(db).fetch(TestBug.self, id: UUID())
         XCTAssertNil(bug)
     }
     
     func testFetchAllEmpty_ReturnsEmpty() async throws {
-        let bugs = try await db.fetchAll(TestBug.self)
+        let bugs = try await requireFixture(db).fetchAll(TestBug.self)
         XCTAssertEqual(bugs.count, 0)
     }
     
     func testFetchAllWithPartiallyInvalidRecords() async throws {
         // Insert some valid bugs
-        try await db.insert(TestBug(title: "Valid 1", priority: 1, status: "open"))
-        try await db.insert(TestBug(title: "Valid 2", priority: 2, status: "open"))
+        try await requireFixture(db).insert(TestBug(title: "Valid 1", priority: 1, status: "open"))
+        try await requireFixture(db).insert(TestBug(title: "Valid 2", priority: 2, status: "open"))
         
         // Insert invalid record (missing field)
         let invalid = BlazeDataRecord([
@@ -289,11 +289,11 @@ final class TypeSafetyEdgeCaseTests: XCTestCase {
             "title": .string("Invalid")
             // Missing priority!
         ])
-        try await db.insert(invalid)
+        try await requireFixture(db).insert(invalid)
         
         // FetchAll should throw when it hits invalid record
         do {
-            let _ = try await db.fetchAll(TestBug.self)
+            let _ = try await requireFixture(db).fetchAll(TestBug.self)
             XCTFail("Should have thrown error for invalid record")
         } catch {
             // Expected
@@ -307,12 +307,12 @@ final class TypeSafetyEdgeCaseTests: XCTestCase {
         let bug1 = TestBug(title: "Bug 1", priority: 1, status: "open")
         let bug2 = TestBug(title: "Bug 2", priority: 2, status: "open")
         
-        let id1 = try await db.insert(bug1)
-        let id2 = try await db.insert(bug2)
+        let id1 = try await requireFixture(db).insert(bug1)
+        let id2 = try await requireFixture(db).insert(bug2)
         
         // Verify both committed
-        let fetched1 = try await db.fetch(TestBug.self, id: id1)
-        let fetched2 = try await db.fetch(TestBug.self, id: id2)
+        let fetched1 = try await requireFixture(db).fetch(TestBug.self, id: id1)
+        let fetched2 = try await requireFixture(db).fetch(TestBug.self, id: id2)
         
         XCTAssertEqual(fetched1?.title, "Bug 1")
         XCTAssertEqual(fetched2?.title, "Bug 2")
@@ -320,16 +320,16 @@ final class TypeSafetyEdgeCaseTests: XCTestCase {
     
     func testTypeSafeRollback() async throws {
         // Insert initial bug
-        try await db.insert(TestBug(title: "Initial", priority: 1, status: "open"))
+        try await requireFixture(db).insert(TestBug(title: "Initial", priority: 1, status: "open"))
         
         // Insert a second bug then delete it (simulating rollback behavior)
-        let id2 = try await db.insert(TestBug(title: "ToDelete", priority: 2, status: "open"))
+        let id2 = try await requireFixture(db).insert(TestBug(title: "ToDelete", priority: 2, status: "open"))
         
         // Delete it
-        try await db.delete(id: id2)
+        try await requireFixture(db).delete(id: id2)
         
         // Verify only initial bug remains
-        let bugs = try await db.fetchAll(TestBug.self)
+        let bugs = try await requireFixture(db).fetchAll(TestBug.self)
         XCTAssertEqual(bugs.count, 1)  // Only initial bug
         XCTAssertEqual(bugs[0].title, "Initial")
     }
@@ -343,9 +343,9 @@ final class TypeSafetyEdgeCaseTests: XCTestCase {
             status: "open",
             tags: ["日本語", "한국어", "العربية"]  // Multiple languages
         )
-        try await db.insert(bug)
+        try await requireFixture(db).insert(bug)
         
-        let fetched = try await db.fetch(TestBug.self, id: bug.id)
+        let fetched = try await requireFixture(db).fetch(TestBug.self, id: bug.id)
         XCTAssertEqual(fetched?.title, "修复登录错误 🐛")
         XCTAssertEqual(fetched?.tags, ["日本語", "한국어", "العربية"])
     }
@@ -358,9 +358,9 @@ final class TypeSafetyEdgeCaseTests: XCTestCase {
             assignee: "Alice 👩‍💻",
             tags: ["🐛", "⚡", "💡"]
         )
-        try await db.insert(bug)
+        try await requireFixture(db).insert(bug)
         
-        let fetched = try await db.fetch(TestBug.self, id: bug.id)
+        let fetched = try await requireFixture(db).fetch(TestBug.self, id: bug.id)
         XCTAssertEqual(fetched?.title, "🔥🚀💎✨")
         XCTAssertEqual(fetched?.status, "🎯")
         XCTAssertEqual(fetched?.assignee, "Alice 👩‍💻")
@@ -373,9 +373,9 @@ final class TypeSafetyEdgeCaseTests: XCTestCase {
             priority: 1,
             status: "open"
         )
-        try await db.insert(bug)
+        try await requireFixture(db).insert(bug)
         
-        let fetched = try await db.fetch(TestBug.self, id: bug.id)
+        let fetched = try await requireFixture(db).fetch(TestBug.self, id: bug.id)
         XCTAssertEqual(fetched?.title, "Line 1\nLine 2\tTabbed")
     }
     
@@ -387,9 +387,9 @@ final class TypeSafetyEdgeCaseTests: XCTestCase {
             priority: Int.max,
             status: "open"
         )
-        try await db.insert(bug)
+        try await requireFixture(db).insert(bug)
         
-        let fetched = try await db.fetch(TestBug.self, id: bug.id)
+        let fetched = try await requireFixture(db).fetch(TestBug.self, id: bug.id)
         XCTAssertEqual(fetched?.priority, Int.max)
     }
     
@@ -399,9 +399,9 @@ final class TypeSafetyEdgeCaseTests: XCTestCase {
             priority: Int.min,
             status: "open"
         )
-        try await db.insert(bug)
+        try await requireFixture(db).insert(bug)
         
-        let fetched = try await db.fetch(TestBug.self, id: bug.id)
+        let fetched = try await requireFixture(db).fetch(TestBug.self, id: bug.id)
         XCTAssertEqual(fetched?.priority, Int.min)
     }
     
@@ -414,9 +414,9 @@ final class TypeSafetyEdgeCaseTests: XCTestCase {
             status: "open",
             createdAt: epoch
         )
-        try await db.insert(bug)
+        try await requireFixture(db).insert(bug)
         
-        let fetched = try await db.fetch(TestBug.self, id: bug.id)
+        let fetched = try await requireFixture(db).fetch(TestBug.self, id: bug.id)
         XCTAssertEqual(fetched?.createdAt.timeIntervalSince1970 ?? 0, 0, accuracy: 0.001)
     }
     
@@ -429,9 +429,9 @@ final class TypeSafetyEdgeCaseTests: XCTestCase {
             status: "open",
             createdAt: future
         )
-        try await db.insert(bug)
+        try await requireFixture(db).insert(bug)
         
-        let fetched = try await db.fetch(TestBug.self, id: bug.id)
+        let fetched = try await requireFixture(db).fetch(TestBug.self, id: bug.id)
         XCTAssertEqual(fetched?.createdAt.timeIntervalSince1970 ?? 0, future.timeIntervalSince1970, accuracy: 0.001)
     }
     
@@ -444,9 +444,9 @@ final class TypeSafetyEdgeCaseTests: XCTestCase {
             status: "open",
             tags: ["", "", ""]
         )
-        try await db.insert(bug)
+        try await requireFixture(db).insert(bug)
         
-        let fetched = try await db.fetch(TestBug.self, id: bug.id)
+        let fetched = try await requireFixture(db).fetch(TestBug.self, id: bug.id)
         XCTAssertEqual(fetched?.tags, ["", "", ""])
     }
     
@@ -459,14 +459,14 @@ final class TypeSafetyEdgeCaseTests: XCTestCase {
             status: "open",
             tags: [longString, longString]
         )
-        let insertedID = try await db.insert(bug)
+        let insertedID = try await requireFixture(db).insert(bug)
         
         print("📊 Array test:")
         print("  Inserted ID: \(insertedID)")
         print("  Original tags count: \(bug.tags.count)")
         
         // Debug: Check raw storage
-        let rawRecord = try await db.fetch(id: insertedID)
+        let rawRecord = try await requireFixture(db).fetch(id: insertedID)
         if let rawRecord = rawRecord {
             print("  Raw storage keys: \(rawRecord.storage.keys.sorted())")
             if let tagsField = rawRecord.storage["tags"] {
@@ -476,7 +476,7 @@ final class TypeSafetyEdgeCaseTests: XCTestCase {
             }
         }
         
-        let fetched = try await db.fetch(TestBug.self, id: insertedID)
+        let fetched = try await requireFixture(db).fetch(TestBug.self, id: insertedID)
         
         print("  Fetched: \(fetched != nil ? "success" : "nil")")
         if let fetched = fetched {
@@ -498,9 +498,9 @@ final class TypeSafetyEdgeCaseTests: XCTestCase {
             status: "open",
             tags: ["z", "a", "m", "b"]
         )
-        try await db.insert(bug)
+        try await requireFixture(db).insert(bug)
         
-        let fetched = try await db.fetch(TestBug.self, id: bug.id)
+        let fetched = try await requireFixture(db).fetch(TestBug.self, id: bug.id)
         XCTAssertEqual(fetched?.tags, ["z", "a", "m", "b"])  // Same order
     }
     
@@ -509,7 +509,7 @@ final class TypeSafetyEdgeCaseTests: XCTestCase {
     func testConcurrentTypedAndDynamicFetches() async throws {
         // Insert bug
         let bug = TestBug(title: "Bug", priority: 1, status: "open")
-        try await db.insert(bug)
+        try await requireFixture(db).insert(bug)
         
         // NOTE: Due to current concurrency limitations, run fetches sequentially
         // Concurrent reads can experience race conditions with the current NSLock + GCD barrier implementation
@@ -520,12 +520,12 @@ final class TypeSafetyEdgeCaseTests: XCTestCase {
         
         for _ in 1...5 {
             // Typed fetch
-            if let _ = try? await db.fetch(TestBug.self, id: bug.id) {
+            if let _ = try? await try requireFixture(db).fetch(TestBug.self, id: bug.id) {
                 typedSuccessCount += 1
             }
             
             // Dynamic fetch
-            if let _ = try? await db.fetch(id: bug.id) {
+            if let _ = try? await try requireFixture(db).fetch(id: bug.id) {
                 dynamicSuccessCount += 1
             }
         }
@@ -540,13 +540,13 @@ final class TypeSafetyEdgeCaseTests: XCTestCase {
     func testConcurrentTypedUpdates() async throws {
         // Insert bug
         let bug = TestBug(title: "Bug", priority: 1, status: "open")
-        try await db.insert(bug)
+        try await requireFixture(db).insert(bug)
         
-        let db = self.db!
+        let db = try XCTUnwrap(self.db)
         // Concurrent updates (last one wins)
         await withTaskGroup(of: Void.self) { group in
             for i in 1...10 {
-                group.addTask {
+                group.addTask { [db] in
                     var updated = bug
                     updated.priority = i
                     try? await db.update(updated)
@@ -555,7 +555,7 @@ final class TypeSafetyEdgeCaseTests: XCTestCase {
         }
         
         // Verify one of the updates succeeded
-        let fetched = try await db.fetch(TestBug.self, id: bug.id)
+        let fetched = try await requireFixture(db).fetch(TestBug.self, id: bug.id)
         XCTAssertNotNil(fetched)
         XCTAssertGreaterThanOrEqual(fetched!.priority, 1)
         XCTAssertLessThanOrEqual(fetched!.priority, 10)
@@ -566,7 +566,7 @@ final class TypeSafetyEdgeCaseTests: XCTestCase {
     func testQueryTypeSafeConversion_WithFilters() async throws {
         // Insert mixed priorities
         for i in 1...10 {
-            try await db.insert(TestBug(
+            try await requireFixture(db).insert(TestBug(
                 title: "Bug \(i)",
                 priority: i,
                 status: "open"
@@ -574,7 +574,7 @@ final class TypeSafetyEdgeCaseTests: XCTestCase {
         }
         
         // Query and convert to typed
-        let result = try await db.query()
+        let result = try await requireFixture(db).query()
             .where("priority", greaterThan: .int(5))
             .execute()
         
@@ -588,12 +588,12 @@ final class TypeSafetyEdgeCaseTests: XCTestCase {
     
     func testQueryTypeSafeConversion_WithSorting() async throws {
         // Insert in random order
-        try await db.insert(TestBug(title: "C", priority: 3, status: "open"))
-        try await db.insert(TestBug(title: "A", priority: 1, status: "open"))
-        try await db.insert(TestBug(title: "B", priority: 2, status: "open"))
+        try await requireFixture(db).insert(TestBug(title: "C", priority: 3, status: "open"))
+        try await requireFixture(db).insert(TestBug(title: "A", priority: 1, status: "open"))
+        try await requireFixture(db).insert(TestBug(title: "B", priority: 2, status: "open"))
         
         // Query with sorting
-        let result = try await db.query()
+        let result = try await requireFixture(db).query()
             .orderBy("title", descending: false)
             .execute()
         
@@ -608,24 +608,24 @@ final class TypeSafetyEdgeCaseTests: XCTestCase {
     
     func testQueryTypeSafeConversion_Empty() async throws {
         // Query empty database
-        let result = try await db.query().execute()
+        let result = try await requireFixture(db).query().execute()
         let bugs = try result.records(as: TestBug.self)
         XCTAssertEqual(bugs.count, 0)
     }
     
     func testQueryTypeSafeConversion_WithInvalidRecords() async throws {
         // Insert valid bug
-        try await db.insert(TestBug(title: "Valid", priority: 1, status: "open"))
+        try await requireFixture(db).insert(TestBug(title: "Valid", priority: 1, status: "open"))
         
         // Insert invalid record (missing field)
-        try await db.insert(BlazeDataRecord([
+        try await requireFixture(db).insert(BlazeDataRecord([
             "id": .uuid(UUID()),
             "title": .string("Invalid")
             // Missing priority!
         ]))
         
         // Query and try to convert (should throw on invalid)
-        let result = try await db.query().execute()
+        let result = try await requireFixture(db).query().execute()
         
         do {
             let _ = try result.records(as: TestBug.self)
@@ -640,7 +640,7 @@ final class TypeSafetyEdgeCaseTests: XCTestCase {
     func testTypeSafeLargeDataset_NoMemoryLeaks() async throws {
         // Insert 1000 records dynamically (TestBug not available in this file)
         for i in 1...1000 {
-            _ = try await db.insert(BlazeDataRecord([
+            _ = try await requireFixture(db).insert(BlazeDataRecord([
                 "title": .string("Bug \(i)"),
                 "priority": .int(i % 10),
                 "status": .string("open")
@@ -649,7 +649,7 @@ final class TypeSafetyEdgeCaseTests: XCTestCase {
         
         // Fetch all repeatedly (check for memory leaks)
         for _ in 1...5 {
-            let bugs = try await db.fetchAll()
+            let bugs = try await requireFixture(db).fetchAll()
             XCTAssertEqual(bugs.count, 1000)
         }
         
@@ -659,7 +659,7 @@ final class TypeSafetyEdgeCaseTests: XCTestCase {
     func testTypeSafeConversionPerformance() async throws {
         // Insert 1000 bugs dynamically
         for i in 1...1000 {
-            _ = try await db.insert(BlazeDataRecord([
+            _ = try await requireFixture(db).insert(BlazeDataRecord([
                 "id": .uuid(UUID()),
                 "title": .string("Bug \(i)"),
                 "priority": .int(i % 10),
@@ -670,15 +670,22 @@ final class TypeSafetyEdgeCaseTests: XCTestCase {
         }
         
         // Measure type-safe fetch performance
-        let db = self.db!
+        final class SendableDBRef: @unchecked Sendable {
+            let db: BlazeDBClient
+            init(_ db: BlazeDBClient) { self.db = db }
+        }
+        let dbRef = SendableDBRef(try XCTUnwrap(self.db))
         measure {
-            Task {
+            let expectation = XCTestExpectation(description: "Type-safe edge fetch performance")
+            Task { [dbRef] in
                 do {
-                    let _ = try await db.fetchAll(TestBug.self)
+                    let _ = try await dbRef.db.fetchAll(TestBug.self)
                 } catch {
                     XCTFail("Fetch failed: \(error)")
                 }
+                expectation.fulfill()
             }
+            wait(for: [expectation], timeout: 5.0)
         }
     }
     
@@ -697,14 +704,14 @@ final class TypeSafetyEdgeCaseTests: XCTestCase {
             "createdAt": .date(Date()),
             "custom field": .string("value")  // Space in name!
         ])
-        let id = try await db.insert(record)
+        let id = try await requireFixture(db).insert(record)
         
         // Fetch as typed (ignores custom field)
-        let bug = try await db.fetch(TestBug.self, id: id)
+        let bug = try await requireFixture(db).fetch(TestBug.self, id: id)
         XCTAssertNotNil(bug)
         
         // Custom field still accessible via dynamic API
-        let dynamic = try await db.fetch(id: id)
+        let dynamic = try await requireFixture(db).fetch(id: id)
         XCTAssertEqual(dynamic?["custom field"]?.stringValue, "value")
     }
     
@@ -720,13 +727,13 @@ final class TypeSafetyEdgeCaseTests: XCTestCase {
             "field.with.dots": .int(123),
             "field_with_underscores": .bool(true)
         ])
-        let id = try await db.insert(record)
+        let id = try await requireFixture(db).insert(record)
         
-        let bug = try await db.fetch(TestBug.self, id: id)
+        let bug = try await requireFixture(db).fetch(TestBug.self, id: id)
         XCTAssertNotNil(bug)
         
         // Special fields accessible via dynamic API
-        let dynamic = try await db.fetch(id: id)
+        let dynamic = try await requireFixture(db).fetch(id: id)
         XCTAssertEqual(dynamic?["field-with-dashes"]?.stringValue, "value")
         XCTAssertEqual(dynamic?["field.with.dots"]?.intValue, 123)
         XCTAssertEqual(dynamic?["field_with_underscores"]?.boolValue, true)
@@ -762,30 +769,30 @@ final class TypeSafetyEdgeCaseTests: XCTestCase {
     
     func testRapidTypeSafeInserts() async throws {
         for i in 1...100 {
-            try await db.insert(TestBug(
+            try await requireFixture(db).insert(TestBug(
                 title: "Bug \(i)",
                 priority: i % 10,
                 status: "open"
             ))
         }
         
-        let count = try await try db.count()
+        let count = try await requireFixture(db).count()
         XCTAssertEqual(count, 100)
     }
     
     func testRapidTypeSafeUpdates() async throws {
         // Insert bug
         var bug = TestBug(title: "Bug", priority: 1, status: "open")
-        try await db.insert(bug)
+        try await requireFixture(db).insert(bug)
         
         // Rapid updates
         for i in 1...50 {
             bug.priority = i
-            try await db.update(bug)
+            try await requireFixture(db).update(bug)
         }
         
         // Verify final state
-        let fetched = try await db.fetch(TestBug.self, id: bug.id)
+        let fetched = try await requireFixture(db).fetch(TestBug.self, id: bug.id)
         XCTAssertEqual(fetched?.priority, 50)
     }
     
@@ -793,27 +800,27 @@ final class TypeSafetyEdgeCaseTests: XCTestCase {
         let sharedID = UUID()
         
         // Insert typed
-        try await db.insert(TestBug(id: sharedID, title: "Start", priority: 1, status: "open"))
+        try await requireFixture(db).insert(TestBug(id: sharedID, title: "Start", priority: 1, status: "open"))
         
         // Update dynamic
-        var record = try await db.fetch(id: sharedID)!
+        var record = try await requireFixture(db).fetch(id: sharedID)!
         record["priority"] = .int(2)
-        try await db.update(id: sharedID, data: record)
+        try await requireFixture(db).update(id: sharedID, data: record)
         
         // Fetch typed
-        var bug = try await db.fetch(TestBug.self, id: sharedID)!
+        var bug = try await requireFixture(db).fetch(TestBug.self, id: sharedID)!
         XCTAssertEqual(bug.priority, 2)
         
         // Update typed
         bug.priority = 3
-        try await db.update(bug)
+        try await requireFixture(db).update(bug)
         
         // Fetch dynamic
-        record = try await db.fetch(id: sharedID)!
+        record = try await requireFixture(db).fetch(id: sharedID)!
         XCTAssertEqual(record["priority"]?.intValue, 3)
         
         // Final verification
-        let final = try await db.fetch(TestBug.self, id: sharedID)
+        let final = try await requireFixture(db).fetch(TestBug.self, id: sharedID)
         XCTAssertEqual(final?.priority, 3)
     }
 }

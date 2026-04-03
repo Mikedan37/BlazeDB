@@ -3,7 +3,7 @@
 **Purpose:** This is a comprehensive reference guide for AI assistants implementing BlazeDB in new projects. It covers all usage patterns, APIs, and best practices.
 
 **Last Updated:** 2026-01-23
-**BlazeDB Version:** 2.7.0+
+**BlazeDB Version:** 2.7.2+
 
 ---
 
@@ -21,7 +21,7 @@ This guide is a reference, not a mandate. When implementing BlazeDB:
 
 ## Versioning & API Stability
 
-- This guide targets BlazeDB 2.7.0+.
+- This guide targets BlazeDB 2.7.2+.
 - APIs may evolve. If code generated from this guide conflicts with compiler errors or library updates, the compiler wins.
 - Do not assume undocumented APIs exist. Only use methods and patterns documented in this guide or the official BlazeDB API.
 - **Note:** Distributed sync features are not yet Swift 6 compliant and are excluded from core builds. Use only core features unless explicitly needed.
@@ -52,7 +52,7 @@ This guide is a reference, not a mandate. When implementing BlazeDB:
 ```swift
 // Package.swift
 dependencies: [
-.package(url: "https://github.com/Mikedan37/BlazeDB.git", from: "2.7.0")
+.package(url: "https://github.com/Mikedan37/BlazeDB.git", from: "2.7.2")
 ]
 ```
 
@@ -60,12 +60,12 @@ dependencies: [
 
 1. **File → Add Package Dependencies**
 2. Enter: `https://github.com/Mikedan37/BlazeDB.git`
-3. Select version: `2.7.0` or later
+3. Select version: `2.7.2` or later
 
 ### Import
 
 ```swift
-import BlazeDBCore  // Core database functionality
+import BlazeDBCore // Core database functionality
 // SwiftUI integration is conditionally available on macOS/iOS/watchOS/tvOS
 ```
 
@@ -950,17 +950,17 @@ services:
  build:.
  container_name: blazedb-server
  ports:
- - "9090:9090"
+- "9090:9090"
  environment:
- - BLAZEDB_DB_NAME=ServerMainDB
- - BLAZEDB_PASSWORD=secure-password-123
- - BLAZEDB_PROJECT=Production
- - BLAZEDB_PORT=9090
- - BLAZEDB_AUTH_TOKEN=secret-token-123 # Optional
- - BLAZEDB_SHARED_SECRET= # Optional
+- BLAZEDB_DB_NAME=ServerMainDB
+- BLAZEDB_PASSWORD=secure-password-123
+- BLAZEDB_PROJECT=Production
+- BLAZEDB_PORT=9090
+- BLAZEDB_AUTH_TOKEN=secret-token-123 # Optional
+- BLAZEDB_SHARED_SECRET= # Optional
  restart: unless-stopped
  volumes:
- -./data:/root/Library/Application Support/BlazeDB # Persist database
+-./data:/root/Library/Application Support/BlazeDB # Persist database
 ```
 
 Start the server:
@@ -984,13 +984,13 @@ docker build -t blazedb-server.
 
 # Run container
 docker run -d \
- --name blazedb-server \
- -p 9090:9090 \
- -e BLAZEDB_DB_NAME=ServerMainDB \
- -e BLAZEDB_PASSWORD=secure-password-123 \
- -e BLAZEDB_PROJECT=Production \
- -e BLAZEDB_AUTH_TOKEN=secret-token-123 \
- -v $(pwd)/data:/root/Library/Application\ Support/BlazeDB \
+--name blazedb-server \
+-p 9090:9090 \
+-e BLAZEDB_DB_NAME=ServerMainDB \
+-e BLAZEDB_PASSWORD=secure-password-123 \
+-e BLAZEDB_PROJECT=Production \
+-e BLAZEDB_AUTH_TOKEN=secret-token-123 \
+-v $(pwd)/data:/root/Library/Application\ Support/BlazeDB \
  blazedb-server
 
 # View logs

@@ -98,13 +98,13 @@ IMPLEMENTATION STEPS:
 
 STEP 1: Introduce worker isolation
 - Create actor-based workers:
-  - EncodingWorker
-  - CompressionWorker
+- EncodingWorker
+- CompressionWorker
 - Each actor:
-  - Holds no shared mutable state
-  - Exposes async methods like:
-    encode(records) -> [UInt8]
-    compress(bytes) -> [UInt8]
+- Holds no shared mutable state
+- Exposes async methods like:
+ encode(records) -> [UInt8]
+ compress(bytes) -> [UInt8]
 
 STEP 2: Add a lightweight worker pool
 - Use a small fixed pool (e.g. min(cores, 4))
@@ -113,9 +113,9 @@ STEP 2: Add a lightweight worker pool
 
 STEP 3: Refactor write pipeline
 - Change the pipeline shape to:
-  1) await encoding in parallel
-  2) await compression in parallel
-  3) call PageStore synchronously with final bytes
+ 1) await encoding in parallel
+ 2) await compression in parallel
+ 3) call PageStore synchronously with final bytes
 - Storage remains fully serial
 
 STEP 4: Eliminate Task.detached
@@ -125,17 +125,17 @@ STEP 4: Eliminate Task.detached
 
 STEP 5: Instrument performance
 - Add lightweight timing logs around:
-  - encode
-  - compress
-  - write
+- encode
+- compress
+- write
 - Print per-batch timings in DEBUG builds
 
 STEP 6: Verification
 - Re-run existing durability tests
 - Add a performance smoke test:
-  - Insert 1,000+ records
-  - Verify correctness
-  - Log batch timing deltas vs Phase 1
+- Insert 1,000+ records
+- Verify correctness
+- Log batch timing deltas vs Phase 1
 
 EXPECTED OUTCOME:
 - Encoding + compression parallelized
@@ -155,12 +155,12 @@ DO NOT:
 ## When Phase 2 is "Done"
 
 Phase 2 is complete when all of these are true:
--  Encoding/compression are parallel
--  PageStore unchanged
--  Swift 6 still trusts the code
--  Durability tests still pass
--  Throughput improved measurably
--  No new concurrency warnings
+- Encoding/compression are parallel
+- PageStore unchanged
+- Swift 6 still trusts the code
+- Durability tests still pass
+- Throughput improved measurably
+- No new concurrency warnings
 
 **If you don't see at least ~30% throughput gain, stop. The bottleneck moved.**
 

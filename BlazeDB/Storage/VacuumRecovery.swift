@@ -42,10 +42,10 @@ extension BlazeDBClient {
                 // VACUUM completed successfully but cleanup didn't finish
                 BlazeLogger.info("VACUUM was successful, cleaning up...")
                 
-                try? FileManager.default.removeItem(at: dataBackupURL)
-                try? FileManager.default.removeItem(at: metaBackupURL)
-                try? FileManager.default.removeItem(at: vacuumLogURL)
-                try? FileManager.default.removeItem(at: successMarkerURL)
+                BlazeAuthoritativeFileOps.removeItemIfExists(at: dataBackupURL, context: "VacuumRecovery(success cleanup data backup)")
+                BlazeAuthoritativeFileOps.removeItemIfExists(at: metaBackupURL, context: "VacuumRecovery(success cleanup meta backup)")
+                BlazeAuthoritativeFileOps.removeItemIfExists(at: vacuumLogURL, context: "VacuumRecovery(success cleanup intent)")
+                BlazeAuthoritativeFileOps.removeItemIfExists(at: successMarkerURL, context: "VacuumRecovery(success marker)")
                 
             } else if hasBackup {
                 // VACUUM was in progress when crash happened
@@ -56,8 +56,8 @@ extension BlazeDBClient {
                 let currentMetaURL = collection.metaURL
                 
                 // Remove potentially incomplete current files
-                try? FileManager.default.removeItem(at: currentDataURL)
-                try? FileManager.default.removeItem(at: currentMetaURL)
+                BlazeAuthoritativeFileOps.removeItemIfExists(at: currentDataURL, context: "VacuumRecovery(interrupted remove partial data)")
+                BlazeAuthoritativeFileOps.removeItemIfExists(at: currentMetaURL, context: "VacuumRecovery(interrupted remove partial meta)")
                 
                 // Restore from backup
                 if FileManager.default.fileExists(atPath: dataBackupURL.path) {
@@ -68,13 +68,13 @@ extension BlazeDBClient {
                 }
                 
                 // Clean up
-                try? FileManager.default.removeItem(at: vacuumLogURL)
+                BlazeAuthoritativeFileOps.removeItemIfExists(at: vacuumLogURL, context: "VacuumRecovery(post-restore intent)")
                 
                 BlazeLogger.info("Restored from VACUUM backup successfully")
                 
             } else {
                 // No backup, VACUUM probably failed early - just clean up marker
-                try? FileManager.default.removeItem(at: vacuumLogURL)
+                BlazeAuthoritativeFileOps.removeItemIfExists(at: vacuumLogURL, context: "VacuumRecovery(early fail intent)")
                 BlazeLogger.info("Cleaned up incomplete VACUUM marker")
             }
             

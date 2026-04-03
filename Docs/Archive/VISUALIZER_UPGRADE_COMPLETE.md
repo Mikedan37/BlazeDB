@@ -4,12 +4,12 @@
 
 BlazeDBVisualizer has been transformed from a simple file browser into a **PROFESSIONAL DATABASE MANAGEMENT TOOL** with:
 
- **Real-time Monitoring Dashboard**
- **Secure Password Management (Keychain + Touch ID)**
- **Live Health Indicators**
- **Maintenance Tools (VACUUM, GC)**
- **Comprehensive Test Suite**
- **Beautiful, User-Friendly UI**
+**Real-time Monitoring Dashboard**
+**Secure Password Management (Keychain + Touch ID)**
+**Live Health Indicators**
+**Maintenance Tools (VACUUM, GC)**
+**Comprehensive Test Suite**
+**Beautiful, User-Friendly UI**
 
 > **Note**: Built for macOS with Touch ID. Future visionOS support planned!
 
@@ -132,33 +132,33 @@ struct DBRecord {
 **Cards:**
 
 1. **Health Card**
- - Status badge (HEALTHY/WARNING/CRITICAL)
- - Warning list (with icons)
- - Color-coded indicators
+- Status badge (HEALTHY/WARNING/CRITICAL)
+- Warning list (with icons)
+- Color-coded indicators
 
 2. **Storage Card**
- - Records count
- - Database size
- - Page stats
- - Fragmentation bar (with warning color if >30%)
+- Records count
+- Database size
+- Page stats
+- Fragmentation bar (with warning color if >30%)
 
 3. **Performance Card**
- - MVCC status (ON/OFF)
- - Index count
- - Version counts
- - GC stats
+- MVCC status (ON/OFF)
+- Index count
+- Version counts
+- GC stats
 
 4. **Schema Card**
- - Total fields
- - Field types (name → type mapping)
- - Index count
+- Total fields
+- Field types (name → type mapping)
+- Index count
 
-5. **Maintenance Card** 
- - VACUUM button (with warning icon if needed)
- - GC button (with warning icon if needed)
- - Completion messages
+5. **Maintenance Card**
+- VACUUM button (with warning icon if needed)
+- GC button (with warning icon if needed)
+- Completion messages
 
-#### **DetailView.swift** (Upgraded) 
+#### **DetailView.swift** (Upgraded)
 - **Three States**: Locked → Unlocked → Deleted
 - **Password Prompt Overlay**: Beautiful modal with blur
 - **Monitoring Integration**: Shows dashboard after unlock
@@ -538,7 +538,7 @@ We just transformed **BlazeDBVisualizer** from a simple file browser into a **PR
 
 - **Industry-Standard Security** (Keychain + Touch ID)
 - **Real-Time Monitoring** (5-second live updates)
--  **Maintenance Tools** (VACUUM, GC)
+- **Maintenance Tools** (VACUUM, GC)
 - **Beautiful UI** (Native SwiftUI for macOS)
 - **89 Comprehensive Tests** (Unit + UI + Integration)
 - **Zero Technical Debt**
@@ -558,7 +558,7 @@ We just transformed **BlazeDBVisualizer** from a simple file browser into a **PR
 
 ---
 
-**Built with  by AI + Human collaboration**
+**Built with by AI + Human collaboration**
 **Date: November 13, 2025**
 **Status: COMPLETE **
 

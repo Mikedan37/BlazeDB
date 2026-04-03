@@ -12,24 +12,24 @@ import XCTest
 
 final class QueryExplainTests: XCTestCase {
     
-    var tempURL: URL!
-    var db: BlazeDBClient!
+    private var tempURL: URL?
+    private var db: BlazeDBClient?
     
     override func setUpWithError() throws {
         try super.setUpWithError()
         BlazeDBClient.clearCachedKey()
         tempURL = FileManager.default.temporaryDirectory
             .appendingPathComponent("Explain-\(UUID().uuidString).blazedb")
-        try? FileManager.default.removeItem(at: tempURL)
-        try? FileManager.default.removeItem(at: tempURL.deletingPathExtension().appendingPathExtension("meta"))
-        db = try BlazeDBClient(name: "explain_test", fileURL: tempURL, password: "SecureTestDB-456!")
+        try? FileManager.default.removeItem(at: try requireFixture(tempURL))
+        try? FileManager.default.removeItem(at: try requireFixture(tempURL).deletingPathExtension().appendingPathExtension("meta"))
+        db = try BlazeDBClient(name: "explain_test", fileURL: try requireFixture(tempURL), password: "SecureTestDB-456!")
     }
     
     override func tearDownWithError() throws {
         try db?.close()
         db = nil
-        try? FileManager.default.removeItem(at: tempURL)
-        try? FileManager.default.removeItem(at: tempURL.deletingPathExtension().appendingPathExtension("meta"))
+        try? FileManager.default.removeItem(at: try requireFixture(tempURL))
+        try? FileManager.default.removeItem(at: try requireFixture(tempURL).deletingPathExtension().appendingPathExtension("meta"))
         BlazeDBClient.clearCachedKey()
         try super.tearDownWithError()
     }
@@ -38,10 +38,10 @@ final class QueryExplainTests: XCTestCase {
     
     func testExplainSimpleQuery() throws {
         for i in 0..<100 {
-            _ = try db.insert(BlazeDataRecord(["index": .int(i)]))
+            _ = try requireFixture(db).insert(BlazeDataRecord(["index": .int(i)]))
         }
         
-        let plan = try db.query()
+        let plan = try requireFixture(db).query()
             .where("index", greaterThan: .int(50))
             .explain()
         
@@ -55,9 +55,9 @@ final class QueryExplainTests: XCTestCase {
         let records = (0..<1000).map { i in
             BlazeDataRecord(["value": .int(i)])
         }
-        _ = try db.insertMany(records)
+        _ = try requireFixture(db).insertMany(records)
         
-        let plan = try db.query()
+        let plan = try requireFixture(db).query()
             .limit(10)
             .explain()
         
@@ -66,10 +66,10 @@ final class QueryExplainTests: XCTestCase {
     
     func testExplainWithSort() throws {
         for i in 0..<100 {
-            _ = try db.insert(BlazeDataRecord(["value": .int(i)]))
+            _ = try requireFixture(db).insert(BlazeDataRecord(["value": .int(i)]))
         }
         
-        let plan = try db.query()
+        let plan = try requireFixture(db).query()
             .orderBy("value", descending: true)
             .explain()
         
@@ -86,9 +86,9 @@ final class QueryExplainTests: XCTestCase {
         let records = (0..<1000).map { i in
             BlazeDataRecord(["status": .string(i % 2 == 0 ? "open" : "closed")])
         }
-        _ = try db.insertMany(records)
+        _ = try requireFixture(db).insertMany(records)
         
-        let plan = try db.query()
+        let plan = try requireFixture(db).query()
             .groupBy("status")
             .count()
             .explain()
@@ -106,16 +106,16 @@ final class QueryExplainTests: XCTestCase {
         let usersURL = FileManager.default.temporaryDirectory
             .appendingPathComponent("Users-\(UUID().uuidString).blazedb")
         defer { 
-            try? FileManager.default.removeItem(at: usersURL)
-            try? FileManager.default.removeItem(at: usersURL.deletingPathExtension().appendingPathExtension("meta"))
+            try? FileManager.default.removeItem(at: try requireFixture(usersURL))
+            try? FileManager.default.removeItem(at: try requireFixture(usersURL).deletingPathExtension().appendingPathExtension("meta"))
         }
-        let usersDB = try BlazeDBClient(name: "users", fileURL: usersURL, password: "SecureTestDB-456!")
+        let usersDB = try BlazeDBClient(name: "users", fileURL: try requireFixture(usersURL), password: "SecureTestDB-456!")
         
-        _ = try usersDB.insert(BlazeDataRecord(["id": .uuid(UUID())]))
-        _ = try db.insert(BlazeDataRecord(["author_id": .uuid(UUID())]))
+        _ = try requireFixture(usersDB).insert(BlazeDataRecord(["id": .uuid(UUID())]))
+        _ = try requireFixture(db).insert(BlazeDataRecord(["author_id": .uuid(UUID())]))
         
-        let plan = try db.query()
-            .join(usersDB.collection, on: "author_id")
+        let plan = try requireFixture(db).query()
+            .join(try requireFixture(usersDB).collection, on: "author_id")
             .explain()
         
         // Should have join step
@@ -133,18 +133,18 @@ final class QueryExplainTests: XCTestCase {
         let records = (0..<15000).map { i in
             BlazeDataRecord(["value": .int(i)])
         }
-        _ = try db.insertMany(records)
+        _ = try requireFixture(db).insertMany(records)
         
-        let plan = try db.query().explain()
+        let plan = try requireFixture(db).query().explain()
         
         // Should warn about large dataset
         XCTAssertGreaterThan(plan.warnings.count, 0)
     }
     
     func testExplainWarnsManyFilters() throws {
-        _ = try db.insert(BlazeDataRecord(["value": .int(1)]))
+        _ = try requireFixture(db).insert(BlazeDataRecord(["value": .int(1)]))
         
-        let plan = try db.query()
+        let plan = try requireFixture(db).query()
             .where("f1", equals: .int(1))
             .where("f2", equals: .int(1))
             .where("f3", equals: .int(1))
@@ -162,9 +162,9 @@ final class QueryExplainTests: XCTestCase {
         let records = (0..<20000).map { i in
             BlazeDataRecord(["value": .int(i)])
         }
-        _ = try db.insertMany(records)
+        _ = try requireFixture(db).insertMany(records)
         
-        let plan = try db.query()
+        let plan = try requireFixture(db).query()
             .orderBy("value", descending: true)
             .explain()
         
@@ -179,9 +179,9 @@ final class QueryExplainTests: XCTestCase {
         let records = (0..<1000).map { i in
             BlazeDataRecord(["value": .int(i)])
         }
-        _ = try db.insertMany(records)
+        _ = try requireFixture(db).insertMany(records)
         
-        let plan = try db.query()
+        let plan = try requireFixture(db).query()
             .where("value", greaterThan: .int(500))
             .limit(10)
             .explain()
@@ -194,10 +194,10 @@ final class QueryExplainTests: XCTestCase {
     
     func testExplainPrintsReadable() throws {
         for i in 0..<100 {
-            _ = try db.insert(BlazeDataRecord(["value": .int(i)]))
+            _ = try requireFixture(db).insert(BlazeDataRecord(["value": .int(i)]))
         }
         
-        let plan = try db.query()
+        let plan = try requireFixture(db).query()
             .where("value", greaterThan: .int(50))
             .orderBy("value", descending: true)
             .limit(10)
@@ -212,19 +212,19 @@ final class QueryExplainTests: XCTestCase {
     
     func testExplainQueryConvenience() throws {
         for i in 0..<10 {
-            _ = try db.insert(BlazeDataRecord(["value": .int(i)]))
+            _ = try requireFixture(db).insert(BlazeDataRecord(["value": .int(i)]))
         }
         
         // Should not throw
-        XCTAssertNoThrow(try db.query().where("value", equals: .int(5)).explainQuery())
+        XCTAssertNoThrow(try requireFixture(db).query().where("value", equals: .int(5)).explainQuery())
     }
     
     // MARK: - Optimization Hints
     
     func testUseIndexHint() throws {
-        _ = try db.insert(BlazeDataRecord(["status": .string("open")]))
+        _ = try requireFixture(db).insert(BlazeDataRecord(["status": .string("open")]))
         
-        let query = db.query()
+        let query = try requireFixture(db).query()
             .useIndex("status")
             .where("status", equals: .string("open"))
         
@@ -233,9 +233,9 @@ final class QueryExplainTests: XCTestCase {
     }
     
     func testForceTableScanHint() throws {
-        _ = try db.insert(BlazeDataRecord(["value": .int(1)]))
+        _ = try requireFixture(db).insert(BlazeDataRecord(["value": .int(1)]))
         
-        let query = db.query()
+        let query = try requireFixture(db).query()
             .forceTableScan()
             .where("value", equals: .int(1))
         
@@ -254,9 +254,9 @@ final class QueryExplainTests: XCTestCase {
                 "value": .int(i)
             ])
         }
-        _ = try db.insertMany(records)
+        _ = try requireFixture(db).insertMany(records)
         
-        let plan = try db.query()
+        let plan = try requireFixture(db).query()
             .where("status", equals: .string("open"))
             .where("priority", greaterThan: .int(3))
             .orderBy("value", descending: true)
@@ -278,9 +278,9 @@ final class QueryExplainTests: XCTestCase {
                 "value": .int(i)
             ])
         }
-        _ = try db.insertMany(records)
+        _ = try requireFixture(db).insertMany(records)
         
-        let plan = try db.query()
+        let plan = try requireFixture(db).query()
             .where("value", greaterThan: .int(2500))
             .groupBy("team")
             .count()
@@ -300,13 +300,13 @@ final class QueryExplainTests: XCTestCase {
 
     func testExplainListsCandidateIndexesForIndexedFilter() throws {
         for i in 0..<20 {
-            _ = try db.insert(BlazeDataRecord([
+            _ = try requireFixture(db).insert(BlazeDataRecord([
                 "status": .string(i % 2 == 0 ? "open" : "closed")
             ]))
         }
-        try db.collection.createIndex(on: "status")
+        try requireFixture(db).collection.createIndex(on: "status")
 
-        let plan = try db.query()
+        let plan = try requireFixture(db).query()
             .where("status", equals: .string("open"))
             .explain()
 
@@ -318,14 +318,14 @@ final class QueryExplainTests: XCTestCase {
 
     func testDeprecatedPlannerExplain_NotesIndexSelectionIsAdvisory() throws {
         for i in 0..<20 {
-            _ = try db.insert(BlazeDataRecord([
+            _ = try requireFixture(db).insert(BlazeDataRecord([
                 "status": .string(i % 2 == 0 ? "open" : "closed")
             ]))
         }
-        try db.collection.createIndex(on: "status")
+        try requireFixture(db).collection.createIndex(on: "status")
 
-        let explanation = try db.explain {
-            db.query().where("status", equals: .string("open"))
+        let explanation = try requireFixture(db).explain {
+            try requireFixture(db).query().where("status", equals: .string("open"))
         }
 
         XCTAssertTrue(

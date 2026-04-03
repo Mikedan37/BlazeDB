@@ -5,10 +5,11 @@ final class RecoveryManagerTests: XCTestCase {
 
     var tempDir: URL!
 
-    override func setUp() {
+    override func setUpWithError() throws {
+        try super.setUpWithError()
         tempDir = FileManager.default.temporaryDirectory
             .appendingPathComponent("blazedb-recovery-tests-\(UUID().uuidString)")
-        try! FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
     }
 
     override func tearDown() {

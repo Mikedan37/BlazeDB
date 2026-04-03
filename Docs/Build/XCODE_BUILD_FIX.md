@@ -14,9 +14,9 @@ This happens when Xcode doesn't know which platform to build for.
 2. **Look at the top toolbar** - you'll see a device/simulator selector
 3. **Click the device selector** (next to the play/stop buttons)
 4. **Select a destination:**
- - **"My Mac"** (for macOS)
- - **Any iOS Simulator** (for iOS testing)
- - **Any available device**
+- **"My Mac"** (for macOS)
+- **Any iOS Simulator** (for iOS testing)
+- **Any available device**
 
 5. **Now try building again** (Cmd+B)
 

@@ -6,6 +6,7 @@
 //
 
 #if !BLAZEDB_LINUX_CORE
+import BlazeDBCore
 import Foundation
 
 #if canImport(Compression)

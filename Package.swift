@@ -182,34 +182,47 @@ let package = Package(
             ]
         ),
 
-        // Tier 1: broad deterministic feature and contract checks.
+        // Tier 1 fast: default PR/local correctness gate (no measure(), no timing-dependent waits).
         .testTarget(
-            name: "BlazeDB_Tier1",
+            name: "BlazeDB_Tier1Fast",
             dependencies: ["BlazeDBCore"],
             path: "BlazeDBTests/Tier1Core",
             exclude: [
-                // Exclude distributed-specific test directories
-                "Sync",
-                // Exclude telemetry tests (require distributed module)
-                "Utilities/TelemetryUnitTests.swift",
-                // Exclude SecureConnectionTests (requires Network/SecureConnection types not in BlazeDBCore)
+                // Requires Network/SecureConnection types not in BlazeDBCore
                 "Security/SecureConnectionTests.swift",
-                // Exclude KeyManager cache API tests until cache helpers are restored.
+                // KeyManager cache API tests until cache helpers are restored.
                 "Security/KeyManagerTests.swift",
-                // Exclude MainActor/SwiftUI test files (require deeper architectural changes)
+                // MainActor/SwiftUI — needs deeper architectural work
                 "Query/BlazeQueryTests.swift",
-                "Features/ChangeObservationTests.swift",
-                // Exclude complex async test files (require significant refactoring)
-                "Concurrency/BlazeDBAsyncTests.swift",
-                "Concurrency/AsyncAwaitTests.swift",
-                // Benchmark quarantine: benchmark-style XCTest must not run in correctness lanes.
-                "Indexes/SearchPerformanceBenchmarks.swift",
-                "Encoding/BlazeBinaryPerformanceTests.swift",
-                "Sync/DistributedGCPerformanceTests.swift",
-                "MVCC/MVCCPerformanceTests.swift",
-                // Heavy long-running GC endurance scenario; keep out of Tier1 deterministic gate.
-                "GarbageCollection/CompleteGCValidationTests.swift"
+                // Complex async — tracked separately
+                "Concurrency/BlazeDBAsyncTests.swift"
             ],
+            swiftSettings: [
+                .define("BLAZEDB_CORE_ONLY"),
+                .define("BLAZEDB_LINUX_CORE", .when(platforms: [.linux]))
+            ]
+        ),
+        // Tier 1 extended: integration, sync, sleep-dependent and large-N stress (not the default gate).
+        .testTarget(
+            name: "BlazeDB_Tier1Extended",
+            dependencies: ["BlazeDBCore"],
+            path: "BlazeDBTests/Tier1Extended",
+            exclude: [
+                // Rely on distributed-only types (InMemoryRelay, topology, cross-app sync); keep in Xcode / extra package until wired.
+                "Sync/InMemoryRelayTests.swift",
+                "Sync/CrossAppSyncTests.swift",
+                "Sync/TopologyTests.swift"
+            ],
+            swiftSettings: [
+                .define("BLAZEDB_CORE_ONLY"),
+                .define("BLAZEDB_LINUX_CORE", .when(platforms: [.linux]))
+            ]
+        ),
+        // Tier 1 perf: XCTest measure() and benchmark-shaped suites (quarantine lane).
+        .testTarget(
+            name: "BlazeDB_Tier1Perf",
+            dependencies: ["BlazeDBCore"],
+            path: "BlazeDBTests/Tier1Perf",
             swiftSettings: [
                 .define("BLAZEDB_CORE_ONLY"),
                 .define("BLAZEDB_LINUX_CORE", .when(platforms: [.linux]))

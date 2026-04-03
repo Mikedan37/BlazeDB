@@ -1,6 +1,6 @@
 # Compilation Fixes Summary
 
-**Date:** 2025-01-22  
+**Date:** 2025-01-22
 **Status:** Complete
 
 ## Problem Summary
@@ -10,8 +10,8 @@ Swift compilation errors were preventing core tests from running. Errors were id
 ## Errors Fixed
 
 ### 1. GraphQuery.swift - Invalid Initializer Call
-**File:** `BlazeDB/Query/GraphQuery.swift`  
-**Line:** 795  
+**File:** `BlazeDB/Query/GraphQuery.swift`
+**Line:** 795
 **Issue:** Code attempted to create `GraphQuery<BlazeDataRecord>(collection: "", components: [])` but:
 - The initializer requires `DynamicCollection`, not `String`
 - The initializer doesn't accept a `components` parameter
@@ -32,8 +32,8 @@ preconditionFailure("GraphQuery.buildBlock: Result builder received empty compon
 ---
 
 ### 2. BlazeDBClient+Triggers.swift - StorageLayout.triggerDefinitions Missing
-**File:** `BlazeDB/Exports/BlazeDBClient+Triggers.swift`  
-**Lines:** 19-20, 34  
+**File:** `BlazeDB/Exports/BlazeDBClient+Triggers.swift`
+**Lines:** 19-20, 34
 **Issue:** Code accessed `layout.triggerDefinitions` but `StorageLayout` (frozen core) doesn't have this property.
 
 **Fix:** Store trigger definitions in `StorageLayout.metaData` using JSON encoding.
@@ -41,22 +41,22 @@ preconditionFailure("GraphQuery.buildBlock: Result builder received empty compon
 ```swift
 // Before:
 if !updatedLayout.triggerDefinitions.contains(where: { $0.name == definition.name }) {
-    updatedLayout.triggerDefinitions.append(definition)
-    // ...
+ updatedLayout.triggerDefinitions.append(definition)
+ // ...
 }
 
 // After:
 var triggerDefinitions: [TriggerDefinition] = []
 if let triggersData = updatedLayout.metaData["_triggers"]?.dataValue,
-   let decoded = try? JSONDecoder().decode([TriggerDefinition].self, from: triggersData) {
-    triggerDefinitions = decoded
+ let decoded = try? JSONDecoder().decode([TriggerDefinition].self, from: triggersData) {
+ triggerDefinitions = decoded
 }
 
 if !triggerDefinitions.contains(where: { $0.name == definition.name }) {
-    triggerDefinitions.append(definition)
-    let encoded = try JSONEncoder().encode(triggerDefinitions)
-    updatedLayout.metaData["_triggers"] = .data(encoded)
-    // ...
+ triggerDefinitions.append(definition)
+ let encoded = try JSONEncoder().encode(triggerDefinitions)
+ updatedLayout.metaData["_triggers"] = .data(encoded)
+ // ...
 }
 ```
 
@@ -65,8 +65,8 @@ if !triggerDefinitions.contains(where: { $0.name == definition.name }) {
 ---
 
 ### 3. DataSeeding.swift - FactoryRegistry MainActor Isolation
-**File:** `BlazeDB/Testing/DataSeeding.swift`  
-**Lines:** 114, 127  
+**File:** `BlazeDB/Testing/DataSeeding.swift`
+**Lines:** 114, 127
 **Issue:** `FactoryRegistry.shared.get(type)` is `@MainActor` isolated but was called from non-isolated contexts.
 
 **Fix:** Added `@MainActor` to synchronous `create` methods and `await` to async `create` method.
@@ -74,25 +74,25 @@ if !triggerDefinitions.contains(where: { $0.name == definition.name }) {
 ```swift
 // Before:
 public func create<T: BlazeStorable>(...) throws -> [T] {
-    guard let generator = FactoryRegistry.shared.get(type) else { ... }
-    // ...
+ guard let generator = FactoryRegistry.shared.get(type) else { ... }
+ // ...
 }
 
 public func create<T: BlazeStorable>(...) async throws -> [T] {
-    guard let generator = FactoryRegistry.shared.get(type) else { ... }
-    // ...
+ guard let generator = FactoryRegistry.shared.get(type) else { ... }
+ // ...
 }
 
 // After:
 @MainActor
 public func create<T: BlazeStorable>(...) throws -> [T] {
-    guard let generator = FactoryRegistry.shared.get(type) else { ... }
-    // ...
+ guard let generator = FactoryRegistry.shared.get(type) else { ... }
+ // ...
 }
 
 public func create<T: BlazeStorable>(...) async throws -> [T] {
-    guard let generator = await FactoryRegistry.shared.get(type) else { ... }
-    // ...
+ guard let generator = await FactoryRegistry.shared.get(type) else { ... }
+ // ...
 }
 ```
 
@@ -101,8 +101,8 @@ public func create<T: BlazeStorable>(...) async throws -> [T] {
 ---
 
 ### 4. BlazeDBClient+Export.swift - Async/Await Ambiguity
-**File:** `BlazeDB/Exports/BlazeDBClient+Export.swift`  
-**Line:** 58  
+**File:** `BlazeDB/Exports/BlazeDBClient+Export.swift`
+**Line:** 58
 **Issue:** Async version of `export(to:)` called `self.export(to: url)` which Swift resolved to the async version, causing "expression is 'async' but is not marked with 'await'" error.
 
 **Fix:** Used a type-erased closure to force resolution to the synchronous version.
@@ -110,15 +110,15 @@ public func create<T: BlazeStorable>(...) async throws -> [T] {
 ```swift
 // Before:
 public func export(to url: URL) async throws {
-    try self.export(to: url)
+ try self.export(to: url)
 }
 
 // After:
 public func export(to url: URL) async throws {
-    let syncExport: (BlazeDBClient, URL) throws -> Void = { db, url in
-        try db.export(to: url)
-    }
-    try syncExport(self, url)
+ let syncExport: (BlazeDBClient, URL) throws -> Void = { db, url in
+ try db.export(to: url)
+ }
+ try syncExport(self, url)
 }
 ```
 
@@ -127,8 +127,8 @@ public func export(to url: URL) async throws {
 ---
 
 ### 5. BlazeDBClient+Compatibility.swift - FormatVersion Sendable Conformance
-**File:** `BlazeDB/Exports/BlazeDBClient+Compatibility.swift`  
-**Line:** 19  
+**File:** `BlazeDB/Exports/BlazeDBClient+Compatibility.swift`
+**Line:** 19
 **Issue:** `FormatVersion.current` static property was not concurrency-safe because `FormatVersion` didn't conform to `Sendable`.
 
 **Fix:** Added `Sendable` conformance to `FormatVersion` struct.
@@ -136,12 +136,12 @@ public func export(to url: URL) async throws {
 ```swift
 // Before:
 public struct FormatVersion {
-    // ...
+ // ...
 }
 
 // After:
 public struct FormatVersion: Sendable {
-    // ...
+ // ...
 }
 ```
 
@@ -179,11 +179,11 @@ swift test --filter BlazeDBTests 2>&1 | grep -v "Distributed\|Telemetry\|..."
 
 ## Constraints Maintained
 
-- ✅ No frozen core files modified (PageStore, DynamicCollection core, encoding untouched)
-- ✅ No new concurrency primitives added (no Task.detached, no new actors)
-- ✅ Swift 6 strict concurrency compliance maintained
-- ✅ All changes are minimal and targeted
-- ✅ No test functionality removed
+- No frozen core files modified (PageStore, DynamicCollection core, encoding untouched)
+- No new concurrency primitives added (no Task.detached, no new actors)
+- Swift 6 strict concurrency compliance maintained
+- All changes are minimal and targeted
+- No test functionality removed
 
 ## Remaining Issues
 

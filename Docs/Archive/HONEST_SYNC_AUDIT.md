@@ -115,10 +115,10 @@ let data = try JSONEncoder().encode(Array(operations.values))
 **What exists:**
 - Unit tests for individual components
 - But no integration test that:
- - Creates two databases
- - Connects them
- - Inserts data in one
- - Verifies it appears in the other
+- Creates two databases
+- Connects them
+- Inserts data in one
+- Verifies it appears in the other
 
 **Impact:** Can't verify sync actually works.
 
@@ -172,7 +172,7 @@ public class BlazeServer {
 - Persist sync state to disk
 - Load sync state on startup
 
-**Status:**  **PARTIALLY IMPLEMENTED** (exists but uses dummy data)
+**Status:** **PARTIALLY IMPLEMENTED** (exists but uses dummy data)
 
 ### **3. End-to-End Integration Test**
 **Needed:**
@@ -238,7 +238,7 @@ func testLocalSyncEndToEnd() async throws {
 - "Works" (server exists, tests added)
 
 **Known limitations:**
--  `InMemoryRelay` is in-memory queue, not actual Unix Domain Sockets (still fast: <1ms, just different implementation)
+- `InMemoryRelay` is in-memory queue, not actual Unix Domain Sockets (still fast: <1ms, just different implementation)
 
 **Bottom line:**
 The sync system is **fully implemented and tested**. All critical components are in place:
@@ -247,6 +247,6 @@ The sync system is **fully implemented and tested**. All critical components are
 - Claims are **accurate** (misleading names fixed)
 
 **Status:**
- **PRODUCTION READY** (with known minor limitations)
+**PRODUCTION READY** (with known minor limitations)
 
 

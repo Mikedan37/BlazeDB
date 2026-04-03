@@ -121,9 +121,9 @@ YOU GET ALL OPTIONS!
 ## **SELECTIVE SYNC + ACCESS CONTROL**
 
 ```swift
-// 
+//
 // INTEGRATION WITH YOUR EXISTING RLS/RBAC
-// 
+//
 
 // You already have (BlazeDB/Security/):
  SecurityContext (userId, teamIds, role)
@@ -211,9 +211,9 @@ SEXY!
 ## **COMPLETE IMPLEMENTATION EXAMPLE:**
 
 ```swift
-// 
+//
 // REAL-WORLD EXAMPLE: TEAM BUG TRACKER
-// 
+//
 
 // SETUP: 3 teams, 50 developers
 
@@ -265,7 +265,7 @@ let managerPolicy = SyncPolicy {
 }
 
 // RESULT:
-// 
+//
 // Alice (iOS Dev):
 // • Sees iOS bugs only
 // • Can't see Android bugs

@@ -21,9 +21,9 @@
 **How it looks:**
 ```
 
- [Monitor] Data [Query Builder] [Visualize] 
-  
- ← Blue pill slides smoothly between tabs! 
+ [Monitor] Data [Query Builder] [Visualize]
+
+ ← Blue pill slides smoothly between tabs!
 
 
 Hover: Tab grows 1.05x, blue highlight
@@ -89,7 +89,7 @@ Result: Buttery smooth transition!
 | ACTIVE | Blue | bolt.circle | Large DB (>10k records) |
 | EMPTY | Gray | circle | No records yet |
 | LARGE | Purple | database.fill | >100MB file size |
-|  WARNING | Orange | triangle | Needs maintenance |
+| WARNING | Orange | triangle | Needs maintenance |
 | CRITICAL | Red | x.octagon | Critical issues |
 
 **Smart Detection:**
@@ -118,10 +118,10 @@ Project: "Invoices"
 **Shows in UI:**
 ```
 
- myapp_users 
- MyApp Project  ← Project name!
- 1,234 • 5.2 MB 
- READY 
+ myapp_users
+ MyApp Project ← Project name!
+ 1,234 • 5.2 MB
+ READY
 
 ```
 
@@ -406,7 +406,7 @@ User thinks:
 ### **Before Animations:**
 ```
 Functional:
-Professional: 
+Professional:
 Polished:
 Feel: "Developer tool"
 Quality: 7/10

@@ -8,6 +8,7 @@
 //
 
 #if !BLAZEDB_LINUX_CORE
+import BlazeDBCore
 import Foundation
 
 /// Discovered BlazeDB database

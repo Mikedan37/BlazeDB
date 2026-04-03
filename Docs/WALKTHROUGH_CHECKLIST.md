@@ -62,21 +62,21 @@ database.blaze (main data file)
 
 **Page Format (4096 bytes):**
 ```
-Offset  Size    Content
+Offset Size Content
 ─────────────────────────────────────
-0-3     4       Magic: "BZDB"
-4       1       Version: 0x02 (encrypted)
-5-8     4       Payload length (UInt32, big-endian)
-9-20    12      Nonce (unique per page)
-21-36   16      Auth tag (AES-GCM)
-37-N    var     Encrypted ciphertext
-N+1-4095        Zero padding to 4KB
+0-3 4 Magic: "BZDB"
+4 1 Version: 0x02 (encrypted)
+5-8 4 Payload length (UInt32, big-endian)
+9-20 12 Nonce (unique per page)
+21-36 16 Auth tag (AES-GCM)
+37-N var Encrypted ciphertext
+N+1-4095 Zero padding to 4KB
 ```
 
 **Page ID to Offset Mapping:**
 ```swift
 // BlazeDB/Storage/PageStore.swift:309
-let offset = UInt64(index * pageSize)  // pageSize = 4096
+let offset = UInt64(index * pageSize) // pageSize = 4096
 // Example: Page 5 = byte offset 20,480
 ```
 
@@ -124,7 +124,7 @@ let offset = UInt64(index * pageSize)  // pageSize = 4096
 **1. Roundtrip Test:**
 ```swift
 // testWriteAndReadPage()
-let original = "This is a 🔥 test record.".data(using: .utf8)!
+let original = "This is a test record.".data(using: .utf8)!
 try store.writePage(index: 0, plaintext: original)
 let readBack = try store.readPage(index: 0)
 XCTAssertEqual(readBack, original)
@@ -176,10 +176,10 @@ XCTAssertThrowsError(try store.writePage(index: 1, plaintext: tooBig))
 ### Cursor Checklist
 
 **Find:**
-- ✅ `BlazeDB/Storage/PageStore.swift:88` - `pageSize = 4096`
-- ✅ `BlazeDB/Storage/PageStore.swift:309` - `offset = UInt64(index * pageSize)`
-- ✅ `BlazeDB/Storage/PageStore.swift:286-313` - Page format: magic + version + length + nonce + tag + ciphertext
-- ✅ `BlazeDB/Storage/PageStore.swift:392-396` - Magic byte validation: `"BZDB"` (0x42, 0x5A, 0x44, 0x42)
+- `BlazeDB/Storage/PageStore.swift:88` - `pageSize = 4096`
+- `BlazeDB/Storage/PageStore.swift:309` - `offset = UInt64(index * pageSize)`
+- `BlazeDB/Storage/PageStore.swift:286-313` - Page format: magic + version + length + nonce + tag + ciphertext
+- `BlazeDB/Storage/PageStore.swift:392-396` - Magic byte validation: `"BZDB"` (0x42, 0x5A, 0x44, 0x42)
 
 **Invariant:**
 - Page ID × 4096 = byte offset in file
@@ -229,11 +229,11 @@ WAL Entry Structure:
 ```swift
 // BlazeDB/Transactions/TransactionLog.swift:11-16
 enum Operation {
-    case write(pageID: Int, data: Data)
-    case delete(pageID: Int)
-    case begin(txID: String)
-    case commit(txID: String)
-    case abort(txID: String)
+ case write(pageID: Int, data: Data)
+ case delete(pageID: Int)
+ case begin(txID: String)
+ case commit(txID: String)
+ case abort(txID: String)
 }
 ```
 
@@ -242,9 +242,9 @@ enum Operation {
 1. Write operation → Append to WAL (sequential, no fsync)
 2. Buffer in memory (pendingWrites array)
 3. When threshold reached (100 writes or 1.0s):
-   - Batch write all pages to main file
-   - Single fsync for entire batch
-   - Truncate WAL
+- Batch write all pages to main file
+- Single fsync for entire batch
+- Truncate WAL
 ```
 
 ---
@@ -335,11 +335,11 @@ enum Operation {
 ### Cursor Checklist
 
 **Find:**
-- ✅ `BlazeDB/Storage/WriteAheadLog.swift:14-18` - WALEntry structure
-- ✅ `BlazeDB/Storage/WriteAheadLog.swift:25-26` - Checkpoint thresholds (100 writes or 1.0s)
-- ✅ `BlazeDB/Storage/WriteAheadLog.swift:61-88` - `append()` method (sequential write, no fsync)
-- ✅ `BlazeDB/Storage/WriteAheadLog.swift:114-155` - `checkpoint()` method (batch write + single fsync)
-- ✅ `BlazeDB/Transactions/TransactionLog.swift:178-220` - `recover()` method (WAL replay)
+- `BlazeDB/Storage/WriteAheadLog.swift:14-18` - WALEntry structure
+- `BlazeDB/Storage/WriteAheadLog.swift:25-26` - Checkpoint thresholds (100 writes or 1.0s)
+- `BlazeDB/Storage/WriteAheadLog.swift:61-88` - `append()` method (sequential write, no fsync)
+- `BlazeDB/Storage/WriteAheadLog.swift:114-155` - `checkpoint()` method (batch write + single fsync)
+- `BlazeDB/Transactions/TransactionLog.swift:178-220` - `recover()` method (WAL replay)
 
 **Invariant:**
 - Committed transactions survive crash (replayed on startup)
@@ -380,7 +380,7 @@ enum Operation {
 try db.beginTransaction()
 try db.insert(record1)
 try db.insert(record2)
-try db.commitTransaction()  // All-or-nothing
+try db.commitTransaction() // All-or-nothing
 ```
 
 **Isolation Mechanism:**
@@ -479,11 +479,11 @@ try db.commitTransaction()  // All-or-nothing
 ### Cursor Checklist
 
 **Find:**
-- ✅ `BlazeDB/Exports/BlazeDBClient.swift:1370` - `beginTransaction()` (creates backup)
-- ✅ `BlazeDB/Exports/BlazeDBClient.swift:1416` - `commitTransaction()` (persists, deletes backup)
-- ✅ `BlazeDB/Exports/BlazeDBClient.swift:1452` - `rollbackTransaction()` (restores from backup)
-- ✅ `BlazeDB/Core/MVCC/MVCCTransaction.swift:22-72` - MVCC transaction with snapshot isolation
-- ✅ `BlazeDB/Storage/PageStore.swift:135-177` - File-level locking via `flock()`
+- `BlazeDB/Exports/BlazeDBClient.swift:1370` - `beginTransaction()` (creates backup)
+- `BlazeDB/Exports/BlazeDBClient.swift:1416` - `commitTransaction()` (persists, deletes backup)
+- `BlazeDB/Exports/BlazeDBClient.swift:1452` - `rollbackTransaction()` (restores from backup)
+- `BlazeDB/Core/MVCC/MVCCTransaction.swift:22-72` - MVCC transaction with snapshot isolation
+- `BlazeDB/Storage/PageStore.swift:135-177` - File-level locking via `flock()`
 
 **Invariant:**
 - Atomicity: All operations succeed or none do (backup/restore)
@@ -529,15 +529,15 @@ try db.commitTransaction()  // All-or-nothing
 
 **Page Format (Encrypted):**
 ```
-Offset  Size    Content
+Offset Size Content
 ─────────────────────────────────────
-0-3     4       Magic: "BZDB"
-4       1       Version: 0x02 (encrypted)
-5-8     4       Plaintext length (UInt32, big-endian)
-9-20    12      Nonce (unique per page)
-21-36   16      Authentication tag (AES-GCM)
-37-N    var     Encrypted ciphertext
-N+1-4095        Zero padding to 4KB
+0-3 4 Magic: "BZDB"
+4 1 Version: 0x02 (encrypted)
+5-8 4 Plaintext length (UInt32, big-endian)
+9-20 12 Nonce (unique per page)
+21-36 16 Authentication tag (AES-GCM)
+37-N var Encrypted ciphertext
+N+1-4095 Zero padding to 4KB
 ```
 
 **Key Derivation:**
@@ -582,12 +582,12 @@ N+1-4095        Zero padding to 4KB
 ```swift
 // testRandomDataRoundTrip()
 for _ in 0..<100 {
-    let size = Int.random(in: 1...3000)
-    var original = Data(count: size)
-    // Fill with random data
-    try store.writePage(index: pageIndex, plaintext: original)
-    let retrieved = try store.readPage(index: pageIndex)
-    XCTAssertEqual(retrieved, original)
+ let size = Int.random(in: 1...3000)
+ var original = Data(count: size)
+ // Fill with random data
+ try store.writePage(index: pageIndex, plaintext: original)
+ let retrieved = try store.readPage(index: pageIndex)
+ XCTAssertEqual(retrieved, original)
 }
 ```
 **Validation:** Encrypt → Decrypt roundtrip works for all data sizes
@@ -617,7 +617,7 @@ XCTAssertThrowsError(try store2.readPage(index: 0))
 ```swift
 // Each page gets unique nonce
 // BlazeDB/Storage/PageStore.swift:266
-let nonce = try AES.GCM.Nonce()  // Cryptographically random
+let nonce = try AES.GCM.Nonce() // Cryptographically random
 ```
 **Validation:** Nonce generation ensures uniqueness (cryptographically random)
 
@@ -625,7 +625,7 @@ let nonce = try AES.GCM.Nonce()  // Cryptographically random
 ```swift
 // BlazeDB/Storage/PageStore.swift:456
 let sealedBox = try AES.GCM.SealedBox(nonce: nonce, ciphertext: ciphertext, tag: tagData)
-let decrypted = try AES.GCM.open(sealedBox, using: key)  // Throws if tag invalid
+let decrypted = try AES.GCM.open(sealedBox, using: key) // Throws if tag invalid
 ```
 **Validation:** Authentication tag verified on every read
 
@@ -634,11 +634,11 @@ let decrypted = try AES.GCM.open(sealedBox, using: key)  // Throws if tag invali
 ### Cursor Checklist
 
 **Find:**
-- ✅ `BlazeDB/Storage/PageStore.swift:266` - Nonce generation: `try AES.GCM.Nonce()`
-- ✅ `BlazeDB/Storage/PageStore.swift:269` - Encryption: `try AES.GCM.seal(plaintext, using: key, nonce: nonce)`
-- ✅ `BlazeDB/Storage/PageStore.swift:299-301` - Nonce and tag storage in page format
-- ✅ `BlazeDB/Storage/PageStore.swift:436-456` - Decryption with tag verification
-- ✅ `BlazeDB/Crypto/KeyManager.swift` - Key derivation (Argon2id + HKDF)
+- `BlazeDB/Storage/PageStore.swift:266` - Nonce generation: `try AES.GCM.Nonce()`
+- `BlazeDB/Storage/PageStore.swift:269` - Encryption: `try AES.GCM.seal(plaintext, using: key, nonce: nonce)`
+- `BlazeDB/Storage/PageStore.swift:299-301` - Nonce and tag storage in page format
+- `BlazeDB/Storage/PageStore.swift:436-456` - Decryption with tag verification
+- `BlazeDB/Crypto/KeyManager.swift` - Key derivation (Argon2id + HKDF)
 
 **Invariant:**
 - Each page has unique nonce (prevents replay attacks)
@@ -794,11 +794,11 @@ XCTAssertEqual(decoded.storage, record.storage)
 ### Cursor Checklist
 
 **Find:**
-- ✅ `BlazeDB/Utils/BlazeBinaryEncoder.swift:55-94` - `encode()` method
-- ✅ `BlazeDB/Utils/BlazeBinaryEncoder.swift:62-66` - Magic bytes: "BLAZE" + version
-- ✅ `BlazeDB/Utils/BlazeBinaryEncoder.swift:68-71` - Field count (2 bytes, big-endian)
-- ✅ `BlazeDB/Utils/BlazeBinaryEncoder.swift:76` - Field sorting (deterministic)
-- ✅ `BlazeDB/Utils/BlazeBinaryEncoder.swift:84-88` - Optional CRC32 checksum
+- `BlazeDB/Utils/BlazeBinaryEncoder.swift:55-94` - `encode()` method
+- `BlazeDB/Utils/BlazeBinaryEncoder.swift:62-66` - Magic bytes: "BLAZE" + version
+- `BlazeDB/Utils/BlazeBinaryEncoder.swift:68-71` - Field count (2 bytes, big-endian)
+- `BlazeDB/Utils/BlazeBinaryEncoder.swift:76` - Field sorting (deterministic)
+- `BlazeDB/Utils/BlazeBinaryEncoder.swift:84-88` - Optional CRC32 checksum
 
 **Invariant:**
 - Same data → same encoding (fields sorted, deterministic)
@@ -846,10 +846,10 @@ Frame Structure:
 ```swift
 // BlazeDB/Distributed/SecureConnection.swift
 enum FrameType: UInt8 {
-    case handshake = 0x01
-    case operations = 0x02
-    case ack = 0x03
-    case error = 0x04
+ case handshake = 0x01
+ case operations = 0x02
+ case ack = 0x03
+ case error = 0x04
 }
 ```
 
@@ -935,10 +935,10 @@ enum FrameType: UInt8 {
 ### Cursor Checklist
 
 **Find:**
-- ✅ `BlazeDB/Distributed/SecureConnection.swift:330-338` - `sendFrame()` (encodes: type + length + payload)
-- ✅ `BlazeDB/Distributed/SecureConnection.swift:340-355` - `receiveFrame()` (decodes: type, length, payload)
-- ✅ `BlazeDB/Distributed/SecureConnection.swift:359-376` - `readExactly()` (buffers until full message)
-- ✅ `BlazeDB/Distributed/TCPRelay+Encoding.swift:82-163` - Operation encoding/decoding
+- `BlazeDB/Distributed/SecureConnection.swift:330-338` - `sendFrame()` (encodes: type + length + payload)
+- `BlazeDB/Distributed/SecureConnection.swift:340-355` - `receiveFrame()` (decodes: type, length, payload)
+- `BlazeDB/Distributed/SecureConnection.swift:359-376` - `readExactly()` (buffers until full message)
+- `BlazeDB/Distributed/TCPRelay+Encoding.swift:82-163` - Operation encoding/decoding
 
 **Invariant:**
 - Frame format: [type][length][payload]
@@ -977,12 +977,12 @@ enum FrameType: UInt8 {
 ```swift
 // BlazeDB/Query/QueryBuilder.swift
 let results = try db.query()
-    .where("status", equals: .string("open"))
-    .where("priority", greaterThan: .int(5))
-    .orderBy("createdAt", descending: true)
-    .limit(10)
-    .execute()
-    .records
+ .where("status", equals: .string("open"))
+ .where("priority", greaterThan: .int(5))
+ .orderBy("createdAt", descending: true)
+ .limit(10)
+ .execute()
+ .records
 ```
 
 **Execution Model:**
@@ -1037,9 +1037,9 @@ let results = try db.query()
 ```swift
 // testWhereEquals()
 let results = try db.query()
-    .where("status", equals: .string("open"))
-    .execute()
-    .records
+ .where("status", equals: .string("open"))
+ .execute()
+ .records
 XCTAssertEqual(results.count, expectedCount)
 ```
 **Validation:** Filters return correct results
@@ -1048,9 +1048,9 @@ XCTAssertEqual(results.count, expectedCount)
 ```swift
 // testOrderBy()
 let results = try db.query()
-    .orderBy("priority", descending: true)
-    .execute()
-    .records
+ .orderBy("priority", descending: true)
+ .execute()
+ .records
 // Verify sorted order
 ```
 **Validation:** Sort produces stable, correct ordering
@@ -1059,10 +1059,10 @@ let results = try db.query()
 ```swift
 // testLimitOffset()
 let results = try db.query()
-    .offset(10)
-    .limit(20)
-    .execute()
-    .records
+ .offset(10)
+ .limit(20)
+ .execute()
+ .records
 XCTAssertEqual(results.count, 20)
 ```
 **Validation:** Limit/offset work correctly
@@ -1071,12 +1071,12 @@ XCTAssertEqual(results.count, 20)
 ```swift
 // testMultipleFilters()
 let results = try db.query()
-    .where("status", equals: .string("open"))
-    .where("priority", greaterThan: .int(5))
-    .orderBy("createdAt", descending: true)
-    .limit(10)
-    .execute()
-    .records
+ .where("status", equals: .string("open"))
+ .where("priority", greaterThan: .int(5))
+ .orderBy("createdAt", descending: true)
+ .limit(10)
+ .execute()
+ .records
 ```
 **Validation:** Multiple filters, sort, and limit work together
 
@@ -1093,10 +1093,10 @@ let results = try db.query()
 ### Cursor Checklist
 
 **Find:**
-- ✅ `BlazeDB/Query/QueryBuilder.swift:36-43` - `where(equals:)` filter
-- ✅ `BlazeDB/Query/QueryBuilder.swift:145-149` - Custom closure predicates
-- ✅ `BlazeDB/Query/QueryBuilder.swift:200-220` - `orderBy()` sorting
-- ✅ `BlazeDB/Query/QueryBuilder.swift:965-1020` - `execute()` method (load, filter, sort, limit)
+- `BlazeDB/Query/QueryBuilder.swift:36-43` - `where(equals:)` filter
+- `BlazeDB/Query/QueryBuilder.swift:145-149` - Custom closure predicates
+- `BlazeDB/Query/QueryBuilder.swift:200-220` - `orderBy()` sorting
+- `BlazeDB/Query/QueryBuilder.swift:965-1020` - `execute()` method (load, filter, sort, limit)
 
 **Invariant:**
 - Filters are applied in-memory (after loading records)
@@ -1134,9 +1134,9 @@ let results = try db.query()
 ```swift
 // BlazeDB/Storage/PageStore+Async.swift:69-120
 class MemoryMappedFile {
-    // Maps file to memory address space
-    // Reads become memory access (no syscall)
-    // 10-100x faster than buffered reads
+ // Maps file to memory address space
+ // Reads become memory access (no syscall)
+ // 10-100x faster than buffered reads
 }
 ```
 
@@ -1227,10 +1227,10 @@ class MemoryMappedFile {
 ### Cursor Checklist
 
 **Find:**
-- ✅ `BlazeDB/Storage/PageStore+Async.swift:69-120` - `MemoryMappedFile` class
-- ✅ `BlazeDB/Storage/PageStore+Async.swift:201-220` - Auto-enable mmap on first read
-- ✅ `BlazeDB/Storage/WriteAheadLog.swift:114-155` - `checkpoint()` (batched fsync)
-- ✅ `BlazeDB/Storage/PageStore+Optimized.swift:156-170` - `writePagesOptimizedBatch()`
+- `BlazeDB/Storage/PageStore+Async.swift:69-120` - `MemoryMappedFile` class
+- `BlazeDB/Storage/PageStore+Async.swift:201-220` - Auto-enable mmap on first read
+- `BlazeDB/Storage/WriteAheadLog.swift:114-155` - `checkpoint()` (batched fsync)
+- `BlazeDB/Storage/PageStore+Optimized.swift:156-170` - `writePagesOptimizedBatch()`
 
 **Invariant:**
 - mmap reads: 10-100x faster than buffered reads

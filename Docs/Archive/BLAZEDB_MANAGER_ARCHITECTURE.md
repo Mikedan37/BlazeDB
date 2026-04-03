@@ -1,4 +1,4 @@
-#  **BlazeDB Manager - Full Architecture Plan**
+# **BlazeDB Manager - Full Architecture Plan**
 
 ## **Vision:**
 
@@ -46,14 +46,14 @@ Think: **"DB Browser for SQLite"** meets **"Activity Monitor"** for BlazeDB!
 - Query performance
 - I/O activity
 
-### **6. Maintenance Tools** 
+### **6. Maintenance Tools**
 - One-click VACUUM
 - Manual GC trigger
 - Backup/restore
 - Export to JSON
 - Integrity check
 
-### **7. Multi-Database View** 
+### **7. Multi-Database View**
 - Compare databases side-by-side
 - Total storage across all DBs
 - Aggregate record counts
@@ -67,30 +67,30 @@ Think: **"DB Browser for SQLite"** meets **"Activity Monitor"** for BlazeDB!
 
 ```
 
- BlazeDB Manager (SwiftUI) 
+ BlazeDB Manager (SwiftUI)
 
- Views Layer 
-  DatabaseListView 
-  DatabaseDetailView 
-  PasswordManagerView 
-  HealthDashboardView 
-  SchemaExplorerView 
+ Views Layer
+ DatabaseListView
+ DatabaseDetailView
+ PasswordManagerView
+ HealthDashboardView
+ SchemaExplorerView
 
- ViewModels (ObservableObject) 
-  DatabaseListViewModel 
-  DatabaseDetailViewModel 
-  PasswordVaultViewModel 
+ ViewModels (ObservableObject)
+ DatabaseListViewModel
+ DatabaseDetailViewModel
+ PasswordVaultViewModel
 
- Services Layer 
-  DatabaseDiscoveryService 
-  MonitoringService 
-  PasswordVaultService (Keychain) 
-  MaintenanceService 
+ Services Layer
+ DatabaseDiscoveryService
+ MonitoringService
+ PasswordVaultService (Keychain)
+ MaintenanceService
 
- BlazeDB SDK 
-  BlazeDBClient+Monitoring ← NEW! 
-  BlazeDBClient (core) 
-  Secure APIs only 
+ BlazeDB SDK
+ BlazeDBClient+Monitoring ← NEW!
+ BlazeDBClient (core)
+ Secure APIs only
 
 ```
 
@@ -135,37 +135,37 @@ Update DatabaseDetailView
 
 ```
 
- BlazeDB Manager Search 
+ BlazeDB Manager Search
 
-  user_database.blazedb 
- Databases   
-   
- user_db  Records: 10,523 
- 10.5K 44MB  Size: 44.8 MB 
-  Health: Healthy 
-  cache_db  Fragmentation: 6.1% 
- 250K 1.2GB  Last Modified: 2 minutes ago 
-  
- audit_log   
- 5.2K 2.1MB   Records Over Time  
-     
- All Apps     
- 3 databases     
- 1.2 GB    
-   
-  
-  Health Indicators 
-   Fragmentation: 6.1% 
-   Orphaned Pages: 45 
-   MVCC Versions: 234 
-  
-  Schema (12 fields) 
-   id (uuid) 
-   status (string) 
-   userId (uuid) 
-   createdAt (date) 
-  
-  [ Run VACUUM] [ Run GC] [ Backup] 
+ user_database.blazedb
+ Databases
+
+ user_db Records: 10,523
+ 10.5K 44MB Size: 44.8 MB
+ Health: Healthy
+ cache_db Fragmentation: 6.1%
+ 250K 1.2GB Last Modified: 2 minutes ago
+
+ audit_log
+ 5.2K 2.1MB Records Over Time
+
+ All Apps
+ 3 databases
+ 1.2 GB
+
+
+ Health Indicators
+ Fragmentation: 6.1%
+ Orphaned Pages: 45
+ MVCC Versions: 234
+
+ Schema (12 fields)
+ id (uuid)
+ status (string)
+ userId (uuid)
+ createdAt (date)
+
+ [ Run VACUUM] [ Run GC] [ Backup]
 
 ```
 
@@ -176,39 +176,39 @@ Update DatabaseDetailView
 ```
 BlazeDBManager/
  App/
-  BlazeDBManagerApp.swift # SwiftUI App entry
+ BlazeDBManagerApp.swift # SwiftUI App entry
 
  Views/
-  DatabaseListView.swift # Sidebar with all databases
-  DatabaseDetailView.swift # Main dashboard
-  PasswordManagerView.swift # Keychain integration
-  HealthDashboardView.swift # Real-time graphs
-  SchemaExplorerView.swift # Field browser
-  MaintenanceView.swift # VACUUM/GC controls
-  DiscoverySettingsView.swift # Scan directories config
+ DatabaseListView.swift # Sidebar with all databases
+ DatabaseDetailView.swift # Main dashboard
+ PasswordManagerView.swift # Keychain integration
+ HealthDashboardView.swift # Real-time graphs
+ SchemaExplorerView.swift # Field browser
+ MaintenanceView.swift # VACUUM/GC controls
+ DiscoverySettingsView.swift # Scan directories config
 
  ViewModels/
-  DatabaseListViewModel.swift # Manages list state
-  DatabaseDetailViewModel.swift # Manages detail state
-  PasswordVaultViewModel.swift # Keychain operations
-  MonitoringViewModel.swift # Real-time updates
+ DatabaseListViewModel.swift # Manages list state
+ DatabaseDetailViewModel.swift # Manages detail state
+ PasswordVaultViewModel.swift # Keychain operations
+ MonitoringViewModel.swift # Real-time updates
 
  Services/
-  DatabaseDiscoveryService.swift # Filesystem scanning
-  MonitoringService.swift # Stats collection
-  PasswordVaultService.swift # Keychain wrapper
-  MaintenanceService.swift # VACUUM/GC operations
-  NotificationService.swift # Health alerts
+ DatabaseDiscoveryService.swift # Filesystem scanning
+ MonitoringService.swift # Stats collection
+ PasswordVaultService.swift # Keychain wrapper
+ MaintenanceService.swift # VACUUM/GC operations
+ NotificationService.swift # Health alerts
 
  Models/
-  DatabaseEntry.swift # UI model
-  MonitoringSnapshot.swift # From BlazeDB
-  PasswordEntry.swift # Keychain model
+ DatabaseEntry.swift # UI model
+ MonitoringSnapshot.swift # From BlazeDB
+ PasswordEntry.swift # Keychain model
 
  Utils/
-  KeychainHelper.swift # Keychain wrapper
-  FileSystemHelper.swift # Directory scanning
-  ChartHelpers.swift # Graph utilities
+ KeychainHelper.swift # Keychain wrapper
+ FileSystemHelper.swift # Directory scanning
+ ChartHelpers.swift # Graph utilities
 ```
 
 ---
@@ -799,12 +799,12 @@ User enters password
 App prompts: "Save to Keychain?"
  ↓
 If YES:
-  Encrypt with Keychain (AES-256)
-  Protect with device passcode
-  Require Face ID to retrieve
+ Encrypt with Keychain (AES-256)
+ Protect with device passcode
+ Require Face ID to retrieve
 
 If NO:
-  Prompt every time (more secure)
+ Prompt every time (more secure)
 ```
 
 ### **Access Control:**
@@ -956,70 +956,70 @@ If NO:
 BlazeDBManager/
  BlazeDBManager.xcodeproj
  BlazeDBManager/
-  App/
-   BlazeDBManagerApp.swift
-   AppDelegate.swift
- 
-  Views/
-   Main/
-    ContentView.swift
-    DatabaseListView.swift
-    DatabaseDetailView.swift
-  
-   Components/
-    DatabaseRowView.swift
-    StatsHeaderView.swift
-    StatCard.swift
-    HealthIndicator.swift
-    ChartView.swift
-  
-   Password/
-    PasswordUnlockView.swift
-    PasswordManagerView.swift
-    BiometricPromptView.swift
-  
-   Monitoring/
-    HealthDashboardView.swift
-    PerformanceChartsView.swift
-    SchemaExplorerView.swift
-  
-   Maintenance/
-   MaintenanceView.swift
-   VacuumProgressView.swift
-   BackupRestoreView.swift
- 
-  ViewModels/
-   DatabaseListViewModel.swift
-   DatabaseDetailViewModel.swift
-   PasswordVaultViewModel.swift
-   MonitoringViewModel.swift
- 
-  Services/
-   DatabaseDiscoveryService.swift
-   MonitoringService.swift
-   PasswordVaultService.swift
-   MaintenanceService.swift
-   NotificationService.swift
- 
-  Models/
-   DatabaseEntry.swift
-   MonitoringSnapshot+Extensions.swift
-   AppSettings.swift
- 
-  Utils/
-   KeychainHelper.swift
-   FileSystemHelper.swift
-   ChartHelpers.swift
-   FormatHelpers.swift
- 
-  Resources/
-  Assets.xcassets/
-  BlazeDBManager.entitlements
+ App/
+ BlazeDBManagerApp.swift
+ AppDelegate.swift
+
+ Views/
+ Main/
+ ContentView.swift
+ DatabaseListView.swift
+ DatabaseDetailView.swift
+
+ Components/
+ DatabaseRowView.swift
+ StatsHeaderView.swift
+ StatCard.swift
+ HealthIndicator.swift
+ ChartView.swift
+
+ Password/
+ PasswordUnlockView.swift
+ PasswordManagerView.swift
+ BiometricPromptView.swift
+
+ Monitoring/
+ HealthDashboardView.swift
+ PerformanceChartsView.swift
+ SchemaExplorerView.swift
+
+ Maintenance/
+ MaintenanceView.swift
+ VacuumProgressView.swift
+ BackupRestoreView.swift
+
+ ViewModels/
+ DatabaseListViewModel.swift
+ DatabaseDetailViewModel.swift
+ PasswordVaultViewModel.swift
+ MonitoringViewModel.swift
+
+ Services/
+ DatabaseDiscoveryService.swift
+ MonitoringService.swift
+ PasswordVaultService.swift
+ MaintenanceService.swift
+ NotificationService.swift
+
+ Models/
+ DatabaseEntry.swift
+ MonitoringSnapshot+Extensions.swift
+ AppSettings.swift
+
+ Utils/
+ KeychainHelper.swift
+ FileSystemHelper.swift
+ ChartHelpers.swift
+ FormatHelpers.swift
+
+ Resources/
+ Assets.xcassets/
+ BlazeDBManager.entitlements
 
  BlazeDBManagerTests/
-  DiscoveryTests.swift
-  PasswordVaultTests.swift
-  MonitoringTests.swift
+ DiscoveryTests.swift
+ PasswordVaultTests.swift
+ MonitoringTests.swift
 ```
 
 ---
@@ -1064,8 +1064,8 @@ BlazeDBManager/
 - **Secure password** management with Face ID
 - **Real-time monitoring** without impacting performance
 - **Health alerts** before problems occur
--  **One-click maintenance** (VACUUM, GC)
--  **Zero data exposure** - only metadata
+- **One-click maintenance** (VACUUM, GC)
+- **Zero data exposure** - only metadata
 
 ### **Use Cases:**
 1. **Developer Tool** - Monitor your app's databases

@@ -2,213 +2,73 @@
 
 Use this checklist before tagging any `vX.Y.Z` release.
 
-## Required
+This file is the release-facing checklist only. Historical strategy notes and speculative roadmap content belong in `Docs/Status/` or `Docs/Project/`, not here.
 
-- [ ] `main` is clean (`git status` shows clean working tree)
-- [ ] PR gate passed (`macOS 15 — build, CLI, tests, clean-checkout, quickstart` in `ci.yml`)
-- [ ] `CHANGELOG.md` has an entry for the release
-- [ ] install snippets in `README.md` and `Docs/GettingStarted/*` are current
-- [ ] `Docs/Testing/CI_AND_TEST_TIERS.md` matches workflow behavior
+## 1) Release Preconditions
 
-## Test Validation
+- [ ] Branch is clean and intentional (`git status`, `git diff`).
+- [ ] PR gate is green (`macOS 15 — build, CLI, tests, clean-checkout, quickstart` from `.github/workflows/ci.yml`).
+- [ ] `CHANGELOG.md` contains release notes for `vX.Y.Z`.
+- [ ] Install snippets are current (`README.md`, `Docs/GettingStarted/*`).
+- [ ] `Docs/Testing/CI_AND_TEST_TIERS.md` matches current workflow behavior.
 
-- [ ] `./Scripts/preflight.sh` passes locally
-- [ ] `swift test --filter BlazeDB_Tier0` passes
-- [ ] `swift test --filter BlazeDB_Tier1` passes (or documented reason if lane is time-bounded)
-- [ ] release workflow checks pass for the tag
+## 2) Required Validation (Local)
 
-## Release Execution
+- [ ] `./Scripts/preflight.sh` passes.
+- [ ] `./Scripts/run-tier1.sh` passes (Tier 0 + Tier1Fast with coverage checks).
+- [ ] `./Scripts/verify-clean-checkout.sh` passes.
+- [ ] `./Scripts/verify-readme-quickstart.sh` passes.
 
-- [ ] create annotated tag: `git tag -a vX.Y.Z -m "BlazeDB vX.Y.Z"`
-- [ ] push tag: `git push origin vX.Y.Z`
-- [ ] confirm `.github/workflows/release.yml` completes successfully
+## 3) Required Validation (CI)
 
-## Post-Release
+- [ ] Push/PR CI check passed on the release commit:
+- `swift build --target BlazeDBCore`
+- Tier 0
+- Tier1Fast
+- clean-checkout verification
+- README quickstart verification
+- [ ] Release workflow passes for tag `vX.Y.Z` (`.github/workflows/release.yml`):
+- Tier 0
+- Tier1Fast
+- Tier1Extended
+- Tier1Perf
+- Tier3 heavy
 
-- [ ] GitHub Release exists with generated notes
-- [ ] artifact upload exists for the release
-- [ ] quick install test succeeds in a clean sample project
-- Long-running sync may need periodic VACUUM
-- Monitor memory usage
+## 4) Security And Compatibility Gates
 
-### **For Enterprise:**
- **NOT READY**
-- Missing audit logging
-- Missing compliance features
-- Missing backup/restore API
-- Missing monitoring/telemetry
+- [ ] `SECURITY.md` disclosure flow and response expectations are accurate.
+- [ ] Compatibility docs are current:
+- `Docs/COMPATIBILITY.md`
+- `Docs/Status/DURABILITY_MODE_SUPPORT.md`
+- `Docs/Status/KEY_MANAGEMENT_AND_COMPATIBILITY.md`
+- `Docs/Status/LEGACY_LAYOUT_MIGRATION_GUIDANCE.md`
+- [ ] Cross-version compatibility harness is green (Tier2 cross-version export/restore).
 
----
+## 5) Tag And Publish
 
-## **PRE-RELEASE CHECKLIST**
+- [ ] Create annotated tag: `git tag -a vX.Y.Z -m "BlazeDB vX.Y.Z"`.
+- [ ] Push tag: `git push origin vX.Y.Z`.
+- [ ] Confirm release workflow completed and GitHub Release was created.
+- [ ] Confirm release artifacts and generated notes are present.
 
-### **Code Quality**
-- No compilation errors
-- No linter errors
-- All tests pass (verify with `swift test`)
-- Code is documented
-- API reference is complete
+## 6) Post-Release Smoke
 
-### **Testing**
-- Unit tests (100+)
-- Integration tests (100+)
-- Overflow page tests (90+)
-- Destructive tests (30+)
-- Performance tests
-- Edge case tests
+- [ ] Fresh sample project can add BlazeDB via SwiftPM and run a minimal open/insert/query/close flow.
+- [ ] Public docs links resolve and point to current files.
+- [ ] No emergency rollback conditions detected in first validation window.
 
-### **Documentation**
-- README.md updated
-- API reference complete
-- Examples provided
-- Quick start guide
-- Architecture docs
+## Stop/No-Go Conditions
 
-### **Deployment**
-- Package.swift configured
-- Linux support
-- Docker support
-- Server executable
-- Tools documented
+Do not publish if any of these are true:
 
-### **Before Release:**
-- [ ] Run full test suite: `swift test`
-- [ ] Verify all tests pass
-- [ ] Check for memory leaks (Instruments)
-- [ ] Performance benchmark
-- [ ] Review error messages
-- [ ] Update version number
-- [ ] Create release notes
+- Required local validation fails.
+- PR gate or release workflow is red for the release commit/tag.
+- Docs materially overstate or contradict current behavior.
+- Security or compatibility docs are stale relative to code.
 
----
+## Related Sources
 
-## **RECOMMENDED RELEASE STRATEGY**
-
-### **Phase 1: Beta Release (NOW)**
-**Target:** Single-device apps, simple sync scenarios
-
-**What's Ready:**
-- Core functionality
-- Overflow pages
-- Reactive queries
-- Basic sync
-- Comprehensive tests
-
-**What to Monitor:**
-- Memory usage in long-running apps
-- Sync state growth
-- Operation log size
-- Performance with large datasets
-
-### **Phase 2: Production Release (After Beta)**
-**Target:** Multi-device sync, long-running apps
-
-**What to Add:**
-- [ ] Verify GC runs automatically
-- [ ] Add GC monitoring/alerting
-- [ ] Add operation log retention policies
-- [ ] Add distributed MVCC coordination
-- [ ] Add telemetry/monitoring
-
-### **Phase 3: Enterprise Release (Future)**
-**Target:** Enterprise customers
-
-**What to Add:**
-- [ ] Audit logging
-- [ ] Compliance features
-- [ ] Backup/restore API
-- [ ] Advanced monitoring
-- [ ] Support contracts
-
----
-
-## **TEST COVERAGE SUMMARY**
-
-| Category | Tests | Status |
-|----------|-------|--------|
-| **Unit Tests** | 100+ | Complete |
-| **Integration Tests** | 100+ | Complete |
-| **Overflow Pages** | 90+ | Complete |
-| **Destructive Tests** | 30+ | Complete |
-| **Performance Tests** | 20+ | Complete |
-| **Edge Cases** | 50+ | Complete |
-| **TOTAL** | **390+** | **Excellent** |
-
----
-
-## **FINAL VERDICT**
-
-### ** READY FOR BETA RELEASE**
-
-**Strengths:**
-- Comprehensive feature set
-- Excellent test coverage
-- Good performance
-- Overflow pages implemented
-- Reactive queries working
-- Solid architecture
-
-**Weaknesses:**
--  MVCC disabled by default
--  GC needs verification in production
--  Some enterprise features missing
-
-**Recommendation:**
-**Release as BETA** with clear documentation of:
-1. MVCC is disabled by default
-2. Monitor GC in production
-3. Use VACUUM periodically for long-running apps
-4. Overflow pages are production-ready
-5. Reactive queries are production-ready
-
----
-
-## **RELEASE NOTES TEMPLATE**
-
-```markdown
-# BlazeDB v1.0.0-beta
-
-## What's New
-
-### Overflow Pages Support
-- Store records of any size (>4KB)
-- Automatic overflow page chains
-- Backward compatible with existing databases
-- 90+ tests covering all scenarios
-
-### Reactive Queries
-- @BlazeQuery property wrapper
-- Automatic SwiftUI view updates
-- Change observation integration
-- Batching for performance
-
-### Developer Experience
-- Name-based database creation
-- Database discovery
-- Consistent logging
-- Comprehensive documentation
-
-##  Known Limitations
-
-- MVCC disabled by default (enable in code)
-- Monitor GC in production
-- Use VACUUM periodically for long-running apps
-
-## Documentation
-
-- [Quick Start Guide](Docs/QUICK_START.md)
-- [API Reference](Docs/API/API_REFERENCE.md)
-- [Architecture](Docs/Architecture/ARCHITECTURE.md)
-
-## Testing
-
-- 390+ tests
-- All tests passing
-- Comprehensive coverage
-```
-
----
-
-**Last Updated:** 2025-01-XX
-**Status:** **READY FOR BETA RELEASE**
-
+- `Docs/Testing/CI_AND_TEST_TIERS.md`
+- `Docs/Status/OPEN_SOURCE_READINESS_CHECKLIST.md`
+- `Docs/Status/RELEASE_ROLLBACK.md`
+- `Docs/Status/COMPATIBILITY_HARNESS.md`

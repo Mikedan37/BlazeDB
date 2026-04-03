@@ -472,10 +472,10 @@ If you encounter issues:
 2. Review error messages carefully
 3. Test with a small subset first
 4. File an issue on GitHub with:
- - Source database type and version
- - BlazeDB version
- - Error messages
- - Sample data (if possible)
+- Source database type and version
+- BlazeDB version
+- Error messages
+- Sample data (if possible)
 
 ## Best Practices
 

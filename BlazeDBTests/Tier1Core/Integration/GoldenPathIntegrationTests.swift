@@ -15,25 +15,28 @@ import XCTest
 
 final class GoldenPathIntegrationTests: XCTestCase {
     
-    var tempDir: URL!
-    var originalDB: BlazeDBClient!
-    var originalDBPath: URL!
-    var dumpPath: URL!
-    var restoredDBPath: URL!
+    private var tempDir: URL?
+    private var originalDB: BlazeDBClient?
+    private var originalDBPath: URL?
+    private var dumpPath: URL?
+    private var restoredDBPath: URL?
     
-    override func setUp() {
-        super.setUp()
-        tempDir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
-        try? FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
+    override func setUpWithError() throws {
+        try super.setUpWithError()
+        let dir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        tempDir = dir
+        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         
-        originalDBPath = tempDir.appendingPathComponent("golden-path-original.blazedb")
-        dumpPath = tempDir.appendingPathComponent("golden-path-dump.blazedump")
-        restoredDBPath = tempDir.appendingPathComponent("golden-path-restored.blazedb")
+        originalDBPath = dir.appendingPathComponent("golden-path-original.blazedb")
+        dumpPath = dir.appendingPathComponent("golden-path-dump.blazedump")
+        restoredDBPath = dir.appendingPathComponent("golden-path-restored.blazedb")
     }
     
     override func tearDown() {
         // Cleanup all database files
-        try? FileManager.default.removeItem(at: tempDir)
+        if let dir = tempDir {
+            try? FileManager.default.removeItem(at: dir)
+        }
         super.tearDown()
     }
     
@@ -48,11 +51,11 @@ final class GoldenPathIntegrationTests: XCTestCase {
         print("\n=== STEP 1: Open Database ===")
         // Use openOrCreate with custom path for test isolation
         let dbName = "golden-path"
-        let dbURL = tempDir.appendingPathComponent("\(dbName).blazedb")
+        let dbURL = try requireFixture(tempDir).appendingPathComponent("\(dbName).blazedb")
         originalDB = try BlazeDBClient(name: dbName, fileURL: dbURL, password: "TestPassword-123!")
         XCTAssertNotNil(originalDB, "Database should open successfully")
-        XCTAssertEqual(originalDB.name, "golden-path", "Database name should match")
-        print("✓ Database opened: \(originalDB.fileURL.path)")
+        XCTAssertEqual(try requireFixture(originalDB).name, "golden-path", "Database name should match")
+        print("✓ Database opened: \(try requireFixture(originalDB).fileURL.path)")
         
         // STEP 2: Insert data (50+ records to force page flush / durability paths)
         print("\n=== STEP 2: Insert Data ===")
@@ -68,7 +71,7 @@ final class GoldenPathIntegrationTests: XCTestCase {
                 "index": .int(i)
             ])
             
-            let id = try originalDB.insert(record)
+            let id = try requireFixture(originalDB).insert(record)
             insertedRecords.append((id: id, name: name, count: count))
         }
         
@@ -76,14 +79,14 @@ final class GoldenPathIntegrationTests: XCTestCase {
         print("✓ Inserted \(recordCount) records")
         
         // Verify records exist
-        let allRecords = try originalDB.fetchAll()
+        let allRecords = try requireFixture(originalDB).fetchAll()
         XCTAssertGreaterThanOrEqual(allRecords.count, recordCount, "Should have at least \(recordCount) records")
         print("✓ Verified \(allRecords.count) records exist")
         
         // STEP 3: Query data
         print("\n=== STEP 3: Query Data ===")
         // Query records where count > 250 (should return records 26-50)
-        let queryResults = try originalDB.query()
+        let queryResults = try requireFixture(originalDB).query()
             .where("count", greaterThan: .int(250))
             .orderBy("count", descending: false)
             .execute()
@@ -106,7 +109,7 @@ final class GoldenPathIntegrationTests: XCTestCase {
         
         // STEP 4: Explain query cost
         print("\n=== STEP 4: Explain Query Cost ===")
-        let explanation = try originalDB.query()
+        let explanation = try requireFixture(originalDB).query()
             .where("count", greaterThan: .int(250))
             .explain()
         
@@ -121,7 +124,7 @@ final class GoldenPathIntegrationTests: XCTestCase {
         XCTAssertFalse(explanation.description.isEmpty, "Explanation description should not be empty")
         
         // Verify explanation doesn't change query results
-        let queryResultsAfterExplain = try originalDB.query()
+        let queryResultsAfterExplain = try requireFixture(originalDB).query()
             .where("count", greaterThan: .int(250))
             .execute()
             .records
@@ -132,19 +135,19 @@ final class GoldenPathIntegrationTests: XCTestCase {
         
         // STEP 5: Dump database
         print("\n=== STEP 5: Dump Database ===")
-        try originalDB.export(to: dumpPath)
+        try requireFixture(originalDB).export(to: try requireFixture(dumpPath))
         
-        XCTAssertTrue(FileManager.default.fileExists(atPath: dumpPath.path), 
+        XCTAssertTrue(FileManager.default.fileExists(atPath: try requireFixture(dumpPath).path), 
                      "Dump file should exist")
         
         // Verify dump integrity
-        let dumpData = try Data(contentsOf: dumpPath)
+        let dumpData = try Data(contentsOf: try requireFixture(dumpPath))
         let dump = try DatabaseDump.decodeAndVerify(dumpData)
         let dumpHeader = dump.header
         XCTAssertNotNil(dumpHeader, "Dump header should be valid")
         XCTAssertGreaterThanOrEqual(dump.manifest.recordCount, recordCount,
                                    "Dump should contain at least \(recordCount) records")
-        print("✓ Dump created: \(dumpPath.path)")
+        print("✓ Dump created: \(try requireFixture(dumpPath).path)")
         print("  Schema version: \(dumpHeader.schemaVersion)")
         print("  Record count: \(dump.manifest.recordCount)")
         
@@ -152,7 +155,7 @@ final class GoldenPathIntegrationTests: XCTestCase {
         print("\n=== STEP 6: Restore Database ===")
         // Create new database for restore
         let restoredDB = try BlazeDBClient(name: "golden-path-restored", 
-                                          fileURL: restoredDBPath, 
+                                          fileURL: try requireFixture(restoredDBPath), 
                                           password: "TestPassword-123!")
         
         // Verify database is empty before restore
@@ -160,7 +163,7 @@ final class GoldenPathIntegrationTests: XCTestCase {
         XCTAssertEqual(recordsBeforeRestore.count, 0, "Restored database should be empty before restore")
         
         // Restore dump
-        try BlazeDBImporter.restore(from: dumpPath, to: restoredDB, allowSchemaMismatch: false)
+        try BlazeDBImporter.restore(from: try requireFixture(dumpPath), to: restoredDB, allowSchemaMismatch: false)
         
         // Verify restore succeeded
         let recordsAfterRestore = try restoredDB.fetchAll()
@@ -217,7 +220,7 @@ final class GoldenPathIntegrationTests: XCTestCase {
         
         // FINAL VERIFICATION: Compare original and restored databases
         print("\n=== FINAL VERIFICATION ===")
-        let originalStats = try originalDB.stats()
+        let originalStats = try requireFixture(originalDB).stats()
         let restoredStats = try restoredDB.stats()
         
         XCTAssertEqual(originalStats.recordCount, restoredStats.recordCount,

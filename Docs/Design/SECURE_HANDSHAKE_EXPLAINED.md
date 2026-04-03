@@ -244,13 +244,13 @@ if let secret = sharedSecret, let serverDB = serverDatabase {
 
 **What Happens:**
 - If server uses **shared secret** authentication:
- - Server derives expected token from shared secret + database names
- - Compares with client's token
- - Rejects if mismatch
+- Server derives expected token from shared secret + database names
+- Compares with client's token
+- Rejects if mismatch
 - If server uses **direct token** authentication:
- - Compares client's token with expected token
+- Compares client's token with expected token
 - If server requires **no auth**:
- - Rejects if client sent a token
+- Rejects if client sent a token
 
 **Security:** Prevents unauthorized connections.
 
@@ -403,9 +403,9 @@ public func send(_ data: Data) async throws {
 **What Happens:**
 1. **Plaintext** → AES-256-GCM encryption → **Ciphertext + Authentication Tag**
 2. GCM mode provides:
- - **Confidentiality:** Data is encrypted
- - **Authenticity:** Authentication tag prevents tampering
- - **Integrity:** Any modification is detected
+- **Confidentiality:** Data is encrypted
+- **Authenticity:** Authentication tag prevents tampering
+- **Integrity:** Any modification is detected
 
 **AES-256-GCM Details:**
 - **Key:** 32 bytes (256 bits) - derived from HKDF
@@ -539,33 +539,33 @@ private func sendFrame(type: FrameType, payload: Data) async throws {
 
 ```
 CLIENT SERVER
-  
- [1] Generate clientPrivateKey 
-  
+
+ [1] Generate clientPrivateKey
+
  [2] Hello (clientPublicKey) >
-  [1] Receive Hello
-  [2] Authenticate (verify token)
-  [3] Generate serverPrivateKey
-  [4] Generate challenge
+ [1] Receive Hello
+ [2] Authenticate (verify token)
+ [3] Generate serverPrivateKey
+ [4] Generate challenge
  <[3] Welcome (serverPublicKey + challenge)[5] Send Welcome
-  
- [4] ECDH: sharedSecret 
-  = ECDH(clientPrivateKey, serverPublicKey) 
-  [6] ECDH: sharedSecret
-   = ECDH(serverPrivateKey, clientPublicKey)
-   (Same result!)
- [5] HKDF: groupKey (AES-256) 
-  = HKDF(sharedSecret, salt, info) [7] HKDF: groupKey (AES-256)
-   = HKDF(sharedSecret, salt, info)
-   (Same result!)
+
+ [4] ECDH: sharedSecret
+ = ECDH(clientPrivateKey, serverPublicKey)
+ [6] ECDH: sharedSecret
+ = ECDH(serverPrivateKey, clientPublicKey)
+ (Same result!)
+ [5] HKDF: groupKey (AES-256)
+ = HKDF(sharedSecret, salt, info) [7] HKDF: groupKey (AES-256)
+ = HKDF(sharedSecret, salt, info)
+ (Same result!)
  [6] HMAC(challenge, groupKey) >
-  Verify (prove key ownership) [8] Verify HMAC response
-   (Confirm client has correct key)
+ Verify (prove key ownership) [8] Verify HMAC response
+ (Confirm client has correct key)
  <[7] handshakeComplete [9] Send confirmation
-  
+
  [8] All future data encrypted >
-  AES-256-GCM(groupKey) [10] All future data encrypted
-   AES-256-GCM(groupKey)
+ AES-256-GCM(groupKey) [10] All future data encrypted
+ AES-256-GCM(groupKey)
 ```
 
 ---

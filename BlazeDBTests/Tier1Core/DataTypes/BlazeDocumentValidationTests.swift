@@ -138,20 +138,20 @@ struct NestedModel: BlazeDocument, Codable {
 }
 
 final class BlazeDocumentValidationTests: XCTestCase {
-    var tempURL: URL!
-    var db: BlazeDBClient!
+    private var tempURL: URL?
+    private var db: BlazeDBClient?
     
-    override func setUp() {
-        super.setUp()
+    override func setUpWithError() throws {
+        try super.setUpWithError()
         tempURL = FileManager.default.temporaryDirectory
             .appendingPathComponent("DocValid-\(UUID().uuidString).blazedb")
-        db = try! BlazeDBClient(name: "DocValidTest", fileURL: tempURL, password: "TestPassword-123!")
+        db = try BlazeDBClient(name: "DocValidTest", fileURL: try requireFixture(tempURL), password: "TestPassword-123!")
     }
     
     override func tearDown() {
         db = nil
-        try? FileManager.default.removeItem(at: tempURL)
-        try? FileManager.default.removeItem(at: tempURL.deletingPathExtension().appendingPathExtension("meta"))
+        try? FileManager.default.removeItem(at: try requireFixture(tempURL))
+        try? FileManager.default.removeItem(at: try requireFixture(tempURL).deletingPathExtension().appendingPathExtension("meta"))
         super.tearDown()
     }
     
@@ -177,14 +177,14 @@ final class BlazeDocumentValidationTests: XCTestCase {
         print("  Storage ID: \(storage.storage["id"])")
         
         // Insert and get returned ID
-        let insertedID = try db.insert(user)
+        let insertedID = try requireFixture(db).insert(user)
         print("  Inserted ID: \(insertedID)")
         print("  IDs match: \(insertedID == user.id)")
         
         // Check if record exists at all
-        let allRecords = try db.fetchAll()
+        let allRecords = try requireFixture(db).fetchAll()
         print("\n  Total records in DB: \(allRecords.count)")
-        if let directFetch = try db.fetch(id: insertedID) {
+        if let directFetch = try requireFixture(db).fetch(id: insertedID) {
             print("  ✅ Raw fetch(id:) FOUND record")
             print("  Record fields: \(directFetch.storage.keys)")
             print("  Record ID field: \(directFetch.storage["id"])")
@@ -194,21 +194,21 @@ final class BlazeDocumentValidationTests: XCTestCase {
         
         // Try fetching with BOTH IDs to see which works
         print("\n  Fetching with user.id...")
-        let fetched1 = try? db.fetch(ValidatedUser.self, id: user.id)
+        let fetched1 = try? try requireFixture(db).fetch(ValidatedUser.self, id: user.id)
         print("  Result: \(fetched1 == nil ? "NOT FOUND" : "FOUND")")
         if fetched1 == nil {
             print("  Error during conversion")
         }
         
         print("  Fetching with insertedID...")
-        let fetched2 = try? db.fetch(ValidatedUser.self, id: insertedID)
+        let fetched2 = try? try requireFixture(db).fetch(ValidatedUser.self, id: insertedID)
         print("  Result: \(fetched2 == nil ? "NOT FOUND" : "FOUND")")
         if fetched2 == nil {
             print("  Error during conversion")
         }
         
         // Use the ID that was actually returned by insert
-        let fetched = try db.fetch(ValidatedUser.self, id: insertedID)
+        let fetched = try requireFixture(db).fetch(ValidatedUser.self, id: insertedID)
         XCTAssertNotNil(fetched, "Should find record with returned ID")
         XCTAssertEqual(fetched?.name, "John Doe")
         XCTAssertEqual(fetched?.email, "john@test.com")
@@ -228,11 +228,11 @@ final class BlazeDocumentValidationTests: XCTestCase {
             // Missing 'name' - required field
         ])
         
-        let id = try db.insert(storage)
+        let id = try requireFixture(db).insert(storage)
         
         // Try to fetch as ValidatedUser
         do {
-            let _ = try db.fetch(ValidatedUser.self, id: id)
+            let _ = try requireFixture(db).fetch(ValidatedUser.self, id: id)
             // If this succeeds, @Field must provide a default (like empty string)
             print("  ℹ️ Missing field was given default value")
         } catch {
@@ -258,11 +258,11 @@ final class BlazeDocumentValidationTests: XCTestCase {
             "inStock": .bool(true)
         ])
         
-        let id = try db.insert(wrongStorage)
+        let id = try requireFixture(db).insert(wrongStorage)
         
         // Try to fetch as StrictProduct
         do {
-            let product = try db.fetch(StrictProduct.self, id: id)
+            let product = try requireFixture(db).fetch(StrictProduct.self, id: id)
             // If this succeeds, @Field must be lenient
             XCTAssertNotNil(product)
             print("  ℹ️ Type mismatch was handled gracefully")
@@ -288,8 +288,8 @@ final class BlazeDocumentValidationTests: XCTestCase {
             isActive: nil  // Optional field set to nil
         )
         
-        let id = try db.insert(user)
-        let fetched = try db.fetch(ValidatedUser.self, id: id)
+        let id = try requireFixture(db).insert(user)
+        let fetched = try requireFixture(db).fetch(ValidatedUser.self, id: id)
         
         XCTAssertNil(fetched?.isActive, "Optional field should be nil")
         
@@ -308,8 +308,8 @@ final class BlazeDocumentValidationTests: XCTestCase {
             isActive: true  // Optional field set to value
         )
         
-        let id = try db.insert(user)
-        let fetched = try db.fetch(ValidatedUser.self, id: id)
+        let id = try requireFixture(db).insert(user)
+        let fetched = try requireFixture(db).fetch(ValidatedUser.self, id: id)
         
         XCTAssertEqual(fetched?.isActive, true, "Optional field should have value")
         
@@ -331,10 +331,10 @@ final class BlazeDocumentValidationTests: XCTestCase {
             "isActive": .bool(true)
         ])
         
-        let id = try db.insert(storage)
+        let id = try requireFixture(db).insert(storage)
         
         // Fetch as ValidatedUser (has only 5 fields)
-        let fetched = try db.fetch(ValidatedUser.self, id: id)
+        let fetched = try requireFixture(db).fetch(ValidatedUser.self, id: id)
         
         XCTAssertNotNil(fetched)
         XCTAssertEqual(fetched?.name, "Alice")
@@ -356,8 +356,8 @@ final class BlazeDocumentValidationTests: XCTestCase {
         
         let model = NestedModel(id: UUID(), config: config)
         
-        let id = try db.insert(model)
-        let fetched = try db.fetch(NestedModel.self, id: id)
+        let id = try requireFixture(db).insert(model)
+        let fetched = try requireFixture(db).fetch(NestedModel.self, id: id)
         
         XCTAssertNotNil(fetched)
         XCTAssertEqual(fetched?.config["theme"]?.stringValue, "dark")

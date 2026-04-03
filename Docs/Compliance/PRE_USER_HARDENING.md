@@ -1,26 +1,26 @@
 # Pre-User Hardening Phase: Tooling & Ergonomics
 
-**Status:**  COMPLETE (4/4 complete)  
-**Completion Date:** Pre-User Hardening Phase  
-**Phase:** Post-Quality Improvements, Pre-User Launch  
+**Status:** COMPLETE (4/4 complete)
+**Completion Date:** Pre-User Hardening Phase
+**Phase:** Post-Quality Improvements, Pre-User Launch
 **Scope:** Tooling + API polish only - NO engine work
 
 ## Critical Constraints
 
--  Phase 1 core is FROZEN
--  No changes to PageStore, WAL, page layout, concurrency model, or storage semantics
--  This phase is about *trust*, *ergonomics*, and *predictability*, not performance or scale
--  Phase 2 (parallelism) is NOT in scope
+- Phase 1 core is FROZEN
+- No changes to PageStore, WAL, page layout, concurrency model, or storage semantics
+- This phase is about *trust*, *ergonomics*, and *predictability*, not performance or scale
+- Phase 2 (parallelism) is NOT in scope
 
 ## Goals
 
 Make BlazeDB safe, predictable, and explainable for early adopters BEFORE opening it up to real users.
 
 Focus areas:
-1.  Query ergonomics (API polish) - **COMPLETE**
-2.  Schema evolution tooling - **COMPLETE**
-3.  Import / export - **COMPLETE**
-4.  Operational confidence - **COMPLETE**
+1. Query ergonomics (API polish) - **COMPLETE**
+2. Schema evolution tooling - **COMPLETE**
+3. Import / export - **COMPLETE**
+4. Operational confidence - **COMPLETE**
 
 **NO ENGINE WORK. TOOLING + API POLISH ONLY.**
 
@@ -30,7 +30,7 @@ Focus areas:
 
 ### 1. Better Querying Ergonomics (API Polish)
 
-**Status:**  COMPLETE
+**Status:** COMPLETE
 
 **Contract:**
 - Invalid queries fail loudly and explain why
@@ -46,17 +46,17 @@ Focus areas:
 - No parallel query execution
 
 **Verification:**
--  Tests asserting error messages are stable and readable
--  Tests fail before changes and pass after
--  Documentation explaining: fast queries, slow queries, guarantees vs non-guarantees
--  No changes to storage or execution semantics
--  No new concurrency warnings
+- Tests asserting error messages are stable and readable
+- Tests fail before changes and pass after
+- Documentation explaining: fast queries, slow queries, guarantees vs non-guarantees
+- No changes to storage or execution semantics
+- No new concurrency warnings
 
 **Deliverables:**
--  Improved error messages for: invalid field names, type mismatches, unsupported operations
--  Field name validation with suggestions (Levenshtein distance)
--  Input validation with clear remediation hints
--  Documentation: `Docs/QUERY_PERFORMANCE.md`
+- Improved error messages for: invalid field names, type mismatches, unsupported operations
+- Field name validation with suggestions (Levenshtein distance)
+- Input validation with clear remediation hints
+- Documentation: `Docs/QUERY_PERFORMANCE.md`
 
 **Files Created:**
 - `BlazeDB/Query/QueryBuilder+Validation.swift`
@@ -70,7 +70,7 @@ Focus areas:
 
 ### 2. Schema Evolution Tooling
 
-**Status:**  COMPLETE
+**Status:** COMPLETE
 
 **Contract:**
 - Schemas have explicit versions
@@ -93,13 +93,13 @@ Focus areas:
 - Dry-run mode validates before applying
 
 **Deliverables:**
--  SchemaVersion type (Comparable, Codable)
--  BlazeDBMigration protocol (up, optional down)
--  MigrationPlanner (validates continuity, computes plans)
--  MigrationExecutor (dry-run mode, explicit apply mode)
--  Version validation on open
--  Clear error messages for migration failures
--  Comprehensive tests
+- SchemaVersion type (Comparable, Codable)
+- BlazeDBMigration protocol (up, optional down)
+- MigrationPlanner (validates continuity, computes plans)
+- MigrationExecutor (dry-run mode, explicit apply mode)
+- Version validation on open
+- Clear error messages for migration failures
+- Comprehensive tests
 
 **Files Created:**
 - `BlazeDB/Core/SchemaVersion.swift`
@@ -113,7 +113,7 @@ Focus areas:
 
 ### 3. Import / Export (Trust-Building)
 
-**Status:**  COMPLETE
+**Status:** COMPLETE
 
 **Contract:**
 - Users can dump and restore databases in a verifiable way
@@ -135,13 +135,13 @@ Focus areas:
 - Document guarantees and limitations
 
 **Deliverables:**
--  DumpFormat (deterministic, self-describing, verifiable)
--  Export API (db.export(to:))
--  Import API (BlazeDBImporter.restore(from:to:))
--  Integrity verification (verify() method)
--  CLI integration (BlazeDump: dump/restore/verify commands)
--  Clear failure modes with explanations
--  Comprehensive tests (round-trip, tamper detection, schema mismatch)
+- DumpFormat (deterministic, self-describing, verifiable)
+- Export API (db.export(to:))
+- Import API (BlazeDBImporter.restore(from:to:))
+- Integrity verification (verify() method)
+- CLI integration (BlazeDump: dump/restore/verify commands)
+- Clear failure modes with explanations
+- Comprehensive tests (round-trip, tamper detection, schema mismatch)
 
 **Files Created:**
 - `BlazeDB/Core/DumpFormat.swift`
@@ -154,7 +154,7 @@ Focus areas:
 
 ### 4. Operational Confidence (Refinement)
 
-**Status:**  COMPLETE
+**Status:** COMPLETE
 
 **Contract:**
 - Users can answer: Is my DB healthy? How big is it? Is it slowing down? When should I worry?
@@ -175,11 +175,11 @@ Focus areas:
 - Documentation: "When should I investigate?"
 
 **Deliverables:**
--  Health summary (OK/WARN/ERROR with reasons)
--  Stats interpretation (meaningful summaries)
--  CLI integration (extended blazedb doctor)
--  Documentation (OPERATIONAL_CONFIDENCE.md)
--  Tests (health classification, interpretation)
+- Health summary (OK/WARN/ERROR with reasons)
+- Stats interpretation (meaningful summaries)
+- CLI integration (extended blazedb doctor)
+- Documentation (OPERATIONAL_CONFIDENCE.md)
+- Tests (health classification, interpretation)
 
 **Files Created:**
 - `BlazeDB/Exports/DatabaseHealth.swift`
@@ -197,25 +197,25 @@ Focus areas:
 
 Before marking this phase complete:
 
--  No frozen core files modified
--  No new concurrency constructs
--  No new Task.detached
--  Swift 6 strict concurrency still compiles
--  Tests exist for:
-  -  Query errors (`QueryErgonomicsTests.swift`)
-  -  Migrations (`SchemaMigrationTests.swift`)
-  -  Import/export (`ImportExportTests.swift`)
-  -  Health reporting (`OperationalConfidenceTests.swift`)
--  Docs explain guarantees clearly:
-  -  Query performance (`QUERY_PERFORMANCE.md`)
-  -  Schema migrations (PRE_USER_HARDENING.md)
-  -  Import/export (PRE_USER_HARDENING.md)
-  -  Operational confidence (`OPERATIONAL_CONFIDENCE.md`)
--  Failure modes are loud and actionable:
-  -  Query errors (categorized with guidance via `BlazeDBError+Categories.swift`)
-  -  Migration errors (explicit version mismatch, missing migrations)
-  -  Import/export errors (integrity verification failures, schema mismatches)
-  -  Health warnings (actionable suggestions in `HealthReport`)
+- No frozen core files modified
+- No new concurrency constructs
+- No new Task.detached
+- Swift 6 strict concurrency still compiles
+- Tests exist for:
+- Query errors (`QueryErgonomicsTests.swift`)
+- Migrations (`SchemaMigrationTests.swift`)
+- Import/export (`ImportExportTests.swift`)
+- Health reporting (`OperationalConfidenceTests.swift`)
+- Docs explain guarantees clearly:
+- Query performance (`QUERY_PERFORMANCE.md`)
+- Schema migrations (PRE_USER_HARDENING.md)
+- Import/export (PRE_USER_HARDENING.md)
+- Operational confidence (`OPERATIONAL_CONFIDENCE.md`)
+- Failure modes are loud and actionable:
+- Query errors (categorized with guidance via `BlazeDBError+Categories.swift`)
+- Migration errors (explicit version mismatch, missing migrations)
+- Import/export errors (integrity verification failures, schema mismatches)
+- Health warnings (actionable suggestions in `HealthReport`)
 
 ---
 
@@ -227,26 +227,26 @@ Before marking this phase complete:
 - A change adds concurrency complexity
 - A change cannot be verified by tests
 
-**If you think:** "This would be easier if we just changed the storage…"  
+**If you think:** "This would be easier if we just changed the storage…"
 **STOP.** That is a different phase.
 
 ---
 
 ## Expected Outcome
 
--  BlazeDB is explainable (query performance documented, health reports)
--  Upgrades are safe and predictable (explicit migration system with versioning)
--  Data can be backed up and restored confidently (verifiable import/export)
--  Query behavior is understandable (clear error messages, performance documentation)
--  Users trust the system before trusting performance (operational confidence with OK/WARN/ERROR)
+- BlazeDB is explainable (query performance documented, health reports)
+- Upgrades are safe and predictable (explicit migration system with versioning)
+- Data can be backed up and restored confidently (verifiable import/export)
+- Query behavior is understandable (clear error messages, performance documentation)
+- Users trust the system before trusting performance (operational confidence with OK/WARN/ERROR)
 
-**Phase Status:  COMPLETE**
+**Phase Status: COMPLETE**
 
 All four work items completed:
-1.  Query ergonomics - validation, error messages, performance docs
-2.  Schema evolution - versioning, migrations, planning
-3.  Import/export - deterministic dumps, integrity verification, CLI
-4.  Operational confidence - health reports, stats interpretation, guidance
+1. Query ergonomics - validation, error messages, performance docs
+2. Schema evolution - versioning, migrations, planning
+3. Import/export - deterministic dumps, integrity verification, CLI
+4. Operational confidence - health reports, stats interpretation, guidance
 
 **Do not optimize. Do not be clever. Make it boring, explicit, and trustworthy.**
 
@@ -254,7 +254,7 @@ All four work items completed:
 
 ## Phase Completion Summary
 
-**Date Completed:** Pre-User Hardening Phase  
+**Date Completed:** Pre-User Hardening Phase
 **Status:** All deliverables complete and frozen
 
 **Deliverables:**
@@ -266,12 +266,12 @@ All four work items completed:
 - Comprehensive documentation (`OPERATIONAL_CONFIDENCE.md`)
 
 **Verification:**
--  No frozen core files modified
--  No new concurrency constructs
--  No new Task.detached
--  Swift 6 strict concurrency compiles
--  All tests pass (query, migration, import/export, health)
--  All documentation complete
+- No frozen core files modified
+- No new concurrency constructs
+- No new Task.detached
+- Swift 6 strict concurrency compiles
+- All tests pass (query, migration, import/export, health)
+- All documentation complete
 
 **Next Steps:**
 BlazeDB is now ready for early adopters. The trust envelope is complete:
@@ -281,13 +281,13 @@ BlazeDB is now ready for early adopters. The trust envelope is complete:
 - Users can monitor database health (OK/WARN/ERROR with guidance)
 
 **Release Posture Complete:**
--  Version: 0.1.0 (Pre-User Hardening Release)
--  Compatibility documented (`COMPATIBILITY.md`)
--  API stability defined (`API_STABILITY.md`)
--  Support policy established (`SUPPORT_POLICY.md`)
--  Changelog maintained (`CHANGELOG.md`)
--  Release posture documented (`RELEASE_POSTURE.md`)
--  CI updated (core tests, CLI tools, distributed allowed to fail)
+- Version: 0.1.0 (Pre-User Hardening Release)
+- Compatibility documented (`COMPATIBILITY.md`)
+- API stability defined (`API_STABILITY.md`)
+- Support policy established (`SUPPORT_POLICY.md`)
+- Changelog maintained (`CHANGELOG.md`)
+- Release posture documented (`RELEASE_POSTURE.md`)
+- CI updated (core tests, CLI tools, distributed allowed to fail)
 
 **Ready For:**
 - Local-first apps

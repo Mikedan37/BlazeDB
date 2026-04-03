@@ -38,5 +38,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: legacy-tag-probe-logs
-          path: .tagcheck-*.log
+          path: .artifacts/tagcheck/*.log
           if-no-files-found: ignore

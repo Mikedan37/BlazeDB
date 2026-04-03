@@ -18,7 +18,7 @@ Run `git status` and `git diff` to double-check.
 
 ## 1) Rule Of `main`
 
-`main` is always releasable.  
+`main` is always releasable.
 Please keep experimental work on a branch, not directly on `main`.
 
 ## 2) Branch Rule

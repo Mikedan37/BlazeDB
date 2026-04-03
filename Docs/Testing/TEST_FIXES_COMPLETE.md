@@ -191,12 +191,12 @@ for i in 0..<1000 {
 
 ## Test Status
 
- **All tests updated to use dual-codec validation**
- **Fuzz tests are now deterministic**
- **Error tests use standardized helpers**
- **Performance tests have realistic thresholds**
- **No legacy assumptions remain**
- **All tests verify both Standard and ARM codecs**
+**All tests updated to use dual-codec validation**
+**Fuzz tests are now deterministic**
+**Error tests use standardized helpers**
+**Performance tests have realistic thresholds**
+**No legacy assumptions remain**
+**All tests verify both Standard and ARM codecs**
 
 ---
 

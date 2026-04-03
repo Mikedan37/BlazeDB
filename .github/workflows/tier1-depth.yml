@@ -1,0 +1,45 @@
+# Weekly / manual Tier 1 depth: extended + perf (not the default PR gate).
+# See Docs/Testing/CI_AND_TEST_TIERS.md
+
+name: Tier 1 depth
+
+on:
+  schedule:
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+
+concurrency:
+  group: tier1-depth-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  tier1-depth-macos:
+    name: macOS 15 — Tier1Extended + Tier1Perf
+    runs-on: macos-15
+    timeout-minutes: 240
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Xcode Swift toolchain
+        run: |
+          xcodebuild -version
+          swift --version
+
+      - name: Build BlazeDBCore
+        run: swift build --target BlazeDBCore
+
+      - name: Test Tier 1 extended
+        run: swift test --filter BlazeDB_Tier1Extended
+
+      - name: Test Tier 1 perf
+        run: swift test --skip-build --filter BlazeDB_Tier1Perf

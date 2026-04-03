@@ -11,8 +11,8 @@ import XCTest
 
 final class BlazeLoggerTests: XCTestCase {
     
-    override func setUp() {
-        super.setUp()
+    override func setUpWithError() throws {
+        try super.setUpWithError()
         // Reset to known state before each test
         BlazeLogger.reset()
     }

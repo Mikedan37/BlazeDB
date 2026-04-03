@@ -6,27 +6,27 @@
 
 ## Current State Assessment
 
-###  What's Already Good
+### What's Already Good
 
 1. **Clear Entry Points**
-   - `openDefault()` is discoverable
-   - Presets (`openForCLI`, `openForDaemon`, `openForTesting`) are helpful
-   - Zero-configuration works well
+- `openDefault()` is discoverable
+- Presets (`openForCLI`, `openForDaemon`, `openForTesting`) are helpful
+- Zero-configuration works well
 
 2. **Error Messages**
-   - Categorized errors with guidance
-   - Actionable suggestions included
-   - Good error formatting
+- Categorized errors with guidance
+- Actionable suggestions included
+- Good error formatting
 
 3. **Documentation Structure**
-   - Task-based docs (`USAGE_BY_TASK.md`)
-   - Clear anti-patterns guide
-   - Extension points documented
+- Task-based docs (`USAGE_BY_TASK.md`)
+- Clear anti-patterns guide
+- Extension points documented
 
 4. **Tooling**
-   - CLI tools (`blazedb doctor`, `blazedb dump`)
-   - Visualizer exists (BlazeDBVisualizer)
-   - Health monitoring APIs
+- CLI tools (`blazedb doctor`, `blazedb dump`)
+- Visualizer exists (BlazeDBVisualizer)
+- Health monitoring APIs
 
 ---
 
@@ -39,9 +39,9 @@
 **Current:**
 ```swift
 let results = try db.query()
-    .where("status", equals: .string("active"))
-    .execute()
-    .records
+ .where("status", equals: .string("active"))
+ .execute()
+ .records
 ```
 
 **Improvements:**
@@ -50,38 +50,38 @@ let results = try db.query()
 ```swift
 // Better: Type-safe field access
 struct User: BlazeDocument {
-    @Field var name: String
-    @Field var age: Int
-    @Field var active: Bool
+ @Field var name: String
+ @Field var age: Int
+ @Field var active: Bool
 }
 
 let results = try db.query(User.self)
-    .where(\.name, equals: "Alice")  // Autocomplete works!
-    .where(\.age, greaterThan: 18)
-    .execute()
+ .where(\.name, equals: "Alice") // Autocomplete works!
+ .where(\.age, greaterThan: 18)
+ .execute()
 ```
 
 #### B. Fluent API with Better Method Names
 ```swift
 // More discoverable method names
 db.query()
-    .filter("status", is: "active")  // "is" is clearer than "equals"
-    .sort(by: "created", order: .descending)  // "sort" is clearer than "orderBy"
-    .limit(to: 10)
-    .execute()
+ .filter("status", is: "active") // "is" is clearer than "equals"
+ .sort(by: "created", order: .descending) // "sort" is clearer than "orderBy"
+ .limit(to: 10)
+ .execute()
 ```
 
 #### C. Query Builder Hints
 ```swift
 // IDE hints show what's available next
 db.query()
-    .where(...)  // IDE shows: "Next: .where(), .orderBy(), .limit(), .execute()"
-    .orderBy(...)  // IDE shows: "Next: .limit(), .execute()"
-    .execute()  // IDE shows: "Returns: QueryResult"
+ .where(...) // IDE shows: "Next: .where(), .orderBy(), .limit(), .execute()"
+ .orderBy(...) // IDE shows: "Next: .limit(), .execute()"
+ .execute() // IDE shows: "Returns: QueryResult"
 ```
 
-**Priority:** High  
-**Effort:** Medium  
+**Priority:** High
+**Effort:** Medium
 **Impact:** High
 
 ---
@@ -101,20 +101,20 @@ db.query()
 #### A. Rich Error Context
 ```swift
 public struct QueryError: Error {
-    let message: String
-    let query: String  // "WHERE status = 'active' ORDER BY created DESC"
-    let affectedFields: [String]
-    let suggestion: String
-    let documentationLink: String?  // Link to relevant docs
+ let message: String
+ let query: String // "WHERE status = 'active' ORDER BY created DESC"
+ let affectedFields: [String]
+ let suggestion: String
+ let documentationLink: String? // Link to relevant docs
 }
 
 // Usage:
 catch let error as QueryError {
-    print("Query failed: \(error.query)")
-    print("Suggestion: \(error.suggestion)")
-    if let link = error.documentationLink {
-        print("See: \(link)")
-    }
+ print("Query failed: \(error.query)")
+ print("Suggestion: \(error.suggestion)")
+ if let link = error.documentationLink {
+ print("See: \(link)")
+ }
 }
 ```
 
@@ -122,15 +122,15 @@ catch let error as QueryError {
 ```swift
 // When field not found, suggest similar fields
 catch BlazeDBError.invalidField(let field, let expected, let actual) {
-    // Auto-suggest: "Did you mean 'user_id' instead of 'userId'?"
-    // Show available fields: "Available fields: name, email, created_at"
+ // Auto-suggest: "Did you mean 'user_id' instead of 'userId'?"
+ // Show available fields: "Available fields: name, email, created_at"
 }
 ```
 
 #### C. Debug Mode with Query Logging
 ```swift
 // Enable query logging for debugging
-BlazeDB.enableQueryLogging()  // Logs all queries with timing
+BlazeDB.enableQueryLogging() // Logs all queries with timing
 
 // Output:
 // [QUERY] WHERE status = 'active' ORDER BY created DESC LIMIT 10
@@ -138,8 +138,8 @@ BlazeDB.enableQueryLogging()  // Logs all queries with timing
 // [RESULTS] 5 records
 ```
 
-**Priority:** High  
-**Effort:** Medium  
+**Priority:** High
+**Effort:** Medium
 **Impact:** High
 
 ---
@@ -150,7 +150,7 @@ BlazeDB.enableQueryLogging()  // Logs all queries with timing
 
 **Current:**
 ```swift
-try db.insertBatch(records)  // No progress, just waits
+try db.insertBatch(records) // No progress, just waits
 ```
 
 **Improvements:**
@@ -158,8 +158,8 @@ try db.insertBatch(records)  // No progress, just waits
 #### A. Progress Callbacks
 ```swift
 try db.insertBatch(records) { progress in
-    print("Inserted \(progress.completed)/\(progress.total)")
-    print("ETA: \(progress.estimatedTimeRemaining)s")
+ print("Inserted \(progress.completed)/\(progress.total)")
+ print("ETA: \(progress.estimatedTimeRemaining)s")
 }
 ```
 
@@ -167,7 +167,7 @@ try db.insertBatch(records) { progress in
 ```swift
 // For async operations
 for await progress in db.insertBatchAsync(records) {
-    print("Progress: \(progress.percentage)%")
+ print("Progress: \(progress.percentage)%")
 }
 ```
 
@@ -175,15 +175,15 @@ for await progress in db.insertBatchAsync(records) {
 ```swift
 let operation = db.insertBatch(records)
 operation.onProgress { progress in
-    // Update UI
+ // Update UI
 }
 operation.onComplete { result in
-    // Handle completion
+ // Handle completion
 }
 ```
 
-**Priority:** Medium  
-**Effort:** Medium  
+**Priority:** Medium
+**Effort:** Medium
 **Impact:** Medium
 
 ---
@@ -194,7 +194,7 @@ operation.onComplete { result in
 
 **Current:**
 ```swift
-let results = try db.query().execute()  // No performance info
+let results = try db.query().execute() // No performance info
 ```
 
 **Improvements:**
@@ -202,39 +202,39 @@ let results = try db.query().execute()  // No performance info
 #### A. Query Explanation API
 ```swift
 let explanation = try db.query()
-    .where("status", equals: .string("active"))
-    .explain()
+ .where("status", equals: .string("active"))
+ .explain()
 
 print(explanation)
 // Output:
 // Query Plan:
-//   - Index scan on 'status' (fast)
-//   - Filter: status = 'active'
-//   - Estimated time: 2ms
-//   - Estimated rows: 150
+// - Index scan on 'status' (fast)
+// - Filter: status = 'active'
+// - Estimated time: 2ms
+// - Estimated rows: 150
 ```
 
 #### B. Performance Warnings
 ```swift
 // Automatically warn about slow queries
 let results = try db.query()
-    .where("unindexed_field", equals: .string("value"))
-    .execute()
+ .where("unindexed_field", equals: .string("value"))
+ .execute()
 // Warning: "Query scans 10,000 records. Consider adding index on 'unindexed_field'"
 ```
 
 #### C. Query Performance Dashboard
 ```swift
 // Track slow queries automatically
-let slowQueries = try db.getSlowQueries(threshold: 100)  // >100ms
+let slowQueries = try db.getSlowQueries(threshold: 100) // >100ms
 for query in slowQueries {
-    print("\(query.query): \(query.avgTime)ms (called \(query.count) times)")
-    print("Suggestion: \(query.suggestion)")
+ print("\(query.query): \(query.avgTime)ms (called \(query.count) times)")
+ print("Suggestion: \(query.suggestion)")
 }
 ```
 
-**Priority:** High  
-**Effort:** Medium  
+**Priority:** High
+**Effort:** Medium
 **Impact:** High
 
 ---
@@ -258,26 +258,26 @@ let schema = try db.getSchema()
 print(schema)
 // Output:
 // Fields:
-//   - name: String (indexed)
-//   - age: Int
-//   - email: String (indexed, unique)
-//   - created_at: Date
+// - name: String (indexed)
+// - age: Int
+// - email: String (indexed, unique)
+// - created_at: Date
 // Indexes:
-//   - idx_name (name)
-//   - idx_email (email, unique)
+// - idx_name (name)
+// - idx_email (email, unique)
 ```
 
 #### B. IDE Autocomplete for Schema
 ```swift
 // If schema is known at compile time
 struct User: BlazeDocument {
-    @Field var name: String
-    @Field var age: Int
+ @Field var name: String
+ @Field var age: Int
 }
 
 // IDE autocomplete works for field names
 db.query(User.self)
-    .where(\.name, ...)  // Autocomplete!
+ .where(\.name, ...) // Autocomplete!
 ```
 
 #### C. Schema Validation at Compile Time
@@ -287,8 +287,8 @@ try db.validateSchema(User.self)
 // Error at compile time if schema doesn't match
 ```
 
-**Priority:** Medium  
-**Effort:** High  
+**Priority:** Medium
+**Effort:** High
 **Impact:** Medium
 
 ---
@@ -301,7 +301,7 @@ try db.validateSchema(User.self)
 ```swift
 let db = try BlazeDB.openForTesting(name: "test", password: "test")
 // ... test code ...
-try? FileManager.default.removeItem(at: db.fileURL)  // Manual cleanup
+try? FileManager.default.removeItem(at: db.fileURL) // Manual cleanup
 ```
 
 **Improvements:**
@@ -310,33 +310,33 @@ try? FileManager.default.removeItem(at: db.fileURL)  // Manual cleanup
 ```swift
 // XCTest helper
 func withTestDB<T>(_ block: (BlazeDBClient) throws -> T) throws -> T {
-    let db = try BlazeDB.openForTesting()
-    defer { try? FileManager.default.removeItem(at: db.fileURL) }
-    return try block(db)
+ let db = try BlazeDB.openForTesting()
+ defer { try? FileManager.default.removeItem(at: db.fileURL) }
+ return try block(db)
 }
 
 // Usage:
 try withTestDB { db in
-    try db.insert(record)
-    XCTAssertNotNil(try db.fetch(id: id))
+ try db.insert(record)
+ XCTAssertNotNil(try db.fetch(id: id))
 }
 ```
 
 #### B. Test Fixtures
 ```swift
 // Pre-populated test database
-let db = try BlazeDB.testFixture("users")  // Loads test/users.blazedb
+let db = try BlazeDB.testFixture("users") // Loads test/users.blazedb
 // Database pre-populated with test data
 ```
 
 #### C. Snapshot Testing
 ```swift
 // Compare database state
-try db.assertSnapshot("after_insert")  // Compares to saved snapshot
+try db.assertSnapshot("after_insert") // Compares to saved snapshot
 ```
 
-**Priority:** Medium  
-**Effort:** Low  
+**Priority:** Medium
+**Effort:** Low
 **Impact:** Medium
 
 ---
@@ -387,8 +387,8 @@ func insert(_ record: BlazeDataRecord) throws -> UUID
 // Click "Run Example" in IDE to execute
 ```
 
-**Priority:** Low  
-**Effort:** Medium  
+**Priority:** Low
+**Effort:** Medium
 **Impact:** Low
 
 ---
@@ -412,27 +412,27 @@ $ blazedb doctor mydb.blazedb
  Database Health: OK
 
  Statistics:
-   Records: 1,000
-   Pages: 100
-   Size: 2.5 MB
-   WAL: 512 KB
+ Records: 1,000
+ Pages: 100
+ Size: 2.5 MB
+ WAL: 512 KB
 
  Indexes:
-    idx_name (name)
-    idx_email (email, unique)
+ idx_name (name)
+ idx_email (email, unique)
 
  Suggestions:
-   - Consider adding index on 'status' for faster queries
+- Consider adding index on 'status' for faster queries
 ```
 
 #### B. Interactive Mode
 ```bash
 $ blazedb doctor --interactive
 > What would you like to check?
-  1. Health
-  2. Performance
-  3. Schema
-  4. Indexes
+ 1. Health
+ 2. Performance
+ 3. Schema
+ 4. Indexes
 > 1
  Health: OK
 ```
@@ -441,14 +441,14 @@ $ blazedb doctor --interactive
 ```bash
 $ blazedb doctor --json mydb.blazedb
 {
-  "health": "OK",
-  "records": 1000,
-  "suggestions": [...]
+ "health": "OK",
+ "records": 1000,
+ "suggestions": [...]
 }
 ```
 
-**Priority:** Medium  
-**Effort:** Low  
+**Priority:** Medium
+**Effort:** Low
 **Impact:** Medium
 
 ---
@@ -456,10 +456,10 @@ $ blazedb doctor --json mydb.blazedb
 ## Implementation Priority
 
 ### Phase 1: High Impact, Low Effort
-1.  Better error context (add query string to errors)
-2.  Query performance warnings (detect slow queries)
-3.  Test helpers (reduce boilerplate)
-4.  CLI output formatting (better UX)
+1. Better error context (add query string to errors)
+2. Query performance warnings (detect slow queries)
+3. Test helpers (reduce boilerplate)
+4. CLI output formatting (better UX)
 
 ### Phase 2: High Impact, Medium Effort
 1. Progress callbacks for long operations
@@ -480,11 +480,11 @@ $ blazedb doctor --json mydb.blazedb
 ```swift
 // In QueryBuilder.execute()
 catch {
-    throw BlazeDBError.invalidQuery(
-        reason: error.localizedDescription,
-        query: self.description,  // Add query string
-        suggestion: "..."
-    )
+ throw BlazeDBError.invalidQuery(
+ reason: error.localizedDescription,
+ query: self.description, // Add query string
+ suggestion: "..."
+ )
 }
 ```
 
@@ -495,10 +495,10 @@ let startTime = Date()
 let results = try execute()
 let duration = Date().timeIntervalSince(startTime)
 
-if duration > 0.1 {  // >100ms
-    BlazeLogger.warn("Slow query detected: \(duration * 1000)ms")
-    BlazeLogger.warn("Query: \(self.description)")
-    BlazeLogger.warn("Consider adding indexes or optimizing query")
+if duration > 0.1 { // >100ms
+ BlazeLogger.warn("Slow query detected: \(duration * 1000)ms")
+ BlazeLogger.warn("Query: \(self.description)")
+ BlazeLogger.warn("Consider adding indexes or optimizing query")
 }
 ```
 
@@ -506,9 +506,9 @@ if duration > 0.1 {  // >100ms
 ```swift
 // In BlazeDoctor
 func printHealth(_ health: HealthReport) {
-    let icon = health.status == .ok ? "" : ""
-    print("\(icon) Database Health: \(health.status)")
-    // ... formatted output
+ let icon = health.status == .ok ? "" : ""
+ print("\(icon) Database Health: \(health.status)")
+ // ... formatted output
 }
 ```
 

@@ -13,19 +13,19 @@ For operators using `BlazeDBManager` or other tooling, note that manager-style h
 For the default `BlazeDBClient` path, durability is provided by the **legacy binary write-ahead log** at the **page** level:
 
 - **Write ordering**
-  - For each page write, the encrypted page image is appended to the binary WAL **before** the main data file is updated.
-  - The WAL entry is fsync’d to disk before the page write is considered committed.
-  - The main file is then written and fsync’d.
+- For each page write, the encrypted page image is appended to the binary WAL **before** the main data file is updated.
+- The WAL entry is fsync’d to disk before the page write is considered committed.
+- The main file is then written and fsync’d.
 - **Crash recovery**
-  - On open, `PageStore` replays any remaining WAL entries and reapplies the corresponding page images to the main file.
-  - WAL replay is idempotent for committed streams: reapplying the same committed WAL sequence converges to a single final state.
-  - Truncated or corrupt tail entries are detected (magic/length/CRC) and replay stops at the last valid entry.
+- On open, `PageStore` replays any remaining WAL entries and reapplies the corresponding page images to the main file.
+- WAL replay is idempotent for committed streams: reapplying the same committed WAL sequence converges to a single final state.
+- Truncated or corrupt tail entries are detected (magic/length/CRC) and replay stops at the last valid entry.
 - **Metadata and visibility**
-  - Persisted record visibility is determined by the catalog/metadata (`StorageLayout.indexMap`), not by scanning raw pages.
-  - A record is considered **published** only after both:
-    1. Its page(s) are durably written (via WAL + main fsync), and
-    2. The metadata has been updated and saved.
-  - If an insert fails (for example, a metadata save error), `BlazeDBClient.performSafeWrite` restores the in-memory index map; the record is not visible via normal APIs, and reopen will not list it unless the metadata actually contains an entry.
+- Persisted record visibility is determined by the catalog/metadata (`StorageLayout.indexMap`), not by scanning raw pages.
+- A record is considered **published** only after both:
+ 1. Its page(s) are durably written (via WAL + main fsync), and
+ 2. The metadata has been updated and saved.
+- If an insert fails (for example, a metadata save error), `BlazeDBClient.performSafeWrite` restores the in-memory index map; the record is not visible via normal APIs, and reopen will not list it unless the metadata actually contains an entry.
 
 ### Large records and overflow pages (publish-last semantics)
 

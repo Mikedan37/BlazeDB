@@ -14,14 +14,14 @@ import XCTest
 
 final class QueryProfilingTests: XCTestCase {
     
-    var dbURL: URL!
-    var db: BlazeDBClient!
+    private var dbURL: URL?
+    private var db: BlazeDBClient?
     
     override func setUp() async throws {
         try await super.setUp()
         dbURL = FileManager.default.temporaryDirectory
             .appendingPathComponent("ProfileTest-\(UUID().uuidString).blazedb")
-        db = try BlazeDBClient(name: "ProfileTest", fileURL: dbURL, password: "SecureTestDB-456!")
+        db = try BlazeDBClient(name: "ProfileTest", fileURL: try requireFixture(dbURL), password: "SecureTestDB-456!")
         
         // Clear any previous profiling data
         QueryProfiler.shared.clear()
@@ -47,19 +47,19 @@ final class QueryProfilingTests: XCTestCase {
     func testProfilingCapturesQueries() async throws {
         print("📊 Testing profiling captures queries")
         
-        db.enableProfiling()
+        try requireFixture(db).enableProfiling()
         
         // Insert test data
-        _ = try await db.insertMany((0..<50).map { i in
+        _ = try await requireFixture(db).insertMany((0..<50).map { i in
             BlazeDataRecord(["value": .int(i), "status": .string(i % 2 == 0 ? "open" : "closed")])
         })
         
         // Run queries
-        _ = try await db.query().where("status", equals: .string("open")).execute()
-        _ = try await db.query().where("value", greaterThan: .int(25)).execute()
-        _ = try await db.fetchAll()
+        _ = try await requireFixture(db).query().where("status", equals: .string("open")).execute()
+        _ = try await requireFixture(db).query().where("value", greaterThan: .int(25)).execute()
+        _ = try await requireFixture(db).fetchAll()
         
-        let stats = db.getQueryStatistics()
+        let stats = try requireFixture(db).getQueryStatistics()
         
         // Note: Only explicitly profiled queries are tracked
         // Regular queries need manual profiling
@@ -70,15 +70,15 @@ final class QueryProfilingTests: XCTestCase {
     func testSlowQueryDetection() async throws {
         print("📊 Testing slow query detection")
         
-        db.enableProfiling()
+        try requireFixture(db).enableProfiling()
         
         // Insert large dataset
-        _ = try await db.insertMany((0..<500).map { i in BlazeDataRecord(["value": .int(i)]) })
+        _ = try await requireFixture(db).insertMany((0..<500).map { i in BlazeDataRecord(["value": .int(i)]) })
         
         // Run expensive query (full scan, no index)
-        _ = try await db.query().where("value", greaterThan: .int(250)).execute()
+        _ = try await requireFixture(db).query().where("value", greaterThan: .int(250)).execute()
         
-        let slowQueries = db.getSlowQueries(threshold: 0.001)  // Very low threshold for testing
+        let slowQueries = try requireFixture(db).getSlowQueries(threshold: 0.001)  // Very low threshold for testing
         
         print("  ⚠️  Slow queries: \(slowQueries.count)")
     }
@@ -86,22 +86,22 @@ final class QueryProfilingTests: XCTestCase {
     func testProfilingCanBeDisabled() async throws {
         print("📊 Testing profiling can be disabled")
         
-        db.enableProfiling()
+        try requireFixture(db).enableProfiling()
         
         // Run query
-        _ = try await db.fetchAll()
+        _ = try await requireFixture(db).fetchAll()
         
-        let statsEnabled = db.getQueryStatistics()
+        let statsEnabled = try requireFixture(db).getQueryStatistics()
         let countEnabled = statsEnabled.totalQueries
         
         // Disable
-        db.disableProfiling()
+        try requireFixture(db).disableProfiling()
         
         // Run more queries
-        _ = try await db.fetchAll()
-        _ = try await db.fetchAll()
+        _ = try await requireFixture(db).fetchAll()
+        _ = try await requireFixture(db).fetchAll()
         
-        let statsDisabled = db.getQueryStatistics()
+        let statsDisabled = try requireFixture(db).getQueryStatistics()
         let countDisabled = statsDisabled.totalQueries
         
         // Count should not increase after disable
@@ -113,12 +113,12 @@ final class QueryProfilingTests: XCTestCase {
     func testProfilingReport() async throws {
         print("📊 Testing profiling report generation")
         
-        db.enableProfiling()
+        try requireFixture(db).enableProfiling()
         
         // Run various queries
-        _ = try await db.insertMany((0..<100).map { i in BlazeDataRecord(["value": .int(i)]) })
+        _ = try await requireFixture(db).insertMany((0..<100).map { i in BlazeDataRecord(["value": .int(i)]) })
         
-        let report = db.getProfilingReport()
+        let report = try requireFixture(db).getProfilingReport()
         
         XCTAssertFalse(report.isEmpty)
         XCTAssertTrue(report.contains("Query"))
@@ -132,16 +132,16 @@ final class QueryProfilingTests: XCTestCase {
     func testQueryStatistics() async throws {
         print("📊 Testing query statistics aggregation")
         
-        db.enableProfiling()
+        try requireFixture(db).enableProfiling()
         
         // Insert data
-        _ = try await db.insertMany((0..<50).map { i in BlazeDataRecord(["value": .int(i)]) })
+        _ = try await requireFixture(db).insertMany((0..<50).map { i in BlazeDataRecord(["value": .int(i)]) })
         
         // Run queries (profiling capture depends on integration)
-        _ = try await db.fetchAll()
-        _ = try await db.fetchAll()
+        _ = try await requireFixture(db).fetchAll()
+        _ = try await requireFixture(db).fetchAll()
         
-        let stats = db.getQueryStatistics()
+        let stats = try requireFixture(db).getQueryStatistics()
         
         XCTAssertGreaterThanOrEqual(stats.totalQueries, 0)
         
@@ -151,18 +151,18 @@ final class QueryProfilingTests: XCTestCase {
     func testClearProfilingData() async throws {
         print("📊 Testing clear profiling data")
         
-        db.enableProfiling()
+        try requireFixture(db).enableProfiling()
         
         // Run some queries
-        _ = try await db.insertMany((0..<10).map { i in BlazeDataRecord(["value": .int(i)]) })
+        _ = try await requireFixture(db).insertMany((0..<10).map { i in BlazeDataRecord(["value": .int(i)]) })
         
-        let statsBefore = db.getQueryStatistics()
+        let statsBefore = try requireFixture(db).getQueryStatistics()
         let countBefore = statsBefore.totalQueries
         
         // Clear
-        db.clearProfilingData()
+        try requireFixture(db).clearProfilingData()
         
-        let statsAfter = db.getQueryStatistics()
+        let statsAfter = try requireFixture(db).getQueryStatistics()
         XCTAssertEqual(statsAfter.totalQueries, 0, "Should clear all profiles")
         
         print("  ✅ Cleared \(countBefore) profiles")
@@ -173,13 +173,13 @@ final class QueryProfilingTests: XCTestCase {
     func testProfilingThreadSafety() async throws {
         print("📊 Testing profiling thread safety")
         
-        db.enableProfiling()
+        try requireFixture(db).enableProfiling()
         
         // Insert data
-        _ = try await db.insertMany((0..<100).map { i in BlazeDataRecord(["value": .int(i)]) })
+        _ = try await requireFixture(db).insertMany((0..<100).map { i in BlazeDataRecord(["value": .int(i)]) })
         
         // Run concurrent queries
-        let db = self.db!
+        let db = try XCTUnwrap(self.db)
         await withTaskGroup(of: Void.self) { group in
             for _ in 0..<20 {
                 group.addTask {
@@ -189,7 +189,7 @@ final class QueryProfilingTests: XCTestCase {
         }
         
         // Should not crash
-        let stats = db.getQueryStatistics()
+        let stats = try requireFixture(db).getQueryStatistics()
         
         print("  ✅ Thread-safe: \(stats.totalQueries) queries profiled")
     }

@@ -455,7 +455,7 @@ BlazeDB is designed for **high-performance embedded database** use cases:
 
 ---
 
-##  **HOW TO GET ACTUAL MEASURED NUMBERS**
+## **HOW TO GET ACTUAL MEASURED NUMBERS**
 
 ### **Quick Method: Run Benchmark Script**
 ```bash

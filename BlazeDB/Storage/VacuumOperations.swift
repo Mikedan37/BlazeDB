@@ -66,6 +66,15 @@ public struct StorageStats {
 // MARK: - BlazeDBClient VACUUM Extension
 
 extension BlazeDBClient {
+    private func loadVacuumLayout() throws -> StorageLayout {
+        try StorageLayout.loadSecure(
+            from: metaURL,
+            signingKey: encryptionKey,
+            password: collection.password,
+            salt: collection.kdfSalt,
+            allowUnsignedLayoutFallback: true
+        )
+    }
     
     // MARK: - VACUUM Operations
     
@@ -111,7 +120,7 @@ extension BlazeDBClient {
                         .appendingPathComponent("\(self.fileURL.lastPathComponent).vacuum-\(UUID().uuidString)")
                     
                     defer {
-                        try? FileManager.default.removeItem(at: tempURL)
+                        BlazeAuthoritativeFileOps.removeItemIfExists(at: tempURL, context: "VacuumOperations(defer temp)")
                     }
                     
                     BlazeLogger.debug("Creating compacted database at \(tempURL.path)")
@@ -144,10 +153,10 @@ extension BlazeDBClient {
                     BlazeLogger.debug("Wrote \(newPageIndex) compacted pages")
                     
                     // Update metadata with new index map
-                    var layout = try StorageLayout.load(from: self.metaURL)
+                    var layout = try self.loadVacuumLayout()
                     layout.indexMap = newIndexMap
                     layout.nextPageIndex = newPageIndex
-                    try layout.save(to: self.metaURL)
+                    try layout.saveSecure(to: self.metaURL, signingKey: self.encryptionKey)
                     
                     // Get file sizes
                     let attrsOld = try FileManager.default.attributesOfItem(atPath: self.fileURL.path)
@@ -232,7 +241,7 @@ extension BlazeDBClient {
     
     /// Internal sync version of getStorageStats
     private func _getStorageStatsSync() throws -> StorageStats {
-        let layout = try StorageLayout.load(from: metaURL)
+        let layout = try loadVacuumLayout()
         
         // Get file size
         let attributes = try FileManager.default.attributesOfItem(atPath: fileURL.path)

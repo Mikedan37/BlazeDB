@@ -36,23 +36,23 @@ let db = try BlazeDBClient.open(named: "myapp", password: "your-password")
 
 // Insert a record
 let id = try db.insert(BlazeDataRecord([
-    "name": .string("Alice"),
-    "role": .string("engineer"),
-    "active": .bool(true)
+ "name": .string("Alice"),
+ "role": .string("engineer"),
+ "active": .bool(true)
 ]))
 
 // Query with the fluent builder
 let results = try db.query()
-    .where("role", equals: .string("engineer"))
-    .where("active", equals: .bool(true))
-    .orderBy("name")
-    .limit(10)
-    .execute()
+ .where("role", equals: .string("engineer"))
+ .where("active", equals: .bool(true))
+ .orderBy("name")
+ .limit(10)
+ .execute()
 
 // Batch insert
 let ids = try db.insertMany([
-    BlazeDataRecord(["name": .string("Bob"), "role": .string("designer")]),
-    BlazeDataRecord(["name": .string("Carol"), "role": .string("pm")])
+ BlazeDataRecord(["name": .string("Bob"), "role": .string("designer")]),
+ BlazeDataRecord(["name": .string("Carol"), "role": .string("pm")])
 ])
 
 try db.close()
@@ -64,7 +64,7 @@ That's the actual API surface. Swift types go in and Swift types come out, witho
 
 BlazeDB is structured as a layered engine. Each layer has a defined boundary and a specific job.
 
-> ✏️ IMAGE → blazedb_architecture.png
+> IMAGE → blazedb_architecture.png
 
 *BlazeDB architecture — from API surface down through query execution, collection storage, page management, and the WAL/encryption subsystems.*
 
@@ -102,7 +102,7 @@ The tradeoff is real: Swift is not currently optimized for writing extremely hig
 
 The WAL design follows a well-understood pattern: log first, mutate the page, sync to disk.
 
-> ✏️ IMAGE → blazedb_wal.png
+> IMAGE → blazedb_wal.png
 
 *Write path and recovery path. WAL entries are always written before page mutations, guaranteeing crash recovery by replaying the log.*
 
@@ -130,7 +130,7 @@ These numbers shift between runs depending on system load, thermal state, and ba
 
 I want to be direct about this: SQLite is faster than BlazeDB on raw throughput. Meaningfully faster.
 
-> ✏️ IMAGE → blazedb_benchmark.png
+> IMAGE → blazedb_benchmark.png
 
 *Growth test throughput comparison. SQLite remains stronger in raw throughput. BlazeDB prioritizes Swift-native design, encryption defaults, and transparent behavior.*
 

@@ -18,7 +18,7 @@ Based on current metrics:
 
 ## **HIGH-IMPACT OPTIMIZATIONS**
 
-### **1. Memory Pool & Object Reuse**  **HIGH PRIORITY**
+### **1. Memory Pool & Object Reuse** **HIGH PRIORITY**
 
 **Current State:**
 - Every operation allocates new `Data` buffers
@@ -59,7 +59,7 @@ actor MemoryPool {
 
 ---
 
-### **2. Page Cache with LRU Eviction**  **HIGH PRIORITY**
+### **2. Page Cache with LRU Eviction** **HIGH PRIORITY**
 
 **Current State:**
 - Pages are read from disk every time
@@ -104,7 +104,7 @@ actor PageCache {
 
 ---
 
-### **3. Record Encoding Cache**  **MEDIUM PRIORITY**
+### **3. Record Encoding Cache** **MEDIUM PRIORITY**
 
 **Current State:**
 - Records are encoded every time they're written
@@ -146,7 +146,7 @@ actor EncodingCache {
 
 ---
 
-### **4. Index Memory Optimization**  **MEDIUM PRIORITY**
+### **4. Index Memory Optimization** **MEDIUM PRIORITY**
 
 **Current State:**
 - Indexes store full UUID sets
@@ -186,7 +186,7 @@ struct CompressedIndex {
 
 ---
 
-### **5. Zero-Copy Record Access**  **HIGH PRIORITY**
+### **5. Zero-Copy Record Access** **HIGH PRIORITY**
 
 **Current State:**
 - Records are copied when fetched
@@ -231,7 +231,7 @@ extension PageStore {
 
 ---
 
-### **6. Batch Index Updates**  **MEDIUM PRIORITY**
+### **6. Batch Index Updates** **MEDIUM PRIORITY**
 
 **Current State:**
 - Indexes are updated per record
@@ -270,7 +270,7 @@ extension DynamicCollection {
 
 ---
 
-### **7. SIMD-Optimized Encoding/Decoding**  **LOW PRIORITY** (Advanced)
+### **7. SIMD-Optimized Encoding/Decoding** **LOW PRIORITY** (Advanced)
 
 **Current State:**
 - Encoding/decoding uses standard Swift operations
@@ -299,7 +299,7 @@ func encodeBatchSIMD(_ records: [BlazeDataRecord]) -> [Data] {
 
 ---
 
-### **8. Write-Ahead Log (WAL) Mode**  **HIGH PRIORITY**
+### **8. Write-Ahead Log (WAL) Mode** **HIGH PRIORITY**
 
 **Current State:**
 - Every write requires fsync
@@ -338,7 +338,7 @@ class WriteAheadLog {
 
 ---
 
-### **9. Query Result Streaming**  **MEDIUM PRIORITY**
+### **9. Query Result Streaming** **MEDIUM PRIORITY**
 
 **Current State:**
 - Queries load all results into memory
@@ -373,7 +373,7 @@ for try await record in query.stream() {
 
 ---
 
-### **10. Compressed Page Storage**  **LOW PRIORITY**
+### **10. Compressed Page Storage** **LOW PRIORITY**
 
 **Current State:**
 - Pages stored uncompressed

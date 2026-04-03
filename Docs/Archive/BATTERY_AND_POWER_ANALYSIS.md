@@ -76,7 +76,7 @@ CPU: 80% utilization
 Radio: 80% utilization
 Power: High
 
-BATTERY IMPACT: -15% (more CPU/radio usage) 
+BATTERY IMPACT: -15% (more CPU/radio usage)
 ```
 
 **Impact:**
@@ -148,7 +148,7 @@ Parallel Encoding (8 cores):
 CPU: 8 cores at 80% for 2ms
 Power: 2ms × 8 cores × 80% = 12.8ms equivalent
 
-BATTERY IMPACT: -28% (more cores active) 
+BATTERY IMPACT: -28% (more cores active)
 ```
 
 **Impact:**
@@ -167,10 +167,10 @@ Optimization Battery Impact Net Impact
 
 Batch Sizes +20% Positive
 Fast Batching +10% Positive
-Pipelining -15%  Negative
+Pipelining -15% Negative
 LZ4 Compression +15% Positive
 Batch Validation +5% Positive
-Parallel Encoding -28%  Negative
+Parallel Encoding -28% Negative
 
 TOTAL: +7% NET POSITIVE!
 ```

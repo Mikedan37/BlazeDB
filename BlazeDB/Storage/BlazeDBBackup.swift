@@ -96,7 +96,7 @@ extension BlazeDBClient {
         // Remove existing backup if it exists (overwrite behavior)
         if FileManager.default.fileExists(atPath: url.path) {
             // Best-effort remove to avoid TOCTOU races in parallel test environments.
-            try? FileManager.default.removeItem(at: url)
+            BlazeAuthoritativeFileOps.removeItemIfExists(at: url, context: "backup(overwrite destination)")
         }
         
         // Copy database file
@@ -106,7 +106,7 @@ extension BlazeDBClient {
         let backupMetaURL = url.deletingPathExtension().appendingPathExtension("meta")
         if FileManager.default.fileExists(atPath: metaURL.path) {
             if FileManager.default.fileExists(atPath: backupMetaURL.path) {
-                try? FileManager.default.removeItem(at: backupMetaURL)
+                BlazeAuthoritativeFileOps.removeItemIfExists(at: backupMetaURL, context: "backup(stale meta)")
             }
             try FileManager.default.copyItem(at: metaURL, to: backupMetaURL)
         }
@@ -116,7 +116,7 @@ extension BlazeDBClient {
         let backupIndexesURL = backupMetaURL.deletingPathExtension().appendingPathExtension("indexes")
         if FileManager.default.fileExists(atPath: indexesURL.path) {
             if FileManager.default.fileExists(atPath: backupIndexesURL.path) {
-                try? FileManager.default.removeItem(at: backupIndexesURL)
+                BlazeAuthoritativeFileOps.removeItemIfExists(at: backupIndexesURL, context: "backup(stale indexes)")
             }
             try FileManager.default.copyItem(at: indexesURL, to: backupIndexesURL)
         }
@@ -126,7 +126,7 @@ extension BlazeDBClient {
         let backupSaltURL = url.deletingPathExtension().appendingPathExtension("salt")
         if FileManager.default.fileExists(atPath: saltURL.path) {
             if FileManager.default.fileExists(atPath: backupSaltURL.path) {
-                try? FileManager.default.removeItem(at: backupSaltURL)
+                BlazeAuthoritativeFileOps.removeItemIfExists(at: backupSaltURL, context: "backup(stale salt)")
             }
             try FileManager.default.copyItem(at: saltURL, to: backupSaltURL)
         }
@@ -231,11 +231,11 @@ extension BlazeDBClient {
         
         let indexesURL = metaURL.deletingPathExtension().appendingPathExtension("indexes")
         if FileManager.default.fileExists(atPath: indexesURL.path) {
-            try? FileManager.default.removeItem(at: indexesURL)
+            BlazeAuthoritativeFileOps.removeItemIfExists(at: indexesURL, context: "restore(replace indexes)")
         }
         let saltURL = fileURL.deletingPathExtension().appendingPathExtension("salt")
         if FileManager.default.fileExists(atPath: saltURL.path) {
-            try? FileManager.default.removeItem(at: saltURL)
+            BlazeAuthoritativeFileOps.removeItemIfExists(at: saltURL, context: "restore(replace salt)")
         }
         
         // Copy backup files

@@ -836,7 +836,8 @@ public final class QueryBuilder: @unchecked Sendable {
                 // Compare values
                 if leftValue == rightValue { continue }
                 
-                let comparison = compareFields(leftValue!, .lessThan, rightValue!)
+                guard let lv = leftValue, let rv = rightValue else { continue }
+                let comparison = compareFields(lv, .lessThan, rv)
                 return sortOp.descending ? !comparison : comparison
             }
             return false
@@ -856,7 +857,8 @@ public final class QueryBuilder: @unchecked Sendable {
                 
                 if leftValue == rightValue { continue }
                 
-                let comparison = compareFields(leftValue!, .lessThan, rightValue!)
+                guard let lv = leftValue, let rv = rightValue else { continue }
+                let comparison = compareFields(lv, .lessThan, rv)
                 return sortOp.descending ? !comparison : comparison
             }
             return false

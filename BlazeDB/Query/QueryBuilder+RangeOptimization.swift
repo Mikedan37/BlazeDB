@@ -62,12 +62,14 @@ extension QueryBuilder {
                 }
             }
             
-            // Filter to only records in the range
+            // Filter to only records in the range. When the index finds no matches we still
+            // need an explicit false filter; otherwise the builder returns the unfiltered result set.
+            filters.append { record in
+                guard let id = record.storage["id"]?.uuidValue else { return false }
+                return matchingIDs.contains(id)
+            }
+
             if !matchingIDs.isEmpty {
-                filters.append { record in
-                    guard let id = record.storage["id"]?.uuidValue else { return false }
-                    return matchingIDs.contains(id)
-                }
                 BlazeLogger.debug("✅ Range query using index: \(matchingIDs.count) records match")
             } else {
                 BlazeLogger.debug("ℹ️ Range query using index: no records match")

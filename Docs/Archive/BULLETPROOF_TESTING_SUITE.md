@@ -1,4 +1,4 @@
-#  Bulletproof Testing Suite
+# Bulletproof Testing Suite
 
 **Created:** November 12, 2025
 **Purpose:** Comprehensive low-level verification tests to catch critical bugs before production
@@ -143,9 +143,9 @@ New Test Suites: 73 tests (low-level verification)
 TOTAL: 1,513 tests
 
 Coverage:
-- Feature-level:  95%
-- Low-level:  100%
-- Integration:  85%
+- Feature-level: 95%
+- Low-level: 100%
+- Integration: 85%
 ```
 
 ---
@@ -191,18 +191,18 @@ for _ in 0..<100 {
 ### **Run Individual Suite:**
 ```bash
 xcodebuild test -scheme BlazeDB \
- -only-testing:BlazeDBTests/EncryptionRoundTripVerificationTests
+-only-testing:BlazeDBTests/EncryptionRoundTripVerificationTests
 ```
 
 ### **Run All New Suites:**
 ```bash
 xcodebuild test -scheme BlazeDB \
- -only-testing:BlazeDBTests/EncryptionRoundTripVerificationTests \
- -only-testing:BlazeDBTests/PersistenceIntegrityTests \
- -only-testing:BlazeDBTests/PerformanceInvariantTests \
- -only-testing:BlazeDBTests/FileIntegrityTests \
- -only-testing:BlazeDBTests/FailureInjectionTests \
- -only-testing:BlazeDBTests/AutoMigrationVerificationTests
+-only-testing:BlazeDBTests/EncryptionRoundTripVerificationTests \
+-only-testing:BlazeDBTests/PersistenceIntegrityTests \
+-only-testing:BlazeDBTests/PerformanceInvariantTests \
+-only-testing:BlazeDBTests/FileIntegrityTests \
+-only-testing:BlazeDBTests/FailureInjectionTests \
+-only-testing:BlazeDBTests/AutoMigrationVerificationTests
 ```
 
 ### **Run Full Suite:**
@@ -254,24 +254,24 @@ WOULD FAIL: Expected 10 records after reopen, got 8
 ## Best Practices Demonstrated
 
 1. **Test What You Fixed**
- - Every bug gets a specific test
- - Test the EXACT failure mode
+- Every bug gets a specific test
+- Test the EXACT failure mode
 
 2. **Verify Invariants**
- - File sizes shouldn't change randomly
- - Checksums should remain stable
- - Performance should stay within bounds
+- File sizes shouldn't change randomly
+- Checksums should remain stable
+- Performance should stay within bounds
 
 3. **Test at Multiple Levels**
- - Byte-level (encryption)
- - File-level (integrity)
- - System-level (concurrency)
+- Byte-level (encryption)
+- File-level (integrity)
+- System-level (concurrency)
 
 4. **Inject Failures**
- - Corruption
- - Missing files
- - Wrong keys
- - Concurrent access
+- Corruption
+- Missing files
+- Wrong keys
+- Concurrent access
 
 ---
 
@@ -320,5 +320,5 @@ With these new tests, BlazeDB now has:
 - **Catastrophic failure resilience**
 - **Migration safety guarantees**
 
-**BlazeDB is now bulletproof.** 
+**BlazeDB is now bulletproof.**
 

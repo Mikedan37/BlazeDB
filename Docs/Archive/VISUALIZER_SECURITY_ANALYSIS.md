@@ -53,33 +53,33 @@
 ### **What's Missing (if we add editing):**
 
 1. **No Audit Trail**
- - Who edited what?
- - When was data changed?
- - What was the old value?
+- Who edited what?
+- When was data changed?
+- What was the old value?
 
 2. **No Role-Based Access Control**
- - Everyone has full access
- - No read-only users
- - No admin vs viewer distinction
+- Everyone has full access
+- No read-only users
+- No admin vs viewer distinction
 
 3. **No Multi-User Support**
- - No conflict detection
- - No concurrent edit prevention
- - No user attribution
+- No conflict detection
+- No concurrent edit prevention
+- No user attribution
 
 4. **No Data Loss Prevention**
- - No "are you sure?" for bulk deletes
- - No automatic backups before edits
- - No undo system
+- No "are you sure?" for bulk deletes
+- No automatic backups before edits
+- No undo system
 
 5. **No Compliance Features**
- - No audit logs for GDPR/HIPAA
- - No data retention policies
- - No access logs
+- No audit logs for GDPR/HIPAA
+- No data retention policies
+- No access logs
 
 ---
 
-##  **Enhanced Security Features (Proposed)**
+## **Enhanced Security Features (Proposed)**
 
 ### **1. Audit Logging**
 
@@ -159,19 +159,19 @@ struct UserPermissions {
 **UI:**
 ```
 
- Access Level: Viewer  
- 
- You can: 
- View records 
- Export data 
- Run queries 
- 
- You cannot: 
- Edit records 
- Delete records 
- Modify database 
- 
- Contact admin for more access 
+ Access Level: Viewer
+
+ You can:
+ View records
+ Export data
+ Run queries
+
+ You cannot:
+ Edit records
+ Delete records
+ Modify database
+
+ Contact admin for more access
 
 ```
 
@@ -519,12 +519,12 @@ Why it's risky:
 | Local-only | | | | |
 | Touch ID | | | | |
 | Keychain | | | | |
-| Audit Logs |  (proposed) | | | |
-| RBAC |  (proposed) | | | |
-| Auto-backup | |  |  | |
-| Undo |  (proposed) | | |  |
-| Read-only mode | |  |  | |
-| Encryption | (AES-GCM) |  | | |
+| Audit Logs | (proposed) | | | |
+| RBAC | (proposed) | | | |
+| Auto-backup | | | | |
+| Undo | (proposed) | | | |
+| Read-only mode | | | | |
+| Encryption | (AES-GCM) | | | |
 
 **Verdict:** BlazeDBVisualizer is **MORE SECURE** than most competitors!
 
@@ -535,14 +535,14 @@ Why it's risky:
 ### **For Public Release:**
 
 1. ** Release as Open Source**
- - Post on GitHub
- - MIT License
- - Community contributions
+- Post on GitHub
+- MIT License
+- Community contributions
 
 2. ** Release on Mac App Store**
- - Sandboxed app
- - Automatic updates
- - Code signing & notarization
+- Sandboxed app
+- Automatic updates
+- Code signing & notarization
 
 3. ** Default Configuration:**
  ```swift
@@ -557,17 +557,17 @@ Why it's risky:
 
 4. ** Security Warnings:**
  ```
-  WARNING: Do not use on production databases
-  This tool is for development/testing only
-  Always backup before editing
-  Enable audit logging for compliance
+ WARNING: Do not use on production databases
+ This tool is for development/testing only
+ Always backup before editing
+ Enable audit logging for compliance
  ```
 
 5. ** Documentation:**
- - Security best practices
- - When to use (and when NOT to use)
- - How to enable editing safely
- - Compliance features
+- Security best practices
+- When to use (and when NOT to use)
+- How to enable editing safely
+- Compliance features
 
 ---
 
@@ -576,27 +576,27 @@ Why it's risky:
 1. ** Enhanced Security Package**
  ```
  BlazeDBVisualizer Pro
-  Role-based access control
-  Full audit logging
-  2FA support
-  SSO integration
-  Compliance reports
-  Priority support
+ Role-based access control
+ Full audit logging
+ 2FA support
+ SSO integration
+ Compliance reports
+ Priority support
 
  Price: $99/user/year
  ```
 
 2. ** On-Premise Deployment**
- - Docker container
- - Kubernetes support
- - LDAP/Active Directory integration
- - Custom security policies
+- Docker container
+- Kubernetes support
+- LDAP/Active Directory integration
+- Custom security policies
 
 3. ** Compliance Certification**
- - SOC 2 Type II
- - HIPAA compliance
- - GDPR compliance
- - ISO 27001
+- SOC 2 Type II
+- HIPAA compliance
+- GDPR compliance
+- ISO 27001
 
 ---
 
@@ -650,7 +650,7 @@ Before public release:
 **BlazeDBVisualizer is SAFE to expose as:**
 - Personal dev tool (public release)
 - Team dev tool (with RBAC)
--  Production tool (with heavy security)
+- Production tool (with heavy security)
 
 **It's MORE SECURE than most competitors thanks to:**
 - Local-only architecture

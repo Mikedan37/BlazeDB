@@ -135,10 +135,10 @@ This dual-codec validation ensures:
 
 ## Status
 
- **All tests refactored**
- **Dual-codec validation complete**
- **Top-level CI suite created**
- **Long-term stability guaranteed**
+**All tests refactored**
+**Dual-codec validation complete**
+**Top-level CI suite created**
+**Long-term stability guaranteed**
 
 The ARM-optimized codec is now permanently locked to the reference implementation, ensuring it will never diverge.
 

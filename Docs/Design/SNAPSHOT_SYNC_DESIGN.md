@@ -15,8 +15,8 @@ BlazeDB currently uses **operation log (op-log) based sync only**. This means:
 - **Incremental sync works well** - only changed operations are transferred
 - **Initial sync is slow** - new devices must replay entire operation log (could be 100K+ operations)
 - **No fast bootstrap** - large databases require downloading all historical operations
--  **Memory pressure** - large operation logs consume memory during replay
--  **Network bandwidth** - entire operation history must be transferred
+- **Memory pressure** - large operation logs consume memory during replay
+- **Network bandwidth** - entire operation history must be transferred
 
 ### Example Problem
 
@@ -45,41 +45,41 @@ A database with 1 million records and 100K operations:
 A snapshot contains:
 
 1. **Database State:**
- - All records at snapshot timestamp
- - Record IDs and versions
- - Index definitions
- - Metadata (schema version, etc.)
+- All records at snapshot timestamp
+- Record IDs and versions
+- Index definitions
+- Metadata (schema version, etc.)
 
 2. **Snapshot Metadata:**
- - Snapshot timestamp (Lamport timestamp)
- - Snapshot version (monotonic counter)
- - Database checksum (for validation)
- - Record count
- - File size
+- Snapshot timestamp (Lamport timestamp)
+- Snapshot version (monotonic counter)
+- Database checksum (for validation)
+- Record count
+- File size
 
 3. **Compression:**
- - Snapshot data is compressed (LZ4 or ZLIB)
- - Compression ratio: 50-70% for typical data
+- Snapshot data is compressed (LZ4 or ZLIB)
+- Compression ratio: 50-70% for typical data
 
 ### Snapshot Format
 
 ```
 Snapshot File Structure:
 
- Header (64 bytes) 
- - Magic: "BZSN" (4 bytes) 
- - Version: UInt32 (1) 
- - Timestamp: LamportTimestamp 
- - Record Count: UInt64 
- - Checksum: UInt64 
- - Compression: UInt8 (0=none, 1=LZ4)
- - Reserved: 31 bytes 
+ Header (64 bytes)
+- Magic: "BZSN" (4 bytes)
+- Version: UInt32 (1)
+- Timestamp: LamportTimestamp
+- Record Count: UInt64
+- Checksum: UInt64
+- Compression: UInt8 (0=none, 1=LZ4)
+- Reserved: 31 bytes
 
 
- Compressed Snapshot Data 
- - Records (BlazeBinary format) 
- - Index Definitions (JSON) 
- - Metadata (JSON) 
+ Compressed Snapshot Data
+- Records (BlazeBinary format)
+- Index Definitions (JSON)
+- Metadata (JSON)
 
 ```
 
@@ -92,20 +92,20 @@ Snapshot File Structure:
 Snapshots are created automatically when:
 
 1. **Operation Log Size Threshold:**
- - When operation log exceeds 10,000 operations
- - Prevents operation log from growing unbounded
+- When operation log exceeds 10,000 operations
+- Prevents operation log from growing unbounded
 
 2. **Time-Based:**
- - Every 24 hours (if operation log has changes)
- - Ensures recent snapshots are available
+- Every 24 hours (if operation log has changes)
+- Ensures recent snapshots are available
 
 3. **Record Count Threshold:**
- - When database exceeds 100,000 records
- - Ensures large databases have snapshots
+- When database exceeds 100,000 records
+- Ensures large databases have snapshots
 
 4. **Manual Trigger:**
- - Application can request snapshot creation
- - Useful before major migrations or backups
+- Application can request snapshot creation
+- Useful before major migrations or backups
 
 ### Snapshot Retention
 
@@ -121,43 +121,43 @@ Snapshots are created automatically when:
 
 ```
 
- 1. Client connects to server 
+ 1. Client connects to server
 
  ↓
 
- 2. Exchange sync state 
- - Client: lastSyncedTimestamp = 0 (new device) 
- - Server: lastSyncedTimestamp = T, hasSnapshot = Y 
+ 2. Exchange sync state
+- Client: lastSyncedTimestamp = 0 (new device)
+- Server: lastSyncedTimestamp = T, hasSnapshot = Y
 
  ↓
 
- 3. Server determines sync strategy 
- IF client.lastSyncedTimestamp == 0: 
- → Use snapshot (fast bootstrap) 
+ 3. Server determines sync strategy
+ IF client.lastSyncedTimestamp == 0:
+ → Use snapshot (fast bootstrap)
  ELSE IF client.lastSyncedTimestamp < snapshot.timestamp:
- → Use snapshot + operations since snapshot 
- ELSE: 
- → Use op-log only (incremental sync) 
+ → Use snapshot + operations since snapshot
+ ELSE:
+ → Use op-log only (incremental sync)
 
  ↓
 
- 4a. Snapshot Transfer (if needed) 
- - Download snapshot file 
- - Validate checksum 
- - Decompress 
- - Load into database 
+ 4a. Snapshot Transfer (if needed)
+- Download snapshot file
+- Validate checksum
+- Decompress
+- Load into database
 
  ↓
 
- 4b. Operation Replay (if needed) 
- - Pull operations since snapshot.timestamp 
- - Apply operations in order 
- - Update sync state 
+ 4b. Operation Replay (if needed)
+- Pull operations since snapshot.timestamp
+- Apply operations in order
+- Update sync state
 
  ↓
 
- 5. Continue incremental sync 
- - Real-time operation exchange 
+ 5. Continue incremental sync
+- Real-time operation exchange
 
 ```
 

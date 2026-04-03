@@ -16,18 +16,21 @@ import XCTest
 #endif
 
 final class ArrayDictionaryEdgeTests: XCTestCase {
-    var tempURL: URL!
-    var db: BlazeDBClient!
+    private var tempURL: URL?
+    private var db: BlazeDBClient?
     
-    override func setUp() {
-        super.setUp()
-        tempURL = FileManager.default.temporaryDirectory
+    override func setUpWithError() throws {
+        try super.setUpWithError()
+        let url = FileManager.default.temporaryDirectory
             .appendingPathComponent("ArrayDict-\(UUID().uuidString).blazedb")
-        db = try! BlazeDBClient(name: "ArrayDictTest", fileURL: tempURL, password: "TestPassword-123!")
+        tempURL = url
+        db = try BlazeDBClient(name: "ArrayDictTest", fileURL: url, password: "TestPassword-123!")
     }
     
     override func tearDown() {
-        cleanupBlazeDB(&db, at: tempURL)
+        if let url = tempURL {
+            cleanupBlazeDB(&db, at: url)
+        }
         super.tearDown()
     }
     
@@ -43,7 +46,7 @@ final class ArrayDictionaryEdgeTests: XCTestCase {
             .array([.int(7), .int(8), .int(9)])
         ])
         
-        let id = try db.insert(BlazeDataRecord([
+        let id = try requireFixture(db).insert(BlazeDataRecord([
             "matrix": nestedArray,
             "name": .string("2D Array")
         ]))
@@ -51,7 +54,7 @@ final class ArrayDictionaryEdgeTests: XCTestCase {
         print("  Inserted record with nested arrays")
         
         // Fetch and verify structure preserved
-        let fetched = try db.fetch(id: id)
+        let fetched = try requireFixture(db).fetch(id: id)
         XCTAssertNotNil(fetched)
         
         if case let .array(outerArray)? = fetched?.storage["matrix"] {
@@ -85,7 +88,7 @@ final class ArrayDictionaryEdgeTests: XCTestCase {
             ])
         ])
         
-        let id = try db.insert(BlazeDataRecord([
+        let id = try requireFixture(db).insert(BlazeDataRecord([
             "structure": deepDict,
             "type": .string("nested")
         ]))
@@ -93,7 +96,7 @@ final class ArrayDictionaryEdgeTests: XCTestCase {
         print("  Inserted record with 4-level nested dictionary")
         
         // Fetch and verify
-        let fetched = try db.fetch(id: id)
+        let fetched = try requireFixture(db).fetch(id: id)
         XCTAssertNotNil(fetched)
         
         // Navigate to deep value
@@ -120,7 +123,7 @@ final class ArrayDictionaryEdgeTests: XCTestCase {
             .array([.string("tag1"), .string("tag2"), .string("tag3")])
         ])
         
-        let id = try db.insert(BlazeDataRecord([
+        let id = try requireFixture(db).insert(BlazeDataRecord([
             "data": mixedStructure,
             "type": .string("mixed")
         ]))
@@ -128,7 +131,7 @@ final class ArrayDictionaryEdgeTests: XCTestCase {
         print("  Inserted mixed array/dictionary structure")
         
         // Fetch and verify
-        let fetched = try db.fetch(id: id)
+        let fetched = try requireFixture(db).fetch(id: id)
         
         if case let .array(items)? = fetched?.storage["data"] {
             XCTAssertEqual(items.count, 3)
@@ -158,17 +161,17 @@ final class ArrayDictionaryEdgeTests: XCTestCase {
         
         let emptyArray: BlazeDocumentField = .array([])
         
-        _ = try db.insert(BlazeDataRecord([
+        _ = try requireFixture(db).insert(BlazeDataRecord([
             "name": .string("EmptyList"),
             "items": emptyArray
         ]))
-        _ = try db.insert(BlazeDataRecord([
+        _ = try requireFixture(db).insert(BlazeDataRecord([
             "name": .string("HasItems"),
             "items": .array([.int(1), .int(2)])
         ]))
         
         // Query for empty arrays
-        let results = try db.query()
+        let results = try requireFixture(db).query()
             .where("items", equals: emptyArray)
             .execute()
             .records
@@ -187,12 +190,12 @@ final class ArrayDictionaryEdgeTests: XCTestCase {
         
         let emptyDict: BlazeDocumentField = .dictionary([:])
         
-        let id = try db.insert(BlazeDataRecord([
+        let id = try requireFixture(db).insert(BlazeDataRecord([
             "name": .string("Empty"),
             "metadata": emptyDict
         ]))
         
-        let fetched = try db.fetch(id: id)
+        let fetched = try requireFixture(db).fetch(id: id)
         
         if case let .dictionary(dict)? = fetched?.storage["metadata"] {
             XCTAssertTrue(dict.isEmpty, "Dictionary should be empty")
@@ -219,7 +222,7 @@ final class ArrayDictionaryEdgeTests: XCTestCase {
         )
         
         let startTime = Date()
-        let id = try db.insert(BlazeDataRecord([
+        let id = try requireFixture(db).insert(BlazeDataRecord([
             "name": .string("LargeArray"),
             "data": largeArray
         ]))
@@ -229,7 +232,7 @@ final class ArrayDictionaryEdgeTests: XCTestCase {
         
         // Fetch and verify
         let fetchStart = Date()
-        let fetched = try db.fetch(id: id)
+        let fetched = try requireFixture(db).fetch(id: id)
         let fetchDuration = Date().timeIntervalSince(fetchStart)
         
         print("  Fetched 400-element array in \(String(format: "%.3f", fetchDuration))s")
@@ -259,7 +262,7 @@ final class ArrayDictionaryEdgeTests: XCTestCase {
             largeDict["key\(i)"] = .int(i * 10)
         }
         
-        let id = try db.insert(BlazeDataRecord([
+        let id = try requireFixture(db).insert(BlazeDataRecord([
             "name": .string("LargeDict"),
             "data": .dictionary(largeDict)
         ]))
@@ -267,7 +270,7 @@ final class ArrayDictionaryEdgeTests: XCTestCase {
         print("  Inserted dictionary with 100 keys")
         
         // Fetch and verify
-        let fetched = try db.fetch(id: id)
+        let fetched = try requireFixture(db).fetch(id: id)
         
         if case let .dictionary(dict)? = fetched?.storage["data"] {
             XCTAssertEqual(dict.count, 100, "Should have all 100 keys")
@@ -294,14 +297,14 @@ final class ArrayDictionaryEdgeTests: XCTestCase {
             "key\nwith\nnewlines": .int(42)
         ])
         
-        let id = try db.insert(BlazeDataRecord([
+        let id = try requireFixture(db).insert(BlazeDataRecord([
             "data": unicodeDict
         ]))
         
         print("  Inserted dictionary with Unicode keys")
         
         // Fetch and verify all keys preserved
-        let fetched = try db.fetch(id: id)
+        let fetched = try requireFixture(db).fetch(id: id)
         
         if case let .dictionary(dict)? = fetched?.storage["data"] {
             XCTAssertEqual(dict.count, 5, "Should have all 5 keys")
@@ -329,11 +332,11 @@ final class ArrayDictionaryEdgeTests: XCTestCase {
             .string("עברית")
         ])
         
-        let id = try db.insert(BlazeDataRecord([
+        let id = try requireFixture(db).insert(BlazeDataRecord([
             "languages": unicodeArray
         ]))
         
-        let fetched = try db.fetch(id: id)
+        let fetched = try requireFixture(db).fetch(id: id)
         
         if case let .array(items)? = fetched?.storage["languages"] {
             XCTAssertEqual(items.count, 5)
@@ -352,12 +355,12 @@ final class ArrayDictionaryEdgeTests: XCTestCase {
     func testArrayDictionaryInCompoundIndexFallback() throws {
         print("📦 Testing array/dict fallback in compound indexes...")
         
-        let collection = db.collection
+        let collection = try requireFixture(db).collection
         
         // Create compound index that includes array field
         try collection.createIndex(on: ["status", "tags"])
         
-        _ = try db.insert(BlazeDataRecord([
+        _ = try requireFixture(db).insert(BlazeDataRecord([
             "status": .string("active"),
             "tags": .array([.string("urgent"), .string("bug")]),  // Should fallback to ""
             "title": .string("Test")

@@ -1,6 +1,6 @@
 # BlazeDB Test Tiers
 
-**Date:** 2025-01-22  
+**Date:** 2025-01-22
 **Purpose:** Define which tests are required for production readiness vs optional/legacy
 
 ---
@@ -9,7 +9,7 @@
 
 These tests validate core guarantees that BlazeDB must uphold for production use.
 
-**Status:** MUST pass for any release  
+**Status:** MUST pass for any release
 **CI:** Required, blocking
 
 ### Test Suites:
@@ -35,7 +35,7 @@ These tests validate core guarantees that BlazeDB must uphold for production use
 
 These tests validate important features but aren't blocking for core functionality.
 
-**Status:** Should pass, but not blocking  
+**Status:** Should pass, but not blocking
 **CI:** Run but allow failures (documented)
 
 ### Test Suites:
@@ -60,7 +60,7 @@ These tests validate important features but aren't blocking for core functionali
 
 These tests may use deprecated APIs, access internals, or test experimental features.
 
-**Status:** May fail or be skipped  
+**Status:** May fail or be skipped
 **CI:** Optional, non-blocking
 
 ### Test Suites:

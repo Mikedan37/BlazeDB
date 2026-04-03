@@ -6,7 +6,7 @@
 
 ## **HIGH-IMPACT ENHANCEMENTS**
 
-### 1. **Distance-Based Sorting** 
+### 1. **Distance-Based Sorting**
 **Impact:** CRITICAL - Most requested feature
 **Effort:** Low (1-2 hours)
 
@@ -27,7 +27,7 @@ let nearest = try db.query()
 
 ---
 
-### 2. **Distance in Query Results** 
+### 2. **Distance in Query Results**
 **Impact:** HIGH - Developers need distance
 **Effort:** Low (1 hour)
 
@@ -50,7 +50,7 @@ for result in results {
 
 ---
 
-### 3. **True Nearest Neighbor (k-NN)** 
+### 3. **True Nearest Neighbor (k-NN)**
 **Impact:** HIGH - Essential for "find nearest"
 **Effort:** Medium (3-4 hours)
 
@@ -71,7 +71,7 @@ let nearest = try db.query()
 
 ---
 
-### 4. **Geohash Support** 
+### 4. **Geohash Support**
 **Impact:** HIGH - 10-100x faster for some queries
 **Effort:** Medium (4-6 hours)
 
@@ -93,7 +93,7 @@ let nearby = try db.query()
 
 ---
 
-### 5. **Bulk Spatial Operations** 
+### 5. **Bulk Spatial Operations**
 **Impact:** MEDIUM - Faster bulk inserts
 **Effort:** Low (2 hours)
 
@@ -117,7 +117,7 @@ try db.insertMany(locations) // Automatically uses bulk spatial indexing
 
 ---
 
-### 6. **Spatial Clustering** 
+### 6. **Spatial Clustering**
 **Impact:** MEDIUM - Useful for map visualization
 **Effort:** Medium (4-6 hours)
 
@@ -140,7 +140,7 @@ let clusters = try db.cluster(
 
 ---
 
-### 7. **Route/Distance Calculations** 
+### 7. **Route/Distance Calculations**
 **Impact:** MEDIUM - Useful for routing
 **Effort:** Medium (3-4 hours)
 
@@ -163,7 +163,7 @@ let totalDistance = SpatialPoint.distance(along: route) // Total distance in met
 
 ---
 
-### 8. **Spatial Aggregations** 
+### 8. **Spatial Aggregations**
 **Impact:** MEDIUM - Analytics on locations
 **Effort:** Medium (3-4 hours)
 

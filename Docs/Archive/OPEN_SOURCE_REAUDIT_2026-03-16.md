@@ -10,39 +10,39 @@ This re-audit captures current evidence after transport deferral gating and loca
 ## Evidence Collected
 
 1. **Core clean-checkout verification**
-   - Command: `./Scripts/verify-clean-checkout.sh`
-   - Result: PASS
-   - Notes: release build + Tier0/Tier1 golden path + Tier2 cross-version harness all pass in clean worktree snapshot.
+- Command: `./Scripts/verify-clean-checkout.sh`
+- Result: PASS
+- Notes: release build + Tier0/Tier1 golden path + Tier2 cross-version harness all pass in clean worktree snapshot.
 
 2. **README quickstart verification**
-   - Command: `./Scripts/verify-readme-quickstart.sh`
-   - Result: PASS
-   - Measured runtime: **35 seconds** (target: <= 300 seconds)
-   - Fixes included:
-     - `Examples/HelloBlazeDB/main.swift` now uses a password that passes current policy.
-     - `Examples/HelloBlazeDB/main.swift` now uses an isolated temp database path per run so quickstart output stays deterministic.
+- Command: `./Scripts/verify-readme-quickstart.sh`
+- Result: PASS
+- Measured runtime: **35 seconds** (target: <= 300 seconds)
+- Fixes included:
+- `Examples/HelloBlazeDB/main.swift` now uses a password that passes current policy.
+- `Examples/HelloBlazeDB/main.swift` now uses an isolated temp database path per run so quickstart output stays deterministic.
 
 3. **Release-tag reproducibility probe**
-   - Command: `./Scripts/check-release-tag-builds.sh`
-   - Result: FAIL on `v0.1.3`, `v2.6.0`, `v2.7.0`
-   - Primary failure: private SSH dependency fetch (`git@github.com:Mikedan37/BlazeTransport.git`).
+- Command: `./Scripts/check-release-tag-builds.sh`
+- Result: FAIL on `v0.1.3`, `v2.6.0`, `v2.7.0`
+- Primary failure: private SSH dependency fetch (`git@github.com:Mikedan37/BlazeTransport.git`).
 
 4. **Distributed transport scope**
-   - Main branch is explicitly core-only.
-   - Distributed transport calls are gated and documented for later re-enable.
+- Main branch is explicitly core-only.
+- Distributed transport calls are gated and documented for later re-enable.
 
 5. **Security review scheduling**
-   - External review plan created and tracked in-repo.
-   - Issue template added for concrete schedule/remediation tracking.
+- External review plan created and tracked in-repo.
+- Issue template added for concrete schedule/remediation tracking.
 
 ## Checklist Delta from this Re-Audit
 
 - Marked complete:
-  - README quickstart from scratch under 5 minutes.
-  - Warning-noise reduction in readiness script output (full logs captured; terminal output summarized).
+- README quickstart from scratch under 5 minutes.
+- Warning-noise reduction in readiness script output (full logs captured; terminal output summarized).
 
 - Still blocked:
-  - Tier0 + Tier1 full suites green in CI on a clean runner (workflow updated, awaiting first green run evidence artifact).
+- Tier0 + Tier1 full suites green in CI on a clean runner (workflow updated, awaiting first green run evidence artifact).
 
 ## Remaining Path to Final Release
 

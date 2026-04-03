@@ -19,15 +19,15 @@ The key derivation process can produce different keys from the same password, wh
  ```
 
 2. **Non-Deterministic Failures**: If Argon2 fails inconsistently (e.g., due to memory constraints, timing, or implementation bugs), the same password might:
- - Use Argon2 in one instance → Key A
- - Fall back to PBKDF2 in another instance → Key B
- - Result: **Different keys from the same password!**
+- Use Argon2 in one instance → Key A
+- Fall back to PBKDF2 in another instance → Key B
+- Result: **Different keys from the same password!**
 
 3. **Impact**:
- - Signature verification fails (as we're seeing in tests)
- - Database cannot be opened with the same password
- - Data becomes inaccessible
- - **This breaks the fundamental security guarantee that the same password always produces the same key**
+- Signature verification fails (as we're seeing in tests)
+- Database cannot be opened with the same password
+- Data becomes inaccessible
+- **This breaks the fundamental security guarantee that the same password always produces the same key**
 
 ## Current Behavior
 

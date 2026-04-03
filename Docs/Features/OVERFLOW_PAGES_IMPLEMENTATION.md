@@ -2,7 +2,7 @@
 
 ## **Current Status**
 
-**Implementation:**  **PARTIAL** - Core logic exists, needs integration
+**Implementation:** **PARTIAL** - Core logic exists, needs integration
 
 **What's Done:**
 - Overflow page format defined (`OverflowPageHeader`)
@@ -11,9 +11,9 @@
 - Comprehensive test suite (15+ tests covering edge cases)
 
 **What's Missing:**
--  Main page format doesn't include overflow pointer
--  Need to modify page header to store overflow pointer
--  Integration with `DynamicCollection` write path
+- Main page format doesn't include overflow pointer
+- Need to modify page header to store overflow pointer
+- Integration with `DynamicCollection` write path
 
 ---
 
@@ -23,54 +23,54 @@
 
 ```
 
- Overflow Page (4096 bytes) 
+ Overflow Page (4096 bytes)
 
- Magic: "OVER" (4 bytes) 
- Version: 0x03 (1 byte) 
- Reserved: 0x00 (3 bytes) 
- Next Page Index: UInt32 (4 bytes)  ← Chain pointer
- Data Length: UInt32 (4 bytes) 
- Nonce: 12 bytes 
- Tag: 16 bytes 
- Ciphertext: Variable 
- Padding: To 4096 bytes 
+ Magic: "OVER" (4 bytes)
+ Version: 0x03 (1 byte)
+ Reserved: 0x00 (3 bytes)
+ Next Page Index: UInt32 (4 bytes) ← Chain pointer
+ Data Length: UInt32 (4 bytes)
+ Nonce: 12 bytes
+ Tag: 16 bytes
+ Ciphertext: Variable
+ Padding: To 4096 bytes
 
 ```
 
 ### **Write Flow**
 
 1. **Check if data fits:**
- - If `data.count <= maxDataPerPage`: Write normally (single page)
- - If `data.count > maxDataPerPage`: Use overflow pages
+- If `data.count <= maxDataPerPage`: Write normally (single page)
+- If `data.count > maxDataPerPage`: Use overflow pages
 
 2. **Split data:**
- - First chunk: Goes in main page
- - Remaining chunks: Go in overflow pages
+- First chunk: Goes in main page
+- Remaining chunks: Go in overflow pages
 
 3. **Write overflow chain:**
- - Allocate overflow pages
- - Write each page with next pointer
- - Link pages together
+- Allocate overflow pages
+- Write each page with next pointer
+- Link pages together
 
 4. **Update main page:**
- - Store pointer to first overflow page
- - (Currently placeholder - needs implementation)
+- Store pointer to first overflow page
+- (Currently placeholder - needs implementation)
 
 ### **Read Flow**
 
 1. **Read main page:**
- - Decrypt and get data
- - Check for overflow pointer
+- Decrypt and get data
+- Check for overflow pointer
 
 2. **Traverse overflow chain:**
- - Read first overflow page
- - Follow `nextPageIndex` pointer
- - Continue until `nextPageIndex == 0`
- - Concatenate all data
+- Read first overflow page
+- Follow `nextPageIndex` pointer
+- Continue until `nextPageIndex == 0`
+- Concatenate all data
 
 ---
 
-##  **Integration Issues**
+## **Integration Issues**
 
 ### **Problem 1: Main Page Format**
 
@@ -241,9 +241,9 @@ if let pageIndices = indexMap[id] {
 - Comprehensive tests
 
 **What Needs Work:**
--  Page format update (add overflow pointer)
--  DynamicCollection integration
--  Page deletion handling
+- Page format update (add overflow pointer)
+- DynamicCollection integration
+- Page deletion handling
 
 **Estimated Effort:** 2-3 days to complete integration
 

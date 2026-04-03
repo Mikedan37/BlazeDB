@@ -1,6 +1,6 @@
 # BlazeDB v0.1.3 - SwiftUI APIs Now Available
 
-**Release Date:** January 23, 2026  
+**Release Date:** January 23, 2026
 **Tag:** v0.1.3
 
 ---
@@ -8,17 +8,17 @@
 ## Added
 
 - **SwiftUI Integration:** `@BlazeQuery` property wrapper is now available to consumers
-  - Included SwiftUI directory in BlazeDBCore target
-  - Fixed Swift 6 strict concurrency errors
-  - SwiftUI code is conditionally compiled (only builds on macOS, iOS, watchOS, tvOS)
+- Included SwiftUI directory in BlazeDBCore target
+- Fixed Swift 6 strict concurrency errors
+- SwiftUI code is conditionally compiled (only builds on macOS, iOS, watchOS, tvOS)
 
 ---
 
 ## Fixed
 
 - **Swift 6 Concurrency:** Fixed Timer deinit and actor isolation errors in SwiftUI code
-  - Marked `autoRefreshTimer` as `@MainActor`
-  - Fixed `enableAutoRefresh` and `disableAutoRefresh` actor isolation
+- Marked `autoRefreshTimer` as `@MainActor`
+- Fixed `enableAutoRefresh` and `disableAutoRefresh` actor isolation
 
 ---
 
@@ -31,17 +31,17 @@ import SwiftUI
 import BlazeDBCore
 
 struct BugListView: View {
-    @BlazeQuery(
-        db: myDatabase,
-        where: "status", equals: .string("open")
-    )
-    var openBugs
-    
-    var body: some View {
-        List(openBugs, id: \.id) { bug in
-            Text(bug["title"]?.stringValue ?? "")
-        }
-    }
+ @BlazeQuery(
+ db: myDatabase,
+ where: "status", equals: .string("open")
+ )
+ var openBugs
+
+ var body: some View {
+ List(openBugs, id: \.id) { bug in
+ Text(bug["title"]?.stringValue ?? "")
+ }
+ }
 }
 ```
 
@@ -79,7 +79,7 @@ record["count"]?.intValue
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/Mikedan37/BlazeDB.git", from: "0.1.3")
+ .package(url: "https://github.com/Mikedan37/BlazeDB.git", from: "0.1.3")
 ]
 ```
 

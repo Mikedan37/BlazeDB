@@ -48,10 +48,10 @@ print(" Synced: \(synced?.string("message")?? "not found")")
 
 ## **What Works:**
 
- **Local Sync** - Same device (fast: <1ms)
- **Remote Sync** - Different devices (needs server: ~5ms)
- **Automatic** - No manual sync needed
- **Bidirectional** - Both databases can write
+**Local Sync** - Same device (fast: <1ms)
+**Remote Sync** - Different devices (needs server: ~5ms)
+**Automatic** - No manual sync needed
+**Bidirectional** - Both databases can write
 
 ---
 

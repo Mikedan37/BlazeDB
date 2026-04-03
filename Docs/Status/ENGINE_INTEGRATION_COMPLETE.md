@@ -187,11 +187,11 @@ The CI matrix ensures:
 
 ## Status
 
- **All engine integration tests created**
- **Benchmark harness complete**
- **CI matrix scaffolding added**
- **Fixture utilities created**
- **Full engine validation ready**
+**All engine integration tests created**
+**Benchmark harness complete**
+**CI matrix scaffolding added**
+**Fixture utilities created**
+**Full engine validation ready**
 
 The BlazeDB engine is now fully validated with dual-codec testing, ensuring long-term stability and correctness.
 

@@ -1,10 +1,10 @@
-# 🔥 BlazeDB Sync Examples - Complete Index
+# BlazeDB Sync Examples - Complete Index
 
 **8 production-ready, runnable examples for all sync scenarios.**
 
 ---
 
-## **🚀 Quick Start:**
+## ** Quick Start:**
 
 ```bash
 # Try the fastest sync method:
@@ -16,7 +16,7 @@ swift Examples/SyncExample_CrossApp.swift
 
 ---
 
-## **📋 All Sync Examples:**
+## ** All Sync Examples:**
 
 ### **1. Same App Sync** ⚡ FASTEST
 **File:** `SyncExample_SameApp.swift`
@@ -24,96 +24,96 @@ swift Examples/SyncExample_CrossApp.swift
 - **Throughput:** 10K-50K ops/sec
 - **Use when:** Multiple databases in same app
 - **Features:**
-  - ✅ Basic sync demonstration
-  - ✅ Bidirectional sync
-  - ✅ Performance test (1000 records)
-  - ✅ Complete with comments
+- Basic sync demonstration
+- Bidirectional sync
+- Performance test (1000 records)
+- Complete with comments
 
 ---
 
-### **2. Cross-App Sync** 📱 DIFFERENT APPS
+### **2. Cross-App Sync** DIFFERENT APPS
 **File:** `SyncExample_CrossApp.swift`
 - **Latency:** ~0.3-0.5ms
 - **Throughput:** 5K-20K ops/sec
 - **Use when:** Different apps on same device
 - **Features:**
-  - ✅ Unix Domain Socket setup
-  - ✅ BlazeBinary encoding
-  - ✅ Bidirectional sync
-  - ✅ Performance test (500 records)
+- Unix Domain Socket setup
+- BlazeBinary encoding
+- Bidirectional sync
+- Performance test (500 records)
 
 ---
 
-### **3. Remote Server** 🖥️ SERVER SETUP
+### **3. Remote Server** SERVER SETUP
 **File:** `SyncExample_RemoteServer.swift`
 - **Latency:** ~5ms
 - **Throughput:** 1K-10K ops/sec
 - **Use when:** Need central server
 - **Features:**
-  - ✅ Server setup
-  - ✅ E2E encryption
-  - ✅ Auth token support
-  - ✅ Test data insertion
+- Server setup
+- E2E encryption
+- Auth token support
+- Test data insertion
 
 ---
 
-### **4. Remote Client** 📡 CLIENT SETUP
+### **4. Remote Client** CLIENT SETUP
 **File:** `SyncExample_RemoteClient.swift`
 - **Latency:** ~5ms
 - **Use when:** Connect to remote server
 - **Features:**
-  - ✅ Client connection
-  - ✅ Remote sync
-  - ✅ Performance test
-  - ✅ Data verification
+- Client connection
+- Remote sync
+- Performance test
+- Data verification
 
 ---
 
-### **5. Automatic Discovery** 🔍 mDNS/BONJOUR
+### **5. Automatic Discovery** mDNS/BONJOUR
 **File:** `SyncExample_Discovery.swift`
 - **Use when:** Auto-find servers
 - **Features:**
-  - ✅ mDNS/Bonjour discovery
-  - ✅ Network-wide search
-  - ✅ Auto-connection
-  - ✅ Works on Mac and iOS
+- mDNS/Bonjour discovery
+- Network-wide search
+- Auto-connection
+- Works on Mac and iOS
 
 ---
 
-### **6. Master-Slave Pattern** 👑📖 ONE-WAY
+### **6. Master-Slave Pattern** ONE-WAY
 **File:** `SyncExample_MasterSlave.swift`
 - **Use when:** Read replicas, backups
 - **Features:**
-  - ✅ Master writes only
-  - ✅ Slave reads only
-  - ✅ One-way sync
-  - ✅ Performance test (1000 records)
+- Master writes only
+- Slave reads only
+- One-way sync
+- Performance test (1000 records)
 
 ---
 
-### **7. Hub-and-Spoke Pattern** 🔄📡 MULTI-CLIENT
+### **7. Hub-and-Spoke Pattern** MULTI-CLIENT
 **File:** `SyncExample_HubAndSpoke.swift`
 - **Use when:** Centralized distribution
 - **Features:**
-  - ✅ 1 Hub (server)
-  - ✅ 5 Spokes (clients)
-  - ✅ Broadcast to all
-  - ✅ Performance test (500 records)
+- 1 Hub (server)
+- 5 Spokes (clients)
+- Broadcast to all
+- Performance test (500 records)
 
 ---
 
-### **8. App Groups (iOS/macOS)** 📱 APPLE PLATFORMS
+### **8. App Groups (iOS/macOS)** APPLE PLATFORMS
 **File:** `SyncExample_AppGroups.swift`
 - **Use when:** Multiple apps on iOS/macOS
 - **Features:**
-  - ✅ App Groups setup
-  - ✅ Shared container
-  - ✅ Unix Domain Sockets
-  - ✅ Production-ready
+- App Groups setup
+- Shared container
+- Unix Domain Sockets
+- Production-ready
 
 ---
 
-## **📊 Performance Comparison:**
+## ** Performance Comparison:**
 
 | Example | Latency | Throughput | Best For |
 |---------|---------|------------|----------|
@@ -123,7 +123,7 @@ swift Examples/SyncExample_CrossApp.swift
 
 ---
 
-## **🎯 Use Case Guide:**
+## ** Use Case Guide:**
 
 **"I want to..."**
 
@@ -138,17 +138,17 @@ swift Examples/SyncExample_CrossApp.swift
 
 ---
 
-## **✅ All Examples Include:**
+## ** All Examples Include:**
 
-- ✅ **Complete code** - Copy-paste ready
-- ✅ **Clear comments** - Step-by-step explanations
-- ✅ **Performance tests** - Throughput measurements
-- ✅ **Error handling** - Proper error handling
-- ✅ **Production patterns** - Real-world use cases
+- **Complete code** - Copy-paste ready
+- **Clear comments** - Step-by-step explanations
+- **Performance tests** - Throughput measurements
+- **Error handling** - Proper error handling
+- **Production patterns** - Real-world use cases
 
 ---
 
-## **📖 Documentation:**
+## ** Documentation:**
 
 - **`SYNC_TRANSPORT_GUIDE.md`** - Detailed guide for all 3 transports
 - **`SYNC_EXAMPLES.md`** - More examples and patterns
@@ -157,5 +157,5 @@ swift Examples/SyncExample_CrossApp.swift
 
 ---
 
-**All examples are production-ready and game-changing! 🔥**
+**All examples are production-ready and game-changing! **
 

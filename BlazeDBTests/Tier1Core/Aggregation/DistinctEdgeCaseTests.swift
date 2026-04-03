@@ -16,20 +16,20 @@ import XCTest
 #endif
 
 final class DistinctEdgeCaseTests: XCTestCase {
-    var tempURL: URL!
-    var db: BlazeDBClient!
+    private var tempURL: URL?
+    private var db: BlazeDBClient?
     
-    override func setUp() {
-        super.setUp()
+    override func setUpWithError() throws {
+        try super.setUpWithError()
         tempURL = FileManager.default.temporaryDirectory
             .appendingPathComponent("Distinct-\(UUID().uuidString).blazedb")
-        db = try! BlazeDBClient(name: "DistinctTest", fileURL: tempURL, password: "TestPassword-123!")
+        db = try BlazeDBClient(name: "DistinctTest", fileURL: try requireFixture(tempURL), password: "TestPassword-123!")
     }
     
     override func tearDown() {
         db = nil
-        try? FileManager.default.removeItem(at: tempURL)
-        try? FileManager.default.removeItem(at: tempURL.deletingPathExtension().appendingPathExtension("meta"))
+        try? FileManager.default.removeItem(at: try requireFixture(tempURL))
+        try? FileManager.default.removeItem(at: try requireFixture(tempURL).deletingPathExtension().appendingPathExtension("meta"))
         super.tearDown()
     }
     
@@ -43,7 +43,7 @@ final class DistinctEdgeCaseTests: XCTestCase {
         
         // Insert records where every value is unique
         for i in 0..<count {
-            _ = try db.insert(BlazeDataRecord([
+            _ = try requireFixture(db).insert(BlazeDataRecord([
                 "uniqueID": .string(UUID().uuidString),
                 "index": .int(i)
             ]))
@@ -53,7 +53,7 @@ final class DistinctEdgeCaseTests: XCTestCase {
         
         // Get distinct values
         let startTime = Date()
-        let distinct = try db.distinct(field: "uniqueID")
+        let distinct = try requireFixture(db).distinct(field: "uniqueID")
         let duration = Date().timeIntervalSince(startTime)
         
         XCTAssertEqual(distinct.count, count, "Should have \(count) distinct values")
@@ -74,7 +74,7 @@ final class DistinctEdgeCaseTests: XCTestCase {
         
         // Insert 100 records with only 5 distinct values
         for i in 0..<100 {
-            _ = try db.insert(BlazeDataRecord([
+            _ = try requireFixture(db).insert(BlazeDataRecord([
                 "category": .string("cat_\(i % 5)"),  // Only 5 distinct values
                 "index": .int(i)
             ]))
@@ -83,7 +83,7 @@ final class DistinctEdgeCaseTests: XCTestCase {
         print("  Inserted 100 records with 5 distinct categories")
         
         // Get distinct
-        let distinct = try db.distinct(field: "category")
+        let distinct = try requireFixture(db).distinct(field: "category")
         
         XCTAssertEqual(distinct.count, 5, "Should have 5 distinct values from 100 records")
         
@@ -98,11 +98,11 @@ final class DistinctEdgeCaseTests: XCTestCase {
     func testDistinctPerformanceIndexedVsNonIndexed() throws {
         print("🎯 Testing distinct performance: indexed vs non-indexed...")
         
-        let collection = db.collection
+        let collection = try requireFixture(db).collection
         
         // Insert data
         for i in 0..<200 {
-            _ = try db.insert(BlazeDataRecord([
+            _ = try requireFixture(db).insert(BlazeDataRecord([
                 "indexed": .string("val_\(i % 20)"),
                 "nonIndexed": .string("val_\(i % 20)")
             ]))
@@ -110,18 +110,18 @@ final class DistinctEdgeCaseTests: XCTestCase {
         
         // Create index on one field
         try collection.createIndex(on: "indexed")
-        try db.persist()
+        try requireFixture(db).persist()
         
         print("  Setup: 200 records, 20 distinct values per field")
         
         // Distinct on non-indexed field
         let start1 = Date()
-        let distinct1 = try db.distinct(field: "nonIndexed")
+        let distinct1 = try requireFixture(db).distinct(field: "nonIndexed")
         let duration1 = Date().timeIntervalSince(start1)
         
         // Distinct on indexed field
         let start2 = Date()
-        let distinct2 = try db.distinct(field: "indexed")
+        let distinct2 = try requireFixture(db).distinct(field: "indexed")
         let duration2 = Date().timeIntervalSince(start2)
         
         XCTAssertEqual(distinct1.count, 20)
@@ -142,11 +142,11 @@ final class DistinctEdgeCaseTests: XCTestCase {
         
         // Insert records without the field
         for i in 0..<10 {
-            _ = try db.insert(BlazeDataRecord(["other": .int(i)]))
+            _ = try requireFixture(db).insert(BlazeDataRecord(["other": .int(i)]))
         }
         
         // Distinct on non-existent field
-        let distinct = try db.distinct(field: "nonExistent")
+        let distinct = try requireFixture(db).distinct(field: "nonExistent")
         
         // Should return empty (no values present)
         XCTAssertEqual(distinct.count, 0, "Distinct on missing field should return empty")

@@ -1,6 +1,10 @@
 //  TransactionLog.swift
 //  BlazeDB
 //  Created by Michael Danylchuk on 6/16/25.
+//
+//  WAL / NDJSON line policy (Pass 6 — Option A, best-effort):
+//  Malformed or unrecognized lines are skipped with BlazeLogger.warn; replay applies only
+//  well-formed decoded operations. Unreadable log files are treated as empty with a warning.
 import Foundation
 #if canImport(Darwin)
 import Darwin
@@ -99,17 +103,27 @@ struct TransactionLog {
         let lines = data.split(separator: 0x0a)
         let decoder = JSONDecoder()
         var ops: [Operation] = [Operation]()
+        var skippedLines = 0
         for line in lines where !line.isEmpty {
-            if let op = try? decoder.decode(Operation.self, from: line) {
+            let lineData = Data(line)
+            if let op = try? decoder.decode(Operation.self, from: lineData) {
                 ops.append(op)
+            } else {
+                skippedLines += 1
             }
+        }
+        if skippedLines > 0 {
+            BlazeLogger.warn("TransactionLog: skipped \(skippedLines) corrupt or unrecognized WAL line(s); replay uses only well-formed entries")
         }
         return ops
     }
 
     // Read all valid entries from a specific log URL
     static func readAll(from url: URL) -> [Operation] {
-        guard let data = try? Data(contentsOf: url) else { return [Operation]() }
+        guard let data = try? Data(contentsOf: url) else {
+            BlazeLogger.warn("TransactionLog: could not read WAL at \(url.path); treating as empty")
+            return []
+        }
         return decodeLines(data)
     }
 
@@ -223,7 +237,13 @@ struct TransactionLog {
 
     // Strict recovery from a specific WAL: only committed txns are applied
     func recover(into store: PageStore, from url: URL) throws {
-        let ops = TransactionLog.readAll(from: url)
+        let ops: [Operation]
+        if FileManager.default.fileExists(atPath: url.path) {
+            let data = try Data(contentsOf: url)
+            ops = Self.decodeLines(data)
+        } else {
+            ops = []
+        }
 
         var buffers: [String: [Operation]] = [String: [Operation]]()
         var committed = Set<String>()
@@ -358,8 +378,8 @@ extension TransactionLog {
         try self.append(.abort(txID: txID.uuidString), to: logURL)
     }
 
-    // LogURL-compatible recover shim
-    func recover(into store: PageStore, logURL: URL) {
-        try? recover(into: store, from: logURL)
+    // LogURL-compatible recover shim (propagates I/O / replay failures — do not swallow)
+    func recover(into store: PageStore, logURL: URL) throws {
+        try recover(into: store, from: logURL)
     }
 }

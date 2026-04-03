@@ -15,31 +15,34 @@ import XCTest
 
 final class CrashSurvivalTests: XCTestCase {
     
-    var tempDir: URL!
+    private var tempDir: URL?
     
     private func uniqueName(_ prefix: String) -> String {
         "\(prefix)-\(UUID().uuidString)"
     }
     
-    override func setUp() {
-        super.setUp()
-        tempDir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
-        try? FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
+    override func setUpWithError() throws {
+        try super.setUpWithError()
+        let dir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        tempDir = dir
+        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
     }
     
     override func tearDown() {
-        try? FileManager.default.removeItem(at: tempDir)
+        if let dir = tempDir {
+            try? FileManager.default.removeItem(at: dir)
+        }
         super.tearDown()
     }
     
     // MARK: - Power-Loss Simulation
     
     func testPowerLoss_AllCommittedDataSurvives() throws {
-        let dbURL = tempDir.appendingPathComponent("power_loss_test.blazedb")
+        let dbURL = try XCTUnwrap(tempDir).appendingPathComponent("power_loss_test.blazedb")
         
         // Write data
         let dbName = uniqueName("power-loss")
-        var db: BlazeDBClient? = try BlazeDBClient(name: dbName, fileURL: dbURL, password: "TestPassword-123!")
+        var db: BlazeDBClient? = try BlazeDBClient(name: dbName, fileURL: try requireFixture(dbURL), password: "TestPassword-123!")
         guard let dbClient = db else {
             XCTFail("Failed to create database")
             return
@@ -73,7 +76,7 @@ final class CrashSurvivalTests: XCTestCase {
         // For test, we just don't call close() and reopen
         
         // Reopen database
-        let reopenedDB = try BlazeDBClient(name: dbName, fileURL: dbURL, password: "TestPassword-123!")
+        let reopenedDB = try BlazeDBClient(name: dbName, fileURL: try requireFixture(dbURL), password: "TestPassword-123!")
         
         // Verify all records exist
         let recoveredCount = try reopenedDB.count()
@@ -90,7 +93,7 @@ final class CrashSurvivalTests: XCTestCase {
         
         // Verify health
         let health = try reopenedDB.health()
-        XCTAssertNotEqual(health.status, .error, "Database should not be unhealthy after power loss recovery")
+        XCTAssertNotEqual(health.status, DatabaseHealth.error, "Database should not be unhealthy after power loss recovery")
         
         try reopenedDB.close()
     }
@@ -98,11 +101,11 @@ final class CrashSurvivalTests: XCTestCase {
     // MARK: - Uncommitted Transaction Rollback
     
     func testCrashDuringTransaction_UncommittedDataRolledBack() throws {
-        let dbURL = tempDir.appendingPathComponent("txn_crash_test.blazedb")
+        let dbURL = try XCTUnwrap(tempDir).appendingPathComponent("txn_crash_test.blazedb")
         
         // Insert committed data
         let dbName = uniqueName("txn-crash")
-        var db: BlazeDBClient? = try BlazeDBClient(name: dbName, fileURL: dbURL, password: "TestPassword-123!")
+        var db: BlazeDBClient? = try BlazeDBClient(name: dbName, fileURL: try requireFixture(dbURL), password: "TestPassword-123!")
         guard let dbClient = db else {
             XCTFail("Failed to create database")
             return
@@ -123,18 +126,18 @@ final class CrashSurvivalTests: XCTestCase {
         BlazeDBClient.clearCachedKey()
         
         // Reopen database
-        let reopenedDB = try BlazeDBClient(name: dbName, fileURL: dbURL, password: "TestPassword-123!")
+        let reopenedDB = try BlazeDBClient(name: dbName, fileURL: try requireFixture(dbURL), password: "TestPassword-123!")
         
         // Verify committed record exists
         let committedRecords = try reopenedDB.query()
-            .where("committed", equals: .bool(true))
+            .where("committed", equals: BlazeDocumentField.bool(true))
             .execute()
             .records
         XCTAssertEqual(committedRecords.count, 1, "Committed record should exist")
         
         // Verify uncommitted record does NOT exist
         let uncommittedRecords = try reopenedDB.query()
-            .where("committed", equals: .bool(false))
+            .where("committed", equals: BlazeDocumentField.bool(false))
             .execute()
             .records
         XCTAssertEqual(uncommittedRecords.count, 0, "Uncommitted record should be rolled back")
@@ -145,11 +148,11 @@ final class CrashSurvivalTests: XCTestCase {
     // MARK: - Invariant Validation
     
     func testCrashRecovery_HealthStatusValid() throws {
-        let dbURL = tempDir.appendingPathComponent("health_test.blazedb")
+        let dbURL = try XCTUnwrap(tempDir).appendingPathComponent("health_test.blazedb")
         
         // Write data and crash
         let dbName = uniqueName("health-test")
-        var db: BlazeDBClient? = try BlazeDBClient(name: dbName, fileURL: dbURL, password: "TestPassword-123!")
+        var db: BlazeDBClient? = try BlazeDBClient(name: dbName, fileURL: try requireFixture(dbURL), password: "TestPassword-123!")
         guard let dbClient = db else {
             XCTFail("Failed to create database")
             return
@@ -164,13 +167,13 @@ final class CrashSurvivalTests: XCTestCase {
         BlazeDBClient.clearCachedKey()
         
         // Recover
-        let recoveredDB = try BlazeDBClient(name: dbName, fileURL: dbURL, password: "TestPassword-123!")
+        let recoveredDB = try BlazeDBClient(name: dbName, fileURL: try requireFixture(dbURL), password: "TestPassword-123!")
         
         // Validate health
         let health = try recoveredDB.health()
-        XCTAssertNotEqual(health.status, .error, "Health status should not be ERROR after crash recovery")
+        XCTAssertNotEqual(health.status, DatabaseHealth.error, "Health status should not be ERROR after crash recovery")
         
-        if health.status == .warn {
+        if health.status == DatabaseHealth.warn {
             print("⚠️  Health warnings after recovery:")
             for reason in health.reasons {
                 print("  - \(reason)")
@@ -203,11 +206,11 @@ final class CrashSurvivalTests: XCTestCase {
     // MARK: - WAL Replay Correctness
     
     func testWALReplay_NoDuplicateRecords() throws {
-        let dbURL = tempDir.appendingPathComponent("wal_replay_test.blazedb")
+        let dbURL = try XCTUnwrap(tempDir).appendingPathComponent("wal_replay_test.blazedb")
         
         // Write records
         let dbName = uniqueName("wal-replay")
-        var db: BlazeDBClient? = try BlazeDBClient(name: dbName, fileURL: dbURL, password: "TestPassword-123!")
+        var db: BlazeDBClient? = try BlazeDBClient(name: dbName, fileURL: try requireFixture(dbURL), password: "TestPassword-123!")
         guard let dbClient = db else {
             XCTFail("Failed to create database")
             return
@@ -224,7 +227,7 @@ final class CrashSurvivalTests: XCTestCase {
         BlazeDBClient.clearCachedKey()
         
         // Simulate crash and recovery
-        let recoveredDB = try BlazeDBClient(name: dbName, fileURL: dbURL, password: "TestPassword-123!")
+        let recoveredDB = try BlazeDBClient(name: dbName, fileURL: try requireFixture(dbURL), password: "TestPassword-123!")
         
         // Verify no duplicates
         let allRecords = try recoveredDB.fetchAll()

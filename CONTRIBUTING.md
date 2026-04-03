@@ -6,7 +6,7 @@ This guide explains how to add tests, what will be accepted, and what will be re
 
 ## CI gate (GitHub Actions)
 
-The default branch workflow (`.github/workflows/ci.yml`) runs on every push/PR: a single **macOS 15** job (core + CLI + Tier0 + Tier1 + `verify-clean-checkout.sh` + README quickstart), plus **Linux** best-effort (`continue-on-error`) and a non-blocking **legacy tag** probe. Checkouts use **full git history** (`fetch-depth: 0`). OSS scripts run on macOS so CI matches the primary platform. The gate is **not** every test target or every file under `BlazeDBTests/` (some files are excluded per tier in `Package.swift`). Authoritative detail: [CI and test tiers](Docs/Testing/CI_AND_TEST_TIERS.md).
+The default branch workflow (`.github/workflows/ci.yml`) runs on every push/PR **when hosted CI is available**: a single **macOS 15** job (core + CLI + Tier0 + Tier1 fast + `verify-clean-checkout.sh` + README quickstart), plus **Linux** best-effort (`continue-on-error`) and a non-blocking **legacy tag** probe. Checkouts use **full git history** (`fetch-depth: 0`). OSS scripts run on macOS so CI matches the primary platform. **Forks and billing limits** can prevent workflows from running; in that case use the same commands locally (see [Hosted CI status](Docs/Status/OPEN_SOURCE_READINESS_CHECKLIST.md#hosted-ci-status)). The gate is **not** every test target or every file under `BlazeDBTests/` (some files are excluded per tier in `Package.swift`). Authoritative detail: [CI and test tiers](Docs/Testing/CI_AND_TEST_TIERS.md).
 
 ---
 
@@ -35,13 +35,26 @@ BlazeDB uses a tiered test model:
 swift test --filter BlazeDB_Tier0
 ```
 
-### Tier 1: Core Contracts (`BlazeDB_Tier1`)
+### Tier 1: Core contracts (split targets)
 
-**Location:** `BlazeDBTests/Tier1Core/`
+**Default PR gate — `BlazeDB_Tier1Fast`:** `BlazeDBTests/Tier1Core/` — deterministic correctness; no `measure()`, no timing-dependent sleeps, no benchmark-shaped workloads.
 
-**What goes here:**
-- Deeper correctness contracts (persistence/security/features)
-- Non-trivial behavior that should remain stable release-to-release
+**Depth — `BlazeDB_Tier1Extended`:** `BlazeDBTests/Tier1Extended/` — integration, sync, sleep-dependent or large-N stress.
+
+**Perf — `BlazeDB_Tier1Perf`:** `BlazeDBTests/Tier1Perf/` — XCTest `measure()` and benchmark-style tests.
+
+**What goes in the fast lane:**
+- Core contracts that must stay green on every PR (persistence/security/features) without heavy timing or perf noise
+
+**Run (preferred Tier 1 gate):**
+```bash
+./Scripts/run-tier1.sh
+```
+
+**Run depth locally (extended + perf):**
+```bash
+./Scripts/run-tier1-depth.sh
+```
 
 ### Tier 2: Integration/Recovery (`BlazeDB_Tier2`)
 
@@ -67,11 +80,12 @@ swift test --filter BlazeDB_Tier0
 
 **Ask yourself:**
 - Does this test validate fast deterministic gate behavior? → Tier 0
-- Does this test validate deeper core contracts? → Tier 1
+- Does this test validate deeper core contracts without measure/sleep/stress? → Tier 1 fast (`BlazeDB_Tier1Fast`)
+- Does it use `measure()`, fixed sleeps, sync integration, or large-N stress? → Tier 1 extended or perf (`BlazeDB_Tier1Extended` / `BlazeDB_Tier1Perf`)
 - Does this test validate integration/recovery scenarios? → Tier 2
 - Does this test belong to heavy/destructive/manual lanes? → Tier 3
 
-**When in doubt, choose Tier 1.**
+**When in doubt, start in Tier 1 fast; move to extended/perf if the test is timing-heavy or benchmark-shaped.**
 
 ### Step 2: Write Test
 
@@ -81,10 +95,10 @@ swift test --filter BlazeDB_Tier0
 - No access to internals
 - Must always pass and stay fast
 
-**For Tier 1 tests:**
-- May test edge cases
-- Should pass in deep CI lanes
-- Can use public APIs freely
+**For Tier 1 tests (pick the right bundle):**
+- Fast lane (`BlazeDB_Tier1Fast`): default PR gate; avoid `measure()`, fixed sleeps, and stress-scale workloads.
+- Extended (`BlazeDB_Tier1Extended`) or perf (`BlazeDB_Tier1Perf`): timing, sync integration, large-N stress, or benchmarks.
+- May test edge cases; use public APIs freely unless you intentionally need internals.
 
 **For Tier 2 tests:**
 - Focus on integration/recovery and longer scenarios
@@ -97,11 +111,11 @@ swift test --filter BlazeDB_Tier0
 
 ### Step 3: Wire the test target
 
-- **Tier 0 / Tier 1 / `BlazeDB_Staging`:** declared in root `Package.swift`.
+- **Tier 0 / Tier 1 (`BlazeDB_Tier1Fast`, `BlazeDB_Tier1Extended`, `BlazeDB_Tier1Perf`) / `BlazeDB_Staging`:** declared in root `Package.swift`.
 - **Tier 2, Tier 3 heavy/destructive, `DistributedSecuritySPMTests`:** declared in `BlazeDBExtraTests/Package.swift` (nested package). Run them with `cd BlazeDBExtraTests && swift test …` or `./Scripts/run-tier2.sh` / `./Scripts/run-tier3.sh`.
 
 Place test files under the correct `BlazeDBTests/...` paths; target names remain:
-- `BlazeDB_Tier0`, `BlazeDB_Tier1` (root package)
+- `BlazeDB_Tier0`, `BlazeDB_Tier1Fast`, `BlazeDB_Tier1Extended`, `BlazeDB_Tier1Perf` (root package)
 - `BlazeDB_Tier2`, `BlazeDB_Tier3_Heavy`, `BlazeDB_Tier3_Destructive`, `DistributedSecuritySPMTests` (extra package)
 
 ---
@@ -110,18 +124,18 @@ Place test files under the correct `BlazeDBTests/...` paths; target names remain
 
 ### Code Changes
 
-- ✅ Bug fixes
-- ✅ Performance improvements (with benchmarks)
-- ✅ API improvements (with migration path)
-- ✅ Documentation improvements
-- ✅ Test additions
+- Bug fixes
+- Performance improvements (with benchmarks)
+- API improvements (with migration path)
+- Documentation improvements
+- Test additions
 
 ### Test Additions
 
-- ✅ Tests for new features
-- ✅ Tests for bug fixes
-- ✅ Tests for edge cases
-- ✅ Performance benchmarks
+- Tests for new features
+- Tests for bug fixes
+- Tests for edge cases
+- Performance benchmarks
 
 ---
 
@@ -129,18 +143,18 @@ Place test files under the correct `BlazeDBTests/...` paths; target names remain
 
 ### Code Changes
 
-- ❌ Changes to frozen core files (PageStore, WAL, encoding)
-- ❌ Breaking API changes without migration path
-- ❌ Changes that weaken safety guarantees
-- ❌ Changes that add `fatalError` to production code
-- ❌ Changes that add `Task.detached` to core
+- Changes to frozen core files (PageStore, WAL, encoding)
+- Breaking API changes without migration path
+- Changes that weaken safety guarantees
+- Changes that add `fatalError` to production code
+- Changes that add `Task.detached` to core
 
 ### Test Additions
 
-- ❌ Tests that require modifying frozen core
-- ❌ Tests that weaken assertions
-- ❌ Tests that use deprecated APIs (unless Tier 3)
-- ❌ Tests that access internals (unless Tier 3)
+- Tests that require modifying frozen core
+- Tests that weaken assertions
+- Tests that use deprecated APIs (unless Tier 3)
+- Tests that access internals (unless Tier 3)
 
 ---
 

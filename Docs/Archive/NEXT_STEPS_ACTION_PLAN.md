@@ -172,8 +172,8 @@ git commit -m "Add performance baselines"
 - name: Run Performance Tests
  run: |
  xcodebuild test -scheme BlazeDB \
- -only-testing:BlazeDBTests/BlazeDBPerformanceTests \
- -testPlanConfiguration Release
+-only-testing:BlazeDBTests/BlazeDBPerformanceTests \
+-testPlanConfiguration Release
 
  # Fail if regression > 10%
  xcresulttool compare --baseline baseline.xcresult --result current.xcresult
@@ -234,14 +234,14 @@ public func fuzzBlazeDB(data: UnsafePointer<UInt8>, size: Int) -> Int32 {
 
 ```
 HIGH IMPACT, LOW EFFORT:
-  Enhanced Chaos Engineering (4-6 hrs)
-  Baseline Tracking (2-3 hrs)
+ Enhanced Chaos Engineering (4-6 hrs)
+ Baseline Tracking (2-3 hrs)
 
 HIGH IMPACT, MEDIUM EFFORT:
-  Property-Based Testing (8-12 hrs)
+ Property-Based Testing (8-12 hrs)
 
 HIGH IMPACT, HIGH EFFORT:
-  Continuous Fuzzing (16-20 hrs)
+ Continuous Fuzzing (16-20 hrs)
 ```
 
 ---
@@ -282,16 +282,16 @@ HIGH IMPACT, HIGH EFFORT:
 **I can help you with:**
 
 1. **Enhanced Chaos Engineering** (NOW - 4 hours)
- - Add 7 new chaos tests
- - Process kills, disk full, FD exhaustion
+- Add 7 new chaos tests
+- Process kills, disk full, FD exhaustion
 
 2. **Property-Based Testing** (NEXT - 8-12 hours)
- - Build random generator framework
- - Add 5-10 property tests
+- Build random generator framework
+- Add 5-10 property tests
 
 3. **Baseline Tracking** (QUICK - 2 hours)
- - Set up XCTest baselines
- - Create CI check script
+- Set up XCTest baselines
+- Create CI check script
 
 **Which one do you want to tackle first?**
 

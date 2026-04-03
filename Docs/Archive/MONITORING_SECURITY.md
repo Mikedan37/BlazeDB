@@ -1,4 +1,4 @@
-#  **Monitoring API Security Guide**
+# **Monitoring API Security Guide**
 
 ## **What's Safe to Expose**
 
@@ -213,19 +213,19 @@ server.bind(host: "10.0.0.5", port: 8080) // Internal network
 ## **Compliance Notes:**
 
 ### **GDPR / Privacy:**
- **No PII exposed** - Only metadata
- **No user data** - Counts and sizes only
- **Safe for audit logs** - Can be logged freely
+**No PII exposed** - Only metadata
+**No user data** - Counts and sizes only
+**Safe for audit logs** - Can be logged freely
 
 ### **HIPAA / Healthcare:**
- **No PHI exposed** - Only database stats
- **Safe for monitoring** - Won't leak patient data
- **Audit-friendly** - Can be included in reports
+**No PHI exposed** - Only database stats
+**Safe for monitoring** - Won't leak patient data
+**Audit-friendly** - Can be included in reports
 
 ### **SOC 2 / Enterprise:**
- **Observability** - Required for compliance
- **No data leakage** - Only system metrics
- **Audit trail safe** - Can be logged/exported
+**Observability** - Required for compliance
+**No data leakage** - Only system metrics
+**Audit trail safe** - Can be logged/exported
 
 ---
 
@@ -265,5 +265,5 @@ Export metrics for Grafana:
 
 ---
 
-**You now have SECURE, PRODUCTION-READY monitoring!** 
+**You now have SECURE, PRODUCTION-READY monitoring!**
 

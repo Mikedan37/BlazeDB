@@ -37,11 +37,11 @@ You'll create separate test plans for each major component. This allows you to r
 ### **Step 2: Create Your First Test Plan (Core Component)**
 
 1. **Product → Test Plan → New Test Plan...**
- - Or: Right-click in Project Navigator → New File → Test Plan
+- Or: Right-click in Project Navigator → New File → Test Plan
 
 2. **Name the test plan:**
- - Enter: `Core Component Tests`
- - Click "Create"
+- Enter: `Core Component Tests`
+- Click "Create"
 
 3. **Xcode will open the test plan editor**
 
@@ -56,19 +56,19 @@ In the test plan editor:
 2. **Expand the target** to see all test classes organized by component directory
 
 3. **Check ONLY the tests for Core component:**
- - `Core/BlazeDBTests`
- - `Core/BlazeCollectionTests`
- - `Core/DynamicCollectionTests`
- - `Core/BlazeDBInitializationTests`
- - `Core/BlazeDBManagerTests`
- - `Core/BlazeDBMemoryTests`
- - `Core/BlazeFileSystemErrorTests`
- - `Core/CriticalBlockerTests`
- - `Core/Storage/PageStoreTests`
- - `Core/Storage/PageStoreEdgeCaseTests`
- - `Core/Storage/StorageLayoutTests`
- - `Core/Storage/StorageManagerEdgeCaseTests`
- - `Core/Storage/StorageStatsTests`
+- `Core/BlazeDBTests`
+- `Core/BlazeCollectionTests`
+- `Core/DynamicCollectionTests`
+- `Core/BlazeDBInitializationTests`
+- `Core/BlazeDBManagerTests`
+- `Core/BlazeDBMemoryTests`
+- `Core/BlazeFileSystemErrorTests`
+- `Core/CriticalBlockerTests`
+- `Core/Storage/PageStoreTests`
+- `Core/Storage/PageStoreEdgeCaseTests`
+- `Core/Storage/StorageLayoutTests`
+- `Core/Storage/StorageManagerEdgeCaseTests`
+- `Core/Storage/StorageStatsTests`
 
 4. **Uncheck all other tests** (MVCC, Query, Indexes, etc.)
 
@@ -208,15 +208,15 @@ Repeat Step 2-3 for each component:
 ```bash
 # Run Core component tests
 xcodebuild test \
- -scheme BlazeDB \
- -testPlan "Core Component Tests" \
- -destination 'platform=macOS'
+-scheme BlazeDB \
+-testPlan "Core Component Tests" \
+-destination 'platform=macOS'
 
 # Run MVCC component tests
 xcodebuild test \
- -scheme BlazeDB \
- -testPlan "MVCC Component Tests" \
- -destination 'platform=macOS'
+-scheme BlazeDB \
+-testPlan "MVCC Component Tests" \
+-destination 'platform=macOS'
 ```
 
 ---

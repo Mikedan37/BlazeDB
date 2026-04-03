@@ -2,6 +2,8 @@
 
 **Comparisons and tradeoffs with SQLite and other embedded databases.**
 
+> **OSS core positioning:** The **default open-source `BlazeDB` package** is an **embedded engine** (ACID, encryption, queries, export/restore). **Distributed sync is not part of that default runtime** today; it is planned / deferred—see `README.md` and `Docs/Status/DISTRIBUTED_TRANSPORT_DEFERRED.md`. Where this page compares “sync,” read it as **product direction and optional layers**, not something every SwiftPM consumer gets out of the box.
+
 ---
 
 ## Quick Comparison
@@ -14,8 +16,8 @@
 | **Performance** | Predictable, optimized for Apple Silicon | Variable under load | Fast, but licensing | Variable, object graph overhead |
 | **Query Language** | Fluent Swift API | SQL | Fluent API | NSPredicate |
 | **Platform** | macOS/iOS/Linux (Swift) | Universal (C) | Cross-platform | macOS/iOS only |
-| **Dependencies** | Zero | Zero | Large SDK | Built-in |
-| **Sync** | Built-in distributed sync | None | Proprietary cloud | CloudKit (Apple only) |
+| **Dependencies** | No external *services*; SwiftPM includes crypto primitives (e.g. `swift-crypto` on Linux—see `THIRD_PARTY_NOTICES.md`) | Zero | Large SDK | Built-in |
+| **Sync** | Planned distributed layer (not default in current OSS core) | None | Proprietary cloud | CloudKit (Apple only) |
 
 ---
 
@@ -27,7 +29,7 @@
 - **Schema flexibility**: Dynamic schemas without migration complexity
 - **Swift-native**: Building Swift applications with idiomatic APIs
 - **Predictable performance**: Consistent latency under varying workloads
-- **Multi-device sync**: Local-first apps with distributed synchronization
+- **Multi-device sync (roadmap)**: If you want a Swift-native path toward distributed sync when that layer is supported—not a guarantee of the current default OSS build
 - **Apple Silicon optimization**: Targeting macOS/iOS with best performance
 
 ### Performance Advantages
@@ -193,7 +195,7 @@
 - Schema flexibility
 - Swift-native API
 - Predictable performance
-- Built-in sync
+- Roadmap toward distributed sync (not the default OSS core surface today)
 
 ### BlazeDB Weaknesses
 
@@ -225,7 +227,7 @@
 - Need encryption by default
 - Want schema flexibility
 - Prioritize predictable performance
-- Need multi-device sync
+- Want a Swift-native embedded engine today and can adopt sync when it is supported for your deployment
 
 **Choose SQLite if:**
 - Need SQL compatibility

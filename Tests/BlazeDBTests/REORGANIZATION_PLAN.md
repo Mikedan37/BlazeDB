@@ -4,14 +4,14 @@
 
 ```
 BlazeDBTests/
-├── Codec/              # All BlazeBinary codec tests
-├── Engine/              # Engine integration tests
-├── Stress/              # Stress and fuzz tests
-├── Performance/         # Performance benchmarks
-├── Fixtures/            # Test fixtures
-├── CI/                  # CI-specific tests
-├── Docs/                # Documentation
-└── Helpers/             # Shared test helpers (keep existing)
+├── Codec/ # All BlazeBinary codec tests
+├── Engine/ # Engine integration tests
+├── Stress/ # Stress and fuzz tests
+├── Performance/ # Performance benchmarks
+├── Fixtures/ # Test fixtures
+├── CI/ # CI-specific tests
+├── Docs/ # Documentation
+└── Helpers/ # Shared test helpers (keep existing)
 ```
 
 ## File Moves

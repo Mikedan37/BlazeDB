@@ -19,42 +19,42 @@ Duration: 1 hour
 Lines Added: ~600 lines
 ```
 
-### **Phase 2: Read MVCC** ⏳ **NEXT**
+### **Phase 2: Read MVCC** **NEXT**
 ```
-⏳ Integrate with BlazeDBClient
-⏳ Concurrent read support
-⏳ Property-based tests for snapshots
-⏳ Benchmark read performance
+ Integrate with BlazeDBClient
+ Concurrent read support
+ Property-based tests for snapshots
+ Benchmark read performance
 
 Estimated: 3-4 days
 ```
 
-### **Phase 3: Write MVCC** ⏳ **PENDING**
+### **Phase 3: Write MVCC** **PENDING**
 ```
-⏳ Write conflict detection
-⏳ Optimistic locking
-⏳ Retry logic
-⏳ Chaos tests for conflicts
+ Write conflict detection
+ Optimistic locking
+ Retry logic
+ Chaos tests for conflicts
 
 Estimated: 1 week
 ```
 
-### **Phase 4: Garbage Collection** ⏳ **PENDING**
+### **Phase 4: Garbage Collection** **PENDING**
 ```
-⏳ Automatic GC triggers
-⏳ Memory monitoring
-⏳ GC tuning parameters
-⏳ Performance profiling
+ Automatic GC triggers
+ Memory monitoring
+ GC tuning parameters
+ Performance profiling
 
 Estimated: 3-4 days
 ```
 
-### **Phase 5: Performance & Polish** ⏳ **PENDING**
+### **Phase 5: Performance & Polish** **PENDING**
 ```
-⏳ Before/after benchmarks
-⏳ Optimization pass
-⏳ Migration guide
-⏳ Final documentation
+ Before/after benchmarks
+ Optimization pass
+ Migration guide
+ Final documentation
 
 Estimated: 3-4 days
 ```
@@ -106,7 +106,7 @@ func garbageCollect() -> Int {
 }
 ```
 
-**This is the GC you need!** 
+**This is the GC you need!**
 
 ---
 
@@ -208,7 +208,7 @@ Writers wait for readers
  Version tracking infrastructure
  Snapshot isolation logic
  Garbage collection
-⏳ Not integrated yet (Phase 2)
+ Not integrated yet (Phase 2)
 ```
 
 ---
@@ -218,24 +218,24 @@ Writers wait for readers
 ### **What We'll Do**:
 
 1. **Integrate with BlazeDBClient**
- - Replace single-version storage
- - Use VersionManager
- - Create MVCCTransactions
+- Replace single-version storage
+- Use VersionManager
+- Create MVCCTransactions
 
 2. **Enable Concurrent Reads**
- - Remove serial queue for reads
- - Use snapshot isolation
- - Benchmark improvement
+- Remove serial queue for reads
+- Use snapshot isolation
+- Benchmark improvement
 
 3. **Test Thoroughly**
- - Property-based tests
- - Concurrent access tests
- - Regression tests
+- Property-based tests
+- Concurrent access tests
+- Regression tests
 
 4. **Measure Performance**
- - Before/after benchmarks
- - Concurrent read speedup
- - Memory overhead
+- Before/after benchmarks
+- Concurrent read speedup
+- Memory overhead
 
 ---
 
@@ -253,7 +253,7 @@ GC Strategy:
  4. Run periodically (e.g., after N commits)
 ```
 
-**You asked if we had GC - now we do!** 
+**You asked if we had GC - now we do!**
 
 ### **Memory Overhead**:
 ```
@@ -283,12 +283,12 @@ Phase 3: Writes mostly concurrent
 - Comprehensive tests
 - Thread safety
 
-### **⏳ Next (Phase 2)**:
+### ** Next (Phase 2)**:
 - Integration with BlazeDBClient
 - Concurrent read implementation
 - Performance benchmarks
 
-### **⏳ After That**:
+### ** After That**:
 - Write MVCC (Phase 3)
 - GC tuning (Phase 4)
 - Performance optimization (Phase 5)
@@ -299,10 +299,10 @@ Phase 3: Writes mostly concurrent
 
 ```
 Phase 1: 1 hour (DONE!)
-Phase 2: ⏳ 3-4 days
-Phase 3: ⏳ 1 week
-Phase 4: ⏳ 3-4 days
-Phase 5: ⏳ 3-4 days
+Phase 2: 3-4 days
+Phase 3: 1 week
+Phase 4: 3-4 days
+Phase 5: 3-4 days
 
 Total: ~3-4 weeks of focused work
 ```

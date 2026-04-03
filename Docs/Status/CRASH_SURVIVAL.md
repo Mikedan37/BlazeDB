@@ -1,6 +1,6 @@
 # BlazeDB Crash Survival Validation
 
-**Date:** 2025-01-22  
+**Date:** 2025-01-22
 **Status:** Phase 1 Complete
 
 ---
@@ -184,7 +184,7 @@ let db = try BlazeDBClient(name: "test", fileURL: dbURL, password: "password")
 let health = try db.health()
 print("Status: \(health.status)")
 for reason in health.reasons {
-    print("  - \(reason)")
+ print(" - \(reason)")
 }
 ```
 

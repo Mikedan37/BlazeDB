@@ -1,6 +1,6 @@
 # FatalError Removal
 
-**Status:**  Complete  
+**Status:** Complete
 **Date:** 2025-01-XX
 
 ## Summary
@@ -14,33 +14,33 @@ All `fatalError()` calls have been removed from production code and replaced wit
 **Before:**
 ```swift
 public var wrappedValue: Value {
-    get {
-        fatalError("@Field can only be used within a @BlazeDocument struct")
-    }
-    set {
-        fatalError("@Field can only be used within a @BlazeDocument struct")
-    }
+ get {
+ fatalError("@Field can only be used within a @BlazeDocument struct")
+ }
+ set {
+ fatalError("@Field can only be used within a @BlazeDocument struct")
+ }
 }
 ```
 
 **After:**
 ```swift
 public var wrappedValue: Value {
-    get {
-        // Log error and return default value instead of crashing
-        BlazeLogger.error("@Field can only be used within a @BlazeDocument struct. This indicates a programming error.")
-        if let defaultValue = defaultValue {
-            return defaultValue
-        }
-        // If no default, use preconditionFailure (better than fatalError - can be caught in debug)
-        preconditionFailure("@Field can only be used within a @BlazeDocument struct. Provide a default value or use @BlazeDocument.")
-    }
-    set {
-        // Log error instead of crashing
-        BlazeLogger.error("@Field can only be used within a @BlazeDocument struct. Attempted to set value: \(newValue). This indicates a programming error.")
-        // Property setters can't throw, so we log and do nothing
-        // The value won't be stored, but the app won't crash
-    }
+ get {
+ // Log error and return default value instead of crashing
+ BlazeLogger.error("@Field can only be used within a @BlazeDocument struct. This indicates a programming error.")
+ if let defaultValue = defaultValue {
+ return defaultValue
+ }
+ // If no default, use preconditionFailure (better than fatalError - can be caught in debug)
+ preconditionFailure("@Field can only be used within a @BlazeDocument struct. Provide a default value or use @BlazeDocument.")
+ }
+ set {
+ // Log error instead of crashing
+ BlazeLogger.error("@Field can only be used within a @BlazeDocument struct. Attempted to set value: \(newValue). This indicates a programming error.")
+ // Property setters can't throw, so we log and do nothing
+ // The value won't be stored, but the app won't crash
+ }
 }
 ```
 
@@ -56,21 +56,21 @@ public var wrappedValue: Value {
 **Before:**
 ```swift
 do {
-    db = try BlazeDBClient(fileURL: url, project: "app")
+ db = try BlazeDBClient(fileURL: url, project: "app")
 } catch {
-    fatalError("Failed to initialize database: \(error)")
+ fatalError("Failed to initialize database: \(error)")
 }
 ```
 
 **After:**
 ```swift
 do {
-    db = try BlazeDBClient(fileURL: url, project: "app")
+ db = try BlazeDBClient(fileURL: url, project: "app")
 } catch {
-    // Log error instead of crashing
-    print(" Failed to initialize database: \(error)")
-    // In a real app, you might want to show an alert or handle this gracefully
-    // For this example, we'll just log and leave db as nil
+ // Log error instead of crashing
+ print(" Failed to initialize database: \(error)")
+ // In a real app, you might want to show an alert or handle this gracefully
+ // For this example, we'll just log and leave db as nil
 }
 ```
 
@@ -89,13 +89,13 @@ do {
 ### Production Code
 ```bash
 grep -r "fatalError(" BlazeDB/ --include="*.swift" | grep -v "//"
-# Result: 0 matches 
+# Result: 0 matches
 ```
 
 ### Example Code
 ```bash
 grep -r "fatalError(" Examples/ --include="*.swift" | grep -v "//"
-# Result: 0 matches 
+# Result: 0 matches
 ```
 
 ### Documentation
@@ -141,11 +141,11 @@ The only remaining references to `fatalError` are:
 All changes compile successfully:
 ```bash
 swift build --target BlazeDB
-#  Builds successfully
+# Builds successfully
 ```
 
 ## Conclusion
 
- All `fatalError()` calls have been removed from production code.  
- Error handling is now proper and graceful.  
+ All `fatalError()` calls have been removed from production code.
+ Error handling is now proper and graceful.
  Code is production-ready and won't crash unexpectedly.

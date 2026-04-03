@@ -363,9 +363,15 @@ extension BlazeDBClient {
     public func clearReuseablePages() throws {
         BlazeLogger.warn("⚠️  Clearing reuseable pages pool")
         
-        var layout = try StorageLayout.load(from: metaURL)
+        var layout = try StorageLayout.loadSecure(
+            from: metaURL,
+            signingKey: encryptionKey,
+            password: collection.password,
+            salt: collection.kdfSalt,
+            allowUnsignedLayoutFallback: true
+        )
         layout.deletedPages.removeAll()
-        try layout.save(to: metaURL)
+        try layout.saveSecure(to: metaURL, signingKey: encryptionKey)
         
         BlazeLogger.info("✅ Reuseable pages cleared")
     }

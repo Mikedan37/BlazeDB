@@ -16,18 +16,24 @@ import XCTest
 
 final class ImportExportTests: XCTestCase {
     
-    var tempDBURL: URL!
-    var tempDumpURL: URL!
+    private var tempDBURL: URL?
+    private var tempDumpURL: URL?
     let password = "Test-Password-123!"
     
     override func setUpWithError() throws {
-        tempDBURL = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".blazedb")
-        tempDumpURL = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".blazedump")
+        let dbURL = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".blazedb")
+        let dumpURL = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".blazedump")
+        tempDBURL = dbURL
+        tempDumpURL = dumpURL
     }
     
     override func tearDownWithError() throws {
-        try? FileManager.default.removeItem(at: tempDBURL)
-        try? FileManager.default.removeItem(at: tempDumpURL)
+        if let dbURL = tempDBURL {
+            try? FileManager.default.removeItem(at: dbURL)
+        }
+        if let dumpURL = tempDumpURL {
+            try? FileManager.default.removeItem(at: dumpURL)
+        }
     }
     
     private func uniqueName(_ prefix: String) -> String {
@@ -38,19 +44,19 @@ final class ImportExportTests: XCTestCase {
     
     func testExport_CreatesValidDump() throws {
         // Create database with test data
-        let db = try BlazeDBClient(name: uniqueName("export-test"), fileURL: tempDBURL, password: password)
-        defer { try? db.close() }
-        _ = try db.insert(BlazeDataRecord(["name": .string("Alice"), "age": .int(30)]))
-        _ = try db.insert(BlazeDataRecord(["name": .string("Bob"), "age": .int(25)]))
+        let db = try BlazeDBClient(name: uniqueName("export-test"), fileURL: try requireFixture(tempDBURL), password: password)
+        defer { try? try requireFixture(db).close() }
+        _ = try requireFixture(db).insert(BlazeDataRecord(["name": .string("Alice"), "age": .int(30)]))
+        _ = try requireFixture(db).insert(BlazeDataRecord(["name": .string("Bob"), "age": .int(25)]))
         
         // Export
-        try db.export(to: tempDumpURL)
+        try requireFixture(db).export(to: try requireFixture(tempDumpURL))
         
         // Verify dump file exists
-        XCTAssertTrue(FileManager.default.fileExists(atPath: tempDumpURL.path))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: try requireFixture(tempDumpURL).path))
         
         // Verify dump can be decoded
-        let dumpData = try Data(contentsOf: tempDumpURL)
+        let dumpData = try Data(contentsOf: try requireFixture(tempDumpURL))
         let dump = try DatabaseDump.decodeAndVerify(dumpData)
         
         XCTAssertEqual(dump.records.count, 2)
@@ -59,16 +65,16 @@ final class ImportExportTests: XCTestCase {
     
     func testExport_DeterministicOutput() throws {
         // Create database
-        let db = try BlazeDBClient(name: uniqueName("deterministic-test"), fileURL: tempDBURL, password: password)
-        defer { try? db.close() }
-        _ = try db.insert(BlazeDataRecord(["name": .string("Test"), "value": .int(42)]))
+        let db = try BlazeDBClient(name: uniqueName("deterministic-test"), fileURL: try requireFixture(tempDBURL), password: password)
+        defer { try? try requireFixture(db).close() }
+        _ = try requireFixture(db).insert(BlazeDataRecord(["name": .string("Test"), "value": .int(42)]))
         
         // Export twice
-        let dump1URL = tempDumpURL.deletingLastPathComponent().appendingPathComponent("dump1.blazedump")
-        let dump2URL = tempDumpURL.deletingLastPathComponent().appendingPathComponent("dump2.blazedump")
+        let dump1URL = try requireFixture(tempDumpURL).deletingLastPathComponent().appendingPathComponent("dump1.blazedump")
+        let dump2URL = try requireFixture(tempDumpURL).deletingLastPathComponent().appendingPathComponent("dump2.blazedump")
         
-        try db.export(to: dump1URL)
-        try db.export(to: dump2URL)
+        try requireFixture(db).export(to: dump1URL)
+        try requireFixture(db).export(to: dump2URL)
         
         // Compare files (should be identical)
         let data1 = try Data(contentsOf: dump1URL)
@@ -86,21 +92,21 @@ final class ImportExportTests: XCTestCase {
     
     func testImport_RoundTripEquivalence() throws {
         // Create source database
-        let sourceDB = try BlazeDBClient(name: uniqueName("source"), fileURL: tempDBURL, password: password)
+        let sourceDB = try BlazeDBClient(name: uniqueName("source"), fileURL: try requireFixture(tempDBURL), password: password)
         defer { try? sourceDB.close() }
         _ = try sourceDB.insert(BlazeDataRecord(["name": .string("Alice"), "age": .int(30)]))
         _ = try sourceDB.insert(BlazeDataRecord(["name": .string("Bob"), "age": .int(25)]))
         
         // Export
-        try sourceDB.export(to: tempDumpURL)
+        try sourceDB.export(to: try requireFixture(tempDumpURL))
         
         // Create target database
-        let targetDBURL = tempDBURL.deletingLastPathComponent().appendingPathComponent(UUID().uuidString + ".blazedb")
+        let targetDBURL = try requireFixture(tempDBURL).deletingLastPathComponent().appendingPathComponent(UUID().uuidString + ".blazedb")
         let targetDB = try BlazeDBClient(name: uniqueName("target"), fileURL: targetDBURL, password: password)
         defer { try? targetDB.close() }
         
         // Import
-        try BlazeDBImporter.restore(from: tempDumpURL, to: targetDB, allowSchemaMismatch: false)
+        try BlazeDBImporter.restore(from: try requireFixture(tempDumpURL), to: targetDB, allowSchemaMismatch: false)
         
         // Verify records match
         let restoredRecords = try targetDB.fetchAll()
@@ -124,13 +130,13 @@ final class ImportExportTests: XCTestCase {
     
     func testImport_RefusesNonEmptyDatabase() throws {
         // Create database with data
-        let db = try BlazeDBClient(name: uniqueName("nonempty-test"), fileURL: tempDBURL, password: password)
-        defer { try? db.close() }
-        _ = try db.insert(BlazeDataRecord(["name": .string("Existing")]))
+        let db = try BlazeDBClient(name: uniqueName("nonempty-test"), fileURL: try requireFixture(tempDBURL), password: password)
+        defer { try? try requireFixture(db).close() }
+        _ = try requireFixture(db).insert(BlazeDataRecord(["name": .string("Existing")]))
         
         // Create dump
-        let dumpURL = tempDumpURL.deletingLastPathComponent().appendingPathComponent("test.blazedump")
-        try db.export(to: dumpURL)
+        let dumpURL = try requireFixture(tempDumpURL).deletingLastPathComponent().appendingPathComponent("test.blazedump")
+        try requireFixture(db).export(to: dumpURL)
         
         // Try to restore to same database (should fail)
         do {
@@ -151,55 +157,55 @@ final class ImportExportTests: XCTestCase {
     
     func testVerify_ValidDump_Succeeds() throws {
         // Create and export database
-        let db = try BlazeDBClient(name: uniqueName("verify-test"), fileURL: tempDBURL, password: password)
-        defer { try? db.close() }
-        _ = try db.insert(BlazeDataRecord(["test": .string("data")]))
-        try db.export(to: tempDumpURL)
+        let db = try BlazeDBClient(name: uniqueName("verify-test"), fileURL: try requireFixture(tempDBURL), password: password)
+        defer { try? try requireFixture(db).close() }
+        _ = try requireFixture(db).insert(BlazeDataRecord(["test": .string("data")]))
+        try requireFixture(db).export(to: try requireFixture(tempDumpURL))
         
         // Verify dump
-        let header = try BlazeDBImporter.verify(tempDumpURL)
+        let header = try BlazeDBImporter.verify(try requireFixture(tempDumpURL))
         XCTAssertNotNil(header)
         XCTAssertTrue(header.databaseName.hasPrefix("verify-test"), "Dump header should preserve source database name prefix")
     }
     
     func testVerify_TamperedDump_Fails() throws {
         // Create and export database
-        let db = try BlazeDBClient(name: uniqueName("tamper-test"), fileURL: tempDBURL, password: password)
-        defer { try? db.close() }
-        _ = try db.insert(BlazeDataRecord(["test": .string("data")]))
-        try db.export(to: tempDumpURL)
+        let db = try BlazeDBClient(name: uniqueName("tamper-test"), fileURL: try requireFixture(tempDBURL), password: password)
+        defer { try? try requireFixture(db).close() }
+        _ = try requireFixture(db).insert(BlazeDataRecord(["test": .string("data")]))
+        try requireFixture(db).export(to: try requireFixture(tempDumpURL))
         
         // Tamper with dump file
-        var dumpData = try Data(contentsOf: tempDumpURL)
+        var dumpData = try Data(contentsOf: try requireFixture(tempDumpURL))
         // Modify a byte
         dumpData[100] = dumpData[100] == 0 ? 1 : 0
-        try dumpData.write(to: tempDumpURL, options: [.atomic])
+        try dumpData.write(to: try requireFixture(tempDumpURL), options: [.atomic])
         
         // Verification should fail
-        XCTAssertThrowsError(try BlazeDBImporter.verify(tempDumpURL), "Tampered dump must fail verification/decoding")
+        XCTAssertThrowsError(try BlazeDBImporter.verify(try requireFixture(tempDumpURL)), "Tampered dump must fail verification/decoding")
     }
     
     // MARK: - Schema Mismatch Tests
     
     func testImport_SchemaMismatch_Refuses() throws {
         // Create database with schema version
-        let db = try BlazeDBClient(name: uniqueName("schema-test"), fileURL: tempDBURL, password: password)
-        defer { try? db.close() }
-        try db.setSchemaVersion(SchemaVersion(major: 1, minor: 0))
-        _ = try db.insert(BlazeDataRecord(["test": .string("data")]))
+        let db = try BlazeDBClient(name: uniqueName("schema-test"), fileURL: try requireFixture(tempDBURL), password: password)
+        defer { try? try requireFixture(db).close() }
+        try requireFixture(db).setSchemaVersion(SchemaVersion(major: 1, minor: 0))
+        _ = try requireFixture(db).insert(BlazeDataRecord(["test": .string("data")]))
         
         // Export
-        try db.export(to: tempDumpURL)
+        try requireFixture(db).export(to: try requireFixture(tempDumpURL))
         
         // Create target with different schema version
-        let targetURL = tempDBURL.deletingLastPathComponent().appendingPathComponent(UUID().uuidString + ".blazedb")
+        let targetURL = try requireFixture(tempDBURL).deletingLastPathComponent().appendingPathComponent(UUID().uuidString + ".blazedb")
         let targetDB = try BlazeDBClient(name: uniqueName("target"), fileURL: targetURL, password: password)
         defer { try? targetDB.close() }
         try targetDB.setSchemaVersion(SchemaVersion(major: 1, minor: 1))
         
         // Import should fail without allowSchemaMismatch
         do {
-            try BlazeDBImporter.restore(from: tempDumpURL, to: targetDB, allowSchemaMismatch: false)
+            try BlazeDBImporter.restore(from: try requireFixture(tempDumpURL), to: targetDB, allowSchemaMismatch: false)
             XCTFail("Should have refused schema mismatch")
         } catch let error as BlazeDBError {
             if case .migrationFailed = error {
@@ -214,22 +220,22 @@ final class ImportExportTests: XCTestCase {
     
     func testImport_SchemaMismatch_Allowed() throws {
         // Create database with schema version
-        let db = try BlazeDBClient(name: uniqueName("schema-allow-test"), fileURL: tempDBURL, password: password)
-        defer { try? db.close() }
-        try db.setSchemaVersion(SchemaVersion(major: 1, minor: 0))
-        _ = try db.insert(BlazeDataRecord(["test": .string("data")]))
+        let db = try BlazeDBClient(name: uniqueName("schema-allow-test"), fileURL: try requireFixture(tempDBURL), password: password)
+        defer { try? try requireFixture(db).close() }
+        try requireFixture(db).setSchemaVersion(SchemaVersion(major: 1, minor: 0))
+        _ = try requireFixture(db).insert(BlazeDataRecord(["test": .string("data")]))
         
         // Export
-        try db.export(to: tempDumpURL)
+        try requireFixture(db).export(to: try requireFixture(tempDumpURL))
         
         // Create target with different schema version
-        let targetURL = tempDBURL.deletingLastPathComponent().appendingPathComponent(UUID().uuidString + ".blazedb")
+        let targetURL = try requireFixture(tempDBURL).deletingLastPathComponent().appendingPathComponent(UUID().uuidString + ".blazedb")
         let targetDB = try BlazeDBClient(name: uniqueName("target"), fileURL: targetURL, password: password)
         defer { try? targetDB.close() }
         try targetDB.setSchemaVersion(SchemaVersion(major: 1, minor: 1))
         
         // Import with allowSchemaMismatch should succeed
-        try BlazeDBImporter.restore(from: tempDumpURL, to: targetDB, allowSchemaMismatch: true)
+        try BlazeDBImporter.restore(from: try requireFixture(tempDumpURL), to: targetDB, allowSchemaMismatch: true)
         
         // Verify restore succeeded
         let records = try targetDB.fetchAll()

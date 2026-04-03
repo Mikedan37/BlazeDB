@@ -16,20 +16,20 @@ import XCTest
 #endif
 
 final class QueryResultConversionTests: XCTestCase {
-    var tempURL: URL!
-    var db: BlazeDBClient!
+    private var tempURL: URL?
+    private var db: BlazeDBClient?
     
-    override func setUp() {
-        super.setUp()
+    override func setUpWithError() throws {
+        try super.setUpWithError()
         tempURL = FileManager.default.temporaryDirectory
             .appendingPathComponent("ResultConv-\(UUID().uuidString).blazedb")
-        db = try! BlazeDBClient(name: "ResultConvTest", fileURL: tempURL, password: "TestPassword-123!")
+        db = try BlazeDBClient(name: "ResultConvTest", fileURL: try requireFixture(tempURL), password: "TestPassword-123!")
     }
     
     override func tearDown() {
         db = nil
-        try? FileManager.default.removeItem(at: tempURL)
-        try? FileManager.default.removeItem(at: tempURL.deletingPathExtension().appendingPathExtension("meta"))
+        try? FileManager.default.removeItem(at: try requireFixture(tempURL))
+        try? FileManager.default.removeItem(at: try requireFixture(tempURL).deletingPathExtension().appendingPathExtension("meta"))
         super.tearDown()
     }
     
@@ -41,11 +41,11 @@ final class QueryResultConversionTests: XCTestCase {
         
         // Insert test data
         for i in 0..<5 {
-            _ = try db.insert(BlazeDataRecord(["value": .int(i)]))
+            _ = try requireFixture(db).insert(BlazeDataRecord(["value": .int(i)]))
         }
         
         // Execute standard query (returns .records)
-        let result = try db.query().execute()
+        let result = try requireFixture(db).query().execute()
         
         XCTAssertTrue(result.isType(.records), "Should be records type")
         
@@ -65,10 +65,10 @@ final class QueryResultConversionTests: XCTestCase {
     func testNilAccessorsForWrongTypes() throws {
         print("🔄 Testing nil accessors for wrong types...")
         
-        _ = try db.insert(BlazeDataRecord(["value": .int(1)]))
+        _ = try requireFixture(db).insert(BlazeDataRecord(["value": .int(1)]))
         
         // Standard query
-        let recordResult = try db.query().execute()
+        let recordResult = try requireFixture(db).query().execute()
         XCTAssertNotNil(recordResult.recordsOrNil, "recordsOrNil should return value")
         XCTAssertNil(recordResult.joinedOrNil, "joinedOrNil should return nil")
         XCTAssertNil(recordResult.aggregationOrNil, "aggregationOrNil should return nil")
@@ -76,7 +76,7 @@ final class QueryResultConversionTests: XCTestCase {
         XCTAssertNil(recordResult.searchResultsOrNil, "searchResultsOrNil should return nil")
         
         // Aggregation query
-        let aggResult = try db.query().count().execute()
+        let aggResult = try requireFixture(db).query().count().execute()
         XCTAssertNil(aggResult.recordsOrNil, "recordsOrNil should return nil for aggregation")
         XCTAssertNotNil(aggResult.aggregationOrNil, "aggregationOrNil should return value")
         
@@ -88,7 +88,7 @@ final class QueryResultConversionTests: XCTestCase {
         print("🔄 Testing empty result conversion...")
         
         // Query empty database
-        let result = try db.query().execute()
+        let result = try requireFixture(db).query().execute()
         
         XCTAssertTrue(result.isType(.records), "Empty result should still be records type")
         
@@ -97,7 +97,7 @@ final class QueryResultConversionTests: XCTestCase {
         XCTAssertEqual(result.count, 0)
         
         // Aggregation on empty database
-        let aggResult = try db.query().count().execute()
+        let aggResult = try requireFixture(db).query().count().execute()
         let agg = try aggResult.aggregation
         XCTAssertEqual(agg.count, 0, "Count on empty DB should be 0")
         
@@ -110,19 +110,19 @@ final class QueryResultConversionTests: XCTestCase {
         
         // Insert test data
         for i in 0..<10 {
-            _ = try db.insert(BlazeDataRecord(["value": .int(i), "category": .string("A")]))
+            _ = try requireFixture(db).insert(BlazeDataRecord(["value": .int(i), "category": .string("A")]))
         }
         
         // Records result
-        let recordsResult = try db.query().execute()
+        let recordsResult = try requireFixture(db).query().execute()
         XCTAssertEqual(recordsResult.count, 10, "Records count should be 10")
         
         // Aggregation result
-        let aggResult = try db.query().count().execute()
+        let aggResult = try requireFixture(db).query().count().execute()
         XCTAssertEqual(aggResult.count, 1, "Aggregation always has count 1")
         
         // Grouped result
-        let groupedResult = try db.query().groupBy("category").count().execute()
+        let groupedResult = try requireFixture(db).query().groupBy("category").count().execute()
         XCTAssertEqual(groupedResult.count, 1, "Grouped result has 1 group")
         
         print("✅ QueryResult.count works for all types")
@@ -136,16 +136,16 @@ final class QueryResultConversionTests: XCTestCase {
         
         // Insert many records
         for i in 0..<count {
-            _ = try db.insert(BlazeDataRecord(["index": .int(i), "group": .string("G\(i % 10)")]))
+            _ = try requireFixture(db).insert(BlazeDataRecord(["index": .int(i), "group": .string("G\(i % 10)")]))
         }
         
-        try db.persist()
+        try requireFixture(db).persist()
         
         print("  Inserted \(count) records")
         
         // Convert large records result
         let startTime = Date()
-        let result = try db.query().execute()
+        let result = try requireFixture(db).query().execute()
         let records = try result.records
         let duration = Date().timeIntervalSince(startTime)
         
@@ -154,7 +154,7 @@ final class QueryResultConversionTests: XCTestCase {
         
         // Convert large grouped result
         let groupStart = Date()
-        let groupedResult = try db.query().groupBy("group").count().execute()
+        let groupedResult = try requireFixture(db).query().groupBy("group").count().execute()
         let grouped = try groupedResult.grouped
         let groupDuration = Date().timeIntervalSince(groupStart)
         

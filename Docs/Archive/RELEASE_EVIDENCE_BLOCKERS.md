@@ -8,25 +8,25 @@ This document records blockers discovered while executing OSS readiness evidence
 
 - Result: **fresh clean environment cannot fetch private SSH dependencies**.
 - Failure:
-  - `git@github.com: Permission denied (publickey).`
-  - `Failed to clone repository git@github.com:Mikedan37/BlazeTransport.git`
+- `git@github.com: Permission denied (publickey).`
+- `Failed to clone repository git@github.com:Mikedan37/BlazeTransport.git`
 - Impact:
-  - Release-tag build reproducibility is not publicly verifiable without private SSH key access.
-  - This does **not** block current core-only OSS builds on main; it blocks reproducibility for affected legacy tags and deferred distributed transport re-enable work.
+- Release-tag build reproducibility is not publicly verifiable without private SSH key access.
+- This does **not** block current core-only OSS builds on main; it blocks reproducibility for affected legacy tags and deferred distributed transport re-enable work.
 
 ### `v2.6.0`
 
 - Result: **cannot build on current Swift toolchain**.
 - Representative failures:
-  - strict concurrency conformance/isolation errors in distributed relay types,
-  - non-Sendable shared mutable state errors,
-  - async API mismatch errors in query async extensions.
+- strict concurrency conformance/isolation errors in distributed relay types,
+- non-Sendable shared mutable state errors,
+- async API mismatch errors in query async extensions.
 
 ### `v2.7.0`
 
 - Result: **package manifest/target path issue in clean worktree**.
 - Failure:
-  - `invalid custom path 'Examples/ReferenceConsumer' for target 'ReferenceConsumer'`.
+- `invalid custom path 'Examples/ReferenceConsumer' for target 'ReferenceConsumer'`.
 
 ## Impact
 
@@ -34,10 +34,10 @@ This document records blockers discovered while executing OSS readiness evidence
 - Next-release (core-only) confidence is now covered by clean-snapshot verification and CI evidence workflows.
 - Compatibility harness evidence now exists for two released lines (`v0.1.3`, `v2.7.0`) in `Tests/CompatibilityFixtures/`.
 - Hosted Actions evidence is currently blocked by repository billing state:
-  - `The job was not started because recent account payments have failed or your spending limit needs to be increased.`
+- `The job was not started because recent account payments have failed or your spending limit needs to be increased.`
 - Main-branch local evidence improved:
-  - `Scripts/verify-clean-checkout.sh` passes with concise per-step logs.
-  - `Scripts/verify-readme-quickstart.sh` confirms README quickstart behavior in a clean snapshot.
+- `Scripts/verify-clean-checkout.sh` passes with concise per-step logs.
+- `Scripts/verify-readme-quickstart.sh` confirms README quickstart behavior in a clean snapshot.
 
 ## Unblock Plan
 

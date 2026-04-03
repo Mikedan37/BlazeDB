@@ -4,7 +4,7 @@
 
 ---
 
-##  **Current Issue**
+## **Current Issue**
 
 The test runner UI in BlazeDBVisualizer tries to execute xcodebuild from within the app, but:
 - xcodebuild output buffering issues
@@ -54,10 +54,10 @@ The Test Runner tab is still **VALUABLE** for:
 ```
  Lists 907 tests across 8 categories
  Shows test breakdown:
- - Unit: 437 tests
- - Integration: 19 tests
- - MVCC: 67 tests
- - etc.
+- Unit: 437 tests
+- Integration: 19 tests
+- MVCC: 67 tests
+- etc.
  Explains what BlazeDB tests
  Marketing/portfolio value
  "Run Tests in Xcode" button
@@ -92,24 +92,24 @@ Button("Run Tests in Xcode") {
 ### **Technical Challenges:**
 
 1. **Output Buffering**
- - xcodebuild buffers output
- - Hard to get real-time streaming
- - Pipe reads are tricky
+- xcodebuild buffers output
+- Hard to get real-time streaming
+- Pipe reads are tricky
 
 2. **Scheme Configuration**
- - Needs to be shared
- - Needs test targets enabled
- - Environment variables needed
+- Needs to be shared
+- Needs test targets enabled
+- Environment variables needed
 
 3. **Sandbox Restrictions**
- - Running subprocesses is complex
- - File access needed
- - Process monitoring
+- Running subprocesses is complex
+- File access needed
+- Process monitoring
 
 4. **Performance**
- - 907 tests take 2-3 minutes
- - UI can freeze
- - Memory overhead
+- 907 tests take 2-3 minutes
+- UI can freeze
+- Memory overhead
 
 ---
 
@@ -157,7 +157,7 @@ Button(action: {
 TablePlus: No test runner
 Sequel Pro: No test runner
 DB Browser: No test runner
-DataGrip:  Runs SQL tests (different!)
+DataGrip: Runs SQL tests (different!)
 
 BlazeDBVisualizer: Shows test info + opens Xcode!
 ```
@@ -172,20 +172,20 @@ BlazeDBVisualizer: Shows test info + opens Xcode!
 
 ```
 
- BlazeDB Test Suite 
- 
- 907 comprehensive tests 
- Validates database reliability 
- 
- Unit Tests: 437 tests 
- Integration: 19 tests 
- MVCC: 67 tests 
-... etc 
- 
- [ Open in Xcode & Run Tests] 
- 
- Last Run: 2 hours ago 
- 893 passed, 14 failed (98.5%) 
+ BlazeDB Test Suite
+
+ 907 comprehensive tests
+ Validates database reliability
+
+ Unit Tests: 437 tests
+ Integration: 19 tests
+ MVCC: 67 tests
+... etc
+
+ [ Open in Xcode & Run Tests]
+
+ Last Run: 2 hours ago
+ 893 passed, 14 failed (98.5%)
 
 ```
 
@@ -249,7 +249,7 @@ Portfolio/marketing value
 **Want me to:**
 1. Add "Open in Xcode" button (5 minutes)
 2. Parse last test results from DerivedData (30 minutes)
-3.  Keep debugging xcodebuild integration (hours of frustration!)
+3. Keep debugging xcodebuild integration (hours of frustration!)
 
 **I recommend #1! It's the best UX!**
 

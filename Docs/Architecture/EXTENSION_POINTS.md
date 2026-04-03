@@ -166,11 +166,11 @@ This document explicitly lists where persistence extensions, schema logic, and t
 ```swift
 // File: BlazeDB/Exports/BlazeDBClient+MyExtension.swift
 extension BlazeDBClient {
-    public func myNewMethod() throws {
-        // Use public APIs only
-        let records = try fetchAll()
-        // ... do something with records
-    }
+ public func myNewMethod() throws {
+ // Use public APIs only
+ let records = try fetchAll()
+ // ... do something with records
+ }
 }
 ```
 
@@ -179,12 +179,12 @@ extension BlazeDBClient {
 ```swift
 // File: BlazeDB/Query/QueryBuilder+MyOperator.swift
 extension QueryBuilder {
-    public func myNewOperator(_ field: String) -> QueryBuilder {
-        filters.append { record in
-            // Filter logic
-        }
-        return self
-    }
+ public func myNewOperator(_ field: String) -> QueryBuilder {
+ filters.append { record in
+ // Filter logic
+ }
+ return self
+ }
 }
 ```
 

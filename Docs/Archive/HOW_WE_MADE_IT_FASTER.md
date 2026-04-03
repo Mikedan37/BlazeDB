@@ -195,29 +195,29 @@ decoding: 0.02ms (BlazeBinary) - 10x faster!
 ### **Yes! Here are additional optimizations:**
 
 1. **Zero-Copy BlazeBinary Encoding** (1.2-1.5x faster)
- - Use `UnsafeMutableRawPointer` instead of `Data.append()`
- - Pre-allocate exact buffer size
- - Eliminate intermediate allocations
+- Use `UnsafeMutableRawPointer` instead of `Data.append()`
+- Pre-allocate exact buffer size
+- Eliminate intermediate allocations
 
 2. **BlazeBinary Decoder Optimizations** (1.1-1.3x faster)
- - Direct UUID construction (no Array intermediate)
- - Cache ISO8601DateFormatter
- - Use `withUnsafeBytes` for direct memory access
+- Direct UUID construction (no Array intermediate)
+- Cache ISO8601DateFormatter
+- Use `withUnsafeBytes` for direct memory access
 
 3. **Memory Pooling** (1.1-1.2x faster)
- - Reuse Data buffers
- - Reduce GC pressure
- - Lower memory allocations
+- Reuse Data buffers
+- Reduce GC pressure
+- Lower memory allocations
 
 4. **Parallel Encoding** (2-4x faster for batches)
- - Encode multiple records in parallel
- - Use all CPU cores
- - Perfect for `insertMany()`
+- Encode multiple records in parallel
+- Use all CPU cores
+- Perfect for `insertMany()`
 
 5. **Read-Ahead Prefetching** (1.5-2x faster)
- - Prefetch next pages while processing current
- - Overlap I/O with CPU work
- - Perfect for sequential scans
+- Prefetch next pages while processing current
+- Overlap I/O with CPU work
+- Perfect for sequential scans
 
 ---
 

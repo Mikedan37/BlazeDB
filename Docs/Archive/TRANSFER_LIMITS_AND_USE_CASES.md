@@ -183,7 +183,7 @@ USE CASE:
 • No lag (local DB is instant!)
 ```
 
-### **3. Collaborative Editing** 
+### **3. Collaborative Editing**
 ```
 SCENARIO:
 • 50 users editing same document
@@ -452,7 +452,7 @@ Message queue with BlazeDB:
 SPEED: 1.6M messages/sec (same device)
 ```
 
-### **9. Real-Time Graph Database** 
+### **9. Real-Time Graph Database**
 ```
 Graph database with BlazeDB:
 • Nodes/edges = records

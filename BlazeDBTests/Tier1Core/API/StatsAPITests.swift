@@ -6,7 +6,7 @@ import XCTest
 #endif
 
 final class StatsAPITests: XCTestCase {
-    private var dbURL: URL!
+    private var dbURL: URL?
 
     override func setUpWithError() throws {
         dbURL = FileManager.default.temporaryDirectory
@@ -14,17 +14,17 @@ final class StatsAPITests: XCTestCase {
     }
 
     override func tearDownWithError() throws {
-        let metaURL = dbURL.deletingPathExtension().appendingPathExtension("meta")
-        try? FileManager.default.removeItem(at: dbURL)
-        try? FileManager.default.removeItem(at: metaURL)
+        let metaURL = try requireFixture(dbURL).deletingPathExtension().appendingPathExtension("meta")
+        try? FileManager.default.removeItem(at: try requireFixture(dbURL))
+        try? FileManager.default.removeItem(at: try requireFixture(metaURL))
     }
 
     func testStatsPrettyPrint_IndicatesCacheHitRateUnavailable() throws {
-        let db = try BlazeDBClient(name: "stats-api", fileURL: dbURL, password: "StatsPass-123!")
-        defer { try? db.close() }
+        let db = try BlazeDBClient(name: "stats-api", fileURL: try requireFixture(dbURL), password: "StatsPass-123!")
+        defer { try? try requireFixture(db).close() }
 
-        _ = try db.insert(BlazeDataRecord(["name": .string("alice")]))
-        let stats = try db.stats()
+        _ = try requireFixture(db).insert(BlazeDataRecord(["name": .string("alice")]))
+        let stats = try requireFixture(db).stats()
         let printed = stats.prettyPrint()
 
         XCTAssertTrue(

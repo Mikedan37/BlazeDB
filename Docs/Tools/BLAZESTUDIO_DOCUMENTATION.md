@@ -35,18 +35,18 @@ BlazeStudio is a visual block-based editor that lets you design database schemas
 ## **Getting Started**
 
 1. **Launch BlazeStudio**
- - Open the BlazeStudio app
- - Create a new project or open existing
+- Open the BlazeStudio app
+- Create a new project or open existing
 
 2. **Create Blocks**
- - Drag blocks from the palette
- - Connect blocks to define relationships
- - Set block properties
+- Drag blocks from the palette
+- Connect blocks to define relationships
+- Set block properties
 
 3. **Generate Code**
- - Export schema to Swift
- - Generate BlazeDB code
- - Copy to your project
+- Export schema to Swift
+- Generate BlazeDB code
+- Copy to your project
 
 ---
 
@@ -66,9 +66,9 @@ Defines a data model/class.
 ```
 Class: User
 Fields:
- - id: UUID
- - name: String
- - email: String
+- id: UUID
+- name: String
+- email: String
 ```
 
 #### **Connector Block**

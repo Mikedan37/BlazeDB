@@ -544,14 +544,14 @@ VERDICT: BlazeDB is the most elegant!
 
 ### **Performance:**
 
- **Still blazing fast!**
+**Still blazing fast!**
 - 6.5M ops/sec (vs 7M without security)
 - Only 7% performance loss
 - Still 34x faster than Firebase!
 
 ### **Elegance:**
 
- **Elegant and sexy!**
+**Elegant and sexy!**
 - Zero boilerplate
 - Type-safe
 - Declarative
@@ -560,7 +560,7 @@ VERDICT: BlazeDB is the most elegant!
 
 ### **Code Quality:**
 
- **Beautiful code!**
+**Beautiful code!**
 - Simple API
 - Clean design
 - Type-safe

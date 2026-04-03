@@ -6,6 +6,7 @@
 //  Manages connection lifecycle, health checks, and resource limits
 //
 #if !BLAZEDB_LINUX_CORE
+import BlazeDBCore
 import Foundation
 
 /// Pooled connection with metadata

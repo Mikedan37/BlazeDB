@@ -30,22 +30,25 @@ import Glibc
 #endif
 
 final class MetadataFlushEdgeCaseTests: XCTestCase {
-    var tempURL: URL!
-    var db: BlazeDBClient!
+    private var tempURL: URL?
+    private var db: BlazeDBClient?
     
-    override func setUp() {
-        super.setUp()
-        tempURL = FileManager.default.temporaryDirectory
+    override func setUpWithError() throws {
+        try super.setUpWithError()
+        let url = FileManager.default.temporaryDirectory
             .appendingPathComponent("FlushEdge-\(UUID().uuidString).blazedb")
-        db = try! BlazeDBClient(name: "FlushTest", fileURL: tempURL, password: "TestPassword-123!")
+        tempURL = url
+        db = try BlazeDBClient(name: "FlushTest", fileURL: url, password: "TestPassword-123!")
     }
     
     override func tearDown() {
         try? db?.close()
         db = nil
-        try? FileManager.default.removeItem(at: tempURL)
-        try? FileManager.default.removeItem(at: tempURL.deletingPathExtension().appendingPathExtension("meta"))
-        try? FileManager.default.removeItem(at: tempURL.deletingPathExtension().appendingPathExtension("meta.indexes"))
+        if let url = tempURL {
+            try? FileManager.default.removeItem(at: url)
+            try? FileManager.default.removeItem(at: url.deletingPathExtension().appendingPathExtension("meta"))
+            try? FileManager.default.removeItem(at: url.deletingPathExtension().appendingPathExtension("meta.indexes"))
+        }
         super.tearDown()
     }
 
@@ -64,7 +67,8 @@ final class MetadataFlushEdgeCaseTests: XCTestCase {
 
     private func dumpLayoutIndexMapFromMetaIfRequested() {
         guard ProcessInfo.processInfo.environment["BLAZEDB_DUMP_LAYOUT_INDEXMAP"] == "1" else { return }
-        let metaURL = tempURL.deletingPathExtension().appendingPathExtension("meta")
+        guard let baseURL = tempURL else { return }
+        let metaURL = baseURL.deletingPathExtension().appendingPathExtension("meta")
         guard let data = try? Data(contentsOf: metaURL),
               let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
               let layout = json["layout"] as? [String: Any],
@@ -101,19 +105,19 @@ final class MetadataFlushEdgeCaseTests: XCTestCase {
         
         // Insert exactly 100 records
         for i in 0..<100 {
-            _ = try db.insert(BlazeDataRecord(["index": .int(i)]))
+            _ = try requireFixture(db).insert(BlazeDataRecord(["index": .int(i)]))
         }
         
         print("  Inserted 100 records")
         
         // Check unsavedChanges should be 0 (auto-flushed at 100)
-        XCTAssertEqual(db.collection.unsavedChanges, 0, "Should auto-flush at 100 records")
+        XCTAssertEqual(try requireFixture(db).collection.unsavedChanges, 0, "Should auto-flush at 100 records")
         
         // Verify persistence without explicit flush
         try? db?.close()
         db = nil
-        let db2 = try reopenWithRetry(name: "FlushTest", fileURL: tempURL, password: "TestPassword-123!")
-        let records = try db2.fetchAll()
+        let db2 = try reopenWithRetry(name: "FlushTest", fileURL: try requireFixture(tempURL), password: "TestPassword-123!")
+        let records = try requireFixture(db2).fetchAll()
         
         XCTAssertEqual(records.count, 100, "All 100 records should be persisted after auto-flush")
         
@@ -128,14 +132,14 @@ final class MetadataFlushEdgeCaseTests: XCTestCase {
         
         // Insert 99 records (below threshold, won't flush)
         for i in 0..<99 {
-            let id = try db.insert(BlazeDataRecord(["index": .int(i)]))
+            let id = try requireFixture(db).insert(BlazeDataRecord(["index": .int(i)]))
             ids.append(id)
         }
         
         print("  Inserted 99 records (no auto-flush)")
         
         // Check that unsavedChanges > 0 (not flushed)
-        let collection = db.collection
+        let collection = try requireFixture(db).collection
         XCTAssertGreaterThan(collection.unsavedChanges, 0, "Should have unsaved changes")
         print("  Unsaved changes: \(collection.unsavedChanges)")
         
@@ -147,7 +151,7 @@ final class MetadataFlushEdgeCaseTests: XCTestCase {
         dumpLayoutIndexMapFromMetaIfRequested()
         
         // Reopen database
-        let recovered = try reopenWithRetry(name: "FlushTest", fileURL: tempURL, password: "TestPassword-123!")
+        let recovered = try reopenWithRetry(name: "FlushTest", fileURL: try requireFixture(tempURL), password: "TestPassword-123!")
         let recoveredRecords = try recovered.fetchAll()
         
         // Due to deinit flush, records should still be there
@@ -163,26 +167,26 @@ final class MetadataFlushEdgeCaseTests: XCTestCase {
         
         // Insert 101 records
         for i in 0..<101 {
-            _ = try db.insert(BlazeDataRecord(["index": .int(i)]))
+            _ = try requireFixture(db).insert(BlazeDataRecord(["index": .int(i)]))
         }
         
         print("  Inserted 101 records")
         
         // Depending on compaction cadence, pending changes can vary slightly.
-        XCTAssertGreaterThan(db.collection.unsavedChanges, 0,
+        XCTAssertGreaterThan(try requireFixture(db).collection.unsavedChanges, 0,
                              "Should have pending changes after crossing auto-flush threshold")
         
-        print("  Unsaved changes: \(db.collection.unsavedChanges)")
+        print("  Unsaved changes: \(try requireFixture(db).collection.unsavedChanges)")
         
         // Explicitly flush remaining
-        try db.persist()
-        XCTAssertEqual(db.collection.unsavedChanges, 0, "Should have 0 after explicit flush")
+        try requireFixture(db).persist()
+        XCTAssertEqual(try requireFixture(db).collection.unsavedChanges, 0, "Should have 0 after explicit flush")
         
         // Verify all persisted
         try? db?.close()
         db = nil
-        let db2 = try reopenWithRetry(name: "FlushTest", fileURL: tempURL, password: "TestPassword-123!")
-        let records = try db2.fetchAll()
+        let db2 = try reopenWithRetry(name: "FlushTest", fileURL: try requireFixture(tempURL), password: "TestPassword-123!")
+        let records = try requireFixture(db2).fetchAll()
         XCTAssertGreaterThanOrEqual(records.count, 101)
         
         print("✅ Auto-flush at 100 verified with 101 records")
@@ -194,7 +198,7 @@ final class MetadataFlushEdgeCaseTests: XCTestCase {
         
         // Insert 95 records
         for i in 0..<95 {
-            _ = try db.insert(BlazeDataRecord(["index": .int(i)]))
+            _ = try requireFixture(db).insert(BlazeDataRecord(["index": .int(i)]))
         }
         
         print("  Inserted 95 records (5 away from flush)")
@@ -210,7 +214,7 @@ final class MetadataFlushEdgeCaseTests: XCTestCase {
         for i in 95..<105 {
             queue.async {
                 do {
-                    _ = try self.db.insert(BlazeDataRecord(["index": .int(i)]))
+                    _ = try self.requireFixture(self.db).insert(BlazeDataRecord(["index": .int(i)]))
                     expectation.fulfill()
                 } catch {
                     errorLock.lock()
@@ -226,11 +230,11 @@ final class MetadataFlushEdgeCaseTests: XCTestCase {
         XCTAssertTrue(errors.isEmpty, "No errors during concurrent flush boundary")
         
         // Verify all records present
-        let records = try db.fetchAll()
+        let records = try requireFixture(db).fetchAll()
         XCTAssertEqual(records.count, 105, "All records should be present")
         
         // Verify flush happened
-        let collection = db.collection
+        let collection = try requireFixture(db).collection
         XCTAssertEqual(collection.unsavedChanges, 5, 
                       "Should have 5 unsaved (flushed at 100)")
         
@@ -249,17 +253,17 @@ final class MetadataFlushEdgeCaseTests: XCTestCase {
         // Insert should throw due to forced layout save failure, with the fault only enabled
         // around the insert itself to avoid impacting later metadata writes in this test.
         setenv("BLAZEDB_FORCE_LAYOUT_SAVE_FAILURE", "1", 1)
-        XCTAssertThrowsError(try db.insert(record), "Insert should throw when layout save failure is forced")
+        XCTAssertThrowsError(try requireFixture(db).insert(record), "Insert should throw when layout save failure is forced")
         unsetenv("BLAZEDB_FORCE_LAYOUT_SAVE_FAILURE")
 
         // Record should not be visible via normal API in the same process.
-        let missing = try db.fetch(id: fixedID)
+        let missing = try requireFixture(db).fetch(id: fixedID)
         XCTAssertNil(missing, "Record must not be visible after failed insert with forced layout save failure")
 
         // Reopen and ensure record is still absent.
-        try? db.close()
+        try? try requireFixture(db).close()
         db = nil
-        let reopened = try reopenWithRetry(name: "FlushTest", fileURL: tempURL, password: "TestPassword-123!")
+        let reopened = try reopenWithRetry(name: "FlushTest", fileURL: try requireFixture(tempURL), password: "TestPassword-123!")
         let reopenedMissing = try reopened.fetch(id: fixedID)
         XCTAssertNil(reopenedMissing, "Record must not be visible after reopen when insert failed before metadata commit")
 
@@ -276,7 +280,7 @@ final class MetadataFlushEdgeCaseTests: XCTestCase {
 
         // Reopen again and verify the record is still visible.
         try? reopened.close()
-        let reopened2 = try reopenWithRetry(name: "FlushTest", fileURL: tempURL, password: "TestPassword-123!")
+        let reopened2 = try reopenWithRetry(name: "FlushTest", fileURL: try requireFixture(tempURL), password: "TestPassword-123!")
         let fetched2 = try reopened2.fetch(id: fixedID)
         XCTAssertNotNil(fetched2, "Record should remain visible after reopen following successful re-insert")
     }
@@ -287,14 +291,14 @@ final class MetadataFlushEdgeCaseTests: XCTestCase {
         print("💾 Testing flush persists both data and indexes...")
         
         // Create indexes before inserting
-        try db.collection.createIndex(on: "category")
-        try db.collection.createIndex(on: ["status", "priority"])
+        try requireFixture(db).collection.createIndex(on: "category")
+        try requireFixture(db).collection.createIndex(on: ["status", "priority"])
         
         print("  Created 2 indexes")
         
         // Insert 100 records to trigger auto-flush
         for i in 0..<100 {
-            _ = try db.insert(BlazeDataRecord([
+            _ = try requireFixture(db).insert(BlazeDataRecord([
                 "category": .string("cat_\(i % 10)"),
                 "status": .string(["open", "closed"][i % 2]),
                 "priority": .int((i % 5) + 1)
@@ -306,8 +310,8 @@ final class MetadataFlushEdgeCaseTests: XCTestCase {
         // Reopen and verify indexes work
         try? db?.close()
         db = nil
-        let db2 = try reopenWithRetry(name: "FlushTest", fileURL: tempURL, password: "TestPassword-123!")
-        let collection2 = db2.collection
+        let db2 = try reopenWithRetry(name: "FlushTest", fileURL: try requireFixture(tempURL), password: "TestPassword-123!")
+        let collection2 = try requireFixture(db2).collection
         
         // Test single-field index
         let categoryResults = try collection2.fetch(byIndexedField: "category", value: "cat_5")
@@ -327,22 +331,22 @@ final class MetadataFlushEdgeCaseTests: XCTestCase {
         
         // Insert only 10 records (well below 100 threshold)
         for i in 0..<10 {
-            _ = try db.insert(BlazeDataRecord(["index": .int(i)]))
+            _ = try requireFixture(db).insert(BlazeDataRecord(["index": .int(i)]))
         }
         
-        XCTAssertGreaterThan(db.collection.unsavedChanges, 0, "Should have unsaved changes")
-        print("  Inserted 10 records, unsaved: \(db.collection.unsavedChanges)")
+        XCTAssertGreaterThan(try requireFixture(db).collection.unsavedChanges, 0, "Should have unsaved changes")
+        print("  Inserted 10 records, unsaved: \(try requireFixture(db).collection.unsavedChanges)")
         
         // Manual persist
-        try db.persist()
+        try requireFixture(db).persist()
         
-        XCTAssertEqual(db.collection.unsavedChanges, 0, "Manual persist should flush")
-        print("  After manual persist, unsaved: \(db.collection.unsavedChanges)")
+        XCTAssertEqual(try requireFixture(db).collection.unsavedChanges, 0, "Manual persist should flush")
+        print("  After manual persist, unsaved: \(try requireFixture(db).collection.unsavedChanges)")
         
         // Verify persistence
         db = nil
-        let db2 = try reopenWithRetry(name: "FlushTest", fileURL: tempURL, password: "TestPassword-123!")
-        let records = try db2.fetchAll()
+        let db2 = try reopenWithRetry(name: "FlushTest", fileURL: try requireFixture(tempURL), password: "TestPassword-123!")
+        let records = try requireFixture(db2).fetchAll()
         XCTAssertEqual(records.count, 10, "All 10 records should be persisted")
         
         print("✅ Manual persist() works correctly")

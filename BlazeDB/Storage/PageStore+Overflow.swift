@@ -1027,12 +1027,23 @@ extension PageStore {
         
         let tagData = finalPageData.subdata(in: 28..<44)
         
-        // Bounds check: ensure we don't exceed finalPageData bounds
-        // This can happen during concurrent writes where a page is partially written
-        let expectedCiphertextEnd = 44 + Int(header.dataLength)
+        // Bounds check: remain defensive on UInt32→Int and claims larger than the physical page payload
+        let payloadCap = finalPageData.count - 44
+        guard payloadCap >= 0 else {
+            throw NSError(domain: "PageStore", code: 4006, userInfo: [
+                NSLocalizedDescriptionKey: "Overflow page negative payload capacity"
+            ])
+        }
+        guard UInt64(header.dataLength) <= UInt64(payloadCap) else {
+            throw NSError(domain: "PageStore", code: 4006, userInfo: [
+                NSLocalizedDescriptionKey: "Overflow page dataLength \(header.dataLength) exceeds available ciphertext (\(payloadCap) bytes)"
+            ])
+        }
+        let ciphertextByteCount = Int(header.dataLength)
+        let expectedCiphertextEnd = 44 + ciphertextByteCount
         guard expectedCiphertextEnd <= finalPageData.count else {
             throw NSError(domain: "PageStore", code: 4006, userInfo: [
-                NSLocalizedDescriptionKey: "Overflow page data length exceeds page bounds (expected \(expectedCiphertextEnd) bytes, got \(finalPageData.count))"
+                NSLocalizedDescriptionKey: "Overflow page ciphertext end \(expectedCiphertextEnd) exceeds page size \(finalPageData.count)"
             ])
         }
         
@@ -1179,7 +1190,11 @@ extension PageStore {
         var current = pointer
         var chainLength = 0
         var completeData = Data(mainData.prefix(bytesRead))
+        let maxChainHops = 10_000
         while current > 0 {
+            if chainLength >= maxChainHops {
+                return .truncatedChain(expectedBytes: bytesRead + 1, actualBytes: bytesRead)
+            }
             let index = Int(current)
             if visited.contains(index) {
                 return .cycleDetected(index)
@@ -1253,7 +1268,10 @@ extension PageStore {
                 continue
             }
             var seen = Set<Int>()
-            while pointer > 0 {
+            var hops = 0
+            let maxOrphanWalk = 10_000
+            while pointer > 0 && hops < maxOrphanWalk {
+                hops += 1
                 let idx = Int(pointer)
                 if seen.contains(idx) { break }
                 seen.insert(idx)

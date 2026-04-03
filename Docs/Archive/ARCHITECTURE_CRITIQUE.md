@@ -48,15 +48,15 @@ try await db.insert(record) // Works locally AND syncs
 ```swift
 // Every operation stored forever!
 struct OperationLog {
- var operations: [UUID: BlazeOperation] = [:] // Grows forever! 
+ var operations: [UUID: BlazeOperation] = [:] // Grows forever!
 }
 
 ISSUE:
 • Insert 1,000 bugs/day = 365,000 operations/year
 • Each operation: ~200 bytes
 • Total: 73 MB/year just for logs!
-• Memory: Keeps ALL operations in RAM 
-• Performance: Search through millions of operations 
+• Memory: Keeps ALL operations in RAM
+• Performance: Search through millions of operations
 
 After 1 year:
 • 365,000 operations in memory
@@ -409,11 +409,11 @@ CLIENT (iPhone):
 Operation Log: Grows unbounded
 • 1 year @ 100 ops/day = 36,500 ops
 • Memory: 36,500 × 200 bytes = 7.3 MB
-•  Eventually hits iOS memory limits (crash!)
+• Eventually hits iOS memory limits (crash!)
 
 Sync Queue: Unbounded
 • If offline for 1 week: 700 ops queued
-•  Large sync when reconnect
+• Large sync when reconnect
 
 Local DB: Already handled
 • VACUUM and GC already implemented
@@ -426,16 +426,16 @@ Operation Log: Grows unbounded
 • 100 users × 100 ops/day = 10,000 ops/day
 • 1 year: 3.65M operations
 • Memory: 3.65M × 200 bytes = 730 MB
-•  Pi only has 4GB RAM!
+• Pi only has 4GB RAM!
 
 Connections: Limited by RAM
 • Each connection: ~1 MB overhead
 • Pi can handle: ~500 concurrent
-•  More than that = OOM
+• More than that = OOM
 
 Database Size: SD card limited
 • 32GB SD card
-•  Will fill up without VACUUM
+• Will fill up without VACUUM
 
 
 NETWORK:
@@ -447,7 +447,7 @@ Bandwidth: Pi has 1 Gbps ethernet
 Latency: Distance-dependent
 • Local: 1ms
 • Same country: 20-50ms
-• Cross-continent: 100-200ms 
+• Cross-continent: 100-200ms
 • Deploy multiple regions!
 ```
 
@@ -603,28 +603,28 @@ BlazeDB: CRDT + Event Sourcing (elegant!)
 // Core idea: Operations are events, state is derived
 
 
- EVENT SOURCING ARCHITECTURE 
+ EVENT SOURCING ARCHITECTURE
 
- 
- ALL STATE IS DERIVED FROM EVENTS 
- 
- Events (Immutable): 
-  
-  t=1: Insert(bug, title="Login broken")  
-  t=2: Update(bug, priority=5→10)  
-  t=3: Update(bug, status="open"→"closed")  
-  t=4: Delete(bug)  
-  
- 
- Current State (Derived): 
-  
-  bug: (deleted)  
-  • Apply t=1: Created  
-  • Apply t=2: priority = 10  
-  • Apply t=3: status = "closed"  
-  • Apply t=4: Deleted  
-  
- 
+
+ ALL STATE IS DERIVED FROM EVENTS
+
+ Events (Immutable):
+
+ t=1: Insert(bug, title="Login broken")
+ t=2: Update(bug, priority=5→10)
+ t=3: Update(bug, status="open"→"closed")
+ t=4: Delete(bug)
+
+
+ Current State (Derived):
+
+ bug: (deleted)
+ • Apply t=1: Created
+ • Apply t=2: priority = 10
+ • Apply t=3: status = "closed"
+ • Apply t=4: Deleted
+
+
 
 
 // Replay events to rebuild state
@@ -659,42 +659,42 @@ for event in prioEvents {
 
 ```swift
 
- BLAZEDB DISTRIBUTED: ULTIMATE ARCHITECTURE 
+ BLAZEDB DISTRIBUTED: ULTIMATE ARCHITECTURE
 
- 
- CLIENT LAYER (iPhone/iPad/Mac) 
-  
- • Local BlazeDB (encrypted AES-256) 
- • Event sourcing (all changes are events) 
- • CRDT merge (automatic conflict resolution) 
- • Smart routing (P2P when possible, server when needed) 
- • Offline queue (batch + compress) 
- • GC (compact old events after snapshot) 
- 
- PROTOCOL LAYER 
-  
- • gRPC + HTTP/2 (fast, streaming) 
- • BlazeBinary encoding (60% smaller) 
- • LZ4 compression (batches) 
- • TLS 1.3 (transport security) 
- • Optional E2E (app-layer encryption) 
- 
- SERVER LAYER (Raspberry Pi / Cloud) 
-  
- • BlazeDB (encrypted AES-256) 
- • Event log (compacted hourly) 
- • Snapshot system (daily/weekly) 
- • Query execution (server-side) 
- • Conflict resolution (CRDT merge) 
- • GC (remove acknowledged events) 
- • Multi-region support (deploy globally) 
- 
- MANAGEMENT LAYER 
-  
- • BlazeDBVisualizer (monitor all nodes) 
- • Metrics dashboard (Prometheus) 
- • Alert system (downtime, conflicts) 
- 
+
+ CLIENT LAYER (iPhone/iPad/Mac)
+
+ • Local BlazeDB (encrypted AES-256)
+ • Event sourcing (all changes are events)
+ • CRDT merge (automatic conflict resolution)
+ • Smart routing (P2P when possible, server when needed)
+ • Offline queue (batch + compress)
+ • GC (compact old events after snapshot)
+
+ PROTOCOL LAYER
+
+ • gRPC + HTTP/2 (fast, streaming)
+ • BlazeBinary encoding (60% smaller)
+ • LZ4 compression (batches)
+ • TLS 1.3 (transport security)
+ • Optional E2E (app-layer encryption)
+
+ SERVER LAYER (Raspberry Pi / Cloud)
+
+ • BlazeDB (encrypted AES-256)
+ • Event log (compacted hourly)
+ • Snapshot system (daily/weekly)
+ • Query execution (server-side)
+ • Conflict resolution (CRDT merge)
+ • GC (remove acknowledged events)
+ • Multi-region support (deploy globally)
+
+ MANAGEMENT LAYER
+
+ • BlazeDBVisualizer (monitor all nodes)
+ • Metrics dashboard (Prometheus)
+ • Alert system (downtime, conflicts)
+
 
 
 FEATURES:
@@ -887,7 +887,7 @@ Architecture: REST + JSON + Firestore
 Memory: ~20 MB client overhead
 GC: Automatic (opaque)
 Performance: Good (but JSON overhead)
-Elegance: 
+Elegance:
 
 PROS: Managed, reliable
 CONS: Expensive, proprietary, vendor lock-in
@@ -899,7 +899,7 @@ Architecture: Binary protocol + MongoDB Atlas
 Memory: ~15 MB client overhead
 GC: Automatic (opaque)
 Performance: Good
-Elegance: 
+Elegance:
 
 PROS: Fast, mature
 CONS: MongoDB required, expensive at scale
@@ -911,7 +911,7 @@ Architecture: REST + JSON + MVCC
 Memory: ~10 MB client overhead
 GC: Manual (you run compaction)
 Performance: Slow (JSON, HTTP/1.1)
-Elegance: 
+Elegance:
 
 PROS: Self-hostable, proven
 CONS: Slow, verbose, complex
@@ -923,7 +923,7 @@ Architecture: gRPC + BlazeBinary + Event Sourcing + CRDT
 Memory: ~5 MB client overhead (with GC)
 GC: Automatic (configurable)
 Performance: Excellent (8x faster)
-Elegance: 
+Elegance:
 
 PROS:
  Fastest (8x better)
@@ -1008,9 +1008,9 @@ VERDICT: MOST ELEGANT AND FASTEST!
 - Snapshots (Kafka, EventStore do this)
 
 **The only "more elegant" approach is fully P2P (like IPFS), but:**
--  Much more complex
--  Unreliable without always-on nodes
--  Not practical for mobile apps
+- Much more complex
+- Unreliable without always-on nodes
+- Not practical for mobile apps
 
 **Your hub-and-spoke design is the sweet spot! **
 

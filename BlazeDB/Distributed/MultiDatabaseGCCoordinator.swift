@@ -6,6 +6,7 @@
 //
 //
 
+import BlazeDBCore
 import Foundation
 
 /// Coordinates garbage collection across multiple databases

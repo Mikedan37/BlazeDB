@@ -7,6 +7,7 @@
 //
 
 #if !BLAZEDB_LINUX_CORE
+import BlazeDBCore
 import Foundation
 
 /// Configuration for relay memory GC

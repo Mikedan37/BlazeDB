@@ -58,16 +58,16 @@ Records are encoded to BlazeBinary, assembled into 4KB pages, encrypted with AES
 ### Threat Actors
 
 1. **Physical Access**: Attacker has device access
- - Mitigation: Encryption at rest, Secure Enclave
+- Mitigation: Encryption at rest, Secure Enclave
 
 2. **Network Interception**: Attacker intercepts sync traffic
- - Mitigation: TLS/SSL, ECDH key exchange, end-to-end encryption
+- Mitigation: TLS/SSL, ECDH key exchange, end-to-end encryption
 
 3. **Malicious Application**: Compromised app process
- - Mitigation: Row-level security, policy evaluation
+- Mitigation: Row-level security, policy evaluation
 
 4. **Storage Corruption**: Accidental or malicious data corruption
- - Mitigation: CRC32 checksums, corruption detection, automatic recovery
+- Mitigation: CRC32 checksums, corruption detection, automatic recovery
 
 ### Attack Surfaces
 
@@ -138,7 +138,7 @@ struct SecurityContext {
 |--------|---------|--------|
 | Physical access | Encryption at rest | Implemented |
 | Key extraction | Secure Enclave | Implemented |
-| Network interception | TLS/SSL |  Required |
+| Network interception | TLS/SSL | Required |
 | E2E encryption | ECDH + AES-256-GCM | Implemented |
 | Unauthorized access | Row-level security | Implemented |
 | Data tampering | GCM auth tag | Implemented |

@@ -270,13 +270,13 @@ let remote = RemoteNode(
 
 **All critical security vulnerabilities have been fixed!**
 
- **Authentication** - Shared secret tokens
- **Authorization** - Fine-grained permissions
- **Replay Protection** - Nonces, expiry, deduplication
- **Rate Limiting** - Per-user operation limits
- **Operation Signatures** - HMAC-SHA256 signatures
- **Connection Limits** - Max concurrent connections
- **Comprehensive Tests** - 15+ security tests
+**Authentication** - Shared secret tokens
+**Authorization** - Fine-grained permissions
+**Replay Protection** - Nonces, expiry, deduplication
+**Rate Limiting** - Per-user operation limits
+**Operation Signatures** - HMAC-SHA256 signatures
+**Connection Limits** - Max concurrent connections
+**Comprehensive Tests** - 15+ security tests
 
 **BlazeDB P2P sync is now production-ready! **
 

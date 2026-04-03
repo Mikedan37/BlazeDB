@@ -141,25 +141,25 @@
 **What it does:**
 - Shows BlazeDB's FULL test suite (907 tests!)
 - Category breakdown:
- - Unit Tests: 437 tests
- - Integration: 19 tests
- - MVCC: 67 tests
- - Binary Format: 48 tests
- - Chaos Engineering: 7 tests
- - Property-Based: 15 tests
- - Performance: 45 tests
- - Baseline: 269 tests
+- Unit Tests: 437 tests
+- Integration: 19 tests
+- MVCC: 67 tests
+- Binary Format: 48 tests
+- Chaos Engineering: 7 tests
+- Property-Based: 15 tests
+- Performance: 45 tests
+- Baseline: 269 tests
 - One-click "Run All Tests" button
 - **RUNS REAL xcodebuild test command**
 - Live progress bar
 - Real-time test output parsing
 - Shows:
- - Total tests run
- - Tests passed
- - Tests failed
- - Current test being executed
- - Test execution time
- - Pass rate percentage
+- Total tests run
+- Tests passed
+- Tests failed
+- Current test being executed
+- Test execution time
+- Pass rate percentage
 - Final results with category breakdown
 - Color-coded status (green/red/yellow)
 
@@ -197,18 +197,18 @@
 
 ### **Supported Formats:**
 1. **CSV Export**
- - Proper comma escaping (`"This, has, commas"`)
- - Quote escaping (`She said ""Hello""`)
- - Unicode support (, , العربية)
- - Headers row
- - UTF-8 encoding
+- Proper comma escaping (`"This, has, commas"`)
+- Quote escaping (`She said ""Hello""`)
+- Unicode support (, , العربية)
+- Headers row
+- UTF-8 encoding
 
 2. **JSON Export**
- - Pretty-print or compact
- - Includes record IDs
- - Preserves data types
- - Unicode support
- - Valid JSON schema
+- Pretty-print or compact
+- Includes record IDs
+- Preserves data types
+- Unicode support
+- Valid JSON schema
 
 **Tested features:**
 - CSV export with escaping (8 tests)
@@ -226,10 +226,10 @@
 ### **Automatic Database Scanning**
 **What it does:**
 - Scans common macOS locations:
- - `~/Library/Application Support/`
- - `~/Documents/`
- - `~/Desktop/`
- - `~/Downloads/`
+- `~/Library/Application Support/`
+- `~/Documents/`
+- `~/Desktop/`
+- `~/Downloads/`
 - Finds all `.blazedb` files
 - Auto-detects encryption status
 - Shows file size, last modified
@@ -251,11 +251,11 @@
 ### **Intelligent Monitoring**
 **What it does:**
 - Auto-alerts for critical issues:
- - High fragmentation (>70%)
- - Low storage (<10% free)
- - Slow queries (>100ms avg)
- - Large transaction log (>10MB)
- - Database corruption detection
+- High fragmentation (>70%)
+- Low storage (<10% free)
+- Slow queries (>100ms avg)
+- Large transaction log (>10MB)
+- Database corruption detection
 - macOS native notifications
 - In-app alert badges
 - Actionable recommendations
@@ -468,19 +468,19 @@ open ~/Library/Developer/Xcode/DerivedData/.../BlazeDBVisualizer.app
 
 **Here's why:**
 
- **6 full-featured tabs** (Monitor, Data, Query, Charts, Backup, Tests)
- **296 comprehensive tests** covering all critical paths
- **Touch ID support** for instant secure access
- **Real-time monitoring** with auto-alerts
- **CSV & JSON export** with proper escaping
- **Backup/restore** with safety mechanisms
- **Beautiful SwiftUI design** with smooth animations
- **Performance charts** with 7-day history
- **Query builder** with live results
- **Can run 907 BlazeDB tests** from the UI!
- **Menu bar extra** for quick access
- **Auto-discovery** finds all databases
- **Production-ready** with comprehensive error handling
+**6 full-featured tabs** (Monitor, Data, Query, Charts, Backup, Tests)
+**296 comprehensive tests** covering all critical paths
+**Touch ID support** for instant secure access
+**Real-time monitoring** with auto-alerts
+**CSV & JSON export** with proper escaping
+**Backup/restore** with safety mechanisms
+**Beautiful SwiftUI design** with smooth animations
+**Performance charts** with 7-day history
+**Query builder** with live results
+**Can run 907 BlazeDB tests** from the UI!
+**Menu bar extra** for quick access
+**Auto-discovery** finds all databases
+**Production-ready** with comprehensive error handling
 
 ---
 
@@ -518,7 +518,7 @@ open ~/Library/Developer/Xcode/DerivedData/.../BlazeDBVisualizer.app
 
 ---
 
-**Built with  by Michael Danylchuk**
+**Built with by Michael Danylchuk**
 **Powered by BlazeDB - The Swift-native embedded database**
 
 ---

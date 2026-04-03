@@ -32,14 +32,16 @@ final class ThreadSafeBlazeDBClient {
 }
 
 final class BlazeDBClientConcurrencyTests: XCTestCase {
-    var client: ThreadSafeBlazeDBClient!
+    private var client: ThreadSafeBlazeDBClient?
 
     override func setUpWithError() throws {
+        try super.setUpWithError()
         let tmp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         client = try ThreadSafeBlazeDBClient(name: "testName", fileURL: tmp, password: "TestPassword-123!")
     }
 
     func testConcurrentInsertsAndFetches() throws {
+        let clientRef = try XCTUnwrap(client, "client should be set in setUp")
         let group = DispatchGroup()
         let queue = DispatchQueue(label: "concurrency", attributes: .concurrent)
         let N = 100
@@ -49,8 +51,8 @@ final class BlazeDBClientConcurrencyTests: XCTestCase {
             queue.async {
                 do {
                     let record = BlazeDataRecord(["value": .string("Val \(i)")])
-                    let id = try self.client.insert(record)
-                    _ = try? self.client.fetch(id: id)
+                    let id = try clientRef.insert(record)
+                    _ = try? clientRef.fetch(id: id)
                 } catch {
                     XCTFail("Insert/fetch failed: \(error)")
                 }

@@ -10,7 +10,7 @@
 
 ```
 
- [Monitor] [Data] [Query] [Charts] [Backup] 
+ [Monitor] [Data] [Query] [Charts] [Backup]
 
 ```
 
@@ -147,12 +147,12 @@ Investigation:
 ### **Charts:**
 ```
 Record Count:
- 
-   
-    
-    
-    
- 
+
+
+
+
+
+
  Current: 1,234
  Peak: 1,500
  Average: 1,180
@@ -272,11 +272,11 @@ Testing:
 ### **Configuration:**
 ```swift
 AlertConfiguration:
- - Notifications: ON/OFF
- - Fragmentation threshold: 30%
- - Max DB size: 1 GB
- - Obsolete versions: 1000
- - Orphaned pages: 100
+- Notifications: ON/OFF
+- Fragmentation threshold: 30%
+- Max DB size: 1 GB
+- Obsolete versions: 1000
+- Orphaned pages: 100
 ```
 
 ---
@@ -323,7 +323,7 @@ Backup:
 
  Monitor Tab:
  test.blazedb - HEALTHY
-  cache.blazedb - 45% fragmentation
+ cache.blazedb - 45% fragmentation
  users.blazedb - HEALTHY
 
  [Click cache.blazedb]
@@ -403,35 +403,35 @@ Views/
 ```
  (click menu bar icon)
 
- BlazeDB Manager 
- 3 databases found 
+ BlazeDB Manager
+ 3 databases found
 
- [Search...] 
+ [Search...]
 
- test 
- 50 records • 205 KB 
- ~/Desktop 
- 
- users 
- 10K records • 44 MB 
- ~/Documents 
+ test
+ 50 records • 205 KB
+ ~/Desktop
 
- [Dashboard] [Refresh] 
+ users
+ 10K records • 44 MB
+ ~/Documents
 
- Quit 
+ [Dashboard] [Refresh]
+
+ Quit
 
 ```
 
 ### **Main Window:**
 ```
 
- Sidebar  Detail View 
+ Sidebar Detail View
 
- test  [Monitor][Data][Query][Charts] 
- users  
- cache  (selected tab content) 
-  
-  Touch ID → Full Dashboard! 
+ test [Monitor][Data][Query][Charts]
+ users
+ cache (selected tab content)
+
+ Touch ID → Full Dashboard!
 
 ```
 
@@ -648,7 +648,7 @@ AshPile creates:
 BlazeDBVisualizer shows:
  bugs (1,234) - ~/Developer/AshPile
  projects (45) - ~/Developer/AshPile
-  tasks (10,230) - ~/Developer/AshPile (45% fragmented!)
+ tasks (10,230) - ~/Developer/AshPile (45% fragmented!)
 
 You:
 1. Click tasks.blazedb
@@ -700,7 +700,7 @@ You:
 ### **For Solo Developers:**
 - ⏰ **Save 5+ hours/week** on database maintenance
 - **Debug 10x faster** with data viewer
--  **Zero data loss** with backup/restore
+- **Zero data loss** with backup/restore
 - **Professional monitoring** (looks impressive!)
 
 ### **For Teams:**
@@ -712,7 +712,7 @@ You:
 ### **For Products:**
 - **Customer support tool** (diagnose issues!)
 - **Capacity planning** (Charts!)
--  **Ops dashboard** (Monitor tab!)
+- **Ops dashboard** (Monitor tab!)
 - **Disaster recovery** (Backup/Restore!)
 
 ---
@@ -727,11 +727,11 @@ Navicat: $199 one-time
 DataGrip: $89/year
 
 BlazeDBVisualizer:
- - Same features
- - Native macOS
- - Touch ID
- - Real-time
- - Beautiful UI
+- Same features
+- Native macOS
+- Touch ID
+- Real-time
+- Beautiful UI
 
  Value: $99 one-time or $9.99/mo subscription
 ```

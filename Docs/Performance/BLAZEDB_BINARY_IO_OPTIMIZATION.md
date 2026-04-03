@@ -57,24 +57,24 @@ public static func encode(_ record: BlazeDataRecord) throws -> Data {
 
 **Issues:**
 1. **Data.append() Reallocations:**
- - `Data` may reallocate if capacity exceeded
- - Each reallocation copies entire buffer
- - Cost: O(n) per reallocation
+- `Data` may reallocate if capacity exceeded
+- Each reallocation copies entire buffer
+- Cost: O(n) per reallocation
 
 2. **No Memory Pooling:**
- - New `Data` buffer for every encode
- - No reuse of buffers
- - Memory churn increases GC pressure
+- New `Data` buffer for every encode
+- No reuse of buffers
+- Memory churn increases GC pressure
 
 3. **Sequential Encoding:**
- - Fields encoded one at a time
- - No parallelization for large records
- - No SIMD for bulk operations
+- Fields encoded one at a time
+- No parallelization for large records
+- No SIMD for bulk operations
 
 4. **String UTF-8 Encoding:**
- - `s.data(using:.utf8)` creates new Data
- - No reuse of UTF-8 buffers
- - Cost: ~0.01ms per string
+- `s.data(using:.utf8)` creates new Data
+- No reuse of UTF-8 buffers
+- Cost: ~0.01ms per string
 
 **Code References:**
 - `BlazeBinaryEncoder.swift:52-88` - Main encode function
@@ -110,24 +110,24 @@ public static func decode(_ data: Data) throws -> BlazeDataRecord {
  return (byte1 << 8) | byte2 // Slow: 2 loads + shift + OR
  }
  ```
- - Safe but slow (no alignment assumptions)
- - Could use `withUnsafeBytes` for faster access
- - Cost: ~0.001ms per read (adds up for many fields)
+- Safe but slow (no alignment assumptions)
+- Could use `withUnsafeBytes` for faster access
+- Cost: ~0.001ms per read (adds up for many fields)
 
 2. **String UTF-8 Decoding:**
- - `String(data: keyData, encoding:.utf8)` creates new String
- - No UTF-8 buffer reuse
- - Cost: ~0.01ms per string
+- `String(data: keyData, encoding:.utf8)` creates new String
+- No UTF-8 buffer reuse
+- Cost: ~0.01ms per string
 
 3. **No SIMD for Bulk Operations:**
- - Vector decoding could use SIMD
- - Array/dictionary decoding is sequential
- - Cost: O(n) instead of O(n/4) with SIMD
+- Vector decoding could use SIMD
+- Array/dictionary decoding is sequential
+- Cost: O(n) instead of O(n/4) with SIMD
 
 4. **No Prefetching:**
- - Reads data sequentially
- - No read-ahead for next field
- - CPU cache misses
+- Reads data sequentially
+- No read-ahead for next field
+- CPU cache misses
 
 **Code References:**
 - `BlazeBinaryDecoder.swift:25-56` - Unaligned read helpers
@@ -156,29 +156,29 @@ internal func _writePageLocked(index: Int, plaintext: Data) throws {
 
 **Issues:**
 1. **Synchronous I/O:**
- - `queue.sync(flags:.barrier)` blocks thread
- - Cannot parallelize writes
- - Cost: 0.2-0.5ms per write
+- `queue.sync(flags:.barrier)` blocks thread
+- Cannot parallelize writes
+- Cost: 0.2-0.5ms per write
 
 2. **Per-Write fsync:**
- - `fileHandle.compatSynchronize()` on every write
- - fsync is 10-100x slower than write
- - Cost: 1-10ms per fsync (varies by disk)
+- `fileHandle.compatSynchronize()` on every write
+- fsync is 10-100x slower than write
+- Cost: 1-10ms per fsync (varies by disk)
 
 3. **No Write Batching:**
- - Each write is independent
- - No coalescing of adjacent writes
- - Cost: Multiple seeks for sequential writes
+- Each write is independent
+- No coalescing of adjacent writes
+- Cost: Multiple seeks for sequential writes
 
 4. **No Read-Ahead:**
- - Reads only requested page
- - No prefetching of likely-next pages
- - Cost: Cache misses
+- Reads only requested page
+- No prefetching of likely-next pages
+- Cost: Cache misses
 
 5. **Sequential Overflow Reads:**
- - Overflow chains read one page at a time
- - No parallel reads for long chains
- - Cost: O(n) for n-page chain
+- Overflow chains read one page at a time
+- No parallel reads for long chains
+- Cost: O(n) for n-page chain
 
 **Code References:**
 - `PageStore.swift:205-209` - Write page (synchronous)
@@ -646,45 +646,45 @@ extension PageStore {
 ### 4.1 Critical (Implement First)
 
 1. **Batched fsync** (3.4)
- - **Impact:** 10-100x faster writes
- - **Effort:** Medium (1-2 days)
- - **Risk:** Low (well-understood pattern)
+- **Impact:** 10-100x faster writes
+- **Effort:** Medium (1-2 days)
+- **Risk:** Low (well-understood pattern)
 
 2. **Memory Pooling** (3.1)
- - **Impact:** 2-3x faster encoding
- - **Effort:** Low (1 day)
- - **Risk:** Low (simple buffer reuse)
+- **Impact:** 2-3x faster encoding
+- **Effort:** Low (1 day)
+- **Risk:** Low (simple buffer reuse)
 
 ### 4.2 High Priority
 
 3. **Async I/O with Parallelization** (3.5)
- - **Impact:** 2-4x faster overflow reads
- - **Effort:** Medium (2-3 days)
- - **Risk:** Medium (concurrency complexity)
+- **Impact:** 2-4x faster overflow reads
+- **Effort:** Medium (2-3 days)
+- **Risk:** Medium (concurrency complexity)
 
 4. **Unsafe Fast-Path** (3.2)
- - **Impact:** 2-3x faster aligned reads
- - **Effort:** Low (1 day)
- - **Risk:** Low (fallback to safe path)
+- **Impact:** 2-3x faster aligned reads
+- **Effort:** Low (1 day)
+- **Risk:** Low (fallback to safe path)
 
 ### 4.3 Medium Priority
 
 5. **Write Coalescing** (3.6)
- - **Impact:** 2-3x faster sequential writes
- - **Effort:** Medium (2 days)
- - **Risk:** Medium (coalescing logic)
+- **Impact:** 2-3x faster sequential writes
+- **Effort:** Medium (2 days)
+- **Risk:** Medium (coalescing logic)
 
 6. **Read-Ahead Prefetching** (3.7)
- - **Impact:** 2-3x faster sequential reads
- - **Effort:** Medium (2 days)
- - **Risk:** Low (optional optimization)
+- **Impact:** 2-3x faster sequential reads
+- **Effort:** Medium (2 days)
+- **Risk:** Low (optional optimization)
 
 ### 4.4 Low Priority (Future)
 
 7. **SIMD Optimizations** (3.3)
- - **Impact:** 4-8x faster bulk operations
- - **Effort:** High (3-5 days)
- - **Risk:** Medium (platform-specific)
+- **Impact:** 4-8x faster bulk operations
+- **Effort:** High (3-5 days)
+- **Risk:** Medium (platform-specific)
 
 ---
 
@@ -733,37 +733,37 @@ extension PageStore {
 ### 6.1 New Files
 
 1. **`BlazeDB/Utils/BlazeBinaryBufferPool.swift`**
- - Memory pooling for encode/decode buffers
- - Actor-based for thread safety
+- Memory pooling for encode/decode buffers
+- Actor-based for thread safety
 
 2. **`BlazeDB/Storage/PageStoreWriteBatcher.swift`**
- - Batched fsync implementation
- - Actor-based for thread safety
+- Batched fsync implementation
+- Actor-based for thread safety
 
 ### 6.2 Modified Files
 
 1. **`BlazeDB/Utils/BlazeBinaryEncoder.swift`**
- - Use buffer pool
- - Add fast-path for aligned writes (future)
+- Use buffer pool
+- Add fast-path for aligned writes (future)
 
 2. **`BlazeDB/Utils/BlazeBinaryDecoder.swift`**
- - Use buffer pool
- - Add fast-path for aligned reads
- - Add SIMD for vector decoding (optional)
+- Use buffer pool
+- Add fast-path for aligned reads
+- Add SIMD for vector decoding (optional)
 
 3. **`BlazeDB/Storage/PageStore.swift`**
- - Add write batcher integration
- - Add write coalescing
- - Add read-ahead prefetching
+- Add write batcher integration
+- Add write coalescing
+- Add read-ahead prefetching
 
 4. **`BlazeDB/Storage/PageStore+Async.swift`**
- - Add parallel page reads
- - Add parallel overflow reads
- - Enhance async I/O
+- Add parallel page reads
+- Add parallel overflow reads
+- Enhance async I/O
 
 5. **`BlazeDB/Storage/PageStore+Overflow.swift`**
- - Add parallel overflow chain reads
- - Optimize overflow detection
+- Add parallel overflow chain reads
+- Optimize overflow detection
 
 ---
 
@@ -772,35 +772,35 @@ extension PageStore {
 ### 7.1 Performance Tests
 
 1. **Encoding/Decoding Benchmarks:**
- - Measure before/after encoding speed
- - Measure before/after decoding speed
- - Verify memory usage reduction
+- Measure before/after encoding speed
+- Measure before/after decoding speed
+- Verify memory usage reduction
 
 2. **I/O Benchmarks:**
- - Measure before/after write throughput
- - Measure before/after read throughput
- - Verify fsync batching effectiveness
+- Measure before/after write throughput
+- Measure before/after read throughput
+- Verify fsync batching effectiveness
 
 3. **Overflow Benchmarks:**
- - Measure before/after overflow read speed
- - Verify parallel reads correctness
+- Measure before/after overflow read speed
+- Verify parallel reads correctness
 
 ### 7.2 Correctness Tests
 
 1. **Buffer Pool Tests:**
- - Verify buffer reuse
- - Verify thread safety
- - Verify memory leak prevention
+- Verify buffer reuse
+- Verify thread safety
+- Verify memory leak prevention
 
 2. **Write Batcher Tests:**
- - Verify batched fsync correctness
- - Verify crash recovery (pending writes)
- - Verify ordering guarantees
+- Verify batched fsync correctness
+- Verify crash recovery (pending writes)
+- Verify ordering guarantees
 
 3. **Parallel Read Tests:**
- - Verify parallel read correctness
- - Verify race condition handling
- - Verify error propagation
+- Verify parallel read correctness
+- Verify race condition handling
+- Verify error propagation
 
 ---
 
@@ -846,7 +846,7 @@ extension PageStore {
 **Expected Gain:** 2-3x faster sequential operations
 
 ### Phase 4 (Future): Advanced
--  SIMD optimizations (3.3)
+- SIMD optimizations (3.3)
 
 **Expected Gain:** 4-8x faster bulk operations
 

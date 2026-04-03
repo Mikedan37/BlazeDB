@@ -10,7 +10,7 @@
 ```swift
 // WRONG: Background thread accessing database
 Task.detached {
-    try db.insert(record)  // Data race risk
+ try db.insert(record) // Data race risk
 }
 ```
 
@@ -18,7 +18,7 @@ Task.detached {
 ```swift
 // CORRECT: Use async/await or synchronous calls
 Task {
-    try db.insert(record)  // Safe
+ try db.insert(record) // Safe
 }
 ```
 
@@ -32,9 +32,9 @@ Task {
 ```swift
 // WRONG: Silent migration without user awareness
 func openDB() {
-    let db = try BlazeDB.openDefault(...)
-    // Automatically migrates without telling user
-    try db.performMigrationIfNeeded()  // Hidden behavior
+ let db = try BlazeDB.openDefault(...)
+ // Automatically migrates without telling user
+ try db.performMigrationIfNeeded() // Hidden behavior
 }
 ```
 
@@ -42,12 +42,12 @@ func openDB() {
 ```swift
 // CORRECT: Explicit migration with user awareness
 func openDB() throws {
-    let db = try BlazeDB.openDefault(...)
-    let plan = try db.planMigration(targetVersion: v1_1, migrations: [])
-    if !plan.migrations.isEmpty {
-        print("Migrations needed: \(plan.migrations.count)")
-        try db.executeMigration(plan: plan, dryRun: false)
-    }
+ let db = try BlazeDB.openDefault(...)
+ let plan = try db.planMigration(targetVersion: v1_1, migrations: [])
+ if !plan.migrations.isEmpty {
+ print("Migrations needed: \(plan.migrations.count)")
+ try db.executeMigration(plan: plan, dryRun: false)
+ }
 }
 ```
 
@@ -60,14 +60,14 @@ func openDB() throws {
 **DON'T:**
 ```swift
 // WRONG: Direct PageStore access
-let pageStore = db.collection.pageStore  // Internal API
-try pageStore.writePage(...)  // Violates encapsulation
+let pageStore = db.collection.pageStore // Internal API
+try pageStore.writePage(...) // Violates encapsulation
 ```
 
 **DO:**
 ```swift
 // CORRECT: Use public APIs
-try db.insert(record)  // Public API
+try db.insert(record) // Public API
 ```
 
 **Why:** `PageStore` is frozen. Direct access bypasses safety checks.
@@ -80,16 +80,16 @@ try db.insert(record)  // Public API
 ```swift
 // WRONG: Automatic retries without user awareness
 func insertWithRetry(_ record: BlazeDataRecord) {
-    var attempts = 0
-    while attempts < 3 {
-        do {
-            try db.insert(record)
-            return
-        } catch {
-            attempts += 1
-            Thread.sleep(forTimeInterval: 0.1)  // Hidden retry
-        }
-    }
+ var attempts = 0
+ while attempts < 3 {
+ do {
+ try db.insert(record)
+ return
+ } catch {
+ attempts += 1
+ Thread.sleep(forTimeInterval: 0.1) // Hidden retry
+ }
+ }
 }
 ```
 
@@ -97,16 +97,16 @@ func insertWithRetry(_ record: BlazeDataRecord) {
 ```swift
 // CORRECT: Explicit retry with user awareness
 func insertWithRetry(_ record: BlazeDataRecord) throws {
-    do {
-        try db.insert(record)
-    } catch BlazeDBError.databaseLocked {
-        // User knows retry happened
-        throw BlazeDBError.databaseLocked(
-            operation: "insert",
-            timeout: 1.0,
-            path: db.fileURL
-        )
-    }
+ do {
+ try db.insert(record)
+ } catch BlazeDBError.databaseLocked {
+ // User knows retry happened
+ throw BlazeDBError.databaseLocked(
+ operation: "insert",
+ timeout: 1.0,
+ path: db.fileURL
+ )
+ }
 }
 ```
 
@@ -120,9 +120,9 @@ func insertWithRetry(_ record: BlazeDataRecord) throws {
 ```swift
 // WRONG: Automatic performance tuning
 func optimizeDatabase() {
-    // Automatically creates indexes based on query patterns
-    // Automatically adjusts cache size
-    // Automatically changes WAL settings
+ // Automatically creates indexes based on query patterns
+ // Automatically adjusts cache size
+ // Automatically changes WAL settings
 }
 ```
 
@@ -130,11 +130,11 @@ func optimizeDatabase() {
 ```swift
 // CORRECT: Explicit configuration
 func setupDatabase() throws {
-    // User explicitly creates indexes
-    try db.createIndex(on: "userId")
-    
-    // User explicitly configures settings
-    // (if configuration APIs exist)
+ // User explicitly creates indexes
+ try db.createIndex(on: "userId")
+
+ // User explicitly configures settings
+ // (if configuration APIs exist)
 }
 ```
 
@@ -176,16 +176,16 @@ let db2 = try BlazeDB.openDefault(name: "process2", password: "pass")
 // WRONG: Bypassing schema validation
 let db = try BlazeDB.openDefault(...)
 // Skip validation, hope schema matches
-try db.insert(record)  // May fail silently or corrupt data
+try db.insert(record) // May fail silently or corrupt data
 ```
 
 **DO:**
 ```swift
 // CORRECT: Explicit schema validation
 let db = try BlazeDB.openWithSchemaValidation(
-    name: "mydb",
-    password: "pass",
-    expectedVersion: MyAppSchema.version
+ name: "mydb",
+ password: "pass",
+ expectedVersion: MyAppSchema.version
 )
 ```
 
@@ -198,20 +198,20 @@ let db = try BlazeDB.openWithSchemaValidation(
 **DON'T:**
 ```swift
 // WRONG: Ignoring errors
-try? db.insert(record)  // Silent failure
-try! db.insert(record)  // Crashes on error
+try? db.insert(record) // Silent failure
+try! db.insert(record) // Crashes on error
 ```
 
 **DO:**
 ```swift
 // CORRECT: Handle errors explicitly
 do {
-    try db.insert(record)
+ try db.insert(record)
 } catch BlazeDBError.recordExists {
-    // Handle duplicate
+ // Handle duplicate
 } catch {
-    // Handle other errors
-    print("Insert failed: \(error)")
+ // Handle other errors
+ print("Insert failed: \(error)")
 }
 ```
 

@@ -200,7 +200,8 @@ extension OrderingIndex {
             if leftIndex == nil { return false }
             if rightIndex == nil { return true }
             
-            return leftIndex! < rightIndex!
+            guard let li = leftIndex, let ri = rightIndex else { return false }
+            return li < ri
         }
     }
 }

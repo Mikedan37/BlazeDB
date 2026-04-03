@@ -69,19 +69,25 @@ let resolvedPassword = password
     ?? ""
 
 // Initialize database connection
-guard let db = try? initializeDatabase(path: dbPath, name: dbName, password: resolvedPassword) else {
-    let error = """
+let db: BlazeDBClient
+do {
+    db = try initializeDatabase(path: dbPath, name: dbName, password: resolvedPassword)
+} catch {
+    let escaped = error.localizedDescription
+        .replacingOccurrences(of: "\\", with: "\\\\")
+        .replacingOccurrences(of: "\"", with: "\\\"")
+    let message = """
     {
       "jsonrpc": "2.0",
       "id": null,
       "error": {
         "code": -32603,
         "message": "Failed to initialize database",
-        "data": "Check database path and password"
+        "data": "\(escaped)"
       }
     }
     """
-    print(error)
+    print(message)
     exit(1)
 }
 
@@ -90,14 +96,13 @@ let server = MCPServer(database: db)
 server.run()
 
 // Helper function to initialize database
-func initializeDatabase(path: String?, name: String?, password: String) throws -> BlazeDBClient? {
+func initializeDatabase(path: String?, name: String?, password: String) throws -> BlazeDBClient {
     if let path = path {
         let url = URL(fileURLWithPath: path)
         return try BlazeDBClient(name: name ?? "mcp_db", fileURL: url, password: password)
     } else if let name = name {
         return try BlazeDBClient(name: name, password: password)
     } else {
-        // Default: use "mcp_db" in default location
         return try BlazeDBClient(name: "mcp_db", password: password)
     }
 }

@@ -1,8 +1,8 @@
 # Getting Started on Linux
 
-**Platform:** Linux (aarch64 tested on Orange Pi 5 Ultra)  
-**Swift:** 6.0+  
-**Status:**  Core functionality fully supported
+**Platform:** Linux (aarch64 tested on Orange Pi 5 Ultra)
+**Swift:** 6.0+
+**Status:** Core functionality fully supported
 
 ---
 
@@ -18,7 +18,7 @@ Add to your `Package.swift`:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/Mikedan37/BlazeDB.git", from: "2.7.0")
+ .package(url: "https://github.com/Mikedan37/BlazeDB.git", from: "2.7.2")
 ]
 ```
 
@@ -37,18 +37,18 @@ let db = try BlazeDBClient.open(named: "mydb", password: "secure-password")
 
 // Insert a record
 let id = try db.insert(BlazeDataRecord([
-    "name": .string("Alice"),
-    "age": .int(30)
+ "name": .string("Alice"),
+ "age": .int(30)
 ]))
 
 // Query records
 let results = try db.query()
-    .where("age", greaterThan: .int(25))
-    .execute()
-    .records
+ .where("age", greaterThan: .int(25))
+ .execute()
+ .records
 
 for record in results {
-    print(record.string("name") ?? "Unknown")
+ print(record.string("name") ?? "Unknown")
 }
 ```
 
@@ -67,9 +67,9 @@ for record in results {
 ```swift
 // Use custom path
 let db = try BlazeDB.open(
-    name: "mydb",
-    path: "/var/lib/myapp/data.blazedb",
-    password: "secure-password"
+ name: "mydb",
+ path: "/var/lib/myapp/data.blazedb",
+ password: "secure-password"
 )
 ```
 
@@ -203,15 +203,15 @@ let db = try BlazeDBClient.open(named: "mydb", password: "password")
 ```
 
 **What BlazeDB Guarantees:**
--  Directories created automatically
--  Encryption enabled by default
--  Safe defaults for all settings
--  Works identically on Linux and macOS
+- Directories created automatically
+- Encryption enabled by default
+- Safe defaults for all settings
+- Works identically on Linux and macOS
 
 **What BlazeDB Refuses to Guess:**
--  Database location (use `open(named:password:)` or specify path)
--  Encryption password (you must provide it)
--  Schema version (use migrations for upgrades)
+- Database location (use `open(named:password:)` or specify path)
+- Encryption password (you must provide it)
+- Schema version (use migrations for upgrades)
 
 **Next Steps:**
 - Read `QUERY_PERFORMANCE.md` for query optimization

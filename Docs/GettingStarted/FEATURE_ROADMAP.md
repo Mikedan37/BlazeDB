@@ -25,16 +25,16 @@
 **API:**
 ```swift
 public struct DatabaseStats {
-    public let pageCount: Int
-    public let walSize: Int64?
-    public let lastCheckpoint: Date?
-    public let cacheHitRate: Double
-    public let indexCount: Int
-    public let recordCount: Int
+ public let pageCount: Int
+ public let walSize: Int64?
+ public let lastCheckpoint: Date?
+ public let cacheHitRate: Double
+ public let indexCount: Int
+ public let recordCount: Int
 }
 
 extension BlazeDBClient {
-    public func stats() throws -> DatabaseStats
+ public func stats() throws -> DatabaseStats
 }
 ```
 
@@ -94,20 +94,20 @@ extension BlazeDBClient {
 ## What We're NOT Doing
 
 **Out of scope (respects Phase 1 freeze):**
--  Performance optimizations (wait for Phase 2)
--  Concurrency changes (Phase 1 is frozen)
--  Storage layer refactoring
--  Query engine rewrites
+- Performance optimizations (wait for Phase 2)
+- Concurrency changes (Phase 1 is frozen)
+- Storage layer refactoring
+- Query engine rewrites
 
 **Principle:** Ship features that operate "outside the heart." Core is frozen for good reason.
 
 ## Success Criteria
 
 Each feature must:
--  Not touch frozen core modules
--  Pass all existing tests
--  Include tests for new functionality
--  Update documentation
--  Work on macOS and Linux (where applicable)
+- Not touch frozen core modules
+- Pass all existing tests
+- Include tests for new functionality
+- Update documentation
+- Work on macOS and Linux (where applicable)
 
 **Ship features. Not optimizations.**

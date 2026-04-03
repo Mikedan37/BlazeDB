@@ -26,23 +26,23 @@
 
 ```
 
- Header (8 bytes, aligned) 
+ Header (8 bytes, aligned)
 
- Magic: "BLAZE" (5 bytes) 
- Bytes: 0x42 0x4C 0x41 0x5A 0x45 
- Version: 0x01 or 0x02 (1 byte) 
- • 0x01 = No CRC32 
- • 0x02 = With CRC32 checksum 
- Field Count: UInt16 (2 bytes, BE) 
+ Magic: "BLAZE" (5 bytes)
+ Bytes: 0x42 0x4C 0x41 0x5A 0x45
+ Version: 0x01 or 0x02 (1 byte)
+ • 0x01 = No CRC32
+ • 0x02 = With CRC32 checksum
+ Field Count: UInt16 (2 bytes, BE)
 
- Fields (variable length) 
- [Field 1] 
- [Field 2] 
-... 
- [Field N] 
+ Fields (variable length)
+ [Field 1]
+ [Field 2]
+...
+ [Field N]
 
- CRC32 (4 bytes, optional, v2 only) 
- UInt32 big-endian 
+ CRC32 (4 bytes, optional, v2 only)
+ UInt32 big-endian
 
 ```
 
@@ -355,16 +355,16 @@ data.reserveCapacity(estimatedSize) // Pre-allocation
 
 **Hotspot Analysis:**
 1. **String UTF-8 conversion:** `s.data(using:.utf8)` (line 148)
- - Cost: O(n) where n = string length
- - Cannot be optimized (Foundation requirement)
+- Cost: O(n) where n = string length
+- Cannot be optimized (Foundation requirement)
 
 2. **Dictionary sorting:** `record.storage.sorted()` (line 70)
- - Cost: O(n log n) where n = field count
- - **Optimization Opportunity:** Pre-sort if record is reused
+- Cost: O(n log n) where n = field count
+- **Optimization Opportunity:** Pre-sort if record is reused
 
 3. **Data.append() calls:** Multiple per field
- - Cost: O(1) amortized, O(n) worst-case (reallocation)
- - **Mitigation:** Accurate size estimation reduces reallocations
+- Cost: O(1) amortized, O(n) worst-case (reallocation)
+- **Mitigation:** Accurate size estimation reduces reallocations
 
 ### 2.4 Buffer Size Selection
 
@@ -378,9 +378,9 @@ internal static func estimateSize(_ record: BlazeDataRecord) -> Int {
 **Formula Breakdown:**
 - Header: 8 bytes (fixed)
 - Per field: 40 bytes average
- - Key: ~10 bytes average
- - Type tag: 1 byte
- - Value: ~29 bytes average
+- Key: ~10 bytes average
+- Type tag: 1 byte
+- Value: ~29 bytes average
 
 **Accuracy:**
 - **Overestimate:** Common (wastes memory)
@@ -731,19 +731,19 @@ public func synchronize() throws {
 
 ```
 
- Frame Header (5 bytes) 
+ Frame Header (5 bytes)
 
- Type: UInt8 (1 byte) 
- 0x01 = handshake 
- 0x02 = handshakeAck 
- 0x03 = verify 
- 0x04 = handshakeComplete 
- 0x05 = encryptedData 
- 0x06 = operation 
- Length: UInt32 (4 bytes, BE) 
+ Type: UInt8 (1 byte)
+ 0x01 = handshake
+ 0x02 = handshakeAck
+ 0x03 = verify
+ 0x04 = handshakeComplete
+ 0x05 = encryptedData
+ 0x06 = operation
+ Length: UInt32 (4 bytes, BE)
 
- Payload (variable length) 
- [Encrypted BlazeBinary data] 
+ Payload (variable length)
+ [Encrypted BlazeBinary data]
 
 ```
 

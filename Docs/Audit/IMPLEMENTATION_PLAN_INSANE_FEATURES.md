@@ -6,7 +6,7 @@
 
 ## Status Overview
 
- **Phase 1: Partial/Lazy Decoding** - In Progress
+**Phase 1: Partial/Lazy Decoding** - In Progress
 - Field table structure created
 - LazyBlazeRecord abstraction created
 - StorageLayout configuration added
@@ -14,20 +14,20 @@
 - **Next:** Integrate with QueryBuilder projection
 - **Next:** Add tests
 
-⏳ **Phase 2: Geospatial Enhancements** - Pending
+**Phase 2: Geospatial Enhancements** - Pending
 - Distance sorting already implemented
 - Distance in results already implemented
 - k-NN already implemented
 - **Next:** Proper integration and tests per spec
 
-⏳ **Phase 3: Event Triggers** - Partially Done
+**Phase 3: Event Triggers** - Partially Done
 - Basic trigger system exists
 - Enhanced triggers with context created
 - **Next:** Add persistence to StorageLayout
 - **Next:** Add safety checks (no infinite loops)
 - **Next:** Add tests
 
-⏳ **Phase 4: Vector + Spatial** - Partially Done
+**Phase 4: Vector + Spatial** - Partially Done
 - VectorIndex created
 - QueryBuilder+Vector created
 - QueryBuilder+Hybrid created
@@ -35,7 +35,7 @@
 - **Next:** Proper encoding/decoding
 - **Next:** Add tests
 
-⏳ **Phase 5: Query Planner/CBO** - Partially Done
+**Phase 5: Query Planner/CBO** - Partially Done
 - QueryPlanner created
 - QueryOptimizer exists
 - **Next:** Add stats collection
@@ -53,35 +53,35 @@
 
 ### Remaining Tasks
 1. **Extend BlazeBinary encoder** to support v3 format with field table
- - Version 0x03 = with field table
- - Calculate field offsets during encoding
- - Append field table after header, before fields
- - Maintain backward compatibility (v1/v2 still work)
+- Version 0x03 = with field table
+- Calculate field offsets during encoding
+- Append field table after header, before fields
+- Maintain backward compatibility (v1/v2 still work)
 
 2. **Extend BlazeBinary decoder** to read field table
- - Detect v3 format
- - Parse field table
- - Support lazy decoding path
+- Detect v3 format
+- Parse field table
+- Support lazy decoding path
 
 3. **Integrate with QueryBuilder**
- - When `.project()` is used, enable lazy decoding
- - Only decode projected fields
- - Works with all query types (standard, spatial, full-text)
+- When `.project()` is used, enable lazy decoding
+- Only decode projected fields
+- Works with all query types (standard, spatial, full-text)
 
 4. **Integrate with DynamicCollection**
- - Add `fetchLazy()` method
- - Use lazy decoding when `lazyDecodingEnabled` is true
- - Fall back to full decode if field table missing
+- Add `fetchLazy()` method
+- Use lazy decoding when `lazyDecodingEnabled` is true
+- Fall back to full decode if field table missing
 
 5. **Tests**
- - `LazyDecodingTests.swift`
- - Test with many fields, only access 1-2
- - Test with large blobs
- - Test backward compatibility
- - Test with RLS
+- `LazyDecodingTests.swift`
+- Test with many fields, only access 1-2
+- Test with large blobs
+- Test backward compatibility
+- Test with RLS
 
 6. **Documentation**
- - `Docs/Features/LAZY_DECODING.md`
+- `Docs/Features/LAZY_DECODING.md`
 
 ---
 
@@ -95,14 +95,14 @@
 
 ### Remaining Tasks
 1. **Proper integration**
- - Ensure all features work together
- - Test edge cases
- - Performance validation
+- Ensure all features work together
+- Test edge cases
+- Performance validation
 
 2. **Documentation updates**
- - Update `GEOSPATIAL_ENHANCEMENTS.md` with real examples
- - Show distance in outputs
- - Show interaction with lazy decoding
+- Update `GEOSPATIAL_ENHANCEMENTS.md` with real examples
+- Show distance in outputs
+- Show interaction with lazy decoding
 
 ---
 
@@ -115,28 +115,28 @@
 
 ### Remaining Tasks
 1. **Persistence**
- - Store trigger definitions in StorageLayout
- - Re-attach on DB open
- - Store trigger metadata (name, collection, event)
+- Store trigger definitions in StorageLayout
+- Re-attach on DB open
+- Store trigger metadata (name, collection, event)
 
 2. **Safety**
- - Prevent infinite recursion
- - Detect trigger cycles
- - Limit trigger execution time
+- Prevent infinite recursion
+- Detect trigger cycles
+- Limit trigger execution time
 
 3. **Post-commit semantics**
- - Triggers run after commit
- - Failures don't roll back data
- - Log failures to telemetry
+- Triggers run after commit
+- Failures don't roll back data
+- Log failures to telemetry
 
 4. **Tests**
- - `EventTriggersTests.swift`
- - Test insert/update/delete triggers
- - Test trigger failures
- - Test recursion prevention
+- `EventTriggersTests.swift`
+- Test insert/update/delete triggers
+- Test trigger failures
+- Test recursion prevention
 
 5. **Documentation**
- - `Docs/Features/EVENT_TRIGGERS.md`
+- `Docs/Features/EVENT_TRIGGERS.md`
 
 ---
 
@@ -149,29 +149,29 @@
 
 ### Remaining Tasks
 1. **Vector field type**
- - Add `BlazeDocumentField.vector([Float])`
- - Extend BlazeBinary encoding/decoding
- - Store vectors efficiently
+- Add `BlazeDocumentField.vector([Float])`
+- Extend BlazeBinary encoding/decoding
+- Store vectors efficiently
 
 2. **Proper encoding**
- - Encode vectors in BlazeBinary format
- - Support variable-length vectors
- - Optimize for common sizes (128, 384, 768 dims)
+- Encode vectors in BlazeBinary format
+- Support variable-length vectors
+- Optimize for common sizes (128, 384, 768 dims)
 
 3. **Integration**
- - Ensure vector queries work with lazy decoding
- - Ensure vector + spatial queries work correctly
- - Test execution order
+- Ensure vector queries work with lazy decoding
+- Ensure vector + spatial queries work correctly
+- Test execution order
 
 4. **Tests**
- - `VectorSpatialQueriesTests.swift`
- - Test pure vector queries
- - Test combined vector + spatial
- - Test edge cases
+- `VectorSpatialQueriesTests.swift`
+- Test pure vector queries
+- Test combined vector + spatial
+- Test edge cases
 
 5. **Documentation**
- - `Docs/Features/VECTOR_QUERIES.md`
- - Update geospatial docs with hybrid examples
+- `Docs/Features/VECTOR_QUERIES.md`
+- Update geospatial docs with hybrid examples
 
 ---
 
@@ -184,36 +184,36 @@
 
 ### Remaining Tasks
 1. **Stats collection**
- - Track row counts per collection
- - Track field statistics (distinct count, null ratio, min/max)
- - Track index usage and selectivity
- - Store stats in StorageLayout
+- Track row counts per collection
+- Track field statistics (distinct count, null ratio, min/max)
+- Track index usage and selectivity
+- Store stats in StorageLayout
 
 2. **Cost model**
- - Refine cost estimates
- - Add spatial index costs
- - Add vector search costs
- - Add full-text index costs
+- Refine cost estimates
+- Add spatial index costs
+- Add vector search costs
+- Add full-text index costs
 
 3. **EXPLAIN API**
- - `db.explain { query }` method
- - Return human-readable plan
- - Show chosen indexes
- - Show estimated costs
+- `db.explain { query }` method
+- Return human-readable plan
+- Show chosen indexes
+- Show estimated costs
 
 4. **Integration**
- - Use planner in QueryBuilder
- - Auto-optimize queries
- - Log plan choices
+- Use planner in QueryBuilder
+- Auto-optimize queries
+- Log plan choices
 
 5. **Tests**
- - `QueryPlannerTests.swift`
- - Test index selection
- - Test cost estimates
- - Test EXPLAIN output
+- `QueryPlannerTests.swift`
+- Test index selection
+- Test cost estimates
+- Test EXPLAIN output
 
 6. **Documentation**
- - `Docs/Features/QUERY_PLANNER.md`
+- `Docs/Features/QUERY_PLANNER.md`
 
 ---
 

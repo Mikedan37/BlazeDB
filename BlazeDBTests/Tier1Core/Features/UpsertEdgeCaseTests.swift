@@ -16,20 +16,20 @@ import XCTest
 #endif
 
 final class UpsertEdgeCaseTests: XCTestCase {
-    var tempURL: URL!
-    var db: BlazeDBClient!
+    private var tempURL: URL?
+    private var db: BlazeDBClient?
     
-    override func setUp() {
-        super.setUp()
+    override func setUpWithError() throws {
+        try super.setUpWithError()
         tempURL = FileManager.default.temporaryDirectory
             .appendingPathComponent("Upsert-\(UUID().uuidString).blazedb")
-        db = try! BlazeDBClient(name: "UpsertTest", fileURL: tempURL, password: "TestPassword-123!")
+        db = try BlazeDBClient(name: "UpsertTest", fileURL: try requireFixture(tempURL), password: "TestPassword-123!")
     }
     
     override func tearDown() {
         db = nil
-        try? FileManager.default.removeItem(at: tempURL)
-        try? FileManager.default.removeItem(at: tempURL.deletingPathExtension().appendingPathExtension("meta"))
+        try? FileManager.default.removeItem(at: try requireFixture(tempURL))
+        try? FileManager.default.removeItem(at: try requireFixture(tempURL).deletingPathExtension().appendingPathExtension("meta"))
         super.tearDown()
     }
     
@@ -45,12 +45,13 @@ final class UpsertEdgeCaseTests: XCTestCase {
         expectation.expectedFulfillmentCount = 10
         
         let queue = DispatchQueue(label: "test.upsert", attributes: .concurrent)
+        let db = try requireFixture(self.db)
         
         // 10 threads upserting to same ID
         for threadID in 0..<10 {
-            queue.async {
+            queue.async { [db] in
                 do {
-                    let wasInsert = try self.db.upsert(id: sharedID, data: BlazeDataRecord([
+                    let wasInsert = try db.upsert(id: sharedID, data: BlazeDataRecord([
                         "thread": .int(threadID),
                         "timestamp": .date(Date()),
                         "value": .int(threadID * 100)
@@ -69,7 +70,7 @@ final class UpsertEdgeCaseTests: XCTestCase {
         wait(for: [expectation], timeout: 10.0)
         
         // Verify final state
-        let final = try db.fetch(id: sharedID)
+        let final = try requireFixture(db).fetch(id: sharedID)
         XCTAssertNotNil(final, "Record should exist after concurrent upserts")
         
         print("  Final record from thread: \(final?.storage["thread"]?.intValue ?? -1)")
@@ -83,21 +84,21 @@ final class UpsertEdgeCaseTests: XCTestCase {
         let id = UUID()
         
         // Begin transaction
-        try db.beginTransaction()
+        try requireFixture(db).beginTransaction()
         
         // First upsert (insert)
-        let wasInsert1 = try db.upsert(id: id, data: BlazeDataRecord(["value": .int(1)]))
+        let wasInsert1 = try requireFixture(db).upsert(id: id, data: BlazeDataRecord(["value": .int(1)]))
         XCTAssertTrue(wasInsert1, "First upsert should be insert")
         
         // Second upsert (update)
-        let wasInsert2 = try db.upsert(id: id, data: BlazeDataRecord(["value": .int(2)]))
+        let wasInsert2 = try requireFixture(db).upsert(id: id, data: BlazeDataRecord(["value": .int(2)]))
         XCTAssertFalse(wasInsert2, "Second upsert should be update")
         
         // Commit
-        try db.commitTransaction()
+        try requireFixture(db).commitTransaction()
         
         // Verify final value
-        let final = try db.fetch(id: id)
+        let final = try requireFixture(db).fetch(id: id)
         XCTAssertEqual(final?.storage["value"]?.intValue, 2)
         
         print("✅ Upsert in transaction works correctly")
@@ -107,13 +108,13 @@ final class UpsertEdgeCaseTests: XCTestCase {
     func testUpsertWithIndexUpdates() throws {
         print("🔄 Testing upsert with index updates...")
         
-        let collection = db.collection
+        let collection = try requireFixture(db).collection
         try collection.createIndex(on: "status")
         
         let id = UUID()
         
         // Upsert (insert) with indexed field
-        _ = try db.upsert(id: id, data: BlazeDataRecord([
+        _ = try requireFixture(db).upsert(id: id, data: BlazeDataRecord([
             "title": .string("Test"),
             "status": .string("draft")
         ]))
@@ -123,7 +124,7 @@ final class UpsertEdgeCaseTests: XCTestCase {
         XCTAssertEqual(draftResults.count, 1, "Should be in draft index")
         
         // Upsert (update) changing indexed field
-        _ = try db.upsert(id: id, data: BlazeDataRecord([
+        _ = try requireFixture(db).upsert(id: id, data: BlazeDataRecord([
             "title": .string("Test"),
             "status": .string("published")  // Changed!
         ]))
@@ -150,14 +151,14 @@ final class UpsertEdgeCaseTests: XCTestCase {
         for i in 0..<count {
             let id = UUID()
             ids.append(id)
-            _ = try db.upsert(id: id, data: BlazeDataRecord(["value": .int(i)]))
+            _ = try requireFixture(db).upsert(id: id, data: BlazeDataRecord(["value": .int(i)]))
         }
         let upsertInsertDuration = Date().timeIntervalSince(upsertStart)
         
         // Benchmark: upsert (update phase)
         let upsertUpdateStart = Date()
         for (i, id) in ids.enumerated() {
-            _ = try db.upsert(id: id, data: BlazeDataRecord(["value": .int(i * 2)]))
+            _ = try requireFixture(db).upsert(id: id, data: BlazeDataRecord(["value": .int(i * 2)]))
         }
         let upsertUpdateDuration = Date().timeIntervalSince(upsertUpdateStart)
         
@@ -165,7 +166,7 @@ final class UpsertEdgeCaseTests: XCTestCase {
         print("  Upsert update: \(String(format: "%.3f", upsertUpdateDuration))s")
         
         // Verify final state
-        let allRecords = try db.fetchAll()
+        let allRecords = try requireFixture(db).fetchAll()
         XCTAssertEqual(allRecords.count, count)
         
         // Upsert should be reasonably fast
@@ -182,19 +183,19 @@ final class UpsertEdgeCaseTests: XCTestCase {
         let id = UUID()
         
         // Upsert with array
-        _ = try db.upsert(id: id, data: BlazeDataRecord([
+        _ = try requireFixture(db).upsert(id: id, data: BlazeDataRecord([
             "tags": .array([.string("swift"), .string("database")]),
             "metadata": .dictionary(["version": .int(1)])
         ]))
         
         // Upsert (update) with different complex data
-        _ = try db.upsert(id: id, data: BlazeDataRecord([
+        _ = try requireFixture(db).upsert(id: id, data: BlazeDataRecord([
             "tags": .array([.string("swift"), .string("performance")]),  // Changed
             "metadata": .dictionary(["version": .int(2)])  // Updated
         ]))
         
         // Verify latest values
-        let final = try db.fetch(id: id)
+        let final = try requireFixture(db).fetch(id: id)
         
         if case let .array(tags)? = final?.storage["tags"] {
             XCTAssertEqual(tags.count, 2)

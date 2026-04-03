@@ -18,11 +18,11 @@ Compression in BlazeDB is a **pure performance optimization** that reduces stora
 2. **Transparent:** Compression/decompression is automatic. Applications do not need to handle compressed data.
 3. **Non-Fatal on Failure:** If compression fails, data is stored/transmitted uncompressed. No errors are thrown.
 4. **Isolated from Correctness:** Compression does not affect:
- - File locking
- - WAL semantics
- - Crash recovery
- - Transaction atomicity
- - MVCC isolation
+- File locking
+- WAL semantics
+- Crash recovery
+- Transaction atomicity
+- MVCC isolation
 
 ---
 
@@ -54,8 +54,8 @@ Compression in BlazeDB is a **pure performance optimization** that reduces stora
 **Current Status:**
 - Implemented in `PageStore+Compression.swift`
 - Uses safe Swift patterns (no unsafe pointers)
--  Not enabled by default
--  Requires explicit `enableCompression()` call
+- Not enabled by default
+- Requires explicit `enableCompression()` call
 
 ---
 
@@ -84,8 +84,8 @@ Compression in BlazeDB is a **pure performance optimization** that reduces stora
 **Current Status:**
 - Implemented in `CompressionSupport.swift`
 - Uses safe Swift patterns
--  Not enabled by default
--  Requires explicit `enableCompression()` call
+- Not enabled by default
+- Requires explicit `enableCompression()` call
 
 ---
 
@@ -289,8 +289,8 @@ db.disableCompression()
 - Error handling and fallback
 
 ### Pending
--  Compression enabled by default (currently opt-in)
--  Compression ratio monitoring/logging
+- Compression enabled by default (currently opt-in)
+- Compression ratio monitoring/logging
 
 ### Deferred
 - Adaptive compression (algorithm selection based on data type)

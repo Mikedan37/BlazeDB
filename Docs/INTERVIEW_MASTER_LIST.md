@@ -51,7 +51,7 @@
 
 **The Problem:**
 - SQLite: C library, not Swift-native, no built-in encryption, requires migrations
-- Realm: Proprietary, requires cloud service, vendor lock-in  
+- Realm: Proprietary, requires cloud service, vendor lock-in
 - CoreData: Complex, Apple-only, no sync mechanism
 - None provide operation-log-based synchronization with cryptographic handshakes
 
@@ -95,20 +95,20 @@
 **Answer:**
 
 1. **Multi-process concurrent access** - Single-writer only (file-level locking via `flock()`)
-   - Code: `BlazeDB/Storage/PageStore.swift:138` - `LOCK_EX | LOCK_NB`
-   - Rationale: Simplifies concurrency model, prevents corruption
+- Code: `BlazeDB/Storage/PageStore.swift:138` - `LOCK_EX | LOCK_NB`
+- Rationale: Simplifies concurrency model, prevents corruption
 
 2. **SQL compatibility** - No SQL parser, no joins, no complex queries
-   - Rationale: Focus on schema-less document store with simple query DSL
+- Rationale: Focus on schema-less document store with simple query DSL
 
 3. **Distributed consensus** - No Raft/Paxos, no automatic leader election
-   - Rationale: Hub-and-spoke or P2P sync, not distributed database
+- Rationale: Hub-and-spoke or P2P sync, not distributed database
 
 4. **Automatic migrations** - Schema-less means no migrations needed
-   - Rationale: Dynamic fields eliminate migration complexity
+- Rationale: Dynamic fields eliminate migration complexity
 
 5. **Background workers** - No async background compaction, no background indexing
-   - Rationale: Keep system simple, explicit operations
+- Rationale: Keep system simple, explicit operations
 
 **Code Reference:** `README.md:211-216`
 
@@ -131,8 +131,8 @@
 **Answer:**
 
 1. **Single-writer assumption** - Only one process can write at a time
-   - Enforced via `flock()` with `LOCK_EX | LOCK_NB`
-   - Code: `BlazeDB/Storage/PageStore.swift:138`
+- Enforced via `flock()` with `LOCK_EX | LOCK_NB`
+- Code: `BlazeDB/Storage/PageStore.swift:138`
 
 2. **Local-first assumption** - Database is primarily local, sync is secondary
 
@@ -149,18 +149,18 @@
 **Answer:**
 
 1. **MVCC concurrency** - Initially planned simple locking, switched to MVCC for non-blocking reads
-   - Code: `BlazeDB/Core/MVCC/MVCCTransaction.swift:22-72`
-   - Reason: 50-100x faster concurrent reads
+- Code: `BlazeDB/Core/MVCC/MVCCTransaction.swift:22-72`
+- Reason: 50-100x faster concurrent reads
 
 2. **WAL batching** - Initially planned immediate fsync, switched to batched checkpoints
-   - Code: `BlazeDB/Storage/WriteAheadLog.swift:25-26` - `checkpointThreshold = 100`, `checkpointInterval = 1.0s`
-   - Reason: 10-100x fewer fsync calls
+- Code: `BlazeDB/Storage/WriteAheadLog.swift:25-26` - `checkpointThreshold = 100`, `checkpointInterval = 1.0s`
+- Reason: 10-100x fewer fsync calls
 
 3. **BlazeBinary format** - Initially considered JSON, switched to custom binary format
-   - Reason: 53% smaller, 48% faster, deterministic encoding
+- Reason: 53% smaller, 48% faster, deterministic encoding
 
 4. **Per-page encryption** - Initially considered file-level, switched to per-page
-   - Reason: Selective decryption, parallel encryption, efficient GC
+- Reason: Selective decryption, parallel encryption, efficient GC
 
 ---
 
@@ -264,13 +264,13 @@ Application Layer → Query & Index → MVCC & Concurrency → Transaction & WAL
 
 **Answer:**
 1. **File-level locking** - Single-writer (enforced by `flock()`)
-   - Code: `BlazeDB/Storage/PageStore.swift:138`
+- Code: `BlazeDB/Storage/PageStore.swift:138`
 2. **Page boundaries** - 4KB fixed-size pages
-   - Code: `BlazeDB/Storage/PageStore.swift:88` - `pageSize = 4096`
+- Code: `BlazeDB/Storage/PageStore.swift:88` - `pageSize = 4096`
 3. **Transaction boundaries** - begin/commit/rollback
-   - Code: `BlazeDB/Exports/BlazeDBClient.swift:1370-1588`
+- Code: `BlazeDB/Exports/BlazeDBClient.swift:1370-1588`
 4. **Encryption boundaries** - Per-page encryption
-   - Code: `BlazeDB/Storage/PageStore.swift:266` - `let nonce = try AES.GCM.Nonce()`
+- Code: `BlazeDB/Storage/PageStore.swift:266` - `let nonce = try AES.GCM.Nonce()`
 
 ---
 
@@ -349,7 +349,7 @@ Application Layer → Query & Index → MVCC & Concurrency → Transaction & WAL
 
 ### How do you validate page integrity?
 
-**Answer:** 
+**Answer:**
 1. Check magic bytes "BZDB" (4 bytes)
 2. Check version byte (0x02 = encrypted)
 3. Verify AES-GCM authentication tag on decryption
@@ -443,7 +443,7 @@ Application Layer → Query & Index → MVCC & Concurrency → Transaction & WAL
 
 ### What happens if the process crashes mid-write?
 
-**Answer:** 
+**Answer:**
 - **Before commit:** WAL shows no commit → recovery discards changes
 - **After commit:** WAL shows commit → recovery replays changes
 - **No ambiguity:** Commit marker is the boundary
@@ -525,7 +525,7 @@ Application Layer → Query & Index → MVCC & Concurrency → Transaction & WAL
 
 ### How do you guarantee consistency?
 
-**Answer:** 
+**Answer:**
 - **Index updates atomic with data writes** - Indexes updated in same transaction
 - **Schema validation prevents invalid states** - Constraints checked before commit
 - **Metadata rebuild on corruption** - Can rebuild from data pages
@@ -957,7 +957,7 @@ Frame Structure:
 
 ### Why a length-prefixed format?
 
-**Answer:** 
+**Answer:**
 - **Message boundaries** - Know where one message ends, next begins
 - **Exact reads** - Read exactly `length` bytes
 - **Buffer overflow prevention** - Validate length before reading

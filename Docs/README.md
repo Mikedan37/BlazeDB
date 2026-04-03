@@ -1,52 +1,65 @@
 # BlazeDB Documentation
 
-Welcome to the BlazeDB documentation. This directory contains all documentation organized by topic.
+This index separates the main public documentation path from maintainer-only or historical material.
 
-##  Quick Navigation
+## Documentation guide
 
-### Getting Started
-- **[Getting Started Guides](GettingStarted/)** - Start here if you're new to BlazeDB
-- **[Linux Getting Started](GettingStarted/LINUX_GETTING_STARTED.md)** - Linux-specific guide
-- **[Why BlazeDB Exists](GettingStarted/WHY_BLAZEDB_EXISTS.md)** - Project motivation
+BlazeDB documentation is organized into:
 
-### Core Documentation
-- **[API Reference](API/API_REFERENCE.md)** - Complete API documentation
-- **[Architecture](Architecture/)** - System architecture and design
-- **[Features](Features/)** - Feature documentation
-- **[Guides](Guides/)** - User guides and tutorials
+- **Canonical docs (current, maintained)** — Use these first for behavior and APIs:
+  - [Repository README](../README.md) (install, quickstart, product summary)
+  - [Getting Started](GettingStarted/) (first run, HOW_TO_USE, Linux notes)
+  - [Testing / CI](Testing/) (tiers, test layout, execution model)
+  - [Release](Release/) (release-facing checklists and notes)
+  - [Architecture](Architecture/) — **core embedded runtime** (storage, queries, durability); prefer these over informal design notes for “what ships” in OSS.
 
-### Compliance & Quality
-- **[Compliance](Compliance/)** - Swift 6 concurrency compliance and phase tracking
-- **[Audit Reports](Audit/)** - Safety, security, and code audits
-- **[Status](Status/)** - Current build and readiness status
+- **Design / forward-looking docs** — Distributed transport, sync topology, and related material may describe **non-default** or **deferred** surfaces. Always cross-check [Distributed transport deferred](Status/DISTRIBUTED_TRANSPORT_DEFERRED.md) and the root `README.md` for what the default SwiftPM product includes.
 
-### Technical Documentation
-- **[Performance](Performance/)** - Performance analysis and optimizations
-- **[Security](Security/)** - Security documentation
-- **[Sync](Sync/)** - Distributed sync documentation
-- **[Testing](Testing/)** - Testing documentation
-- **[Design](Design/)** - Design documents and specifications
+- **Archived / historical docs** — [`Archive/`](Archive/) holds snapshots, old milestones, and superseded write-ups. **Not authoritative** for current OSS behavior unless explicitly cross-linked from a maintained doc.
 
-### Policy & Release
-- **[API Stability](API_STABILITY.md)** - API stability policy
-- **[Compatibility](COMPATIBILITY.md)** - Platform compatibility
-- **[Support Policy](SUPPORT_POLICY.md)** - Support expectations
-- **[Release Posture](RELEASE_POSTURE.md)** - Release status
-- **[Changelog](../CHANGELOG.md)** - Version history
+## Start Here
 
-### Other Resources
-- **[Archive](Archive/)** - Historical documentation
-- **[Tools](Tools/)** - Tool documentation
-- **[Project](Project/)** - Project status and assessments
-- **[Meta](Meta/)** - Internal project documentation
+- [Getting Started](GettingStarted/README.md) for first install, first run, and starter code.
+- [Developer Guide](DEVELOPER_GUIDE.md) for the main public API walkthrough.
+- [API Reference](API/API_REFERENCE.md) for reference-style documentation.
+- [Examples](../Examples/) for runnable usage patterns.
 
-##  Main Indexes
+## Core Product Docs
 
-- **[Master Documentation Index](MASTER_DOCUMENTATION_INDEX.md)** - Complete documentation index
-- **[Archive Index](ARCHIVE_INDEX.md)** - Archive documentation index
-- **[Testing Guide](TESTING_GUIDE.md)** - Testing guide
-- **[Agents Guide](AGENTS_GUIDE.md)** - AI agents guide
+- [Compatibility](COMPATIBILITY.md) for supported platforms and release expectations.
+- [Security](../SECURITY.md) for vulnerability reporting and disclosure expectations.
+- [Durability Mode Support](Status/DURABILITY_MODE_SUPPORT.md) for WAL and recovery guarantees.
+- [Key Management and Compatibility](Status/KEY_MANAGEMENT_AND_COMPATIBILITY.md) for password and key-handling behavior.
+- [Legacy Layout Migration Guidance](Status/LEGACY_LAYOUT_MIGRATION_GUIDANCE.md) for migration-sensitive upgrades.
+- [Distributed Transport Deferred Status](Status/DISTRIBUTED_TRANSPORT_DEFERRED.md) for features intentionally out of the OSS core build.
+- [Architecture](Architecture/README.md) for system design and internals.
+- [Performance](Performance/README.md) for benchmark and performance guidance.
 
----
+## Contributing And Project Policies
 
-**Note:** Documentation is organized into logical folders. Each folder contains a README.md explaining its contents.
+- [Contributing Guide](../CONTRIBUTING.md)
+- [Code of Conduct](../CODE_OF_CONDUCT.md)
+- [Security Policy](../SECURITY.md)
+- [Support Policy](SUPPORT_POLICY.md)
+- [API Stability](API_STABILITY.md)
+- [Third-Party Notices](../THIRD_PARTY_NOTICES.md)
+
+## Maintainer Docs
+
+- [CI and Test Tiers](Testing/CI_AND_TEST_TIERS.md)
+- [Testing Guide](TESTING_GUIDE.md)
+- [Release Rollback Procedure](Status/RELEASE_ROLLBACK.md)
+- [Open-Source Readiness Checklist](Status/OPEN_SOURCE_READINESS_CHECKLIST.md) (hosted CI expectations and local validation paths)
+- [External Security Review Plan](Status/EXTERNAL_SECURITY_REVIEW_PLAN.md)
+- [Master Documentation Index](MASTER_DOCUMENTATION_INDEX.md)
+- [Agents Guide](AGENTS_GUIDE.md)
+
+## Historical And Internal Material
+
+- [Archive](Archive/) for historical release and design records (see [Archive README](Archive/README.md)).
+- [Meta](Meta/README.md) for internal project-management documentation.
+- [Audit](Audit/README.md) for audit snapshots and internal review artifacts.
+- [Project](Project/README.md) for project status and assessment notes.
+- [Tools](Tools/README.md) for tool-specific documentation.
+
+Use the sections above as the default path. Archive and internal folders are useful for maintainers, but they are not the recommended starting point for new adopters.

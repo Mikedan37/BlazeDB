@@ -39,65 +39,65 @@ BlazeAnimation.elastic // Elastic spring (playful)
 ### **Menu Bar Dropdown:**
 ```
  Create Database Button:
- - Hover: Scale 1.05x, green glow
- - Icon: Rotates 90° on hover
- - Click: Bouncy spring animation
+- Hover: Scale 1.05x, green glow
+- Icon: Rotates 90° on hover
+- Click: Bouncy spring animation
 
  Database List Items:
- - Appear: Staggered scale-in (0.05s delay each)
- - Hover: Scale 1.02x
- - Remove: Fade out smoothly
+- Appear: Staggered scale-in (0.05s delay each)
+- Hover: Scale 1.02x
+- Remove: Fade out smoothly
 
  Dashboard/Refresh Buttons:
- - Hover: Scale and shadow
- - Click: Press feedback
+- Hover: Scale and shadow
+- Click: Press feedback
 ```
 
 ### **Create Database Sheet:**
 ```
  Success Animation:
- - Big green checkmark
- - Elastic bounce-in
- - "Database Created!" text
- - Fades in over dark overlay
- - Shows for 0.8s then dismisses
+- Big green checkmark
+- Elastic bounce-in
+- "Database Created!" text
+- Fades in over dark overlay
+- Shows for 0.8s then dismisses
 
  Form Elements:
- - Smooth transitions between sections
+- Smooth transitions between sections
 ```
 
 ### **Data Editor:**
 ```
  Loading State:
- - Animated spinner with gradient
- - Smooth fade-in/out
+- Animated spinner with gradient
+- Smooth fade-in/out
 
  Undo Toast:
- - Slides down from top
- - Fades in smoothly
- - Slides back up when dismissed
+- Slides down from top
+- Fades in smoothly
+- Slides back up when dismissed
 
  Selection Toolbar:
- - Slides up from bottom
- - Fades in when items selected
- - Slides down when deselected
+- Slides up from bottom
+- Fades in when items selected
+- Slides down when deselected
 
  State Transitions:
- - Loading → Data: Smooth fade
- - Empty → Data: Scale and fade
+- Loading → Data: Smooth fade
+- Empty → Data: Scale and fade
 ```
 
 ### **Dashboard Tabs:**
 ```
  Tab Switching:
- - Content fades out (old tab)
- - Content fades in (new tab)
- - Subtle scale effect (0.98 → 1.0)
- - 0.5s smooth spring
+- Content fades out (old tab)
+- Content fades in (new tab)
+- Subtle scale effect (0.98 → 1.0)
+- 0.5s smooth spring
 
  Tab Indicator:
- - Slides smoothly between tabs
- - Native segmented control animation
+- Slides smoothly between tabs
+- Native segmented control animation
 ```
 
 ---
@@ -238,7 +238,7 @@ Feels: Dynamic, lively
 
 ### **Top 5 Most Satisfying:**
 
-**1. Create Database Success** 
+**1. Create Database Success**
 ```
 Big green checkmark
 Elastic bounce-in
@@ -249,7 +249,7 @@ Then smooth dismiss
 FEELS: Incredibly rewarding!
 ```
 
-**2. Database List Cascade** 
+**2. Database List Cascade**
 ```
 Each database card appears
 0.05s delay between each
@@ -259,7 +259,7 @@ Staggered wave effect
 FEELS: Lively, dynamic!
 ```
 
-**3. Create Button Hover** 
+**3. Create Button Hover**
 ```
 Scale 1.05x
 Green glow shadow
@@ -269,7 +269,7 @@ Smooth spring
 FEELS: Interactive, inviting!
 ```
 
-**4. Tab Switching** 
+**4. Tab Switching**
 ```
 Old content fades out
 New content fades in
@@ -279,7 +279,7 @@ Subtle scale (0.98→1.0)
 FEELS: Professional, buttery!
 ```
 
-**5. Undo Toast** 
+**5. Undo Toast**
 ```
 Slides down from top
 Smooth spring

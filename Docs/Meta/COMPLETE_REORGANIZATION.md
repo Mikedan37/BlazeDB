@@ -8,10 +8,10 @@ Due to terminal command limitations, files are being moved using direct file ope
 
 1. Copy all remaining test files from `BlazeDBTests/` to `Tests/BlazeDBTests/`
 2. Organize by subsystem:
- - Codec tests → `Tests/BlazeDBTests/Codec/`
- - Engine tests → `Tests/BlazeDBTests/Engine/`
- - Stress tests → `Tests/BlazeDBTests/Stress/`
- - Performance tests → `Tests/BlazeDBTests/Performance/`
+- Codec tests → `Tests/BlazeDBTests/Codec/`
+- Engine tests → `Tests/BlazeDBTests/Engine/`
+- Stress tests → `Tests/BlazeDBTests/Stress/`
+- Performance tests → `Tests/BlazeDBTests/Performance/`
 3. Update Package.swift (already done)
 
 ## Files to Move

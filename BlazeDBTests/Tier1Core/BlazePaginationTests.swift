@@ -22,19 +22,19 @@ import Crypto
 #endif
 
 final class BlazePaginationTests: XCTestCase {
-    var tempURL: URL!
-    var db: BlazeDBClient!
+    private var tempURL: URL?
+    private var db: BlazeDBClient?
     
     override func setUpWithError() throws {
         tempURL = FileManager.default.temporaryDirectory
             .appendingPathComponent("BlazePagination-\(UUID().uuidString).blazedb")
-        db = try BlazeDBClient(name: "PaginationTest", fileURL: tempURL, password: "TestPassword-123!")
+        db = try BlazeDBClient(name: "PaginationTest", fileURL: try requireFixture(tempURL), password: "TestPassword-123!")
     }
     
     override func tearDownWithError() throws {
         db = nil
-        try? FileManager.default.removeItem(at: tempURL)
-        try? FileManager.default.removeItem(at: tempURL.deletingPathExtension().appendingPathExtension("meta"))
+        try? FileManager.default.removeItem(at: try requireFixture(tempURL))
+        try? FileManager.default.removeItem(at: try requireFixture(tempURL).deletingPathExtension().appendingPathExtension("meta"))
     }
     
     // MARK: - Basic Pagination Tests
@@ -44,30 +44,30 @@ final class BlazePaginationTests: XCTestCase {
         
         // Insert 100 records
         for i in 0..<100 {
-            _ = try db.insert(BlazeDataRecord([
+            _ = try requireFixture(db).insert(BlazeDataRecord([
                 "index": .int(i),
                 "data": .string("Record \(i)")
             ]))
         }
         
         // Fetch first page (0-9)
-        let page1 = try db.fetchPage(offset: 0, limit: 10)
+        let page1 = try requireFixture(db).fetchPage(offset: 0, limit: 10)
         XCTAssertEqual(page1.count, 10, "First page should have 10 records")
         
         // Fetch second page (10-19)
-        let page2 = try db.fetchPage(offset: 10, limit: 10)
+        let page2 = try requireFixture(db).fetchPage(offset: 10, limit: 10)
         XCTAssertEqual(page2.count, 10, "Second page should have 10 records")
         
         // Fetch last page (90-99)
-        let page10 = try db.fetchPage(offset: 90, limit: 10)
+        let page10 = try requireFixture(db).fetchPage(offset: 90, limit: 10)
         XCTAssertEqual(page10.count, 10, "Last page should have 10 records")
         
         // Fetch beyond end
-        let beyond = try db.fetchPage(offset: 100, limit: 10)
+        let beyond = try requireFixture(db).fetchPage(offset: 100, limit: 10)
         XCTAssertEqual(beyond.count, 0, "Beyond end should return empty")
         
         // Fetch partial last page
-        let partial = try db.fetchPage(offset: 95, limit: 10)
+        let partial = try requireFixture(db).fetchPage(offset: 95, limit: 10)
         XCTAssertEqual(partial.count, 5, "Partial page should have 5 records")
         
         print("✅ Basic pagination works correctly")
@@ -76,23 +76,23 @@ final class BlazePaginationTests: XCTestCase {
     func testCountMethod() throws {
         print("📊 Testing count() method...")
         
-        XCTAssertEqual(try db.count(), 0, "Empty database should have count 0")
+        XCTAssertEqual(try requireFixture(db).count(), 0, "Empty database should have count 0")
         
         // Insert records
         for i in 0..<50 {
-            _ = try db.insert(BlazeDataRecord(["index": .int(i)]))
+            _ = try requireFixture(db).insert(BlazeDataRecord(["index": .int(i)]))
         }
         
-        XCTAssertEqual(try db.count(), 50, "Should have 50 records")
+        XCTAssertEqual(try requireFixture(db).count(), 50, "Should have 50 records")
         
         // Delete some
-        let collection = db.collection as! DynamicCollection
+        let collection = try requireFixture(db).collection
         let allIDs = try collection.fetchAllIDs()
         for id in allIDs.prefix(10) {
             try collection.delete(id: id)
         }
         
-        XCTAssertEqual(try db.count(), 40, "Should have 40 records after deletes")
+        XCTAssertEqual(try requireFixture(db).count(), 40, "Should have 40 records after deletes")
         
         print("✅ count() method works correctly")
     }
@@ -102,7 +102,7 @@ final class BlazePaginationTests: XCTestCase {
         
         var insertedIDs: [UUID] = []
         for i in 0..<20 {
-            let id = try db.insert(BlazeDataRecord([
+            let id = try requireFixture(db).insert(BlazeDataRecord([
                 "index": .int(i),
                 "value": .string("Value \(i)")
             ]))
@@ -111,7 +111,7 @@ final class BlazePaginationTests: XCTestCase {
         
         // Fetch specific batch
         let batchIDs = Array(insertedIDs[5..<15])  // IDs 5-14
-        let batch = try db.fetchBatch(ids: batchIDs)
+        let batch = try requireFixture(db).fetchBatch(ids: batchIDs)
         
         XCTAssertEqual(batch.count, 10, "Should fetch 10 records")
         
@@ -121,7 +121,7 @@ final class BlazePaginationTests: XCTestCase {
         
         // Test with non-existent IDs
         let mixedIDs = batchIDs + [UUID(), UUID()]
-        let mixedBatch = try db.fetchBatch(ids: mixedIDs)
+        let mixedBatch = try requireFixture(db).fetchBatch(ids: mixedIDs)
         XCTAssertEqual(mixedBatch.count, 10, "Should only fetch existing records")
         
         print("✅ Batch fetch works correctly")
@@ -135,7 +135,7 @@ final class BlazePaginationTests: XCTestCase {
         // Insert 1000 records
         let recordCount = 1000
         for i in 0..<recordCount {
-            _ = try db.insert(BlazeDataRecord([
+            _ = try requireFixture(db).insert(BlazeDataRecord([
                 "index": .int(i),
                 "data": .string(String(repeating: "x", count: 500))  // 500 bytes each
             ]))
@@ -147,7 +147,7 @@ final class BlazePaginationTests: XCTestCase {
         print("  Testing fetchAll() memory...")
         autoreleasepool {
             let startMemory = getMemoryUsage()
-            _ = try? db.fetchAll()
+            _ = try? try requireFixture(db).fetchAll()
             let endMemory = getMemoryUsage()
             let fetchAllMemory = endMemory - startMemory
             print("    fetchAll() memory: ~\(formatBytes(fetchAllMemory))")
@@ -162,7 +162,7 @@ final class BlazePaginationTests: XCTestCase {
         
         for offset in stride(from: 0, to: recordCount, by: pageSize) {
             autoreleasepool {
-                if let page = try? db.fetchPage(offset: offset, limit: pageSize) {
+                if let page = try? try requireFixture(db).fetchPage(offset: offset, limit: pageSize) {
                     totalPaginated += page.count
                 }
             }
@@ -191,7 +191,7 @@ final class BlazePaginationTests: XCTestCase {
                 "category": .string("cat_\(i % 100)")
             ])
         }
-        _ = try db.insertMany(records)
+        _ = try requireFixture(db).insertMany(records)
         print("    Inserted \(recordCount) records")
         
         print("  Testing pagination through entire dataset...")
@@ -202,7 +202,7 @@ final class BlazePaginationTests: XCTestCase {
         let startTime = Date()
         
         for offset in stride(from: 0, to: recordCount, by: pageSize) {
-            let page = try db.fetchPage(offset: offset, limit: pageSize)
+            let page = try requireFixture(db).fetchPage(offset: offset, limit: pageSize)
             totalFetched += page.count
             
             for record in page {
@@ -230,27 +230,27 @@ final class BlazePaginationTests: XCTestCase {
         
         // Insert 25 records
         for i in 0..<25 {
-            _ = try db.insert(BlazeDataRecord(["index": .int(i)]))
+            _ = try requireFixture(db).insert(BlazeDataRecord(["index": .int(i)]))
         }
         
         // Zero offset, zero limit
-        let zero = try db.fetchPage(offset: 0, limit: 0)
+        let zero = try requireFixture(db).fetchPage(offset: 0, limit: 0)
         XCTAssertEqual(zero.count, 0, "Zero limit should return empty")
         
         // Offset at boundary
-        let boundary = try db.fetchPage(offset: 25, limit: 10)
+        let boundary = try requireFixture(db).fetchPage(offset: 25, limit: 10)
         XCTAssertEqual(boundary.count, 0, "Offset at boundary should return empty")
         
         // Offset beyond boundary
-        let beyond = try db.fetchPage(offset: 100, limit: 10)
+        let beyond = try requireFixture(db).fetchPage(offset: 100, limit: 10)
         XCTAssertEqual(beyond.count, 0, "Offset beyond data should return empty")
         
         // Large limit
-        let large = try db.fetchPage(offset: 0, limit: 1000)
+        let large = try requireFixture(db).fetchPage(offset: 0, limit: 1000)
         XCTAssertEqual(large.count, 25, "Large limit should return all records")
         
         // Fetch from middle
-        let middle = try db.fetchPage(offset: 10, limit: 10)
+        let middle = try requireFixture(db).fetchPage(offset: 10, limit: 10)
         XCTAssertEqual(middle.count, 10, "Middle page should have correct count")
         
         print("✅ All edge cases handled correctly")
@@ -261,18 +261,18 @@ final class BlazePaginationTests: XCTestCase {
         
         // Insert 100 records
         for i in 0..<100 {
-            _ = try db.insert(BlazeDataRecord(["index": .int(i)]))
+            _ = try requireFixture(db).insert(BlazeDataRecord(["index": .int(i)]))
         }
         
         // Fetch via pagination
         var paginatedRecords: [BlazeDataRecord] = []
         for offset in stride(from: 0, to: 100, by: 10) {
-            let page = try db.fetchPage(offset: offset, limit: 10)
+            let page = try requireFixture(db).fetchPage(offset: offset, limit: 10)
             paginatedRecords.append(contentsOf: page)
         }
         
         // Fetch all at once
-        let allRecords = try db.fetchAll()
+        let allRecords = try requireFixture(db).fetchAll()
         
         // Both should return same count
         XCTAssertEqual(paginatedRecords.count, allRecords.count,

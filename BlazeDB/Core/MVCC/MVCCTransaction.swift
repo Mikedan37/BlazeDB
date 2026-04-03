@@ -98,7 +98,7 @@ public class MVCCTransaction {
             )
         }
         
-        guard let data = try pageStore.readPage(index: version.pageNumber) else {
+        guard let data = try pageStore.readPageWithOverflow(index: version.pageNumber) else {
             throw BlazeDBError.transactionFailed(
                 "Failed to read page \(version.pageNumber)",
                 underlyingError: nil
@@ -168,24 +168,31 @@ public class MVCCTransaction {
         // Serialize record using static method
         let data = try BlazeBinaryEncoder.encode(record)
         
-        // Try to reuse a freed page first (Page GC!)
+        // MVCC versions store the main page number. Large records may spill into
+        // overflow pages, so use the overflow-aware writer here just like the
+        // legacy insert path does.
+        var nextNewPage = pageStore.nextAvailablePageIndex()
         let pageNumber: Int
         if let freePage = versionManager.pageGC.getFreePage() {
-            // Reuse freed page! ♻️
-            try pageStore.writePageUnsynchronized(
-                index: freePage,
-                plaintext: data
-            )
             pageNumber = freePage
         } else {
-            // Allocate new page
-            let newPage = pageStore.nextAvailablePageIndex()
-            try pageStore.writePageUnsynchronized(
-                index: newPage,
-                plaintext: data
-            )
-            pageNumber = newPage
+            pageNumber = nextNewPage
+            nextNewPage += 1
         }
+
+        _ = try pageStore.writePageWithOverflow(
+            index: pageNumber,
+            plaintext: data,
+            allocatePage: {
+                if let freePage = self.versionManager.pageGC.getFreePage() {
+                    return freePage
+                }
+
+                let allocatedPage = nextNewPage
+                nextNewPage += 1
+                return allocatedPage
+            }
+        )
         
         // Create new version
         let version = RecordVersion(

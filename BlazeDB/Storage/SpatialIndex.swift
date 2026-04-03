@@ -245,7 +245,9 @@ public final class SpatialIndex: Codable {
                 root = RTreeNode(boundingBox: boundingBox, isLeaf: true)
             }
             
-            insert(point: point, recordId: id, into: &root!)
+            guard var rootNode = root else { return }
+            insert(point: point, recordId: id, into: &rootNode)
+            root = rootNode
             updateStats()
         }
     }
@@ -279,7 +281,9 @@ public final class SpatialIndex: Codable {
                     root = RTreeNode(boundingBox: boundingBox, isLeaf: true)
                 }
                 
-                insert(point: point, recordId: id, into: &root!)
+                guard var rootNode = root else { continue }
+                insert(point: point, recordId: id, into: &rootNode)
+                root = rootNode
             }
             
             updateStats()

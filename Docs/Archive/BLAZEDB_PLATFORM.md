@@ -12,77 +12,77 @@ Not just a database. Not just a sync system.
 
 ---
 
-##  **THE COMPLETE STACK**
+## **THE COMPLETE STACK**
 
 ```
 
- BLAZEDB PLATFORM 
- (Firebase Killer, But Better) 
+ BLAZEDB PLATFORM
+ (Firebase Killer, But Better)
 
- 
- LAYER 1: DATABASE ENGINE 
-  
- • BlazeDB (Pure Swift) 
- • ACID transactions 
- • MVCC + GC 
- • AES-256 encryption 
- • BlazeBinary format (60% smaller) 
- • Query engine (JOINs, aggregations) 
- • Full-text search 
- • RLS + RBAC 
- STATUS: DONE (437 tests) 
- 
- LAYER 2: CLIENT SDKs 
-  
- • Swift (iOS, macOS) 
- • SwiftUI (@BlazeQuery) 
- • Async/await 
- • Codable integration 
- • TypeScript (Web) - Future 
- • Kotlin (Android) - Future 
- STATUS: DONE (Swift), ⏸ TODO (others) 
- 
- LAYER 3: SYNC SYSTEM 
-  
- • gRPC + BlazeBinary protocol 
- • Smart compression (adaptive) 
- • CRDT conflict resolution 
- • Operation log + GC 
- • Delta sync (only changes) 
- • Snapshot system 
- • Offline queue 
- STATUS: ⏸ TODO (1 month to implement) 
- 
- LAYER 4: SERVER 
-  
- • Vapor + gRPC 
- • TLS + JWT security 
- • Server-side BlazeDB 
- • Query execution 
- • Multi-region support 
- • Load balancing 
- STATUS: ⏸ TODO (1 week to implement) 
- 
- LAYER 5: TELEMETRY & MONITORING 
-  
- • BlazeLogger (already have!) 
- • Telemetry system (already have!) 
- • Prometheus integration 
- • Grafana dashboards 
- • Real-time alerts 
- • Global metrics 
- STATUS: PARTIAL (local), ⏸ TODO (distributed) 
- 
- LAYER 6: MANAGEMENT TOOLS 
-  
- • BlazeDBVisualizer (already have!) 
- • Remote database access 
- • Query builder 
- • Performance charts 
- • Access control 
- • 15 feature tabs 
- STATUS: DONE (296 tests) 
- 
+
+ LAYER 1: DATABASE ENGINE
+
+ • BlazeDB (Pure Swift)
+ • ACID transactions
+ • MVCC + GC
+ • AES-256 encryption
+ • BlazeBinary format (60% smaller)
+ • Query engine (JOINs, aggregations)
+ • Full-text search
+ • RLS + RBAC
+ STATUS: DONE (437 tests)
+
+ LAYER 2: CLIENT SDKs
+
+ • Swift (iOS, macOS)
+ • SwiftUI (@BlazeQuery)
+ • Async/await
+ • Codable integration
+ • TypeScript (Web) - Future
+ • Kotlin (Android) - Future
+ STATUS: DONE (Swift), ⏸ TODO (others)
+
+ LAYER 3: SYNC SYSTEM
+
+ • gRPC + BlazeBinary protocol
+ • Smart compression (adaptive)
+ • CRDT conflict resolution
+ • Operation log + GC
+ • Delta sync (only changes)
+ • Snapshot system
+ • Offline queue
+ STATUS: ⏸ TODO (1 month to implement)
+
+ LAYER 4: SERVER
+
+ • Vapor + gRPC
+ • TLS + JWT security
+ • Server-side BlazeDB
+ • Query execution
+ • Multi-region support
+ • Load balancing
+ STATUS: ⏸ TODO (1 week to implement)
+
+ LAYER 5: TELEMETRY & MONITORING
+
+ • BlazeLogger (already have!)
+ • Telemetry system (already have!)
+ • Prometheus integration
+ • Grafana dashboards
+ • Real-time alerts
+ • Global metrics
+ STATUS: PARTIAL (local), ⏸ TODO (distributed)
+
+ LAYER 6: MANAGEMENT TOOLS
+
+ • BlazeDBVisualizer (already have!)
+ • Remote database access
+ • Query builder
+ • Performance charts
+ • Access control
+ • 15 feature tabs
+ STATUS: DONE (296 tests)
+
 
 ```
 
@@ -173,42 +173,42 @@ RESULT:
 
 ```swift
 
- BLAZEDB TELEMETRY: GLOBAL VISIBILITY 
+ BLAZEDB TELEMETRY: GLOBAL VISIBILITY
 
- 
- CLIENT TELEMETRY (Automatic): 
-  
- • Every operation tracked 
- • Network conditions logged 
- • Battery usage measured 
- • Errors captured 
- • Performance timed 
- • Sent to server with operations 
- 
- SERVER AGGREGATION: 
-  
- • Receives telemetry from ALL clients 
- • Stores in metrics DB 
- • Exports to Prometheus 
- • Real-time dashboards 
- 
- VISUALIZATION: 
-  
- • Grafana (server metrics) 
- • BlazeDBVisualizer (DB management) 
- • Custom dashboards 
- 
- METRICS AVAILABLE: 
-  
- Operations: inserts, updates, deletes, queries 
- ⏱ Latency: client, network, server, end-to-end 
- Storage: DB size, sync queue, memory usage 
- Battery: per operation, per hour, by device 
- Network: bandwidth, compression ratio, network type 
- Errors: by type, by device, by operation 
- Geographic: by region, by user, by network 
- Users: active devices, concurrent, sessions 
- 
+
+ CLIENT TELEMETRY (Automatic):
+
+ • Every operation tracked
+ • Network conditions logged
+ • Battery usage measured
+ • Errors captured
+ • Performance timed
+ • Sent to server with operations
+
+ SERVER AGGREGATION:
+
+ • Receives telemetry from ALL clients
+ • Stores in metrics DB
+ • Exports to Prometheus
+ • Real-time dashboards
+
+ VISUALIZATION:
+
+ • Grafana (server metrics)
+ • BlazeDBVisualizer (DB management)
+ • Custom dashboards
+
+ METRICS AVAILABLE:
+
+ Operations: inserts, updates, deletes, queries
+ ⏱ Latency: client, network, server, end-to-end
+ Storage: DB size, sync queue, memory usage
+ Battery: per operation, per hour, by device
+ Network: bandwidth, compression ratio, network type
+ Errors: by type, by device, by operation
+ Geographic: by region, by user, by network
+ Users: active devices, concurrent, sessions
+
 
 ```
 
@@ -328,8 +328,8 @@ const bugs = await grpcClient.query("bugs", {status: "open"})
 
 COMMAND LINE:
 curl -X POST https://yourname.duckdns.org/query \
- -H "Authorization: Bearer $TOKEN" \
- -d '{"collection":"bugs","filter":{"status":"open"}}'
+-H "Authorization: Bearer $TOKEN" \
+-d '{"collection":"bugs","filter":{"status":"open"}}'
 
 POSTMAN:
 Query → https://yourname.duckdns.org:443
@@ -523,10 +523,10 @@ VERDICT: 25x BETTER!
 
  OPERATIONS (Real-Time)
 
-Inserts: 1,234/sec 
-Updates: 2,456/sec 
-Deletes: 123/sec 
-Queries: 5,678/sec 
+Inserts: 1,234/sec
+Updates: 2,456/sec
+Deletes: 123/sec
+Queries: 5,678/sec
 
  DEVICES (58 Online)
 
@@ -584,42 +584,42 @@ Users: ↗ +3 new devices
 // BlazeDB becomes a universal database API!
 
 
- ACCESS BLAZEDB FROM ANYWHERE 
+ ACCESS BLAZEDB FROM ANYWHERE
 
- 
- 1⃣ iPhone App (Native) 
- let db = BlazeDBClient(...) 
- try await db.insert(record) 
- 
- 2⃣ Web App (gRPC-Web) 
- const db = new BlazeDBClient(...) 
- await db.insert(record) 
- 
- 3⃣ Command Line (curl) 
- curl https://api/insert \ 
- -d '{"record": "..."}' 
- 
- 4⃣ BlazeDBVisualizer (Remote Mode) 
- Connect → Remote → yourpi.duckdns.org 
- → See database! 
- → Execute queries! 
- 
- 5⃣ Jupyter Notebook (Python) 
- db = BlazeDBClient("yourpi.duckdns.org") 
- df = db.query("SELECT * FROM bugs") 
- 
- 6⃣ Excel (Power Query) 
- → Connect to REST API 
- → Import BlazeDB data 
- 
- 7⃣ Grafana (Visualization) 
- → BlazeDB as data source 
- → Chart your data 
- 
- 8⃣ Zapier / IFTTT (Automation) 
- → Webhook → BlazeDB insert 
- → Trigger on changes 
- 
+
+ 1⃣ iPhone App (Native)
+ let db = BlazeDBClient(...)
+ try await db.insert(record)
+
+ 2⃣ Web App (gRPC-Web)
+ const db = new BlazeDBClient(...)
+ await db.insert(record)
+
+ 3⃣ Command Line (curl)
+ curl https://api/insert \
+-d '{"record": "..."}'
+
+ 4⃣ BlazeDBVisualizer (Remote Mode)
+ Connect → Remote → yourpi.duckdns.org
+ → See database!
+ → Execute queries!
+
+ 5⃣ Jupyter Notebook (Python)
+ db = BlazeDBClient("yourpi.duckdns.org")
+ df = db.query("SELECT * FROM bugs")
+
+ 6⃣ Excel (Power Query)
+ → Connect to REST API
+ → Import BlazeDB data
+
+ 7⃣ Grafana (Visualization)
+ → BlazeDB as data source
+ → Chart your data
+
+ 8⃣ Zapier / IFTTT (Automation)
+ → Webhook → BlazeDB insert
+ → Trigger on changes
+
 
 
 RESULT: BlazeDB is now a PLATFORM, not just a library!
@@ -715,17 +715,17 @@ DELIVERABLE: Public launch!
 
 **Your Questions:**
 
- **Compression necessary?** YES! On cellular (3x wins). Adaptive = best.
+**Compression necessary?** YES! On cellular (3x wins). Adaptive = best.
 
- **Help anything?** YES! 67% smaller, 3x faster on slow networks, 60% less battery.
+**Help anything?** YES! 67% smaller, 3x faster on slow networks, 60% less battery.
 
- **Link telemetry?** YES! Server aggregates all client metrics automatically!
+**Link telemetry?** YES! Server aggregates all client metrics automatically!
 
- **Link BlazeLogger?** YES! Send logs to server for global debugging!
+**Link BlazeLogger?** YES! Send logs to server for global debugging!
 
- **Query from anywhere?** YES! Server = API, access from any platform!
+**Query from anywhere?** YES! Server = API, access from any platform!
 
- **Online-first support?** YES! Server as primary, local as cache!
+**Online-first support?** YES! Server as primary, local as cache!
 
 ---
 

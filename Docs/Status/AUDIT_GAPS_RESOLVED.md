@@ -1,6 +1,6 @@
 # Audit Gaps Resolution Summary
 
-**Date:** 2025-01-22  
+**Date:** 2025-01-22
 **Status:** Complete
 
 ## Overview
@@ -164,35 +164,35 @@ The CI workflow (`.github/workflows/core-tests.yml`) now:
 
 ## Constraints Maintained
 
-- ✅ No frozen core files modified
-- ✅ No new concurrency constructs added
-- ✅ Swift 6 strict concurrency compliance maintained
-- ✅ All changes are at API/tooling boundary
-- ✅ Tests use public APIs only
+- No frozen core files modified
+- No new concurrency constructs added
+- Swift 6 strict concurrency compliance maintained
+- All changes are at API/tooling boundary
+- Tests use public APIs only
 
 ---
 
 ## Remaining Work
 
 1. **Distributed Modules Swift 6 Compliance** (Phase C)
-   - Status: Documented, not blocking
-   - Priority: Low (core is stable)
-   - Approach: Fix concurrency issues or make truly optional
+- Status: Documented, not blocking
+- Priority: Low (core is stable)
+- Approach: Fix concurrency issues or make truly optional
 
 2. **Package.swift Restructuring** (Future)
-   - Separate core and distributed targets
-   - Eliminate need for log filtering
-   - Priority: Medium (improves developer experience)
+- Separate core and distributed targets
+- Eliminate need for log filtering
+- Priority: Medium (improves developer experience)
 
 ---
 
 ## Summary
 
 All critical audit gaps have been resolved:
-- ✅ Freeze check automation
-- ✅ Task.detached removal
-- ✅ Core-only test path
-- ✅ CLI smoke tests
+- Freeze check automation
+- Task.detached removal
+- Core-only test path
+- CLI smoke tests
 
 BlazeDB core is now:
 - Protected from accidental frozen core modifications

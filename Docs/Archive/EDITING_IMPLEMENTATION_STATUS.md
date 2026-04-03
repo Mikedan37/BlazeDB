@@ -78,53 +78,53 @@ struct Settings {
 ##### **EditingServiceTests.swift** (85 tests)
 ```
  Insert Tests (5 tests)
- - testInsertRecord
- - testInsertRecord_CreatesAutoBackup
- - testInsertMultipleRecords
- - testInsertRecord_WithoutConnection
- - testInsertRecord_WithAuditLogging
+- testInsertRecord
+- testInsertRecord_CreatesAutoBackup
+- testInsertMultipleRecords
+- testInsertRecord_WithoutConnection
+- testInsertRecord_WithAuditLogging
 
  Update Tests (3 tests)
- - testUpdateRecord
- - testUpdateField
- - testUpdateNonExistentRecord
+- testUpdateRecord
+- testUpdateField
+- testUpdateNonExistentRecord
 
  Delete Tests (2 tests)
- - testDeleteRecord
- - testDeleteNonExistentRecord
+- testDeleteRecord
+- testDeleteNonExistentRecord
 
  Bulk Update Tests (3 tests)
- - testBulkUpdateField
- - testBulkUpdateField_TooLarge
- - testBulkUpdateField_PartialSuccess
+- testBulkUpdateField
+- testBulkUpdateField_TooLarge
+- testBulkUpdateField_PartialSuccess
 
  Bulk Delete Tests (2 tests)
- - testBulkDelete
- - testBulkDelete_TooLarge
+- testBulkDelete
+- testBulkDelete_TooLarge
 
  Undo Tests (7 tests)
- - testUndo_Insert
- - testUndo_Update
- - testUndo_Delete
- - testUndo_BulkUpdate
- - testUndo_BulkDelete
- - testCanUndo
- - testUndoExpiration
+- testUndo_Insert
+- testUndo_Update
+- testUndo_Delete
+- testUndo_BulkUpdate
+- testUndo_BulkDelete
+- testCanUndo
+- testUndoExpiration
 
  Settings Tests (2 tests)
- - testSettings_AutoBackup
- - testSettings_BulkOperationLimit
+- testSettings_AutoBackup
+- testSettings_BulkOperationLimit
 
  Error Handling Tests (1 test)
- - testErrorHandling_DatabaseDisconnected
+- testErrorHandling_DatabaseDisconnected
 
  Integration Tests (2 tests)
- - testCompleteWorkflow
- - testConcurrentInserts
+- testCompleteWorkflow
+- testConcurrentInserts
 
  Performance Tests (2 tests)
- - testPerformance_Insert100Records
- - testPerformance_BulkUpdate
+- testPerformance_Insert100Records
+- testPerformance_BulkUpdate
 ```
 
 ##### **AuditLogServiceTests.swift** (40 tests)
@@ -146,32 +146,32 @@ struct Settings {
 ##### **EditingIntegrationTests.swift** (50 tests)
 ```
  Complete Workflow Tests (4 tests)
- - testWorkflow_InsertUpdateDelete
- - testWorkflow_BulkOperations
- - testWorkflow_BackupBeforeEditing
- - testWorkflow_UndoChain
+- testWorkflow_InsertUpdateDelete
+- testWorkflow_BulkOperations
+- testWorkflow_BackupBeforeEditing
+- testWorkflow_UndoChain
 
  Error Recovery (2 tests)
- - testErrorRecovery_FailedUpdateRollback
- - testErrorRecovery_ConcurrentEdits
+- testErrorRecovery_FailedUpdateRollback
+- testErrorRecovery_ConcurrentEdits
 
  Audit Integration (3 tests)
- - testAuditIntegration_AllOperationsLogged
- - testAuditIntegration_OldAndNewValuesTracked
- - testAuditIntegration_ExportAuditTrail
+- testAuditIntegration_AllOperationsLogged
+- testAuditIntegration_OldAndNewValuesTracked
+- testAuditIntegration_ExportAuditTrail
 
  Performance (2 tests)
- - testPerformance_Edit100Records
- - testPerformance_BulkUpdate100Records
+- testPerformance_Edit100Records
+- testPerformance_BulkUpdate100Records
 
  Data Integrity (2 tests)
- - testDataIntegrity_UndoPreservesData
- - testDataIntegrity_BulkDeleteUndo
+- testDataIntegrity_UndoPreservesData
+- testDataIntegrity_BulkDeleteUndo
 
  Real-World Scenarios (3 tests)
- - testScenario_UserRegistrationFlow
- - testScenario_DataMigration
- - testScenario_BulkCleanup
+- testScenario_UserRegistrationFlow
+- testScenario_DataMigration
+- testScenario_BulkCleanup
 ```
 
 ---
@@ -237,13 +237,13 @@ COVERAGE:
 **UI Layout:**
 ```
 
- Data Viewer [+ Add] 
+ Data Viewer [+ Add]
 
- ID  Name  Age  Email 
+ ID Name Age Email
 
- abc  [Alice]  25  alice@...  ← Double-click to edit
- def  Bob  30  bob@... 
- ghi  Carol  28  carol@... 
+ abc [Alice] 25 alice@... ← Double-click to edit
+ def Bob 30 bob@...
+ ghi Carol 28 carol@...
 
 
 [Undo: Updated "Name" (28s left)] [×]
@@ -266,21 +266,21 @@ COVERAGE:
 **UI Layout:**
 ```
 
- Create New Record 
- 
-  
-  Field Name: [name____]  
-  Field Type: [String ]  
-  Value: [Alice___]  
-  [+ Add Field]  
-  
- 
- Fields Preview: 
- • name (string): "Alice" 
- • age (int): 25 
- • email (string): "alice@..." 
- 
- [Cancel] [Create Record] 
+ Create New Record
+
+
+ Field Name: [name____]
+ Field Type: [String ]
+ Value: [Alice___]
+ [+ Add Field]
+
+
+ Fields Preview:
+ • name (string): "Alice"
+ • age (int): 25
+ • email (string): "alice@..."
+
+ [Cancel] [Create Record]
 
 ```
 
@@ -300,21 +300,21 @@ COVERAGE:
 **UI Layout:**
 ```
 
-  Delete 5 Records? 
- 
- This action cannot be undone, 
- but you can undo within 30s. 
- 
-  Create backup first 
- (Recommended) 
- 
- Records to delete: 
- • Alice (alice@test.com) 
- • Bob (bob@test.com) 
- • Carol (carol@test.com) 
- •...and 2 more 
- 
- [Cancel] [Delete] 
+ Delete 5 Records?
+
+ This action cannot be undone,
+ but you can undo within 30s.
+
+ Create backup first
+ (Recommended)
+
+ Records to delete:
+ • Alice (alice@test.com)
+ • Bob (bob@test.com)
+ • Carol (carol@test.com)
+ •...and 2 more
+
+ [Cancel] [Delete]
 
 ```
 
@@ -335,29 +335,29 @@ COVERAGE:
 **UI Layout:**
 ```
 
- Data Viewer [Select All] [×] 
+ Data Viewer [Select All] [×]
 
-  ID  Name  Status 
+ ID Name Status
 
-  abc  Alice  active 
-  def  Bob  active 
- ghi  Carol  inactive 
+ abc Alice active
+ def Bob active
+ ghi Carol inactive
 
 
 2 selected: [Update Selected] [Delete Selected]
 
 On "Update Selected":
 
- Bulk Edit 2 Records 
- 
- Field: [status ] 
- Value: [inactive] 
- 
- Preview: 
- • Alice: status = "inactive" 
- • Bob: status = "inactive" 
- 
- [Cancel] [Apply to 2] 
+ Bulk Edit 2 Records
+
+ Field: [status ]
+ Value: [inactive]
+
+ Preview:
+ • Alice: status = "inactive"
+ • Bob: status = "inactive"
+
+ [Cancel] [Apply to 2]
 
 ```
 
@@ -458,14 +458,14 @@ Day 5: Documentation & examples
 | Feature | BlazeDBVisualizer | TablePlus | Sequel Pro | DB Browser |
 |---------|-------------------|-----------|------------|------------|
 | **Inline Editing** | | | | |
-| **Bulk Operations** | | |  Limited |  Limited |
-| **Undo Support** | 30s window | | |  Limited |
+| **Bulk Operations** | | | Limited | Limited |
+| **Undo Support** | 30s window | | | Limited |
 | **Audit Logging** | Full | | | |
-| **Auto Backup** | Before edits |  Manual |  Manual | |
-| **Type Validation** | | |  Basic |  Basic |
+| **Auto Backup** | Before edits | Manual | Manual | |
+| **Type Validation** | | | Basic | Basic |
 | **GDPR Compliance** | Audit export | | | |
 | **Touch ID** | | | | |
-| **Native macOS** | SwiftUI |  Electron | |  Qt |
+| **Native macOS** | SwiftUI | Electron | | Qt |
 | **Open Source** | | ($99) | | |
 
 **BlazeDBVisualizer will be THE MOST SECURE, AUDITABLE, OPEN-SOURCE DATABASE TOOL! **
@@ -477,34 +477,34 @@ Day 5: Documentation & examples
 ### **What Makes BlazeDBVisualizer Unique:**
 
 1. **30-Second Undo Window**
- - No other tool has this!
- - Undo any operation within 30 seconds
- - Automatic expiration for safety
+- No other tool has this!
+- Undo any operation within 30 seconds
+- Automatic expiration for safety
 
 2. **Automatic Safety Backups**
- - Auto-backup before FIRST edit
- - Never lose data accidentally
- - One-click restore
+- Auto-backup before FIRST edit
+- Never lose data accidentally
+- One-click restore
 
 3. **Full Audit Logging**
- - GDPR/HIPAA compliant
- - Who, what, when, old/new values
- - Export to JSON/CSV for compliance
+- GDPR/HIPAA compliant
+- Who, what, when, old/new values
+- Export to JSON/CSV for compliance
 
 4. **Touch ID Integration**
- - Unique to BlazeDBVisualizer!
- - Secure, fast authentication
- - macOS Keychain integration
+- Unique to BlazeDBVisualizer!
+- Secure, fast authentication
+- macOS Keychain integration
 
 5. **Bulk Operations**
- - Update/delete 1000s of records
- - Progress bars for large ops
- - Preview before applying
+- Update/delete 1000s of records
+- Progress bars for large ops
+- Preview before applying
 
 6. **Type Validation**
- - Prevents "abc" in int fields
- - Real-time validation feedback
- - Smart type detection
+- Prevents "abc" in int fields
+- Real-time validation feedback
+- Smart type detection
 
 ---
 

@@ -3,6 +3,9 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 TAGS=("$@")
+LOG_DIR="$ROOT_DIR/.artifacts/tagcheck"
+
+mkdir -p "$LOG_DIR"
 
 if [ "${#TAGS[@]}" -eq 0 ]; then
   # Last three semver tags present in this clone (requires full clone: fetch-depth: 0 in CI).
@@ -37,7 +40,7 @@ for TAG in "${TAGS[@]}"; do
   WORKTREE="$(mktemp -d "${TMPDIR:-/tmp}/blazedb-tagcheck-${TAG//./_}-XXXXXX")"
   HOME_ISO="$(mktemp -d "${TMPDIR:-/tmp}/blazedb-home-tagcheck-${TAG//./_}-XXXXXX")"
   TMP_ISO="$(mktemp -d "${TMPDIR:-/tmp}/blazedb-tmp-tagcheck-${TAG//./_}-XXXXXX")"
-  LOG="$ROOT_DIR/.tagcheck-${TAG}.log"
+  LOG="$LOG_DIR/${TAG}.log"
 
   echo "[$TAG] preparing clean worktree..."
   git -C "$ROOT_DIR" worktree add --detach "$WORKTREE" "$TAG" >/dev/null
@@ -65,6 +68,6 @@ for TAG in "${TAGS[@]}"; do
   echo
 done
 
-echo "Logs written to .tagcheck-<tag>.log in repo root."
+echo "Logs written to .artifacts/tagcheck/<tag>.log."
 echo "=== Tag buildability check complete ==="
 exit "$FAILED"

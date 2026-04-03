@@ -24,7 +24,7 @@ BlazeLogger.debug(" [INIT] Before PageStore init...")
 
 ---
 
-##  Remaining Issues
+## Remaining Issues
 
 ### 1. **Intentional Print Statement** (OK to Keep)
 
@@ -41,7 +41,7 @@ public func explainQuery() throws {
 
 ---
 
-### 2. **Legacy Code Still Used** 
+### 2. **Legacy Code Still Used**
 
 **Location:** `BlazeDB/Query/BlazeQueryLegacy.swift`
 **Status:** Marked as "Legacy" but still actively used
@@ -74,7 +74,7 @@ public func explainQuery() throws {
 
 ---
 
-### 4. **Deprecated Type Aliases** 
+### 4. **Deprecated Type Aliases**
 
 **Location:** `BlazeDB/Utils/BlazeEncoder.swift:127-131`
 **Code:**
@@ -91,7 +91,7 @@ public typealias CBORCoder = BlazeEncoder
 
 ---
 
-### 5. **Deprecated Async Methods** 
+### 5. **Deprecated Async Methods**
 
 **Location:** `BlazeDB/Query/QueryBuilder+Async.swift:113-160`
 **Status:** Methods marked as deprecated
@@ -103,7 +103,7 @@ public typealias CBORCoder = BlazeEncoder
 
 **Total Issues Found:** ~15
 - **Fixed:** 2 (print statements)
--  **Needs Review:** 3 (legacy code, TODOs, deprecated methods)
+- **Needs Review:** 3 (legacy code, TODOs, deprecated methods)
 - **OK to Keep:** 1 (intentional print in convenience method)
 - **Properly Deprecated:** 2 (type aliases, BlazeCollection)
 
@@ -114,9 +114,9 @@ public typealias CBORCoder = BlazeEncoder
 ## Recommended Next Steps
 
 1. **Done:** Remove print statements from production code
-2.  **Review:** Verify `BlazeQueryLegacy` usage - deprecate or rename
-3.  **Document:** Add TODOs to project tracking or implement
-4.  **Cleanup:** Remove deprecated async methods if unused
+2. **Review:** Verify `BlazeQueryLegacy` usage - deprecate or rename
+3. **Document:** Add TODOs to project tracking or implement
+4. **Cleanup:** Remove deprecated async methods if unused
 5. **Done:** BlazeCollection properly deprecated
 
 ---

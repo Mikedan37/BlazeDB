@@ -583,27 +583,25 @@ struct StorageLayout: Codable {
     }
 
     static func load(from url: URL) throws -> StorageLayout {
-        do {
-            let data = try Data(contentsOf: url)
-            let decoder = JSONDecoder()
-            decoder.dateDecodingStrategy = .iso8601
-
-            // Prefer secure-wrapper decode when present, but do not verify signature
-            // in this legacy helper (verification is handled by loadSecure()).
-            if let secureLayout = try? decoder.decode(StorageLayout.SecureLayout.self, from: data) {
-                return secureLayout.layout
-            }
-
-            return try decoder.decode(StorageLayout.self, from: data)
-        } catch {
-            // Check if file simply doesn't exist (new database) vs actual corruption
-            if !FileManager.default.fileExists(atPath: url.path) {
-                BlazeLogger.debug("Initializing new database (no layout file found at \(url.lastPathComponent))")
-            } else {
-                BlazeLogger.warn("Corrupted layout at \(url.lastPathComponent). Rebuilding default layout. Error: \(error)")
-            }
-            return StorageLayout.empty() // Return safe defaults
+        // Missing file: legitimate “new DB” path — empty layout.
+        // Existing file: must decode or throw; do not substitute empty layout for corruption
+        // (that hides data loss and poisons higher-level recovery logic).
+        guard FileManager.default.fileExists(atPath: url.path) else {
+            BlazeLogger.debug("Initializing new database (no layout file found at \(url.lastPathComponent))")
+            return StorageLayout.empty()
         }
+
+        let data = try Data(contentsOf: url)
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+
+        // Prefer secure-wrapper decode when present, but do not verify signature
+        // in this legacy helper (verification is handled by loadSecure()).
+        if let secureLayout = try? decoder.decode(StorageLayout.SecureLayout.self, from: data) {
+            return try secureLayout.resolvedLayout(using: decoder)
+        }
+
+        return try decoder.decode(StorageLayout.self, from: data)
     }
 
     func save(to url: URL) throws {

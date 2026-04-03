@@ -39,7 +39,7 @@
 
 ---
 
-##  **CRITICAL GAPS (Need Integration)**
+## **CRITICAL GAPS (Need Integration)**
 
 ### 1. Lazy Decoding Integration
 
@@ -126,15 +126,15 @@ let encoded = isLazyEnabled
 
 | Feature | Foundation | Integration | Optimization | Tests |
 |---------|-----------|-------------|--------------|-------|
-| Lazy Decoding | | | |  |
+| Lazy Decoding | | | | |
 | Geospatial | | | | |
-| Event Triggers | | |  |  |
-| Vector Search | | | |  |
-| Query Planner | | |  |  |
+| Event Triggers | | | | |
+| Vector Search | | | | |
+| Query Planner | | | | |
 
 **Legend:**
 - Complete
--  Partial
+- Partial
 - Missing
 
 ---
@@ -142,27 +142,27 @@ let encoded = isLazyEnabled
 ## **PRIORITY FIXES**
 
 1. **Lazy Decoding Integration** (High Priority)
- - Enable v3 encoding when flag set
- - Integrate with QueryBuilder projection
- - Fix LazyBlazeRecord.decodeField()
+- Enable v3 encoding when flag set
+- Integrate with QueryBuilder projection
+- Fix LazyBlazeRecord.decodeField()
 
 2. **Vector Index Integration** (High Priority)
- - Add VectorIndex to DynamicCollection
- - Maintain index on writes
- - Use index in queries
+- Add VectorIndex to DynamicCollection
+- Maintain index on writes
+- Use index in queries
 
 3. **Query Planner Integration** (Medium Priority)
- - Make planner default in execute()
- - Verify optimization works
+- Make planner default in execute()
+- Verify optimization works
 
 4. **Event Triggers Persistence** (Medium Priority)
- - Implement persistence
- - Reload on DB open
+- Implement persistence
+- Reload on DB open
 
 5. **Comprehensive Tests** (High Priority)
- - Performance benchmarks
- - Edge cases
- - Integration tests
+- Performance benchmarks
+- Edge cases
+- Integration tests
 
 ---
 

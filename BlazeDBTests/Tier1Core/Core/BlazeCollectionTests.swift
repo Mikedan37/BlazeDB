@@ -16,7 +16,7 @@ import XCTest
 #endif
 
 final class BlazeCollectionTests: XCTestCase {
-    var tempURL: URL!
+    private var tempURL: URL?
     var store: PageStore!
     var collection: BlazeCollection<Commit>!
 
@@ -25,15 +25,15 @@ final class BlazeCollectionTests: XCTestCase {
             .appendingPathComponent(UUID().uuidString + ".blz")
         
         let key = try KeyManager.getKey(from: .password("SecureTest-123!"))
-        store = try PageStore(fileURL: tempURL, key: key)
+        store = try PageStore(fileURL: try requireFixture(tempURL), key: key)
 
-        let metaURL = tempURL.deletingPathExtension().appendingPathExtension("meta")
+        let metaURL = try requireFixture(tempURL).deletingPathExtension().appendingPathExtension("meta")
         collection = try BlazeCollection(store: store, metaURL: metaURL, key: key)
     }
 
     override func tearDownWithError() throws {
-        try? FileManager.default.removeItem(at: tempURL)
-        try? FileManager.default.removeItem(at: tempURL.deletingPathExtension().appendingPathExtension("meta"))
+        try? FileManager.default.removeItem(at: try requireFixture(tempURL))
+        try? FileManager.default.removeItem(at: try requireFixture(tempURL).deletingPathExtension().appendingPathExtension("meta"))
     }
 
     func testInsertAndFetchCommit() throws {

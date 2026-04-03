@@ -12,28 +12,28 @@ import XCTest
 
 final class SubqueryTests: XCTestCase {
     
-    var tempURL: URL!
-    var usersURL: URL!
-    var db: BlazeDBClient!
-    var usersDB: BlazeDBClient!
+    private var tempURL: URL?
+    private var usersURL: URL?
+    private var db: BlazeDBClient?
+    private var usersDB: BlazeDBClient?
     
-    override func setUp() {
-        super.setUp()
+    override func setUpWithError() throws {
+        try super.setUpWithError()
         tempURL = FileManager.default.temporaryDirectory
             .appendingPathComponent("Bugs-\(UUID().uuidString).blazedb")
         usersURL = FileManager.default.temporaryDirectory
             .appendingPathComponent("Users-\(UUID().uuidString).blazedb")
-        db = try! BlazeDBClient(name: "bugs", fileURL: tempURL, password: "SecureTestDB-456!")
-        usersDB = try! BlazeDBClient(name: "users", fileURL: usersURL, password: "SecureTestDB-456!")
+        db = try BlazeDBClient(name: "bugs", fileURL: try requireFixture(tempURL), password: "SecureTestDB-456!")
+        usersDB = try BlazeDBClient(name: "users", fileURL: try requireFixture(usersURL), password: "SecureTestDB-456!")
     }
     
     override func tearDown() {
         db = nil
         usersDB = nil
-        try? FileManager.default.removeItem(at: tempURL)
-        try? FileManager.default.removeItem(at: tempURL.deletingPathExtension().appendingPathExtension("meta"))
-        try? FileManager.default.removeItem(at: usersURL)
-        try? FileManager.default.removeItem(at: usersURL.deletingPathExtension().appendingPathExtension("meta"))
+        try? FileManager.default.removeItem(at: try requireFixture(tempURL))
+        try? FileManager.default.removeItem(at: try requireFixture(tempURL).deletingPathExtension().appendingPathExtension("meta"))
+        try? FileManager.default.removeItem(at: try requireFixture(usersURL))
+        try? FileManager.default.removeItem(at: try requireFixture(usersURL).deletingPathExtension().appendingPathExtension("meta"))
         super.tearDown()
     }
     
@@ -45,26 +45,26 @@ final class SubqueryTests: XCTestCase {
         let bob = UUID()
         let charlie = UUID()
         
-        _ = try usersDB.insert(BlazeDataRecord(["id": .uuid(alice), "name": .string("Alice"), "role": .string("senior")]))
-        _ = try usersDB.insert(BlazeDataRecord(["id": .uuid(bob), "name": .string("Bob"), "role": .string("junior")]))
-        _ = try usersDB.insert(BlazeDataRecord(["id": .uuid(charlie), "name": .string("Charlie"), "role": .string("senior")]))
+        _ = try requireFixture(usersDB).insert(BlazeDataRecord(["id": .uuid(alice), "name": .string("Alice"), "role": .string("senior")]))
+        _ = try requireFixture(usersDB).insert(BlazeDataRecord(["id": .uuid(bob), "name": .string("Bob"), "role": .string("junior")]))
+        _ = try requireFixture(usersDB).insert(BlazeDataRecord(["id": .uuid(charlie), "name": .string("Charlie"), "role": .string("senior")]))
         
         // Create bugs
         for i in 0..<20 {
             let author = [alice, bob, charlie][i % 3]
-            _ = try db.insert(BlazeDataRecord([
+            _ = try requireFixture(db).insert(BlazeDataRecord([
                 "title": .string("Bug \(i)"),
                 "author_id": .uuid(author)
             ]))
         }
         
         // Subquery: Get IDs of senior developers
-        let seniorDevs = usersDB.query()
+        let seniorDevs = try requireFixture(usersDB).query()
             .where("role", equals: .string("senior"))
             .asSubquery(extracting: "id")
         
         // Main query: Get bugs by senior devs
-        let results = try db.query()
+        let results = try requireFixture(db).query()
             .where("author_id", inSubquery: seniorDevs)
             .execute()
         
@@ -78,11 +78,11 @@ final class SubqueryTests: XCTestCase {
         let alice = UUID()
         let bob = UUID()
         
-        _ = try usersDB.insert(BlazeDataRecord(["id": .uuid(alice), "active": .bool(true)]))
-        _ = try usersDB.insert(BlazeDataRecord(["id": .uuid(bob), "active": .bool(false)]))
+        _ = try requireFixture(usersDB).insert(BlazeDataRecord(["id": .uuid(alice), "active": .bool(true)]))
+        _ = try requireFixture(usersDB).insert(BlazeDataRecord(["id": .uuid(bob), "active": .bool(false)]))
         
         for i in 0..<10 {
-            _ = try db.insert(BlazeDataRecord([
+            _ = try requireFixture(db).insert(BlazeDataRecord([
                 "title": .string("Bug \(i)"),
                 "author_id": .uuid(i % 2 == 0 ? alice : bob),
                 "priority": .int(i % 5 + 1)
@@ -90,12 +90,12 @@ final class SubqueryTests: XCTestCase {
         }
         
         // Subquery: Active users
-        let activeUsers = usersDB.query()
+        let activeUsers = try requireFixture(usersDB).query()
             .where("active", equals: .bool(true))
             .asSubquery(extracting: "id")
         
         // Main query: High-priority bugs by active users
-        let results = try db.query()
+        let results = try requireFixture(db).query()
             .where("priority", greaterThan: .int(3))
             .where("author_id", inSubquery: activeUsers)
             .execute()
@@ -109,18 +109,18 @@ final class SubqueryTests: XCTestCase {
     }
     
     func testSubqueryReturnsEmpty() throws {
-        _ = try usersDB.insert(BlazeDataRecord(["id": .uuid(UUID()), "role": .string("admin")]))
+        _ = try requireFixture(usersDB).insert(BlazeDataRecord(["id": .uuid(UUID()), "role": .string("admin")]))
         
         for i in 0..<10 {
-            _ = try db.insert(BlazeDataRecord(["title": .string("Bug \(i)"), "author_id": .uuid(UUID())]))
+            _ = try requireFixture(db).insert(BlazeDataRecord(["title": .string("Bug \(i)"), "author_id": .uuid(UUID())]))
         }
         
         // Subquery returns no results
-        let seniorDevs = usersDB.query()
+        let seniorDevs = try requireFixture(usersDB).query()
             .where("role", equals: .string("nonexistent"))
             .asSubquery(extracting: "id")
         
-        let results = try db.query()
+        let results = try requireFixture(db).query()
             .where("author_id", inSubquery: seniorDevs)
             .execute()
         
@@ -131,22 +131,22 @@ final class SubqueryTests: XCTestCase {
         let alice = UUID()
         let bob = UUID()
         
-        _ = try usersDB.insert(BlazeDataRecord(["id": .uuid(alice), "role": .string("senior")]))
-        _ = try usersDB.insert(BlazeDataRecord(["id": .uuid(bob), "role": .string("junior")]))
+        _ = try requireFixture(usersDB).insert(BlazeDataRecord(["id": .uuid(alice), "role": .string("senior")]))
+        _ = try requireFixture(usersDB).insert(BlazeDataRecord(["id": .uuid(bob), "role": .string("junior")]))
         
         for i in 0..<10 {
-            _ = try db.insert(BlazeDataRecord([
+            _ = try requireFixture(db).insert(BlazeDataRecord([
                 "title": .string("Bug \(i)"),
                 "author_id": .uuid(i % 2 == 0 ? alice : bob)
             ]))
         }
         
         // Get bugs NOT by senior devs
-        let seniorDevs = usersDB.query()
+        let seniorDevs = try requireFixture(usersDB).query()
             .where("role", equals: .string("senior"))
             .asSubquery(extracting: "id")
         
-        let results = try db.query()
+        let results = try requireFixture(db).query()
             .where("author_id", notInSubquery: seniorDevs)
             .execute()
         
@@ -164,14 +164,14 @@ final class SubqueryTests: XCTestCase {
         let alice = UUID()
         let bob = UUID()
         
-        _ = try usersDB.insert(BlazeDataRecord([
+        _ = try requireFixture(usersDB).insert(BlazeDataRecord([
             "id": .uuid(alice),
             "name": .string("Alice"),
             "role": .string("senior"),
             "active": .bool(true)
         ]))
         
-        _ = try usersDB.insert(BlazeDataRecord([
+        _ = try requireFixture(usersDB).insert(BlazeDataRecord([
             "id": .uuid(bob),
             "name": .string("Bob"),
             "role": .string("senior"),
@@ -179,18 +179,18 @@ final class SubqueryTests: XCTestCase {
         ]))
         
         for i in 0..<10 {
-            _ = try db.insert(BlazeDataRecord([
+            _ = try requireFixture(db).insert(BlazeDataRecord([
                 "author_id": .uuid(i % 2 == 0 ? alice : bob)
             ]))
         }
         
         // Subquery with multiple filters
-        let activeSeniors = usersDB.query()
+        let activeSeniors = try requireFixture(usersDB).query()
             .where("role", equals: .string("senior"))
             .where("active", equals: .bool(true))
             .asSubquery(extracting: "id")
         
-        let results = try db.query()
+        let results = try requireFixture(db).query()
             .where("author_id", inSubquery: activeSeniors)
             .execute()
         
@@ -198,17 +198,17 @@ final class SubqueryTests: XCTestCase {
     }
     
     func testSubqueryWithNonIDField() throws {
-        _ = try usersDB.insert(BlazeDataRecord(["name": .string("Alice"), "email": .string("alice@example.com")]))
-        _ = try usersDB.insert(BlazeDataRecord(["name": .string("Bob"), "email": .string("bob@example.com")]))
+        _ = try requireFixture(usersDB).insert(BlazeDataRecord(["name": .string("Alice"), "email": .string("alice@example.com")]))
+        _ = try requireFixture(usersDB).insert(BlazeDataRecord(["name": .string("Bob"), "email": .string("bob@example.com")]))
         
-        _ = try db.insert(BlazeDataRecord(["assignee_email": .string("alice@example.com")]))
-        _ = try db.insert(BlazeDataRecord(["assignee_email": .string("charlie@example.com")]))
+        _ = try requireFixture(db).insert(BlazeDataRecord(["assignee_email": .string("alice@example.com")]))
+        _ = try requireFixture(db).insert(BlazeDataRecord(["assignee_email": .string("charlie@example.com")]))
         
         // Subquery extracts emails
-        let userEmails = usersDB.query()
+        let userEmails = try requireFixture(usersDB).query()
             .asSubquery(extracting: "email")
         
-        let results = try db.query()
+        let results = try requireFixture(db).query()
             .where("assignee_email", inSubquery: userEmails)
             .execute()
         
@@ -224,7 +224,7 @@ final class SubqueryTests: XCTestCase {
         
         for i in 0..<100 {
             let role = i < 20 ? "senior" : "junior"
-            let userID = try usersDB.insert(BlazeDataRecord([
+            let userID = try requireFixture(usersDB).insert(BlazeDataRecord([
                 "role": .string(role)
             ]))
             allUserIDs.append(userID)
@@ -239,7 +239,7 @@ final class SubqueryTests: XCTestCase {
                 "author_id": .uuid(allUserIDs[i % allUserIDs.count])
             ])
         }
-        _ = try db.insertMany(bugRecords)
+        _ = try requireFixture(db).insertMany(bugRecords)
         
         // Now test the subquery performance
         print("📊 Subquery test data:")
@@ -248,12 +248,12 @@ final class SubqueryTests: XCTestCase {
         print("  First 3 senior IDs: \(seniorIDs.prefix(3))")
         
         let start = Date()
-        let seniorDevs = usersDB.query()
+        let seniorDevs = try requireFixture(usersDB).query()
             .where("role", equals: .string("senior"))
             .asSubquery(extracting: "id")  // Extract record ID, not custom "user_id"
         
         // Debug: Check what the subquery returns
-        let seniorUsers = try usersDB.query()
+        let seniorUsers = try requireFixture(usersDB).query()
             .where("role", equals: .string("senior"))
             .execute()
             .records
@@ -262,7 +262,7 @@ final class SubqueryTests: XCTestCase {
         print("  Extracted \(extractedIDs.count) IDs from subquery")
         print("  First 3 extracted: \(extractedIDs.prefix(3))")
         
-        let results = try db.query()
+        let results = try requireFixture(db).query()
             .where("author_id", inSubquery: seniorDevs)
             .execute()
         let duration = Date().timeIntervalSince(start)
@@ -276,14 +276,14 @@ final class SubqueryTests: XCTestCase {
     // MARK: - Edge Cases
     
     func testSubqueryWithEmptyResult() throws {
-        _ = try usersDB.insert(BlazeDataRecord(["role": .string("admin")]))
-        _ = try db.insert(BlazeDataRecord(["title": .string("Bug")]))
+        _ = try requireFixture(usersDB).insert(BlazeDataRecord(["role": .string("admin")]))
+        _ = try requireFixture(db).insert(BlazeDataRecord(["title": .string("Bug")]))
         
-        let seniorDevs = usersDB.query()
+        let seniorDevs = try requireFixture(usersDB).query()
             .where("role", equals: .string("senior"))
             .asSubquery(extracting: "id")
         
-        let results = try db.query()
+        let results = try requireFixture(db).query()
             .where("author_id", inSubquery: seniorDevs)
             .execute()
         
@@ -291,13 +291,13 @@ final class SubqueryTests: XCTestCase {
     }
     
     func testSubqueryWithMissingField() throws {
-        _ = try usersDB.insert(BlazeDataRecord(["name": .string("Alice")]))  // No "id"
-        _ = try db.insert(BlazeDataRecord(["author_id": .uuid(UUID())]))
+        _ = try requireFixture(usersDB).insert(BlazeDataRecord(["name": .string("Alice")]))  // No "id"
+        _ = try requireFixture(db).insert(BlazeDataRecord(["author_id": .uuid(UUID())]))
         
-        let subquery = usersDB.query()
+        let subquery = try requireFixture(usersDB).query()
             .asSubquery(extracting: "nonexistent")
         
-        let results = try db.query()
+        let results = try requireFixture(db).query()
             .where("author_id", inSubquery: subquery)
             .execute()
         
@@ -320,7 +320,7 @@ final class SubqueryTests: XCTestCase {
         ]
         
         for (id, teamID, active) in users {
-            _ = try usersDB.insert(BlazeDataRecord([
+            _ = try requireFixture(usersDB).insert(BlazeDataRecord([
                 "id": .uuid(id),
                 "team_id": .uuid(teamID),
                 "active": .bool(active)
@@ -329,19 +329,19 @@ final class SubqueryTests: XCTestCase {
         
         // Bugs
         for i in 0..<40 {
-            _ = try db.insert(BlazeDataRecord([
+            _ = try requireFixture(db).insert(BlazeDataRecord([
                 "title": .string("Bug \(i)"),
                 "author_id": .uuid(users[i % 4].0)
             ]))
         }
         
         // Get bugs by active team1 members
-        let activeTeam1Users = usersDB.query()
+        let activeTeam1Users = try requireFixture(usersDB).query()
             .where("team_id", equals: .uuid(team1))
             .where("active", equals: .bool(true))
             .asSubquery(extracting: "id")
         
-        let results = try db.query()
+        let results = try requireFixture(db).query()
             .where("author_id", inSubquery: activeTeam1Users)
             .execute()
         

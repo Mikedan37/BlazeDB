@@ -48,10 +48,10 @@ Path: /path/to/db.blazedb
  Health Status: OK
 
  Statistics:
-  Records: 1,000
-  Pages: 100
-  Size: 2.5 MB
-  Encrypted: Yes
+ Records: 1,000
+ Pages: 100
+ Size: 2.5 MB
+ Encrypted: Yes
 
  Database is healthy
 ```
@@ -59,31 +59,31 @@ Path: /path/to/db.blazedb
 **Output (JSON):**
 ```json
 {
-  "healthy": true,
-  "database": "mydb",
-  "path": "/path/to/db.blazedb",
-  "checks": [
-    {
-      "name": "File Exists",
-      "passed": true,
-      "message": "Database file found"
-    },
-    {
-      "name": "Encryption Key",
-      "passed": true,
-      "message": "Encryption key valid, database opened successfully"
-    }
-  ],
-  "stats": {
-    "pageCount": 100,
-    "recordCount": 1000,
-    "databaseSize": 2621440,
-    "isEncrypted": true,
-    "walSize": 512000,
-    "cacheHitRate": 0.95,
-    "indexCount": 3
-  },
-  "errors": []
+ "healthy": true,
+ "database": "mydb",
+ "path": "/path/to/db.blazedb",
+ "checks": [
+ {
+ "name": "File Exists",
+ "passed": true,
+ "message": "Database file found"
+ },
+ {
+ "name": "Encryption Key",
+ "passed": true,
+ "message": "Encryption key valid, database opened successfully"
+ }
+ ],
+ "stats": {
+ "pageCount": 100,
+ "recordCount": 1000,
+ "databaseSize": 2621440,
+ "isEncrypted": true,
+ "walSize": 512000,
+ "cacheHitRate": 0.95,
+ "indexCount": 3
+ },
+ "errors": []
 }
 ```
 
@@ -155,7 +155,7 @@ Restoring database from /path/to/backup.blazedump...
 **Errors:**
 ```
  Restore failed: Cannot restore to non-empty database. Database has 10 records.
-    Clear database first or use a new database.
+ Clear database first or use a new database.
 ```
 
 ---
@@ -186,10 +186,10 @@ blazedb verify /path/to/backup.blazedump
 ```
 Verifying dump file /path/to/backup.blazedump...
  Dump file is valid
-   Format version: 1.0
-   Schema version: 1.0
-   Database: mydb
-   Exported at: 2025-01-15T10:30:00Z
+ Format version: 1.0
+ Schema version: 1.0
+ Database: mydb
+ Exported at: 2025-01-15T10:30:00Z
 ```
 
 ---
@@ -230,7 +230,7 @@ Indexes: 3
 WAL Size: 512 KB
 
 Health: OK
-  • Database operating normally
+ • Database operating normally
 
 Schema Version: 1.0
 ```
@@ -267,7 +267,7 @@ All CLI tools provide:
 **Example:**
 ```
  Error: Permission denied for operation: open
-    Check file permissions and app sandbox entitlements. On Linux, ensure directory is writable (chmod 755).
+ Check file permissions and app sandbox entitlements. On Linux, ensure directory is writable (chmod 755).
 ```
 
 ---
@@ -278,10 +278,10 @@ All CLI tools provide:
 ```bash
 #!/bin/bash
 if blazedb doctor /path/to/db.blazedb mypassword --json > /dev/null 2>&1; then
-    echo "Database is healthy"
+ echo "Database is healthy"
 else
-    echo "Database health check failed"
-    exit 1
+ echo "Database health check failed"
+ exit 1
 fi
 ```
 

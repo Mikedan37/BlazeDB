@@ -281,7 +281,7 @@ Legitimate users can't access database
 
 ---
 
-##  **MITIGATION STRATEGIES**
+## **MITIGATION STRATEGIES**
 
 ### **1. Defense in Depth**
 - **Layer 1**: Network encryption (TLS)
@@ -377,11 +377,11 @@ Legitimate users can't access database
 ### **Confidentiality**
 - Data encrypted at rest (AES-256-GCM)
 - Data encrypted in transit (TLS - when enabled)
--  Keys protected (Secure Enclave - optional)
+- Keys protected (Secure Enclave - optional)
 
 ### **Integrity**
 - Data integrity (GCM auth tag)
--  Metadata integrity (HMAC - to be implemented)
+- Metadata integrity (HMAC - to be implemented)
 - Operation integrity (signatures - optional)
 
 ### **Availability**
@@ -391,7 +391,7 @@ Legitimate users can't access database
 
 ### **Authentication**
 - Password-based (PBKDF2 - needs Argon2)
--  Biometric (Secure Enclave - optional)
+- Biometric (Secure Enclave - optional)
 - MFA (to be implemented)
 
 ### **Authorization**

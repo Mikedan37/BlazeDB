@@ -13,6 +13,7 @@
 //
 
 #if !BLAZEDB_LINUX_CORE
+import BlazeDBCore
 import Foundation
 
 /// Protocol for server transport operations (TCP listening, connection handling)
@@ -22,7 +23,7 @@ public protocol ServerTransportProvider {
     /// - Parameter port: Port number to listen on
     /// - Parameter onConnection: Callback when a new connection is established
     /// - Throws: If server cannot be started
-    func startServer(port: UInt16, onConnection: @escaping @Sendable (ServerConnection) async -> Void) async throws
+    func startServer(port: UInt16, onConnection: @escaping @Sendable (any ServerConnection) async -> Void) async throws
     
     /// Stop listening for connections
     func stopServer() async
@@ -62,7 +63,7 @@ public final class AppleServerTransportProvider: ServerTransportProvider, @unche
     
     public init() {}
     
-    public func startServer(port: UInt16, onConnection: @escaping (ServerConnection) async -> Void) async throws {
+    public func startServer(port: UInt16, onConnection: @escaping @Sendable (any ServerConnection) async -> Void) async throws {
         guard !isRunning else {
             throw ServerTransportError.alreadyRunning
         }
@@ -115,7 +116,7 @@ public final class AppleServerTransportProvider: ServerTransportProvider, @unche
 }
 
 /// Apple platform server connection wrapper
-private final class AppleServerConnection: ServerConnection {
+private final class AppleServerConnection: ServerConnection, @unchecked Sendable {
     private let connection: NWConnection
     
     init(connection: NWConnection) {
@@ -173,7 +174,7 @@ public final class HeadlessServerTransportProvider: ServerTransportProvider {
     
     public init() {}
     
-    public func startServer(port: UInt16, onConnection: @escaping (ServerConnection) async -> Void) async throws {
+    public func startServer(port: UInt16, onConnection: @escaping @Sendable (any ServerConnection) async -> Void) async throws {
         guard !isRunning else {
             throw ServerTransportError.alreadyRunning
         }

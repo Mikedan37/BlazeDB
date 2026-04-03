@@ -27,7 +27,7 @@
 
 ## **BlazeBinary Encoding:**
 
- **All transports use BlazeBinary** (not JSON):
+**All transports use BlazeBinary** (not JSON):
 - **5-10x faster** encoding/decoding
 - **34-67% smaller** payload size
 - **Zero-copy** optimizations
@@ -70,8 +70,8 @@ try await topology.connectRemote(
 
 ## **Status:**
 
- **All three transports implemented**
- **All use BlazeBinary encoding**
- **Comprehensive tests**
- **Production ready**
+**All three transports implemented**
+**All use BlazeBinary encoding**
+**Comprehensive tests**
+**Production ready**
 

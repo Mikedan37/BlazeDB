@@ -13,39 +13,39 @@
 - **No critical security vulnerabilities**
 - **Memory safety: Excellent** (actor-based isolation)
 - **Thread safety: Excellent** (GCD barriers + MVCC)
--  **Minor issues:** Force unwraps, incomplete features, TODOs
+- **Minor issues:** Force unwraps, incomplete features, TODOs
 
 ---
 
 ## What's Working Well
 
-### 1. **Memory Safety**  (98/100)
+### 1. **Memory Safety** (98/100)
 - All sync components use Swift `actor` (zero data races)
 - Proper cleanup in `deinit` methods
 - Weak references where needed
 - No retain cycles detected
 
-### 2. **Thread Safety**  (95/100)
+### 2. **Thread Safety** (95/100)
 - GCD concurrent queues with barriers
 - MVCC enabled by default
 - Actor isolation for distributed sync
 - Proper lock ordering (no deadlocks)
 
-### 3. **Error Handling**  (90/100)
+### 3. **Error Handling** (90/100)
 - Most code throws errors instead of crashing
 - Descriptive error messages
 - Proper error propagation
--  Some force unwraps remain (see below)
+- Some force unwraps remain (see below)
 
-### 4. **Code Quality**  (92/100)
+### 4. **Code Quality** (92/100)
 - Comprehensive test coverage
 - Good logging infrastructure
 - Well-documented APIs
--  Some TODOs for incomplete features
+- Some TODOs for incomplete features
 
 ---
 
-##  Issues Found
+## Issues Found
 
 ### **Priority 1: Low Risk (Should Fix)**
 
@@ -102,21 +102,21 @@ assertionFailure("Unsupported AnyHashable base type: \(type(of: raw)); coercing 
 
 #### 4. **Incomplete Features (TODOs)**
 
-**A. Compression Disabled** 
+**A. Compression Disabled**
 - **Location:** `TCPRelay+Compression.swift`
 - **Status:** Stubs return data unchanged
 - **Impact:** No compression → larger network transfers
 - **Reason:** Unsafe pointer code removed for Swift 6 safety
 - **Recommendation:** Re-implement using Swift-safe APIs
 
-**B. Unix Domain Socket Listener** 
+**B. Unix Domain Socket Listener**
 - **Location:** `UnixDomainSocketRelay.swift:191`
 - **Status:** Throws `RelayError.notImplemented`
 - **Impact:** Can't use UDS for server-side listening
 - **Workaround:** Client-side connections work
 - **Recommendation:** Implement using POSIX sockets or document limitation
 
-**C. Distributed Transaction Coordination** 
+**C. Distributed Transaction Coordination**
 - **Location:** `BlazeSyncEngine.swift:889`
 - **Status:** TODO comment
 - **Impact:** No distributed transactions
@@ -135,7 +135,7 @@ assertionFailure("Unsupported AnyHashable base type: \(type(of: raw)); coercing 
 
 ---
 
-#### 5. **Legacy Code Still Used** 
+#### 5. **Legacy Code Still Used**
 - **Location:** `BlazeQueryLegacy.swift`
 - **Status:** Marked "Legacy" but still actively used
 - **Usage:** `BlazeQueryContext.swift`, `DynamicCollection.swift`
@@ -148,10 +148,10 @@ assertionFailure("Unsupported AnyHashable base type: \(type(of: raw)); coercing 
 #### 6. **Deprecated Code**
 - `BlazeCollection` - Properly deprecated
 - `JSONCoder`, `CBORCoder` - Properly deprecated
--  Deprecated async methods in `QueryBuilder+Async.swift` - Verify if still used
+- Deprecated async methods in `QueryBuilder+Async.swift` - Verify if still used
 
 #### 7. **Documentation**
--  Some README examples may need verification
+- Some README examples may need verification
 - Most APIs well-documented
 - Good inline comments
 
@@ -168,9 +168,9 @@ assertionFailure("Unsupported AnyHashable base type: \(type(of: raw)); coercing 
 - Actor isolation (no data races)
 
 ### **Minor Concerns:**
--  Key caching in static dictionary (vulnerable to memory dumps)
--  No explicit memory zeroing for sensitive data
--  Some force unwraps could fail unexpectedly
+- Key caching in static dictionary (vulnerable to memory dumps)
+- No explicit memory zeroing for sensitive data
+- Some force unwraps could fail unexpectedly
 
 **Overall Security Grade:** **A (92/100)**
 
@@ -239,10 +239,10 @@ assertionFailure("Unsupported AnyHashable base type: \(type(of: raw)); coercing 
 5. Document compression limitation
 
 ### **Short Term (Priority 2):**
-1.  Re-implement compression with Swift-safe APIs
-2.  Implement or document Unix Domain Socket listener limitation
-3.  Migrate `BlazeQueryLegacy` or remove "Legacy" label
-4.  Complete or document TODOs
+1. Re-implement compression with Swift-safe APIs
+2. Implement or document Unix Domain Socket listener limitation
+3. Migrate `BlazeQueryLegacy` or remove "Legacy" label
+4. Complete or document TODOs
 
 ### **Long Term (Priority 3):**
 1. Implement distributed transaction coordination
@@ -277,10 +277,10 @@ Based on previous audits:
 - Well-documented
 
 **Areas for Improvement:**
--  Replace array force unwraps (medium risk, 8 instances)
--  Replace Thread.sleep with Task.sleep (4 instances)
--  Complete incomplete features or document limitations
--  Re-implement compression
+- Replace array force unwraps (medium risk, 8 instances)
+- Replace Thread.sleep with Task.sleep (4 instances)
+- Complete incomplete features or document limitations
+- Re-implement compression
 
 **Risk Level:** **LOW** - All critical issues resolved, only minor improvements recommended.
 

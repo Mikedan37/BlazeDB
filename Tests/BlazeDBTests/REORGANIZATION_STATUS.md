@@ -1,23 +1,23 @@
 # Test Reorganization Status
 
-## ✅ Completed
+## Completed
 
 ### Codec/ Directory
-- ✅ Created `Codec/CodecValidation.swift` (moved from Helpers/)
-- ✅ Created `Codec/BlazeBinaryCompatibilityTests.swift` (moved from Encoding/BlazeBinary/)
-- ✅ Created `Codec/BlazeBinaryFuzzTests.swift` (moved from Fuzz/)
-- ✅ Created `Codec/CIMatrix.swift` (moved from root)
-- ✅ Created `Codec/CodecDualPathTestSuite.swift` (moved from root)
+- Created `Codec/CodecValidation.swift` (moved from Helpers/)
+- Created `Codec/BlazeBinaryCompatibilityTests.swift` (moved from Encoding/BlazeBinary/)
+- Created `Codec/BlazeBinaryFuzzTests.swift` (moved from Fuzz/)
+- Created `Codec/CIMatrix.swift` (moved from root)
+- Created `Codec/CodecDualPathTestSuite.swift` (moved from root)
 
 ### CI/ Directory
-- ✅ Created `CI/CIMatrix.swift`
-- ✅ Created `CI/CodecDualPathTestSuite.swift`
+- Created `CI/CIMatrix.swift`
+- Created `CI/CodecDualPathTestSuite.swift`
 
 ### Fixtures/ Directory
-- ✅ Created `Fixtures/FixtureValidationTests.swift` (moved from Engine/)
-- ✅ Updated `Fixtures/FixtureLoader.swift` bundle references
+- Created `Fixtures/FixtureValidationTests.swift` (moved from Engine/)
+- Updated `Fixtures/FixtureLoader.swift` bundle references
 
-## 📋 Remaining Files to Move
+## Remaining Files to Move
 
 ### Codec/ (Still need to move)
 - `Encoding/BlazeBinary/BlazeBinaryCorruptionRecoveryTests.swift`
@@ -52,14 +52,14 @@
 ### Docs/ (Still need to move)
 - All `*.md` files → `Docs/`
 
-## 🔧 Next Steps
+## Next Steps
 
 1. Run `python3 reorganize.py` to complete the file moves
 2. Or manually move remaining files using the script as reference
 3. Verify all tests are discovered by SwiftPM/Xcode
 4. Update any CI scripts that reference specific paths
 
-## 📝 Notes
+## Notes
 
 - All import paths remain unchanged (`@testable import BlazeDB`)
 - CodecValidation.swift helper functions work via direct calls (no import needed)

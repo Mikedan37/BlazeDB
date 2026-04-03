@@ -1,6 +1,6 @@
 # BlazeDB Adoption Readiness
 
-**Date:** 2025-01-23  
+**Date:** 2025-01-23
 **Status:** Ready for early adopters
 
 ---
@@ -10,25 +10,25 @@
 ### Primary Use Cases
 
 1. **Embedded single-process applications**
-   - Desktop apps (macOS, Linux)
-   - Mobile apps (iOS, tvOS, watchOS)
-   - CLI tools
-   - Server applications (one DB per process)
+- Desktop apps (macOS, Linux)
+- Mobile apps (iOS, tvOS, watchOS)
+- CLI tools
+- Server applications (one DB per process)
 
 2. **Applications requiring encryption**
-   - Sensitive data storage
-   - Compliance requirements
-   - User privacy
+- Sensitive data storage
+- Compliance requirements
+- User privacy
 
 3. **Applications needing schema versioning**
-   - Long-lived applications
-   - Data migration requirements
-   - Explicit upgrade paths
+- Long-lived applications
+- Data migration requirements
+- Explicit upgrade paths
 
 4. **Applications valuing correctness over features**
-   - Deterministic behavior
-   - Explicit error handling
-   - No magic, no surprises
+- Deterministic behavior
+- Explicit error handling
+- No magic, no surprises
 
 ---
 
@@ -37,26 +37,26 @@
 ### Not Suitable For
 
 1. **Multi-process applications**
-   - BlazeDB is single-writer
-   - Multiple processes will corrupt data
-   - Use PostgreSQL, MySQL, or similar instead
+- BlazeDB is single-writer
+- Multiple processes will corrupt data
+- Use PostgreSQL, MySQL, or similar instead
 
 2. **Network filesystems**
-   - NFS, SMB, cloud storage mounts
-   - File locking doesn't work correctly
-   - Performance will be terrible
+- NFS, SMB, cloud storage mounts
+- File locking doesn't work correctly
+- Performance will be terrible
 
 3. **High-churn ephemeral data**
-   - BlazeDB is optimized for durability
-   - Use in-memory stores for temporary data
+- BlazeDB is optimized for durability
+- Use in-memory stores for temporary data
 
 4. **Applications needing SQL**
-   - BlazeDB is not SQL-compatible
-   - Use SQLite, PostgreSQL, or similar
+- BlazeDB is not SQL-compatible
+- Use SQLite, PostgreSQL, or similar
 
 5. **Distributed workloads**
-   - BlazeDB is single-process
-   - Use distributed databases instead
+- BlazeDB is single-process
+- Use distributed databases instead
 
 ---
 
@@ -66,12 +66,12 @@
 
 **BlazeDB is in beta:**
 
-- ✅ Core functionality is stable
-- ✅ Crash recovery works
-- ✅ Export/restore works
-- ✅ Schema migrations work
-- ⚠️  Distributed modules are WIP
-- ⚠️  Performance optimization ongoing
+- Core functionality is stable
+- Crash recovery works
+- Export/restore works
+- Schema migrations work
+- Distributed modules are WIP
+- Performance optimization ongoing
 
 **What "beta" means:**
 - Core is production-ready
@@ -86,17 +86,17 @@
 ### Core Guarantees
 
 **BlazeDB guarantees:**
-- ✅ Crash-safe writes (committed data survives crashes)
-- ✅ Atomic operations (no partial records)
-- ✅ Explicit error handling (no silent failures)
-- ✅ Deterministic exports (same data → same dump)
-- ✅ Schema versioning (explicit migrations)
+- Crash-safe writes (committed data survives crashes)
+- Atomic operations (no partial records)
+- Explicit error handling (no silent failures)
+- Deterministic exports (same data → same dump)
+- Schema versioning (explicit migrations)
 
 **BlazeDB does NOT guarantee:**
-- ❌ Multi-process access
-- ❌ Network filesystem support
-- ❌ Automatic migrations
-- ❌ SQL compatibility
+- Multi-process access
+- Network filesystem support
+- Automatic migrations
+- SQL compatibility
 
 ---
 
@@ -199,19 +199,19 @@
 
 ### What We've Done
 
-- ✅ Swift 6 strict concurrency compliance (core)
-- ✅ Comprehensive crash recovery tests
-- ✅ Explicit error handling (no fatalError)
-- ✅ Deterministic export/restore
-- ✅ Schema versioning system
-- ✅ Health monitoring
-- ✅ CLI diagnostic tools
+- Swift 6 strict concurrency compliance (core)
+- Comprehensive crash recovery tests
+- Explicit error handling (no fatalError)
+- Deterministic export/restore
+- Schema versioning system
+- Health monitoring
+- CLI diagnostic tools
 
 ### What We're Working On
 
-- 🔄 Performance benchmarks vs SQLite
-- 🔄 Real-world deployment validation
-- 🔄 External security audit (planned)
+- Performance benchmarks vs SQLite
+- Real-world deployment validation
+- External security audit (planned)
 
 ---
 

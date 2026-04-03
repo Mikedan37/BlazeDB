@@ -182,9 +182,9 @@ try db.insert(record)
 1. **Keep DynamicCollection** - It's the right choice
 2. **Use BlazeDBClient** - Simple API, all features
 3. **Use BlazeDocument** - For type-safe models
-4.  **Deprecate BlazeCollection** - Mark as deprecated
+4. **Deprecate BlazeCollection** - Mark as deprecated
 5. **Update tests** - Use DynamicCollection/BlazeDBClient instead
-6.  **Remove BlazeCollection** - After migration complete
+6. **Remove BlazeCollection** - After migration complete
 
 ## Conclusion
 

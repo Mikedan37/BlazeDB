@@ -32,7 +32,7 @@ ANSWER: NO! Here's why...
 let server = try BlazeServer(
  database: db,
  port: 8080,
- authToken: nil //  Default: NO auth token = REJECT ALL CONNECTIONS!
+ authToken: nil // Default: NO auth token = REJECT ALL CONNECTIONS!
 )
 
 // With auth token (REQUIRED for access):
@@ -84,7 +84,7 @@ if let expectedToken = expectedAuthToken {
 
 ---
 
-##  **ADDITIONAL SECURITY MEASURES:**
+## **ADDITIONAL SECURITY MEASURES:**
 
 ### **1. Connection Limits**
 
@@ -300,9 +300,9 @@ if await requestServerPermission() {
 ### **Secure by Default:**
 
 ```swift
-// 
+//
 // SECURE SERVER IMPLEMENTATION
-// 
+//
 
 extension BlazeDBClient {
  /// Start server with security defaults
@@ -331,7 +331,7 @@ extension BlazeDBClient {
  try storeAuthToken(authToken, in:.keychain)
  } else {
  authToken = nil
- //  WARNING: Server without auth is insecure!
+ // WARNING: Server without auth is insecure!
  print(" WARNING: Server started without authentication!")
  }
 
@@ -399,9 +399,9 @@ enum NetworkType {
 | **Encryption** | Always | AES-256-GCM |
 | **Handshake** | Always | Diffie-Hellman |
 | **Connection Limits** | Yes | Max 10 connections |
-| **Rate Limiting** |  TODO | Should add |
-| **Network Filtering** |  TODO | Should add |
-| **User Permission** |  TODO | Should add |
+| **Rate Limiting** | TODO | Should add |
+| **Network Filtering** | TODO | Should add |
+| **User Permission** | TODO | Should add |
 
 ### **Recommended Implementation:**
 

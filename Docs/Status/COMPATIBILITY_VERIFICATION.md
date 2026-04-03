@@ -2,7 +2,7 @@
 
 ## Summary
 
- **This was a good choice!** The direct encoder/decoder approach:
+**This was a good choice!** The direct encoder/decoder approach:
 - **Doesn't break anything** - All existing code continues to work
 - **Is actually faster** - 20-50% performance improvement
 - **Is more efficient** - 50-75% less memory usage

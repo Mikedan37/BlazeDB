@@ -7,10 +7,10 @@
 - `open(named:password:)` now requires a password (non-optional `String`)
 - Previously, `open(named:)` without a password silently injected a development password (`"BlazeDB-Dev-<name>-2024!"`)
 - If you have databases created with the old behavior, reopen with the legacy password to migrate:
-  ```swift
-  let db = try BlazeDBClient.open(named: "yourdb", password: "BlazeDB-Dev-yourdb-2024!")
-  ```
-  Then export and re-import with your chosen password, or continue using the legacy password explicitly.
+ ```swift
+ let db = try BlazeDBClient.open(named: "yourdb", password: "BlazeDB-Dev-yourdb-2024!")
+ ```
+ Then export and re-import with your chosen password, or continue using the legacy password explicitly.
 
 ### Removed from Public API
 

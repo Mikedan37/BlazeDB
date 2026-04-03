@@ -1,6 +1,6 @@
 # BlazeDB v0.1.2 - SwiftPM Dependency Resolution Fix
 
-**Release Date:** January 23, 2026  
+**Release Date:** January 23, 2026
 **Tag:** v0.1.2
 
 ---
@@ -8,10 +8,10 @@
 ## Fixed
 
 - **SwiftPM Dependency Resolution:** Verified and pinned SwiftCBOR to exact stable version (v0.6.0)
-  - Resolves error: "package 'blazedb' depends on an unstable-version package 'swiftcbor'"
-  - Ensures BlazeDB can be consumed with stable version requirements
-  - All transitive dependencies verified stable
-  - Version bump clears SwiftPM cache metadata
+- Resolves error: "package 'blazedb' depends on an unstable-version package 'swiftcbor'"
+- Ensures BlazeDB can be consumed with stable version requirements
+- All transitive dependencies verified stable
+- Version bump clears SwiftPM cache metadata
 
 ---
 
@@ -20,10 +20,10 @@
 When consumers pin BlazeDB to a stable version (e.g., `exact: "0.1.0"`), SwiftPM requires all transitive dependencies to also be stable.
 
 **What was verified:**
-- ✅ SwiftCBOR pinned with `exact: "0.6.0"` (stable tagged version)
-- ✅ No branch/revision references to SwiftCBOR
-- ✅ Only one SwiftCBOR dependency declaration exists
-- ✅ Package.resolved shows correct version (0.6.0)
+- SwiftCBOR pinned with `exact: "0.6.0"` (stable tagged version)
+- No branch/revision references to SwiftCBOR
+- Only one SwiftCBOR dependency declaration exists
+- Package.resolved shows correct version (0.6.0)
 
 **Why v0.1.2:**
 - SwiftPM caches dependency metadata by version
@@ -36,7 +36,7 @@ When consumers pin BlazeDB to a stable version (e.g., `exact: "0.1.0"`), SwiftPM
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/Mikedan37/BlazeDB.git", from: "0.1.2")
+ .package(url: "https://github.com/Mikedan37/BlazeDB.git", from: "0.1.2")
 ]
 ```
 

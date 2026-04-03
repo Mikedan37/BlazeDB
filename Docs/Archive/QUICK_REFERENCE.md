@@ -67,7 +67,7 @@ let record = try db.fetch(id: id)
 
 ---
 
-##  **Row-Level Security (RLS)**
+## **Row-Level Security (RLS)**
 
 ```swift
 // 1. Enable RLS
@@ -105,7 +105,7 @@ db.rls.addPolicy(.publicRead)
 
 ---
 
-##  **Garbage Collection**
+## **Garbage Collection**
 
 ```swift
 // Auto-GC (recommended)

@@ -10,62 +10,62 @@
 
 ```
 
- BLAZEDB DISTRIBUTED 
- (Local Sync + Server Sync) 
+ BLAZEDB DISTRIBUTED
+ (Local Sync + Server Sync)
 
- 
- SAME DEVICE (iPhone) 
-  
- 
- BugTracker.app Dashboard.app 
-   
-  bugs.blazedb  ←→  dashboard.db  
-   
-  
-  Unix Domain Socket (<1ms!) 
-  BlazeTopology coordinates 
-  
-  
-  
-  BlazeTopology (Coordinator)  
-  • In-memory message queues  
-  • App group support  
-  • Permission model  
-  
- 
- DIFFERENT DEVICES 
-  
- 
- iPhone (bugs.blazedb) 
-  
-  Raw TCP + TLS 
-  DH Handshake + E2E 
-  BlazeBinary Protocol 
-  
-  
- RASPBERRY PI SERVER 
-  
-  
-  Vapor Server  
-  • WebSocket handlers  
-  • Multi-DB routing  
-  • Access control  
-  
-  
-  
-  
-  BlazeDB (Server Database)  
-  • bugs.blazedb (server copy)  
-  • users.blazedb (server copy)  
-  • Coordinates all clients  
-  
-  
-  Raw TCP + TLS 
-  E2E Encrypted 
-  
-  
- iPad (bugs.blazedb) 
- 
+
+ SAME DEVICE (iPhone)
+
+
+ BugTracker.app Dashboard.app
+
+ bugs.blazedb ←→ dashboard.db
+
+
+ Unix Domain Socket (<1ms!)
+ BlazeTopology coordinates
+
+
+
+ BlazeTopology (Coordinator)
+ • In-memory message queues
+ • App group support
+ • Permission model
+
+
+ DIFFERENT DEVICES
+
+
+ iPhone (bugs.blazedb)
+
+ Raw TCP + TLS
+ DH Handshake + E2E
+ BlazeBinary Protocol
+
+
+ RASPBERRY PI SERVER
+
+
+ Vapor Server
+ • WebSocket handlers
+ • Multi-DB routing
+ • Access control
+
+
+
+
+ BlazeDB (Server Database)
+ • bugs.blazedb (server copy)
+ • users.blazedb (server copy)
+ • Coordinates all clients
+
+
+ Raw TCP + TLS
+ E2E Encrypted
+
+
+ iPad (bugs.blazedb)
+
 
 ```
 
@@ -75,55 +75,55 @@
 
 ```
 BlazeDB/Distributed/
- BlazeTopology.swift ⏳ NEW
+ BlazeTopology.swift NEW
  • Multi-DB coordinator
  • Local sync (Unix Domain Socket)
  • Remote sync (TCP)
  • Dynamic topology patterns
 
- CrossAppSync.swift ⏳ NEW
+ CrossAppSync.swift NEW
  • Cross-app API
  • Permission model
  • Export policies
  • App group support
 
- SecureConnection.swift ⏳ NEW
+ SecureConnection.swift NEW
  • DH handshake (P256)
  • HKDF key derivation
  • AES-256-GCM encryption
  • Challenge-response
 
- WebSocketRelay.swift ⏳ NEW
+ WebSocketRelay.swift NEW
  • Raw TCP connection
  • BlazeBinary framing
  • Operation batching
  • Connection management
 
- InMemoryRelay.swift ⏳ NEW
+ InMemoryRelay.swift NEW
  • Unix Domain Socket
  • In-memory message queues
  • <1ms latency
 
- RemoteNode.swift ⏳ NEW
+ RemoteNode.swift NEW
  • Server connection
  • Failover logic
  • Health checks
 
 Server/ (Vapor)
- Package.swift ⏳ NEW
+ Package.swift NEW
  Sources/App/
-  main.swift ⏳ NEW
-  WebSocketHandler.swift ⏳ NEW
-  TopologyCoordinator.swift ⏳ NEW
-  DatabaseManager.swift ⏳ NEW
+ main.swift NEW
+ WebSocketHandler.swift NEW
+ TopologyCoordinator.swift NEW
+ DatabaseManager.swift NEW
  Tests/
-  ServerTests.swift ⏳ NEW
+ ServerTests.swift NEW
 
 BlazeDBTests/
- TopologyTests.swift ⏳ NEW
- CrossAppSyncTests.swift ⏳ NEW
- SecureConnectionTests.swift ⏳ NEW
- ServerSyncTests.swift ⏳ NEW
+ TopologyTests.swift NEW
+ CrossAppSyncTests.swift NEW
+ SecureConnectionTests.swift NEW
+ ServerSyncTests.swift NEW
 ```
 
 ---

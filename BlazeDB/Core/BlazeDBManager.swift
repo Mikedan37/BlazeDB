@@ -53,7 +53,9 @@ public final class BlazeDBManager {
     }
 
     private static func preferredTransactionLogURL(for fileURL: URL) -> URL {
-        transactionLogURLs(for: fileURL).first!
+        let candidates = transactionLogURLs(for: fileURL)
+        return candidates.first
+            ?? fileURL.deletingLastPathComponent().appendingPathComponent("txn_log.json")
     }
 
     /// Legacy NDJSON recovery hook used by manager-style tooling.

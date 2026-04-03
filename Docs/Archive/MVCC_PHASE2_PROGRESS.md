@@ -24,7 +24,7 @@ self.versionManager = VersionManager()
 
 ---
 
-## ⏳ **In Progress**
+## **In Progress**
 
 ### **Step 2: MVCC-Aware Operations**
 
@@ -140,21 +140,21 @@ func insert(...) {
 ### **This Week**:
 
 4. **Complete all CRUD operations**
- - Insert
- - Fetch
- - Update ⏳
- - Delete ⏳
- - FetchAll ⏳
+- Insert
+- Fetch
+- Update
+- Delete
+- FetchAll
 
 5. **Benchmark Performance**
- - Before: Serial queue
- - After: MVCC concurrent
- - Measure speedup
+- Before: Serial queue
+- After: MVCC concurrent
+- Measure speedup
 
 6. **Enable by Default**
- - Once tests pass
- - Set `mvccEnabled = true`
- - MVCC becomes default!
+- Once tests pass
+- Set `mvccEnabled = true`
+- MVCC becomes default!
 
 ---
 
@@ -187,25 +187,25 @@ Risk: Low (can disable if issues)
 
 ### **Feature Flag Benefits**:
 
-1. **Safety** 
- - Can disable instantly if bugs found
- - No risky "all or nothing" switch
- - Production rollback is trivial
+1. **Safety**
+- Can disable instantly if bugs found
+- No risky "all or nothing" switch
+- Production rollback is trivial
 
 2. **Testing**
- - Test MVCC path independently
- - Compare performance directly
- - A/B test in production
+- Test MVCC path independently
+- Compare performance directly
+- A/B test in production
 
 3. **Migration**
- - Gradual rollout
- - Learn and iterate
- - Fix issues before full deployment
+- Gradual rollout
+- Learn and iterate
+- Fix issues before full deployment
 
 4. **Confidence**
- - Proves MVCC works before committing
- - Can benchmark real improvements
- - Shows due diligence
+- Proves MVCC works before committing
+- Can benchmark real improvements
+- Shows due diligence
 
 ---
 
@@ -214,13 +214,13 @@ Risk: Low (can disable if issues)
 ```
 Phase 2 Tasks:
  Foundation Done
- MVCC Insert Path ⏳ Next
- MVCC Fetch Path ⏳ Next
- MVCC Update Path ⏳ Todo
- MVCC Delete Path ⏳ Todo
- Integration Tests ⏳ Todo
- Performance Tests ⏳ Todo
- Enable by Default ⏳ Todo
+ MVCC Insert Path Next
+ MVCC Fetch Path Next
+ MVCC Update Path Todo
+ MVCC Delete Path Todo
+ Integration Tests Todo
+ Performance Tests Todo
+ Enable by Default Todo
 
 Completion: 1/8 tasks (12.5%)
 ```

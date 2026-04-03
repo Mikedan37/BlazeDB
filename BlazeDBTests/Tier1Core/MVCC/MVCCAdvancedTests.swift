@@ -19,8 +19,8 @@ final class MVCCAdvancedTests: XCTestCase {
     var versionManager: VersionManager!
     var gcManager: AutomaticGCManager!
     
-    override func setUp() {
-        super.setUp()
+    override func setUpWithError() throws {
+        try super.setUpWithError()
         versionManager = VersionManager()
         gcManager = AutomaticGCManager(versionManager: versionManager)
     }
@@ -89,7 +89,7 @@ final class MVCCAdvancedTests: XCTestCase {
         print("✅ Abort strategy works!")
     }
     
-    func testConflictResolutionLastWriteWins() {
+    func testConflictResolutionLastWriteWins() throws {
         let resolver = ConflictResolver(strategy: .lastWriteWins, versionManager: versionManager)
         
         let conflict = WriteConflict(
@@ -103,7 +103,7 @@ final class MVCCAdvancedTests: XCTestCase {
         let currentRecord = BlazeDataRecord(["name": .string("Bob")])
         
         // Last write wins strategy returns your record
-        let resolved = try! resolver.resolve(conflict: conflict, yourRecord: yourRecord, currentRecord: currentRecord)
+        let resolved = try resolver.resolve(conflict: conflict, yourRecord: yourRecord, currentRecord: currentRecord)
         XCTAssertEqual(resolved["name"]?.stringValue, "Alice")
         
         print("✅ Last-write-wins strategy works!")

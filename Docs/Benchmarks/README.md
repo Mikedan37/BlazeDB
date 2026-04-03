@@ -62,7 +62,7 @@ python3 Scripts/refresh_benchmark_suite.py --skip-gc --skip-power
 Results are saved to:
 - `Docs/Benchmarks/RESULTS.md` (human-readable)
 - `Docs/Benchmarks/results.json` (machine-readable)
-- `Docs/Benchmarks/results_matrix.json` (condition run metadata + per-condition outputs)
+- `Docs/Benchmarks/results_matrix.json` (condition run metadata + sanitized per-condition excerpts)
 - `Docs/Benchmarks/BENCHMARK_ENVIRONMENT.md` (device fingerprint + supported toggle matrix)
 - `Docs/Benchmarks/benchmark_environment.json` (machine-readable benchmark environment metadata)
 - `Docs/Benchmarks/LATENCY.md` (latency-focused report with p50/p95/p99 when available)
@@ -73,6 +73,8 @@ Results are saved to:
 - `Docs/Benchmarks/ENERGY.md` (first-class numeric energy/resource metrics and proxy index)
 - `Docs/Benchmarks/OBSERVABILITY_BENCHMARKS.md` (logging/observability measurement coverage)
 - `Docs/Benchmarks/RUN_STATUS.md` (live status while refresh script runs)
+
+Local run logs are written under `Docs/Benchmarks/logs/` during refreshes for debugging, but that directory is intentionally ignored and should not be committed.
 
 To include optional percentile test captures:
 

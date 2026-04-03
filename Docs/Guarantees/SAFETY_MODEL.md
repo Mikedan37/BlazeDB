@@ -13,18 +13,18 @@ This document exists to calm fear and set expectations.
 **After a crash (SIGKILL, power loss, kernel panic):**
 
 1. **All committed writes survive**
-   - If `persist()` was called, data is on disk
-   - If `close()` was called, all data is flushed
-   - WAL replay restores committed state on next open
+- If `persist()` was called, data is on disk
+- If `close()` was called, all data is flushed
+- WAL replay restores committed state on next open
 
 2. **No partial records**
-   - Either a record is fully written, or it doesn't exist
-   - No corrupted records due to crashes
-   - Page-level atomicity ensures this
+- Either a record is fully written, or it doesn't exist
+- No corrupted records due to crashes
+- Page-level atomicity ensures this
 
 3. **Uncommitted transactions are rolled back**
-   - If you called `beginTransaction()` but not `commitTransaction()`, changes are lost
-   - This is intentional - transactions are explicit
+- If you called `beginTransaction()` but not `commitTransaction()`, changes are lost
+- This is intentional - transactions are explicit
 
 ### What BlazeDB Does NOT Guarantee
 
@@ -68,9 +68,9 @@ This document exists to calm fear and set expectations.
 1. **Process terminates immediately** (no cleanup)
 2. **WAL contains committed writes** (if `persist()` was called)
 3. **On next open:**
-   - WAL is replayed
-   - Committed writes are restored
-   - Uncommitted writes are discarded
+- WAL is replayed
+- Committed writes are restored
+- Uncommitted writes are discarded
 
 ### What You'll See
 
@@ -244,55 +244,55 @@ This document exists to calm fear and set expectations.
 ### After Crash
 
 1. **Open database normally**
-   - BlazeDB will replay WAL automatically
-   - Committed writes are restored
-   - Uncommitted writes are lost
+- BlazeDB will replay WAL automatically
+- Committed writes are restored
+- Uncommitted writes are lost
 
 2. **Check health:**
-   ```swift
-   let health = try db.health()
-   if health.status != .ok {
-       // Investigate warnings
-   }
-   ```
+ ```swift
+ let health = try db.health()
+ if health.status != .ok {
+ // Investigate warnings
+ }
+ ```
 
 3. **Verify data:**
-   ```swift
-   let count = db.count()
-   // Check if count matches expected
-   ```
+ ```swift
+ let count = db.count()
+ // Check if count matches expected
+ ```
 
 ### After Corruption
 
 1. **Run diagnostics:**
-   ```bash
-   blazedb doctor <db-path>
-   ```
+ ```bash
+ blazedb doctor <db-path>
+ ```
 
 2. **Restore from backup:**
-   ```swift
-   try BlazeDBImporter.restore(from: backupURL, to: db)
-   ```
+ ```swift
+ try BlazeDBImporter.restore(from: backupURL, to: db)
+ ```
 
 3. **If no backup:**
-   - Metadata may be rebuildable from data pages
-   - Contact support with error details
+- Metadata may be rebuildable from data pages
+- Contact support with error details
 
 ---
 
 ## Summary
 
 **BlazeDB guarantees:**
-- ✅ Crash-safe committed writes
-- ✅ Atomic operations
-- ✅ No partial records
-- ✅ Explicit error messages
+- Crash-safe committed writes
+- Atomic operations
+- No partial records
+- Explicit error messages
 
 **BlazeDB does NOT guarantee:**
-- ❌ Multi-process writes
-- ❌ Network filesystem support
-- ❌ Automatic migrations
-- ❌ Recovery from wrong password
+- Multi-process writes
+- Network filesystem support
+- Automatic migrations
+- Recovery from wrong password
 
 **Always:**
 - Call `close()` before process exit

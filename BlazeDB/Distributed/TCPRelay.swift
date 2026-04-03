@@ -6,6 +6,7 @@
 //
 
 #if !BLAZEDB_LINUX_CORE
+import BlazeDBCore
 import Foundation
 
 /// Relay for remote synchronization using secure TCP connection (raw TCP, not WebSocket)

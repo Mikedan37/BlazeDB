@@ -5,12 +5,12 @@
 ### **Quick Verification (All 6 Suites - ~1 minute)**
 ```bash
 xcodebuild test -scheme BlazeDB -destination 'platform=macOS' \
- -only-testing:BlazeDBTests/EncryptionRoundTripVerificationTests \
- -only-testing:BlazeDBTests/PersistenceIntegrityTests \
- -only-testing:BlazeDBTests/PerformanceInvariantTests \
- -only-testing:BlazeDBTests/FileIntegrityTests \
- -only-testing:BlazeDBTests/FailureInjectionTests \
- -only-testing:BlazeDBTests/AutoMigrationVerificationTests
+-only-testing:BlazeDBTests/EncryptionRoundTripVerificationTests \
+-only-testing:BlazeDBTests/PersistenceIntegrityTests \
+-only-testing:BlazeDBTests/PerformanceInvariantTests \
+-only-testing:BlazeDBTests/FileIntegrityTests \
+-only-testing:BlazeDBTests/FailureInjectionTests \
+-only-testing:BlazeDBTests/AutoMigrationVerificationTests
 ```
 
 ### **Individual Suites**
@@ -18,37 +18,37 @@ xcodebuild test -scheme BlazeDB -destination 'platform=macOS' \
 **Encryption Verification (fastest - 10 seconds):**
 ```bash
 xcodebuild test -scheme BlazeDB \
- -only-testing:BlazeDBTests/EncryptionRoundTripVerificationTests
+-only-testing:BlazeDBTests/EncryptionRoundTripVerificationTests
 ```
 
 **Persistence Integrity (30 seconds):**
 ```bash
 xcodebuild test -scheme BlazeDB \
- -only-testing:BlazeDBTests/PersistenceIntegrityTests
+-only-testing:BlazeDBTests/PersistenceIntegrityTests
 ```
 
 **Performance Invariants (45 seconds - includes 10k inserts):**
 ```bash
 xcodebuild test -scheme BlazeDB \
- -only-testing:BlazeDBTests/PerformanceInvariantTests
+-only-testing:BlazeDBTests/PerformanceInvariantTests
 ```
 
 **File Integrity (20 seconds):**
 ```bash
 xcodebuild test -scheme BlazeDB \
- -only-testing:BlazeDBTests/FileIntegrityTests
+-only-testing:BlazeDBTests/FileIntegrityTests
 ```
 
 **Failure Injection (25 seconds):**
 ```bash
 xcodebuild test -scheme BlazeDB \
- -only-testing:BlazeDBTests/FailureInjectionTests
+-only-testing:BlazeDBTests/FailureInjectionTests
 ```
 
 **Auto-Migration Verification (40 seconds):**
 ```bash
 xcodebuild test -scheme BlazeDB \
- -only-testing:BlazeDBTests/AutoMigrationVerificationTests
+-only-testing:BlazeDBTests/AutoMigrationVerificationTests
 ```
 
 ---
@@ -63,13 +63,13 @@ xcodebuild test -scheme BlazeDB -destination 'platform=macOS'
 ### **Unit Tests Only (~10 minutes)**
 ```bash
 xcodebuild test -scheme BlazeDB \
- -only-testing:BlazeDBTests
+-only-testing:BlazeDBTests
 ```
 
 ### **Integration Tests Only (~5 minutes)**
 ```bash
 xcodebuild test -scheme BlazeDB \
- -only-testing:BlazeDBIntegrationTests
+-only-testing:BlazeDBIntegrationTests
 ```
 
 ---
@@ -79,25 +79,25 @@ xcodebuild test -scheme BlazeDB \
 ### **Verify AES-GCM Fix**
 ```bash
 xcodebuild test -scheme BlazeDB \
- -only-testing:BlazeDBTests/EncryptionRoundTripVerificationTests/testCiphertextNotRounded
+-only-testing:BlazeDBTests/EncryptionRoundTripVerificationTests/testCiphertextNotRounded
 ```
 
 ### **Verify Metadata Corruption Fix**
 ```bash
 xcodebuild test -scheme BlazeDB \
- -only-testing:BlazeDBTests/AutoMigrationVerificationTests/testMetadataNeverStartsWithBinaryByte
+-only-testing:BlazeDBTests/AutoMigrationVerificationTests/testMetadataNeverStartsWithBinaryByte
 ```
 
 ### **Verify Persistence Fix**
 ```bash
 xcodebuild test -scheme BlazeDB \
- -only-testing:BlazeDBTests/PersistenceIntegrityTests/testTenRecordsPersistence
+-only-testing:BlazeDBTests/PersistenceIntegrityTests/testTenRecordsPersistence
 ```
 
 ### **Verify Performance Fix**
 ```bash
 xcodebuild test -scheme BlazeDB \
- -only-testing:BlazeDBTests/PerformanceInvariantTests/testBatchInsert10kPerformance
+-only-testing:BlazeDBTests/PerformanceInvariantTests/testBatchInsert10kPerformance
 ```
 
 ---
@@ -155,8 +155,8 @@ xxd -l 16 /tmp/TestDB.meta
 ```bash
 # Use Instruments for detailed profiling
 xcodebuild test -scheme BlazeDB \
- -only-testing:BlazeDBTests/PerformanceInvariantTests \
- -enableCodeCoverage YES
+-only-testing:BlazeDBTests/PerformanceInvariantTests \
+-enableCodeCoverage YES
 ```
 
 ---
@@ -183,10 +183,10 @@ Run just the most critical tests:
 
 ```bash
 xcodebuild test -scheme BlazeDB \
- -only-testing:BlazeDBTests/EncryptionRoundTripVerificationTests/testCiphertextNotRounded \
- -only-testing:BlazeDBTests/PersistenceIntegrityTests/testTenRecordsPersistence \
- -only-testing:BlazeDBTests/FileIntegrityTests/testMetadataAlwaysValidJSON \
- -only-testing:BlazeDBTests/AutoMigrationVerificationTests/testMetadataNeverStartsWithBinaryByte
+-only-testing:BlazeDBTests/EncryptionRoundTripVerificationTests/testCiphertextNotRounded \
+-only-testing:BlazeDBTests/PersistenceIntegrityTests/testTenRecordsPersistence \
+-only-testing:BlazeDBTests/FileIntegrityTests/testMetadataAlwaysValidJSON \
+-only-testing:BlazeDBTests/AutoMigrationVerificationTests/testMetadataNeverStartsWithBinaryByte
 ```
 
 If these 4 pass, you're 95% confident the critical bugs are fixed.

@@ -12,62 +12,62 @@ BlazeDB is a layered embedded database system with the following architecture:
 
 ```
 
- APPLICATION LAYER 
- BlazeDBClient, DynamicCollection, QueryBuilder, BlazeQuery 
+ APPLICATION LAYER
+ BlazeDBClient, DynamicCollection, QueryBuilder, BlazeQuery
 
- 
 
- QUERY & INDEX LAYER 
- QueryBuilder, QueryOptimizer, QueryPlanner 
- SecondaryIndexes, FullTextSearch, SpatialIndex, VectorIndex 
 
- 
+ QUERY & INDEX LAYER
+ QueryBuilder, QueryOptimizer, QueryPlanner
+ SecondaryIndexes, FullTextSearch, SpatialIndex, VectorIndex
 
- MVCC & CONCURRENCY LAYER 
- VersionManager, MVCCTransaction, ConflictResolution 
- OperationPool (max 100 concurrent), AsyncQueryCache 
 
- 
 
- TRANSACTION & WAL LAYER 
- BlazeTransaction, TransactionLog, WriteAheadLog 
- Checkpoint threshold: 100 writes or 1.0s 
+ MVCC & CONCURRENCY LAYER
+ VersionManager, MVCCTransaction, ConflictResolution
+ OperationPool (max 100 concurrent), AsyncQueryCache
 
- 
 
- STORAGE ENGINE LAYER 
- DynamicCollection (schema-less document store) 
- StorageLayout (metadata: indexMap, secondaryIndexes) 
- PageStore (4KB pages, AES-256-GCM encryption, 1000-page cache) 
- PageStore+Overflow (page chains for records >4KB) 
 
- 
+ TRANSACTION & WAL LAYER
+ BlazeTransaction, TransactionLog, WriteAheadLog
+ Checkpoint threshold: 100 writes or 1.0s
 
- ENCODING & SERIALIZATION 
- BlazeBinaryEncoder/Decoder (53% smaller than JSON) 
- BlazeRecordEncoder/Decoder (Codable integration) 
- Optional CRC32 checksums (99.9% corruption detection) 
 
- 
 
- DISTRIBUTED SYNC LAYER 
- BlazeSyncEngine (op-log based, 10K-50K batch size) 
- OperationLog (Lamport timestamps, persistent storage) 
- TCPRelay, UnixDomainSocketRelay, InMemoryRelay 
- BlazeTopology, BlazeDiscovery (mDNS/Bonjour) 
+ STORAGE ENGINE LAYER
+ DynamicCollection (schema-less document store)
+ StorageLayout (metadata: indexMap, secondaryIndexes)
+ PageStore (4KB pages, AES-256-GCM encryption, 1000-page cache)
+ PageStore+Overflow (page chains for records >4KB)
 
- 
 
- SECURITY & ENCRYPTION 
- SecureConnection (ECDH P-256 + HKDF + AES-256-GCM) 
- PolicyEngine (Row-Level Security) 
- PageStore encryption (AES-256-GCM per page, unique nonce) 
 
- 
+ ENCODING & SERIALIZATION
+ BlazeBinaryEncoder/Decoder (53% smaller than JSON)
+ BlazeRecordEncoder/Decoder (Codable integration)
+ Optional CRC32 checksums (99.9% corruption detection)
 
- TOOLBOX 
- BlazeServer (TCP server), BlazeShell (CLI), BlazeMCP (MCP) 
- BlazeDBVisualizer, BlazeStudio (GUI tools) 
+
+
+ DISTRIBUTED SYNC LAYER
+ BlazeSyncEngine (op-log based, 10K-50K batch size)
+ OperationLog (Lamport timestamps, persistent storage)
+ TCPRelay, UnixDomainSocketRelay, InMemoryRelay
+ BlazeTopology, BlazeDiscovery (mDNS/Bonjour)
+
+
+
+ SECURITY & ENCRYPTION
+ SecureConnection (ECDH P-256 + HKDF + AES-256-GCM)
+ PolicyEngine (Row-Level Security)
+ PageStore encryption (AES-256-GCM per page, unique nonce)
+
+
+
+ TOOLBOX
+ BlazeServer (TCP server), BlazeShell (CLI), BlazeMCP (MCP)
+ BlazeDBVisualizer, BlazeStudio (GUI tools)
 
 ```
 
@@ -777,82 +777,82 @@ BlazeDB is a layered embedded database system with the following architecture:
 ### 4.1 Record Size Limits
 
 - **Max Record Size:** 100MB (enforced in `DynamicCollection+Batch.swift:125`)
- - Code: `let maxRecordSize = 100 * 1024 * 1024`
- - Rationale: Prevents memory exhaustion attacks
+- Code: `let maxRecordSize = 100 * 1024 * 1024`
+- Rationale: Prevents memory exhaustion attacks
 - **Single Page Max Data:** ~4046 bytes (4096 - 50 bytes overhead)
- - Code: `PageStore+Overflow.swift:103-108` - `maxDataPerPage = pageSize - 50`
+- Code: `PageStore+Overflow.swift:103-108` - `maxDataPerPage = pageSize - 50`
 - **Overflow Chain Max:** Unlimited (practical limit: ~25,000 pages = 100MB)
- - Code: `PageStore+Overflow.swift:114-687` - Supports arbitrary chain length
+- Code: `PageStore+Overflow.swift:114-687` - Supports arbitrary chain length
 
 ### 4.2 Database Size Limits
 
 - **Max Pages:** ~2.1 billion (Int.max / 4096 = 536,870,912 pages, but file size uses UInt64)
- - Code: `PageStore.swift:248-403` - Uses UInt64 for file size, Int for page index
- - Rationale: Page index is Int, but file size can exceed Int.max
+- Code: `PageStore.swift:248-403` - Uses UInt64 for file size, Int for page index
+- Rationale: Page index is Int, but file size can exceed Int.max
 - **Max Database Size (Theoretical):** ~8.6 TB (2.1B pages × 4KB)
- - Code: `PageStore.swift:401-403` - Checks `fileSize <= UInt64(Int.max)` for page index calculation
+- Code: `PageStore.swift:401-403` - Checks `fileSize <= UInt64(Int.max)` for page index calculation
 - **Max Database Size (Practical):** ~1-2 GB (iOS/macOS file system limits)
- - Rationale: File system and memory constraints
+- Rationale: File system and memory constraints
 
 ### 4.3 Index Limits
 
 - **Max Indexes Per Collection:** Unlimited (no explicit limit in code)
 - **Max Index Fields:** Unlimited (compound keys support any number of fields)
- - Code: `CompoundIndexKey.swift:4` - `components: [AnyBlazeCodable]` (array, no limit)
+- Code: `CompoundIndexKey.swift:4` - `components: [AnyBlazeCodable]` (array, no limit)
 - **Max Index Entries:** Unlimited (practical limit: memory, typically <1M entries per index)
 
 ### 4.4 MVCC Limits
 
 - **Max Versions Per Record:** Unlimited (practical limit: memory, GC prevents bloat)
- - Code: `RecordVersion.swift:94` - `versions: [UUID: [RecordVersion]]` (array, no limit)
+- Code: `RecordVersion.swift:94` - `versions: [UUID: [RecordVersion]]` (array, no limit)
 - **Max Version Number:** UInt64.max (18,446,744,073,709,551,615) with wraparound handling
- - Code: `RecordVersion.swift:124-130` - Checks for overflow, resets to 0 if reached
+- Code: `RecordVersion.swift:124-130` - Checks for overflow, resets to 0 if reached
 - **Max Active Snapshots:** Unlimited (practical limit: memory, typically <100)
- - Code: `RecordVersion.swift:101` - `activeSnapshots: [UInt64: Int]` (dictionary, no limit)
+- Code: `RecordVersion.swift:101` - `activeSnapshots: [UInt64: Int]` (dictionary, no limit)
 
 ### 4.5 Sync Limits
 
 - **Max Batch Size:** 50,000 operations (adaptive limit)
- - Code: `BlazeSyncEngine.swift:647` - `min(batchSize + 1000, 50_000)`
+- Code: `BlazeSyncEngine.swift:647` - `min(batchSize + 1000, 50_000)`
 - **Min Batch Size:** 1,000 operations (adaptive limit)
- - Code: `BlazeSyncEngine.swift:650` - `max(batchSize - 1000, 1000)`
+- Code: `BlazeSyncEngine.swift:650` - `max(batchSize - 1000, 1000)`
 - **Max In-Flight Batches:** 200 (hardcoded)
- - Code: `BlazeSyncEngine.swift:58` - `maxInFlight: Int = 200`
+- Code: `BlazeSyncEngine.swift:58` - `maxInFlight: Int = 200`
 - **Max Operation Log Size:** Unlimited (with GC: <10,000 operations retained)
- - Code: `BlazeOperation.swift:111-268` - OperationLog actor, GC configurable
+- Code: `BlazeOperation.swift:111-268` - OperationLog actor, GC configurable
 
 ### 4.6 BlazeBinary Limits
 
 - **Max Field Count:** 65,535 (UInt16.max)
- - Code: `BlazeBinaryEncoder.swift:63` - `UInt16(record.storage.count)`
+- Code: `BlazeBinaryEncoder.swift:63` - `UInt16(record.storage.count)`
 - **Max Field Name Length:** 65,535 bytes (UInt16.max)
- - Code: `BlazeBinaryEncoder.swift:119` - `guard keyData.count <= UInt16.max`
+- Code: `BlazeBinaryEncoder.swift:119` - `guard keyData.count <= UInt16.max`
 - **Max Frame Size:** Unlimited (practical limit: network buffer, typically <64KB)
 
 ### 4.7 WAL Limits
 
 - **Max WAL File Size:** Unlimited (no rollover, truncates after checkpoint)
- - Code: `WriteAheadLog.swift:134-147` - Truncates to 0 after checkpoint
+- Code: `WriteAheadLog.swift:134-147` - Truncates to 0 after checkpoint
 - **Checkpoint Threshold:** 100 writes (hardcoded)
- - Code: `WriteAheadLog.swift:25` - `checkpointThreshold: Int = 100`
+- Code: `WriteAheadLog.swift:25` - `checkpointThreshold: Int = 100`
 - **Checkpoint Interval:** 1.0 second (hardcoded)
- - Code: `WriteAheadLog.swift:26` - `checkpointInterval: TimeInterval = 1.0`
+- Code: `WriteAheadLog.swift:26` - `checkpointInterval: TimeInterval = 1.0`
 
 ### 4.8 Concurrency Limits
 
 - **Max Concurrent Operations:** 100 (configurable, default in `DynamicCollection+Async.swift:148`)
- - Code: `DynamicCollection+Async.swift:67-68` - `maxConcurrentOperations: Int = 100`
+- Code: `DynamicCollection+Async.swift:67-68` - `maxConcurrentOperations: Int = 100`
 - **Max Query Cache Entries:** 1000 (hardcoded)
- - Code: `DynamicCollection+Async.swift:134` - `maxCacheSize: Int = 1000`
+- Code: `DynamicCollection+Async.swift:134` - `maxCacheSize: Int = 1000`
 - **Max Cache TTL:** 60.0 seconds (hardcoded)
- - Code: `DynamicCollection+Async.swift:134` - `cacheTTL: TimeInterval = 60.0`
+- Code: `DynamicCollection+Async.swift:134` - `cacheTTL: TimeInterval = 60.0`
 
 ### 4.9 Memory Pool Limits
 
 - **Max Encode Buffer Pool Size:** 10 buffers (hardcoded)
- - Code: `TCPRelay.swift:20` - `maxPoolSize = 10`
+- Code: `TCPRelay.swift:20` - `maxPoolSize = 10`
 - **Max Encoded Operation Cache:** 10,000 operations (hardcoded)
- - Code: `TCPRelay.swift:27` - `maxCacheSize = 10000`
+- Code: `TCPRelay.swift:27` - `maxCacheSize = 10000`
 
 ---
 
@@ -970,24 +970,24 @@ BlazeDB is a layered embedded database system with the following architecture:
 
 **Corruption Types:**
 1. **Magic Byte Corruption:** Detected via "BLAZE" magic bytes validation
- - Test: `BlazeBinaryReliabilityTests.swift:297-337` - `testReliability_DetectsAllCorruption()`
- - Mitigation: Decoding fails immediately with error
+- Test: `BlazeBinaryReliabilityTests.swift:297-337` - `testReliability_DetectsAllCorruption()`
+- Mitigation: Decoding fails immediately with error
 
 2. **Version Corruption:** Detected via version byte validation
- - Test: `BlazeBinaryReliabilityTests.swift:315-317` - Version corruption test
- - Mitigation: Decoding fails with `BlazeDBError.corruptedData`
+- Test: `BlazeBinaryReliabilityTests.swift:315-317` - Version corruption test
+- Mitigation: Decoding fails with `BlazeDBError.corruptedData`
 
 3. **Truncated Data:** Detected via length validation
- - Test: `BlazeBinaryReliabilityTests.swift:325-327` - Truncated data test
- - Mitigation: Decoding fails when expected bytes missing
+- Test: `BlazeBinaryReliabilityTests.swift:325-327` - Truncated data test
+- Mitigation: Decoding fails when expected bytes missing
 
 4. **Page Header Corruption:** Detected via overflow page header validation
- - Test: `OverflowPageDestructiveTests.swift:56-60` - Corruption injection tests
- - Mitigation: Page read fails, record marked as corrupted
+- Test: `OverflowPageDestructiveTests.swift:56-60` - Corruption injection tests
+- Mitigation: Page read fails, record marked as corrupted
 
 5. **Metadata Corruption:** Detected via signature verification or format validation
- - Test: `FailureRecoveryScenarios.swift:208-249` - `testCorruption_MetadataRecovery()`
- - Mitigation: Automatic rebuild from data pages (`StorageLayout.rebuildFromDataPages()`)
+- Test: `FailureRecoveryScenarios.swift:208-249` - `testCorruption_MetadataRecovery()`
+- Mitigation: Automatic rebuild from data pages (`StorageLayout.rebuildFromDataPages()`)
 
 **Code References:**
 - `BlazeDB/Utils/BlazeBinaryDecoder.swift` - Magic byte and format validation
@@ -998,20 +998,20 @@ BlazeDB is a layered embedded database system with the following architecture:
 
 **Crash Scenarios:**
 1. **Crash During Transaction:** WAL replay recovers committed transactions, rolls back uncommitted
- - Test: `DataConsistencyACIDTests.swift:342-386` - `testWAL_EnsuresDurabilityUnderCrash()`
- - Mitigation: WAL replay on startup (`TransactionLog.readAll()`)
+- Test: `DataConsistencyACIDTests.swift:342-386` - `testWAL_EnsuresDurabilityUnderCrash()`
+- Mitigation: WAL replay on startup (`TransactionLog.readAll()`)
 
 2. **Crash During Overflow Write:** Overflow chain may be incomplete
- - Test: `OverflowPageDestructiveTests.swift:62-64` - `test6_1_CrashBetweenMainAndOverflow()`
- - Mitigation: Overflow chain validation on read, corrupted chains fail gracefully
+- Test: `OverflowPageDestructiveTests.swift:62-64` - `test6_1_CrashBetweenMainAndOverflow()`
+- Mitigation: Overflow chain validation on read, corrupted chains fail gracefully
 
 3. **Crash During Metadata Write:** Metadata file may be corrupted
- - Test: `FailureRecoveryScenarios.swift:208-249` - `testCorruption_MetadataRecovery()`
- - Mitigation: Automatic rebuild from data pages
+- Test: `FailureRecoveryScenarios.swift:208-249` - `testCorruption_MetadataRecovery()`
+- Mitigation: Automatic rebuild from data pages
 
 4. **Crash During WAL Checkpoint:** Some writes may be in WAL but not in main file
- - Test: `TransactionDurabilityTests.swift:120-144` - `testCrashRecovery_NoPartialOutcomes_AllOrNothing()`
- - Mitigation: WAL replay applies pending writes
+- Test: `TransactionDurabilityTests.swift:120-144` - `testCrashRecovery_NoPartialOutcomes_AllOrNothing()`
+- Mitigation: WAL replay applies pending writes
 
 **Code References:**
 - `BlazeDB/Transactions/TransactionLog.swift:106-114` - WAL replay on startup
@@ -1022,20 +1022,20 @@ BlazeDB is a layered embedded database system with the following architecture:
 
 **Failure Scenarios:**
 1. **Network Partition:** Operations queued locally, synced when connection restored
- - Test: `DistributedSyncTests.swift` - Basic sync operations
- - Mitigation: Operation log persists locally, sync resumes on reconnect
+- Test: `DistributedSyncTests.swift` - Basic sync operations
+- Mitigation: Operation log persists locally, sync resumes on reconnect
 
 2. **Conflict Resolution Failure:** Server priority + Last-Write-Wins handles conflicts
- - Test: `DistributedSyncTests.swift` - Conflict resolution tests
- - Mitigation: `mergeWithCRDT()` implements conflict resolution
+- Test: `DistributedSyncTests.swift` - Conflict resolution tests
+- Mitigation: `mergeWithCRDT()` implements conflict resolution
 
 3. **Operation Log Overflow:** GC prevents unbounded growth
- - Test: `DistributedGCPerformanceTests.swift:39-94` - Operation log GC tests
- - Mitigation: Automatic GC with configurable retention (default: 10K operations)
+- Test: `DistributedGCPerformanceTests.swift:39-94` - Operation log GC tests
+- Mitigation: Automatic GC with configurable retention (default: 10K operations)
 
 4. **Sync State Memory Leak:** GC cleans up deleted records and disconnected nodes
- - Test: `DistributedGCPerformanceTests.swift:161-238` - Sync state GC tests
- - Mitigation: Periodic GC (every 5 minutes, configurable)
+- Test: `DistributedGCPerformanceTests.swift:161-238` - Sync state GC tests
+- Mitigation: Periodic GC (every 5 minutes, configurable)
 
 **Code References:**
 - `BlazeDB/Distributed/BlazeSyncEngine.swift:360-385` - Conflict resolution
@@ -1046,16 +1046,16 @@ BlazeDB is a layered embedded database system with the following architecture:
 
 **Prevention Mechanisms:**
 1. **Policy Evaluation on Every Operation:** Policies checked on select, update, insert, delete
- - Test: `RLSNegativeTests.swift:32-77` - `testRLS_DeniesAccessForUnauthorizedUser()`
- - Mitigation: `PolicyEngine.isAllowed()` called on every operation
+- Test: `RLSNegativeTests.swift:32-77` - `testRLS_DeniesAccessForUnauthorizedUser()`
+- Mitigation: `PolicyEngine.isAllowed()` called on every operation
 
 2. **Query Result Filtering:** Graph queries and fetchAll filter results based on policies
- - Test: `RLSGraphQueryTests.swift` - RLS with graph queries
- - Mitigation: `PolicyEngine.filterRecords()` applied to query results
+- Test: `RLSGraphQueryTests.swift` - RLS with graph queries
+- Mitigation: `PolicyEngine.filterRecords()` applied to query results
 
 3. **Role Hierarchy Enforcement:** Admin/Manager/Employee roles enforced
- - Test: `RLSIntegrationTests.swift:358-376` - `testRLS_HierarchicalPermissions()`
- - Mitigation: Policy evaluation checks roles in `SecurityContext`
+- Test: `RLSIntegrationTests.swift:358-376` - `testRLS_HierarchicalPermissions()`
+- Mitigation: Policy evaluation checks roles in `SecurityContext`
 
 **Code References:**
 - `BlazeDB/Security/PolicyEngine.swift:75-139` - Policy evaluation
@@ -1066,16 +1066,16 @@ BlazeDB is a layered embedded database system with the following architecture:
 
 **Failure Scenarios:**
 1. **Wrong Password:** Key derivation fails, decryption fails immediately
- - Test: `EncryptionRoundTripTests.swift:985` - `testEncryption_WrongPassword()`
- - Mitigation: `AES.GCM.open()` throws on wrong key (authentication tag mismatch)
+- Test: `EncryptionRoundTripTests.swift:985` - `testEncryption_WrongPassword()`
+- Mitigation: `AES.GCM.open()` throws on wrong key (authentication tag mismatch)
 
 2. **Tampered Ciphertext:** Authentication tag validation fails
- - Test: `EncryptionSecurityFullTests.swift:1000` - `testSecurity_AuthenticationTagPreventsModification()`
- - Mitigation: `AES.GCM.open()` throws on tampered data
+- Test: `EncryptionSecurityFullTests.swift:1000` - `testSecurity_AuthenticationTagPreventsModification()`
+- Mitigation: `AES.GCM.open()` throws on tampered data
 
 3. **Unique Nonce Violation:** Each page uses unique nonce (prevents replay)
- - Test: `EncryptionSecurityFullTests.swift:999` - `testSecurity_EachPageHasUniqueNonce()`
- - Mitigation: Nonce generated per page (`AES.GCM.Nonce()`)
+- Test: `EncryptionSecurityFullTests.swift:999` - `testSecurity_EachPageHasUniqueNonce()`
+- Mitigation: Nonce generated per page (`AES.GCM.Nonce()`)
 
 **Code References:**
 - `BlazeDB/Storage/PageStore.swift:147-200` - Page encryption/decryption
@@ -1086,16 +1086,16 @@ BlazeDB is a layered embedded database system with the following architecture:
 
 **Safety Mechanisms:**
 1. **Committed Transaction Replay:** Only committed transactions applied
- - Test: `TransactionDurabilityTests.swift:120-144` - `testCrashRecovery_NoPartialOutcomes_AllOrNothing()`
- - Mitigation: WAL entries include `commit(txID)` markers, only committed transactions replayed
+- Test: `TransactionDurabilityTests.swift:120-144` - `testCrashRecovery_NoPartialOutcomes_AllOrNothing()`
+- Mitigation: WAL entries include `commit(txID)` markers, only committed transactions replayed
 
 2. **Uncommitted Transaction Rollback:** Uncommitted transactions discarded
- - Test: `DataConsistencyACIDTests.swift:342-386` - `testWAL_EnsuresDurabilityUnderCrash()`
- - Mitigation: WAL replay ignores operations after `begin(txID)` without `commit(txID)`
+- Test: `DataConsistencyACIDTests.swift:342-386` - `testWAL_EnsuresDurabilityUnderCrash()`
+- Mitigation: WAL replay ignores operations after `begin(txID)` without `commit(txID)`
 
 3. **Partial Write Prevention:** All-or-nothing page updates
- - Test: `TransactionDurabilityTests.swift:120-144` - No partial outcomes
- - Mitigation: WAL replay applies all writes in transaction atomically
+- Test: `TransactionDurabilityTests.swift:120-144` - No partial outcomes
+- Mitigation: WAL replay applies all writes in transaction atomically
 
 **Code References:**
 - `BlazeDB/Transactions/TransactionLog.swift:106-114` - WAL replay
@@ -1106,16 +1106,16 @@ BlazeDB is a layered embedded database system with the following architecture:
 
 **Handling Mechanisms:**
 1. **Dynamic Schema Evolution:** Fields can be added/removed without migration
- - Test: `AutoMigrationVerificationTests.swift` - Auto migration tests
- - Mitigation: Schema-less storage, no schema validation on insert
+- Test: `AutoMigrationVerificationTests.swift` - Auto migration tests
+- Mitigation: Schema-less storage, no schema validation on insert
 
 2. **Type Coercion:** Automatic type conversion where safe
- - Test: `TypeSafetyTests.swift` - Type safety validation
- - Mitigation: `BlazeDocumentField` supports type coercion
+- Test: `TypeSafetyTests.swift` - Type safety validation
+- Mitigation: `BlazeDocumentField` supports type coercion
 
 3. **Missing Field Handling:** Queries handle missing fields gracefully
- - Test: `QueryBuilderEdgeCaseTests.swift` - Edge case handling
- - Mitigation: `whereNil()` and `whereNotNil()` filters
+- Test: `QueryBuilderEdgeCaseTests.swift` - Edge case handling
+- Mitigation: `whereNil()` and `whereNotNil()` filters
 
 **Code References:**
 - `BlazeDB/Core/AutoMigration.swift` - Auto migration logic
@@ -1126,16 +1126,16 @@ BlazeDB is a layered embedded database system with the following architecture:
 
 **Resync Mechanisms:**
 1. **Incremental Sync:** Pulls operations since last timestamp
- - Test: `DistributedSyncTests.swift:1163` - `testOperationLog()`
- - Mitigation: `pullOperations(since:)` pulls only missing operations
+- Test: `DistributedSyncTests.swift:1163` - `testOperationLog()`
+- Mitigation: `pullOperations(since:)` pulls only missing operations
 
 2. **Full Resync (Not Implemented):** No snapshot sync, must replay entire operation log
- - Test: None (feature not implemented)
- - Mitigation: Operation log GC limits size (<10K operations with GC)
+- Test: None (feature not implemented)
+- Mitigation: Operation log GC limits size (<10K operations with GC)
 
 3. **Conflict Resolution:** Server priority + Last-Write-Wins
- - Test: `DistributedSyncTests.swift` - Conflict resolution tests
- - Mitigation: `mergeWithCRDT()` implements resolution strategy
+- Test: `DistributedSyncTests.swift` - Conflict resolution tests
+- Mitigation: `mergeWithCRDT()` implements resolution strategy
 
 **Code References:**
 - `BlazeDB/Distributed/BlazeSyncEngine.swift:192-224` - `synchronize()` method (op-log only)

@@ -322,7 +322,7 @@ CMS Interface (Visualizer):
 
 ---
 
-## 10.  **PROJECT MANAGEMENT TOOL**
+## 10. **PROJECT MANAGEMENT TOOL**
 
 ### **The Problem:**
 Team needs project tracking
@@ -848,10 +848,10 @@ Interviewer: "When can you start?"
 1. Polish README with screenshots
 2. Record 5-minute demo video
 3. Post to:
- - Show HN
- - Reddit r/swift, r/programming
- - Twitter/X
- - Product Hunt
+- Show HN
+- Reddit r/swift, r/programming
+- Twitter/X
+- Product Hunt
 
 Title:
 "BlazeDB - Native Swift database with

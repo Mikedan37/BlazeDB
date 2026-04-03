@@ -98,16 +98,16 @@ Very Large (10M+): ~50-200 MB
 ### **Database File Structure:**
 ```
 Database File: Variable (depends on data)
- - Pages: 4 KB each
- - Metadata: ~10-50 KB
- - Indexes: ~1-10% of data size
- - WAL (if enabled): ~1-10% of data size
+- Pages: 4 KB each
+- Metadata: ~10-50 KB
+- Indexes: ~1-10% of data size
+- WAL (if enabled): ~1-10% of data size
 
 Example Sizes:
- - Empty DB: ~50 KB
- - 1,000 records: ~1-5 MB
- - 100,000 records: ~50-200 MB
- - 1,000,000 records: ~500 MB - 2 GB
+- Empty DB: ~50 KB
+- 1,000 records: ~1-5 MB
+- 100,000 records: ~50-200 MB
+- 1,000,000 records: ~500 MB - 2 GB
 ```
 
 ### **Storage Efficiency:**
@@ -165,7 +165,7 @@ BlazeDB: Efficient (BlazeBinary, 53% smaller than JSON)
 - **1M Records:** ~500 MB - 2 GB
 
 ### **Verdict:**
- **BlazeDB is NOT 1 MB** - it's **~2-4 MB compiled**, but:
+**BlazeDB is NOT 1 MB** - it's **~2-4 MB compiled**, but:
 - **Smaller than Realm** (15-20 MB)
 - **Comparable to SQLite** (700 KB, but BlazeDB has more features)
 - **Efficient storage** (53% smaller than JSON)

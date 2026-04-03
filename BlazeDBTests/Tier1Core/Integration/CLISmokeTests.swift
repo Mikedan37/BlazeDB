@@ -33,13 +33,14 @@ private final class LockedDataBuffer: @unchecked Sendable {
 }
 
 final class CLISmokeTests: XCTestCase {
-    var tempDir: URL!
+    private var tempDir: URL?
     
     override func setUpWithError() throws {
         try super.setUpWithError()
-        tempDir = FileManager.default.temporaryDirectory
+        let dir = FileManager.default.temporaryDirectory
             .appendingPathComponent("BlazeDB_CLISmoke_\(UUID().uuidString)")
-        try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
+        tempDir = dir
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         
         let requiredExecutables = ["BlazeDoctor", "BlazeInfo", "BlazeDump"]
         let missing = requiredExecutables.filter { resolveExecutablePath($0) == nil }
@@ -49,7 +50,9 @@ final class CLISmokeTests: XCTestCase {
     }
     
     override func tearDown() {
-        try? FileManager.default.removeItem(at: tempDir)
+        if let dir = tempDir {
+            try? FileManager.default.removeItem(at: dir)
+        }
         super.tearDown()
     }
     
@@ -162,7 +165,7 @@ final class CLISmokeTests: XCTestCase {
     // MARK: - Test Database Setup
     
     private func createTestDatabase() throws -> URL {
-        let dbPath = tempDir.appendingPathComponent("test.blazedb")
+        let dbPath = try requireFixture(tempDir).appendingPathComponent("test.blazedb")
         let db = try BlazeDBClient(name: "TestDB", fileURL: dbPath, password: "TestPass123!")
         
         // Insert test data
@@ -192,7 +195,7 @@ final class CLISmokeTests: XCTestCase {
     }
     
     func testBlazeDoctor_InvalidPath() {
-        let invalidPath = tempDir.appendingPathComponent("nonexistent.blazedb").path
+        let invalidPath = (try? requireFixture(tempDir).appendingPathComponent("nonexistent.blazedb").path) ?? "/nonexistent.blazedb"
         
         let (exitCode, _, _) = runCommand("BlazeDoctor", arguments: [invalidPath])
         
@@ -215,7 +218,7 @@ final class CLISmokeTests: XCTestCase {
     
     func testBlazeDump_DumpAndVerify() throws {
         let dbPath = try createTestDatabase()
-        let dumpPath = tempDir.appendingPathComponent("test.dump")
+        let dumpPath = try requireFixture(tempDir).appendingPathComponent("test.dump")
         
         // Dump
         let (dumpExitCode, dumpOutput, dumpError) = runCommand("BlazeDump", arguments: ["dump", dbPath.path, dumpPath.path])
@@ -233,8 +236,8 @@ final class CLISmokeTests: XCTestCase {
     
     func testBlazeDump_Restore() throws {
         let dbPath = try createTestDatabase()
-        let dumpPath = tempDir.appendingPathComponent("test.dump")
-        let restoredPath = tempDir.appendingPathComponent("restored.blazedb")
+        let dumpPath = try requireFixture(tempDir).appendingPathComponent("test.dump")
+        let restoredPath = try requireFixture(tempDir).appendingPathComponent("restored.blazedb")
         
         // Dump
         let (dumpExitCode, _, _) = runCommand("BlazeDump", arguments: ["dump", dbPath.path, dumpPath.path])
@@ -255,7 +258,7 @@ final class CLISmokeTests: XCTestCase {
     
     func testBlazeDump_VerifyCorruptedDump() throws {
         let dbPath = try createTestDatabase()
-        let dumpPath = tempDir.appendingPathComponent("corrupted.dump")
+        let dumpPath = try requireFixture(tempDir).appendingPathComponent("corrupted.dump")
         
         // Create dump
         let (dumpExitCode, _, _) = runCommand("BlazeDump", arguments: ["dump", dbPath.path, dumpPath.path])
@@ -290,8 +293,8 @@ final class CLISmokeTests: XCTestCase {
         XCTAssertEqual(infoExitCode, 0, "Info should pass")
         
         // Dump and restore
-        let dumpPath = tempDir.appendingPathComponent("e2e.dump")
-        let restoredPath = tempDir.appendingPathComponent("e2e_restored.blazedb")
+        let dumpPath = try requireFixture(tempDir).appendingPathComponent("e2e.dump")
+        let restoredPath = try requireFixture(tempDir).appendingPathComponent("e2e_restored.blazedb")
         
         let (dumpExitCode, _, _) = runCommand("BlazeDump", arguments: ["dump", dbPath.path, dumpPath.path])
         XCTAssertEqual(dumpExitCode, 0, "Dump should succeed")

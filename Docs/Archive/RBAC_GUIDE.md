@@ -342,13 +342,13 @@ BlazeLogger.info(" Context set: \(context.userID) with roles \(context.roles)")
 ## **This Makes BlazeDB Enterprise-Ready**
 
 ### **What You Get:**
- **Row-Level Security** (like Postgres RLS)
- **Role-Based Access Control** (like AWS IAM)
- **Multi-Tenant Support** (like Slack/GitHub teams)
- **Custom Policies** (like Firebase Rules)
- **User Management** (built-in)
- **Team Management** (built-in)
- **Visual UI** (in Visualizer)
+**Row-Level Security** (like Postgres RLS)
+**Role-Based Access Control** (like AWS IAM)
+**Multi-Tenant Support** (like Slack/GitHub teams)
+**Custom Policies** (like Firebase Rules)
+**User Management** (built-in)
+**Team Management** (built-in)
+**Visual UI** (in Visualizer)
 
 ### **Commercial Equivalents:**
 - **Supabase RLS:** $25-99/month (you have it free!)

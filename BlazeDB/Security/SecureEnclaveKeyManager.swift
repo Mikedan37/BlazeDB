@@ -174,8 +174,11 @@ public final class SecureEnclaveKeyManager {
 
         // Decrypt the symmetric key using the EC private key
         let algorithm: SecKeyAlgorithm = .eciesEncryptionCofactorVariableIVX963SHA256AESGCM
-        // swiftlint:disable:next force_cast
-        let secKey = privateKey as! SecKey
+        // Keychain returns an untyped ref; verify CF type before downcasting to SecKey (no `as!`).
+        guard CFGetTypeID(privateKey as CFTypeRef) == SecKeyGetTypeID() else {
+            throw SecureEnclaveError.keychainError(errSecInvalidKeyRef)
+        }
+        let secKey = unsafeDowncast(privateKey as AnyObject, to: SecKey.self)
 
         var decryptError: Unmanaged<CFError>?
         guard let decryptedData = SecKeyCreateDecryptedData(secKey, algorithm, encryptedData as CFData, &decryptError) as Data? else {

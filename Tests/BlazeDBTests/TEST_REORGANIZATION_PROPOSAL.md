@@ -1,6 +1,6 @@
 # Test Reorganization Proposal: Component-Based Structure
 
-## 📊 Current State Analysis
+## Current State Analysis
 
 ### Problems with Current Structure:
 1. **158+ test files in root directory** - Hard to navigate
@@ -10,17 +10,17 @@
 5. **No clear component boundaries** - Hard to know what tests what
 
 ### Current Partial Organization:
-- ✅ `Chaos/` - Chaos testing
-- ✅ `Concurrency/` - Concurrency tests
-- ✅ `Indexes/` - Index consistency tests
-- ✅ `Performance/` - Performance benchmarks
-- ✅ `Recovery/` - Recovery tests
-- ✅ `ModelBased/` - Model-based tests
-- ❌ **Everything else** - 150+ files in root
+- `Chaos/` - Chaos testing
+- `Concurrency/` - Concurrency tests
+- `Indexes/` - Index consistency tests
+- `Performance/` - Performance benchmarks
+- `Recovery/` - Recovery tests
+- `ModelBased/` - Model-based tests
+- **Everything else** - 150+ files in root
 
 ---
 
-## ✅ Benefits of Component-Based Organization
+## Benefits of Component-Based Organization
 
 ### 1. **Clear Component Boundaries**
 - Know exactly where to find tests for a specific feature
@@ -49,229 +49,229 @@
 
 ---
 
-## 📁 Proposed Directory Structure
+## Proposed Directory Structure
 
 ```
 BlazeDBTests/
-├── Core/                          # Core database engine
-│   ├── DynamicCollectionTests.swift
-│   ├── BlazeDBClientTests.swift
-│   ├── BlazeDBInitializationTests.swift
-│   ├── BlazeDBManagerTests.swift
-│   └── Storage/
-│       ├── PageStoreTests.swift
-│       ├── PageStoreEdgeCaseTests.swift
-│       ├── StorageLayoutTests.swift
-│       ├── StorageManagerEdgeCaseTests.swift
-│       └── StorageStatsTests.swift
+├── Core/ # Core database engine
+│ ├── DynamicCollectionTests.swift
+│ ├── BlazeDBClientTests.swift
+│ ├── BlazeDBInitializationTests.swift
+│ ├── BlazeDBManagerTests.swift
+│ └── Storage/
+│ ├── PageStoreTests.swift
+│ ├── PageStoreEdgeCaseTests.swift
+│ ├── StorageLayoutTests.swift
+│ ├── StorageManagerEdgeCaseTests.swift
+│ └── StorageStatsTests.swift
 │
-├── MVCC/                          # Multi-Version Concurrency Control
-│   ├── MVCCFoundationTests.swift
-│   ├── MVCCAdvancedTests.swift
-│   ├── MVCCIntegrationTests.swift
-│   ├── MVCCPerformanceTests.swift
-│   └── MVCCRegressionTests.swift
+├── MVCC/ # Multi-Version Concurrency Control
+│ ├── MVCCFoundationTests.swift
+│ ├── MVCCAdvancedTests.swift
+│ ├── MVCCIntegrationTests.swift
+│ ├── MVCCPerformanceTests.swift
+│ └── MVCCRegressionTests.swift
 │
-├── Query/                         # Query engine
-│   ├── QueryBuilderTests.swift
-│   ├── QueryBuilderEdgeCaseTests.swift
-│   ├── QueryPlannerTests.swift
-│   ├── QueryOptimizationTests.swift
-│   ├── QueryProfilingTests.swift
-│   ├── QueryCacheTests.swift
-│   ├── QueryExplainTests.swift
-│   ├── QueryResultConversionTests.swift
-│   ├── BlazeQueryTests.swift
-│   └── GraphQueryTests.swift
+├── Query/ # Query engine
+│ ├── QueryBuilderTests.swift
+│ ├── QueryBuilderEdgeCaseTests.swift
+│ ├── QueryPlannerTests.swift
+│ ├── QueryOptimizationTests.swift
+│ ├── QueryProfilingTests.swift
+│ ├── QueryCacheTests.swift
+│ ├── QueryExplainTests.swift
+│ ├── QueryResultConversionTests.swift
+│ ├── BlazeQueryTests.swift
+│ └── GraphQueryTests.swift
 │
-├── Indexes/                        # All index types
-│   ├── IndexConsistencyTests.swift (existing)
-│   ├── SecondaryIndexTests.swift
-│   ├── FullTextSearchTests.swift
-│   ├── OptimizedSearchTests.swift
-│   ├── SearchIndexMaintenanceTests.swift
-│   ├── SearchPerformanceBenchmarks.swift
-│   ├── SpatialIndexTests.swift
-│   ├── VectorIndexIntegrationTests.swift
-│   ├── VectorSpatialQueriesTests.swift
-│   ├── OrderingIndexTests.swift
-│   ├── OrderingIndexAdvancedTests.swift
-│   ├── BlazeIndexStressTests.swift
-│   └── DataTypeCompoundIndexTests.swift
+├── Indexes/ # All index types
+│ ├── IndexConsistencyTests.swift (existing)
+│ ├── SecondaryIndexTests.swift
+│ ├── FullTextSearchTests.swift
+│ ├── OptimizedSearchTests.swift
+│ ├── SearchIndexMaintenanceTests.swift
+│ ├── SearchPerformanceBenchmarks.swift
+│ ├── SpatialIndexTests.swift
+│ ├── VectorIndexIntegrationTests.swift
+│ ├── VectorSpatialQueriesTests.swift
+│ ├── OrderingIndexTests.swift
+│ ├── OrderingIndexAdvancedTests.swift
+│ ├── BlazeIndexStressTests.swift
+│ └── DataTypeCompoundIndexTests.swift
 │
-├── Transactions/                  # Transaction system
-│   ├── BlazeTransactionTests.swift
-│   ├── TransactionDurabilityTests.swift
-│   ├── TransactionEdgeCaseTests.swift
-│   └── TransactionRecoveryTests.swift
+├── Transactions/ # Transaction system
+│ ├── BlazeTransactionTests.swift
+│ ├── TransactionDurabilityTests.swift
+│ ├── TransactionEdgeCaseTests.swift
+│ └── TransactionRecoveryTests.swift
 │
-├── Security/                      # Security features
-│   ├── EncryptionSecurityTests.swift
-│   ├── EncryptionSecurityFullTests.swift
-│   ├── EncryptionRoundTripTests.swift
-│   ├── EncryptionRoundTripVerificationTests.swift
-│   ├── RLSAccessManagerTests.swift
-│   ├── RLSSecurityContextTests.swift
-│   ├── RLSPolicyEngineTests.swift
-│   ├── RLSGraphQueryTests.swift
-│   ├── SecurityAuditTests.swift
-│   ├── SecureConnectionTests.swift
-│   └── KeyManagerTests.swift
+├── Security/ # Security features
+│ ├── EncryptionSecurityTests.swift
+│ ├── EncryptionSecurityFullTests.swift
+│ ├── EncryptionRoundTripTests.swift
+│ ├── EncryptionRoundTripVerificationTests.swift
+│ ├── RLSAccessManagerTests.swift
+│ ├── RLSSecurityContextTests.swift
+│ ├── RLSPolicyEngineTests.swift
+│ ├── RLSGraphQueryTests.swift
+│ ├── SecurityAuditTests.swift
+│ ├── SecureConnectionTests.swift
+│ └── KeyManagerTests.swift
 │
-├── Sync/                          # Distributed sync
-│   ├── DistributedSyncTests.swift
-│   ├── DistributedSecurityTests.swift
-│   ├── DistributedGCTests.swift
-│   ├── DistributedGCPerformanceTests.swift
-│   ├── SyncIntegrationTests.swift
-│   ├── SyncEndToEndTests.swift
-│   ├── CrossAppSyncTests.swift
-│   ├── InMemoryRelayTests.swift
-│   ├── UnixDomainSocketTests.swift
-│   └── TopologyTests.swift
+├── Sync/ # Distributed sync
+│ ├── DistributedSyncTests.swift
+│ ├── DistributedSecurityTests.swift
+│ ├── DistributedGCTests.swift
+│ ├── DistributedGCPerformanceTests.swift
+│ ├── SyncIntegrationTests.swift
+│ ├── SyncEndToEndTests.swift
+│ ├── CrossAppSyncTests.swift
+│ ├── InMemoryRelayTests.swift
+│ ├── UnixDomainSocketTests.swift
+│ └── TopologyTests.swift
 │
-├── GarbageCollection/             # GC system
-│   ├── GarbageCollectionEdgeTests.swift
-│   ├── CompleteGCValidationTests.swift
-│   ├── PageGCTests.swift
-│   ├── PageReuseGCTests.swift
-│   ├── GCControlAPITests.swift
-│   └── VacuumOperationsTests.swift
+├── GarbageCollection/ # GC system
+│ ├── GarbageCollectionEdgeTests.swift
+│ ├── CompleteGCValidationTests.swift
+│ ├── PageGCTests.swift
+│ ├── PageReuseGCTests.swift
+│ ├── GCControlAPITests.swift
+│ └── VacuumOperationsTests.swift
 │
-├── Persistence/                   # Persistence & recovery
-│   ├── BlazeDBPersistenceTests.swift
-│   ├── BlazeDBPersistAPITests.swift
-│   ├── PersistenceIntegrityTests.swift
-│   ├── BlazeDBRecoveryTests.swift
-│   ├── BlazeCorruptionRecoveryTests.swift
-│   ├── FileIntegrityTests.swift
-│   └── MetadataFlushEdgeCaseTests.swift
+├── Persistence/ # Persistence & recovery
+│ ├── BlazeDBPersistenceTests.swift
+│ ├── BlazeDBPersistAPITests.swift
+│ ├── PersistenceIntegrityTests.swift
+│ ├── BlazeDBRecoveryTests.swift
+│ ├── BlazeCorruptionRecoveryTests.swift
+│ ├── FileIntegrityTests.swift
+│ └── MetadataFlushEdgeCaseTests.swift
 │
-├── Migration/                     # Migration system
-│   ├── MigrationTests.swift
-│   ├── AutoMigrationVerificationTests.swift
-│   ├── BlazeDBMigrationTests.swift
-│   ├── BlazeEncoderMigrationTests.swift
-│   └── MigrationProgressMonitorTests.swift
+├── Migration/ # Migration system
+│ ├── MigrationTests.swift
+│ ├── AutoMigrationVerificationTests.swift
+│ ├── BlazeDBMigrationTests.swift
+│ ├── BlazeEncoderMigrationTests.swift
+│ └── MigrationProgressMonitorTests.swift
 │
-├── SQL/                           # SQL features
-│   ├── SQLFeaturesTests.swift
-│   ├── CompleteSQLFeaturesTests.swift
-│   ├── CompleteSQLFeaturesOptimizedTests.swift
-│   ├── BlazeJoinTests.swift
-│   ├── ConcurrentJoinTests.swift
-│   ├── SubqueryTests.swift
-│   └── ForeignKeyTests.swift
+├── SQL/ # SQL features
+│ ├── SQLFeaturesTests.swift
+│ ├── CompleteSQLFeaturesTests.swift
+│ ├── CompleteSQLFeaturesOptimizedTests.swift
+│ ├── BlazeJoinTests.swift
+│ ├── ConcurrentJoinTests.swift
+│ ├── SubqueryTests.swift
+│ └── ForeignKeyTests.swift
 │
-├── Aggregation/                   # Aggregation features
-│   ├── AggregationTests.swift
-│   └── DistinctEdgeCaseTests.swift
+├── Aggregation/ # Aggregation features
+│ ├── AggregationTests.swift
+│ └── DistinctEdgeCaseTests.swift
 │
-├── DataTypes/                     # Data type handling
-│   ├── DataTypeQueryTests.swift
-│   ├── ArrayDictionaryEdgeTests.swift
-│   ├── BlazeDocumentValidationTests.swift
-│   └── TypeSafetyTests.swift
+├── DataTypes/ # Data type handling
+│ ├── DataTypeQueryTests.swift
+│ ├── ArrayDictionaryEdgeTests.swift
+│ ├── BlazeDocumentValidationTests.swift
+│ └── TypeSafetyTests.swift
 │
-├── Encoding/                     # BlazeBinary encoding
-│   ├── BlazeBinaryEncoderTests.swift
-│   ├── BlazeBinaryEdgeCaseTests.swift
-│   ├── BlazeBinaryDirectVerificationTests.swift
-│   ├── BlazeBinaryExhaustiveVerificationTests.swift
-│   ├── BlazeBinaryPerformanceTests.swift
-│   ├── BlazeBinaryReliabilityTests.swift
-│   └── BlazeBinaryUltimateBulletproofTests.swift
+├── Encoding/ # BlazeBinary encoding
+│ ├── BlazeBinaryEncoderTests.swift
+│ ├── BlazeBinaryEdgeCaseTests.swift
+│ ├── BlazeBinaryDirectVerificationTests.swift
+│ ├── BlazeBinaryExhaustiveVerificationTests.swift
+│ ├── BlazeBinaryPerformanceTests.swift
+│ ├── BlazeBinaryReliabilityTests.swift
+│ └── BlazeBinaryUltimateBulletproofTests.swift
 │
-├── Overflow/                      # Overflow page system
-│   ├── OverflowPageTests.swift
-│   └── OverflowPageDestructiveTests.swift
+├── Overflow/ # Overflow page system
+│ ├── OverflowPageTests.swift
+│ └── OverflowPageDestructiveTests.swift
 │
-├── Features/                      # Feature-specific tests
-│   ├── EventTriggersTests.swift
-│   ├── ComputedFieldsTests.swift
-│   ├── LazyDecodingTests.swift
-│   ├── ChangeObservationTests.swift
-│   ├── BlazePaginationTests.swift
-│   ├── UpsertEdgeCaseTests.swift
-│   ├── UpdateFieldsEdgeCaseTests.swift
-│   ├── KeyPathQueryTests.swift
-│   ├── GeospatialEnhancementTests.swift
-│   └── ComprehensiveFeatureTests.swift
+├── Features/ # Feature-specific tests
+│ ├── EventTriggersTests.swift
+│ ├── ComputedFieldsTests.swift
+│ ├── LazyDecodingTests.swift
+│ ├── ChangeObservationTests.swift
+│ ├── BlazePaginationTests.swift
+│ ├── UpsertEdgeCaseTests.swift
+│ ├── UpdateFieldsEdgeCaseTests.swift
+│ ├── KeyPathQueryTests.swift
+│ ├── GeospatialEnhancementTests.swift
+│ └── ComprehensiveFeatureTests.swift
 │
-├── Performance/                   # Performance tests
-│   ├── PerformanceBenchmarks.swift (existing)
-│   ├── BaselinePerformanceTests.swift
-│   ├── PerformanceProfilingTests.swift
-│   ├── PerformanceInvariantTests.swift
-│   ├── PerformanceOptimizationTests.swift
-│   ├── BlazeDBPerformanceTests.swift
-│   └── ComprehensiveBenchmarks.swift
+├── Performance/ # Performance tests
+│ ├── PerformanceBenchmarks.swift (existing)
+│ ├── BaselinePerformanceTests.swift
+│ ├── PerformanceProfilingTests.swift
+│ ├── PerformanceInvariantTests.swift
+│ ├── PerformanceOptimizationTests.swift
+│ ├── BlazeDBPerformanceTests.swift
+│ └── ComprehensiveBenchmarks.swift
 │
-├── Concurrency/                   # Concurrency tests
-│   ├── ConcurrencyStressTests.swift (existing)
-│   ├── BlazeDBConcurrencyTests.swift
-│   ├── BlazeDBEnhancedConcurrencyTests.swift
-│   ├── AsyncAwaitTests.swift
-│   ├── AsyncAwaitEdgeCaseTests.swift
-│   ├── BlazeDBAsyncTests.swift
-│   ├── TypeSafeAsyncEdgeCaseTests.swift
-│   └── BatchOperationTests.swift
+├── Concurrency/ # Concurrency tests
+│ ├── ConcurrencyStressTests.swift (existing)
+│ ├── BlazeDBConcurrencyTests.swift
+│ ├── BlazeDBEnhancedConcurrencyTests.swift
+│ ├── AsyncAwaitTests.swift
+│ ├── AsyncAwaitEdgeCaseTests.swift
+│ ├── BlazeDBAsyncTests.swift
+│ ├── TypeSafeAsyncEdgeCaseTests.swift
+│ └── BatchOperationTests.swift
 │
-├── EdgeCases/                     # Edge case tests
-│   ├── EdgeCaseTests.swift
-│   ├── ExtremeEdgeCaseTests.swift
-│   ├── TypeSafetyEdgeCaseTests.swift
-│   └── QueryBuilderEdgeCaseTests.swift
+├── EdgeCases/ # Edge case tests
+│ ├── EdgeCaseTests.swift
+│ ├── ExtremeEdgeCaseTests.swift
+│ ├── TypeSafetyEdgeCaseTests.swift
+│ └── QueryBuilderEdgeCaseTests.swift
 │
-├── Stress/                        # Stress tests
-│   ├── StressTests.swift
-│   ├── BlazeDBStressTests.swift
-│   └── BlazeDBCrashSimTests.swift
+├── Stress/ # Stress tests
+│ ├── StressTests.swift
+│ ├── BlazeDBStressTests.swift
+│ └── BlazeDBCrashSimTests.swift
 │
-├── Chaos/                         # Chaos testing
-│   └── ChaosEngineTests.swift (existing)
+├── Chaos/ # Chaos testing
+│ └── ChaosEngineTests.swift (existing)
 │
-├── Recovery/                      # Recovery tests
-│   └── ReplayTests.swift (existing)
+├── Recovery/ # Recovery tests
+│ └── ReplayTests.swift (existing)
 │
-├── ModelBased/                    # Model-based tests
-│   └── StateModelTests.swift (existing)
+├── ModelBased/ # Model-based tests
+│ └── StateModelTests.swift (existing)
 │
-├── PropertyBased/                 # Property-based tests
-│   ├── PropertyBasedTests.swift
-│   └── FuzzTests.swift
+├── PropertyBased/ # Property-based tests
+│ ├── PropertyBasedTests.swift
+│ └── FuzzTests.swift
 │
-├── Integration/                   # Integration tests
-│   ├── ComprehensiveFeatureTests.swift
-│   ├── FeatureVerificationTests.swift
-│   ├── Final100PercentCoverageTests.swift
-│   ├── BlazeDBTodaysFeaturesTests.swift
-│   ├── CodableIntegrationTests.swift
-│   └── ConvenienceAPITests.swift
+├── Integration/ # Integration tests
+│ ├── ComprehensiveFeatureTests.swift
+│ ├── FeatureVerificationTests.swift
+│ ├── Final100PercentCoverageTests.swift
+│ ├── BlazeDBTodaysFeaturesTests.swift
+│ ├── CodableIntegrationTests.swift
+│ └── ConvenienceAPITests.swift
 │
-├── Utilities/                     # Utility components
-│   ├── BlazeLoggerTests.swift
-│   ├── LoggerExtremeEdgeCaseTests.swift
-│   ├── TelemetryUnitTests.swift
-│   ├── MCPServerTests.swift
-│   └── DXImprovementsTests.swift
+├── Utilities/ # Utility components
+│ ├── BlazeLoggerTests.swift
+│ ├── LoggerExtremeEdgeCaseTests.swift
+│ ├── TelemetryUnitTests.swift
+│ ├── MCPServerTests.swift
+│ └── DXImprovementsTests.swift
 │
-├── Backup/                        # Backup & restore
-│   └── BlazeDBBackupTests.swift
+├── Backup/ # Backup & restore
+│ └── BlazeDBBackupTests.swift
 │
-├── Testing/                        # Test infrastructure
-│   ├── TestCleanupTests.swift
-│   ├── TestHelpers.swift
-│   └── TestCleanupHelpers.swift
+├── Testing/ # Test infrastructure
+│ ├── TestCleanupTests.swift
+│ ├── TestHelpers.swift
+│ └── TestCleanupHelpers.swift
 │
-└── Helpers/                       # Shared test helpers
-    ├── TestHelpers.swift
-    └── TestCleanupHelpers.swift
+└── Helpers/ # Shared test helpers
+ ├── TestHelpers.swift
+ └── TestCleanupHelpers.swift
 ```
 
 ---
 
-## 📋 Migration Plan
+## Migration Plan
 
 ### Phase 1: Create Directory Structure (5 min)
 - Create all new directories
@@ -294,29 +294,29 @@ BlazeDBTests/
 
 ---
 
-## ⚠️ Considerations
+## Considerations
 
 ### Pros:
-- ✅ Much better organization
-- ✅ Easier to navigate
-- ✅ Clear component boundaries
-- ✅ Better for large teams
-- ✅ Easier to maintain
+- Much better organization
+- Easier to navigate
+- Clear component boundaries
+- Better for large teams
+- Easier to maintain
 
 ### Cons:
-- ⚠️ One-time migration effort (~1-2 hours)
-- ⚠️ Need to update any scripts that reference test files
-- ⚠️ Git history preserved (files moved, not deleted)
+- One-time migration effort (~1-2 hours)
+- Need to update any scripts that reference test files
+- Git history preserved (files moved, not deleted)
 
 ### Migration Safety:
-- ✅ Git tracks file moves (no history loss)
-- ✅ Can be done incrementally
-- ✅ Tests remain functional during migration
-- ✅ Easy to rollback if needed
+- Git tracks file moves (no history loss)
+- Can be done incrementally
+- Tests remain functional during migration
+- Easy to rollback if needed
 
 ---
 
-## 🎯 Recommendation
+## Recommendation
 
 **YES, reorganize by component!**
 
@@ -334,7 +334,7 @@ BlazeDBTests/
 
 ---
 
-## 🚀 Next Steps
+## Next Steps
 
 If you want me to proceed:
 1. I'll create the directory structure

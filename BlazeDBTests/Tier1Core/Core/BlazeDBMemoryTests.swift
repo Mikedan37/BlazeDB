@@ -22,26 +22,35 @@ import Crypto
 #endif
 
 /// Darwin autoreleasepool has no equivalent on Linux; run body directly.
-private func runMemoryPool(_ body: () -> Void) {
+private func runMemoryPool(_ body: () throws -> Void) rethrows {
     #if os(Linux)
-    body()
+    try body()
     #else
-    autoreleasepool(invoking: body)
+    try autoreleasepool(invoking: body)
     #endif
 }
 
 final class BlazeDBMemoryTests: XCTestCase {
-    var tempURL: URL!
+    private var tempURL: URL?
+    
+    private func memoryTestURL() throws -> URL {
+        try XCTUnwrap(tempURL, "tempURL should be set in setUpWithError")
+    }
     
     override func setUpWithError() throws {
+        try super.setUpWithError()
         tempURL = FileManager.default.temporaryDirectory
             .appendingPathComponent("BlazeMemory-\(UUID().uuidString).blazedb")
     }
     
     override func tearDownWithError() throws {
-        try? FileManager.default.removeItem(at: tempURL)
-        try? FileManager.default.removeItem(at: tempURL.deletingPathExtension().appendingPathExtension("meta"))
-        try? FileManager.default.removeItem(at: tempURL.deletingPathExtension().appendingPathExtension("meta.indexes"))
+        if let url = tempURL {
+            try? FileManager.default.removeItem(at: url)
+            try? FileManager.default.removeItem(at: url.deletingPathExtension().appendingPathExtension("meta"))
+            try? FileManager.default.removeItem(at: url.deletingPathExtension().appendingPathExtension("meta.indexes"))
+        }
+        tempURL = nil
+        try super.tearDownWithError()
     }
     
     // MARK: - Memory Leak Tests
@@ -50,10 +59,10 @@ final class BlazeDBMemoryTests: XCTestCase {
     func testDatabaseDeallocation() throws {
         weak var weakDB: BlazeDBClient?
         
-        runMemoryPool {
-            var db: BlazeDBClient? = try! BlazeDBClient(
+        try runMemoryPool {
+            var db: BlazeDBClient? = try BlazeDBClient(
                 name: "LeakTest",
-                fileURL: tempURL,
+                fileURL: try memoryTestURL(),
                 password: "TestPassword-123!"
             )
             
@@ -61,7 +70,7 @@ final class BlazeDBMemoryTests: XCTestCase {
             XCTAssertNotNil(weakDB, "Database should exist")
             
             // Use database
-            _ = try! db!.insert(BlazeDataRecord(["test": .string("data")]))
+            _ = try XCTUnwrap(db).insert(BlazeDataRecord(["test": .string("data")]))
             
             // Release database
             db = nil
@@ -77,12 +86,12 @@ final class BlazeDBMemoryTests: XCTestCase {
     func testCollectionDeallocation() throws {
         weak var weakCollection: DynamicCollection?
         
-        runMemoryPool {
+        try runMemoryPool {
             let key = SymmetricKey(size: .bits256)
-            let store = try! PageStore(fileURL: tempURL, key: key)
-            let metaURL = tempURL.deletingPathExtension().appendingPathExtension("meta")
+            let store = try PageStore(fileURL: try memoryTestURL(), key: key)
+            let metaURL = try memoryTestURL().deletingPathExtension().appendingPathExtension("meta")
             
-            var collection: DynamicCollection? = try! DynamicCollection(
+            var collection: DynamicCollection? = try DynamicCollection(
                 store: store,
                 metaURL: metaURL,
                 project: "LeakTest",
@@ -93,7 +102,7 @@ final class BlazeDBMemoryTests: XCTestCase {
             XCTAssertNotNil(weakCollection, "Collection should exist")
             
             // Use collection
-            _ = try! collection!.insert(BlazeDataRecord(["test": .string("data")]))
+            _ = try XCTUnwrap(collection).insert(BlazeDataRecord(["test": .string("data")]))
             
             // Release collection
             collection = nil
@@ -109,17 +118,17 @@ final class BlazeDBMemoryTests: XCTestCase {
     func testPageStoreDeallocation() throws {
         weak var weakStore: PageStore?
         
-        runMemoryPool {
+        try runMemoryPool {
             let key = SymmetricKey(size: .bits256)
-            var store: PageStore? = try! PageStore(fileURL: tempURL, key: key)
+            var store: PageStore? = try PageStore(fileURL: try memoryTestURL(), key: key)
             
             weakStore = store
             XCTAssertNotNil(weakStore, "Store should exist")
             
             // Use store
             let data = Data("test".utf8)
-            try! store!.writePage(index: 0, plaintext: data)
-            _ = try! store!.readPage(index: 0)
+            try XCTUnwrap(store).writePage(index: 0, plaintext: data)
+            _ = try XCTUnwrap(store).readPage(index: 0)
             
             // Release store
             store = nil
@@ -135,7 +144,7 @@ final class BlazeDBMemoryTests: XCTestCase {
     func testTransactionRollbackNoLeak() throws {
         var db: BlazeDBClient? = try BlazeDBClient(
             name: "TransactionLeakTest",
-            fileURL: tempURL,
+            fileURL: try memoryTestURL(),
             password: "TestPassword-123!"
         )
         
@@ -143,10 +152,10 @@ final class BlazeDBMemoryTests: XCTestCase {
         
         // Perform multiple transaction rollbacks
         for _ in 0..<10 {
-            runMemoryPool {
-                try! db!.beginTransaction()
-                _ = try! db!.insert(BlazeDataRecord(["test": .string("data")]))
-                try! db!.rollbackTransaction()
+            try runMemoryPool {
+                try XCTUnwrap(db).beginTransaction()
+                _ = try XCTUnwrap(db).insert(BlazeDataRecord(["test": .string("data")]))
+                try XCTUnwrap(db).rollbackTransaction()
             }
         }
         
@@ -170,7 +179,7 @@ final class BlazeDBMemoryTests: XCTestCase {
     func testMemoryGrowthDuringBulkInsert() throws {
         let db = try BlazeDBClient(
             name: "MemoryGrowthTest",
-            fileURL: tempURL,
+            fileURL: try memoryTestURL(),
             password: "TestPassword-123!"
         )
         
@@ -205,7 +214,7 @@ final class BlazeDBMemoryTests: XCTestCase {
     func testMemoryReleasedAfterFetchAll() throws {
         let db = try BlazeDBClient(
             name: "MemoryReleaseTest",
-            fileURL: tempURL,
+            fileURL: try memoryTestURL(),
             password: "TestPassword-123!"
         )
         
@@ -225,8 +234,8 @@ final class BlazeDBMemoryTests: XCTestCase {
         
         let beforeFetch = getMemoryUsage()
         
-        runMemoryPool {
-            _ = try! db.fetchAll()
+        try runMemoryPool {
+            _ = try db.fetchAll()
         }
         
         // ✅ OPTIMIZED: Reduced polling time (10ms instead of 100ms)
@@ -246,7 +255,7 @@ final class BlazeDBMemoryTests: XCTestCase {
     func testPaginationMemoryEfficiency() throws {
         let db = try BlazeDBClient(
             name: "PaginationMemoryTest",
-            fileURL: tempURL,
+            fileURL: try memoryTestURL(),
             password: "TestPassword-123!"
         )
         
@@ -266,8 +275,8 @@ final class BlazeDBMemoryTests: XCTestCase {
         
         // Measure fetchAll memory
         let beforeFetchAll = getMemoryUsage()
-        runMemoryPool {
-            _ = try! db.fetchAll()
+        try runMemoryPool {
+            _ = try db.fetchAll()
         }
         let fetchAllPeak = getMemoryUsage()
         let fetchAllMemory = fetchAllPeak - beforeFetchAll
@@ -277,8 +286,8 @@ final class BlazeDBMemoryTests: XCTestCase {
         
         // Measure pagination memory
         let beforePagination = getMemoryUsage()
-        runMemoryPool {
-            _ = try! db.fetchPage(offset: 0, limit: 50)
+        try runMemoryPool {
+            _ = try db.fetchPage(offset: 0, limit: 50)
         }
         let paginationPeak = getMemoryUsage()
         let paginationMemory = paginationPeak - beforePagination
@@ -297,7 +306,7 @@ final class BlazeDBMemoryTests: XCTestCase {
     func testMemoryStabilityUnderLoad() throws {
         let db = try BlazeDBClient(
             name: "MemoryStabilityTest",
-            fileURL: tempURL,
+            fileURL: try memoryTestURL(),
             password: "TestPassword-123!"
         )
         
@@ -305,7 +314,7 @@ final class BlazeDBMemoryTests: XCTestCase {
         
         // Perform 10 rounds of operations
         for round in 0..<10 {
-            runMemoryPool {
+            try runMemoryPool {
                 // Insert 100 records
                 for i in 0..<100 {
                     let record = BlazeDataRecord([
@@ -313,17 +322,17 @@ final class BlazeDBMemoryTests: XCTestCase {
                         "index": .int(i),
                         "data": .string(String(repeating: "Z", count: 200))
                     ])
-                    _ = try! db.insert(record)
+                    _ = try db.insert(record)
                 }
                 
                 // Fetch all
-                _ = try! db.fetchAll()
+                _ = try db.fetchAll()
                 
                 // Delete some
-                let all = try! db.fetchAll()
+                let all = try db.fetchAll()
                 for record in all.prefix(50) {
                     if let id = record.storage["id"]?.uuidValue {
-                        try! db.delete(id: id)
+                        try db.delete(id: id)
                     }
                 }
             }

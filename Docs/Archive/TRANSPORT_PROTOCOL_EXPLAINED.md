@@ -14,35 +14,35 @@ BlazeDB Currently Uses: RAW TCP (via NWConnection)
 
 Layer Stack:
 
- BlazeDBClient (insert, update, etc.) 
+ BlazeDBClient (insert, update, etc.)
 
  ↓
 
- BlazeSyncEngine (sync coordination) 
+ BlazeSyncEngine (sync coordination)
 
  ↓
 
- WebSocketRelay (protocol abstraction) 
-  NOTE: Name is misleading! 
- It's NOT actually WebSocket! 
+ WebSocketRelay (protocol abstraction)
+ NOTE: Name is misleading!
+ It's NOT actually WebSocket!
 
  ↓
 
- SecureConnection (E2E encryption) 
- • Uses NWConnection (raw TCP) 
- • ECDH P-256 handshake 
- • AES-256-GCM encryption 
+ SecureConnection (E2E encryption)
+ • Uses NWConnection (raw TCP)
+ • ECDH P-256 handshake
+ • AES-256-GCM encryption
 
  ↓
 
  NWConnection (Apple's Network framework)
- • Raw TCP connection 
- • Optional TLS (transport security) 
- • Direct socket connection 
+ • Raw TCP connection
+ • Optional TLS (transport security)
+ • Direct socket connection
 
  ↓
 
- TCP/IP (Internet Protocol) 
+ TCP/IP (Internet Protocol)
 
 ```
 
@@ -78,11 +78,11 @@ connection.start(queue:.global())
 
 ```
 
- BLAZEDB TCP FRAME (5 bytes overhead) 
+ BLAZEDB TCP FRAME (5 bytes overhead)
 
- Type: 1 byte (handshake, operation) 
- Length: 4 bytes (payload size) 
- Payload: N bytes (BlazeBinary data) 
+ Type: 1 byte (handshake, operation)
+ Length: 4 bytes (payload size)
+ Payload: N bytes (BlazeBinary data)
 
 
 Total Overhead: 5 bytes per message
@@ -128,21 +128,21 @@ try await webSocket.send(.data(frame.encode()))
 
 ```
 
- WEBSOCKET FRAME (2-14 bytes overhead) 
+ WEBSOCKET FRAME (2-14 bytes overhead)
 
- WebSocket Header: 2-14 bytes 
- • FIN + RSV + Opcode: 1 byte 
- • Mask + Length: 1-9 bytes 
- • Masking Key: 0-4 bytes (client) 
+ WebSocket Header: 2-14 bytes
+ • FIN + RSV + Opcode: 1 byte
+ • Mask + Length: 1-9 bytes
+ • Masking Key: 0-4 bytes (client)
 
  ↓
 
- BLAZEBINARY FRAME (7 bytes overhead) 
+ BLAZEBINARY FRAME (7 bytes overhead)
 
- Magic: 2 bytes 
- Flags: 1 byte 
- Length: 4 bytes 
- Payload: N bytes 
+ Magic: 2 bytes
+ Flags: 1 byte
+ Length: 4 bytes
+ Payload: N bytes
 
 
 Total Overhead: 9-21 bytes per message
@@ -220,27 +220,27 @@ Example: Web admin panel syncing with server
 ### **Current Options (Ranked by Speed):**
 
 ```
-1. RAW TCP (Current) 
+1. RAW TCP (Current)
  • 7,800,000 ops/sec
  • 5-byte overhead
  • Fastest possible!
 
-2. WebSocket 
+2. WebSocket
  • 6,000,000 ops/sec
  • 9-21 byte overhead
  • Still very fast!
 
-3. Unix Domain Sockets (Same Device) 
+3. Unix Domain Sockets (Same Device)
  • 50,000,000+ ops/sec!
  • <1ms latency
  • Only for same device
 
-4. HTTP/2 (gRPC) 
+4. HTTP/2 (gRPC)
  • 200,000 ops/sec
  • 210-byte overhead
  • Much slower!
 
-5. HTTP/1.1 (REST) 
+5. HTTP/1.1 (REST)
  • 10,000 ops/sec
  • 600+ byte overhead
  • Slowest!

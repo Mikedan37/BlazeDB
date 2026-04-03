@@ -1,6 +1,6 @@
 # Test Compilation Fixes
 
-**Date:** 2025-01-22  
+**Date:** 2025-01-22
 **Status:** Complete
 
 ## Problem Summary
@@ -35,12 +35,12 @@ Test execution was blocked by Swift 6 strict concurrency compilation errors orig
 ```swift
 // Before:
 group.addTask {
-    try await transform(item)
+ try await transform(item)
 }
 
 // After:
 group.addTask { @Sendable in
-    try await transform(item)
+ try await transform(item)
 }
 ```
 
@@ -52,12 +52,12 @@ group.addTask { @Sendable in
 ```swift
 // Before:
 let encodedOps = try await uniqueOps.concurrentMap { op in
-    // ...
+ // ...
 }
 
 // After:
 let encodedOps = try await uniqueOps.concurrentMap { @Sendable op in
-    // ...
+ // ...
 }
 ```
 
@@ -74,10 +74,10 @@ let encodedOps = try await uniqueOps.concurrentMap { @Sendable op in
 ## Files Modified
 
 1. `BlazeDB/Utils/Array+Concurrent.swift`
-   - Added `@Sendable` annotation to closure in `group.addTask`
+- Added `@Sendable` annotation to closure in `group.addTask`
 
 2. `BlazeDB/Distributed/BlazeOperation.swift`
-   - Added `@Sendable` annotation to closure in `concurrentMap` call
+- Added `@Sendable` annotation to closure in `concurrentMap` call
 
 ## Verification
 
@@ -110,13 +110,13 @@ swift test --filter LifecycleTests --filter LockingTests --filter ResourceLimits
 ## Remaining Work
 
 1. **Full Test Target Separation** (Future)
-   - Split `BlazeDBTests` into `BlazeDBCoreTests` and `BlazeDBDistributedTests`
-   - Eliminate need for error filtering in test output
-   - Priority: Medium (improves developer experience)
+- Split `BlazeDBTests` into `BlazeDBCoreTests` and `BlazeDBDistributedTests`
+- Eliminate need for error filtering in test output
+- Priority: Medium (improves developer experience)
 
 2. **Distributed Module Swift 6 Compliance** (Future)
-   - Fix remaining concurrency issues in distributed modules
-   - Priority: Low (core is stable, distributed is out of scope)
+- Fix remaining concurrency issues in distributed modules
+- Priority: Low (core is stable, distributed is out of scope)
 
 ## Summary
 

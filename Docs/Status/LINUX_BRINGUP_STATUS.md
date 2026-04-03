@@ -1,17 +1,17 @@
 # BlazeDB Linux Bring-Up Status
 
-##  Completed Refactoring
+## Completed Refactoring
 
 BlazeDB has been successfully refactored to be platform-neutral and Linux-compatible while preserving full functionality on Apple platforms.
 
 ### Core Database Engine (Platform-Neutral)
 
 **Verified Clean:**
--  `BlazeDB/Core/` - Zero Apple framework imports
--  `BlazeDB/Crypto/` - Zero Apple framework imports  
--  `BlazeDB/Storage/` - Zero Apple framework imports
--  `BlazeDB/Query/` - Zero Apple framework imports
--  `BlazeDB/Exports/` - Zero Apple framework imports
+- `BlazeDB/Core/` - Zero Apple framework imports
+- `BlazeDB/Crypto/` - Zero Apple framework imports
+- `BlazeDB/Storage/` - Zero Apple framework imports
+- `BlazeDB/Query/` - Zero Apple framework imports
+- `BlazeDB/Exports/` - Zero Apple framework imports
 
 **All CryptoKit imports are conditional:**
 ```swift
@@ -25,28 +25,28 @@ import Crypto
 ### Platform Abstraction Layers
 
 **1. Key Unlocking (LocalAuthentication)**
--  Protocol: `KeyUnlockProvider`
--  Apple: `AppleKeyUnlockProvider` (uses LocalAuthentication)
--  Linux: `HeadlessKeyUnlockProvider` (no-op)
--  Location: `BlazeDB/Security/KeyUnlockProvider.swift`
+- Protocol: `KeyUnlockProvider`
+- Apple: `AppleKeyUnlockProvider` (uses LocalAuthentication)
+- Linux: `HeadlessKeyUnlockProvider` (no-op)
+- Location: `BlazeDB/Security/KeyUnlockProvider.swift`
 
 **2. Peer Discovery (Network.framework)**
--  Protocol: `DiscoveryProvider`
--  Apple: `AppleDiscoveryProvider` (uses Network.framework)
--  Linux: `NoopDiscoveryProvider` (no-op)
--  Location: `BlazeDB/Distributed/DiscoveryProvider.swift`
+- Protocol: `DiscoveryProvider`
+- Apple: `AppleDiscoveryProvider` (uses Network.framework)
+- Linux: `NoopDiscoveryProvider` (no-op)
+- Location: `BlazeDB/Distributed/DiscoveryProvider.swift`
 
 **3. Server Transport (Network.framework)**
--  Protocol: `ServerTransportProvider`
--  Apple: `AppleServerTransportProvider` (uses Network.framework)
--  Linux: `HeadlessServerTransportProvider` (no-op)
--  Location: `BlazeDB/Distributed/ServerTransportProvider.swift`
+- Protocol: `ServerTransportProvider`
+- Apple: `AppleServerTransportProvider` (uses Network.framework)
+- Linux: `HeadlessServerTransportProvider` (no-op)
+- Location: `BlazeDB/Distributed/ServerTransportProvider.swift`
 
 **4. Objective-C Runtime**
--  Helper: `AssociatedObjects` (conditionally uses Objective-C)
--  Linux: Dictionary-based storage fallback
--  Location: `BlazeDB/Utils/AssociatedObjects.swift`
--  Spatial/Vector indexing: Pure Swift stored properties
+- Helper: `AssociatedObjects` (conditionally uses Objective-C)
+- Linux: Dictionary-based storage fallback
+- Location: `BlazeDB/Utils/AssociatedObjects.swift`
+- Spatial/Vector indexing: Pure Swift stored properties
 
 ### Distributed Sync Layer
 
@@ -63,9 +63,9 @@ import Crypto
 
 ### Build Status
 
- **macOS/iOS:** Builds successfully with full functionality
- **Linux (aarch64):** Builds successfully with `swift build -c release`
- **Swift 6:** Strict concurrency compliant
+**macOS/iOS:** Builds successfully with full functionality
+**Linux (aarch64):** Builds successfully with `swift build -c release`
+**Swift 6:** Strict concurrency compliant
 
 ### Architecture Summary
 
@@ -82,9 +82,9 @@ import Crypto
 - No leakage into core code
 
 **Public APIs:**
--  All preserved and unchanged
--  Backward compatible
--  No breaking changes
+- All preserved and unchanged
+- Backward compatible
+- No breaking changes
 
 ### Files Modified
 
@@ -110,9 +110,9 @@ import Crypto
  `swift build -c release` succeeds on Linux
  macOS/iOS still compile and behave the same
  No core BlazeDB file imports:
-   -  ObjectiveC (except AssociatedObjects helper, conditionally)
-   -  Network (only in Distributed/, conditionally)
-   -  LocalAuthentication (abstracted via KeyUnlockProvider)
+- ObjectiveC (except AssociatedObjects helper, conditionally)
+- Network (only in Distributed/, conditionally)
+- LocalAuthentication (abstracted via KeyUnlockProvider)
  All Apple-specific code lives behind protocols
  Codebase is cleaner than before, not messier
  Public APIs preserved
@@ -120,26 +120,26 @@ import Crypto
 ### Next Steps for Linux Deployment
 
 1. **On Orange Pi:**
-   ```bash
-   cd ~/blazedb
-   git fetch origin
-   git reset --hard origin/main
-   rm -rf .build Package.resolved ~/.cache/org.swift.swiftpm
-   swift package reset
-   swift package resolve
-   swift build -c release
-   ```
+ ```bash
+ cd ~/blazedb
+ git fetch origin
+ git reset --hard origin/main
+ rm -rf .build Package.resolved ~/.cache/org.swift.swiftpm
+ swift package reset
+ swift package resolve
+ swift build -c release
+ ```
 
 2. **Expected Result:**
-   -  Build succeeds
-   -  No ObjectiveC errors
-   -  No CryptoKit errors
-   -  No Network.framework errors
-   -  No LocalAuthentication errors
+- Build succeeds
+- No ObjectiveC errors
+- No CryptoKit errors
+- No Network.framework errors
+- No LocalAuthentication errors
 
 3. **Run Server:**
-   ```bash
-   .build/release/BlazeDBServer
-   ```
+ ```bash
+ .build/release/BlazeDBServer
+ ```
 
-BlazeDB is now officially server-grade and Linux-compatible! 
+BlazeDB is now officially server-grade and Linux-compatible!

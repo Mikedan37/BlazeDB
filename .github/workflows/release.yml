@@ -10,11 +10,11 @@ jobs:
   # JOB 1: Validate Release
   # ═══════════════════════════════════════════════════════════
   validate:
-    name: 🔍 Validate Release
+    name: Validate Release
     runs-on: macos-15
 
     steps:
-      - name: 📥 Checkout Code
+      - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Xcode Swift toolchain
@@ -22,29 +22,31 @@ jobs:
           xcodebuild -version
           swift --version
 
-      - name: 🏷️ Validate SemVer Tag
+      - name: Validate SemVer tag
         run: |
           if [[ ! "${{ github.ref_name }}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
             echo "Release tags must be stable SemVer in the form vX.Y.Z"
             exit 1
           fi
       
-      - name: 🧪 Run Full Test Suite
+      - name: Run full test suite
         run: |
           echo "Running Tier 0 gate tests..."
           swift test --filter BlazeDB_Tier0
 
-          echo "Running Tier 1 core contract tests..."
-          swift test --filter BlazeDB_Tier1
+          echo "Running Tier 1 fast, extended, and perf lanes..."
+          swift test --filter BlazeDB_Tier1Fast
+          swift test --skip-build --filter BlazeDB_Tier1Extended
+          swift test --skip-build --filter BlazeDB_Tier1Perf
       
-      - name: 💪 Run Stress Tests
+      - name: Run stress tests
         env:
           RUN_HEAVY_STRESS: "1"
         run: |
           echo "Running Tier 3 heavy tests..."
           cd BlazeDBExtraTests && swift test --filter BlazeDB_Tier3_Heavy
       
-      - name: 🔬 Run Sanitizer Tests
+      - name: Run sanitizer tests
         run: |
           echo "Running thread sanitizer on Tier 0..."
           SANITIZER_LOG=$(mktemp)
@@ -54,20 +56,20 @@ jobs:
             exit 1
           fi
       
-      - name: ✅ All Tests Passed
+      - name: All tests passed
         run: |
-          echo "✅ All tests passed! Release validated."
+          echo "All tests passed. Release validated."
 
   # ═══════════════════════════════════════════════════════════
   # JOB 2: Build Release
   # ═══════════════════════════════════════════════════════════
   build:
-    name: 🏗️ Build Release
+    name: Build Release
     runs-on: macos-15
     needs: validate
     
     steps:
-      - name: 📥 Checkout Code
+      - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Xcode Swift toolchain
@@ -75,15 +77,15 @@ jobs:
           xcodebuild -version
           swift --version
       
-      - name: 🏗️ Build Release Configuration
+      - name: Build release configuration
         run: |
           swift build -c release
       
-      - name: 📦 Package Release
+      - name: Package release
         run: |
           tar -czf BlazeDB-${{ github.ref_name }}.tar.gz .build/release
       
-      - name: 📤 Upload Build Artifact
+      - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
           name: release-build
@@ -93,22 +95,23 @@ jobs:
   # JOB 3: Generate Release Notes
   # ═══════════════════════════════════════════════════════════
   release-notes:
-    name: 📝 Generate Release Notes
+    name: Generate release notes
     runs-on: ubuntu-22.04
     needs: validate
     
     steps:
-      - name: 📥 Checkout Code
+      - name: Checkout code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
       
-      - name: 📝 Generate Release Notes
+      - name: Generate release notes
         id: notes
         run: |
-          echo "## 🎉 BlazeDB ${{ github.ref_name }}" > release_notes.md
+          VERSION="${GITHUB_REF_NAME#v}"
+          echo "## BlazeDB ${{ github.ref_name }}" > release_notes.md
           echo "" >> release_notes.md
-          echo "### ✨ What's New" >> release_notes.md
+          echo "### What's new" >> release_notes.md
           echo "" >> release_notes.md
           
           # Extract commits since last tag
@@ -120,34 +123,34 @@ jobs:
           fi
           
           echo "" >> release_notes.md
-          echo "### 🧪 Test Results" >> release_notes.md
+          echo "### Test results" >> release_notes.md
           echo "" >> release_notes.md
           echo "- Tier 0 gate tests: passing" >> release_notes.md
           echo "- Tier 1 contract tests: passing" >> release_notes.md
           echo "- Tier 3 heavy tests: passing" >> release_notes.md
           echo "" >> release_notes.md
-          echo "### 📦 Installation" >> release_notes.md
+          echo "### Installation" >> release_notes.md
           echo "" >> release_notes.md
           echo "\`\`\`swift" >> release_notes.md
           echo "dependencies: [" >> release_notes.md
-          echo "    .package(url: \"https://github.com/Mikedan37/BlazeDB.git\", from: \"${{ github.ref_name }}\")" >> release_notes.md
+          echo "    .package(url: \"https://github.com/${{ github.repository }}.git\", from: \"$VERSION\")" >> release_notes.md
           echo "]" >> release_notes.md
           echo "\`\`\`" >> release_notes.md
           echo "" >> release_notes.md
-          echo "### 📚 Documentation" >> release_notes.md
+          echo "### Documentation" >> release_notes.md
           echo "" >> release_notes.md
-          echo "- [README](https://github.com/Mikedan37/BlazeDB/blob/${{ github.ref_name }}/README.md)" >> release_notes.md
-          echo "- [API Docs](https://github.com/Mikedan37/BlazeDB/tree/${{ github.ref_name }}/Docs)" >> release_notes.md
+          echo "- [README](https://github.com/${{ github.repository }}/blob/${{ github.ref_name }}/README.md)" >> release_notes.md
+          echo "- [API Docs](https://github.com/${{ github.repository }}/tree/${{ github.ref_name }}/Docs)" >> release_notes.md
           echo "" >> release_notes.md
           echo "---" >> release_notes.md
           echo "" >> release_notes.md
           if [ -n "$LAST_TAG" ]; then
-            echo "**Full Changelog**: https://github.com/Mikedan37/BlazeDB/compare/$LAST_TAG...${{ github.ref_name }}" >> release_notes.md
+            echo "**Full Changelog**: https://github.com/${{ github.repository }}/compare/$LAST_TAG...${{ github.ref_name }}" >> release_notes.md
           else
-            echo "**Full Changelog**: https://github.com/Mikedan37/BlazeDB/releases/tag/${{ github.ref_name }}" >> release_notes.md
+            echo "**Full Changelog**: https://github.com/${{ github.repository }}/releases/tag/${{ github.ref_name }}" >> release_notes.md
           fi
       
-      - name: 📤 Upload Release Notes
+      - name: Upload release notes
         uses: actions/upload-artifact@v4
         with:
           name: release-notes
@@ -157,27 +160,27 @@ jobs:
   # JOB 4: Create GitHub Release
   # ═══════════════════════════════════════════════════════════
   create-release:
-    name: 🚀 Create GitHub Release
+    name: Create GitHub Release
     runs-on: ubuntu-22.04
     needs: [validate, build, release-notes]
     permissions:
       contents: write
     
     steps:
-      - name: 📥 Checkout Code
+      - name: Checkout code
         uses: actions/checkout@v4
       
-      - name: 📥 Download Build Artifact
+      - name: Download build artifact
         uses: actions/download-artifact@v4
         with:
           name: release-build
       
-      - name: 📥 Download Release Notes
+      - name: Download release notes
         uses: actions/download-artifact@v4
         with:
           name: release-notes
       
-      - name: 🚀 Create GitHub Release
+      - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
         with:
           name: BlazeDB ${{ github.ref_name }}
@@ -189,8 +192,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       
-      - name: ✅ Release Published
+      - name: Release published
         run: |
-          echo "🎉 Release ${{ github.ref_name }} published successfully!"
-          echo "📦 Available at: https://github.com/${{ github.repository }}/releases/tag/${{ github.ref_name }}"
-
+          echo "Release ${{ github.ref_name }} published successfully."
+          echo "Available at: https://github.com/${{ github.repository }}/releases/tag/${{ github.ref_name }}"

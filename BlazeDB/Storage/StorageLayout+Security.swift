@@ -159,6 +159,7 @@ extension StorageLayout {
             // fail typed decoding after indexMap normalization. Fall back to tolerant
             // raw JSON layout decoding before treating this as fatal corruption.
             if let fallback = decodeLayoutFromRawJSON(normalized) {
+                BlazeLogger.warn("StorageLayout: typed decode failed (\(error.localizedDescription)); applied tolerant raw-json fallback after indexMap normalization (legacy secure trunk only)")
                 return fallback
             }
             throw error
@@ -620,18 +621,25 @@ extension StorageLayout {
                         userInfo: [NSLocalizedDescriptionKey: "secure_layout_v2_missing_signed_payload"]
                     )
                 }
-                if let canonical = try? decoder.decode(CanonicalStorageLayout.self, from: payload) {
+                do {
+                    let canonical = try decoder.decode(CanonicalStorageLayout.self, from: payload)
                     return StorageLayout.storageLayout(from: canonical)
+                } catch let canonicalError {
+                    // Only signed bytes may be trusted; same bytes, looser field extraction for legacy canonical shape
+                    BlazeLogger.warn("SecureLayout v2: CanonicalStorageLayout decode failed (\(canonicalError.localizedDescription)); trying signed-payload raw normalization")
+                    if let raw = try? JSONSerialization.jsonObject(with: payload, options: []),
+                       let normalized = StorageLayout.decodeLayoutFromRawJSON(raw) {
+                        return normalized
+                    }
+                    throw NSError(
+                        domain: "StorageLayout",
+                        code: 6,
+                        userInfo: [
+                            NSLocalizedDescriptionKey: "secure_layout_v2_payload_decode_failed",
+                            NSUnderlyingErrorKey: canonicalError
+                        ]
+                    )
                 }
-                if let raw = try? JSONSerialization.jsonObject(with: payload, options: []),
-                   let normalized = StorageLayout.decodeLayoutFromRawJSON(raw) {
-                    return normalized
-                }
-                throw NSError(
-                    domain: "StorageLayout",
-                    code: 6,
-                    userInfo: [NSLocalizedDescriptionKey: "secure_layout_v2_payload_decode_failed"]
-                )
             }
             return layout
         }

@@ -9,6 +9,7 @@
 //
 
 #if !BLAZEDB_LINUX_CORE
+import BlazeDBCore
 import Foundation
 
 #if canImport(Compression)
@@ -28,8 +29,13 @@ extension WebSocketRelay {
     private func compressUltraFast(_ data: Data) throws -> Data {
         let config = Self.ultraFastCompressionConfig
         
+        if data.isEmpty {
+            return Data()
+        }
         return try data.withUnsafeBytes { inputBuffer in
-            let inputPtr = inputBuffer.bindMemory(to: UInt8.self).baseAddress!
+            guard let inputPtr = inputBuffer.bindMemory(to: UInt8.self).baseAddress else {
+                throw RelayError.compressionFailed
+            }
             let inputSize = data.count
             
             // Estimate output size (conservative)

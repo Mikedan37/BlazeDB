@@ -1,6 +1,6 @@
 # DX Improvements Implementation Summary
 
-**Date:** 2025-01-XX  
+**Date:** 2025-01-XX
 **Status:** Complete
 
 ---
@@ -50,7 +50,7 @@ defer { try? FileManager.default.removeItem(at: db.fileURL) }
 
 // Or scoped usage
 try BlazeDB.withDatabase(name: "mydb", password: "pass") { db in
-    try db.insert(record)
+ try db.insert(record)
 }
 ```
 
@@ -63,24 +63,24 @@ try BlazeDB.withDatabase(name: "mydb", password: "pass") { db in
 **Before:**
 ```swift
 catch BlazeDBError.invalidField(let name, let expected, let actual) {
-    print("Field '\(name)' has invalid type: expected \(expected) but got \(actual)")
-    // No guidance on how to fix
+ print("Field '\(name)' has invalid type: expected \(expected) but got \(actual)")
+ // No guidance on how to fix
 }
 ```
 
 **After:**
 ```swift
 catch let error as BlazeDBError {
-    print(error.suggestedMessage)
-    // Output:
-    // Field 'userId' has invalid type: expected String but got Int.
-    // Suggestion: Check your data model matches the expected schema. Verify field types.
+ print(error.suggestedMessage)
+ // Output:
+ // Field 'userId' has invalid type: expected String but got Int.
+ // Suggestion: Check your data model matches the expected schema. Verify field types.
 }
 
 // Field name suggestions
 let suggestions = BlazeDBError.suggestFieldNames(
-    targetField: "userId",
-    availableFields: ["user_id", "user_name", "email"]
+ targetField: "userId",
+ availableFields: ["user_id", "user_name", "email"]
 )
 // Returns: ["user_id"] (prefix match)
 ```
@@ -94,8 +94,8 @@ let suggestions = BlazeDBError.suggestFieldNames(
 **Before:**
 ```swift
 let results = try db.query()
-    .where("status", equals: .string("active"))
-    .execute()
+ .where("status", equals: .string("active"))
+ .execute()
 // No visibility into why query is slow
 ```
 
@@ -103,22 +103,22 @@ let results = try db.query()
 ```swift
 // Explain query cost
 let explanation = try db.query()
-    .where("status", equals: .string("active"))
-    .explainCost()
+ .where("status", equals: .string("active"))
+ .explainCost()
 
 print(explanation.description)
 // Output:
 // Query Explanation:
-//   Filters: 1
-//   Filter fields: status
-//   Indexed fields: none
-//   Risk: WARN: Unindexed filter
-//   Filter on 'status' may require full table scan. Consider adding index: db.createIndex(on: "status")
+// Filters: 1
+// Filter fields: status
+// Indexed fields: none
+// Risk: WARN: Unindexed filter
+// Filter on 'status' may require full table scan. Consider adding index: db.createIndex(on: "status")
 
 // Execute with automatic warnings
 let results = try db.query()
-    .where("status", equals: .string("active"))
-    .executeWithWarnings()
+ .where("status", equals: .string("active"))
+ .executeWithWarnings()
 // Warning logged automatically if query is slow
 ```
 
@@ -135,7 +135,7 @@ print(plan.description)
 // Output:
 // Migration Plan: 1.0 → 1.1
 // Migrations to apply: 1
-//   1. 1.0 → 1.1
+// 1. 1.0 → 1.1
 // (No context about what migration does)
 ```
 
@@ -145,17 +145,17 @@ let plan = try db.planMigration(targetVersion: v1_1, migrations: [AddEmailField(
 print(plan.prettyDescription())
 // Output:
 // Migration Plan
-// 
+//
 //
 // Current Version: 1.0
-// Target Version:  1.1
+// Target Version: 1.1
 //
 // Migrations to Apply (1):
-// 
+//
 //
 // 1. AddEmailField
-//    Adds email field to all user records
-//    Version: 1.0 → 1.1
+// Adds email field to all user records
+// Version: 1.0 → 1.1
 //
 // No destructive operations detected.
 //
@@ -191,10 +191,10 @@ Path: /path/to/mydb.blazedb
  Health Status: OK
 
  Statistics:
-  Records: 1,000
-  Pages: 100
-  Size: 2.5 MB
-  Encrypted: Yes
+ Records: 1,000
+ Pages: 100
+ Size: 2.5 MB
+ Encrypted: Yes
 
  Database is healthy
 ```

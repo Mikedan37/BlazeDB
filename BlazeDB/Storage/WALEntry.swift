@@ -130,7 +130,10 @@ public struct WALEntry: Sendable, Equatable {
         }
 
         return try data.withUnsafeBytes { buf in
-            let base = buf.baseAddress!.assumingMemoryBound(to: UInt8.self)
+            guard let baseRaw = buf.baseAddress else {
+                throw WALError.truncatedEntry
+            }
+            let base = baseRaw.assumingMemoryBound(to: UInt8.self)
             let rel = offset - data.startIndex  // relative offset into the buffer
 
             // Validate magic

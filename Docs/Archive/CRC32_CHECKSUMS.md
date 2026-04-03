@@ -1,4 +1,4 @@
-#  **CRC32 Checksums in BlazeBinary**
+# **CRC32 Checksums in BlazeBinary**
 
 ## **What Is It?**
 
@@ -163,7 +163,7 @@ let db = try BlazeDBClient(name: "prod_db", password: "secret")
 ```swift
 BlazeBinaryEncoder.crc32Mode =.enabled // Need CRC32 without encryption
 let db = try BlazeDBClient(name: "logs", password: nil)
-// 99.9% corruption detection! 
+// 99.9% corruption detection!
 ```
 
 ---

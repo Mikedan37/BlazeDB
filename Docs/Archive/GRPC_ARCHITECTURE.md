@@ -4,82 +4,82 @@
 
 ---
 
-##  **THE COMPLETE ARCHITECTURE**
+## **THE COMPLETE ARCHITECTURE**
 
 ```
 
- COMPLETE SYSTEM FLOW 
+ COMPLETE SYSTEM FLOW
 
- 
-   
-  IPHONE APP   IPAD APP  
-   
-  SwiftUI View   SwiftUI View  
-  @BlazeQuery   @BlazeQuery  
-   
-  Local BlazeDB   Local BlazeDB  
-  bugs.blazedb   bugs.blazedb  
-  (Offline-first!)   (Offline-first!)  
-   
-  BlazeBinaryEncoder   BlazeBinaryDecoder  
-  encode(record)   decode(bytes)  
-  ↓ 165 KB   ↑ 165 KB  
-   
-  gRPC Client   gRPC Client  
-  (Swift gRPC)   (Swift gRPC)  
-   
-   
-  gRPC/HTTP2 (Binary, Multiplexed, Streaming)  
-  TLS Encrypted  
-  165 KB payload  
-  ~30ms latency  
-   
-  
-  
-  
-  
-  CLOUD SERVER (Where gRPC Runs)  
-  ================================  
-   
-  Location Options:  
-  • Fly.io ($3/month, auto-scales)  
-  • Railway ($5/month)  
-  • AWS EC2 ($10/month)  
-  • DigitalOcean ($6/month)  
-  • Your own server (free!)  
-   
-    
-   gRPC Server (Port 443/50051)   
-      
-   • Written in Swift (Vapor)   
-   • Handles all clients   
-   • Routes messages   
-   • Manages connections   
-    
-    
-    
-    
-   BlazeBinaryDecoder / Encoder   
-      
-   • Same code as client!   
-   • Decode incoming (8ms)   
-   • Encode outgoing (15ms)   
-    
-    
-    
-    
-   Server BlazeDB Instance   
-      
-   server.blazedb (on disk)   
-     
-   • Same BlazeDBClient API!   
-   • insert(), fetch(), query()   
-   • JOINs, aggregations, search   
-   • Transactions, MVCC, GC   
-    
-   
-  
- 
+
+
+ IPHONE APP IPAD APP
+
+ SwiftUI View SwiftUI View
+ @BlazeQuery @BlazeQuery
+
+ Local BlazeDB Local BlazeDB
+ bugs.blazedb bugs.blazedb
+ (Offline-first!) (Offline-first!)
+
+ BlazeBinaryEncoder BlazeBinaryDecoder
+ encode(record) decode(bytes)
+ ↓ 165 KB ↑ 165 KB
+
+ gRPC Client gRPC Client
+ (Swift gRPC) (Swift gRPC)
+
+
+ gRPC/HTTP2 (Binary, Multiplexed, Streaming)
+ TLS Encrypted
+ 165 KB payload
+ ~30ms latency
+
+
+
+
+
+ CLOUD SERVER (Where gRPC Runs)
+ ================================
+
+ Location Options:
+ • Fly.io ($3/month, auto-scales)
+ • Railway ($5/month)
+ • AWS EC2 ($10/month)
+ • DigitalOcean ($6/month)
+ • Your own server (free!)
+
+
+ gRPC Server (Port 443/50051)
+
+ • Written in Swift (Vapor)
+ • Handles all clients
+ • Routes messages
+ • Manages connections
+
+
+
+
+ BlazeBinaryDecoder / Encoder
+
+ • Same code as client!
+ • Decode incoming (8ms)
+ • Encode outgoing (15ms)
+
+
+
+
+ Server BlazeDB Instance
+
+ server.blazedb (on disk)
+
+ • Same BlazeDBClient API!
+ • insert(), fetch(), query()
+ • JOINs, aggregations, search
+ • Transactions, MVCC, GC
+
+
+
+
 
 ```
 
@@ -165,10 +165,10 @@ iPhone ←→ iPad
 
 ```
  iPhone
- 
- 
+
+
  Server (gRPC) ← Broadcasts to all
- 
+
  → iPad
  → Mac
  → Android
@@ -195,8 +195,8 @@ CONS:
 
 ```
 iPhone ←→ iPad ←→ Mac
- ↑ 
- 
+ ↑
+
 
 HOW IT WORKS:
 1. Each device maintains list of peers
@@ -219,11 +219,11 @@ CONS:
 
 ```
  iPhone
- 
+
  → iPad (local WiFi, P2P)
- 
+
  → Server (internet, gRPC)
- 
+
  → Mac (different location)
 
 HOW IT WORKS:
@@ -254,28 +254,28 @@ CONS:
 
 ```
 
- iPhone 
+ iPhone
 
- 1. JSONEncoder.encode([Bug]) → JSON 
- Time: 80ms 
- Size: 450 KB 
- 
- 2. URLSession.dataTask() 
- • Create new TCP connection: 100ms (handshake) 
- • TLS handshake: 150ms 
- • HTTP headers: 2 KB 
- • Upload 450 KB: 360ms (10 Mbps) 
- • Server processing: 100ms 
- • Download response: 360ms 
- • Close connection 
- Time: 1,070ms 
- 
- 3. JSONDecoder.decode(JSON) → [Bug] 
- Time: 95ms 
- 
- TOTAL: 1,245ms (1.2 seconds!) 
- Size: 452 KB (with headers) 
- Connections: 1 new per request 
+ 1. JSONEncoder.encode([Bug]) → JSON
+ Time: 80ms
+ Size: 450 KB
+
+ 2. URLSession.dataTask()
+ • Create new TCP connection: 100ms (handshake)
+ • TLS handshake: 150ms
+ • HTTP headers: 2 KB
+ • Upload 450 KB: 360ms (10 Mbps)
+ • Server processing: 100ms
+ • Download response: 360ms
+ • Close connection
+ Time: 1,070ms
+
+ 3. JSONDecoder.decode(JSON) → [Bug]
+ Time: 95ms
+
+ TOTAL: 1,245ms (1.2 seconds!)
+ Size: 452 KB (with headers)
+ Connections: 1 new per request
 
 ```
 
@@ -283,27 +283,27 @@ CONS:
 
 ```
 
- iPhone 
+ iPhone
 
- 1. BlazeBinaryEncoder.encode([Bug]) → Binary 
- Time: 15ms (5x faster!) 
- Size: 165 KB (63% smaller!) 
- 
- 2. gRPC Client (persistent connection) 
- • Reuses existing connection: 0ms 
- • HTTP/2 headers (compressed): 200 bytes 
- • Upload 165 KB: 132ms (10 Mbps) 
- • Server processing: 20ms 
- • Download response: 132ms 
- • Connection stays open 
- Time: 284ms 
- 
- 3. BlazeBinaryDecoder.decode(Binary) → [Bug] 
- Time: 12ms (8x faster!) 
- 
- TOTAL: 311ms (4x faster!) 
- Size: 165.2 KB (63% smaller) 
- Connections: 1 persistent (reused) 
+ 1. BlazeBinaryEncoder.encode([Bug]) → Binary
+ Time: 15ms (5x faster!)
+ Size: 165 KB (63% smaller!)
+
+ 2. gRPC Client (persistent connection)
+ • Reuses existing connection: 0ms
+ • HTTP/2 headers (compressed): 200 bytes
+ • Upload 165 KB: 132ms (10 Mbps)
+ • Server processing: 20ms
+ • Download response: 132ms
+ • Connection stays open
+ Time: 284ms
+
+ 3. BlazeBinaryDecoder.decode(Binary) → [Bug]
+ Time: 12ms (8x faster!)
+
+ TOTAL: 311ms (4x faster!)
+ Size: 165.2 KB (63% smaller)
+ Connections: 1 persistent (reused)
 
 ```
 
@@ -532,53 +532,53 @@ IPHONE INSERTS BUG
 
 
 [User taps Save] (t=0ms)
- 
- 
+
+
 [BlazeDB.insert(bug)] (t=1ms)
-  • Writes to local DB (instant!)
-  • UI updates immediately
- 
+ • Writes to local DB (instant!)
+ • UI updates immediately
+
 [BlazeBinaryEncoder.encode(bug)] (t=15ms)
-  • 165 bytes
-  • 5x faster than JSON
- 
+ • 165 bytes
+ • 5x faster than JSON
+
 [gRPC Client.insert(bytes)] (t=30ms)
-  • HTTP/2 binary
-  • Persistent connection
-  • Compressed headers
- 
- 
-   INTERNET (30ms latency) 
- 
- 
+ • HTTP/2 binary
+ • Persistent connection
+ • Compressed headers
+
+
+ INTERNET (30ms latency)
+
+
 [gRPC Server receives] (t=60ms)
- 
- 
+
+
 [BlazeBinaryDecoder.decode(bytes)] (t=68ms)
-  • 8ms to decode
-  • 8x faster than JSON
- 
+ • 8ms to decode
+ • 8x faster than JSON
+
 [Server BlazeDB.insert(bug)] (t=69ms)
-  • Same code as iPhone!
- 
+ • Same code as iPhone!
+
 [Broadcast to subscribers] (t=74ms)
- 
+
  → iPad stream
  → Mac stream
  → Android stream
- 
-   INTERNET (20ms) 
- 
- 
+
+ INTERNET (20ms)
+
+
 [iPad gRPC stream receives] (t=94ms)
- 
- 
+
+
 [BlazeBinaryDecoder.decode(bytes)] (t=99ms)
-  • 5ms to decode
- 
+ • 5ms to decode
+
 [iPad BlazeDB.applyOperation()] (t=100ms)
- 
- 
+
+
 [iPad UI auto-updates] (t=100ms)
 
 TOTAL LATENCY: 100ms (iPhone → iPad)
@@ -718,7 +718,7 @@ fly scale vm shared-cpu-4x # 4 CPU, 1GB ($12/mo)
 - Free SSL
 
 **CONS:**
--  Shared resources (fine for <1000 users)
+- Shared resources (fine for <1000 users)
 
 ### **Option 2: AWS EC2 / DigitalOcean (More Control)**
 
@@ -753,8 +753,8 @@ sudo systemctl start blazedb-server
 - Predictable costs
 
 **CONS:**
--  More setup
--  Manual scaling
+- More setup
+- Manual scaling
 
 ### **Option 3: Kubernetes (Enterprise)**
 
@@ -769,12 +769,12 @@ spec:
  template:
  spec:
  containers:
- - name: blazedb
+- name: blazedb
  image: your-registry/blazedb-server:1.0
  ports:
- - containerPort: 50051
+- containerPort: 50051
  env:
- - name: DB_PASSWORD
+- name: DB_PASSWORD
  valueFrom:
  secretKeyRef:
  name: blazedb-secrets
@@ -789,8 +789,8 @@ spec:
 - Rolling updates
 
 **CONS:**
--  Complex setup
--  Higher cost
+- Complex setup
+- Higher cost
 
 ### **Option 4: Self-Hosted (Your Mac/Server)**
 
@@ -814,9 +814,9 @@ swift run
 - Privacy
 
 **CONS:**
--  Requires static IP or dynamic DNS
--  Home network limitations
--  Must manage uptime yourself
+- Requires static IP or dynamic DNS
+- Home network limitations
+- Must manage uptime yourself
 
 ---
 
@@ -1113,58 +1113,58 @@ struct ContentView: View {
 
 ```
 
- REST + JSON 
+ REST + JSON
 
- iPhone: 
- • Encode JSON: 80ms 
- • Create connection: 100ms (TCP + TLS handshake) 
- • Send headers: 2 KB, 10ms 
- • Upload body: 450 KB, 360ms 
- TOTAL: 550ms 
- 
- Server: 
- • Decode JSON: 40ms 
- • Process: 20ms 
- • Encode JSON: 80ms 
- • Send: 360ms 
- TOTAL: 500ms 
- 
- iPad: 
- • Poll server: 0-5000ms (average 2500ms!) 
- • Receive: 360ms 
- • Decode JSON: 95ms 
- TOTAL: 2,955ms 
- 
- TOTAL END-TO-END: 4,005ms (~4 seconds!) 
- Data transferred: 902 KB (both directions) 
- Battery: ~40% 
+ iPhone:
+ • Encode JSON: 80ms
+ • Create connection: 100ms (TCP + TLS handshake)
+ • Send headers: 2 KB, 10ms
+ • Upload body: 450 KB, 360ms
+ TOTAL: 550ms
+
+ Server:
+ • Decode JSON: 40ms
+ • Process: 20ms
+ • Encode JSON: 80ms
+ • Send: 360ms
+ TOTAL: 500ms
+
+ iPad:
+ • Poll server: 0-5000ms (average 2500ms!)
+ • Receive: 360ms
+ • Decode JSON: 95ms
+ TOTAL: 2,955ms
+
+ TOTAL END-TO-END: 4,005ms (~4 seconds!)
+ Data transferred: 902 KB (both directions)
+ Battery: ~40%
 
 
 
- gRPC + BlazeBinary 
+ gRPC + BlazeBinary
 
- iPhone: 
- • Encode BlazeBinary: 15ms 
- • Reuse connection: 0ms 
- • Send headers: 200 bytes, 2ms 
- • Upload body: 165 KB, 132ms 
- TOTAL: 149ms (3.7x faster!) 
- 
- Server: 
- • Decode BlazeBinary: 8ms 
- • Process: 1ms 
- • Encode BlazeBinary: 15ms 
- • Stream to clients: 30ms 
- TOTAL: 54ms (9.3x faster!) 
- 
- iPad: 
- • Receive (streaming, instant!): 30ms 
- • Decode BlazeBinary: 8ms 
- TOTAL: 38ms (77x faster!) 
- 
- TOTAL END-TO-END: 241ms (~0.2 seconds!) 
- Data transferred: 330 KB (63% less!) 
- Battery: ~12% (67% less!) 
+ iPhone:
+ • Encode BlazeBinary: 15ms
+ • Reuse connection: 0ms
+ • Send headers: 200 bytes, 2ms
+ • Upload body: 165 KB, 132ms
+ TOTAL: 149ms (3.7x faster!)
+
+ Server:
+ • Decode BlazeBinary: 8ms
+ • Process: 1ms
+ • Encode BlazeBinary: 15ms
+ • Stream to clients: 30ms
+ TOTAL: 54ms (9.3x faster!)
+
+ iPad:
+ • Receive (streaming, instant!): 30ms
+ • Decode BlazeBinary: 8ms
+ TOTAL: 38ms (77x faster!)
+
+ TOTAL END-TO-END: 241ms (~0.2 seconds!)
+ Data transferred: 330 KB (63% less!)
+ Battery: ~12% (67% less!)
 
 
 IMPROVEMENT:
@@ -1180,81 +1180,81 @@ IMPROVEMENT:
 
 ```
 
- HOW IT ALL WORKS 
+ HOW IT ALL WORKS
 
 
 IPHONE SERVER (Fly.io) IPAD
-  
 
-  
-   gRPC   
- Local   Server   Local 
- BlazeDB   (Vapor)   BlazeDB 
-     
-  
-   
-  insert(bug)  
-  → 1ms (instant!)  
-   
-   
-  
- BlazeBinary   
- Encoder   
- → 15ms   
- → 165 bytes   
-  
-   
-  gRPC.insert(bytes)  
-   
-  
- HTTP/2, TLS 
- 30ms latency 
-  
-  
-  gRPC  
-  Handler  
-  
-  
-  
-  BlazeBinary 
-  Decoder  
-  → 8ms  
-  
-  
-  
-  Server  
-  BlazeDB  
-  insert  
-  → 1ms  
-  
-  
-  Broadcast! 
-  
-  
-  BlazeBinary 
-  Encoder  
-  → 15ms  
-  
-  
-  gRPC stream 
-  
- 
+
+
+ gRPC
+ Local Server Local
+ BlazeDB (Vapor) BlazeDB
+
+
+
+ insert(bug)
+ → 1ms (instant!)
+
+
+
+ BlazeBinary
+ Encoder
+ → 15ms
+ → 165 bytes
+
+
+ gRPC.insert(bytes)
+
+
+ HTTP/2, TLS
+ 30ms latency
+
+
+ gRPC
+ Handler
+
+
+
+ BlazeBinary
+ Decoder
+ → 8ms
+
+
+
+ Server
+ BlazeDB
+ insert
+ → 1ms
+
+
+ Broadcast!
+
+
+ BlazeBinary
+ Encoder
+ → 15ms
+
+
+ gRPC stream
+
+
  20ms latency
- 
- 
-  BlazeBinary
-  Decoder 
-  → 5ms 
- 
- 
- 
-  Local 
-  BlazeDB 
-  apply 
-  → 1ms 
- 
- 
- 
+
+
+ BlazeBinary
+ Decoder
+ → 5ms
+
+
+
+ Local
+ BlazeDB
+ apply
+ → 1ms
+
+
+
  UI updates!
 
 TOTAL TIME: iPhone tap → iPad update = 100ms (instant!)

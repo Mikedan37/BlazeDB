@@ -339,31 +339,31 @@ let csv = records.map { record in
 ### ** HIGH PRIORITY (Would Unlock New Use Cases)**
 
 1. **Geospatial/Spatial Queries** (2-3 weeks)
- - **Impact:** HIGH - Many apps need location features
- - **Value:** HIGH - Unlocks location-based apps
- - **Effort:** Medium
+- **Impact:** HIGH - Many apps need location features
+- **Value:** HIGH - Unlocks location-based apps
+- **Effort:** Medium
 
 ### ** MEDIUM PRIORITY (Would Improve Existing Features)**
 
 2. **Time-Series Optimizations** (4-6 weeks)
- - **Impact:** MEDIUM - Would help IoT, monitoring apps
- - **Value:** MEDIUM - Niche but valuable
- - **Effort:** High
+- **Impact:** MEDIUM - Would help IoT, monitoring apps
+- **Value:** MEDIUM - Niche but valuable
+- **Effort:** High
 
 3. **Query Result Streaming** (2-3 weeks)
- - **Impact:** MEDIUM - Would help with large datasets
- - **Value:** MEDIUM - Useful for large queries
- - **Effort:** Medium
+- **Impact:** MEDIUM - Would help with large datasets
+- **Value:** MEDIUM - Useful for large queries
+- **Effort:** Medium
 
 4. **Query Planner Improvements** (4-6 weeks)
- - **Impact:** MEDIUM - Would improve query performance
- - **Value:** MEDIUM - Performance optimization
- - **Effort:** High
+- **Impact:** MEDIUM - Would improve query performance
+- **Value:** MEDIUM - Performance optimization
+- **Effort:** High
 
 5. **Multi-Master Replication** (8-12 weeks)
- - **Impact:** HIGH - Would enable true distributed databases
- - **Value:** HIGH - Advanced feature
- - **Effort:** Very High
+- **Impact:** HIGH - Would enable true distributed databases
+- **Value:** HIGH - Advanced feature
+- **Effort:** Very High
 
 ### ** LOW PRIORITY (Nice-to-Have)**
 
@@ -389,9 +389,9 @@ let csv = records.map { record in
 - **Point-in-time recovery** - Enterprise feature
 
 ### **For Future (Optional):**
--  **Multi-master replication** - Advanced feature, high effort
--  **Advanced index types** - Nice-to-have optimizations
--  **Export/import formats** - Convenience features
+- **Multi-master replication** - Advanced feature, high effort
+- **Advanced index types** - Nice-to-have optimizations
+- **Export/import formats** - Convenience features
 
 ---
 

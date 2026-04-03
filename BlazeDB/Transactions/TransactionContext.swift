@@ -18,9 +18,11 @@ final class TransactionContext {
     func write(pageID: Int, data: Data) {
         // Save baseline before first write (needed for legacy rollback)
         if !unified && baselinePages[pageID] == nil {
-            if let existing = try? store.readPage(index: pageID) {
-                baselinePages[pageID] = existing
-            } else {
+            do {
+                let existing = try store.readPage(index: pageID)
+                baselinePages[pageID] = existing ?? Data()
+            } catch {
+                BlazeLogger.warn("TransactionContext: baseline read failed for page \(pageID) before write: \(error.localizedDescription); rollback may be incomplete")
                 baselinePages[pageID] = Data()
             }
         }
@@ -44,9 +46,11 @@ final class TransactionContext {
 
     func delete(pageID: Int) {
         if !unified && baselinePages[pageID] == nil {
-            if let existing = try? store.readPage(index: pageID) {
-                baselinePages[pageID] = existing
-            } else {
+            do {
+                let existing = try store.readPage(index: pageID)
+                baselinePages[pageID] = existing ?? Data()
+            } catch {
+                BlazeLogger.warn("TransactionContext: baseline read failed for page \(pageID) before delete: \(error.localizedDescription); rollback may be incomplete")
                 baselinePages[pageID] = Data()
             }
         }

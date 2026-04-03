@@ -182,13 +182,13 @@ Use For:
 ### **How It Works:**
 ```
 BlazeDB Database
-  Encrypted with AES-256
-  Password-protected
-  Cannot be opened without password
+ Encrypted with AES-256
+ Password-protected
+ Cannot be opened without password
 
 BlazeDBVisualizer:
-  User enters password
-  OR Touch ID unlock
+ User enters password
+ OR Touch ID unlock
  ↓
 BlazeDBClient decrypts database
  ↓
@@ -233,40 +233,40 @@ WITH PASSWORD:
 ```
  (menu bar icon)
 
- BlazeDB Manager 
- 3 databases found 
+ BlazeDB Manager
+ 3 databases found
 
- [Search databases...] 
+ [Search databases...]
 
- test 
- 50 records • 205 KB 
- ~/Desktop 
- 
- users 
- 10K records • 44 MB 
- ~/Documents 
- 
-  cache 
- 250K records • 1.2 GB 
- ~/Developer 
+ test
+ 50 records • 205 KB
+ ~/Desktop
 
- [Dashboard] [Refresh] 
+ users
+ 10K records • 44 MB
+ ~/Documents
 
- Quit 
+ cache
+ 250K records • 1.2 GB
+ ~/Developer
+
+ [Dashboard] [Refresh]
+
+ Quit
 
 ```
 
 ### **Main Window** (Full Features):
 ```
 
- Database List  Dashboard 
+ Database List Dashboard
 
-  [Monitor][Data][Query] 
- test  [Charts][Backup] 
- users  
-  cache  (Tab Content) 
-  
- [Refresh]  Touch ID → Full Access! 
+ [Monitor][Data][Query]
+ test [Charts][Backup]
+ users
+ cache (Tab Content)
+
+ [Refresh] Touch ID → Full Access!
 
 ```
 
@@ -282,7 +282,7 @@ WITH PASSWORD:
 
  Monitor Tab:
  test - HEALTHY
-  cache - 45% fragmentation
+ cache - 45% fragmentation
 
  [Run VACUUM on cache]
  Fragmentation: 3%
@@ -470,12 +470,12 @@ BlazeDBVisualizer: BETTER!
 ### **ROI for Developers:**
 ```
 Time Saved Per Week:
- - Database checks: 2 hours
- - Data inspection: 3 hours
- - Query testing: 1 hour
- - Maintenance: 1 hour
- - Backup operations: 0.5 hours
- 
+- Database checks: 2 hours
+- Data inspection: 3 hours
+- Query testing: 1 hour
+- Maintenance: 1 hour
+- Backup operations: 0.5 hours
+
  Total: 7.5 hours/week
 
 Value:
@@ -712,7 +712,7 @@ Backup History:
 
 [Select backup]
 [Restore]
-  Confirm
+ Confirm
  ↓
  "Restored from pre_migration"
 ```
@@ -725,34 +725,34 @@ Backup History:
 
 ```
 Morning Routine:
-  Open BlazeDBVisualizer
-  Check all database health
-  Run maintenance if needed
-  Start coding with clean slate
+ Open BlazeDBVisualizer
+ Check all database health
+ Run maintenance if needed
+ Start coding with clean slate
 
 Development:
-  Monitor tab: Live health updates
-  Data tab: Inspect test data
-  Query tab: Test new queries
-  Charts tab: Track performance
+ Monitor tab: Live health updates
+ Data tab: Inspect test data
+ Query tab: Test new queries
+ Charts tab: Track performance
 
 Testing:
-  Backup tab: Save clean state
-  Run destructive tests
-  Restore clean state
-  Repeat
+ Backup tab: Save clean state
+ Run destructive tests
+ Restore clean state
+ Repeat
 
 Pre-Deploy:
-  Backup tab: Create snapshot
-  Monitor tab: Check health
-  Charts tab: Verify trends
-  Deploy!
+ Backup tab: Create snapshot
+ Monitor tab: Check health
+ Charts tab: Verify trends
+ Deploy!
 
 Production Support:
-  Get customer database
-  Data tab: Search user data
-  Query tab: Find issues
-  Export tab: Share results
+ Get customer database
+ Data tab: Search user data
+ Query tab: Find issues
+ Export tab: Share results
 ```
 
 ---
@@ -793,23 +793,23 @@ Production Support:
 
 ```
 Started With:
- - Basic file browser
- - No interaction
- - View-only
+- Basic file browser
+- No interaction
+- View-only
 
 Built:
- - 5-tab management suite
- - Real-time monitoring
- - Touch ID security
- - Data viewer
- - Query console
- - Performance charts
- - Backup/restore
- - Export (CSV/JSON)
- - Auto-alerts
- - Search/filter
- - 186 tests
- - Beautiful UI
+- 5-tab management suite
+- Real-time monitoring
+- Touch ID security
+- Data viewer
+- Query console
+- Performance charts
+- Backup/restore
+- Export (CSV/JSON)
+- Auto-alerts
+- Search/filter
+- 186 tests
+- Beautiful UI
 
 Time: ONE SESSION!
 Lines of Code: 4,500+ lines
@@ -891,7 +891,7 @@ THIS IS LEGENDARY!
 
 ---
 
-**Built with  by Human + AI collaboration**
+**Built with by Human + AI collaboration**
 **Date: November 14, 2025**
 **Status: LEGENDARY **
 **Test Coverage: 186 tests **

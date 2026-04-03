@@ -1,7 +1,7 @@
 # Release Posture
 
-**Version Line:** 2.7.x  
-**Status:** Active stable line  
+**Version Line:** 2.7.x
+**Status:** Active stable line
 **Tag Policy:** `vX.Y.Z` tags drive release workflow
 
 ---
@@ -9,36 +9,36 @@
 ## What This Release Includes
 
 ### Trust Envelope (Complete)
--  Query ergonomics (validation, error messages, performance docs)
--  Schema evolution (versioning, migrations, planning)
--  Import/export (deterministic dumps, integrity verification)
--  Operational confidence (health reports, stats interpretation)
+- Query ergonomics (validation, error messages, performance docs)
+- Schema evolution (versioning, migrations, planning)
+- Import/export (deterministic dumps, integrity verification)
+- Operational confidence (health reports, stats interpretation)
 
 ### Core Stability
--  Swift 6 strict concurrency compliant
--  Deadlock prevention guards
--  Durability verified across close/reopen cycles
--  Comprehensive test coverage
+- Swift 6 strict concurrency compliant
+- Deadlock prevention guards
+- Durability verified across close/reopen cycles
+- Comprehensive test coverage
 
 ### Tooling
--  `blazedb doctor` - Health checks
--  `blazedb dump` - Backup/restore
--  `db.stats()` - Statistics API
--  `db.health()` - Health reports
+- `blazedb doctor` - Health checks
+- `blazedb dump` - Backup/restore
+- `db.stats()` - Statistics API
+- `db.health()` - Health reports
 
 ---
 
 ## What This Release Does NOT Include
 
 ### Distributed Modules
--  Sync/replication (not Swift 6 compliant)
--  Cross-app sync (excluded from core)
--  Network transport (separate project)
+- Sync/replication (not Swift 6 compliant)
+- Cross-app sync (excluded from core)
+- Network transport (separate project)
 
 ### Performance Features
--  Parallel encoding (Phase 1 freeze)
--  Query optimization (manual indexing)
--  Automatic tuning (explicit only)
+- Parallel encoding (Phase 1 freeze)
+- Query optimization (manual indexing)
+- Automatic tuning (explicit only)
 
 ---
 
@@ -57,10 +57,10 @@
 
 ## Compatibility Statement
 
-**Core:**  Swift 6 compliant, stable, production-ready  
-**Distributed:**  Not yet compliant, excluded from core  
-**Storage:**  Stable format, migration support  
-**APIs:**  Core APIs stable, experimental APIs clearly marked
+**Core:** Swift 6 compliant, stable, production-ready
+**Distributed:** Not yet compliant, excluded from core
+**Storage:** Stable format, migration support
+**APIs:** Core APIs stable, experimental APIs clearly marked
 
 See `COMPATIBILITY.md` for details.
 
@@ -111,16 +111,16 @@ See `API_STABILITY.md` for details.
 ## Use Cases
 
 ### Ready For
--  Local-first apps
--  Devtools caches/indexes
--  Secure local storage
--  Audit logging / forensic stores
--  Data that outlives the binary
+- Local-first apps
+- Devtools caches/indexes
+- Secure local storage
+- Audit logging / forensic stores
+- Data that outlives the binary
 
 ### Not Ready For (Yet)
--  Distributed systems (sync not available)
--  High-throughput scenarios (parallelism disabled)
--  Automatic optimization needs (manual indexing)
+- Distributed systems (sync not available)
+- High-throughput scenarios (parallelism disabled)
+- Automatic optimization needs (manual indexing)
 
 ---
 

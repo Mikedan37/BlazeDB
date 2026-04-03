@@ -19,7 +19,7 @@ import Crypto
 #endif
 
 final class BlazeFileSystemErrorTests: XCTestCase {
-    var tempURL: URL!
+    private var tempURL: URL?
     
     override func setUpWithError() throws {
         tempURL = FileManager.default.temporaryDirectory
@@ -28,9 +28,9 @@ final class BlazeFileSystemErrorTests: XCTestCase {
     
     override func tearDownWithError() throws {
         // Restore permissions before cleanup
-        try? FileManager.default.setAttributes([.posixPermissions: 0o644], ofItemAtPath: tempURL.path)
-        try? FileManager.default.removeItem(at: tempURL)
-        try? FileManager.default.removeItem(at: tempURL.deletingPathExtension().appendingPathExtension("meta"))
+        try? FileManager.default.setAttributes([.posixPermissions: 0o644], ofItemAtPath: try requireFixture(tempURL).path)
+        try? FileManager.default.removeItem(at: try requireFixture(tempURL))
+        try? FileManager.default.removeItem(at: try requireFixture(tempURL).deletingPathExtension().appendingPathExtension("meta"))
     }
     
     // MARK: - Permission Tests
@@ -41,7 +41,7 @@ final class BlazeFileSystemErrorTests: XCTestCase {
         print("📊 Testing single-process lock behavior...")
         
         // Create database and insert data
-        var db1: BlazeDBClient? = try BlazeDBClient(name: "Test", fileURL: tempURL, password: "SecureTestDB-456!")
+        var db1: BlazeDBClient? = try BlazeDBClient(name: "Test", fileURL: try requireFixture(tempURL), password: "SecureTestDB-456!")
         
         // ✅ Ensure cleanup on exit
         defer {
@@ -63,7 +63,7 @@ final class BlazeFileSystemErrorTests: XCTestCase {
         
         // Opening a second instance should fail while first one is alive.
         XCTAssertThrowsError(
-            try BlazeDBClient(name: "Test", fileURL: tempURL, password: "SecureTestDB-456!"),
+            try BlazeDBClient(name: "Test", fileURL: try requireFixture(tempURL), password: "SecureTestDB-456!"),
             "Second instance should be rejected while lock is held"
         )
         
@@ -79,14 +79,14 @@ final class BlazeFileSystemErrorTests: XCTestCase {
     func testHandlingMissingDirectory() throws {
         print("📊 Testing missing directory handling...")
         
-        let nonExistentDir = tempURL.deletingLastPathComponent()
+        let nonExistentDir = try requireFixture(tempURL).deletingLastPathComponent()
             .appendingPathComponent("nonexistent-\(UUID().uuidString)")
         let dbURL = nonExistentDir.appendingPathComponent("test.blazedb")
         
         print("🔍 Attempting to create database in non-existent directory...")
         
         do {
-            _ = try BlazeDBClient(name: "Test", fileURL: dbURL, password: "SecureTestDB-456!")
+            _ = try BlazeDBClient(name: "Test", fileURL: try requireFixture(dbURL), password: "SecureTestDB-456!")
             XCTFail("Should fail when directory doesn't exist")
         } catch {
             print("✅ Correctly handled missing directory: \(error)")
@@ -97,18 +97,21 @@ final class BlazeFileSystemErrorTests: XCTestCase {
     func testRecoveryFromPermissionDenial() throws {
         print("📊 Testing recovery from permission denial...")
         
-        let db = try BlazeDBClient(name: "Test", fileURL: tempURL, password: "SecureTestDB-456!")
+        let db = try BlazeDBClient(name: "Test", fileURL: try requireFixture(tempURL), password: "SecureTestDB-456!")
         
         // Insert some data successfully
         for i in 0..<5 {
-            _ = try db.insert(BlazeDataRecord(["index": .int(i)]))
+            _ = try requireFixture(db).insert(BlazeDataRecord(["index": .int(i)]))
         }
         
         print("  Inserted 5 records successfully")
         
         // Make directory read-only (will prevent meta file updates)
-        let dir = tempURL.deletingLastPathComponent()
-        let originalPermissions = try FileManager.default.attributesOfItem(atPath: dir.path)[.posixPermissions] as! NSNumber
+        let dir = try requireFixture(tempURL).deletingLastPathComponent()
+        let originalPermissions = try XCTUnwrap(
+            try FileManager.default.attributesOfItem(atPath: dir.path)[.posixPermissions] as? NSNumber,
+            "expected posixPermissions attribute"
+        )
         
         defer {
             // Restore permissions
@@ -128,18 +131,18 @@ final class BlazeFileSystemErrorTests: XCTestCase {
         print("📊 Testing exclusive file locking...")
         
         // First instance opens database and acquires lock
-        let db1 = try BlazeDBClient(name: "DB1", fileURL: tempURL, password: "SecureTestDB-456!")
+        let db1 = try BlazeDBClient(name: "DB1", fileURL: try requireFixture(tempURL), password: "SecureTestDB-456!")
         
         print("  First database opened and lock acquired")
         
         // Insert a record to verify first instance works
-        _ = try db1.insert(BlazeDataRecord(["source": .string("db1")]))
+        _ = try requireFixture(db1).insert(BlazeDataRecord(["source": .string("db1")]))
         
         // Try to open same file with second instance - should fail
         print("🔍 Attempting to open same file with second instance...")
         
         do {
-            _ = try BlazeDBClient(name: "DB2", fileURL: tempURL, password: "SecureTestDB-456!")
+            _ = try BlazeDBClient(name: "DB2", fileURL: try requireFixture(tempURL), password: "SecureTestDB-456!")
             
             // If we get here, locking failed - this is a test failure
             XCTFail("Second instance should not be able to open locked database")
@@ -155,7 +158,7 @@ final class BlazeFileSystemErrorTests: XCTestCase {
         }
         
         // First instance should still work
-        let count = try db1.count()
+        let count = try requireFixture(db1).count()
         XCTAssertEqual(count, 1, "First instance should still have access")
         print("✅ First instance still functional: \(count) records")
     }
@@ -167,14 +170,14 @@ final class BlazeFileSystemErrorTests: XCTestCase {
         print("📊 Testing lock release on close...")
         
         // Open and close first instance
-        var db1: BlazeDBClient? = try BlazeDBClient(name: "DB1", fileURL: tempURL, password: "SecureTestDB-456!")
+        var db1: BlazeDBClient? = try BlazeDBClient(name: "DB1", fileURL: try requireFixture(tempURL), password: "SecureTestDB-456!")
         _ = try db1!.insert(BlazeDataRecord(["source": .string("db1")]))
         
         print("  First instance created and inserted record")
         
         // Verify first instance holds the lock
         do {
-            let _ = try BlazeDBClient(name: "DB2", fileURL: tempURL, password: "SecureTestDB-456!")
+            let _ = try BlazeDBClient(name: "DB2", fileURL: try requireFixture(tempURL), password: "SecureTestDB-456!")
             XCTFail("Second instance should not be able to open while first is active")
         } catch BlazeDBError.concurrentProcessAccessNotSupported {
             // Expected - lock is held
@@ -194,7 +197,7 @@ final class BlazeFileSystemErrorTests: XCTestCase {
         
         while db2 == nil && attempts < maxAttempts {
             do {
-                db2 = try BlazeDBClient(name: "DB2", fileURL: tempURL, password: "SecureTestDB-456!")
+                db2 = try BlazeDBClient(name: "DB2", fileURL: try requireFixture(tempURL), password: "SecureTestDB-456!")
                 break
             } catch BlazeDBError.concurrentProcessAccessNotSupported {
                 // Lock still held - this should not happen if deinit worked
@@ -221,13 +224,13 @@ final class BlazeFileSystemErrorTests: XCTestCase {
         print("  ✅ First instance closed, second instance opened")
         
         // Should be able to read data from first instance
-        let records = try db2.fetchAll()
+        let records = try requireFixture(db2).fetchAll()
         XCTAssertEqual(records.count, 1, "Should see record from first instance")
         print("✅ Lock released: second instance can read database")
         
         // Should be able to write
-        _ = try db2.insert(BlazeDataRecord(["source": .string("db2")]))
-        let count = try db2.count()
+        _ = try requireFixture(db2).insert(BlazeDataRecord(["source": .string("db2")]))
+        let count = try requireFixture(db2).count()
         XCTAssertEqual(count, 2, "Should have 2 records")
         print("✅ Second instance can write: \(count) records")
     }
@@ -240,15 +243,15 @@ final class BlazeFileSystemErrorTests: XCTestCase {
         print("📊 Testing single-process reentrancy...")
         
         // First instance - creates separate file descriptor and acquires lock
-        let db1 = try BlazeDBClient(name: "DB1", fileURL: tempURL, password: "SecureTestDB-456!")
-        _ = try db1.insert(BlazeDataRecord(["source": .string("db1")]))
+        let db1 = try BlazeDBClient(name: "DB1", fileURL: try requireFixture(tempURL), password: "SecureTestDB-456!")
+        _ = try requireFixture(db1).insert(BlazeDataRecord(["source": .string("db1")]))
         
         print("  First instance opened and lock acquired")
         
         // Try to open same file again in same process
         // This creates a NEW file descriptor, which should fail to acquire the lock
         do {
-            _ = try BlazeDBClient(name: "DB2", fileURL: tempURL, password: "SecureTestDB-456!")
+            _ = try BlazeDBClient(name: "DB2", fileURL: try requireFixture(tempURL), password: "SecureTestDB-456!")
             
             // If we get here, locking failed - this is a critical test failure
             XCTFail("Second instance in same process should not be able to open locked database. Lock enforcement is broken.")
@@ -256,7 +259,7 @@ final class BlazeFileSystemErrorTests: XCTestCase {
             // Expected - lock conflict detected (single-process only)
             XCTAssertEqual(operation, "open database", "Error should specify 'open database' operation")
             if let path = path {
-                XCTAssertEqual(path.path, tempURL.path, "Error should include correct database path")
+                XCTAssertEqual(path.path, try requireFixture(tempURL).path, "Error should include correct database path")
             }
             print("✅ Reentrancy prevented: second instance failed with concurrentProcessAccessNotSupported")
             print("   Operation: \(operation)")
@@ -269,7 +272,7 @@ final class BlazeFileSystemErrorTests: XCTestCase {
         }
         
         // First instance should still work
-        let count = try db1.count()
+        let count = try requireFixture(db1).count()
         XCTAssertEqual(count, 1, "First instance should still have access")
         print("✅ First instance still functional: \(count) records")
     }
@@ -281,14 +284,14 @@ final class BlazeFileSystemErrorTests: XCTestCase {
         print("📊 Testing crash safety (lock release on process termination)...")
         
         // Open first instance
-        var db1: BlazeDBClient? = try BlazeDBClient(name: "DB1", fileURL: tempURL, password: "SecureTestDB-456!")
+        var db1: BlazeDBClient? = try BlazeDBClient(name: "DB1", fileURL: try requireFixture(tempURL), password: "SecureTestDB-456!")
         _ = try db1!.insert(BlazeDataRecord(["source": .string("db1")]))
         
         print("  First instance opened and lock acquired")
         
         // Verify lock is held
         do {
-            let _ = try BlazeDBClient(name: "DB2", fileURL: tempURL, password: "SecureTestDB-456!")
+            let _ = try BlazeDBClient(name: "DB2", fileURL: try requireFixture(tempURL), password: "SecureTestDB-456!")
             XCTFail("Second instance should not be able to open while first is active")
         } catch BlazeDBError.concurrentProcessAccessNotSupported {
             print("  ✅ Lock confirmed held by first instance")
@@ -317,7 +320,7 @@ final class BlazeFileSystemErrorTests: XCTestCase {
         
         while db2 == nil && attempts < maxAttempts {
             do {
-                db2 = try BlazeDBClient(name: "DB2", fileURL: tempURL, password: "SecureTestDB-456!")
+                db2 = try BlazeDBClient(name: "DB2", fileURL: try requireFixture(tempURL), password: "SecureTestDB-456!")
                 break
             } catch BlazeDBError.concurrentProcessAccessNotSupported {
                 attempts += 1
@@ -342,7 +345,7 @@ final class BlazeFileSystemErrorTests: XCTestCase {
         print("✅ Crash safety verified: lock released, new instance can open")
         
         // Verify data is still accessible
-        let records = try db2.fetchAll()
+        let records = try requireFixture(db2).fetchAll()
         XCTAssertEqual(records.count, 1, "Should see record from first instance")
         print("✅ Data integrity maintained: \(records.count) records")
     }
@@ -353,7 +356,7 @@ final class BlazeFileSystemErrorTests: XCTestCase {
     func testLargeSingleRecord() throws {
         print("📊 Testing very large single record...")
         
-        let db = try BlazeDBClient(name: "Test", fileURL: tempURL, password: "SecureTestDB-456!")
+        let db = try BlazeDBClient(name: "Test", fileURL: try requireFixture(tempURL), password: "SecureTestDB-456!")
         
         // Create record near 4KB limit (4096 - 9 bytes overhead = 4087 max)
         let largeString = String(repeating: "X", count: 3000)
@@ -361,7 +364,7 @@ final class BlazeFileSystemErrorTests: XCTestCase {
         print("  Attempting to insert \(largeString.count)-char string...")
         
         do {
-            _ = try db.insert(BlazeDataRecord([
+            _ = try requireFixture(db).insert(BlazeDataRecord([
                 "large": .string(largeString),
                 "index": .int(1)
             ]))
@@ -377,7 +380,7 @@ final class BlazeFileSystemErrorTests: XCTestCase {
     func testManySmallOperations() throws {
         print("📊 Testing many small operations (resource stress)...")
         
-        let db = try BlazeDBClient(name: "Test", fileURL: tempURL, password: "SecureTestDB-456!")
+        let db = try BlazeDBClient(name: "Test", fileURL: try requireFixture(tempURL), password: "SecureTestDB-456!")
         
         // Perform many small operations
         let count = 1000
@@ -385,8 +388,8 @@ final class BlazeFileSystemErrorTests: XCTestCase {
         print("  Performing \(count) insert/fetch cycles...")
         
         for i in 0..<count {
-            let id = try db.insert(BlazeDataRecord(["index": .int(i)]))
-            _ = try db.fetch(id: id)
+            let id = try requireFixture(db).insert(BlazeDataRecord(["index": .int(i)]))
+            _ = try requireFixture(db).fetch(id: id)
             
             if i % 200 == 0 {
                 print("    \(i) operations completed...")
@@ -402,10 +405,10 @@ final class BlazeFileSystemErrorTests: XCTestCase {
     func testStorageGrowthMonitoring() throws {
         print("📊 Testing storage growth monitoring...")
         
-        let db = try BlazeDBClient(name: "Test", fileURL: tempURL, password: "SecureTestDB-456!")
+        let db = try BlazeDBClient(name: "Test", fileURL: try requireFixture(tempURL), password: "SecureTestDB-456!")
         
         func getFileSize() throws -> Int {
-            let attrs = try FileManager.default.attributesOfItem(atPath: tempURL.path)
+            let attrs = try FileManager.default.attributesOfItem(atPath: try requireFixture(tempURL).path)
             return (attrs[.size] as? NSNumber)?.intValue ?? 0
         }
         
@@ -415,7 +418,7 @@ final class BlazeFileSystemErrorTests: XCTestCase {
         // Insert records and monitor growth
         for batch in 0..<5 {
             for i in 0..<100 {
-                _ = try db.insert(BlazeDataRecord([
+                _ = try requireFixture(db).insert(BlazeDataRecord([
                     "batch": .int(batch),
                     "index": .int(i),
                     "data": .string(String(repeating: "x", count: 200))
@@ -439,13 +442,13 @@ final class BlazeFileSystemErrorTests: XCTestCase {
     func testSlowFilesystemHandling() throws {
         print("📊 Testing slow filesystem handling...")
         
-        let db = try BlazeDBClient(name: "Test", fileURL: tempURL, password: "SecureTestDB-456!")
+        let db = try BlazeDBClient(name: "Test", fileURL: try requireFixture(tempURL), password: "SecureTestDB-456!")
         
         // Measure baseline performance
         let startTime = Date()
         
         for i in 0..<100 {
-            _ = try db.insert(BlazeDataRecord(["index": .int(i)]))
+            _ = try requireFixture(db).insert(BlazeDataRecord(["index": .int(i)]))
         }
         
         let duration = Date().timeIntervalSince(startTime)
@@ -464,7 +467,7 @@ final class BlazeFileSystemErrorTests: XCTestCase {
     func testIncompleteFlushRecovery() throws {
         print("📊 Testing incomplete flush recovery...")
         
-        var db: BlazeDBClient? = try BlazeDBClient(name: "Test", fileURL: tempURL, password: "SecureTestDB-456!")
+        var db: BlazeDBClient? = try BlazeDBClient(name: "Test", fileURL: try requireFixture(tempURL), password: "SecureTestDB-456!")
         
         // Insert enough data to trigger metadata flush (>100 records)
         var ids: [UUID] = []
@@ -480,7 +483,7 @@ final class BlazeFileSystemErrorTests: XCTestCase {
         
         // Reopen and verify
         print("🔄 Reopening database...")
-        let recovered = try BlazeDBClient(name: "Test", fileURL: tempURL, password: "SecureTestDB-456!")
+        let recovered = try BlazeDBClient(name: "Test", fileURL: try requireFixture(tempURL), password: "SecureTestDB-456!")
         
         var recoveredCount = 0
         for id in ids {
@@ -496,7 +499,7 @@ final class BlazeFileSystemErrorTests: XCTestCase {
     func testReloadFromDiskFailureHandling() throws {
         print("📊 Testing reload from disk with corrupted metadata...")
         
-        var db: BlazeDBClient? = try BlazeDBClient(name: "ReloadTest", fileURL: tempURL, password: "SecureTestDB-456!")
+        var db: BlazeDBClient? = try BlazeDBClient(name: "ReloadTest", fileURL: try requireFixture(tempURL), password: "SecureTestDB-456!")
         
         let id = try db!.insert(BlazeDataRecord(["value": .int(1)]))
         
@@ -507,11 +510,11 @@ final class BlazeFileSystemErrorTests: XCTestCase {
         db = nil
         
         // Corrupt metadata file
-        let metaURL = tempURL.deletingPathExtension().appendingPathExtension("meta")
-        try Data(repeating: 0xFF, count: 100).write(to: metaURL)
+        let metaURL = try requireFixture(tempURL).deletingPathExtension().appendingPathExtension("meta")
+        try Data(repeating: 0xFF, count: 100).write(to: try requireFixture(metaURL))
         
         // Current behavior: metadata corruption triggers layout rebuild from data pages.
-        let reloadedDB = try BlazeDBClient(name: "ReloadTest", fileURL: tempURL, password: "SecureTestDB-456!")
+        let reloadedDB = try BlazeDBClient(name: "ReloadTest", fileURL: try requireFixture(tempURL), password: "SecureTestDB-456!")
         
         // Original record should still be recoverable from page scan.
         let record = try? reloadedDB.fetch(id: id)

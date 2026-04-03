@@ -41,9 +41,9 @@ let id2 = try db.insert(BlazeDataRecord(["name": .string("Bob"), "count": .int(2
 
 // Query records
 let results = try db.query()
-    .where("count", greaterThan: .int(15))
-    .execute()
-    .records
+ .where("count", greaterThan: .int(15))
+ .execute()
+ .records
 
 print("Found \(results.count) records")
 
@@ -90,8 +90,8 @@ BlazeDB doesn't enforce schemas by default. Insert records with whatever fields 
 **Basic usage:**
 ```swift
 let record = BlazeDataRecord([
-    "name": .string("Alice"),
-    "age": .int(30)
+ "name": .string("Alice"),
+ "age": .int(30)
 ])
 try db.insert(record)
 ```
@@ -108,19 +108,19 @@ try db.insert(oldRecord)
 
 // New records (with email field)
 let newRecord = BlazeDataRecord([
-    "name": .string("Charlie"),
-    "email": .string("charlie@example.com")
+ "name": .string("Charlie"),
+ "email": .string("charlie@example.com")
 ])
 try db.insert(newRecord)
 
 // Querying: handle missing fields
 let allRecords = try db.fetchAll()
 for record in allRecords {
-    if let email = record.storage["email"]?.stringValue {
-        print("Email: \(email)")
-    } else {
-        print("No email (old record)")
-    }
+ if let email = record.storage["email"]?.stringValue {
+ print("Email: \(email)")
+ } else {
+ print("No email (old record)")
+ }
 }
 ```
 
@@ -135,28 +135,28 @@ BlazeDB will not auto-migrate your data. You write migrations explicitly.
 **Step 1: Define schema version**
 ```swift
 struct MyAppSchema: BlazeSchema {
-    static var version: SchemaVersion {
-        SchemaVersion(major: 1, minor: 0)
-    }
+ static var version: SchemaVersion {
+ SchemaVersion(major: 1, minor: 0)
+ }
 }
 ```
 
 **Step 2: Write a migration**
 ```swift
 struct AddEmailField: BlazeDBMigration {
-    var from: SchemaVersion { SchemaVersion(major: 1, minor: 0) }
-    var to: SchemaVersion { SchemaVersion(major: 1, minor: 1) }
-    
-    func up(db: BlazeDBClient) throws {
-        let records = try db.fetchAll()
-        for record in records {
-            if let id = record.storage["id"]?.uuidValue {
-                var updated = record.storage
-                updated["email"] = .string("")
-                try db.update(id: id, with: BlazeDataRecord(updated))
-            }
-        }
-    }
+ var from: SchemaVersion { SchemaVersion(major: 1, minor: 0) }
+ var to: SchemaVersion { SchemaVersion(major: 1, minor: 1) }
+
+ func up(db: BlazeDBClient) throws {
+ let records = try db.fetchAll()
+ for record in records {
+ if let id = record.storage["id"]?.uuidValue {
+ var updated = record.storage
+ updated["email"] = .string("")
+ try db.update(id: id, with: BlazeDataRecord(updated))
+ }
+ }
+ }
 }
 ```
 
@@ -170,7 +170,7 @@ let targetVersion = MyAppSchema.version
 let plan = try db.planMigration(to: targetVersion, migrations: migrations)
 
 guard plan.isValid else {
-    throw BlazeDBError.migrationFailed("Invalid plan", underlyingError: nil)
+ throw BlazeDBError.migrationFailed("Invalid plan", underlyingError: nil)
 }
 
 // Dry-run first
@@ -192,19 +192,19 @@ try db.validateSchemaVersion(expectedVersion: MyAppSchema.version)
 **Filter:**
 ```swift
 let results = try db.query()
-    .where("status", equals: .string("open"))
-    .execute()
-    .records
+ .where("status", equals: .string("open"))
+ .execute()
+ .records
 ```
 
 **Sort:**
 ```swift
 let results = try db.query()
-    .where("status", equals: .string("open"))
-    .orderBy("created_at", descending: true)
-    .limit(10)
-    .execute()
-    .records
+ .where("status", equals: .string("open"))
+ .orderBy("created_at", descending: true)
+ .limit(10)
+ .execute()
+ .records
 ```
 
 **Check if query is slow:**
@@ -244,15 +244,15 @@ defer { try? db.close() }
 **`close()` is safe to call multiple times:**
 
 ```swift
-try db.close()  // Closes
-try db.close()  // Does nothing (safe)
+try db.close() // Closes
+try db.close() // Does nothing (safe)
 ```
 
 **After `close()`, don't use the database:**
 
 ```swift
 try db.close()
-try db.insert(record)  // Error: Database has been closed
+try db.insert(record) // Error: Database has been closed
 ```
 
 Create a new instance if you need to continue.
@@ -271,56 +271,56 @@ import BlazeDB
 
 // Store database in Application
 extension Application {
-    var blazeDB: BlazeDBClient {
-        get {
-            guard let db = storage[BlazeDBKey.self] else {
-                fatalError("BlazeDB not initialized")
-            }
-            return db
-        }
-        set {
-            storage[BlazeDBKey.self] = newValue
-        }
-    }
+ var blazeDB: BlazeDBClient {
+ get {
+ guard let db = storage[BlazeDBKey.self] else {
+ fatalError("BlazeDB not initialized")
+ }
+ return db
+ }
+ set {
+ storage[BlazeDBKey.self] = newValue
+ }
+ }
 }
 
 private struct BlazeDBKey: StorageKey {
-    typealias Value = BlazeDBClient
+ typealias Value = BlazeDBClient
 }
 
 // In configure.swift
 public func configure(_ app: Application) throws {
-    // Open database on startup
-    let db = try BlazeDBClient.open(
-        named: "myserver",
-        password: ProcessInfo.processInfo.environment["BLAZEDB_PASSWORD"] ?? "change-me"
-    )
-    app.blazeDB = db
-    
-    // Register routes
-    try routes(app)
-    
-    // Close on shutdown
-    app.lifecycle.use(BlazeDBLifecycle(db: db))
+ // Open database on startup
+ let db = try BlazeDBClient.open(
+ named: "myserver",
+ password: ProcessInfo.processInfo.environment["BLAZEDB_PASSWORD"] ?? "change-me"
+ )
+ app.blazeDB = db
+
+ // Register routes
+ try routes(app)
+
+ // Close on shutdown
+ app.lifecycle.use(BlazeDBLifecycle(db: db))
 }
 
 final class BlazeDBLifecycle: LifecycleHandler {
-    let db: BlazeDBClient
-    init(db: BlazeDBClient) { self.db = db }
-    func shutdown(_ application: Application) {
-        try? db.close()
-    }
+ let db: BlazeDBClient
+ init(db: BlazeDBClient) { self.db = db }
+ func shutdown(_ application: Application) {
+ try? db.close()
+ }
 }
 
 // In routes.swift
 func routes(_ app: Application) throws {
-    app.get("users") { req -> [BlazeDataRecord] in
-        let db = app.blazeDB  // Use shared instance
-        return try db.query()
-            .where("active", equals: .bool(true))
-            .execute()
-            .records
-    }
+ app.get("users") { req -> [BlazeDataRecord] in
+ let db = app.blazeDB // Use shared instance
+ return try db.query()
+ .where("active", equals: .bool(true))
+ .execute()
+ .records
+ }
 }
 ```
 
@@ -339,7 +339,7 @@ func routes(_ app: Application) throws {
 let db = try BlazeDBClient.open(named: "myapp", password: "your-password")
 
 let backupURL = FileManager.default.temporaryDirectory
-    .appendingPathComponent("backup.blazedump")
+ .appendingPathComponent("backup.blazedump")
 
 try db.export(to: backupURL)
 print("Exported to: \(backupURL.path)")
@@ -397,9 +397,9 @@ let health = try db.health()
 print(health.summary)
 
 if health.status == .warn {
-    for action in health.suggestedActions {
-        print("  - \(action)")
-    }
+ for action in health.suggestedActions {
+ print(" - \(action)")
+ }
 }
 ```
 

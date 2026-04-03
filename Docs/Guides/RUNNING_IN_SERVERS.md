@@ -43,30 +43,30 @@ let app = Application(.development)
 
 // Open database (one per server process)
 let db = try BlazeDB.openForDaemon(
-    name: "myserver",
-    password: ProcessInfo.processInfo.environment["DB_PASSWORD"] ?? "default-password"
+ name: "myserver",
+ password: ProcessInfo.processInfo.environment["DB_PASSWORD"] ?? "default-password"
 )
 
 // Routes
 app.get("users") { req async throws -> [User] in
-    let records = try db.query()
-        .where("active", equals: .bool(true))
-        .execute()
-        .records
-    
-    return records.map { User(from: $0) }
+ let records = try db.query()
+ .where("active", equals: .bool(true))
+ .execute()
+ .records
+
+ return records.map { User(from: $0) }
 }
 
 app.post("users") { req async throws -> User in
-    let userData = try req.content.decode(UserData.self)
-    let record = BlazeDataRecord([
-        "name": .string(userData.name),
-        "email": .string(userData.email),
-        "active": .bool(true)
-    ])
-    
-    let id = try db.insert(record)
-    return User(id: id, from: record)
+ let userData = try req.content.decode(UserData.self)
+ let record = BlazeDataRecord([
+ "name": .string(userData.name),
+ "email": .string(userData.email),
+ "active": .bool(true)
+ ])
+
+ let id = try db.insert(record)
+ return User(id: id, from: record)
 }
 
 // Start server
@@ -91,23 +91,23 @@ let db = try BlazeDB.openForDaemon(name: "server", password: "secure-password")
 
 // 2. Validate schema (if using schema versioning)
 struct ServerSchema: BlazeSchema {
-    static var version = SchemaVersion(major: 1, minor: 0)
+ static var version = SchemaVersion(major: 1, minor: 0)
 }
 try db.validateSchemaVersion(expectedVersion: ServerSchema.version)
 
 // 3. Run migrations if needed
 let plan = try db.planMigration(
-    targetVersion: ServerSchema.version,
-    migrations: [MyMigration()]
+ targetVersion: ServerSchema.version,
+ migrations: [MyMigration()]
 )
 if !plan.migrations.isEmpty {
-    try db.executeMigration(plan: plan, dryRun: false)
+ try db.executeMigration(plan: plan, dryRun: false)
 }
 
 // 4. Check health
 let health = try db.health()
 if health.status == .error {
-    // Handle error state
+ // Handle error state
 }
 ```
 
@@ -116,7 +116,7 @@ if health.status == .error {
 ```swift
 // Explicit close is recommended for deterministic shutdown
 defer {
-    try? db.close()  // Idempotent - safe to call multiple times
+ try? db.close() // Idempotent - safe to call multiple times
 }
 
 // Database automatically flushes on deinit if close() not called
@@ -127,14 +127,14 @@ defer {
 ```swift
 // Handle graceful shutdown
 signal(SIGTERM) { _ in
-    // Close database explicitly
-    try? db.close()
-    exit(0)
+ // Close database explicitly
+ try? db.close()
+ exit(0)
 }
 
 signal(SIGINT) { _ in
-    try? db.close()
-    exit(0)
+ try? db.close()
+ exit(0)
 }
 ```
 
@@ -162,11 +162,11 @@ signal(SIGINT) { _ in
 ```swift
 // CORRECT: One database per server process
 class Server {
-    let db: BlazeDBClient
-    
-    init() throws {
-        self.db = try BlazeDB.openForDaemon(name: "server", password: "pass")
-    }
+ let db: BlazeDBClient
+
+ init() throws {
+ self.db = try BlazeDB.openForDaemon(name: "server", password: "pass")
+ }
 }
 ```
 
@@ -175,14 +175,14 @@ class Server {
 ```swift
 // Handle database errors explicitly
 do {
-    try db.insert(record)
+ try db.insert(record)
 } catch BlazeDBError.databaseLocked {
-    // Database is locked (shouldn't happen in single-process)
-    // Log and return error to client
-    throw Abort(.serviceUnavailable, reason: "Database temporarily unavailable")
+ // Database is locked (shouldn't happen in single-process)
+ // Log and return error to client
+ throw Abort(.serviceUnavailable, reason: "Database temporarily unavailable")
 } catch {
-    // Other errors
-    throw Abort(.internalServerError, reason: "Database error: \(error)")
+ // Other errors
+ throw Abort(.internalServerError, reason: "Database error: \(error)")
 }
 ```
 
@@ -191,19 +191,19 @@ do {
 ```swift
 // Periodic health checks
 func checkHealth() {
-    do {
-        let health = try db.health()
-        if health.status == .error {
-            // Alert monitoring system
-        }
-    } catch {
-        // Database error - alert
-    }
+ do {
+ let health = try db.health()
+ if health.status == .error {
+ // Alert monitoring system
+ }
+ } catch {
+ // Database error - alert
+ }
 }
 
 // Run health check every 60 seconds
 Timer.scheduledTimer(withTimeInterval: 60, repeats: true) { _ in
-    checkHealth()
+ checkHealth()
 }
 ```
 

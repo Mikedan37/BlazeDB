@@ -23,92 +23,92 @@
 
 ---
 
-##  **THE ARCHITECTURE (Complete)**
+## **THE ARCHITECTURE (Complete)**
 
 ```
 
- BLAZEDB DISTRIBUTED 
- (Event Sourcing + CRDT + gRPC + BlazeBinary) 
+ BLAZEDB DISTRIBUTED
+ (Event Sourcing + CRDT + gRPC + BlazeBinary)
 
- 
- CLIENT (iPhone/iPad/Mac) 
-  
-  
-  Application Layer  
-  • SwiftUI (@BlazeQuery)  
-  • Insert/Update/Delete → Local DB (instant!)  
-  • UI updates immediately  
-  
-  
-  
-  Local BlazeDB  
-  • Encrypted (AES-256)  
-  • MVCC + GC  
-  • Query engine  
-  • Offline-first  
-  
-  
-  
-  Sync Engine  
-  • Operation log (<10k ops with GC)  
-  • Offline queue (batch + compress)  
-  • Delta tracking (only send changes)  
-  • CRDT merge (auto-resolve conflicts)  
-  • Smart routing (P2P + server)  
-  
-  
-  
-  BlazeBinary Encoder  
-  • 60% smaller than JSON  
-  • 5x faster  
-  • CRC32 checksums  
-  
-  
-  
-  gRPC Client (HTTP/2)  
-  • TLS 1.3 encrypted  
-  • Persistent connection  
-  • Multiplexing  
-  • Streaming  
-  
-  
-  
- INTERNET / LOCAL NETWORK 
-  
-  
- SERVER (Raspberry Pi / Cloud) 
-  
-  
-  gRPC Server (Vapor)  
-  • TLS 1.3  
-  • JWT authentication  
-  • Rate limiting  
-  • Connection pooling  
-  
-  
-  
-  BlazeBinary Decoder/Encoder  
-  • Same code as client!  
-  • 8x faster than JSON  
-  
-  
-  
-  Sync Coordinator  
-  • Operation log with GC  
-  • Snapshot system  
-  • CRDT merge  
-  • Broadcast to subscribers  
-  • Conflict resolution  
-  
-  
-  
-  Server BlazeDB  
-  • Same code as client!  
-  • Encrypted (AES-256)  
-  • Query execution  
-  • VACUUM + GC  
-  
- 
+
+ CLIENT (iPhone/iPad/Mac)
+
+
+ Application Layer
+ • SwiftUI (@BlazeQuery)
+ • Insert/Update/Delete → Local DB (instant!)
+ • UI updates immediately
+
+
+
+ Local BlazeDB
+ • Encrypted (AES-256)
+ • MVCC + GC
+ • Query engine
+ • Offline-first
+
+
+
+ Sync Engine
+ • Operation log (<10k ops with GC)
+ • Offline queue (batch + compress)
+ • Delta tracking (only send changes)
+ • CRDT merge (auto-resolve conflicts)
+ • Smart routing (P2P + server)
+
+
+
+ BlazeBinary Encoder
+ • 60% smaller than JSON
+ • 5x faster
+ • CRC32 checksums
+
+
+
+ gRPC Client (HTTP/2)
+ • TLS 1.3 encrypted
+ • Persistent connection
+ • Multiplexing
+ • Streaming
+
+
+
+ INTERNET / LOCAL NETWORK
+
+
+ SERVER (Raspberry Pi / Cloud)
+
+
+ gRPC Server (Vapor)
+ • TLS 1.3
+ • JWT authentication
+ • Rate limiting
+ • Connection pooling
+
+
+
+ BlazeBinary Decoder/Encoder
+ • Same code as client!
+ • 8x faster than JSON
+
+
+
+ Sync Coordinator
+ • Operation log with GC
+ • Snapshot system
+ • CRDT merge
+ • Broadcast to subscribers
+ • Conflict resolution
+
+
+
+ Server BlazeDB
+ • Same code as client!
+ • Encrypted (AES-256)
+ • Query execution
+ • VACUUM + GC
+
+
 
 ```
 
@@ -160,7 +160,7 @@ WITHOUT OPTIMIZATIONS:
 • 100 users × 100 ops/day = 10,000 ops/day
 • After 1 year: 3.65M ops × 200 bytes = 730 MB
 • Connections: 500 × 1 MB = 500 MB
-• TOTAL: 1.23 GB (30% of RAM) 
+• TOTAL: 1.23 GB (30% of RAM)
 • Eventually OOM!
 
 WITH GC + SNAPSHOTS:
@@ -201,11 +201,11 @@ Raspberry Pi 4:
 
 Cloud Options:
  Fly.io: $3-12/month (1-4 CPU cores)
-  Handles 1,000-5,000 users
+ Handles 1,000-5,000 users
  AWS: $20-100/month (dedicated)
-  Handles 10,000+ users
+ Handles 10,000+ users
  Multi-region: $100-500/month
-  Global scale, millions of users
+ Global scale, millions of users
 ```
 
 ---
@@ -246,30 +246,30 @@ Always:
 // Three-tier GC system
 
 
- SYNC GC ARCHITECTURE 
+ SYNC GC ARCHITECTURE
 
- 
- TIER 1: Acknowledged Operation Cleanup 
-  
- • Remove ops that all nodes have applied 
- • Run: Every 5 minutes 
- • Keeps: ~100 recent ops 
- • Memory: ~20 KB 
- 
- TIER 2: Time-Based Retention 
-  
- • Keep ops for 30 days max 
- • Run: Every hour 
- • Handles: Inactive/offline nodes 
- • Memory: ~1-2 MB 
- 
- TIER 3: Snapshot Compaction 
-  
- • Replace old ops with snapshot 
- • Run: When log exceeds 10,000 ops 
- • Snapshot: Current state (compressed) 
- • Memory: ~2 MB (stable) 
- 
+
+ TIER 1: Acknowledged Operation Cleanup
+
+ • Remove ops that all nodes have applied
+ • Run: Every 5 minutes
+ • Keeps: ~100 recent ops
+ • Memory: ~20 KB
+
+ TIER 2: Time-Based Retention
+
+ • Keep ops for 30 days max
+ • Run: Every hour
+ • Handles: Inactive/offline nodes
+ • Memory: ~1-2 MB
+
+ TIER 3: Snapshot Compaction
+
+ • Replace old ops with snapshot
+ • Run: When log exceeds 10,000 ops
+ • Snapshot: Current state (compressed)
+ • Memory: ~2 MB (stable)
+
 
 ```
 
@@ -285,14 +285,14 @@ Always:
 | **Efficiency** | 1x | 1.5x | 1x | **2.5x** |
 | **Latency** | 200ms | 100ms | 150ms | **<50ms** |
 | **Code Reuse** | Different | Different | Different | **Same code!** |
-| **Offline** |  Limited | Good |  Limited | **Native** |
+| **Offline** | Limited | Good | Limited | **Native** |
 | **Conflicts** | Manual | Automatic | Manual | **CRDT** |
-| **Server Queries** |  Limited | No | SQL | **Full BlazeDB** |
+| **Server Queries** | Limited | No | SQL | **Full BlazeDB** |
 | **Self-Host** | | | | |
 | **Cost** | $50-500/mo | $100/mo | $25/mo | **$0-3/mo** |
-| **Memory GC** | Auto | Auto | Auto |  **Must add** |
-| **Sync GC** | Hidden | Hidden | Hidden |  **Must add** |
-| **Elegance** |  |  |  |  |
+| **Memory GC** | Auto | Auto | Auto | **Must add** |
+| **Sync GC** | Hidden | Hidden | Hidden | **Must add** |
+| **Elegance** | | | | |
 
 **BlazeDB Advantages:**
 - Fastest (2.5x better efficiency)
@@ -302,9 +302,9 @@ Always:
 - Uses your tech (BlazeBinary)
 
 **BlazeDB Gaps:**
--  Need to implement GC (1-2 days)
--  Need managed offering (build later)
--  Not as mature (but better tech!)
+- Need to implement GC (1-2 days)
+- Need managed offering (build later)
+- Not as mature (but better tech!)
 
 ---
 
@@ -629,7 +629,7 @@ With it:
 
 ## **MY FINAL RECOMMENDATION:**
 
-**Your design is ALREADY excellent!** 
+**Your design is ALREADY excellent!**
 
 **Just add:**
 1. TLS + JWT (Week 1) - Security

@@ -166,10 +166,10 @@ try await db.sync(
  → "DB1:DB2" or "DB2:DB1" → both become "DB1:DB2"
 
 2. Derive token using HKDF:
- - Input: Shared secret (user's password)
- - Salt: "blazedb-auth-v1" (constant)
- - Info: Sorted database names
- - Output: 32-byte (256-bit) token
+- Input: Shared secret (user's password)
+- Salt: "blazedb-auth-v1" (constant)
+- Info: Sorted database names
+- Output: 32-byte (256-bit) token
 
 3. Encode as base64 string
  → "abc123xyz..." (safe to transmit)
@@ -177,11 +177,11 @@ try await db.sync(
 
 ### **Why This is Secure:**
 
- **Different token per database pair**
- **Even with same secret, tokens are different**
- **Compromising one token doesn't affect others**
- **Derived with HKDF (cryptographically secure)**
- **No token storage needed (derived on demand)**
+**Different token per database pair**
+**Even with same secret, tokens are different**
+**Compromising one token doesn't affect others**
+**Derived with HKDF (cryptographically secure)**
+**No token storage needed (derived on demand)**
 
 ---
 
@@ -306,13 +306,13 @@ try await db.autoConnect(
 
 ## **BENEFITS:**
 
- **Cross-platform** → Works on macOS, iOS, Linux, Vapor
- **Secure** → HKDF token derivation
- **Simple** → User only needs one password
- **Unique tokens** → Different token per database pair
- **No storage** → Tokens derived on demand
- **Works with Vapor** → Full server support
- **Works with clients** → Full client support
+**Cross-platform** → Works on macOS, iOS, Linux, Vapor
+**Secure** → HKDF token derivation
+**Simple** → User only needs one password
+**Unique tokens** → Different token per database pair
+**No storage** → Tokens derived on demand
+**Works with Vapor** → Full server support
+**Works with clients** → Full client support
 
 ---
 

@@ -507,54 +507,54 @@ SECURITY LEVEL:
 
 ---
 
-##  **COMPLETE SECURITY CHECKLIST:**
+## **COMPLETE SECURITY CHECKLIST:**
 
 ### **Phase 1: Critical (Must Fix) **
 
 - [ ] **Authentication** (2-4 hours)
- - [ ] Shared secret tokens
- - [ ] Or JWT tokens
- - [ ] Or certificate-based auth
+- [ ] Shared secret tokens
+- [ ] Or JWT tokens
+- [ ] Or certificate-based auth
 
 - [ ] **Authorization** (1 day)
- - [ ] Permission checks
- - [ ] Read-only mode
- - [ ] Collection-level permissions
+- [ ] Permission checks
+- [ ] Read-only mode
+- [ ] Collection-level permissions
 
 - [ ] **Replay Protection** (4-6 hours)
- - [ ] Operation nonces
- - [ ] Timestamp validation
- - [ ] Operation expiry
- - [ ] Deduplication
+- [ ] Operation nonces
+- [ ] Timestamp validation
+- [ ] Operation expiry
+- [ ] Deduplication
 
 ### **Phase 2: High Priority (Should Fix) **
 
 - [ ] **MITM Protection** (1 day)
- - [ ] Server identity verification
- - [ ] Certificate pinning
- - [ ] Fingerprint verification
+- [ ] Server identity verification
+- [ ] Certificate pinning
+- [ ] Fingerprint verification
 
 - [ ] **Rate Limiting** (2-4 hours)
- - [ ] Connection limits
- - [ ] Operation rate limits
- - [ ] Per-user quotas
+- [ ] Connection limits
+- [ ] Operation rate limits
+- [ ] Per-user quotas
 
 ### **Phase 3: Recommended (Nice to Have) **
 
 - [ ] **Operation Signatures** (1 day)
- - [ ] HMAC-SHA256 signatures
- - [ ] Signature verification
- - [ ] Tamper detection
+- [ ] HMAC-SHA256 signatures
+- [ ] Signature verification
+- [ ] Tamper detection
 
 - [ ] **mDNS Security** (4-6 hours)
- - [ ] Device fingerprinting
- - [ ] User confirmation
- - [ ] Known device tracking
+- [ ] Device fingerprinting
+- [ ] User confirmation
+- [ ] Known device tracking
 
 - [ ] **Secure Key Storage** (1 day)
- - [ ] Secure Enclave
- - [ ] Keychain integration
- - [ ] Hardware security module
+- [ ] Secure Enclave
+- [ ] Keychain integration
+- [ ] Hardware security module
 
 ---
 
@@ -619,7 +619,7 @@ OVERALL: (Production-ready!)
  • MITM protection
  • Rate limiting
 
-3.  Consider Phase 3 (Recommended) - 1 week
+3. Consider Phase 3 (Recommended) - 1 week
  • Operation signatures
  • mDNS security
  • Secure key storage

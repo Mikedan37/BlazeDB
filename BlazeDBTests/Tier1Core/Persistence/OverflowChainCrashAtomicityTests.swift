@@ -13,7 +13,7 @@ import Crypto
 #endif
 
 final class OverflowChainCrashAtomicityTests: XCTestCase {
-    private var tempURL: URL!
+    private var tempURL: URL?
 
     override func setUpWithError() throws {
         tempURL = FileManager.default.temporaryDirectory
@@ -22,15 +22,21 @@ final class OverflowChainCrashAtomicityTests: XCTestCase {
     }
 
     override func tearDownWithError() throws {
+        guard let base = tempURL else {
+            try super.tearDownWithError()
+            return
+        }
         let exts = ["", "meta", "wal", "backup", "txn_log.json"]
         for ext in exts {
-            let target = ext.isEmpty ? tempURL! : tempURL!.deletingPathExtension().appendingPathExtension(ext)
+            let target = ext.isEmpty ? base : base.deletingPathExtension().appendingPathExtension(ext)
             try? FileManager.default.removeItem(at: target)
         }
+        tempURL = nil
+        try super.tearDownWithError()
     }
 
     func testPhase1_DeterministicMultiPageOverflowWrite() throws {
-        let store = try PageStore(fileURL: tempURL, key: SymmetricKey(size: .bits256))
+        let store = try PageStore(fileURL: try requireFixture(tempURL), key: SymmetricKey(size: .bits256))
         let originalData = deterministicData(size: 20_000, seed: 0x5A)
         var nextPage = 1
 
@@ -66,7 +72,7 @@ final class OverflowChainCrashAtomicityTests: XCTestCase {
     }
 
     func testPhase4_RetryPolicyHardening_ThrowsOnTruncatedChain() throws {
-        let store = try PageStore(fileURL: tempURL, key: SymmetricKey(size: .bits256))
+        let store = try PageStore(fileURL: try requireFixture(tempURL), key: SymmetricKey(size: .bits256))
         let originalData = deterministicData(size: 20_000, seed: 0x44)
         var nextPage = 1
         let indices = try store.writePageWithOverflow(index: 0, plaintext: originalData) {
@@ -88,10 +94,10 @@ final class OverflowChainCrashAtomicityTests: XCTestCase {
     }
 
     func testPhase5_SingleWriterLockEnforcement() throws {
-        let first = try PageStore(fileURL: tempURL, key: SymmetricKey(size: .bits256))
+        let first = try PageStore(fileURL: try requireFixture(tempURL), key: SymmetricKey(size: .bits256))
         XCTAssertNotNil(first)
 
-        XCTAssertThrowsError(try PageStore(fileURL: tempURL, key: SymmetricKey(size: .bits256))) { error in
+        XCTAssertThrowsError(try PageStore(fileURL: try requireFixture(tempURL), key: SymmetricKey(size: .bits256))) { error in
             if case BlazeDBError.concurrentProcessAccessNotSupported = error {
                 return
             }
@@ -103,7 +109,7 @@ final class OverflowChainCrashAtomicityTests: XCTestCase {
     }
 
     func testPhase6_OrphanOverflowDetection() throws {
-        let store = try PageStore(fileURL: tempURL, key: SymmetricKey(size: .bits256))
+        let store = try PageStore(fileURL: try requireFixture(tempURL), key: SymmetricKey(size: .bits256))
         let originalData = deterministicData(size: 20_000, seed: 0x33)
         var nextPage = 1
         _ = try store.writePageWithOverflow(index: 0, plaintext: originalData) {
@@ -147,7 +153,7 @@ final class OverflowChainCrashAtomicityTests: XCTestCase {
     }
 
     private func runCrashScenario(hook: String) throws -> (status: String, elapsed: TimeInterval) {
-        try? FileManager.default.removeItem(at: tempURL)
+        try? FileManager.default.removeItem(at: try requireFixture(tempURL))
 
         let process = Process()
         process.executableURL = URL(fileURLWithPath: ProcessInfo.processInfo.arguments[0])
@@ -155,7 +161,7 @@ final class OverflowChainCrashAtomicityTests: XCTestCase {
 
         var env = ProcessInfo.processInfo.environment
         env["BLAZEDB_OVERFLOW_CHILD"] = "1"
-        env["BLAZEDB_OVERFLOW_DB_PATH"] = tempURL.path
+        env["BLAZEDB_OVERFLOW_DB_PATH"] = try requireFixture(tempURL).path
         env["BLAZEDB_OVERFLOW_CRASH_HOOK"] = hook
         env["BLAZEDB_OVERFLOW_CRASH_EXIT_CODE"] = "86"
         process.environment = env
@@ -163,7 +169,7 @@ final class OverflowChainCrashAtomicityTests: XCTestCase {
         try process.run()
         process.waitUntilExit()
 
-        let store = try PageStore(fileURL: tempURL, key: SymmetricKey(size: .bits256))
+        let store = try PageStore(fileURL: try requireFixture(tempURL), key: SymmetricKey(size: .bits256))
 
         let expectedData: Data = hook == "afterWALAppendBeforeCommitMark"
             ? deterministicData(size: 512, seed: 0x19)

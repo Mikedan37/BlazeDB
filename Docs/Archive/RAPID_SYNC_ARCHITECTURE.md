@@ -22,9 +22,9 @@ Result: INSTANT sync between apps!
 ### **2. Hub-and-Spoke (Multiple DBs → Single Server):**
 
 ```
-iPhone DB 
+iPhone DB
 iPad DB → Server DB (Hub)
-Mac DB 
+Mac DB
  ↓
  Broadcast to all
  ↓
@@ -58,33 +58,33 @@ Result: Near-instant updates everywhere!
 
 ```
 
- TIER 1: SAME DEVICE (Fastest) 
-  
- • iPhone App ↔ Mac App 
- • Transport: Unix Domain Sockets 
- • Throughput: 50,000,000+ ops/sec 
- • Latency: <1ms 
- • Use: Cross-app sync, P2P same device 
+ TIER 1: SAME DEVICE (Fastest)
+
+ • iPhone App ↔ Mac App
+ • Transport: Unix Domain Sockets
+ • Throughput: 50,000,000+ ops/sec
+ • Latency: <1ms
+ • Use: Cross-app sync, P2P same device
 
  ↓
 
- TIER 2: LOCAL NETWORK (Very Fast) 
-  
- • iPhone ↔ Mac (different devices) 
- • Transport: Raw TCP (local WiFi) 
- • Throughput: 7,800,000 ops/sec 
- • Latency: 5ms 
- • Use: P2P local network 
+ TIER 2: LOCAL NETWORK (Very Fast)
+
+ • iPhone ↔ Mac (different devices)
+ • Transport: Raw TCP (local WiFi)
+ • Throughput: 7,800,000 ops/sec
+ • Latency: 5ms
+ • Use: P2P local network
 
  ↓
 
- TIER 3: INTERNET (Fast) 
-  
- • Device ↔ Server (hub) 
- • Transport: Raw TCP (internet) 
- • Throughput: 1,500,000 ops/sec 
- • Latency: 50-100ms 
- • Use: Hub-and-spoke, remote sync 
+ TIER 3: INTERNET (Fast)
+
+ • Device ↔ Server (hub)
+ • Transport: Raw TCP (internet)
+ • Throughput: 1,500,000 ops/sec
+ • Latency: 50-100ms
+ • Use: Hub-and-spoke, remote sync
 
 ```
 

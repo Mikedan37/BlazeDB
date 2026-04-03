@@ -5,18 +5,18 @@
 1. Updated Package.swift to use `path: "Tests/BlazeDBTests"`
 2. Created Tests/BlazeDBTests/ directory structure
 3. Moved critical Codec test files:
- - CodecValidation.swift
- - BlazeBinaryCompatibilityTests.swift
- - BlazeBinaryFuzzTests.swift
- - BlazeBinaryCorruptionRecoveryTests.swift
- - BlazeBinaryFieldViewTests.swift
- - BlazeBinaryLargeRecordTests.swift
- - BlazeBinaryMMapTests.swift
- - BlazeBinaryPointerIntegrityTests.swift
- - BlazeBinaryEncoderTests.swift
- - BlazeBinaryEdgeCaseTests.swift
+- CodecValidation.swift
+- BlazeBinaryCompatibilityTests.swift
+- BlazeBinaryFuzzTests.swift
+- BlazeBinaryCorruptionRecoveryTests.swift
+- BlazeBinaryFieldViewTests.swift
+- BlazeBinaryLargeRecordTests.swift
+- BlazeBinaryMMapTests.swift
+- BlazeBinaryPointerIntegrityTests.swift
+- BlazeBinaryEncoderTests.swift
+- BlazeBinaryEdgeCaseTests.swift
 
-##  Remaining Work
+## Remaining Work
 
 Due to the large number of files (100+), you need to:
 

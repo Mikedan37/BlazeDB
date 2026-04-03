@@ -54,219 +54,219 @@
 ```
 BlazeDBTests/
  Core/ # Core database engine
-  DynamicCollectionTests.swift
-  BlazeDBClientTests.swift
-  BlazeDBInitializationTests.swift
-  BlazeDBManagerTests.swift
-  Storage/
-  PageStoreTests.swift
-  PageStoreEdgeCaseTests.swift
-  StorageLayoutTests.swift
-  StorageManagerEdgeCaseTests.swift
-  StorageStatsTests.swift
+ DynamicCollectionTests.swift
+ BlazeDBClientTests.swift
+ BlazeDBInitializationTests.swift
+ BlazeDBManagerTests.swift
+ Storage/
+ PageStoreTests.swift
+ PageStoreEdgeCaseTests.swift
+ StorageLayoutTests.swift
+ StorageManagerEdgeCaseTests.swift
+ StorageStatsTests.swift
 
  MVCC/ # Multi-Version Concurrency Control
-  MVCCFoundationTests.swift
-  MVCCAdvancedTests.swift
-  MVCCIntegrationTests.swift
-  MVCCPerformanceTests.swift
-  MVCCRegressionTests.swift
+ MVCCFoundationTests.swift
+ MVCCAdvancedTests.swift
+ MVCCIntegrationTests.swift
+ MVCCPerformanceTests.swift
+ MVCCRegressionTests.swift
 
  Query/ # Query engine
-  QueryBuilderTests.swift
-  QueryBuilderEdgeCaseTests.swift
-  QueryPlannerTests.swift
-  QueryOptimizationTests.swift
-  QueryProfilingTests.swift
-  QueryCacheTests.swift
-  QueryExplainTests.swift
-  QueryResultConversionTests.swift
-  BlazeQueryTests.swift
-  GraphQueryTests.swift
+ QueryBuilderTests.swift
+ QueryBuilderEdgeCaseTests.swift
+ QueryPlannerTests.swift
+ QueryOptimizationTests.swift
+ QueryProfilingTests.swift
+ QueryCacheTests.swift
+ QueryExplainTests.swift
+ QueryResultConversionTests.swift
+ BlazeQueryTests.swift
+ GraphQueryTests.swift
 
  Indexes/ # All index types
-  IndexConsistencyTests.swift (existing)
-  SecondaryIndexTests.swift
-  FullTextSearchTests.swift
-  OptimizedSearchTests.swift
-  SearchIndexMaintenanceTests.swift
-  SearchPerformanceBenchmarks.swift
-  SpatialIndexTests.swift
-  VectorIndexIntegrationTests.swift
-  VectorSpatialQueriesTests.swift
-  OrderingIndexTests.swift
-  OrderingIndexAdvancedTests.swift
-  BlazeIndexStressTests.swift
-  DataTypeCompoundIndexTests.swift
+ IndexConsistencyTests.swift (existing)
+ SecondaryIndexTests.swift
+ FullTextSearchTests.swift
+ OptimizedSearchTests.swift
+ SearchIndexMaintenanceTests.swift
+ SearchPerformanceBenchmarks.swift
+ SpatialIndexTests.swift
+ VectorIndexIntegrationTests.swift
+ VectorSpatialQueriesTests.swift
+ OrderingIndexTests.swift
+ OrderingIndexAdvancedTests.swift
+ BlazeIndexStressTests.swift
+ DataTypeCompoundIndexTests.swift
 
  Transactions/ # Transaction system
-  BlazeTransactionTests.swift
-  TransactionDurabilityTests.swift
-  TransactionEdgeCaseTests.swift
-  TransactionRecoveryTests.swift
+ BlazeTransactionTests.swift
+ TransactionDurabilityTests.swift
+ TransactionEdgeCaseTests.swift
+ TransactionRecoveryTests.swift
 
  Security/ # Security features
-  EncryptionSecurityTests.swift
-  EncryptionSecurityFullTests.swift
-  EncryptionRoundTripTests.swift
-  EncryptionRoundTripVerificationTests.swift
-  RLSAccessManagerTests.swift
-  RLSSecurityContextTests.swift
-  RLSPolicyEngineTests.swift
-  RLSGraphQueryTests.swift
-  SecurityAuditTests.swift
-  SecureConnectionTests.swift
-  KeyManagerTests.swift
+ EncryptionSecurityTests.swift
+ EncryptionSecurityFullTests.swift
+ EncryptionRoundTripTests.swift
+ EncryptionRoundTripVerificationTests.swift
+ RLSAccessManagerTests.swift
+ RLSSecurityContextTests.swift
+ RLSPolicyEngineTests.swift
+ RLSGraphQueryTests.swift
+ SecurityAuditTests.swift
+ SecureConnectionTests.swift
+ KeyManagerTests.swift
 
  Sync/ # Distributed sync
-  DistributedSyncTests.swift
-  DistributedSecurityTests.swift
-  DistributedGCTests.swift
-  DistributedGCPerformanceTests.swift
-  SyncIntegrationTests.swift
-  SyncEndToEndTests.swift
-  CrossAppSyncTests.swift
-  InMemoryRelayTests.swift
-  UnixDomainSocketTests.swift
-  TopologyTests.swift
+ DistributedSyncTests.swift
+ DistributedSecurityTests.swift
+ DistributedGCTests.swift
+ DistributedGCPerformanceTests.swift
+ SyncIntegrationTests.swift
+ SyncEndToEndTests.swift
+ CrossAppSyncTests.swift
+ InMemoryRelayTests.swift
+ UnixDomainSocketTests.swift
+ TopologyTests.swift
 
  GarbageCollection/ # GC system
-  GarbageCollectionEdgeTests.swift
-  CompleteGCValidationTests.swift
-  PageGCTests.swift
-  PageReuseGCTests.swift
-  GCControlAPITests.swift
-  VacuumOperationsTests.swift
+ GarbageCollectionEdgeTests.swift
+ CompleteGCValidationTests.swift
+ PageGCTests.swift
+ PageReuseGCTests.swift
+ GCControlAPITests.swift
+ VacuumOperationsTests.swift
 
  Persistence/ # Persistence & recovery
-  BlazeDBPersistenceTests.swift
-  BlazeDBPersistAPITests.swift
-  PersistenceIntegrityTests.swift
-  BlazeDBRecoveryTests.swift
-  BlazeCorruptionRecoveryTests.swift
-  FileIntegrityTests.swift
-  MetadataFlushEdgeCaseTests.swift
+ BlazeDBPersistenceTests.swift
+ BlazeDBPersistAPITests.swift
+ PersistenceIntegrityTests.swift
+ BlazeDBRecoveryTests.swift
+ BlazeCorruptionRecoveryTests.swift
+ FileIntegrityTests.swift
+ MetadataFlushEdgeCaseTests.swift
 
  Migration/ # Migration system
-  MigrationTests.swift
-  AutoMigrationVerificationTests.swift
-  BlazeDBMigrationTests.swift
-  BlazeEncoderMigrationTests.swift
-  MigrationProgressMonitorTests.swift
+ MigrationTests.swift
+ AutoMigrationVerificationTests.swift
+ BlazeDBMigrationTests.swift
+ BlazeEncoderMigrationTests.swift
+ MigrationProgressMonitorTests.swift
 
  SQL/ # SQL features
-  SQLFeaturesTests.swift
-  CompleteSQLFeaturesTests.swift
-  CompleteSQLFeaturesOptimizedTests.swift
-  BlazeJoinTests.swift
-  ConcurrentJoinTests.swift
-  SubqueryTests.swift
-  ForeignKeyTests.swift
+ SQLFeaturesTests.swift
+ CompleteSQLFeaturesTests.swift
+ CompleteSQLFeaturesOptimizedTests.swift
+ BlazeJoinTests.swift
+ ConcurrentJoinTests.swift
+ SubqueryTests.swift
+ ForeignKeyTests.swift
 
  Aggregation/ # Aggregation features
-  AggregationTests.swift
-  DistinctEdgeCaseTests.swift
+ AggregationTests.swift
+ DistinctEdgeCaseTests.swift
 
  DataTypes/ # Data type handling
-  DataTypeQueryTests.swift
-  ArrayDictionaryEdgeTests.swift
-  BlazeDocumentValidationTests.swift
-  TypeSafetyTests.swift
+ DataTypeQueryTests.swift
+ ArrayDictionaryEdgeTests.swift
+ BlazeDocumentValidationTests.swift
+ TypeSafetyTests.swift
 
  Encoding/ # BlazeBinary encoding
-  BlazeBinaryEncoderTests.swift
-  BlazeBinaryEdgeCaseTests.swift
-  BlazeBinaryDirectVerificationTests.swift
-  BlazeBinaryExhaustiveVerificationTests.swift
-  BlazeBinaryPerformanceTests.swift
-  BlazeBinaryReliabilityTests.swift
-  BlazeBinaryUltimateBulletproofTests.swift
+ BlazeBinaryEncoderTests.swift
+ BlazeBinaryEdgeCaseTests.swift
+ BlazeBinaryDirectVerificationTests.swift
+ BlazeBinaryExhaustiveVerificationTests.swift
+ BlazeBinaryPerformanceTests.swift
+ BlazeBinaryReliabilityTests.swift
+ BlazeBinaryUltimateBulletproofTests.swift
 
  Overflow/ # Overflow page system
-  OverflowPageTests.swift
-  OverflowPageDestructiveTests.swift
+ OverflowPageTests.swift
+ OverflowPageDestructiveTests.swift
 
  Features/ # Feature-specific tests
-  EventTriggersTests.swift
-  ComputedFieldsTests.swift
-  LazyDecodingTests.swift
-  ChangeObservationTests.swift
-  BlazePaginationTests.swift
-  UpsertEdgeCaseTests.swift
-  UpdateFieldsEdgeCaseTests.swift
-  KeyPathQueryTests.swift
-  GeospatialEnhancementTests.swift
-  ComprehensiveFeatureTests.swift
+ EventTriggersTests.swift
+ ComputedFieldsTests.swift
+ LazyDecodingTests.swift
+ ChangeObservationTests.swift
+ BlazePaginationTests.swift
+ UpsertEdgeCaseTests.swift
+ UpdateFieldsEdgeCaseTests.swift
+ KeyPathQueryTests.swift
+ GeospatialEnhancementTests.swift
+ ComprehensiveFeatureTests.swift
 
  Performance/ # Performance tests
-  PerformanceBenchmarks.swift (existing)
-  BaselinePerformanceTests.swift
-  PerformanceProfilingTests.swift
-  PerformanceInvariantTests.swift
-  PerformanceOptimizationTests.swift
-  BlazeDBPerformanceTests.swift
-  ComprehensiveBenchmarks.swift
+ PerformanceBenchmarks.swift (existing)
+ BaselinePerformanceTests.swift
+ PerformanceProfilingTests.swift
+ PerformanceInvariantTests.swift
+ PerformanceOptimizationTests.swift
+ BlazeDBPerformanceTests.swift
+ ComprehensiveBenchmarks.swift
 
  Concurrency/ # Concurrency tests
-  ConcurrencyStressTests.swift (existing)
-  BlazeDBConcurrencyTests.swift
-  BlazeDBEnhancedConcurrencyTests.swift
-  AsyncAwaitTests.swift
-  AsyncAwaitEdgeCaseTests.swift
-  BlazeDBAsyncTests.swift
-  TypeSafeAsyncEdgeCaseTests.swift
-  BatchOperationTests.swift
+ ConcurrencyStressTests.swift (existing)
+ BlazeDBConcurrencyTests.swift
+ BlazeDBEnhancedConcurrencyTests.swift
+ AsyncAwaitTests.swift
+ AsyncAwaitEdgeCaseTests.swift
+ BlazeDBAsyncTests.swift
+ TypeSafeAsyncEdgeCaseTests.swift
+ BatchOperationTests.swift
 
  EdgeCases/ # Edge case tests
-  EdgeCaseTests.swift
-  ExtremeEdgeCaseTests.swift
-  TypeSafetyEdgeCaseTests.swift
-  QueryBuilderEdgeCaseTests.swift
+ EdgeCaseTests.swift
+ ExtremeEdgeCaseTests.swift
+ TypeSafetyEdgeCaseTests.swift
+ QueryBuilderEdgeCaseTests.swift
 
  Stress/ # Stress tests
-  StressTests.swift
-  BlazeDBStressTests.swift
-  BlazeDBCrashSimTests.swift
+ StressTests.swift
+ BlazeDBStressTests.swift
+ BlazeDBCrashSimTests.swift
 
  Chaos/ # Chaos testing
-  ChaosEngineTests.swift (existing)
+ ChaosEngineTests.swift (existing)
 
  Recovery/ # Recovery tests
-  ReplayTests.swift (existing)
+ ReplayTests.swift (existing)
 
  ModelBased/ # Model-based tests
-  StateModelTests.swift (existing)
+ StateModelTests.swift (existing)
 
  PropertyBased/ # Property-based tests
-  PropertyBasedTests.swift
-  FuzzTests.swift
+ PropertyBasedTests.swift
+ FuzzTests.swift
 
  Integration/ # Integration tests
-  ComprehensiveFeatureTests.swift
-  FeatureVerificationTests.swift
-  Final100PercentCoverageTests.swift
-  BlazeDBTodaysFeaturesTests.swift
-  CodableIntegrationTests.swift
-  ConvenienceAPITests.swift
+ ComprehensiveFeatureTests.swift
+ FeatureVerificationTests.swift
+ Final100PercentCoverageTests.swift
+ BlazeDBTodaysFeaturesTests.swift
+ CodableIntegrationTests.swift
+ ConvenienceAPITests.swift
 
  Utilities/ # Utility components
-  BlazeLoggerTests.swift
-  LoggerExtremeEdgeCaseTests.swift
-  TelemetryUnitTests.swift
-  MCPServerTests.swift
-  DXImprovementsTests.swift
+ BlazeLoggerTests.swift
+ LoggerExtremeEdgeCaseTests.swift
+ TelemetryUnitTests.swift
+ MCPServerTests.swift
+ DXImprovementsTests.swift
 
  Backup/ # Backup & restore
-  BlazeDBBackupTests.swift
+ BlazeDBBackupTests.swift
 
  Testing/ # Test infrastructure
-  TestCleanupTests.swift
-  TestHelpers.swift
-  TestCleanupHelpers.swift
+ TestCleanupTests.swift
+ TestHelpers.swift
+ TestCleanupHelpers.swift
 
  Helpers/ # Shared test helpers
-  TestHelpers.swift
-  TestCleanupHelpers.swift
+ TestHelpers.swift
+ TestCleanupHelpers.swift
 ```
 
 ---
@@ -294,7 +294,7 @@ BlazeDBTests/
 
 ---
 
-##  Considerations
+## Considerations
 
 ### Pros:
 - Much better organization
@@ -304,9 +304,9 @@ BlazeDBTests/
 - Easier to maintain
 
 ### Cons:
--  One-time migration effort (~1-2 hours)
--  Need to update any scripts that reference test files
--  Git history preserved (files moved, not deleted)
+- One-time migration effort (~1-2 hours)
+- Need to update any scripts that reference test files
+- Git history preserved (files moved, not deleted)
 
 ### Migration Safety:
 - Git tracks file moves (no history loss)

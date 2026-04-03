@@ -14,16 +14,19 @@ import XCTest
 
 final class PresetTests: XCTestCase {
     
-    var tempDir: URL!
+    private var tempDir: URL?
     
-    override func setUp() {
-        super.setUp()
-        tempDir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
-        try? FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
+    override func setUpWithError() throws {
+        try super.setUpWithError()
+        let dir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        tempDir = dir
+        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
     }
     
     override func tearDown() {
-        try? FileManager.default.removeItem(at: tempDir)
+        if let dir = tempDir {
+            try? FileManager.default.removeItem(at: dir)
+        }
         super.tearDown()
     }
 
@@ -75,8 +78,8 @@ final class PresetTests: XCTestCase {
     func testOpenForTesting_UsesTemporaryDirectory() throws {
         let db = try BlazeDBClient.openForTesting(name: uniqueName("testdb"), password: "TestPassword-123!")
         defer { try? db.close() }
-        let tempDir = FileManager.default.temporaryDirectory
-        XCTAssertTrue(db.fileURL.path.contains(tempDir.path))
+        let systemTemp = FileManager.default.temporaryDirectory
+        XCTAssertTrue(db.fileURL.path.contains(systemTemp.path))
     }
     
     func testOpenForTesting_DefaultName() throws {

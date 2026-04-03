@@ -65,31 +65,14 @@ extension QueryBuilder {
             totalCost += filterCost
         }
         
-        // Step 2: Analyze indexes
-        let indexUsed: String? = nil
+        // Step 2: Analyze indexes (legacy explainDetailed does not resolve real index names yet)
         if collection != nil {
-            // Check if any filter uses an indexed field
-            for _ in filters {
-                // Simplified: check if filter might use index
-                // In real implementation, would check actual index usage
-            }
-            
-            if indexUsed != nil {
-                steps.append(QueryExecutionPlan.ExecutionStep(
-                    operation: "Index Scan",
-                    details: "Using index: \(indexUsed!)",
-                    cost: 0.5,
-                    indexUsed: indexUsed
-                ))
-                totalCost += 0.5
-            } else {
-                steps.append(QueryExecutionPlan.ExecutionStep(
-                    operation: "Full Table Scan",
-                    details: "Scanning all records",
-                    cost: 10.0
-                ))
-                totalCost += 10.0
-            }
+            steps.append(QueryExecutionPlan.ExecutionStep(
+                operation: "Full Table Scan",
+                details: "Scanning all records (index selection not implemented in legacy explainDetailed)",
+                cost: 10.0
+            ))
+            totalCost += 10.0
         }
         
         // Step 3: Analyze joins

@@ -173,29 +173,29 @@ Total overhead: ~210 bytes per message
 // Skip gRPC, use BlazeBinary directly!
 
 
- BLAZEBINARY NATIVE PROTOCOL 
+ BLAZEBINARY NATIVE PROTOCOL
 
- 
- Frame Format: 
-  
-  Magic: "BLAZE" (5 bytes)  
-  Version: 0x01 (1 byte)  
-  MessageType: enum (1 byte)  
-  • 0x01: Handshake  
-  • 0x02: Operation  
-  • 0x03: Query  
-  • 0x04: Response  
-  • 0x05: Subscribe  
-  • 0x06: Telemetry  
-  Length: UInt32 (4 bytes)  
-  
-  Payload: BlazeBinary encoded data  
-  
-  CRC32: checksum (4 bytes)  
-  
- 
- Total overhead: 15 bytes (vs 210 for gRPC!) 
- 
+
+ Frame Format:
+
+ Magic: "BLAZE" (5 bytes)
+ Version: 0x01 (1 byte)
+ MessageType: enum (1 byte)
+ • 0x01: Handshake
+ • 0x02: Operation
+ • 0x03: Query
+ • 0x04: Response
+ • 0x05: Subscribe
+ • 0x06: Telemetry
+ Length: UInt32 (4 bytes)
+
+ Payload: BlazeBinary encoded data
+
+ CRC32: checksum (4 bytes)
+
+
+ Total overhead: 15 bytes (vs 210 for gRPC!)
+
 
 
 BENEFITS:
@@ -211,8 +211,8 @@ DRAWBACKS:
  gRPC gives you a lot for free (compression, flow control, etc)
 
 VERDICT:
-• gRPC + BlazeBinary =  (Best for production)
-• Raw BlazeBinary =  (Simpler, but more work)
+• gRPC + BlazeBinary = (Best for production)
+• Raw BlazeBinary = (Simpler, but more work)
 
 RECOMMENDATION: Start with gRPC, add native BlazeBinary protocol later if needed
 ```
@@ -225,46 +225,46 @@ RECOMMENDATION: Start with gRPC, add native BlazeBinary protocol later if needed
 
 ```
 
- OPTION 1: Use Grafana (Traditional) 
-
- 
- BlazeDB → Telemetry → Prometheus → Grafana 
- 
- PROS: 
- Industry standard 
- Mature tooling 
- Lots of templates 
- Alert system 
- 
- CONS: 
-  Extra dependency (Prometheus + Grafana) 
-  Another system to manage 
-  Data duplication (BlazeDB + Prometheus) 
-  Complex setup 
- 
+ OPTION 1: Use Grafana (Traditional)
 
 
+ BlazeDB → Telemetry → Prometheus → Grafana
 
- OPTION 2: BlazeDBVisualizer (Your Way!) 
+ PROS:
+ Industry standard
+ Mature tooling
+ Lots of templates
+ Alert system
 
- 
- BlazeDB → Telemetry → BlazeDBVisualizer 
- (store in BlazeDB!) 
- 
- PROS: 
- No extra dependencies 
- All data in BlazeDB (query with BlazeDB!) 
- Custom UI (already beautiful!) 
- Real-time updates (already have!) 
- Same tech stack (Swift + SwiftUI) 
- Can query telemetry like any data 
- 
- CONS: 
-  Need to build charts (but you have Charts tab!) 
-  Need alert system (simple to add) 
- 
- VERDICT:  THIS IS BETTER! 
- 
+ CONS:
+ Extra dependency (Prometheus + Grafana)
+ Another system to manage
+ Data duplication (BlazeDB + Prometheus)
+ Complex setup
+
+
+
+
+ OPTION 2: BlazeDBVisualizer (Your Way!)
+
+
+ BlazeDB → Telemetry → BlazeDBVisualizer
+ (store in BlazeDB!)
+
+ PROS:
+ No extra dependencies
+ All data in BlazeDB (query with BlazeDB!)
+ Custom UI (already beautiful!)
+ Real-time updates (already have!)
+ Same tech stack (Swift + SwiftUI)
+ Can query telemetry like any data
+
+ CONS:
+ Need to build charts (but you have Charts tab!)
+ Need alert system (simple to add)
+
+ VERDICT: THIS IS BETTER!
+
 
 ```
 
@@ -450,28 +450,28 @@ YOU'RE EARLY TO THE OPPORTUNITY!
 
 ```swift
 
- BLAZEBINARY NATIVE PROTOCOL (No gRPC!) 
+ BLAZEBINARY NATIVE PROTOCOL (No gRPC!)
 
- 
- Why gRPC is great: 
- • HTTP/2 (multiplexing, compression) 
- • Streaming (bidirectional) 
- • Flow control 
- • Retries, timeouts 
- • Language bindings 
- • Battle-tested 
- 
- Why gRPC adds overhead: 
- • Protobuf framing: 10 bytes 
- • HTTP/2 headers: 200 bytes 
- • gRPC metadata: varies 
- 
- BlazeBinary Native Protocol: 
- • NO Protobuf (just BlazeBinary) 
- • NO gRPC overhead 
- • Direct WebSocket + BlazeBinary 
- • Total overhead: 15 bytes (93% less!) 
- 
+
+ Why gRPC is great:
+ • HTTP/2 (multiplexing, compression)
+ • Streaming (bidirectional)
+ • Flow control
+ • Retries, timeouts
+ • Language bindings
+ • Battle-tested
+
+ Why gRPC adds overhead:
+ • Protobuf framing: 10 bytes
+ • HTTP/2 headers: 200 bytes
+ • gRPC metadata: varies
+
+ BlazeBinary Native Protocol:
+ • NO Protobuf (just BlazeBinary)
+ • NO gRPC overhead
+ • Direct WebSocket + BlazeBinary
+ • Total overhead: 15 bytes (93% less!)
+
 
 
 COMPARISON:
@@ -807,34 +807,34 @@ RESULT:
 
 ```
 
- BLAZEBINARY EVERYWHERE 
+ BLAZEBINARY EVERYWHERE
 
- 
- STORAGE: 
-  
- • Records encoded with BlazeBinary 
- • Pages stored with BlazeBinary 
- • Indexes with BlazeBinary 
- 
- NETWORK: 
-  
- • Operations sent as BlazeBinary 
- • Queries sent as BlazeBinary 
- • Responses sent as BlazeBinary 
- 
- TELEMETRY: 
-  
- • Metrics encoded with BlazeBinary 
- • Logs encoded with BlazeBinary 
- • Events encoded with BlazeBinary 
- 
- IPC (Inter-Process Communication): 
-  
- • Multiple BlazeDB instances communicate 
- • All using BlazeBinary 
- 
- RESULT: One format, everywhere! 
- 
+
+ STORAGE:
+
+ • Records encoded with BlazeBinary
+ • Pages stored with BlazeBinary
+ • Indexes with BlazeBinary
+
+ NETWORK:
+
+ • Operations sent as BlazeBinary
+ • Queries sent as BlazeBinary
+ • Responses sent as BlazeBinary
+
+ TELEMETRY:
+
+ • Metrics encoded with BlazeBinary
+ • Logs encoded with BlazeBinary
+ • Events encoded with BlazeBinary
+
+ IPC (Inter-Process Communication):
+
+ • Multiple BlazeDB instances communicate
+ • All using BlazeBinary
+
+ RESULT: One format, everywhere!
+
 
 
 BENEFITS:
@@ -854,23 +854,23 @@ BLAZEBINARY PROTOCOL v1.0
 MESSAGE FORMAT:
 
 
- Header (15 bytes) 
+ Header (15 bytes)
 
- Magic: "BLAZE" (5 bytes) 
- Version: 0x01 (1 byte) 
- Type: MessageType (1 byte) 
- Length: UInt32 BE (4 bytes) 
- Flags: UInt8 (1 byte) 
- • bit 0: Compressed 
- • bit 1: Encrypted 
- • bit 2: Requires ACK 
- • bit 3-7: Reserved 
- Sequence: UInt24 BE (3 bytes) 
+ Magic: "BLAZE" (5 bytes)
+ Version: 0x01 (1 byte)
+ Type: MessageType (1 byte)
+ Length: UInt32 BE (4 bytes)
+ Flags: UInt8 (1 byte)
+ • bit 0: Compressed
+ • bit 1: Encrypted
+ • bit 2: Requires ACK
+ • bit 3-7: Reserved
+ Sequence: UInt24 BE (3 bytes)
 
- Payload (variable) 
- • BlazeBinary encoded! 
+ Payload (variable)
+ • BlazeBinary encoded!
 
- CRC32: checksum (4 bytes) 
+ CRC32: checksum (4 bytes)
 
 
 MESSAGE TYPES:
@@ -944,21 +944,21 @@ BLAZEDB OBSERVABILITY STACK:
 
 SERVER:
 
- metricsDB: BlazeDBClient 
- logsDB: BlazeDBClient 
- eventsDB: BlazeDBClient 
+ metricsDB: BlazeDBClient
+ logsDB: BlazeDBClient
+ eventsDB: BlazeDBClient
 
- 
-  gRPC API
- 
- 
+
+ gRPC API
+
+
 VISUALIZER (Mac):
 
- Connect to remote server 
- Query metrics with BlazeDB API 
- Display with SwiftUI Charts 
- Add alerts (notifications) 
- Export data if needed 
+ Connect to remote server
+ Query metrics with BlazeDB API
+ Display with SwiftUI Charts
+ Add alerts (notifications)
+ Export data if needed
 
 
 EXAMPLE DASHBOARD:

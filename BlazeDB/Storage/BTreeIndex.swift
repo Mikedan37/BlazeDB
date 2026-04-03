@@ -10,6 +10,11 @@
 
 import Foundation
 
+/// Thrown when a decoded or loaded B-tree violates structural invariants (typically corrupt persistence).
+public enum BTreeIndexError: Error {
+    case invalidStructure(String)
+}
+
 /// A B-tree node for sorted index storage
 /// Optimized for in-memory use with disk persistence via Codable
 public final class BTreeNode<Key: Comparable & Codable, Value: Codable>: Codable {
@@ -97,20 +102,24 @@ public final class BTreeIndex<Key: Comparable & Codable & Hashable, Value: Codab
             }
             i += 1
             
+            guard let children = node.children, i < children.count else { return }
+            
             // Split child if full
-            if node.children![i].keys.count == 2 * minDegree - 1 {
+            if children[i].keys.count == 2 * minDegree - 1 {
                 splitChild(node, index: i)
                 if key > node.keys[i] {
                     i += 1
                 }
             }
             
-            insertNonFull(node.children![i], key: key, value: value)
+            guard let afterSplit = node.children, i < afterSplit.count else { return }
+            insertNonFull(afterSplit[i], key: key, value: value)
         }
     }
     
     private func splitChild(_ parent: BTreeNode<Key, Value>, index: Int) {
-        let fullChild = parent.children![index]
+        guard var parentChildren = parent.children, index < parentChildren.count else { return }
+        let fullChild = parentChildren[index]
         let newChild = BTreeNode<Key, Value>(isLeaf: fullChild.isLeaf)
         
         let midIndex = minDegree - 1
@@ -120,7 +129,8 @@ public final class BTreeIndex<Key: Comparable & Codable & Hashable, Value: Codab
         newChild.values = Array(fullChild.values[(midIndex + 1)...])
         
         if !fullChild.isLeaf {
-            newChild.children = Array(fullChild.children![(midIndex + 1)...])
+            guard let fcChildren = fullChild.children, fcChildren.count > midIndex else { return }
+            newChild.children = Array(fcChildren[(midIndex + 1)...])
         }
         
         // Move median key up to parent
@@ -131,13 +141,15 @@ public final class BTreeIndex<Key: Comparable & Codable & Hashable, Value: Codab
         fullChild.keys = Array(fullChild.keys[..<midIndex])
         fullChild.values = Array(fullChild.values[..<midIndex])
         if !fullChild.isLeaf {
-            fullChild.children = Array(fullChild.children![...(midIndex)])
+            guard let fcChildren = fullChild.children, fcChildren.count > midIndex else { return }
+            fullChild.children = Array(fcChildren[...(midIndex)])
         }
         
         // Insert into parent
         parent.keys.insert(medianKey, at: index)
         parent.values.insert(medianValues, at: index)
-        parent.children!.insert(newChild, at: index + 1)
+        parentChildren.insert(newChild, at: index + 1)
+        parent.children = parentChildren
     }
     
     // MARK: - Remove
@@ -153,7 +165,8 @@ public final class BTreeIndex<Key: Comparable & Codable & Hashable, Value: Codab
         
         // If root has no keys and has a child, make that child the new root
         if root.keys.isEmpty && !root.isLeaf {
-            root = root.children![0]
+            guard let ch = root.children, !ch.isEmpty else { return }
+            root = ch[0]
         }
     }
     
@@ -178,7 +191,8 @@ public final class BTreeIndex<Key: Comparable & Codable & Hashable, Value: Codab
         } else if node.isLeaf {
             return false
         } else {
-            return removeFromNode(node.children![i], key: key, value: value)
+            guard let children = node.children, i < children.count else { return false }
+            return removeFromNode(children[i], key: key, value: value)
         }
     }
     
@@ -203,7 +217,8 @@ public final class BTreeIndex<Key: Comparable & Codable & Hashable, Value: Codab
         } else if node.isLeaf {
             return []
         } else {
-            return findInNode(node.children![i], key: key)
+            guard let children = node.children, i < children.count else { return [] }
+            return findInNode(children[i], key: key)
         }
     }
     
@@ -294,8 +309,8 @@ public final class BTreeIndex<Key: Comparable & Codable & Hashable, Value: Codab
             // Check lower bound (for non-leaf traversal)
             if let minKey = min {
                 if key < minKey || (!includeMin && key == minKey) {
-                    if !node.isLeaf {
-                        rangeSearch(node: node.children![i], min: min, max: max, includeMin: includeMin, includeMax: includeMax, results: &results)
+                    if !node.isLeaf, let ch = node.children, i < ch.count {
+                        rangeSearch(node: ch[i], min: min, max: max, includeMin: includeMin, includeMax: includeMax, results: &results)
                     }
                     i += 1
                     continue
@@ -303,8 +318,8 @@ public final class BTreeIndex<Key: Comparable & Codable & Hashable, Value: Codab
             }
             
             // Visit left child first (if internal node)
-            if !node.isLeaf && i < node.children!.count {
-                rangeSearch(node: node.children![i], min: min, max: max, includeMin: includeMin, includeMax: includeMax, results: &results)
+            if !node.isLeaf, let ch = node.children, i < ch.count {
+                rangeSearch(node: ch[i], min: min, max: max, includeMin: includeMin, includeMax: includeMax, results: &results)
             }
             
             // Add values for this key
@@ -314,8 +329,8 @@ public final class BTreeIndex<Key: Comparable & Codable & Hashable, Value: Codab
         }
         
         // Visit rightmost child if needed
-        if !node.isLeaf && i < node.children!.count {
-            rangeSearch(node: node.children![i], min: min, max: max, includeMin: includeMin, includeMax: includeMax, results: &results)
+        if !node.isLeaf, let ch = node.children, i < ch.count {
+            rangeSearch(node: ch[i], min: min, max: max, includeMin: includeMin, includeMax: includeMax, results: &results)
         }
     }
     
@@ -343,25 +358,25 @@ public final class BTreeIndex<Key: Comparable & Codable & Hashable, Value: Codab
     
     private func inorderTraversal(node: BTreeNode<Key, Value>, results: inout [Value]) {
         for i in 0..<node.keys.count {
-            if !node.isLeaf {
-                inorderTraversal(node: node.children![i], results: &results)
+            if !node.isLeaf, let ch = node.children, i < ch.count {
+                inorderTraversal(node: ch[i], results: &results)
             }
             results.append(contentsOf: node.values[i])
         }
-        if !node.isLeaf && !node.children!.isEmpty {
-            inorderTraversal(node: node.children![node.keys.count], results: &results)
+        if !node.isLeaf, let ch = node.children, node.keys.count < ch.count {
+            inorderTraversal(node: ch[node.keys.count], results: &results)
         }
     }
     
     private func inorderTraversalWithKeys(node: BTreeNode<Key, Value>, results: inout [(key: Key, values: [Value])]) {
         for i in 0..<node.keys.count {
-            if !node.isLeaf {
-                inorderTraversalWithKeys(node: node.children![i], results: &results)
+            if !node.isLeaf, let ch = node.children, i < ch.count {
+                inorderTraversalWithKeys(node: ch[i], results: &results)
             }
             results.append((key: node.keys[i], values: node.values[i]))
         }
-        if !node.isLeaf && !node.children!.isEmpty {
-            inorderTraversalWithKeys(node: node.children![node.keys.count], results: &results)
+        if !node.isLeaf, let ch = node.children, node.keys.count < ch.count {
+            inorderTraversalWithKeys(node: ch[node.keys.count], results: &results)
         }
     }
     
@@ -382,11 +397,41 @@ public final class BTreeIndex<Key: Comparable & Codable & Hashable, Value: Codab
         defer { lock.unlock() }
         
         let decoder = JSONDecoder()
-        root = try decoder.decode(BTreeNode<Key, Value>.self, from: data)
+        let decoded = try decoder.decode(BTreeNode<Key, Value>.self, from: data)
+        try Self.validateDecodedTree(decoded, isRoot: true, depth: 0)
+        root = decoded
         
         // Recalculate count
         count = 0
         countEntries(node: root)
+    }
+
+    /// Ensures a loaded tree matches B-tree structural invariants (rejects corrupt Codable payloads).
+    private static func validateDecodedTree(_ node: BTreeNode<Key, Value>, isRoot: Bool, depth: Int) throws {
+        guard depth < 10_000 else {
+            throw BTreeIndexError.invalidStructure("B-tree depth exceeds limit — likely corrupt persistence")
+        }
+        guard node.keys.count == node.values.count else {
+            throw BTreeIndexError.invalidStructure("keys.count (\(node.keys.count)) != values.count (\(node.values.count))")
+        }
+        if node.isLeaf {
+            if node.children != nil {
+                throw BTreeIndexError.invalidStructure("leaf node must have nil children")
+            }
+            return
+        }
+        guard let children = node.children else {
+            throw BTreeIndexError.invalidStructure("internal node missing children")
+        }
+        guard children.count == node.keys.count + 1 else {
+            throw BTreeIndexError.invalidStructure("child count \(children.count) != keys.count + 1 (\(node.keys.count + 1))")
+        }
+        guard isRoot || !children.isEmpty else {
+            throw BTreeIndexError.invalidStructure("non-root internal node has empty children")
+        }
+        for ch in children {
+            try validateDecodedTree(ch, isRoot: false, depth: depth + 1)
+        }
     }
     
     private func countEntries(node: BTreeNode<Key, Value>) {

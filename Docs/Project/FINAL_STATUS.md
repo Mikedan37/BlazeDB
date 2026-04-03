@@ -82,11 +82,11 @@
 
 | Feature | Foundation | Integration | Optimization | Tests |
 |---------|-----------|-------------|--------------|-------|
-| Lazy Decoding | | | |  |
+| Lazy Decoding | | | | |
 | Geospatial | | | | |
-| Event Triggers | | | |  |
-| Vector Search | | |  |  |
-| Query Planner | | | |  |
+| Event Triggers | | | | |
+| Vector Search | | | | |
+| Query Planner | | | | |
 
 **Overall:** ~95% Complete
 
@@ -115,7 +115,7 @@
 - Cost-based optimization working
 - Lazy decoding provides massive gains
 
-**Ready for Production:**  After testing
+**Ready for Production:** After testing
 - Need comprehensive test suite
 - Need performance benchmarks
 - Need edge case coverage

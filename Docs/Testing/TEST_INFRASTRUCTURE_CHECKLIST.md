@@ -15,12 +15,12 @@
 
 ### Missing:
 - **ChaosEngineTests.swift** - Dedicated chaos engine with:
- - Deterministic seed for reproducibility
- - 1,000+ random operations per test run
- - Schema change simulation
- - Trigger firing simulation
- - Post-operation consistency validation
- - Comprehensive corruption checks
+- Deterministic seed for reproducibility
+- 1,000+ random operations per test run
+- Schema change simulation
+- Trigger firing simulation
+- Post-operation consistency validation
+- Comprehensive corruption checks
 
 **Status:** **NEEDS IMPLEMENTATION** (existing tests are good but not comprehensive enough)
 
@@ -42,14 +42,14 @@
 
 ### Missing:
 - **ConcurrencyStressTests.swift** - Dedicated torture tests with:
- - 50-200 concurrent writers (more extreme than existing)
- - Simultaneous queries during writes
- - Deadlock detection
- - Starvation detection
- - Index corruption validation
- - Partial write detection
- - RLS bypass detection
- - Spatial/vector index drift detection
+- 50-200 concurrent writers (more extreme than existing)
+- Simultaneous queries during writes
+- Deadlock detection
+- Starvation detection
+- Index corruption validation
+- Partial write detection
+- RLS bypass detection
+- Spatial/vector index drift detection
 
 **Status:** **NEEDS IMPLEMENTATION** (existing tests are good but need more extreme torture scenarios)
 
@@ -63,10 +63,10 @@
 
 ### Missing:
 - **StateModelTests.swift** - Model-based testing with:
- - Pure Swift Dictionary as "ground truth"
- - Mirror operations (insert/update/delete/query)
- - Compare BlazeDB behavior to model after each operation
- - Detect divergence (missing rows, inconsistent values, index mismatch)
+- Pure Swift Dictionary as "ground truth"
+- Mirror operations (insert/update/delete/query)
+- Compare BlazeDB behavior to model after each operation
+- Detect divergence (missing rows, inconsistent values, index mismatch)
 
 **Status:** **NEEDS IMPLEMENTATION** (no existing model-based state machine tests)
 
@@ -85,14 +85,14 @@
 
 ### Missing:
 - **IndexConsistencyTests.swift** - Comprehensive index consistency tests with:
- - Primary index consistency
- - Secondary index consistency
- - Full-text index consistency
- - Spatial index consistency
- - Ordering index consistency
- - Vector index consistency
- - Cross-index validation (all indexes must match data)
- - Index drift detection
+- Primary index consistency
+- Secondary index consistency
+- Full-text index consistency
+- Spatial index consistency
+- Ordering index consistency
+- Vector index consistency
+- Cross-index validation (all indexes must match data)
+- Index drift detection
 
 **Status:** **NEEDS IMPLEMENTATION** (existing tests cover individual indexes but not comprehensive cross-index validation)
 
@@ -111,13 +111,13 @@
 
 ### Missing:
 - **ReplayTests.swift** - Comprehensive replay tests with:
- - Operation log generator
- - Log replay engine
- - Crash simulation (cut DB mid-write and reload)
- - Orphaned overflow page detection
- - Dangling ordering index detection
- - Spatial/vector index synchronization validation
- - Lazy decoding validity post-recovery
+- Operation log generator
+- Log replay engine
+- Crash simulation (cut DB mid-write and reload)
+- Orphaned overflow page detection
+- Dangling ordering index detection
+- Spatial/vector index synchronization validation
+- Lazy decoding validity post-recovery
 
 **Status:** **NEEDS IMPLEMENTATION** (existing tests cover basic recovery but not comprehensive replay scenarios)
 
@@ -139,16 +139,16 @@
 
 ### Missing:
 - **PerformanceBenchmarks.swift** - Microbenchmarks for:
- - Insert
- - Query
- - Spatial
- - Vector
- - Ordering
- - RLS filters
- - Lazy decode
- - Query planner decisions
- - Debug-only mode (never block CI)
- - JSON output to.build/test-metrics/
+- Insert
+- Query
+- Spatial
+- Vector
+- Ordering
+- RLS filters
+- Lazy decode
+- Query planner decisions
+- Debug-only mode (never block CI)
+- JSON output to.build/test-metrics/
 
 **Status:** **NEEDS IMPLEMENTATION** (existing benchmarks are good but need microbenchmarks with CI-safe output)
 
@@ -158,12 +158,12 @@
 
 | Phase | Status | Existing Coverage | Missing Coverage |
 |-------|--------|------------------|------------------|
-| **Phase 1: Chaos Engine** |  Partial | FuzzTests, PropertyBasedTests | Comprehensive chaos engine with deterministic seed |
-| **Phase 2: Concurrency Torture** |  Partial | Multiple concurrency tests | Extreme torture (50-200 writers, deadlock detection) |
+| **Phase 1: Chaos Engine** | Partial | FuzzTests, PropertyBasedTests | Comprehensive chaos engine with deterministic seed |
+| **Phase 2: Concurrency Torture** | Partial | Multiple concurrency tests | Extreme torture (50-200 writers, deadlock detection) |
 | **Phase 3: Model-Based Testing** | Missing | PropertyBasedTests (partial) | State machine with Dictionary ground truth |
-| **Phase 4: Index Consistency** |  Partial | Individual index tests | Cross-index validation, drift detection |
-| **Phase 5: Replay & Crash Recovery** |  Partial | Basic recovery tests | Comprehensive replay engine, orphan detection |
-| **Phase 6: Performance Baselines** |  Partial | Multiple benchmarks | Microbenchmarks with CI-safe output |
+| **Phase 4: Index Consistency** | Partial | Individual index tests | Cross-index validation, drift detection |
+| **Phase 5: Replay & Crash Recovery** | Partial | Basic recovery tests | Comprehensive replay engine, orphan detection |
+| **Phase 6: Performance Baselines** | Partial | Multiple benchmarks | Microbenchmarks with CI-safe output |
 
 ---
 

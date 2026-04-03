@@ -15,7 +15,7 @@
 ### BlazeCollection
 - **NOT used by BlazeDBClient** - Only found in test files
 - **Limited features** - No indexes, no MVCC, no search
--  **Redundant** - `BlazeDBClient` already provides type-safe APIs via `BlazeDocument`
+- **Redundant** - `BlazeDBClient` already provides type-safe APIs via `BlazeDocument`
 
 ## The Confusion
 
@@ -116,22 +116,22 @@ let id = try db.insert(record)
 **Current Architecture:**
 ```
 BlazeDBClient
-  DynamicCollection (production)
-  BlazeDataRecord → BlazeBinary → File
+ DynamicCollection (production)
+ BlazeDataRecord → BlazeBinary → File
 
 BlazeCollection (test-only, redundant)
-  Record → BlazeDataRecord → BlazeBinary → File
+ Record → BlazeDataRecord → BlazeBinary → File
 ```
 
 **Recommended Architecture:**
 ```
 BlazeDBClient
-  DynamicCollection (production)
-  BlazeDataRecord → BlazeBinary → File
+ DynamicCollection (production)
+ BlazeDataRecord → BlazeBinary → File
 
 Type-Safe APIs:
-  BlazeDocument → BlazeDataRecord (via BlazeDBClient+TypeSafe)
-  BlazeStorable → BlazeDataRecord (via CodableIntegration)
+ BlazeDocument → BlazeDataRecord (via BlazeDBClient+TypeSafe)
+ BlazeStorable → BlazeDataRecord (via CodableIntegration)
 ```
 
 ## Conclusion

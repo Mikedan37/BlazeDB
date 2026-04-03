@@ -16,8 +16,8 @@ final class RLSPolicyEngineTests: XCTestCase {
     
     var engine: PolicyEngine!
     
-    override func setUp() {
-        super.setUp()
+    override func setUpWithError() throws {
+        try super.setUpWithError()
         engine = PolicyEngine()
         engine.setEnabled(true)
     }

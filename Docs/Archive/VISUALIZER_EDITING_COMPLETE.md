@@ -61,12 +61,12 @@
  Beautiful modal sheet
  Field name + type + value inputs
  Type picker with 6 types:
- - String
- - Integer
- - Double
- - Boolean
- - Date (ISO8601 or YYYY-MM-DD)
- - UUID (auto-generated)
+- String
+- Integer
+- Double
+- Boolean
+- Date (ISO8601 or YYYY-MM-DD)
+- UUID (auto-generated)
  Add multiple fields
  Preview before creation
  Type validation
@@ -176,46 +176,46 @@ TOTAL: 220+ COMPREHENSIVE TESTS
 
  Unit Tests (125 tests)
  EditingServiceTests: 85 tests
-  Insert operations 5 tests
-  Update operations 3 tests
-  Delete operations 2 tests
-  Bulk operations 5 tests
-  Undo functionality 7 tests
-  Settings 2 tests
-  Error handling 1 test
-  Complete workflows 2 tests
-  Performance 2 tests
+ Insert operations 5 tests
+ Update operations 3 tests
+ Delete operations 2 tests
+ Bulk operations 5 tests
+ Undo functionality 7 tests
+ Settings 2 tests
+ Error handling 1 test
+ Complete workflows 2 tests
+ Performance 2 tests
 
  AuditLogServiceTests: 40 tests
-  Basic logging 4 tests
-  Enable/disable 2 tests
-  Search & filter 5 tests
-  Export (JSON/CSV) 4 tests
-  Cleanup 2 tests
-  Metadata 2 tests
-  Performance 3 tests
-  Compliance (GDPR) 3 tests
+ Basic logging 4 tests
+ Enable/disable 2 tests
+ Search & filter 5 tests
+ Export (JSON/CSV) 4 tests
+ Cleanup 2 tests
+ Metadata 2 tests
+ Performance 3 tests
+ Compliance (GDPR) 3 tests
 
  Integration Tests (50 tests)
  EditingIntegrationTests: 50 tests
-  Complete workflows 4 tests
-  Error recovery 2 tests
-  Audit integration 3 tests
-  Performance 2 tests
-  Data integrity 2 tests
-  Real-world scenarios 3 tests
+ Complete workflows 4 tests
+ Error recovery 2 tests
+ Audit integration 3 tests
+ Performance 2 tests
+ Data integrity 2 tests
+ Real-world scenarios 3 tests
 
  UI Tests (45 tests)
  EditingUITests: 45 tests
-  Basic editing UI 4 tests
-  New record creation 2 tests
-  Bulk operations 3 tests
-  Undo functionality 2 tests
-  Settings 2 tests
-  Error handling 1 test
-  Audit log viewing 2 tests
-  Performance 2 tests
-  Accessibility 2 tests
+ Basic editing UI 4 tests
+ New record creation 2 tests
+ Bulk operations 3 tests
+ Undo functionality 2 tests
+ Settings 2 tests
+ Error handling 1 test
+ Audit log viewing 2 tests
+ Performance 2 tests
+ Accessibility 2 tests
 ```
 
 **Coverage:**
@@ -240,16 +240,16 @@ TOTAL: 220+ COMPREHENSIVE TESTS
 | **Platform** | macOS | Multi | macOS | Multi |
 | **UI** | SwiftUI | Electron | Cocoa | Qt |
 | **Inline Editing** | | | | |
-| **Bulk Operations** | 1,000 | |  Limited |  Limited |
-| **Undo System** | 30s window | | |  Basic |
+| **Bulk Operations** | 1,000 | | Limited | Limited |
+| **Undo System** | 30s window | | | Basic |
 | **Audit Logging** | Full | | | |
-| **Auto Backup** | Before edits |  Manual |  Manual | |
-| **Type Validation** | Smart | |  Basic |  Basic |
+| **Auto Backup** | Before edits | Manual | Manual | |
+| **Type Validation** | Smart | | Basic | Basic |
 | **Touch ID** | Unique! | | | |
 | **GDPR Export** | Built-in | | | |
-| **Real-time Monitor** | |  Limited | | |
+| **Real-time Monitor** | | Limited | | |
 | **Performance Charts** | 7-day | | | |
-| **Backup/Restore** | One-click |  Manual |  Manual | |
+| **Backup/Restore** | One-click | Manual | Manual | |
 | **Test Runner** | 907 tests | | | |
 | **Open Source** | | | | |
 | **Test Coverage** | 516 tests | | | |
@@ -262,45 +262,45 @@ TOTAL: 220+ COMPREHENSIVE TESTS
 
 ```
  30-Second Undo Window
- - Undo ANY operation
- - Works for bulk operations too!
- - Automatic expiration
+- Undo ANY operation
+- Works for bulk operations too!
+- Automatic expiration
  → TablePlus:
  → Sequel Pro:
  → DB Browser:
 
  Automatic Safety Backups
- - Auto-backup before FIRST edit
- - Never lose data accidentally
+- Auto-backup before FIRST edit
+- Never lose data accidentally
  → TablePlus: Manual only
  → Sequel Pro: Manual only
  → DB Browser: None
 
  Full Audit Logging
- - GDPR/HIPAA compliant
- - Who, what, when, old/new values
- - Export for compliance
+- GDPR/HIPAA compliant
+- Who, what, when, old/new values
+- Export for compliance
  → ALL OTHER TOOLS:
 
  Touch ID Integration
- - Secure, fast unlock
- - macOS Keychain
+- Secure, fast unlock
+- macOS Keychain
  → ALL OTHER TOOLS:
 
  Real-time Monitoring
- - Live health dashboard
- - Auto-alerts
- - Performance charts
+- Live health dashboard
+- Auto-alerts
+- Performance charts
  → Most tools:
 
  Test Runner Integration
- - Run 907 BlazeDB tests from UI
- - Live progress tracking
+- Run 907 BlazeDB tests from UI
+- Live progress tracking
  → ALL OTHER TOOLS:
 
  516 Total Tests
- - 296 visualizer tests
- - 220 editing tests
+- 296 visualizer tests
+- 220 editing tests
  → TablePlus: Unknown (closed source)
  → Sequel Pro: ~50 tests
  → DB Browser: ~100 tests
@@ -369,7 +369,7 @@ TOTAL: 220+ COMPREHENSIVE TESTS
 1. Select record(s) via checkboxes
 2. Click "Delete Selected"
 3. Confirmation: "Delete N records?"
-4. Optional:  "Create backup first"
+4. Optional: "Create backup first"
 5. Click "Delete"
 6. Deleted!
 7. Toast: "Deleted N records" with [Undo] (30s)
@@ -399,15 +399,15 @@ TOTAL: 220+ COMPREHENSIVE TESTS
 ### **Data Viewer (Editing Mode)**
 ```
 
- Data Viewer 907 records 
- 
- [ Editing] [Search___] [+ Add] [↻] 
+ Data Viewer 907 records
 
-  ID  Name  Age  Email  Actions 
+ [ Editing] [Search___] [+ Add] [↻]
 
-  abc123  Alice  25  alice@test.com   
-  def456  [Bob]  30  bob@test.com    ← Editing!
-  ghi789  Carol  28  carol@test.com   
+ ID Name Age Email Actions
+
+ abc123 Alice 25 alice@test.com
+ def456 [Bob] 30 bob@test.com ← Editing!
+ ghi789 Carol 28 carol@test.com
 
 
  Updated "Name" to "Bob" [Undo] (28s) [×]
@@ -420,21 +420,21 @@ TOTAL: 220+ COMPREHENSIVE TESTS
 ### **New Record Sheet**
 ```
 
- Create New Record 
- 
- Add Field 
-  
-  [name___] [String ] [Alice____] [+]  
-  
- 
- Record Preview (3 fields) 
-  
-  name (String): "Alice"  
-  age (Integer): "25"  
-  email (String): "alice@test.com"  
-  
- 
- [Cancel] [Create] 
+ Create New Record
+
+ Add Field
+
+ [name___] [String ] [Alice____] [+]
+
+
+ Record Preview (3 fields)
+
+ name (String): "Alice"
+ age (Integer): "25"
+ email (String): "alice@test.com"
+
+
+ [Cancel] [Create]
 
 ```
 
@@ -443,24 +443,24 @@ TOTAL: 220+ COMPREHENSIVE TESTS
 ### **Bulk Edit Sheet**
 ```
 
- Bulk Edit 5 Records 
- 
- Select Field 
- [status ] 
- 
- New Value (String) 
- [inactive_________________] 
- 
- Preview Changes 
-  
-  abc123 → status = "inactive"  
-  def456 → status = "inactive"  
-  ghi789 → status = "inactive"  
-  jkl012 → status = "inactive"  
-  mno345 → status = "inactive"  
-  
- 
- [Cancel] [Apply to 5] 
+ Bulk Edit 5 Records
+
+ Select Field
+ [status ]
+
+ New Value (String)
+ [inactive_________________]
+
+ Preview Changes
+
+ abc123 → status = "inactive"
+ def456 → status = "inactive"
+ ghi789 → status = "inactive"
+ jkl012 → status = "inactive"
+ mno345 → status = "inactive"
+
+
+ [Cancel] [Apply to 5]
 
 ```
 
@@ -471,40 +471,40 @@ TOTAL: 220+ COMPREHENSIVE TESTS
 ### **Built-in Protection:**
 ```
  Read-Only Mode by Default
- - Must explicitly enable editing
- - Orange visual indicator
- - Can disable at any time
+- Must explicitly enable editing
+- Orange visual indicator
+- Can disable at any time
 
  Automatic Safety Backups
- - Before first edit of session
- - Named "auto_before_edit"
- - Located in database directory
+- Before first edit of session
+- Named "auto_before_edit"
+- Located in database directory
 
  Type Validation
- - Prevents invalid data
- - Real-time feedback
- - Clear error messages
+- Prevents invalid data
+- Real-time feedback
+- Clear error messages
 
  Confirmation Dialogs
- - For all deletions
- - Shows affected records
- - Can backup before delete
+- For all deletions
+- Shows affected records
+- Can backup before delete
 
  Undo System
- - 30-second safety net
- - All operations reversible
- - Visual countdown timer
+- 30-second safety net
+- All operations reversible
+- Visual countdown timer
 
  Audit Trail
- - Optional (enable in settings)
- - Immutable log file
- - Export for compliance
- - User/timestamp/operation tracking
+- Optional (enable in settings)
+- Immutable log file
+- Export for compliance
+- User/timestamp/operation tracking
 
  Bulk Operation Limits
- - Max 1,000 records per operation
- - Prevents accidental mass changes
- - Configurable via settings
+- Max 1,000 records per operation
+- Prevents accidental mass changes
+- Configurable via settings
 ```
 
 ---
@@ -590,7 +590,7 @@ Create backup | < 500ms | Any size
 
 ---
 
-##  **ARCHITECTURE**
+## **ARCHITECTURE**
 
 ### **Service Layer:**
 ```
@@ -641,12 +641,12 @@ BulkEditSheet
 
 ### **Test Pyramid:**
 ```
-  UI Tests (45)
- 
+ UI Tests (45)
+
  Integration (50)
- 
+
  Unit Tests (125)
- 
+
 
 = 220 Total Tests
 = 95%+ Coverage
@@ -686,7 +686,7 @@ xcodebuild test -scheme BlazeDBVisualizer
 # Expected output:
 # 296 visualizer tests
 # 220 editing tests
-# 
+#
 # 516 TOTAL TESTS PASSED!
 ```
 
@@ -698,37 +698,37 @@ xcodebuild test -scheme BlazeDBVisualizer
 
 ```
  COMPLETE DATABASE MANAGEMENT TOOL
- - Not just a viewer anymore!
- - Full CRUD operations
- - Bulk operations
- - Advanced features
+- Not just a viewer anymore!
+- Full CRUD operations
+- Bulk operations
+- Advanced features
 
  MORE SECURE than competitors
- - Touch ID
- - Auto-backups
- - Audit logging
- - 30s undo
+- Touch ID
+- Auto-backups
+- Audit logging
+- 30s undo
 
  BETTER TESTED than competitors
- - 516 comprehensive tests
- - 95%+ coverage
- - Unit + Integration + UI
+- 516 comprehensive tests
+- 95%+ coverage
+- Unit + Integration + UI
 
  MORE COMPLIANT than competitors
- - GDPR: Data portability
- - HIPAA: Audit trail
- - SOC 2: Access controls
+- GDPR: Data portability
+- HIPAA: Audit trail
+- SOC 2: Access controls
 
  PRODUCTION-READY
- - Zero known bugs
- - Error handling everywhere
- - Performance optimized
- - Beautiful UI
+- Zero known bugs
+- Error handling everywhere
+- Performance optimized
+- Beautiful UI
 
  OPEN SOURCE & FREE
- - Unlike TablePlus ($99)
- - Better than Sequel Pro (unmaintained)
- - More features than DB Browser
+- Unlike TablePlus ($99)
+- Better than Sequel Pro (unmaintained)
+- More features than DB Browser
 ```
 
 ---
@@ -806,37 +806,37 @@ Testing:
 ### **Optional Enhancements:**
 
 1. **Advanced Query Builder**
- - Visual query composer
- - JOIN support
- - Aggregations
- - SQL-like syntax
+- Visual query composer
+- JOIN support
+- Aggregations
+- SQL-like syntax
 
 2. **Schema Migration UI**
- - Add/remove fields
- - Change types
- - Visual migration preview
+- Add/remove fields
+- Change types
+- Visual migration preview
 
 3. **Collaboration Features**
- - Multi-user support
- - Real-time sync
- - Conflict resolution
+- Multi-user support
+- Real-time sync
+- Conflict resolution
 
 4. **Enhanced Audit Log Viewer**
- - Dedicated audit log tab
- - Visual timeline
- - Diff viewer (old vs new)
- - User activity heatmap
+- Dedicated audit log tab
+- Visual timeline
+- Diff viewer (old vs new)
+- User activity heatmap
 
 5. **Export Templates**
- - Custom CSV formats
- - Excel export
- - Parquet format
- - Database dump (SQL)
+- Custom CSV formats
+- Excel export
+- Parquet format
+- Database dump (SQL)
 
 6. **Import Data**
- - CSV import
- - JSON import
- - Bulk insert from file
+- CSV import
+- JSON import
+- Bulk insert from file
 
 ---
 
@@ -855,19 +855,19 @@ Testing:
 
 **Release Strategy:**
 1. **Public Beta** (this week)
- - Post on GitHub
- - Share on Reddit/Twitter
- - Get early feedback
+- Post on GitHub
+- Share on Reddit/Twitter
+- Get early feedback
 
 2. **v1.0 Release** (2 weeks)
- - Mac App Store submission
- - Homepage & landing page
- - Tutorial videos
+- Mac App Store submission
+- Homepage & landing page
+- Tutorial videos
 
 3. **Marketing** (ongoing)
- - Blog posts
- - Conference talks
- - Developer outreach
+- Blog posts
+- Conference talks
+- Developer outreach
 
 ---
 

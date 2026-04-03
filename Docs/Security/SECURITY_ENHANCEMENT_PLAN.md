@@ -26,7 +26,7 @@
 
 ## **SECURITY ENHANCEMENTS**
 
-### **1. Formal Threat Model**  **HIGH PRIORITY**
+### **1. Formal Threat Model** **HIGH PRIORITY**
 
 **Status**: Documentation needed
 
@@ -44,7 +44,7 @@
 
 ---
 
-### **2. Hardened KDF (Argon2)**  **HIGH PRIORITY**
+### **2. Hardened KDF (Argon2)** **HIGH PRIORITY**
 
 **Current State**:
 - Using PBKDF2 with 100,000 iterations
@@ -83,7 +83,7 @@ enum KeyDerivation {
 
 ---
 
-### **3. TLS for Remote Sync**  **HIGH PRIORITY**
+### **3. TLS for Remote Sync** **HIGH PRIORITY**
 
 **Current State**:
 - TCP connections are unencrypted
@@ -139,7 +139,7 @@ class SecureTCPRelay: BlazeSyncRelay {
 
 ---
 
-### **4. Tamper-Proof Metadata**  **HIGH PRIORITY**
+### **4. Tamper-Proof Metadata** **HIGH PRIORITY**
 
 **Current State**:
 - Metadata (StorageLayout) stored in plaintext
@@ -189,7 +189,7 @@ struct SecureStorageLayout {
 
 ---
 
-### **5. Forward Secrecy**  **MEDIUM PRIORITY**
+### **5. Forward Secrecy** **MEDIUM PRIORITY**
 
 **Current State**:
 - Single encryption key for all data
@@ -235,7 +235,7 @@ class ForwardSecrecyManager {
 
 ---
 
-### **6. Secure Enclave Integration**  **MEDIUM PRIORITY** (iOS/macOS only)
+### **6. Secure Enclave Integration** **MEDIUM PRIORITY** (iOS/macOS only)
 
 **Current State**:
 - Keys stored in memory
@@ -304,7 +304,7 @@ class SecureEnclaveKeyManager {
 
 ---
 
-### **7. External Code Audit**  **HIGH PRIORITY**
+### **7. External Code Audit** **HIGH PRIORITY**
 
 **Status**: Requires external security firm
 
@@ -432,13 +432,13 @@ class SecureEnclaveKeyManager {
 
 ### **HIPAA:**
 - Encryption requirements met
--  Audit logging needed
--  Access controls need enhancement
+- Audit logging needed
+- Access controls need enhancement
 
 ### **SOC 2:**
 - Encryption
--  Security monitoring needed
--  Incident response plan needed
+- Security monitoring needed
+- Incident response plan needed
 
 ---
 

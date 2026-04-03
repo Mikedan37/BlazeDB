@@ -16,7 +16,7 @@ import XCTest
 
 final class SchemaMigrationTests: XCTestCase {
     
-    var tempURL: URL!
+    private var tempURL: URL?
     let password = "Test-Password-123!"
     
     override func setUpWithError() throws {
@@ -24,7 +24,7 @@ final class SchemaMigrationTests: XCTestCase {
     }
     
     override func tearDownWithError() throws {
-        try? FileManager.default.removeItem(at: tempURL)
+        try? FileManager.default.removeItem(at: try requireFixture(tempURL))
     }
     
     // MARK: - SchemaVersion Tests
@@ -183,7 +183,7 @@ final class SchemaMigrationTests: XCTestCase {
     
     func testMigrationExecution_Success() throws {
         // Create database
-        let db = try BlazeDBClient(name: "migration-test", fileURL: tempURL, password: password)
+        let db = try BlazeDBClient(name: "migration-test", fileURL: try requireFixture(tempURL), password: password)
         
         // Insert test record
         let id = try db.insert(BlazeDataRecord(["name": .string("Test")]))
@@ -215,7 +215,7 @@ final class SchemaMigrationTests: XCTestCase {
     }
     
     func testMigrationExecution_DryRun_NoMutation() throws {
-        let db = try BlazeDBClient(name: "dryrun-test", fileURL: tempURL, password: password)
+        let db = try BlazeDBClient(name: "dryrun-test", fileURL: try requireFixture(tempURL), password: password)
         let id = try db.insert(BlazeDataRecord(["name": .string("Test")]))
         try db.setSchemaVersion(SchemaVersion(major: 1, minor: 0))
         
@@ -236,7 +236,7 @@ final class SchemaMigrationTests: XCTestCase {
     }
     
     func testMigrationExecution_InvalidPlan_Fails() throws {
-        let db = try BlazeDBClient(name: "invalid-test", fileURL: tempURL, password: password)
+        let db = try BlazeDBClient(name: "invalid-test", fileURL: try requireFixture(tempURL), password: password)
         
         let invalidPlan = MigrationPlan(
             currentVersion: SchemaVersion(major: 1, minor: 0),
@@ -261,7 +261,7 @@ final class SchemaMigrationTests: XCTestCase {
     // MARK: - Version Validation Tests
     
     func testVersionValidation_Match_Succeeds() throws {
-        let db = try BlazeDBClient(name: "version-test", fileURL: tempURL, password: password)
+        let db = try BlazeDBClient(name: "version-test", fileURL: try requireFixture(tempURL), password: password)
         try db.setSchemaVersion(SchemaVersion(major: 1, minor: 0))
         
         // Should not throw
@@ -269,7 +269,7 @@ final class SchemaMigrationTests: XCTestCase {
     }
     
     func testVersionValidation_Older_Fails() throws {
-        let db = try BlazeDBClient(name: "older-test", fileURL: tempURL, password: password)
+        let db = try BlazeDBClient(name: "older-test", fileURL: try requireFixture(tempURL), password: password)
         try db.setSchemaVersion(SchemaVersion(major: 1, minor: 0))
         
         do {
@@ -285,7 +285,7 @@ final class SchemaMigrationTests: XCTestCase {
     }
     
     func testVersionValidation_Newer_Fails() throws {
-        let db = try BlazeDBClient(name: "newer-test", fileURL: tempURL, password: password)
+        let db = try BlazeDBClient(name: "newer-test", fileURL: try requireFixture(tempURL), password: password)
         try db.setSchemaVersion(SchemaVersion(major: 1, minor: 1))
         
         do {

@@ -124,36 +124,36 @@ TOTAL: 22 tests covering all components!
 
 ## **WHAT'S TESTED:**
 
- **Node Registration**
+**Node Registration**
 - Single database
 - Multiple databases
 - Node ID generation
 
- **Local Connections**
+**Local Connections**
 - Bidirectional sync
 - Read-only mode
 - Connection management
 
- **Handshake & Encryption**
+**Handshake & Encryption**
 - Message encoding/decoding
 - Diffie-Hellman key exchange
 - HKDF key derivation
 - AES-256-GCM encryption
 - Challenge-response
 
- **Operation Log**
+**Operation Log**
 - Recording operations
 - Persistence
 - Loading from disk
 - Replay capability
 
- **Sync Policies**
+**Sync Policies**
 - Collection filtering
 - Field filtering
 - Team isolation
 - Encryption modes
 
- **Error Handling**
+**Error Handling**
 - Invalid nodes
 - Connection failures
 - Missing databases

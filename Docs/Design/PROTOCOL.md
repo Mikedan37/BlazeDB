@@ -107,20 +107,20 @@ Identical values produce identical binary:
 
 ```
 
- Frame Header (8 bytes) 
+ Frame Header (8 bytes)
 
- Magic: "BLAZE" (5 bytes) 
- Version: 1 (1 byte) 
- MessageType: enum (1 byte) 
- Length: payload size (4 bytes) 
+ Magic: "BLAZE" (5 bytes)
+ Version: 1 (1 byte)
+ MessageType: enum (1 byte)
+ Length: payload size (4 bytes)
 
- Payload (BlazeBinary encoded) 
- • Handshake 
- • SyncState 
- • Operations 
- • Query 
+ Payload (BlazeBinary encoded)
+ • Handshake
+ • SyncState
+ • Operations
+ • Query
 
- CRC32 Checksum (4 bytes) 
+ CRC32 Checksum (4 bytes)
 
 ```
 

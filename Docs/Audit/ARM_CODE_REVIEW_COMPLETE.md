@@ -71,65 +71,65 @@
 ## Implementation Details Verified
 
 ### Encoder (`BlazeBinaryEncoder+ARM.swift`)
- **Header Encoding**: Magic bytes, version, field count
- **Field Encoding**: Common fields (1 byte) vs custom fields (3+N bytes)
- **Value Encoding**: All types handled correctly (string, int, double, bool, uuid, date, data, array, dict)
- **Big-Endian**: All multi-byte values use manual byte shifting
- **Vectorized Copying**: `memcpy()` for bulk transfers
- **Buffer Safety**: Bounds checks added
- **CRC32**: Properly calculated and appended
+**Header Encoding**: Magic bytes, version, field count
+**Field Encoding**: Common fields (1 byte) vs custom fields (3+N bytes)
+**Value Encoding**: All types handled correctly (string, int, double, bool, uuid, date, data, array, dict)
+**Big-Endian**: All multi-byte values use manual byte shifting
+**Vectorized Copying**: `memcpy()` for bulk transfers
+**Buffer Safety**: Bounds checks added
+**CRC32**: Properly calculated and appended
 
 ### Decoder (`BlazeBinaryDecoder+ARM.swift`)
- **Header Parsing**: Magic check, version detection, field count reading
- **CRC32 Verification**: Properly verified if present
- **Field Decoding**: Common vs custom fields handled correctly
- **Value Decoding**: All types handled correctly
- **Big-Endian**: All multi-byte values use manual byte reading
- **Zero-Copy**: Direct pointer access to memory-mapped buffers
- **Prefetching**: Cache line hints for sequential reads
- **Bounds Checking**: All reads are bounds-checked
+**Header Parsing**: Magic check, version detection, field count reading
+**CRC32 Verification**: Properly verified if present
+**Field Decoding**: Common vs custom fields handled correctly
+**Value Decoding**: All types handled correctly
+**Big-Endian**: All multi-byte values use manual byte reading
+**Zero-Copy**: Direct pointer access to memory-mapped buffers
+**Prefetching**: Cache line hints for sequential reads
+**Bounds Checking**: All reads are bounds-checked
 
 ### Field View (`BlazeBinaryFieldView.swift`)
- **Lazy Decoding**: Fields decoded on-demand
- **Zero-Copy**: Direct pointer access
- **Type Handling**: All simple types supported
- **Complex Types**: Placeholder for arrays/dicts (limitation noted)
+**Lazy Decoding**: Fields decoded on-demand
+**Zero-Copy**: Direct pointer access
+**Type Handling**: All simple types supported
+**Complex Types**: Placeholder for arrays/dicts (limitation noted)
 
 ---
 
 ## Performance Optimizations Verified
 
- **Vectorized Copying**: Using `memcpy()` for bulk transfers (ARM-optimized)
- **Direct Pointer Access**: Using `UnsafeRawPointer` instead of Data subscripting
- **Zero-Copy Decoding**: Direct pointer access to memory-mapped buffers
- **Prefetching**: Cache line hints (`ptr.load(fromByteOffset:)`)
- **SIMD Magic Check**: Optional Accelerate-based comparison (gracefully degrades)
- **Manual Big-Endian**: LLVM optimizes to NEON bit operations
+**Vectorized Copying**: Using `memcpy()` for bulk transfers (ARM-optimized)
+**Direct Pointer Access**: Using `UnsafeRawPointer` instead of Data subscripting
+**Zero-Copy Decoding**: Direct pointer access to memory-mapped buffers
+**Prefetching**: Cache line hints (`ptr.load(fromByteOffset:)`)
+**SIMD Magic Check**: Optional Accelerate-based comparison (gracefully degrades)
+**Manual Big-Endian**: LLVM optimizes to NEON bit operations
 
 ---
 
 ## Edge Cases Handled
 
- **Empty Values**: Empty strings, arrays, dicts handled
- **Small Ints**: 0-255 optimization (2 bytes vs 9)
- **Inline Strings**: 0-15 bytes optimization (1 byte type+length)
- **Large Values**: Proper length encoding for strings/data
- **Nested Structures**: Arrays and dictionaries recursively encoded/decoded
- **Truncated Keys**: Fallback handling for overly long field names
- **UTF-8 Failures**: Graceful fallback to empty string
+**Empty Values**: Empty strings, arrays, dicts handled
+**Small Ints**: 0-255 optimization (2 bytes vs 9)
+**Inline Strings**: 0-15 bytes optimization (1 byte type+length)
+**Large Values**: Proper length encoding for strings/data
+**Nested Structures**: Arrays and dictionaries recursively encoded/decoded
+**Truncated Keys**: Fallback handling for overly long field names
+**UTF-8 Failures**: Graceful fallback to empty string
 
 ---
 
 ## API Correctness
 
- **Public APIs**:
+**Public APIs**:
 - `BlazeBinaryEncoder.encodeARM(_:)` - Encodes record
 - `BlazeBinaryDecoder.decodeARM(_:)` - Decodes from Data
 - `BlazeBinaryDecoder.decodeARM(fromMemoryMappedPage:length:)` - Zero-copy decode
 
- **Error Handling**: All errors properly thrown with descriptive messages
- **Type Safety**: All types correctly handled
- **Return Types**: Correct return types (Data, BlazeDataRecord)
+**Error Handling**: All errors properly thrown with descriptive messages
+**Type Safety**: All types correctly handled
+**Return Types**: Correct return types (Data, BlazeDataRecord)
 
 ---
 
@@ -147,10 +147,10 @@
 
 ## Test Coverage
 
- **Benchmarks Created**: `BlazeBinaryARMBenchmarks.swift`
- **Compatibility Tests**: Standard ↔ ARM round-trip tests
- **Performance Tests**: Small/large records, batches, memory-mapped
- **Edge Case Tests**: Empty values, nested structures
+**Benchmarks Created**: `BlazeBinaryARMBenchmarks.swift`
+**Compatibility Tests**: Standard ↔ ARM round-trip tests
+**Performance Tests**: Small/large records, batches, memory-mapped
+**Edge Case Tests**: Empty values, nested structures
 
 ---
 

@@ -243,7 +243,7 @@ Speedup: 2-5x faster user experience
 
 ---
 
-##  **Garbage Collection**
+## **Garbage Collection**
 
 ### **Status**: **Fully Implemented**
 
@@ -261,10 +261,10 @@ Memory freed: X KB
 ### **GC Strategy**:
 ```
 Trigger GC when:
- - Active snapshot count changes
- - Every N commits (configurable)
- - Memory threshold exceeded
- - Manual trigger available
+- Active snapshot count changes
+- Every N commits (configurable)
+- Memory threshold exceeded
+- Manual trigger available
 ```
 
 **Your memory is SAFE!**
@@ -355,7 +355,7 @@ Status: READY!
 - Feature flag for safe rollout
 - Comprehensive tests
 
-### **⏳ What's Left**:
+### ** What's Left**:
 - Full conflict resolution (Phase 3)
 - Automatic GC triggers (Phase 4)
 - Performance optimization (Phase 5)

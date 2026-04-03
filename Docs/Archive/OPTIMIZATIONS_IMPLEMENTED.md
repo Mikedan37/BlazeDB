@@ -24,11 +24,11 @@
 
 **Changed:**
 - `BlazeCollection.swift`:
- - `insert()`: Uses `BlazeBinaryEncoder` (was `JSONEncoder`)
- - `insertMany()`: Uses `BlazeBinaryEncoder` + batch writes
- - `fetch()`: Uses `BlazeBinaryDecoder` (was `JSONDecoder`)
- - `fetchAll()`: Uses `BlazeBinaryDecoder` (was `JSONDecoder`)
- - `update()`: Uses `BlazeBinaryEncoder` (was `JSONEncoder`)
+- `insert()`: Uses `BlazeBinaryEncoder` (was `JSONEncoder`)
+- `insertMany()`: Uses `BlazeBinaryEncoder` + batch writes
+- `fetch()`: Uses `BlazeBinaryDecoder` (was `JSONDecoder`)
+- `fetchAll()`: Uses `BlazeBinaryDecoder` (was `JSONDecoder`)
+- `update()`: Uses `BlazeBinaryEncoder` (was `JSONEncoder`)
 
 **Impact:**
 - 5-10x faster encoding/decoding
@@ -41,9 +41,9 @@
 
 **Changed:**
 - `BlazeCollection.insertMany()`:
- - Uses `writePageUnsynchronized()` for all writes
- - Single `synchronize()` call at the end
- - **10-100x faster for batch operations!**
+- Uses `writePageUnsynchronized()` for all writes
+- Single `synchronize()` call at the end
+- **10-100x faster for batch operations!**
 
 **Already Optimized:**
 - `DynamicCollection.insertBatch()`: Already uses `writePageUnsynchronized()` + `synchronize()`
@@ -95,18 +95,18 @@ Batch Fetch: 0.05-0.1ms → 10,000-20,000 ops/sec (3x faster!)
 ### **Files Modified:**
 
 1. **`StorageLayout.swift`**
- - Default `encodingFormat = "blazeBinary"` (was `"json"`)
+- Default `encodingFormat = "blazeBinary"` (was `"json"`)
 
 2. **`BlazeCollection.swift`**
- - All `JSONEncoder` → `BlazeBinaryEncoder`
- - All `JSONDecoder` → `BlazeBinaryDecoder`
- - `insertMany()` uses `writePageUnsynchronized()` + `synchronize()`
+- All `JSONEncoder` → `BlazeBinaryEncoder`
+- All `JSONDecoder` → `BlazeBinaryDecoder`
+- `insertMany()` uses `writePageUnsynchronized()` + `synchronize()`
 
 3. **`DynamicCollection.swift`**
- - `metadataFlushThreshold = 1000` (was `100`)
+- `metadataFlushThreshold = 1000` (was `100`)
 
 4. **`AutoMigration.swift`**
- - Always sets `encodingFormat = "blazeBinary"` (no more JSON!)
+- Always sets `encodingFormat = "blazeBinary"` (no more JSON!)
 
 ---
 

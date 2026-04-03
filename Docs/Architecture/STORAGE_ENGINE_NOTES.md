@@ -19,71 +19,71 @@ This is an architectural mental model, not a claim that the current implementati
 
 ```mermaid
 sequenceDiagram
-    participant App as BlazeDB API
-    participant PS as PageStore
-    participant WAL as WriteAheadLog
-    participant DB as Main .blazedb File
+ participant App as BlazeDB API
+ participant PS as PageStore
+ participant WAL as WriteAheadLog
+ participant DB as Main .blazedb File
 
-    App->>PS: writePage(index, plaintext)
-    PS->>PS: AES-GCM seal(plaintext) -> page buffer\n(magic, version, len, nonce, tag, ciphertext)
-    PS->>WAL: append(pageIndex, encrypted buffer)
-    WAL->>WAL: pwrite framed entry + fsync
-    PS->>DB: pwrite encrypted buffer to page slot
-    PS->>DB: fsync main file
+ App->>PS: writePage(index, plaintext)
+ PS->>PS: AES-GCM seal(plaintext) -> page buffer\n(magic, version, len, nonce, tag, ciphertext)
+ PS->>WAL: append(pageIndex, encrypted buffer)
+ WAL->>WAL: pwrite framed entry + fsync
+ PS->>DB: pwrite encrypted buffer to page slot
+ PS->>DB: fsync main file
 ```
 
 Recovery on open:
 
 ```mermaid
 sequenceDiagram
-    participant PS as PageStore
-    participant WAL as WriteAheadLog
-    participant DB as Main .blazedb File
+ participant PS as PageStore
+ participant WAL as WriteAheadLog
+ participant DB as Main .blazedb File
 
-    PS->>WAL: replay()
-    WAL-->>PS: ordered valid entries (CRC-checked)
-    loop each entry
-        PS->>DB: pwrite encrypted buffer to page slot
-    end
-    PS->>DB: fsync main file
-    PS->>WAL: checkpoint + truncate/clear per mode
+ PS->>WAL: replay()
+ WAL-->>PS: ordered valid entries (CRC-checked)
+ loop each entry
+ PS->>DB: pwrite encrypted buffer to page slot
+ end
+ PS->>DB: fsync main file
+ PS->>WAL: checkpoint + truncate/clear per mode
 ```
 
 ## Unified WAL Flow (`WALMode.unified`)
 
 ```mermaid
 sequenceDiagram
-    participant App as BlazeDB API
-    participant PS as PageStore
-    participant DM as DurabilityManager
-    participant DB as Main .blazedb File
+ participant App as BlazeDB API
+ participant PS as PageStore
+ participant DM as DurabilityManager
+ participant DB as Main .blazedb File
 
-    App->>PS: writePage(index, plaintext)
-    PS->>PS: AES-GCM seal(plaintext) -> encrypted buffer
-    PS->>DM: appendBegin(txID)
-    PS->>DM: appendWrite(txID, pageIndex, encrypted buffer)
-    PS->>DM: appendCommit(txID)
-    DM->>DM: fsync on commit/abort/checkpoint
-    PS->>DB: pwrite encrypted buffer to page slot
-    PS->>DB: fsync main file
+ App->>PS: writePage(index, plaintext)
+ PS->>PS: AES-GCM seal(plaintext) -> encrypted buffer
+ PS->>DM: appendBegin(txID)
+ PS->>DM: appendWrite(txID, pageIndex, encrypted buffer)
+ PS->>DM: appendCommit(txID)
+ DM->>DM: fsync on commit/abort/checkpoint
+ PS->>DB: pwrite encrypted buffer to page slot
+ PS->>DB: fsync main file
 ```
 
 Recovery on open:
 
 ```mermaid
 sequenceDiagram
-    participant PS as PageStore
-    participant RM as RecoveryManager
-    participant DM as DurabilityManager
-    participant DB as Main .blazedb File
+ participant PS as PageStore
+ participant RM as RecoveryManager
+ participant DM as DurabilityManager
+ participant DB as Main .blazedb File
 
-    RM->>DM: scanEntries(wal)
-    RM-->>PS: committed writes in LSN order\n(uncommitted discarded)
-    loop each committed write/delete
-        PS->>DB: pwrite encrypted payload or zero page
-    end
-    PS->>DB: fsync main file
-    PS->>DM: checkpoint() + truncate/clear per mode
+ RM->>DM: scanEntries(wal)
+ RM-->>PS: committed writes in LSN order\n(uncommitted discarded)
+ loop each committed write/delete
+ PS->>DB: pwrite encrypted payload or zero page
+ end
+ PS->>DB: fsync main file
+ PS->>DM: checkpoint() + truncate/clear per mode
 ```
 
 ## Encryption and Page Format
@@ -91,12 +91,12 @@ sequenceDiagram
 - Page encryption uses AES-GCM with a newly generated nonce per encryption operation.
 - Benchmark-only builds can disable encryption via `BLAZEDB_BENCHMARK_NO_ENCRYPTION` for performance isolation.
 - Current encrypted page layout in `PageStore` is:
-  - 4 bytes magic (`BZDB`)
-  - 1 byte version (`0x02` encrypted, `0x01` plaintext legacy)
-  - 4 bytes plaintext length
-  - 12 bytes nonce
-  - 16 bytes GCM tag
-  - ciphertext
+- 4 bytes magic (`BZDB`)
+- 1 byte version (`0x02` encrypted, `0x01` plaintext legacy)
+- 4 bytes plaintext length
+- 12 bytes nonce
+- 16 bytes GCM tag
+- ciphertext
 - On read, the engine reconstructs `AES.GCM.SealedBox` and calls `AES.GCM.open`.
 - Authentication failure is treated as corruption or key mismatch, and the read is rejected.
 
@@ -127,6 +127,6 @@ sequenceDiagram
 - Encryption is integrated into the page primitive, not bolted on after WAL.
 - Crash recovery remains feasible because WAL replays encrypted page buffers directly back into page slots.
 - The deepest operational questions are not "is AES-GCM used?" but:
-  - key lifecycle,
-  - nonce governance under extreme write rates,
-  - and performance tuning under encrypted full-page replay.
+- key lifecycle,
+- nonce governance under extreme write rates,
+- and performance tuning under encrypted full-page replay.

@@ -9,40 +9,40 @@ This policy defines what we support and how to report issues.
 ## What We Support
 
 ### Core Functionality
--  Data corruption or loss
--  Migration failures
--  Import/export failures
--  Query errors or incorrect results
--  Performance regressions in core operations
+- Data corruption or loss
+- Migration failures
+- Import/export failures
+- Query errors or incorrect results
+- Performance regressions in core operations
 
 ### Trust Features
--  Health report accuracy
--  Error message clarity
--  Migration planning correctness
--  Dump/restore integrity
+- Health report accuracy
+- Error message clarity
+- Migration planning correctness
+- Dump/restore integrity
 
 ### Documentation
--  Missing or unclear documentation
--  Incorrect examples
--  API documentation gaps
+- Missing or unclear documentation
+- Incorrect examples
+- API documentation gaps
 
 ---
 
 ## What We Don't Support (Yet)
 
 ### Distributed Modules
--  Sync/replication issues (modules not Swift 6 compliant)
--  Network transport problems
--  Cross-app sync failures
+- Sync/replication issues (modules not Swift 6 compliant)
+- Network transport problems
+- Cross-app sync failures
 
 ### Performance Optimization
--  Broad "make it faster" requests without reproducible workload details
--  Parallelism requests that bypass current safety constraints
--  Query optimization requests without schema/query examples
+- Broad "make it faster" requests without reproducible workload details
+- Parallelism requests that bypass current safety constraints
+- Query optimization requests without schema/query examples
 
 ### Experimental Features
--  Advanced query features (spatial, vector on Linux)
--  Telemetry API issues (actor isolation problems)
+- Advanced query features (spatial, vector on Linux)
+- Telemetry API issues (actor isolation problems)
 
 ---
 

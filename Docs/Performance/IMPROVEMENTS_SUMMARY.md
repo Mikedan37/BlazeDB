@@ -63,7 +63,7 @@ GAIN: System stability + better scalability!
 
 ### **HIGH PRIORITY (Biggest Impact):**
 
-#### **1. Async File I/O** 
+#### **1. Async File I/O**
 ```
 Current: Synchronous FileHandle operations (blocking)
 Optimization: Async file I/O with FileHandle.asyncRead/asyncWrite
@@ -76,7 +76,7 @@ Impact:
 Expected Gain: 2-5x faster I/O!
 ```
 
-#### **2. Parallel Encoding/Decoding** 
+#### **2. Parallel Encoding/Decoding**
 ```
 Current: Sequential encoding/decoding
 Optimization: Parallel encoding with TaskGroup + SIMD
@@ -89,7 +89,7 @@ Impact:
 Expected Gain: 4-8x faster encoding!
 ```
 
-#### **3. Write Batching** 
+#### **3. Write Batching**
 ```
 Current: Individual page writes with fsync
 Optimization: Batch multiple writes, single fsync
@@ -104,7 +104,7 @@ Expected Gain: 3-5x faster writes!
 
 ### **MEDIUM PRIORITY (High Impact):**
 
-#### **4. Memory-Mapped I/O** 
+#### **4. Memory-Mapped I/O**
 ```
 Current: FileHandle-based I/O
 Optimization: Memory-mapped files for reads
@@ -117,7 +117,7 @@ Impact:
 Expected Gain: 10-100x faster reads!
 ```
 
-#### **5. Compression** 
+#### **5. Compression**
 ```
 Current: Uncompressed data
 Optimization: LZ4 compression for pages > 1KB
@@ -130,7 +130,7 @@ Impact:
 Expected Gain: 50-70% less storage!
 ```
 
-#### **6. Index Optimization** 
+#### **6. Index Optimization**
 ```
 Current: Synchronous index updates
 Optimization: Async index updates with batching
@@ -145,7 +145,7 @@ Expected Gain: 2-3x faster indexes!
 
 ### **LOW PRIORITY (Polish):**
 
-#### **7. Prefetching** 
+#### **7. Prefetching**
 ```
 Current: Read on demand
 Optimization: Predictive prefetching
@@ -157,7 +157,7 @@ Impact:
 Expected Gain: 2-5x faster sequential reads!
 ```
 
-#### **8. SIMD Optimizations** 
+#### **8. SIMD Optimizations**
 ```
 Current: Scalar operations
 Optimization: SIMD for bulk operations

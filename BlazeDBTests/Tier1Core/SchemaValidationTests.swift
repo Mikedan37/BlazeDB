@@ -14,14 +14,14 @@ import XCTest
 
 final class SchemaValidationTests: XCTestCase {
     
-    var dbURL: URL!
-    var db: BlazeDBClient!
+    private var dbURL: URL?
+    private var db: BlazeDBClient?
     
     override func setUp() async throws {
         try await super.setUp()
         dbURL = FileManager.default.temporaryDirectory
             .appendingPathComponent("Schema-\(UUID().uuidString).blazedb")
-        db = try BlazeDBClient(name: "SchemaTest", fileURL: dbURL, password: "SecureTestDB-456!")
+        db = try BlazeDBClient(name: "SchemaTest", fileURL: try requireFixture(dbURL), password: "SecureTestDB-456!")
     }
     
     override func tearDown() {
@@ -48,11 +48,11 @@ final class SchemaValidationTests: XCTestCase {
             FieldSchema(name: "priority", type: .int, required: true)
         ])
         
-        db.defineSchema(schema)
+        try requireFixture(db).defineSchema(schema)
         
         // Try to insert record without required field
         do {
-            _ = try db.insert(BlazeDataRecord([
+            _ = try requireFixture(db).insert(BlazeDataRecord([
                 "title": .string("Bug 1")
                 // Missing "priority" (required!)
             ]))
@@ -65,7 +65,7 @@ final class SchemaValidationTests: XCTestCase {
         }
         
         // Insert with all required fields should work
-        let id = try db.insert(BlazeDataRecord([
+        let id = try requireFixture(db).insert(BlazeDataRecord([
             "title": .string("Bug 1"),
             "priority": .int(5)
         ]))
@@ -83,11 +83,11 @@ final class SchemaValidationTests: XCTestCase {
             FieldSchema(name: "score", type: .double)
         ])
         
-        db.defineSchema(schema)
+        try requireFixture(db).defineSchema(schema)
         
         // Try to insert wrong type
         do {
-            _ = try db.insert(BlazeDataRecord([
+            _ = try requireFixture(db).insert(BlazeDataRecord([
                 "title": .int(123)  // Wrong type! Should be string
             ]))
             XCTFail("Should have thrown error for wrong type")
@@ -97,7 +97,7 @@ final class SchemaValidationTests: XCTestCase {
         }
         
         // Correct types should work
-        let id = try db.insert(BlazeDataRecord([
+        let id = try requireFixture(db).insert(BlazeDataRecord([
             "title": .string("Valid title"),
             "count": .int(42),
             "score": .double(9.5)
@@ -120,11 +120,11 @@ final class SchemaValidationTests: XCTestCase {
             })
         ])
         
-        db.defineSchema(schema)
+        try requireFixture(db).defineSchema(schema)
         
         // Try invalid priority
         do {
-            _ = try db.insert(BlazeDataRecord([
+            _ = try requireFixture(db).insert(BlazeDataRecord([
                 "priority": .int(10)  // Out of range!
             ]))
             XCTFail("Should have thrown error for invalid priority")
@@ -133,7 +133,7 @@ final class SchemaValidationTests: XCTestCase {
         }
         
         // Valid priority should work
-        let id = try db.insert(BlazeDataRecord([
+        let id = try requireFixture(db).insert(BlazeDataRecord([
             "priority": .int(3)  // Valid (1-5)
         ]))
         
@@ -148,11 +148,11 @@ final class SchemaValidationTests: XCTestCase {
             FieldSchema(name: "title", type: .string)
         ], strict: true)
         
-        db.defineSchema(schema)
+        try requireFixture(db).defineSchema(schema)
         
         // Try to insert with unknown field
         do {
-            _ = try db.insert(BlazeDataRecord([
+            _ = try requireFixture(db).insert(BlazeDataRecord([
                 "title": .string("Valid"),
                 "extraField": .string("Unknown")  // Not in schema!
             ]))
@@ -163,7 +163,7 @@ final class SchemaValidationTests: XCTestCase {
         }
         
         // Only known fields should work
-        let id = try db.insert(BlazeDataRecord([
+        let id = try requireFixture(db).insert(BlazeDataRecord([
             "title": .string("Valid")
         ]))
         
@@ -178,15 +178,15 @@ final class SchemaValidationTests: XCTestCase {
             FieldSchema(name: "status", type: .string, required: false, defaultValue: .string("open"))
         ])
         
-        db.defineSchema(schema)
+        try requireFixture(db).defineSchema(schema)
         
         // Insert without status field
-        let id = try db.insert(BlazeDataRecord([
+        let id = try requireFixture(db).insert(BlazeDataRecord([
             "title": .string("Bug 1")
         ]))
         
         // Fetch and check default was applied
-        let record = try db.fetch(id: id)
+        let record = try requireFixture(db).fetch(id: id)
         
         // Note: Default values would need to be applied in insert logic
         // For now, just verify it doesn't error
@@ -206,16 +206,16 @@ final class SchemaValidationTests: XCTestCase {
             })
         ])
         
-        db.defineSchema(schema)
+        try requireFixture(db).defineSchema(schema)
         
         // Insert valid record
-        let id = try db.insert(BlazeDataRecord([
+        let id = try requireFixture(db).insert(BlazeDataRecord([
             "priority": .int(3)
         ]))
         
         // Try to update with invalid value
         do {
-            try db.update(id: id, with: BlazeDataRecord([
+            try requireFixture(db).update(id: id, with: BlazeDataRecord([
                 "priority": .int(10)  // Invalid!
             ]))
             XCTFail("Should have thrown error for invalid update")
@@ -224,11 +224,11 @@ final class SchemaValidationTests: XCTestCase {
         }
         
         // Valid update should work
-        try db.update(id: id, with: BlazeDataRecord([
+        try requireFixture(db).update(id: id, with: BlazeDataRecord([
             "priority": .int(5)  // Valid
         ]))
         
-        let updated = try db.fetch(id: id)
+        let updated = try requireFixture(db).fetch(id: id)
         XCTAssertEqual(updated?.storage["priority"]?.intValue, 5)
         print("  ✅ Valid update accepted")
     }
@@ -240,11 +240,11 @@ final class SchemaValidationTests: XCTestCase {
             FieldSchema(name: "title", type: .string, required: true)
         ], strict: true)
         
-        db.defineSchema(schema)
+        try requireFixture(db).defineSchema(schema)
         
         // With schema: should reject unknown fields
         do {
-            _ = try db.insert(BlazeDataRecord([
+            _ = try requireFixture(db).insert(BlazeDataRecord([
                 "unknown": .string("value")
             ]))
             XCTFail("Should reject when schema active")
@@ -253,10 +253,10 @@ final class SchemaValidationTests: XCTestCase {
         }
         
         // Remove schema
-        db.removeSchema()
+        try requireFixture(db).removeSchema()
         
         // Without schema: should accept anything
-        let id = try db.insert(BlazeDataRecord([
+        let id = try requireFixture(db).insert(BlazeDataRecord([
             "unknown": .string("value")
         ]))
         
@@ -273,10 +273,10 @@ final class SchemaValidationTests: XCTestCase {
             FieldSchema(name: "optional", type: .string, required: false)
         ])
         
-        db.defineSchema(schema)
+        try requireFixture(db).defineSchema(schema)
         
         // Empty record (all fields optional)
-        let id = try db.insert(BlazeDataRecord([:]))
+        let id = try requireFixture(db).insert(BlazeDataRecord([:]))
         
         XCTAssertNotNil(id)
         print("  ✅ Empty record accepted when no required fields")
@@ -297,10 +297,10 @@ final class SchemaValidationTests: XCTestCase {
             FieldSchema(name: "dict", type: .dictionary)
         ])
         
-        db.defineSchema(schema)
+        try requireFixture(db).defineSchema(schema)
         
         // Insert with all types
-        let id = try db.insert(BlazeDataRecord([
+        let id = try requireFixture(db).insert(BlazeDataRecord([
             "str": .string("test"),
             "int": .int(42),
             "dbl": .double(3.14),
@@ -323,10 +323,10 @@ final class SchemaValidationTests: XCTestCase {
             FieldSchema(name: "score", type: .double)
         ])
         
-        db.defineSchema(schema)
+        try requireFixture(db).defineSchema(schema)
         
         // Insert int for double field (should be allowed)
-        let id = try db.insert(BlazeDataRecord([
+        let id = try requireFixture(db).insert(BlazeDataRecord([
             "score": .int(10)  // Int treated as Double
         ]))
         

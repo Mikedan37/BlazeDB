@@ -133,20 +133,20 @@ let bugTrackerDB = try BlazeDBClient.connectToSharedDB(
 
 ## **WHAT'S NEXT:**
 
-### **Phase 2: Vapor Server** ⏳
+### **Phase 2: Vapor Server**
 ```
 Server/ (Vapor)
  Package.swift
  Sources/App/
-  main.swift
-  WebSocketHandler.swift
-  TopologyCoordinator.swift
-  DatabaseManager.swift
+ main.swift
+ WebSocketHandler.swift
+ TopologyCoordinator.swift
+ DatabaseManager.swift
  Tests/
-  ServerTests.swift
+ ServerTests.swift
 ```
 
-### **Phase 3: Tests** ⏳
+### **Phase 3: Tests**
 ```
 BlazeDBTests/
  TopologyTests.swift
@@ -155,7 +155,7 @@ BlazeDBTests/
  ServerSyncTests.swift
 ```
 
-### **Phase 4: Integration** ⏳
+### **Phase 4: Integration**
 ```
 • BlazeDBClient integration
 • Automatic transport selection
@@ -184,8 +184,8 @@ BlazeDBTests/
 
 1. Local DB-to-DB sync (same device)
 2. DB-to-server sync (Vapor + BlazeDB)
-3. ⏳ Vapor server implementation (next!)
-4. ⏳ Tests (next!)
+3. Vapor server implementation (next!)
+4. Tests (next!)
 
 ---
 

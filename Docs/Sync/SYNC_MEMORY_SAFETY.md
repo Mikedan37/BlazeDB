@@ -67,10 +67,10 @@ All data structures passed between actors are `Sendable`:
 
 ## **Conclusion:**
 
- **Memory Safe:** Actor-based isolation prevents all data races
- **Modern:** Uses latest Swift concurrency features
- **Rapid:** <0.1ms latency, 10K-50K ops/sec
- **Production Ready:** Comprehensive tests, proper error handling
+**Memory Safe:** Actor-based isolation prevents all data races
+**Modern:** Uses latest Swift concurrency features
+**Rapid:** <0.1ms latency, 10K-50K ops/sec
+**Production Ready:** Comprehensive tests, proper error handling
 
 **BlazeDB Sync is memory-safe, modern, and rapid! **
 

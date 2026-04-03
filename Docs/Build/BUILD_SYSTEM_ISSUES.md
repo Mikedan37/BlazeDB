@@ -66,7 +66,7 @@ swift build
 
 ---
 
-##  **Actor Isolation Warnings**
+## **Actor Isolation Warnings**
 
 The actor isolation warnings for `BlazeSyncRelay` conformances are **expected** and **safe**:
 

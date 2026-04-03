@@ -76,20 +76,20 @@ try await topology.connectCrossApp(
 ### **Connection Flow:**
 
 1. **Server Side (App 1):**
- - Creates `UnixDomainSocketRelay` (listener)
- - Calls `startListening()` on socket path
- - Waits for incoming connections
+- Creates `UnixDomainSocketRelay` (listener)
+- Calls `startListening()` on socket path
+- Waits for incoming connections
 
 2. **Client Side (App 2):**
- - Creates `UnixDomainSocketRelay` (connector)
- - Calls `connect()` to socket path
- - Establishes connection to server
+- Creates `UnixDomainSocketRelay` (connector)
+- Calls `connect()` to socket path
+- Establishes connection to server
 
 3. **Data Flow:**
- - Operations encoded in **BlazeBinary** (fast!)
- - Sent over Unix Domain Socket
- - Decoded on receiving side
- - Applied to database
+- Operations encoded in **BlazeBinary** (fast!)
+- Sent over Unix Domain Socket
+- Decoded on receiving side
+- Applied to database
 
 ---
 
@@ -143,7 +143,7 @@ See `UnixDomainSocketTests.swift` for:
 
 ## **Status:**
 
- **PRODUCTION READY**
+**PRODUCTION READY**
 
 - Fully implemented
 - BlazeBinary encoding

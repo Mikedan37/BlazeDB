@@ -22,15 +22,15 @@ import XCTest
 /// These tests verify the fix holds — different queries must produce different cache keys.
 final class CacheKeyBugTests: XCTestCase {
 
-    var tempURL: URL!
-    var db: BlazeDBClient!
+    private var tempURL: URL?
+    private var db: BlazeDBClient?
 
-    override func setUp() {
-        super.setUp()
+    override func setUpWithError() throws {
+        try super.setUpWithError()
         let testID = UUID().uuidString
         tempURL = FileManager.default.temporaryDirectory
             .appendingPathComponent("CacheKeyBug-\(testID).blazedb")
-        db = try! BlazeDBClient(name: "cache_key_bug_\(testID)", fileURL: tempURL, password: "CacheKeyBugTest123!")
+        db = try BlazeDBClient(name: "cache_key_bug_\(testID)", fileURL: try requireFixture(tempURL), password: "CacheKeyBugTest123!")
         QueryCache.shared.clearAll()
         QueryCache.shared.isEnabled = true
     }
@@ -50,18 +50,18 @@ final class CacheKeyBugTests: XCTestCase {
     /// Previously, both queries had cacheKey "filters:1|..." and Query B got Query A's results.
     func testDeprecatedCacheKeyCollision_DifferentValues() throws {
         for i in 0..<3 {
-            _ = try db.insert(BlazeDataRecord(["status": .string("open"), "idx": .int(i)]))
+            _ = try requireFixture(db).insert(BlazeDataRecord(["status": .string("open"), "idx": .int(i)]))
         }
         for i in 0..<2 {
-            _ = try db.insert(BlazeDataRecord(["status": .string("closed"), "idx": .int(i)]))
+            _ = try requireFixture(db).insert(BlazeDataRecord(["status": .string("closed"), "idx": .int(i)]))
         }
 
-        let resultsA = try db.query()
+        let resultsA = try requireFixture(db).query()
             .where("status", equals: .string("open"))
             .executeWithCache(ttl: 60)
         XCTAssertEqual(resultsA.count, 3, "Query A should find 3 open records")
 
-        let resultsB = try db.query()
+        let resultsB = try requireFixture(db).query()
             .where("status", equals: .string("closed"))
             .executeWithCache(ttl: 60)
         XCTAssertEqual(resultsB.count, 2,
@@ -71,18 +71,18 @@ final class CacheKeyBugTests: XCTestCase {
     /// Regression test: queries filtering on different fields must not share cache entries.
     /// Previously, both queries had the same cache key because only filter count was hashed.
     func testDeprecatedCacheKeyCollision_DifferentFields() throws {
-        _ = try db.insert(BlazeDataRecord(["status": .string("open"), "priority": .int(5)]))
-        _ = try db.insert(BlazeDataRecord(["status": .string("open"), "priority": .int(1)]))
-        _ = try db.insert(BlazeDataRecord(["status": .string("closed"), "priority": .int(5)]))
+        _ = try requireFixture(db).insert(BlazeDataRecord(["status": .string("open"), "priority": .int(5)]))
+        _ = try requireFixture(db).insert(BlazeDataRecord(["status": .string("open"), "priority": .int(1)]))
+        _ = try requireFixture(db).insert(BlazeDataRecord(["status": .string("closed"), "priority": .int(5)]))
 
         // Query A: filter by status
-        let resultsA = try db.query()
+        let resultsA = try requireFixture(db).query()
             .where("status", equals: .string("open"))
             .executeWithCache(ttl: 60)
         XCTAssertEqual(resultsA.count, 2, "Query A should find 2 open records")
 
         // Query B: filter by priority — different field entirely
-        let resultsB = try db.query()
+        let resultsB = try requireFixture(db).query()
             .where("priority", equals: .int(5))
             .executeWithCache(ttl: 60)
 
@@ -96,21 +96,21 @@ final class CacheKeyBugTests: XCTestCase {
     /// correctly includes filter descriptor hashes. This test should always pass.
     func testNewCacheKeyCorrectlyDifferentiates() throws {
         for i in 0..<3 {
-            _ = try db.insert(BlazeDataRecord(["status": .string("open"), "idx": .int(i)]))
+            _ = try requireFixture(db).insert(BlazeDataRecord(["status": .string("open"), "idx": .int(i)]))
         }
         for i in 0..<2 {
-            _ = try db.insert(BlazeDataRecord(["status": .string("closed"), "idx": .int(i)]))
+            _ = try requireFixture(db).insert(BlazeDataRecord(["status": .string("closed"), "idx": .int(i)]))
         }
 
         // Query A via new path
-        let resultA = try db.query()
+        let resultA = try requireFixture(db).query()
             .where("status", equals: .string("open"))
             .execute(withCache: 60)
         let recordsA = try resultA.records
         XCTAssertEqual(recordsA.count, 3)
 
         // Query B via new path — should NOT collide
-        let resultB = try db.query()
+        let resultB = try requireFixture(db).query()
             .where("status", equals: .string("closed"))
             .execute(withCache: 60)
         let recordsB = try resultB.records
@@ -122,17 +122,17 @@ final class CacheKeyBugTests: XCTestCase {
     /// Previously, WHERE priority > 3 and WHERE priority < 3 had the same cache key.
     func testDeprecatedCacheKeyCollision_DifferentOperators() throws {
         for i in 1...5 {
-            _ = try db.insert(BlazeDataRecord(["priority": .int(i)]))
+            _ = try requireFixture(db).insert(BlazeDataRecord(["priority": .int(i)]))
         }
 
         // Query A: priority > 3 → records with 4, 5
-        let resultsA = try db.query()
+        let resultsA = try requireFixture(db).query()
             .where("priority", greaterThan: .int(3))
             .executeWithCache(ttl: 60)
         XCTAssertEqual(resultsA.count, 2)
 
         // Query B: priority < 3 → records with 1, 2
-        let resultsB = try db.query()
+        let resultsB = try requireFixture(db).query()
             .where("priority", lessThan: .int(3))
             .executeWithCache(ttl: 60)
 
@@ -198,15 +198,15 @@ final class DatabaseLockedMessageBugTests: XCTestCase {
 /// not unrelated query builder mistakes.
 final class TransactionFailedMisuseBugTests: XCTestCase {
 
-    var tempURL: URL!
-    var db: BlazeDBClient!
+    private var tempURL: URL?
+    private var db: BlazeDBClient?
 
-    override func setUp() {
-        super.setUp()
+    override func setUpWithError() throws {
+        try super.setUpWithError()
         let testID = UUID().uuidString
         tempURL = FileManager.default.temporaryDirectory
             .appendingPathComponent("TxMisuse-\(testID).blazedb")
-        db = try! BlazeDBClient(name: "tx_misuse_\(testID)", fileURL: tempURL, password: "TxMisuseTest123!")
+        db = try BlazeDBClient(name: "tx_misuse_\(testID)", fileURL: try requireFixture(tempURL), password: "TxMisuseTest123!")
     }
 
     override func tearDown() {
@@ -221,10 +221,10 @@ final class TransactionFailedMisuseBugTests: XCTestCase {
 
     /// Regression test: groupBy without aggregation must throw .invalidQuery, not .transactionFailed.
     func testGroupByWithoutAggregationThrowsInvalidQuery() throws {
-        _ = try db.insert(BlazeDataRecord(["status": .string("open")]))
+        _ = try requireFixture(db).insert(BlazeDataRecord(["status": .string("open")]))
 
         do {
-            let query = db.query().groupBy("status")
+            let query = try requireFixture(db).query().groupBy("status")
             _ = try query.executeGroupedAggregation()
             XCTFail("Should have thrown an error")
         } catch let error as BlazeDBError {
@@ -241,10 +241,10 @@ final class TransactionFailedMisuseBugTests: XCTestCase {
 
     /// Regression test: executeJoin() without a join must throw .invalidQuery.
     func testJoinWithoutJoinOperationThrowsInvalidQuery() throws {
-        _ = try db.insert(BlazeDataRecord(["title": .string("test")]))
+        _ = try requireFixture(db).insert(BlazeDataRecord(["title": .string("test")]))
 
         do {
-            let query = db.query()
+            let query = try requireFixture(db).query()
             _ = try query.executeJoin()
             XCTFail("Should have thrown an error")
         } catch let error as BlazeDBError {
@@ -261,10 +261,10 @@ final class TransactionFailedMisuseBugTests: XCTestCase {
 
     /// Regression test: executeAggregation() without aggregations must throw .invalidQuery.
     func testAggregationWithoutOperationsThrowsInvalidQuery() throws {
-        _ = try db.insert(BlazeDataRecord(["value": .int(1)]))
+        _ = try requireFixture(db).insert(BlazeDataRecord(["value": .int(1)]))
 
         do {
-            let query = db.query()
+            let query = try requireFixture(db).query()
             _ = try query.executeAggregation()
             XCTFail("Should have thrown an error")
         } catch let error as BlazeDBError {
@@ -281,12 +281,12 @@ final class TransactionFailedMisuseBugTests: XCTestCase {
 
     /// Contract enforcement: catch .transactionFailed must NOT catch query structure errors.
     func testTransactionFailedDoesNotCatchQueryErrors() throws {
-        _ = try db.insert(BlazeDataRecord(["status": .string("open")]))
+        _ = try requireFixture(db).insert(BlazeDataRecord(["status": .string("open")]))
 
         var caughtAsTransactionError = false
 
         do {
-            _ = try db.query().groupBy("status").executeGroupedAggregation()
+            _ = try requireFixture(db).query().groupBy("status").executeGroupedAggregation()
         } catch BlazeDBError.transactionFailed {
             caughtAsTransactionError = true
         } catch {
@@ -306,15 +306,15 @@ final class TransactionFailedMisuseBugTests: XCTestCase {
 /// The `useIndex()` and `forceTableScan()` stubs are now documented as unimplemented.
 final class QueryExplainBugTests: XCTestCase {
 
-    var tempURL: URL!
-    var db: BlazeDBClient!
+    private var tempURL: URL?
+    private var db: BlazeDBClient?
 
-    override func setUp() {
-        super.setUp()
+    override func setUpWithError() throws {
+        try super.setUpWithError()
         let testID = UUID().uuidString
         tempURL = FileManager.default.temporaryDirectory
             .appendingPathComponent("ExplainBug-\(testID).blazedb")
-        db = try! BlazeDBClient(name: "explain_bug_\(testID)", fileURL: tempURL, password: "ExplainBugTest123!")
+        db = try BlazeDBClient(name: "explain_bug_\(testID)", fileURL: try requireFixture(tempURL), password: "ExplainBugTest123!")
     }
 
     override func tearDown() {
@@ -330,15 +330,15 @@ final class QueryExplainBugTests: XCTestCase {
     /// Verify explain surfaces candidate indexes while clearly marking selection as advisory.
     func testExplainReportsCandidateIndexesHonestly() throws {
         for i in 0..<100 {
-            _ = try db.insert(BlazeDataRecord([
+            _ = try requireFixture(db).insert(BlazeDataRecord([
                 "status": .string(i % 2 == 0 ? "open" : "closed"),
                 "priority": .int(i % 5)
             ]))
         }
 
-        try db.collection.createIndex(on: "status")
+        try requireFixture(db).collection.createIndex(on: "status")
 
-        let plan = try db.query()
+        let plan = try requireFixture(db).query()
             .where("status", equals: .string("open"))
             .explain()
 
@@ -355,17 +355,17 @@ final class QueryExplainBugTests: XCTestCase {
     /// Verify useIndex() is a documented stub that doesn't affect the plan.
     func testUseIndexIsDocumentedStub() throws {
         for i in 0..<50 {
-            _ = try db.insert(BlazeDataRecord(["value": .int(i)]))
+            _ = try requireFixture(db).insert(BlazeDataRecord(["value": .int(i)]))
         }
 
-        try db.collection.createIndex(on: "value")
+        try requireFixture(db).collection.createIndex(on: "value")
 
-        let planWithHint = try db.query()
+        let planWithHint = try requireFixture(db).query()
             .where("value", greaterThan: .int(25))
             .useIndex("value")
             .explain()
 
-        let planWithoutHint = try db.query()
+        let planWithoutHint = try requireFixture(db).query()
             .where("value", greaterThan: .int(25))
             .explain()
 
@@ -377,14 +377,14 @@ final class QueryExplainBugTests: XCTestCase {
     /// Verify forceTableScan() is a documented stub that doesn't affect the plan.
     func testForceTableScanIsDocumentedStub() throws {
         for i in 0..<50 {
-            _ = try db.insert(BlazeDataRecord(["value": .int(i)]))
+            _ = try requireFixture(db).insert(BlazeDataRecord(["value": .int(i)]))
         }
 
-        let planNormal = try db.query()
+        let planNormal = try requireFixture(db).query()
             .where("value", greaterThan: .int(25))
             .explain()
 
-        let planForced = try db.query()
+        let planForced = try requireFixture(db).query()
             .where("value", greaterThan: .int(25))
             .forceTableScan()
             .explain()
@@ -404,15 +404,15 @@ final class QueryExplainBugTests: XCTestCase {
 /// Already existed: equals, greaterThan, lessThan, filter() (custom closure)
 final class TypeSafeQueryBuilderGapTests: XCTestCase {
 
-    var tempURL: URL!
-    var db: BlazeDBClient!
+    private var tempURL: URL?
+    private var db: BlazeDBClient?
 
-    override func setUp() {
-        super.setUp()
+    override func setUpWithError() throws {
+        try super.setUpWithError()
         let testID = UUID().uuidString
         tempURL = FileManager.default.temporaryDirectory
             .appendingPathComponent("TSQueryGap-\(testID).blazedb")
-        db = try! BlazeDBClient(name: "ts_query_gap_\(testID)", fileURL: tempURL, password: "TSQueryGapTest123!")
+        db = try BlazeDBClient(name: "ts_query_gap_\(testID)", fileURL: try requireFixture(tempURL), password: "TSQueryGapTest123!")
     }
 
     override func tearDown() {
@@ -436,40 +436,40 @@ final class TypeSafeQueryBuilderGapTests: XCTestCase {
             if i < 5 {
                 fields["assignee"] = .string("Alice")
             }
-            _ = try db.insert(BlazeDataRecord(fields))
+            _ = try requireFixture(db).insert(BlazeDataRecord(fields))
         }
 
-        let r1 = try db.query().where("status", equals: .string("open")).execute()
+        let r1 = try requireFixture(db).query().where("status", equals: .string("open")).execute()
         XCTAssertGreaterThan(try r1.records.count, 0, "equals works")
 
-        let r2 = try db.query().where("status", notEquals: .string("open")).execute()
+        let r2 = try requireFixture(db).query().where("status", notEquals: .string("open")).execute()
         XCTAssertGreaterThan(try r2.records.count, 0, "notEquals works")
 
-        let r3 = try db.query().where("priority", greaterThan: .int(5)).execute()
+        let r3 = try requireFixture(db).query().where("priority", greaterThan: .int(5)).execute()
         XCTAssertGreaterThan(try r3.records.count, 0, "greaterThan works")
 
-        let r4 = try db.query().where("priority", lessThan: .int(5)).execute()
+        let r4 = try requireFixture(db).query().where("priority", lessThan: .int(5)).execute()
         XCTAssertGreaterThan(try r4.records.count, 0, "lessThan works")
 
-        let r5 = try db.query().where("priority", greaterThanOrEqual: .int(5)).execute()
+        let r5 = try requireFixture(db).query().where("priority", greaterThanOrEqual: .int(5)).execute()
         XCTAssertGreaterThan(try r5.records.count, 0, "greaterThanOrEqual works")
 
-        let r6 = try db.query().where("priority", lessThanOrEqual: .int(5)).execute()
+        let r6 = try requireFixture(db).query().where("priority", lessThanOrEqual: .int(5)).execute()
         XCTAssertGreaterThan(try r6.records.count, 0, "lessThanOrEqual works")
 
-        let r7 = try db.query().where("title", contains: "Bug").execute()
+        let r7 = try requireFixture(db).query().where("title", contains: "Bug").execute()
         XCTAssertGreaterThan(try r7.records.count, 0, "contains works")
 
-        let r8 = try db.query().where("priority", in: [.int(1), .int(3), .int(5)]).execute()
+        let r8 = try requireFixture(db).query().where("priority", in: [.int(1), .int(3), .int(5)]).execute()
         XCTAssertGreaterThan(try r8.records.count, 0, "in works")
 
-        let r9 = try db.query().whereNil("assignee").execute()
+        let r9 = try requireFixture(db).query().whereNil("assignee").execute()
         XCTAssertGreaterThan(try r9.records.count, 0, "whereNil works")
 
-        let r10 = try db.query().whereNotNil("assignee").execute()
+        let r10 = try requireFixture(db).query().whereNotNil("assignee").execute()
         XCTAssertGreaterThan(try r10.records.count, 0, "whereNotNil works")
 
-        let r11 = try db.query().where { $0["priority"]?.intValue ?? 0 > 7 }.execute()
+        let r11 = try requireFixture(db).query().where { $0["priority"]?.intValue ?? 0 > 7 }.execute()
         XCTAssertGreaterThan(try r11.records.count, 0, "custom closure works")
     }
 

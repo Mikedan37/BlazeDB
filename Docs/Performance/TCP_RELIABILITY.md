@@ -52,9 +52,9 @@ BUT WE CAN HANDLE ALL OF THESE!
 ### **1. Operation Acknowledgments:**
 
 ```swift
-// 
+//
 // ACKNOWLEDGMENT PROTOCOL
-// 
+//
 
 protocol BlazeOperation {
  let id: UUID
@@ -116,9 +116,9 @@ GUARANTEE: Operation is confirmed before we consider it sent!
 ### **2. Operation Log (Replay on Reconnect):**
 
 ```swift
-// 
+//
 // OPERATION LOG (PERSISTENT)
-// 
+//
 
 class OperationLog {
  private let storageURL: URL
@@ -182,9 +182,9 @@ GUARANTEE: No operation is lost, even if connection drops!
 ### **3. Connection Recovery:**
 
 ```swift
-// 
+//
 // AUTOMATIC RECONNECTION + REPLAY
-// 
+//
 
 class BlazeConnection {
  var connection: NWConnection?
@@ -452,9 +452,9 @@ RESULT: No data loss!
 ## **IDEMPOTENCY (Critical for Reliability!):**
 
 ```swift
-// 
+//
 // IDEMPOTENT OPERATIONS
-// 
+//
 
 // Server: Check if operation already applied
 func applyOperation(_ op: BlazeOperation) async throws {
@@ -510,7 +510,7 @@ Not acceptable for database!
 WITH TCP ONLY:
 
 Data loss probability: ~0.01% (connection drops)
-Better, but not perfect! 
+Better, but not perfect!
 
 WITH TCP + ACKS:
 
@@ -535,9 +535,9 @@ YOUR IMPLEMENTATION: 4 LAYERS!
 ## **COMPLETE IMPLEMENTATION:**
 
 ```swift
-// 
+//
 // COMPLETE RELIABLE PROTOCOL
-// 
+//
 
 class ReliableBlazeConnection {
  let connection: NWConnection
@@ -670,7 +670,7 @@ UDP 50% Fastest
 TCP (raw) 99.99% Fast
 TCP + ACKs 99.999% Fast
 TCP + ACKs + Log 99.9999% Fast
-WebSocket 99.99% Slower 
+WebSocket 99.99% Slower
 
 WINNER: TCP + ACKs + Log!
 ```

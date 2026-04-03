@@ -14,16 +14,19 @@ import XCTest
 
 final class GuardrailTests: XCTestCase {
     
-    var tempDir: URL!
+    private var tempDir: URL?
     
-    override func setUp() {
-        super.setUp()
-        tempDir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
-        try? FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
+    override func setUpWithError() throws {
+        try super.setUpWithError()
+        let dir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        tempDir = dir
+        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
     }
     
     override func tearDown() {
-        try? FileManager.default.removeItem(at: tempDir)
+        if let dir = tempDir {
+            try? FileManager.default.removeItem(at: dir)
+        }
         super.tearDown()
     }
 
@@ -112,7 +115,7 @@ final class GuardrailTests: XCTestCase {
         try db.insert(BlazeDataRecord(["name": .string("Existing")]))
         
         // Create dump
-        let dumpURL = tempDir.appendingPathComponent("dump.blazedump")
+        let dumpURL = try XCTUnwrap(tempDir).appendingPathComponent("dump.blazedump")
         try db.export(to: dumpURL)
         
         // Try to restore to non-empty database (should fail)
@@ -139,7 +142,7 @@ final class GuardrailTests: XCTestCase {
         try db2.setSchemaVersion(SchemaVersion(major: 1, minor: 1))
         
         // Create dump from db1
-        let dumpURL = tempDir.appendingPathComponent("dump.blazedump")
+        let dumpURL = try XCTUnwrap(tempDir).appendingPathComponent("dump.blazedump")
         try db1.export(to: dumpURL)
         
         // Try to restore to db2 with mismatched schema (should fail)
@@ -169,7 +172,7 @@ final class GuardrailTests: XCTestCase {
         try db1.insert(BlazeDataRecord(["name": .string("Test")]))
         
         // Create dump from db1
-        let dumpURL = tempDir.appendingPathComponent("dump.blazedump")
+        let dumpURL = try XCTUnwrap(tempDir).appendingPathComponent("dump.blazedump")
         try db1.export(to: dumpURL)
         
         // Restore with allowSchemaMismatch: true (should succeed)

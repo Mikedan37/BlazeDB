@@ -20,50 +20,50 @@
 | **Platforms** | Apple only | Any platform |
 | **Self-Hosted** | | |
 | **Cost** | $$$, then free tier limits | Free (self-host) or $0.01/GB |
-| **Offline** |  Complex | Native |
+| **Offline** | Complex | Native |
 | **Conflict Resolution** | Manual | Automatic (CRDT) |
 | **Query on Server** | Limited | Full BlazeDB queries |
-| **Real-Time** |  Push notifications | WebSocket |
+| **Real-Time** | Push notifications | WebSocket |
 | **E2E Encryption** | | |
 | **Open Source** | | |
 
 ---
 
-##  **Architecture**
+## **Architecture**
 
 ```
 
- BlazeDB Relay Network 
+ BlazeDB Relay Network
 
- 
-     
-  iPhone   iPad   Mac   Android  
-         
-  BlazeDB   BlazeDB   BlazeDB   BlazeDB  
-  Client   Client   Client   Client  
-     
-     
-  
-   
- WebSocket (Binary)  
-   
-  
-  BlazeDB Relay Server  
-  (Swift on Server)  
-   
-    
-   BlazeDB Instance   
-   (Server-side DB)   
-    
-   
-  Features:  
-  • Operation log  
-  • CRDT merge  
-  • Real-time broadcast  
-  • Query execution  
-  • Conflict resolution  
-  
- 
+
+
+ iPhone iPad Mac Android
+
+ BlazeDB BlazeDB BlazeDB BlazeDB
+ Client Client Client Client
+
+
+
+
+ WebSocket (Binary)
+
+
+ BlazeDB Relay Server
+ (Swift on Server)
+
+
+ BlazeDB Instance
+ (Server-side DB)
+
+
+ Features:
+ • Operation log
+ • CRDT merge
+ • Real-time broadcast
+ • Query execution
+ • Conflict resolution
+
+
 
 ```
 
@@ -292,11 +292,11 @@ final class BlazeDBRelayServer {
  swift build -c release
 
  2. Deploy to:
- - Fly.io (easiest)
- - Railway
- - AWS EC2
- - DigitalOcean
- - Your own server
+- Fly.io (easiest)
+- Railway
+- AWS EC2
+- DigitalOcean
+- Your own server
 
  3. Configure environment:
  export BLAZEDB_PASSWORD="server-password"
@@ -308,7 +308,7 @@ final class BlazeDBRelayServer {
  5. Connect clients:
  let relay = BlazeWebSocketRelay(url: URL(string: "wss://your-server.com/sync")!)
 
- */
+*/
 ```
 
 ---

@@ -230,8 +230,12 @@ public final class DurabilityManager: @unchecked Sendable {
         let metaURL = Self.metaURL(for: walURL)
         try metaData.write(to: metaURL, options: .atomic)
         if let metaFH = FileHandle(forWritingAtPath: metaURL.path) {
-            try? metaFH.synchronize()
-            try? metaFH.close()
+            do {
+                try metaFH.synchronize()
+                try metaFH.close()
+            } catch {
+                BlazeLogger.warn("DurabilityManager.checkpoint: could not fsync/close wal-meta handle at \(metaURL.path): \(error.localizedDescription)")
+            }
         }
         try Self.fsyncDirectory(at: metaURL.deletingLastPathComponent())
 

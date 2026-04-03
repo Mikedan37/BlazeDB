@@ -1,6 +1,6 @@
 # SwiftPM Dependency Status
 
-##  Completed
+## Completed
 
 1. **BlazeTransport Added**: Remote dependency using SSH URL `https://github.com/Mikedan37/BlazeTransport.git` with branch-based resolution
 2. **BlazeBinary Added**: Remote dependency using SSH URL `https://github.com/Mikedan37/BlazeBinary.git` with branch-based resolution
@@ -9,7 +9,7 @@
 5. **All Dependencies Remote**: No local/path dependencies in BlazeDB's Package.swift
 6. **Branch-Based Resolution**: All dependencies use `branch: "main"` (no revision-based requirements)
 
-##  Blocker
+## Blocker
 
 **Error**: `package 'blazetransport' is required using a revision-based requirement and it depends on local package 'blazebinary', which is not supported`
 
@@ -22,21 +22,21 @@
 
 Instead of:
 ```swift
-.package(path: "../BlazeBinary")  //  Not allowed
+.package(path: "../BlazeBinary") // Not allowed
 ```
 
 ## Current Package.swift Configuration
 
 ```swift
 dependencies: [
-    .package(
-        url: "https://github.com/Mikedan37/BlazeTransport.git",
-        branch: "main"
-    ),
-    .package(
-        url: "https://github.com/Mikedan37/BlazeBinary.git",
-        branch: "main"
-    )
+ .package(
+ url: "https://github.com/Mikedan37/BlazeTransport.git",
+ branch: "main"
+ ),
+ .package(
+ url: "https://github.com/Mikedan37/BlazeBinary.git",
+ branch: "main"
+ )
 ]
 ```
 

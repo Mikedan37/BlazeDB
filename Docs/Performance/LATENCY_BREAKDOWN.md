@@ -56,7 +56,7 @@ Breakdown:
 • Operation creation: 0.05ms
 • Encoding: 0.1ms (BlazeBinary encode)
 • Encryption: 0.2ms (AES-256-GCM encrypt)
-• TCP send: 5ms (network transmission)  THIS IS THE 5MS!
+• TCP send: 5ms (network transmission) THIS IS THE 5MS!
 • Server receive: 0.1ms
 • Server decrypt: 0.2ms
 • Server decode: 0.08ms

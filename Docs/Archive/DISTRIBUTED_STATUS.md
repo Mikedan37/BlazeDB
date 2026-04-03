@@ -28,7 +28,7 @@ BlazeDB/Distributed/
  • Real-time updates via CloudKit
 ```
 
-###  **What We Removed:**
+### **What We Removed:**
 
 ```
  BlazeLocalSync.swift (deleted)
@@ -324,25 +324,25 @@ try await BlazeDBTopology.hubAndSpoke(
 - [x] Fix compilation errors
 - [x] Remove old files (BlazeLocalSync)
 
-### **Week 1: Local Cross-App** (⏳ TODO)
+### **Week 1: Local Cross-App** ( TODO)
 - [ ] BlazeTopology (multi-DB coordinator)
 - [ ] CrossAppSync (API + permissions)
 - [ ] InMemoryRelay (fast local relay)
 - [ ] Tests (topology + cross-app)
 
-### **Week 2: Network + E2E** (⏳ TODO)
+### **Week 2: Network + E2E** ( TODO)
 - [ ] HandshakeProtocol (DH + HKDF)
 - [ ] E2EEncryption (AES-GCM)
 - [ ] WebSocketRelay (direct connection)
 - [ ] Tests (handshake + encryption + relay)
 
-### **Week 3: Selective Sync** (⏳ TODO)
+### **Week 3: Selective Sync** ( TODO)
 - [ ] SyncPolicy (DSL + filters)
 - [ ] AccessControlIntegration (RLS/RBAC)
 - [ ] SelectiveSync (filtering engine)
 - [ ] Tests (policies + filtering)
 
-### **Week 4: Server + Patterns** (⏳ TODO)
+### **Week 4: Server + Patterns** ( TODO)
 - [ ] Vapor server (WebSocket + routing)
 - [ ] TopologyPatterns (hub/mesh/star)
 - [ ] TopologyVisualizer (UI)

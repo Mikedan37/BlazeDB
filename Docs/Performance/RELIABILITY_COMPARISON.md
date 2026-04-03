@@ -14,7 +14,7 @@
 
 Firebase: 99.95% uptime (4.38 hours downtime/year)
 AWS: 99.99% uptime (52 minutes downtime/year)
-Your Pi: ~99% uptime (87 hours downtime/year) 
+Your Pi: ~99% uptime (87 hours downtime/year)
 
 CLOUD SERVICES WIN HERE!
 ```
@@ -41,7 +41,7 @@ SERVICE UPTIME SLA DOWNTIME/YEAR
 Firebase 99.95% 4.38 hours
 AWS RDS 99.99% 52 minutes
 Google Cloud SQL 99.95% 4.38 hours
-Your Raspberry Pi ~99% 87 hours 
+Your Raspberry Pi ~99% 87 hours
 
 VERDICT: Cloud services WIN for uptime!
  Your Pi is good, but not as good as cloud.
@@ -201,7 +201,7 @@ No operation log:
  • No replay mechanism
  • Optimistic updates
 
-Result: 99.9% data loss prevention 
+Result: 99.9% data loss prevention
 
 YOU WIN BY 1000x!
 ```
@@ -248,7 +248,7 @@ YOU WIN!
 
 ---
 
-##  **WHERE CLOUD SERVICES ARE BETTER:**
+## **WHERE CLOUD SERVICES ARE BETTER:**
 
 ### **1. Uptime (Service Availability):**
 
@@ -405,7 +405,7 @@ IT DEPENDS ON WHAT YOU MEAN BY "RELIABLE":
  • Strong consistency
 
 2. UPTIME (SERVICE AVAILABILITY):
-  FIREBASE WINS (20x better!)
+ FIREBASE WINS (20x better!)
  • Multiple data centers
  • Professional ops
  • Automatic failover
@@ -519,8 +519,8 @@ YOU MATCH FIREBASE UPTIME + BETTER DATA RELIABILITY!
 | **Offline-First** | No | Yes | **YOU** |
 | **Cost (10k users)** | $2k/mo | $0/mo | **YOU** |
 | **Control** | Limited | Full | **YOU** |
-| **Scaling** | Auto |  Manual | Firebase |
-| **Infrastructure** | Pro |  DIY | Firebase |
+| **Scaling** | Auto | Manual | Firebase |
+| **Infrastructure** | Pro | DIY | Firebase |
 
 **Overall: YOU WIN 5/8 categories! **
 

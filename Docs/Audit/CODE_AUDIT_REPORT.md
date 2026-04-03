@@ -9,7 +9,7 @@
 
 ## Critical Issues Found
 
-### 1. **Print Statements in Production Code** 
+### 1. **Print Statements in Production Code**
 
 **Location:** `BlazeDB/Exports/BlazeDBClient.swift` lines 278-295
 **Issue:** Multiple `print()` statements in production initialization code
@@ -31,7 +31,7 @@
 
 ---
 
-### 2. **Deprecated Code Still Present** 
+### 2. **Deprecated Code Still Present**
 
 **Location:** `BlazeDB/Core/BlazeCollection.swift`
 **Status:** Already marked as deprecated
@@ -105,9 +105,9 @@
 3. Verify README examples match actual API
 
 ### Priority 2: Important (Do Soon)
-1.  Complete or document TODOs
-2.  Remove deprecated `BlazeCollection` after migration period
-3.  Audit `BlazeQueryLegacy` usage
+1. Complete or document TODOs
+2. Remove deprecated `BlazeCollection` after migration period
+3. Audit `BlazeQueryLegacy` usage
 
 ### Priority 3: Nice to Have
 1. Clean up legacy type aliases

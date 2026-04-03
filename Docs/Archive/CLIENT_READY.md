@@ -101,32 +101,32 @@ try await bugsDB.enableSync(
 
 ## **CLIENT-SIDE FEATURES:**
 
- **Local Sync**
+**Local Sync**
 - Unix Domain Socket
 - <1ms latency
 - In-memory relay
 - Multiple modes (bidirectional/read-only/write-only)
 
- **Cross-App Sync**
+**Cross-App Sync**
 - App Groups (official Apple API)
 - File coordination
 - Export policies
 - Permission model
 
- **Secure Connection**
+**Secure Connection**
 - Diffie-Hellman handshake (P256)
 - HKDF key derivation
 - AES-256-GCM encryption
 - Perfect Forward Secrecy
 - Challenge-response verification
 
- **Operation Log**
+**Operation Log**
 - Crash-safe persistence
 - Replay on reconnect
 - ACK tracking
 - Idempotent operations
 
- **Topology Management**
+**Topology Management**
 - Multi-DB coordination
 - Connection management
 - Graph visualization
@@ -146,11 +146,11 @@ CLIENT-SIDE: 100% COMPLETE
  Ready for cross-app sync
  Ready for server (when built)
 
-SERVER-SIDE: ⏳ DEFERRED
+SERVER-SIDE: DEFERRED
 
-⏳ Vapor server (later)
-⏳ WebSocket handlers (later)
-⏳ Database routing (later)
+ Vapor server (later)
+ WebSocket handlers (later)
+ Database routing (later)
 
 CLIENT IS PRODUCTION-READY!
 ```
@@ -162,7 +162,7 @@ CLIENT IS PRODUCTION-READY!
 1. **Testing local sync** (works now!)
 2. **Testing cross-app sync** (works now!)
 3. **Building example apps** (ready!)
-4. ⏳ **Server implementation** (when ready!)
+4. **Server implementation** (when ready!)
 
 ---
 
@@ -213,9 +213,9 @@ try await bugsDB.enableSync(
 
 ## **NEXT STEPS (When Ready):**
 
-1. ⏳ **Vapor Server** (when you're ready)
-2. ⏳ **Tests** (can add now or later)
-3. ⏳ **Example Apps** (can build now!)
+1. **Vapor Server** (when you're ready)
+2. **Tests** (can add now or later)
+3. **Example Apps** (can build now!)
 
 ---
 

@@ -58,6 +58,22 @@ final class StorageLayoutTests: XCTestCase {
         XCTAssertGreaterThan(rebuiltLayout.indexMap.count, 0, "Should rebuild some index entries")
     }
     
+    /// Corrupt on-disk meta must surface as an error, not silently as an empty layout.
+    func testLoad_corruptExistingMeta_throws() throws {
+        let metaURL = tempURL.deletingPathExtension().appendingPathExtension("meta")
+        try Data("not valid json {{{".utf8).write(to: metaURL)
+        XCTAssertThrowsError(try StorageLayout.load(from: metaURL))
+        try? FileManager.default.removeItem(at: metaURL)
+    }
+    
+    /// Missing meta path still yields an empty layout for new-database bootstrap.
+    func testLoad_missingMeta_returnsEmptyLayout() throws {
+        let metaURL = tempURL.deletingPathExtension().appendingPathExtension("meta_missing_\(UUID().uuidString)")
+        XCTAssertFalse(FileManager.default.fileExists(atPath: metaURL.path))
+        let layout = try StorageLayout.load(from: metaURL)
+        XCTAssertTrue(layout.indexMap.isEmpty)
+    }
+
     /// Test StorageLayout save and load
     func testSaveAndLoadLayout() throws {
         let metaURL = tempURL.deletingPathExtension().appendingPathExtension("meta")
@@ -233,6 +249,17 @@ final class StorageLayoutTests: XCTestCase {
         XCTAssertEqual(secureLayout.layout.indexMap[id1] ?? [], [4, 5])
         XCTAssertEqual(secureLayout.layout.indexMap[id2] ?? [], [6])
         XCTAssertEqual(secureLayout.layout.nextPageIndex, 7)
+    }
+
+    /// Decoding a structurally impossible B-tree (internal node with no children) must throw, not trap later.
+    func testFieldBTreeIndex_decode_invalidStructure_throws() throws {
+        let idx = FieldBTreeIndex(name: "corrupt btree decode")
+        let json = Data("""
+        {"keys":[],"values":[],"children":[],"isLeaf":false}
+        """.utf8)
+        XCTAssertThrowsError(try idx.decode(from: json)) { error in
+            XCTAssertTrue(error is BTreeIndexError)
+        }
     }
 }
 
