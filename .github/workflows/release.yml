@@ -86,7 +86,7 @@ jobs:
           tar -czf BlazeDB-${{ github.ref_name }}.tar.gz .build/release
       
       - name: Upload build artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: release-build
           path: BlazeDB-${{ github.ref_name }}.tar.gz
@@ -151,7 +151,7 @@ jobs:
           fi
       
       - name: Upload release notes
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: release-notes
           path: release_notes.md
