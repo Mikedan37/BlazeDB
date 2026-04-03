@@ -2,129 +2,154 @@
 //  main.swift
 //  HelloBlazeDB
 //
-//  Zero-config example: Open → Insert → Query → Export → Close
-//  This example should work immediately without reading docs
+//  Open → Insert → Query → Fetch → Export → Health → Close
+//  Showcases the typed BlazeStorable API (recommended) and the raw BlazeDataRecord API.
 //
 
 import Foundation
 import BlazeDB
 
+// MARK: - Model (BlazeStorable — recommended)
+
+struct User: BlazeStorable {
+    var id: UUID = UUID()
+    var name: String
+    var age: Int
+    var active: Bool
+}
+
 print("=== Hello BlazeDB ===\n")
 
 do {
-    // STEP 1: Open database (one line, zero config)
+    // STEP 1: Open database
     print("1. Opening database...")
-    // Use an isolated temp path per run so example output is deterministic
-    // and does not accumulate records across repeated executions.
     let runID = UUID().uuidString
     let dbPath = FileManager.default.temporaryDirectory
         .appendingPathComponent("hello-blazedb-\(runID).blaze")
-    // Keep example password policy-compliant so quickstart works from a clean clone.
     let db = try BlazeDBClient.open(at: dbPath, password: "Hello-BlazeDB-Demo-2026A!")
     print("   Database opened\n")
-    
-    // STEP 2: Insert data
-    print("2. Inserting records...")
-    let users = [
-        ("Alice", 30, true),
-        ("Bob", 25, false),
-        ("Charlie", 35, true)
+
+    // ──────────────────────────────────────────────
+    // Typed API (BlazeStorable + TypedStore)
+    // ──────────────────────────────────────────────
+
+    print("── Typed API (recommended) ──\n")
+
+    let users = db.typed(User.self)
+
+    // STEP 2: Insert typed models
+    print("2. Inserting typed models...")
+    let seedUsers = [
+        User(name: "Alice",   age: 30, active: true),
+        User(name: "Bob",     age: 25, active: false),
+        User(name: "Charlie", age: 35, active: true),
     ]
-    
     var insertedIDs: [UUID] = []
-    for (name, age, active) in users {
-        let record = BlazeDataRecord([
-            "name": .string(name),
-            "age": .int(age),
-            "active": .bool(active)
-        ])
-        let id = try db.insert(record)
+    for user in seedUsers {
+        let id = try users.insert(user)
         insertedIDs.append(id)
-        print("   Inserted: \(name) (ID: \(id.uuidString.prefix(8))...)")
+        print("   Inserted: \(user.name) (ID: \(id.uuidString.prefix(8))...)")
     }
     print()
-    
-    // STEP 3: Query data
-    print("3. Querying active users...")
-    let activeUsers = try db.query()
+
+    // STEP 3: Query with KeyPaths
+    print("3. Querying active users (KeyPath filter)...")
+    let activeUsers = try users.query()
+        .where(\.active, equals: true)
+        .all()
+
+    print("   Found \(activeUsers.count) active users:")
+    for u in activeUsers {
+        print("   - \(u.name), age \(u.age)")
+    }
+    print()
+
+    // STEP 4: Fetch by ID
+    print("4. Fetching by ID...")
+    if let firstID = insertedIDs.first,
+       let fetched = try users.fetch(firstID) {
+        print("   Found: \(fetched.name)")
+    }
+    print()
+
+    // ──────────────────────────────────────────────
+    // Raw API (BlazeDataRecord)
+    // ──────────────────────────────────────────────
+
+    print("── Raw API (BlazeDataRecord) ──\n")
+
+    print("5. Inserting a raw record...")
+    let rawRecord = BlazeDataRecord([
+        "name": .string("Diana"),
+        "age": .int(28),
+        "active": .bool(true),
+    ])
+    let rawID = try db.insert(rawRecord)
+    print("   Inserted raw record (ID: \(rawID.uuidString.prefix(8))...)")
+    print()
+
+    print("6. Querying with string-based filter...")
+    let rawResults = try db.query()
         .where("active", equals: .bool(true))
         .execute()
         .records
-    
-    print("   Found \(activeUsers.count) active users:")
-    for user in activeUsers {
-        let name = user.string("name", default: "")
-        let age = user.int("age", default: 0)
-        print("   - \(name), age \(age)")
-    }
+    print("   Found \(rawResults.count) active records (typed + raw combined)")
     print()
-    
-    // STEP 4: Fetch by ID
-    print("4. Fetching record by ID...")
-    if let firstID = insertedIDs.first,
-       let record = try db.fetch(id: firstID) {
-        let name = record.string("name", default: "unknown")
-        print("   Found: \(name)")
-    }
-    print()
-    
-    // STEP 5: Export database
-    print("5. Exporting database...")
+
+    // ──────────────────────────────────────────────
+    // Database utilities
+    // ──────────────────────────────────────────────
+
+    // STEP 7: Export
+    print("7. Exporting database...")
     let exportPath = FileManager.default.temporaryDirectory
         .appendingPathComponent("hello-export.blazedump")
-    
     try db.export(to: exportPath)
-    print("   Exported to: \(exportPath.path)")
-    
-    // Verify export
     let dumpHeader = try BlazeDBImporter.verify(exportPath)
-    print("   Export verified (schema version: \(dumpHeader.schemaVersion))")
+    print("   Exported and verified (schema version: \(dumpHeader.schemaVersion))")
     print()
-    
-    // STEP 6: Get statistics
-    print("6. Database statistics...")
+
+    // STEP 8: Statistics
+    print("8. Database statistics...")
     let stats = try db.stats()
     print("   Records: \(stats.recordCount)")
     print("   Size: \(ByteCountFormatter.string(fromByteCount: Int64(stats.databaseSize), countStyle: .file))")
     print()
-    
-    // STEP 7: Health check
-    print("7. Health check...")
+
+    // STEP 9: Health check
+    print("9. Health check...")
     let health = try db.health()
     print("   Status: \(health.status.rawValue)")
-    if !health.reasons.isEmpty {
+    if health.reasons.isEmpty {
+        print("   All systems healthy")
+    } else {
         for reason in health.reasons {
             print("   Warning: \(reason)")
         }
-    } else {
-        print("   All systems healthy")
     }
     print()
-    
-    // STEP 8: Close database
-    print("8. Closing database...")
+
+    // STEP 10: Close
+    print("10. Closing database...")
     try db.close()
     print("   Database closed cleanly\n")
-    
+
     print("=== Success! ===")
     print("BlazeDB is working correctly.")
     print("\nNext steps:")
     print("  - Read Docs/GettingStarted/HOW_TO_USE_BLAZEDB.md")
     print("  - Check Docs/Guarantees/SAFETY_MODEL.md for safety details")
     print("  - Run 'blazedb doctor' for diagnostics")
-    
+
 } catch {
     print("\nError: \(error)")
-    
     if let blazeError = error as? BlazeDBError {
         print("\nGuidance: \(blazeError.guidance)")
     }
-    
     print("\nIf this failed, here's why:")
     print("  - Disk full: Free disk space and retry")
     print("  - Permission error: Check file permissions")
     print("  - Invalid path: Use a valid directory path")
     print("  - Wrong password: Use correct password")
-    
     exit(1)
 }

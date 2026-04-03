@@ -8,6 +8,8 @@ Complete reference guide. For a quick start, see [README.md](README.md).
 
 BlazeDB is an embedded database that runs inside your app. One process writes at a time. If your app crashes, committed data survives.
 
+This guide prioritizes the **default shipped OSS core runtime**. Advanced/conditional surfaces (distributed sync, full telemetry path, staging features) are not the default onboarding path.
+
 **What it is:**
 - Embedded database (lives in your process)
 - Encrypted by default (AES-256-GCM)
@@ -27,23 +29,33 @@ If you need multiple processes writing to the same database, BlazeDB is not the 
 
 ## 2. Quick Start
 
+BlazeDB has three public API tiers:
+
+- **Typed (recommended):** `BlazeStorable` + `db.typed(T.self)`
+- **Raw explicit:** `BlazeDataRecord` + string-field query builder
+- **Manual mapping:** `BlazeDocument` with `toStorage()` / `init(from:)`
+
 ```swift
 import BlazeDB
 
+struct Counter: BlazeStorable {
+    var id: UUID = UUID()
+    var name: String
+    var count: Int
+}
+
 // Open database (creates if needed, always encrypted)
-// Applications should import the `BlazeDB` product; the `BlazeDBCore` target is primarily used
-// internally by tools and examples in this repository.
 let db = try BlazeDBClient.open(named: "myapp", password: "your-secure-password")
+let counters = db.typed(Counter.self)
 
-// Insert records
-let id1 = try db.insert(BlazeDataRecord(["name": .string("Alice"), "count": .int(10)]))
-let id2 = try db.insert(BlazeDataRecord(["name": .string("Bob"), "count": .int(20)]))
+// Insert typed records
+try counters.insert(Counter(name: "Alice", count: 10))
+try counters.insert(Counter(name: "Bob", count: 20))
 
-// Query records
-let results = try db.query()
- .where("count", greaterThan: .int(15))
- .execute()
- .records
+// Query with KeyPaths
+let results = try counters.query()
+    .where(\.count, greaterThan: 15)
+    .all()
 
 print("Found \(results.count) records")
 
@@ -347,7 +359,9 @@ print("Exported to: \(backupURL.path)")
 
 ---
 
-## 9. Advanced APIs (non-default surfaces)
+### Advanced APIs (non-default surfaces)
+
+If you are onboarding to BlazeDB, you can skip this subsection and continue to backup verification below.
 
 For most applications, **`BlazeDBClient` is the only API you need**. The following types are public
 primarily for tooling, diagnostics, or migration and are **not** the default entrypoints:

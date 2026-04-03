@@ -14,17 +14,48 @@ An encrypted embedded document store for Swift — designed for application stat
 
 ---
 
+## Product Focus (Current OSS Release)
+
+BlazeDB is positioned as a **high-confidence embedded encrypted database** for Swift apps:
+
+- Typed-first developer workflow (`BlazeStorable` + `db.typed(T.self)`)
+- WAL-backed durability and crash recovery
+- Deterministic import/export/verify/restore workflows
+- Practical operator tooling (`health`, `stats`, `BlazeDoctor`, `BlazeDump`, `BlazeInfo`)
+
+### Shipped by default vs conditional/deferred
+
+| Area | Status |
+|------|--------|
+| Embedded encrypted core, typed API, query/transactions, durability/recovery, import/export, health/stats, CLI tools | **Shipped by default** |
+| Raw/manual APIs, migrations, schema validation, indexing/full-text, benchmark tooling | **Advanced but supported** |
+| Distributed sync/server/discovery, full telemetry manager path, staging modules | **Conditional or deferred** |
+
+> Source-present code does not always mean default-shipped runtime behavior. The default SwiftPM OSS product is `BlazeDBCore`/`BlazeDB` as defined by `Package.swift`.
+
+---
+
 ## 60-Second Quick Start
 
 ```swift
 import BlazeDB
 
+// 1. Define your model
+struct User: BlazeStorable {
+    var id: UUID = UUID()
+    var name: String
+    var role: String
+}
+
+// 2. Open + get a typed store
 let db = try BlazeDBClient.open(named: "myapp", password: "MyApp-Password-2026A!")
+let users = db.typed(User.self)
 
-try db.insert(BlazeDataRecord(["name": .string("Alice"), "role": .string("engineer")]))
+// 3. Insert, query, done
+try users.insert(User(name: "Alice", role: "engineer"))
 
-let users = try db.query().execute().records
-print("Users: \(users.count)")
+let everyone = try users.fetchAll()
+print("Users: \(everyone.count)")
 
 try db.close()
 ```
@@ -34,8 +65,16 @@ If this runs, BlazeDB is working. [Next: HelloBlazeDB example](Examples/HelloBla
 ### New here? Start with this path
 
 1. **Run the 60-second quick start** above (or `swift run HelloBlazeDB` from this repo).
-2. **Explore `Examples/HelloBlazeDB/`** to see an end-to-end open → insert → query → export → health → close flow using `BlazeDBClient`.
+2. **Explore `Examples/HelloBlazeDB/`** — typed insert → query → fetch → export → health → close.
 3. **Read `Docs/GettingStarted/HOW_TO_USE_BLAZEDB.md`** for the complete guide (schema, queries, backups, health, sharp edges).
+
+### API Tiers
+
+| Tier | API | Best for |
+|------|-----|----------|
+| **Typed (recommended)** | `BlazeStorable` + `db.typed(T.self)` | Most apps — Codable models, KeyPath queries |
+| **Raw explicit** | `BlazeDataRecord` + `db.insert(record)` | Dynamic schemas, migration scripts |
+| **Manual mapping** | `BlazeDocument` | Custom serialization, non-Codable types |
 
 ---
 
@@ -71,7 +110,7 @@ Or in Xcode: File → Add Package Dependencies → paste the URL.
 
 BlazeDB encrypts data and overflow pages at rest using AES-GCM, and the page-level write-ahead log stores only those encrypted page frames. Metadata is HMAC-signed for tamper detection but remains in plaintext, and rollback to older valid snapshots is not cryptographically prevented. Legacy NDJSON transaction logs are not used by the default `BlazeDBClient` path and, when present from older or advanced tooling (`BlazeDBManager`, legacy page-level `BlazeTransaction`), are plaintext artifacts that should be treated as sensitive cleartext.
 
-> **Note:** Distributed sync and telemetry features are planned for a future release. This version ships the core embedded engine only, and transport integration is intentionally gated off until a public transport dependency is reintroduced.
+> **Note:** Distributed sync and transport-backed features are deferred for the default OSS runtime. Telemetry APIs are available in-core, but full telemetry behavior is build-configuration dependent (core builds can use stub/no-op telemetry behavior).
 
 ---
 

@@ -617,10 +617,42 @@ if let records = result.recordsOrNil {
 
 ### Choosing a Protocol
 
-| Use case | Protocol | Query style |
-|----------|----------|-------------|
-| Default — Codable models, KeyPath queries, minimal boilerplate | `BlazeStorable` | `query(for: MyModel.self)` |
-| Manual mapping, custom field control, non-Codable types | `BlazeDocument` | `query()` with string-based filters |
+| Tier | Protocol | Query style | Best for |
+|------|----------|-------------|----------|
+| **Recommended** | `BlazeStorable` + `TypedStore` | `db.typed(T.self)` → KeyPath queries | Most apps |
+| Advanced raw | `BlazeDataRecord` | `db.query()` with string-based filters | Dynamic schemas |
+| Manual mapping | `BlazeDocument` | `db.query()` with string-based filters | Custom serialization |
+
+### TypedStore (Recommended)
+
+The easiest way to work with BlazeDB. Define a `BlazeStorable` model and use `db.typed(T.self)`:
+
+```swift
+struct Bug: BlazeStorable {
+    var id: UUID = UUID()
+    var title: String
+    var priority: Int
+    var status: String
+}
+
+let bugs = db.typed(Bug.self)
+
+try bugs.insert(Bug(title: "Fix login", priority: 8, status: "open"))
+
+let urgent = try bugs.query()
+    .where(\.priority, greaterThan: 5)
+    .orderBy(\.title)
+    .all()
+
+let bug = try bugs.fetch(someID)
+
+var b = bug!
+b.status = "closed"
+try bugs.update(b)
+```
+
+> **Note:** `TypedStore` is a typed view, not a separate physical table.
+> All records share the same underlying encrypted collection.
 
 ### BlazeDocument Protocol
 
@@ -1082,14 +1114,22 @@ func insertWithRetry(_ record: BlazeDataRecord, maxRetries: Int = 3) throws {
 
 ## Best Practices
 
-### 1. Use Type-Safe Models
+### 1. Use TypedStore with BlazeStorable Models
 
 ```swift
-// Good: Type-safe
-struct Bug: BlazeDocument { ... }
+// Good: TypedStore (recommended)
+struct Bug: BlazeStorable {
+    var id: UUID = UUID()
+    var title: String
+    var priority: Int
+}
+let bugs = db.typed(Bug.self)
+let bug = try bugs.fetch(id)
+
+// Also fine: BlazeStorable without TypedStore
 let bug = try db.fetch(Bug.self, id: id)
 
-// Avoid: Dynamic (unless necessary)
+// Avoid: Dynamic (unless you need schemaless flexibility)
 let record = try db.fetch(id: id)
 let title = record?["title"]?.stringValue ?? ""
 ```

@@ -2,6 +2,23 @@
 
 This index separates the main public documentation path from maintainer-only or historical material.
 
+## Support-State Framing
+
+Use this quick framing before diving into detailed docs:
+
+- **Default shipped core:** embedded encrypted engine, typed/raw APIs, durability, import/export, health/stats, CLI tooling.
+- **Advanced but supported:** migrations, schema validation, indexing/search tuning, manual mapping.
+- **Conditional/deferred:** distributed sync/server/discovery and full telemetry path outside default OSS runtime packaging.
+- **Historical/internal:** archive and project-management docs are non-authoritative for first-time adopters.
+
+## Audience Segmentation
+
+- **Public product docs:** what BlazeDB is, how to use it, what is supported now.
+- **Public maintainer docs:** release/testing/CI operations for contributors.
+- **Internal analysis docs:** branch/capability/positioning analysis artifacts for maintainers.
+
+Internal analysis material lives under [`Docs/Internal/`](Internal/README.md) and should not be treated as onboarding guidance.
+
 ## Documentation guide
 
 BlazeDB documentation is organized into:
@@ -31,9 +48,20 @@ BlazeDB documentation is organized into:
 - [Durability Mode Support](Status/DURABILITY_MODE_SUPPORT.md) for WAL and recovery guarantees.
 - [Key Management and Compatibility](Status/KEY_MANAGEMENT_AND_COMPATIBILITY.md) for password and key-handling behavior.
 - [Legacy Layout Migration Guidance](Status/LEGACY_LAYOUT_MIGRATION_GUIDANCE.md) for migration-sensitive upgrades.
-- [Distributed Transport Deferred Status](Status/DISTRIBUTED_TRANSPORT_DEFERRED.md) for features intentionally out of the OSS core build.
 - [Architecture](Architecture/README.md) for system design and internals.
 - [Performance](Performance/README.md) for benchmark and performance guidance.
+
+## Advanced Features (Supported)
+
+- [Developer Guide](DEVELOPER_GUIDE.md) (advanced API sections)
+- [API Reference](API/API_REFERENCE.md) (full reference; includes advanced and conditional surfaces)
+- [Performance](Performance/README.md) (benchmark and tuning guidance)
+
+## Conditional / Deferred Features
+
+- [Distributed Transport Deferred Status](Status/DISTRIBUTED_TRANSPORT_DEFERRED.md)
+- [Sync Docs](Sync/README.md) - design and deferred transport context; not default OSS onboarding
+- Telemetry and staging-related surfaces in source are conditional and should be treated as non-default runtime behavior
 
 ## Contributing And Project Policies
 
@@ -53,6 +81,11 @@ BlazeDB documentation is organized into:
 - [External Security Review Plan](Status/EXTERNAL_SECURITY_REVIEW_PLAN.md)
 - [Master Documentation Index](MASTER_DOCUMENTATION_INDEX.md)
 - [Agents Guide](AGENTS_GUIDE.md)
+
+## Internal Analysis Docs
+
+- [Internal Docs Index](Internal/README.md)
+- Analysis-style status artifacts are maintainer-facing and intentionally separated from user onboarding flow.
 
 ## Historical And Internal Material
 

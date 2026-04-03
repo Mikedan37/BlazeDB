@@ -2,6 +2,27 @@
 
 **Every public API, method, and property available to developers.**
 
+### Recommended starting surface
+
+For new applications, start with the typed API:
+
+- `BlazeStorable` model
+- `let store = db.typed(MyModel.self)`
+- `store.insert(...)`, `store.fetch(...)`, `store.query().where(\.field, ...).all()`
+
+Advanced paths remain fully supported:
+
+- Raw explicit API via `BlazeDataRecord`
+- Manual custom mapping via `BlazeDocument`
+
+### Scope and support-state caveat
+
+This file documents broad repository API surfaces. They are **not all equal in default OSS support state**.
+
+- Treat embedded typed core APIs as the primary/default story.
+- Treat raw/manual and tuning-heavy APIs as advanced.
+- Treat sync/distributed/telemetry sections as conditional or deferred unless explicitly enabled by build packaging/runtime configuration.
+
 ---
 
 ## ** Convenience API (NEW!)**
@@ -579,6 +600,8 @@ The former name `replayTransactionLogIfNeeded()` remains available as a deprecat
 
 ## ** Sync & Distributed**
 
+> **Support-state caveat:** This surface is source-present but not part of the default `BlazeDBCore` OSS runtime packaging path. Do not treat this section as default shipped behavior.
+
 **Purpose:** Synchronize databases across devices, apps, and networks using BlazeBinary protocol.
 
 ### **BlazeTopology:**
@@ -645,6 +668,8 @@ public class BlazeDiscovery {
 ---
 
 ## ** Monitoring & Telemetry**
+
+> **Support-state caveat:** Telemetry behavior is build-dependent. Core OSS builds may expose telemetry stubs/no-op behavior while full telemetry paths are conditional.
 
 ### **Database Info:**
 

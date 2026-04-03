@@ -8,77 +8,57 @@ Runnable examples from basic to advanced.
 
 | Order | Example | What You'll Learn | Run Command |
 |-------|---------|-------------------|-------------|
-| 1 | HelloBlazeDB | Open, insert, query, close | `swift run HelloBlazeDB` |
+| 1 | HelloBlazeDB | Typed API first (`BlazeStorable` + `TypedStore`), then raw API | `swift run HelloBlazeDB` |
 | 2 | BasicExample | CRUD operations | `swift run BasicExample` |
 | 3 | QueryBuilderExample | Queries and filters | See file |
 | 4 | MigrationExamples | Schema migrations | See file |
 
 ---
 
-## All Examples by Category
+## All Examples by Support State
 
-### Getting Started
+### Core Embedded Examples (Default Shipped Path)
 | File | Description |
 |------|-------------|
-| `HelloBlazeDB/main.swift` | Complete walkthrough (best first example) |
-| `BasicExample/main.swift` | Basic CRUD operations |
-| `QuickStart.swift` | Minimal working example |
-| `BasicUsageExample.swift` | Common patterns |
-
-### Queries
-| File | Description |
-|------|-------------|
-| `QueryBuilderExample.swift` | Fluent query builder |
+| `HelloBlazeDB/main.swift` | Complete walkthrough: typed API, query, export, health |
+| `BasicExample/main.swift` | Core CRUD operations |
+| `QuickStart.swift` | Minimal typed working example |
+| `BasicUsageExample.swift` | Common embedded usage patterns |
 | `KeyPathQueriesExample.swift` | Type-safe queries with key paths |
-| `JoinExample.swift` | Joining data from multiple queries |
-
-### Data Modeling
-| File | Description |
-|------|-------------|
-| `CodableExample.swift` | Using Codable types |
-| `TypeSafeModels.swift` | Defining type-safe models |
-| `TypeSafeUsageExample.swift` | Using type-safe models |
-| `DynamicSchemaExample.swift` | Schema-less flexible storage |
-
-### Advanced Features
-| File | Description |
-|------|-------------|
-| `MigrationExamples.swift` | Schema migrations |
-| `EventTriggersExample.swift` | Database triggers |
-| `LazyDecodingExample.swift` | Lazy field loading |
-| `VectorIndexExample.swift` | Vector similarity search |
-| `DataSeedingExample.swift` | Generating test data |
-
-### Monitoring and Debugging
-| File | Description |
-|------|-------------|
-| `MonitorDatabases.swift` | Health monitoring |
-| `PrettyPrintExample.swift` | Debug output |
-| `TelemetryBasicExample.swift` | Performance metrics |
-| `ProgressMonitorExample.swift` | Long operation progress |
-
-### Sync (Experimental)
-| File | Description |
-|------|-------------|
-| `SyncExample_SameApp.swift` | In-memory sync (same process) |
-| `SyncExample_CrossApp.swift` | Unix socket sync (cross-process) |
-| `SyncExample_RemoteServer.swift` | TCP server |
-| `SyncExample_RemoteClient.swift` | TCP client |
-
-See `SYNC_EXAMPLES_INDEX.md` for complete sync documentation.
-
-### Integration
-| File | Description |
-|------|-------------|
-| `SwiftUIExample.swift` | SwiftUI integration |
-| `VaporServer/main.swift` | Vapor web server |
+| `QueryBuilderExample.swift` | Raw/fluent query usage |
+| `MonitorDatabases.swift` | Health/stats oriented operations |
 | `ReferenceConsumer/main.swift` | Production lifecycle example |
 
-### Security
+### Advanced but Core-Supported Examples
+| File | Description |
+|------|-------------|
+| `MigrationExamples.swift` | Schema migration workflow |
+| `DynamicSchemaExample.swift` | Schemaless + evolving fields |
+| `CodableExample.swift` | Codable model storage |
+| `TypeSafeModels.swift` | Type-safe model patterns |
+| `TypeSafeUsageExample.swift` | Type-safe API usage |
+| `EventTriggersExample.swift` | Trigger-style hooks |
+| `LazyDecodingExample.swift` | Lazy field loading |
+| `DataSeedingExample.swift` | Test/seed data generation |
+| `PrettyPrintExample.swift` | Debug formatting and inspection |
+
+### Conditional / Deferred / Platform-Gated Examples
+| File | Description |
+|------|-------------|
+| `SyncExample_*.swift` | Sync/distributed examples; deferred from default OSS runtime packaging |
+| `TelemetryBasicExample.swift` | Telemetry API walkthrough; full telemetry behavior is build-configuration dependent |
+| `VectorIndexExample.swift` | Advanced indexing with platform/build caveats |
+| `SwiftUIExample.swift` | UI integration path, not part of minimal core onboarding |
+| `VaporServer/main.swift` | Server integration example; optional deployment model |
+
+See `SYNC_EXAMPLES_INDEX.md` for full sync design docs and caveats.
+
+### Experimental / Under-Development Examples
 | File | Description |
 |------|-------------|
 | `RLSExample.swift` | Row-level security (under development; not available in this release) |
-| `AshPileWithRLS.swift` | RLS with real app patterns (under development; not available in this release) |
+| `AshPileWithRLS.swift` | RLS app pattern sample (under development; not available in this release) |
+| `AshPileExample.swift`, `AshPileDebugMenu.swift` | Companion app/experimental workflows |
 
 ---
 

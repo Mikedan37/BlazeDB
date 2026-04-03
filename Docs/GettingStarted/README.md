@@ -47,91 +47,118 @@ Copy this into your project:
 ```swift
 import BlazeDB
 
-// Open database (creates if needed, always encrypted)
-let db = try BlazeDBClient.open(named: "myapp", password: "your-password")
-
-// Insert data
-let id = try db.insert(BlazeDataRecord([
- "name": .string("Alice"),
- "age": .int(30),
- "active": .bool(true)
-]))
-
-// Query data
-let results = try db.query()
- .where("active", equals: .bool(true))
- .execute()
- .records
-
-for record in results {
- print(record.string("name", default: ""))
+// 1. Define your model
+struct User: BlazeStorable {
+    var id: UUID = UUID()
+    var name: String
+    var age: Int
+    var active: Bool
 }
 
-// Always close when done
+// 2. Open database (creates if needed, always encrypted)
+let db = try BlazeDBClient.open(named: "myapp", password: "My-Secure-Password-2026!")
+
+// 3. Get a typed store
+let users = db.typed(User.self)
+
+// 4. Insert
+try users.insert(User(name: "Alice", age: 30, active: true))
+
+// 5. Query with KeyPaths
+let activeUsers = try users.query()
+    .where(\.active, equals: true)
+    .all()
+
+for user in activeUsers {
+    print(user.name)  // Type-safe, no casting
+}
+
+// 6. Close when done
 try db.close()
 ```
 
-**That's it.** You have a working, encrypted, crash-safe database.
+**That's it.** You have a working, encrypted, crash-safe database with type-safe models.
 
 ---
 
 ## Step 4: Learn Basics
 
-### Data Types
+### Product Scope Note
 
-BlazeDB stores typed values:
+This guide focuses on the **default shipped embedded core**.  
+Distributed sync/server/discovery and full telemetry behavior are conditional/deferred surfaces and are not part of the default OSS onboarding path.
+
+### API Tiers
+
+BlazeDB offers three API tiers. Use whichever fits your needs:
+
+| Tier | Protocol | Best for |
+|------|----------|----------|
+| **Typed (recommended)** | `BlazeStorable` + `TypedStore` | Most apps — Codable models, KeyPath queries, minimal boilerplate |
+| **Raw explicit** | `BlazeDataRecord` | Dynamic schemas, migration scripts, schemaless exploration |
+| **Manual mapping** | `BlazeDocument` | Custom serialization, non-Codable types, full field control |
+
+### Typed API (Recommended)
 
 ```swift
-BlazeDataRecord([
- "name": .string("Alice"), // String
- "age": .int(30), // Integer
- "score": .double(95.5), // Double
- "active": .bool(true), // Boolean
- "created": .date(Date()), // Date
- "id": .uuid(UUID()), // UUID
- "tags": .array([.string("a")]) // Array
-])
+struct Task: BlazeStorable {
+    var id: UUID = UUID()
+    var title: String
+    var priority: Int
+    var done: Bool
+}
+
+let tasks = db.typed(Task.self)
+
+// Insert
+try tasks.insert(Task(title: "Ship v3", priority: 9, done: false))
+
+// Fetch by ID
+let task = try tasks.fetch(someID)
+
+// Query with KeyPaths
+let urgent = try tasks.query()
+    .where(\.priority, greaterThan: 7)
+    .orderBy(\.title)
+    .all()
+
+// Update
+var t = task!
+t.done = true
+try tasks.update(t)
+
+// Delete
+try tasks.delete(t.id)
 ```
 
-### CRUD Operations
+### Raw Explicit API (Advanced)
 
 ```swift
-// CREATE
+let record = BlazeDataRecord([
+    "name": .string("Alice"),
+    "age": .int(30),
+    "active": .bool(true)
+])
 let id = try db.insert(record)
 
-// READ
-let record = try db.fetch(id: id)
-let all = try db.fetchAll()
-
-// UPDATE
-try db.update(id: id, with: updatedRecord)
-
-// DELETE
-try db.delete(id: id)
+let results = try db.query()
+    .where("active", equals: .bool(true))
+    .execute()
+    .records
 ```
 
-### Query Builder
+### Manual Mapping API (Advanced)
+
+Use when you need full control over how fields map to/from storage:
 
 ```swift
-// Filter
-let admins = try db.query()
- .where("role", equals: .string("admin"))
- .execute()
- .records
-
-// Sort and limit
-let recent = try db.query()
- .orderBy("created", descending: true)
- .limit(10)
- .execute()
- .records
-
-// Multiple conditions
-let activeAdmins = try db.query()
- .where("role", equals: .string("admin"))
- .where("active", equals: .bool(true))
- .execute()
- .records
+struct Bug: BlazeDocument {
+    var id: UUID
+    var title: String
+    // ...
+    func toStorage() throws -> BlazeDataRecord { /* custom mapping */ }
+    init(from storage: BlazeDataRecord) throws { /* custom mapping */ }
+}
 ```
 
 ---
@@ -146,15 +173,6 @@ let activeAdmins = try db.query()
 
 ---
 
-## Typed Model Protocols
-
-| Use case | Protocol | Query style |
-|----------|----------|-------------|
-| Default — Codable models, KeyPath queries, minimal boilerplate | `BlazeStorable` | `query(for: MyModel.self)` |
-| Manual mapping, custom field control, non-Codable types | `BlazeDocument` | `query()` with string-based filters |
-
----
-
 ## Next Steps
 
 | Guide | What You'll Learn |
@@ -163,12 +181,17 @@ let activeAdmins = try db.query()
 | [Examples](../../Examples/) | Working code for common patterns |
 | [LINUX_GETTING_STARTED.md](LINUX_GETTING_STARTED.md) | Linux-specific setup |
 
+### Advanced / Conditional Discovery
+
+- Advanced core-supported paths: migrations, schema validation, indexing, raw/manual APIs
+- Conditional/deferred paths: distributed sync/server/discovery and full telemetry manager behavior
+
 ---
 
 ## Common Questions
 
 **Do I need a schema?**
-No. BlazeDB is schemaless. Each record can have different fields.
+No. BlazeDB is schemaless. Each record can have different fields. Use `BlazeStorable` for compile-time type safety without runtime schema setup.
 
 **Is my data encrypted?**
 Yes, by default. AES-256-GCM encryption is enabled automatically.
@@ -181,3 +204,6 @@ Yes. See `Examples/SwiftUIExample.swift` for `@BlazeQuery` property wrapper.
 
 **Can I use this with Vapor?**
 Yes. See [HOW_TO_USE_BLAZEDB.md](HOW_TO_USE_BLAZEDB.md#8-using-blazedb-in-a-server-vapor-example).
+
+**What about nested Codable types?**
+Nested structs are stored as serialized JSON strings. They round-trip correctly, but nested fields are not individually queryable via KeyPath filters. Flatten fields you need to query.

@@ -11,6 +11,13 @@ import BlazeDB
 
 // MARK: - Quick Start Example
 
+struct QuickStartUser: BlazeStorable {
+    var id: UUID = UUID()
+    var name: String
+    var age: Int
+    var role: String
+}
+
 func quickStartExample() throws {
     print("BlazeDB Quick Start Example\n")
     
@@ -19,32 +26,35 @@ func quickStartExample() throws {
     let db = try BlazeDBClient.open(named: "quickstart", password: "demo-password-123")
     print("   Database opened: \(db.fileURL.path)\n")
     
-    // 2. Insert records
-    print("2. Inserting records...")
-    let records = [
-        BlazeDataRecord(["name": .string("Alice"), "age": .int(30), "role": .string("admin")]),
-        BlazeDataRecord(["name": .string("Bob"), "age": .int(25), "role": .string("user")]),
-        BlazeDataRecord(["name": .string("Charlie"), "age": .int(35), "role": .string("admin")])
-    ]
-    
-    let ids = try db.insertMany(records)
-    print("   Inserted \(ids.count) records\n")
-    
-    // 3. Query with filter
-    print("3. Querying records...")
-    let results = try db.query()
-        .where("role", equals: .string("admin"))
-        .orderBy("age", descending: true)
-        .execute()
-        .records
-    
-    print("   Found \(results.count) admins:")
-    for record in results {
-        if let name = record.string("name"), let age = record.int("age") {
-            print("      - \(name), age \(age)")
-        }
+    let users = db.typed(QuickStartUser.self)
+
+    // 2. Insert records (typed path)
+    print("2. Inserting typed records...")
+    try users.insertMany([
+        QuickStartUser(name: "Alice", age: 30, role: "admin"),
+        QuickStartUser(name: "Bob", age: 25, role: "user"),
+        QuickStartUser(name: "Charlie", age: 35, role: "admin"),
+    ])
+    print("   Inserted 3 records\n")
+
+    // 3. Query with filter (typed path)
+    print("3. Querying typed records...")
+    let admins = try users.query()
+        .where(\.role, equals: "admin")
+        .orderBy(\.age, descending: true)
+        .all()
+
+    print("   Found \(admins.count) admins:")
+    for user in admins {
+        print("      - \(user.name), age \(user.age)")
     }
     print()
+
+    // 3b. Raw API remains available
+    print("3b. Raw API check...")
+    _ = try db.insert(BlazeDataRecord(["name": .string("RawUser"), "age": .int(22), "role": .string("user")]))
+    let rawCount = try db.query().where("role", equals: .string("user")).execute().records.count
+    print("   Raw query found \(rawCount) user-role records\n")
     
     // 4. Explain query
     print("4. Explaining query...")
