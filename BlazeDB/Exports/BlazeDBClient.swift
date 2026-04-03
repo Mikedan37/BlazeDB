@@ -1436,6 +1436,26 @@ public final class BlazeDBClient: @unchecked Sendable {
         return collection.query()
     }
 
+    // MARK: - Sync Index Management
+
+    /// Create a secondary index on a field for faster queries.
+    ///
+    /// ```swift
+    /// try db.createIndex(on: "status")
+    /// ```
+    public func createIndex(on field: String) throws {
+        try collection.createIndex(on: field)
+    }
+
+    /// Create a compound secondary index on multiple fields.
+    ///
+    /// ```swift
+    /// try db.createIndex(on: ["status", "priority"])
+    /// ```
+    public func createIndex(on fields: [String]) throws {
+        try collection.createIndex(on: fields)
+    }
+
     // MARK: - MetaStore
 
     #if !BLAZEDB_LINUX_CORE

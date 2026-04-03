@@ -5,21 +5,23 @@ import CoreFoundation
 
 /// The recommended protocol for typed model support.
 ///
-/// Conform to `BlazeStorable` and `Codable` to get automatic serialization
-/// and type-safe KeyPath queries via `query(for:)`.
+/// Conform to `BlazeStorable` to get automatic Codable serialization,
+/// type-safe KeyPath queries, and access to the ergonomic `TypedStore` API.
 ///
 /// ```swift
-/// struct Task: BlazeStorable, Codable {
-///     var id: UUID
+/// struct Task: BlazeStorable {
+///     var id: UUID = UUID()
 ///     var title: String
 ///     var priority: Int
 ///     var isComplete: Bool
 /// }
 ///
-/// // Type-safe queries with KeyPath:
-/// let urgent = try db.query(for: Task.self)
-///     .where(\.priority, .greaterThanOrEqual, 7)
-///     .execute()
+/// let tasks = db.typed(Task.self)
+/// try tasks.insert(Task(title: "Ship v3", priority: 9, isComplete: false))
+///
+/// let urgent = try tasks.query()
+///     .where(\.priority, greaterThanOrEqual: 7)
+///     .all()
 /// ```
 ///
 /// ## When to use BlazeDocument instead
