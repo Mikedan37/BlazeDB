@@ -440,55 +440,20 @@ func first() async throws -> BlazeDataRecord?
 
 ## ** Security & RLS**
 
-### **Security Context:**
+> **Support-state caveat:** BlazeDB includes row-level security (RLS) policy infrastructure in source, but this release does **not** expose a fully public, uniformly enforced RLS boundary across all default CRUD/query paths.
+>
+> Treat RLS as internal/advanced integration work unless you have explicitly validated the exact enforcement path in your build.
 
-```swift
-// Set security context
-func setSecurityContext(_ context: SecurityContext)
+### Current practical status
 
-// Get security context
-func getSecurityContext() -> SecurityContext?
-```
+- Policy engine and security-context types exist in core source.
+- Some specialized/internal paths can apply policy checks.
+- Default public `BlazeDBClient` CRUD/query operations are the canonical supported path and should **not** be assumed to enforce RLS universally in this release.
 
-### **Security Policies:**
+### Public guidance
 
-```swift
-// Create policy
-func createPolicy(_ policy: SecurityPolicy) throws
-
-// Get policy
-func getPolicy(name: String) -> SecurityPolicy?
-
-// Delete policy
-func deletePolicy(name: String) throws
-```
-
-### **SecurityContext:**
-
-```swift
-public struct SecurityContext {
- public let userId: UUID
- public let roles: [String]
- public let teams: [UUID]
- public let publicKey: Data?
-}
-```
-
-### **SecurityPolicy:**
-
-```swift
-public struct SecurityPolicy {
- public let name: String
- public let rules: [PolicyRule]
-
- public enum PolicyRule {
- case allowRead(where: (BlazeDataRecord) -> Bool)
- case allowWrite(where: (BlazeDataRecord) -> Bool)
- case denyRead(where: (BlazeDataRecord) -> Bool)
- case denyWrite(where: (BlazeDataRecord) -> Bool)
- }
-}
-```
+- If you need strict, guaranteed row-level access control as a hard boundary, do not assume it is fully covered by default API paths yet.
+- Use BlazeDB's existing app-layer authorization checks and validate security behavior end-to-end in your own deployment.
 
 ---
 
@@ -765,6 +730,9 @@ func performSecurityAudit() -> SecurityAuditReport
 ---
 
 ## ** SwiftUI Integration**
+
+For app-local SwiftUI usage, these wrappers can refresh query results after BlazeDB change notifications.
+They are refresh-on-change wrappers (query re-execution), not a generalized incremental diff engine.
 
 ### **Property Wrappers:**
 

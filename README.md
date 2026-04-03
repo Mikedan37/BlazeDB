@@ -22,6 +22,7 @@ BlazeDB is positioned as a **high-confidence embedded encrypted database** for S
 - WAL-backed durability and crash recovery
 - Deterministic import/export/verify/restore workflows
 - Practical operator tooling (`health`, `stats`, `BlazeDoctor`, `BlazeDump`, `BlazeInfo`)
+- SwiftUI query wrappers that can refresh from DB change notifications
 
 ### Shipped by default vs conditional/deferred
 
@@ -29,7 +30,7 @@ BlazeDB is positioned as a **high-confidence embedded encrypted database** for S
 |------|--------|
 | Embedded encrypted core, typed API, query/transactions, durability/recovery, import/export, health/stats, CLI tools | **Shipped by default** |
 | Raw/manual APIs, migrations, schema validation, indexing/full-text, benchmark tooling | **Advanced but supported** |
-| Distributed sync/server/discovery, full telemetry manager path, staging modules | **Conditional or deferred** |
+| Distributed sync/server/discovery, full telemetry manager path, row-level security policy surfaces, staging modules | **Conditional, internal, or deferred** |
 
 > Source-present code does not always mean default-shipped runtime behavior. The default SwiftPM OSS product is `BlazeDBCore`/`BlazeDB` as defined by `Package.swift`.
 
@@ -101,6 +102,21 @@ Or in Xcode: File → Add Package Dependencies → paste the URL.
 - Always-on AES-256-GCM encryption
 - Schema-less document storage with typed queries
 - Sub-millisecond reads, no external service dependencies
+- SwiftUI-friendly query wrappers (`@BlazeQuery`, `@BlazeQueryTyped`) with change-observation refresh
+
+### SwiftUI Query Observation
+
+BlazeDB includes change observation primitives plus SwiftUI query wrappers. In SwiftUI apps, wrappers can re-run queries after database write notifications so list UIs stay current without timer-only polling.
+
+```swift
+@BlazeQueryTyped(
+    db: AppDatabase.shared.db,
+    type: Bug.self,
+    where: "status", equals: .string("open"),
+    sortBy: "priority", descending: true
+)
+var openBugs: [Bug]
+```
 
 ### Default durability (BlazeDBClient)
 
@@ -111,6 +127,8 @@ Or in Xcode: File → Add Package Dependencies → paste the URL.
 BlazeDB encrypts data and overflow pages at rest using AES-GCM, and the page-level write-ahead log stores only those encrypted page frames. Metadata is HMAC-signed for tamper detection but remains in plaintext, and rollback to older valid snapshots is not cryptographically prevented. Legacy NDJSON transaction logs are not used by the default `BlazeDBClient` path and, when present from older or advanced tooling (`BlazeDBManager`, legacy page-level `BlazeTransaction`), are plaintext artifacts that should be treated as sensitive cleartext.
 
 > **Note:** Distributed sync and transport-backed features are deferred for the default OSS runtime. Telemetry APIs are available in-core, but full telemetry behavior is build-configuration dependent (core builds can use stub/no-op telemetry behavior).
+>
+> Row-level security (RLS) policy infrastructure exists in source, but full public CRUD/query enforcement is not the default supported behavior in this release.
 
 ---
 

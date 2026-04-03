@@ -234,6 +234,17 @@ let results = try query.execute().records
 
 A slow query scans all records because there's no index. If you filter by `user_id` without an index, BlazeDB reads every record. For small datasets, this is fine. For large datasets, add indexes (see API docs).
 
+### SwiftUI Query Observation
+
+For app-local UI integration, BlazeDB exposes:
+
+- `@BlazeQuery` for dynamic record views
+- `@BlazeQueryTyped` for typed SwiftUI views
+
+These wrappers can re-run queries when BlazeDB emits change notifications after writes.
+They are useful for keeping SwiftUI lists current without relying only on timer polling.
+Manual refresh and pull-to-refresh remain available when you want explicit refresh behavior.
+
 ---
 
 ## 7. Opening and Closing Correctly
@@ -473,6 +484,11 @@ blazedb info mydb --password "password"
 - BlazeDB doesn't spawn background threads
 - All operations are synchronous (or async/await)
 - No automatic cleanup or maintenance
+
+**RLS status (important):**
+- BlazeDB includes row-level security policy infrastructure in source.
+- In this release, RLS is not a fully enforced default public CRUD/query boundary across all client operations.
+- Treat RLS as internal/advanced-integration work unless you have explicitly validated your enforcement path.
 
 **File locking:**
 - Uses OS-level file locks (`flock`)

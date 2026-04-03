@@ -131,6 +131,11 @@ try tasks.update(t)
 try tasks.delete(t.id)
 ```
 
+### SwiftUI Query Observation (App Dev DX)
+
+If you are building a SwiftUI app, BlazeDB also provides `@BlazeQuery` and `@BlazeQueryTyped`.
+These wrappers use BlazeDB change observation to refresh query results after DB writes, so UI lists can stay in sync without relying only on timers.
+
 ### Raw Explicit API (Advanced)
 
 ```swift
@@ -184,7 +189,7 @@ struct Bug: BlazeDocument {
 ### Advanced / Conditional Discovery
 
 - Advanced core-supported paths: migrations, schema validation, indexing, raw/manual APIs
-- Conditional/deferred paths: distributed sync/server/discovery and full telemetry manager behavior
+- Conditional/deferred paths: distributed sync/server/discovery, full telemetry manager behavior, and row-level security policy surfaces (currently internal/under-development for full CRUD enforcement)
 
 ---
 
@@ -200,7 +205,7 @@ Yes, by default. AES-256-GCM encryption is enabled automatically.
 Committed data survives. BlazeDB uses write-ahead logging for crash safety.
 
 **Can I use this with SwiftUI?**
-Yes. See `Examples/SwiftUIExample.swift` for `@BlazeQuery` property wrapper.
+Yes. See `Examples/SwiftUIExample.swift` for `@BlazeQuery` / `@BlazeQueryTyped`. These wrappers can refresh from DB change notifications, and still support manual/pull refresh where useful.
 
 **Can I use this with Vapor?**
 Yes. See [HOW_TO_USE_BLAZEDB.md](HOW_TO_USE_BLAZEDB.md#8-using-blazedb-in-a-server-vapor-example).
