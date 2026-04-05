@@ -9,7 +9,8 @@ An encrypted embedded document store for Swift — designed for application stat
 **ACID transactions, AES-256-GCM encryption, no external service dependencies.**
 
 [![Swift](https://img.shields.io/badge/Swift-6.0-orange.svg)](https://swift.org)
-[![Platform](https://img.shields.io/badge/Platform-macOS%20%7C%20iOS%20%7C%20Linux-lightgrey.svg)](https://github.com/Mikedan37/BlazeDB)
+[![Platform](https://img.shields.io/badge/Platform-macOS%20%7C%20iOS%20%7C%20Linux%20%7C%20Android-lightgrey.svg)](https://github.com/Mikedan37/BlazeDB)
+[![Android Core Path](https://img.shields.io/badge/Android-core%20path%20enabled-blue.svg)](Docs/COMPATIBILITY.md)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 ---
@@ -179,7 +180,9 @@ BlazeDB encrypts data and overflow pages at rest using AES-GCM, and the page-lev
 > BlazeDB. It is **not required** to use the core embedded database engine and is less battle-tested than the core
 > library.
 
-**Requirements:** Swift 6.0+, macOS 15+ / iOS 15+ / Linux (core engine supported; automated CI validation is lighter than on macOS — see [Linux guide](Docs/GettingStarted/LINUX_GETTING_STARTED.md) and [Compatibility](Docs/COMPATIBILITY.md))
+**Requirements:** Swift 6.0+, macOS 15+ / iOS 15+ / Linux / Android
+
+Android currently follows the Linux-style core path (`BLAZEDB_LINUX_CORE`): core storage/query functionality builds, while some advanced platform-dependent surfaces are excluded. CI coverage for Android is currently best-effort/manual. See [Compatibility](Docs/COMPATIBILITY.md).
 
 ### Security and Benchmark Mode Note
 
