@@ -43,6 +43,9 @@ jobs:
       - name: Build BlazeDBCore
         run: swift build --target BlazeDBCore
 
+      - name: Sendable observation regression check
+        run: ./Scripts/check-sendable-observation.sh
+
       - name: Build CLI tools
         run: |
           swift build --target BlazeDoctor
@@ -87,6 +90,9 @@ jobs:
 
       - name: Build core
         run: swift build --target BlazeDBCore
+
+      - name: Sendable observation regression check
+        run: ./Scripts/check-sendable-observation.sh
 
       - name: Test Tier 0
         run: swift test --filter BlazeDB_Tier0

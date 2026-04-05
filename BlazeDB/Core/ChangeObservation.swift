@@ -11,8 +11,8 @@ import Foundation
 // MARK: - Database Change Types
 
 /// Represents a change to the database
-public struct DatabaseChange {
-    public enum ChangeType {
+public struct DatabaseChange: Sendable {
+    public enum ChangeType: Sendable {
         case insert(UUID)
         case update(UUID)
         case delete(UUID)
@@ -157,6 +157,48 @@ internal final class ChangeNotificationManager: @unchecked Sendable {
     }
 }
 
+// Bridges `BlazeDBClient` into a `@Sendable` change handler without capturing
+// a non-Sendable client reference in the outer closure (Swift 6 / Linux).
+private final class FilteredChangeBridge: @unchecked Sendable {
+    private weak var client: BlazeDBClient?
+    private let predicate: @Sendable (BlazeDataRecord) -> Bool
+    private let forward: ChangeObserver
+
+    init(
+        client: BlazeDBClient,
+        predicate: @escaping @Sendable (BlazeDataRecord) -> Bool,
+        forward: @escaping ChangeObserver
+    ) {
+        self.client = client
+        self.predicate = predicate
+        self.forward = forward
+    }
+
+    func handleChanges(_ changes: [DatabaseChange]) {
+        guard let client else { return }
+
+        var relevantChanges: [DatabaseChange] = []
+
+        for change in changes {
+            if case .insert(let id) = change.type,
+               let record = try? client.fetch(id: id),
+               predicate(record) {
+                relevantChanges.append(change)
+            } else if case .update(let id) = change.type,
+                      let record = try? client.fetch(id: id),
+                      predicate(record) {
+                relevantChanges.append(change)
+            } else if case .delete = change.type {
+                relevantChanges.append(change)
+            }
+        }
+
+        if !relevantChanges.isEmpty {
+            forward(relevantChanges)
+        }
+    }
+}
+
 // MARK: - BlazeDBClient Observation Extension
 
 extension BlazeDBClient {
@@ -247,35 +289,11 @@ extension BlazeDBClient {
         where predicate: @escaping @Sendable (BlazeDataRecord) -> Bool,
         changes observer: @escaping ChangeObserver
     ) -> ObserverToken {
-        // Filtered observer: only notify if change matches predicate
-        let filteredObserver: ChangeObserver = { [weak self] changes in
-            guard let self = self else { return }
-            
-            var relevantChanges: [DatabaseChange] = []
-            
-            for change in changes {
-                // Check if this change affects matching records
-                if case .insert(let id) = change.type,
-                   let record = try? self.fetch(id: id),
-                   predicate(record) {
-                    relevantChanges.append(change)
-                }
-                else if case .update(let id) = change.type,
-                        let record = try? self.fetch(id: id),
-                        predicate(record) {
-                    relevantChanges.append(change)
-                }
-                else if case .delete = change.type {
-                    // Can't check deleted record, include all deletes
-                    relevantChanges.append(change)
-                }
-            }
-            
-            if !relevantChanges.isEmpty {
-                observer(relevantChanges)
-            }
+        let bridge = FilteredChangeBridge(client: self, predicate: predicate, forward: observer)
+        let filteredObserver: ChangeObserver = { [bridge] changes in
+            bridge.handleChanges(changes)
         }
-        
+
         let id = ChangeNotificationManager.shared.registerObserver(filteredObserver)
         
         BlazeLogger.info("📡 Filtered database observer registered")

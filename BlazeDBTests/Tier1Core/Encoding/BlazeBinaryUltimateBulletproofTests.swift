@@ -13,6 +13,23 @@ import XCTest
 @testable import BlazeDB
 #endif
 
+private final class LockedIntCounter: @unchecked Sendable {
+    private let lock = NSLock()
+    private var value = 0
+
+    func increment() {
+        lock.lock()
+        value += 1
+        lock.unlock()
+    }
+
+    func get() -> Int {
+        lock.lock()
+        defer { lock.unlock() }
+        return value
+    }
+}
+
 final class BlazeBinaryUltimateBulletproofTests: XCTestCase {
     
     // MARK: - The Gauntlet (Tests That Break Everything)
@@ -273,8 +290,7 @@ final class BlazeBinaryUltimateBulletproofTests: XCTestCase {
         expectation.expectedFulfillmentCount = 10_000
         
         let queue = DispatchQueue(label: "test", attributes: .concurrent)
-        var failureCount = 0
-        let lock = NSLock()
+        let failureCount = LockedIntCounter()
         
         for i in 0..<10_000 {
             queue.async {
@@ -289,14 +305,10 @@ final class BlazeBinaryUltimateBulletproofTests: XCTestCase {
                     let decoded = try BlazeBinaryDecoder.decode(encoded)
                     
                     if decoded.storage["id"]?.intValue != i {
-                        lock.lock()
-                        failureCount += 1
-                        lock.unlock()
+                        failureCount.increment()
                     }
                 } catch {
-                    lock.lock()
-                    failureCount += 1
-                    lock.unlock()
+                    failureCount.increment()
                 }
                 
                 expectation.fulfill()
@@ -306,10 +318,11 @@ final class BlazeBinaryUltimateBulletproofTests: XCTestCase {
         wait(for: [expectation], timeout: 60)
         
         print("  Operations: 10,000")
-        print("  Failures: \(failureCount)")
-        print("  Success rate: \(String(format: "%.2f", (10000 - failureCount) / 100))%")
+        let failures = failureCount.get()
+        print("  Failures: \(failures)")
+        print("  Success rate: \(String(format: "%.2f", (10000 - failures) / 100))%")
         
-        XCTAssertEqual(failureCount, 0, "Should have ZERO failures in concurrent ops!")
+        XCTAssertEqual(failures, 0, "Should have ZERO failures in concurrent ops!")
         
         print("  ✅ 10,000 concurrent operations: 100.00% success!")
     }
@@ -551,8 +564,7 @@ final class BlazeBinaryUltimateBulletproofTests: XCTestCase {
         expectation.expectedFulfillmentCount = 1000
         
         let queue = DispatchQueue(label: "finalBoss", attributes: .concurrent)
-        var failureCount = 0
-        let lock = NSLock()
+        let failureCount = LockedIntCounter()
         
         for i in 0..<1000 {
             queue.async {
@@ -589,27 +601,19 @@ final class BlazeBinaryUltimateBulletproofTests: XCTestCase {
                     
                     // Verify integrity
                     if decoded.storage.count != storage.count {
-                        lock.lock()
-                        failureCount += 1
-                        lock.unlock()
+                        failureCount.increment()
                     }
                     
                     if decoded.storage["id"]?.intValue != i {
-                        lock.lock()
-                        failureCount += 1
-                        lock.unlock()
+                        failureCount.increment()
                     }
                     
                     if decoded.storage["extreme"]?.intValue != Int.min {
-                        lock.lock()
-                        failureCount += 1
-                        lock.unlock()
+                        failureCount.increment()
                     }
                     
                 } catch {
-                    lock.lock()
-                    failureCount += 1
-                    lock.unlock()
+                    failureCount.increment()
                 }
                 
                 expectation.fulfill()
@@ -619,10 +623,11 @@ final class BlazeBinaryUltimateBulletproofTests: XCTestCase {
         wait(for: [expectation], timeout: 120)
         
         print("  Operations: 1,000 pathological records")
-        print("  Failures: \(failureCount)")
-        print("  Success rate: \(String(format: "%.1f", Double(1000 - failureCount) / 10))%")
+        let failures = failureCount.get()
+        print("  Failures: \(failures)")
+        print("  Success rate: \(String(format: "%.1f", Double(1000 - failures) / 10))%")
         
-        XCTAssertEqual(failureCount, 0, "THE FINAL BOSS: ZERO failures allowed!")
+        XCTAssertEqual(failures, 0, "THE FINAL BOSS: ZERO failures allowed!")
         
         print("  🏆 THE FINAL BOSS: DEFEATED! BlazeBinary is FLAWLESS!")
     }

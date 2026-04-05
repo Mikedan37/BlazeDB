@@ -17,6 +17,23 @@ import XCTest
 @testable import BlazeDB
 #endif
 
+private final class MVCCRegressionLockedCounter: @unchecked Sendable {
+    private let lock = NSLock()
+    private var value = 0
+
+    func increment() {
+        lock.lock()
+        value += 1
+        lock.unlock()
+    }
+
+    func get() -> Int {
+        lock.lock()
+        defer { lock.unlock() }
+        return value
+    }
+}
+
 final class MVCCRegressionTests: XCTestCase {
     
     private var tempURL: URL?
@@ -214,8 +231,8 @@ final class MVCCRegressionTests: XCTestCase {
     
     func testRegression_ConcurrentInserts() throws {
         let group = DispatchGroup()
-        var insertedCount = 0
-        let lock = NSLock()
+        let insertedCount = MVCCRegressionLockedCounter()
+        let dbRef = try requireFixture(db)
         
         for i in 0..<100 {
             group.enter()
@@ -223,12 +240,10 @@ final class MVCCRegressionTests: XCTestCase {
                 defer { group.leave() }
                 
                 do {
-                    _ = try self.requireFixture(self.db).insert(BlazeDataRecord([
+                    _ = try dbRef.insert(BlazeDataRecord([
                         "thread": .int(i)
                     ]))
-                    lock.lock()
-                    insertedCount += 1
-                    lock.unlock()
+                    insertedCount.increment()
                 } catch {
                     print("Insert error: \(error)")
                 }
@@ -237,7 +252,7 @@ final class MVCCRegressionTests: XCTestCase {
         
         group.wait()
         
-        XCTAssertEqual(insertedCount, 100)
+        XCTAssertEqual(insertedCount.get(), 100)
         XCTAssertEqual(try requireFixture(db).count(), 100)
     }
     
@@ -250,8 +265,9 @@ final class MVCCRegressionTests: XCTestCase {
         }
         
         let group = DispatchGroup()
-        var errors = 0
-        let lock = NSLock()
+        let errors = MVCCRegressionLockedCounter()
+        let dbRef = try requireFixture(db)
+        let idList = ids
         
         // 200 mixed concurrent operations
         for _ in 0..<200 {
@@ -264,30 +280,28 @@ final class MVCCRegressionTests: XCTestCase {
                     
                     switch op {
                     case 0:  // Insert
-                        _ = try self.requireFixture(self.db).insert(BlazeDataRecord([
+                        _ = try dbRef.insert(BlazeDataRecord([
                             "r": .int(Int.random(in: 0...1000))
                         ]))
                     case 1:  // Fetch
-                        if let id = ids.randomElement() {
-                            _ = try self.requireFixture(self.db).fetch(id: id)
+                        if let id = idList.randomElement() {
+                            _ = try dbRef.fetch(id: id)
                         }
                     case 2:  // Update
-                        if let id = ids.randomElement() {
-                            try self.requireFixture(self.db).update(id: id, with: BlazeDataRecord([
+                        if let id = idList.randomElement() {
+                            try dbRef.update(id: id, with: BlazeDataRecord([
                                 "updated": .bool(true)
                             ]))
                         }
                     case 3:  // Delete
-                        if ids.count > 20, let id = ids.randomElement() {
-                            try self.requireFixture(self.db).delete(id: id)
+                        if idList.count > 20, let id = idList.randomElement() {
+                            try dbRef.delete(id: id)
                         }
                     default:
                         break
                     }
                 } catch {
-                    lock.lock()
-                    errors += 1
-                    lock.unlock()
+                    errors.increment()
                 }
             }
         }
@@ -296,7 +310,7 @@ final class MVCCRegressionTests: XCTestCase {
         
         // Some operations might fail (conflicts), but database should be stable
         XCTAssertNoThrow(try requireFixture(db).fetchAll())
-        print("Errors: \(errors)/200 (conflicts expected)")
+        print("Errors: \(errors.get())/200 (conflicts expected)")
     }
     
     // MARK: - Data Types Regression

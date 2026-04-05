@@ -13,6 +13,23 @@ import XCTest
 @testable import BlazeDB
 #endif
 
+private final class MigrationLockedErrors: @unchecked Sendable {
+    private let lock = NSLock()
+    private var errors: [Error] = []
+
+    func append(_ error: Error) {
+        lock.lock()
+        errors.append(error)
+        lock.unlock()
+    }
+
+    func snapshot() -> [Error] {
+        lock.lock()
+        defer { lock.unlock() }
+        return errors
+    }
+}
+
 final class AutoMigrationVerificationTests: XCTestCase {
     
     private var tempURL: URL?
@@ -611,8 +628,7 @@ final class AutoMigrationVerificationTests: XCTestCase {
         // Immediately start concurrent operations
         let client = try XCTUnwrap(self.db, "database should be open after migration reopen")
         let group = DispatchGroup()
-        var errors: [Error] = []
-        let lock = NSLock()
+        let errors = MigrationLockedErrors()
         
         for i in 100..<200 {
             group.enter()
@@ -621,9 +637,7 @@ final class AutoMigrationVerificationTests: XCTestCase {
                 do {
                     try client.insert(BlazeDataRecord(["value": .int(i)]))
                 } catch {
-                    lock.lock()
                     errors.append(error)
-                    lock.unlock()
                 }
             }
         }
@@ -631,7 +645,8 @@ final class AutoMigrationVerificationTests: XCTestCase {
         group.wait()
         
         // Should handle concurrent access during/after migration
-        XCTAssertTrue(errors.isEmpty, "Concurrent inserts after migration should work: \(errors)")
+        let allErrors = errors.snapshot()
+        XCTAssertTrue(allErrors.isEmpty, "Concurrent inserts after migration should work: \(allErrors)")
         
         let finalCount = try migrationDB().count()
         XCTAssertGreaterThanOrEqual(finalCount, 100, 

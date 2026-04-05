@@ -15,6 +15,23 @@ import XCTest
 @testable import BlazeDB
 #endif
 
+private final class ObservabilityLockedErrors: @unchecked Sendable {
+    private let lock = NSLock()
+    private var errors: [Error] = []
+
+    func append(_ error: Error) {
+        lock.lock()
+        errors.append(error)
+        lock.unlock()
+    }
+
+    func snapshot() -> [Error] {
+        lock.lock()
+        defer { lock.unlock() }
+        return errors
+    }
+}
+
 final class ObservabilityTests: XCTestCase {
     private var tempDir: URL?
     private var db: BlazeDBClient?
@@ -155,8 +172,7 @@ final class ObservabilityTests: XCTestCase {
     func testObservability_DoesNotDeadlock() throws {
         // Concurrent operations with observability
         let group = DispatchGroup()
-        var errors: [Error] = []
-        let lock = NSLock()
+        let errors = ObservabilityLockedErrors()
         let client = try XCTUnwrap(db)
         
         for _ in 0..<10 {
@@ -168,17 +184,16 @@ final class ObservabilityTests: XCTestCase {
                     _ = try client.observe()
                     _ = try client.fetchAll()
                 } catch {
-                    lock.lock()
                     errors.append(error)
-                    lock.unlock()
                 }
                 group.leave()
             }
         }
         
         let result = group.wait(timeout: .now() + 5.0)
+        let allErrors = errors.snapshot()
         XCTAssertEqual(result, .success, "Operations should complete without deadlock")
-        XCTAssertTrue(errors.isEmpty || errors.allSatisfy { $0.localizedDescription.contains("locked") },
+        XCTAssertTrue(allErrors.isEmpty || allErrors.allSatisfy { $0.localizedDescription.contains("locked") },
                       "Only expected errors should occur")
     }
     

@@ -14,6 +14,25 @@ import XCTest
 @testable import BlazeDB
 #endif
 
+extension VersionManager: @unchecked Sendable {}
+
+private final class MVCCLockedCounter: @unchecked Sendable {
+    private let lock = NSLock()
+    private var value = 0
+
+    func increment() {
+        lock.lock()
+        value += 1
+        lock.unlock()
+    }
+
+    func get() -> Int {
+        lock.lock()
+        defer { lock.unlock() }
+        return value
+    }
+}
+
 final class MVCCFoundationTests: XCTestCase {
     
     var versionManager: VersionManager!
@@ -308,8 +327,8 @@ final class MVCCFoundationTests: XCTestCase {
         versionManager.addVersion(version)
         
         let group = DispatchGroup()
-        var successCount = 0
-        let lock = NSLock()
+        let successCount = MVCCLockedCounter()
+        let versionManagerRef = versionManager!
         
         // 100 concurrent reads
         for _ in 0..<100 {
@@ -317,22 +336,21 @@ final class MVCCFoundationTests: XCTestCase {
             DispatchQueue.global().async {
                 defer { group.leave() }
                 
-                if let _ = self.versionManager.getVersion(recordID: recordID, snapshot: 1) {
-                    lock.lock()
-                    successCount += 1
-                    lock.unlock()
+                if let _ = versionManagerRef.getVersion(recordID: recordID, snapshot: 1) {
+                    successCount.increment()
                 }
             }
         }
         
         group.wait()
         
-        XCTAssertEqual(successCount, 100, "All concurrent reads should succeed")
+        XCTAssertEqual(successCount.get(), 100, "All concurrent reads should succeed")
     }
     
     func testConcurrentVersionAdds() {
         let recordID = UUID()
         let group = DispatchGroup()
+        let versionManagerRef = versionManager!
         
         // 50 threads adding versions
         for i in 1...50 {
@@ -346,7 +364,7 @@ final class MVCCFoundationTests: XCTestCase {
                     pageNumber: i,
                     createdByTransaction: UInt64(i)
                 )
-                self.versionManager.addVersion(version)
+                versionManagerRef.addVersion(version)
             }
         }
         

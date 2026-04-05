@@ -177,7 +177,7 @@ final class BlazeDBEnhancedConcurrencyTests: XCTestCase {
         expectation.expectedFulfillmentCount = 50
         
         let queue = DispatchQueue(label: "test.concurrent", attributes: .concurrent)
-        var insertedIDs = ThreadSafeArray<UUID>()
+        let insertedIDs = ThreadSafeArray<UUID>()
         guard let dbRef = db else {
             XCTFail("db not set")
             return
@@ -523,7 +523,7 @@ final class BlazeDBEnhancedConcurrencyTests: XCTestCase {
         expectation.expectedFulfillmentCount = iterations
         
         let queue = DispatchQueue(label: "test.concurrent", attributes: .concurrent)
-        var successCount = ThreadSafeCounter()
+        let successCount = ThreadSafeCounter()
         guard let dbRef = db else {
             XCTFail("db not set")
             return
@@ -566,7 +566,7 @@ final class BlazeDBEnhancedConcurrencyTests: XCTestCase {
 
 // MARK: - Helper Classes
 
-class ThreadSafeArray<T> {
+final class ThreadSafeArray<T>: @unchecked Sendable {
     private var _array: [T] = []
     private let lock = NSLock()
     
@@ -589,7 +589,7 @@ class ThreadSafeArray<T> {
     }
 }
 
-class ThreadSafeCounter {
+final class ThreadSafeCounter: @unchecked Sendable {
     private var _value: Int = 0
     private let lock = NSLock()
     

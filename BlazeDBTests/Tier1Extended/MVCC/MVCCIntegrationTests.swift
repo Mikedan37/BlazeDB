@@ -14,6 +14,29 @@ import XCTest
 @testable import BlazeDB
 #endif
 
+private final class MVCCIntegrationLockedCounter: @unchecked Sendable {
+    private let lock = NSLock()
+    private var value = 0
+
+    func increment() {
+        lock.lock()
+        value += 1
+        lock.unlock()
+    }
+
+    func set(_ newValue: Int) {
+        lock.lock()
+        value = newValue
+        lock.unlock()
+    }
+
+    func get() -> Int {
+        lock.lock()
+        defer { lock.unlock() }
+        return value
+    }
+}
+
 final class MVCCIntegrationTests: XCTestCase {
     
     private var tempURL: URL?
@@ -124,9 +147,9 @@ final class MVCCIntegrationTests: XCTestCase {
         print("  ✅ Inserted 100 records")
         
         let group = DispatchGroup()
-        var successCount = 0
-        var errorCount = 0
-        let lock = NSLock()
+        let successCount = MVCCIntegrationLockedCounter()
+        let errorCount = MVCCIntegrationLockedCounter()
+        let dbRef = try requireFixture(db)
         
         // Measure time
         let start = Date()
@@ -138,14 +161,10 @@ final class MVCCIntegrationTests: XCTestCase {
                 defer { group.leave() }
                 
                 do {
-                    _ = try self.requireFixture(self.db).fetch(id: id)
-                    lock.lock()
-                    successCount += 1
-                    lock.unlock()
+                    _ = try dbRef.fetch(id: id)
+                    successCount.increment()
                 } catch {
-                    lock.lock()
-                    errorCount += 1
-                    lock.unlock()
+                    errorCount.increment()
                 }
             }
         }
@@ -154,13 +173,13 @@ final class MVCCIntegrationTests: XCTestCase {
         let duration = Date().timeIntervalSince(start)
         
         print("  📊 Concurrent reads: 100")
-        print("  📊 Success: \(successCount)")
-        print("  📊 Errors: \(errorCount)")
+        print("  📊 Success: \(successCount.get())")
+        print("  📊 Errors: \(errorCount.get())")
         print("  📊 Duration: \(String(format: "%.3f", duration))s")
         print("  📊 Throughput: \(String(format: "%.0f", 100.0 / duration)) reads/sec")
         
-        XCTAssertEqual(successCount, 100)
-        XCTAssertEqual(errorCount, 0)
+        XCTAssertEqual(successCount.get(), 100)
+        XCTAssertEqual(errorCount.get(), 0)
         
         print("  ✅ All concurrent reads successful!")
     }
@@ -177,22 +196,21 @@ final class MVCCIntegrationTests: XCTestCase {
         }
         
         let group = DispatchGroup()
-        var readCount = 0
-        var writeCount = 0
-        let lock = NSLock()
+        let readCount = MVCCIntegrationLockedCounter()
+        let writeCount = MVCCIntegrationLockedCounter()
+        let dbRef = try requireFixture(db)
+        let idList = ids
         
         let start = Date()
         
         // Readers (50 threads)
-        for id in ids {
+        for id in idList {
             group.enter()
             DispatchQueue.global().async {
                 defer { group.leave() }
                 
-                _ = try? self.requireFixture(self.db).fetch(id: id)
-                lock.lock()
-                readCount += 1
-                lock.unlock()
+                _ = try? dbRef.fetch(id: id)
+                readCount.increment()
             }
         }
         
@@ -202,20 +220,18 @@ final class MVCCIntegrationTests: XCTestCase {
             DispatchQueue.global().async {
                 defer { group.leave() }
                 
-                _ = try? self.requireFixture(self.db).insert(BlazeDataRecord([
+                _ = try? dbRef.insert(BlazeDataRecord([
                     "write": .int(i)
                 ]))
-                lock.lock()
-                writeCount += 1
-                lock.unlock()
+                writeCount.increment()
             }
         }
         
         group.wait()
         let duration = Date().timeIntervalSince(start)
         
-        print("  📊 Reads: \(readCount)")
-        print("  📊 Writes: \(writeCount)")
+        print("  📊 Reads: \(readCount.get())")
+        print("  📊 Writes: \(writeCount.get())")
         print("  📊 Duration: \(String(format: "%.3f", duration))s")
         print("  ✅ Reads and writes happened concurrently!")
     }
@@ -236,18 +252,19 @@ final class MVCCIntegrationTests: XCTestCase {
         
         // Transaction 1: Start reading
         let group = DispatchGroup()
-        var count1 = 0
-        var count2 = 0
+        let count1 = MVCCIntegrationLockedCounter()
+        let count2 = MVCCIntegrationLockedCounter()
+        let dbRef = try requireFixture(db)
         
         group.enter()
         DispatchQueue.global().async {
             defer { group.leave() }
             
             // This transaction sees snapshot at start
-            count1 = (try? self.requireFixture(self.db).count()) ?? 0
+            count1.set((try? dbRef.count()) ?? 0)
             Thread.sleep(forTimeInterval: 0.1)
             // Count should be same (snapshot isolation)
-            count2 = (try? self.requireFixture(self.db).count()) ?? 0
+            count2.set((try? dbRef.count()) ?? 0)
         }
         
         // Meanwhile, insert more records
@@ -258,8 +275,8 @@ final class MVCCIntegrationTests: XCTestCase {
         
         group.wait()
         
-        print("  📸 Snapshot count1: \(count1)")
-        print("  📸 Snapshot count2: \(count2)")
+        print("  📸 Snapshot count1: \(count1.get())")
+        print("  📸 Snapshot count2: \(count2.get())")
         print("  📊 Final count: \(try requireFixture(db).count())")
         
         // Note: Without full snapshot transactions, this might not work yet
@@ -289,11 +306,12 @@ final class MVCCIntegrationTests: XCTestCase {
         let start = Date()
         
         let group = DispatchGroup()
+        let dbRef = try requireFixture(db)
         for id in ids {
             group.enter()
             DispatchQueue.global().async {
                 defer { group.leave() }
-                _ = try? self.requireFixture(self.db).fetch(id: id)
+                _ = try? dbRef.fetch(id: id)
             }
         }
         
@@ -346,12 +364,13 @@ final class MVCCIntegrationTests: XCTestCase {
         }
         
         let group = DispatchGroup()
-        var insertCount = 0
-        var fetchCount = 0
-        var updateCount = 0
-        var deleteCount = 0
-        var errorCount = 0
-        let lock = NSLock()
+        let insertCount = MVCCIntegrationLockedCounter()
+        let fetchCount = MVCCIntegrationLockedCounter()
+        let updateCount = MVCCIntegrationLockedCounter()
+        let deleteCount = MVCCIntegrationLockedCounter()
+        let errorCount = MVCCIntegrationLockedCounter()
+        let dbRef = try requireFixture(db)
+        let idList = ids
         
         // 1000 random concurrent operations
         for _ in 0..<1000 {
@@ -364,46 +383,36 @@ final class MVCCIntegrationTests: XCTestCase {
                     
                     switch op {
                     case 0:  // Insert (25%)
-                        _ = try self.requireFixture(self.db).insert(BlazeDataRecord([
+                        _ = try dbRef.insert(BlazeDataRecord([
                             "random": .int(Int.random(in: 0...1000))
                         ]))
-                        lock.lock()
-                        insertCount += 1
-                        lock.unlock()
+                        insertCount.increment()
                         
                     case 1:  // Fetch (25%)
-                        if let id = ids.randomElement() {
-                            _ = try self.requireFixture(self.db).fetch(id: id)
+                        if let id = idList.randomElement() {
+                            _ = try dbRef.fetch(id: id)
                         }
-                        lock.lock()
-                        fetchCount += 1
-                        lock.unlock()
+                        fetchCount.increment()
                         
                     case 2:  // Update (25%)
-                        if let id = ids.randomElement() {
-                            try self.requireFixture(self.db).update(id: id, with: BlazeDataRecord([
+                        if let id = idList.randomElement() {
+                            try dbRef.update(id: id, with: BlazeDataRecord([
                                 "updated": .bool(true)
                             ]))
                         }
-                        lock.lock()
-                        updateCount += 1
-                        lock.unlock()
+                        updateCount.increment()
                         
                     case 3:  // Delete (25%)
-                        if let id = ids.randomElement(), ids.count > 20 {
-                            try self.requireFixture(self.db).delete(id: id)
+                        if let id = idList.randomElement(), idList.count > 20 {
+                            try dbRef.delete(id: id)
                         }
-                        lock.lock()
-                        deleteCount += 1
-                        lock.unlock()
+                        deleteCount.increment()
                         
                     default:
                         break
                     }
                 } catch {
-                    lock.lock()
-                    errorCount += 1
-                    lock.unlock()
+                    errorCount.increment()
                 }
             }
         }
@@ -411,11 +420,11 @@ final class MVCCIntegrationTests: XCTestCase {
         group.wait()
         
         print("  📊 Operations completed:")
-        print("     Inserts: \(insertCount)")
-        print("     Fetches: \(fetchCount)")
-        print("     Updates: \(updateCount)")
-        print("     Deletes: \(deleteCount)")
-        print("     Errors:  \(errorCount)")
+        print("     Inserts: \(insertCount.get())")
+        print("     Fetches: \(fetchCount.get())")
+        print("     Updates: \(updateCount.get())")
+        print("     Deletes: \(deleteCount.get())")
+        print("     Errors:  \(errorCount.get())")
         
         // Database should still be functional
         XCTAssertNoThrow(try requireFixture(db).fetchAll())
@@ -443,21 +452,19 @@ final class MVCCIntegrationTests: XCTestCase {
         
         // Concurrent reads
         let group = DispatchGroup()
-        var integrityFailures = 0
-        let lock = NSLock()
+        let integrityFailures = MVCCIntegrationLockedCounter()
+        let dbRef = try requireFixture(db)
         
         for (id, expected) in expectedRecords {
             group.enter()
             DispatchQueue.global().async {
                 defer { group.leave() }
                 
-                if let fetched = try? self.requireFixture(self.db).fetch(id: id) {
+                if let fetched = try? dbRef.fetch(id: id) {
                     // Verify data matches
                     if fetched["index"]?.intValue != expected["index"]?.intValue ||
                        fetched["data"]?.stringValue != expected["data"]?.stringValue {
-                        lock.lock()
-                        integrityFailures += 1
-                        lock.unlock()
+                        integrityFailures.increment()
                     }
                 }
             }
@@ -466,9 +473,9 @@ final class MVCCIntegrationTests: XCTestCase {
         group.wait()
         
         print("  📊 Integrity checks: 100")
-        print("  📊 Failures: \(integrityFailures)")
+        print("  📊 Failures: \(integrityFailures.get())")
         
-        XCTAssertEqual(integrityFailures, 0, "All data should be intact")
+        XCTAssertEqual(integrityFailures.get(), 0, "All data should be intact")
         
         print("  ✅ Data integrity verified!")
     }
@@ -497,11 +504,12 @@ final class MVCCIntegrationTests: XCTestCase {
         let start = Date()
         
         let group = DispatchGroup()
+        let dbRef = try requireFixture(db)
         for id in ids {
             group.enter()
             DispatchQueue.global().async {
                 defer { group.leave() }
-                _ = try? self.requireFixture(self.db).fetch(id: id)
+                _ = try? dbRef.fetch(id: id)
             }
         }
         
