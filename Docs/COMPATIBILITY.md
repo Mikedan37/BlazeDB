@@ -66,6 +66,10 @@
 - **Status:** Core supported
 - **Notes:** Some advanced features disabled (`BLAZEDB_LINUX_CORE`)
 
+### Android
+- **Status:** Core path supported (same compile-time path as Linux)
+- **Notes:** Builds with `BLAZEDB_LINUX_CORE` path; advanced platform-dependent features may be excluded. CI validation is currently best-effort/manual.
+
 ---
 
 ## Storage Format Compatibility
@@ -159,7 +163,7 @@ See `CONTRIBUTING.md` for bug report templates and guidelines.
 
 ## Summary
 
-**Core:** Swift 6 compliant, stable, production-ready
+**Core:** Swift 6 compliant, stable, production-ready (macOS/iOS) and core-path supported on Linux/Android
 **Distributed:** Not yet compliant, excluded from core
 **Storage:** Stable format, migration support
 **APIs:** Core APIs stable, experimental APIs clearly marked
