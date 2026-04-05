@@ -158,11 +158,22 @@ final class ImportExportTests: XCTestCase {
         try db.insert(BlazeDataRecord(["test": .string("data")]))
         try db.export(to: tempDumpURL)
         
-        // Tamper with dump file
-        var dumpData = try Data(contentsOf: tempDumpURL)
-        // Modify a byte
-        dumpData[100] = dumpData[100] == 0 ? 1 : 0
-        try dumpData.write(to: tempDumpURL, options: [.atomic])
+        // Tamper with dump file while keeping JSON syntactically valid.
+        // Flipping an arbitrary byte can introduce invalid control characters
+        // and crash older Foundation JSON decoders on Linux.
+        let originalDumpData = try Data(contentsOf: tempDumpURL)
+        var dumpJSON = try XCTUnwrap(String(data: originalDumpData, encoding: .utf8))
+        let marker = "\"combinedHash\":\""
+        let markerRange = try XCTUnwrap(dumpJSON.range(of: marker))
+        let hashStart = markerRange.upperBound
+        let hashEnd = try XCTUnwrap(dumpJSON[hashStart...].firstIndex(of: "\""))
+
+        var hashChars = Array(dumpJSON[hashStart..<hashEnd])
+        XCTAssertFalse(hashChars.isEmpty, "combinedHash should be non-empty")
+        hashChars[0] = hashChars[0] == "0" ? "1" : "0"
+        dumpJSON.replaceSubrange(hashStart..<hashEnd, with: String(hashChars))
+
+        try dumpJSON.data(using: .utf8)?.write(to: tempDumpURL, options: [.atomic])
         
         // Verification should fail
         do {
