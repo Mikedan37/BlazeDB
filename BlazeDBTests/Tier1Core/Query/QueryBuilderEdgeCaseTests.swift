@@ -312,7 +312,7 @@ final class QueryBuilderEdgeCaseTests: XCTestCase {
             }
         }
         
-        waitForExpectations(timeout: 5.0)
+        wait(for: [expectation], timeout: 5.0)
     }
     
     // MARK: - Filter Ordering Edge Cases

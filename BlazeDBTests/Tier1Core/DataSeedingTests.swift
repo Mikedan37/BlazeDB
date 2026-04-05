@@ -99,52 +99,60 @@ final class DataSeedingTests: XCTestCase {
     
     // MARK: - Factories
     
-    func testFactoryRegistration() throws {
-        // Register factory
-        try requireFixture(db).factory(Bug.self) { i in
-            Bug(title: "Factory Bug \(i)", priority: 5, status: "open")
+    func testFactoryRegistration() async throws {
+        try await MainActor.run {
+            // Register factory
+            try requireFixture(db).factory(Bug.self) { i in
+                Bug(title: "Factory Bug \(i)", priority: 5, status: "open")
+            }
+
+            // Create using factory
+            let bugs = try requireFixture(db).create(Bug.self, count: 10)
+
+            XCTAssertEqual(bugs.count, 10)
+            XCTAssertTrue(bugs.allSatisfy { $0.priority == 5 })
+            XCTAssertTrue(bugs.allSatisfy { $0.status == "open" })
         }
-        
-        // Create using factory
-        let bugs = try requireFixture(db).create(Bug.self, count: 10)
-        
-        XCTAssertEqual(bugs.count, 10)
-        XCTAssertTrue(bugs.allSatisfy { $0.priority == 5 })
-        XCTAssertTrue(bugs.allSatisfy { $0.status == "open" })
     }
     
-    func testFactorySingleCreate() throws {
-        try requireFixture(db).factory(Bug.self) { i in
-            Bug(title: "Single Bug", priority: 1)
+    func testFactorySingleCreate() async throws {
+        try await MainActor.run {
+            try requireFixture(db).factory(Bug.self) { i in
+                Bug(title: "Single Bug", priority: 1)
+            }
+
+            let bug = try requireFixture(db).create(Bug.self)  // Create just one
+
+            XCTAssertEqual(bug.title, "Single Bug")
+
+            let all = try requireFixture(db).fetchAll(Bug.self)
+            XCTAssertEqual(all.count, 1)
         }
-        
-        let bug = try requireFixture(db).create(Bug.self)  // Create just one
-        
-        XCTAssertEqual(bug.title, "Single Bug")
-        
-        let all = try requireFixture(db).fetchAll(Bug.self)
-        XCTAssertEqual(all.count, 1)
     }
     
-    func testFactoryWithoutRegistration() throws {
-        // Should throw if no factory registered
-        XCTAssertThrowsError(try requireFixture(db).create(Bug.self))
+    func testFactoryWithoutRegistration() async {
+        await MainActor.run {
+            // Should throw if no factory registered
+            XCTAssertThrowsError(try requireFixture(db).create(Bug.self))
+        }
     }
     
-    func testFactoryOverride() throws {
-        // Register first factory
-        try requireFixture(db).factory(Bug.self) { i in
-            Bug(title: "First", priority: 1)
+    func testFactoryOverride() async throws {
+        try await MainActor.run {
+            // Register first factory
+            try requireFixture(db).factory(Bug.self) { i in
+                Bug(title: "First", priority: 1)
+            }
+
+            // Override with new factory
+            try requireFixture(db).factory(Bug.self) { i in
+                Bug(title: "Second", priority: 2)
+            }
+
+            let bug = try requireFixture(db).create(Bug.self)
+            XCTAssertEqual(bug.title, "Second")
+            XCTAssertEqual(bug.priority, 2)
         }
-        
-        // Override with new factory
-        try requireFixture(db).factory(Bug.self) { i in
-            Bug(title: "Second", priority: 2)
-        }
-        
-        let bug = try requireFixture(db).create(Bug.self)
-        XCTAssertEqual(bug.title, "Second")
-        XCTAssertEqual(bug.priority, 2)
     }
     
     // MARK: - Fixtures from JSON
@@ -273,12 +281,13 @@ final class DataSeedingTests: XCTestCase {
         XCTAssertEqual(all.count, 10)
     }
     
-    @MainActor
     func testAsyncFactory() async throws {
-        try requireFixture(db).factory(Bug.self) { i in
-            Bug(title: "Async Factory \(i)", priority: 3)
+        try await MainActor.run {
+            try requireFixture(db).factory(Bug.self) { i in
+                Bug(title: "Async Factory \(i)", priority: 3)
+            }
         }
-        
+
         let bugs = try await requireFixture(db).create(Bug.self, count: 5)
         XCTAssertEqual(bugs.count, 5)
     }
