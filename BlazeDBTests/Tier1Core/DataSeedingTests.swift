@@ -130,8 +130,8 @@ final class DataSeedingTests: XCTestCase {
         }
     }
     
-    func testFactoryWithoutRegistration() async {
-        await MainActor.run {
+    func testFactoryWithoutRegistration() async throws {
+        try await MainActor.run {
             // Should throw if no factory registered
             XCTAssertThrowsError(try requireFixture(db).create(Bug.self))
         }
