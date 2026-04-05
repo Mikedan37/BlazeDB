@@ -70,6 +70,10 @@
 - **Status:** Core path supported (same compile-time path as Linux)
 - **Notes:** Builds with `BLAZEDB_LINUX_CORE` path; advanced platform-dependent features may be excluded. Android cross-compilation currently expects Swift 6.3+ plus the Swift Android SDK and Android NDK (manual/best-effort lane).
 
+### Android
+- **Status:** Core path supported (same compile-time path as Linux)
+- **Notes:** Builds with `BLAZEDB_LINUX_CORE` path; advanced platform-dependent features may be excluded. CI validation is currently best-effort/manual.
+
 ---
 
 ## Storage Format Compatibility
