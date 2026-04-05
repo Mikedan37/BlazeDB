@@ -54,7 +54,7 @@ let package = Package(
         .target(
             name: "BlazeDBCore",
             dependencies: [
-                .product(name: "Crypto", package: "swift-crypto", condition: .when(platforms: [.linux])),
+                .product(name: "Crypto", package: "swift-crypto", condition: .when(platforms: [.linux, .android])),
             ],
             path: "BlazeDB",
             exclude: [
@@ -91,7 +91,7 @@ let package = Package(
                 "BlazeDB-Package.xctestplan"
             ],
             swiftSettings: [
-                .define("BLAZEDB_LINUX_CORE", .when(platforms: [.linux])),
+                .define("BLAZEDB_LINUX_CORE", .when(platforms: [.linux, .android])),
                 // Swift 6.0.x: IRGen can abort on SwiftUI Binding<> debug reconstruction (e.g. BlazeQuery+Extensions.swift).
                 // Matches swiftc hint: -Xfrontend -disable-round-trip-debug-types
                 .unsafeFlags(
@@ -178,7 +178,7 @@ let package = Package(
             path: "BlazeDBTests/Tier0Core",
             swiftSettings: [
                 .define("BLAZEDB_CORE_ONLY"),
-                .define("BLAZEDB_LINUX_CORE", .when(platforms: [.linux]))
+                .define("BLAZEDB_LINUX_CORE", .when(platforms: [.linux, .android]))
             ]
         ),
 
@@ -199,7 +199,7 @@ let package = Package(
             ],
             swiftSettings: [
                 .define("BLAZEDB_CORE_ONLY"),
-                .define("BLAZEDB_LINUX_CORE", .when(platforms: [.linux]))
+                .define("BLAZEDB_LINUX_CORE", .when(platforms: [.linux, .android]))
             ]
         ),
         // Tier 1 extended: integration, sync, sleep-dependent and large-N stress (not the default gate).
@@ -215,7 +215,7 @@ let package = Package(
             ],
             swiftSettings: [
                 .define("BLAZEDB_CORE_ONLY"),
-                .define("BLAZEDB_LINUX_CORE", .when(platforms: [.linux]))
+                .define("BLAZEDB_LINUX_CORE", .when(platforms: [.linux, .android]))
             ]
         ),
         // Tier 1 perf: XCTest measure() and benchmark-shaped suites (quarantine lane).
@@ -225,7 +225,7 @@ let package = Package(
             path: "BlazeDBTests/Tier1Perf",
             swiftSettings: [
                 .define("BLAZEDB_CORE_ONLY"),
-                .define("BLAZEDB_LINUX_CORE", .when(platforms: [.linux]))
+                .define("BLAZEDB_LINUX_CORE", .when(platforms: [.linux, .android]))
             ]
         ),
         // Tier 2 / Tier 3 heavy+destructive / DistributedSecurity SPM harness live under

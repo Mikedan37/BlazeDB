@@ -1,7 +1,7 @@
 // swift-corelibs-xctest on Linux does not ship XCTClockMetric / measure(metrics:...).
 // Provide minimal stubs and a generic measure overload so Tier1 performance-style tests compile.
 
-#if os(Linux)
+#if os(Linux) || os(Android)
 import XCTest
 
 public struct XCTClockMetric { public init() {} }

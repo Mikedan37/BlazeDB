@@ -18,6 +18,8 @@ import Foundation
 import Darwin
 #elseif canImport(Glibc)
 import Glibc
+#elseif canImport(Android)
+import Android
 #endif
 
 // MARK: - WAL Entry Format
@@ -312,6 +314,8 @@ internal final class WriteAheadLog: @unchecked Sendable {
         Darwin.close(fd)
         #elseif canImport(Glibc)
         Glibc.close(fd)
+        #elseif canImport(Android)
+        Android.close(fd)
         #else
         _ = Foundation.close(fd)
         #endif

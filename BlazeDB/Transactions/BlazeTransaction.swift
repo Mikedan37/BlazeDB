@@ -6,6 +6,8 @@ import Foundation
 import Darwin
 #elseif canImport(Glibc)
 import Glibc
+#elseif canImport(Android)
+import Android
 #endif
 
 /// Low-level page read/write transaction scoped to a `PageStore`.

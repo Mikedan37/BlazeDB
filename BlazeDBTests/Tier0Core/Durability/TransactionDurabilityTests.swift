@@ -26,6 +26,10 @@ import CryptoKit
 import Crypto
 #endif
 
+#if canImport(Android)
+import Android
+#endif
+
 final class TransactionDurabilityTests: XCTestCase {
 
     // MARK: - Helpers
