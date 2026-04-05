@@ -173,7 +173,8 @@ final class ImportExportTests: XCTestCase {
         hashChars[0] = hashChars[0] == "0" ? "1" : "0"
         dumpJSON.replaceSubrange(hashStart..<hashEnd, with: String(hashChars))
 
-        try dumpJSON.data(using: .utf8)?.write(to: tempDumpURL, options: [.atomic])
+        let tamperedData = try XCTUnwrap(dumpJSON.data(using: .utf8))
+        try tamperedData.write(to: tempDumpURL, options: [.atomic])
         
         // Verification should fail
         do {
