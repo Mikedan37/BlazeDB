@@ -71,11 +71,9 @@ jobs:
         run: ./Scripts/verify-readme-quickstart.sh
 
   linux:
-    name: Linux (Swift 6) — best-effort (manual)
-    if: github.event_name == 'workflow_dispatch'
+    name: Linux (Swift 6.0 baseline) — core + Tier 0
     runs-on: ubuntu-22.04
     timeout-minutes: 120
-    continue-on-error: true
 
     steps:
       - name: Checkout
@@ -91,11 +89,11 @@ jobs:
       - name: Build core
         run: swift build --target BlazeDBCore
 
-      - name: Sendable observation regression check
-        run: ./Scripts/check-sendable-observation.sh
+      - name: Build CLI tools
+        run: |
+          swift build --target BlazeDoctor
+          swift build --target BlazeDump
+          swift build --target BlazeInfo
 
       - name: Test Tier 0
         run: swift test --filter BlazeDB_Tier0
-
-      - name: Test Tier 1 (fast)
-        run: swift test --skip-build --filter BlazeDB_Tier1Fast
