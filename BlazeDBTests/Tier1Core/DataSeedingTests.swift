@@ -100,14 +100,15 @@ final class DataSeedingTests: XCTestCase {
     // MARK: - Factories
     
     func testFactoryRegistration() async throws {
+        let dbClient = try XCTUnwrap(self.db)
         try await MainActor.run {
             // Register factory
-            try requireFixture(db).factory(Bug.self) { i in
+            try dbClient.factory(Bug.self) { i in
                 Bug(title: "Factory Bug \(i)", priority: 5, status: "open")
             }
 
             // Create using factory
-            let bugs = try requireFixture(db).create(Bug.self, count: 10)
+            let bugs = try dbClient.create(Bug.self, count: 10)
 
             XCTAssertEqual(bugs.count, 10)
             XCTAssertTrue(bugs.allSatisfy { $0.priority == 5 })
@@ -116,40 +117,43 @@ final class DataSeedingTests: XCTestCase {
     }
     
     func testFactorySingleCreate() async throws {
+        let dbClient = try XCTUnwrap(self.db)
         try await MainActor.run {
-            try requireFixture(db).factory(Bug.self) { i in
+            try dbClient.factory(Bug.self) { i in
                 Bug(title: "Single Bug", priority: 1)
             }
 
-            let bug = try requireFixture(db).create(Bug.self)  // Create just one
+            let bug = try dbClient.create(Bug.self)  // Create just one
 
             XCTAssertEqual(bug.title, "Single Bug")
 
-            let all = try requireFixture(db).fetchAll(Bug.self)
+            let all = try dbClient.fetchAll(Bug.self)
             XCTAssertEqual(all.count, 1)
         }
     }
     
     func testFactoryWithoutRegistration() async throws {
+        let dbClient = try XCTUnwrap(self.db)
         try await MainActor.run {
             // Should throw if no factory registered
-            XCTAssertThrowsError(try requireFixture(db).create(Bug.self))
+            XCTAssertThrowsError(try dbClient.create(Bug.self))
         }
     }
     
     func testFactoryOverride() async throws {
+        let dbClient = try XCTUnwrap(self.db)
         try await MainActor.run {
             // Register first factory
-            try requireFixture(db).factory(Bug.self) { i in
+            try dbClient.factory(Bug.self) { i in
                 Bug(title: "First", priority: 1)
             }
 
             // Override with new factory
-            try requireFixture(db).factory(Bug.self) { i in
+            try dbClient.factory(Bug.self) { i in
                 Bug(title: "Second", priority: 2)
             }
 
-            let bug = try requireFixture(db).create(Bug.self)
+            let bug = try dbClient.create(Bug.self)
             XCTAssertEqual(bug.title, "Second")
             XCTAssertEqual(bug.priority, 2)
         }
@@ -282,13 +286,14 @@ final class DataSeedingTests: XCTestCase {
     }
     
     func testAsyncFactory() async throws {
+        let dbClient = try XCTUnwrap(self.db)
         try await MainActor.run {
-            try requireFixture(db).factory(Bug.self) { i in
+            try dbClient.factory(Bug.self) { i in
                 Bug(title: "Async Factory \(i)", priority: 3)
             }
         }
 
-        let bugs = try await requireFixture(db).create(Bug.self, count: 5)
+        let bugs = try await dbClient.create(Bug.self, count: 5)
         XCTAssertEqual(bugs.count, 5)
     }
     
