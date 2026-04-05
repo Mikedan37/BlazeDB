@@ -15,6 +15,8 @@ import Crypto
 import Darwin
 #elseif canImport(Glibc)
 import Glibc
+#elseif canImport(Android)
+import Android
 #endif
 
 // MARK: - Overflow Page Format

@@ -7,6 +7,10 @@
 //
 import Foundation
 
+#if canImport(Android)
+import Android
+#endif
+
 /// Vector embedding (array of floats)
 public typealias VectorEmbedding = [Float]
 

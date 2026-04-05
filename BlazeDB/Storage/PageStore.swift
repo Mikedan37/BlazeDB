@@ -12,6 +12,8 @@ import Crypto
 import Darwin
 #elseif canImport(Glibc)
 import Glibc
+#elseif canImport(Android)
+import Android
 #endif
 
 // Note: Logger is available within the same module (BlazeDBCore)
