@@ -145,7 +145,7 @@ final class BlazePaginationTests: XCTestCase {
         
         // Measure memory for fetchAll()
         print("  Testing fetchAll() memory...")
-        autoreleasepool {
+        withPlatformAutoreleasePool {
             let startMemory = getMemoryUsage()
             _ = try? try requireFixture(db).fetchAll()
             let endMemory = getMemoryUsage()
@@ -161,7 +161,7 @@ final class BlazePaginationTests: XCTestCase {
         let startMemory = getMemoryUsage()
         
         for offset in stride(from: 0, to: recordCount, by: pageSize) {
-            autoreleasepool {
+            withPlatformAutoreleasePool {
                 if let page = try? try requireFixture(db).fetchPage(offset: offset, limit: pageSize) {
                     totalPaginated += page.count
                 }
@@ -282,8 +282,16 @@ final class BlazePaginationTests: XCTestCase {
     }
     
     // MARK: - Helper Methods
+    private func withPlatformAutoreleasePool(_ body: () -> Void) {
+#if canImport(Darwin)
+        autoreleasepool(invoking: body)
+#else
+        body()
+#endif
+    }
     
     private func getMemoryUsage() -> Int {
+#if canImport(Darwin)
         var info = mach_task_basic_info()
         var count = mach_msg_type_number_t(MemoryLayout<mach_task_basic_info>.size) / 4
         
@@ -294,6 +302,11 @@ final class BlazePaginationTests: XCTestCase {
         }
         
         return result == KERN_SUCCESS ? Int(info.resident_size) : 0
+#else
+        // Linux path: this test only reports memory deltas for observability.
+        // Returning 0 keeps behavior deterministic without Mach APIs.
+        0
+#endif
     }
     
     private func formatBytes(_ bytes: Int) -> String {
