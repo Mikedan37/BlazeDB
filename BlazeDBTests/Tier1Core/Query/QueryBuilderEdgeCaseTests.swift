@@ -282,7 +282,6 @@ final class QueryBuilderEdgeCaseTests: XCTestCase {
     
     // MARK: - Concurrent Query Tests
     
-    @MainActor
     func testConcurrentQueries() throws {
         for i in 0..<100 {
             _ = try requireFixture(db).insert(BlazeDataRecord([

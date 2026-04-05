@@ -99,7 +99,6 @@ final class DataSeedingTests: XCTestCase {
     
     // MARK: - Factories
     
-    @MainActor
     func testFactoryRegistration() throws {
         // Register factory
         try requireFixture(db).factory(Bug.self) { i in
@@ -114,7 +113,6 @@ final class DataSeedingTests: XCTestCase {
         XCTAssertTrue(bugs.allSatisfy { $0.status == "open" })
     }
     
-    @MainActor
     func testFactorySingleCreate() throws {
         try requireFixture(db).factory(Bug.self) { i in
             Bug(title: "Single Bug", priority: 1)
@@ -128,13 +126,11 @@ final class DataSeedingTests: XCTestCase {
         XCTAssertEqual(all.count, 1)
     }
     
-    @MainActor
     func testFactoryWithoutRegistration() throws {
         // Should throw if no factory registered
         XCTAssertThrowsError(try requireFixture(db).create(Bug.self))
     }
     
-    @MainActor
     func testFactoryOverride() throws {
         // Register first factory
         try requireFixture(db).factory(Bug.self) { i in
