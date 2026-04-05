@@ -263,6 +263,7 @@ final class MVCCPerformanceTests: XCTestCase {
             let id = try client.insert(BlazeDataRecord(["i": .int(i)]))
             ids.append(id)
         }
+        let idList = ids
         
         let start = Date()
         let group = DispatchGroup()
@@ -276,7 +277,7 @@ final class MVCCPerformanceTests: XCTestCase {
                 let op = i % 10  // 0-9
                 
                 if op < 8 {  // 80% reads
-                    if let id = ids.randomElement() {
+                    if let id = idList.randomElement() {
                         _ = try? client.fetch(id: id)
                     }
                 } else {  // 20% writes

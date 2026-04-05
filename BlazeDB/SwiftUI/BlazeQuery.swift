@@ -144,6 +144,28 @@ public enum BlazeQueryComparison {
     case contains // For strings
 }
 
+@MainActor
+fileprivate protocol BlazeQueryObserverRefreshable: AnyObject {
+    func refresh()
+}
+
+extension BlazeQueryObserver: BlazeQueryObserverRefreshable {}
+
+private final class BlazeQueryRefreshSink: @unchecked Sendable {
+    private weak var target: (any BlazeQueryObserverRefreshable)?
+
+    func attach(_ o: any BlazeQueryObserverRefreshable) {
+        target = o
+    }
+
+    func notifyChange() {
+        guard let t = target else { return }
+        Task { @MainActor in
+            t.refresh()
+        }
+    }
+}
+
 // MARK: - BlazeQuery Observer
 
 /// Observable object that manages query execution and result updates
@@ -181,6 +203,7 @@ public final class BlazeQueryObserver: ObservableObject {
     private var refreshTask: Task<Void, Never>?
     private var changeObserverToken: ObserverToken?
     @MainActor private var autoRefreshTimer: Timer?
+    private let refreshSink = BlazeQueryRefreshSink()
     
     // MARK: - Initialization
     
@@ -200,12 +223,11 @@ public final class BlazeQueryObserver: ObservableObject {
         // Initial fetch
         refresh()
 
+        refreshSink.attach(self)
+
         // Subscribe to DB change events so wrappers refresh on writes without polling.
-        self.changeObserverToken = db.observe { [weak self] _ in
-            guard let self = self else { return }
-            Task { @MainActor in
-                self.refresh()
-            }
+        self.changeObserverToken = db.observe { [refreshSink] _ in
+            refreshSink.notifyChange()
         }
     }
     

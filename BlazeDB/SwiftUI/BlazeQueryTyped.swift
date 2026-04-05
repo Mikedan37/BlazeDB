@@ -125,6 +125,29 @@ public struct BlazeQueryTyped<T: BlazeDocument>: DynamicProperty {
 
 // MARK: - Type-Safe Query Observer
 
+@MainActor
+fileprivate protocol BlazeQueryTypedRefreshable: AnyObject {
+    func refresh()
+}
+
+extension BlazeQueryTypedObserver: BlazeQueryTypedRefreshable {}
+
+/// Non-generic so `@Sendable` `observe` does not close over `T.Type` (#SendableMetatypes).
+private final class BlazeQueryTypedRefreshSink: @unchecked Sendable {
+    private weak var target: (any BlazeQueryTypedRefreshable)?
+
+    func attach(_ o: any BlazeQueryTypedRefreshable) {
+        target = o
+    }
+
+    func notifyChange() {
+        guard let t = target else { return }
+        Task { @MainActor in
+            t.refresh()
+        }
+    }
+}
+
 /// Observable object that manages type-safe query execution and result updates
 @MainActor
 public final class BlazeQueryTypedObserver<T: BlazeDocument>: ObservableObject {
@@ -160,6 +183,7 @@ public final class BlazeQueryTypedObserver<T: BlazeDocument>: ObservableObject {
     private var refreshTask: Task<Void, Never>?
     private var changeObserverToken: ObserverToken?
     @MainActor private var autoRefreshTimer: Timer?
+    private let refreshSink = BlazeQueryTypedRefreshSink()
     
     // MARK: - Initialization
     
@@ -179,12 +203,11 @@ public final class BlazeQueryTypedObserver<T: BlazeDocument>: ObservableObject {
         // Initial fetch
         refresh()
 
+        refreshSink.attach(self)
+
         // Subscribe to DB change events so wrappers refresh on writes without polling.
-        self.changeObserverToken = db.observe { [weak self] _ in
-            guard let self = self else { return }
-            Task { @MainActor in
-                self.refresh()
-            }
+        self.changeObserverToken = db.observe { [refreshSink] _ in
+            refreshSink.notifyChange()
         }
     }
     

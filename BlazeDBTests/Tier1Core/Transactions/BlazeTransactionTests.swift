@@ -84,10 +84,11 @@ final class BlazeTransactionTests: XCTestCase {
         let id4 = UUID()
         let record1 = BlazeDataRecord(["message": .string("Data1")])
         let record2 = BlazeDataRecord(["message": .string("Data2")])
+        let dbRef = try requireFixture(db)
 
         DispatchQueue.global().async {
             do {
-                try self.requireFixture(self.db).insert(record1, id: id3)
+                try dbRef.insert(record1, id: id3)
                 expectation1.fulfill()
             } catch {
                 XCTFail("Write Data1 failed: \(error)")
@@ -96,7 +97,7 @@ final class BlazeTransactionTests: XCTestCase {
 
         DispatchQueue.global().async {
             do {
-                try self.requireFixture(self.db).insert(record2, id: id4)
+                try dbRef.insert(record2, id: id4)
                 expectation2.fulfill()
             } catch {
                 XCTFail("Write Data2 failed: \(error)")

@@ -127,12 +127,13 @@ final class ConcurrentJoinTests: XCTestCase {
         insertExpectation.expectedFulfillmentCount = 3
         
         let queue = DispatchQueue(label: "test.join.insert", attributes: .concurrent)
+        let dbRef1 = try requireFixture(db1)
         
         // 3 threads inserting new posts concurrently (this is safe)
         for threadID in 0..<3 {
             queue.async {
                 do {
-                    _ = try self.requireFixture(self.db1).insert(BlazeDataRecord([
+                    _ = try dbRef1.insert(BlazeDataRecord([
                         "post": .string("Concurrent Post \(threadID)"),
                         "author": .uuid(userId1)
                     ]))

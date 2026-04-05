@@ -11,7 +11,7 @@ import XCTest
 
 /// A thin wrapper around BlazeDBClient that serializes writes.
 /// Reads (fetch) remain concurrent.
-final class ThreadSafeBlazeDBClient {
+final class ThreadSafeBlazeDBClient: @unchecked Sendable {
     private let client: BlazeDBClient
     private let writeQueue = DispatchQueue(label: "blazedb.write.queue")
 

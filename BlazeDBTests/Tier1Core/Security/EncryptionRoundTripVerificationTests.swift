@@ -25,6 +25,23 @@ import Crypto
 @testable import BlazeDB
 #endif
 
+private final class EncryptionLockedErrors: @unchecked Sendable {
+    private let lock = NSLock()
+    private var errors: [Error] = []
+
+    func append(_ error: Error) {
+        lock.lock()
+        errors.append(error)
+        lock.unlock()
+    }
+
+    func snapshot() -> [Error] {
+        lock.lock()
+        defer { lock.unlock() }
+        return errors
+    }
+}
+
 final class EncryptionRoundTripVerificationTests: XCTestCase {
     
     private var tempURL: URL?
@@ -309,8 +326,8 @@ final class EncryptionRoundTripVerificationTests: XCTestCase {
     /// Test: Concurrent writes to different pages
     func testConcurrentWritesDifferentPages() throws {
         let group = DispatchGroup()
-        var errors: [Error] = []
-        let errorLock = NSLock()
+        let errors = EncryptionLockedErrors()
+        let storeRef = try XCTUnwrap(store, "store should be initialized in setUpWithError")
         
         // Write 100 pages concurrently
         for i in 0..<100 {
@@ -319,17 +336,16 @@ final class EncryptionRoundTripVerificationTests: XCTestCase {
                 defer { group.leave() }
                 do {
                     let data = "Page \(i)".data(using: .utf8)!
-                    try self.store.writePage(index: i, plaintext: data)
+                    try storeRef.writePage(index: i, plaintext: data)
                 } catch {
-                    errorLock.lock()
                     errors.append(error)
-                    errorLock.unlock()
                 }
             }
         }
         
         group.wait()
-        XCTAssertTrue(errors.isEmpty, "Concurrent writes should not cause errors: \(errors)")
+        let allErrors = errors.snapshot()
+        XCTAssertTrue(allErrors.isEmpty, "Concurrent writes should not cause errors: \(allErrors)")
         
         // Verify all pages readable
         for i in 0..<100 {
@@ -347,8 +363,8 @@ final class EncryptionRoundTripVerificationTests: XCTestCase {
         }
         
         let group = DispatchGroup()
-        var errors: [Error] = []
-        let errorLock = NSLock()
+        let errors = EncryptionLockedErrors()
+        let storeRef = try XCTUnwrap(store, "store should be initialized in setUpWithError")
         
         // Concurrent readers and writers
         for _ in 0..<20 {
@@ -358,12 +374,10 @@ final class EncryptionRoundTripVerificationTests: XCTestCase {
                 defer { group.leave() }
                 do {
                     for i in 0..<50 {
-                        _ = try self.store.readPage(index: i)
+                        _ = try storeRef.readPage(index: i)
                     }
                 } catch {
-                    errorLock.lock()
                     errors.append(error)
-                    errorLock.unlock()
                 }
             }
             
@@ -373,17 +387,16 @@ final class EncryptionRoundTripVerificationTests: XCTestCase {
                 defer { group.leave() }
                 do {
                     let page = Int.random(in: 0..<50)
-                    try self.store.writePage(index: page, plaintext: "Updated".data(using: .utf8)!)
+                    try storeRef.writePage(index: page, plaintext: "Updated".data(using: .utf8)!)
                 } catch {
-                    errorLock.lock()
                     errors.append(error)
-                    errorLock.unlock()
                 }
             }
         }
         
         group.wait()
-        XCTAssertTrue(errors.isEmpty, "Concurrent read/write should be thread-safe: \(errors)")
+        let allErrors = errors.snapshot()
+        XCTAssertTrue(allErrors.isEmpty, "Concurrent read/write should be thread-safe: \(allErrors)")
     }
 }
 

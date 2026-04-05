@@ -29,6 +29,23 @@ import Glibc
 @testable import BlazeDB
 #endif
 
+private final class LockedErrorList: @unchecked Sendable {
+    private let lock = NSLock()
+    private var errors: [Error] = []
+
+    func append(_ error: Error) {
+        lock.lock()
+        errors.append(error)
+        lock.unlock()
+    }
+
+    func isEmpty() -> Bool {
+        lock.lock()
+        defer { lock.unlock() }
+        return errors.isEmpty
+    }
+}
+
 final class MetadataFlushEdgeCaseTests: XCTestCase {
     private var tempURL: URL?
     private var db: BlazeDBClient?
@@ -208,18 +225,16 @@ final class MetadataFlushEdgeCaseTests: XCTestCase {
         expectation.expectedFulfillmentCount = 10
         
         let queue = DispatchQueue(label: "test.flush", attributes: .concurrent)
-        var errors: [Error] = []
-        let errorLock = NSLock()
+        let errors = LockedErrorList()
+        let dbRef = try requireFixture(db)
         
         for i in 95..<105 {
             queue.async {
                 do {
-                    _ = try self.requireFixture(self.db).insert(BlazeDataRecord(["index": .int(i)]))
+                    _ = try dbRef.insert(BlazeDataRecord(["index": .int(i)]))
                     expectation.fulfill()
                 } catch {
-                    errorLock.lock()
                     errors.append(error)
-                    errorLock.unlock()
                     expectation.fulfill()
                 }
             }
@@ -227,7 +242,7 @@ final class MetadataFlushEdgeCaseTests: XCTestCase {
         
         wait(for: [expectation], timeout: 5.0)
         
-        XCTAssertTrue(errors.isEmpty, "No errors during concurrent flush boundary")
+        XCTAssertTrue(errors.isEmpty(), "No errors during concurrent flush boundary")
         
         // Verify all records present
         let records = try requireFixture(db).fetchAll()

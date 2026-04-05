@@ -16,6 +16,40 @@ import XCTest
 #endif
 import Foundation
 
+private final class SearchLockedArray<T>: @unchecked Sendable {
+    private let lock = NSLock()
+    private var valuesStorage: [T] = []
+
+    func append(_ value: T) {
+        lock.lock()
+        valuesStorage.append(value)
+        lock.unlock()
+    }
+
+    func snapshot() -> [T] {
+        lock.lock()
+        defer { lock.unlock() }
+        return valuesStorage
+    }
+}
+
+private final class SearchLockedCounter: @unchecked Sendable {
+    private let lock = NSLock()
+    private var value = 0
+
+    func increment() {
+        lock.lock()
+        value += 1
+        lock.unlock()
+    }
+
+    func get() -> Int {
+        lock.lock()
+        defer { lock.unlock() }
+        return value
+    }
+}
+
 final class SearchPerformanceBenchmarks: XCTestCase {
     
     private var tempURL: URL?
@@ -45,9 +79,8 @@ final class SearchPerformanceBenchmarks: XCTestCase {
         let expectation = self.expectation(description: "Concurrent searches")
         expectation.expectedFulfillmentCount = searches
         let queue = DispatchQueue(label: "test.search", attributes: .concurrent)
-        var durations: [Double] = []
-        var nilResultCount = 0
-        let lock = NSLock()
+        let durations = SearchLockedArray<Double>()
+        let nilResultCount = SearchLockedCounter()
         let totalStart = Date()
 
         for _ in 1...searches {
@@ -55,19 +88,17 @@ final class SearchPerformanceBenchmarks: XCTestCase {
                 let start = Date()
                 let results = try? client.query().search("bug", in: ["title", "description"])
                 let elapsedMs = Date().timeIntervalSince(start) * 1000.0
-                lock.lock()
                 durations.append(elapsedMs)
                 if results == nil {
-                    nilResultCount += 1
+                    nilResultCount.increment()
                 }
-                lock.unlock()
                 expectation.fulfill()
             }
         }
 
         wait(for: [expectation], timeout: timeout)
-        XCTAssertEqual(nilResultCount, 0, "Concurrent query should return a result")
-        return (durationsMs: durations, totalDuration: Date().timeIntervalSince(totalStart))
+        XCTAssertEqual(nilResultCount.get(), 0, "Concurrent query should return a result")
+        return (durationsMs: durations.snapshot(), totalDuration: Date().timeIntervalSince(totalStart))
     }
     
     func testBenchmark_SearchWith1000Records() throws {
