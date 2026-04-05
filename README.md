@@ -183,6 +183,7 @@ BlazeDB encrypts data and overflow pages at rest using AES-GCM, and the page-lev
 **Requirements:** Swift 6.0+, macOS 15+ / iOS 15+ / Linux / Android
 
 Android currently follows the Linux-style core path (`BLAZEDB_LINUX_CORE`): core storage/query functionality builds, while some advanced platform-dependent surfaces are excluded. CI coverage for Android is currently best-effort/manual. See [Compatibility](Docs/COMPATIBILITY.md).
+Linux CI uses a Swift 6.0 baseline lane for core validation; Android cross-compilation expects Swift 6.3+ with the Swift Android SDK + Android NDK in a separate/manual lane.
 
 ### Security and Benchmark Mode Note
 

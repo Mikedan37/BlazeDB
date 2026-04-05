@@ -64,11 +64,11 @@
 ### Linux
 - **Platform:** aarch64 (tested on Orange Pi 5 Ultra)
 - **Status:** Core supported
-- **Notes:** Some advanced features disabled (`BLAZEDB_LINUX_CORE`)
+- **Notes:** Some advanced features disabled (`BLAZEDB_LINUX_CORE`). CI baseline lane targets Swift 6.0 for core + Tier 0 stability checks.
 
 ### Android
 - **Status:** Core path supported (same compile-time path as Linux)
-- **Notes:** Builds with `BLAZEDB_LINUX_CORE` path; advanced platform-dependent features may be excluded. CI validation is currently best-effort/manual.
+- **Notes:** Builds with `BLAZEDB_LINUX_CORE` path; advanced platform-dependent features may be excluded. Android cross-compilation currently expects Swift 6.3+ plus the Swift Android SDK and Android NDK (manual/best-effort lane).
 
 ---
 
@@ -112,6 +112,7 @@ These APIs may change:
 - **Minimum:** Swift 6.0
 - **Recommended:** Latest Swift 6.x
 - **Strict Concurrency:** Enabled for core modules
+- **CI lane policy:** Linux CI runs a Swift 6.0 baseline lane for deterministic core validation; Android toolchain bring-up uses Swift 6.3+ outside the baseline lane.
 
 ---
 
