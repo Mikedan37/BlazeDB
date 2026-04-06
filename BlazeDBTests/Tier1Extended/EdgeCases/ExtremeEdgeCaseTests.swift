@@ -718,7 +718,7 @@ final class ExtremeEdgeCaseTests: XCTestCase {
         
         _ = try await requireFixture(db).insertMany((0..<10).map { i in BlazeDataRecord(["value": .int(i)]) })
         
-        let page = try await requireFixture(db).fetchPage(offset: 100, limit: 10)
+        let page = try requireFixture(db).fetchPage(offset: 100, limit: 10)
         
         XCTAssertEqual(page.count, 0, "Should return empty for offset beyond end")
         
@@ -731,7 +731,7 @@ final class ExtremeEdgeCaseTests: XCTestCase {
         _ = try await requireFixture(db).insertMany((0..<10).map { i in BlazeDataRecord(["value": .int(i)]) })
         
         // Negative offset is clamped to an empty page in current API.
-        let page = try await requireFixture(db).fetchPage(offset: -10, limit: 5)
+        let page = try requireFixture(db).fetchPage(offset: -10, limit: 5)
         
         XCTAssertEqual(page.count, 0)
         
@@ -743,7 +743,7 @@ final class ExtremeEdgeCaseTests: XCTestCase {
         
         _ = try await requireFixture(db).insertMany((0..<10).map { i in BlazeDataRecord(["value": .int(i)]) })
         
-        let page = try await requireFixture(db).fetchPage(offset: 0, limit: 0)
+        let page = try requireFixture(db).fetchPage(offset: 0, limit: 0)
         
         XCTAssertEqual(page.count, 0, "Zero limit should return empty")
         
