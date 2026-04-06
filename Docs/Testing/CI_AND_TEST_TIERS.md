@@ -11,14 +11,15 @@ For branch discipline and PR hygiene, see `Docs/Guides/WORKFLOW_AND_STYLE_GUIDE.
 - `.github/workflows/ci.yml`
 - Triggers: push and pull_request on `main`, `develop`
 - All jobs use **`actions/checkout` with `fetch-depth: 0`** so tags and worktree scripts match a full clone.
-- **Primary check (blocking):** `macOS 15 — build, CLI, tests, clean-checkout, quickstart`
+- **Primary check (blocking):** `macOS 15 — build, CLI, tests`
 - Runner: `macos-15`; **does not** use `swift-actions/setup-swift` — tests run with **Xcode’s** `swift` so XCTest/`XCTestCore` resolves (OSS Swift on macOS does not).
+- `actions/cache` on `.build` (keyed by `runner.os`, `Package.swift`, `Package.resolved`)
 - `swift build --target BlazeDBCore`, CLI targets (`BlazeDoctor`, `BlazeDump`, `BlazeInfo`)
 - `swift test --filter BlazeDB_Tier0`, then `swift test --skip-build --filter BlazeDB_Tier1Fast`
-- `ripgrep` (brew if needed) + `./Scripts/verify-clean-checkout.sh` + `./Scripts/verify-readme-quickstart.sh` (same toolchain as local dev — not on Linux)
-- **Secondary (non-blocking):** `Linux (Swift 6) — best-effort`
+- `verify-clean-checkout.sh` and `verify-readme-quickstart.sh` are **not** part of the blocking PR lane (they remain in-repo and move to deeper lanes)
+- **Secondary (blocking):** `Linux (Swift 6.0 baseline) — core + Tier 0`
 - Runner: `ubuntu-22.04`
-- Same test tiers after `swift build`; `continue-on-error: true`
+- `actions/cache` on `.build` (same key shape), then `swift build` + CLI targets + `swift test --filter BlazeDB_Tier0`
 
 - `.github/workflows/tag-probe.yml`
 - Trigger: **manual** (`workflow_dispatch`) only
@@ -104,7 +105,7 @@ A few files remain **excluded** from `Tier1Core` in `Package.swift` because they
 
 - Confirm working tree is intentional (`git status`, `git diff`).
 - Run `./Scripts/preflight.sh`.
-- Ensure required checks are green on PR (primary: `macOS 15 — build, CLI, tests, clean-checkout, quickstart`).
+- Ensure required checks are green on PR (primary: `macOS 15 — build, CLI, tests`).
 - Do not mix workflow behavior changes with docs-only cleanup in the same PR unless explicitly scoped.
 
 ## Maintenance Policy
