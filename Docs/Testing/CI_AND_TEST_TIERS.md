@@ -27,7 +27,7 @@ For branch discipline and PR hygiene, see `Docs/Guides/WORKFLOW_AND_STYLE_GUIDE.
 
 - `.github/workflows/tier1-depth.yml`
 - Trigger: **weekly schedule** and **manual** (`workflow_dispatch`)
-- Runs **`BlazeDB_Tier1Extended`** and **`BlazeDB_Tier1Perf`** only (not `BlazeDB_Tier1Fast`; that is already covered on every PR). This is the scheduled **Tier1 depth** lane—see [Reporting vocabulary](#reporting-vocabulary) below.
+- Runs **`BlazeDB_Tier1Extended`** and **`BlazeDB_Tier1Perf`** only (not `BlazeDB_Tier1Fast`; that is the PR-critical lane). This is the scheduled **Tier1 depth** lane—see [Reporting vocabulary](#reporting-vocabulary) below.
 
 - `.github/workflows/release.yml`
 - Trigger: tag push `v*`
@@ -45,8 +45,11 @@ For branch discipline and PR hygiene, see `Docs/Guides/WORKFLOW_AND_STYLE_GUIDE.
 - Must stay bounded and stable.
 
 - `BlazeDB_Tier1Fast`
-- Default PR and local correctness gate: deterministic core contracts without `measure()`, fixed sleeps, or benchmark-shaped workloads.
-- Sources: `BlazeDBTests/Tier1Core/` (with a small `Package.swift` exclude list for broken/architectural tests).
+- Default PR correctness gate from `BlazeDBTests/Tier1Core/`, intentionally reduced with a broader `Package.swift` exclude list to keep blocking runtime bounded.
+- Sources: `BlazeDBTests/Tier1Core/` in root package.
+
+- `BlazeDB_Tier1FastFull`
+- Broader deterministic Tier1 lane from the same `Tier1Core` sources, defined under `BlazeDBExtraTests/Package.swift` for deeper/manual lanes.
 
 - `BlazeDB_Tier1Extended`
 - Integration, distributed sync, sleep-dependent timing, and large-N stress that should stay in CI but not in the default fast loop.
@@ -75,7 +78,7 @@ Use precise language so status and dashboards do not blur the PR gate with deepe
 | -------- | ------- |
 | **Tier1 PR gate** / **T1 fast** | `BlazeDB_Tier1Fast` only—the default blocking Tier1 lane on PRs. |
 | **Tier1 depth** | `BlazeDB_Tier1Extended` + `BlazeDB_Tier1Perf` (weekly/manual `tier1-depth.yml`, or `./Scripts/run-tier1-depth.sh`). Does *not* by itself imply `BlazeDB_Tier1Fast` ran. |
-| **Full Tier1** / **Tier1 all lanes** | `BlazeDB_Tier1Fast` + `BlazeDB_Tier1Extended` + `BlazeDB_Tier1Perf` (e.g. release validation). |
+| **Full Tier1** / **Tier1 all lanes** | `BlazeDB_Tier1Fast` + `BlazeDB_Tier1FastFull` + `BlazeDB_Tier1Extended` + `BlazeDB_Tier1Perf` (broader deterministic coverage via `BlazeDBExtraTests`). |
 
 Inventory/bootstrap code may still bucket all three SwiftPM modules under a single **`T1`** label for file-level manifests; that is a storage convenience. **Human-facing** summaries (CI names, release notes, team chat) should use the table above, not a vague “T1 passed.”
 
