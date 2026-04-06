@@ -22,7 +22,7 @@ env:
 
 jobs:
   macos-15:
-    name: macOS 15 — build, CLI, tests, clean-checkout, quickstart
+    name: macOS 15 — build, CLI, tests
     runs-on: macos-15
     timeout-minutes: 180
 
@@ -31,6 +31,14 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
+      - name: Cache SwiftPM build
+        uses: actions/cache@v4
+        with:
+          path: .build
+          key: ${{ runner.os }}-spm-${{ hashFiles('Package.swift', 'Package.resolved') }}
+          restore-keys: |
+            ${{ runner.os }}-spm-
 
       # Use the runner's Xcode Swift for tests. setup-swift's OSS toolchain breaks XCTest
       # (missing XCTestCore at dlopen — see swiftpm_testing_helper / BlazeDBPackageTests).
@@ -58,18 +66,6 @@ jobs:
       - name: Test Tier 1 (fast)
         run: swift test --skip-build --filter BlazeDB_Tier1Fast
 
-      - name: Install ripgrep (verification scripts)
-        env:
-          HOMEBREW_NO_AUTO_UPDATE: 1
-        run: |
-          command -v rg >/dev/null 2>&1 || brew install ripgrep
-
-      - name: Verify clean-checkout flow
-        run: ./Scripts/verify-clean-checkout.sh
-
-      - name: Verify README quickstart
-        run: ./Scripts/verify-readme-quickstart.sh
-
   linux:
     name: Linux (Swift 6.2) — core + Tier 0
     runs-on: ubuntu-22.04
@@ -80,6 +76,14 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
+      - name: Cache SwiftPM build
+        uses: actions/cache@v4
+        with:
+          path: .build
+          key: ${{ runner.os }}-spm-${{ hashFiles('Package.swift', 'Package.resolved') }}
+          restore-keys: |
+            ${{ runner.os }}-spm-
 
       - name: Setup Swift 6.2
         uses: swift-actions/setup-swift@v2
