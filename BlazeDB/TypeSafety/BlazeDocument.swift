@@ -97,21 +97,25 @@ extension BlazeDocument {
 @available(*, unavailable, message: "Macro support is not implemented. Use BlazeStorable (Codable-based) or BlazeDocument protocol for typed models.")
 @propertyWrapper
 public struct Field<Value> {
+    // experiment/field-trap-removal: fatalError traps replaced with no-op stubs
+    // to test whether Linux test discovery hits these inits via reflection.
+    private var _storage: Value?
+
     public var wrappedValue: Value {
-        get { fatalError("unavailable") }
-        set { fatalError("unavailable") }
+        get { _storage! }
+        set { _storage = newValue }
     }
 
     public init(wrappedValue: Value) {
-        fatalError("unavailable")
+        self._storage = wrappedValue
     }
 
     public init(_ key: String) {
-        fatalError("unavailable")
+        self._storage = nil
     }
 
     public init(_ key: String, defaultValue: Value) {
-        fatalError("unavailable")
+        self._storage = defaultValue
     }
 }
 
