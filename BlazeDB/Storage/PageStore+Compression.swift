@@ -126,7 +126,7 @@ extension PageStore {
         
         if version == 0x03 {
             // Compressed + encrypted
-            let originalLength = Int(storedPage.subdata(in: 5..<9).withUnsafeBytes { $0.load(as: UInt32.self).bigEndian })
+            let originalLength = Int(storedPage.subdata(in: 5..<9).withUnsafeBytes { $0.loadUnaligned(as: UInt32.self).bigEndian })
             
             // Check if this is the new format with compressedLength (41+ byte header)
             // or old format without it (37 byte header)
@@ -139,7 +139,7 @@ extension PageStore {
             
             if hasCompressedLength {
                 // New format: includes compressedLength field
-                compressedLength = Int(storedPage.subdata(in: 9..<13).withUnsafeBytes { $0.load(as: UInt32.self).bigEndian })
+                compressedLength = Int(storedPage.subdata(in: 9..<13).withUnsafeBytes { $0.loadUnaligned(as: UInt32.self).bigEndian })
                 nonceOffset = 13
                 tagOffset = 25
                 ciphertextOffset = 41

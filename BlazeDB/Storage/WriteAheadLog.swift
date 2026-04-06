@@ -209,7 +209,7 @@ internal final class WriteAheadLog: @unchecked Sendable {
 
             // Validate magic
             let magic = headerData.withUnsafeBytes { buf in
-                buf.load(fromByteOffset: 0, as: UInt32.self)
+                buf.loadUnaligned(fromByteOffset: 0, as: UInt32.self)
             }
             guard magic == walEntryMagic.littleEndian else {
                 BlazeLogger.warn("WAL replay: invalid magic at offset \(offset), stopping")
@@ -218,13 +218,13 @@ internal final class WriteAheadLog: @unchecked Sendable {
 
             // Parse fields
             let pageIndex = Int(headerData.withUnsafeBytes { buf in
-                buf.load(fromByteOffset: 4, as: UInt32.self).littleEndian
+                buf.loadUnaligned(fromByteOffset: 4, as: UInt32.self).littleEndian
             })
             let dataLen = Int(headerData.withUnsafeBytes { buf in
-                buf.load(fromByteOffset: 8, as: UInt32.self).littleEndian
+                buf.loadUnaligned(fromByteOffset: 8, as: UInt32.self).littleEndian
             })
             let storedCRC = headerData.withUnsafeBytes { buf in
-                buf.load(fromByteOffset: 12, as: UInt32.self).littleEndian
+                buf.loadUnaligned(fromByteOffset: 12, as: UInt32.self).littleEndian
             }
 
             // Bounds check

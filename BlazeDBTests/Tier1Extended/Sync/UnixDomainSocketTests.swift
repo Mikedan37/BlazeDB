@@ -106,13 +106,13 @@ final class UnixDomainSocketTests: XCTestCase {
         
         // Decode all operations
         var offset = 0
-        let decodedCount = encoded[offset..<offset+4].withUnsafeBytes { $0.load(as: UInt32.self).bigEndian }
+        let decodedCount = encoded[offset..<offset+4].withUnsafeBytes { $0.loadUnaligned(as: UInt32.self).bigEndian }
         offset += 4
         XCTAssertEqual(Int(decodedCount), 10)
         
         var decodedOps: [BlazeOperation] = []
         for _ in 0..<10 {
-            let opLength = Int(encoded[offset..<offset+4].withUnsafeBytes { $0.load(as: UInt32.self).bigEndian })
+            let opLength = Int(encoded[offset..<offset+4].withUnsafeBytes { $0.loadUnaligned(as: UInt32.self).bigEndian })
             offset += 4
             let opData = encoded[offset..<offset+opLength]
             offset += opLength

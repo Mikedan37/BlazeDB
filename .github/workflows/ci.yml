@@ -71,7 +71,7 @@ jobs:
         run: ./Scripts/verify-readme-quickstart.sh
 
   linux:
-    name: Linux (Swift 6.0 baseline) — core + Tier 0
+    name: Linux (Swift 6.2) — core + Tier 0
     runs-on: ubuntu-22.04
     timeout-minutes: 120
 
@@ -81,10 +81,13 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Setup Swift 6.0
+      - name: Setup Swift 6.2
         uses: swift-actions/setup-swift@v2
         with:
-          swift-version: "6.0"
+          swift-version: "6.2"
+
+      - name: Swift version
+        run: swift --version
 
       - name: Build core
         run: swift build --target BlazeDBCore

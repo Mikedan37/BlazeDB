@@ -212,14 +212,14 @@ public actor OperationLog {
         
         // Read count (4 bytes)
         guard offset + 4 <= data.count else { return }
-        let count = data[offset..<offset+4].withUnsafeBytes { $0.load(as: UInt32.self).bigEndian }
+        let count = data[offset..<offset+4].withUnsafeBytes { $0.loadUnaligned(as: UInt32.self).bigEndian }
         offset += 4
         
         // Read each operation
         for _ in 0..<count {
             // Read operation length (4 bytes)
             guard offset + 4 <= data.count else { break }
-            let opLength = Int(data[offset..<offset+4].withUnsafeBytes { $0.load(as: UInt32.self).bigEndian })
+            let opLength = Int(data[offset..<offset+4].withUnsafeBytes { $0.loadUnaligned(as: UInt32.self).bigEndian })
             offset += 4
             
             // Read operation data
