@@ -71,9 +71,13 @@ jobs:
         run: ./Scripts/verify-readme-quickstart.sh
 
   linux:
-    name: Linux (Swift 6.0 baseline) — core + Tier 0
+    name: Linux (Swift ${{ matrix.swift }}) — discovery + Tier 0
     runs-on: ubuntu-22.04
     timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        swift: ["6.0", "6.3"]
 
     steps:
       - name: Checkout
@@ -81,10 +85,10 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Setup Swift 6.0
+      - name: Setup Swift ${{ matrix.swift }}
         uses: swift-actions/setup-swift@v2
         with:
-          swift-version: "6.0"
+          swift-version: ${{ matrix.swift }}
 
       - name: Build core
         run: swift build --target BlazeDBCore
@@ -95,5 +99,8 @@ jobs:
           swift build --target BlazeDump
           swift build --target BlazeInfo
 
-      - name: Test Tier 0
+      - name: Test discovery list
+        run: swift test list
+
+      - name: Test Tier 0 execution
         run: swift test --filter BlazeDB_Tier0
