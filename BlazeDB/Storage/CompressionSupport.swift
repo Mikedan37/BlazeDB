@@ -8,6 +8,19 @@
 
 import Foundation
 
+extension BlazeDBClient {
+    /// Indicates whether compression APIs are compiled into this build.
+    ///
+    /// Use this to feature-detect compression support in cross-platform code.
+    public static var isCompressionAvailable: Bool {
+        #if canImport(Compression)
+        true
+        #else
+        false
+        #endif
+    }
+}
+
 #if canImport(Compression)
 import Compression
 
