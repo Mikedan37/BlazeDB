@@ -70,7 +70,7 @@ public struct FieldTable {
             throw BlazeBinaryError.invalidFormat("Field table: data too short for count")
         }
         let countBytes = data.subdata(in: pos..<pos + 2)
-        let count = UInt16(bigEndian: countBytes.withUnsafeBytes { $0.load(as: UInt16.self) })
+        let count = UInt16(bigEndian: countBytes.withUnsafeBytes { $0.loadUnaligned(as: UInt16.self) })
         pos += 2
         
         var fields: [String: FieldInfo] = [:]
@@ -81,7 +81,7 @@ public struct FieldTable {
                 throw BlazeBinaryError.invalidFormat("Field table: data too short for name length")
             }
             let nameLenBytes = data.subdata(in: pos..<pos + 2)
-            let nameLen = UInt16(bigEndian: nameLenBytes.withUnsafeBytes { $0.load(as: UInt16.self) })
+            let nameLen = UInt16(bigEndian: nameLenBytes.withUnsafeBytes { $0.loadUnaligned(as: UInt16.self) })
             pos += 2
             
             guard pos + Int(nameLen) <= data.count else {
@@ -98,7 +98,7 @@ public struct FieldTable {
                 throw BlazeBinaryError.invalidFormat("Field table: data too short for offset")
             }
             let offsetBytes = data.subdata(in: pos..<pos + 4)
-            let fieldOffset = UInt32(bigEndian: offsetBytes.withUnsafeBytes { $0.load(as: UInt32.self) })
+            let fieldOffset = UInt32(bigEndian: offsetBytes.withUnsafeBytes { $0.loadUnaligned(as: UInt32.self) })
             pos += 4
             
             // Read length (use subdata to ensure alignment)
@@ -106,7 +106,7 @@ public struct FieldTable {
                 throw BlazeBinaryError.invalidFormat("Field table: data too short for length")
             }
             let lengthBytes = data.subdata(in: pos..<pos + 4)
-            let fieldLength = UInt32(bigEndian: lengthBytes.withUnsafeBytes { $0.load(as: UInt32.self) })
+            let fieldLength = UInt32(bigEndian: lengthBytes.withUnsafeBytes { $0.loadUnaligned(as: UInt32.self) })
             pos += 4
             
             // Read type tag

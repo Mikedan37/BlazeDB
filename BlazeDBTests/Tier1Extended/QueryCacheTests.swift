@@ -212,7 +212,6 @@ final class QueryCacheTests: XCTestCase {
     
     // MARK: - Thread Safety
     
-    @MainActor
     func testConcurrentCacheAccess() throws {
         for i in 0..<100 {
             _ = try requireFixture(db).insert(BlazeDataRecord(["index": .int(i)]))
@@ -237,7 +236,7 @@ final class QueryCacheTests: XCTestCase {
             }
         }
         
-        waitForExpectations(timeout: 5.0)
+        wait(for: [expectation], timeout: 5.0)
     }
     
     // MARK: - Cache Effectiveness

@@ -282,7 +282,6 @@ final class QueryBuilderEdgeCaseTests: XCTestCase {
     
     // MARK: - Concurrent Query Tests
     
-    @MainActor
     func testConcurrentQueries() throws {
         for i in 0..<100 {
             _ = try requireFixture(db).insert(BlazeDataRecord([
@@ -313,7 +312,7 @@ final class QueryBuilderEdgeCaseTests: XCTestCase {
             }
         }
         
-        waitForExpectations(timeout: 5.0)
+        wait(for: [expectation], timeout: 5.0)
     }
     
     // MARK: - Filter Ordering Edge Cases

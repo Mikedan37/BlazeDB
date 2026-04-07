@@ -152,7 +152,7 @@ final class EncryptionRoundTripVerificationTests: XCTestCase {
         
         // Extract ciphertext length from page structure:
         // [BZDB][0x02][length:4][nonce:12][tag:16][ciphertext:N][padding]
-        let plaintextLength = Int(page.subdata(in: 5..<9).withUnsafeBytes { $0.load(as: UInt32.self).bigEndian })
+        let plaintextLength = Int(page.subdata(in: 5..<9).withUnsafeBytes { $0.loadUnaligned(as: UInt32.self).bigEndian })
         let ciphertext = page.subdata(in: 37..<(37 + plaintextLength))
         
         XCTAssertEqual(plaintextLength, 105, "Plaintext length should be 105")
@@ -255,9 +255,8 @@ final class EncryptionRoundTripVerificationTests: XCTestCase {
         for _ in 0..<100 {
             let size = Int.random(in: 1...3000)
             var original = Data(count: size)
-            _ = original.withUnsafeMutableBytes { buffer in
-                guard let baseAddress = buffer.baseAddress else { return }
-                arc4random_buf(baseAddress, size)
+            for i in 0..<size {
+                original[i] = UInt8.random(in: 0...255)
             }
             
             let pageIndex = Int.random(in: 0..<1000)

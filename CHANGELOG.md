@@ -7,6 +7,17 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ## [Unreleased]
 
+### Fixed
+
+- **Linux CI: all test targets failed to compile due to Darwin-only `arc4random_buf` call.**
+  `EncryptionRoundTripVerificationTests.swift` used `arc4random_buf`, a BSD/Darwin C
+  function not available on Linux. Because SwiftPM builds *all* test targets during
+  `swift test` (even when filtering to a single target — see
+  [swiftlang/swift-package-manager#9272](https://github.com/swiftlang/swift-package-manager/issues/9272)),
+  the `BlazeDB_Tier1Fast` compile failure prevented every Linux test run, including
+  Tier 0. Replaced with `UInt8.random(in:)` which is cross-platform Swift stdlib.
+  Affected Linux CI on Swift 6.0, 6.2, and 6.3.
+
 ---
 
 ## [2.7.2] - 2026-04-03

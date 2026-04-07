@@ -108,7 +108,7 @@ extension BlazeOperation {
         
         // Timestamp counter (8 bytes)
         guard offset + 8 <= data.count else { throw BlazeOperationDecodeError.invalidData }
-        let counter = data[offset..<offset+8].withUnsafeBytes { $0.load(as: UInt64.self).bigEndian }
+        let counter = data[offset..<offset+8].withUnsafeBytes { $0.loadUnaligned(as: UInt64.self).bigEndian }
         offset += 8
         
         // Timestamp nodeId (16 bytes)
@@ -160,7 +160,7 @@ extension BlazeOperation {
         
         // Changes (4 bytes length + BlazeBinary data)
         guard offset + 4 <= data.count else { throw BlazeOperationDecodeError.invalidData }
-        let changesLength = Int(data[offset..<offset+4].withUnsafeBytes { $0.load(as: UInt32.self).bigEndian })
+        let changesLength = Int(data[offset..<offset+4].withUnsafeBytes { $0.loadUnaligned(as: UInt32.self).bigEndian })
         offset += 4
         guard offset + changesLength <= data.count else { throw BlazeOperationDecodeError.invalidData }
         let changesData = data[offset..<offset+changesLength]
@@ -196,7 +196,7 @@ extension BlazeOperation {
         
         // Expires at (8 bytes)
         guard offset + 8 <= data.count else { throw BlazeOperationDecodeError.invalidData }
-        let expiresTimestampBits = data[offset..<offset+8].withUnsafeBytes { $0.load(as: UInt64.self).bigEndian }
+        let expiresTimestampBits = data[offset..<offset+8].withUnsafeBytes { $0.loadUnaligned(as: UInt64.self).bigEndian }
         let expiresTimestamp = Double(bitPattern: expiresTimestampBits)
         let expiresAt = Date(timeIntervalSince1970: expiresTimestamp)
         offset += 8

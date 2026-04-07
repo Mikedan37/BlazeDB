@@ -913,7 +913,7 @@ public final class PageStore: @unchecked Sendable {
             if version == 0x01 {
                 // Read payload length from bytes 5-8 (UInt32, big-endian)
                 let lengthBytes = page.subdata(in: 5..<9)
-                let payloadLength = lengthBytes.withUnsafeBytes { $0.load(as: UInt32.self).bigEndian }
+                let payloadLength = lengthBytes.withUnsafeBytes { $0.loadUnaligned(as: UInt32.self).bigEndian }
                 
                 BlazeLogger.trace("Page \(index) plaintext, payload length: \(payloadLength) bytes")
                 
@@ -937,7 +937,7 @@ public final class PageStore: @unchecked Sendable {
                 // ✅ DECRYPT DATA
                 // Read original plaintext length
                 let lengthBytes = page.subdata(in: 5..<9)
-                let plaintextLength = Int(lengthBytes.withUnsafeBytes { $0.load(as: UInt32.self).bigEndian })
+                let plaintextLength = Int(lengthBytes.withUnsafeBytes { $0.loadUnaligned(as: UInt32.self).bigEndian })
                 
                 // Extract nonce (12 bytes at offset 9)
                 guard page.count >= 37 else {

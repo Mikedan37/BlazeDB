@@ -289,7 +289,7 @@ public actor UnixDomainSocketRelay: BlazeSyncRelay {
         
         // Read count (4 bytes)
         guard offset + 4 <= data.count else { throw RelayError.invalidData }
-        let count = data[offset..<offset+4].withUnsafeBytes { $0.load(as: UInt32.self).bigEndian }
+        let count = data[offset..<offset+4].withUnsafeBytes { $0.loadUnaligned(as: UInt32.self).bigEndian }
         offset += 4
         
         var operations: [BlazeOperation] = []
@@ -298,7 +298,7 @@ public actor UnixDomainSocketRelay: BlazeSyncRelay {
         for _ in 0..<count {
             // Read operation length (4 bytes)
             guard offset + 4 <= data.count else { break }
-            let opLength = Int(data[offset..<offset+4].withUnsafeBytes { $0.load(as: UInt32.self).bigEndian })
+            let opLength = Int(data[offset..<offset+4].withUnsafeBytes { $0.loadUnaligned(as: UInt32.self).bigEndian })
             offset += 4
             
             // Read operation data
@@ -383,7 +383,7 @@ public actor UnixDomainSocketRelay: BlazeSyncRelay {
         
         // Receive length prefix (4 bytes)
         let lengthData = try await receiveExactBytes(4)
-        let length = lengthData.withUnsafeBytes { $0.load(as: UInt32.self).bigEndian }
+        let length = lengthData.withUnsafeBytes { $0.loadUnaligned(as: UInt32.self).bigEndian }
         
         // Receive actual data
         let data = try await receiveExactBytes(Int(length))
