@@ -580,7 +580,11 @@ extension PageStore {
             // IMPORTANT: Only check for overflow if the data is exactly maxDataPerPage AND
             // the potential pointer points to a valid overflow page (has "OVER" magic bytes)
             BlazeLogger.debug("📖 [readPageWithOverflow] Main page data size: \(mainPageData.count), maxDataPerPage: \(maxDataPerPage)")
-            if currentOverflowIndex == 0 && mainPageData.count == maxDataPerPage && mainPageData.count >= 4 {
+            if currentOverflowIndex == 0
+                && legacyOverflowPointerHeuristicCompatibilityMode
+                && mainPageData.count == maxDataPerPage
+                && mainPageData.count >= 4
+            {
                 usingLegacyOverflowReference = true
                 BlazeLogger.debug("📖 [readPageWithOverflow] Main page is exactly maxDataPerPage, checking for overflow pointer")
                 // Extract potential overflow pointer from last 4 bytes
@@ -868,7 +872,7 @@ extension PageStore {
                 }
             }
 
-            // Legacy heuristic path remains read-compatible only.
+            // Legacy heuristic path is compatibility-mode only.
             if usingLegacyOverflowReference {
                 BlazeLogger.trace("📖 [readPageWithOverflow] Legacy overflow heuristic path used for page \(index)")
             }
@@ -1068,6 +1072,9 @@ extension PageStore {
     /// Get overflow page index from main page
     /// Uses heuristic: if main page data is exactly maxDataPerPage, check if next page is overflow
     private func _getOverflowPageIndex(from mainPageIndex: Int) throws -> UInt32 {
+        guard legacyOverflowPointerHeuristicCompatibilityMode else {
+            return 0
+        }
         // Read main page to check its size
         guard let mainPageData = try readPage(index: mainPageIndex) else {
             return 0
@@ -1177,6 +1184,7 @@ extension PageStore {
             expectedChecksum = ref.payloadChecksum
             expectedPageCount = Int(ref.chainPageCount)
         } else {
+            guard legacyOverflowPointerHeuristicCompatibilityMode else { return .valid }
             let hasPointer = mainData.count == maxDataPerPage && mainData.count >= 4
             guard hasPointer else { return .valid }
             let offset = mainData.count - 4
@@ -1260,7 +1268,7 @@ extension PageStore {
             var pointer: UInt32 = 0
             if let ref = OverflowReferenceV2.decodeIfPresent(from: main, maxDataPerPage: maxDataPerPage) {
                 pointer = ref.firstOverflowPageIndex
-            } else if main.count == maxDataPerPage, main.count >= 4 {
+            } else if legacyOverflowPointerHeuristicCompatibilityMode, main.count == maxDataPerPage, main.count >= 4 {
                 let offset = main.count - 4
                 pointer = (UInt32(main[offset]) << 24)
                     | (UInt32(main[offset + 1]) << 16)

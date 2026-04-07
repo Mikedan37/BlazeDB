@@ -15,6 +15,18 @@
 - Need to modify page header to store overflow pointer
 - Integration with `DynamicCollection` write path
 
+## Legacy Overflow Pointer Compatibility Mode
+
+Legacy overflow-pointer heuristic traversal is no longer part of the default read contract.
+
+- **Default behavior:** v2 overflow reference trailer (`OVR2`) is authoritative.
+- **Compatibility mode:** legacy heuristic traversal is only enabled when `PageStore` is opened with:
+  - `enableLegacyOverflowPointerHeuristicCompatibilityMode: true`, or
+  - environment override `BLAZEDB_ENABLE_LEGACY_OVERFLOW_POINTER_HEURISTIC=1`.
+- **Intended use:** migration/backfill readers for legacy pages that predate v2 trailers.
+
+This keeps backward compatibility available while reducing default read ambiguity and corruption-prone branch surface.
+
 ---
 
 ## **How It Works**

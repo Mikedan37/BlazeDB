@@ -127,6 +127,7 @@ public final class PageStore: @unchecked Sendable {
     internal var knownCorruptedOverflowMainPages: Set<Int> = []
     internal var overflowCorruptionIncidentCount: Int = 0
     internal var overflowReadDegradedMode: Bool = false
+    internal let legacyOverflowPointerHeuristicCompatibilityMode: Bool
     private var isLocked: Bool = false  // Track lock state for cleanup
     private var closed: Bool = false
 
@@ -212,10 +213,18 @@ public final class PageStore: @unchecked Sendable {
     }
     #endif
 
-    public init(fileURL: URL, key: SymmetricKey, enableWAL: Bool = true, walMode: WALMode = .legacy) throws {
+    public init(
+        fileURL: URL,
+        key: SymmetricKey,
+        enableWAL: Bool = true,
+        walMode: WALMode = .legacy,
+        enableLegacyOverflowPointerHeuristicCompatibilityMode: Bool = false
+    ) throws {
         self.fileURL = fileURL
         self.walEnabled = enableWAL
         self.walMode = walMode
+        let envCompatEnabled = ProcessInfo.processInfo.environment["BLAZEDB_ENABLE_LEGACY_OVERFLOW_POINTER_HEURISTIC"] == "1"
+        self.legacyOverflowPointerHeuristicCompatibilityMode = enableLegacyOverflowPointerHeuristicCompatibilityMode || envCompatEnabled
         IOTraceSink.record(operation: "open_begin", path: fileURL.path)
 
         // Validate key size for AES-GCM
