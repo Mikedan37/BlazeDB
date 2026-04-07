@@ -166,21 +166,22 @@ final class BlazeDBClientTests: XCTestCase {
         }
     }
     
-    /// Measure batch insert performance (100 records)
+    /// Validate batch insert correctness for 100 records.
+    /// Kept deterministic for fast CI lanes; perf variance belongs in Tier1Perf.
     func testPerformance_BatchInsert100() throws {
-        measure {
-            do {
-                let records = (0..<100).map { i in
-                    BlazeDataRecord([
-                        "index": .int(i),
-                        "data": .string("Record \(i)")
-                    ])
-                }
-                _ = try requireFixture(client).insertMany(records)
-            } catch {
-                XCTFail("Batch insert failed: \(error)")
-            }
+        let baselineCount = try requireFixture(client).count()
+        let records = (0..<100).map { i in
+            BlazeDataRecord([
+                "index": .int(i),
+                "data": .string("Record \(i)")
+            ])
         }
+
+        let insertedIDs = try requireFixture(client).insertMany(records)
+        XCTAssertEqual(insertedIDs.count, 100, "Should insert all records in the batch")
+
+        let finalCount = try requireFixture(client).count()
+        XCTAssertEqual(finalCount - baselineCount, 100, "Batch insert should increase row count by 100")
     }
     
     /// Measure fetchAll performance with 100 records
