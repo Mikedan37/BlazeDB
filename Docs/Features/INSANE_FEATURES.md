@@ -53,10 +53,9 @@ db.onInsert("Tasks") { _, modified, ctx in
 **Level:** "ok who let a real database engine in here"
 
 **What it does:**
-- Intelligently chooses between spatial, vector, full-text, and regular indexes
-- Optimizes execution order (spatial first, then vector, then full-text)
+- Intelligently chooses among executable planner strategies (spatial, regular index, sequential)
 - Cost-based optimization (chooses fastest path)
-- Hybrid query planning (combines multiple index types)
+- Keeps strategy output aligned with real execution behavior
 
 **Example:**
 ```swift
@@ -70,16 +69,16 @@ let results = try db.query()
 
 // Planner automatically chooses:
 // 1. Use spatial index (fastest, O(log n))
-// 2. Intersect with full-text results
+// 2. Apply query filters in standard execution path (including full-text)
 // 3. Sort by distance
 // 4. Limit to 10
 ```
 
 **Benefits:**
 - Automatic index selection
-- Optimal execution order
-- 10-100x faster for complex queries
-- No manual optimization needed
+- Contract-accurate strategy output
+- Predictable fallback behavior for vector/full-text/hybrid query shapes
+- No misleading EXPLAIN/planner surface
 
 ---
 
@@ -125,7 +124,7 @@ for record in results {
 - Semantic search (vector similarity)
 - Combined with location (spatial queries)
 - Combined with full-text search
-- All optimized by query planner
+- Executed via standard query paths (planner does not advertise dedicated vector/hybrid branches)
 
 **Example:**
 ```swift
@@ -251,12 +250,14 @@ let results = try db.query()
 ## **IMPLEMENTATION STATUS**
 
 - **Event Triggers** - Enhanced with context API
-- **Query Planner** - Enhanced for spatial + vector + full-text
+- **Query Planner** - Strategy output aligned to executable behavior (spatial/regular/sequential)
 - **Lazy Decoding** - Integrated into QueryBuilder
 - **Vector Support** - Implemented with cosine similarity
 - **Hybrid Queries** - Vector + Spatial combined
 
-**All features are production-ready and integrated.**
+**Note:** Vector/full-text/hybrid query execution exists, but dedicated planner strategy
+selection for those branches is intentionally not advertised until corresponding
+execution branches are implemented.
 
 ---
 
