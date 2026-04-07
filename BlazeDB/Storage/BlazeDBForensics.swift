@@ -217,14 +217,14 @@ enum BlazeDBForensics {
         while offset + headerLen <= data.count {
             // Validate magic
             let magicBytes = data.subdata(in: offset..<(offset + 4))
-            let magic = magicBytes.withUnsafeBytes { $0.load(as: UInt32.self) }
+            let magic = magicBytes.withUnsafeBytes { $0.loadUnaligned(as: UInt32.self) }
             if magic != walMagic.littleEndian {
                 firstBreak = (offset, "invalid magic (expected WALE)")
                 break
             }
             let sizeRange = (offset + 8)..<(offset + 12)
             let sizeBytes = data.subdata(in: sizeRange)
-            let payloadSize = sizeBytes.withUnsafeBytes { $0.load(as: UInt32.self).littleEndian }
+            let payloadSize = sizeBytes.withUnsafeBytes { $0.loadUnaligned(as: UInt32.self).littleEndian }
             let next = offset + headerLen + Int(payloadSize)
             if next > data.count {
                 firstBreak = (offset, "declared payload overruns file")

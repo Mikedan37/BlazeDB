@@ -79,7 +79,7 @@ final class BlazeDBTodaysFeaturesTests: XCTestCase {
     
     /// Test deinit flushes pending changes
     func testDeinitFlushesMetadata() throws {
-        try autoreleasepool {
+        try withPlatformAutoreleasePool {
             let db = try BlazeDBClient(name: "DeinitTest", fileURL: try requireFixture(tempURL), password: "TestPassword-123!")
             
             // Insert 50 records (below threshold)
@@ -327,6 +327,14 @@ final class BlazeDBTodaysFeaturesTests: XCTestCase {
         XCTAssertGreaterThan(results.count, 0, "Indexes should survive all operations")
         
         print("✅ All today's improvements working together")
+    }
+
+    private func withPlatformAutoreleasePool<T>(_ body: () throws -> T) rethrows -> T {
+#if canImport(Darwin)
+        try autoreleasepool(invoking: body)
+#else
+        try body()
+#endif
     }
 }
 

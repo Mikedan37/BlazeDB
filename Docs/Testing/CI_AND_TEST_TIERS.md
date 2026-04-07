@@ -11,14 +11,15 @@ For branch discipline and PR hygiene, see `Docs/Guides/WORKFLOW_AND_STYLE_GUIDE.
 - `.github/workflows/ci.yml`
 - Triggers: push and pull_request on `main`, `develop`
 - All jobs use **`actions/checkout` with `fetch-depth: 0`** so tags and worktree scripts match a full clone.
-- **Primary check (blocking):** `macOS 15 — build, CLI, tests, clean-checkout, quickstart`
+- **Primary check (blocking):** `macOS 15 — build, CLI, tests`
 - Runner: `macos-15`; **does not** use `swift-actions/setup-swift` — tests run with **Xcode’s** `swift` so XCTest/`XCTestCore` resolves (OSS Swift on macOS does not).
+- `actions/cache` on `.build` (keyed by `runner.os`, `Package.swift`, `Package.resolved`)
 - `swift build --target BlazeDBCore`, CLI targets (`BlazeDoctor`, `BlazeDump`, `BlazeInfo`)
 - `swift test --filter BlazeDB_Tier0`, then `swift test --skip-build --filter BlazeDB_Tier1Fast`
-- `ripgrep` (brew if needed) + `./Scripts/verify-clean-checkout.sh` + `./Scripts/verify-readme-quickstart.sh` (same toolchain as local dev — not on Linux)
-- **Secondary (non-blocking):** `Linux (Swift 6) — best-effort`
+- `verify-clean-checkout.sh` and `verify-readme-quickstart.sh` are **not** part of the blocking PR lane (they remain in-repo and move to deeper lanes)
+- **Secondary (blocking):** `Linux (Swift 6.2) — core + Tier 0`
 - Runner: `ubuntu-22.04`
-- Same test tiers after `swift build`; `continue-on-error: true`
+- `actions/cache` on `.build` (same key shape), then `swift build` + CLI targets + `swift test --filter BlazeDB_Tier0`
 
 - `.github/workflows/tag-probe.yml`
 - Trigger: **manual** (`workflow_dispatch`) only
@@ -26,7 +27,7 @@ For branch discipline and PR hygiene, see `Docs/Guides/WORKFLOW_AND_STYLE_GUIDE.
 
 - `.github/workflows/tier1-depth.yml`
 - Trigger: **weekly schedule** and **manual** (`workflow_dispatch`)
-- Runs **`BlazeDB_Tier1Extended`** and **`BlazeDB_Tier1Perf`** only (not `BlazeDB_Tier1Fast`; that is already covered on every PR). This is the scheduled **Tier1 depth** lane—see [Reporting vocabulary](#reporting-vocabulary) below.
+- Runs **`BlazeDB_Tier1Extended`** and **`BlazeDB_Tier1Perf`** only (not `BlazeDB_Tier1Fast`; that is the PR-critical lane). This is the scheduled **Tier1 depth** lane—see [Reporting vocabulary](#reporting-vocabulary) below.
 
 - `.github/workflows/release.yml`
 - Trigger: tag push `v*`
@@ -44,8 +45,11 @@ For branch discipline and PR hygiene, see `Docs/Guides/WORKFLOW_AND_STYLE_GUIDE.
 - Must stay bounded and stable.
 
 - `BlazeDB_Tier1Fast`
-- Default PR and local correctness gate: deterministic core contracts without `measure()`, fixed sleeps, or benchmark-shaped workloads.
-- Sources: `BlazeDBTests/Tier1Core/` (with a small `Package.swift` exclude list for broken/architectural tests).
+- Default PR correctness gate from `BlazeDBTests/Tier1Core/`, intentionally reduced with a broader `Package.swift` exclude list to keep blocking runtime bounded.
+- Sources: `BlazeDBTests/Tier1Core/` in root package.
+
+- `BlazeDB_Tier1FastFull`
+- Broader deterministic Tier1 lane from the same `Tier1Core` sources, defined under `BlazeDBExtraTests/Package.swift` for deeper/manual lanes.
 
 - `BlazeDB_Tier1Extended`
 - Integration, distributed sync, sleep-dependent timing, and large-N stress that should stay in CI but not in the default fast loop.
@@ -74,7 +78,7 @@ Use precise language so status and dashboards do not blur the PR gate with deepe
 | -------- | ------- |
 | **Tier1 PR gate** / **T1 fast** | `BlazeDB_Tier1Fast` only—the default blocking Tier1 lane on PRs. |
 | **Tier1 depth** | `BlazeDB_Tier1Extended` + `BlazeDB_Tier1Perf` (weekly/manual `tier1-depth.yml`, or `./Scripts/run-tier1-depth.sh`). Does *not* by itself imply `BlazeDB_Tier1Fast` ran. |
-| **Full Tier1** / **Tier1 all lanes** | `BlazeDB_Tier1Fast` + `BlazeDB_Tier1Extended` + `BlazeDB_Tier1Perf` (e.g. release validation). |
+| **Full Tier1** / **Tier1 all lanes** | `BlazeDB_Tier1Fast` + `BlazeDB_Tier1FastFull` + `BlazeDB_Tier1Extended` + `BlazeDB_Tier1Perf` (broader deterministic coverage via `BlazeDBExtraTests`). |
 
 Inventory/bootstrap code may still bucket all three SwiftPM modules under a single **`T1`** label for file-level manifests; that is a storage convenience. **Human-facing** summaries (CI names, release notes, team chat) should use the table above, not a vague “T1 passed.”
 
@@ -104,7 +108,7 @@ A few files remain **excluded** from `Tier1Core` in `Package.swift` because they
 
 - Confirm working tree is intentional (`git status`, `git diff`).
 - Run `./Scripts/preflight.sh`.
-- Ensure required checks are green on PR (primary: `macOS 15 — build, CLI, tests, clean-checkout, quickstart`).
+- Ensure required checks are green on PR (primary: `macOS 15 — build, CLI, tests`).
 - Do not mix workflow behavior changes with docs-only cleanup in the same PR unless explicitly scoped.
 
 ## Maintenance Policy

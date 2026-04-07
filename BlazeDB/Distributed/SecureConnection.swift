@@ -357,7 +357,7 @@ public class SecureConnection {
         
         // Read length (4 bytes)
         let lengthData = try await readExactly(4)
-        let length = lengthData.withUnsafeBytes { $0.load(as: UInt32.self).bigEndian }
+        let length = lengthData.withUnsafeBytes { $0.loadUnaligned(as: UInt32.self).bigEndian }
         
         // Read payload
         let payload = try await readExactly(Int(length))
@@ -512,7 +512,7 @@ public class SecureConnection {
         
         // Timestamp
         guard offset + 8 <= data.count else { throw HandshakeError.invalidResponse }
-        let millis = data[offset..<offset+8].withUnsafeBytes { $0.load(as: UInt64.self).bigEndian }
+        let millis = data[offset..<offset+8].withUnsafeBytes { $0.loadUnaligned(as: UInt64.self).bigEndian }
         let timestamp = Date(timeIntervalSince1970: Double(millis) / 1000.0)
         offset += 8
         

@@ -149,8 +149,8 @@ extension PageStore {
             )
         }
         
-        let originalLength = Int(storedPage.subdata(in: 5..<9).withUnsafeBytes { $0.load(as: UInt32.self).bigEndian })
-        let compressedLength = Int(storedPage.subdata(in: 9..<13).withUnsafeBytes { $0.load(as: UInt32.self).bigEndian })
+        let originalLength = Int(storedPage.subdata(in: 5..<9).withUnsafeBytes { $0.loadUnaligned(as: UInt32.self).bigEndian })
+        let compressedLength = Int(storedPage.subdata(in: 9..<13).withUnsafeBytes { $0.loadUnaligned(as: UInt32.self).bigEndian })
         
         guard originalLength > 0 else {
             throw BlazeDBError.corruptedData(
