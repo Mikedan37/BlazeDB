@@ -2,12 +2,14 @@
 //  QueryPlanner.swift
 //  BlazeDB
 //
-//  Advanced query planner that intelligently chooses between:
+//  Advanced query planner for executable strategy selection:
 //  - Spatial indexes (R-tree)
-//  - Vector indexes (cosine similarity)
-//  - Full-text indexes (inverted index)
 //  - Regular indexes (B-tree)
 //  - Sequential scans
+//
+//  NOTE:
+//  Vector/full-text/hybrid plans are intentionally not surfaced by plan(query:collection:)
+//  until dedicated execution branches exist in executeWithPlanner().
 //
 import Foundation
 @preconcurrency import Foundation
@@ -56,9 +58,6 @@ internal class QueryPlanner {
         #endif
         // Check for search index via StorageLayout
         _ = (try? StorageLayout.load(from: collection.metaURL))?.searchIndex != nil
-        // NOTE: Vector index support intentionally not implemented in query planner.
-        // Vector queries require specialized execution paths not yet implemented.
-        _ = false  // Vector index check (not implemented)
         let hasRegularIndexes = !collection.secondaryIndexes.isEmpty
         
         // Detect query types (spatial/vector builder state is omitted on Linux core builds)
@@ -88,39 +87,7 @@ internal class QueryPlanner {
             ))
         }
         
-        // Strategy 2: Vector search (if used)
-        if hasVectorQuery {
-            let vectorLimit = 100  // Default
-            let cost = StatisticsCollector.costVectorSearch(rowCount: rowCount, vectorLimit: vectorLimit)
-            candidatePlans.append((
-                AdvancedQueryPlan(
-                    strategy: .vectorIndex(field: "embedding", embedding: []),
-                    estimatedCost: cost,
-                    estimatedRows: vectorLimit,
-                    executionOrder: ["vector_search", "filter", "sort", "limit"]
-                ),
-                cost
-            ))
-        }
-        
-        // Strategy 3: Hybrid (spatial + vector)
-        if hasSpatial && hasVectorQuery && hasSpatialQuery {
-            let spatialCost = StatisticsCollector.costSpatialQuery(rowCount: rowCount, estimatedResults: 200)
-            let vectorCost = StatisticsCollector.costVectorSearch(rowCount: rowCount, vectorLimit: 100)
-            let hybridCost = StatisticsCollector.costHybrid(spatialCost: spatialCost, vectorCost: vectorCost, fullTextCost: nil)
-            
-            candidatePlans.append((
-                AdvancedQueryPlan(
-                    strategy: .hybrid(spatial: true, vector: true, fullText: false),
-                    estimatedCost: hybridCost,
-                    estimatedRows: 50,
-                    executionOrder: ["spatial_index", "vector_search", "intersect", "filter", "sort", "limit"]
-                ),
-                hybridCost
-            ))
-        }
-        
-        // Strategy 4: Regular index (if available)
+        // Strategy 2: Regular index (if available)
         if hasRegularIndexes {
             // Find best index for query filters
             // Simplified: use first available index
@@ -139,7 +106,7 @@ internal class QueryPlanner {
             }
         }
         
-        // Strategy 5: Sequential scan (fallback)
+        // Strategy 3: Sequential scan (fallback)
         let scanCost = StatisticsCollector.costFullScan(rowCount: rowCount)
         candidatePlans.append((
             AdvancedQueryPlan(
@@ -165,7 +132,11 @@ internal class QueryPlanner {
             throw BlazeDBError.invalidData(reason: "No query plan available")
         }
         
-        BlazeLogger.debug("Query planner: Selected strategy '\(bestPlan.strategy)' with cost \(String(format: "%.2f", bestPlan.estimatedCost))")
+        if hasVectorQuery {
+            BlazeLogger.debug("Query planner: Vector query detected; using executable fallback strategy '\(bestPlan.strategy)'")
+        } else {
+            BlazeLogger.debug("Query planner: Selected strategy '\(bestPlan.strategy)' with cost \(String(format: "%.2f", bestPlan.estimatedCost))")
+        }
         
         return bestPlan
     }
