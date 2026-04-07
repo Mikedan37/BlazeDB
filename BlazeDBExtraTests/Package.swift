@@ -55,6 +55,26 @@ let package = Package(
                 .define("BLAZEDB_LINUX_CORE", .when(platforms: [.linux]))
             ]
         ),
+        // Broader deterministic Tier1 lane kept outside the default PR graph.
+        .testTarget(
+            name: "BlazeDB_Tier1FastFull",
+            dependencies: [.product(name: "BlazeDBCore", package: "BlazeDB")],
+            path: "../BlazeDBTests/Tier1Core",
+            exclude: [
+                // Requires Network/SecureConnection types not in BlazeDBCore
+                "Security/SecureConnectionTests.swift",
+                // KeyManager cache API tests until cache helpers are restored.
+                "Security/KeyManagerTests.swift",
+                // MainActor/SwiftUI — needs deeper architectural work.
+                "Query/BlazeQueryTests.swift",
+                // Complex async — tracked separately.
+                "Concurrency/BlazeDBAsyncTests.swift"
+            ],
+            swiftSettings: [
+                .define("BLAZEDB_CORE_ONLY"),
+                .define("BLAZEDB_LINUX_CORE", .when(platforms: [.linux]))
+            ]
+        ),
         .testTarget(
             name: "BlazeDB_Tier3_Destructive",
             dependencies: [.product(name: "BlazeDBCore", package: "BlazeDB")],
