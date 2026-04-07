@@ -53,12 +53,12 @@ final class QueryPlannerStrategyContractTests: XCTestCase {
                 "embedding": .data(vectorData)
             ])
         }
-        _ = try requireFixture(db).insertMany(records)
+        _ = try XCTUnwrap(db).insertMany(records)
 
-        let plannedQuery = try requireFixture(db).query()
+        let plannedQuery = try XCTUnwrap(db).query()
             .vectorNearest(field: "embedding", to: [1.0, 0.0, 0.0, 0.0], limit: 50, threshold: 0.0)
 
-        let plan = try plannedQuery.getAdvancedPlan(collection: try requireFixture(db).collection)
+        let plan = try plannedQuery.getAdvancedPlan(collection: try XCTUnwrap(db).collection)
         switch plan.strategy {
         case .sequential:
             break
@@ -67,7 +67,7 @@ final class QueryPlannerStrategyContractTests: XCTestCase {
         }
 
         let plannedResult = try plannedQuery.executeWithPlanner()
-        let baselineResult = try requireFixture(db).query()
+        let baselineResult = try XCTUnwrap(db).query()
             .vectorNearest(field: "embedding", to: [1.0, 0.0, 0.0, 0.0], limit: 50, threshold: 0.0)
             .execute()
 
