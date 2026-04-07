@@ -110,72 +110,98 @@ extension PageStore {
     
     /// Read page with automatic decompression
     public func readPageCompressed(index: Int) throws -> Data? {
-        let page = try readPage(index: index)
-        guard let page = page else { return nil }
-        
-        // Check if compressed (version 0x03)
-        guard page.count >= 9 else { return page }
-        
-        // Read version from stored page
+        // Read stored page metadata to detect v0x03 format.
         let storedPage = try queue.sync {
             try atomicRead(offset: off_t(index * pageSize), count: pageSize)
         }
         
-        guard storedPage.count >= 9 else { return page }
+        guard storedPage.count >= 9 else { return try readPage(index: index) }
         let version = storedPage[4]
         
         if version == 0x03 {
-            // Compressed + encrypted
-            let originalLength = Int(storedPage.subdata(in: 5..<9).withUnsafeBytes { $0.loadUnaligned(as: UInt32.self).bigEndian })
-            
-            // Check if this is the new format with compressedLength (41+ byte header)
-            // or old format without it (37 byte header)
-            let hasCompressedLength = storedPage.count >= 41
-            
-            let compressedLength: Int
-            let nonceOffset: Int
-            let tagOffset: Int
-            let ciphertextOffset: Int
-            
-            if hasCompressedLength {
-                // New format: includes compressedLength field
-                compressedLength = Int(storedPage.subdata(in: 9..<13).withUnsafeBytes { $0.loadUnaligned(as: UInt32.self).bigEndian })
-                nonceOffset = 13
-                tagOffset = 25
-                ciphertextOffset = 41
-            } else {
-                // Old format: no compressedLength field (backward compatibility)
-                // Use remaining data as ciphertext (may include padding)
-                guard storedPage.count >= 37 else { return page }
-                compressedLength = storedPage.count - 37
-                nonceOffset = 9
-                tagOffset = 21
-                ciphertextOffset = 37
-            }
-            
-            guard storedPage.count >= ciphertextOffset else { return page }
-            
-            let nonceData = storedPage.subdata(in: nonceOffset..<(nonceOffset + 12))
-            guard let nonce = try? AES.GCM.Nonce(data: nonceData) else { return page }
-            
-            let tagData = storedPage.subdata(in: tagOffset..<(tagOffset + 16))
-            let ciphertext = storedPage.subdata(in: ciphertextOffset..<min(ciphertextOffset + compressedLength, storedPage.count))
-            
-            guard let sealedBox = try? AES.GCM.SealedBox(nonce: nonce, ciphertext: ciphertext, tag: tagData) else {
-                return page
-            }
-            
-            // Decrypt
-            let compressed = try AES.GCM.open(sealedBox, using: key)
-            
-            // Decompress
-            let decompressed = try decompressData(compressed, originalSize: originalLength, algorithm: COMPRESSION_LZ4)
-            
-            return decompressed
+            return try _decodeCompressedPageV03(storedPage: storedPage, index: index)
         }
         
-        // Not compressed - return as-is
-        return page
+        // Non-compressed pages still flow through the canonical reader.
+        return try readPage(index: index)
+    }
+
+    /// Decode v0x03 compressed+encrypted page payload.
+    /// Supports both current layout (with compressedLength) and the legacy layout.
+    internal func _decodeCompressedPageV03(storedPage: Data, index: Int) throws -> Data {
+        guard storedPage.count >= 37 else {
+            throw NSError(domain: "PageStore", code: 7, userInfo: [
+                NSLocalizedDescriptionKey: "Page \(index) too short for compressed format"
+            ])
+        }
+
+        let originalLength = Int(storedPage.subdata(in: 5..<9).withUnsafeBytes { $0.loadUnaligned(as: UInt32.self).bigEndian })
+
+        // First attempt current format (v0x03.1): [magic][v][origLen][compressedLen][nonce][tag][ciphertext]
+        if storedPage.count >= 41 {
+            let compressedLength = Int(storedPage.subdata(in: 9..<13).withUnsafeBytes { $0.loadUnaligned(as: UInt32.self).bigEndian })
+            if compressedLength > 0, 41 + compressedLength <= storedPage.count {
+                if let decoded = try? _decryptAndDecompressCompressedV03Payload(
+                    storedPage: storedPage,
+                    originalLength: originalLength,
+                    nonceOffset: 13,
+                    tagOffset: 25,
+                    ciphertextOffset: 41,
+                    ciphertextLength: compressedLength
+                ) {
+                    return decoded
+                }
+            }
+        }
+
+        // Fallback for legacy layout: [magic][v][origLen][nonce][tag][ciphertext(+padding...)]
+        let legacyCiphertextLength = max(0, storedPage.count - 37)
+        if let decoded = try? _decryptAndDecompressCompressedV03Payload(
+            storedPage: storedPage,
+            originalLength: originalLength,
+            nonceOffset: 9,
+            tagOffset: 21,
+            ciphertextOffset: 37,
+            ciphertextLength: legacyCiphertextLength
+        ) {
+            return decoded
+        }
+
+        throw NSError(domain: "PageStore", code: 8, userInfo: [
+            NSLocalizedDescriptionKey: "Corrupted compression payload for page \(index)"
+        ])
+    }
+
+    private func _decryptAndDecompressCompressedV03Payload(
+        storedPage: Data,
+        originalLength: Int,
+        nonceOffset: Int,
+        tagOffset: Int,
+        ciphertextOffset: Int,
+        ciphertextLength: Int
+    ) throws -> Data {
+        guard ciphertextLength > 0 else {
+            throw NSError(domain: "PageStore", code: 9, userInfo: [
+                NSLocalizedDescriptionKey: "Invalid compressed ciphertext length"
+            ])
+        }
+        guard storedPage.count >= ciphertextOffset + ciphertextLength else {
+            throw NSError(domain: "PageStore", code: 10, userInfo: [
+                NSLocalizedDescriptionKey: "Compressed ciphertext range out of bounds"
+            ])
+        }
+
+        let nonceData = storedPage.subdata(in: nonceOffset..<(nonceOffset + 12))
+        guard let nonce = try? AES.GCM.Nonce(data: nonceData) else {
+            throw NSError(domain: "PageStore", code: 11, userInfo: [
+                NSLocalizedDescriptionKey: "Invalid compressed page nonce"
+            ])
+        }
+        let tagData = storedPage.subdata(in: tagOffset..<(tagOffset + 16))
+        let ciphertext = storedPage.subdata(in: ciphertextOffset..<(ciphertextOffset + ciphertextLength))
+        let sealedBox = try AES.GCM.SealedBox(nonce: nonce, ciphertext: ciphertext, tag: tagData)
+        let compressed = try AES.GCM.open(sealedBox, using: key)
+        return try decompressData(compressed, originalSize: originalLength, algorithm: COMPRESSION_LZ4)
     }
     
     // MARK: - Compression Helpers

@@ -973,6 +973,21 @@ public final class PageStore: @unchecked Sendable {
                 return decrypted
             }
             
+            // VERSION 0x03: Compressed page marker.
+            // Compression APIs are conditionally compiled, so on unsupported platforms
+            // this must fail with an explicit portability message.
+            else if version == 0x03 {
+                #if canImport(Compression)
+                let decompressed = try _decodeCompressedPageV03(storedPage: page, index: index)
+                pageCache.set(index, data: decompressed)
+                return decompressed
+                #else
+                throw NSError(domain: "PageStore", code: 6, userInfo: [
+                    NSLocalizedDescriptionKey: "Page \(index) uses compression (version 0x03) that is not available on this platform"
+                ])
+                #endif
+            }
+            
             // Unknown version
             else {
                 BlazeLogger.error("Unsupported page version \(version) for page \(index)")
