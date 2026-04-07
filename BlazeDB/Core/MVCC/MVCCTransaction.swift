@@ -171,7 +171,7 @@ public class MVCCTransaction {
         // MVCC versions store the main page number. Large records may spill into
         // overflow pages, so use the overflow-aware writer here just like the
         // legacy insert path does.
-        var nextNewPage = pageStore.nextAvailablePageIndex()
+        var nextNewPage = try pageStore.nextAvailablePageIndex()
         let pageNumber: Int
         if let freePage = versionManager.pageGC.getFreePage() {
             pageNumber = freePage

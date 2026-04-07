@@ -236,4 +236,16 @@ final class PageStoreUnifiedWALTests: XCTestCase {
 
         store.close()
     }
+
+    func testNextAvailablePageIndexThrowsOnStatFailure() throws {
+        let dbURL = tempDir.appendingPathComponent("test-next-index-failure.db")
+        let store = try PageStore(fileURL: dbURL, key: testKey, walMode: .unified)
+        try store.writePage(index: 0, plaintext: Data(repeating: 0x11, count: 64))
+
+        // Closing invalidates the backing file descriptor; nextAvailablePageIndex
+        // must surface the failure instead of returning page index 0.
+        store.close()
+
+        XCTAssertThrowsError(try store.nextAvailablePageIndex())
+    }
 }
