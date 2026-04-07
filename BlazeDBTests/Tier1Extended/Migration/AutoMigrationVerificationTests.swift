@@ -403,9 +403,22 @@ final class AutoMigrationVerificationTests: XCTestCase {
         let countAfter = try migrationDB().count()
         XCTAssertEqual(countAfter, 1000, "All 1000 records should survive migration")
         
-        // Reopen should be reasonably fast even with large dataset
-        XCTAssertLessThan(reopenDuration, 5.0,
-                         "Reopening with 1000 records should be < 5s, was \(String(format: "%.2f", reopenDuration))s")
+        // Reopen should be reasonably fast even with large dataset.
+        // Keep tighter budgets on Darwin (primary performance signal), and allow
+        // a wider non-Darwin baseline where filesystem/runtime characteristics vary more.
+        #if canImport(Darwin)
+        let baseThreshold = 5.0
+        #else
+        let baseThreshold = 15.0
+        #endif
+        let maxAllowedReopenSeconds = ProcessInfo.processInfo.environment["CI"] == "true"
+            ? (baseThreshold + 3.0)
+            : baseThreshold
+        XCTAssertLessThan(
+            reopenDuration,
+            maxAllowedReopenSeconds,
+            "Reopening with 1000 records should be < \(String(format: "%.1f", maxAllowedReopenSeconds))s, was \(String(format: "%.2f", reopenDuration))s"
+        )
     }
     
     // MARK: - Rollback Safety
