@@ -1,0 +1,133 @@
+name: Nightly confidence
+
+on:
+  schedule:
+    - cron: "0 4 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: nightly-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  nightly-macos-confidence:
+    name: macOS 15 — Tier1 depth + Tier1FastFull + Tier2 + verify scripts
+    runs-on: macos-15
+    timeout-minutes: 360
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Cache SwiftPM build
+        uses: actions/cache@v4
+        with:
+          path: .build
+          key: nightly-${{ runner.os }}-spm-${{ hashFiles('Package.swift', 'Package.resolved', 'BlazeDBExtraTests/Package.swift') }}
+          restore-keys: |
+            nightly-${{ runner.os }}-spm-
+            ${{ runner.os }}-spm-
+
+      - name: Xcode Swift toolchain
+        run: |
+          xcodebuild -version
+          swift --version
+          which swift
+
+      - name: Build BlazeDBCore
+        run: swift build --target BlazeDBCore
+
+      - name: Test Tier 1 extended
+        run: swift test --filter BlazeDB_Tier1Extended
+
+      - name: Test Tier 1 perf
+        run: swift test --skip-build --filter BlazeDB_Tier1Perf
+
+      - name: Test Tier 1 fast full (broader deterministic)
+        run: swift test --filter BlazeDB_Tier1FastFull
+        working-directory: BlazeDBExtraTests
+
+      - name: Test Tier 2 integration/recovery (non-blocking lane)
+        run: ./Scripts/run-tier2.sh
+
+      - name: Install ripgrep (verification scripts)
+        env:
+          HOMEBREW_NO_AUTO_UPDATE: 1
+        run: |
+          command -v rg >/dev/null 2>&1 || brew install ripgrep
+
+      - name: Verify clean-checkout flow
+        run: ./Scripts/verify-clean-checkout.sh
+
+      - name: Verify README quickstart
+        run: ./Scripts/verify-readme-quickstart.sh
+
+  nightly-macos-tsan:
+    name: macOS 15 — Tier0 ThreadSanitizer
+    runs-on: macos-15
+    timeout-minutes: 180
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Xcode Swift toolchain
+        run: |
+          xcodebuild -version
+          swift --version
+
+      - name: Run thread sanitizer on Tier 0
+        run: |
+          SANITIZER_LOG=$(mktemp)
+          swift test -Xswiftc -sanitize=thread --filter BlazeDB_Tier0 | tee "$SANITIZER_LOG"
+          if grep -q "Executed 0 tests" "$SANITIZER_LOG"; then
+            echo "Sanitizer lane ran zero tests"
+            exit 1
+          fi
+
+  nightly-linux-depth:
+    name: Linux (Swift 6.2) — Tier0 + Tier1Fast
+    runs-on: ubuntu-22.04
+    timeout-minutes: 240
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Cache SwiftPM build
+        uses: actions/cache@v4
+        with:
+          path: .build
+          key: nightly-${{ runner.os }}-spm-${{ hashFiles('Package.swift', 'Package.resolved') }}
+          restore-keys: |
+            nightly-${{ runner.os }}-spm-
+            ${{ runner.os }}-spm-
+
+      - name: Setup Swift 6.2
+        uses: swift-actions/setup-swift@v2
+        with:
+          swift-version: "6.2"
+
+      - name: Swift version
+        run: swift --version
+
+      - name: Build core
+        run: swift build --target BlazeDBCore
+
+      - name: Test Tier 0
+        run: swift test --filter BlazeDB_Tier0
+
+      - name: Test Tier 1 fast
+        run: swift test --skip-build --filter BlazeDB_Tier1Fast
