@@ -928,11 +928,11 @@ extension StorageLayout {
 
     private static func constantTimeEquals(_ lhs: Data, _ rhs: Data) -> Bool {
         let maxLen = max(lhs.count, rhs.count)
-        var diff = UInt8(lhs.count ^ rhs.count)
+        var diff: UInt = UInt(lhs.count) ^ UInt(rhs.count)
         for i in 0..<maxLen {
-            let l = i < lhs.count ? lhs[lhs.index(lhs.startIndex, offsetBy: i)] : 0
-            let r = i < rhs.count ? rhs[rhs.index(rhs.startIndex, offsetBy: i)] : 0
-            diff |= l ^ r
+            let l: UInt8 = i < lhs.count ? lhs[lhs.index(lhs.startIndex, offsetBy: i)] : 0
+            let r: UInt8 = i < rhs.count ? rhs[rhs.index(rhs.startIndex, offsetBy: i)] : 0
+            diff |= UInt(l ^ r)
         }
         return diff == 0
     }
