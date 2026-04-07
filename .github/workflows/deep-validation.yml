@@ -1,0 +1,151 @@
+name: Deep validation
+
+on:
+  schedule:
+    - cron: "0 3 * * 0"
+  workflow_dispatch:
+
+concurrency:
+  group: deep-validation-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  deep-macos-full:
+    name: macOS 15 — full deep validation
+    runs-on: macos-15
+    timeout-minutes: 480
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Cache SwiftPM build
+        uses: actions/cache@v4
+        with:
+          path: .build
+          key: deep-${{ runner.os }}-spm-${{ hashFiles('Package.swift', 'Package.resolved', 'BlazeDBExtraTests/Package.swift') }}
+          restore-keys: |
+            deep-${{ runner.os }}-spm-
+            nightly-${{ runner.os }}-spm-
+            ${{ runner.os }}-spm-
+
+      - name: Xcode Swift toolchain
+        run: |
+          xcodebuild -version
+          swift --version
+          which swift
+
+      - name: Build BlazeDBCore
+        run: swift build --target BlazeDBCore
+
+      - name: Test Tier 0
+        run: swift test --filter BlazeDB_Tier0
+
+      - name: Test Tier 1 fast (PR-critical subset)
+        run: swift test --skip-build --filter BlazeDB_Tier1Fast
+
+      - name: Test Tier 1 fast full (broader deterministic)
+        run: swift test --filter BlazeDB_Tier1FastFull
+        working-directory: BlazeDBExtraTests
+
+      - name: Test Tier 1 extended
+        run: swift test --filter BlazeDB_Tier1Extended
+
+      - name: Test Tier 1 perf
+        run: swift test --skip-build --filter BlazeDB_Tier1Perf
+
+      - name: Test Tier 2 integration/recovery
+        run: ./Scripts/run-tier2.sh
+
+      - name: Test Tier 3 heavy stress/fuzz
+        env:
+          RUN_HEAVY_STRESS: "1"
+        run: |
+          cd BlazeDBExtraTests
+          swift test --filter BlazeDB_Tier3_Heavy
+
+      - name: Test Tier 3 destructive/fault injection
+        run: ./Scripts/run-tier3.sh
+
+  deep-macos-tsan:
+    name: macOS 15 — Tier0 + Tier1Fast ThreadSanitizer
+    runs-on: macos-15
+    timeout-minutes: 360
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Xcode Swift toolchain
+        run: |
+          xcodebuild -version
+          swift --version
+
+      - name: Run thread sanitizer on Tier 0
+        run: |
+          SANITIZER_LOG=$(mktemp)
+          swift test -Xswiftc -sanitize=thread --filter BlazeDB_Tier0 | tee "$SANITIZER_LOG"
+          if grep -q "Executed 0 tests" "$SANITIZER_LOG"; then
+            echo "Tier 0 sanitizer lane ran zero tests"
+            exit 1
+          fi
+
+      - name: Run thread sanitizer on Tier 1 fast
+        run: |
+          SANITIZER_LOG=$(mktemp)
+          swift test -Xswiftc -sanitize=thread --filter BlazeDB_Tier1Fast | tee "$SANITIZER_LOG"
+          if grep -q "Executed 0 tests" "$SANITIZER_LOG"; then
+            echo "Tier 1 fast sanitizer lane ran zero tests"
+            exit 1
+          fi
+
+  deep-linux-extended:
+    name: Linux (Swift 6.2) — Tier0 + Tier1Fast + Tier1Extended
+    runs-on: ubuntu-22.04
+    timeout-minutes: 360
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Cache SwiftPM build
+        uses: actions/cache@v4
+        with:
+          path: .build
+          key: deep-${{ runner.os }}-spm-${{ hashFiles('Package.swift', 'Package.resolved') }}
+          restore-keys: |
+            deep-${{ runner.os }}-spm-
+            nightly-${{ runner.os }}-spm-
+            ${{ runner.os }}-spm-
+
+      - name: Setup Swift 6.2
+        uses: swift-actions/setup-swift@v2
+        with:
+          swift-version: "6.2"
+
+      - name: Swift version
+        run: swift --version
+
+      - name: Build core
+        run: swift build --target BlazeDBCore
+
+      - name: Test Tier 0
+        run: swift test --filter BlazeDB_Tier0
+
+      - name: Test Tier 1 fast
+        run: swift test --skip-build --filter BlazeDB_Tier1Fast
+
+      - name: Test Tier 1 extended
+        run: swift test --skip-build --filter BlazeDB_Tier1Extended
