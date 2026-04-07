@@ -101,7 +101,7 @@ public final class PageStore: @unchecked Sendable {
     internal let pageSize = 4096  // Made internal for DynamicCollection access
 
     // MARK: - Write-Ahead Log for crash safety
-    private let wal: WriteAheadLog?
+    internal let wal: WriteAheadLog?
     private let walEnabled: Bool
     public let walMode: WALMode
 
@@ -130,6 +130,10 @@ public final class PageStore: @unchecked Sendable {
     internal let legacyOverflowPointerHeuristicCompatibilityMode: Bool
     private var isLocked: Bool = false  // Track lock state for cleanup
     private var closed: Bool = false
+    // Compression is configured per PageStore instance.
+    // Internal visibility is required for the same-module compression extension.
+    internal let compressionStateLock = NSLock()
+    internal var compressionEnabled = false
 
     internal enum IOError: Error, LocalizedError {
         case posix(
@@ -793,7 +797,7 @@ public final class PageStore: @unchecked Sendable {
         pendingUnifiedAutoTransactionID = nil
     }
 
-    private func _flushPendingUnifiedBufferedWritesLocked() throws {
+    internal func _flushPendingUnifiedBufferedWritesLocked() throws {
         guard pendingUnifiedBufferedWrites.isEmpty == false else { return }
         for entry in pendingUnifiedBufferedWrites {
             try _writeEncryptedBuffer(index: entry.index, buffer: entry.buffer)

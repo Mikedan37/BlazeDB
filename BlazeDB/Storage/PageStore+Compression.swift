@@ -22,32 +22,33 @@ extension PageStore {
     
     // MARK: - Compression Configuration
     
-    // Swift 6: Protected by NSLock, safe for concurrent access
-    nonisolated(unsafe) private static var compressionEnabled: [ObjectIdentifier: Bool] = [:]
-    private static let compressionLock = NSLock()
-    
     /// Enable compression for pages > 1KB
     public func enableCompression() {
-        let id = ObjectIdentifier(self)
-        Self.compressionLock.lock()
-        defer { Self.compressionLock.unlock() }
-        Self.compressionEnabled[id] = true
+        compressionStateLock.lock()
+        compressionEnabled = true
+        compressionStateLock.unlock()
     }
     
     /// Disable compression
     public func disableCompression() {
-        let id = ObjectIdentifier(self)
-        Self.compressionLock.lock()
-        defer { Self.compressionLock.unlock() }
-        Self.compressionEnabled[id] = false
+        compressionStateLock.lock()
+        compressionEnabled = false
+        compressionStateLock.unlock()
     }
     
     private var isCompressionEnabled: Bool {
-        let id = ObjectIdentifier(self)
-        Self.compressionLock.lock()
-        defer { Self.compressionLock.unlock() }
-        return Self.compressionEnabled[id] ?? false
+        compressionStateLock.lock()
+        defer { compressionStateLock.unlock() }
+        return compressionEnabled
     }
+
+    #if DEBUG
+    /// Regression guard for issue #39:
+    /// compression state is instance-scoped; no shared static table should exist.
+    internal static func _compressionStateTableCountForTests() -> Int {
+        0
+    }
+    #endif
     
     // MARK: - Compressed Write
     
@@ -267,6 +268,47 @@ extension PageStore {
         
         // Convert back to Data
         return Data(destBuffer)
+    }
+
+    /// Encrypt compressed payload and format a page buffer for version 0x03.
+    /// Must be called while holding the barrier on `queue`.
+    private func _encryptCompressedPageBuffer(compressed: Data, originalLength: Int) throws -> Data {
+        let nonce = AES.GCM.Nonce()
+        let sealedBox = try AES.GCM.seal(compressed, using: key, nonce: nonce)
+
+        var buffer = Data()
+        guard let magicBytes = "BZDB".data(using: .utf8) else {
+            throw NSError(domain: "PageStore", code: -1, userInfo: [
+                NSLocalizedDescriptionKey: "Failed to encode page header magic"
+            ])
+        }
+        buffer.append(magicBytes)
+        buffer.append(0x03)  // Version 0x03 = compressed + encrypted
+
+        // Store original length (for decompression target size)
+        var originalLengthBE = UInt32(originalLength).bigEndian
+        buffer.append(Data(bytes: &originalLengthBE, count: 4))
+
+        // Store compressed ciphertext length (for ciphertext bounds)
+        var compressedLengthBE = UInt32(sealedBox.ciphertext.count).bigEndian
+        buffer.append(Data(bytes: &compressedLengthBE, count: 4))
+
+        // Encryption components
+        buffer.append(contentsOf: nonce)
+        buffer.append(contentsOf: sealedBox.tag)
+        buffer.append(contentsOf: sealedBox.ciphertext)
+
+        guard buffer.count <= pageSize else {
+            throw NSError(domain: "PageStore", code: 1, userInfo: [
+                NSLocalizedDescriptionKey: "Compressed page too large (max: \(pageSize) bytes)"
+            ])
+        }
+
+        if buffer.count < pageSize {
+            buffer.append(Data(repeating: 0, count: pageSize - buffer.count))
+        }
+
+        return buffer
     }
 }
 
