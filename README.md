@@ -27,13 +27,13 @@ An encrypted, embedded document database for Swift. Single-process, zero externa
 - **Not per-type table storage.** All record types coexist in a single encrypted collection.
 - **Not distributed sync.** Sync infrastructure exists in source but is deferred and excluded from the default runtime.
 
-### Choose your path
+### API tiers
 
-| If you want... | Use... |
-|----------------|--------|
-| The easiest typed path | `BlazeStorable` + `db.typed(T.self)` → `TypedStore` |
-| Dynamic or untyped schemas | `BlazeDataRecord` + `db.insert(record)` |
-| Manual storage mapping or SwiftUI typed query wrappers | `BlazeDocument` (required for `@BlazeQueryTyped`) |
+| Tier | API | Use case |
+|------|-----|----------|
+| **Typed (recommended)** | `BlazeStorable` + `db.typed(T.self)` | Codable models, KeyPath queries |
+| **Raw** | `BlazeDataRecord` + `db.insert(record)` | Dynamic schemas, migrations |
+| **Manual mapping** | `BlazeDocument` | Custom storage control, `@BlazeQueryTyped` |
 
 ---
 
