@@ -40,6 +40,15 @@ For branch discipline and PR hygiene, see `Docs/Guides/WORKFLOW_AND_STYLE_GUIDE.
   - Linux depth run: `BlazeDB_Tier0` + `BlazeDB_Tier1Fast`
 - **Operational policy:** nightly failures are triaged within 24–48 hours.
 
+- `.github/workflows/deep-validation.yml`
+- Trigger: **weekly schedule** and **manual** (`workflow_dispatch`)
+- Runs deep/manual soak coverage:
+  - Full Tier1 (`BlazeDB_Tier1Fast` + `BlazeDB_Tier1FastFull` + `BlazeDB_Tier1Extended` + `BlazeDB_Tier1Perf`)
+  - Tier2 via `./Scripts/run-tier2.sh`
+  - Tier3 heavy (`BlazeDB_Tier3_Heavy` with `RUN_HEAVY_STRESS=1`) and Tier3 destructive (`./Scripts/run-tier3.sh`)
+  - ThreadSanitizer on `BlazeDB_Tier0` and `BlazeDB_Tier1Fast`
+  - Linux extended lane (`BlazeDB_Tier0` + `BlazeDB_Tier1Fast` + `BlazeDB_Tier1Extended`)
+
 - `.github/workflows/release.yml`
 - Trigger: tag push `v*`
 - Behavior:
@@ -90,6 +99,7 @@ Use precise language so status and dashboards do not blur the PR gate with deepe
 | **Tier1 PR gate** / **T1 fast** | `BlazeDB_Tier1Fast` only—the default blocking Tier1 lane on PRs. |
 | **Tier1 depth** | `BlazeDB_Tier1Extended` + `BlazeDB_Tier1Perf` (weekly/manual `tier1-depth.yml`, or `./Scripts/run-tier1-depth.sh`). Does *not* by itself imply `BlazeDB_Tier1Fast` ran. |
 | **Nightly confidence lane** | `nightly.yml`: Tier1 depth + `BlazeDB_Tier1FastFull` + Tier2 script + verify scripts + Tier0 TSan + Linux Tier0/Tier1Fast. |
+| **Deep validation lane** | `deep-validation.yml`: full Tier1 + Tier2 + Tier3 heavy/destructive + Tier0/Tier1Fast TSan + Linux extended lane. |
 | **Full Tier1** / **Tier1 all lanes** | `BlazeDB_Tier1Fast` + `BlazeDB_Tier1FastFull` + `BlazeDB_Tier1Extended` + `BlazeDB_Tier1Perf` (broader deterministic coverage via `BlazeDBExtraTests`). |
 
 Inventory/bootstrap code may still bucket all three SwiftPM modules under a single **`T1`** label for file-level manifests; that is a storage convenience. **Human-facing** summaries (CI names, release notes, team chat) should use the table above, not a vague “T1 passed.”
