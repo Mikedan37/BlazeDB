@@ -13,6 +13,6 @@ if [ -n "${TEST_SLOW_CONCURRENCY}" ] && [ "${TEST_SLOW_CONCURRENCY}" != "0" ]; t
   exit 1
 fi
 
-swift test --filter BlazeDB_Tier0 || exit 1
+env BLAZEDB_TEST_SCOPE=tier0 swift test --filter BlazeDB_Tier0 || exit 1
 swift test --filter BlazeDB_Tier1Fast || exit 1
 echo "=== Tier 1 (strict) complete ==="

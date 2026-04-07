@@ -21,8 +21,8 @@ from pathlib import Path
 TEST_ID_RE = re.compile(r"^([A-Za-z0-9_]+)\.([A-Za-z0-9_]+)/([A-Za-z0-9_]+)$")
 
 
-def run(cmd: list[str], cwd: Path) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(cmd, cwd=str(cwd), capture_output=True, text=True, check=False)
+def run(cmd: list[str], cwd: Path, env: dict[str, str] | None = None) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(cmd, cwd=str(cwd), capture_output=True, text=True, check=False, env=env)
 
 
 def parse_discovered(text: str, target: str) -> set[str]:
@@ -96,7 +96,10 @@ def main() -> int:
         "--xunit-output",
         str(xunit_path),
     ]
-    run_proc = run(run_cmd, pkg_root)
+    run_env = os.environ.copy()
+    if args.target == "BlazeDB_Tier0":
+        run_env["BLAZEDB_TEST_SCOPE"] = "tier0"
+    run_proc = run(run_cmd, pkg_root, env=run_env)
 
     executed = parse_executed_from_xunit(xunit_path)
     missing = sorted(discovered - executed)

@@ -26,7 +26,7 @@ run_step() {
 echo "=== BlazeDB OSS readiness local check ==="
 run_step "Step 1/4: swift build" swift build
 
-run_step "Step 2/4: Tier 0 gate" swift test --filter BlazeDB_Tier0
+run_step "Step 2/4: Tier 0 gate" env BLAZEDB_TEST_SCOPE=tier0 swift test --filter BlazeDB_Tier0
 
 run_step "Step 3/4: Tier 1 fast gate" swift test --skip-build --filter BlazeDB_Tier1Fast
 
