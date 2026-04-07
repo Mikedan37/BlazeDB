@@ -110,72 +110,73 @@ extension PageStore {
     
     /// Read page with automatic decompression
     public func readPageCompressed(index: Int) throws -> Data? {
-        let page = try readPage(index: index)
-        guard let page = page else { return nil }
-        
-        // Check if compressed (version 0x03)
-        guard page.count >= 9 else { return page }
-        
-        // Read version from stored page
-        let storedPage = try queue.sync {
-            try atomicRead(offset: off_t(index * pageSize), count: pageSize)
+        let storedPage = try queue.sync { () throws -> Data? in
+            let offset = off_t(index * pageSize)
+            let currentFileSize = try self.fileSize()
+            if offset >= currentFileSize {
+                return nil
+            }
+            
+            var page = try atomicRead(offset: offset, count: pageSize)
+            if page.count < pageSize {
+                page.append(Data(repeating: 0, count: pageSize - page.count))
+            }
+            
+            if page.allSatisfy({ $0 == 0 }) {
+                return nil
+            }
+            
+            return page
         }
         
-        guard storedPage.count >= 9 else { return page }
+        guard let storedPage else { return nil }
+        guard storedPage.count >= 9 else { return try readPage(index: index) }
+        
+        let isValidHeader = storedPage[0] == 0x42 && storedPage[1] == 0x5A && storedPage[2] == 0x44 && storedPage[3] == 0x42
+        guard isValidHeader else { return try readPage(index: index) }
+        
         let version = storedPage[4]
-        
-        if version == 0x03 {
-            // Compressed + encrypted
-            let originalLength = Int(storedPage.subdata(in: 5..<9).withUnsafeBytes { $0.load(as: UInt32.self).bigEndian })
-            
-            // Check if this is the new format with compressedLength (41+ byte header)
-            // or old format without it (37 byte header)
-            let hasCompressedLength = storedPage.count >= 41
-            
-            let compressedLength: Int
-            let nonceOffset: Int
-            let tagOffset: Int
-            let ciphertextOffset: Int
-            
-            if hasCompressedLength {
-                // New format: includes compressedLength field
-                compressedLength = Int(storedPage.subdata(in: 9..<13).withUnsafeBytes { $0.load(as: UInt32.self).bigEndian })
-                nonceOffset = 13
-                tagOffset = 25
-                ciphertextOffset = 41
-            } else {
-                // Old format: no compressedLength field (backward compatibility)
-                // Use remaining data as ciphertext (may include padding)
-                guard storedPage.count >= 37 else { return page }
-                compressedLength = storedPage.count - 37
-                nonceOffset = 9
-                tagOffset = 21
-                ciphertextOffset = 37
-            }
-            
-            guard storedPage.count >= ciphertextOffset else { return page }
-            
-            let nonceData = storedPage.subdata(in: nonceOffset..<(nonceOffset + 12))
-            guard let nonce = try? AES.GCM.Nonce(data: nonceData) else { return page }
-            
-            let tagData = storedPage.subdata(in: tagOffset..<(tagOffset + 16))
-            let ciphertext = storedPage.subdata(in: ciphertextOffset..<min(ciphertextOffset + compressedLength, storedPage.count))
-            
-            guard let sealedBox = try? AES.GCM.SealedBox(nonce: nonce, ciphertext: ciphertext, tag: tagData) else {
-                return page
-            }
-            
-            // Decrypt
-            let compressed = try AES.GCM.open(sealedBox, using: key)
-            
-            // Decompress
-            let decompressed = try decompressData(compressed, originalSize: originalLength, algorithm: COMPRESSION_LZ4)
-            
-            return decompressed
+        guard version == 0x03 else {
+            // Delegate plaintext/encrypted versions to the canonical read path.
+            return try readPage(index: index)
         }
         
-        // Not compressed - return as-is
-        return page
+        // Version 0x03: compressed + encrypted
+        guard storedPage.count >= 41 else {
+            throw BlazeDBError.corruptedData(
+                location: "compressed page",
+                reason: "Compressed page header is too short"
+            )
+        }
+        
+        let originalLength = Int(storedPage.subdata(in: 5..<9).withUnsafeBytes { $0.load(as: UInt32.self).bigEndian })
+        let compressedLength = Int(storedPage.subdata(in: 9..<13).withUnsafeBytes { $0.load(as: UInt32.self).bigEndian })
+        
+        guard originalLength > 0 else {
+            throw BlazeDBError.corruptedData(
+                location: "compressed page",
+                reason: "Invalid original payload length \(originalLength)"
+            )
+        }
+        
+        guard compressedLength > 0, (41 + compressedLength) <= storedPage.count else {
+            throw BlazeDBError.corruptedData(
+                location: "compressed page",
+                reason: "Invalid compressed payload length \(compressedLength)"
+            )
+        }
+        
+        let nonceData = storedPage.subdata(in: 13..<25)
+        let tagData = storedPage.subdata(in: 25..<41)
+        let ciphertext = storedPage.subdata(in: 41..<(41 + compressedLength))
+        
+        let nonce = try AES.GCM.Nonce(data: nonceData)
+        let sealedBox = try AES.GCM.SealedBox(nonce: nonce, ciphertext: ciphertext, tag: tagData)
+        let compressed = try AES.GCM.open(sealedBox, using: key)
+        let decompressed = try decompressData(compressed, originalSize: originalLength, algorithm: COMPRESSION_LZ4)
+        
+        pageCache.set(index, data: decompressed)
+        return decompressed
     }
     
     // MARK: - Compression Helpers
