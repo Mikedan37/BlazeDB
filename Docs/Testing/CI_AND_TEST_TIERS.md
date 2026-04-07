@@ -27,7 +27,18 @@ For branch discipline and PR hygiene, see `Docs/Guides/WORKFLOW_AND_STYLE_GUIDE.
 
 - `.github/workflows/tier1-depth.yml`
 - Trigger: **weekly schedule** and **manual** (`workflow_dispatch`)
-- Runs **`BlazeDB_Tier1Extended`** and **`BlazeDB_Tier1Perf`** only (not `BlazeDB_Tier1Fast`; that is the PR-critical lane). This is the scheduled **Tier1 depth** lane—see [Reporting vocabulary](#reporting-vocabulary) below.
+- Runs **`BlazeDB_Tier1Extended`** and **`BlazeDB_Tier1Perf`** only (not `BlazeDB_Tier1Fast`; that is the PR-critical lane). This remains available during nightly rollout.
+
+- `.github/workflows/nightly.yml`
+- Trigger: **daily schedule** and **manual** (`workflow_dispatch`)
+- Runs medium-confidence coverage:
+  - `BlazeDB_Tier1Extended` + `BlazeDB_Tier1Perf`
+  - `BlazeDB_Tier1FastFull` (from `BlazeDBExtraTests`)
+  - Tier2 integration/recovery via `./Scripts/run-tier2.sh` (non-blocking within nightly lane)
+  - `verify-clean-checkout.sh` and `verify-readme-quickstart.sh`
+  - ThreadSanitizer on `BlazeDB_Tier0`
+  - Linux depth run: `BlazeDB_Tier0` + `BlazeDB_Tier1Fast`
+- **Operational policy:** nightly failures are triaged within 24–48 hours.
 
 - `.github/workflows/release.yml`
 - Trigger: tag push `v*`
@@ -78,6 +89,7 @@ Use precise language so status and dashboards do not blur the PR gate with deepe
 | -------- | ------- |
 | **Tier1 PR gate** / **T1 fast** | `BlazeDB_Tier1Fast` only—the default blocking Tier1 lane on PRs. |
 | **Tier1 depth** | `BlazeDB_Tier1Extended` + `BlazeDB_Tier1Perf` (weekly/manual `tier1-depth.yml`, or `./Scripts/run-tier1-depth.sh`). Does *not* by itself imply `BlazeDB_Tier1Fast` ran. |
+| **Nightly confidence lane** | `nightly.yml`: Tier1 depth + `BlazeDB_Tier1FastFull` + Tier2 script + verify scripts + Tier0 TSan + Linux Tier0/Tier1Fast. |
 | **Full Tier1** / **Tier1 all lanes** | `BlazeDB_Tier1Fast` + `BlazeDB_Tier1FastFull` + `BlazeDB_Tier1Extended` + `BlazeDB_Tier1Perf` (broader deterministic coverage via `BlazeDBExtraTests`). |
 
 Inventory/bootstrap code may still bucket all three SwiftPM modules under a single **`T1`** label for file-level manifests; that is a storage convenience. **Human-facing** summaries (CI names, release notes, team chat) should use the table above, not a vague “T1 passed.”
@@ -103,6 +115,13 @@ A few files remain **excluded** from `Tier1Core` in `Package.swift` because they
 - `./Scripts/run-tier1-depth.sh` (`BlazeDB_Tier1Extended` + `BlazeDB_Tier1Perf`)
 - `./Scripts/run-tier2.sh`
 - `./Scripts/run-tier3.sh`
+
+## Nightly Triage Policy
+
+- Nightly failures are treated as real work and triaged within **24–48 hours**.
+- If nightly remains red beyond that window, either:
+  - fix the failing lane, or
+  - temporarily quarantine the failing job with an explicit issue link and owner.
 
 ## Before Merge Checklist
 
