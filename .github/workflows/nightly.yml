@@ -55,8 +55,8 @@ jobs:
         run: swift test --filter BlazeDB_Tier1FastFull
         working-directory: BlazeDBExtraTests
 
-      - name: Test Tier 2 integration/recovery (non-blocking lane)
-        run: ./Scripts/run-tier2.sh
+      - name: Test Tier 2 integration/recovery (strict enforcement)
+        run: ./Scripts/run-tier2.sh --strict
 
       - name: Install ripgrep (verification scripts)
         env:
