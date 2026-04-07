@@ -1012,18 +1012,13 @@ public final class PageStore: @unchecked Sendable {
     
     /// Get the next available page index for MVCC
     /// This calculates based on current file size
-    public func nextAvailablePageIndex() -> Int {
+    public func nextAvailablePageIndex() throws -> Int {
         #if DEBUG
         dispatchPrecondition(condition: .notOnQueue(queue))
         #endif
-        return queue.sync {
-            do {
-                let currentSize = try self.fileSize()
-                return currentSize / pageSize
-            } catch {
-                BlazeLogger.error("pageCount(): failed to stat file — returning 0: \(error)")
-                return 0
-            }
+        return try queue.sync {
+            let currentSize = try self.fileSize()
+            return currentSize / pageSize
         }
     }
     
