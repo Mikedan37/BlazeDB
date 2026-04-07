@@ -29,10 +29,10 @@ final class PageStoreCompressionStateTests: XCTestCase {
             fileURL: tempDir.appendingPathComponent("state.db"),
             key: testKey
         )
-        try requireFixture(store).enableCompression()
+        try XCTUnwrap(store).enableCompression()
 
         // Explicitly close and release to ensure deinit path is exercised.
-        requireFixture(store).close()
+        try XCTUnwrap(store).close()
         store = nil
 
         XCTAssertEqual(
@@ -52,7 +52,7 @@ final class PageStoreCompressionStateTests: XCTestCase {
 
         try store.writePageCompressed(index: 0, plaintext: payload)
 
-        let walStats = try requireFixture(store.walStats())
+        let walStats = try XCTUnwrap(store.walStats())
         XCTAssertGreaterThan(
             walStats.logFileSize,
             0,
