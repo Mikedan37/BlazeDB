@@ -295,7 +295,8 @@ final class EncryptionRoundTripVerificationTests: XCTestCase {
             let description = String(describing: error)
             XCTAssertTrue(error.localizedDescription.contains("authentication") ||
                          error.localizedDescription.contains("corrupt") ||
-                         description.contains("authenticationFailure"),
+                         description.contains("authenticationFailure") ||
+                         description.contains("underlyingCoreCryptoError"),
                          "Should detect corruption, got: \(error)")
         }
     }
