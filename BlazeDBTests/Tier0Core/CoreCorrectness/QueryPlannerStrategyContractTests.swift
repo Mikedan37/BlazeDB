@@ -16,15 +16,16 @@ final class QueryPlannerStrategyContractTests: XCTestCase {
         BlazeDBClient.clearCachedKey()
         tempURL = FileManager.default.temporaryDirectory
             .appendingPathComponent("PlannerContract-\(UUID().uuidString).blazedb")
-        try? FileManager.default.removeItem(at: try requireFixture(tempURL))
+        let dbURL = try XCTUnwrap(tempURL)
+        try? FileManager.default.removeItem(at: dbURL)
         try? FileManager.default.removeItem(
-            at: try requireFixture(tempURL)
+            at: dbURL
                 .deletingPathExtension()
                 .appendingPathExtension("meta")
         )
         db = try BlazeDBClient(
             name: "planner_contract_test",
-            fileURL: try requireFixture(tempURL),
+            fileURL: dbURL,
             password: "SecureTestDB-456!"
         )
     }
@@ -32,12 +33,14 @@ final class QueryPlannerStrategyContractTests: XCTestCase {
     override func tearDownWithError() throws {
         try db?.close()
         db = nil
-        try? FileManager.default.removeItem(at: try requireFixture(tempURL))
-        try? FileManager.default.removeItem(
-            at: try requireFixture(tempURL)
-                .deletingPathExtension()
-                .appendingPathExtension("meta")
-        )
+        if let dbURL = tempURL {
+            try? FileManager.default.removeItem(at: dbURL)
+            try? FileManager.default.removeItem(
+                at: dbURL
+                    .deletingPathExtension()
+                    .appendingPathExtension("meta")
+            )
+        }
         BlazeDBClient.clearCachedKey()
         try super.tearDownWithError()
     }
