@@ -51,57 +51,84 @@ extension PageStore {
     
     // MARK: - Compressed Write
     
+    /// Build a compressed + encrypted page buffer in v0x03 format.
+    /// Returns nil when compression does not reduce payload size.
+    internal func _encryptCompressedPageBuffer(plaintext: Data) throws -> Data? {
+        // Compress using LZ4 (fast, good compression)
+        let compressed = try compressData(plaintext, algorithm: COMPRESSION_LZ4)
+
+        // Only use compression if it saves space
+        guard compressed.count < plaintext.count else {
+            return nil
+        }
+
+        // Encrypt compressed data
+        let nonce = AES.GCM.Nonce()
+        let sealedBox = try AES.GCM.seal(compressed, using: key, nonce: nonce)
+
+        var buffer = Data()
+        guard let magicBytes = "BZDB".data(using: .utf8) else {
+            throw NSError(domain: "PageStore", code: -1, userInfo: [
+                NSLocalizedDescriptionKey: "Failed to encode page header magic"
+            ])
+        }
+        buffer.append(magicBytes)
+        buffer.append(0x03)  // Version 0x03 = compressed + encrypted
+
+        // Store original length (for decompression target size)
+        var originalLength = UInt32(plaintext.count).bigEndian
+        buffer.append(Data(bytes: &originalLength, count: 4))
+
+        // Store compressed length (for ciphertext bounds) - FIXED in v0x03.1
+        var compressedLength = UInt32(sealedBox.ciphertext.count).bigEndian
+        buffer.append(Data(bytes: &compressedLength, count: 4))
+
+        // Encryption components
+        buffer.append(contentsOf: nonce)
+        buffer.append(contentsOf: sealedBox.tag)
+        buffer.append(contentsOf: sealedBox.ciphertext)
+
+        // Pad to page size
+        if buffer.count < pageSize {
+            buffer.append(Data(repeating: 0, count: pageSize - buffer.count))
+        }
+
+        return buffer
+    }
+
     /// Write page with optional compression (50-70% savings for large pages)
     public func writePageCompressed(index: Int, plaintext: Data) throws {
         guard isCompressionEnabled && plaintext.count > 1024 else {
             // Compression disabled or page too small - write normally
             return try writePage(index: index, plaintext: plaintext)
         }
-        
-        // Compress using LZ4 (fast, good compression)
-        let compressed = try compressData(plaintext, algorithm: COMPRESSION_LZ4)
-        
-        // Only use compression if it saves space
-        guard compressed.count < plaintext.count else {
-            // Compression didn't help - write uncompressed
-            return try writePage(index: index, plaintext: plaintext)
-        }
-        
-        // Write compressed data with compression marker (version 0x03)
+
         try queue.sync(flags: .barrier) {
-            // Encrypt compressed data
-            let nonce = AES.GCM.Nonce()
-            let sealedBox = try AES.GCM.seal(compressed, using: key, nonce: nonce)
-            
-            var buffer = Data()
-            guard let magicBytes = "BZDB".data(using: .utf8) else {
-                throw NSError(domain: "PageStore", code: -1, userInfo: [
-                    NSLocalizedDescriptionKey: "Failed to encode page header magic"
-                ])
+            guard let buffer = try _encryptCompressedPageBuffer(plaintext: plaintext) else {
+                // Compression didn't help - write uncompressed via normal path.
+                return try _writePageLocked(index: index, plaintext: plaintext)
             }
-            buffer.append(magicBytes)
-            buffer.append(0x03)  // Version 0x03 = compressed + encrypted
-            
-            // Store original length (for decompression target size)
-            var originalLength = UInt32(plaintext.count).bigEndian
-            buffer.append(Data(bytes: &originalLength, count: 4))
-            
-            // Store compressed length (for ciphertext bounds) - FIXED in v0x03.1
-            var compressedLength = UInt32(sealedBox.ciphertext.count).bigEndian
-            buffer.append(Data(bytes: &compressedLength, count: 4))
-            
-            // Encryption components
-            buffer.append(contentsOf: nonce)
-            buffer.append(contentsOf: sealedBox.tag)
-            buffer.append(contentsOf: sealedBox.ciphertext)
-            
-            // Pad to page size
-            if buffer.count < pageSize {
-                buffer.append(Data(repeating: 0, count: pageSize - buffer.count))
+
+            // Match normal synchronized write ordering exactly:
+            // durable WAL append first, then main-file write, then fsync.
+            try _commitPendingUnifiedAutoTransactionIfNeededLocked()
+            try _flushPendingUnifiedBufferedWritesLocked()
+
+            if let wal = wal {
+                try wal.append(pageIndex: index, data: buffer)
+            } else if let dm = durabilityManager {
+                let txID = UUID()
+                try dm.appendBegin(transactionID: txID)
+                guard index >= 0, index <= Int(UInt32.max) else {
+                    throw NSError(domain: "PageStore", code: -1, userInfo: [
+                        NSLocalizedDescriptionKey: "Page index \(index) out of UInt32 range for WAL entry"
+                    ])
+                }
+                try dm.appendWrite(transactionID: txID, pageIndex: UInt32(index), data: buffer)
+                try dm.appendCommit(transactionID: txID)
             }
-            
-            let offset = off_t(index * pageSize)
-            try atomicWrite(offset: offset, data: buffer)
+
+            try _writeEncryptedBuffer(index: index, buffer: buffer)
             try fileHandle.compatSynchronize()
         }
     }
