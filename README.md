@@ -1,147 +1,305 @@
 # BlazeDB
 
-**Version:** 2.7.2
-**Status:** Core modules Swift 6 strict concurrency compliant
-**License:** MIT
+**Version:** 2.7.3 &nbsp;|&nbsp; **License:** MIT &nbsp;|&nbsp; **Swift 6 strict concurrency compliant**
 
-An encrypted embedded document store for Swift — designed for application state, indexed metadata, and deterministic recovery.
+An encrypted, embedded document database for Swift. Single-process, zero external dependencies. Production runtime is always encrypted at rest.
 
-**ACID transactions, AES-256-GCM encryption, no external service dependencies.**
-
-[![Swift](https://img.shields.io/badge/Swift-6.0-orange.svg)](https://swift.org)
-[![Platform](https://img.shields.io/badge/Platform-macOS%20%7C%20iOS%20%7C%20Linux%20%7C%20Android-lightgrey.svg)](https://github.com/Mikedan37/BlazeDB)
-[![Android Core Path](https://img.shields.io/badge/Android-core%20path%20enabled-blue.svg)](Docs/COMPATIBILITY.md)
+[![Swift](https://img.shields.io/badge/Swift-6.0+-orange.svg)](https://swift.org)
+[![Platforms](https://img.shields.io/badge/Platforms-macOS%20%7C%20iOS%20%7C%20watchOS%20%7C%20tvOS%20%7C%20visionOS%20%7C%20Linux%20%7C%20Android-lightgrey.svg)](Docs/COMPATIBILITY.md)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 ---
 
-## Product Focus (Current OSS Release)
+## What BlazeDB Is
 
-BlazeDB is positioned as a **high-confidence embedded encrypted database** for Swift apps:
+- An **embedded** database — runs in your process, no server required
+- **Encrypted at rest** in production — AES-256-GCM on every data page
+- **Document-oriented** — schema-less records with typed Codable overlays
+- **ACID transactions** with WAL-backed crash recovery
+- **Single-process** — one process owns the database file at a time
+- **Single-collection** — all records (regardless of type) share one encrypted collection per database file; `TypedStore` is a typed lens, not a separate table
 
-- Typed-first developer workflow (`BlazeStorable` + `db.typed(T.self)`)
-- WAL-backed durability and crash recovery
-- Deterministic import/export/verify/restore workflows
-- Practical operator tooling (`health`, `stats`, `BlazeDoctor`, `BlazeDump`, `BlazeInfo`)
-- SwiftUI query wrappers that can refresh from DB change notifications
+## What BlazeDB Is Not
 
-### Shipped by default vs conditional/deferred
+- **Not SQL.** No relational schema, no SQL query language.
+- **Not multi-process.** One process owns the database file. No concurrent access from separate processes.
+- **Not client/server.** No network listener, no remote connections.
+- **Not per-type table storage.** All record types coexist in a single encrypted collection.
+- **Not distributed sync.** Sync infrastructure exists in source but is deferred and excluded from the default runtime.
 
-| Area | Status |
-|------|--------|
-| Embedded encrypted core, typed API, query/transactions, durability/recovery, import/export, health/stats, CLI tools | **Shipped by default** |
-| Raw/manual APIs, migrations, schema validation, indexing/full-text, benchmark tooling | **Advanced but supported** |
-| Distributed sync/server/discovery, full telemetry manager path, row-level security policy surfaces, staging modules | **Conditional, internal, or deferred** |
+### API tiers
 
-> Source-present code does not always mean default-shipped runtime behavior. The default SwiftPM OSS product is `BlazeDBCore`/`BlazeDB` as defined by `Package.swift`.
+| Tier | API | Use case |
+|------|-----|----------|
+| **Typed (recommended)** | `BlazeStorable` + `db.typed(T.self)` | Codable models, KeyPath queries |
+| **Raw** | `BlazeDataRecord` + `db.insert(record)` | Dynamic schemas, migrations |
+| **Manual mapping** | `BlazeDocument` | Custom storage control, `@BlazeQueryTyped` |
 
 ---
 
-## 60-Second Quick Start
+## Quick Start
+
+Run the included example directly from this repository:
+
+```bash
+swift run HelloBlazeDB
+```
+
+Or add BlazeDB to your own project and use this minimal example:
 
 ```swift
 import BlazeDB
 
-// 1. Define your model
 struct User: BlazeStorable {
     var id: UUID = UUID()
     var name: String
-    var role: String
+    var age: Int
+    var active: Bool
 }
 
-// 2. Open + get a typed store
 let db = try BlazeDBClient.open(named: "myapp", password: "MyApp-Password-2026A!")
 let users = db.typed(User.self)
 
-// 3. Insert, query, done
-try users.insert(User(name: "Alice", role: "engineer"))
+// Insert
+try users.insert(User(name: "Alice", age: 30, active: true))
 
+// Query with KeyPaths
+let activeUsers = try users.query()
+    .where(\.active, equals: true)
+    .all()
+
+// Fetch all
 let everyone = try users.fetchAll()
 print("Users: \(everyone.count)")
 
 try db.close()
 ```
 
-If this runs, BlazeDB is working. [Next: HelloBlazeDB example](Examples/HelloBlazeDB/)
+### Getting started path
 
-### New here? Start with this path
-
-1. **Run the 60-second quick start** above (or `swift run HelloBlazeDB` from this repo).
-2. **Explore `Examples/HelloBlazeDB/`** — typed insert → query → fetch → export → health → close.
-3. **Read `Docs/GettingStarted/HOW_TO_USE_BLAZEDB.md`** for the complete guide (schema, queries, backups, health, sharp edges).
-
-### API Tiers
-
-| Tier | API | Best for |
-|------|-----|----------|
-| **Typed (recommended)** | `BlazeStorable` + `db.typed(T.self)` | Most apps — Codable models, KeyPath queries |
-| **Raw explicit** | `BlazeDataRecord` + `db.insert(record)` | Dynamic schemas, migration scripts |
-| **Manual mapping** | `BlazeDocument` | Custom serialization, non-Codable types |
+1. **Run `swift run HelloBlazeDB`** from this repo to verify your environment.
+2. **Read [Examples/HelloBlazeDB/main.swift](Examples/HelloBlazeDB/main.swift)** — covers typed insert, KeyPath query, fetch, raw API, export, health, and close.
+3. **Read [HOW_TO_USE_BLAZEDB.md](Docs/GettingStarted/HOW_TO_USE_BLAZEDB.md)** for the complete guide.
 
 ---
 
 ## Install
 
-Add to `Package.swift`:
+Add to your `Package.swift`:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/Mikedan37/BlazeDB.git", from: "2.7.2")
+    .package(url: "https://github.com/Mikedan37/BlazeDB.git", from: "2.7.3")
 ],
 targets: [
     .target(name: "YourApp", dependencies: ["BlazeDB"])
 ]
 ```
 
-Or in Xcode: File → Add Package Dependencies → paste the URL.
+Or in Xcode: **File → Add Package Dependencies** → paste `https://github.com/Mikedan37/BlazeDB.git`.
+
+**Requirements:** Swift 6.0+, macOS 15+ / iOS 15+ / watchOS 8+ / tvOS 15+ / visionOS 1+ / Linux / Android
 
 ---
 
-## What You Get
+## Core Concepts
 
-- ACID transactions with WAL-based crash recovery
-- Always-on AES-256-GCM encryption
-- Schema-less document storage with typed queries
-- Sub-millisecond reads, no external service dependencies
-- SwiftUI-friendly query wrappers (`@BlazeQuery`, `@BlazeQueryTyped`) with change-observation refresh
+### Single-collection architecture
 
-### SwiftUI Query Observation
+BlazeDB stores all records in one encrypted document collection per database file. When you call `db.typed(User.self)`, you get a typed lens (a `TypedStore<User>`) — not a separate physical table. The typed store encodes/decodes through the `BlazeStorable` Codable bridge and filters records by decodability.
 
-BlazeDB includes change observation primitives plus SwiftUI query wrappers. In SwiftUI apps, wrappers can re-run queries after database write notifications so list UIs stay current without timer-only polling.
+### Two typed protocols
+
+| Protocol | Purpose | Used with |
+|----------|---------|-----------|
+| **`BlazeStorable`** | Automatic Codable serialization, KeyPath queries | `TypedStore`, `db.typed(T.self)` |
+| **`BlazeDocument`** | Manual `toStorage()`/`init(from:)` mapping, more control | `@BlazeQueryTyped` SwiftUI wrapper |
+
+`BlazeStorable` is the recommended starting point. `BlazeDocument` is for when you need manual control over how your model maps to `BlazeDataRecord` storage. Both require `Codable` and `Identifiable` with `ID == UUID`.
+
+> **Do not use `@BlazeQueryTyped` with `BlazeStorable`-only models. It will not compile.** The `@BlazeQueryTyped` SwiftUI property wrapper requires `BlazeDocument`. If your model only conforms to `BlazeStorable`, you must add `BlazeDocument` conformance (with manual `toStorage()`/`init(from:)`) before you can use it in SwiftUI typed query wrappers.
+
+### Encryption
+
+The production runtime is always encrypted at rest. Every data page is sealed with AES-256-GCM. A password is required to open any database (minimum 8 characters). Metadata is HMAC-SHA256 signed for tamper detection. A benchmark-only flag (`BLAZEDB_BENCHMARK_NO_ENCRYPTION`) exists for performance isolation testing but must not be used with real data.
+
+---
+
+## API Overview
+
+### TypedStore (recommended)
+
+`TypedStore<T>` provides full CRUD and query operations bound to a single `BlazeStorable` model type:
+
+```swift
+let users = db.typed(User.self)
+
+try users.insert(user)                          // Insert one
+try users.insertMany([user1, user2])             // Insert batch
+let user = try users.fetch(id)                   // Fetch by UUID
+let all = try users.fetchAll()                   // Fetch all
+try users.update(user)                           // Update by id
+try users.upsert(user)                           // Insert or update
+try users.delete(id)                             // Delete by id
+let count = try users.count()                    // Count all
+
+let results = try users.query()
+    .where(\.age, greaterThanOrEqual: 21)
+    .orderBy(\.name, descending: false)
+    .all()
+```
+
+### Raw API
+
+For dynamic schemas or migration scripts, use `BlazeDataRecord` directly:
+
+```swift
+let record = BlazeDataRecord([
+    "name": .string("Alice"),
+    "age": .int(30),
+    "active": .bool(true),
+])
+let id = try db.insert(record)
+
+let results = try db.query()
+    .where("active", equals: .bool(true))
+    .execute()
+    .records
+```
+
+### Opening a database
+
+```swift
+// By name (stored in platform default location)
+let db = try BlazeDBClient.open(named: "myapp", password: "secure-password-123")
+
+// At a specific file URL
+let db = try BlazeDBClient.open(at: fileURL, password: "secure-password-123")
+
+// For testing (uses temp directory)
+let db = try BlazeDBClient.openForTesting()
+```
+
+Default storage locations: `~/Library/Application Support/BlazeDB/` (macOS), `~/.local/share/blazedb/` (Linux).
+
+### SwiftUI query wrappers (Apple platforms only)
+
+`@BlazeQuery` and `@BlazeQueryTyped` provide SwiftUI property wrappers that re-run queries when the database posts write notifications. These require Apple platforms (macOS, iOS, watchOS, tvOS).
+
+**`@BlazeQueryTyped` requires `BlazeDocument`, not `BlazeStorable`. Using a `BlazeStorable`-only model will not compile.**
 
 ```swift
 @BlazeQueryTyped(
     db: AppDatabase.shared.db,
-    type: Bug.self,
+    type: Bug.self,               // Bug must conform to BlazeDocument
     where: "status", equals: .string("open"),
     sortBy: "priority", descending: true
 )
 var openBugs: [Bug]
 ```
 
-### Default durability (BlazeDBClient)
+### Transactions
 
-- **Binary WAL:** The default client path uses `PageStore` with `WALMode.legacy` and a page-level binary `WriteAheadLog` before writes hit the main data file. Crash recovery replays that WAL during `PageStore` initialization (see `Docs/Status/DURABILITY_MODE_SUPPORT.md`).
-- **Unified WAL:** An optional `WALMode.unified` path exists for callers that construct `PageStore` explicitly; it is **not** selected by `BlazeDBClient`’s default initializer.
-- **NDJSON transaction logs:** High-level NDJSON transaction logs are **not** part of normal document durability for the client API; obsolete legacy sidecar files may be removed on open.
+```swift
+try db.beginTransaction()
+try users.insert(user1)
+try users.insert(user2)
+try db.commitTransaction()
+// Or: try db.rollbackTransaction()
+```
 
-BlazeDB encrypts data and overflow pages at rest using AES-GCM, and the page-level write-ahead log stores only those encrypted page frames. Metadata is HMAC-signed for tamper detection but remains in plaintext, and rollback to older valid snapshots is not cryptographically prevented. Legacy NDJSON transaction logs are not used by the default `BlazeDBClient` path and, when present from older or advanced tooling (`BlazeDBManager`, legacy page-level `BlazeTransaction`), are plaintext artifacts that should be treated as sensitive cleartext.
+### Utilities
 
-> **Note:** Distributed sync and transport-backed features are deferred for the default OSS runtime. Telemetry APIs are available in-core, but full telemetry behavior is build-configuration dependent (core builds can use stub/no-op telemetry behavior).
->
-> Row-level security (RLS) policy infrastructure exists in source, but full public CRUD/query enforcement is not the default supported behavior in this release.
+```swift
+let stats = try db.stats()          // Record count, database size
+let health = try db.health()        // Health status + warnings
+try db.export(to: exportURL)        // Export to file
+let header = try BlazeDBImporter.verify(exportURL)
+```
 
 ---
 
-## Learn More
+## Durability
+
+The default `BlazeDBClient` uses a binary write-ahead log (`WALMode.legacy`) that fsyncs page frames before writing to the main data file. On crash, the WAL is replayed during the next `PageStore` initialization. See [Durability Mode Support](Docs/Status/DURABILITY_MODE_SUPPORT.md) for details on the unified WAL mode and recovery guarantees.
+
+---
+
+## Platform Support
+
+| Platform | Status | Notes |
+|----------|--------|-------|
+| macOS 15+ | Full support | CI validated (GitHub Actions) |
+| iOS 15+ | Full support | Xcode builds |
+| watchOS 8+ | Builds | Declared in Package.swift; limited CI |
+| tvOS 15+ | Builds | Declared in Package.swift; limited CI |
+| visionOS 1+ | Builds | Declared in Package.swift; limited CI |
+| Linux | Core support | Swift 6.0; CI runs Tier 0 tests; SwiftUI wrappers excluded |
+| Android | Core support | `BLAZEDB_LINUX_CORE` path; Swift 6.3+ / Android NDK; best-effort CI |
+
+SwiftUI query wrappers (`@BlazeQuery`, `@BlazeQueryTyped`) are only available on Apple platforms. On Linux and Android, the `swift-crypto` package is used in place of Apple CryptoKit.
+
+See [Compatibility Matrix](Docs/COMPATIBILITY.md) for details.
+
+---
+
+## CLI Tools
+
+| Tool | Purpose |
+|------|---------|
+| `BlazeDoctor` | Opens a database and runs diagnostic checks (insert/fetch/delete probe, stats, health) |
+| `BlazeDump` | Export (`dump`), restore, and verify database backups |
+| `BlazeInfo` | Print database stats, health, and schema version |
+| `BlazeShell` | Interactive shell |
+
+Run with `swift run <ToolName>`.
+
+---
+
+## Current Limitations
+
+- **Single-process only.** Do not share database files between multiple processes. File-level locking prevents concurrent access, but the database is designed for single-process use.
+- **Nested Codable types are not individually queryable.** Nested structs/classes are stored as serialized JSON strings inside `BlazeDocumentField.string`. Round-tripping works, but nested fields cannot be filtered via KeyPath queries. Flatten nested fields into top-level properties if you need to query them.
+- **Password minimum 8 characters.** Enforced at open time.
+- **`@BlazeQueryTyped` requires `BlazeDocument`.** It will not compile with `BlazeStorable`-only models. You must add `BlazeDocument` conformance with manual `toStorage()`/`init(from:)` implementations.
+- **Android CI is best-effort.** Cross-compilation expects Swift 6.3+ with the Swift Android SDK + Android NDK in a manual lane.
+
+---
+
+## Advanced, Deferred, and Experimental Features
+
+### Available but advanced / opt-in
+
+- **MVCC (multi-version concurrency control)** — opt-in via `db.setMVCCEnabled(true)`. Provides snapshot isolation when enabled. See `BlazeDBClient+MVCC.swift`.
+- **Full telemetry manager** — build-configuration dependent; core builds use stub/no-op telemetry.
+
+### Present in source, not primary stable onboarding surfaces
+
+- **Indexing** — B-tree, inverted (full-text), vector, and spatial index implementations exist in source. These are internal to the storage engine and do not yet have stable public creation APIs, onboarding docs, or runnable examples for end users.
+- **Row-level security (RLS)** — policy infrastructure exists in source, but full CRUD/query enforcement is not enabled by default.
+
+### Deferred / not part of default runtime
+
+- **Distributed sync/transport** — infrastructure exists but is excluded from `BlazeDBCore`. See [Distributed Transport Status](Docs/Status/DISTRIBUTED_TRANSPORT_DEFERRED.md).
+
+---
+
+## Documentation
 
 | Resource | Description |
 |----------|-------------|
-| [Getting Started Guide](Docs/GettingStarted/README.md) | Step-by-step setup in 5 minutes |
-| [Complete Reference](Docs/GettingStarted/HOW_TO_USE_BLAZEDB.md) | Migrations, backups, health checks |
-| [Examples](Examples/) | Working code for common patterns |
+| [Getting Started Guide](Docs/GettingStarted/README.md) | Step-by-step setup |
+| [Complete Reference](Docs/GettingStarted/HOW_TO_USE_BLAZEDB.md) | Full usage guide with queries, backups, and health checks |
+| [API Reference](Docs/API/API_REFERENCE.md) | Public API documentation |
+| [Examples](Examples/) | Working code (HelloBlazeDB, BasicExample, ReferenceConsumer) |
 | [Linux Guide](Docs/GettingStarted/LINUX_GETTING_STARTED.md) | Linux-specific setup |
-| [Design overview (Medium, March 2026, updated)](https://medium.com/@DanylchukStudiosLLC/blazedb-a-swift-native-embedded-application-database-c0c762dee311) | Narrative architecture and durability overview; see this repo’s `Docs/` and `Docs/Benchmarks/` for current guarantees and measurements |
+| [Developer Guide](Docs/DEVELOPER_GUIDE.md) | Contributing and development setup |
+| [Architecture](Docs/Architecture/) | Storage engine and internal design |
+| [Compatibility Matrix](Docs/COMPATIBILITY.md) | Platform and version support details |
+| [Durability Modes](Docs/Status/DURABILITY_MODE_SUPPORT.md) | WAL modes and recovery guarantees |
+| [Design Overview (Medium)](https://medium.com/@DanylchukStudiosLLC/blazedb-a-swift-native-embedded-application-database-c0c762dee311) | Narrative architecture overview (March 2026) |
+
+> **BlazeStudio:** This repository includes `BlazeStudio/`, an optional experimental visual companion app. It is not required to use the core database and is not part of the SwiftPM product.
 
 ---
 
@@ -153,40 +311,5 @@ BlazeDB encrypts data and overflow pages at rest using AES-GCM, and the page-lev
 - [Third-Party Notices](THIRD_PARTY_NOTICES.md)
 
 ---
-
-## Documentation
-
-- [Docs Index](Docs/README.md)
-- [Developer Guide](Docs/DEVELOPER_GUIDE.md)
-- [API Reference](Docs/API/API_REFERENCE.md)
-- [Compatibility Matrix](Docs/COMPATIBILITY.md)
-- [Durability Mode Support Policy](Docs/Status/DURABILITY_MODE_SUPPORT.md)
-- [Key Management and Compatibility Modes](Docs/Status/KEY_MANAGEMENT_AND_COMPATIBILITY.md)
-- [Legacy Layout Migration Guidance](Docs/Status/LEGACY_LAYOUT_MIGRATION_GUIDANCE.md)
-- [Distributed Transport Deferred Status](Docs/Status/DISTRIBUTED_TRANSPORT_DEFERRED.md)
-- [Architecture](Docs/Architecture/)
-- [Performance](Docs/Performance/)
-
-### Maintainer Docs
-
-- [Open-Source Readiness Checklist](Docs/Status/OPEN_SOURCE_READINESS_CHECKLIST.md) (hosted CI expectations and local validation)
-- [CI and Test Tiers](Docs/Testing/CI_AND_TEST_TIERS.md)
-- [Release Rollback Procedure](Docs/Status/RELEASE_ROLLBACK.md)
-- [Cross-Version Compatibility Harness](Docs/Status/COMPATIBILITY_HARNESS.md)
-- [OSS Core Build Excludes](Docs/Contributing/OSS_CORE_BUILD_EXCLUDES.md)
-- [External Security Review Plan](Docs/Status/EXTERNAL_SECURITY_REVIEW_PLAN.md)
-
-> **Note:** This repository also includes `BlazeStudio/`, an optional, experimental visual companion app built on
-> BlazeDB. It is **not required** to use the core embedded database engine and is less battle-tested than the core
-> library.
-
-**Requirements:** Swift 6.0+, macOS 15+ / iOS 15+ / Linux / Android
-
-Android currently follows the Linux-style core path (`BLAZEDB_LINUX_CORE`): core storage/query functionality builds, while some advanced platform-dependent surfaces are excluded. CI coverage for Android is currently best-effort/manual. See [Compatibility](Docs/COMPATIBILITY.md).
-Linux CI uses a Swift 6.0 baseline lane for core validation; Android cross-compilation expects Swift 6.3+ with the Swift Android SDK + Android NDK in a separate/manual lane.
-
-### Security and Benchmark Mode Note
-
-BlazeDB is encryption-on by default. The benchmark-only flag `BLAZEDB_BENCHMARK_NO_ENCRYPTION` is for performance isolation and must not be used with production data.
 
 **License:** MIT
