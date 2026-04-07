@@ -1,5 +1,8 @@
 // swift-tools-version:6.0
 import PackageDescription
+import Foundation
+
+let tier0OnlyTestScope = ProcessInfo.processInfo.environment["BLAZEDB_TEST_SCOPE"]?.lowercased() == "tier0"
 
 let package = Package(
     name: "BlazeDB",
@@ -182,6 +185,7 @@ let package = Package(
             ]
         ),
 
+    ] + (tier0OnlyTestScope ? [] : [
         // Tier 1 fast: default PR/local correctness gate (no measure(), no timing-dependent waits).
         // This lane is intentionally reduced to keep PR iteration speed acceptable.
         .testTarget(
@@ -242,7 +246,8 @@ let package = Package(
                 .define("BLAZEDB_CORE_ONLY"),
                 .define("BLAZEDB_LINUX_CORE", .when(platforms: [.linux, .android]))
             ]
-        ),
+        )
+    ]) + [
         // Tier 2 / Tier 3 heavy+destructive / DistributedSecurity SPM harness live under
         // BlazeDBExtraTests/ (separate package) so root `swift test` does not compile them.
         .testTarget(

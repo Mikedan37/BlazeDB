@@ -61,7 +61,7 @@ jobs:
           swift build --target BlazeInfo
 
       - name: Test Tier 0
-        run: swift test --filter BlazeDB_Tier0
+        run: BLAZEDB_TEST_SCOPE=tier0 swift test --filter BlazeDB_Tier0
 
       - name: Test Tier 1 (fast)
         run: swift test --skip-build --filter BlazeDB_Tier1Fast
@@ -103,4 +103,4 @@ jobs:
           swift build --target BlazeInfo
 
       - name: Test Tier 0
-        run: swift test --filter BlazeDB_Tier0
+        run: BLAZEDB_TEST_SCOPE=tier0 swift test --filter BlazeDB_Tier0
