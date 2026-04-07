@@ -23,12 +23,12 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
       - name: Cache SwiftPM build
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: .build
           key: nightly-${{ runner.os }}-spm-${{ hashFiles('Package.swift', 'Package.resolved', 'BlazeDBExtraTests/Package.swift') }}
@@ -77,7 +77,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
@@ -102,12 +102,12 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
       - name: Cache SwiftPM build
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: .build
           key: nightly-${{ runner.os }}-spm-${{ hashFiles('Package.swift', 'Package.resolved') }}
