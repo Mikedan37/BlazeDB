@@ -94,7 +94,12 @@ extension QueryBuilder {
         let riskLevel: QueryExplanation.RiskLevel
         let suggestion: String
         
-        if filterFields.isEmpty {
+        if filterFields.isEmpty && !filters.isEmpty {
+            // Some builds cannot introspect filter fields (for example reduced Linux-core paths).
+            // Preserve explainability semantics by reporting unknown risk instead of "OK".
+            riskLevel = .unknown
+            suggestion = "Filter fields could not be inferred in this build. Use explain() for a detailed plan."
+        } else if filterFields.isEmpty {
             riskLevel = .ok
             suggestion = "Query has no filters - will scan all records."
         } else if indexedFields.isEmpty {
