@@ -6,6 +6,26 @@ If this file conflicts with other docs, treat this file and `.github/workflows/*
 
 For branch discipline and PR hygiene, see `Docs/Guides/WORKFLOW_AND_STYLE_GUIDE.md`.
 
+## CI Lane Snapshot
+
+Use this table for day-to-day expectations.
+
+| Lane | Goal | Trigger | Blocking | Current workflow(s) |
+| ---- | ---- | ------- | -------- | ------------------- |
+| PR fast gate | Catch obvious breakage quickly | `pull_request`, `push` | Yes | `ci.yml` |
+| Tier1 depth | Broader Tier1 confidence | Weekly + manual | No | `tier1-depth.yml` |
+| Release validation | Validate tagged releases | `v*` tag + manual | Release-only | `release.yml` |
+| Tag probe | Check older tags still build | Manual | No | `tag-probe.yml` |
+
+### Rollout status
+
+- Completed:
+  - PR gate caching and verify-step trim in `ci.yml`
+  - Tier1 PR gate reduction (`BlazeDB_Tier1Fast`) + broader deterministic lane (`BlazeDB_Tier1FastFull`)
+- In rollout:
+  - nightly confidence lane (`nightly.yml`)
+  - deep soak lane (`deep-validation.yml`)
+
 ## Workflow Inventory
 
 - `.github/workflows/ci.yml`
@@ -98,7 +118,7 @@ Use precise language so status and dashboards do not blur the PR gate with deepe
 | -------- | ------- |
 | **Tier1 PR gate** / **T1 fast** | `BlazeDB_Tier1Fast` only—the default blocking Tier1 lane on PRs. |
 | **Tier1 depth** | `BlazeDB_Tier1Extended` + `BlazeDB_Tier1Perf` (weekly/manual `tier1-depth.yml`, or `./Scripts/run-tier1-depth.sh`). Does *not* by itself imply `BlazeDB_Tier1Fast` ran. |
-| **Nightly confidence lane** | `nightly.yml`: Tier1 depth + `BlazeDB_Tier1FastFull` + Tier2 script + verify scripts + Tier0 TSan + Linux Tier0/Tier1Fast. |
+| **Nightly confidence lane** | `nightly.yml`: daily/manual medium-confidence lane (Tier1 depth + broader deterministic Tier1 + selected integration checks + verify scripts + sanitizer checks). |
 | **Deep validation lane** | `deep-validation.yml`: full Tier1 + Tier2 + Tier3 heavy/destructive + Tier0/Tier1Fast TSan + Linux extended lane. |
 | **Full Tier1** / **Tier1 all lanes** | `BlazeDB_Tier1Fast` + `BlazeDB_Tier1FastFull` + `BlazeDB_Tier1Extended` + `BlazeDB_Tier1Perf` (broader deterministic coverage via `BlazeDBExtraTests`). |
 

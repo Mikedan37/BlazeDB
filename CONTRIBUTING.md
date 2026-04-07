@@ -6,7 +6,7 @@ This guide explains how to add tests, what will be accepted, and what will be re
 
 ## CI gate (GitHub Actions)
 
-The default branch workflow (`.github/workflows/ci.yml`) runs on every push/PR **when hosted CI is available**: a single **macOS 15** job (core + CLI + Tier0 + Tier1 fast + `verify-clean-checkout.sh` + README quickstart), plus **Linux** best-effort (`continue-on-error`). Legacy **`v*` tag buildability** is **not** part of that automatic gate; it runs only from the **manual** workflow [`.github/workflows/tag-probe.yml`](.github/workflows/tag-probe.yml) (see [CI and test tiers](Docs/Testing/CI_AND_TEST_TIERS.md)). Checkouts use **full git history** (`fetch-depth: 0`). OSS scripts run on macOS so CI matches the primary platform. **Forks and billing limits** can prevent workflows from running; in that case use the same commands locally (see [Hosted CI status](Docs/Status/OPEN_SOURCE_READINESS_CHECKLIST.md#hosted-ci-status)). The gate is **not** every test target or every file under `BlazeDBTests/` (some files are excluded per tier in `Package.swift`). Authoritative detail: [CI and test tiers](Docs/Testing/CI_AND_TEST_TIERS.md).
+The default branch workflow (`.github/workflows/ci.yml`) runs on every push/PR **when hosted CI is available**: a **macOS 15** blocking job (core + CLI + Tier0 + reduced `BlazeDB_Tier1Fast`) and a **Linux 6.2** blocking job (core + Tier0). `verify-clean-checkout.sh` and `verify-readme-quickstart.sh` are intentionally **not** in the blocking PR gate. Legacy **`v*` tag buildability** is **not** part of that automatic gate; it runs only from the manual workflow [`.github/workflows/tag-probe.yml`](.github/workflows/tag-probe.yml). Checkouts use full git history (`fetch-depth: 0`). **Forks and billing limits** can prevent workflows from running; in that case use the same commands locally (see [Hosted CI status](Docs/Status/OPEN_SOURCE_READINESS_CHECKLIST.md#hosted-ci-status)). The gate is **not** every test target or every file under `BlazeDBTests/` (some files are excluded per tier in `Package.swift`). Authoritative detail: [CI and test tiers](Docs/Testing/CI_AND_TEST_TIERS.md).
 
 ---
 
@@ -38,6 +38,8 @@ swift test --filter BlazeDB_Tier0
 ### Tier 1: Core contracts (split targets)
 
 **Default PR gate — `BlazeDB_Tier1Fast`:** `BlazeDBTests/Tier1Core/` — deterministic correctness; no `measure()`, no timing-dependent sleeps, no benchmark-shaped workloads.
+
+**Broader deterministic lane — `BlazeDB_Tier1FastFull`:** same source tree, declared in `BlazeDBExtraTests/Package.swift` for deeper/manual confidence lanes.
 
 **Depth — `BlazeDB_Tier1Extended`:** `BlazeDBTests/Tier1Extended/` — integration, sync, sleep-dependent or large-N stress.
 
