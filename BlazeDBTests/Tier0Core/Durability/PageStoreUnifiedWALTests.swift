@@ -60,6 +60,32 @@ final class PageStoreUnifiedWALTests: XCTestCase {
         store.close()
     }
 
+    func testCompressedWriteParticipatesInUnifiedWAL_Bug34Regression() throws {
+        #if canImport(Compression)
+        let dbURL = tempDir.appendingPathComponent("compressed-bypass.db")
+        let walURL = dbURL.deletingPathExtension().appendingPathExtension("wal")
+        let store = try PageStore(fileURL: dbURL, key: testKey, walMode: .unified)
+        store.enableCompression()
+
+        // Highly compressible payload > 1KB to force compressed write path.
+        let plaintext = Data(repeating: 0x41, count: 3000)
+        try store.writePageCompressed(index: 7, plaintext: plaintext)
+
+        let entries = try DurabilityManager.scanEntries(from: walURL)
+        XCTAssertEqual(entries.count, 3, "Compressed writes should append begin/write/commit entries")
+        XCTAssertEqual(entries[0].operation, .begin)
+        XCTAssertEqual(entries[1].operation, .write)
+        XCTAssertEqual(entries[1].pageIndex, 7)
+        XCTAssertEqual(entries[2].operation, .commit)
+
+        let readBack = try store.readPageCompressed(index: 7)
+        XCTAssertEqual(readBack, plaintext)
+        store.close()
+        #else
+        throw XCTSkip("Compression module unavailable on this platform.")
+        #endif
+    }
+
     // MARK: - Recovery after crash
 
     func testUnifiedModeRecoveryAfterCrash() throws {

@@ -686,33 +686,9 @@ public final class PageStore: @unchecked Sendable {
 
     // Performs a write assuming the caller already holds the barrier on `queue`
     internal func _writePageLocked(index: Int, plaintext: Data) throws {
-        // Ensure previously staged unified unsynchronized writes are durably committed
-        // and applied before issuing an immediate synchronized write.
-        try _commitPendingUnifiedAutoTransactionIfNeededLocked()
-        try _flushPendingUnifiedBufferedWritesLocked()
-
-        pageCache.remove(index)
         BlazeLogger.trace("Writing encrypted page at index \(index) with size \(plaintext.count)")
         let buffer = try _encryptPageBuffer(plaintext: plaintext)
-
-        if let wal = wal {
-            // Legacy mode: append WAL entry first, then apply to main file.
-            try wal.append(pageIndex: index, data: buffer)
-        } else if let dm = durabilityManager {
-            // Unified mode: durable WAL commit before writing main file.
-            let txID = UUID()
-            try dm.appendBegin(transactionID: txID)
-            guard index >= 0, index <= Int(UInt32.max) else {
-                throw NSError(domain: "PageStore", code: -1, userInfo: [
-                    NSLocalizedDescriptionKey: "Page index \(index) out of UInt32 range for WAL entry"
-                ])
-            }
-            try dm.appendWrite(transactionID: txID, pageIndex: UInt32(index), data: buffer)
-            try dm.appendCommit(transactionID: txID)
-        }
-
-        try _writeEncryptedBuffer(index: index, buffer: buffer)
-        try fileHandle.compatSynchronize()
+        try _writeEncryptedBufferDurablyLocked(index: index, buffer: buffer)
         BlazeLogger.trace("✅ Page \(index) encrypted and flushed to disk")
     }
 
@@ -772,6 +748,34 @@ public final class PageStore: @unchecked Sendable {
         pageCache.remove(index)
         let offset = off_t(index * pageSize)
         try atomicWrite(offset: offset, data: buffer)
+    }
+
+    /// Append durable WAL entries, write encrypted buffer to main file, then fsync.
+    /// Must be called under barrier on `queue`.
+    internal func _writeEncryptedBufferDurablyLocked(index: Int, buffer: Data) throws {
+        // Ensure previously staged unified unsynchronized writes are durably committed
+        // and applied before issuing an immediate synchronized write.
+        try _commitPendingUnifiedAutoTransactionIfNeededLocked()
+        try _flushPendingUnifiedBufferedWritesLocked()
+
+        if let wal = wal {
+            // Legacy mode: append WAL entry first, then apply to main file.
+            try wal.append(pageIndex: index, data: buffer)
+        } else if let dm = durabilityManager {
+            // Unified mode: durable WAL commit before writing main file.
+            let txID = UUID()
+            try dm.appendBegin(transactionID: txID)
+            guard index >= 0, index <= Int(UInt32.max) else {
+                throw NSError(domain: "PageStore", code: -1, userInfo: [
+                    NSLocalizedDescriptionKey: "Page index \(index) out of UInt32 range for WAL entry"
+                ])
+            }
+            try dm.appendWrite(transactionID: txID, pageIndex: UInt32(index), data: buffer)
+            try dm.appendCommit(transactionID: txID)
+        }
+
+        try _writeEncryptedBuffer(index: index, buffer: buffer)
+        try fileHandle.compatSynchronize()
     }
 
     private func _commitPendingUnifiedAutoTransactionIfNeededLocked() throws {
