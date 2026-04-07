@@ -94,6 +94,11 @@ internal final class WriteAheadLog: @unchecked Sendable {
                 NSLocalizedDescriptionKey: "WAL file not open"
             ])
         }
+        guard pageIndex >= 0, pageIndex <= Int(UInt32.max) else {
+            throw NSError(domain: "WriteAheadLog", code: -1, userInfo: [
+                NSLocalizedDescriptionKey: "Page index \(pageIndex) out of UInt32 range"
+            ])
+        }
 
         // Build header
         var header = Data(capacity: walEntryHeaderSize)
