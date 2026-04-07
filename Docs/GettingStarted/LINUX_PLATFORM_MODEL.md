@@ -23,6 +23,7 @@ This document explains the feature matrix, design rationale, and explicit limita
 | **Query Builder** | | | Type-safe query construction |
 | **MVCC (Multi-Version Concurrency)** | | | Snapshot isolation, version management |
 | **Encryption (AES-256-GCM)** | | | Per-page encryption, PBKDF2/Argon2 KDF |
+| **Compression APIs** | | | Apple-only (`Compression` framework). Check `BlazeDBClient.isCompressionAvailable` before enabling compression in shared code |
 | **Backup & Restore** | | | Full database backup with metadata |
 | **Async Queries** | | | `async/await` APIs gated on Apple |
 | **SwiftUI Bindings** | | | `@BlazeQuery`, `@BlazeQueryTyped` property wrappers |
@@ -56,6 +57,7 @@ This document explains the feature matrix, design rationale, and explicit limita
 - **Certificate Pinning**: No Network.framework TLS validation (transport security is external)
 - **Biometric Authentication**: No LocalAuthentication integration (password-only key derivation)
 - **App Attest**: No Apple-specific attestation mechanisms
+- **Compression.framework**: No Apple Compression framework integration (compression APIs are compiled out)
 
 ### Transport Security on Linux
 

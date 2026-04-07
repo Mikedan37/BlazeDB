@@ -10,6 +10,12 @@
 
 Compression in BlazeDB is a **pure performance optimization** that reduces storage and network bandwidth. It is **completely optional** and **transparent** to the application. Compression failures never corrupt data or prevent database operations.
 
+## Platform Availability
+
+- Compression currently depends on Apple's `Compression` framework.
+- Compression APIs are available on Apple platforms and compiled out on Linux.
+- Use `BlazeDBClient.isCompressionAvailable` to feature-detect support in cross-platform code before calling compression APIs.
+
 ---
 
 ## Design Principles
@@ -199,6 +205,11 @@ store.disableCompression()
 ### Field-Level Compression
 
 ```swift
+guard BlazeDBClient.isCompressionAvailable else {
+    // Linux/core-only build: skip compression setup
+    return
+}
+
 // Enable compression with custom config
 var config = CompressionConfig()
 config.algorithm =.lz4
@@ -224,7 +235,7 @@ db.disableCompression()
 ## Migration and Compatibility
 
 ### Reading Compressed Data
-- Databases with compressed pages can be read without enabling compression
+- Databases with compressed pages can be read without enabling compression (on builds where compression support exists)
 - Decompression happens automatically during read
 - Old uncompressed pages continue to work
 
@@ -232,6 +243,7 @@ db.disableCompression()
 - Compression is opt-in per database instance
 - Enabling compression does not retroactively compress existing pages
 - New pages are compressed if compression is enabled
+- Compressed pages are not portable to builds where compression support is unavailable (for example, Linux core-only deployments)
 
 ### Backup/Restore
 - Backups preserve compression state
