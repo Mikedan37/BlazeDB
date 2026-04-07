@@ -109,27 +109,7 @@ extension PageStore {
                 return try _writePageLocked(index: index, plaintext: plaintext)
             }
 
-            // Match normal synchronized write ordering exactly:
-            // durable WAL append first, then main-file write, then fsync.
-            try _commitPendingUnifiedAutoTransactionIfNeededLocked()
-            try _flushPendingUnifiedBufferedWritesLocked()
-
-            if let wal = wal {
-                try wal.append(pageIndex: index, data: buffer)
-            } else if let dm = durabilityManager {
-                let txID = UUID()
-                try dm.appendBegin(transactionID: txID)
-                guard index >= 0, index <= Int(UInt32.max) else {
-                    throw NSError(domain: "PageStore", code: -1, userInfo: [
-                        NSLocalizedDescriptionKey: "Page index \(index) out of UInt32 range for WAL entry"
-                    ])
-                }
-                try dm.appendWrite(transactionID: txID, pageIndex: UInt32(index), data: buffer)
-                try dm.appendCommit(transactionID: txID)
-            }
-
-            try _writeEncryptedBuffer(index: index, buffer: buffer)
-            try fileHandle.compatSynchronize()
+            try _writeEncryptedBufferDurablyLocked(index: index, buffer: buffer)
         }
     }
     
