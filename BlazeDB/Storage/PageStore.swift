@@ -129,8 +129,10 @@ public final class PageStore: @unchecked Sendable {
     internal var overflowReadDegradedMode: Bool = false
     private var isLocked: Bool = false  // Track lock state for cleanup
     private var closed: Bool = false
-    private let compressionStateLock = NSLock()
-    private var compressionEnabled = false
+    // Compression is configured per PageStore instance.
+    // Internal visibility is required for the same-module compression extension.
+    internal let compressionStateLock = NSLock()
+    internal var compressionEnabled = false
 
     internal enum IOError: Error, LocalizedError {
         case posix(
