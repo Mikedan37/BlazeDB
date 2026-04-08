@@ -39,10 +39,10 @@ public protocol BlazeDocument: Codable, Identifiable where ID == UUID {
     
     /// Encoded storage view, normally produced by ``toStorage()``.
     ///
-    /// The default implementation delegates to ``toStorage()`` and terminates the process if
-    /// encoding fails, so callers are not given an empty record on error. Prefer ``toStorage()``,
-    /// ``resolveStorage()``, or typed database client APIs when persisting or when you need
-    /// explicit error handling.
+    /// The default implementation delegates to ``toStorage()``. If encoding fails, BlazeDB logs
+    /// at warning/error level and returns an empty ``BlazeDataRecord`` — do not persist that value.
+    /// For persistence or correct error handling, use ``toStorage()`` or ``resolveStorage()``,
+    /// or typed database client APIs.
     var storage: BlazeDataRecord { get set }
     
     /// Convert this document to a BlazeDataRecord for storage
@@ -54,21 +54,23 @@ public protocol BlazeDocument: Codable, Identifiable where ID == UUID {
 
 // Default implementations
 extension BlazeDocument {
-    /// Default implementation forwards to ``toStorage()`` and does not swallow conversion errors.
+    /// Default implementation forwards to ``toStorage()``. On failure, logs prominently and returns
+    /// ``BlazeDataRecord`` `[:]` so the process keeps running; callers must not treat that as valid data.
     public var storage: BlazeDataRecord {
         get {
             do {
                 return try toStorage()
             } catch {
-                BlazeLogger.error("Failed to convert document to storage: \(error)")
-                #if DEBUG
-                assertionFailure(
-                    "BlazeDocument.storage: toStorage() failed (\(error)). Use try toStorage(), resolveStorage(), or typed insert/update APIs instead of relying on an empty fallback record."
+                BlazeLogger.warn(
+                    "BlazeDocument.storage: toStorage() failed for \(Self.self). Returning empty BlazeDataRecord([:]). Do not persist this value — use try toStorage(), resolveStorage(), or typed insert/update APIs.",
+                    includeStack: true
                 )
-                #endif
-                fatalError(
-                    "BlazeDocument.storage: toStorage() failed: \(error). Use try toStorage() or typed BlazeDBClient APIs."
+                BlazeLogger.error(
+                    "BlazeDocument.storage: conversion failed",
+                    error: error,
+                    includeStack: true
                 )
+                return BlazeDataRecord([:])
             }
         }
         set {
@@ -77,7 +79,7 @@ extension BlazeDocument {
         }
     }
 
-    /// Throwing equivalent of reading ``storage``; use this instead of the property when you need to handle encoding failures.
+    /// Same as ``toStorage()``; use when you want an explicit throwing API instead of the ``storage`` property.
     public func resolveStorage() throws -> BlazeDataRecord {
         try toStorage()
     }

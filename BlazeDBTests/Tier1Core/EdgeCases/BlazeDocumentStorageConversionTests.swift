@@ -2,8 +2,8 @@
 //  BlazeDocumentStorageConversionTests.swift
 //  BlazeDBTests
 //
-//  Regression tests for GitHub #37: default BlazeDocument.storage must not return an empty
-//  BlazeDataRecord when toStorage() fails.
+//  Regression tests for GitHub #37: BlazeDocument.storage must not hide conversion failures
+//  without warning (typed APIs use toStorage() directly; the property logs and falls back).
 //
 
 import XCTest
@@ -15,7 +15,7 @@ import XCTest
 
 final class BlazeDocumentStorageConversionTests: XCTestCase {
 
-    /// Document whose toStorage() always fails — used to assert throwing paths (not .storage, which traps).
+    /// Document whose toStorage() always fails — used for throwing APIs and .storage fallback behavior.
     private struct FailingToStorageDoc: BlazeDocument {
         var id: UUID
 
@@ -59,12 +59,31 @@ final class BlazeDocumentStorageConversionTests: XCTestCase {
         XCTAssertEqual(viaToStorage, viaResolve)
     }
 
-    /// GitHub #37: when encoding succeeds, the default ``storage`` getter must match ``toStorage()`` (no silent empty record).
     func testDefaultStorageGetterMatchesToStorageWhenConversionSucceeds() throws {
         let bug = TestBug(title: "Storage parity", priority: 2, status: "closed", assignee: "a")
         let fromGetter = bug.storage
         let fromMethod = try bug.toStorage()
         XCTAssertEqual(fromGetter, fromMethod)
         XCTAssertFalse(fromGetter.storage.isEmpty)
+    }
+
+    /// When toStorage() fails, the default ``storage`` getter returns an empty record but must log so the failure is visible if logging is enabled.
+    func testStorageGetterReturnsEmptyAndLogsWhenConversionFails() {
+        var captured: [(String, BlazeLogLevel)] = []
+        BlazeLogger.reset()
+        BlazeLogger.level = .warn
+        BlazeLogger.handler = { message, level in
+            captured.append((message, level))
+        }
+        defer {
+            BlazeLogger.reset()
+        }
+
+        let doc = FailingToStorageDoc()
+        XCTAssertTrue(doc.storage.storage.isEmpty)
+
+        XCTAssertFalse(captured.isEmpty, "Expected warn/error logs when .storage is used after toStorage() failure")
+        let levels = Set(captured.map(\.1))
+        XCTAssertTrue(levels.contains(.warn) || levels.contains(.error))
     }
 }
