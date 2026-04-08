@@ -41,5 +41,6 @@ jobs:
       - name: Test Tier 1 extended
         run: swift test --filter BlazeDB_Tier1Extended
 
+      # Rebuild Tier1Perf (see nightly.yml — avoid --skip-build after Tier1Extended-only build).
       - name: Test Tier 1 perf
-        run: swift test --skip-build --filter BlazeDB_Tier1Perf
+        run: swift test --filter BlazeDB_Tier1Perf
