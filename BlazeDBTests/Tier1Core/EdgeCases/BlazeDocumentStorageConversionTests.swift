@@ -2,8 +2,8 @@
 //  BlazeDocumentStorageConversionTests.swift
 //  BlazeDBTests
 //
-//  Regression tests for GitHub #37: BlazeDocument.storage must not hide conversion failures
-//  without warning (typed APIs use toStorage() directly; the property logs and falls back).
+//  Regression tests for GitHub #37: BlazeDocument.storage logs on conversion failure and falls
+//  back to an empty record; throwing APIs remain the correct persistence path.
 //
 
 import XCTest
@@ -15,7 +15,6 @@ import XCTest
 
 final class BlazeDocumentStorageConversionTests: XCTestCase {
 
-    /// Document whose toStorage() always fails — used for throwing APIs and .storage fallback behavior.
     private struct FailingToStorageDoc: BlazeDocument {
         var id: UUID
 
@@ -59,6 +58,7 @@ final class BlazeDocumentStorageConversionTests: XCTestCase {
         XCTAssertEqual(viaToStorage, viaResolve)
     }
 
+    /// Exercises the deprecated default `storage` getter; should match `toStorage()` when encoding succeeds.
     func testDefaultStorageGetterMatchesToStorageWhenConversionSucceeds() throws {
         let bug = TestBug(title: "Storage parity", priority: 2, status: "closed", assignee: "a")
         let fromGetter = bug.storage
@@ -67,11 +67,11 @@ final class BlazeDocumentStorageConversionTests: XCTestCase {
         XCTAssertFalse(fromGetter.storage.isEmpty)
     }
 
-    /// When toStorage() fails, the default ``storage`` getter returns an empty record but must log so the failure is visible if logging is enabled.
-    func testStorageGetterReturnsEmptyAndLogsWhenConversionFails() {
+    /// Fallback is still `[:]` for compatibility, but an error must be logged when the global level allows it.
+    func testStorageReturnsEmptyOnConversionFailureAndLogsError() {
         var captured: [(String, BlazeLogLevel)] = []
         BlazeLogger.reset()
-        BlazeLogger.level = .warn
+        BlazeLogger.level = .error
         BlazeLogger.handler = { message, level in
             captured.append((message, level))
         }
@@ -82,8 +82,10 @@ final class BlazeDocumentStorageConversionTests: XCTestCase {
         let doc = FailingToStorageDoc()
         XCTAssertTrue(doc.storage.storage.isEmpty)
 
-        XCTAssertFalse(captured.isEmpty, "Expected warn/error logs when .storage is used after toStorage() failure")
-        let levels = Set(captured.map(\.1))
-        XCTAssertTrue(levels.contains(.warn) || levels.contains(.error))
+        XCTAssertTrue(captured.contains { $0.1 == .error }, "Expected an error-level log when .storage fallback is used")
+        XCTAssertTrue(
+            captured.contains { $0.0.contains("BlazeDocument.storage fallback") },
+            "Expected fallback log message; captured: \(captured.map(\.0))"
+        )
     }
 }
