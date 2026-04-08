@@ -7,20 +7,40 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ## [Unreleased]
 
+---
+
+## [2.7.4] - 2026-04-08
+
+### Added
+
+- **Android core-path support:** Swift Android imports and `BLAZEDB_LINUX_CORE` wiring so the package builds on Android targets ([#21](https://github.com/Mikedan37/BlazeDB/pull/21)).
+- README and **COMPATIBILITY** updates documenting Android core-path expectations ([#25](https://github.com/Mikedan37/BlazeDB/pull/25)).
+- **Nightly confidence** and **deep validation** CI workflows; Tier2 failures enforced in nightly; Tier0 graph isolation for filtered test runs; Actions migrated to Node 24 runtimes.
+- **README** rewrite and canonical **SYSTEM_MAP** for maintainers.
+
 ### Fixed
 
-- **Linux CI: all test targets failed to compile due to Darwin-only `arc4random_buf` call.**
-  `EncryptionRoundTripVerificationTests.swift` used `arc4random_buf`, a BSD/Darwin C
-  function not available on Linux. Because SwiftPM builds *all* test targets during
-  `swift test` (even when filtering to a single target — see
-  [swiftlang/swift-package-manager#9272](https://github.com/swiftlang/swift-package-manager/issues/9272)),
-  the `BlazeDB_Tier1Fast` compile failure prevented every Linux test run, including
-  Tier 0. Replaced with `UInt8.random(in:)` which is cross-platform Swift stdlib.
-  Affected Linux CI on Swift 6.0, 6.2, and 6.3.
+- **Linux CI:** baseline lane re-enabled; portability for alignment, Darwin-only APIs, and tests across Tier0/Tier1 ([#28](https://github.com/Mikedan37/BlazeDB/pull/28), [#29](https://github.com/Mikedan37/BlazeDB/pull/29)).
+- **Linux tests:** `arc4random_buf` replaced with `UInt8.random(in:)` in encryption round-trip tests so all SwiftPM test targets compile on Linux (SwiftPM still builds every test target when filtering — [swiftlang/swift-package-manager#9272](https://github.com/swiftlang/swift-package-manager/issues/9272)).
+- **Compression:** explicit v0x03 page reads, WAL-backed compressed writes, per-instance PageStore compression state, availability surfaced in API/docs ([#44](https://github.com/Mikedan37/BlazeDB/pull/44), [#50](https://github.com/Mikedan37/BlazeDB/pull/50), [#52](https://github.com/Mikedan37/BlazeDB/pull/52), [#70](https://github.com/Mikedan37/BlazeDB/pull/70)).
+- **Durability / storage:** legacy overflow heuristic gated behind compatibility mode; WAL page index UInt32 conversion guarded; page index allocation stat failures propagated ([#65](https://github.com/Mikedan37/BlazeDB/pull/65)–[#67](https://github.com/Mikedan37/BlazeDB/pull/67)).
+- **Query:** planner strategy output aligned with execution; **GROUP BY** validation no longer rejects keys missing from every sampled document (SQL-style single “missing” bucket) ([#68](https://github.com/Mikedan37/BlazeDB/pull/68), [#86](https://github.com/Mikedan37/BlazeDB/pull/86)).
+- **Security:** constant-time signature compare overflow trap ([#41](https://github.com/Mikedan37/BlazeDB/pull/41)).
+- **Tests:** Swift 6 Sendable in observation flow; pagination portable off Darwin; Tier1Fast Linux signals, explain/corruption assertions, migration reopen threshold, CompleteGC nightly scale ([#23](https://github.com/Mikedan37/BlazeDB/pull/23), [#60](https://github.com/Mikedan37/BlazeDB/pull/60)–[#62](https://github.com/Mikedan37/BlazeDB/pull/62), [#69](https://github.com/Mikedan37/BlazeDB/pull/69), [#85](https://github.com/Mikedan37/BlazeDB/pull/85)); Tier1Fast exclusion list reduced ([#72](https://github.com/Mikedan37/BlazeDB/pull/72)).
+- **Tooling:** Swift warning cleanup (nightly noise, vacuum) ([#83](https://github.com/Mikedan37/BlazeDB/pull/83)).
+
+### Changed
+
+- **CI:** PR lane build caching and trim; reduced Tier1 scope on PR with full deterministic lane; CI lane documentation ([#40](https://github.com/Mikedan37/BlazeDB/pull/40), [#42](https://github.com/Mikedan37/BlazeDB/pull/42), [#48](https://github.com/Mikedan37/BlazeDB/pull/48)).
+- RLS documentation aligned with current enforcement; OSS check stabilization.
+
+**Full changelog:** https://github.com/Mikedan37/BlazeDB/compare/v2.7.3...v2.7.4
 
 ---
 
 ## [2.7.3] - 2026-04-03
+
+Tag `v2.7.3` is a narrow snapshot (TypedStore + OSS docs below). **Android, Linux CI parity, compression/WAL work, and later fixes ship in [2.7.4](#274---2026-04-08); prefer `from: "2.7.4"` in SwiftPM.**
 
 ### Added
 

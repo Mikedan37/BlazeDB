@@ -293,4 +293,4 @@ Bug fixes, internal refactors, and doc-only changes that do not change what is s
 
 ---
 
-_Last verified against `main` at tag v2.7.3 (commit `63e9844`). Deep surface census + truth extraction applied._
+_Last verified against tag **v2.7.4** on `main`. Deep surface census + truth extraction applied._
