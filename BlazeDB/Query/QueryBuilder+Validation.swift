@@ -75,7 +75,10 @@ extension QueryBuilder {
         }
     }
     
-    /// Validates groupBy field names
+    /// Best-effort GROUP BY field hints (does not throw if a key is absent).
+    ///
+    /// GROUP BY on a field missing from every document is valid: the executor buckets those rows
+    /// as missing (one group), matching SQL-style semantics — see `AggregationTests.testGroupByOnMissingField`.
     private func validateGroupByFields(collection: DynamicCollection) throws {
         guard !groupByFields.isEmpty else { return }
         
@@ -84,22 +87,15 @@ extension QueryBuilder {
         if let samples = sampleRecords, !samples.isEmpty {
             let availableFields = Set(samples.flatMap { $0.storage.keys })
             
-            for field in groupByFields {
-                if !availableFields.contains(field) {
-                    let suggestions = findSimilarFields(target: field, available: Array(availableFields))
-                    
-                    var suggestionMsg = "Check field name spelling."
-                    if !suggestions.isEmpty {
-                        suggestionMsg += " Did you mean: \(suggestions.prefix(3).joined(separator: ", "))?"
-                    } else if !availableFields.isEmpty {
-                        suggestionMsg += " Available fields: \(Array(availableFields).sorted().prefix(5).joined(separator: ", "))"
-                    }
-                    
-                    throw BlazeDBError.invalidQuery(
-                        reason: "GROUP BY field '\(field)' not found in any records",
-                        suggestion: suggestionMsg
-                    )
+            for field in groupByFields where !availableFields.contains(field) {
+                let suggestions = findSimilarFields(target: field, available: Array(availableFields))
+                var hint = "GROUP BY '\(field)' is absent from sampled records; all rows will bucket as missing."
+                if !suggestions.isEmpty {
+                    hint += " Did you mean: \(suggestions.prefix(3).joined(separator: ", "))?"
+                } else if !availableFields.isEmpty {
+                    hint += " Sample fields: \(Array(availableFields).sorted().prefix(8).joined(separator: ", "))"
                 }
+                BlazeLogger.debug(hint)
             }
         }
     }
