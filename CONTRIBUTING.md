@@ -258,8 +258,39 @@ If this fails locally, fix it before pushing.
 
 ---
 
+## Change Discipline
+
+### Source of truth
+
+`Docs/SYSTEM_MAP.md` is the canonical engineering map for what exists, what state it is in, and where it lives. Read it before making major changes.
+
+### When to update the system map
+
+Any PR that materially changes feature surface, support status, platform support, or module boundaries must update `Docs/SYSTEM_MAP.md` in the same PR. See that file for what counts as "material."
+
+### Branch and scope rules
+
+- One branch per coherent unit of work. Do not mix unrelated changes.
+- Docs and code must land together — do not ship a feature in one PR and document it in another.
+- Test lane or target boundary changes must be documented in `Docs/Testing/CI_AND_TEST_TIERS.md`.
+- Prefer narrow, surgical edits. Do not rewrite unrelated doc sections.
+
+### Feature surface rules
+
+- Do not advertise internal or deferred features as shipped in `README.md` or other public-facing docs.
+- If a feature is in source but not in stable public onboarding, mark it accordingly in the system map.
+- Tests are evidence of implementation, not automatic evidence of public product maturity.
+
+### Reconciliation
+
+- Rebase and reconcile `SYSTEM_MAP.md` carefully if multiple PRs touch it.
+- If `CI_AND_TEST_TIERS.md` conflicts, the file plus `.github/workflows/*.yml` are authoritative.
+
+---
+
 ## Questions?
 
+- Check `Docs/SYSTEM_MAP.md` for the canonical feature inventory and status map
 - Check `Docs/Testing/CI_AND_TEST_TIERS.md` for authoritative CI and tier mapping
 - Check `Docs/Guides/WORKFLOW_AND_STYLE_GUIDE.md` for branch/PR workflow and style expectations
 - Check `Docs/Guarantees/SAFETY_MODEL.md` for safety guarantees
