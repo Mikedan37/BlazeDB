@@ -297,6 +297,7 @@ Run with `swift run <ToolName>`.
 | [Architecture](Docs/Architecture/) | Storage engine and internal design |
 | [Compatibility Matrix](Docs/COMPATIBILITY.md) | Platform and version support details |
 | [Durability Modes](Docs/Status/DURABILITY_MODE_SUPPORT.md) | WAL modes and recovery guarantees |
+| [System Map](Docs/SYSTEM_MAP.md) | Feature inventory, status, and code locations |
 | [Design Overview (Medium)](https://medium.com/@DanylchukStudiosLLC/blazedb-a-swift-native-embedded-application-database-c0c762dee311) | Narrative architecture overview (March 2026) |
 
 > **BlazeStudio:** This repository includes `BlazeStudio/`, an optional experimental visual companion app. It is not required to use the core database and is not part of the SwiftPM product.
