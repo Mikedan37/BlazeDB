@@ -37,7 +37,12 @@ import Foundation
 public protocol BlazeDocument: Codable, Identifiable where ID == UUID {
     var id: UUID { get set }
     
-    /// Access to underlying storage for dynamic fields
+    /// Encoded storage view, normally produced by ``toStorage()``.
+    ///
+    /// The default implementation delegates to ``toStorage()`` and terminates the process if
+    /// encoding fails, so callers are not given an empty record on error. Prefer ``toStorage()``,
+    /// ``resolveStorage()``, or typed database client APIs when persisting or when you need
+    /// explicit error handling.
     var storage: BlazeDataRecord { get set }
     
     /// Convert this document to a BlazeDataRecord for storage
@@ -49,20 +54,32 @@ public protocol BlazeDocument: Codable, Identifiable where ID == UUID {
 
 // Default implementations
 extension BlazeDocument {
-    /// Default implementation provides access to storage
+    /// Default implementation forwards to ``toStorage()`` and does not swallow conversion errors.
     public var storage: BlazeDataRecord {
         get {
             do {
                 return try toStorage()
             } catch {
                 BlazeLogger.error("Failed to convert document to storage: \(error)")
-                return BlazeDataRecord([:])
+                #if DEBUG
+                assertionFailure(
+                    "BlazeDocument.storage: toStorage() failed (\(error)). Use try toStorage(), resolveStorage(), or typed insert/update APIs instead of relying on an empty fallback record."
+                )
+                #endif
+                fatalError(
+                    "BlazeDocument.storage: toStorage() failed: \(error). Use try toStorage() or typed BlazeDBClient APIs."
+                )
             }
         }
         set {
             // Storage is read-only by default
             // Individual fields should be set via their property wrappers
         }
+    }
+
+    /// Throwing equivalent of reading ``storage``; use this instead of the property when you need to handle encoding failures.
+    public func resolveStorage() throws -> BlazeDataRecord {
+        try toStorage()
     }
 }
 
