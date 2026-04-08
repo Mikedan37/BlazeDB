@@ -40,7 +40,7 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ## [2.7.3] - 2026-04-03
 
-Tag `v2.7.3` is a narrow snapshot (TypedStore + OSS docs below). **Android, Linux CI parity, compression/WAL work, and later fixes ship in [2.7.4](#274---2026-04-08); prefer `from: "2.7.4"` in SwiftPM.**
+Tag `v2.7.3` is a narrow snapshot (TypedStore + OSS docs below). **Android, Linux CI parity, compression/WAL work, and later fixes ship in v2.7.4** (changelog section above); prefer `from: "2.7.4"` in SwiftPM.
 
 ### Added
 
