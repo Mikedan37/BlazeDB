@@ -133,11 +133,11 @@ Inventory/bootstrap code may still bucket all three SwiftPM modules under a sing
 
 Three files remain **excluded** from `BlazeDB_Tier1Fast` in `Package.swift`:
 
-| File | Blocker | Resolution path |
-| ---- | ------- | --------------- |
-| `Security/SecureConnectionTests.swift` | Requires `Network` framework + `SecureConnection` types from `BlazeDB/Distributed/`, not part of `BlazeDBCore` | Stays excluded until distributed module is wired into a core-compatible test target |
-| `Security/KeyManagerTests.swift` | Uses `KeyManager.generateSalt()` which is not exposed in `BlazeDBCore` | Expose `generateSalt()` in core, or rewrite test to use public API only |
-| `Concurrency/BlazeDBAsyncTests.swift` | Uses removed async APIs (`insertAsync`, `fetchAsync`, `updateAsync`, etc.) that no longer exist in `BlazeDBCore` | Rewrite test against current async API surface |
+| File | Root cause | Issue | Fix |
+| ---- | ---------- | ----- | --- |
+| `Security/SecureConnectionTests.swift` | Wrong target ownership — tests `SecureConnection` (in `Distributed/`) + `import Network` (Apple-only). 3 of 4 tests are pure crypto. | [#73](https://github.com/Mikedan37/BlazeDB/issues/73) | Split: transport test → distributed lane, crypto tests → Tier1Core |
+| `Security/KeyManagerTests.swift` | 2 of 7 tests call deleted `KeyManager.generateSalt(for:)`. Other 5 compile fine. | [#74](https://github.com/Mikedan37/BlazeDB/issues/74) | Replace `generateSalt` with manual salt, remove exclusion |
+| `Concurrency/BlazeDBAsyncTests.swift` | Async APIs gated behind `#if !BLAZEDB_LINUX_CORE`; test has no matching guard. APIs are NOT removed. | [#75](https://github.com/Mikedan37/BlazeDB/issues/75) | Add `#if !BLAZEDB_LINUX_CORE` to test file, remove exclusion |
 
 All other `Tier1Core` directories and files (Aggregation, API, Query, Integration, Features, Migration, etc.) are now included in the PR gate.
 
