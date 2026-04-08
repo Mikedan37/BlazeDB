@@ -145,12 +145,12 @@ final class ForeignKeyTests: XCTestCase {
             "name": .string("Bob")
         ]))
         
-        let bug1Id = try requireFixture(bugsDB).insert(BlazeDataRecord([
+        _ = try requireFixture(bugsDB).insert(BlazeDataRecord([
             "title": .string("Bug 1"),
             "userId": .uuid(userId)
         ]))
         
-        let bug2Id = try requireFixture(bugsDB).insert(BlazeDataRecord([
+        _ = try requireFixture(bugsDB).insert(BlazeDataRecord([
             "title": .string("Bug 2"),
             "userId": .uuid(userId)
         ]))

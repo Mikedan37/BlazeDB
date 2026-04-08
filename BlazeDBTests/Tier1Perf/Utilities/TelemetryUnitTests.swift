@@ -255,7 +255,7 @@ final class TelemetryUnitTests: XCTestCase {
         
         // 2 failed operations
         for _ in 0..<2 {
-            try? await try requireFixture(db).delete(id: UUID())
+            try? try await requireFixture(db).delete(id: UUID())
         }
         
         try await Task.sleep(nanoseconds: 100_000_000)

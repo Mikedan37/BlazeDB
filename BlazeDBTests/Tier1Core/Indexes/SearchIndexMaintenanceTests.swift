@@ -164,7 +164,7 @@ final class SearchIndexMaintenanceTests: XCTestCase {
         try requireFixture(db).collection.enableSearch(on: ["title"])
         
         let id1 = try requireFixture(db).insert(BlazeDataRecord(["title": .string("Bug 1")]))
-        let id2 = try requireFixture(db).insert(BlazeDataRecord(["title": .string("Bug 2")]))
+        _ = try requireFixture(db).insert(BlazeDataRecord(["title": .string("Bug 2")]))
         let id3 = try requireFixture(db).insert(BlazeDataRecord(["title": .string("Bug 3")]))
         
         // Delete two of them

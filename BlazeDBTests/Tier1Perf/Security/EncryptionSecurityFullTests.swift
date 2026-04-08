@@ -93,7 +93,7 @@ final class EncryptionSecurityFullTests: XCTestCase {
         let url1 = FileManager.default.temporaryDirectory
             .appendingPathComponent("db1-\(UUID().uuidString).blazedb")
         let db1 = try BlazeDBClient(name: "DB1", fileURL: url1, password: "password-A-12345")
-        let id1 = try db1.insert(data)
+        _ = try db1.insert(data)
         try db1.persist()
         
         BlazeDBClient.clearCachedKey()
@@ -102,7 +102,7 @@ final class EncryptionSecurityFullTests: XCTestCase {
         let url2 = FileManager.default.temporaryDirectory
             .appendingPathComponent("db2-\(UUID().uuidString).blazedb")
         let db2 = try BlazeDBClient(name: "DB2", fileURL: url2, password: "password-B-12345")
-        let id2 = try db2.insert(data)
+        _ = try db2.insert(data)
         try db2.persist()
         
         // Read raw bytes
@@ -209,7 +209,7 @@ final class EncryptionSecurityFullTests: XCTestCase {
         
         if FileManager.default.fileExists(atPath: metaURL.path) {
             let metaData = try Data(contentsOf: metaURL)
-            let metaString = String(data: metaData, encoding: .utf8) ?? ""
+            _ = String(data: metaData, encoding: .utf8) ?? ""
             
             // Metadata should be encrypted or at least not contain sensitive UUIDs in plaintext
             // (This is a basic check - more thorough audit needed)

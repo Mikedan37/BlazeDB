@@ -28,9 +28,7 @@ final class BlazeDBEnhancedConcurrencyTests: XCTestCase {
     }
     
     override func tearDownWithError() throws {
-        if let collection = db?.collection as? DynamicCollection {
-            try? collection.persist()
-        }
+        try? db?.collection.persist()
         db = nil
         try? FileManager.default.removeItem(at: try requireFixture(tempURL))
         try? FileManager.default.removeItem(at: try requireFixture(tempURL).deletingPathExtension().appendingPathExtension("meta"))
@@ -222,9 +220,7 @@ final class BlazeDBEnhancedConcurrencyTests: XCTestCase {
             ids.append(id)
         }
         
-        if let collection = try requireFixture(db).collection as? DynamicCollection {
-            try collection.persist()
-        }
+        try requireFixture(db).collection.persist()
         
         let expectation = expectation(description: "100 concurrent updates")
         expectation.expectedFulfillmentCount = 100
@@ -276,9 +272,7 @@ final class BlazeDBEnhancedConcurrencyTests: XCTestCase {
             ids.append(id)
         }
         
-        if let collection = try requireFixture(db).collection as? DynamicCollection {
-            try collection.persist()
-        }
+        try requireFixture(db).collection.persist()
         
         let expectation = expectation(description: "100 concurrent deletes")
         expectation.expectedFulfillmentCount = 100
@@ -342,9 +336,7 @@ final class BlazeDBEnhancedConcurrencyTests: XCTestCase {
         
         wait(for: [expectation], timeout: 10.0)
         
-        if let collection = try requireFixture(db).collection as? DynamicCollection {
-            try collection.persist()
-        }
+        try requireFixture(db).collection.persist()
         
         // Reopen to trigger index rebuild
         try requireFixture(db).close()
@@ -361,9 +353,7 @@ final class BlazeDBEnhancedConcurrencyTests: XCTestCase {
         // Insert a counter record
         let counterID = try requireFixture(db).insert(BlazeDataRecord(["counter": .int(0)]))
         
-        if let collection = try requireFixture(db).collection as? DynamicCollection {
-            try collection.persist()
-        }
+        try requireFixture(db).collection.persist()
         
         let expectation = expectation(description: "100 concurrent increments")
         expectation.expectedFulfillmentCount = 100
@@ -459,9 +449,7 @@ final class BlazeDBEnhancedConcurrencyTests: XCTestCase {
             ids.append(id)
         }
         
-        if let collection = try requireFixture(db).collection as? DynamicCollection {
-            try collection.persist()
-        }
+        try requireFixture(db).collection.persist()
         
         let expectation = expectation(description: "100 mixed operations")
         expectation.expectedFulfillmentCount = 100
@@ -547,9 +535,7 @@ final class BlazeDBEnhancedConcurrencyTests: XCTestCase {
         
         wait(for: [expectation], timeout: 30.0)
         
-        if let collection = try requireFixture(db).collection as? DynamicCollection {
-            try collection.persist()
-        }
+        try requireFixture(db).collection.persist()
         
         // Verify database is still valid
         let records = try requireFixture(db).fetchAll()

@@ -449,7 +449,7 @@ final class DXImprovementsTests: XCTestCase {
             "priority": .int(3)
         ])
         
-        let oldID = try requireFixture(db).insert(oldBug)
+        _ = try requireFixture(db).insert(oldBug)
         
         let oldResult = try requireFixture(db).query()
             .where("title", equals: .string("Old Style"))
@@ -464,7 +464,7 @@ final class DXImprovementsTests: XCTestCase {
             "priority" => 3
         }
         
-        let newID = try requireFixture(db).insert(newBug)
+        _ = try requireFixture(db).insert(newBug)
         
         let newRecords = try requireFixture(db).query()
             .where("title", equals: "New Style")
@@ -535,10 +535,10 @@ final class DXImprovementsTests: XCTestCase {
     // MARK: - Error Messages
     
     func testFriendlyErrorMessages() {
-        let notFound = BlazeDBError.recordNotFound(id: UUID())
+        let _ = BlazeDBError.recordNotFound(id: UUID())
         // Error created successfully
         
-        let transactionFailed = BlazeDBError.transactionFailed("Test error", underlyingError: nil)
+        let _ = BlazeDBError.transactionFailed("Test error", underlyingError: nil)
         // Error created successfully
     }
     

@@ -53,7 +53,7 @@ final class BlazeDBClientTests: XCTestCase {
     /// Stress test: writes enough records to force page flush and layout save
     func testDurabilityAfterConcurrencyChanges() throws {
         let fileURL = try requireFixture(tempURL)
-        let metaURL = try requireFixture(tempURL).deletingPathExtension().appendingPathExtension("meta")
+        _ = try requireFixture(tempURL).deletingPathExtension().appendingPathExtension("meta")
         let testContentPrefix = "Durability test - \(UUID().uuidString)"
         var insertedIDs: [UUID] = []
         
@@ -238,7 +238,7 @@ final class BlazeDBClientTests: XCTestCase {
         let store = try PageStore(fileURL: try requireFixture(dbURL), key: key)
         let metaURL = try requireFixture(dbURL).deletingPathExtension().appendingPathExtension("meta")
 
-        var collection = try DynamicCollection(
+        let collection = try DynamicCollection(
             store: store,
             metaURL: metaURL,
             project: "Test",
@@ -279,7 +279,7 @@ final class BlazeDBClientTests: XCTestCase {
         let store = try PageStore(fileURL: try requireFixture(dbURL), key: key)
         let metaURL = try requireFixture(dbURL).deletingPathExtension().appendingPathExtension("meta")
 
-        var collection = try DynamicCollection(
+        let collection = try DynamicCollection(
             store: store,
             metaURL: metaURL,
             project: "Test",
@@ -323,9 +323,7 @@ final class BlazeDBClientTests: XCTestCase {
         
         _ = try requireFixture(db).insert(BlazeDataRecord(["valid": .string("data")]))
         
-        if let collection = try requireFixture(db).collection as? DynamicCollection {
-            try collection.persist()
-        }
+        try requireFixture(db).collection.persist()
         
         let report = try requireFixture(db).checkDatabaseIntegrity()
         

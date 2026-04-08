@@ -90,9 +90,9 @@ final class TransactionDurabilityTests: XCTestCase {
         let tx = BlazeTransaction(store: store)
         let newData = Data("tx-write".utf8)
         try tx.write(pageID: 0, data: newData)
-        try tx.ensureWALCreatedForTesting()
+        tx.ensureWALCreatedForTesting()
         // Force WAL flush after write, if available for testing
-        try tx.flushStagedWritesForTesting()
+        tx.flushStagedWritesForTesting()
 
         // WAL should exist and be non-empty before commit (if journaling is wired).
         let walURL = guessTxLogURL(for: url)
@@ -116,7 +116,7 @@ final class TransactionDurabilityTests: XCTestCase {
         if !found {
             let files = (try? FileManager.default.contentsOfDirectory(atPath: dir.path)) ?? []
             print("⚠️ No WAL file found. Directory contents: \(files)")
-            XCTSkip("WAL file not found pre-commit — journaling is lazily created in this configuration.")
+            throw XCTSkip("WAL file not found pre-commit — journaling is lazily created in this configuration.")
         }
 
         // Commit and ensure file reflects new data.
@@ -151,7 +151,7 @@ final class TransactionDurabilityTests: XCTestCase {
             try store.write(index: 1, data: Data("B0".utf8))
 
             // Begin a tx and stage two updates but DO NOT commit (simulate crash before commit).
-            var tx = BlazeTransaction(store: store)
+            let tx = BlazeTransaction(store: store)
             try tx.write(pageID: 0, data: Data("A1".utf8))
             try tx.write(pageID: 1, data: Data("B1".utf8))
             // Implicit crash: the tx goes out of scope without commit and process restarts.
@@ -210,7 +210,7 @@ final class TransactionDurabilityTests: XCTestCase {
         let results = CommitResults()
 
         q.async {
-            var tx = BlazeTransaction(store: store)
+            let tx = BlazeTransaction(store: store)
             try? tx.write(pageID: 0, data: Data("AAAA".utf8))
             let e: Error? = (try? tx.commit()).map { _ in nil } ?? NSError(domain: "commitA", code: 1)
             results.setA(e)
@@ -218,7 +218,7 @@ final class TransactionDurabilityTests: XCTestCase {
         }
 
         q.async {
-            var tx = BlazeTransaction(store: store)
+            let tx = BlazeTransaction(store: store)
             try? tx.write(pageID: 0, data: Data("BBBB".utf8))
             let e: Error? = (try? tx.commit()).map { _ in nil } ?? NSError(domain: "commitB", code: 1)
             results.setB(e)
@@ -250,7 +250,7 @@ final class TransactionDurabilityTests: XCTestCase {
         let readerOk = expectation(description: "reader ok")
 
         DispatchQueue.global().async {
-            var tx = BlazeTransaction(store: store)
+            let tx = BlazeTransaction(store: store)
             try? tx.write(pageID: 0, data: Data("writer".utf8))
             startedWrite.fulfill()
             // Simulate work (optimized for faster tests)

@@ -276,7 +276,7 @@ final class MetadataFlushEdgeCaseTests: XCTestCase {
         XCTAssertNil(missing, "Record must not be visible after failed insert with forced layout save failure")
 
         // Reopen and ensure record is still absent.
-        try? try requireFixture(db).close()
+        try requireFixture(db).close()
         db = nil
         let reopened = try reopenWithRetry(name: "FlushTest", fileURL: try requireFixture(tempURL), password: "TestPassword-123!")
         let reopenedMissing = try reopened.fetch(id: fixedID)

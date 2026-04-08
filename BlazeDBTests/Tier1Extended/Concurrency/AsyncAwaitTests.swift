@@ -94,7 +94,7 @@ final class AsyncAwaitTests: XCTestCase {
     func testAsyncFetchAll() async throws {
         // Insert multiple records
         for i in 1...5 {
-            try await requireFixture(db).insert(BlazeDataRecord([
+            _ = try await requireFixture(db).insert(BlazeDataRecord([
                 "title": .string("Bug \(i)")
             ]))
         }
@@ -141,7 +141,7 @@ final class AsyncAwaitTests: XCTestCase {
     func testAsyncCount() async throws {
         // Insert records
         for i in 1...10 {
-            try await requireFixture(db).insert(BlazeDataRecord([
+            _ = try await requireFixture(db).insert(BlazeDataRecord([
                 "title": .string("Bug \(i)")
             ]))
         }
@@ -156,7 +156,7 @@ final class AsyncAwaitTests: XCTestCase {
     func testAsyncQuery_StandardQuery() async throws {
         // Insert test data
         for i in 1...10 {
-            try await requireFixture(db).insert(BlazeDataRecord([
+            _ = try await requireFixture(db).insert(BlazeDataRecord([
                 "title": .string("Bug \(i)"),
                 "status": .string(i % 2 == 0 ? "open" : "closed")
             ]))
@@ -183,13 +183,13 @@ final class AsyncAwaitTests: XCTestCase {
         
         // Insert users
         let userId = UUID()
-        try await requireFixture(usersDB).insert(BlazeDataRecord([
+        _ = try await requireFixture(usersDB).insert(BlazeDataRecord([
             "id": .uuid(userId),
             "name": .string("Alice")
         ]))
         
         // Insert bugs
-        try await requireFixture(db).insert(BlazeDataRecord([
+        _ = try await requireFixture(db).insert(BlazeDataRecord([
             "title": .string("Bug 1"),
             "authorId": .uuid(userId)
         ]))
@@ -214,7 +214,7 @@ final class AsyncAwaitTests: XCTestCase {
     func testAsyncQuery_WithAggregation() async throws {
         // Insert test data
         for i in 1...10 {
-            try await requireFixture(db).insert(BlazeDataRecord([
+            _ = try await requireFixture(db).insert(BlazeDataRecord([
                 "priority": .int(i)
             ]))
         }
@@ -234,7 +234,7 @@ final class AsyncAwaitTests: XCTestCase {
         // Insert test data
         let teams = ["Frontend", "Backend"]
         for i in 1...10 {
-            try await requireFixture(db).insert(BlazeDataRecord([
+            _ = try await requireFixture(db).insert(BlazeDataRecord([
                 "team": .string(teams[i % 2]),
                 "hours": .int(i)
             ]))
@@ -253,7 +253,7 @@ final class AsyncAwaitTests: XCTestCase {
     
     func testAsyncQuery_WithCaching() async throws {
         // Insert test data
-        try await requireFixture(db).insert(BlazeDataRecord(["title": .string("Bug 1")]))
+        _ = try await requireFixture(db).insert(BlazeDataRecord(["title": .string("Bug 1")]))
         
         // Execute with cache
         let result1 = try await requireFixture(db).query()
@@ -264,7 +264,7 @@ final class AsyncAwaitTests: XCTestCase {
         XCTAssertEqual(records1.count, 1)
         
         // Insert more data
-        try await requireFixture(db).insert(BlazeDataRecord(["title": .string("Bug 2")]))
+        _ = try await requireFixture(db).insert(BlazeDataRecord(["title": .string("Bug 2")]))
         
         // Execute same query (should hit cache)
         let result2 = try await requireFixture(db).query()
@@ -296,7 +296,7 @@ final class AsyncAwaitTests: XCTestCase {
     func testAsyncUpdateMany() async throws {
         // Insert records
         for i in 1...10 {
-            try await requireFixture(db).insert(BlazeDataRecord([
+            _ = try await requireFixture(db).insert(BlazeDataRecord([
                 "status": .string("open"),
                 "priority": .int(i)
             ]))
@@ -321,7 +321,7 @@ final class AsyncAwaitTests: XCTestCase {
     func testAsyncDeleteMany() async throws {
         // Insert records
         for i in 1...10 {
-            try await requireFixture(db).insert(BlazeDataRecord([
+            _ = try await requireFixture(db).insert(BlazeDataRecord([
                 "priority": .int(i)
             ]))
         }
@@ -362,7 +362,7 @@ final class AsyncAwaitTests: XCTestCase {
         // Insert records with duplicate statuses
         let statuses = ["open", "closed", "open", "pending", "closed"]
         for status in statuses {
-            try await requireFixture(db).insert(BlazeDataRecord([
+            _ = try await requireFixture(db).insert(BlazeDataRecord([
                 "status": .string(status)
             ]))
         }
@@ -380,7 +380,7 @@ final class AsyncAwaitTests: XCTestCase {
         
         // Verify index exists (implicit through query performance)
         for i in 1...100 {
-            try await requireFixture(db).insert(BlazeDataRecord([
+            _ = try await requireFixture(db).insert(BlazeDataRecord([
                 "title": .string("Bug \(i)")
             ]))
         }
@@ -400,7 +400,7 @@ final class AsyncAwaitTests: XCTestCase {
         
         // Insert test data
         for i in 1...10 {
-            try await requireFixture(db).insert(BlazeDataRecord([
+            _ = try await requireFixture(db).insert(BlazeDataRecord([
                 "team": .string("Frontend"),
                 "status": .string(i % 2 == 0 ? "open" : "closed")
             ]))
@@ -420,7 +420,7 @@ final class AsyncAwaitTests: XCTestCase {
     func testAsyncPersist() async throws {
         // Insert data
         for i in 1...10 {
-            try await requireFixture(db).insert(BlazeDataRecord([
+            _ = try await requireFixture(db).insert(BlazeDataRecord([
                 "title": .string("Bug \(i)")
             ]))
         }
@@ -445,10 +445,10 @@ final class AsyncAwaitTests: XCTestCase {
     
     func testAsyncFlush() async throws {
         // Insert data
-        try await requireFixture(db).insert(BlazeDataRecord(["title": .string("Bug 1")]))
+        _ = try await requireFixture(db).insert(BlazeDataRecord(["title": .string("Bug 1")]))
         
         // Flush async (alias for persist)
-        try await requireFixture(db).flush()
+        try await requireFixture(db).persist()
         
         // Verify by reopening
         db = nil
@@ -472,7 +472,7 @@ final class AsyncAwaitTests: XCTestCase {
     
     func testAsyncTransactionRollback() async throws {
         // Insert initial record
-        try await requireFixture(db).insert(BlazeDataRecord(["title": .string("Initial")]))
+        _ = try await requireFixture(db).insert(BlazeDataRecord(["title": .string("Initial")]))
         
         // Try to perform operations that should fail
         do {
@@ -496,7 +496,7 @@ final class AsyncAwaitTests: XCTestCase {
             for i in 1...10 {
                 group.addTask {
                     do {
-                        try await client.insert(BlazeDataRecord([
+                        _ = try await client.insert(BlazeDataRecord([
                             "title": .string("Concurrent Bug \(i)")
                         ]))
                     } catch {
@@ -514,7 +514,7 @@ final class AsyncAwaitTests: XCTestCase {
     func testConcurrentAsyncQueries() async throws {
         // Insert test data
         for i in 1...100 {
-            try await requireFixture(db).insert(BlazeDataRecord([
+            _ = try await requireFixture(db).insert(BlazeDataRecord([
                 "title": .string("Bug \(i)"),
                 "priority": .int(i % 10)
             ]))
@@ -560,7 +560,7 @@ final class AsyncAwaitTests: XCTestCase {
         await withTaskGroup(of: Void.self) { group in
             for i in 1...5 {
                 group.addTask {
-                    try? await client.insert(BlazeDataRecord([
+                    _ = try? await client.insert(BlazeDataRecord([
                         "title": .string("Bug \(i)")
                     ]))
                 }
@@ -568,13 +568,13 @@ final class AsyncAwaitTests: XCTestCase {
             
             for _ in 1...5 {
                 group.addTask {
-                    try? await client.query().execute()
+                    _ = try? await client.query().execute()
                 }
             }
             
             for _ in 1...5 {
                 group.addTask {
-                    try? await client.count()
+                    _ = try? await client.count()
                 }
             }
         }
@@ -589,7 +589,7 @@ final class AsyncAwaitTests: XCTestCase {
     func testAsyncPerformance_LargeInsert() async throws {
         let client = try XCTUnwrap(db, "BlazeDBClient must be initialized in setUp")
         for i in 1...100 {
-            try await client.insert(BlazeDataRecord([
+            _ = try await client.insert(BlazeDataRecord([
                 "title": .string("Bug \(i)"),
                 "priority": .int(i % 10)
             ]))
@@ -599,7 +599,7 @@ final class AsyncAwaitTests: XCTestCase {
     func testAsyncPerformance_LargeQuery() async throws {
         // Insert large dataset
         for i in 1...1000 {
-            try await requireFixture(db).insert(BlazeDataRecord([
+            _ = try await requireFixture(db).insert(BlazeDataRecord([
                 "title": .string("Bug \(i)"),
                 "priority": .int(i % 10)
             ]))

@@ -42,7 +42,7 @@ final class BlazeCollectionTests: XCTestCase {
 
         let fetched = try collection.fetch(id: commit.id)
         print("Inserted Commit ID:", commit.id)
-        print("Fetched Commit:", fetched)
+        print("Fetched Commit:", String(describing: fetched))
         XCTAssertEqual(fetched?.message, "Initial commit")
         XCTAssertEqual(fetched?.id, commit.id)
     }
@@ -54,12 +54,12 @@ final class BlazeCollectionTests: XCTestCase {
 
         var fetched = try collection.fetch(id: commit.id)
         XCTAssertNotNil(fetched)
-        print("Before delete fetched:", fetched)
+        print("Before delete fetched:", String(describing: fetched))
         // 2. Delete the record
 
         try collection.delete(id: commit.id)
         fetched = try collection.fetch(id: commit.id)
-        print("After delete fetched:", fetched)
+        print("After delete fetched:", String(describing: fetched))
         // 3. Verify the record is deleted
         XCTAssertNil(fetched)
         print("✅ testDeleteRecord completed")
@@ -74,14 +74,14 @@ final class BlazeCollectionTests: XCTestCase {
         var fetched = try collection.fetch(id: id)
         XCTAssertEqual(fetched?.message, "Initial")
         print("Original Commit:", original)
-        print("Fetched before update:", fetched)
+        print("Fetched before update:", String(describing: fetched))
 
         let updated = Commit(id: id, createdAt: .now, message: "Updated", author: "Michael")
         print("Updated Commit:", updated)
         try collection.update(id: id, with: updated)
 
         fetched = try collection.fetch(id: id)
-        print("Fetched after update:", fetched)
+        print("Fetched after update:", String(describing: fetched))
         XCTAssertEqual(fetched?.message, "Updated")
     }
 }

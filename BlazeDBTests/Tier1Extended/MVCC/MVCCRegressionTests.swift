@@ -90,7 +90,7 @@ final class MVCCRegressionTests: XCTestCase {
     func testRegression_Count() throws {
         // Insert 50 records
         for i in 0..<50 {
-            try requireFixture(db).insert(BlazeDataRecord(["index": .int(i)]))
+            _ = try requireFixture(db).insert(BlazeDataRecord(["index": .int(i)]))
         }
         
         let count = try requireFixture(db).count()
@@ -137,7 +137,7 @@ final class MVCCRegressionTests: XCTestCase {
     
     func testRegression_FetchAll() throws {
         for i in 0..<100 {
-            try requireFixture(db).insert(BlazeDataRecord(["index": .int(i)]))
+            _ = try requireFixture(db).insert(BlazeDataRecord(["index": .int(i)]))
         }
         
         let all = try requireFixture(db).fetchAll()
@@ -148,7 +148,7 @@ final class MVCCRegressionTests: XCTestCase {
     
     func testRegression_SimpleQuery() throws {
         for i in 0..<100 {
-            try requireFixture(db).insert(BlazeDataRecord([
+            _ = try requireFixture(db).insert(BlazeDataRecord([
                 "status": .string(i % 2 == 0 ? "active" : "inactive"),
                 "value": .int(i)
             ]))
@@ -163,13 +163,14 @@ final class MVCCRegressionTests: XCTestCase {
     
     func testRegression_Aggregations() throws {
         for i in 0..<50 {
-            try requireFixture(db).insert(BlazeDataRecord(["value": .int(i)]))
+            _ = try requireFixture(db).insert(BlazeDataRecord(["value": .int(i)]))
         }
         
-        let result = try requireFixture(db).query()
+        let queryResult = try requireFixture(db).query()
             .sum("value", as: "total")
             .count(as: "count")
-            .executeAggregation()
+            .execute()
+        let result = try queryResult.aggregation
         
         let expectedSum = (0..<50).reduce(0, +)
         XCTAssertEqual(Int(result.sum("total") ?? -1), expectedSum)
@@ -378,7 +379,7 @@ final class MVCCRegressionTests: XCTestCase {
     func testRegression_GC_DuringOperations() throws {
         // Insert many records
         for i in 0..<200 {
-            try requireFixture(db).insert(BlazeDataRecord(["i": .int(i)]))
+            _ = try requireFixture(db).insert(BlazeDataRecord(["i": .int(i)]))
         }
         
         // Trigger GC

@@ -244,7 +244,7 @@ final class MVCCIntegrationTests: XCTestCase {
         
         // Insert records
         for i in 0..<10 {
-            try requireFixture(db).insert(BlazeDataRecord(["index": .int(i)]))
+            _ = try requireFixture(db).insert(BlazeDataRecord(["index": .int(i)]))
         }
         
         let initialCount = try requireFixture(db).count()
@@ -270,7 +270,7 @@ final class MVCCIntegrationTests: XCTestCase {
         // Meanwhile, insert more records
         Thread.sleep(forTimeInterval: 0.05)
         for i in 10..<20 {
-            try requireFixture(db).insert(BlazeDataRecord(["index": .int(i)]))
+            _ = try requireFixture(db).insert(BlazeDataRecord(["index": .int(i)]))
         }
         
         group.wait()
@@ -334,7 +334,7 @@ final class MVCCIntegrationTests: XCTestCase {
         let start = Date()
         
         for i in 0..<1000 {
-            try requireFixture(db).insert(BlazeDataRecord([
+            _ = try requireFixture(db).insert(BlazeDataRecord([
                 "index": .int(i),
                 "data": .string("Test record \(i)")
             ]))

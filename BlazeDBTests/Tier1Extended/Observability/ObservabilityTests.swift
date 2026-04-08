@@ -109,7 +109,7 @@ final class ObservabilityTests: XCTestCase {
     
     func testMetrics_TransactionCommitted() throws {
         try requireFixture(db).beginTransaction()
-        try requireFixture(db).insert(BlazeDataRecord(["value": .int(42)]))
+        _ = try requireFixture(db).insert(BlazeDataRecord(["value": .int(42)]))
         try requireFixture(db).commitTransaction()
         
         let snapshot = try requireFixture(db).observe()
@@ -120,7 +120,7 @@ final class ObservabilityTests: XCTestCase {
     
     func testMetrics_TransactionAborted() throws {
         try requireFixture(db).beginTransaction()
-        try requireFixture(db).insert(BlazeDataRecord(["value": .int(42)]))
+        _ = try requireFixture(db).insert(BlazeDataRecord(["value": .int(42)]))
         try requireFixture(db).rollbackTransaction()
         
         let snapshot = try requireFixture(db).observe()
@@ -133,7 +133,7 @@ final class ObservabilityTests: XCTestCase {
         // Multiple transactions
         for i in 0..<5 {
             try requireFixture(db).beginTransaction()
-            try requireFixture(db).insert(BlazeDataRecord(["value": .int(i)]))
+            _ = try requireFixture(db).insert(BlazeDataRecord(["value": .int(i)]))
             try requireFixture(db).commitTransaction()
         }
         

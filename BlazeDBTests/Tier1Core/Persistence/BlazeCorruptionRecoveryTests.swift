@@ -403,7 +403,7 @@ final class BlazeCorruptionRecoveryTests: XCTestCase {
         
         // Insert records
         let id1 = try XCTUnwrap(db).insert(BlazeDataRecord(["category": .string("important")]))
-        let id2 = try XCTUnwrap(db).insert(BlazeDataRecord(["category": .string("important")]))
+        _ = try XCTUnwrap(db).insert(BlazeDataRecord(["category": .string("important")]))
         
         // Verify initial state
         let initialResults = try collection.fetch(byIndexedField: "category", value: "important")

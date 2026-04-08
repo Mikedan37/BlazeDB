@@ -222,7 +222,7 @@ final class CriticalBlockerTests: XCTestCase {
         
         // Insert 100 records
         for i in 0..<100 {
-            try requireFixture(db).insert(BlazeDataRecord(["index": .int(i)]))
+            _ = try requireFixture(db).insert(BlazeDataRecord(["index": .int(i)]))
         }
         
         // Fetch all
@@ -239,7 +239,7 @@ final class CriticalBlockerTests: XCTestCase {
         
         // Insert test data
         for i in 0..<50 {
-            try requireFixture(db).insert(BlazeDataRecord([
+            _ = try requireFixture(db).insert(BlazeDataRecord([
                 "value": .int(i)
             ]))
         }
@@ -247,7 +247,7 @@ final class CriticalBlockerTests: XCTestCase {
         // Sum aggregation
         let result = try requireFixture(db).query()
             .sum("value", as: "total")
-            .executeAggregation()
+            .execute().aggregation
         
         let expectedSum = (0..<50).reduce(0, +)
         let actualSum = result.sum("total") ?? -1
@@ -265,7 +265,7 @@ final class CriticalBlockerTests: XCTestCase {
         
         // Insert data
         for i in 0..<100 {
-            try requireFixture(db).insert(BlazeDataRecord(["index": .int(i)]))
+            _ = try requireFixture(db).insert(BlazeDataRecord(["index": .int(i)]))
         }
         
         let group = DispatchGroup()
@@ -352,7 +352,7 @@ final class CriticalBlockerTests: XCTestCase {
         
         // Insert data
         for i in 0..<100 {
-            try requireFixture(db).insert(BlazeDataRecord(["i": .int(i)]))
+            _ = try requireFixture(db).insert(BlazeDataRecord(["i": .int(i)]))
         }
         
         // Simulate crash during VACUUM by creating intent log
@@ -427,7 +427,7 @@ final class CriticalBlockerTests: XCTestCase {
         
         // Insert data
         for i in 0..<50 {
-            try requireFixture(db).insert(BlazeDataRecord(["i": .int(i)]))
+            _ = try requireFixture(db).insert(BlazeDataRecord(["i": .int(i)]))
         }
         
         try requireFixture(db).persist()

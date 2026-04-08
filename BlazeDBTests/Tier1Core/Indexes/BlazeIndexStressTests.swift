@@ -246,11 +246,11 @@ final class BlazeIndexStressTests: XCTestCase {
         
         // Full scan (no index)
         print("  Testing full scan...")
-        var fullScanStart = Date()
+        let fullScanStart = Date()
         let fullScanResults = try requireFixture(db).collection.filter { record in
             record.storage["searchField"]?.stringValue == searchValue
         }
-        var fullScanDuration = Date().timeIntervalSince(fullScanStart)
+        let fullScanDuration = Date().timeIntervalSince(fullScanStart)
         
         // Create index definition
         try requireFixture(db).collection.createIndex(on: "searchField")

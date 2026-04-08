@@ -183,7 +183,7 @@ final class CompleteGCValidationTests: XCTestCase {
         
         // Insert baseline
         var ids: [UUID] = []
-        for i in 0..<200 {
+        for _ in 0..<200 {
             let id = try requireFixture(db).insert(BlazeDataRecord([
                 "data": .string(String(repeating: "x", count: 2000))
             ]))
@@ -208,7 +208,7 @@ final class CompleteGCValidationTests: XCTestCase {
             }
             ids.removeFirst(100)
             
-            for i in 0..<100 {
+            for _ in 0..<100 {
                 let id = try requireFixture(db).insert(BlazeDataRecord([
                     "data": .string(String(repeating: "y", count: 2000))
                 ]))
@@ -275,7 +275,7 @@ final class CompleteGCValidationTests: XCTestCase {
             // Updates (random existing records)
             for _ in 0..<updatesPerMonth {
                 if let id = ids.randomElement() {
-                    try? try requireFixture(db).update(id: id, with: BlazeDataRecord([
+                    try? requireFixture(db).update(id: id, with: BlazeDataRecord([
                         "lastUpdate": .date(Date())
                     ]))
                     totalOperations += 1
@@ -285,7 +285,7 @@ final class CompleteGCValidationTests: XCTestCase {
             // Deletes (oldest records)
             if ids.count > deletesPerMonth {
                 for id in ids.prefix(deletesPerMonth) {
-                    try? try requireFixture(db).delete(id: id)
+                    try? requireFixture(db).delete(id: id)
                     totalOperations += 1
                 }
                 ids.removeFirst(deletesPerMonth)

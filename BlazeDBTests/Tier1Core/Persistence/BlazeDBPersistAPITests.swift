@@ -73,7 +73,7 @@ final class BlazeDBPersistAPITests: XCTestCase {
         }
         
         // Use flush() alias
-        try db.flush()
+        try db.persist()
         
         // Reopen and verify
         try db.close()
@@ -167,9 +167,7 @@ final class BlazeDBPersistAPITests: XCTestCase {
         let db = try BlazeDBClient(name: "Test", fileURL: tempURL, password: "SecureTestDB-456!")
         
         // Create index
-        if let collection = db.collection as? DynamicCollection {
-            try collection.createIndex(on: ["status"])
-        }
+        try db.collection.createIndex(on: ["status"])
         
         // Insert records (below threshold)
         for i in 0..<25 {
@@ -186,10 +184,8 @@ final class BlazeDBPersistAPITests: XCTestCase {
         try db.close()
         let db2 = try BlazeDBClient(name: "Test", fileURL: tempURL, password: "SecureTestDB-456!")
         
-        if let collection = db2.collection as? DynamicCollection {
-            let active = try collection.fetch(byIndexedField: "status", value: "active")
-            XCTAssertGreaterThan(active.count, 0, "Index should work after persist+reopen")
-        }
+        let active = try db2.collection.fetch(byIndexedField: "status", value: "active")
+        XCTAssertGreaterThan(active.count, 0, "Index should work after persist+reopen")
     }
     
     func testMultiplePersistCalls() throws {

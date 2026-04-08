@@ -78,8 +78,8 @@ final class Final100PercentCoverageTests: XCTestCase {
         print("🔍 Testing integrity check on healthy database...")
         
         // Insert some data
-        _ = try? try requireFixture(db).insert(BlazeDataRecord(["value": .int(42)]))
-        try? try requireFixture(db).persist()
+        _ = try? requireFixture(db).insert(BlazeDataRecord(["value": .int(42)]))
+        try? requireFixture(db).persist()
         
         // Check integrity
         let report = try requireFixture(db).checkDatabaseIntegrity()
@@ -557,7 +557,7 @@ final class Final100PercentCoverageTests: XCTestCase {
         setenv("BLAZEDB_CRASH_BEFORE_UPDATE", "1", 1)
         
         // Try to update - should simulate crash
-        let id = try? try requireFixture(db).insert(BlazeDataRecord(["test": .string("value")]))
+        let id = try? requireFixture(db).insert(BlazeDataRecord(["test": .string("value")]))
         
         if let id = id {
             do {
@@ -639,7 +639,7 @@ final class Final100PercentCoverageTests: XCTestCase {
         print("🔄 Testing commit without active transaction...")
         
         // Ensure no transaction is active
-        try? try requireFixture(db).rollbackTransaction()  // Clean up any existing
+        try? requireFixture(db).rollbackTransaction()  // Clean up any existing
         
         // Try to commit when no transaction active
         XCTAssertThrowsError(

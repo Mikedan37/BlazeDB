@@ -367,7 +367,7 @@ final class OptimizedSearchTests: XCTestCase {
         let records = (1...1000).map { i in
             BlazeDataRecord(["title": .string("Bug \(i)")])
         }
-        try requireFixture(db).insertMany(records)
+        _ = try requireFixture(db).insertMany(records)
         
         // Enable search (rebuilds index for existing 1000 records)
         try requireFixture(db).collection.enableSearch(on: ["title"])
@@ -499,7 +499,7 @@ final class OptimizedSearchTests: XCTestCase {
         let queue = DispatchQueue(label: "test.search", attributes: .concurrent)
         let db = try requireFixture(self.db)
         
-        for i in 1...10 {
+        for _ in 1...10 {
             queue.async { [db] in
                 let results = try? db.query().search("bug", in: ["title"])
                 XCTAssertNotNil(results)

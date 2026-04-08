@@ -195,9 +195,7 @@ final class BlazeDBMemoryTests: XCTestCase {
         }
         _ = try db.insertMany(records)
         
-        if let collection = db.collection as? DynamicCollection {
-            try collection.persist()
-        }
+        try db.collection.persist()
         
         let peakMemory = getMemoryUsage()
         let growth = peakMemory - initialMemory
@@ -228,9 +226,7 @@ final class BlazeDBMemoryTests: XCTestCase {
         }
         _ = try db.insertMany(records)
         
-        if let collection = db.collection as? DynamicCollection {
-            try collection.persist()
-        }
+        try db.collection.persist()
         
         let beforeFetch = getMemoryUsage()
         
@@ -269,9 +265,7 @@ final class BlazeDBMemoryTests: XCTestCase {
         }
         _ = try db.insertMany(records)
         
-        if let collection = db.collection as? DynamicCollection {
-            try collection.persist()
-        }
+        try db.collection.persist()
         
         // Measure fetchAll memory
         let beforeFetchAll = getMemoryUsage()

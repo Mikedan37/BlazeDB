@@ -543,40 +543,40 @@ final class ExtremeEdgeCaseTests: XCTestCase {
     
     // MARK: - Transaction Edge Cases
     
-    func testEmptyTransaction() async throws {
+    func testEmptyTransaction() throws {
         print("🔄 Testing empty transaction")
         
-        try await requireFixture(db).beginTransaction()
-        try await requireFixture(db).commitTransaction()
+        try requireFixture(db).beginTransaction()
+        try requireFixture(db).commitTransaction()
         
         // Should succeed without errors
         print("  ✅ Empty transaction handled")
     }
     
-    func testRollbackWithNoChanges() async throws {
+    func testRollbackWithNoChanges() throws {
         print("🔄 Testing rollback with no changes")
         
-        try await requireFixture(db).beginTransaction()
-        try await requireFixture(db).rollbackTransaction()
+        try requireFixture(db).beginTransaction()
+        try requireFixture(db).rollbackTransaction()
         
         // Should succeed without errors
         print("  ✅ Rollback with no changes handled")
     }
     
-    func testNestedTransactionAttempt() async throws {
+    func testNestedTransactionAttempt() throws {
         print("🔄 Testing nested transaction attempt")
         
-        try await requireFixture(db).beginTransaction()
+        try requireFixture(db).beginTransaction()
         
         do {
-            try await requireFixture(db).beginTransaction()  // Nested transaction
+            try requireFixture(db).beginTransaction()  // Nested transaction
             XCTFail("Should not allow nested transactions")
         } catch {
             // Expected to fail
             print("  ✅ Nested transactions prevented")
         }
         
-        try await requireFixture(db).rollbackTransaction()
+        try requireFixture(db).rollbackTransaction()
     }
     
     // MARK: - Password Edge Cases

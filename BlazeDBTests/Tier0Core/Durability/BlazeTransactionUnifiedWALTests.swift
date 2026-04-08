@@ -30,7 +30,7 @@ final class BlazeTransactionUnifiedWALTests: XCTestCase {
     /// Committed transaction is replayed on recovery.
     func testTransactionCommitReplaysOnRecovery() throws {
         let dbURL = tempDir.appendingPathComponent("test.db")
-        let walURL = dbURL.deletingPathExtension().appendingPathExtension("wal")
+        _ = dbURL.deletingPathExtension().appendingPathExtension("wal")
 
         // Write via transaction and close
         let store1 = try PageStore(fileURL: dbURL, key: testKey, walMode: .unified)

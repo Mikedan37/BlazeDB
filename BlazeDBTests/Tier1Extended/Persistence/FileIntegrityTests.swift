@@ -78,7 +78,7 @@ final class FileIntegrityTests: XCTestCase {
     func testMetadataChecksumStable() throws {
         // Insert records
         for i in 0..<10 {
-            try fileIntegrityDB().insert(BlazeDataRecord(["value": .int(i)]))
+            _ = try fileIntegrityDB().insert(BlazeDataRecord(["value": .int(i)]))
         }
         
         try fileIntegrityDB().persist()
@@ -97,7 +97,7 @@ final class FileIntegrityTests: XCTestCase {
     /// Test: Data file checksum stable after persist with no changes
     func testDataFileChecksumStable() throws {
         for i in 0..<10 {
-            try fileIntegrityDB().insert(BlazeDataRecord(["value": .int(i)]))
+            _ = try fileIntegrityDB().insert(BlazeDataRecord(["value": .int(i)]))
         }
         
         try fileIntegrityDB().persist()
@@ -120,7 +120,7 @@ final class FileIntegrityTests: XCTestCase {
         
         // Insert 10 records
         for i in 0..<10 {
-            try fileIntegrityDB().insert(BlazeDataRecord(["value": .int(i)]))
+            _ = try fileIntegrityDB().insert(BlazeDataRecord(["value": .int(i)]))
         }
         
         try fileIntegrityDB().persist()
@@ -154,7 +154,7 @@ final class FileIntegrityTests: XCTestCase {
         let recordCount = 10
         
         for i in 0..<recordCount {
-            try fileIntegrityDB().insert(BlazeDataRecord(["value": .int(i)]))
+            _ = try fileIntegrityDB().insert(BlazeDataRecord(["value": .int(i)]))
         }
         
         try fileIntegrityDB().persist()
@@ -178,11 +178,11 @@ final class FileIntegrityTests: XCTestCase {
         // Test at various stages
         let stages: [(String, () throws -> Void)] = [
             ("After init", {}),
-            ("After 1 insert", { try self.fileIntegrityDB().insert(BlazeDataRecord(["a": .int(1)])) }),
+            ("After 1 insert", { _ = try self.fileIntegrityDB().insert(BlazeDataRecord(["a": .int(1)])) }),
             ("After persist", { try self.fileIntegrityDB().persist() }),
             ("After 10 inserts", {
                 for i in 2...11 {
-                    try self.fileIntegrityDB().insert(BlazeDataRecord(["a": .int(i)]))
+                    _ = try self.fileIntegrityDB().insert(BlazeDataRecord(["a": .int(i)]))
                 }
             }),
             ("After reopen", {
@@ -222,7 +222,7 @@ final class FileIntegrityTests: XCTestCase {
     /// Test: Metadata file doesn't contain binary garbage
     func testMetadataContainsNoBinaryGarbage() throws {
         for i in 0..<10 {
-            try fileIntegrityDB().insert(BlazeDataRecord(["value": .int(i)]))
+            _ = try fileIntegrityDB().insert(BlazeDataRecord(["value": .int(i)]))
         }
         try fileIntegrityDB().persist()
         
@@ -246,7 +246,7 @@ final class FileIntegrityTests: XCTestCase {
         // This test verifies that .atomic option works correctly
         
         for i in 0..<10 {
-            try fileIntegrityDB().insert(BlazeDataRecord(["value": .int(i)]))
+            _ = try fileIntegrityDB().insert(BlazeDataRecord(["value": .int(i)]))
         }
         
         try fileIntegrityDB().persist()
@@ -273,7 +273,7 @@ final class FileIntegrityTests: XCTestCase {
     func testNoFileDescriptorLeaks() throws {
         for cycle in 0..<20 {
             // Insert some data
-            try fileIntegrityDB().insert(BlazeDataRecord(["cycle": .int(cycle)]))
+            _ = try fileIntegrityDB().insert(BlazeDataRecord(["cycle": .int(cycle)]))
             try fileIntegrityDB().persist()
             
             // Close and reopen

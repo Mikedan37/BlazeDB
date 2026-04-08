@@ -472,7 +472,7 @@ final class BlazeBinaryExhaustiveVerificationTests: XCTestCase {
         // Build 500-level deep nesting
         var deep: BlazeDocumentField = .string("bottom")
         
-        for level in 0..<500 {
+        for _ in 0..<500 {
             deep = .dictionary(["level": deep])
         }
         

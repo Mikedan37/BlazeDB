@@ -55,7 +55,7 @@ final class Phase4CorrectnessTests: XCTestCase {
     func testRangeIndexGreaterThan() throws {
         // Insert records with known values
         for i in 0..<100 {
-            try requireFixture(db).insert(BlazeDataRecord([
+            _ = try requireFixture(db).insert(BlazeDataRecord([
                 "value": .int(i),
                 "name": .string("record_\(i)")
             ]))
@@ -91,7 +91,7 @@ final class Phase4CorrectnessTests: XCTestCase {
     
     func testRangeIndexLessThan() throws {
         for i in 0..<100 {
-            try requireFixture(db).insert(BlazeDataRecord([
+            _ = try requireFixture(db).insert(BlazeDataRecord([
                 "value": .int(i),
                 "name": .string("record_\(i)")
             ]))
@@ -116,7 +116,7 @@ final class Phase4CorrectnessTests: XCTestCase {
     
     func testRangeIndexBetween() throws {
         for i in 0..<100 {
-            try requireFixture(db).insert(BlazeDataRecord([
+            _ = try requireFixture(db).insert(BlazeDataRecord([
                 "score": .int(i * 10)  // 0, 10, 20, ..., 990
             ]))
         }
@@ -229,7 +229,7 @@ final class Phase4CorrectnessTests: XCTestCase {
     func testUseIndexHintPreference() throws {
         // Insert data
         for i in 0..<50 {
-            try requireFixture(db).insert(BlazeDataRecord([
+            _ = try requireFixture(db).insert(BlazeDataRecord([
                 "category": .string(i % 2 == 0 ? "even" : "odd"),
                 "value": .int(i)
             ]))
@@ -250,7 +250,7 @@ final class Phase4CorrectnessTests: XCTestCase {
     
     func testForceIndexReturnsCorrectResults() throws {
         for i in 0..<100 {
-            try requireFixture(db).insert(BlazeDataRecord([
+            _ = try requireFixture(db).insert(BlazeDataRecord([
                 "status": .string(["active", "pending", "complete"][i % 3]),
                 "priority": .int(i % 5)
             ]))
@@ -275,7 +275,7 @@ final class Phase4CorrectnessTests: XCTestCase {
             "FORCE INDEX must return same results as normal query")
         
         // Verify correctness
-        let expectedCount = 100 / 3 + (100 % 3 > 0 ? 1 : 0)  // ~34
+        let _ = 100 / 3 + (100 % 3 > 0 ? 1 : 0)  // ~34
         XCTAssertEqual(forcedResults.count, 34)
     }
     
@@ -284,7 +284,7 @@ final class Phase4CorrectnessTests: XCTestCase {
     func testLazyCollectMatchesExecute() throws {
         // Insert test data
         for i in 0..<100 {
-            try requireFixture(db).insert(BlazeDataRecord([
+            _ = try requireFixture(db).insert(BlazeDataRecord([
                 "index": .int(i),
                 "category": .string(i % 4 == 0 ? "special" : "normal")
             ]))
@@ -315,7 +315,7 @@ final class Phase4CorrectnessTests: XCTestCase {
     func testLazyTakeDoesNotLoadAll() throws {
         // Insert many records
         for i in 0..<1000 {
-            try requireFixture(db).insert(BlazeDataRecord([
+            _ = try requireFixture(db).insert(BlazeDataRecord([
                 "value": .int(i)
             ]))
         }
@@ -333,7 +333,7 @@ final class Phase4CorrectnessTests: XCTestCase {
     
     func testLazyFirstReturnsOneRecord() throws {
         for i in 0..<100 {
-            try requireFixture(db).insert(BlazeDataRecord([
+            _ = try requireFixture(db).insert(BlazeDataRecord([
                 "order": .int(i)
             ]))
         }
@@ -345,7 +345,7 @@ final class Phase4CorrectnessTests: XCTestCase {
     
     func testLazyOnClosedDatabaseReturnsEmpty() throws {
         for i in 0..<10 {
-            try requireFixture(db).insert(BlazeDataRecord(["v": .int(i)]))
+            _ = try requireFixture(db).insert(BlazeDataRecord(["v": .int(i)]))
         }
         
         // Close the database
@@ -376,7 +376,7 @@ final class Phase4CorrectnessTests: XCTestCase {
     
     func testLazyOrderMatchesEager() throws {
         for i in 0..<50 {
-            try requireFixture(db).insert(BlazeDataRecord([
+            _ = try requireFixture(db).insert(BlazeDataRecord([
                 "sortKey": .int(50 - i),  // Insert in reverse order
                 "name": .string("item_\(i)")
             ]))
@@ -426,7 +426,7 @@ final class Phase4CorrectnessTests: XCTestCase {
         }
         
         for i in 0..<50 {
-            try reopenDB!.insert(BlazeDataRecord([
+            _ = try reopenDB!.insert(BlazeDataRecord([
                 "score": .int(i * 2)
             ]))
         }

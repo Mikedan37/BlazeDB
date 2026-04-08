@@ -42,11 +42,11 @@ final class LifecycleTests: XCTestCase {
         
         // First close should succeed
         try db.close()
-        XCTAssertTrue(try db.isClosed, "Database should be closed after close()")
+        XCTAssertTrue(db.isClosed, "Database should be closed after close()")
         
         // Second close should be idempotent (no error)
         try db.close()
-        XCTAssertTrue(try db.isClosed, "Database should still be closed after second close()")
+        XCTAssertTrue(db.isClosed, "Database should still be closed after second close()")
     }
     
     func testClose_FlushesPendingChanges() throws {

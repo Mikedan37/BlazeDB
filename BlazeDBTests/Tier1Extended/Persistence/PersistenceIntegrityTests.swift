@@ -148,19 +148,19 @@ final class PersistenceIntegrityTests: XCTestCase {
     func testMultiplePersistCycles() throws {
         // Cycle 1: Insert 5
         for i in 1...5 {
-            try persistenceDB().insert(BlazeDataRecord(["cycle": .int(1), "index": .int(i)]))
+            _ = try persistenceDB().insert(BlazeDataRecord(["cycle": .int(1), "index": .int(i)]))
         }
         try persistenceDB().persist()
         
         // Cycle 2: Insert 5 more
         for i in 1...5 {
-            try persistenceDB().insert(BlazeDataRecord(["cycle": .int(2), "index": .int(i)]))
+            _ = try persistenceDB().insert(BlazeDataRecord(["cycle": .int(2), "index": .int(i)]))
         }
         try persistenceDB().persist()
         
         // Cycle 3: Insert 5 more
         for i in 1...5 {
-            try persistenceDB().insert(BlazeDataRecord(["cycle": .int(3), "index": .int(i)]))
+            _ = try persistenceDB().insert(BlazeDataRecord(["cycle": .int(3), "index": .int(i)]))
         }
         try persistenceDB().persist()
         
@@ -218,7 +218,7 @@ final class PersistenceIntegrityTests: XCTestCase {
     /// Test: Metadata count matches actual fetchable records
     func testMetadataCountMatchesFetchableRecords() throws {
         for i in 1...20 {
-            try persistenceDB().insert(BlazeDataRecord(["value": .int(i)]))
+            _ = try persistenceDB().insert(BlazeDataRecord(["value": .int(i)]))
         }
         
         try persistenceDB().persist()
@@ -243,7 +243,7 @@ final class PersistenceIntegrityTests: XCTestCase {
         // Insert records with varying sizes
         for i in 1...50 {
             let title = String(repeating: "A", count: i * 10)
-            try persistenceDB().insert(BlazeDataRecord(["title": .string(title), "index": .int(i)]))
+            _ = try persistenceDB().insert(BlazeDataRecord(["title": .string(title), "index": .int(i)]))
         }
         
         try persistenceDB().persist()
@@ -285,14 +285,14 @@ final class PersistenceIntegrityTests: XCTestCase {
     func testPersistInsertPersistCycle() throws {
         // First batch
         for i in 1...5 {
-            try persistenceDB().insert(BlazeDataRecord(["batch": .int(1), "index": .int(i)]))
+            _ = try persistenceDB().insert(BlazeDataRecord(["batch": .int(1), "index": .int(i)]))
         }
         try persistenceDB().persist()
         XCTAssertEqual(try persistenceDB().count(), 5)
         
         // Second batch
         for i in 1...5 {
-            try persistenceDB().insert(BlazeDataRecord(["batch": .int(2), "index": .int(i)]))
+            _ = try persistenceDB().insert(BlazeDataRecord(["batch": .int(2), "index": .int(i)]))
         }
         try persistenceDB().persist()
         XCTAssertEqual(try persistenceDB().count(), 10)
@@ -440,7 +440,7 @@ final class PersistenceIntegrityTests: XCTestCase {
     func testAbruptTerminationRecovery() throws {
         // Insert without persist
         for i in 1...10 {
-            try persistenceDB().insert(BlazeDataRecord(["value": .int(i)]))
+            _ = try persistenceDB().insert(BlazeDataRecord(["value": .int(i)]))
         }
         
         // Simulate crash (no persist, no deinit cleanup)
@@ -475,7 +475,7 @@ final class PersistenceIntegrityTests: XCTestCase {
     func testFileSizeConsistency() throws {
         // Insert 10 records
         for i in 1...10 {
-            try persistenceDB().insert(BlazeDataRecord(["value": .int(i)]))
+            _ = try persistenceDB().insert(BlazeDataRecord(["value": .int(i)]))
         }
         
         try persistenceDB().persist()
@@ -495,7 +495,7 @@ final class PersistenceIntegrityTests: XCTestCase {
     /// Test: Metadata file remains valid JSON
     func testMetadataRemainsValidJSON() throws {
         for i in 1...10 {
-            try persistenceDB().insert(BlazeDataRecord(["value": .int(i)]))
+            _ = try persistenceDB().insert(BlazeDataRecord(["value": .int(i)]))
         }
         
         try persistenceDB().persist()

@@ -175,11 +175,11 @@ final class VacuumOperationsTests: XCTestCase {
 
         let id1 = UUID()
         let id2 = UUID()
-        try await requireFixture(db).insert(BlazeDataRecord([
+        _ = try await requireFixture(db).insert(BlazeDataRecord([
             "id": .uuid(id1), "name": .string("Alice"), "age": .int(30),
             "tags": .array([.string("admin"), .string("active")])
         ]))
-        try await requireFixture(db).insert(BlazeDataRecord([
+        _ = try await requireFixture(db).insert(BlazeDataRecord([
             "id": .uuid(id2), "name": .string("Bob"), "score": .double(99.5),
             "active": .bool(false)
         ]))

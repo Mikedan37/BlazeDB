@@ -91,8 +91,8 @@ final class CompatibilityTests: XCTestCase {
     func testIncompatibleVersion_RefusesToOpen() throws {
         // Create database
         let db1 = try BlazeDBClient(name: "test", fileURL: try requireFixture(dbURL), password: "TestPassword-123!")
-        let signingKey = try db1.encryptionKey
-        let kdfSalt = try db1.kdfSalt
+        let signingKey = db1.encryptionKey
+        let kdfSalt = db1.kdfSalt
         try db1.close()
         
         // Manually modify format version to incompatible version while preserving signature validity
@@ -121,8 +121,8 @@ final class CompatibilityTests: XCTestCase {
     func testLegacyDatabase_AssumesCompatibleVersion() throws {
         // Create database without format version (legacy)
         let db1 = try BlazeDBClient(name: "test", fileURL: try requireFixture(dbURL), password: "TestPassword-123!")
-        let signingKey = try db1.encryptionKey
-        let kdfSalt = try db1.kdfSalt
+        let signingKey = db1.encryptionKey
+        let kdfSalt = db1.kdfSalt
         try db1.close()
         
         // Remove format version from metadata while preserving signature validity

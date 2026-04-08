@@ -33,7 +33,7 @@ final class DXHappyPathTests: XCTestCase {
     // MARK: - openTemporary Tests
     
     func testOpenTemporary_WritesAndReads() throws {
-        let db = try BlazeDBClient.openTemporary(password: "TestPassword-123!")
+        let db = try BlazeDBClient.openForTesting(password: "TestPassword-123!")
         defer { try? FileManager.default.removeItem(at: db.fileURL) }
         
         // Write
@@ -50,10 +50,10 @@ final class DXHappyPathTests: XCTestCase {
     
     func testOpenOrCreate_CreatesDirectory() throws {
         // Should create database if it doesn't exist
-        let db = try BlazeDBClient.openOrCreate(name: "testdb", password: "TestPassword-123!")
+        let db = try BlazeDBClient.open(named: "testdb", password: "TestPassword-123!")
         
         // Verify database file exists
-        XCTAssertTrue(FileManager.default.fileExists(atPath: try db.fileURL.path))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: db.fileURL.path))
         
         // Can insert records
         let id = try db.insert(BlazeDataRecord(["name": .string("Test")]))
@@ -63,7 +63,7 @@ final class DXHappyPathTests: XCTestCase {
     // MARK: - insertMany Tests
     
     func testInsertMany_InsertsAllRecords() throws {
-        let db = try BlazeDBClient.openTemporary(password: "TestPassword-123!")
+        let db = try BlazeDBClient.openForTesting(password: "TestPassword-123!")
         defer { try? FileManager.default.removeItem(at: db.fileURL) }
         
         let records = (1...10).map { i in

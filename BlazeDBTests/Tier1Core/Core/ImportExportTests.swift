@@ -45,7 +45,7 @@ final class ImportExportTests: XCTestCase {
     func testExport_CreatesValidDump() throws {
         // Create database with test data
         let db = try BlazeDBClient(name: uniqueName("export-test"), fileURL: try requireFixture(tempDBURL), password: password)
-        defer { try? try requireFixture(db).close() }
+        defer { try? requireFixture(db).close() }
         _ = try requireFixture(db).insert(BlazeDataRecord(["name": .string("Alice"), "age": .int(30)]))
         _ = try requireFixture(db).insert(BlazeDataRecord(["name": .string("Bob"), "age": .int(25)]))
         
@@ -66,7 +66,7 @@ final class ImportExportTests: XCTestCase {
     func testExport_DeterministicOutput() throws {
         // Create database
         let db = try BlazeDBClient(name: uniqueName("deterministic-test"), fileURL: try requireFixture(tempDBURL), password: password)
-        defer { try? try requireFixture(db).close() }
+        defer { try? requireFixture(db).close() }
         _ = try requireFixture(db).insert(BlazeDataRecord(["name": .string("Test"), "value": .int(42)]))
         
         // Export twice
@@ -131,7 +131,7 @@ final class ImportExportTests: XCTestCase {
     func testImport_RefusesNonEmptyDatabase() throws {
         // Create database with data
         let db = try BlazeDBClient(name: uniqueName("nonempty-test"), fileURL: try requireFixture(tempDBURL), password: password)
-        defer { try? try requireFixture(db).close() }
+        defer { try? requireFixture(db).close() }
         _ = try requireFixture(db).insert(BlazeDataRecord(["name": .string("Existing")]))
         
         // Create dump
@@ -158,7 +158,7 @@ final class ImportExportTests: XCTestCase {
     func testVerify_ValidDump_Succeeds() throws {
         // Create and export database
         let db = try BlazeDBClient(name: uniqueName("verify-test"), fileURL: try requireFixture(tempDBURL), password: password)
-        defer { try? try requireFixture(db).close() }
+        defer { try? requireFixture(db).close() }
         _ = try requireFixture(db).insert(BlazeDataRecord(["test": .string("data")]))
         try requireFixture(db).export(to: try requireFixture(tempDumpURL))
         
@@ -171,7 +171,7 @@ final class ImportExportTests: XCTestCase {
     func testVerify_TamperedDump_Fails() throws {
         // Create and export database
         let db = try BlazeDBClient(name: uniqueName("tamper-test"), fileURL: try requireFixture(tempDBURL), password: password)
-        defer { try? try requireFixture(db).close() }
+        defer { try? requireFixture(db).close() }
         _ = try requireFixture(db).insert(BlazeDataRecord(["test": .string("data")]))
         try requireFixture(db).export(to: try requireFixture(tempDumpURL))
         
@@ -190,7 +190,7 @@ final class ImportExportTests: XCTestCase {
     func testImport_SchemaMismatch_Refuses() throws {
         // Create database with schema version
         let db = try BlazeDBClient(name: uniqueName("schema-test"), fileURL: try requireFixture(tempDBURL), password: password)
-        defer { try? try requireFixture(db).close() }
+        defer { try? requireFixture(db).close() }
         try requireFixture(db).setSchemaVersion(SchemaVersion(major: 1, minor: 0))
         _ = try requireFixture(db).insert(BlazeDataRecord(["test": .string("data")]))
         
@@ -221,7 +221,7 @@ final class ImportExportTests: XCTestCase {
     func testImport_SchemaMismatch_Allowed() throws {
         // Create database with schema version
         let db = try BlazeDBClient(name: uniqueName("schema-allow-test"), fileURL: try requireFixture(tempDBURL), password: password)
-        defer { try? try requireFixture(db).close() }
+        defer { try? requireFixture(db).close() }
         try requireFixture(db).setSchemaVersion(SchemaVersion(major: 1, minor: 0))
         _ = try requireFixture(db).insert(BlazeDataRecord(["test": .string("data")]))
         
