@@ -20,6 +20,19 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ---
 
+## [2.7.3] - 2026-04-03
+
+### Added
+
+- **TypedStore** ergonomic API and tests — typed document storage helpers on top of the dynamic collection surface.
+
+### Changed
+
+- Documentation: finalize OSS-facing surface, remove internal analysis artifacts, align public narrative.
+- OSS hygiene: remove maintainer leaks, align CI/Linux docs, OSS-safe Xcode settings.
+
+---
+
 ## [2.7.2] - 2026-04-03
 
 ### Deprecated
