@@ -39,11 +39,12 @@ For release line policy, see `Docs/RELEASE_POSTURE.md`.
 | ------- | ------ | ------- | ------------- | -------- | ----- |
 | Document store (single-collection) | Stable | Public | `Core/DynamicCollection.swift` | — | All record types share one encrypted collection per DB file |
 | Client lifecycle (open / close / validate) | Stable | Public | `Exports/BlazeDBClient+EasyOpen.swift`, `+Convenience.swift`, `+DX.swift`, `+Lifecycle.swift`, `+Compatibility.swift` | — | `open(named:)`, `openOrCreate()`, `close()`; `FormatVersion` on-disk compat check |
-| CRUD operations | Stable | Public | `Exports/BlazeDBClient.swift`, `Core/DynamicCollection.swift` | — | insert/fetch/update/delete/fetchAll; batch upsert via `+Batch.swift` |
+| CRUD operations | Stable | Public | `Exports/BlazeDBClient.swift`, `Core/DynamicCollection.swift` | — | insert/fetch/update/delete/fetchAll; batch upsert via `+Batch.swift`; **`fetchAll()` silently drops records that fail to decode** (`try?` in bulk path) while individual `fetch(id:)` throws — behavioral split |
 | Record encoding (BlazeBinary + JSON) | Stable | Internal | `Utils/BlazeBinary*.swift`, `Core/BlazeRecordEncoder.swift`, `Core/BlazeRecordDecoder.swift` | — | BlazeBinary codec (18 files in `Utils/`); JSON legacy supported |
 | Record builder DSL | Internal | Public with caveats | `Core/BlazeRecordDSL.swift` | — | Public `RecordBuilder` / `RecordField`; not referenced in examples or onboarding docs |
 | Multi-database manager | Advanced / Opt-in | Public with caveats | `Core/BlazeDBManager.swift` | — | `BlazeDBManager.shared`; mount/unmount/switch databases; used by CLI tools |
 | Change observation | Internal | Public with caveats | `Core/ChangeObservation.swift`, `Observability/BlazeDBSnapshot.swift` | — | `db.observe { changes in }` pub/sub; `DatabaseChange`, `ObserverToken`; 50ms coalesced batching |
+| `BlazeDBError` unified error model | Stable | Public | `Exports/BlazeDBClient.swift` | — | 15 cases covering CRUD, transactions, migrations, queries, concurrency, integrity, security; `LocalizedError` with actionable messages; every public API throws this type |
 | Metadata store | Stable | Internal | `Core/MetaStore.swift`, `Storage/StorageLayout.swift` | — | Index map, deleted pages, schema version |
 | Page-based storage | Stable | Internal | `Storage/PageStore.swift` | — | 4KB pages, AES-256-GCM encrypted |
 | Record cache | Internal | Internal | `Core/RecordCache.swift` | — | In-memory LRU |
@@ -55,15 +56,15 @@ For release line policy, see `Docs/RELEASE_POSTURE.md`.
 | Feature | Status | Surface | Code location | Tracking | Notes |
 | ------- | ------ | ------- | ------------- | -------- | ----- |
 | WAL (write-ahead log) | Stable | Internal | `Storage/WriteAheadLog.swift`, `Storage/WALEntry.swift` | — | Binary WAL; fsync before main-file write |
-| Crash recovery / WAL replay | Stable | Internal | `Storage/RecoveryManager.swift` | — | Replays committed entries on init |
+| Crash recovery / WAL replay | Stable | Internal | `Storage/RecoveryManager.swift` | — | Replays committed entries on init; **uncommitted transactions silently discarded**; corrupt mid-WAL entry is a hard failure (DB refuses to open); no "skip recovery" mode |
 | Durability manager | Stable | Internal | `Storage/DurabilityManager.swift` | — | LSN allocation, checkpoint metadata |
-| Page cache | Stable | Internal | `Storage/PageCache.swift` | — | LRU, 1000-page default |
+| Page cache | Stable | Internal | `Storage/PageCache.swift` | — | LRU, 1000-page default (~4MB); O(n) eviction via array scan; cache size not configurable via public API; thread-safe via `NSLock` (independent of collection's GCD queue) |
 | Overflow pages | Stable | Internal | `Storage/PageStore+Overflow.swift` | — | Records larger than one page |
 | Compression | Stable | Internal | `Storage/PageStore+Compression.swift`, `Storage/CompressionSupport.swift` | [#43](https://github.com/Mikedan37/BlazeDB/issues/43) | zlib; Linux parity tracked in #43 |
 | Vacuum / compaction | Internal | Internal | `Storage/VacuumCompaction.swift`, `VacuumOperations.swift`, `VacuumRecovery.swift` | — | Page reclamation; no public API |
 | Page reuse GC | Internal | Internal | `Core/PageReuseGC.swift` | — | Free-page allocation/reclaim; distinct from vacuum compaction |
 | Storage manager | Partial | Public with caveats | `Storage/StorageManager.swift` | — | Public `performCleanup()`, `databaseDiskUsage()`; no docs or onboarding path |
-| Backup / export | Stable | Public | `Storage/BlazeDBBackup.swift`, `Exports/BlazeDBClient+Export.swift`, `Exports/BlazeDBImporter.swift` | — | `db.export(to:)` + `BlazeDBImporter.verify()` |
+| Backup / export | Stable | Public | `Storage/BlazeDBBackup.swift`, `Exports/BlazeDBClient+Export.swift`, `Exports/BlazeDBImporter.swift` | — | `db.export(to:)` produces deterministic JSON (`DatabaseDump`); SHA256 tamper detection on Apple; **base64 fallback on Linux (not cryptographic)** — see `Core/DumpFormat.swift` |
 | Forensics | Internal | Internal | `Storage/BlazeDBForensics.swift` | — | Low-level page inspection |
 
 ### Transactions and Concurrency
@@ -72,8 +73,8 @@ For release line policy, see `Docs/RELEASE_POSTURE.md`.
 | ------- | ------ | ------- | ------------- | -------- | ----- |
 | Explicit transactions | Stable | Public | `Exports/BlazeDBClient.swift`, `Transactions/` | — | `beginTransaction()` / `commitTransaction()` / `rollbackTransaction()`; savepoints |
 | MVCC (multi-version concurrency) | Advanced / Opt-in | Public with caveats | `Core/MVCC/`, `Exports/BlazeDBClient+MVCC.swift` | — | `db.setMVCCEnabled(true)`; snapshot isolation |
-| GCD concurrent-read / barrier-write | Stable | Internal | `Core/DynamicCollection.swift` | — | Thread-safety model |
-| Page garbage collector | Internal | Internal | `Core/MVCC/PageGarbageCollector.swift`, `AutomaticGC.swift` | — | Automatic + manual GC for MVCC |
+| GCD concurrent-read / barrier-write | Stable | Internal | `Core/DynamicCollection.swift` | — | Per-collection `DispatchQueue(.concurrent)`; queue label is placeholder `com.yourorg.blazedb` (indistinguishable in Instruments); `fetchAll` on Apple has 5-second static in-memory cache (`NSLock`-guarded, independent of queue) |
+| Page garbage collector | Internal | Internal | `Core/MVCC/PageGarbageCollector.swift`, `AutomaticGC.swift` | — | Automatic (60s interval / 100 txn / 3.0 avg versions threshold) + manual GC; **holds `VersionManager` lock during collection — blocks all MVCC reads and writes**; only runs when MVCC is enabled |
 | Async APIs | Advanced / Opt-in | Public with caveats | `Exports/BlazeDBClient+AsyncOptimized.swift`, `Core/DynamicCollection+Async.swift` | [#75](https://github.com/Mikedan37/BlazeDB/issues/75) | `insertAsync`, `fetchAsync`, etc. Gated: `#if !BLAZEDB_LINUX_CORE` — Apple platforms only |
 
 ### Encryption and Security
@@ -81,9 +82,9 @@ For release line policy, see `Docs/RELEASE_POSTURE.md`.
 | Feature | Status | Surface | Code location | Tracking | Notes |
 | ------- | ------ | ------- | ------------- | -------- | ----- |
 | AES-256-GCM page encryption | Stable | Internal | `Storage/PageStore.swift` | — | Always-on in production; per-page auth tags |
-| Key management | Stable | Internal | `Crypto/KeyManager.swift` | — | `CryptoKit` / `swift-crypto`; password-derived |
+| Key management | Stable | Internal | `Crypto/KeyManager.swift` | — | PBKDF2-HMAC-SHA256, 600k iterations (100k in tests, configurable via `BLAZEDB_PBKDF2_ITERATIONS` env var); `CryptoKit` / `swift-crypto`; per-DB salt; legacy `KeySource.password` path uses hardcoded static salt (deprecated) |
 | HMAC-SHA256 metadata signing | Stable | Internal | `Storage/StorageLayout+Security.swift` | — | Tamper detection on metadata |
-| Argon2 KDF | Internal | Internal | `Crypto/Argon2KDF.swift` | — | Key derivation |
+| Argon2 KDF | Internal | Internal | `Crypto/Argon2KDF.swift` | — | Argon2-inspired, **not standards-compliant Argon2id**; not called by `KeyManager` in production — actual KDF is PBKDF2 (see Key management row); dead code for key derivation purposes |
 | Forward secrecy manager | Internal | Internal | `Crypto/ForwardSecrecyManager.swift` | — | Key rotation helpers |
 | Row-level security (RLS) | Partial | Internal | `Security/RLSPolicy.swift`, `Security/PolicyEngine.swift`, `Security/AccessManager.swift` | — | Policy infrastructure exists; not enforced by default |
 | Security context / policy | Internal | Internal | `Security/SecurityContext.swift`, `SecurityPolicy.swift`, `SecurityAuditor.swift` | — | Audit and policy evaluation infrastructure |
@@ -96,9 +97,9 @@ For release line policy, see `Docs/RELEASE_POSTURE.md`.
 
 | Feature | Status | Surface | Code location | Tracking | Notes |
 | ------- | ------ | ------- | ------------- | -------- | ----- |
-| `BlazeStorable` protocol | Stable | Public | `Codable/CodableIntegration.swift` | — | `Codable + Identifiable where ID == UUID` |
-| `TypedStore<T>` | Stable | Public | `Codable/TypedStore.swift` | — | `db.typed(T.self)` — CRUD + KeyPath queries |
-| `BlazeDocument` protocol | Stable | Public with caveats | `TypeSafety/BlazeDocument.swift` | — | Manual `toStorage()` / `init(from:)` mapping; required for `@BlazeQueryTyped` |
+| `BlazeStorable` protocol | Stable | Public | `Codable/CodableIntegration.swift` | — | `Codable + Identifiable where ID == UUID`; recommended path; **no bridge to `BlazeDocument`** — cannot use `@BlazeQueryTyped` without rewriting model |
+| `TypedStore<T>` | Stable | Public with caveats | `Codable/TypedStore.swift` | — | `db.typed(T.self)` — CRUD + KeyPath queries; `fetchAll()` uses `map` (not `compactMap`) — **throws if any record in DB fails to decode as `T`**; `count()` returns total DB record count, not type-`T` count; safe only for single-model-type databases |
+| `BlazeDocument` protocol | Stable | Public with caveats | `TypeSafety/BlazeDocument.swift` | [#37](https://github.com/Mikedan37/BlazeDB/issues/37) | Manual `toStorage()` / `init(from:)` mapping; required for `@BlazeQueryTyped`; `storage` getter silently swallows errors (#37); no bridge from `BlazeStorable` |
 | `BlazeDataRecord` (raw API) | Stable | Public | `Exports/BlazeTypes.swift` | — | Dynamic schemas, migration scripts |
 | `BlazeDocumentField` value type | Stable | Public | `Core/BlazeDocumentField.swift` | — | `.string`, `.int`, `.bool`, etc. |
 
@@ -108,7 +109,7 @@ For release line policy, see `Docs/RELEASE_POSTURE.md`.
 | ------- | ------ | ------- | ------------- | -------- | ----- |
 | `QueryBuilder` (field-name) | Stable | Public | `Query/QueryBuilder.swift` | — | `db.query().where("field", equals: .value).execute()` |
 | `TypeSafeQueryBuilder` (KeyPath) | Stable | Public | `Query/QueryBuilderKeyPath.swift` | — | `users.query().where(\.age, greaterThan: 21).all()` |
-| Query planner | Stable | Internal | `Query/QueryPlanner.swift` | — | Strategy selection for execution |
+| Query planner | Stable | Internal | `Query/QueryPlanner.swift` | — | Strategy selection only; `.regularIndex` path still fetches all records and filters in memory; `.vectorIndex`, `.fullTextIndex`, `.hybrid` strategies **fall back to sequential scan** — index-accelerated execution not yet wired |
 | Query explain | Stable | Public | `Query/QueryPlanner+Explain.swift`, `QueryBuilder+Explain.swift` | — | `query.explain()` |
 | Full-text search | Partial | Internal | `Query/FullTextSearch.swift`, `Query/AdvancedSearch.swift` | — | Inverted index integration; no public stable creation API |
 | Aggregation | Partial | Public with caveats | `Query/BlazeAggregation.swift`, `Query/WindowFunctions.swift` | — | Sum/avg/count/min/max; window functions internal |
@@ -124,7 +125,7 @@ For release line policy, see `Docs/RELEASE_POSTURE.md`.
 | Feature | Status | Surface | Code location | Tracking | Notes |
 | ------- | ------ | ------- | ------------- | -------- | ----- |
 | Secondary indexes (compound key) | Internal | Internal | `Core/CompoundIndexKey.swift`, `Core/WorkspaceIndexing.swift` | — | Used internally by query engine |
-| B-tree index | Internal | Internal | `Storage/BTreeIndex.swift` | — | Storage-level implementation |
+| B-tree index | Internal | Internal | `Storage/BTreeIndex.swift` | — | Storage-level data structure; **not consumed by query execution path** — planner uses for cost estimation only |
 | Inverted index (FTS) | Internal | Internal | `Storage/InvertedIndex.swift` | — | Backing for full-text search |
 | Vector index | Internal | Internal | `Storage/VectorIndex.swift` | — | Nearest-neighbor search backing |
 | Spatial index | Internal | Internal | `Storage/SpatialIndex.swift` | — | Geo-spatial query backing |
@@ -147,8 +148,8 @@ For release line policy, see `Docs/RELEASE_POSTURE.md`.
 
 | Feature | Status | Surface | Code location | Tracking | Notes |
 | ------- | ------ | ------- | ------------- | -------- | ----- |
-| `@BlazeQuery` | Stable | Public with caveats | `SwiftUI/BlazeQuery.swift` | — | Apple platforms only; `#if canImport(SwiftUI)` |
-| `@BlazeQueryTyped` | Stable | Public with caveats | `SwiftUI/BlazeQueryTyped.swift` | — | Requires `BlazeDocument`, not `BlazeStorable` |
+| `@BlazeQuery` | Stable | Public with caveats | `SwiftUI/BlazeQuery.swift` | — | Apple platforms only; `#if canImport(SwiftUI)`; **hard dependency on `ChangeObservation` subsystem** (`ObserverToken`, `db.observe()`); changes to observation API break SwiftUI wrappers |
+| `@BlazeQueryTyped` | Stable | Public with caveats | `SwiftUI/BlazeQueryTyped.swift` | — | Requires `BlazeDocument`, not `BlazeStorable`; **no bridge protocol** — `BlazeStorable` users must rewrite models to use typed queries; same `ChangeObservation` dependency as `@BlazeQuery` |
 
 ### Distributed / Transport
 
@@ -210,7 +211,7 @@ Additional example files in `Examples/` (`.swift` files) are standalone referenc
 | watchOS 8+ | Stable | Declared in Package.swift | Limited CI |
 | tvOS 15+ | Stable | Declared in Package.swift | Limited CI |
 | visionOS 1+ | Stable | Declared in Package.swift | Limited CI |
-| Linux (Swift 6.0+) | Stable | Blocking lane (core + Tier0) | `BLAZEDB_LINUX_CORE`; SwiftUI excluded |
+| Linux (Swift 6.0+) | Stable | Blocking lane (core + Tier0) | `BLAZEDB_LINUX_CORE` gates **68 files** across spatial, vector, async APIs, trigger persistence, FTS internals, query planner branches — effectively a second operating mode, not just SwiftUI exclusion |
 | Android | Partial | Best-effort | `BLAZEDB_LINUX_CORE` path; Swift 6.3+ / NDK |
 
 ### Testing and CI
@@ -292,4 +293,4 @@ Bug fixes, internal refactors, and doc-only changes that do not change what is s
 
 ---
 
-_Last verified against `main` at tag v2.7.3 (commit `63e9844`). Deep surface census applied._
+_Last verified against `main` at tag v2.7.3 (commit `63e9844`). Deep surface census + truth extraction applied._
