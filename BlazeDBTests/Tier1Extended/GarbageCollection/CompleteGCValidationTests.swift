@@ -37,17 +37,22 @@ final class CompleteGCValidationTests: XCTestCase {
         db = try BlazeDBClient(name: "complete_gc_test", fileURL: url, password: "SecureTestDB-456!")
     }
     
-    override func tearDown() {
+    override func tearDown() async throws {
         if let url = tempURL {
             cleanupBlazeDB(&db, at: url)
         }
         BlazeDBClient.clearCachedKey()
-        super.tearDown()
+        try await super.tearDown()
     }
 
     private var isHeavyStressMode: Bool {
         ProcessInfo.processInfo.environment["RUN_HEAVY_STRESS"] == "1" ||
         ProcessInfo.processInfo.environment["TEST_SLOW_CONCURRENCY"] == "1"
+    }
+
+    /// GitHub-hosted macOS runners are memory- and time-bounded; the full “6×1000” simulation can abort the XCTest worker without a normal assertion failure (nightly Tier1 extended then exits non-zero right after this test starts).
+    private var isCI: Bool {
+        ProcessInfo.processInfo.environment["CI"] == "true"
     }
 
     private func scaled(_ value: Int, floor: Int = 1) -> Int {
@@ -57,6 +62,14 @@ final class CompleteGCValidationTests: XCTestCase {
 
     private func requireDatabaseURL() throws -> URL {
         try XCTUnwrap(tempURL, "temp URL must be set in setUp")
+    }
+
+    /// Cross-platform on-disk size (Swift `URL.resourceValues(forKeys: [.fileSizeKey])` can report 0 on Linux right after create).
+    private func databaseFileSizeBytes() throws -> Int64 {
+        let url = try requireDatabaseURL()
+        let attrs = try FileManager.default.attributesOfItem(atPath: url.path)
+        let n = attrs[.size] as? NSNumber
+        return n?.int64Value ?? 0
     }
     
     // MARK: - THE ULTIMATE TEST
@@ -76,20 +89,40 @@ final class CompleteGCValidationTests: XCTestCase {
         gcConfig.verbose = true
         try requireFixture(db).configureGC(gcConfig)
         
-        let sizeInitial = try requireDatabaseURL().resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 1
-        print("\n📊 Initial file size: \(sizeInitial / 1000) KB")
+        // Establish a meaningful on-disk baseline so "10× growth" reflects churn, not bytes÷tiny header.
+        try requireFixture(db).persist()
+        var sizeInitial = try databaseFileSizeBytes()
+        var warmupPads = 0
+        while sizeInitial < 512 * 1024 && warmupPads < 256 {
+            _ = try requireFixture(db).insert(BlazeDataRecord([
+                "_gc_pad": .string(String(repeating: "z", count: 16_000))
+            ]))
+            warmupPads += 1
+            try requireFixture(db).persist()
+            sizeInitial = try databaseFileSizeBytes()
+        }
+        XCTAssertGreaterThan(
+            sizeInitial,
+            256 * 1024,
+            "Sanity: warmup should leave a >=256KB database file before measuring growth ratio"
+        )
+        print("\n📊 Initial file size: \(sizeInitial / 1000) KB (warmup inserts: \(warmupPads))")
         
-        // Simulate 6 months of heavy usage
-        print("\n🔄 Simulating 6 months of heavy usage...")
+        // Simulate months of heavy usage (full scale locally / stress; reduced on CI for bounded time + memory).
+        let monthCount = isHeavyStressMode ? 6 : (isCI ? 3 : 6)
+        let insertsPerMonth = isHeavyStressMode ? 1000 : (isCI ? scaled(600, floor: 220) : 1000)
+        let updatesPerMonth = isHeavyStressMode ? 500 : (isCI ? scaled(300, floor: 100) : 500)
+        let deletesPerMonth = isHeavyStressMode ? 300 : (isCI ? scaled(180, floor: 60) : 300)
+
+        print("\n🔄 Simulating \(monthCount) months of heavy usage (inserts/mo=\(insertsPerMonth), updates/mo=\(updatesPerMonth), deletes/mo=\(deletesPerMonth))...")
         
         var ids: [UUID] = []
         
-        for month in 1...6 {
+        for month in 1...monthCount {
             print("\n📅 Month \(month):")
             
-            // Insert 1000 records
-            print("   📝 Inserting 1000 records...")
-            for i in 0..<1000 {
+            print("   📝 Inserting \(insertsPerMonth) records...")
+            for i in 0..<insertsPerMonth {
                 let id = try requireFixture(db).insert(BlazeDataRecord([
                     "month": .int(month),
                     "index": .int(i),
@@ -98,21 +131,19 @@ final class CompleteGCValidationTests: XCTestCase {
                 ids.append(id)
             }
             
-            // Update 500 records (creates new versions)
-            print("   ✏️  Updating 500 records...")
-            for id in ids.prefix(500).shuffled() {
+            print("   ✏️  Updating \(updatesPerMonth) records...")
+            for id in ids.prefix(updatesPerMonth).shuffled() {
                 try requireFixture(db).update(id: id, with: BlazeDataRecord([
                     "updated": .bool(true)
                 ]))
             }
             
-            // Delete 300 old records
-            print("   🗑️ Deleting 300 old records...")
-            if ids.count > 300 {
-                for id in ids.prefix(300) {
+            print("   🗑️ Deleting \(deletesPerMonth) old records...")
+            if ids.count > deletesPerMonth {
+                for id in ids.prefix(deletesPerMonth) {
                     try requireFixture(db).delete(id: id)
                 }
-                ids.removeFirst(300)
+                ids.removeFirst(deletesPerMonth)
             }
             
             // Persist and GC
@@ -121,7 +152,7 @@ final class CompleteGCValidationTests: XCTestCase {
             print("   ♻️  GC removed \(removed) old versions")
             
             // Check size
-            let sizeNow = try requireDatabaseURL().resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0
+            let sizeNow = try databaseFileSizeBytes()
             let growth = Double(sizeNow - sizeInitial) / Double(sizeInitial)
             
             print("   📊 File size: \(sizeNow / 1_000_000) MB (growth: \(String(format: "%.1f", growth * 100))%)")
@@ -132,14 +163,14 @@ final class CompleteGCValidationTests: XCTestCase {
                 print("   🗑️ Running VACUUM (waste: \(String(format: "%.1f", health.wastedPercentage * 100))%)...")
                 try requireFixture(db).vacuum()
                 
-                let sizeAfterVacuum = try requireDatabaseURL().resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0
+                let sizeAfterVacuum = try databaseFileSizeBytes()
                 print("   ✅ VACUUM complete: \(sizeAfterVacuum / 1_000_000) MB")
             }
         }
         
         // Final check
-        let sizeFinal = try requireDatabaseURL().resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0
-        let totalGrowth = Double(sizeFinal - sizeInitial) / max(Double(sizeInitial), 1.0)
+        let sizeFinal = try databaseFileSizeBytes()
+        let totalGrowth = Double(sizeFinal - sizeInitial) / Double(sizeInitial)
         
         print("\n" + String(repeating: "=", count: 60))
         print("📊 FINAL RESULTS:")
@@ -191,7 +222,7 @@ final class CompleteGCValidationTests: XCTestCase {
         }
         
         try requireFixture(db).persist()
-        let baselineSize = try requireDatabaseURL().resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0
+        let baselineSize = try databaseFileSizeBytes()
         
         // Heavy churn (10 cycles of update/delete)
         for cycle in 0..<10 {
@@ -223,9 +254,9 @@ final class CompleteGCValidationTests: XCTestCase {
         }
         
         try requireFixture(db).persist()
-        let finalSize = try requireDatabaseURL().resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0
+        let finalSize = try databaseFileSizeBytes()
         
-        let ratio = Double(finalSize) / Double(baselineSize)
+        let ratio = Double(finalSize) / max(Double(baselineSize), 1.0)
         
         print("  Baseline: \(baselineSize / 1_000_000) MB")
         print("  Final:    \(finalSize / 1_000_000) MB")
