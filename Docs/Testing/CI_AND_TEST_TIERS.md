@@ -85,8 +85,9 @@ Use this table for day-to-day expectations.
 - Must stay bounded and stable.
 
 - `BlazeDB_Tier1Fast`
-- Default PR correctness gate from `BlazeDBTests/Tier1Core/`, intentionally reduced with a broader `Package.swift` exclude list to keep blocking runtime bounded.
+- Default PR correctness gate from `BlazeDBTests/Tier1Core/`.
 - Sources: `BlazeDBTests/Tier1Core/` in root package.
+- Only three files remain excluded (see `Package.swift` excludes below).
 
 - `BlazeDB_Tier1FastFull`
 - Broader deterministic Tier1 lane from the same `Tier1Core` sources, defined under `BlazeDBExtraTests/Package.swift` for deeper/manual lanes.
@@ -130,7 +131,15 @@ Inventory/bootstrap code may still bucket all three SwiftPM modules under a sing
 
 ### `BlazeDB_Tier1Fast` excludes
 
-A few files remain **excluded** from `Tier1Core` in `Package.swift` because they do not compile or fit the core-only harness yet. That is **intentional debt**: track them, rehome into the right lane, or fix the underlying code—do not treat the exclude list as permanent.
+Three files remain **excluded** from `BlazeDB_Tier1Fast` in `Package.swift`:
+
+| File | Root cause | Issue | Fix |
+| ---- | ---------- | ----- | --- |
+| `Security/SecureConnectionTests.swift` | Wrong target ownership — tests `SecureConnection` (in `Distributed/`) + `import Network` (Apple-only). 3 of 4 tests are pure crypto. | [#73](https://github.com/Mikedan37/BlazeDB/issues/73) | Split: transport test → distributed lane, crypto tests → Tier1Core |
+| `Security/KeyManagerTests.swift` | 2 of 7 tests call deleted `KeyManager.generateSalt(for:)`. Other 5 compile fine. | [#74](https://github.com/Mikedan37/BlazeDB/issues/74) | Replace `generateSalt` with manual salt, remove exclusion |
+| `Concurrency/BlazeDBAsyncTests.swift` | Async APIs gated behind `#if !BLAZEDB_LINUX_CORE`; test has no matching guard. APIs are NOT removed. | [#75](https://github.com/Mikedan37/BlazeDB/issues/75) | Add `#if !BLAZEDB_LINUX_CORE` to test file, remove exclusion |
+
+All other `Tier1Core` directories and files (Aggregation, API, Query, Integration, Features, Migration, etc.) are now included in the PR gate.
 
 ## Local Entry Points
 
