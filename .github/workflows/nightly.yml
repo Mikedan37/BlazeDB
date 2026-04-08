@@ -48,8 +48,11 @@ jobs:
       - name: Test Tier 1 extended
         run: swift test --filter BlazeDB_Tier1Extended
 
+      # Do not use --skip-build here: Tier1Perf is not built by the prior Tier1Extended-only
+      # step, so a cached test bundle can run against stale library code (wrong line numbers /
+      # pre-fix behavior after BlazeDBCore-only rebuild + cache restore).
       - name: Test Tier 1 perf
-        run: swift test --skip-build --filter BlazeDB_Tier1Perf
+        run: swift test --filter BlazeDB_Tier1Perf
 
       - name: Test Tier 1 fast full (broader deterministic)
         run: swift test --filter BlazeDB_Tier1FastFull

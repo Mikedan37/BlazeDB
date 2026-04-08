@@ -59,8 +59,9 @@ jobs:
       - name: Test Tier 1 extended
         run: swift test --filter BlazeDB_Tier1Extended
 
+      # Rebuild Tier1Perf so it links the current BlazeDBCore (avoid stale cached bundle).
       - name: Test Tier 1 perf
-        run: swift test --skip-build --filter BlazeDB_Tier1Perf
+        run: swift test --filter BlazeDB_Tier1Perf
 
       - name: Test Tier 2 integration/recovery
         run: ./Scripts/run-tier2.sh
