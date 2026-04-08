@@ -64,7 +64,7 @@ jobs:
         run: swift test --filter BlazeDB_Tier1Perf
 
       - name: Test Tier 2 integration/recovery
-        run: ./Scripts/run-tier2.sh
+        run: ./Scripts/run-tier2.sh --strict
 
       - name: Test Tier 3 heavy stress/fuzz
         env:
