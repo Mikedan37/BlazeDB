@@ -241,7 +241,7 @@ final class OverflowChainCrashAtomicityTests: XCTestCase {
         let store = try PageStore(fileURL: URL(fileURLWithPath: dbPath), key: SymmetricKey(size: .bits256))
 
         if hook == "afterWALAppendBeforeCommitMark" {
-            var tx = BlazeTransaction(store: store)
+            let tx = BlazeTransaction(store: store)
             try tx.write(pageID: 0, data: deterministicData(size: 512, seed: 0x19))
             try tx.commit()
             return

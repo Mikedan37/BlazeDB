@@ -63,8 +63,8 @@ final class TypeSafeAsyncEdgeCaseTests: XCTestCase {
         let startCount = try await requireFixture(db).count()
         if startCount != 0 {
             print("⚠️ CRITICAL: TypeAsync test database not empty! Has \(startCount) records. Force wiping...")
-            _ = try? await try requireFixture(db).deleteMany(where: { _ in true })
-            try? await try requireFixture(db).persist()
+            _ = try? await requireFixture(db).deleteMany(where: { _ in true })
+            try? await requireFixture(db).persist()
         }
     }
     

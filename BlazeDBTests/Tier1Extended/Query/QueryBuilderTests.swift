@@ -398,7 +398,7 @@ final class QueryBuilderTests: XCTestCase {
     }
     
     func testComplexQuery() throws {
-        let now = Date()
+        _ = Date()
         
         _ = try requireFixture(db).insert(BlazeDataRecord([
             "title": .string("Bug 1"),
@@ -491,7 +491,7 @@ final class QueryBuilderTests: XCTestCase {
         let results = try requireFixture(db).query()
             .where("status", equals: .string("open"))
             .join(try requireFixture(usersDB).collection, on: "author_id", equals: "id")
-            .executeJoin()
+            .execute().joined
         
         // Filter by author role (done after join for now)
         let seniorBugs = results.filter {
@@ -542,7 +542,7 @@ final class QueryBuilderTests: XCTestCase {
         let results = try requireFixture(db).query()
             .join(try requireFixture(usersDB).collection, on: "author_id")
             .orderBy("priority", descending: true)
-            .executeJoin()
+            .execute().joined
         
         XCTAssertEqual(results.count, 3)
         XCTAssertEqual(results[0].left["title"]?.stringValue, "Bug A") // priority 3
@@ -576,7 +576,7 @@ final class QueryBuilderTests: XCTestCase {
         let results = try requireFixture(db).query()
             .join(try requireFixture(usersDB).collection, on: "author_id")
             .limit(5)
-            .executeJoin()
+            .execute().joined
         
         XCTAssertEqual(results.count, 5)
     }
@@ -611,7 +611,7 @@ final class QueryBuilderTests: XCTestCase {
         let results = try requireFixture(db).query()
             .where("status", equals: .string("open"))
             .join(try requireFixture(usersDB).collection, on: "author_id")
-            .executeJoin()
+            .execute().joined
         let duration = Date().timeIntervalSince(start)
         
         XCTAssertEqual(results.count, 100)

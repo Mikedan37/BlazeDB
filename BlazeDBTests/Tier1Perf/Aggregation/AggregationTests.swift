@@ -72,7 +72,7 @@ final class AggregationTests: XCTestCase {
         // Count all
         let result = try requireFixture(db).query()
             .count()
-            .executeAggregation()
+            .execute().aggregation
         
         XCTAssertEqual(result.count, 100)
     }
@@ -88,7 +88,7 @@ final class AggregationTests: XCTestCase {
         let result = try requireFixture(db).query()
             .where("status", equals: .string("open"))
             .count()
-            .executeAggregation()
+            .execute().aggregation
         
         XCTAssertEqual(result.count, 50)
     }
@@ -103,7 +103,7 @@ final class AggregationTests: XCTestCase {
         
         let result = try requireFixture(db).query()
             .sum("value", as: "total")
-            .executeAggregation()
+            .execute().aggregation
         
         XCTAssertEqual(result.sum("total"), 45.0)  // 0+1+2+...+9 = 45
     }
@@ -115,7 +115,7 @@ final class AggregationTests: XCTestCase {
         
         let result = try requireFixture(db).query()
             .sum("price", as: "total")
-            .executeAggregation()
+            .execute().aggregation
         
         XCTAssertEqual(result.sum("total") ?? 0, 36.5, accuracy: 0.01)
     }
@@ -127,7 +127,7 @@ final class AggregationTests: XCTestCase {
         
         let result = try requireFixture(db).query()
             .avg("value", as: "average")
-            .executeAggregation()
+            .execute().aggregation
         
         XCTAssertEqual(result.avg("average"), 5.5)  // (1+10)/2 = 5.5
     }
@@ -139,7 +139,7 @@ final class AggregationTests: XCTestCase {
         
         let result = try requireFixture(db).query()
             .min("value", as: "minimum")
-            .executeAggregation()
+            .execute().aggregation
         
         XCTAssertEqual(result.min("minimum")?.intValue, 5)
     }
@@ -151,7 +151,7 @@ final class AggregationTests: XCTestCase {
         
         let result = try requireFixture(db).query()
             .max("value", as: "maximum")
-            .executeAggregation()
+            .execute().aggregation
         
         XCTAssertEqual(result.max("maximum")?.intValue, 20)
     }
@@ -169,7 +169,7 @@ final class AggregationTests: XCTestCase {
                 .min("value", as: "min"),
                 .max("value", as: "max")
             ])
-            .executeAggregation()
+            .execute().aggregation
         
         // Access count by alias "total" since that's what we named it
         XCTAssertEqual(result["total"]?.intValue ?? 0, 10)
@@ -202,7 +202,7 @@ final class AggregationTests: XCTestCase {
         let result = try requireFixture(db).query()
             .groupBy("status")
             .count(as: "total")
-            .executeGroupedAggregation()
+            .execute().grouped
         
         XCTAssertEqual(result.groups.count, 3)
         XCTAssert(result.groups.keys.contains("open"))
@@ -224,7 +224,7 @@ final class AggregationTests: XCTestCase {
         let result = try requireFixture(db).query()
             .groupBy(["priority", "status"])
             .count()
-            .executeGroupedAggregation()
+            .execute().grouped
         
         // Should have 6 groups: (1,open), (1,closed), (2,open), (2,closed), (3,open), (3,closed)
         XCTAssertEqual(result.groups.count, 6)
@@ -239,7 +239,7 @@ final class AggregationTests: XCTestCase {
         let result = try requireFixture(db).query()
             .groupBy("team")
             .sum("hours", as: "total_hours")
-            .executeGroupedAggregation()
+            .execute().grouped
         
         XCTAssertEqual(result.groups.count, 2)
         XCTAssertEqual(result.groups["A"]?.sum("total_hours") ?? 0, 30.5, accuracy: 0.01)
@@ -260,7 +260,7 @@ final class AggregationTests: XCTestCase {
         let result = try requireFixture(db).query()
             .groupBy("category")
             .avg("score", as: "avg_score")
-            .executeGroupedAggregation()
+            .execute().grouped
         
         XCTAssertEqual(result.groups.count, 2)
         XCTAssertEqual(result.groups["A"]?.avg("avg_score") ?? 0, 3.0, accuracy: 0.01)  // (1+2+3+4+5)/5
@@ -288,7 +288,7 @@ final class AggregationTests: XCTestCase {
                 .min("hours", as: "min_hours"),
                 .max("hours", as: "max_hours")
             ])
-            .executeGroupedAggregation()
+            .execute().grouped
         
         XCTAssertEqual(result.groups.count, 2)
         // Access count by alias "total" since that's what we named it
@@ -312,7 +312,7 @@ final class AggregationTests: XCTestCase {
             .groupBy("team")
             .count()
             .having { $0.count ?? 0 > 15 }
-            .executeGroupedAggregation()
+            .execute().grouped
         
         XCTAssertEqual(result.groups.count, 2)  // Only A and B
         XCTAssertNil(result.groups["C"])  // C filtered out by HAVING
@@ -331,7 +331,7 @@ final class AggregationTests: XCTestCase {
             .groupBy("team")
             .avg("priority", as: "avg_priority")
             .having { $0.avg("avg_priority") ?? 0 > 2.0 }
-            .executeGroupedAggregation()
+            .execute().grouped
         
         XCTAssertEqual(result.groups.count, 2)  // A (5) and B (3), not C (1)
         XCTAssertNotNil(result.groups["A"])
@@ -344,7 +344,7 @@ final class AggregationTests: XCTestCase {
     func testAggregationOnEmptyDataset() throws {
         let result = try requireFixture(db).query()
             .count()
-            .executeAggregation()
+            .execute().aggregation
         
         XCTAssertEqual(result.count, 0)
     }
@@ -354,7 +354,7 @@ final class AggregationTests: XCTestCase {
         
         let result = try requireFixture(db).query()
             .sum("nonexistent", as: "sum")
-            .executeAggregation()
+            .execute().aggregation
         
         XCTAssertEqual(result.sum("sum"), 0.0)
     }
@@ -366,7 +366,7 @@ final class AggregationTests: XCTestCase {
         let result = try requireFixture(db).query()
             .groupBy("status")
             .count()
-            .executeGroupedAggregation()
+            .execute().grouped
         
         XCTAssertEqual(result.groups.count, 1)  // All grouped as "null"
     }
@@ -398,7 +398,7 @@ final class AggregationTests: XCTestCase {
         print("  ✅ Query built")
         
         print("  Executing aggregation...")
-        let result = try query.executeAggregation()
+        let result = try query.execute().aggregation
         print("  ✅ Aggregation complete")
         print("    Result: \(result.values)")
         print("    Sum value: \(result.sum("sum") ?? -999.0)")
@@ -414,7 +414,7 @@ final class AggregationTests: XCTestCase {
         
         let result = try requireFixture(db).query()
             .sum("value", as: "sum")
-            .executeAggregation()
+            .execute().aggregation
         
         XCTAssertEqual(result.sum("sum") ?? 0, 30.5, accuracy: 0.01)
     }
@@ -424,9 +424,9 @@ final class AggregationTests: XCTestCase {
         let past = Date(timeIntervalSinceNow: -3600)
         let future = Date(timeIntervalSinceNow: 3600)
         
-        let id1 = try requireFixture(db).insert(BlazeDataRecord(["created_at": .date(now)]))
-        let id2 = try requireFixture(db).insert(BlazeDataRecord(["created_at": .date(past)]))
-        let id3 = try requireFixture(db).insert(BlazeDataRecord(["created_at": .date(future)]))
+        _ = try requireFixture(db).insert(BlazeDataRecord(["created_at": .date(now)]))
+        _ = try requireFixture(db).insert(BlazeDataRecord(["created_at": .date(past)]))
+        _ = try requireFixture(db).insert(BlazeDataRecord(["created_at": .date(future)]))
         
         // Verify records were inserted
         let allRecords = try requireFixture(db).fetchAll()
@@ -444,7 +444,7 @@ final class AggregationTests: XCTestCase {
                 .min("created_at", as: "earliest"),
                 .max("created_at", as: "latest")
             ])
-            .executeAggregation()
+            .execute().aggregation
         
         // Debug: Check what keys are available
         print("\n📊 Aggregation Result:")
@@ -536,7 +536,7 @@ final class AggregationTests: XCTestCase {
                 .count(as: "count"),
                 .sum("hours", as: "total_hours")
             ])
-            .executeGroupedAggregation()
+            .execute().grouped
         
         XCTAssertEqual(result.groups.count, 5)  // 5 priority levels
     }
@@ -563,7 +563,7 @@ final class AggregationTests: XCTestCase {
                 .avg("priority", as: "avg_priority")
             ])
             .having { ($0.values["bug_count"]?.intValue ?? 0) > 50 }
-            .executeGroupedAggregation()
+            .execute().grouped
         
         XCTAssertGreaterThan(result.groups.count, 0)
     }
@@ -589,7 +589,7 @@ final class AggregationTests: XCTestCase {
                 .count(as: "count"),
                 .avg("priority", as: "avg_priority")
             ])
-            .executeGroupedAggregation()
+            .execute().grouped
         let duration = Date().timeIntervalSince(start)
         
         print("  Aggregation completed in \(String(format: "%.2f", duration))s")
@@ -613,7 +613,7 @@ final class AggregationTests: XCTestCase {
         let result = try requireFixture(db).query()
             .groupBy("status")
             .count()
-            .executeGroupedAggregation()
+            .execute().grouped
         
         // Result is tiny (2 groups) even though 5000 records
         XCTAssertEqual(result.groups.count, 2)
@@ -623,19 +623,19 @@ final class AggregationTests: XCTestCase {
     // MARK: - Error Handling
     
     func testAggregationWithoutAggregationsFails() throws {
-        XCTAssertThrowsError(try requireFixture(db).query().executeAggregation()) { error in
+        XCTAssertThrowsError(try requireFixture(db).query().execute().aggregation) { error in
             XCTAssert(error is BlazeDBError)
         }
     }
     
     func testGroupByWithoutGroupByFails() throws {
-        XCTAssertThrowsError(try requireFixture(db).query().count().executeGroupedAggregation()) { error in
+        XCTAssertThrowsError(try requireFixture(db).query().count().execute().grouped) { error in
             XCTAssert(error is BlazeDBError)
         }
     }
     
     func testGroupByWithoutAggregationsFails() throws {
-        XCTAssertThrowsError(try requireFixture(db).query().groupBy("status").executeGroupedAggregation()) { error in
+        XCTAssertThrowsError(try requireFixture(db).query().groupBy("status").execute().grouped) { error in
             XCTAssert(error is BlazeDBError)
         }
     }
@@ -662,7 +662,7 @@ final class AggregationTests: XCTestCase {
                 .count(as: "count"),
                 .avg("priority", as: "avg_priority")
             ])
-            .executeGroupedAggregation()
+            .execute().grouped
         
         XCTAssertEqual(statusStats.groups.count, 4)
         
@@ -672,7 +672,7 @@ final class AggregationTests: XCTestCase {
             .where("status", equals: .string("open"))
             .groupBy("severity")
             .count()
-            .executeGroupedAggregation()
+            .execute().grouped
         
         XCTAssertGreaterThan(severityStats.groups.count, 0)
     }
@@ -695,7 +695,7 @@ final class AggregationTests: XCTestCase {
                 .min("created_at", as: "earliest"),
                 .max("created_at", as: "latest")
             ])
-            .executeAggregation()
+            .execute().aggregation
         
         XCTAssertEqual(result.count ?? 0, 30)
         XCTAssertNotNil(result["earliest"]?.dateValue, "Min date should be present")
@@ -717,7 +717,7 @@ final class AggregationTests: XCTestCase {
         let result = try requireFixture(db).query()
             .groupBy("group")
             .count()
-            .executeGroupedAggregation()
+            .execute().grouped
         
         XCTAssertEqual(result.groups.count, 100)
     }
@@ -739,7 +739,7 @@ final class AggregationTests: XCTestCase {
                 .count(as: "count"),
                 .sum("value", as: "sum")
             ])
-            .executeGroupedAggregation()
+            .execute().grouped
         
         XCTAssertEqual(result.groups.count, 2)
         XCTAssertEqual(result.totalCount, 10000)

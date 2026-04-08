@@ -81,8 +81,8 @@ final class TypeSafetyEdgeCaseTests: XCTestCase {
         let bug = TestBug(title: "Bug", priority: 1, status: "open")
         let doc = SimpleDoc(value: "test")
         
-        try await requireFixture(db).insert(bug)
-        try await requireFixture(db).insert(doc)
+        _ = try await requireFixture(db).insert(bug)
+        _ = try await requireFixture(db).insert(doc)
         
         // Fetch both types
         let fetchedBug = try await requireFixture(db).fetch(TestBug.self, id: bug.id)

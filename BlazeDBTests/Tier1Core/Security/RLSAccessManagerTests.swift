@@ -206,7 +206,7 @@ final class RLSAccessManagerTests: XCTestCase {
     }
     
     func testAccessManager_InactiveUserNoContext() {
-        var user = User(name: "Grace", email: "grace@example.com", isActive: false)
+        let user = User(name: "Grace", email: "grace@example.com", isActive: false)
         let userID = accessManager.createUser(user)
         
         let context = accessManager.getSecurityContext(for: userID)

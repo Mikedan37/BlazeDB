@@ -436,7 +436,7 @@ final class GCControlAPITests: XCTestCase {
                 group.addTask { [db] in
                     var config = GCConfiguration()
                     config.maxReuseablePages = Int.random(in: 1000...10000)
-                    try? db.configureGC(config)
+                    db.configureGC(config)
                 }
             }
             
@@ -444,7 +444,7 @@ final class GCControlAPITests: XCTestCase {
             for _ in 0..<10 {
                 group.addTask { [db] in
                     let policies: [GCPolicy] = [.conservative, .balanced, .aggressive]
-                    try? db.setGCPolicy(policies.randomElement()!)
+                    db.setGCPolicy(policies.randomElement()!)
                 }
             }
             
@@ -478,10 +478,10 @@ final class GCControlAPITests: XCTestCase {
                     // Configure
                     var config = GCConfiguration()
                     config.enablePageReuse = true
-                    try dbRef.db.configureGC(config)
+                    dbRef.db.configureGC(config)
                     
                     // Set policy
-                    try dbRef.db.setGCPolicy(.balanced)
+                    dbRef.db.setGCPolicy(.balanced)
                     
                     // Get stats
                     _ = try await dbRef.db.getStorageStats()

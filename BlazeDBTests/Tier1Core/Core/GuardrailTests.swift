@@ -112,7 +112,7 @@ final class GuardrailTests: XCTestCase {
         defer { try? db.close() }
         
         // Insert a record
-        try db.insert(BlazeDataRecord(["name": .string("Existing")]))
+        _ = try db.insert(BlazeDataRecord(["name": .string("Existing")]))
         
         // Create dump
         let dumpURL = try XCTUnwrap(tempDir).appendingPathComponent("dump.blazedump")
@@ -169,7 +169,7 @@ final class GuardrailTests: XCTestCase {
         try db2.setSchemaVersion(SchemaVersion(major: 1, minor: 1))
         
         // Insert record in db1
-        try db1.insert(BlazeDataRecord(["name": .string("Test")]))
+        _ = try db1.insert(BlazeDataRecord(["name": .string("Test")]))
         
         // Create dump from db1
         let dumpURL = try XCTUnwrap(tempDir).appendingPathComponent("dump.blazedump")

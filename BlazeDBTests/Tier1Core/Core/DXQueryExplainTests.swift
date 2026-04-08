@@ -19,7 +19,7 @@ final class DXQueryExplainTests: XCTestCase {
     override func setUpWithError() throws {
         try super.setUpWithError()
         BlazeDBClient.clearCachedKey()
-        db = try BlazeDBClient.openTemporary(password: "TestPassword-123!")
+        db = try BlazeDBClient.openForTesting(password: "TestPassword-123!")
     }
     
     override func tearDownWithError() throws {
@@ -37,7 +37,7 @@ final class DXQueryExplainTests: XCTestCase {
     func testExplain_IncludesCorrectFilterCount() throws {
         let db = try XCTUnwrap(self.db, "db should be set in setUp")
         // Insert test data
-        try db.insert(BlazeDataRecord(["name": .string("Alice"), "age": .int(30)]))
+        _ = try db.insert(BlazeDataRecord(["name": .string("Alice"), "age": .int(30)]))
         
         let explanation = try db.query()
             .where("name", equals: .string("Alice"))
@@ -50,7 +50,7 @@ final class DXQueryExplainTests: XCTestCase {
     func testExplain_WarnsForUnindexedFilter() throws {
         let db = try XCTUnwrap(self.db, "db should be set in setUp")
         // Insert test data
-        try db.insert(BlazeDataRecord(["name": .string("Alice"), "status": .string("active")]))
+        _ = try db.insert(BlazeDataRecord(["name": .string("Alice"), "status": .string("active")]))
         
         // Query without index
         let explanation = try db.query()
@@ -68,8 +68,8 @@ final class DXQueryExplainTests: XCTestCase {
     func testExecuteWithWarnings_ReturnsSameResultsAsExecute() throws {
         let db = try XCTUnwrap(self.db, "db should be set in setUp")
         // Insert test data
-        let id1 = try db.insert(BlazeDataRecord(["name": .string("Alice"), "age": .int(30)]))
-        let id2 = try db.insert(BlazeDataRecord(["name": .string("Bob"), "age": .int(25)]))
+        _ = try db.insert(BlazeDataRecord(["name": .string("Alice"), "age": .int(30)]))
+        _ = try db.insert(BlazeDataRecord(["name": .string("Bob"), "age": .int(25)]))
         
         // Execute with warnings
         let result1 = try db.query()

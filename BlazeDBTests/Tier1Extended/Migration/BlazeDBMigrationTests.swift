@@ -143,9 +143,7 @@ final class BlazeDBMigrationTests: XCTestCase {
             "value": .int(42)
         ]))
         
-        if let collection = db.collection as? DynamicCollection {
-            try collection.persist()
-        }
+        try db.collection.persist()
         
         var record = try db.fetch(id: id)
         XCTAssertNotNil(record?.storage["deprecated"])
@@ -180,9 +178,7 @@ final class BlazeDBMigrationTests: XCTestCase {
             "other": .int(123)
         ]))
         
-        if let collection = db.collection as? DynamicCollection {
-            try collection.persist()
-        }
+        try db.collection.persist()
         
         var record = try db.fetch(id: id)!
         let value = record.storage["oldName"]!
@@ -214,9 +210,7 @@ final class BlazeDBMigrationTests: XCTestCase {
         
         let id = try db.insert(BlazeDataRecord(["count": .string("42")]))
         
-        if let collection = db.collection as? DynamicCollection {
-            try collection.persist()
-        }
+        try db.collection.persist()
         
         var record = try db.fetch(id: id)!
         if let stringValue = record.storage["count"]?.stringValue,
@@ -245,9 +239,7 @@ final class BlazeDBMigrationTests: XCTestCase {
         
         let id = try db.insert(BlazeDataRecord(["value": .int(100)]))
         
-        if let collection = db.collection as? DynamicCollection {
-            try collection.persist()
-        }
+        try db.collection.persist()
         
         try db.beginTransaction()
         
@@ -346,9 +338,7 @@ final class BlazeDBMigrationTests: XCTestCase {
             ]))
         }
         
-        if let collection = db.collection as? DynamicCollection {
-            try collection.persist()
-        }
+        try db.collection.persist()
         
         let insertDuration = Date().timeIntervalSince(startTime)
         print("✅ Inserted \(count) records in \(String(format: "%.2f", insertDuration))s")
@@ -409,9 +399,7 @@ final class BlazeDBMigrationTests: XCTestCase {
             "version": .int(1)
         ]))
         
-        if let collection = db.collection as? DynamicCollection {
-            try collection.persist()
-        }
+        try db.collection.persist()
         
         var record = try db.fetch(id: id)!
         var v2 = record.storage

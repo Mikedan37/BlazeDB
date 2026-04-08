@@ -121,7 +121,7 @@ final class BlazeDBManagerTests: XCTestCase {
             _ = try db1.insert(BlazeDataRecord(["index": .int(i)]))
         }
         
-        try manager.use("SwitchDB2")
+        _ = try manager.use("SwitchDB2")
         let db2 = manager.database(named: "SwitchDB2")!
         
         for i in 0..<50 {

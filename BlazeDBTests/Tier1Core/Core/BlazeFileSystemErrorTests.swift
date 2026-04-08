@@ -45,21 +45,17 @@ final class BlazeFileSystemErrorTests: XCTestCase {
         
         // ✅ Ensure cleanup on exit
         defer {
-            if let collection = db1?.collection as? DynamicCollection {
-                try? collection.persist()
-            }
+            try? db1?.collection.persist()
             db1 = nil
         }
         
-        let id = try db1!.insert(BlazeDataRecord(["value": .int(42)]))
+        _ = try db1!.insert(BlazeDataRecord(["value": .int(42)]))
         
         print("  First instance inserted record")
         
         // Flush metadata to disk so second instance can see it
         // (Without this, metadata batching means second instance sees stale data)
-        if let collection = db1!.collection as? DynamicCollection {
-            try collection.persist()
-        }
+        try db1!.collection.persist()
         
         // Opening a second instance should fail while first one is alive.
         XCTAssertThrowsError(
@@ -503,9 +499,7 @@ final class BlazeFileSystemErrorTests: XCTestCase {
         
         let id = try db!.insert(BlazeDataRecord(["value": .int(1)]))
         
-        if let collection = db!.collection as? DynamicCollection {
-            try collection.persist()
-        }
+        try db!.collection.persist()
         
         db = nil
         

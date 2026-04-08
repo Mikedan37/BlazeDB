@@ -136,7 +136,7 @@ final class BlazeDBBackupTests: XCTestCase {
         
         // Try to open backup with WRONG password
         BlazeDBClient.clearCachedKey()
-        let wrongPasswordDB = try? BlazeDBClient(
+        _ = try? BlazeDBClient(
             name: "WrongPassword",
             fileURL: backupURL,
             password: "wrong-password-123456"

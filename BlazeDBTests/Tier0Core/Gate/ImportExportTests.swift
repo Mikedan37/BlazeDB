@@ -35,8 +35,8 @@ final class ImportExportTests: XCTestCase {
     func testExport_CreatesValidDump() throws {
         // Create database with test data
         let db = try BlazeDBClient(name: "export-test", fileURL: tempDBURL, password: password)
-        let id1 = try db.insert(BlazeDataRecord(["name": .string("Alice"), "age": .int(30)]))
-        let id2 = try db.insert(BlazeDataRecord(["name": .string("Bob"), "age": .int(25)]))
+        _ = try db.insert(BlazeDataRecord(["name": .string("Alice"), "age": .int(30)]))
+        _ = try db.insert(BlazeDataRecord(["name": .string("Bob"), "age": .int(25)]))
         
         // Export
         try db.export(to: tempDumpURL)
@@ -55,7 +55,7 @@ final class ImportExportTests: XCTestCase {
     func testExport_DeterministicOutput() throws {
         // Create database
         let db = try BlazeDBClient(name: "deterministic-test", fileURL: tempDBURL, password: password)
-        try db.insert(BlazeDataRecord(["name": .string("Test"), "value": .int(42)]))
+        _ = try db.insert(BlazeDataRecord(["name": .string("Test"), "value": .int(42)]))
         
         // Export twice
         let dump1URL = tempDumpURL.deletingLastPathComponent().appendingPathComponent("dump1.blazedump")
@@ -81,8 +81,8 @@ final class ImportExportTests: XCTestCase {
     func testImport_RoundTripEquivalence() throws {
         // Create source database
         let sourceDB = try BlazeDBClient(name: "source", fileURL: tempDBURL, password: password)
-        let id1 = try sourceDB.insert(BlazeDataRecord(["name": .string("Alice"), "age": .int(30)]))
-        let id2 = try sourceDB.insert(BlazeDataRecord(["name": .string("Bob"), "age": .int(25)]))
+        _ = try sourceDB.insert(BlazeDataRecord(["name": .string("Alice"), "age": .int(30)]))
+        _ = try sourceDB.insert(BlazeDataRecord(["name": .string("Bob"), "age": .int(25)]))
         
         // Export
         try sourceDB.export(to: tempDumpURL)
@@ -117,7 +117,7 @@ final class ImportExportTests: XCTestCase {
     func testImport_RefusesNonEmptyDatabase() throws {
         // Create database with data
         let db = try BlazeDBClient(name: "nonempty-test", fileURL: tempDBURL, password: password)
-        try db.insert(BlazeDataRecord(["name": .string("Existing")]))
+        _ = try db.insert(BlazeDataRecord(["name": .string("Existing")]))
         
         // Create dump
         let dumpURL = tempDumpURL.deletingLastPathComponent().appendingPathComponent("test.blazedump")
@@ -143,7 +143,7 @@ final class ImportExportTests: XCTestCase {
     func testVerify_ValidDump_Succeeds() throws {
         // Create and export database
         let db = try BlazeDBClient(name: "verify-test", fileURL: tempDBURL, password: password)
-        try db.insert(BlazeDataRecord(["test": .string("data")]))
+        _ = try db.insert(BlazeDataRecord(["test": .string("data")]))
         try db.export(to: tempDumpURL)
         
         // Verify dump
@@ -155,7 +155,7 @@ final class ImportExportTests: XCTestCase {
     func testVerify_TamperedDump_Fails() throws {
         // Create and export database
         let db = try BlazeDBClient(name: "tamper-test", fileURL: tempDBURL, password: password)
-        try db.insert(BlazeDataRecord(["test": .string("data")]))
+        _ = try db.insert(BlazeDataRecord(["test": .string("data")]))
         try db.export(to: tempDumpURL)
         
         // Tamper with dump file while keeping JSON syntactically valid.
@@ -191,7 +191,7 @@ final class ImportExportTests: XCTestCase {
         // Create database with schema version
         let db = try BlazeDBClient(name: "schema-test", fileURL: tempDBURL, password: password)
         try db.setSchemaVersion(SchemaVersion(major: 1, minor: 0))
-        try db.insert(BlazeDataRecord(["test": .string("data")]))
+        _ = try db.insert(BlazeDataRecord(["test": .string("data")]))
         
         // Export
         try db.export(to: tempDumpURL)
@@ -220,7 +220,7 @@ final class ImportExportTests: XCTestCase {
         // Create database with schema version
         let db = try BlazeDBClient(name: "schema-allow-test", fileURL: tempDBURL, password: password)
         try db.setSchemaVersion(SchemaVersion(major: 1, minor: 0))
-        try db.insert(BlazeDataRecord(["test": .string("data")]))
+        _ = try db.insert(BlazeDataRecord(["test": .string("data")]))
         
         // Export
         try db.export(to: tempDumpURL)

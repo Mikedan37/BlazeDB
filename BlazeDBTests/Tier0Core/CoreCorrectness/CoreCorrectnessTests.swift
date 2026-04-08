@@ -492,7 +492,7 @@ final class CoreCorrectnessTests: XCTestCase {
         let readerTx = MVCCTransaction(versionManager: db.collection.versionManager, pageStore: db.collection.store)
 
         // Read in the snapshot — should see v1
-        let snapshotRead = try readerTx.read(recordID: id)
+        _ = try readerTx.read(recordID: id)
         // Note: MVCCTransaction.read returns based on version, not the raw record.
         // If MVCC is working, this captures the v1 state.
 
@@ -501,7 +501,7 @@ final class CoreCorrectnessTests: XCTestCase {
 
         // The snapshot reader should still see v1 (or the snapshot state)
         // This is the core isolation property.
-        let snapshotReadAfterUpdate = try readerTx.read(recordID: id)
+        _ = try readerTx.read(recordID: id)
 
         // Clean up the transaction
         try readerTx.rollback()

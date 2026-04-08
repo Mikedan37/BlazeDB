@@ -332,7 +332,7 @@ final class PublicAPIVerificationTests: XCTestCase {
     func testFlushAlias() throws {
         let db = try makeDB("flush")
         _ = try db.insert(BlazeDataRecord(["x": .int(1)]))
-        try db.flush()
+        try db.persist()
         try db.close()
     }
 

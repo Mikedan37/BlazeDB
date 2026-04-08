@@ -133,7 +133,6 @@ extension BlazeDBClient {
         }
 
         let activeCollection = collection
-        var retiredCollection: DynamicCollection? = activeCollection
 
         let reclaimed = try activeCollection.queue.sync(flags: .barrier) {
             let collection = activeCollection
@@ -337,7 +336,6 @@ extension BlazeDBClient {
             return reclaimed
         }
 
-        retiredCollection = nil
         return reclaimed
     }
     

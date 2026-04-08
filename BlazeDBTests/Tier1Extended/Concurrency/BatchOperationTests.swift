@@ -662,7 +662,7 @@ final class BatchOperationTests: XCTestCase {
         let records = (0..<100).map { i in
             BlazeDataRecord(["index": .int(i), "status": .string("pending")])
         }
-        var ids = try requireFixture(db).insertMany(records)
+        _ = try requireFixture(db).insertMany(records)
         
         measure {
             do {

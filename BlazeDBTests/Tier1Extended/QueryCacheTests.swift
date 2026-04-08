@@ -43,14 +43,14 @@ final class QueryCacheTests: XCTestCase {
         let start1 = Date()
         let results1 = try requireFixture(db).query()
             .where("index", greaterThan: .int(50))
-            .executeWithCache(ttl: 60)
+            .execute(withCache: 60)
         let duration1 = Date().timeIntervalSince(start1)
         
         // Second query: cache hit
         let start2 = Date()
         let results2 = try requireFixture(db).query()
             .where("index", greaterThan: .int(50))
-            .executeWithCache(ttl: 60)
+            .execute(withCache: 60)
         let duration2 = Date().timeIntervalSince(start2)
         
         XCTAssertEqual(results1.count, results2.count)
@@ -62,11 +62,11 @@ final class QueryCacheTests: XCTestCase {
         
         // Cache with 100ms TTL (optimized for tests)
         let testTTL: TimeInterval = 0.1
-        _ = try requireFixture(db).query().executeWithCache(ttl: testTTL)
+        _ = try requireFixture(db).query().execute(withCache: testTTL)
         
         // Should hit cache immediately
         let start1 = Date()
-        _ = try requireFixture(db).query().executeWithCache(ttl: testTTL)
+        _ = try requireFixture(db).query().execute(withCache: testTTL)
         let cachedDuration = Date().timeIntervalSince(start1)
         
         // Wait for TTL to expire (optimized: 150ms instead of 1.1s)
@@ -74,7 +74,7 @@ final class QueryCacheTests: XCTestCase {
         
         // Should miss cache (expired)
         let start2 = Date()
-        _ = try requireFixture(db).query().executeWithCache(ttl: testTTL)
+        _ = try requireFixture(db).query().execute(withCache: testTTL)
         let expiredDuration = Date().timeIntervalSince(start2)
         
         XCTAssertLessThan(cachedDuration, expiredDuration, "Expired cache should be slower")
@@ -87,8 +87,8 @@ final class QueryCacheTests: XCTestCase {
         
         QueryCache.shared.isEnabled = false
         
-        let results1 = try requireFixture(db).query().executeWithCache(ttl: 60)
-        let results2 = try requireFixture(db).query().executeWithCache(ttl: 60)
+        let results1 = try requireFixture(db).query().execute(withCache: 60)
+        let results2 = try requireFixture(db).query().execute(withCache: 60)
         let stats = QueryCache.shared.stats()
 
         XCTAssertEqual(results1.count, 100)
@@ -102,7 +102,7 @@ final class QueryCacheTests: XCTestCase {
         _ = try requireFixture(db).insert(BlazeDataRecord(["value": .int(1)]))
         
         // Cache query
-        _ = try requireFixture(db).query().executeWithCache(ttl: 60)
+        _ = try requireFixture(db).query().execute(withCache: 60)
         
         // Insert new data (cache now stale)
         _ = try requireFixture(db).insert(BlazeDataRecord(["value": .int(2)]))
@@ -111,7 +111,7 @@ final class QueryCacheTests: XCTestCase {
         // With invalidation, gets fresh data
         QueryCache.shared.clearAll()
         
-        let results = try requireFixture(db).query().executeWithCache(ttl: 60)
+        let results = try requireFixture(db).query().execute(withCache: 60)
         XCTAssertEqual(results.count, 2)  // Fresh data
     }
     
@@ -121,8 +121,8 @@ final class QueryCacheTests: XCTestCase {
         }
         
         // Cache multiple queries (would need to track keys in real implementation)
-        _ = try requireFixture(db).query().where("value", greaterThan: .int(5)).executeWithCache()
-        _ = try requireFixture(db).query().where("value", lessThan: .int(5)).executeWithCache()
+        _ = try requireFixture(db).query().where("value", greaterThan: .int(5)).execute(withCache: 60)
+        _ = try requireFixture(db).query().where("value", lessThan: .int(5)).execute(withCache: 60)
         
         // Note: In real usage, you'd need to track prefixes by collection
         // For now, clearAll() works
@@ -138,8 +138,8 @@ final class QueryCacheTests: XCTestCase {
         }
         
         // Cache some queries
-        _ = try requireFixture(db).query().executeWithCache()
-        _ = try requireFixture(db).query().where("value", greaterThan: .int(5)).executeWithCache()
+        _ = try requireFixture(db).query().execute(withCache: 60)
+        _ = try requireFixture(db).query().where("value", greaterThan: .int(5)).execute(withCache: 60)
         
         let statsBefore = QueryCache.shared.stats()
         XCTAssertGreaterThan(statsBefore.entries, 0)
@@ -185,8 +185,8 @@ final class QueryCacheTests: XCTestCase {
     func testCacheStats() throws {
         _ = try requireFixture(db).insert(BlazeDataRecord(["value": .int(1)]))
         
-        _ = try requireFixture(db).query().executeWithCache(ttl: 60)
-        _ = try requireFixture(db).query().where("value", equals: .int(1)).executeWithCache(ttl: 60)
+        _ = try requireFixture(db).query().execute(withCache: 60)
+        _ = try requireFixture(db).query().where("value", equals: .int(1)).execute(withCache: 60)
         
         let stats = QueryCache.shared.stats()
         XCTAssertEqual(stats.entries, 2)
@@ -196,7 +196,7 @@ final class QueryCacheTests: XCTestCase {
         _ = try requireFixture(db).insert(BlazeDataRecord(["value": .int(1)]))
         
         // Cache with 100ms TTL (optimized for tests)
-        _ = try requireFixture(db).query().executeWithCache(ttl: 0.1)
+        _ = try requireFixture(db).query().execute(withCache: 0.1)
         
         let statsBefore = QueryCache.shared.stats()
         XCTAssertEqual(statsBefore.entries, 1)
@@ -228,7 +228,7 @@ final class QueryCacheTests: XCTestCase {
                 do {
                     _ = try dbRef.query()
                         .where("index", greaterThan: .int(50))
-                        .executeWithCache(ttl: 60)
+                        .execute(withCache: 60)
                     expectation.fulfill()
                 } catch {
                     XCTFail("Query failed: \(error)")

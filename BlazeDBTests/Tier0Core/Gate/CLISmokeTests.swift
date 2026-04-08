@@ -218,7 +218,7 @@ final class CLISmokeTests: XCTestCase {
         let dumpPath = tempDir.appendingPathComponent("test.dump")
         
         // Dump
-        let (dumpExitCode, dumpOutput, dumpError) = runCommand("BlazeDump", arguments: ["dump", dbPath.path, dumpPath.path])
+        let (dumpExitCode, _, dumpError) = runCommand("BlazeDump", arguments: ["dump", dbPath.path, dumpPath.path])
         
         XCTAssertEqual(dumpExitCode, 0, "BlazeDump dump should exit with code 0. Error: \(dumpError)")
         XCTAssertTrue(FileManager.default.fileExists(atPath: dumpPath.path), "Dump file should exist")
@@ -241,7 +241,7 @@ final class CLISmokeTests: XCTestCase {
         XCTAssertEqual(dumpExitCode, 0, "Dump should succeed")
         
         // Restore
-        let (restoreExitCode, restoreOutput, restoreError) = runCommand("BlazeDump", arguments: ["restore", dumpPath.path, restoredPath.path])
+        let (restoreExitCode, _, restoreError) = runCommand("BlazeDump", arguments: ["restore", dumpPath.path, restoredPath.path])
         
         XCTAssertEqual(restoreExitCode, 0, "BlazeDump restore should exit with code 0. Error: \(restoreError)")
         XCTAssertTrue(FileManager.default.fileExists(atPath: restoredPath.path), "Restored database should exist")

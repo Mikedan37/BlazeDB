@@ -91,7 +91,7 @@ final class TypeSafetyTests: XCTestCase {
             status: "open",
             assignee: "Alice"
         )
-        try await requireFixture(db).insert(bug)
+        _ = try await requireFixture(db).insert(bug)
         
         // Fetch with typed API
         let fetched = try await requireFixture(db).fetch(TestBug.self, id: bug.id)
@@ -109,9 +109,9 @@ final class TypeSafetyTests: XCTestCase {
         let bug2 = TestBug(title: "Bug 2", priority: 2, status: "closed")
         let bug3 = TestBug(title: "Bug 3", priority: 3, status: "open")
         
-        try await requireFixture(db).insert(bug1)
-        try await requireFixture(db).insert(bug2)
-        try await requireFixture(db).insert(bug3)
+        _ = try await requireFixture(db).insert(bug1)
+        _ = try await requireFixture(db).insert(bug2)
+        _ = try await requireFixture(db).insert(bug3)
         
         // Fetch all as typed
         let bugs = try await requireFixture(db).fetchAll(TestBug.self)
@@ -130,7 +130,7 @@ final class TypeSafetyTests: XCTestCase {
             priority: 1,
             status: "open"
         )
-        try await requireFixture(db).insert(bug)
+        _ = try await requireFixture(db).insert(bug)
         
         // Update using typed API
         bug.priority = 2
@@ -148,7 +148,7 @@ final class TypeSafetyTests: XCTestCase {
     func testDeleteTypeSafeDocument() async throws {
         // Insert
         let bug = TestBug(title: "To delete", priority: 1, status: "open")
-        try await requireFixture(db).insert(bug)
+        _ = try await requireFixture(db).insert(bug)
         
         // Verify exists
         var fetched = try await requireFixture(db).fetch(TestBug.self, id: bug.id)
@@ -167,7 +167,7 @@ final class TypeSafetyTests: XCTestCase {
     func testInsertTypedFetchDynamic() async throws {
         // Insert with typed API
         let bug = TestBug(title: "Fix login", priority: 1, status: "open")
-        try await requireFixture(db).insert(bug)
+        _ = try await requireFixture(db).insert(bug)
         
         // Fetch with dynamic API
         let record = try await requireFixture(db).fetch(id: bug.id)
@@ -201,7 +201,7 @@ final class TypeSafetyTests: XCTestCase {
     func testUpdateTypedFetchDynamic() async throws {
         // Insert typed
         var bug = TestBug(title: "Initial", priority: 1, status: "open")
-        try await requireFixture(db).insert(bug)
+        _ = try await requireFixture(db).insert(bug)
         
         // Update typed
         bug.title = "Updated"
@@ -217,7 +217,7 @@ final class TypeSafetyTests: XCTestCase {
     func testUpdateDynamicFetchTyped() async throws {
         // Insert typed
         let bug = TestBug(title: "Original", priority: 1, status: "open")
-        try await requireFixture(db).insert(bug)
+        _ = try await requireFixture(db).insert(bug)
         
         // Update dynamic
         var record = try await requireFixture(db).fetch(id: bug.id)!
@@ -240,7 +240,7 @@ final class TypeSafetyTests: XCTestCase {
             status: "open",
             assignee: "Alice"
         )
-        try await requireFixture(db).insert(bug)
+        _ = try await requireFixture(db).insert(bug)
         
         let fetched = try await requireFixture(db).fetch(TestBug.self, id: bug.id)
         XCTAssertEqual(fetched?.assignee, "Alice")
@@ -253,7 +253,7 @@ final class TypeSafetyTests: XCTestCase {
             status: "open",
             assignee: nil
         )
-        try await requireFixture(db).insert(bug)
+        _ = try await requireFixture(db).insert(bug)
         
         let fetched = try await requireFixture(db).fetch(TestBug.self, id: bug.id)
         XCTAssertNil(fetched?.assignee)
@@ -267,7 +267,7 @@ final class TypeSafetyTests: XCTestCase {
             status: "open",
             assignee: "Alice"
         )
-        try await requireFixture(db).insert(bug)
+        _ = try await requireFixture(db).insert(bug)
         
         // Update to nil
         bug.assignee = nil
@@ -286,7 +286,7 @@ final class TypeSafetyTests: XCTestCase {
             status: "open",
             assignee: nil
         )
-        try await requireFixture(db).insert(bug)
+        _ = try await requireFixture(db).insert(bug)
         
         // Update to value
         bug.assignee = "Bob"
@@ -306,7 +306,7 @@ final class TypeSafetyTests: XCTestCase {
             status: "open",
             tags: []
         )
-        try await requireFixture(db).insert(bug)
+        _ = try await requireFixture(db).insert(bug)
         
         let fetched = try await requireFixture(db).fetch(TestBug.self, id: bug.id)
         XCTAssertEqual(fetched?.tags, [])
@@ -319,7 +319,7 @@ final class TypeSafetyTests: XCTestCase {
             status: "open",
             tags: ["auth", "critical", "security"]
         )
-        try await requireFixture(db).insert(bug)
+        _ = try await requireFixture(db).insert(bug)
         
         let fetched = try await requireFixture(db).fetch(TestBug.self, id: bug.id)
         XCTAssertEqual(fetched?.tags, ["auth", "critical", "security"])
@@ -333,7 +333,7 @@ final class TypeSafetyTests: XCTestCase {
             status: "open",
             tags: []
         )
-        try await requireFixture(db).insert(bug)
+        _ = try await requireFixture(db).insert(bug)
         
         // Update tags
         bug.tags = ["new-tag", "another-tag"]
@@ -472,7 +472,7 @@ final class TypeSafetyTests: XCTestCase {
             priority: 1,
             status: "open"
         )
-        try await requireFixture(db).insert(bug)
+        _ = try await requireFixture(db).insert(bug)
         
         // Upsert (update)
         var updated = bug
@@ -492,9 +492,9 @@ final class TypeSafetyTests: XCTestCase {
     
     func testQueryResultTypeSafeConversion() async throws {
         // Insert typed bugs
-        try await requireFixture(db).insert(TestBug(title: "Bug 1", priority: 1, status: "open"))
-        try await requireFixture(db).insert(TestBug(title: "Bug 2", priority: 2, status: "closed"))
-        try await requireFixture(db).insert(TestBug(title: "Bug 3", priority: 3, status: "open"))
+        _ = try await requireFixture(db).insert(TestBug(title: "Bug 1", priority: 1, status: "open"))
+        _ = try await requireFixture(db).insert(TestBug(title: "Bug 2", priority: 2, status: "closed"))
+        _ = try await requireFixture(db).insert(TestBug(title: "Bug 3", priority: 3, status: "open"))
         
         // Query and convert to typed
         let result = try await requireFixture(db).query()
@@ -513,9 +513,9 @@ final class TypeSafetyTests: XCTestCase {
     
     func testQueryWithTypeSafeSorting() async throws {
         // Insert in random order
-        try await requireFixture(db).insert(TestBug(title: "Bug C", priority: 3, status: "open"))
-        try await requireFixture(db).insert(TestBug(title: "Bug A", priority: 1, status: "open"))
-        try await requireFixture(db).insert(TestBug(title: "Bug B", priority: 2, status: "open"))
+        _ = try await requireFixture(db).insert(TestBug(title: "Bug C", priority: 3, status: "open"))
+        _ = try await requireFixture(db).insert(TestBug(title: "Bug A", priority: 1, status: "open"))
+        _ = try await requireFixture(db).insert(TestBug(title: "Bug B", priority: 2, status: "open"))
         
         // Query with sorting
         let result = try await requireFixture(db).query()
@@ -543,7 +543,7 @@ final class TypeSafetyTests: XCTestCase {
         XCTAssertTrue(highPriority.isOpen)
         
         // Insert and fetch to verify computed properties persist behavior
-        try await requireFixture(db).insert(highPriority)
+        _ = try await requireFixture(db).insert(highPriority)
         let fetched = try await requireFixture(db).fetch(TestBug.self, id: highPriority.id)
         XCTAssertTrue(fetched!.isHighPriority)
         XCTAssertTrue(fetched!.isOpen)
@@ -557,7 +557,7 @@ final class TypeSafetyTests: XCTestCase {
             priority: 1,
             status: "open"
         )
-        try await requireFixture(db).insert(bug)
+        _ = try await requireFixture(db).insert(bug)
         
         let fetched = try await requireFixture(db).fetch(TestBug.self, id: bug.id)
         XCTAssertEqual(fetched?.title, "")
@@ -571,7 +571,7 @@ final class TypeSafetyTests: XCTestCase {
             priority: 1,
             status: "open"
         )
-        try await requireFixture(db).insert(bug)
+        _ = try await requireFixture(db).insert(bug)
         
         let fetched = try await requireFixture(db).fetch(TestBug.self, id: bug.id)
         XCTAssertEqual(fetched?.title.count, 1500, "Long title should be preserved")
@@ -584,7 +584,7 @@ final class TypeSafetyTests: XCTestCase {
             priority: 1,
             status: "open"
         )
-        try await requireFixture(db).insert(bug)
+        _ = try await requireFixture(db).insert(bug)
         
         let fetched = try await requireFixture(db).fetch(TestBug.self, id: bug.id)
         XCTAssertEqual(fetched?.title, "Fix \"login\" bug: [CRITICAL] 🔥")
@@ -596,7 +596,7 @@ final class TypeSafetyTests: XCTestCase {
             priority: -5,  // Negative!
             status: "open"
         )
-        try await requireFixture(db).insert(bug)
+        _ = try await requireFixture(db).insert(bug)
         
         let fetched = try await requireFixture(db).fetch(TestBug.self, id: bug.id)
         XCTAssertEqual(fetched?.priority, -5)
@@ -608,7 +608,7 @@ final class TypeSafetyTests: XCTestCase {
             priority: 0,  // Zero!
             status: "open"
         )
-        try await requireFixture(db).insert(bug)
+        _ = try await requireFixture(db).insert(bug)
         
         let fetched = try await requireFixture(db).fetch(TestBug.self, id: bug.id)
         XCTAssertEqual(fetched?.priority, 0)
@@ -620,7 +620,7 @@ final class TypeSafetyTests: XCTestCase {
             priority: Int.max,  // Max value!
             status: "open"
         )
-        try await requireFixture(db).insert(bug)
+        _ = try await requireFixture(db).insert(bug)
         
         let fetched = try await requireFixture(db).fetch(TestBug.self, id: bug.id)
         XCTAssertEqual(fetched?.priority, Int.max)
@@ -633,7 +633,7 @@ final class TypeSafetyTests: XCTestCase {
             status: "open",
             tags: []
         )
-        try await requireFixture(db).insert(bug)
+        _ = try await requireFixture(db).insert(bug)
         
         let fetched = try await requireFixture(db).fetch(TestBug.self, id: bug.id)
         XCTAssertEqual(fetched?.tags, [])
@@ -648,7 +648,7 @@ final class TypeSafetyTests: XCTestCase {
             status: "open",
             tags: largeTags
         )
-        try await requireFixture(db).insert(bug)
+        _ = try await requireFixture(db).insert(bug)
         
         let fetched = try await requireFixture(db).fetch(TestBug.self, id: bug.id)
         XCTAssertEqual(fetched?.tags.count, 200, "Array with 200 elements should be preserved")
@@ -663,7 +663,7 @@ final class TypeSafetyTests: XCTestCase {
             status: "open",
             tags: ["auth", "auth", "critical"]
         )
-        try await requireFixture(db).insert(bug)
+        _ = try await requireFixture(db).insert(bug)
         
         let fetched = try await requireFixture(db).fetch(TestBug.self, id: bug.id)
         XCTAssertEqual(fetched?.tags, ["auth", "auth", "critical"])
@@ -677,7 +677,7 @@ final class TypeSafetyTests: XCTestCase {
             status: "open",
             createdAt: now
         )
-        try await requireFixture(db).insert(bug)
+        _ = try await requireFixture(db).insert(bug)
         
         let fetched = try await requireFixture(db).fetch(TestBug.self, id: bug.id)
         XCTAssertEqual(fetched?.createdAt.timeIntervalSince1970 ?? 0, now.timeIntervalSince1970, accuracy: 0.001)
@@ -692,7 +692,7 @@ final class TypeSafetyTests: XCTestCase {
             status: "open",
             createdAt: oldDate
         )
-        try await requireFixture(db).insert(bug)
+        _ = try await requireFixture(db).insert(bug)
         
         let fetched = try await requireFixture(db).fetch(TestBug.self, id: bug.id)
         XCTAssertEqual(fetched?.createdAt.timeIntervalSince1970 ?? 0, oldDate.timeIntervalSince1970, accuracy: 0.001)
@@ -707,7 +707,7 @@ final class TypeSafetyTests: XCTestCase {
             status: "open",
             createdAt: futureDate
         )
-        try await requireFixture(db).insert(bug)
+        _ = try await requireFixture(db).insert(bug)
         
         let fetched = try await requireFixture(db).fetch(TestBug.self, id: bug.id)
         XCTAssertEqual(fetched?.createdAt.timeIntervalSince1970 ?? 0, futureDate.timeIntervalSince1970, accuracy: 0.001)
@@ -808,7 +808,7 @@ final class TypeSafetyTests: XCTestCase {
             for i in 1...50 {
                 group.addTask {
                     let bug = TestBug(title: "Bug \(i)", priority: i % 10, status: "open")
-                    try? await db.insert(bug)
+                    _ = try? await db.insert(bug)
                 }
             }
         }
@@ -823,7 +823,7 @@ final class TypeSafetyTests: XCTestCase {
         var ids: [UUID] = []
         for i in 1...10 {
             let bug = TestBug(title: "Bug \(i)", priority: i, status: "open")
-            try await requireFixture(db).insert(bug)
+            _ = try await requireFixture(db).insert(bug)
             ids.append(bug.id)
         }
         
@@ -854,7 +854,7 @@ final class TypeSafetyTests: XCTestCase {
             for i in 1...25 {
                 group.addTask {
                     let bug = TestBug(title: "Typed \(i)", priority: i % 10, status: "open")
-                    try? await db.insert(bug)
+                    _ = try? await db.insert(bug)
                 }
             }
             
@@ -869,7 +869,7 @@ final class TypeSafetyTests: XCTestCase {
                         "tags": .array([]),
                         "createdAt": .date(Date())
                     ])
-                    try? await db.insert(record)
+                    _ = try? await db.insert(record)
                 }
             }
         }
@@ -893,7 +893,7 @@ final class TypeSafetyTests: XCTestCase {
     
     func testSyncFetchTypeSafe() throws {
         let bug = TestBug(title: "Sync Bug", priority: 1, status: "open")
-        try requireFixture(db).insert(bug)
+        _ = try requireFixture(db).insert(bug)
         
         let fetched = try requireFixture(db).fetch(TestBug.self, id: bug.id)
         XCTAssertNotNil(fetched)
@@ -902,7 +902,7 @@ final class TypeSafetyTests: XCTestCase {
     
     func testSyncUpdateTypeSafe() throws {
         var bug = TestBug(title: "Original", priority: 1, status: "open")
-        try requireFixture(db).insert(bug)
+        _ = try requireFixture(db).insert(bug)
         
         bug.title = "Updated"
         try requireFixture(db).update(bug)

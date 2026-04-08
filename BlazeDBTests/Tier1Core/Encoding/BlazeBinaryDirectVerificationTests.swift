@@ -48,7 +48,7 @@ final class BlazeBinaryDirectVerificationTests: XCTestCase {
         print("🔬 DIRECT: Decoder validates header exactly")
         
         // Valid header
-        var validData = Data([0x42, 0x4C, 0x41, 0x5A, 0x45, 0x01, 0x00, 0x00])
+        let validData = Data([0x42, 0x4C, 0x41, 0x5A, 0x45, 0x01, 0x00, 0x00])
         XCTAssertNoThrow(try BlazeBinaryDecoder.decode(validData))
         
         // Invalid magic byte 1

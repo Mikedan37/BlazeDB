@@ -187,7 +187,7 @@ final class PageGCTests: XCTestCase {
         
         // Insert 90 new records (should reuse freed pages!)
         for i in 0..<90 {
-            try requireFixture(db).insert(BlazeDataRecord([
+            _ = try requireFixture(db).insert(BlazeDataRecord([
                 "index": .int(i + 1000),
                 "data": .string(String(repeating: "y", count: 1000))
             ]))
@@ -293,7 +293,7 @@ final class PageGCTests: XCTestCase {
         
         // Insert records
         for i in 0..<500 {
-            try requireFixture(db).insert(BlazeDataRecord([
+            _ = try requireFixture(db).insert(BlazeDataRecord([
                 "index": .int(i),
                 "data": .string(String(repeating: "x", count: 1000))
             ]))
@@ -316,7 +316,7 @@ final class PageGCTests: XCTestCase {
         
         // Insert 100 records
         var ids: [UUID] = []
-        for i in 0..<100 {
+        for _ in 0..<100 {
             let id = try requireFixture(db).insert(BlazeDataRecord([
                 "data": .string(String(repeating: "x", count: 2000))
             ]))
@@ -352,7 +352,7 @@ final class PageGCTests: XCTestCase {
         
         // Insert and delete to create waste
         var ids: [UUID] = []
-        for i in 0..<200 {
+        for _ in 0..<200 {
             let id = try requireFixture(db).insert(BlazeDataRecord([
                 "data": .string(String(repeating: "x", count: 2000))
             ]))
@@ -498,7 +498,7 @@ final class PageGCTests: XCTestCase {
         
         // Insert 5000 records
         for i in 0..<5000 {
-            try requireFixture(db).insert(BlazeDataRecord([
+            _ = try requireFixture(db).insert(BlazeDataRecord([
                 "index": .int(i),
                 "data": .string("Record \(i)")
             ]))
@@ -569,7 +569,7 @@ final class PageGCTests: XCTestCase {
         XCTAssertGreaterThan(healthAfter.obsoletePages, 0, "Should have obsolete pages")
         
         // Run VACUUM to actually shrink file
-        let reclaimed = try requireFixture(db).vacuum()
+        _ = try requireFixture(db).vacuum()
         
         let healthFinal = try requireFixture(db).getStorageHealth()
         print("  After VACUUM:")

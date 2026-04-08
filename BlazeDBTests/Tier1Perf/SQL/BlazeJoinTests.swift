@@ -200,7 +200,7 @@ final class BlazeJoinTests: XCTestCase {
         let allUsers = try joinUsersDB().fetchAll()
         print("  Total users in DB: \(allUsers.count)")
         for user in allUsers {
-            print("    User ID: \(user.storage["id"]), Name: \(user.storage["name"])")
+            print("    User ID: \(user.storage["id"].map { String(describing: $0) } ?? "nil"), Name: \(user.storage["name"].map { String(describing: $0) } ?? "nil")")
         }
         
         // Only one bug (for Alice)
@@ -221,7 +221,7 @@ final class BlazeJoinTests: XCTestCase {
         
         print("  Result count: \(results.count)")
         for (idx, result) in results.enumerated() {
-            print("  Result \(idx): left.count=\(result.left.storage.count), right.name=\(result.right?.storage["name"])")
+            print("  Result \(idx): left.count=\(result.left.storage.count), right.name=\(result.right.flatMap { $0.storage["name"] }.map { String(describing: $0) } ?? "nil")")
         }
         
         XCTAssertEqual(results.count, 2, "Should have both users")

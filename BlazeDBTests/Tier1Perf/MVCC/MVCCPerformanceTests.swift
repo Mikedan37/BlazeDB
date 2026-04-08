@@ -162,7 +162,7 @@ final class MVCCPerformanceTests: XCTestCase {
         let start = Date()
         
         for i in 0..<1000 {
-            try requireFixture(db).insert(BlazeDataRecord([
+            _ = try requireFixture(db).insert(BlazeDataRecord([
                 "index": .int(i),
                 "data": .string("Record \(i)")
             ]))
@@ -303,11 +303,11 @@ final class MVCCPerformanceTests: XCTestCase {
         print("\n💾 BENCHMARK: Memory Overhead with MVCC")
         
         // Measure baseline
-        let statsBefore = try requireFixture(db).collection.versionManager.getStats()
+        _ = try requireFixture(db).collection.versionManager.getStats()
         
         // Insert 1000 records
         for i in 0..<1000 {
-            try requireFixture(db).insert(BlazeDataRecord([
+            _ = try requireFixture(db).insert(BlazeDataRecord([
                 "index": .int(i),
                 "data": .string("Record \(i)")
             ]))

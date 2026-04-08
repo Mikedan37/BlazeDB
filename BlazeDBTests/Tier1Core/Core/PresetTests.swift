@@ -37,14 +37,14 @@ final class PresetTests: XCTestCase {
     // MARK: - openForCLI Tests
     
     func testOpenForCLI_Succeeds() throws {
-        let db = try BlazeDBClient.openForCLI(name: uniqueName("clitest"), password: "TestPassword-123!")
+        let db = try BlazeDBClient.open(named: uniqueName("clitest"), password: "TestPassword-123!")
         defer { try? db.close() }
         XCTAssertNotNil(db)
         XCTAssertTrue(db.name.hasPrefix("clitest-"))
     }
     
     func testOpenForCLI_UsesDefaultDirectory() throws {
-        let db = try BlazeDBClient.openForCLI(name: uniqueName("clitest"), password: "TestPassword-123!")
+        let db = try BlazeDBClient.open(named: uniqueName("clitest"), password: "TestPassword-123!")
         defer { try? db.close() }
         let expectedDir = try PathResolver.defaultDatabaseDirectory()
         XCTAssertTrue(db.fileURL.path.contains(expectedDir.path))
@@ -53,14 +53,14 @@ final class PresetTests: XCTestCase {
     // MARK: - openForDaemon Tests
     
     func testOpenForDaemon_Succeeds() throws {
-        let db = try BlazeDBClient.openForDaemon(name: uniqueName("daemontest"), password: "TestPassword-123!")
+        let db = try BlazeDBClient.open(named: uniqueName("daemontest"), password: "TestPassword-123!")
         defer { try? db.close() }
         XCTAssertNotNil(db)
         XCTAssertTrue(db.name.hasPrefix("daemontest-"))
     }
     
     func testOpenForDaemon_UsesDefaultDirectory() throws {
-        let db = try BlazeDBClient.openForDaemon(name: uniqueName("daemontest"), password: "TestPassword-123!")
+        let db = try BlazeDBClient.open(named: uniqueName("daemontest"), password: "TestPassword-123!")
         defer { try? db.close() }
         let expectedDir = try PathResolver.defaultDatabaseDirectory()
         XCTAssertTrue(db.fileURL.path.contains(expectedDir.path))
