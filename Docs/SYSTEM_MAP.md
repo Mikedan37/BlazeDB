@@ -99,7 +99,7 @@ For release line policy, see `Docs/RELEASE_POSTURE.md`.
 | ------- | ------ | ------- | ------------- | -------- | ----- |
 | `BlazeStorable` protocol | Stable | Public | `Codable/CodableIntegration.swift` | — | `Codable + Identifiable where ID == UUID`; recommended path; **no bridge to `BlazeDocument`** — cannot use `@BlazeQueryTyped` without rewriting model |
 | `TypedStore<T>` | Stable | Public with caveats | `Codable/TypedStore.swift` | — | `db.typed(T.self)` — CRUD + KeyPath queries; `fetchAll()` uses `map` (not `compactMap`) — **throws if any record in DB fails to decode as `T`**; `count()` returns total DB record count, not type-`T` count; safe only for single-model-type databases |
-| `BlazeDocument` protocol | Stable | Public with caveats | `TypeSafety/BlazeDocument.swift` | [#37](https://github.com/Mikedan37/BlazeDB/issues/37) | Manual `toStorage()` / `init(from:)` mapping; required for `@BlazeQueryTyped`; `storage` getter silently swallows errors (#37); no bridge from `BlazeStorable` |
+| `BlazeDocument` protocol | Stable | Public with caveats | `TypeSafety/BlazeDocument.swift` | [#37](https://github.com/Mikedan37/BlazeDB/issues/37) | Manual `toStorage()` / `init(from:)` mapping; required for `@BlazeQueryTyped`; default `storage` is **deprecated** — on `toStorage()` failure it **logs** (error) and returns `[:]` (not safe to persist); use `try toStorage()` or `try resolveStorage()` when errors must propagate; typed `insert`/`update` paths call `toStorage()` directly — see [#88](https://github.com/Mikedan37/BlazeDB/pull/88); no bridge from `BlazeStorable` |
 | `BlazeDataRecord` (raw API) | Stable | Public | `Exports/BlazeTypes.swift` | — | Dynamic schemas, migration scripts |
 | `BlazeDocumentField` value type | Stable | Public | `Core/BlazeDocumentField.swift` | — | `.string`, `.int`, `.bool`, etc. |
 
@@ -254,7 +254,6 @@ Additional example files in `Examples/` (`.swift` files) are standalone referenc
 | [#75](https://github.com/Mikedan37/BlazeDB/issues/75) | Tests / Linux | BlazeDBAsyncTests missing `#if !BLAZEDB_LINUX_CORE` guard | Tier1Fast exclusion removal |
 | [#43](https://github.com/Mikedan37/BlazeDB/issues/43) | Storage / Linux | Compressed pages (v0x03) Linux/Android parity | Cross-platform compression |
 | [#30](https://github.com/Mikedan37/BlazeDB/issues/30) | Storage / Linux | Binary decoding alignment safety audit | Linux reliability |
-| [#37](https://github.com/Mikedan37/BlazeDB/issues/37) | Typed Models | `BlazeDocument.storage` silently swallows conversion errors | API correctness |
 | [#54](https://github.com/Mikedan37/BlazeDB/issues/54) | CI | Tier1Fast exclusion burn-down umbrella | CI coverage |
 | [#51](https://github.com/Mikedan37/BlazeDB/issues/51) | CI / Linux | Linux Tier1 enablement and CI contract alignment | Linux parity |
 | [#58](https://github.com/Mikedan37/BlazeDB/issues/58) | Docs | Publish explicit shipped-core contract and deferred-feature boundaries | Documentation |
