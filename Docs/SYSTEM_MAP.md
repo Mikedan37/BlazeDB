@@ -39,12 +39,13 @@ For release line policy, see `Docs/RELEASE_POSTURE.md`.
 | ------- | ------ | ------- | ------------- | -------- | ----- |
 | Document store (single-collection) | Stable | Public | `Core/DynamicCollection.swift` | — | All record types share one encrypted collection per DB file |
 | CRUD operations | Stable | Public | `Exports/BlazeDBClient.swift`, `Core/DynamicCollection.swift` | — | insert/fetch/update/delete/fetchAll |
-| Record encoding (BlazeBinary + JSON) | Stable | Internal | `Core/BlazeRecordEncoder.swift`, `BlazeRecordDecoder.swift` | — | BlazeBinary is current default; JSON legacy supported |
+| Record encoding (BlazeBinary + JSON) | Stable | Internal | `Core/BlazeRecordEncoder.swift`, `Core/BlazeRecordDecoder.swift` | — | BlazeBinary is current default; JSON legacy supported |
+| Record builder DSL | Stable | Public | `Core/BlazeRecordDSL.swift` | — | `RecordBuilder`, `RecordField` helpers for constructing records |
 | Metadata store | Stable | Internal | `Core/MetaStore.swift`, `Storage/StorageLayout.swift` | — | Index map, deleted pages, schema version |
 | Page-based storage | Stable | Internal | `Storage/PageStore.swift` | — | 4KB pages, AES-256-GCM encrypted |
 | Record cache | Internal | Internal | `Core/RecordCache.swift` | — | In-memory LRU |
-| Lazy records | Internal | Internal | `Core/LazyRecord.swift`, `LazyFieldRecord.swift` | — | Deferred decoding |
-| Triggers | Partial | Internal | `Core/Triggers.swift`, `TriggerDefinition.swift`, `TriggerContext.swift` | — | Infrastructure exists; no public creation API or docs |
+| Lazy records | Internal | Internal | `Core/LazyRecord.swift`, `Core/LazyFieldRecord.swift` | — | Deferred decoding |
+| Triggers | Partial | Public with caveats | `Core/Triggers.swift`, `Exports/BlazeDBClient+Triggers.swift` | — | Public `registerTrigger`, `onInsert`, `onUpdate`, `onDelete` on `BlazeDBClient`; persistence gated behind `#if !BLAZEDB_LINUX_CORE` |
 
 ### Storage and Durability
 
@@ -57,7 +58,9 @@ For release line policy, see `Docs/RELEASE_POSTURE.md`.
 | Overflow pages | Stable | Internal | `Storage/PageStore+Overflow.swift` | — | Records larger than one page |
 | Compression | Stable | Internal | `Storage/PageStore+Compression.swift`, `CompressionSupport.swift` | [#43](https://github.com/Mikedan37/BlazeDB/issues/43) | zlib; Linux parity tracked in #43 |
 | Vacuum / compaction | Internal | Internal | `Storage/VacuumCompaction.swift`, `VacuumOperations.swift`, `VacuumRecovery.swift` | — | Page reclamation; no public API |
-| Backup / export | Stable | Public | `Storage/BlazeDBBackup.swift`, `Exports/BlazeDBClient.swift` | — | `db.export(to:)` + `BlazeDBImporter.verify()` |
+| Page reuse GC | Internal | Internal | `Core/PageReuseGC.swift` | — | Free-page allocation/reclaim; distinct from vacuum compaction |
+| Storage manager | Internal | Public with caveats | `Storage/StorageManager.swift` | — | Public `performCleanup()`, `databaseDiskUsage()`; advanced use |
+| Backup / export | Stable | Public | `Storage/BlazeDBBackup.swift`, `Exports/BlazeDBClient+Export.swift`, `Exports/BlazeDBImporter.swift` | — | `db.export(to:)` + `BlazeDBImporter.verify()` |
 | Forensics | Internal | Internal | `Storage/BlazeDBForensics.swift` | — | Low-level page inspection |
 
 ### Transactions and Concurrency
@@ -65,7 +68,7 @@ For release line policy, see `Docs/RELEASE_POSTURE.md`.
 | Feature | Status | Surface | Code location | Tracking | Notes |
 | ------- | ------ | ------- | ------------- | -------- | ----- |
 | Explicit transactions | Stable | Public | `Exports/BlazeDBClient.swift` | — | `beginTransaction()` / `commitTransaction()` / `rollbackTransaction()` |
-| MVCC (multi-version concurrency) | Advanced / Opt-in | Public with caveats | `Core/MVCC/` (5 files) | — | `db.setMVCCEnabled(true)`; snapshot isolation |
+| MVCC (multi-version concurrency) | Advanced / Opt-in | Public with caveats | `Core/MVCC/`, `Exports/BlazeDBClient+MVCC.swift` | — | `db.setMVCCEnabled(true)`; snapshot isolation |
 | GCD concurrent-read / barrier-write | Stable | Internal | `Core/DynamicCollection.swift` | — | Thread-safety model |
 | Page garbage collector | Internal | Internal | `Core/MVCC/PageGarbageCollector.swift`, `AutomaticGC.swift` | — | Automatic + manual GC for MVCC |
 | Async APIs | Advanced / Opt-in | Public with caveats | `Exports/BlazeDBClient+AsyncOptimized.swift`, `Core/DynamicCollection+Async.swift` | [#75](https://github.com/Mikedan37/BlazeDB/issues/75) | `insertAsync`, `fetchAsync`, etc. Gated: `#if !BLAZEDB_LINUX_CORE` — Apple platforms only |
@@ -80,7 +83,10 @@ For release line policy, see `Docs/RELEASE_POSTURE.md`.
 | Argon2 KDF | Internal | Internal | `Crypto/Argon2KDF.swift` | — | Key derivation |
 | Forward secrecy manager | Internal | Internal | `Crypto/ForwardSecrecyManager.swift` | — | Key rotation helpers |
 | Row-level security (RLS) | Partial | Internal | `Security/RLSPolicy.swift`, `PolicyEngine.swift`, `AccessManager.swift` | — | Policy infrastructure exists; not enforced by default |
+| Security context / policy | Internal | Internal | `Security/SecurityContext.swift`, `SecurityPolicy.swift`, `SecurityAuditor.swift` | — | Audit and policy evaluation infrastructure |
+| Certificate pinning | Internal | Internal | `Security/CertificatePinning.swift` | — | TLS pinning helpers |
 | Secure enclave key manager | Internal | Internal | `Security/SecureEnclaveKeyManager.swift` | — | Apple Keychain path; `#if canImport(Security)` |
+| User context / key unlock | Internal | Internal | `Security/BlazeUserContext.swift`, `KeyUnlockProvider.swift` | — | User-scoped security context and key unlock |
 | Password strength validator | Internal | Internal | `Security/PasswordStrengthValidator.swift` | — | Minimum 8-char enforcement at open |
 
 ### Typed Model Layer
@@ -90,7 +96,7 @@ For release line policy, see `Docs/RELEASE_POSTURE.md`.
 | `BlazeStorable` protocol | Stable | Public | `Codable/CodableIntegration.swift` | — | `Codable + Identifiable where ID == UUID` |
 | `TypedStore<T>` | Stable | Public | `Codable/TypedStore.swift` | — | `db.typed(T.self)` — CRUD + KeyPath queries |
 | `BlazeDocument` protocol | Stable | Public with caveats | `TypeSafety/BlazeDocument.swift` | — | Manual `toStorage()` / `init(from:)` mapping; required for `@BlazeQueryTyped` |
-| `BlazeDataRecord` (raw API) | Stable | Public | `Core/BlazeRecord.swift` | — | Dynamic schemas, migration scripts |
+| `BlazeDataRecord` (raw API) | Stable | Public | `Exports/BlazeTypes.swift` | — | Dynamic schemas, migration scripts |
 | `BlazeDocumentField` value type | Stable | Public | `Core/BlazeDocumentField.swift` | — | `.string`, `.int`, `.bool`, etc. |
 
 ### Query System
@@ -131,6 +137,7 @@ For release line policy, see `Docs/RELEASE_POSTURE.md`.
 | `BlazeDBMigration` protocol | Stable | Public | `Core/BlazeDBMigration.swift` | — | `up(db:)` / `down(db:)` |
 | Schema validation | Internal | Internal | `Core/SchemaValidation.swift` | — | Constraint checking |
 | Unique / foreign key / check constraints | Internal | Internal | `Core/UniqueConstraints.swift`, `ForeignKeys.swift`, `CheckConstraints.swift` | — | Infrastructure; no public creation API |
+| Migration progress monitor | Deferred | Not shipped | `Migration/MigrationProgressMonitor.swift` | — | Excluded from `BlazeDBCore`; depended on by CoreData/SQLite migrators |
 | CoreData / SQLite migrators | Deferred | Not shipped | `Migration/CoreDataMigrator.swift`, `SQLiteMigrator.swift`, `SQLMigrator.swift` | — | Excluded from `BlazeDBCore` |
 
 ### SwiftUI Integration
@@ -147,6 +154,8 @@ All distributed code is **excluded from `BlazeDBCore`** and **not shipped** in t
 | Feature | Status | Surface | Code location | Tracking | Notes |
 | ------- | ------ | ------- | ------------- | -------- | ----- |
 | Sync engine | Deferred | Not shipped | `Distributed/BlazeSyncEngine.swift` | — | Excluded from BlazeDBCore |
+| Server | Deferred | Not shipped | `Distributed/BlazeServer.swift`, `Exports/BlazeDBServer.swift` | — | Excluded from BlazeDBCore |
+| Operation model | Deferred | Not shipped | `Distributed/BlazeOperation.swift`, `BlazeOperation+BlazeBinary.swift` | — | Sync operation types + serialization |
 | TCP relay | Deferred | Not shipped | `Distributed/TCPRelay.swift` | — | `import Network` — Apple-only |
 | WebSocket relay | Deferred | Not shipped | `Distributed/WebSocketRelay.swift` | — | |
 | Unix domain socket relay | Deferred | Not shipped | `Distributed/UnixDomainSocketRelay.swift` | — | |
@@ -155,6 +164,8 @@ All distributed code is **excluded from `BlazeDBCore`** and **not shipped** in t
 | Cross-app sync | Deferred | Not shipped | `Distributed/CrossAppSync.swift` | — | |
 | Discovery / topology | Deferred | Not shipped | `Distributed/BlazeDiscovery.swift`, `BlazeTopology.swift` | — | |
 | Connection pool | Deferred | Not shipped | `Distributed/ConnectionPool.swift` | — | |
+| Distributed GC suite | Deferred | Not shipped | `Distributed/*GC.swift` (7 files) | — | Sync metadata, relay memory, operation log cleanup |
+| Security validator | Deferred | Not shipped | `Distributed/SecurityValidator.swift` | — | Transport-layer validation |
 | Sync staging primitives | Deferred | Not shipped | `DistributedStaging/SyncPrimitives.swift` | — | Stub target |
 
 See `Docs/Status/DISTRIBUTED_TRANSPORT_DEFERRED.md` for rationale.
@@ -203,7 +214,7 @@ Additional example files in `Examples/` (`.swift` files) are standalone referenc
 | Lane | Status | Location | Notes |
 | ---- | ------ | -------- | ----- |
 | Tier 0 (PR gate) | Stable | `BlazeDBTests/Tier0Core/` | Deterministic correctness |
-| Tier 1 Fast (PR gate) | Stable | `BlazeDBTests/Tier1Core/` | 3 files excluded — see `CI_AND_TEST_TIERS.md` |
+| Tier 1 Fast (PR gate) | Stable | `BlazeDBTests/Tier1Core/` | Reduced subset; many dirs/files excluded for speed — see `CI_AND_TEST_TIERS.md` and `Package.swift` |
 | Tier 1 Extended | Stable | `BlazeDBTests/Tier1Extended/` | Weekly + manual; sync tests partially excluded |
 | Tier 1 Perf | Stable | `BlazeDBTests/Tier1Perf/` | `measure()` suites |
 | Tier 2 / Tier 3 | Stable | `BlazeDBExtraTests/` | Nested package; not in root `swift test` |
@@ -214,8 +225,8 @@ Additional example files in `Examples/` (`.swift` files) are standalone referenc
 
 | Feature | Status | Surface | Code location | Notes |
 | ------- | ------ | ------- | ------------- | ----- |
-| `db.stats()` | Stable | Public | `Exports/BlazeDBClient.swift` | Record count, size |
-| `db.health()` | Stable | Public | `Exports/BlazeDBClient.swift` | Health report + warnings |
+| `db.stats()` | Stable | Public | `Exports/BlazeDBClient+Stats.swift` | Record count, size |
+| `db.health()` | Stable | Public | `Exports/BlazeDBClient+HealthCheck.swift`, `Exports/DatabaseHealth.swift` | Health report + warnings |
 | IO trace sink | Internal | Internal | `Storage/IOTraceSink.swift` | `#if DEBUG` on Darwin |
 | Storage dashboard stats | Internal | Internal | `Storage/StorageDashboardStats.swift` | |
 | Test fault injection | Internal | Internal | `Core/BlazeDBTestFaults.swift` | `#if DEBUG` only |
@@ -276,4 +287,4 @@ Bug fixes, internal refactors, and doc-only changes that do not change what is s
 
 ---
 
-_Last verified against `main` at tag v2.7.3 (commit `63e9844`)._
+_Last verified against `main` at tag v2.7.3 (commit `63e9844`). Accuracy audit applied at `cb7aeb3`._
