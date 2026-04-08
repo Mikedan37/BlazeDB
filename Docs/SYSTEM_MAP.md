@@ -38,9 +38,12 @@ For release line policy, see `Docs/RELEASE_POSTURE.md`.
 | Feature | Status | Surface | Code location | Tracking | Notes |
 | ------- | ------ | ------- | ------------- | -------- | ----- |
 | Document store (single-collection) | Stable | Public | `Core/DynamicCollection.swift` | — | All record types share one encrypted collection per DB file |
-| CRUD operations | Stable | Public | `Exports/BlazeDBClient.swift`, `Core/DynamicCollection.swift` | — | insert/fetch/update/delete/fetchAll |
-| Record encoding (BlazeBinary + JSON) | Stable | Internal | `Core/BlazeRecordEncoder.swift`, `Core/BlazeRecordDecoder.swift` | — | BlazeBinary is current default; JSON legacy supported |
+| Client lifecycle (open / close / validate) | Stable | Public | `Exports/BlazeDBClient+EasyOpen.swift`, `+Convenience.swift`, `+DX.swift`, `+Lifecycle.swift`, `+Compatibility.swift` | — | `open(named:)`, `openOrCreate()`, `close()`; `FormatVersion` on-disk compat check |
+| CRUD operations | Stable | Public | `Exports/BlazeDBClient.swift`, `Core/DynamicCollection.swift` | — | insert/fetch/update/delete/fetchAll; batch upsert via `+Batch.swift` |
+| Record encoding (BlazeBinary + JSON) | Stable | Internal | `Utils/BlazeBinary*.swift`, `Core/BlazeRecordEncoder.swift`, `Core/BlazeRecordDecoder.swift` | — | BlazeBinary codec (18 files in `Utils/`); JSON legacy supported |
 | Record builder DSL | Internal | Public with caveats | `Core/BlazeRecordDSL.swift` | — | Public `RecordBuilder` / `RecordField`; not referenced in examples or onboarding docs |
+| Multi-database manager | Advanced / Opt-in | Public with caveats | `Core/BlazeDBManager.swift` | — | `BlazeDBManager.shared`; mount/unmount/switch databases; used by CLI tools |
+| Change observation | Internal | Public with caveats | `Core/ChangeObservation.swift`, `Observability/BlazeDBSnapshot.swift` | — | `db.observe { changes in }` pub/sub; `DatabaseChange`, `ObserverToken`; 50ms coalesced batching |
 | Metadata store | Stable | Internal | `Core/MetaStore.swift`, `Storage/StorageLayout.swift` | — | Index map, deleted pages, schema version |
 | Page-based storage | Stable | Internal | `Storage/PageStore.swift` | — | 4KB pages, AES-256-GCM encrypted |
 | Record cache | Internal | Internal | `Core/RecordCache.swift` | — | In-memory LRU |
@@ -67,7 +70,7 @@ For release line policy, see `Docs/RELEASE_POSTURE.md`.
 
 | Feature | Status | Surface | Code location | Tracking | Notes |
 | ------- | ------ | ------- | ------------- | -------- | ----- |
-| Explicit transactions | Stable | Public | `Exports/BlazeDBClient.swift` | — | `beginTransaction()` / `commitTransaction()` / `rollbackTransaction()` |
+| Explicit transactions | Stable | Public | `Exports/BlazeDBClient.swift`, `Transactions/` | — | `beginTransaction()` / `commitTransaction()` / `rollbackTransaction()`; savepoints |
 | MVCC (multi-version concurrency) | Advanced / Opt-in | Public with caveats | `Core/MVCC/`, `Exports/BlazeDBClient+MVCC.swift` | — | `db.setMVCCEnabled(true)`; snapshot isolation |
 | GCD concurrent-read / barrier-write | Stable | Internal | `Core/DynamicCollection.swift` | — | Thread-safety model |
 | Page garbage collector | Internal | Internal | `Core/MVCC/PageGarbageCollector.swift`, `AutomaticGC.swift` | — | Automatic + manual GC for MVCC |
@@ -111,8 +114,8 @@ For release line policy, see `Docs/RELEASE_POSTURE.md`.
 | Aggregation | Partial | Public with caveats | `Query/BlazeAggregation.swift`, `Query/WindowFunctions.swift` | — | Sum/avg/count/min/max; window functions internal |
 | Joins | Internal | Internal | `Query/BlazeJoin.swift` | — | Cross-collection join within same DB |
 | Subqueries / CTEs | Internal | Internal | `Query/Subqueries.swift`, `CTE.swift` | — | Infrastructure present |
-| Spatial queries | Partial | Internal | `Query/QueryBuilder+Spatial.swift` | — | Builder API present; spatial index in storage |
-| Vector queries | Partial | Internal | `Query/QueryBuilder+Vector.swift` | — | Builder API present; vector index in storage |
+| Spatial queries | Partial | Public with caveats | `Query/QueryBuilder+Spatial.swift`, `Exports/BlazeDBClient+Spatial.swift` | — | Builder + client APIs; `enableSpatialIndex()` / `rebuildSpatialIndex()` |
+| Vector queries | Partial | Public with caveats | `Query/QueryBuilder+Vector.swift`, `Exports/BlazeDBClient+Vector.swift` | — | Builder + client APIs; `enableVectorIndex()` / `rebuildVectorIndex()` |
 | Query cache | Internal | Internal | `Query/QueryCache.swift` | — | In-memory result cache |
 | Query profiling | Internal | Internal | `Query/QueryProfiling.swift` | — | Per-query timing |
 
@@ -226,8 +229,9 @@ Additional example files in `Examples/` (`.swift` files) are standalone referenc
 
 | Feature | Status | Surface | Code location | Notes |
 | ------- | ------ | ------- | ------------- | ----- |
-| `db.stats()` | Stable | Public | `Exports/BlazeDBClient+Stats.swift` | Record count, size |
-| `db.health()` | Stable | Public | `Exports/BlazeDBClient+HealthCheck.swift`, `Exports/DatabaseHealth.swift` | Health report + warnings |
+| `db.stats()` | Stable | Public | `Exports/BlazeDBClient+Stats.swift` | Record count, size; interpretation via `DatabaseStats+Interpretation.swift` |
+| `db.health()` | Stable | Public | `Exports/BlazeDBClient+HealthCheck.swift`, `Exports/DatabaseHealth.swift` | Health report + warnings; resource limits via `DatabaseHealth+Limits.swift` |
+| Monitoring framework | Stable | Public | `Exports/BlazeDBClient+Monitoring.swift` | `DatabaseMonitoringSnapshot` with 5 info subtypes; 69 public symbols; metadata-only dashboard surface |
 | IO trace sink | Internal | Internal | `Storage/IOTraceSink.swift` | `#if DEBUG` on Darwin |
 | Storage dashboard stats | Internal | Internal | `Storage/StorageDashboardStats.swift` | |
 | Test fault injection | Internal | Internal | `Core/BlazeDBTestFaults.swift` | `#if DEBUG` only |
@@ -288,4 +292,4 @@ Bug fixes, internal refactors, and doc-only changes that do not change what is s
 
 ---
 
-_Last verified against `main` at tag v2.7.3 (commit `63e9844`). Second accuracy audit applied._
+_Last verified against `main` at tag v2.7.3 (commit `63e9844`). Deep surface census applied._
