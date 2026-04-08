@@ -37,11 +37,13 @@ import Foundation
 public protocol BlazeDocument: Codable, Identifiable where ID == UUID {
     var id: UUID { get set }
     
-    /// Legacy compatibility view of encoded storage.
+    /// Legacy compatibility accessor for encoded storage.
     ///
-    /// Prefer ``toStorage()`` or ``resolveStorage()`` for persistence and for handling conversion
-    /// errors. The default implementation of this property is deprecated, logs on failure, and may
-    /// return an empty ``BlazeDataRecord`` — that value must not be persisted.
+    /// The default implementation is retained for compatibility and may return an empty
+    /// ``BlazeDataRecord`` if ``toStorage()`` fails (after logging). It should not be used for
+    /// persistence when conversion errors must be handled explicitly — use ``try toStorage()`` or
+    /// ``try resolveStorage()`` instead, or typed database client APIs. The default property
+    /// implementation is deprecated; callers that need correctness must use the throwing APIs.
     var storage: BlazeDataRecord { get set }
     
     /// Convert this document to a BlazeDataRecord for storage

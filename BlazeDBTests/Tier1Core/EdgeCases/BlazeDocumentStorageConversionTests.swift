@@ -58,10 +58,10 @@ final class BlazeDocumentStorageConversionTests: XCTestCase {
         XCTAssertEqual(viaToStorage, viaResolve)
     }
 
-    /// Exercises the deprecated default `storage` getter; should match `toStorage()` when encoding succeeds.
+    /// Locks down legacy default `storage` parity with `toStorage()` on success (expect a deprecation warning).
     func testDefaultStorageGetterMatchesToStorageWhenConversionSucceeds() throws {
         let bug = TestBug(title: "Storage parity", priority: 2, status: "closed", assignee: "a")
-        let fromGetter = bug.storage
+        let fromGetter = bug.storage // Intentionally uses deprecated API.
         let fromMethod = try bug.toStorage()
         XCTAssertEqual(fromGetter, fromMethod)
         XCTAssertFalse(fromGetter.storage.isEmpty)
