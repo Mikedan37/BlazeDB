@@ -85,8 +85,9 @@ Use this table for day-to-day expectations.
 - Must stay bounded and stable.
 
 - `BlazeDB_Tier1Fast`
-- Default PR correctness gate from `BlazeDBTests/Tier1Core/`, intentionally reduced with a broader `Package.swift` exclude list to keep blocking runtime bounded.
+- Default PR correctness gate from `BlazeDBTests/Tier1Core/`.
 - Sources: `BlazeDBTests/Tier1Core/` in root package.
+- Only three files remain excluded (see `Package.swift` excludes below).
 
 - `BlazeDB_Tier1FastFull`
 - Broader deterministic Tier1 lane from the same `Tier1Core` sources, defined under `BlazeDBExtraTests/Package.swift` for deeper/manual lanes.
@@ -130,7 +131,15 @@ Inventory/bootstrap code may still bucket all three SwiftPM modules under a sing
 
 ### `BlazeDB_Tier1Fast` excludes
 
-A few files remain **excluded** from `Tier1Core` in `Package.swift` because they do not compile or fit the core-only harness yet. That is **intentional debt**: track them, rehome into the right lane, or fix the underlying code—do not treat the exclude list as permanent.
+Three files remain **excluded** from `BlazeDB_Tier1Fast` in `Package.swift`:
+
+| File | Blocker | Resolution path |
+| ---- | ------- | --------------- |
+| `Security/SecureConnectionTests.swift` | Requires `Network` framework + `SecureConnection` types from `BlazeDB/Distributed/`, not part of `BlazeDBCore` | Stays excluded until distributed module is wired into a core-compatible test target |
+| `Security/KeyManagerTests.swift` | Uses `KeyManager.generateSalt()` which is not exposed in `BlazeDBCore` | Expose `generateSalt()` in core, or rewrite test to use public API only |
+| `Concurrency/BlazeDBAsyncTests.swift` | Uses removed async APIs (`insertAsync`, `fetchAsync`, `updateAsync`, etc.) that no longer exist in `BlazeDBCore` | Rewrite test against current async API surface |
+
+All other `Tier1Core` directories and files (Aggregation, API, Query, Integration, Features, Migration, etc.) are now included in the PR gate.
 
 ## Local Entry Points
 

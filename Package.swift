@@ -186,35 +186,19 @@ let package = Package(
         ),
 
     ] + (tier0OnlyTestScope ? [] : [
-        // Tier 1 fast: default PR/local correctness gate (no measure(), no timing-dependent waits).
-        // This lane is intentionally reduced to keep PR iteration speed acceptable.
+        // Tier 1 fast: default PR/local correctness gate.
+        // Runs nearly all of Tier1Core; only three files with hard blockers remain excluded.
         .testTarget(
             name: "BlazeDB_Tier1Fast",
             dependencies: ["BlazeDBCore"],
             path: "BlazeDBTests/Tier1Core",
             exclude: [
-                // Excluded from PR-fast lane; these stay in broader deterministic lane(s).
-                "Aggregation",
-                "API",
-                "BlazePaginationTests.swift",
-                "Concurrency",
-                "DataSeedingTests.swift",
-                "DataTypes",
-                "EdgeCases",
-                "EnhancedErrorMessagesTests.swift",
-                "Features",
-                "Integration",
-                "Migration",
-                "Phase4",
-                "Platform",
-                "Query",
-                "SchemaValidationTests.swift",
-                "Testing",
-                "Utilities",
-                // Requires Network/SecureConnection types not in BlazeDBCore
+                // Requires Network framework + SecureConnection types not in BlazeDBCore
                 "Security/SecureConnectionTests.swift",
-                // KeyManager cache API tests until cache helpers are restored.
-                "Security/KeyManagerTests.swift"
+                // Uses KeyManager.generateSalt() which is not exposed in BlazeDBCore
+                "Security/KeyManagerTests.swift",
+                // Uses stale async APIs (insertAsync, fetchAsync, etc.) removed from BlazeDBCore
+                "Concurrency/BlazeDBAsyncTests.swift",
             ],
             swiftSettings: [
                 .define("BLAZEDB_CORE_ONLY"),
