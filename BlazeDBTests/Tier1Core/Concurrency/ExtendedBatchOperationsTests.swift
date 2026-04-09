@@ -271,6 +271,41 @@ final class ExtendedBatchOperationsTests: XCTestCase {
         print("  ✅ Updated 10 records by ID")
     }
     
+    // MARK: - deleteMany Correctness (#82)
+
+    func testDeleteManyReturnsAccurateCount() throws {
+        let ids = try (0..<5).map { i in
+            try requireFixture(db).insert(BlazeDataRecord(["index": .int(i)]))
+        }
+
+        let deleted = try requireFixture(db).deleteMany(ids: ids)
+        XCTAssertEqual(deleted, 5, "deleteMany should report exactly 5 deletions")
+
+        let remaining = try requireFixture(db).fetchAll()
+        XCTAssertEqual(remaining.count, 0, "All records should be deleted")
+    }
+
+    func testDeleteManyWithNonExistentIdsIsIdempotent() throws {
+        let realID = try requireFixture(db).insert(BlazeDataRecord(["name": .string("keep")]))
+        let fakeIDs = [UUID(), UUID(), UUID()]
+
+        let deleted = try requireFixture(db).deleteMany(ids: fakeIDs + [realID])
+        XCTAssertEqual(deleted, 1, "Only the one real record should be deleted")
+
+        let remaining = try requireFixture(db).fetchAll()
+        XCTAssertEqual(remaining.count, 0)
+    }
+
+    func testDeleteManyEmptyArrayNoOp() throws {
+        _ = try requireFixture(db).insert(BlazeDataRecord(["name": .string("untouched")]))
+
+        let deleted = try requireFixture(db).deleteMany(ids: [])
+        XCTAssertEqual(deleted, 0)
+
+        let remaining = try requireFixture(db).fetchAll()
+        XCTAssertEqual(remaining.count, 1, "Existing record should be untouched")
+    }
+
     // MARK: - Performance Tests
     
     // Performance tests can be added here as needed

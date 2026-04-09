@@ -145,6 +145,28 @@ final class TypedStoreTests: XCTestCase {
         XCTAssertEqual(count, 2)
     }
 
+    func testCountFiltersByDecodability() throws {
+        let tasks = db.typed(Task.self)
+        try tasks.insertMany([
+            Task(title: "A", priority: 1, done: false),
+            Task(title: "B", priority: 2, done: true),
+            Task(title: "C", priority: 3, done: false),
+        ])
+
+        let incompatible = BlazeDataRecord([
+            "color": .string("red"),
+            "weight": .double(3.5),
+        ])
+        try db.insert(incompatible)
+        try db.insert(BlazeDataRecord(["unrelated": .string("data")]))
+
+        let allRaw = try db.fetchAll()
+        XCTAssertEqual(allRaw.count, 5, "Raw fetchAll returns every record")
+
+        let count = try tasks.count()
+        XCTAssertEqual(count, 3, "TypedStore.count() returns only type-T count")
+    }
+
     // MARK: - Dual-API Coexistence
 
     func testTypedAndRawCoexist() throws {
