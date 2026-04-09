@@ -244,16 +244,16 @@ extension BlazeDBClient {
         return try T.fromBlazeRecord(record)
     }
     
-    /// Fetch all as Codable type
+    /// Fetch all as Codable type, filtering out records that cannot decode as `T`.
     public func fetchAll<T: BlazeStorable>(_ type: T.Type) throws -> [T] {
         let records = try self.fetchAll()
-        return try records.map { try T.fromBlazeRecord($0) }
+        return records.compactMap { try? T.fromBlazeRecord($0) }
     }
     
-    /// Fetch all async
+    /// Fetch all async, filtering out records that cannot decode as `T`.
     public func fetchAll<T: BlazeStorable>(_ type: T.Type) async throws -> [T] {
         let records = try await self.fetchAll()
-        return try records.map { try T.fromBlazeRecord($0) }
+        return records.compactMap { try? T.fromBlazeRecord($0) }
     }
     
     // MARK: - Update

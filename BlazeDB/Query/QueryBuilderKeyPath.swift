@@ -268,7 +268,7 @@ public class TypeSafeQueryBuilder<T: BlazeStorable> {
         }
         
         let records = try query.all()
-        return try records.map { try T.fromBlazeRecord($0) }
+        return records.compactMap { try? T.fromBlazeRecord($0) }
     }
     
     /// Execute async
@@ -291,7 +291,7 @@ public class TypeSafeQueryBuilder<T: BlazeStorable> {
         }
         
         let records = try await query.all()
-        return try records.map { try T.fromBlazeRecord($0) }
+        return records.compactMap { try? T.fromBlazeRecord($0) }
     }
     
     /// Get first result
