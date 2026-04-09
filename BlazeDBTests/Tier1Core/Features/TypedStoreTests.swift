@@ -182,6 +182,49 @@ final class TypedStoreTests: XCTestCase {
         XCTAssertEqual(fetched?.title, "FromRaw")
     }
 
+    // MARK: - Mixed-Type Decodability Filtering (#77)
+
+    func testFetchAllFiltersByDecodability() throws {
+        let tasks = db.typed(Task.self)
+        try tasks.insertMany([
+            Task(title: "A", priority: 1, done: false),
+            Task(title: "B", priority: 2, done: true),
+        ])
+
+        let incompatible = BlazeDataRecord([
+            "color": .string("red"),
+            "weight": .double(3.5),
+        ])
+        try db.insert(incompatible)
+
+        let allRaw = try db.fetchAll()
+        XCTAssertEqual(allRaw.count, 3, "Raw fetchAll returns every record")
+
+        let typedAll = try tasks.fetchAll()
+        XCTAssertEqual(typedAll.count, 2, "TypedStore.fetchAll filters out non-decodable records")
+        XCTAssertTrue(typedAll.contains { $0.title == "A" })
+        XCTAssertTrue(typedAll.contains { $0.title == "B" })
+    }
+
+    func testQueryAllFiltersByDecodability() throws {
+        let tasks = db.typed(Task.self)
+        try tasks.insertMany([
+            Task(title: "X", priority: 5, done: false),
+            Task(title: "Y", priority: 9, done: true),
+        ])
+
+        let incompatible = BlazeDataRecord([
+            "unrelated": .string("data"),
+        ])
+        try db.insert(incompatible)
+
+        let results = try tasks.query()
+            .where(\.done, equals: true)
+            .all()
+        XCTAssertEqual(results.count, 1)
+        XCTAssertEqual(results.first?.title, "Y")
+    }
+
     // MARK: - Sync createIndex
 
     func testSyncCreateIndex() throws {
