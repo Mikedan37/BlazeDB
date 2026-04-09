@@ -57,22 +57,39 @@ extension BlazeStorable {
         return BlazeDataRecord(storage)
     }
     
-    /// Convert BlazeDataRecord back to Codable
+    /// Convert BlazeDataRecord back to Codable.
+    ///
+    /// Uses a two-pass strategy:
+    /// 1. Primary path treats `.string(...)` values as literal strings (correct
+    ///    for data written after the issue-#80 fix and for any plain-String field).
+    /// 2. Legacy fallback re-parses `.string(...)` values as JSON for databases
+    ///    that stored nested Codable objects as `.string(json)` before the fix.
     internal static func fromBlazeRecord(_ record: BlazeDataRecord) throws -> Self {
-        var jsonObject: [String: Any] = [:]
-        
         BlazeLogger.debug("fromBlazeRecord: Converting \(record.storage.count) fields")
-        
+
+        // Primary path — strings stay as strings
+        if let result = try? decodeRecord(record, legacyJSONStringParsing: false) {
+            return result
+        }
+
+        // Legacy fallback — parse .string(...) as JSON for old nested-object storage
+        return try decodeRecord(record, legacyJSONStringParsing: true)
+    }
+
+    private static func decodeRecord(
+        _ record: BlazeDataRecord,
+        legacyJSONStringParsing: Bool
+    ) throws -> Self {
+        var jsonObject: [String: Any] = [:]
+
         for (key, field) in record.storage {
             BlazeLogger.debug("  Processing field '\(key)': \(String(describing: field).prefix(100))...")
-            jsonObject[key] = try convertToJSON(field)
+            jsonObject[key] = try convertToJSON(field, legacyJSONStringParsing: legacyJSONStringParsing)
         }
-        
+
         let jsonData = try JSONSerialization.data(withJSONObject: jsonObject)
-        
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
-        
         return try decoder.decode(Self.self, from: jsonData)
     }
 }
@@ -104,10 +121,11 @@ private func convertToBlazeField(_ value: Any) throws -> BlazeDocumentField {
         let fields = try array.map { try convertToBlazeField($0) }
         return .array(fields)
     case let dict as [String: Any]:
-        // Nested objects encoded as JSON strings
-        let jsonData = try JSONSerialization.data(withJSONObject: dict)
-        let jsonString = String(data: jsonData, encoding: .utf8) ?? "{}"
-        return .string(jsonString)
+        var fields: [String: BlazeDocumentField] = [:]
+        for (k, v) in dict {
+            fields[k] = try convertToBlazeField(v)
+        }
+        return .dictionary(fields)
     default:
         // Handle ISO8601 date strings
         if let str = value as? String, let date = ISO8601DateFormatter().date(from: str) {
@@ -117,11 +135,18 @@ private func convertToBlazeField(_ value: Any) throws -> BlazeDocumentField {
     }
 }
 
-private func convertToJSON(_ field: BlazeDocumentField) throws -> Any {
+private func convertToJSON(
+    _ field: BlazeDocumentField,
+    legacyJSONStringParsing: Bool = false
+) throws -> Any {
     switch field {
     case .string(let str):
-        // Try to parse as nested JSON
-        if let data = str.data(using: .utf8),
+        // After issue-#80 fix, nested objects are stored as .dictionary(...)
+        // so plain .string values are always literal strings.
+        // Legacy fallback: re-parse .string as JSON for databases written
+        // before the fix that stored nested Codable objects as .string(json).
+        if legacyJSONStringParsing,
+           let data = str.data(using: .utf8),
            let json = try? JSONSerialization.jsonObject(with: data) {
             return json
         }
@@ -139,11 +164,11 @@ private func convertToJSON(_ field: BlazeDocumentField) throws -> Any {
     case .data(let data):
         return data.base64EncodedString()
     case .array(let array):
-        return try array.map { try convertToJSON($0) }
+        return try array.map { try convertToJSON($0, legacyJSONStringParsing: legacyJSONStringParsing) }
     case .dictionary(let dict):
         var jsonDict: [String: Any] = [:]
         for (key, value) in dict {
-            jsonDict[key] = try convertToJSON(value)
+            jsonDict[key] = try convertToJSON(value, legacyJSONStringParsing: legacyJSONStringParsing)
         }
         return jsonDict
     case .vector(let vector):
