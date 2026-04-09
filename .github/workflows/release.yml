@@ -55,15 +55,16 @@ jobs:
           set -euo pipefail
           swift test --filter BlazeDB_Tier0 2>&1 | tee .logs/tier0.log
 
+      # No --skip-build here: release validate favors a full link each step over PR-gate latency.
       - name: Test Tier 1 fast
         run: |
           set -euo pipefail
-          swift test --skip-build --filter BlazeDB_Tier1Fast 2>&1 | tee .logs/tier1fast.log
+          swift test --filter BlazeDB_Tier1Fast 2>&1 | tee .logs/tier1fast.log
 
       - name: Test Tier 1 extended
         run: |
           set -euo pipefail
-          swift test --skip-build --filter BlazeDB_Tier1Extended 2>&1 | tee .logs/tier1extended.log
+          swift test --filter BlazeDB_Tier1Extended 2>&1 | tee .logs/tier1extended.log
 
       - name: Run perf lane (manual deep validation)
         if: github.event_name == 'workflow_dispatch' && inputs.run_deep_validation == true
@@ -71,7 +72,7 @@ jobs:
           set -euo pipefail
           mkdir -p .logs
           echo "Running Tier 1 perf lane..."
-          swift test --skip-build --filter BlazeDB_Tier1Perf 2>&1 | tee .logs/tier1perf.log
+          swift test --filter BlazeDB_Tier1Perf 2>&1 | tee .logs/tier1perf.log
 
       - name: Run stress tests
         if: github.event_name == 'workflow_dispatch' && inputs.run_deep_validation == true
