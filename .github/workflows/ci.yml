@@ -24,7 +24,7 @@ jobs:
   macos-15:
     name: macOS 15 — build, CLI, tests
     runs-on: macos-15
-    timeout-minutes: 180
+    timeout-minutes: 60
 
     steps:
       - name: Checkout
@@ -96,7 +96,7 @@ jobs:
   linux:
     name: Linux (Swift 6.2) — core + Tier 0
     runs-on: ubuntu-22.04
-    timeout-minutes: 120
+    timeout-minutes: 45
 
     steps:
       - name: Checkout
