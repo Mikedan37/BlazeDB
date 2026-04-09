@@ -162,7 +162,8 @@ jobs:
   nightly-linux-depth:
     name: Linux (Swift 6.2) — Tier0 + Tier1Fast
     runs-on: ubuntu-22.04
-    timeout-minutes: 90
+    # 90m was too tight: a real run exceeded it (~90.23m wall) and the job was stopped as Cancelled.
+    timeout-minutes: 150
 
     steps:
       - name: Checkout
