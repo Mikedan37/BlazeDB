@@ -35,7 +35,7 @@ final class KeyManagerTests: XCTestCase {
 
 
     func testPasswordKeyEncryptDecrypt() throws {
-        let key = try KeyManager.getKey(from: .password("my-secure-password-🔥"))
+        let key = try KeyManager.getKey(from: .password("MySecurePass-99!"))
         let store = try PageStore(fileURL: try requireFixture(tempFile), key: key)
 
         try store.writePage(index: 1, plaintext: testText)
@@ -54,7 +54,7 @@ final class KeyManagerTests: XCTestCase {
     }
     
     func testCustomSaltKeyDerivation() throws {
-        let password = "test-password-123"
+        let password = "TestPassword-123"
         let salt1 = "CustomSalt1".data(using: .utf8)!
         let salt2 = "CustomSalt2".data(using: .utf8)!
         
@@ -68,7 +68,7 @@ final class KeyManagerTests: XCTestCase {
     }
     
     func testKeyCacheWorks() throws {
-        let password = "cached-password-123"
+        let password = "CachedPassword-123"
         let salt = "TestSalt".data(using: .utf8)!
         
         let startTime1 = Date()
@@ -89,8 +89,8 @@ final class KeyManagerTests: XCTestCase {
     func testConcurrentKeyDerivationReturnsSameKeys() async throws {
         // Verify concurrent derivation of the same password/salt returns identical keys
         // and that concurrent derivation of different passwords doesn't corrupt.
-        let salt = KeyManager.generateSalt(for: "concurrent-test")
-        let password = "ConcurrentTestPass!99"
+        let salt = "concurrent-test".data(using: .utf8)!
+        let password = "ConcurrentTest-Pass99"
 
         // Clear cache so derivation actually runs
         KeyManager.clearKeyCache()
@@ -119,7 +119,7 @@ final class KeyManagerTests: XCTestCase {
         let distinctKeys: [Data] = try await withThrowingTaskGroup(of: Data.self) { group in
             for i in 0..<10 {
                 group.addTask {
-                    let key = try KeyManager.getKey(from: "DistinctPass\(i)!Secure", salt: salt)
+                    let key = try KeyManager.getKey(from: "DistinctPass\(i)Secure1", salt: salt)
                     return key.withUnsafeBytes { Data($0) }
                 }
             }
@@ -134,10 +134,10 @@ final class KeyManagerTests: XCTestCase {
     }
 
     func testClearKeyCacheUnderConcurrency() async throws {
-        let salt = KeyManager.generateSalt(for: "clear-test")
+        let salt = "clear-test".data(using: .utf8)!
 
         // Derive some keys, then clear while deriving more
-        _ = try KeyManager.getKey(from: "PreClearPass!Secure1", salt: salt)
+        _ = try KeyManager.getKey(from: "PreClearPass1Secure", salt: salt)
 
         try await withThrowingTaskGroup(of: Void.self) { group in
             // Clear cache mid-flight
@@ -147,14 +147,14 @@ final class KeyManagerTests: XCTestCase {
             // Derive concurrently
             for i in 0..<10 {
                 group.addTask {
-                    _ = try KeyManager.getKey(from: "MidClearPass\(i)!Secure", salt: salt)
+                    _ = try KeyManager.getKey(from: "MidClearPass\(i)Secure1", salt: salt)
                 }
             }
             try await group.waitForAll()
         }
 
         // Post-clear, fresh derivation must still work
-        let key = try KeyManager.getKey(from: "PostClearPass!Secure1", salt: salt)
+        let key = try KeyManager.getKey(from: "PostClearPass1Secure", salt: salt)
         XCTAssertEqual(key.bitCount, 256, "Key derivation must work after concurrent clear")
     }
 
@@ -162,7 +162,7 @@ final class KeyManagerTests: XCTestCase {
         var keys: [Data] = []
         
         for i in 0..<10 {
-            let password = "password-\(i)-test1234"
+            let password = "Password-\(i)-Test1234"
             let salt = "Salt\(i)".data(using: .utf8)!
             let key = try KeyManager.getKey(from: password, salt: salt)
             let keyData = key.withUnsafeBytes { Data($0) }

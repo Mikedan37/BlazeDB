@@ -195,9 +195,7 @@ let package = Package(
             exclude: [
                 // Requires Network framework + SecureConnection types not in BlazeDBCore
                 "Security/SecureConnectionTests.swift",
-                // Uses KeyManager.generateSalt() which is not exposed in BlazeDBCore
-                "Security/KeyManagerTests.swift",
-                // Uses stale async APIs (insertAsync, fetchAsync, etc.) removed from BlazeDBCore
+                // Async APIs gated behind #if !BLAZEDB_LINUX_CORE; test has no matching guard
                 "Concurrency/BlazeDBAsyncTests.swift",
             ],
             swiftSettings: [
