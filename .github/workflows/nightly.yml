@@ -76,7 +76,7 @@ jobs:
   nightly-macos-tsan:
     name: macOS 15 — Tier0 ThreadSanitizer
     runs-on: macos-15
-    timeout-minutes: 180
+    timeout-minutes: 90
 
     steps:
       - name: Checkout
@@ -101,7 +101,7 @@ jobs:
   nightly-linux-depth:
     name: Linux (Swift 6.2) — Tier0 + Tier1Fast
     runs-on: ubuntu-22.04
-    timeout-minutes: 240
+    timeout-minutes: 90
 
     steps:
       - name: Checkout
