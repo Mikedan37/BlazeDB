@@ -90,7 +90,7 @@ jobs:
           set -euo pipefail
           mkdir -p .logs
           echo "Running thread sanitizer on Tier 0..."
-          swift test -Xswiftc -sanitize=thread --filter BlazeDB_Tier0 2>&1 | tee .logs/tsan-tier0.log
+          swift test --sanitize thread --filter BlazeDB_Tier0 2>&1 | tee .logs/tsan-tier0.log
           if grep -q "Executed 0 tests" .logs/tsan-tier0.log; then
             echo "Sanitizer lane ran zero tests"
             exit 1
@@ -107,7 +107,7 @@ jobs:
 
       - name: Upload validate logs and artifacts
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: release-validate-logs
           path: |
@@ -147,7 +147,7 @@ jobs:
           tar -czf BlazeDB-${{ github.ref_name }}.tar.gz .build/release
 
       - name: Upload build artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: release-build
           path: BlazeDB-${{ github.ref_name }}.tar.gz
@@ -212,7 +212,7 @@ jobs:
           fi
 
       - name: Upload release notes
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: release-notes
           path: release_notes.md
