@@ -32,7 +32,7 @@ final class SecurityAuditAPITests: XCTestCase {
 
     func testPerformSecurityAudit_RLSPoliciesCountAsAccessControl() throws {
         let db = try BlazeDBClient(name: "audit-rls", fileURL: try requireFixture(dbURL), password: "AuditRLS-123!")
-        defer { try? try requireFixture(db).close() }
+        defer { try? requireFixture(db).close() }
 
         try requireFixture(db).rls.enable()
         try requireFixture(db).rls.addPolicy(.publicRead)

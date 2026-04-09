@@ -21,7 +21,7 @@ final class TriggerPersistenceAPITests: XCTestCase {
 
     func testOnInsertTriggerDefinitionIsPersistedToLayoutMetadata() throws {
         let db = try BlazeDBClient(name: "trigger-persist", fileURL: try requireFixture(dbURL), password: "TriggerPass-123!")
-        defer { try? try requireFixture(db).close() }
+        defer { try? requireFixture(db).close() }
 
         try requireFixture(db).onInsert(name: "persisted_on_insert") { _, _, _ in
             // no-op

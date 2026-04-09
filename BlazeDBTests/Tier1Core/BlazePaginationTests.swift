@@ -147,7 +147,7 @@ final class BlazePaginationTests: XCTestCase {
         print("  Testing fetchAll() memory...")
         withPlatformAutoreleasePool {
             let startMemory = getMemoryUsage()
-            _ = try? try requireFixture(db).fetchAll()
+            _ = try? requireFixture(db).fetchAll()
             let endMemory = getMemoryUsage()
             let fetchAllMemory = endMemory - startMemory
             print("    fetchAll() memory: ~\(formatBytes(fetchAllMemory))")
@@ -162,7 +162,7 @@ final class BlazePaginationTests: XCTestCase {
         
         for offset in stride(from: 0, to: recordCount, by: pageSize) {
             withPlatformAutoreleasePool {
-                if let page = try? try requireFixture(db).fetchPage(offset: offset, limit: pageSize) {
+                if let page = try? requireFixture(db).fetchPage(offset: offset, limit: pageSize) {
                     totalPaginated += page.count
                 }
             }

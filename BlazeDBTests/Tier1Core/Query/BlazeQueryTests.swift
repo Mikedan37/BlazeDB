@@ -25,7 +25,7 @@ final class BlazeQueryTests: XCTestCase {
 
     override func tearDown() async throws {
         if let db {
-            try? await try requireFixture(db).close()
+            try? await requireFixture(db).close()
         }
         db = nil
         if let tempURL {
