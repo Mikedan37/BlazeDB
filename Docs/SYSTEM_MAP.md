@@ -251,7 +251,6 @@ Additional example files in `Examples/` (`.swift` files) are standalone referenc
 | ----- | ---- | ------- | ------ |
 | [#73](https://github.com/Mikedan37/BlazeDB/issues/73) | Tests / Transport | SecureConnectionTests in wrong target; split crypto vs transport tests | Tier1Fast exclusion removal |
 | [#74](https://github.com/Mikedan37/BlazeDB/issues/74) | Tests / Security | KeyManagerTests call deleted `generateSalt`; 2 tests need rewrite | Tier1Fast exclusion removal |
-| [#75](https://github.com/Mikedan37/BlazeDB/issues/75) | Tests / Linux | BlazeDBAsyncTests missing `#if !BLAZEDB_LINUX_CORE` guard | Tier1Fast exclusion removal |
 | [#43](https://github.com/Mikedan37/BlazeDB/issues/43) | Storage / Linux | Compressed pages (v0x03) Linux/Android parity | Cross-platform compression |
 | [#30](https://github.com/Mikedan37/BlazeDB/issues/30) | Storage / Linux | Binary decoding alignment safety audit | Linux reliability |
 | [#54](https://github.com/Mikedan37/BlazeDB/issues/54) | CI | Tier1Fast exclusion burn-down umbrella | CI coverage |

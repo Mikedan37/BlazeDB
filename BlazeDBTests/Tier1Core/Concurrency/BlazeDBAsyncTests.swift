@@ -7,6 +7,8 @@
 //  Created by Michael Danylchuk on 1/15/25.
 //
 
+#if !BLAZEDB_LINUX_CORE
+
 import XCTest
 #if canImport(BlazeDBCore)
 @testable import BlazeDBCore
@@ -151,4 +153,6 @@ final class BlazeDBAsyncTests: XCTestCase {
         XCTAssertEqual(after.count, 2)
     }
 }
+
+#endif
 

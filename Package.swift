@@ -197,7 +197,7 @@ let package = Package(
                 "Security/SecureConnectionTests.swift",
                 // Uses KeyManager.generateSalt() which is not exposed in BlazeDBCore
                 "Security/KeyManagerTests.swift",
-                // Uses stale async APIs (insertAsync, fetchAsync, etc.) removed from BlazeDBCore
+                // Platform guard added (#75); still excluded due to strict-concurrency violations
                 "Concurrency/BlazeDBAsyncTests.swift",
             ],
             swiftSettings: [
