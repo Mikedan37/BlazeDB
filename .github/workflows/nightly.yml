@@ -19,7 +19,8 @@ jobs:
   nightly-macos-confidence:
     name: macOS 15 — Tier1 depth + Tier1FastFull + Tier2 + verify scripts
     runs-on: macos-15
-    timeout-minutes: 360
+    # Tier1 extended + perf + FastFull + Tier2 + verify can approach multi-hour wall times on hosted runners.
+    timeout-minutes: 480
 
     steps:
       - name: Checkout
