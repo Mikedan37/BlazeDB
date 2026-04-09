@@ -101,7 +101,7 @@ jobs:
 
       - name: Upload nightly macOS confidence logs
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: nightly-macos-confidence-logs
           path: |
@@ -133,7 +133,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p .logs
-          swift test -Xswiftc -sanitize=thread --filter BlazeDB_Tier0 2>&1 | tee .logs/tsan-tier0.log
+          swift test --sanitize thread --filter BlazeDB_Tier0 2>&1 | tee .logs/tsan-tier0.log
           if grep -q "Executed 0 tests" .logs/tsan-tier0.log; then
             echo "Sanitizer lane ran zero tests"
             exit 1
@@ -150,7 +150,7 @@ jobs:
 
       - name: Upload nightly macOS TSan logs
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: nightly-macos-tsan-logs
           path: |
@@ -213,7 +213,7 @@ jobs:
 
       - name: Upload nightly Linux depth logs
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: nightly-linux-depth-logs
           path: |

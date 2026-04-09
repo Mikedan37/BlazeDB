@@ -108,7 +108,7 @@ jobs:
 
       - name: Upload deep macOS full logs and artifacts
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: deep-macos-full-logs
           path: |
@@ -140,7 +140,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p .logs
-          swift test -Xswiftc -sanitize=thread --filter BlazeDB_Tier0 2>&1 | tee .logs/tsan-tier0.log
+          swift test --sanitize thread --filter BlazeDB_Tier0 2>&1 | tee .logs/tsan-tier0.log
           if grep -q "Executed 0 tests" .logs/tsan-tier0.log; then
             echo "Tier 0 sanitizer lane ran zero tests"
             exit 1
@@ -150,7 +150,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p .logs
-          swift test -Xswiftc -sanitize=thread --filter BlazeDB_Tier1Fast 2>&1 | tee .logs/tsan-tier1fast.log
+          swift test --sanitize thread --filter BlazeDB_Tier1Fast 2>&1 | tee .logs/tsan-tier1fast.log
           if grep -q "Executed 0 tests" .logs/tsan-tier1fast.log; then
             echo "Tier 1 fast sanitizer lane ran zero tests"
             exit 1
@@ -167,7 +167,7 @@ jobs:
 
       - name: Upload deep macOS TSan logs
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: deep-macos-tsan-logs
           path: |
@@ -236,7 +236,7 @@ jobs:
 
       - name: Upload deep Linux extended logs
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: deep-linux-extended-logs
           path: |

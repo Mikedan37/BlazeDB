@@ -84,7 +84,7 @@ jobs:
 
       - name: Upload CI macOS logs
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: ci-macos-logs
           path: |
@@ -147,7 +147,7 @@ jobs:
 
       - name: Upload CI Linux logs
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: ci-linux-logs
           path: |

@@ -35,7 +35,7 @@ jobs:
 
       - name: Upload logs
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: legacy-tag-probe-logs
           path: .artifacts/tagcheck/*.log

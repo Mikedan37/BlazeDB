@@ -63,7 +63,7 @@ jobs:
 
       - name: Upload tier1-depth macOS logs
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: tier1-depth-macos-logs
           path: |
