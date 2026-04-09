@@ -111,7 +111,11 @@ final class ConvenienceAPITests: XCTestCase {
         let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
         let expectedDir = appSupport.appendingPathComponent("BlazeDB")
         
-        XCTAssertTrue(url.path.contains("Application Support/BlazeDB"), "Should be in Application Support/BlazeDB")
+        XCTAssertEqual(
+            url.deletingLastPathComponent().standardizedFileURL,
+            expectedDir.standardizedFileURL,
+            "Database should be created inside the default BlazeDB directory"
+        )
         XCTAssertEqual(url.lastPathComponent, "MyApp.blazedb", "Filename should match")
         
         // Directory should be created

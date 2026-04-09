@@ -189,17 +189,30 @@ final class ChangeObservationTests: XCTestCase {
     func testObserverRemoval() async throws {
         print("👁️ Testing observer removal")
         
+        let stateQueue = DispatchQueue(label: "ChangeObservationTests.testObserverRemoval.state")
         nonisolated(unsafe) var callCount = 0
+        let firstCallback = expectation(description: "First observer callback arrives")
+        let callbackAfterRemoval = expectation(description: "Observer callback after removal")
+        callbackAfterRemoval.isInverted = true
         
         let token = try requireFixture(db).observe { _ in
-            callCount += 1
+            let currentCount = stateQueue.sync { () -> Int in
+                callCount += 1
+                return callCount
+            }
+
+            if currentCount == 1 {
+                firstCallback.fulfill()
+            } else {
+                callbackAfterRemoval.fulfill()
+            }
         }
         
         // Make change 1
         _ = try await requireFixture(db).insert(BlazeDataRecord(["value": .int(1)]))
-        try await Task.sleep(nanoseconds: 200_000_000)  // Wait for notification
-        
-        let countAfterFirst = callCount
+        await fulfillment(of: [firstCallback], timeout: 3.0)
+
+        let countAfterFirst = stateQueue.sync { callCount }
         XCTAssertGreaterThanOrEqual(countAfterFirst, 1)
         
         // Remove observer
@@ -207,9 +220,9 @@ final class ChangeObservationTests: XCTestCase {
         
         // Make change 2
         _ = try await requireFixture(db).insert(BlazeDataRecord(["value": .int(2)]))
-        try await Task.sleep(nanoseconds: 200_000_000)  // Wait
-        
-        let countAfterSecond = callCount
+        await fulfillment(of: [callbackAfterRemoval], timeout: 0.6)
+
+        let countAfterSecond = stateQueue.sync { callCount }
         XCTAssertEqual(countAfterSecond, countAfterFirst, "Observer should not be called after removal")
         
         print("  ✅ Observer removed successfully")
