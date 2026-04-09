@@ -166,39 +166,15 @@ extension BlazeDBClient {
     nonisolated(unsafe) private static var enhancedTriggerManagerKey: UInt8 = 1
     
     internal var triggerManager: TriggerManager {
-        #if canImport(ObjectiveC)
-        if let manager = objc_getAssociatedObject(self, &Self.triggerManagerKey) as? TriggerManager {
-            return manager
+        AssociatedObjects.getOrCreate(self, key: &Self.triggerManagerKey) {
+            TriggerManager()
         }
-        let manager = TriggerManager()
-        objc_setAssociatedObject(self, &Self.triggerManagerKey, manager, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
-        return manager
-        #else
-        if let manager: TriggerManager = AssociatedObjects.get(self, key: &Self.triggerManagerKey) {
-            return manager
-        }
-        let manager = TriggerManager()
-        AssociatedObjects.set(self, key: &Self.triggerManagerKey, value: manager)
-        return manager
-        #endif
     }
     
     private var enhancedTriggerManager: EnhancedTriggerManager {
-        #if canImport(ObjectiveC)
-        if let manager = objc_getAssociatedObject(self, &Self.enhancedTriggerManagerKey) as? EnhancedTriggerManager {
-            return manager
+        AssociatedObjects.getOrCreate(self, key: &Self.enhancedTriggerManagerKey) {
+            EnhancedTriggerManager()
         }
-        let manager = EnhancedTriggerManager()
-        objc_setAssociatedObject(self, &Self.enhancedTriggerManagerKey, manager, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
-        return manager
-        #else
-        if let manager: EnhancedTriggerManager = AssociatedObjects.get(self, key: &Self.enhancedTriggerManagerKey) {
-            return manager
-        }
-        let manager = EnhancedTriggerManager()
-        AssociatedObjects.set(self, key: &Self.enhancedTriggerManagerKey, value: manager)
-        return manager
-        #endif
     }
     
     /// Register a trigger

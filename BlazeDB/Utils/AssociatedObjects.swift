@@ -19,12 +19,31 @@ import ObjectiveC
 internal enum AssociatedObjects {
     #if canImport(ObjectiveC)
     // Apple platforms: use Objective-C runtime
+    private static let lock = NSLock()
+
     static func get<T: AnyObject>(_ object: AnyObject, key: UnsafeRawPointer) -> T? {
         return objc_getAssociatedObject(object, key) as? T
     }
     
     static func set(_ object: AnyObject, key: UnsafeRawPointer, value: AnyObject?) {
         objc_setAssociatedObject(object, key, value, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
+    }
+
+    /// Atomically fetch/create an associated object value.
+    static func getOrCreate<T: AnyObject>(
+        _ object: AnyObject,
+        key: UnsafeRawPointer,
+        create: () -> T
+    ) -> T {
+        lock.lock()
+        defer { lock.unlock() }
+
+        if let existing = objc_getAssociatedObject(object, key) as? T {
+            return existing
+        }
+        let created = create()
+        objc_setAssociatedObject(object, key, created, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
+        return created
     }
     #else
     // Linux: use static dictionary storage with type-erased values
@@ -53,6 +72,28 @@ internal enum AssociatedObjects {
                 storage.removeValue(forKey: id)
             }
         }
+    }
+
+    /// Atomically fetch/create an associated object value.
+    static func getOrCreate<T: AnyObject>(
+        _ object: AnyObject,
+        key: UnsafeRawPointer,
+        create: () -> T
+    ) -> T {
+        lock.lock()
+        defer { lock.unlock() }
+
+        let id = ObjectIdentifier(object)
+        if let existing = storage[id]?[key] as? T {
+            return existing
+        }
+
+        let created = create()
+        if storage[id] == nil {
+            storage[id] = [:]
+        }
+        storage[id]?[key] = created
+        return created
     }
     
     // Helper for value types (String, Bool, etc.)

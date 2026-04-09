@@ -60,6 +60,22 @@ Use this table for day-to-day expectations.
   - Linux depth run: `BlazeDB_Tier0` + `BlazeDB_Tier1Fast`
 - **Operational policy:** nightly failures are triaged within 24–48 hours.
 
+### Nightly stability trade-offs (documented)
+
+- **Associated object storage model:**
+  - Apple platforms use Objective-C associated objects (standard extension-storage pattern).
+  - Linux uses the `AssociatedObjects` dictionary fallback (no Objective-C runtime available).
+  - To remove TSan races from concurrent first access, manager creation now uses an atomic `getOrCreate(...)` path guarded by `NSLock`.
+  - Trade-off: first-time associated-object initialization is globally serialized per process; expected contention is low and chosen for correctness.
+
+- **Observer-removal test determinism:**
+  - `ChangeObservationTests.testObserverRemoval` uses explicit expectations and synchronized state checks instead of sleep-only timing.
+  - Trade-off: test logic is slightly more verbose, but avoids scheduler-dependent flakes in nightly lanes.
+
+- **Cross-platform default-path assertions:**
+  - `ConvenienceAPITests.testDefaultDatabaseURL` validates against `defaultDatabaseDirectory` semantics instead of hardcoded `"Application Support/BlazeDB"` text.
+  - Trade-off: less strict about path string formatting, more correct across Linux/macOS path conventions.
+
 - `.github/workflows/deep-validation.yml`
 - Trigger: **weekly schedule** and **manual** (`workflow_dispatch`)
 - Runs deep/manual soak coverage:
