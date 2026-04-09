@@ -75,7 +75,7 @@ For release line policy, see `Docs/RELEASE_POSTURE.md`.
 | MVCC (multi-version concurrency) | Advanced / Opt-in | Public with caveats | `Core/MVCC/`, `Exports/BlazeDBClient+MVCC.swift` | — | `db.setMVCCEnabled(true)`; snapshot isolation |
 | GCD concurrent-read / barrier-write | Stable | Internal | `Core/DynamicCollection.swift` | — | Per-collection `DispatchQueue(.concurrent)`; queue label is placeholder `com.yourorg.blazedb` (indistinguishable in Instruments); `fetchAll` on Apple has 5-second static in-memory cache (`NSLock`-guarded, independent of queue) |
 | Page garbage collector | Internal | Internal | `Core/MVCC/PageGarbageCollector.swift`, `AutomaticGC.swift` | — | Automatic (60s interval / 100 txn / 3.0 avg versions threshold) + manual GC; **holds `VersionManager` lock during collection — blocks all MVCC reads and writes**; only runs when MVCC is enabled |
-| Async APIs | Advanced / Opt-in | Public with caveats | `Exports/BlazeDBClient+AsyncOptimized.swift`, `Core/DynamicCollection+Async.swift` | [#75](https://github.com/Mikedan37/BlazeDB/issues/75) | `insertAsync`, `fetchAsync`, etc. Gated: `#if !BLAZEDB_LINUX_CORE` — Apple platforms only |
+| Async APIs | Advanced / Opt-in | Public with caveats | `Exports/BlazeDBClient+AsyncOptimized.swift`, `Core/DynamicCollection+Async.swift` | — | `insertAsync`, `fetchAsync`, etc. Gated: `#if !BLAZEDB_LINUX_CORE` — Apple platforms only |
 
 ### Encryption and Security
 
@@ -91,7 +91,7 @@ For release line policy, see `Docs/RELEASE_POSTURE.md`.
 | Certificate pinning | Internal | Internal | `Security/CertificatePinning.swift` | — | TLS pinning helpers |
 | Secure enclave key manager | Internal | Internal | `Security/SecureEnclaveKeyManager.swift` | — | Apple Keychain path; `#if canImport(Security)` |
 | User context / key unlock | Internal | Internal | `Security/BlazeUserContext.swift`, `Security/KeyUnlockProvider.swift` | — | User-scoped security context and key unlock |
-| Password strength validator | Internal | Internal | `Security/PasswordStrengthValidator.swift` | — | Minimum 8-char enforcement at open |
+| Password strength validator | Internal | Internal | `Security/PasswordStrengthValidator.swift` | — | `KeyManager` enforces `.recommended` preset: min 12 chars, uppercase + lowercase + numbers required; configurable via `Requirements` |
 
 ### Typed Model Layer
 
@@ -99,7 +99,7 @@ For release line policy, see `Docs/RELEASE_POSTURE.md`.
 | ------- | ------ | ------- | ------------- | -------- | ----- |
 | `BlazeStorable` protocol | Stable | Public | `Codable/CodableIntegration.swift` | — | `Codable + Identifiable where ID == UUID`; recommended path; **no bridge to `BlazeDocument`** — cannot use `@BlazeQueryTyped` without rewriting model; nested Codable structs encode to `.dictionary(...)` (not `.string(json)` — fixed in [#80](https://github.com/Mikedan37/BlazeDB/issues/80)); legacy `.string(json)` nested objects still decode via two-pass fallback |
 | `TypedStore<T>` | Stable | Public with caveats | `Codable/TypedStore.swift` | — | `db.typed(T.self)` — CRUD + KeyPath queries; `fetchAll()` and `TypeSafeQueryBuilder.all()` filter by decodability (`compactMap` / `try?`), silently skipping records that cannot decode as `T`; `count()` returns total DB record count, not type-`T` count ([#78](https://github.com/Mikedan37/BlazeDB/issues/78)) |
-| `BlazeDocument` protocol | Stable | Public with caveats | `TypeSafety/BlazeDocument.swift` | [#37](https://github.com/Mikedan37/BlazeDB/issues/37) | Manual `toStorage()` / `init(from:)` mapping; required for `@BlazeQueryTyped`; default `storage` is **deprecated** — on `toStorage()` failure it **logs** (error) and returns `[:]` (not safe to persist); use `try toStorage()` or `try resolveStorage()` when errors must propagate; typed `insert`/`update` paths call `toStorage()` directly — see [#88](https://github.com/Mikedan37/BlazeDB/pull/88); no bridge from `BlazeStorable` |
+| `BlazeDocument` protocol | Stable | Public with caveats | `TypeSafety/BlazeDocument.swift` | — | Manual `toStorage()` / `init(from:)` mapping; required for `@BlazeQueryTyped`; default `storage` is **deprecated** — on `toStorage()` failure it **logs** (error) and returns `[:]` (not safe to persist); use `try toStorage()` or `try resolveStorage()` when errors must propagate; typed `insert`/`update` paths call `toStorage()` directly — see [#88](https://github.com/Mikedan37/BlazeDB/pull/88); no bridge from `BlazeStorable` |
 | `BlazeDataRecord` (raw API) | Stable | Public | `Exports/BlazeTypes.swift` | — | Dynamic schemas, migration scripts |
 | `BlazeDocumentField` value type | Stable | Public | `Core/BlazeDocumentField.swift` | — | `.string`, `.int`, `.bool`, etc. |
 
@@ -211,7 +211,7 @@ Additional example files in `Examples/` (`.swift` files) are standalone referenc
 | watchOS 8+ | Stable | Declared in Package.swift | Limited CI |
 | tvOS 15+ | Stable | Declared in Package.swift | Limited CI |
 | visionOS 1+ | Stable | Declared in Package.swift | Limited CI |
-| Linux (Swift 6.0+) | Stable | Blocking lane (core + Tier0) | `BLAZEDB_LINUX_CORE` gates **68 files** across spatial, vector, async APIs, trigger persistence, FTS internals, query planner branches — effectively a second operating mode, not just SwiftUI exclusion |
+| Linux (Swift 6.0+) | Stable | Blocking lane (core + Tier0) | `BLAZEDB_LINUX_CORE` gates **69 files** across spatial, vector, async APIs, trigger persistence, FTS internals, query planner branches — effectively a second operating mode, not just SwiftUI exclusion |
 | Android | Partial | Best-effort | `BLAZEDB_LINUX_CORE` path; Swift 6.3+ / NDK |
 
 ### Testing and CI
@@ -219,7 +219,7 @@ Additional example files in `Examples/` (`.swift` files) are standalone referenc
 | Lane | Status | Location | Notes |
 | ---- | ------ | -------- | ----- |
 | Tier 0 (PR gate) | Stable | `BlazeDBTests/Tier0Core/` | Deterministic correctness |
-| Tier 1 Fast (PR gate) | Stable | `BlazeDBTests/Tier1Core/` | Reduced subset; many dirs/files excluded for speed — see `CI_AND_TEST_TIERS.md` and `Package.swift` |
+| Tier 1 Fast (PR gate) | Stable | `BlazeDBTests/Tier1Core/` | Nearly full coverage; one file excluded (`SecureConnectionTests.swift` — requires Network framework) — see `CI_AND_TEST_TIERS.md` and `Package.swift` |
 | Tier 1 Extended | Stable | `BlazeDBTests/Tier1Extended/` | Weekly + manual; sync tests partially excluded |
 | Tier 1 Perf | Stable | `BlazeDBTests/Tier1Perf/` | `measure()` suites |
 | Tier 2 / Tier 3 | Stable | `BlazeDBExtraTests/` | Nested package; not in root `swift test` |
@@ -250,11 +250,8 @@ Additional example files in `Examples/` (`.swift` files) are standalone referenc
 | Issue | Area | Summary | Blocks |
 | ----- | ---- | ------- | ------ |
 | [#73](https://github.com/Mikedan37/BlazeDB/issues/73) | Tests / Transport | SecureConnectionTests in wrong target; split crypto vs transport tests | Tier1Fast exclusion removal |
-| [#74](https://github.com/Mikedan37/BlazeDB/issues/74) | Tests / Security | KeyManagerTests call deleted `generateSalt`; 2 tests need rewrite | Tier1Fast exclusion removal |
-| [#75](https://github.com/Mikedan37/BlazeDB/issues/75) | Tests / Linux | BlazeDBAsyncTests missing `#if !BLAZEDB_LINUX_CORE` guard | Tier1Fast exclusion removal |
 | [#43](https://github.com/Mikedan37/BlazeDB/issues/43) | Storage / Linux | Compressed pages (v0x03) Linux/Android parity | Cross-platform compression |
 | [#30](https://github.com/Mikedan37/BlazeDB/issues/30) | Storage / Linux | Binary decoding alignment safety audit | Linux reliability |
-| [#54](https://github.com/Mikedan37/BlazeDB/issues/54) | CI | Tier1Fast exclusion burn-down umbrella | CI coverage |
 | [#51](https://github.com/Mikedan37/BlazeDB/issues/51) | CI / Linux | Linux Tier1 enablement and CI contract alignment | Linux parity |
 | [#58](https://github.com/Mikedan37/BlazeDB/issues/58) | Docs | Publish explicit shipped-core contract and deferred-feature boundaries | Documentation |
 
