@@ -119,7 +119,7 @@ public struct TypedStore<T: BlazeStorable>: Sendable {
 
     /// Count all objects of this type in the database.
     public func count() throws -> Int {
-        try db.fetchAll().count
+        try db.fetchAll(T.self).count
     }
 }
 
