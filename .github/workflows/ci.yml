@@ -60,11 +60,38 @@ jobs:
           swift build --target BlazeDump
           swift build --target BlazeInfo
 
+      - name: Prepare CI log directories
+        run: mkdir -p .logs .artifacts
+
       - name: Test Tier 0
-        run: BLAZEDB_TEST_SCOPE=tier0 swift test --filter BlazeDB_Tier0
+        run: |
+          set -euo pipefail
+          BLAZEDB_TEST_SCOPE=tier0 swift test --filter BlazeDB_Tier0 2>&1 | tee .logs/tier0.log
 
       - name: Test Tier 1 (fast)
-        run: swift test --skip-build --filter BlazeDB_Tier1Fast
+        run: |
+          set -euo pipefail
+          swift test --skip-build --filter BlazeDB_Tier1Fast 2>&1 | tee .logs/tier1fast.log
+
+      - name: Dump diagnostics on failure
+        if: failure()
+        run: |
+          mkdir -p .logs
+          ps aux > .logs/ps.txt || true
+          df -h > .logs/disk.txt || true
+          swift --version > .logs/swift-version.txt 2>&1 || true
+          xcodebuild -version > .logs/xcode-version.txt 2>&1 || true
+
+      - name: Upload CI macOS logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-macos-logs
+          path: |
+            .logs/
+            .artifacts/
+          if-no-files-found: ignore
+          retention-days: 7
 
   linux:
     name: Linux (Swift 6.2) — core + Tier 0
@@ -102,5 +129,29 @@ jobs:
           swift build --target BlazeDump
           swift build --target BlazeInfo
 
+      - name: Prepare CI log directories
+        run: mkdir -p .logs .artifacts
+
       - name: Test Tier 0
-        run: BLAZEDB_TEST_SCOPE=tier0 swift test --filter BlazeDB_Tier0
+        run: |
+          set -euo pipefail
+          BLAZEDB_TEST_SCOPE=tier0 swift test --filter BlazeDB_Tier0 2>&1 | tee .logs/tier0.log
+
+      - name: Dump diagnostics on failure
+        if: failure()
+        run: |
+          mkdir -p .logs
+          ps aux > .logs/ps.txt || true
+          df -h > .logs/disk.txt || true
+          swift --version > .logs/swift-version.txt 2>&1 || true
+
+      - name: Upload CI Linux logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-linux-logs
+          path: |
+            .logs/
+            .artifacts/
+          if-no-files-found: ignore
+          retention-days: 7

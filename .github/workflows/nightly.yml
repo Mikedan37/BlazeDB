@@ -45,21 +45,34 @@ jobs:
       - name: Build BlazeDBCore
         run: swift build --target BlazeDBCore
 
+      - name: Prepare CI log directories
+        run: mkdir -p .logs .artifacts
+
       - name: Test Tier 1 extended
-        run: swift test --filter BlazeDB_Tier1Extended
+        run: |
+          set -euo pipefail
+          swift test --filter BlazeDB_Tier1Extended 2>&1 | tee .logs/tier1extended.log
 
       # Do not use --skip-build here: Tier1Perf is not built by the prior Tier1Extended-only
       # step, so a cached test bundle can run against stale library code (wrong line numbers /
       # pre-fix behavior after BlazeDBCore-only rebuild + cache restore).
       - name: Test Tier 1 perf
-        run: swift test --filter BlazeDB_Tier1Perf
+        run: |
+          set -euo pipefail
+          swift test --filter BlazeDB_Tier1Perf 2>&1 | tee .logs/tier1perf.log
 
       - name: Test Tier 1 fast full (broader deterministic)
-        run: swift test --filter BlazeDB_Tier1FastFull
-        working-directory: BlazeDBExtraTests
+        run: |
+          set -euo pipefail
+          cd BlazeDBExtraTests
+          swift test --filter BlazeDB_Tier1FastFull 2>&1 | tee "${GITHUB_WORKSPACE}/.logs/tier1fastfull.log"
 
       - name: Test Tier 2 integration/recovery (strict enforcement)
-        run: ./Scripts/run-tier2.sh --strict
+        run: |
+          set -euo pipefail
+          mkdir -p .logs
+          echo ">>> ./Scripts/run-tier2.sh --strict (Tier 2 strict mode; script prints strict banner)" | tee .logs/tier2.log
+          ./Scripts/run-tier2.sh --strict 2>&1 | tee -a .logs/tier2.log
 
       - name: Install ripgrep (verification scripts)
         env:
@@ -68,10 +81,34 @@ jobs:
           command -v rg >/dev/null 2>&1 || brew install ripgrep
 
       - name: Verify clean-checkout flow
-        run: ./Scripts/verify-clean-checkout.sh
+        run: |
+          set -euo pipefail
+          ./Scripts/verify-clean-checkout.sh 2>&1 | tee .logs/verify-clean-checkout.log
 
       - name: Verify README quickstart
-        run: ./Scripts/verify-readme-quickstart.sh
+        run: |
+          set -euo pipefail
+          ./Scripts/verify-readme-quickstart.sh 2>&1 | tee .logs/verify-readme-quickstart.log
+
+      - name: Dump diagnostics on failure
+        if: failure()
+        run: |
+          mkdir -p .logs
+          ps aux > .logs/ps.txt || true
+          df -h > .logs/disk.txt || true
+          swift --version > .logs/swift-version.txt 2>&1 || true
+          xcodebuild -version > .logs/xcode-version.txt 2>&1 || true
+
+      - name: Upload nightly macOS confidence logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nightly-macos-confidence-logs
+          path: |
+            .logs/
+            .artifacts/
+          if-no-files-found: ignore
+          retention-days: 7
 
   nightly-macos-tsan:
     name: macOS 15 — Tier0 ThreadSanitizer
@@ -89,14 +126,38 @@ jobs:
           xcodebuild -version
           swift --version
 
+      - name: Prepare CI log directories
+        run: mkdir -p .logs .artifacts
+
       - name: Run thread sanitizer on Tier 0
         run: |
-          SANITIZER_LOG=$(mktemp)
-          swift test -Xswiftc -sanitize=thread --filter BlazeDB_Tier0 | tee "$SANITIZER_LOG"
-          if grep -q "Executed 0 tests" "$SANITIZER_LOG"; then
+          set -euo pipefail
+          mkdir -p .logs
+          swift test -Xswiftc -sanitize=thread --filter BlazeDB_Tier0 2>&1 | tee .logs/tsan-tier0.log
+          if grep -q "Executed 0 tests" .logs/tsan-tier0.log; then
             echo "Sanitizer lane ran zero tests"
             exit 1
           fi
+
+      - name: Dump diagnostics on failure
+        if: failure()
+        run: |
+          mkdir -p .logs
+          ps aux > .logs/ps.txt || true
+          df -h > .logs/disk.txt || true
+          swift --version > .logs/swift-version.txt 2>&1 || true
+          xcodebuild -version > .logs/xcode-version.txt 2>&1 || true
+
+      - name: Upload nightly macOS TSan logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nightly-macos-tsan-logs
+          path: |
+            .logs/
+            .artifacts/
+          if-no-files-found: ignore
+          retention-days: 7
 
   nightly-linux-depth:
     name: Linux (Swift 6.2) — Tier0 + Tier1Fast
@@ -129,8 +190,34 @@ jobs:
       - name: Build core
         run: swift build --target BlazeDBCore
 
+      - name: Prepare CI log directories
+        run: mkdir -p .logs .artifacts
+
       - name: Test Tier 0
-        run: swift test --filter BlazeDB_Tier0
+        run: |
+          set -euo pipefail
+          swift test --filter BlazeDB_Tier0 2>&1 | tee .logs/tier0.log
 
       - name: Test Tier 1 fast
-        run: swift test --skip-build --filter BlazeDB_Tier1Fast
+        run: |
+          set -euo pipefail
+          swift test --skip-build --filter BlazeDB_Tier1Fast 2>&1 | tee .logs/tier1fast.log
+
+      - name: Dump diagnostics on failure
+        if: failure()
+        run: |
+          mkdir -p .logs
+          ps aux > .logs/ps.txt || true
+          df -h > .logs/disk.txt || true
+          swift --version > .logs/swift-version.txt 2>&1 || true
+
+      - name: Upload nightly Linux depth logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nightly-linux-depth-logs
+          path: |
+            .logs/
+            .artifacts/
+          if-no-files-found: ignore
+          retention-days: 7

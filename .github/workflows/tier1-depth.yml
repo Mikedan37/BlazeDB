@@ -38,9 +38,36 @@ jobs:
       - name: Build BlazeDBCore
         run: swift build --target BlazeDBCore
 
+      - name: Prepare CI log directories
+        run: mkdir -p .logs .artifacts
+
       - name: Test Tier 1 extended
-        run: swift test --filter BlazeDB_Tier1Extended
+        run: |
+          set -euo pipefail
+          swift test --filter BlazeDB_Tier1Extended 2>&1 | tee .logs/tier1extended.log
 
       # Rebuild Tier1Perf (see nightly.yml — avoid --skip-build after Tier1Extended-only build).
       - name: Test Tier 1 perf
-        run: swift test --filter BlazeDB_Tier1Perf
+        run: |
+          set -euo pipefail
+          swift test --filter BlazeDB_Tier1Perf 2>&1 | tee .logs/tier1perf.log
+
+      - name: Dump diagnostics on failure
+        if: failure()
+        run: |
+          mkdir -p .logs
+          ps aux > .logs/ps.txt || true
+          df -h > .logs/disk.txt || true
+          swift --version > .logs/swift-version.txt 2>&1 || true
+          xcodebuild -version > .logs/xcode-version.txt 2>&1 || true
+
+      - name: Upload tier1-depth macOS logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tier1-depth-macos-logs
+          path: |
+            .logs/
+            .artifacts/
+          if-no-files-found: ignore
+          retention-days: 7
