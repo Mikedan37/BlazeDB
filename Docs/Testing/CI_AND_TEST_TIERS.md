@@ -171,6 +171,28 @@ All other `Tier1Core` directories and files (Aggregation, API, Query, Integratio
 - `./Scripts/run-tier2.sh`
 - `./Scripts/run-tier3.sh`
 
+## Interpreting CI failures (first artifact, not last passer)
+
+The **last passing test** in the log only identifies the **next execution candidate**, not necessarily the **root cause**. Sanitizer runs, worker death, and infra limits often make the “last green” line a red herring.
+
+**Default hypothesis order for late failures when Tier0 Thread Sanitizer is currently green**
+
+1. Real XCTest failure (assertion or thrown error with test context)
+2. Order or shared-state contamination (parallel workers, globals, shared paths)
+3. Late runtime or infra failure (timeout, SIGKILL, OOM, runner cancellation)
+4. Sanitizer output — **only** when the **first** failing artifact is actually a sanitizer report (do not infer sanitizer from “we fixed a race once”)
+
+Tier0 TSan being green does **not** prove there are no races anywhere, no sanitizer-only issues in other lanes, or no parallelism-dependent failures. It **does** mean you should not treat an older, fixed failure class (for example associated-object lazy-init races) as the automatic explanation for every later failure without matching log evidence.
+
+**Buckets collapse only on the first failing artifact**, for example: first `XCTAssert…` line, first thrown error with test context, first TSan report block, first timeout or kill line, or first cancellation/OOM signal.
+
+**Quick checklist when triaging**
+
+- What is the **first** failing artifact (assertion, throw, timeout, kill, cancellation, sanitizer)?
+- Was the failure **early**, **mid-run**, or **late**?
+- Is Tier0 TSan green on the branch?
+- Is the suspect test the **named failing test**, or merely the **next execution candidate** after an unrelated last pass?
+
 ## Nightly Triage Policy
 
 - Nightly failures are treated as real work and triaged within **24–48 hours**.

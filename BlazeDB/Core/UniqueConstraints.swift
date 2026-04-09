@@ -58,8 +58,17 @@ public class UniqueConstraintManager {
     
     /// Validate unique constraint before insert
     public func validateUnique(collection: DynamicCollection, record: BlazeDataRecord, excludeId: UUID? = nil) throws {
+        // Snapshot configuration under lock so validation does not iterate the sets while another
+        // thread mutates them (TSan: concurrent read/write on Set storage).
+        let fieldsSnapshot: Set<String>
+        let compoundSnapshot: Set<String>
+        lock.lock()
+        fieldsSnapshot = uniqueFields
+        compoundSnapshot = uniqueCompoundFields
+        lock.unlock()
+
         // Check single-field unique constraints
-        for field in uniqueFields {
+        for field in fieldsSnapshot {
             guard let value = record.storage[field] else { continue }
             
             // Check if another record has this value
@@ -83,7 +92,7 @@ public class UniqueConstraintManager {
         }
         
         // Check compound unique constraints
-        for compoundKey in uniqueCompoundFields {
+        for compoundKey in compoundSnapshot {
             let fields = compoundKey.components(separatedBy: "+")
             guard fields.allSatisfy({ record.storage[$0] != nil }) else { continue }
             
