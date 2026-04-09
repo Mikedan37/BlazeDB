@@ -21,7 +21,7 @@ final class StatsAPITests: XCTestCase {
 
     func testStatsPrettyPrint_IndicatesCacheHitRateUnavailable() throws {
         let db = try BlazeDBClient(name: "stats-api", fileURL: try requireFixture(dbURL), password: "StatsPass-123!")
-        defer { try? try requireFixture(db).close() }
+        defer { try? requireFixture(db).close() }
 
         _ = try requireFixture(db).insert(BlazeDataRecord(["name": .string("alice")]))
         let stats = try requireFixture(db).stats()

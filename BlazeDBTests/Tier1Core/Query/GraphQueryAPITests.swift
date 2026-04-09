@@ -16,7 +16,7 @@ final class GraphQueryAPITests: XCTestCase {
     }
 
     override func tearDownWithError() throws {
-        try? try requireFixture(db).close()
+        try? requireFixture(db).close()
         db = nil
         let metaURL = try requireFixture(dbURL).deletingPathExtension().appendingPathExtension("meta")
         try? FileManager.default.removeItem(at: try requireFixture(dbURL))

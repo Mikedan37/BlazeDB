@@ -520,12 +520,12 @@ final class TypeSafetyEdgeCaseTests: XCTestCase {
         
         for _ in 1...5 {
             // Typed fetch
-            if let _ = try? await try requireFixture(db).fetch(TestBug.self, id: bug.id) {
+            if let _ = try? await requireFixture(db).fetch(TestBug.self, id: bug.id) {
                 typedSuccessCount += 1
             }
             
             // Dynamic fetch
-            if let _ = try? await try requireFixture(db).fetch(id: bug.id) {
+            if let _ = try? await requireFixture(db).fetch(id: bug.id) {
                 dynamicSuccessCount += 1
             }
         }

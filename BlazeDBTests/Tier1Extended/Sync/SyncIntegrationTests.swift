@@ -95,7 +95,7 @@ final class SyncIntegrationTests: XCTestCase {
             for i in 0..<100 {
                 group.addTask {
                     let record = BlazeDataRecord(["source": .string("db1"), "index": .int(i)])
-                    _ = try? try requireFixture(db1).insert(record)
+                    _ = try? requireFixture(db1).insert(record)
                 }
             }
             
@@ -103,7 +103,7 @@ final class SyncIntegrationTests: XCTestCase {
             for i in 0..<100 {
                 group.addTask {
                     let record = BlazeDataRecord(["source": .string("db2"), "index": .int(i)])
-                    _ = try? try requireFixture(db2).insert(record)
+                    _ = try? requireFixture(db2).insert(record)
                 }
             }
         }

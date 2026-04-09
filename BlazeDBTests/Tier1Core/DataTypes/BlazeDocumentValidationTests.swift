@@ -194,14 +194,14 @@ final class BlazeDocumentValidationTests: XCTestCase {
         
         // Try fetching with BOTH IDs to see which works
         print("\n  Fetching with user.id...")
-        let fetched1 = try? try requireFixture(db).fetch(ValidatedUser.self, id: user.id)
+        let fetched1 = try? requireFixture(db).fetch(ValidatedUser.self, id: user.id)
         print("  Result: \(fetched1 == nil ? "NOT FOUND" : "FOUND")")
         if fetched1 == nil {
             print("  Error during conversion")
         }
         
         print("  Fetching with insertedID...")
-        let fetched2 = try? try requireFixture(db).fetch(ValidatedUser.self, id: insertedID)
+        let fetched2 = try? requireFixture(db).fetch(ValidatedUser.self, id: insertedID)
         print("  Result: \(fetched2 == nil ? "NOT FOUND" : "FOUND")")
         if fetched2 == nil {
             print("  Error during conversion")

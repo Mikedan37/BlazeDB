@@ -63,7 +63,7 @@ final class ConvenienceAPITests: XCTestCase {
         let uniqueName = "TestDB-\(UUID().uuidString)"
         // Create database by name only
         let db = try BlazeDBClient(name: uniqueName, password: "SecureTestDB-456!")
-        defer { try? try requireFixture(db).close() }
+        defer { try? requireFixture(db).close() }
         
         // Verify it was created in Application Support
         let expectedURL = try BlazeDBClient.defaultDatabaseURL(for: uniqueName)
@@ -94,7 +94,7 @@ final class ConvenienceAPITests: XCTestCase {
     func testConvenienceInit_WithProject() throws {
         // Create with project namespace
         let db = try BlazeDBClient(name: "MyApp", password: "SecureTestDB-456!", project: "MyProject")
-        defer { try? try requireFixture(db).close() }
+        defer { try? requireFixture(db).close() }
         
         XCTAssertEqual(try requireFixture(db).name, "MyApp", "Database name should match")
         // Project is stored internally, verify it works
@@ -143,8 +143,8 @@ final class ConvenienceAPITests: XCTestCase {
         let db1 = try BlazeDBClient(name: "MyApp", password: "SecureTestDB-456!")
         let db2 = try BlazeDBClient(name: "UserData", password: "SecureTestDB-456!")
         defer {
-            try? try requireFixture(db1).close()
-            try? try requireFixture(db2).close()
+            try? requireFixture(db1).close()
+            try? requireFixture(db2).close()
         }
         
         // Discover them
@@ -160,7 +160,7 @@ final class ConvenienceAPITests: XCTestCase {
     func testFindDatabase() throws {
         // Create a database
         let db = try BlazeDBClient(name: "MyApp", password: "SecureTestDB-456!")
-        defer { try? try requireFixture(db).close() }
+        defer { try? requireFixture(db).close() }
         
         // Find it
         let found = try BlazeDBClient.findDatabase(named: "MyApp")
@@ -189,7 +189,7 @@ final class ConvenienceAPITests: XCTestCase {
     
     func testRegisterDatabase() throws {
         let db = try BlazeDBClient(name: "MyApp", password: "SecureTestDB-456!")
-        defer { try? try requireFixture(db).close() }
+        defer { try? requireFixture(db).close() }
         
         // Register it
         BlazeDBClient.registerDatabase(name: "MyApp", client: db)
@@ -203,7 +203,7 @@ final class ConvenienceAPITests: XCTestCase {
     
     func testUnregisterDatabase() throws {
         let db = try BlazeDBClient(name: "MyApp", password: "SecureTestDB-456!")
-        defer { try? try requireFixture(db).close() }
+        defer { try? requireFixture(db).close() }
         
         // Register it
         BlazeDBClient.registerDatabase(name: "MyApp", client: db)
@@ -221,8 +221,8 @@ final class ConvenienceAPITests: XCTestCase {
         let db1 = try BlazeDBClient(name: "MyApp", password: "SecureTestDB-456!")
         let db2 = try BlazeDBClient(name: "UserData", password: "SecureTestDB-456!")
         defer {
-            try? try requireFixture(db1).close()
-            try? try requireFixture(db2).close()
+            try? requireFixture(db1).close()
+            try? requireFixture(db2).close()
         }
         
         BlazeDBClient.registerDatabase(name: "MyApp", client: db1)
