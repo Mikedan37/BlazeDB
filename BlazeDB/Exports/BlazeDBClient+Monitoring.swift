@@ -240,8 +240,9 @@ extension BlazeDBClient {
     }
     
     private func getStorageInfo() throws -> StorageInfo {
-        let recordCount = collection.indexMap.count
-        let totalPages = collection.nextPageIndex
+        let (recordCount, totalPages) = collection.queue.sync {
+            (collection.indexMap.count, collection.nextPageIndex)
+        }
         
         // Calculate file sizes
         let fileAttrs = try? FileManager.default.attributesOfItem(atPath: fileURL.path)
@@ -272,24 +273,27 @@ extension BlazeDBClient {
     }
     
     private func getPerformanceInfo() -> PerformanceInfo {
-        let mvccEnabled = collection.mvccEnabled
+        let (mvccEnabled, indexNames, indexCount) = collection.queue.sync {
+            (
+                collection.mvccEnabled,
+                collection.secondaryIndexes.keys.map { String($0) },
+                collection.secondaryIndexes.count
+            )
+        }
         let versionStats = collection.versionManager.getStats()
         let gcStats = collection.gcManager.getStats()
-        
-        // Get index names
-        let indexNames = collection.secondaryIndexes.keys.map { String($0) }
         
         // Calculate obsolete versions (total - unique records)
         let obsoleteVersions = versionStats.totalVersions - versionStats.uniqueRecords
         
         return PerformanceInfo(
             mvccEnabled: mvccEnabled,
-            activeTransactions: versionStats.activeSnapshots,  // Fixed: use activeSnapshots
+            activeTransactions: versionStats.activeSnapshots,
             totalVersions: versionStats.totalVersions,
-            obsoleteVersions: obsoleteVersions,  // Calculated from stats
+            obsoleteVersions: obsoleteVersions,
             gcRunCount: gcStats.totalRuns,
-            lastGCDuration: nil,  // MVCCGCStats doesn't have duration, only lastGCTime
-            indexCount: collection.secondaryIndexes.count,
+            lastGCDuration: nil,
+            indexCount: indexCount,
             indexNames: indexNames
         )
     }
@@ -344,8 +348,9 @@ extension BlazeDBClient {
         var typeInference: [String: String] = [:]
         
         // Sample first 100 records to infer schema
-        let sampleSize = min(100, collection.indexMap.count)
-        let sampleIDs = Array(collection.indexMap.keys.prefix(sampleSize))
+        let sampleIDs: [UUID] = collection.queue.sync {
+            Array(collection.indexMap.keys.prefix(min(100, collection.indexMap.count)))
+        }
         
         for id in sampleIDs {
             let record: BlazeDataRecord
@@ -447,7 +452,7 @@ extension BlazeDBClient {
     
     /// Get record count (fast, no actual reads!)
     public func getRecordCount() -> Int {
-        return collection.indexMap.count
+        return collection.queue.sync { collection.indexMap.count }
     }
     
     /// Check if database needs maintenance
