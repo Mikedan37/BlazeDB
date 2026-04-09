@@ -12,6 +12,16 @@ on:
         default: false
         type: boolean
 
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   # ═══════════════════════════════════════════════════════════
   # JOB 1: Validate Release
@@ -19,6 +29,7 @@ jobs:
   validate:
     name: Validate Release
     runs-on: macos-15
+    timeout-minutes: 60
 
     steps:
       - name: Checkout code
@@ -35,22 +46,22 @@ jobs:
             echo "Release tags must be stable SemVer in the form vX.Y.Z"
             exit 1
           fi
-      
-      - name: Run full test suite
-        run: |
-          echo "Running Tier 0 gate tests..."
-          swift test --filter BlazeDB_Tier0
 
-          echo "Running Tier 1 fast and extended lanes..."
-          swift test --filter BlazeDB_Tier1Fast
-          swift test --filter BlazeDB_Tier1Extended
+      - name: Test Tier 0
+        run: swift test --filter BlazeDB_Tier0
+
+      - name: Test Tier 1 fast
+        run: swift test --filter BlazeDB_Tier1Fast
+
+      - name: Test Tier 1 extended
+        run: swift test --filter BlazeDB_Tier1Extended
 
       - name: Run perf lane (manual deep validation)
         if: github.event_name == 'workflow_dispatch' && inputs.run_deep_validation == true
         run: |
           echo "Running Tier 1 perf lane..."
           swift test --filter BlazeDB_Tier1Perf
-      
+
       - name: Run stress tests
         if: github.event_name == 'workflow_dispatch' && inputs.run_deep_validation == true
         env:
@@ -58,7 +69,7 @@ jobs:
         run: |
           echo "Running Tier 3 heavy tests..."
           cd BlazeDBExtraTests && swift test --filter BlazeDB_Tier3_Heavy
-      
+
       - name: Run sanitizer tests
         if: github.event_name == 'workflow_dispatch' && inputs.run_deep_validation == true
         run: |
@@ -69,7 +80,7 @@ jobs:
             echo "Sanitizer lane ran zero tests"
             exit 1
           fi
-      
+
       - name: All tests passed
         run: |
           echo "All tests passed. Release validated."
@@ -81,7 +92,8 @@ jobs:
     name: Build Release
     runs-on: macos-15
     needs: validate
-    
+    timeout-minutes: 30
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
@@ -90,15 +102,15 @@ jobs:
         run: |
           xcodebuild -version
           swift --version
-      
+
       - name: Build release configuration
         run: |
           swift build -c release
-      
+
       - name: Package release
         run: |
           tar -czf BlazeDB-${{ github.ref_name }}.tar.gz .build/release
-      
+
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
@@ -112,13 +124,14 @@ jobs:
     name: Generate release notes
     runs-on: ubuntu-22.04
     needs: validate
-    
+    timeout-minutes: 10
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
         with:
           fetch-depth: 0
-      
+
       - name: Generate release notes
         id: notes
         run: |
@@ -127,15 +140,14 @@ jobs:
           echo "" >> release_notes.md
           echo "### What's new" >> release_notes.md
           echo "" >> release_notes.md
-          
-          # Extract commits since last tag
+
           LAST_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
           if [ -z "$LAST_TAG" ]; then
             echo "- Initial release" >> release_notes.md
           else
             git log $LAST_TAG..HEAD --pretty=format:"- %s" >> release_notes.md
           fi
-          
+
           echo "" >> release_notes.md
           echo "### Test results" >> release_notes.md
           echo "" >> release_notes.md
@@ -163,7 +175,7 @@ jobs:
           else
             echo "**Full Changelog**: https://github.com/${{ github.repository }}/releases/tag/${{ github.ref_name }}" >> release_notes.md
           fi
-      
+
       - name: Upload release notes
         uses: actions/upload-artifact@v4
         with:
@@ -177,25 +189,26 @@ jobs:
     name: Create GitHub Release
     runs-on: ubuntu-22.04
     needs: [validate, build, release-notes]
+    timeout-minutes: 10
     permissions:
       contents: write
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
-      
+
       - name: Download build artifact
         uses: actions/download-artifact@v4
         with:
           name: release-build
-      
+
       - name: Download release notes
         uses: actions/download-artifact@v4
         with:
           name: release-notes
-      
+
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           name: BlazeDB ${{ github.ref_name }}
           body_path: release_notes.md
@@ -205,7 +218,7 @@ jobs:
           prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      
+
       - name: Release published
         run: |
           echo "Release ${{ github.ref_name }} published successfully."
