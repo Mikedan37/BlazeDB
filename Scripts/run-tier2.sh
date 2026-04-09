@@ -3,7 +3,7 @@
 # This lane is pre-release/nightly. Default behavior remains non-blocking for local/manual use.
 # Use --strict (or BLAZEDB_TIER2_STRICT=1) to make failures fail the caller workflow.
 # See Docs/Testing/TEST_EXECUTION_MODEL.md
-set -e
+set -euo pipefail
 STRICT_MODE="${BLAZEDB_TIER2_STRICT:-0}"
 case "${1:-}" in
   --strict)

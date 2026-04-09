@@ -268,8 +268,17 @@ final class OverflowChainCrashAtomicityTests: XCTestCase {
         env["BLAZEDB_OVERFLOW_CRASH_EXIT_CODE"] = "86"
         process.environment = env
 
+        let completion = DispatchSemaphore(value: 0)
+        process.terminationHandler = { _ in completion.signal() }
         try process.run()
-        process.waitUntilExit()
+
+        let waitResult = completion.wait(timeout: .now() + .seconds(60))
+        if waitResult == .timedOut {
+            process.terminate()
+            _ = completion.wait(timeout: .now() + .seconds(2))
+            XCTFail("Crash scenario child process timed out after 60s for hook: \(hook)")
+            return (status: "TIMEOUT", elapsed: 60.0)
+        }
 
         let store = try PageStore(fileURL: try requireFixture(tempURL), key: SymmetricKey(size: .bits256))
 
