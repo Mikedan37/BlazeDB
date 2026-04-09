@@ -47,39 +47,73 @@ jobs:
             exit 1
           fi
 
+      - name: Prepare CI log directories
+        run: mkdir -p .logs .artifacts
+
       - name: Test Tier 0
-        run: swift test --filter BlazeDB_Tier0
+        run: |
+          set -euo pipefail
+          swift test --filter BlazeDB_Tier0 2>&1 | tee .logs/tier0.log
 
       - name: Test Tier 1 fast
-        run: swift test --filter BlazeDB_Tier1Fast
+        run: |
+          set -euo pipefail
+          swift test --skip-build --filter BlazeDB_Tier1Fast 2>&1 | tee .logs/tier1fast.log
 
       - name: Test Tier 1 extended
-        run: swift test --filter BlazeDB_Tier1Extended
+        run: |
+          set -euo pipefail
+          swift test --skip-build --filter BlazeDB_Tier1Extended 2>&1 | tee .logs/tier1extended.log
 
       - name: Run perf lane (manual deep validation)
         if: github.event_name == 'workflow_dispatch' && inputs.run_deep_validation == true
         run: |
+          set -euo pipefail
+          mkdir -p .logs
           echo "Running Tier 1 perf lane..."
-          swift test --filter BlazeDB_Tier1Perf
+          swift test --skip-build --filter BlazeDB_Tier1Perf 2>&1 | tee .logs/tier1perf.log
 
       - name: Run stress tests
         if: github.event_name == 'workflow_dispatch' && inputs.run_deep_validation == true
         env:
           RUN_HEAVY_STRESS: "1"
         run: |
+          set -euo pipefail
+          mkdir -p .logs
           echo "Running Tier 3 heavy tests..."
-          cd BlazeDBExtraTests && swift test --filter BlazeDB_Tier3_Heavy
+          (cd BlazeDBExtraTests && swift test --filter BlazeDB_Tier3_Heavy 2>&1 | tee "${GITHUB_WORKSPACE}/.logs/tier3-heavy.log")
 
       - name: Run sanitizer tests
         if: github.event_name == 'workflow_dispatch' && inputs.run_deep_validation == true
         run: |
+          set -euo pipefail
+          mkdir -p .logs
           echo "Running thread sanitizer on Tier 0..."
-          SANITIZER_LOG=$(mktemp)
-          swift test -Xswiftc -sanitize=thread --filter BlazeDB_Tier0 | tee "$SANITIZER_LOG"
-          if grep -q "Executed 0 tests" "$SANITIZER_LOG"; then
+          swift test -Xswiftc -sanitize=thread --filter BlazeDB_Tier0 2>&1 | tee .logs/tsan-tier0.log
+          if grep -q "Executed 0 tests" .logs/tsan-tier0.log; then
             echo "Sanitizer lane ran zero tests"
             exit 1
           fi
+
+      - name: Dump diagnostics on failure
+        if: failure()
+        run: |
+          mkdir -p .logs
+          ps aux > .logs/ps.txt || true
+          df -h > .logs/disk.txt || true
+          swift --version > .logs/swift-version.txt 2>&1 || true
+          xcodebuild -version > .logs/xcode-version.txt 2>&1 || true
+
+      - name: Upload validate logs and artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-validate-logs
+          path: |
+            .logs/
+            .artifacts/
+          if-no-files-found: ignore
+          retention-days: 7
 
       - name: All tests passed
         run: |
