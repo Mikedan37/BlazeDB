@@ -54,20 +54,29 @@ final class QueryErgonomicsTests: XCTestCase {
         }
     }
     
-    func testInvalidGroupByField_FailsWithHelpfulMessage() throws {
-        do {
-            _ = try requireFixture(db).query()
-                .groupBy("namme")  // Typo: "namme" instead of "name"
+    /// GROUP BY on a field absent from every row is allowed (SQL-style): all rows share one
+    /// missing-key bucket. Validation only logs best-effort hints; see `validateGroupByFields`
+    /// and `AggregationTests.testGroupByOnMissingField`.
+    func testGroupByFieldAbsentFromAllRecords_SingleMissingBucketAndTotalCount() throws {
+        let absentFields = ["namme", "invalid_field_xyz"]
+        for field in absentFields {
+            let result = try requireFixture(db).query()
+                .groupBy(field)
                 .count()
                 .execute()
-            XCTFail("Should have thrown error for invalid groupBy field")
-        } catch let error as BlazeDBError {
-            if case .invalidQuery(let reason, let suggestion) = error {
-                XCTAssertTrue(reason.contains("namme"), "Error should mention invalid field")
-                XCTAssertNotNil(suggestion, "Should provide suggestion")
-            } else {
-                XCTFail("Expected invalidQuery error, got \(error)")
-            }
+            let grouped = try result.grouped
+            XCTAssertEqual(
+                grouped.groups.count,
+                1,
+                "Expected one group for missing key '\(field)' (all rows bucket as missing)"
+            )
+            XCTAssertNotNil(grouped.groups["null"], "Missing-key bucket should use composite key 'null'")
+            XCTAssertEqual(
+                grouped.groups["null"]?.count,
+                3,
+                "All fixture rows should be counted in the missing-key bucket for '\(field)'"
+            )
+            XCTAssertEqual(grouped.totalCount, 3, "totalCount should match fixture size for '\(field)'")
         }
     }
     
@@ -103,19 +112,19 @@ final class QueryErgonomicsTests: XCTestCase {
         }
     }
     
-    func testErrorMessagesIncludeGuidance() throws {
+    /// Sort field validation still throws `invalidQuery` with suggestions; GROUP BY does not.
+    func testInvalidOrderByField_IncludesGuidanceInInvalidQuery() throws {
         do {
             _ = try requireFixture(db).query()
-                .groupBy("invalid_field_xyz")
-                .count()
+                .orderBy("invalid_field_xyz", descending: false)
                 .execute()
-            XCTFail("Should have thrown error")
+            XCTFail("Should have thrown error for invalid sort field")
         } catch let error as BlazeDBError {
-            if case .invalidQuery(let reason, let suggestion) = error {
+            if case .invalidQuery(_, let suggestion) = error {
                 XCTAssertNotNil(suggestion, "Error should include suggestion")
                 XCTAssertTrue(suggestion?.count ?? 0 > 10, "Suggestion should be helpful")
             } else {
-                XCTFail("Expected invalidQuery error")
+                XCTFail("Expected invalidQuery error, got \(error)")
             }
         }
     }

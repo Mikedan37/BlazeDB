@@ -85,7 +85,7 @@ let results = try db.query()
 ### Correctness Guarantees
 - All queries return correct results
 - Type mismatches are handled gracefully (comparison returns false)
-- Invalid field names in sort/groupBy fail with helpful errors
+- Invalid field names in **sort** (`orderBy`) fail with helpful errors; **GROUP BY** on a field missing from every row is allowed and buckets all rows as one missing-key group (SQL-style), with optional debug hints only
 - Empty collections return empty results (no crashes)
 
 ### Performance Guarantees
@@ -152,11 +152,12 @@ try db.query().orderBy("agge").execute()
 // Suggestion: Did you mean: age?
 ```
 
-### Missing Fields in GroupBy
+### GROUP BY on a Missing Field
 ```swift
-try db.query().groupBy("invalid_field").count().execute()
-// Error: GROUP BY field 'invalid_field' not found in any records
-// Suggestion: Check field name spelling. Available fields: name, age, active
+// Allowed: every row lacks "unknown_field", so all rows fall into one missing-key bucket (key "null" in grouped results).
+let grouped = try db.query().groupBy("unknown_field").count().execute().grouped
+// grouped.groups.count == 1, grouped.groups["null"]?.count == totalRowCount
+// Best-effort hints may be logged at debug level; execution does not throw.
 ```
 
 ## Performance Monitoring
