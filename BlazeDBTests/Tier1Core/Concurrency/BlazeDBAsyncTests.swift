@@ -7,6 +7,8 @@
 //  Created by Michael Danylchuk on 1/15/25.
 //
 
+#if !BLAZEDB_LINUX_CORE
+
 import XCTest
 #if canImport(BlazeDBCore)
 @testable import BlazeDBCore
@@ -53,10 +55,11 @@ final class BlazeDBAsyncTests: XCTestCase {
     }
 
     func testAsyncConcurrentInsert() async throws {
+        let client = try requireFixture(db)
         let ids = try await withThrowingTaskGroup(of: UUID.self) { group in
             for i in 0..<20 {
                 group.addTask {
-                    try await self.db.insertAsync(BlazeDataRecord(["index": .int(i)]))
+                    try await client.insertAsync(BlazeDataRecord(["index": .int(i)]))
                 }
             }
             var out: [UUID] = []
@@ -77,13 +80,14 @@ final class BlazeDBAsyncTests: XCTestCase {
     }
 
     func testOperationPoolLoadReturnsToZero() async throws {
-        let initial = await try requireFixture(db).getOperationPoolLoad()
+        let client = try requireFixture(db)
+        let initial = try await client.getOperationPoolLoad()
         XCTAssertEqual(initial, 0)
 
         _ = try await withThrowingTaskGroup(of: UUID.self) { group in
             for i in 0..<10 {
                 group.addTask {
-                    try await self.db.insertAsync(BlazeDataRecord(["index": .int(i)]))
+                    try await client.insertAsync(BlazeDataRecord(["index": .int(i)]))
                 }
             }
             var out: [UUID] = []
@@ -91,15 +95,16 @@ final class BlazeDBAsyncTests: XCTestCase {
             return out
         }
 
-        let final = await try requireFixture(db).getOperationPoolLoad()
-        XCTAssertEqual(final, 0)
+        let poolLoad = try await client.getOperationPoolLoad()
+        XCTAssertEqual(poolLoad, 0)
     }
 
     func testAsyncFetchAllAfterConcurrentWrites() async throws {
+        let client = try requireFixture(db)
         _ = try await withThrowingTaskGroup(of: UUID.self) { group in
             for i in 0..<30 {
                 group.addTask {
-                    try await self.db.insertAsync(BlazeDataRecord(["group": .string("g"), "index": .int(i)]))
+                    try await client.insertAsync(BlazeDataRecord(["group": .string("g"), "index": .int(i)]))
                 }
             }
             var ids: [UUID] = []
@@ -107,24 +112,25 @@ final class BlazeDBAsyncTests: XCTestCase {
             return ids
         }
 
-        let all = try await requireFixture(db).fetchAllAsync()
+        let all = try await client.fetchAllAsync()
         XCTAssertEqual(all.count, 30)
     }
 
     func testAsyncDeleteManyViaConcurrentDeletes() async throws {
-        let ids = try await requireFixture(db).insertManyAsync((0..<25).map { BlazeDataRecord(["index": .int($0)]) })
+        let client = try requireFixture(db)
+        let ids = try await client.insertManyAsync((0..<25).map { BlazeDataRecord(["index": .int($0)]) })
         XCTAssertEqual(ids.count, 25)
 
         try await withThrowingTaskGroup(of: Void.self) { group in
             for id in ids {
                 group.addTask {
-                    try await self.db.deleteAsync(id: id)
+                    try await client.deleteAsync(id: id)
                 }
             }
             for try await _ in group {}
         }
 
-        let remaining = try await requireFixture(db).fetchAllAsync()
+        let remaining = try await client.fetchAllAsync()
         XCTAssertEqual(remaining.count, 0)
     }
 
@@ -145,10 +151,12 @@ final class BlazeDBAsyncTests: XCTestCase {
         let before = try await requireFixture(db).queryAsync(where: "status", equals: .string("open"), useCache: true)
         XCTAssertEqual(before.count, 1)
 
-        await try requireFixture(db).invalidateQueryCache()
+        try await requireFixture(db).invalidateQueryCache()
         _ = try await requireFixture(db).insertAsync(BlazeDataRecord(["status": .string("open")]))
         let after = try await requireFixture(db).queryAsync(where: "status", equals: .string("open"), useCache: true)
         XCTAssertEqual(after.count, 2)
     }
 }
+
+#endif
 

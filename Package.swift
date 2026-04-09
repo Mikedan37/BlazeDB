@@ -187,7 +187,7 @@ let package = Package(
 
     ] + (tier0OnlyTestScope ? [] : [
         // Tier 1 fast: default PR/local correctness gate.
-        // Runs nearly all of Tier1Core; only three files with hard blockers remain excluded.
+        // Runs nearly all of Tier1Core; only one file with a hard blocker remains excluded.
         .testTarget(
             name: "BlazeDB_Tier1Fast",
             dependencies: ["BlazeDBCore"],
@@ -195,10 +195,6 @@ let package = Package(
             exclude: [
                 // Requires Network framework + SecureConnection types not in BlazeDBCore
                 "Security/SecureConnectionTests.swift",
-                // Uses KeyManager.generateSalt() which is not exposed in BlazeDBCore
-                "Security/KeyManagerTests.swift",
-                // Uses stale async APIs (insertAsync, fetchAsync, etc.) removed from BlazeDBCore
-                "Concurrency/BlazeDBAsyncTests.swift",
             ],
             swiftSettings: [
                 .define("BLAZEDB_CORE_ONLY"),
