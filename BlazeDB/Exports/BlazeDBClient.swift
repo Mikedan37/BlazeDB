@@ -918,13 +918,9 @@ public final class BlazeDBClient: @unchecked Sendable {
                 deletedCount = try collection.deleteBatch(ids)
                 #else
                 for id in ids {
-                    do {
-                        if try collection.fetch(id: id) != nil {
-                            try collection.delete(id: id)
-                            deletedCount += 1
-                        }
-                    } catch {
-                        BlazeLogger.warn("deleteMany(Linux): could not process \(id): \(error.localizedDescription)")
+                    if try collection.fetch(id: id) != nil {
+                        try collection.delete(id: id)
+                        deletedCount += 1
                     }
                 }
                 #endif
