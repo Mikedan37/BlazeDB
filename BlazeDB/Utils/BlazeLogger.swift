@@ -21,8 +21,11 @@ public enum BlazeLogLevel: Int, Comparable {
 /// Centralized logging for BlazeDB
 /// Thread-safe via nonisolated(unsafe) for performance (logging must be callable from anywhere)
 public final class BlazeLogger {
-    /// Global log level - set this to control verbosity
-    /// Default is .warn (quiet unless problems) - set to .debug or .trace for development
+    /// Global verbosity threshold (see ``BlazeLogLevel`` raw ordering). A log call runs only if
+    /// `BlazeLogger.level` is at least that message’s level — e.g. ``.error`` emits error logs only;
+    /// ``.warn`` emits both errors and warnings; ``.trace`` emits everything. ``.silent`` disables all.
+    ///
+    /// Default is ``.warn`` unless running under XCTest (then ``.silent`` in DEBUG).
     public nonisolated(unsafe) static var level: BlazeLogLevel = {
         #if DEBUG
         // Auto-detect test environment and silence

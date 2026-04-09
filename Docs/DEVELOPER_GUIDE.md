@@ -668,6 +668,8 @@ public protocol BlazeDocument: Codable, Identifiable where ID == UUID {
 }
 ```
 
+**Persistence and `storage`:** The default `storage` implementation is **deprecated**. It forwards to `toStorage()`; on failure it logs at error level and returns an empty `BlazeDataRecord`. That fallback is **not** valid data to write with `insert(record)`. For correctness, use `try toStorage()`, `try resolveStorage()`, or typed APIs (`insert(document:)`, etc.) that call `toStorage()` and propagate errors.
+
 ### Example Implementation
 
 ```swift

@@ -37,7 +37,13 @@ import Foundation
 public protocol BlazeDocument: Codable, Identifiable where ID == UUID {
     var id: UUID { get set }
     
-    /// Access to underlying storage for dynamic fields
+    /// Legacy compatibility accessor for encoded storage.
+    ///
+    /// The default implementation is retained for compatibility and may return an empty
+    /// ``BlazeDataRecord`` if ``toStorage()`` fails (after logging). It should not be used for
+    /// persistence when conversion errors must be handled explicitly — use ``try toStorage()`` or
+    /// ``try resolveStorage()`` instead, or typed database client APIs. The default property
+    /// implementation is deprecated; callers that need correctness must use the throwing APIs.
     var storage: BlazeDataRecord { get set }
     
     /// Convert this document to a BlazeDataRecord for storage
@@ -49,13 +55,16 @@ public protocol BlazeDocument: Codable, Identifiable where ID == UUID {
 
 // Default implementations
 extension BlazeDocument {
-    /// Default implementation provides access to storage
+    @available(*, deprecated, message: "Use try toStorage() or try resolveStorage() instead. `storage` falls back to an empty record on conversion failure.")
     public var storage: BlazeDataRecord {
         get {
             do {
                 return try toStorage()
             } catch {
-                BlazeLogger.error("Failed to convert document to storage: \(error)")
+                BlazeLogger.error(
+                    "BlazeDocument.storage fallback used after conversion failure. " +
+                    "Prefer try toStorage() or try resolveStorage(). Error: \(error)"
+                )
                 return BlazeDataRecord([:])
             }
         }
@@ -63,6 +72,13 @@ extension BlazeDocument {
             // Storage is read-only by default
             // Individual fields should be set via their property wrappers
         }
+    }
+
+    /// Explicit throwing storage resolution API.
+    ///
+    /// Prefer this over ``storage`` when conversion failure must be handled by the caller.
+    public func resolveStorage() throws -> BlazeDataRecord {
+        try toStorage()
     }
 }
 
