@@ -202,6 +202,8 @@ final class RLSIntegrationTests: XCTestCase {
         
         // Enable RLS
         db.rls.enable()
+        // Read-only requires an explicit SELECT allow for viewers.
+        db.rls.addPolicy(.viewerCanSelect())
         db.rls.addPolicy(.viewerReadOnly())
         db.rls.addPolicy(SecurityPolicy(
             name: "editor_can_write",
@@ -224,13 +226,17 @@ final class RLSIntegrationTests: XCTestCase {
         db.rls.setContext(viewer.toSecurityContext())
         let viewerRecords = try db.rls.filterRecords(operation: .select, records: try db.fetchAll())
         XCTAssertEqual(viewerRecords.count, 1)
+        guard let viewerRecord = viewerRecords.first else {
+            XCTFail("Viewer should be able to read one record")
+            return
+        }
         print("  ✅ Viewer can read document")
         
         // Viewer cannot update
         let canUpdate = db.rls.policyEngine.isAllowed(
             operation: .update,
             context: viewer.toSecurityContext(),
-            record: viewerRecords[0]
+            record: viewerRecord
         )
         XCTAssertFalse(canUpdate)
         print("  ✅ Viewer cannot update document")
@@ -239,7 +245,7 @@ final class RLSIntegrationTests: XCTestCase {
         let canDelete = db.rls.policyEngine.isAllowed(
             operation: .delete,
             context: viewer.toSecurityContext(),
-            record: viewerRecords[0]
+            record: viewerRecord
         )
         XCTAssertFalse(canDelete)
         print("  ✅ Viewer cannot delete document")

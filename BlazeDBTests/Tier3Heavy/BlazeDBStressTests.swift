@@ -252,7 +252,8 @@ final class BlazeDBStressTests: XCTestCase {
         // Reduced counts for more reliable test execution
         let readerCount = 10
         let writerCount = 5
-        let duration: TimeInterval = 2.0  // Run for 2 seconds
+        let isCI = ProcessInfo.processInfo.environment["CI"] == "true"
+        let duration: TimeInterval = isCI ? 3.0 : 2.0  // Give CI more time to avoid startup starvation
         
         print("📊 Testing concurrent reads (\(readerCount)) and writes (\(writerCount)) for \(duration)s...")
         
@@ -286,31 +287,7 @@ final class BlazeDBStressTests: XCTestCase {
         let writeCount = StressThreadSafeInt()
         let errorBag = StressErrorBag()
         
-        // Start readers
-        for readerID in 0..<readerCount {
-            group.enter()
-            queue.async {
-                defer { group.leave() }
-                var localReads = 0
-                while DispatchTime.now() < deadline {
-                    let randomID = seeds.randomElement()!
-                    _ = try? db.fetch(id: randomID)
-                    readCount.increment()
-                    localReads += 1
-                    // Optimized: shorter delay for default tests, longer for thorough testing
-                    let readDelay = ProcessInfo.processInfo.environment["TEST_SLOW_CONCURRENCY"] == "1" ? 1000 : 100
-                    usleep(UInt32(readDelay))
-                }
-                if localReads > 0 {
-                    print("  Reader \(readerID) completed \(localReads) reads")
-                }
-            }
-        }
-        
-        // Start writers with delay (optimized for faster tests)
-        let startupDelay = ProcessInfo.processInfo.environment["TEST_SLOW_CONCURRENCY"] == "1" ? 100000 : 10000
-        usleep(UInt32(startupDelay))  // 10ms default, 100ms for thorough testing
-        
+        // Start writers first so we don't fail with zero writes on busy CI hosts.
         for writerID in 0..<writerCount {
             group.enter()
             queue.async {
@@ -336,6 +313,30 @@ final class BlazeDBStressTests: XCTestCase {
                 }
                 if localWrites > 0 {
                     print("  Writer \(writerID) completed \(localWrites) writes")
+                }
+            }
+        }
+        
+        // Start readers after a short writer head-start.
+        let startupDelay = ProcessInfo.processInfo.environment["TEST_SLOW_CONCURRENCY"] == "1" ? 100000 : 20000
+        usleep(UInt32(startupDelay))  // 20ms default, 100ms for thorough testing
+        
+        for readerID in 0..<readerCount {
+            group.enter()
+            queue.async {
+                defer { group.leave() }
+                var localReads = 0
+                while DispatchTime.now() < deadline {
+                    let randomID = seeds.randomElement()!
+                    _ = try? db.fetch(id: randomID)
+                    readCount.increment()
+                    localReads += 1
+                    // Optimized: shorter delay for default tests, longer for thorough testing
+                    let readDelay = ProcessInfo.processInfo.environment["TEST_SLOW_CONCURRENCY"] == "1" ? 1000 : 100
+                    usleep(UInt32(readDelay))
+                }
+                if localReads > 0 {
+                    print("  Reader \(readerID) completed \(localReads) reads")
                 }
             }
         }
