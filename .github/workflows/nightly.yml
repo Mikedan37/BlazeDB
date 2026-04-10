@@ -80,8 +80,8 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
 
-  nightly-macos-fastfull-extra:
-    name: macOS 15 — Tier1FastFull (extra package)
+  nightly-macos-tier1:
+    name: macOS 15 — Tier1
     runs-on: macos-15
     timeout-minutes: 180
 
@@ -95,7 +95,7 @@ jobs:
         uses: actions/cache@v5
         with:
           path: .build
-          key: nightly-${{ runner.os }}-spm-${{ hashFiles('Package.swift', 'Package.resolved', 'BlazeDBExtraTests/Package.swift') }}
+          key: nightly-${{ runner.os }}-spm-${{ hashFiles('Package.swift', 'Package.resolved') }}
           restore-keys: |
             nightly-${{ runner.os }}-spm-
             ${{ runner.os }}-spm-
@@ -112,11 +112,10 @@ jobs:
       - name: Prepare CI log directories
         run: mkdir -p .logs .artifacts
 
-      - name: Test Tier 1 fast full (broader deterministic)
+      - name: Test Tier 1
         run: |
           set -euo pipefail
-          cd BlazeDBExtraTests
-          swift test --filter BlazeDB_Tier1FastFull 2>&1 | tee "${GITHUB_WORKSPACE}/.logs/tier1fastfull.log"
+          swift test --filter BlazeDB_Tier1 2>&1 | tee .logs/tier1.log
 
       - name: Dump diagnostics on failure
         if: failure()
@@ -127,11 +126,11 @@ jobs:
           swift --version > .logs/swift-version.txt 2>&1 || true
           xcodebuild -version > .logs/xcode-version.txt 2>&1 || true
 
-      - name: Upload nightly macOS Tier1FastFull logs
+      - name: Upload nightly macOS Tier1 logs
         if: always()
         uses: actions/upload-artifact@v5
         with:
-          name: nightly-macos-tier1fastfull-logs
+          name: nightly-macos-tier1-logs
           path: |
             .logs/
             .artifacts/
@@ -153,7 +152,7 @@ jobs:
         uses: actions/cache@v5
         with:
           path: .build
-          key: nightly-${{ runner.os }}-spm-${{ hashFiles('Package.swift', 'Package.resolved', 'BlazeDBExtraTests/Package.swift') }}
+          key: nightly-${{ runner.os }}-spm-${{ hashFiles('Package.swift', 'Package.resolved') }}
           restore-keys: |
             nightly-${{ runner.os }}-spm-
             ${{ runner.os }}-spm-
@@ -293,7 +292,7 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
 
-  nightly-macos-tsan:
+  nightly-macos-tsan-tier0:
     name: macOS 15 — Tier0 ThreadSanitizer
     runs-on: macos-15
     timeout-minutes: 90
@@ -343,7 +342,7 @@ jobs:
           retention-days: 7
 
   nightly-linux-validation:
-    name: Linux (Swift 6.2) — Tier0 + Tier1Fast
+    name: Linux (Swift 6.2) — Tier0 + Tier1
     runs-on: ubuntu-22.04
     # 90m was too tight: a real run exceeded it (~90.23m wall) and the job was stopped as Cancelled.
     timeout-minutes: 150
@@ -382,10 +381,10 @@ jobs:
           set -euo pipefail
           swift test --filter BlazeDB_Tier0 2>&1 | tee .logs/tier0.log
 
-      - name: Test Tier 1 fast
+      - name: Test Tier 1
         run: |
           set -euo pipefail
-          swift test --skip-build --filter BlazeDB_Tier1Fast 2>&1 | tee .logs/tier1fast.log
+          swift test --skip-build --filter BlazeDB_Tier1 2>&1 | tee .logs/tier1.log
 
       - name: Dump diagnostics on failure
         if: failure()

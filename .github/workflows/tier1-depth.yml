@@ -1,7 +1,7 @@
-# Weekly / manual Tier 1 depth: extended + perf (not the default PR gate).
+# Weekly / manual legacy depth lanes: extended + perf (pre-PR3 reclassification).
 # See Docs/Testing/CI_AND_TEST_TIERS.md
 
-name: Tier 1 depth
+name: Tier1 legacy depth
 
 on:
   schedule:
@@ -20,7 +20,7 @@ env:
 
 jobs:
   tier1-depth-macos:
-    name: macOS 15 — Tier1Extended + Tier1Perf
+    name: macOS 15 — Tier1Extended + Tier1Perf (legacy)
     runs-on: macos-15
     timeout-minutes: 240
 

@@ -124,16 +124,7 @@ step_test() {
     "Tier1 GoldenPath" \
     "$RUN_LOG_DIR/step2_tier1_golden.log" \
     env -i PATH="$PATH" HOME="$HOME" TERM="${TERM:-dumb}" \
-    swift test --skip-build --filter BlazeDB_Tier1Fast.GoldenPathIntegrationTests
-  if env -i PATH="$PATH" HOME="$HOME" TERM="${TERM:-dumb}" bash -c 'cd BlazeDBExtraTests && swift test list >/dev/null 2>&1'; then
-    step_test \
-      "Tier2 CrossVersion harness" \
-      "$RUN_LOG_DIR/step2_tier2_crossversion.log" \
-      env -i PATH="$PATH" HOME="$HOME" TERM="${TERM:-dumb}" \
-      bash -c 'cd BlazeDBExtraTests && swift test --filter BlazeDB_Tier2.CrossVersionExportRestoreHarnessTests'
-  else
-    echo "  WARN Tier2 CrossVersion harness skipped (BlazeDBExtraTests package not runnable in current layout)."
-  fi
+    swift test --skip-build --filter BlazeDB_Tier1.GoldenPathIntegrationTests
 )
 
 echo "Step 3/3: report"

@@ -1,4 +1,4 @@
-// Shared BlazeDocument fixture for type-safety tests (Tier1Fast + Tier1Extended via Helpers symlink).
+// Shared BlazeDocument fixture for type-safety tests (Tier1 + Tier1Extended via Helpers symlink).
 import Foundation
 #if canImport(BlazeDBCore)
 @testable import BlazeDBCore

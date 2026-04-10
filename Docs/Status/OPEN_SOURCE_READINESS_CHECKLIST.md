@@ -21,7 +21,7 @@ BlazeDB includes GitHub Actions workflows under `.github/workflows/` for CI vali
 
 - [x] Tier0 golden-path gate test is enabled and passing.
 - [x] Tier1 golden-path integration test is passing.
-- [ ] Tier0 + Tier1 fast (`BlazeDB_Tier1Fast`) are green in **hosted** CI when workflows are allowed to run (see [Hosted CI status](#hosted-ci-status) above).
+- [ ] Tier0 + Tier1 (`BlazeDB_Tier1`) are green in **hosted** CI when workflows are allowed to run (see [Hosted CI status](#hosted-ci-status) above).
 - If hosted Actions cannot run (billing, forks, or org policy), treat **local** runs of the same commands as the merge gate evidence until CI is restored.
 - [x] Next public release tag candidate build passes from a fresh clone.
 - Verified locally via `Scripts/verify-clean-checkout.sh` and `Scripts/verify-readme-quickstart.sh`.

@@ -6,7 +6,7 @@ This guide explains how to add tests, what will be accepted, and what will be re
 
 ## CI gate (GitHub Actions)
 
-The default branch workflow (`.github/workflows/ci.yml`) runs on every push/PR **when hosted CI is available**: a **macOS 15** blocking job (core + CLI + Tier0 + reduced `BlazeDB_Tier1Fast`) and a **Linux 6.2** blocking job (core + Tier0). `verify-clean-checkout.sh` and `verify-readme-quickstart.sh` are intentionally **not** in the blocking PR gate. Legacy **`v*` tag buildability** is **not** part of that automatic gate; it runs only from the manual workflow [`.github/workflows/tag-probe.yml`](.github/workflows/tag-probe.yml). Checkouts use full git history (`fetch-depth: 0`). **Forks and billing limits** can prevent workflows from running; in that case use the same commands locally (see [Hosted CI status](Docs/Status/OPEN_SOURCE_READINESS_CHECKLIST.md#hosted-ci-status)). The gate is **not** every test target or every file under `BlazeDBTests/` (some files are excluded per tier in `Package.swift`). Authoritative detail: [CI and test tiers](Docs/Testing/CI_AND_TEST_TIERS.md).
+The default branch workflow (`.github/workflows/ci.yml`) runs on every push/PR **when hosted CI is available**: a **macOS 15** blocking job (core + CLI + Tier0 + `BlazeDB_Tier1`) and a **Linux 6.2** blocking job (core + Tier0). `verify-clean-checkout.sh` and `verify-readme-quickstart.sh` are intentionally **not** in the blocking PR gate. Legacy **`v*` tag buildability** is **not** part of that automatic gate; it runs only from the manual workflow [`.github/workflows/tag-probe.yml`](.github/workflows/tag-probe.yml). Checkouts use full git history (`fetch-depth: 0`). **Forks and billing limits** can prevent workflows from running; in that case use the same commands locally (see [Hosted CI status](Docs/Status/OPEN_SOURCE_READINESS_CHECKLIST.md#hosted-ci-status)). The gate is **not** every test target or every file under `BlazeDBTests/` (some files are excluded per tier in `Package.swift`). Authoritative detail: [CI and test tiers](Docs/Testing/CI_AND_TEST_TIERS.md).
 
 ---
 
@@ -35,15 +35,11 @@ BlazeDB uses a tiered test model:
 swift test --filter BlazeDB_Tier0
 ```
 
-### Tier 1: Core contracts (split targets)
+### Tier 1: Canonical confidence target (`BlazeDB_Tier1`)
 
-**Default PR gate — `BlazeDB_Tier1Fast`:** `BlazeDBTests/Tier1Core/` — deterministic correctness; no `measure()`, no timing-dependent sleeps, no benchmark-shaped workloads.
+**Canonical Tier1 gate — `BlazeDB_Tier1`:** `BlazeDBTests/Tier1Core/` — deterministic correctness; no `measure()`, no timing-dependent sleeps, no benchmark-shaped workloads.
 
-**Broader deterministic lane — `BlazeDB_Tier1FastFull`:** same source tree, declared in `BlazeDBExtraTests/Package.swift` for deeper/manual confidence lanes.
-
-**Depth — `BlazeDB_Tier1Extended`:** `BlazeDBTests/Tier1Extended/` — integration, sync, sleep-dependent or large-N stress.
-
-**Perf — `BlazeDB_Tier1Perf`:** `BlazeDBTests/Tier1Perf/` — XCTest `measure()` and benchmark-style tests.
+**Legacy pre-PR3 targets still present:** `BlazeDB_Tier1Extended` and `BlazeDB_Tier1Perf` remain in the repo pending semantic reclassification; they are not additional canonical Tier1 targets.
 
 **What goes in the fast lane:**
 - Core contracts that must stay green on every PR (persistence/security/features) without heavy timing or perf noise
@@ -82,12 +78,12 @@ swift test --filter BlazeDB_Tier0
 
 **Ask yourself:**
 - Does this test validate fast deterministic gate behavior? → Tier 0
-- Does this test validate deeper core contracts without measure/sleep/stress? → Tier 1 fast (`BlazeDB_Tier1Fast`)
-- Does it use `measure()`, fixed sleeps, sync integration, or large-N stress? → Tier 1 extended or perf (`BlazeDB_Tier1Extended` / `BlazeDB_Tier1Perf`)
+- Does this test validate deeper core contracts without measure/sleep/stress? → Tier 1 (`BlazeDB_Tier1`)
+- Does it use `measure()`, fixed sleeps, sync integration, or large-N stress? → legacy pre-PR3 Tier1Extended/Tier1Perf lanes (`BlazeDB_Tier1Extended` / `BlazeDB_Tier1Perf`)
 - Does this test validate integration/recovery scenarios? → Tier 2
 - Does this test belong to heavy/destructive/manual lanes? → Tier 3
 
-**When in doubt, start in Tier 1 fast; move to extended/perf if the test is timing-heavy or benchmark-shaped.**
+**When in doubt, start in Tier 1; move to legacy Tier1Extended/Tier1Perf only when required until PR3 reclassification lands.**
 
 ### Step 2: Write Test
 
@@ -97,9 +93,9 @@ swift test --filter BlazeDB_Tier0
 - No access to internals
 - Must always pass and stay fast
 
-**For Tier 1 tests (pick the right bundle):**
-- Fast lane (`BlazeDB_Tier1Fast`): default PR gate; avoid `measure()`, fixed sleeps, and stress-scale workloads.
-- Extended (`BlazeDB_Tier1Extended`) or perf (`BlazeDB_Tier1Perf`): timing, sync integration, large-N stress, or benchmarks.
+**For Tier 1 tests:**
+- Canonical lane (`BlazeDB_Tier1`): default PR gate; avoid `measure()`, fixed sleeps, and stress-scale workloads.
+- Legacy pre-PR3 lanes (`BlazeDB_Tier1Extended`, `BlazeDB_Tier1Perf`) still exist but are pending reclassification.
 - May test edge cases; use public APIs freely unless you intentionally need internals.
 
 **For Tier 2 tests:**
@@ -113,11 +109,11 @@ swift test --filter BlazeDB_Tier0
 
 ### Step 3: Wire the test target
 
-- **Tier 0 / Tier 1 (`BlazeDB_Tier1Fast`, `BlazeDB_Tier1Extended`, `BlazeDB_Tier1Perf`) / Tier 2 / Tier 3 / `BlazeDB_Staging`:** declared in root `Package.swift`.
+- **Tier 0 / Tier 1 (`BlazeDB_Tier1`) / legacy pre-PR3 Tier1Extended/Tier1Perf / Tier 2 / Tier 3 / `BlazeDB_Staging`:** declared in root `Package.swift`.
 - **`DistributedSecuritySPMTests`:** remains declared in `BlazeDBExtraTests/Package.swift` (nested package).
 
 Place test files under the correct `BlazeDBTests/...` paths; target names remain:
-- `BlazeDB_Tier0`, `BlazeDB_Tier1Fast`, `BlazeDB_Tier1Extended`, `BlazeDB_Tier1Perf`, `BlazeDB_Tier2`, `BlazeDB_Tier3_Heavy`, `BlazeDB_Tier3_Destructive` (root package)
+- `BlazeDB_Tier0`, `BlazeDB_Tier1`, `BlazeDB_Tier1Extended`, `BlazeDB_Tier1Perf`, `BlazeDB_Tier2`, `BlazeDB_Tier3_Heavy`, `BlazeDB_Tier3_Destructive` (root package)
 - `DistributedSecuritySPMTests` (extra package)
 
 ---

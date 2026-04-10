@@ -54,10 +54,10 @@ jobs:
           set -euo pipefail
           swift test --filter BlazeDB_Tier0 2>&1 | tee .logs/tier0.log
 
-      - name: Test Tier 1 fast (PR-critical subset)
+      - name: Test Tier 1 (PR-critical subset)
         run: |
           set -euo pipefail
-          swift test --skip-build --filter BlazeDB_Tier1Fast 2>&1 | tee .logs/tier1fast.log
+          swift test --skip-build --filter BlazeDB_Tier1 2>&1 | tee .logs/tier1.log
 
       - name: Test Tier 1 extended
         run: |
@@ -112,7 +112,7 @@ jobs:
           retention-days: 7
 
   deep-macos-tsan:
-    name: macOS 15 — Tier0 + Tier1Fast ThreadSanitizer
+    name: macOS 15 — Tier0 + Tier1 ThreadSanitizer
     runs-on: macos-15
     timeout-minutes: 360
 
@@ -140,13 +140,13 @@ jobs:
             exit 1
           fi
 
-      - name: Run thread sanitizer on Tier 1 fast
+      - name: Run thread sanitizer on Tier 1
         run: |
           set -euo pipefail
           mkdir -p .logs
-          swift test --sanitize thread --filter BlazeDB_Tier1Fast 2>&1 | tee .logs/tsan-tier1fast.log
-          if grep -q "Executed 0 tests" .logs/tsan-tier1fast.log; then
-            echo "Tier 1 fast sanitizer lane ran zero tests"
+          swift test --sanitize thread --filter BlazeDB_Tier1 2>&1 | tee .logs/tsan-tier1.log
+          if grep -q "Executed 0 tests" .logs/tsan-tier1.log; then
+            echo "Tier 1 sanitizer lane ran zero tests"
             exit 1
           fi
 
@@ -171,7 +171,7 @@ jobs:
           retention-days: 7
 
   deep-linux-extended:
-    name: Linux (Swift 6.2) — Tier0 + Tier1Fast + Tier1Extended
+    name: Linux (Swift 6.2) — Tier0 + Tier1 + Tier1Extended
     runs-on: ubuntu-22.04
     timeout-minutes: 360
 
@@ -210,10 +210,10 @@ jobs:
           set -euo pipefail
           swift test --filter BlazeDB_Tier0 2>&1 | tee .logs/tier0.log
 
-      - name: Test Tier 1 fast
+      - name: Test Tier 1
         run: |
           set -euo pipefail
-          swift test --skip-build --filter BlazeDB_Tier1Fast 2>&1 | tee .logs/tier1fast.log
+          swift test --skip-build --filter BlazeDB_Tier1 2>&1 | tee .logs/tier1.log
 
       - name: Test Tier 1 extended
         run: |

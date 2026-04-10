@@ -28,11 +28,12 @@ Daily (`schedule`) + manual (`workflow_dispatch`) nightly confidence workflow wi
 Jobs:
 
 - `macOS 15 — Tier1 depth`
-- `macOS 15 — Tier1FastFull (extra package)`
+- `macOS 15 — Tier1`
 - `macOS 15 — Tier2 strict`
 - `macOS 15 — clean-checkout verification`
 - `macOS 15 — README quickstart verification`
 - `macOS 15 — Tier0 ThreadSanitizer`
-- `Linux (Swift 6.2) — Tier0 + Tier1Fast`
+- `Linux (Swift 6.2) — Tier0 + Tier1`
 
+Nightly confidence runs root-owned targets only and avoids depending on `BlazeDBExtraTests`.
 This split keeps nightly rerunnable by concern and avoids bundling Tier2/verify/docs into one giant macOS job.

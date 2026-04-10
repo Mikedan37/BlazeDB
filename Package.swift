@@ -186,10 +186,10 @@ let package = Package(
         ),
 
     ] + (tier0OnlyTestScope ? [] : [
-        // Tier 1 fast: default PR/local correctness gate.
+        // Tier 1: canonical PR/local correctness gate.
         // Runs nearly all of Tier1Core; only one file with a hard blocker remains excluded.
         .testTarget(
-            name: "BlazeDB_Tier1Fast",
+            name: "BlazeDB_Tier1",
             dependencies: ["BlazeDBCore"],
             path: "BlazeDBTests/Tier1Core",
             exclude: [

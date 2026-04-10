@@ -21,7 +21,7 @@ Use this table for day-to-day expectations.
 
 - Completed:
   - PR gate caching and verify-step trim in `ci.yml`
-  - Tier1 PR gate reduction (`BlazeDB_Tier1Fast`) + broader deterministic lane (`BlazeDB_Tier1FastFull`)
+  - Tier1 canonical target naming cleanup (`BlazeDB_Tier1`) in active workflows/scripts/docs
   - Nightly confidence split into isolated failure-domain jobs in `nightly.yml`
 - In rollout:
   - deep soak lane (`deep-validation.yml`)
@@ -35,7 +35,7 @@ Use this table for day-to-day expectations.
 - Runner: `macos-15`; **does not** use `swift-actions/setup-swift` — tests run with **Xcode’s** `swift` so XCTest/`XCTestCore` resolves (OSS Swift on macOS does not).
 - `actions/cache` on `.build` (keyed by `runner.os`, `Package.swift`, `Package.resolved`)
 - `swift build --target BlazeDBCore`, CLI targets (`BlazeDoctor`, `BlazeDump`, `BlazeInfo`)
-- `BLAZEDB_TEST_SCOPE=tier0 swift test --filter BlazeDB_Tier0`, then `swift test --skip-build --filter BlazeDB_Tier1Fast`
+- `BLAZEDB_TEST_SCOPE=tier0 swift test --filter BlazeDB_Tier0`, then `swift test --skip-build --filter BlazeDB_Tier1`
 - `verify-clean-checkout.sh` and `verify-readme-quickstart.sh` are **not** part of the blocking PR lane (they remain in-repo and move to deeper lanes)
 - **Secondary (blocking):** `Linux (Swift 6.2) — core + Tier 0`
 - Runner: `ubuntu-22.04`
@@ -47,19 +47,19 @@ Use this table for day-to-day expectations.
 
 - `.github/workflows/tier1-depth.yml`
 - Trigger: **weekly schedule** and **manual** (`workflow_dispatch`)
-- Runs **`BlazeDB_Tier1Extended`** and **`BlazeDB_Tier1Perf`** only (not `BlazeDB_Tier1Fast`; that is the PR-critical lane). This remains available during nightly rollout.
+- Runs **`BlazeDB_Tier1Extended`** and **`BlazeDB_Tier1Perf`** only (legacy pre-PR3 lanes; canonical Tier1 is `BlazeDB_Tier1`).
 
 - `.github/workflows/nightly.yml`
 - Trigger: **daily schedule** and **manual** (`workflow_dispatch`)
 - Runs medium-confidence coverage in **separate rerunnable jobs**:
   - `macOS 15 — Tier1 depth`: `BlazeDB_Tier1Extended` + `BlazeDB_Tier1Perf`
-  - `macOS 15 — Tier1FastFull (extra package)`: `BlazeDB_Tier1FastFull` from `BlazeDBExtraTests`
-  - `macOS 15 — Tier2 strict`: `./Scripts/run-tier2.sh --strict` (blocking in nightly lane)
+  - `macOS 15 — Tier1`: root target `BlazeDB_Tier1`
+  - `macOS 15 — Tier2 strict`: root target `BlazeDB_Tier2` via `./Scripts/run-tier2.sh --strict` (blocking in nightly lane)
   - `macOS 15 — clean-checkout verification`: `./Scripts/verify-clean-checkout.sh`
   - `macOS 15 — README quickstart verification`: `./Scripts/verify-readme-quickstart.sh`
   - `macOS 15 — Tier0 ThreadSanitizer`: `swift test --sanitize thread --filter BlazeDB_Tier0`
-  - `Linux (Swift 6.2) — Tier0 + Tier1Fast`: `BlazeDB_Tier0` + `BlazeDB_Tier1Fast`
-- `verify-clean-checkout.sh` no longer re-runs the duplicate combined GoldenPath filter.
+  - `Linux (Swift 6.2) — Tier0 + Tier1`: `BlazeDB_Tier0` + `BlazeDB_Tier1`
+- Nightly confidence lanes are root-owned and do not depend on `BlazeDBExtraTests`.
 - **Operational policy:** nightly failures are triaged within 24–48 hours.
 
 ### Nightly stability trade-offs (documented)
@@ -81,16 +81,16 @@ Use this table for day-to-day expectations.
 - `.github/workflows/deep-validation.yml`
 - Trigger: **weekly schedule** and **manual** (`workflow_dispatch`)
 - Runs deep/manual soak coverage:
-  - Full Tier1 (`BlazeDB_Tier1Fast` + `BlazeDB_Tier1FastFull` + `BlazeDB_Tier1Extended` + `BlazeDB_Tier1Perf`)
+  - Tier1 lanes currently in deep: `BlazeDB_Tier1` + legacy `BlazeDB_Tier1Extended` + legacy `BlazeDB_Tier1Perf`
   - Tier2 via `./Scripts/run-tier2.sh`
-  - Tier3 heavy (`BlazeDB_Tier3_Heavy` with `RUN_HEAVY_STRESS=1`) and Tier3 destructive (`./Scripts/run-tier3.sh`)
-  - ThreadSanitizer on `BlazeDB_Tier0` and `BlazeDB_Tier1Fast`
-  - Linux extended lane (`BlazeDB_Tier0` + `BlazeDB_Tier1Fast` + `BlazeDB_Tier1Extended`)
+  - Tier3 heavy (`BlazeDB_Tier3_Heavy` with `RUN_HEAVY_STRESS=1`) and Tier3 destructive (`./Scripts/run-tier3.sh`) from root package
+  - ThreadSanitizer on `BlazeDB_Tier0` and `BlazeDB_Tier1`
+  - Linux extended lane (`BlazeDB_Tier0` + `BlazeDB_Tier1` + `BlazeDB_Tier1Extended`)
 
 - `.github/workflows/release.yml`
 - Trigger: tag push `v*`
 - Behavior:
-- Run `BlazeDB_Tier0`, `BlazeDB_Tier1Fast`, `BlazeDB_Tier1Extended`, `BlazeDB_Tier1Perf`, `BlazeDB_Tier3_Heavy`
+- Run `BlazeDB_Tier0`, `BlazeDB_Tier1`, `BlazeDB_Tier1Extended`, `BlazeDB_Tier1Perf`, `BlazeDB_Tier3_Heavy`
 - Build release artifact
 - Generate release notes
 - Publish GitHub release
@@ -102,13 +102,13 @@ Use this table for day-to-day expectations.
 - Fast deterministic correctness gate for PRs and local preflight.
 - Must stay bounded and stable.
 
-- `BlazeDB_Tier1Fast`
-- Default PR correctness gate from `BlazeDBTests/Tier1Core/`.
+- `BlazeDB_Tier1`
+- Canonical PR correctness gate from `BlazeDBTests/Tier1Core/`.
 - Sources: `BlazeDBTests/Tier1Core/` in root package.
 - Only three files remain excluded (see `Package.swift` excludes below).
 
-- `BlazeDB_Tier1FastFull`
-- Broader deterministic Tier1 lane from the same `Tier1Core` sources, defined under `BlazeDBExtraTests/Package.swift` for deeper/manual lanes.
+- `BlazeDB_Tier1Extended` and `BlazeDB_Tier1Perf` (legacy pre-PR3)
+- Temporary legacy targets pending PR3 semantic reclassification into canonical Tier2/Tier3 ownership.
 
 - `BlazeDB_Tier1Extended`
 - Integration, distributed sync, sleep-dependent timing, and large-N stress that should stay in CI but not in the default fast loop.
@@ -121,12 +121,12 @@ Use this table for day-to-day expectations.
 
 - `BlazeDB_Tier2`
 - Integration and recovery scenarios.
-- **Built from nested package** `BlazeDBExtraTests/` (not part of root `swift test` graph).
+- Declared in root `Package.swift`.
 - Non-blocking by default in script form; enforced in nightly via strict mode.
 
 - `BlazeDB_Tier3_Heavy` / `BlazeDB_Tier3_Destructive`
 - Stress, fuzz, and destructive/fault-injection lanes.
-- Declared under `BlazeDBExtraTests/Package.swift`; run via `cd BlazeDBExtraTests && swift test …`.
+- Declared in root `Package.swift`; run via `swift test --filter BlazeDB_Tier3_Heavy` or `./Scripts/run-tier3.sh`.
 - Manual/explicit use only; never default PR gate.
 
 ## Reporting vocabulary
@@ -135,11 +135,11 @@ Use precise language so status and dashboards do not blur the PR gate with deepe
 
 | Say this | Meaning |
 | -------- | ------- |
-| **Tier1 PR gate** / **T1 fast** | `BlazeDB_Tier1Fast` only—the default blocking Tier1 lane on PRs. |
-| **Tier1 depth** | `BlazeDB_Tier1Extended` + `BlazeDB_Tier1Perf` (weekly/manual `tier1-depth.yml`, or `./Scripts/run-tier1-depth.sh`). Does *not* by itself imply `BlazeDB_Tier1Fast` ran. |
-| **Nightly confidence lane** | `nightly.yml`: failure-domain split jobs for Tier1 depth, `BlazeDB_Tier1FastFull` (extra package), strict Tier2, clean-checkout verify, README quickstart verify, Tier0 TSan, and Linux Tier0/Tier1Fast. |
-| **Deep validation lane** | `deep-validation.yml`: full Tier1 + Tier2 + Tier3 heavy/destructive + Tier0/Tier1Fast TSan + Linux extended lane. |
-| **Full Tier1** / **Tier1 all lanes** | `BlazeDB_Tier1Fast` + `BlazeDB_Tier1FastFull` + `BlazeDB_Tier1Extended` + `BlazeDB_Tier1Perf` (broader deterministic coverage via `BlazeDBExtraTests`). |
+| **Tier1 PR gate** / **Tier1** | `BlazeDB_Tier1` only—the default blocking Tier1 lane on PRs. |
+| **Legacy depth lanes (pre-PR3)** | `BlazeDB_Tier1Extended` + `BlazeDB_Tier1Perf` (weekly/manual `tier1-depth.yml`, or `./Scripts/run-tier1-depth.sh`). These are not additional canonical Tier1 targets. |
+| **Nightly confidence lane** | `nightly.yml`: failure-domain split jobs for root-owned Tier1 depth lanes (`BlazeDB_Tier1Extended`/`BlazeDB_Tier1Perf`), root-owned Tier1 (`BlazeDB_Tier1`), root-owned strict Tier2, clean-checkout verify, README quickstart verify, Tier0 TSan, and Linux Tier0/Tier1. |
+| **Deep validation lane** | `deep-validation.yml`: Tier1 + legacy Tier1Extended/Tier1Perf + Tier2 + Tier3 heavy/destructive + Tier0/Tier1 TSan + Linux extended lane. |
+| **Canonical Tier1** | `BlazeDB_Tier1` (single canonical Tier1 target). |
 
 Inventory/bootstrap code may still bucket all three SwiftPM modules under a single **`T1`** label for file-level manifests; that is a storage convenience. **Human-facing** summaries (CI names, release notes, team chat) should use the table above, not a vague “T1 passed.”
 
@@ -147,9 +147,9 @@ Inventory/bootstrap code may still bucket all three SwiftPM modules under a sing
 
 `Tier1Extended/Helpers` and `Tier1Perf/Helpers` symlink to `Tier1Core/Helpers` so helper sources stay single-sourced. SwiftPM generally handles this; if a platform or archive step misbehaves (often Linux or packaging), replace with a small **shared test-support target** and drop the symlinks—see `Package.swift` when that happens.
 
-### `BlazeDB_Tier1Fast` excludes
+### `BlazeDB_Tier1` excludes
 
-Three files remain **excluded** from `BlazeDB_Tier1Fast` in `Package.swift`:
+Three files remain **excluded** from `BlazeDB_Tier1` in `Package.swift`:
 
 | File | Root cause | Issue | Fix |
 | ---- | ---------- | ----- | --- |
@@ -168,7 +168,7 @@ All other `Tier1Core` directories and files (Aggregation, API, Query, Integratio
 
 - Tier runners:
 - `./Scripts/run-tier0.sh`
-- `./Scripts/run-tier1.sh` (Tier 0 + `BlazeDB_Tier1Fast` + execution coverage)
+- `./Scripts/run-tier1.sh` (Tier 0 + `BlazeDB_Tier1` + execution coverage)
 - `./Scripts/run-tier1-depth.sh` (`BlazeDB_Tier1Extended` + `BlazeDB_Tier1Perf`)
 - `./Scripts/run-tier2.sh`
 - `./Scripts/run-tier3.sh`
