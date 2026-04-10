@@ -61,20 +61,13 @@ jobs:
           set -euo pipefail
           swift test --filter BlazeDB_Tier1 2>&1 | tee .logs/tier1.log
 
-      - name: Test Tier 1 extended
+      - name: Test Tier 2 (+ transitional extended companion)
         run: |
           set -euo pipefail
-          swift test --filter BlazeDB_Tier1Extended 2>&1 | tee .logs/tier1extended.log
+          swift test --filter BlazeDB_Tier2 2>&1 | tee .logs/tier2.log
+          swift test --filter BlazeDB_Tier2_Extended 2>&1 | tee .logs/tier2-extended.log
 
-      - name: Run perf lane (manual deep validation)
-        if: github.event_name == 'workflow_dispatch' && inputs.run_deep_validation == true
-        run: |
-          set -euo pipefail
-          mkdir -p .logs
-          echo "Running Tier 1 perf lane..."
-          swift test --filter BlazeDB_Tier1Perf 2>&1 | tee .logs/tier1perf.log
-
-      - name: Run stress tests
+      - name: Run stress tests (+ transitional perf companion)
         if: github.event_name == 'workflow_dispatch' && inputs.run_deep_validation == true
         env:
           RUN_HEAVY_STRESS: "1"
@@ -83,6 +76,7 @@ jobs:
           mkdir -p .logs
           echo "Running Tier 3 heavy tests..."
           swift test --filter BlazeDB_Tier3_Heavy 2>&1 | tee .logs/tier3-heavy.log
+          swift test --filter BlazeDB_Tier3_Heavy_Perf 2>&1 | tee .logs/tier3-heavy-perf.log
 
       - name: Run sanitizer tests
         if: github.event_name == 'workflow_dispatch' && inputs.run_deep_validation == true

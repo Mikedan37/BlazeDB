@@ -59,17 +59,6 @@ jobs:
           set -euo pipefail
           swift test --skip-build --filter BlazeDB_Tier1 2>&1 | tee .logs/tier1.log
 
-      - name: Test Tier 1 extended
-        run: |
-          set -euo pipefail
-          swift test --skip-build --filter BlazeDB_Tier1Extended 2>&1 | tee .logs/tier1extended.log
-
-      # Rebuild Tier1Perf so it links the current BlazeDBCore (avoid stale cached bundle).
-      - name: Test Tier 1 perf
-        run: |
-          set -euo pipefail
-          swift test --filter BlazeDB_Tier1Perf 2>&1 | tee .logs/tier1perf.log
-
       - name: Test Tier 2 integration/recovery
         run: |
           set -euo pipefail
@@ -77,13 +66,14 @@ jobs:
           echo ">>> ./Scripts/run-tier2.sh --strict (Tier 2 strict mode; script prints strict banner)" | tee .logs/tier2.log
           ./Scripts/run-tier2.sh --strict 2>&1 | tee -a .logs/tier2.log
 
-      - name: Test Tier 3 heavy stress/fuzz
+      - name: Test Tier 3 heavy stress/fuzz (+ transitional perf companion)
         env:
           RUN_HEAVY_STRESS: "1"
         run: |
           set -euo pipefail
           mkdir -p .logs
           swift test --filter BlazeDB_Tier3_Heavy 2>&1 | tee .logs/tier3-heavy.log
+          swift test --filter BlazeDB_Tier3_Heavy_Perf 2>&1 | tee .logs/tier3-heavy-perf.log
 
       - name: Test Tier 3 destructive/fault injection
         run: |
@@ -171,7 +161,7 @@ jobs:
           retention-days: 7
 
   deep-linux-extended:
-    name: Linux (Swift 6.2) — Tier0 + Tier1 + Tier1Extended
+    name: Linux (Swift 6.2) — Tier0 + Tier1 + Tier2 (+ extended)
     runs-on: ubuntu-22.04
     timeout-minutes: 360
 
@@ -215,10 +205,11 @@ jobs:
           set -euo pipefail
           swift test --skip-build --filter BlazeDB_Tier1 2>&1 | tee .logs/tier1.log
 
-      - name: Test Tier 1 extended
+      - name: Test Tier 2
         run: |
           set -euo pipefail
-          swift test --skip-build --filter BlazeDB_Tier1Extended 2>&1 | tee .logs/tier1extended.log
+          swift test --skip-build --filter BlazeDB_Tier2 2>&1 | tee .logs/tier2.log
+          swift test --filter BlazeDB_Tier2_Extended 2>&1 | tee .logs/tier2-extended.log
 
       - name: Dump diagnostics on failure
         if: failure()

@@ -77,18 +77,12 @@ def tier_from_module_prefix(test_id: str) -> str | None:
     module = test_id.split(".", 1)[0]
     if module == "BlazeDB_Tier0":
         return "T0"
-    # All three Tier1 SwiftPM modules map to inventory bucket "T1". For human-facing CI
-    # status, use Docs/Testing/CI_AND_TEST_TIERS.md (Tier1 PR gate vs depth vs full Tier1).
-    # Canonical Tier1 module is BlazeDB_Tier1; legacy pre-PR3 split targets remain mapped to T1.
-    if module in (
-        "BlazeDB_Tier1",
-        "BlazeDB_Tier1Extended",
-        "BlazeDB_Tier1Perf",
-    ):
+    # Canonical Tier1 module.
+    if module == "BlazeDB_Tier1":
         return "T1"
-    if module == "BlazeDB_Tier2":
+    if module in {"BlazeDB_Tier2", "BlazeDB_Tier2_Extended"}:
         return "T2"
-    if module in {"BlazeDB_Tier3_Heavy", "BlazeDB_Tier3_Destructive"}:
+    if module in {"BlazeDB_Tier3_Heavy", "BlazeDB_Tier3_Heavy_Perf", "BlazeDB_Tier3_Destructive"}:
         return "T3"
     if module in {"BlazeDB_Benchmarks", "BlazeDBBenchmarks"}:
         return "BENCH"
@@ -103,15 +97,11 @@ def split_id(test_id: str) -> tuple[str, str]:
 def canonical_module_rank(module: str) -> int:
     if module == "BlazeDB_Tier0":
         return 0
-    if module in (
-        "BlazeDB_Tier1",
-        "BlazeDB_Tier1Extended",
-        "BlazeDB_Tier1Perf",
-    ):
+    if module == "BlazeDB_Tier1":
         return 1
-    if module == "BlazeDB_Tier2":
+    if module in {"BlazeDB_Tier2", "BlazeDB_Tier2_Extended"}:
         return 2
-    if module in {"BlazeDB_Tier3_Heavy", "BlazeDB_Tier3_Destructive"}:
+    if module in {"BlazeDB_Tier3_Heavy", "BlazeDB_Tier3_Heavy_Perf", "BlazeDB_Tier3_Destructive"}:
         return 3
     if module in {"BlazeDB_Benchmarks", "BlazeDBBenchmarks"}:
         return 4
