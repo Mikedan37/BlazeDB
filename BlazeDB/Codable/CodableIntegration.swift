@@ -178,43 +178,60 @@ private func convertToJSON(
     }
 }
 
-// MARK: - BlazeDBClient Codable Extensions
+// MARK: - Direct Model CRUD
 
+/// Primary typed CRUD API for `BlazeStorable` models.
+///
+/// These methods are the recommended way to work with BlazeDB in app code:
+///
+/// ```swift
+/// let db = try BlazeDBClient.open()
+///
+/// try db.insert(user)
+/// let u = try db.fetch(User.self, id: userId)
+/// let all = try db.fetchAll(User.self)
+/// try db.update(user)
+/// try db.upsert(user)
+/// try db.delete(user)
+/// ```
+///
+/// For advanced query building, see ``query(_:)-swift.method`` and ``QueryBuilder``.
+/// For batch or scoped stores, see ``TypedStore`` (optional).
 extension BlazeDBClient {
     
     // MARK: - Insert
     
-    /// Insert any Codable type directly
+    /// Insert a model into the database.
     ///
-    /// Example:
+    /// This is the primary way to store a `BlazeStorable` object. The model's `id` is used
+    /// as the record key.
+    ///
     /// ```swift
-    /// struct Bug: Codable, Identifiable {
-    ///     var id: UUID
-    ///     var title: String
-    ///     var priority: Int
-    /// }
-    ///
-    /// let bug = Bug(id: UUID(), title: "Login broken", priority: 5)
-    /// try db.insert(bug)
+    /// let user = User(name: "Alice", age: 30)
+    /// try db.insert(user)
     /// ```
+    @discardableResult
     public func insert<T: BlazeStorable>(_ object: T) throws -> UUID {
         let record = try object.toBlazeRecord()
         return try self.insert(record)
     }
     
-    /// Insert Codable async
+    /// Insert a model (async).
+    @discardableResult
     public func insert<T: BlazeStorable>(_ object: T) async throws -> UUID {
         let record = try object.toBlazeRecord()
         return try await self.insert(record)
     }
     
-    /// Insert many Codable objects
+    /// Insert multiple models in one call.
+    @discardableResult
     public func insertMany<T: BlazeStorable>(_ objects: [T]) throws -> [UUID] {
         let records = try objects.map { try $0.toBlazeRecord() }
         return try self.insertMany(records)
     }
     
-    /// Insert many async
+    /// Insert multiple models (async).
+    @discardableResult
     public func insertMany<T: BlazeStorable>(_ objects: [T]) async throws -> [UUID] {
         let records = try objects.map { try $0.toBlazeRecord() }
         return try await self.insertMany(records)
@@ -222,12 +239,10 @@ extension BlazeDBClient {
     
     // MARK: - Fetch
     
-    /// Fetch Codable type by ID
+    /// Fetch a single model by its ID, returning `nil` if not found.
     ///
-    /// Example:
     /// ```swift
-    /// let bug = try db.fetch(Bug.self, id: bugID)
-    /// print(bug?.title)
+    /// let user = try db.fetch(User.self, id: userId)
     /// ```
     public func fetch<T: BlazeStorable>(_ type: T.Type, id: UUID) throws -> T? {
         guard let record = try self.fetch(id: id) else {
@@ -236,7 +251,7 @@ extension BlazeDBClient {
         return try T.fromBlazeRecord(record)
     }
     
-    /// Fetch async
+    /// Fetch a single model by ID (async).
     public func fetch<T: BlazeStorable>(_ type: T.Type, id: UUID) async throws -> T? {
         guard let record = try await self.fetch(id: id) else {
             return nil
@@ -244,13 +259,17 @@ extension BlazeDBClient {
         return try T.fromBlazeRecord(record)
     }
     
-    /// Fetch all as Codable type, filtering out records that cannot decode as `T`.
+    /// Fetch all models of a given type.
+    ///
+    /// ```swift
+    /// let users = try db.fetchAll(User.self)
+    /// ```
     public func fetchAll<T: BlazeStorable>(_ type: T.Type) throws -> [T] {
         let records = try self.fetchAll()
         return records.compactMap { try? T.fromBlazeRecord($0) }
     }
     
-    /// Fetch all async, filtering out records that cannot decode as `T`.
+    /// Fetch all models of a given type (async).
     public func fetchAll<T: BlazeStorable>(_ type: T.Type) async throws -> [T] {
         let records = try await self.fetchAll()
         return records.compactMap { try? T.fromBlazeRecord($0) }
@@ -258,33 +277,51 @@ extension BlazeDBClient {
     
     // MARK: - Update
     
-    /// Update Codable object
+    /// Update an existing model. The record is identified by the model's `id`.
+    ///
+    /// ```swift
+    /// user.name = "Bob"
+    /// try db.update(user)
+    /// ```
     public func update<T: BlazeStorable>(_ object: T) throws {
         let record = try object.toBlazeRecord()
         try self.update(id: object.id, with: record)
     }
     
-    /// Update async
+    /// Update an existing model (async).
     public func update<T: BlazeStorable>(_ object: T) async throws {
         let record = try object.toBlazeRecord()
         try await self.update(id: object.id, data: record)
     }
     
-    /// Update many Codable objects
+    /// Update multiple models in one call.
     public func updateMany<T: BlazeStorable>(_ objects: [T]) throws {
         for object in objects {
             try self.update(object)
         }
     }
     
-    /// Update many async
+    /// Update multiple models (async).
     public func updateMany<T: BlazeStorable>(_ objects: [T]) async throws {
         for object in objects {
             try await self.update(object)
         }
     }
     
-    // Note: Type-safe query builder is defined in QueryBuilderKeyPath.swift
-    // This avoids duplication and uses the KeyPath-enabled builder
+    // MARK: - Delete
+    
+    /// Delete a model by its `id`.
+    ///
+    /// ```swift
+    /// try db.delete(user)
+    /// ```
+    public func delete<T: BlazeStorable>(_ object: T) throws {
+        try self.delete(id: object.id)
+    }
+    
+    /// Delete a model by its `id` (async).
+    public func delete<T: BlazeStorable>(_ object: T) async throws {
+        try await self.delete(id: object.id)
+    }
 }
 

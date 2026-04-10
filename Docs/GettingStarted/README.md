@@ -17,7 +17,7 @@ Add to your `Package.swift`:
 
 ```swift
 dependencies: [
- .package(url: "https://github.com/Mikedan37/BlazeDB.git", from: "2.7.2")
+ .package(url: "https://github.com/Mikedan37/BlazeDB.git", from: "2.7.4")
 ],
 targets: [
  .target(name: "YourApp", dependencies: ["BlazeDB"])
@@ -58,14 +58,14 @@ struct User: BlazeStorable {
 // 2. Open database (creates if needed, always encrypted)
 let db = try BlazeDBClient.open(named: "myapp", password: "My-Secure-Password-2026!")
 
-// 3. Get a typed store
-let users = db.typed(User.self)
+// 3. Insert
+try db.insert(User(name: "Alice", age: 30, active: true))
 
-// 4. Insert
-try users.insert(User(name: "Alice", age: 30, active: true))
+// 4. Fetch
+let alice = try db.fetch(User.self, id: aliceId)
 
 // 5. Query with KeyPaths
-let activeUsers = try users.query()
+let activeUsers = try db.query(User.self)
     .where(\.active, equals: true)
     .all()
 
@@ -94,11 +94,12 @@ BlazeDB offers three API tiers. Use whichever fits your needs:
 
 | Tier | Protocol | Best for |
 |------|----------|----------|
-| **Typed (recommended)** | `BlazeStorable` + `TypedStore` | Most apps — Codable models, KeyPath queries, minimal boilerplate |
+| **Direct CRUD (recommended)** | `BlazeStorable` + `db.insert(model)` / `db.fetch(T.self, id:)` | Most apps — Codable models, KeyPath queries, minimal boilerplate |
+| **TypedStore (optional)** | `db.typed(T.self)` → scoped handle | View models, service layers that want a bound store |
 | **Raw explicit** | `BlazeDataRecord` | Dynamic schemas, migration scripts, schemaless exploration |
 | **Manual mapping** | `BlazeDocument` | Custom serialization, non-Codable types, full field control |
 
-### Typed API (Recommended)
+### Direct CRUD (Recommended)
 
 ```swift
 struct Task: BlazeStorable {
@@ -108,16 +109,14 @@ struct Task: BlazeStorable {
     var done: Bool
 }
 
-let tasks = db.typed(Task.self)
-
 // Insert
-try tasks.insert(Task(title: "Ship v3", priority: 9, done: false))
+try db.insert(Task(title: "Ship v3", priority: 9, done: false))
 
 // Fetch by ID
-let task = try tasks.fetch(someID)
+let task = try db.fetch(Task.self, id: someID)
 
 // Query with KeyPaths
-let urgent = try tasks.query()
+let urgent = try db.query(Task.self)
     .where(\.priority, greaterThan: 7)
     .orderBy(\.title)
     .all()
@@ -125,10 +124,10 @@ let urgent = try tasks.query()
 // Update
 var t = task!
 t.done = true
-try tasks.update(t)
+try db.update(t)
 
 // Delete
-try tasks.delete(t.id)
+try db.delete(t)
 ```
 
 ### SwiftUI Query Observation (App Dev DX)

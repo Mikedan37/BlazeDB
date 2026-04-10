@@ -1,46 +1,41 @@
 import Foundation
 
-/// A typed view over a `BlazeDBClient` that binds all CRUD and query operations to a
-/// single `BlazeStorable` model type, eliminating the need to repeat `T.self` on every call.
+/// An **optional** typed view over a `BlazeDBClient` that binds CRUD and query operations
+/// to a single `BlazeStorable` model type, so you don't have to repeat `T.self` on every call.
+///
+/// > **Tip:** For most code, calling methods directly on ``BlazeDBClient`` is simpler:
+/// >
+/// > ```swift
+/// > try db.insert(user)
+/// > let u = try db.fetch(User.self, id: userId)
+/// > ```
+/// >
+/// > Use `TypedStore` when you want a scoped handle — e.g. passing a "users"
+/// > store to a view model or service layer.
 ///
 /// `TypedStore` does **not** create a separate physical collection or table — BlazeDB stores
 /// all records in one encrypted document collection per database file. `TypedStore` is purely
 /// a convenience layer that encodes/decodes through the `BlazeStorable` (Codable) bridge.
 ///
-/// ## Quick start
+/// ## Usage
 ///
 /// ```swift
-/// struct User: BlazeStorable {
-///     var id: UUID = UUID()
-///     var name: String
-///     var age: Int
-/// }
-///
-/// let db = try BlazeDBClient.open(named: "myapp", password: "Secure-Password-2026!")
 /// let users = db.typed(User.self)
 ///
-/// // Insert
-/// let alice = User(name: "Alice", age: 30)
 /// try users.insert(alice)
-///
-/// // Fetch
 /// let fetched = try users.fetch(alice.id)
 ///
-/// // Query with KeyPaths
 /// let seniors = try users.query()
 ///     .where(\.age, greaterThanOrEqual: 65)
 ///     .all()
-///
-/// // Fetch all
-/// let everyone = try users.fetchAll()
 /// ```
 ///
 /// ## Nested Codable types
 ///
-/// Nested `Codable` structs/classes are currently stored as serialized JSON strings inside
-/// `BlazeDocumentField.string`. Round-tripping works, but the nested fields are **not**
-/// individually queryable via KeyPath filters. If you need to query nested fields, flatten
-/// them into top-level properties or use the raw `BlazeDataRecord` query API.
+/// Nested `Codable` structs/classes are stored as serialized JSON strings inside
+/// `BlazeDocumentField.string`. Round-tripping works, but nested fields are **not**
+/// individually queryable via KeyPath filters. Flatten them into top-level properties
+/// or use the raw `BlazeDataRecord` query API if you need per-field queries.
 public struct TypedStore<T: BlazeStorable>: Sendable {
     private let db: BlazeDBClient
 
@@ -127,20 +122,16 @@ public struct TypedStore<T: BlazeStorable>: Sendable {
 
 extension BlazeDBClient {
 
-    /// Create a typed store for convenient, type-safe CRUD operations.
+    /// Create a scoped, typed handle for CRUD operations on a single model type.
     ///
-    /// The returned `TypedStore` binds all operations to the given `BlazeStorable` type
-    /// so you never need to repeat `T.self`. This is the **recommended** API for most
-    /// applications.
+    /// Use this when you want to pass a type-bound store to a view model or
+    /// service layer. For simple one-off operations, calling `insert(_:)`,
+    /// `fetch(_:id:)`, etc. directly on `BlazeDBClient` is simpler.
     ///
     /// ```swift
     /// let users = db.typed(User.self)
     /// try users.insert(User(name: "Alice", age: 30))
-    /// let all = try users.fetchAll()
     /// ```
-    ///
-    /// > **Note:** `TypedStore` is a typed view, not a separate physical table.
-    /// > All records share the same underlying encrypted collection.
     public func typed<T: BlazeStorable>(_ type: T.Type) -> TypedStore<T> {
         TypedStore<T>(db: self)
     }
