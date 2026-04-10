@@ -16,11 +16,74 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
-  nightly-macos-confidence:
-    name: macOS 15 — Tier1 depth + Tier1FastFull + Tier2 + verify scripts
+  nightly-macos-tier1-depth:
+    name: macOS 15 — Tier1 depth
     runs-on: macos-15
-    # Tier1 extended + perf + FastFull + Tier2 + verify can approach multi-hour wall times on hosted runners.
-    timeout-minutes: 480
+    timeout-minutes: 240
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Cache SwiftPM build
+        uses: actions/cache@v5
+        with:
+          path: .build
+          key: nightly-${{ runner.os }}-spm-${{ hashFiles('Package.swift', 'Package.resolved') }}
+          restore-keys: |
+            nightly-${{ runner.os }}-spm-
+            ${{ runner.os }}-spm-
+
+      - name: Xcode Swift toolchain
+        run: |
+          xcodebuild -version
+          swift --version
+          which swift
+
+      - name: Build BlazeDBCore
+        run: swift build --target BlazeDBCore
+
+      - name: Prepare CI log directories
+        run: mkdir -p .logs .artifacts
+
+      - name: Test Tier 1 extended
+        run: |
+          set -euo pipefail
+          swift test --filter BlazeDB_Tier1Extended 2>&1 | tee .logs/tier1extended.log
+
+      # Do not use --skip-build here: Tier1Perf is not built by the prior Tier1Extended-only
+      # step, so a cached test bundle can run against stale library code.
+      - name: Test Tier 1 perf
+        run: |
+          set -euo pipefail
+          swift test --filter BlazeDB_Tier1Perf 2>&1 | tee .logs/tier1perf.log
+
+      - name: Dump diagnostics on failure
+        if: failure()
+        run: |
+          mkdir -p .logs
+          ps aux > .logs/ps.txt || true
+          df -h > .logs/disk.txt || true
+          swift --version > .logs/swift-version.txt 2>&1 || true
+          xcodebuild -version > .logs/xcode-version.txt 2>&1 || true
+
+      - name: Upload nightly macOS Tier1 depth logs
+        if: always()
+        uses: actions/upload-artifact@v5
+        with:
+          name: nightly-macos-tier1-depth-logs
+          path: |
+            .logs/
+            .artifacts/
+          if-no-files-found: ignore
+          retention-days: 7
+
+  nightly-macos-fastfull-extra:
+    name: macOS 15 — Tier1FastFull (extra package)
+    runs-on: macos-15
+    timeout-minutes: 180
 
     steps:
       - name: Checkout
@@ -49,24 +112,63 @@ jobs:
       - name: Prepare CI log directories
         run: mkdir -p .logs .artifacts
 
-      - name: Test Tier 1 extended
-        run: |
-          set -euo pipefail
-          swift test --filter BlazeDB_Tier1Extended 2>&1 | tee .logs/tier1extended.log
-
-      # Do not use --skip-build here: Tier1Perf is not built by the prior Tier1Extended-only
-      # step, so a cached test bundle can run against stale library code (wrong line numbers /
-      # pre-fix behavior after BlazeDBCore-only rebuild + cache restore).
-      - name: Test Tier 1 perf
-        run: |
-          set -euo pipefail
-          swift test --filter BlazeDB_Tier1Perf 2>&1 | tee .logs/tier1perf.log
-
       - name: Test Tier 1 fast full (broader deterministic)
         run: |
           set -euo pipefail
           cd BlazeDBExtraTests
           swift test --filter BlazeDB_Tier1FastFull 2>&1 | tee "${GITHUB_WORKSPACE}/.logs/tier1fastfull.log"
+
+      - name: Dump diagnostics on failure
+        if: failure()
+        run: |
+          mkdir -p .logs
+          ps aux > .logs/ps.txt || true
+          df -h > .logs/disk.txt || true
+          swift --version > .logs/swift-version.txt 2>&1 || true
+          xcodebuild -version > .logs/xcode-version.txt 2>&1 || true
+
+      - name: Upload nightly macOS Tier1FastFull logs
+        if: always()
+        uses: actions/upload-artifact@v5
+        with:
+          name: nightly-macos-tier1fastfull-logs
+          path: |
+            .logs/
+            .artifacts/
+          if-no-files-found: ignore
+          retention-days: 7
+
+  nightly-macos-tier2-strict:
+    name: macOS 15 — Tier2 strict
+    runs-on: macos-15
+    timeout-minutes: 180
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Cache SwiftPM build
+        uses: actions/cache@v5
+        with:
+          path: .build
+          key: nightly-${{ runner.os }}-spm-${{ hashFiles('Package.swift', 'Package.resolved', 'BlazeDBExtraTests/Package.swift') }}
+          restore-keys: |
+            nightly-${{ runner.os }}-spm-
+            ${{ runner.os }}-spm-
+
+      - name: Xcode Swift toolchain
+        run: |
+          xcodebuild -version
+          swift --version
+          which swift
+
+      - name: Build BlazeDBCore
+        run: swift build --target BlazeDBCore
+
+      - name: Prepare CI log directories
+        run: mkdir -p .logs .artifacts
 
       - name: Test Tier 2 integration/recovery (strict enforcement)
         run: |
@@ -74,6 +176,46 @@ jobs:
           mkdir -p .logs
           echo ">>> ./Scripts/run-tier2.sh --strict (Tier 2 strict mode; script prints strict banner)" | tee .logs/tier2.log
           ./Scripts/run-tier2.sh --strict 2>&1 | tee -a .logs/tier2.log
+
+      - name: Dump diagnostics on failure
+        if: failure()
+        run: |
+          mkdir -p .logs
+          ps aux > .logs/ps.txt || true
+          df -h > .logs/disk.txt || true
+          swift --version > .logs/swift-version.txt 2>&1 || true
+          xcodebuild -version > .logs/xcode-version.txt 2>&1 || true
+
+      - name: Upload nightly macOS Tier2 logs
+        if: always()
+        uses: actions/upload-artifact@v5
+        with:
+          name: nightly-macos-tier2-logs
+          path: |
+            .logs/
+            .artifacts/
+          if-no-files-found: ignore
+          retention-days: 7
+
+  nightly-macos-clean-checkout:
+    name: macOS 15 — clean-checkout verification
+    runs-on: macos-15
+    timeout-minutes: 120
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Xcode Swift toolchain
+        run: |
+          xcodebuild -version
+          swift --version
+          which swift
+
+      - name: Prepare CI log directories
+        run: mkdir -p .logs .artifacts
 
       - name: Install ripgrep (verification scripts)
         env:
@@ -85,6 +227,46 @@ jobs:
         run: |
           set -euo pipefail
           ./Scripts/verify-clean-checkout.sh 2>&1 | tee .logs/verify-clean-checkout.log
+
+      - name: Dump diagnostics on failure
+        if: failure()
+        run: |
+          mkdir -p .logs
+          ps aux > .logs/ps.txt || true
+          df -h > .logs/disk.txt || true
+          swift --version > .logs/swift-version.txt 2>&1 || true
+          xcodebuild -version > .logs/xcode-version.txt 2>&1 || true
+
+      - name: Upload nightly macOS clean-checkout logs
+        if: always()
+        uses: actions/upload-artifact@v5
+        with:
+          name: nightly-macos-clean-checkout-logs
+          path: |
+            .logs/
+            .artifacts/
+          if-no-files-found: ignore
+          retention-days: 7
+
+  nightly-macos-readme-quickstart:
+    name: macOS 15 — README quickstart verification
+    runs-on: macos-15
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Xcode Swift toolchain
+        run: |
+          xcodebuild -version
+          swift --version
+          which swift
+
+      - name: Prepare CI log directories
+        run: mkdir -p .logs .artifacts
 
       - name: Verify README quickstart
         run: |
@@ -100,11 +282,11 @@ jobs:
           swift --version > .logs/swift-version.txt 2>&1 || true
           xcodebuild -version > .logs/xcode-version.txt 2>&1 || true
 
-      - name: Upload nightly macOS confidence logs
+      - name: Upload nightly macOS quickstart logs
         if: always()
         uses: actions/upload-artifact@v5
         with:
-          name: nightly-macos-confidence-logs
+          name: nightly-macos-quickstart-logs
           path: |
             .logs/
             .artifacts/
@@ -160,7 +342,7 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
 
-  nightly-linux-depth:
+  nightly-linux-validation:
     name: Linux (Swift 6.2) — Tier0 + Tier1Fast
     runs-on: ubuntu-22.04
     # 90m was too tight: a real run exceeded it (~90.23m wall) and the job was stopped as Cancelled.
@@ -213,11 +395,11 @@ jobs:
           df -h > .logs/disk.txt || true
           swift --version > .logs/swift-version.txt 2>&1 || true
 
-      - name: Upload nightly Linux depth logs
+      - name: Upload nightly Linux validation logs
         if: always()
         uses: actions/upload-artifact@v5
         with:
-          name: nightly-linux-depth-logs
+          name: nightly-linux-validation-logs
           path: |
             .logs/
             .artifacts/
