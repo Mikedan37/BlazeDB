@@ -210,7 +210,7 @@ final class PerformanceOptimizationTests: XCTestCase {
     
     // MARK: - Memory-Mapped I/O Tests (if available)
     
-    #if canImport(Darwin)
+    #if canImport(Darwin) && !BLAZEDB_LINUX_CORE
     func testMemoryMappedIO_FasterThanRegular() async throws {
         // Create test data
         let records = (0..<500).map { i in
