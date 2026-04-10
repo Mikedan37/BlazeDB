@@ -2,7 +2,7 @@
 
 ## SwiftPM test targets (root package)
 
-The repository root `Package.swift` defines test targets whose sources live under **`BlazeDBTests/`** (for example `BlazeDB_Tier0`, `BlazeDB_Tier1`, `BlazeDB_Tier2`, `BlazeDB_Tier3_Heavy`). That is what `swift test` and the default CI workflow exercise when filtering those targets.
+The repository root `Package.swift` defines test targets whose sources live under **`BlazeDBTests/`** (for example `BlazeDB_Tier0`, `BlazeDB_Tier1`, `BlazeDB_Tier2`, `BlazeDB_Tier2_Extended`, `BlazeDB_Tier3_Heavy`, `BlazeDB_Tier3_Heavy_Perf`). That is what `swift test` and the default CI workflow exercise when filtering those targets.
 
 ## Top-level `Tests/` directory
 

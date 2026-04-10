@@ -219,10 +219,9 @@ Additional example files in `Examples/` (`.swift` files) are standalone referenc
 | Lane | Status | Location | Notes |
 | ---- | ------ | -------- | ----- |
 | Tier 0 (PR gate) | Stable | `BlazeDBTests/Tier0Core/` | Deterministic correctness |
-| Tier 1 Fast (PR gate) | Stable | `BlazeDBTests/Tier1Core/` | Nearly full coverage; one file excluded (`SecureConnectionTests.swift` — requires Network framework) — see `CI_AND_TEST_TIERS.md` and `Package.swift` |
-| Tier 1 Extended | Stable | `BlazeDBTests/Tier1Extended/` | Weekly + manual; sync tests partially excluded |
-| Tier 1 Perf | Stable | `BlazeDBTests/Tier1Perf/` | `measure()` suites |
-| Tier 2 / Tier 3 | Stable | `BlazeDBExtraTests/` | Nested package; not in root `swift test` |
+| Tier 1 (PR gate) | Stable | `BlazeDBTests/Tier1Core/` | Canonical Tier1 target (`BlazeDB_Tier1`); see `CI_AND_TEST_TIERS.md` |
+| Tier 2 | Stable | `BlazeDBTests/Tier2Integration/` | `BlazeDB_Tier2` plus temporary companion `BlazeDB_Tier2_Extended` |
+| Tier 3 | Stable | `BlazeDBTests/Tier3Heavy/`, `BlazeDBTests/Tier3Destructive/` | `BlazeDB_Tier3_Heavy` / `BlazeDB_Tier3_Destructive` plus temporary companion `BlazeDB_Tier3_Heavy_Perf` |
 | Nightly | Stable | `.github/workflows/nightly.yml` | Depth + TSan + Linux |
 | Deep validation | Stable | `.github/workflows/deep-validation.yml` | Weekly soak |
 

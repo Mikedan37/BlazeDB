@@ -39,7 +39,7 @@ swift test --filter BlazeDB_Tier0
 
 **Canonical Tier1 gate — `BlazeDB_Tier1`:** `BlazeDBTests/Tier1Core/` — deterministic correctness; no `measure()`, no timing-dependent sleeps, no benchmark-shaped workloads.
 
-`BlazeDB_Tier1Extended` and `BlazeDB_Tier1Perf` target names were retired; their suites now run under Tier2/Tier3 ownership via **transitional companion targets** (`BlazeDB_Tier2_Extended`, `BlazeDB_Tier3_Heavy_Perf`) pending PR4 normalization.
+`BlazeDB_Tier1Extended` and `BlazeDB_Tier1Perf` target names were retired; their suites now run under Tier2/Tier3 ownership via **transitional companion targets** (`BlazeDB_Tier2_Extended`, `BlazeDB_Tier3_Heavy_Perf`) pending filesystem/target normalization.
 
 **What goes in the fast lane:**
 - Core contracts that must stay green on every PR (persistence/security/features) without heavy timing or perf noise
