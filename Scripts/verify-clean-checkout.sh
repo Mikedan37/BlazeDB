@@ -124,7 +124,7 @@ step_test() {
     "Tier1 GoldenPath" \
     "$RUN_LOG_DIR/step2_tier1_golden.log" \
     env -i PATH="$PATH" HOME="$HOME" TERM="${TERM:-dumb}" \
-    swift test --skip-build --filter BlazeDB_Tier1Fast.GoldenPathIntegrationTests
+    swift test --skip-build --filter BlazeDB_Tier1.GoldenPathIntegrationTests
 )
 
 echo "Step 3/3: report"

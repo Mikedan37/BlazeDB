@@ -12,7 +12,7 @@ if [ -n "${RUN_HEAVY_STRESS}" ] && [ "${RUN_HEAVY_STRESS}" != "0" ]; then
 fi
 
 python3 ./Scripts/verify_execution_coverage.py --target BlazeDB_Tier0 --artifact-dir "$ARTIFACT_DIR" --allowed-missing 0 --num-workers 1 || exit 1
-python3 ./Scripts/verify_execution_coverage.py --target BlazeDB_Tier1Fast --artifact-dir "$ARTIFACT_DIR" --allowed-missing 0 --num-workers 2 || exit 1
+python3 ./Scripts/verify_execution_coverage.py --target BlazeDB_Tier1 --artifact-dir "$ARTIFACT_DIR" --allowed-missing 0 --num-workers 2 || exit 1
 python3 ./Scripts/verify_execution_coverage.py --target BlazeDB_Tier1Extended --artifact-dir "$ARTIFACT_DIR" --allowed-missing 0 --num-workers 2 || exit 1
 python3 ./Scripts/verify_execution_coverage.py --target BlazeDB_Tier1Perf --artifact-dir "$ARTIFACT_DIR" --allowed-missing 0 --num-workers 2 || exit 1
 python3 ./Scripts/verify_execution_coverage.py --target BlazeDB_Tier2 --artifact-dir "$ARTIFACT_DIR" --allowed-missing 0 --num-workers 2 || exit 1

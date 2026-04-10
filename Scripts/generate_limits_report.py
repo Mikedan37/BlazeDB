@@ -239,7 +239,7 @@ def generate_report(
     if run_fast_bench:
         benches = [
             run_benchmark(
-                'swift test --filter "BlazeDB_Tier1Fast.OverflowChainCrashAtomicityTests"',
+                'swift test --filter "BlazeDB_Tier1.OverflowChainCrashAtomicityTests"',
                 root,
                 "overflow_crash_atomicity",
             ),

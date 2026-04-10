@@ -79,9 +79,9 @@ def tier_from_module_prefix(test_id: str) -> str | None:
         return "T0"
     # All three Tier1 SwiftPM modules map to inventory bucket "T1". For human-facing CI
     # status, use Docs/Testing/CI_AND_TEST_TIERS.md (Tier1 PR gate vs depth vs full Tier1).
-    # Legacy module name BlazeDB_Tier1 removed — inventory maps split targets only (Tier1Fast/Extended/Perf).
+    # Canonical Tier1 module is BlazeDB_Tier1; legacy pre-PR3 split targets remain mapped to T1.
     if module in (
-        "BlazeDB_Tier1Fast",
+        "BlazeDB_Tier1",
         "BlazeDB_Tier1Extended",
         "BlazeDB_Tier1Perf",
     ):
@@ -104,7 +104,7 @@ def canonical_module_rank(module: str) -> int:
     if module == "BlazeDB_Tier0":
         return 0
     if module in (
-        "BlazeDB_Tier1Fast",
+        "BlazeDB_Tier1",
         "BlazeDB_Tier1Extended",
         "BlazeDB_Tier1Perf",
     ):

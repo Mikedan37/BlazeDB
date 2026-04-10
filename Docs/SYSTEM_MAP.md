@@ -249,7 +249,7 @@ Additional example files in `Examples/` (`.swift` files) are standalone referenc
 
 | Issue | Area | Summary | Blocks |
 | ----- | ---- | ------- | ------ |
-| [#73](https://github.com/Mikedan37/BlazeDB/issues/73) | Tests / Transport | SecureConnectionTests in wrong target; split crypto vs transport tests | Tier1Fast exclusion removal |
+| [#73](https://github.com/Mikedan37/BlazeDB/issues/73) | Tests / Transport | SecureConnectionTests in wrong target; split crypto vs transport tests | Tier1 exclusion removal |
 | [#43](https://github.com/Mikedan37/BlazeDB/issues/43) | Storage / Linux | Compressed pages (v0x03) Linux/Android parity | Cross-platform compression |
 | [#30](https://github.com/Mikedan37/BlazeDB/issues/30) | Storage / Linux | Binary decoding alignment safety audit | Linux reliability |
 | [#51](https://github.com/Mikedan37/BlazeDB/issues/51) | CI / Linux | Linux Tier1 enablement and CI contract alignment | Linux parity |

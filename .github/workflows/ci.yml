@@ -68,10 +68,10 @@ jobs:
           set -euo pipefail
           BLAZEDB_TEST_SCOPE=tier0 swift test --filter BlazeDB_Tier0 2>&1 | tee .logs/tier0.log
 
-      - name: Test Tier 1 (fast)
+      - name: Test Tier 1
         run: |
           set -euo pipefail
-          swift test --skip-build --filter BlazeDB_Tier1Fast 2>&1 | tee .logs/tier1fast.log
+          swift test --skip-build --filter BlazeDB_Tier1 2>&1 | tee .logs/tier1.log
 
       - name: Dump diagnostics on failure
         if: failure()

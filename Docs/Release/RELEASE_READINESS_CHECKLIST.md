@@ -15,7 +15,7 @@ This file is the release-facing checklist only. Historical strategy notes and sp
 ## 2) Required Validation (Local)
 
 - [ ] `./Scripts/preflight.sh` passes.
-- [ ] `./Scripts/run-tier1.sh` passes (Tier 0 + Tier1Fast with coverage checks).
+- [ ] `./Scripts/run-tier1.sh` passes (Tier 0 + Tier1 with coverage checks).
 - [ ] `./Scripts/verify-clean-checkout.sh` passes.
 - [ ] `./Scripts/verify-readme-quickstart.sh` passes.
 
@@ -24,12 +24,12 @@ This file is the release-facing checklist only. Historical strategy notes and sp
 - [ ] Push/PR CI check passed on the release commit:
 - `swift build --target BlazeDBCore`
 - Tier 0
-- Tier1Fast
+- Tier1
 - clean-checkout verification
 - README quickstart verification
 - [ ] Release workflow passes for tag `vX.Y.Z` (`.github/workflows/release.yml`):
 - Tier 0
-- Tier1Fast
+- Tier1
 - Tier1Extended
 - Tier1Perf
 - Tier3 heavy
