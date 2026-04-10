@@ -4,55 +4,7 @@ import Foundation
 
 let tier0OnlyTestScope = ProcessInfo.processInfo.environment["BLAZEDB_TEST_SCOPE"]?.lowercased() == "tier0"
 
-let package = Package(
-    name: "BlazeDB",
-    platforms: [
-        .macOS(.v15),
-        .iOS(.v15),
-        .watchOS(.v8),
-        .tvOS(.v15),
-        .visionOS(.v1)
-        // Linux support available (implicit when not specified)
-    ],
-    products: [
-        // Umbrella library — re-exports BlazeDBCore
-        .library(
-            name: "BlazeDB",
-            targets: ["BlazeDB"]),
-        .library(
-            name: "BlazeDBCore",
-            targets: ["BlazeDBCore"]),
-        .executable(
-            name: "BlazeShell",
-            targets: ["BlazeShell"]),
-        .executable(
-            name: "BasicExample",
-            targets: ["BasicExample"]),
-        .executable(
-            name: "BlazeDoctor",
-            targets: ["BlazeDoctor"]),
-        .executable(
-            name: "BlazeDump",
-            targets: ["BlazeDump"]),
-        .executable(
-            name: "BlazeInfo",
-            targets: ["BlazeInfo"]),
-        .executable(
-            name: "BlazeDBBenchmarks",
-            targets: ["BlazeDBBenchmarks"]),
-        .executable(
-            name: "HelloBlazeDB",
-            targets: ["HelloBlazeDB"]),
-        .executable(
-            name: "ReferenceConsumer",
-            targets: ["ReferenceConsumer"])
-    ],
-    dependencies: [
-        // Core OSS dependency set only. Distributed transport dependencies
-        // (for example BlazeTransport) are intentionally deferred.
-        .package(url: "https://github.com/apple/swift-crypto.git", from: "3.0.0"),
-    ],
-    targets: [
+var blazeTargets: [Target] = [
         // MARK: - Core Target (Swift 6 compliant, no distributed code)
         .target(
             name: "BlazeDBCore",
@@ -183,9 +135,11 @@ let package = Package(
                 .define("BLAZEDB_CORE_ONLY"),
                 .define("BLAZEDB_LINUX_CORE", .when(platforms: [.linux, .android]))
             ]
-        ),
+        )
+]
 
-    ] + (tier0OnlyTestScope ? [] : [
+if !tier0OnlyTestScope {
+    blazeTargets += [
         // Tier 1: canonical PR/local correctness gate.
         // Runs nearly all of Tier1Core; only one file with a hard blocker remains excluded.
         .testTarget(
@@ -201,33 +155,7 @@ let package = Package(
                 .define("BLAZEDB_LINUX_CORE", .when(platforms: [.linux, .android]))
             ]
         ),
-        // Tier 1 extended: integration, sync, sleep-dependent and large-N stress (not the default gate).
-        .testTarget(
-            name: "BlazeDB_Tier1Extended",
-            dependencies: ["BlazeDBCore"],
-            path: "BlazeDBTests/Tier1Extended",
-            exclude: [
-                // Rely on distributed-only types (InMemoryRelay, topology, cross-app sync); keep in Xcode / extra package until wired.
-                "Sync/InMemoryRelayTests.swift",
-                "Sync/CrossAppSyncTests.swift",
-                "Sync/TopologyTests.swift"
-            ],
-            swiftSettings: [
-                .define("BLAZEDB_CORE_ONLY"),
-                .define("BLAZEDB_LINUX_CORE", .when(platforms: [.linux, .android]))
-            ]
-        ),
-        // Tier 1 perf: XCTest measure() and benchmark-shaped suites (quarantine lane).
-        .testTarget(
-            name: "BlazeDB_Tier1Perf",
-            dependencies: ["BlazeDBCore"],
-            path: "BlazeDBTests/Tier1Perf",
-            swiftSettings: [
-                .define("BLAZEDB_CORE_ONLY"),
-                .define("BLAZEDB_LINUX_CORE", .when(platforms: [.linux, .android]))
-            ]
-        ),
-        // Tier 2: integration and recovery for nightly confidence/deeper validation.
+        // Tier 2: integration/recovery and deeper deterministic validation.
         .testTarget(
             name: "BlazeDB_Tier2",
             dependencies: ["BlazeDBCore"],
@@ -257,11 +185,38 @@ let package = Package(
                 .define("BLAZEDB_LINUX_CORE", .when(platforms: [.linux, .android]))
             ]
         ),
-        // Tier 3 heavy: stress/fuzz/perf suites used in deep validation lanes.
+        // Reclassified legacy Tier1Extended suites under Tier2 ownership.
+        .testTarget(
+            name: "BlazeDB_Tier2_Extended",
+            dependencies: ["BlazeDBCore"],
+            path: "BlazeDBTests/Tier1Extended",
+            exclude: [
+                // Rely on distributed-only types (InMemoryRelay, topology, cross-app sync); keep excluded until wired.
+                "Sync/InMemoryRelayTests.swift",
+                "Sync/CrossAppSyncTests.swift",
+                "Sync/TopologyTests.swift"
+            ],
+            swiftSettings: [
+                .define("BLAZEDB_CORE_ONLY"),
+                .define("BLAZEDB_LINUX_CORE", .when(platforms: [.linux, .android]))
+            ]
+        ),
+        // Tier 3 heavy: stress/fuzz suites.
         .testTarget(
             name: "BlazeDB_Tier3_Heavy",
             dependencies: ["BlazeDBCore"],
             path: "BlazeDBTests/Tier3Heavy",
+            swiftSettings: [
+                .define("BLAZEDB_CORE_ONLY"),
+                .define("HEAVY_TESTS"),
+                .define("BLAZEDB_LINUX_CORE", .when(platforms: [.linux, .android]))
+            ]
+        ),
+        // Reclassified legacy Tier1Perf suites under Tier3 heavy ownership.
+        .testTarget(
+            name: "BlazeDB_Tier3_Heavy_Perf",
+            dependencies: ["BlazeDBCore"],
+            path: "BlazeDBTests/Tier1Perf",
             swiftSettings: [
                 .define("BLAZEDB_CORE_ONLY"),
                 .define("HEAVY_TESTS"),
@@ -279,12 +234,65 @@ let package = Package(
                 .define("BLAZEDB_LINUX_CORE", .when(platforms: [.linux, .android]))
             ]
         )
-    ]) + [
-        // Staging-only harness target.
-        .testTarget(
-            name: "BlazeDB_Staging",
-            dependencies: ["BlazeDBSyncStaging", "BlazeDBTelemetryStaging"],
-            path: "BlazeDBTests/Staging"
-        )
     ]
+}
+
+blazeTargets += [
+    // Staging-only harness target.
+    .testTarget(
+        name: "BlazeDB_Staging",
+        dependencies: ["BlazeDBSyncStaging", "BlazeDBTelemetryStaging"],
+        path: "BlazeDBTests/Staging"
+    )
+]
+
+let package = Package(
+    name: "BlazeDB",
+    platforms: [
+        .macOS(.v15),
+        .iOS(.v15),
+        .watchOS(.v8),
+        .tvOS(.v15),
+        .visionOS(.v1)
+        // Linux support available (implicit when not specified)
+    ],
+    products: [
+        // Umbrella library — re-exports BlazeDBCore
+        .library(
+            name: "BlazeDB",
+            targets: ["BlazeDB"]),
+        .library(
+            name: "BlazeDBCore",
+            targets: ["BlazeDBCore"]),
+        .executable(
+            name: "BlazeShell",
+            targets: ["BlazeShell"]),
+        .executable(
+            name: "BasicExample",
+            targets: ["BasicExample"]),
+        .executable(
+            name: "BlazeDoctor",
+            targets: ["BlazeDoctor"]),
+        .executable(
+            name: "BlazeDump",
+            targets: ["BlazeDump"]),
+        .executable(
+            name: "BlazeInfo",
+            targets: ["BlazeInfo"]),
+        .executable(
+            name: "BlazeDBBenchmarks",
+            targets: ["BlazeDBBenchmarks"]),
+        .executable(
+            name: "HelloBlazeDB",
+            targets: ["HelloBlazeDB"]),
+        .executable(
+            name: "ReferenceConsumer",
+            targets: ["ReferenceConsumer"])
+    ],
+    dependencies: [
+        // Core OSS dependency set only. Distributed transport dependencies
+        // (for example BlazeTransport) are intentionally deferred.
+        .package(url: "https://github.com/apple/swift-crypto.git", from: "3.0.0"),
+    ],
+    targets: blazeTargets
 )

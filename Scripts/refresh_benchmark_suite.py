@@ -578,17 +578,17 @@ def main() -> int:
     gc_steps = [
         StepResult(
             name="gc_mark_reuse",
-            command='swift test --scratch-path "/tmp/blazedb-test-scratch" --filter "BlazeDB_Tier1Extended.PageGCTests/testPageGC_MarkAndReuse"',
+            command='swift test --scratch-path "/tmp/blazedb-test-scratch" --filter "BlazeDB_Tier2_Extended.PageGCTests/testPageGC_MarkAndReuse"',
             status="pending",
         ),
         StepResult(
             name="gc_multiple_pages",
-            command='swift test --scratch-path "/tmp/blazedb-test-scratch" --filter "BlazeDB_Tier1Extended.PageGCTests/testPageGC_MultiplePages"',
+            command='swift test --scratch-path "/tmp/blazedb-test-scratch" --filter "BlazeDB_Tier2_Extended.PageGCTests/testPageGC_MultiplePages"',
             status="pending",
         ),
         StepResult(
             name="gc_reuse_rate",
-            command='swift test --scratch-path "/tmp/blazedb-test-scratch" --filter "BlazeDB_Tier1Extended.PageGCTests/testPageGC_ReuseRate"',
+            command='swift test --scratch-path "/tmp/blazedb-test-scratch" --filter "BlazeDB_Tier2_Extended.PageGCTests/testPageGC_ReuseRate"',
             status="pending",
         ),
     ]

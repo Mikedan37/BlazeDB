@@ -1,7 +1,7 @@
-# Weekly / manual legacy depth lanes: extended + perf (pre-PR3 reclassification).
+# Weekly / manual deeper validation lane (pre-PR4 naming cleanup).
 # See Docs/Testing/CI_AND_TEST_TIERS.md
 
-name: Tier1 legacy depth
+name: Tier2/Tier3 heavy depth (transitional companions)
 
 on:
   schedule:
@@ -20,7 +20,7 @@ env:
 
 jobs:
   tier1-depth-macos:
-    name: macOS 15 — Tier1Extended + Tier1Perf (legacy)
+    name: macOS 15 — Tier2 + Tier3_Heavy (with companions)
     runs-on: macos-15
     timeout-minutes: 240
 
@@ -41,16 +41,17 @@ jobs:
       - name: Prepare CI log directories
         run: mkdir -p .logs .artifacts
 
-      - name: Test Tier 1 extended
+      - name: Test Tier 2 (+ transitional extended companion)
         run: |
           set -euo pipefail
-          swift test --filter BlazeDB_Tier1Extended 2>&1 | tee .logs/tier1extended.log
+          swift test --filter BlazeDB_Tier2 2>&1 | tee .logs/tier2.log
+          swift test --filter BlazeDB_Tier2_Extended 2>&1 | tee .logs/tier2-extended.log
 
-      # Rebuild Tier1Perf (see nightly.yml — avoid --skip-build after Tier1Extended-only build).
-      - name: Test Tier 1 perf
+      - name: Test Tier 3 heavy (+ transitional perf companion)
         run: |
           set -euo pipefail
-          swift test --filter BlazeDB_Tier1Perf 2>&1 | tee .logs/tier1perf.log
+          swift test --filter BlazeDB_Tier3_Heavy 2>&1 | tee .logs/tier3-heavy.log
+          swift test --filter BlazeDB_Tier3_Heavy_Perf 2>&1 | tee .logs/tier3-heavy-perf.log
 
       - name: Dump diagnostics on failure
         if: failure()

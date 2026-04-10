@@ -6,7 +6,7 @@
       "status": "pass",
       "seconds": 29.484593417,
       "summary": "Executed 1 test, with 0 failures",
-      "command": "swift test --scratch-path \"/tmp/blazedb-test-scratch\" --filter \"BlazeDB_Tier1Extended.PageGCTests/testPageGC_MarkAndReuse\"",
+      "command": "swift test --scratch-path \"/tmp/blazedb-test-scratch\" --filter \"BlazeDB_Tier2_Extended.PageGCTests/testPageGC_MarkAndReuse\"",
       "log_file": "Docs/Benchmarks/logs/gc-mark-reuse.log"
     },
     {
@@ -14,7 +14,7 @@
       "status": "pass",
       "seconds": 1.384882375,
       "summary": "Executed 1 test, with 0 failures",
-      "command": "swift test --scratch-path \"/tmp/blazedb-test-scratch\" --filter \"BlazeDB_Tier1Extended.PageGCTests/testPageGC_MultiplePages\"",
+      "command": "swift test --scratch-path \"/tmp/blazedb-test-scratch\" --filter \"BlazeDB_Tier2_Extended.PageGCTests/testPageGC_MultiplePages\"",
       "log_file": "Docs/Benchmarks/logs/gc-multiple-pages.log"
     },
     {
@@ -22,7 +22,7 @@
       "status": "pass",
       "seconds": 1.365081166999996,
       "summary": "Executed 1 test, with 0 failures",
-      "command": "swift test --scratch-path \"/tmp/blazedb-test-scratch\" --filter \"BlazeDB_Tier1Extended.PageGCTests/testPageGC_ReuseRate\"",
+      "command": "swift test --scratch-path \"/tmp/blazedb-test-scratch\" --filter \"BlazeDB_Tier2_Extended.PageGCTests/testPageGC_ReuseRate\"",
       "log_file": "Docs/Benchmarks/logs/gc-reuse-rate.log"
     },
     {

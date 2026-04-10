@@ -16,8 +16,8 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
-  nightly-macos-tier1-depth:
-    name: macOS 15 — Tier1 depth
+  nightly-macos-tier3-heavy:
+    name: macOS 15 — Tier3 Heavy (+ perf companion, transitional)
     runs-on: macos-15
     timeout-minutes: 240
 
@@ -48,17 +48,11 @@ jobs:
       - name: Prepare CI log directories
         run: mkdir -p .logs .artifacts
 
-      - name: Test Tier 1 extended
+      - name: Test Tier 3 heavy (+ transitional perf companion)
         run: |
           set -euo pipefail
-          swift test --filter BlazeDB_Tier1Extended 2>&1 | tee .logs/tier1extended.log
-
-      # Do not use --skip-build here: Tier1Perf is not built by the prior Tier1Extended-only
-      # step, so a cached test bundle can run against stale library code.
-      - name: Test Tier 1 perf
-        run: |
-          set -euo pipefail
-          swift test --filter BlazeDB_Tier1Perf 2>&1 | tee .logs/tier1perf.log
+          swift test --filter BlazeDB_Tier3_Heavy 2>&1 | tee .logs/tier3-heavy.log
+          swift test --filter BlazeDB_Tier3_Heavy_Perf 2>&1 | tee .logs/tier3-heavy-perf.log
 
       - name: Dump diagnostics on failure
         if: failure()
@@ -69,11 +63,11 @@ jobs:
           swift --version > .logs/swift-version.txt 2>&1 || true
           xcodebuild -version > .logs/xcode-version.txt 2>&1 || true
 
-      - name: Upload nightly macOS Tier1 depth logs
+      - name: Upload nightly macOS Tier3 heavy logs
         if: always()
         uses: actions/upload-artifact@v5
         with:
-          name: nightly-macos-tier1-depth-logs
+          name: nightly-macos-tier3-heavy-logs
           path: |
             .logs/
             .artifacts/

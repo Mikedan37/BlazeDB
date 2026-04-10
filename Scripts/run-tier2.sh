@@ -28,7 +28,10 @@ ARTIFACT_DIR=".artifacts/integration/${RUN_ID}"
 mkdir -p "$ARTIFACT_DIR"
 set +e
 python3 ./Scripts/verify_execution_coverage.py --target BlazeDB_Tier2 --artifact-dir "$ARTIFACT_DIR" --allowed-missing 0 --num-workers 2
-rc=$?
+rc_main=$?
+python3 ./Scripts/verify_execution_coverage.py --target BlazeDB_Tier2_Extended --artifact-dir "$ARTIFACT_DIR" --allowed-missing 0 --num-workers 2
+rc_extended=$?
+rc=$(( rc_main != 0 ? rc_main : rc_extended ))
 set -e
 if [[ "$rc" -ne 0 ]]; then
   if [[ "$STRICT_MODE" == "1" ]]; then

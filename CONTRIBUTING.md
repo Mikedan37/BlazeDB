@@ -39,7 +39,7 @@ swift test --filter BlazeDB_Tier0
 
 **Canonical Tier1 gate — `BlazeDB_Tier1`:** `BlazeDBTests/Tier1Core/` — deterministic correctness; no `measure()`, no timing-dependent sleeps, no benchmark-shaped workloads.
 
-**Legacy pre-PR3 targets still present:** `BlazeDB_Tier1Extended` and `BlazeDB_Tier1Perf` remain in the repo pending semantic reclassification; they are not additional canonical Tier1 targets.
+`BlazeDB_Tier1Extended` and `BlazeDB_Tier1Perf` target names were retired; their suites now run under Tier2/Tier3 ownership via **transitional companion targets** (`BlazeDB_Tier2_Extended`, `BlazeDB_Tier3_Heavy_Perf`) pending PR4 normalization.
 
 **What goes in the fast lane:**
 - Core contracts that must stay green on every PR (persistence/security/features) without heavy timing or perf noise
@@ -54,17 +54,19 @@ swift test --filter BlazeDB_Tier0
 ./Scripts/run-tier1-depth.sh
 ```
 
-### Tier 2: Integration/Recovery (`BlazeDB_Tier2`)
+### Tier 2: Integration/Recovery (`BlazeDB_Tier2`, `BlazeDB_Tier2_Extended`)
 
 **Location:** `BlazeDBTests/Tier2Integration/`
+`BlazeDB_Tier2_Extended` is transitional (PR3 bridge), not an additional canonical tier.
 
 **What goes here:**
 - Integration, recovery, cross-feature interactions
 - Longer-running scenarios
 
-### Tier 3: Heavy/Destructive (`BlazeDB_Tier3_Heavy`, `BlazeDB_Tier3_Destructive`)
+### Tier 3: Heavy/Destructive (`BlazeDB_Tier3_Heavy`, `BlazeDB_Tier3_Heavy_Perf`, `BlazeDB_Tier3_Destructive`)
 
 **Location:** `BlazeDBTests/Tier3Heavy/`, `BlazeDBTests/Tier3Destructive/`
+`BlazeDB_Tier3_Heavy_Perf` is transitional (PR3 bridge), not an additional canonical tier.
 
 **What goes here:**
 - Stress/fuzz/performance and destructive fault-injection
@@ -79,11 +81,11 @@ swift test --filter BlazeDB_Tier0
 **Ask yourself:**
 - Does this test validate fast deterministic gate behavior? → Tier 0
 - Does this test validate deeper core contracts without measure/sleep/stress? → Tier 1 (`BlazeDB_Tier1`)
-- Does it use `measure()`, fixed sleeps, sync integration, or large-N stress? → legacy pre-PR3 Tier1Extended/Tier1Perf lanes (`BlazeDB_Tier1Extended` / `BlazeDB_Tier1Perf`)
+- Does it use `measure()`, fixed sleeps, sync integration, or large-N stress? → Tier2 or Tier3 Heavy (depending on test intent)
 - Does this test validate integration/recovery scenarios? → Tier 2
 - Does this test belong to heavy/destructive/manual lanes? → Tier 3
 
-**When in doubt, start in Tier 1; move to legacy Tier1Extended/Tier1Perf only when required until PR3 reclassification lands.**
+**When in doubt, start in Tier 1; move to Tier2/Tier3 Heavy only when required by test intent.**
 
 ### Step 2: Write Test
 
@@ -95,7 +97,7 @@ swift test --filter BlazeDB_Tier0
 
 **For Tier 1 tests:**
 - Canonical lane (`BlazeDB_Tier1`): default PR gate; avoid `measure()`, fixed sleeps, and stress-scale workloads.
-- Legacy pre-PR3 lanes (`BlazeDB_Tier1Extended`, `BlazeDB_Tier1Perf`) still exist but are pending reclassification.
+- Deeper integration/recovery belongs in `BlazeDB_Tier2` / `BlazeDB_Tier2_Extended`; perf/stress belongs in `BlazeDB_Tier3_Heavy` / `BlazeDB_Tier3_Heavy_Perf`.
 - May test edge cases; use public APIs freely unless you intentionally need internals.
 
 **For Tier 2 tests:**
@@ -109,11 +111,11 @@ swift test --filter BlazeDB_Tier0
 
 ### Step 3: Wire the test target
 
-- **Tier 0 / Tier 1 (`BlazeDB_Tier1`) / legacy pre-PR3 Tier1Extended/Tier1Perf / Tier 2 / Tier 3 / `BlazeDB_Staging`:** declared in root `Package.swift`.
+- **Tier 0 / Tier 1 (`BlazeDB_Tier1`) / Tier 2 / Tier 3 / `BlazeDB_Staging`:** declared in root `Package.swift`.
 - **`DistributedSecuritySPMTests`:** remains declared in `BlazeDBExtraTests/Package.swift` (nested package).
 
 Place test files under the correct `BlazeDBTests/...` paths; target names remain:
-- `BlazeDB_Tier0`, `BlazeDB_Tier1`, `BlazeDB_Tier1Extended`, `BlazeDB_Tier1Perf`, `BlazeDB_Tier2`, `BlazeDB_Tier3_Heavy`, `BlazeDB_Tier3_Destructive` (root package)
+- `BlazeDB_Tier0`, `BlazeDB_Tier1`, `BlazeDB_Tier2`, `BlazeDB_Tier2_Extended`, `BlazeDB_Tier3_Heavy`, `BlazeDB_Tier3_Heavy_Perf`, `BlazeDB_Tier3_Destructive` (root package)
 - `DistributedSecuritySPMTests` (extra package)
 
 ---
