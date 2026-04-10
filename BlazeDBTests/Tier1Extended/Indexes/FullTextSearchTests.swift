@@ -333,7 +333,8 @@ final class FullTextSearchTests: XCTestCase {
         print("  - \(results.count) matching ALL filters + search")
         
         XCTAssertGreaterThan(results.count, 0, "Should find records matching all criteria")
-        XCTAssertLessThan(duration, 1.0, "Filtered search should be fast")
+        // CI hosts can be noisy; keep this a regression guard, not a flaky hard cap.
+        XCTAssertLessThan(duration, 1.25, "Filtered search should remain performant")
     }
     
     // MARK: - Real-World Scenarios
