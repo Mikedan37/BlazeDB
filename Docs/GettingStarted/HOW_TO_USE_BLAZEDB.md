@@ -29,9 +29,10 @@ If you need multiple processes writing to the same database, BlazeDB is not the 
 
 ## 2. Quick Start
 
-BlazeDB has three public API tiers:
+BlazeDB has several API tiers:
 
-- **Typed (recommended):** `BlazeStorable` + `db.typed(T.self)`
+- **Direct CRUD (recommended):** `BlazeStorable` + `db.insert(model)` / `db.fetch(T.self, id:)` / `db.query(T.self)`
+- **TypedStore (optional):** `db.typed(T.self)` — scoped handle for view models / service layers
 - **Raw explicit:** `BlazeDataRecord` + string-field query builder
 - **Manual mapping:** `BlazeDocument` with `toStorage()` / `init(from:)`
 
@@ -46,14 +47,13 @@ struct Counter: BlazeStorable {
 
 // Open database (creates if needed, always encrypted)
 let db = try BlazeDBClient.open(named: "myapp", password: "your-secure-password")
-let counters = db.typed(Counter.self)
 
-// Insert typed records
-try counters.insert(Counter(name: "Alice", count: 10))
-try counters.insert(Counter(name: "Bob", count: 20))
+// Insert
+try db.insert(Counter(name: "Alice", count: 10))
+try db.insert(Counter(name: "Bob", count: 20))
 
 // Query with KeyPaths
-let results = try counters.query()
+let results = try db.query(Counter.self)
     .where(\.count, greaterThan: 15)
     .all()
 

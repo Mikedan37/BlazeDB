@@ -257,37 +257,18 @@ let package = Package(
         // Linux support available (implicit when not specified)
     ],
     products: [
-        // Umbrella library — re-exports BlazeDBCore
+        // Default app-developer library. Most consumers should depend on this.
         .library(
             name: "BlazeDB",
             targets: ["BlazeDB"]),
+        // Advanced / lower-level core module. Use only if you need the implementation
+        // module name directly (e.g. for test targets or core-only embedding).
         .library(
             name: "BlazeDBCore",
             targets: ["BlazeDBCore"]),
-        .executable(
-            name: "BlazeShell",
-            targets: ["BlazeShell"]),
-        .executable(
-            name: "BasicExample",
-            targets: ["BasicExample"]),
-        .executable(
-            name: "BlazeDoctor",
-            targets: ["BlazeDoctor"]),
-        .executable(
-            name: "BlazeDump",
-            targets: ["BlazeDump"]),
-        .executable(
-            name: "BlazeInfo",
-            targets: ["BlazeInfo"]),
-        .executable(
-            name: "BlazeDBBenchmarks",
-            targets: ["BlazeDBBenchmarks"]),
-        .executable(
-            name: "HelloBlazeDB",
-            targets: ["HelloBlazeDB"]),
-        .executable(
-            name: "ReferenceConsumer",
-            targets: ["ReferenceConsumer"])
+        // Tool / example / benchmark executable targets remain in the package for local
+        // `swift run` but are not published as products — they are not intended as
+        // downstream SwiftPM dependencies. See CHANGELOG.md for the migration note.
     ],
     dependencies: [
         // Core OSS dependency set only. Distributed transport dependencies

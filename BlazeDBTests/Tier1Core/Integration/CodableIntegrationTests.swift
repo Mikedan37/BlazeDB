@@ -138,6 +138,57 @@ final class CodableIntegrationTests: XCTestCase {
         XCTAssertNil(fetched)
     }
     
+    func testTypedDeleteByModel() throws {
+        let bug = SimpleBug(title: "Typed Delete", priority: 7)
+        _ = try requireFixture(db).insert(bug)
+        
+        XCTAssertNotNil(try requireFixture(db).fetch(SimpleBug.self, id: bug.id))
+        
+        try requireFixture(db).delete(bug)
+        
+        XCTAssertNil(try requireFixture(db).fetch(SimpleBug.self, id: bug.id))
+    }
+    
+    func testTypedDeleteByModelAsync() async throws {
+        let client = try requireFixture(db)
+        let bug = SimpleBug(title: "Async Typed Delete", priority: 4)
+        _ = try await client.insert(bug)
+        
+        let before = try await client.fetch(SimpleBug.self, id: bug.id)
+        XCTAssertNotNil(before)
+        
+        try await client.delete(bug)
+        
+        let after = try await client.fetch(SimpleBug.self, id: bug.id)
+        XCTAssertNil(after)
+    }
+    
+    // MARK: - Direct CRUD Golden Path
+    
+    func testDirectCRUDGoldenPath() throws {
+        let db = try requireFixture(self.db)
+        
+        var user = SimpleBug(title: "Alice", priority: 5)
+        try db.insert(user)
+        
+        let fetched = try db.fetch(SimpleBug.self, id: user.id)
+        XCTAssertEqual(fetched?.title, "Alice")
+        
+        let all = try db.fetchAll(SimpleBug.self)
+        XCTAssertTrue(all.contains { $0.id == user.id })
+        
+        user.title = "Alice (updated)"
+        user.priority = 9
+        try db.update(user)
+        XCTAssertEqual(try db.fetch(SimpleBug.self, id: user.id)?.title, "Alice (updated)")
+        
+        let wasInsert = try db.upsert(user)
+        XCTAssertFalse(wasInsert)
+        
+        try db.delete(user)
+        XCTAssertNil(try db.fetch(SimpleBug.self, id: user.id))
+    }
+    
     // MARK: - Complex Types
     
     func testComplexCodableType() throws {

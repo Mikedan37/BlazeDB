@@ -31,7 +31,8 @@ An encrypted, embedded document database for Swift. Single-process, zero externa
 
 | Tier | API | Use case |
 |------|-----|----------|
-| **Typed (recommended)** | `BlazeStorable` + `db.typed(T.self)` | Codable models, KeyPath queries |
+| **Direct CRUD (recommended)** | `BlazeStorable` + `db.insert(model)` / `db.fetch(T.self, id:)` | Codable models, most app code |
+| **TypedStore (optional)** | `db.typed(T.self)` → scoped handle | View models, service layers that want a bound store |
 | **Raw** | `BlazeDataRecord` + `db.insert(record)` | Dynamic schemas, migrations |
 | **Manual mapping** | `BlazeDocument` | Custom storage control, `@BlazeQueryTyped` |
 
@@ -58,19 +59,21 @@ struct User: BlazeStorable {
 }
 
 let db = try BlazeDBClient.open(named: "myapp", password: "MyApp-Password-2026A!")
-let users = db.typed(User.self)
 
 // Insert
-try users.insert(User(name: "Alice", age: 30, active: true))
+try db.insert(User(name: "Alice", age: 30, active: true))
 
-// Query with KeyPaths
-let activeUsers = try users.query()
-    .where(\.active, equals: true)
-    .all()
+// Fetch one
+let alice = try db.fetch(User.self, id: aliceId)
 
 // Fetch all
-let everyone = try users.fetchAll()
+let everyone = try db.fetchAll(User.self)
 print("Users: \(everyone.count)")
+
+// Query with KeyPaths
+let activeUsers = try db.query(User.self)
+    .where(\.active, equals: true)
+    .all()
 
 try db.close()
 ```
@@ -106,13 +109,13 @@ Or in Xcode: **File → Add Package Dependencies** → paste `https://github.com
 
 ### Single-collection architecture
 
-BlazeDB stores all records in one encrypted document collection per database file. When you call `db.typed(User.self)`, you get a typed lens (a `TypedStore<User>`) — not a separate physical table. The typed store encodes/decodes through the `BlazeStorable` Codable bridge and filters records by decodability.
+BlazeDB stores all records in one encrypted document collection per database file. All typed APIs (`db.insert(model)`, `db.typed(T.self)`, etc.) encode/decode through the `BlazeStorable` Codable bridge and filter records by decodability — they are not separate physical tables.
 
 ### Two typed protocols
 
 | Protocol | Purpose | Used with |
 |----------|---------|-----------|
-| **`BlazeStorable`** | Automatic Codable serialization, KeyPath queries | `TypedStore`, `db.typed(T.self)` |
+| **`BlazeStorable`** | Automatic Codable serialization, KeyPath queries | `db.insert(model)`, `db.fetch(T.self, id:)`, `db.query(T.self)`, `db.typed(T.self)` |
 | **`BlazeDocument`** | Manual `toStorage()`/`init(from:)` mapping, more control | `@BlazeQueryTyped` SwiftUI wrapper |
 
 `BlazeStorable` is the recommended starting point. `BlazeDocument` is for when you need manual control over how your model maps to `BlazeDataRecord` storage. Both require `Codable` and `Identifiable` with `ID == UUID`.
@@ -129,26 +132,33 @@ The production runtime is always encrypted at rest. Every data page is sealed wi
 
 ## API Overview
 
-### TypedStore (recommended)
+### Direct CRUD (recommended)
 
-`TypedStore<T>` provides full CRUD and query operations bound to a single `BlazeStorable` model type:
+Call typed methods directly on `BlazeDBClient`:
 
 ```swift
-let users = db.typed(User.self)
+try db.insert(user)                              // Insert one
+try db.insertMany([user1, user2])                // Insert batch
+let user = try db.fetch(User.self, id: userId)   // Fetch by UUID
+let all = try db.fetchAll(User.self)             // Fetch all
+try db.update(user)                              // Update by id
+try db.upsert(user)                              // Insert or update
+try db.delete(user)                              // Delete by model
 
-try users.insert(user)                          // Insert one
-try users.insertMany([user1, user2])             // Insert batch
-let user = try users.fetch(id)                   // Fetch by UUID
-let all = try users.fetchAll()                   // Fetch all
-try users.update(user)                           // Update by id
-try users.upsert(user)                           // Insert or update
-try users.delete(id)                             // Delete by id
-let count = try users.count()                    // Count all
-
-let results = try users.query()
+let results = try db.query(User.self)
     .where(\.age, greaterThanOrEqual: 21)
     .orderBy(\.name, descending: false)
     .all()
+```
+
+### TypedStore (optional)
+
+`TypedStore<T>` wraps the same operations into a scoped handle, useful when you want to pass a "users store" to a view model:
+
+```swift
+let users = db.typed(User.self)
+try users.insert(user)
+let all = try users.fetchAll()
 ```
 
 ### Raw API
