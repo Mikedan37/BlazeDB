@@ -1,7 +1,7 @@
-# Weekly / manual deeper validation lane (pre-PR4 naming cleanup).
+# Weekly / manual depth validation lane.
 # See Docs/Testing/CI_AND_TEST_TIERS.md
 
-name: Tier2/Tier3 heavy depth (transitional companions)
+name: Depth validation (Tier2/Tier3 companions)
 
 on:
   schedule:
@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: tier1-depth-${{ github.workflow }}-${{ github.ref }}
+  group: depth-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 permissions:
@@ -19,7 +19,7 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
-  tier1-depth-macos:
+  depth-macos:
     name: macOS 15 — Tier2 + Tier3_Heavy (with companions)
     runs-on: macos-15
     timeout-minutes: 240
@@ -62,11 +62,11 @@ jobs:
           swift --version > .logs/swift-version.txt 2>&1 || true
           xcodebuild -version > .logs/xcode-version.txt 2>&1 || true
 
-      - name: Upload tier1-depth macOS logs
+      - name: Upload depth macOS logs
         if: always()
         uses: actions/upload-artifact@v5
         with:
-          name: tier1-depth-macos-logs
+          name: depth-macos-logs
           path: |
             .logs/
             .artifacts/

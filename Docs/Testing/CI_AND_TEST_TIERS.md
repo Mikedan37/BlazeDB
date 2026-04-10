@@ -13,7 +13,7 @@ Use this table for day-to-day expectations.
 | Lane | Goal | Trigger | Blocking | Current workflow(s) |
 | ---- | ---- | ------- | -------- | ------------------- |
 | PR fast gate | Catch obvious breakage quickly | `pull_request`, `push` | Yes | `ci.yml` |
-| Tier1 depth | Broader Tier1 confidence | Weekly + manual | No | `tier1-depth.yml` |
+| Depth validation | Tier2/Tier3 confidence | Weekly + manual | No | `tier1-depth.yml` |
 | Release validation | Validate tagged releases | `v*` tag + manual | Release-only | `release.yml` |
 | Tag probe | Check older tags still build | Manual | No | `tag-probe.yml` |
 
@@ -47,7 +47,7 @@ Use this table for day-to-day expectations.
 
 - `.github/workflows/tier1-depth.yml`
 - Trigger: **weekly schedule** and **manual** (`workflow_dispatch`)
-- Runs `BlazeDB_Tier2` + `BlazeDB_Tier2_Extended` and `BlazeDB_Tier3_Heavy` + `BlazeDB_Tier3_Heavy_Perf` (legacy workflow name retained pending PR4 cleanup).
+- Runs `BlazeDB_Tier2` + `BlazeDB_Tier2_Extended` and `BlazeDB_Tier3_Heavy` + `BlazeDB_Tier3_Heavy_Perf`.
 
 - `.github/workflows/nightly.yml`
 - Trigger: **daily schedule** and **manual** (`workflow_dispatch`)
@@ -99,7 +99,7 @@ Use this table for day-to-day expectations.
 ## Tier Purposes
 
 - **Canonical targets (end-state taxonomy):** `BlazeDB_Tier0`, `BlazeDB_Tier1`, `BlazeDB_Tier2`, `BlazeDB_Tier3_Heavy`, `BlazeDB_Tier3_Destructive`.
-- **PR3 transitional companions (temporary, pending PR4 normalization):** `BlazeDB_Tier2_Extended`, `BlazeDB_Tier3_Heavy_Perf`.
+- **Transitional companion targets (temporary, pending filesystem/target normalization):** `BlazeDB_Tier2_Extended`, `BlazeDB_Tier3_Heavy_Perf`.
 
 - `BlazeDB_Tier0`
 - Fast deterministic correctness gate for PRs and local preflight.
@@ -130,8 +130,8 @@ Use precise language so status and dashboards do not blur the PR gate with deepe
 | -------- | ------- |
 | **Tier1 PR gate** / **Tier1** | `BlazeDB_Tier1` only—the default blocking Tier1 lane on PRs. |
 | **Canonical tiers** | `BlazeDB_Tier0`, `BlazeDB_Tier1`, `BlazeDB_Tier2`, `BlazeDB_Tier3_Heavy`, `BlazeDB_Tier3_Destructive` (end-state model). |
-| **PR3 transitional companions** | `BlazeDB_Tier2_Extended`, `BlazeDB_Tier3_Heavy_Perf`; temporary bridge targets slated for PR4 filesystem/target normalization. |
-| **Depth lane** | `tier1-depth.yml` currently runs `BlazeDB_Tier2` + `BlazeDB_Tier2_Extended` + `BlazeDB_Tier3_Heavy` + `BlazeDB_Tier3_Heavy_Perf` (workflow filename kept for compatibility until PR4). |
+| **Transitional companions** | `BlazeDB_Tier2_Extended`, `BlazeDB_Tier3_Heavy_Perf`; temporary bridge targets until filesystem/target normalization collapses them. |
+| **Depth lane** | `tier1-depth.yml` runs `BlazeDB_Tier2` + `BlazeDB_Tier2_Extended` + `BlazeDB_Tier3_Heavy` + `BlazeDB_Tier3_Heavy_Perf`. |
 | **Nightly confidence lane** | `nightly.yml`: root-owned Tier1, Tier2 strict (`BlazeDB_Tier2` + `BlazeDB_Tier2_Extended`), Tier3 heavy (`BlazeDB_Tier3_Heavy` + `BlazeDB_Tier3_Heavy_Perf`), verify lanes, Tier0 TSan, and Linux Tier0/Tier1. |
 | **Deep validation lane** | `deep-validation.yml`: Tier1 + Tier2/Tier2_Extended + Tier3_Heavy/Tier3_Heavy_Perf + Tier3 destructive + Tier0/Tier1 TSan + Linux Tier0/Tier1/Tier2/Tier2_Extended. |
 | **Canonical Tier1** | `BlazeDB_Tier1` (single canonical Tier1 target). |

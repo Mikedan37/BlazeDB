@@ -4,7 +4,7 @@ This artifact records the semantic reclassification performed in PR3 without fil
 
 - Scope: `BlazeDBTests/Tier1Extended/**/*.swift` and `BlazeDBTests/Tier1Perf/**/*.swift`
 - Goal: retire legacy Tier1-derived target names while preserving coverage under Tier2/Tier3 ownership
-- Transitional note: `BlazeDB_Tier2_Extended` and `BlazeDB_Tier3_Heavy_Perf` are temporary companion targets pending PR4 normalization.
+- Transitional note: `BlazeDB_Tier2_Extended` and `BlazeDB_Tier3_Heavy_Perf` are temporary companion targets pending filesystem/target normalization.
 
 | file path | old target | new target | reason |
 | --- | --- | --- | --- |
