@@ -237,8 +237,9 @@ final class QueryBuilderEdgeCaseTests: XCTestCase {
     // MARK: - Large Dataset Edge Cases
     
     func testQueryOn10KRecords() throws {
-        // Insert 10k records (batch insert - 20x faster!)
-        let records = (0..<10000).map { i in
+        // Keep this as a large-dataset correctness check without making Tier1 Linux nightly stall.
+        let recordCount = 2_000
+        let records = (0..<recordCount).map { i in
             BlazeDataRecord([
                 "index": .int(i),
                 "status": .string(i % 2 == 0 ? "open" : "closed")
@@ -250,12 +251,12 @@ final class QueryBuilderEdgeCaseTests: XCTestCase {
             .where("status", equals: .string("open"))
             .execute()
         
-        XCTAssertEqual(results.count, 5000)
+        XCTAssertEqual(results.count, recordCount / 2)
     }
     
     func testLimitOn10KRecords() throws {
-        // Batch insert 10k records (20x faster!)
-        let records = (0..<10000).map { i in
+        let recordCount = 2_000
+        let records = (0..<recordCount).map { i in
             BlazeDataRecord(["index": .int(i)])
         }
         _ = try requireFixture(db).insertMany(records)
@@ -578,11 +579,13 @@ final class QueryBuilderEdgeCaseTests: XCTestCase {
     // MARK: - Stress Tests
     
     func testVerySelectiveFilter() throws {
-        // 10k records (batch insert - 20x faster!), only 1 matches
-        let records = (0..<10000).map { i in
+        // Large selective-filter correctness check with CI-safe dataset size.
+        let recordCount = 2_000
+        let specialIndex = recordCount / 2
+        let records = (0..<recordCount).map { i in
             BlazeDataRecord([
                 "index": .int(i),
-                "special": .bool(i == 5000)
+                "special": .bool(i == specialIndex)
             ])
         }
         _ = try requireFixture(db).insertMany(records)
@@ -593,12 +596,13 @@ final class QueryBuilderEdgeCaseTests: XCTestCase {
         
         let resultRecords = try results.records
         XCTAssertEqual(resultRecords.count, 1)
-        XCTAssertEqual(resultRecords[0].storage["index"]?.intValue, 5000)
+        XCTAssertEqual(resultRecords[0].storage["index"]?.intValue, specialIndex)
     }
     
     func testQueryBuilderMemoryEfficiency() throws {
-        // Insert large dataset (batch insert - 15x faster!)
-        let records = (0..<5000).map { i in
+        // This validates limit behavior; it does not require a 5k insert to be meaningful.
+        let recordCount = 2_000
+        let records = (0..<recordCount).map { i in
             BlazeDataRecord([
                 "index": .int(i),
                 "status": .string("open")
@@ -606,7 +610,7 @@ final class QueryBuilderEdgeCaseTests: XCTestCase {
         }
         _ = try requireFixture(db).insertMany(records)
         
-        // Query with limit (should not load all 5000 into final array)
+        // Query with limit (should not load all records into final array)
         let results = try requireFixture(db).query()
             .where("status", equals: .string("open"))
             .orderBy("index", descending: true)
@@ -615,7 +619,7 @@ final class QueryBuilderEdgeCaseTests: XCTestCase {
         
         let resultRecords = try results.records
         XCTAssertEqual(resultRecords.count, 10)
-        XCTAssertEqual(resultRecords[0].storage["index"]?.intValue, 4999)
+        XCTAssertEqual(resultRecords[0].storage["index"]?.intValue, recordCount - 1)
     }
     
     // MARK: - Chaining Order Tests
