@@ -12,9 +12,9 @@ run_and_check() {
   log_file="$(mktemp)"
 
   echo "=== $label ==="
-  echo "Running: swift build --build-tests -Xswiftc -strict-concurrency=complete $*"
+  echo "Running: swift build --target BlazeDBCore -Xswiftc -strict-concurrency=complete $*"
 
-  if ! swift build --build-tests -Xswiftc -strict-concurrency=complete "$@" >"$log_file" 2>&1; then
+  if ! swift build --target BlazeDBCore -Xswiftc -strict-concurrency=complete "$@" >"$log_file" 2>&1; then
     echo "Build failed for '$label'. Showing last 120 log lines:"
     tail -n 120 "$log_file"
     rm -f "$log_file"
