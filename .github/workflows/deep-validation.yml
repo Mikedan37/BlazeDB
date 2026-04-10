@@ -31,7 +31,7 @@ jobs:
         uses: actions/cache@v5
         with:
           path: .build
-          key: deep-${{ runner.os }}-spm-${{ hashFiles('Package.swift', 'Package.resolved', 'BlazeDBExtraTests/Package.swift') }}
+          key: deep-${{ runner.os }}-spm-${{ hashFiles('Package.swift', 'Package.resolved') }}
           restore-keys: |
             deep-${{ runner.os }}-spm-
             nightly-${{ runner.os }}-spm-
@@ -59,12 +59,6 @@ jobs:
           set -euo pipefail
           swift test --skip-build --filter BlazeDB_Tier1Fast 2>&1 | tee .logs/tier1fast.log
 
-      - name: Test Tier 1 fast full (broader deterministic)
-        run: |
-          set -euo pipefail
-          cd BlazeDBExtraTests
-          swift test --filter BlazeDB_Tier1FastFull 2>&1 | tee "${GITHUB_WORKSPACE}/.logs/tier1fastfull.log"
-
       - name: Test Tier 1 extended
         run: |
           set -euo pipefail
@@ -89,7 +83,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p .logs
-          (cd BlazeDBExtraTests && swift test --filter BlazeDB_Tier3_Heavy 2>&1 | tee "${GITHUB_WORKSPACE}/.logs/tier3-heavy.log")
+          swift test --filter BlazeDB_Tier3_Heavy 2>&1 | tee .logs/tier3-heavy.log
 
       - name: Test Tier 3 destructive/fault injection
         run: |
