@@ -226,6 +226,36 @@ let package = Package(
                 .define("BLAZEDB_CORE_ONLY"),
                 .define("BLAZEDB_LINUX_CORE", .when(platforms: [.linux, .android]))
             ]
+        ),
+        // Tier 2: integration and recovery for nightly confidence/deeper validation.
+        .testTarget(
+            name: "BlazeDB_Tier2",
+            dependencies: ["BlazeDBCore"],
+            path: "BlazeDBTests/Tier2Integration/BlazeDBIntegrationTests",
+            exclude: [
+                "TelemetryIntegrationTests.swift",
+                "DistributedGCIntegrationTests.swift",
+                "DistributedGCStressTests.swift",
+                "MixedVersionSyncTests.swift",
+                "SoakStressTests.swift",
+                "DistributedGCRobustnessTests.swift",
+                "RLSEncryptionGCIntegrationTests.swift",
+                "RLSNegativeTests.swift",
+                "AdvancedConcurrencyScenarios.swift",
+                "BlazeBinaryIntegrationTests.swift",
+                "BugTrackerCompleteWorkflow.swift",
+                "AshPileRealWorldTests.swift",
+                "ExtremeIntegrationTests.swift",
+                "FeatureCombinationTests.swift",
+                "SchemaForeignKeyIntegrationTests.swift",
+                "DataConsistencyACIDTests.swift",
+                "GarbageCollectionIntegrationTests.swift",
+                "ChaosEngineeringTests.swift"
+            ],
+            swiftSettings: [
+                .define("BLAZEDB_CORE_ONLY"),
+                .define("BLAZEDB_LINUX_CORE", .when(platforms: [.linux, .android]))
+            ]
         )
     ]) + [
         // Tier 2 / Tier 3 heavy+destructive / DistributedSecurity SPM harness live under

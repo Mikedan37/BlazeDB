@@ -27,7 +27,7 @@ RUN_ID="$(date +%Y%m%d-%H%M%S)"
 ARTIFACT_DIR=".artifacts/integration/${RUN_ID}"
 mkdir -p "$ARTIFACT_DIR"
 set +e
-python3 ./Scripts/verify_execution_coverage.py --target BlazeDB_Tier2 --package-path BlazeDBExtraTests --artifact-dir "$ARTIFACT_DIR" --allowed-missing 0 --num-workers 2
+python3 ./Scripts/verify_execution_coverage.py --target BlazeDB_Tier2 --artifact-dir "$ARTIFACT_DIR" --allowed-missing 0 --num-workers 2
 rc=$?
 set -e
 if [[ "$rc" -ne 0 ]]; then
