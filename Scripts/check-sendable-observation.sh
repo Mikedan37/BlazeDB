@@ -26,9 +26,28 @@ run_and_check() {
 
   # Focused regression gate: fail if strict concurrency emits Sendable diagnostics
   # for our SwiftUI observation wrappers or the change observation core file.
-  if rg -n \
-    "(BlazeDB/SwiftUI/BlazeQuery\\.swift|BlazeDB/SwiftUI/BlazeQueryTyped\\.swift|BlazeDB/Core/ChangeObservation\\.swift):[0-9]+:[0-9]+: (warning|error): .*([sS]endable|#Sendable)" \
-    "$log_file" >"$hits_file"; then
+  if python3 - "$log_file" "$hits_file" <<'PY'
+import re
+import sys
+
+log_path, hits_path = sys.argv[1], sys.argv[2]
+pattern = re.compile(
+    r"(BlazeDB/SwiftUI/BlazeQuery\.swift|BlazeDB/SwiftUI/BlazeQueryTyped\.swift|BlazeDB/Core/ChangeObservation\.swift):\d+:\d+: (warning|error): .*([sS]endable|#Sendable)"
+)
+
+hits = []
+with open(log_path, "r", encoding="utf-8", errors="replace") as f:
+    for i, line in enumerate(f, start=1):
+        if pattern.search(line):
+            hits.append(f"{i}:{line}")
+
+if hits:
+    with open(hits_path, "w", encoding="utf-8") as out:
+        out.writelines(hits)
+    sys.exit(0)
+sys.exit(1)
+PY
+  then
     echo "Sendable regression detected in observation files:"
     cat "$hits_file"
     rm -f "$log_file" "$hits_file"
