@@ -82,7 +82,7 @@ jobs:
           set -euo pipefail
           mkdir -p .logs
           echo "Running Tier 3 heavy tests..."
-          (cd BlazeDBExtraTests && swift test --filter BlazeDB_Tier3_Heavy 2>&1 | tee "${GITHUB_WORKSPACE}/.logs/tier3-heavy.log")
+          swift test --filter BlazeDB_Tier3_Heavy 2>&1 | tee .logs/tier3-heavy.log
 
       - name: Run sanitizer tests
         if: github.event_name == 'workflow_dispatch' && inputs.run_deep_validation == true

@@ -113,12 +113,12 @@ swift test --filter BlazeDB_Tier0
 
 ### Step 3: Wire the test target
 
-- **Tier 0 / Tier 1 (`BlazeDB_Tier1Fast`, `BlazeDB_Tier1Extended`, `BlazeDB_Tier1Perf`) / `BlazeDB_Staging`:** declared in root `Package.swift`.
-- **Tier 2, Tier 3 heavy/destructive, `DistributedSecuritySPMTests`:** declared in `BlazeDBExtraTests/Package.swift` (nested package). Run them with `cd BlazeDBExtraTests && swift test …` or `./Scripts/run-tier2.sh` / `./Scripts/run-tier3.sh`.
+- **Tier 0 / Tier 1 (`BlazeDB_Tier1Fast`, `BlazeDB_Tier1Extended`, `BlazeDB_Tier1Perf`) / Tier 2 / Tier 3 / `BlazeDB_Staging`:** declared in root `Package.swift`.
+- **`DistributedSecuritySPMTests`:** remains declared in `BlazeDBExtraTests/Package.swift` (nested package).
 
 Place test files under the correct `BlazeDBTests/...` paths; target names remain:
-- `BlazeDB_Tier0`, `BlazeDB_Tier1Fast`, `BlazeDB_Tier1Extended`, `BlazeDB_Tier1Perf` (root package)
-- `BlazeDB_Tier2`, `BlazeDB_Tier3_Heavy`, `BlazeDB_Tier3_Destructive`, `DistributedSecuritySPMTests` (extra package)
+- `BlazeDB_Tier0`, `BlazeDB_Tier1Fast`, `BlazeDB_Tier1Extended`, `BlazeDB_Tier1Perf`, `BlazeDB_Tier2`, `BlazeDB_Tier3_Heavy`, `BlazeDB_Tier3_Destructive` (root package)
+- `DistributedSecuritySPMTests` (extra package)
 
 ---
 

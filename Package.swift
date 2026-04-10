@@ -226,10 +226,61 @@ let package = Package(
                 .define("BLAZEDB_CORE_ONLY"),
                 .define("BLAZEDB_LINUX_CORE", .when(platforms: [.linux, .android]))
             ]
+        ),
+        // Tier 2: integration and recovery for nightly confidence/deeper validation.
+        .testTarget(
+            name: "BlazeDB_Tier2",
+            dependencies: ["BlazeDBCore"],
+            path: "BlazeDBTests/Tier2Integration/BlazeDBIntegrationTests",
+            exclude: [
+                "TelemetryIntegrationTests.swift",
+                "DistributedGCIntegrationTests.swift",
+                "DistributedGCStressTests.swift",
+                "MixedVersionSyncTests.swift",
+                "SoakStressTests.swift",
+                "DistributedGCRobustnessTests.swift",
+                "RLSEncryptionGCIntegrationTests.swift",
+                "RLSNegativeTests.swift",
+                "AdvancedConcurrencyScenarios.swift",
+                "BlazeBinaryIntegrationTests.swift",
+                "BugTrackerCompleteWorkflow.swift",
+                "AshPileRealWorldTests.swift",
+                "ExtremeIntegrationTests.swift",
+                "FeatureCombinationTests.swift",
+                "SchemaForeignKeyIntegrationTests.swift",
+                "DataConsistencyACIDTests.swift",
+                "GarbageCollectionIntegrationTests.swift",
+                "ChaosEngineeringTests.swift"
+            ],
+            swiftSettings: [
+                .define("BLAZEDB_CORE_ONLY"),
+                .define("BLAZEDB_LINUX_CORE", .when(platforms: [.linux, .android]))
+            ]
+        ),
+        // Tier 3 heavy: stress/fuzz/perf suites used in deep validation lanes.
+        .testTarget(
+            name: "BlazeDB_Tier3_Heavy",
+            dependencies: ["BlazeDBCore"],
+            path: "BlazeDBTests/Tier3Heavy",
+            swiftSettings: [
+                .define("BLAZEDB_CORE_ONLY"),
+                .define("HEAVY_TESTS"),
+                .define("BLAZEDB_LINUX_CORE", .when(platforms: [.linux, .android]))
+            ]
+        ),
+        // Tier 3 destructive: fault-injection and destructive workflows.
+        .testTarget(
+            name: "BlazeDB_Tier3_Destructive",
+            dependencies: ["BlazeDBCore"],
+            path: "BlazeDBTests/Tier3Destructive",
+            swiftSettings: [
+                .define("BLAZEDB_CORE_ONLY"),
+                .define("DESTRUCTIVE_TESTS"),
+                .define("BLAZEDB_LINUX_CORE", .when(platforms: [.linux, .android]))
+            ]
         )
     ]) + [
-        // Tier 2 / Tier 3 heavy+destructive / DistributedSecurity SPM harness live under
-        // BlazeDBExtraTests/ (separate package) so root `swift test` does not compile them.
+        // Staging-only harness target.
         .testTarget(
             name: "BlazeDB_Staging",
             dependencies: ["BlazeDBSyncStaging", "BlazeDBTelemetryStaging"],
