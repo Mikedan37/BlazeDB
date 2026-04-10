@@ -125,11 +125,6 @@ step_test() {
     "$RUN_LOG_DIR/step2_tier1_golden.log" \
     env -i PATH="$PATH" HOME="$HOME" TERM="${TERM:-dumb}" \
     swift test --skip-build --filter BlazeDB_Tier1Fast.GoldenPathIntegrationTests
-  step_test \
-    "Combined GoldenPath filter" \
-    "$RUN_LOG_DIR/step2_combined_golden.log" \
-    env -i PATH="$PATH" HOME="$HOME" TERM="${TERM:-dumb}" \
-    swift test --skip-build --filter GoldenPathIntegrationTests
   if env -i PATH="$PATH" HOME="$HOME" TERM="${TERM:-dumb}" bash -c 'cd BlazeDBExtraTests && swift test list >/dev/null 2>&1'; then
     step_test \
       "Tier2 CrossVersion harness" \

@@ -20,3 +20,19 @@ Manual only: legacy `v*` tag release builds. Not run on push.
 ## `release.yml`
 
 Tag `v*` releases.
+
+## `nightly.yml`
+
+Daily (`schedule`) + manual (`workflow_dispatch`) nightly confidence workflow with **failure-domain isolation**.
+
+Jobs:
+
+- `macOS 15 — Tier1 depth`
+- `macOS 15 — Tier1FastFull (extra package)`
+- `macOS 15 — Tier2 strict`
+- `macOS 15 — clean-checkout verification`
+- `macOS 15 — README quickstart verification`
+- `macOS 15 — Tier0 ThreadSanitizer`
+- `Linux (Swift 6.2) — Tier0 + Tier1Fast`
+
+This split keeps nightly rerunnable by concern and avoids bundling Tier2/verify/docs into one giant macOS job.

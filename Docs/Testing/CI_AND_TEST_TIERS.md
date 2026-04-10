@@ -22,8 +22,8 @@ Use this table for day-to-day expectations.
 - Completed:
   - PR gate caching and verify-step trim in `ci.yml`
   - Tier1 PR gate reduction (`BlazeDB_Tier1Fast`) + broader deterministic lane (`BlazeDB_Tier1FastFull`)
+  - Nightly confidence split into isolated failure-domain jobs in `nightly.yml`
 - In rollout:
-  - nightly confidence lane (`nightly.yml`)
   - deep soak lane (`deep-validation.yml`)
 
 ## Workflow Inventory
@@ -51,13 +51,15 @@ Use this table for day-to-day expectations.
 
 - `.github/workflows/nightly.yml`
 - Trigger: **daily schedule** and **manual** (`workflow_dispatch`)
-- Runs medium-confidence coverage:
-  - `BlazeDB_Tier1Extended` + `BlazeDB_Tier1Perf`
-  - `BlazeDB_Tier1FastFull` (from `BlazeDBExtraTests`)
-  - Tier2 integration/recovery via `./Scripts/run-tier2.sh --strict` (blocking in nightly lane)
-  - `verify-clean-checkout.sh` and `verify-readme-quickstart.sh`
-  - ThreadSanitizer on `BlazeDB_Tier0`
-  - Linux depth run: `BlazeDB_Tier0` + `BlazeDB_Tier1Fast`
+- Runs medium-confidence coverage in **separate rerunnable jobs**:
+  - `macOS 15 — Tier1 depth`: `BlazeDB_Tier1Extended` + `BlazeDB_Tier1Perf`
+  - `macOS 15 — Tier1FastFull (extra package)`: `BlazeDB_Tier1FastFull` from `BlazeDBExtraTests`
+  - `macOS 15 — Tier2 strict`: `./Scripts/run-tier2.sh --strict` (blocking in nightly lane)
+  - `macOS 15 — clean-checkout verification`: `./Scripts/verify-clean-checkout.sh`
+  - `macOS 15 — README quickstart verification`: `./Scripts/verify-readme-quickstart.sh`
+  - `macOS 15 — Tier0 ThreadSanitizer`: `swift test --sanitize thread --filter BlazeDB_Tier0`
+  - `Linux (Swift 6.2) — Tier0 + Tier1Fast`: `BlazeDB_Tier0` + `BlazeDB_Tier1Fast`
+- `verify-clean-checkout.sh` no longer re-runs the duplicate combined GoldenPath filter.
 - **Operational policy:** nightly failures are triaged within 24–48 hours.
 
 ### Nightly stability trade-offs (documented)
@@ -135,7 +137,7 @@ Use precise language so status and dashboards do not blur the PR gate with deepe
 | -------- | ------- |
 | **Tier1 PR gate** / **T1 fast** | `BlazeDB_Tier1Fast` only—the default blocking Tier1 lane on PRs. |
 | **Tier1 depth** | `BlazeDB_Tier1Extended` + `BlazeDB_Tier1Perf` (weekly/manual `tier1-depth.yml`, or `./Scripts/run-tier1-depth.sh`). Does *not* by itself imply `BlazeDB_Tier1Fast` ran. |
-| **Nightly confidence lane** | `nightly.yml`: Tier1 depth + `BlazeDB_Tier1FastFull` + strict Tier2 + verify scripts + Tier0 TSan + Linux Tier0/Tier1Fast. |
+| **Nightly confidence lane** | `nightly.yml`: failure-domain split jobs for Tier1 depth, `BlazeDB_Tier1FastFull` (extra package), strict Tier2, clean-checkout verify, README quickstart verify, Tier0 TSan, and Linux Tier0/Tier1Fast. |
 | **Deep validation lane** | `deep-validation.yml`: full Tier1 + Tier2 + Tier3 heavy/destructive + Tier0/Tier1Fast TSan + Linux extended lane. |
 | **Full Tier1** / **Tier1 all lanes** | `BlazeDB_Tier1Fast` + `BlazeDB_Tier1FastFull` + `BlazeDB_Tier1Extended` + `BlazeDB_Tier1Perf` (broader deterministic coverage via `BlazeDBExtraTests`). |
 
