@@ -7,6 +7,7 @@ BlazeDB is not tied to SwiftUI. This guide shows one way to use it in a SwiftUI 
 Use this when: you want the fastest path to a working app.
 
 Open BlazeDB once, keep it in one app object, and pass it into your screens.
+Think of `AppDatabase` as the place your app keeps its database.
 
 ```swift
 import SwiftUI
@@ -134,10 +135,11 @@ struct Note: BlazeStorable {
 
 final class NotesStore: ObservableObject {
     private let database: AppDatabase
+    @Published var notes: [Note] = []
     init(database: AppDatabase) { self.database = database }
 
-    func loadNotes() -> [Note] {
-        (try? database.db.query("note").all()) ?? []
+    func load() {
+        notes = (try? database.db.query("note").all()) ?? []
     }
 }
 
@@ -153,6 +155,7 @@ final class TasksStore: ObservableObject {
 
 Use this when: you want cleaner dependency wiring for bigger apps and testing.
 This is optional. You do not need this for most apps.
+This is useful for large apps or testing, but most apps do not need it.
 
 ```swift
 import SwiftUI
