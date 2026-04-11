@@ -1,76 +1,38 @@
 # How to Use BlazeDB
 
-Complete reference guide. For a quick start, see [README.md](README.md).
+This guide starts where the main README leaves off.
+
+Before this guide:
+- Do the onboarding flow in [README.md](../../README.md)
+- If you are building SwiftUI, also read [SWIFTUI_DATABASE_PATTERNS.md](SWIFTUI_DATABASE_PATTERNS.md)
 
 If you are new, read this in order:
-1. Quick Start
-2. Querying Data
-3. Opening and Closing Correctly
-4. Backups, Restore, and Trust
+1. Querying Data
+2. Opening and Closing Correctly
+3. Backups, Restore, and Trust
+4. Sharp Edges
 
 ---
 
-## 1. What BlazeDB Is
+## 1. Scope of This Guide
 
-BlazeDB is an embedded database that runs inside your app. One process writes at a time. If your app crashes, committed data survives.
+This is the practical guide for day-2 usage: queries, lifecycle, backups, and production caveats.
 
-This guide prioritizes the **default shipped OSS core runtime**. Advanced/conditional surfaces (distributed sync, full telemetry path, staging features) are not the default onboarding path.
+The beginner setup and first end-to-end example are intentionally in the root README, so this file does not repeat them.
 
-**What it is:**
-- Embedded database (lives in your process)
-- Encrypted by default (AES-256-GCM)
-- Crash-safe (write-ahead logging)
-- Schemaless (no migrations required)
-- Runs on macOS, Linux, iOS, tvOS, watchOS
-
-**What it is NOT:**
-- Not distributed (no clustering)
-- Not multi-writer (one process writes)
-- Not a server database (files are local)
-- Not a replacement for Postgres (different use case)
-
-If you need multiple processes writing to the same database, BlazeDB is not the right tool.
+If you need a quick "what BlazeDB is / is not" summary, use [README.md](../../README.md).
 
 ---
 
-## 2. Quick Start
+## 2. Quick Recap (skip if you did README)
 
-BlazeDB has several API tiers:
+You will mainly use:
 
 - **Default API (recommended):** `BlazeDB.open(...)` + `db.put(...)` + `db.get(_:)` + `db.query(_:)`
 - **Direct CRUD (secondary):** `BlazeStorable` + `db.insert(model)` / `db.fetch(T.self, id:)` / `db.query(T.self)`
 - **TypedStore (secondary):** `db.typed(T.self)` — scoped handle for view models / service layers
 - **Raw explicit (advanced):** `BlazeDataRecord` + string-field query builder
 - **Manual mapping (advanced):** `BlazeDocument` with `toStorage()` / `init(from:)`
-
-```swift
-import BlazeDB
-
-struct Counter: BlazeStorable {
-    var id: UUID = UUID()
-    var name: String
-    var count: Int
-}
-
-// Open database (creates if needed, always encrypted)
-let db = try BlazeDB.open(name: "myapp", password: "your-secure-password")
-
-let alice = Counter(name: "Alice", count: 10)
-let bob = Counter(name: "Bob", count: 20)
-
-// Put / get / query
-try db.put(alice)
-try db.put(bob)
-
-let one: Counter? = try db.get("counter:\(alice.id.uuidString)")
-let results: [Counter] = try db.query("counter")
-    .where("count", equals: 20)
-    .all()
-
-print("Found \(results.count) records")
-```
-
-That's it. You have a working database.
 
 ---
 
