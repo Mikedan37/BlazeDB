@@ -32,8 +32,17 @@ def swift_test_filter_for_target(target: str) -> str:
     return target
 
 
-def run(cmd: list[str], cwd: Path, env: dict[str, str] | None = None) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(cmd, cwd=str(cwd), capture_output=True, text=True, check=False, env=env)
+def run(
+    cmd: list[str],
+    cwd: Path,
+    env: dict[str, str] | None = None,
+    *,
+    capture: bool = True,
+) -> subprocess.CompletedProcess[str] | subprocess.CompletedProcess[bytes]:
+    if capture:
+        return subprocess.run(cmd, cwd=str(cwd), capture_output=True, text=True, check=False, env=env)
+    # Stream to inherited stdout/stderr so CI logs stay live during long swift test runs.
+    return subprocess.run(cmd, cwd=str(cwd), check=False, env=env)
 
 
 def parse_discovered(text: str, target: str) -> set[str]:
@@ -83,6 +92,7 @@ def main() -> int:
 
     # SwiftPM discovery flags vary by toolchain. Prefer modern `swift test list`
     # and rely on parse_discovered() to filter by target prefix.
+    print(f">> verify_execution_coverage: discovery (swift test list) for {args.target}", flush=True)
     list_cmd = ["swift", "test", "list", "--skip-build"]
     list_proc = run(list_cmd, pkg_root)
     if list_proc.returncode != 0:
@@ -94,7 +104,7 @@ def main() -> int:
         print(f"DISCOVERY_FAILED:{args.target}", file=sys.stderr)
         return 20
 
-    discovered = parse_discovered(list_proc.stdout, args.target)
+    discovered = parse_discovered(str(list_proc.stdout), args.target)
     xunit_path = artifact_dir / f"{args.target}.xunit.xml"
     filter_expr = swift_test_filter_for_target(args.target)
     run_cmd = [
@@ -112,7 +122,11 @@ def main() -> int:
     run_env = os.environ.copy()
     if args.target == "BlazeDB_Tier0":
         run_env["BLAZEDB_TEST_SCOPE"] = "tier0"
-    run_proc = run(run_cmd, pkg_root, env=run_env)
+    print(
+        f">> verify_execution_coverage: running swift test (parallel workers={args.num_workers}) for {args.target}",
+        flush=True,
+    )
+    run_proc = run(run_cmd, pkg_root, env=run_env, capture=False)
 
     executed = parse_executed_from_xunit(xunit_path)
     missing = sorted(discovered - executed)
@@ -137,10 +151,14 @@ def main() -> int:
     out_path = artifact_dir / f"{args.target}.execution.json"
     out_path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
 
-    # First honor test execution failure.
+    # First honor test execution failure (stdout/stderr only when capture was used).
     if run_proc.returncode != 0:
-        sys.stdout.write(run_proc.stdout)
-        sys.stderr.write(run_proc.stderr)
+        out = run_proc.stdout
+        err = run_proc.stderr
+        if out:
+            sys.stdout.write(out if isinstance(out, str) else out.decode("utf-8", errors="replace"))
+        if err:
+            sys.stderr.write(err if isinstance(err, str) else err.decode("utf-8", errors="replace"))
         return run_proc.returncode
 
     if len(missing) > args.allowed_missing:
