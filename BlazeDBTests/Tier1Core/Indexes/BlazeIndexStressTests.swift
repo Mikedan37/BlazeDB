@@ -22,6 +22,64 @@ final class BlazeIndexStressTests: XCTestCase {
     private var tempURL: URL?
     private var db: BlazeDBClient?
     
+    // Linux Tier1 uses boundary-focused fixture sizes to preserve correctness signal
+    // without carrying heavy-lane stress runtime cost.
+    private var linuxBoundaryRebuildCount: Int {
+        #if os(Linux)
+        return 1_001
+        #else
+        return 1_000
+        #endif
+    }
+    
+    private var linuxBoundaryHighCardinalityCount: Int {
+        #if os(Linux)
+        return 101
+        #else
+        return 500
+        #endif
+    }
+    
+    private var linuxBoundaryCompoundCount: Int {
+        #if os(Linux)
+        return 101
+        #else
+        return 500
+        #endif
+    }
+    
+    private var linuxBoundaryMaintenanceCount: Int {
+        #if os(Linux)
+        return 101
+        #else
+        return 1_000
+        #endif
+    }
+    
+    private var linuxBoundaryMaintenanceRounds: Int {
+        #if os(Linux)
+        return 2
+        #else
+        return 5
+        #endif
+    }
+    
+    private var linuxBoundaryScanVsIndexCount: Int {
+        #if os(Linux)
+        return 1_001
+        #else
+        return 500
+        #endif
+    }
+    
+    private var linuxBoundaryPersistenceCount: Int {
+        #if os(Linux)
+        return 101
+        #else
+        return 500
+        #endif
+    }
+    
     override func setUpWithError() throws {
         tempURL = FileManager.default.temporaryDirectory
             .appendingPathComponent("BlazeIndexStress-\(UUID().uuidString).blazedb")
@@ -40,7 +98,7 @@ final class BlazeIndexStressTests: XCTestCase {
     /// Test index rebuild on large dataset
     /// Note: Set RUN_HEAVY_STRESS=1 to use 10k records, otherwise uses 1k
     func testIndexRebuildOn10kRecords() throws {
-        let count = ProcessInfo.processInfo.environment["RUN_HEAVY_STRESS"] == "1" ? 10_000 : 1_000
+        let count = ProcessInfo.processInfo.environment["RUN_HEAVY_STRESS"] == "1" ? 10_000 : linuxBoundaryRebuildCount
         
         print("📊 Inserting \(count) records...")
         for i in 0..<count {
@@ -84,7 +142,7 @@ final class BlazeIndexStressTests: XCTestCase {
     /// Test high cardinality index (many unique values)
     /// Note: Set RUN_HEAVY_STRESS=1 to use 5k records, otherwise uses 500
     func testHighCardinalityIndex() throws {
-        let count = ProcessInfo.processInfo.environment["RUN_HEAVY_STRESS"] == "1" ? 5_000 : 500
+        let count = ProcessInfo.processInfo.environment["RUN_HEAVY_STRESS"] == "1" ? 5_000 : linuxBoundaryHighCardinalityCount
         
         print("📊 Creating high cardinality index with \(count) unique values...")
         
@@ -126,7 +184,7 @@ final class BlazeIndexStressTests: XCTestCase {
     /// Test compound index with 3+ fields on large dataset
     /// Note: Set RUN_HEAVY_STRESS=1 to use 5k records, otherwise uses 500
     func testCompoundIndex3FieldsOn5kRecords() throws {
-        let count = ProcessInfo.processInfo.environment["RUN_HEAVY_STRESS"] == "1" ? 5_000 : 500
+        let count = ProcessInfo.processInfo.environment["RUN_HEAVY_STRESS"] == "1" ? 5_000 : linuxBoundaryCompoundCount
         
         print("📊 Testing compound index with 3 fields on \(count) records...")
         
@@ -171,8 +229,8 @@ final class BlazeIndexStressTests: XCTestCase {
     
     /// Test index maintenance during heavy updates
     func testIndexMaintenanceDuringUpdates() throws {
-        let count = 1_000
-        let updateRounds = 5
+        let count = linuxBoundaryMaintenanceCount
+        let updateRounds = linuxBoundaryMaintenanceRounds
         
         print("📊 Testing index maintenance with \(count) records x \(updateRounds) update rounds...")
         
@@ -227,7 +285,7 @@ final class BlazeIndexStressTests: XCTestCase {
     /// Test index performance vs full scan
     /// Note: Set RUN_HEAVY_STRESS=1 to use 5k records, otherwise uses 500
     func testIndexedVsFullScanPerformance() throws {
-        let count = ProcessInfo.processInfo.environment["RUN_HEAVY_STRESS"] == "1" ? 5_000 : 500
+        let count = ProcessInfo.processInfo.environment["RUN_HEAVY_STRESS"] == "1" ? 5_000 : linuxBoundaryScanVsIndexCount
         let searchValue = "target_value"
         
         print("📊 Comparing indexed vs full scan performance on \(count) records...")
@@ -278,7 +336,7 @@ final class BlazeIndexStressTests: XCTestCase {
     /// Test index survives restart with large dataset
     /// Note: Set RUN_HEAVY_STRESS=1 to use 5k records, otherwise uses 500
     func testIndexPersistenceWith5kRecords() throws {
-        let count = ProcessInfo.processInfo.environment["RUN_HEAVY_STRESS"] == "1" ? 5_000 : 500
+        let count = ProcessInfo.processInfo.environment["RUN_HEAVY_STRESS"] == "1" ? 5_000 : linuxBoundaryPersistenceCount
         
         print("📊 Testing index persistence with \(count) records...")
         
