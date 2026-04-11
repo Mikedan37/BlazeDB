@@ -26,9 +26,13 @@ fi
 RUN_ID="$(date +%Y%m%d-%H%M%S)"
 ARTIFACT_DIR=".artifacts/integration/${RUN_ID}"
 mkdir -p "$ARTIFACT_DIR"
+# Unbuffered Python so progress lines flush before long swift test runs.
+export PYTHONUNBUFFERED=1
 set +e
+echo ">> Tier2: starting verify_execution_coverage BlazeDB_Tier2 (swift test streams below)..."
 python3 ./Scripts/verify_execution_coverage.py --target BlazeDB_Tier2 --artifact-dir "$ARTIFACT_DIR" --allowed-missing 0 --num-workers 2
 rc_main=$?
+echo ">> Tier2: BlazeDB_Tier2 finished (exit ${rc_main}); starting BlazeDB_Tier2_Extended..."
 python3 ./Scripts/verify_execution_coverage.py --target BlazeDB_Tier2_Extended --artifact-dir "$ARTIFACT_DIR" --allowed-missing 0 --num-workers 2
 rc_extended=$?
 rc=$(( rc_main != 0 ? rc_main : rc_extended ))
