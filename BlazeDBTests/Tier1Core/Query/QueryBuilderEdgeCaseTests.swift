@@ -293,7 +293,9 @@ final class QueryBuilderEdgeCaseTests: LinuxTier1NonCryptoKDFHarness {
             .where("status", equals: .string("open"))
             .execute()
         
-        XCTAssertEqual(results.count, recordCount / 2)
+        // Sequence starts at 0, so odd dataset sizes have one extra even/open record.
+        let expectedOpenCount = (recordCount + 1) / 2
+        XCTAssertEqual(results.count, expectedOpenCount)
     }
     
     func testLimitOn10KRecords() throws {
