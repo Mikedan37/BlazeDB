@@ -1,6 +1,6 @@
 # BlazeDB
 
-**Version:** 2.7.4 &nbsp;|&nbsp; **License:** MIT &nbsp;|&nbsp; **Swift 6 strict concurrency compliant**
+**Version:** 2.7.5 &nbsp;|&nbsp; **License:** MIT &nbsp;|&nbsp; **Swift 6 strict concurrency compliant**
 
 An encrypted, embedded document database for Swift. Single-process, zero external dependencies. Production runtime is always encrypted at rest.
 
@@ -117,7 +117,7 @@ Add to your `Package.swift`:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/Mikedan37/BlazeDB.git", from: "2.7.4")
+    .package(url: "https://github.com/Mikedan37/BlazeDB.git", from: "2.7.5")
 ],
 targets: [
     .target(name: "YourApp", dependencies: ["BlazeDB"])
