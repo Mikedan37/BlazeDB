@@ -52,8 +52,8 @@ Use this table for day-to-day expectations.
 - `.github/workflows/nightly.yml`
 - Trigger: **daily schedule** and **manual** (`workflow_dispatch`)
 - Runs medium-confidence coverage in **separate rerunnable jobs**:
-  - `macOS 15 — Tier3 Heavy`: root targets `BlazeDB_Tier3_Heavy` + `BlazeDB_Tier3_Heavy_Perf`
-  - `macOS 15 — Tier1`: `swift test --filter BlazeDB_Tier1`
+  - `macOS 15 — Tier3 Heavy (quarantined, non-blocking)`: root targets `BlazeDB_Tier3_Heavy` + `BlazeDB_Tier3_Heavy_Perf`
+  - `macOS 15 — Tier1`: root target `BlazeDB_Tier1`
   - `macOS 15 — Tier2 strict`: root targets `BlazeDB_Tier2` + `BlazeDB_Tier2_Extended` via `./Scripts/run-tier2.sh --strict` (blocking in nightly lane)
   - `macOS 15 — clean-checkout verification`: `./Scripts/verify-clean-checkout.sh`
   - `macOS 15 — README quickstart verification`: `./Scripts/verify-readme-quickstart.sh`
@@ -63,12 +63,14 @@ Use this table for day-to-day expectations.
   - `Linux (Swift 6.2) — Tier2 (+ extended)`: `BlazeDB_Tier2` + `BlazeDB_Tier2_Extended` (Linux-only nightly job; deeper suites)
   - `Linux (Swift 6.2) — Tier3 heavy (+ perf)`: `BlazeDB_Tier3_Heavy` + `BlazeDB_Tier3_Heavy_Perf` (Linux-only nightly job)
 - Nightly confidence lanes are root-owned and do not depend on `BlazeDBExtraTests`.
+- Temporary quarantine policy (current): `macOS 15 — Tier3 Heavy` is non-blocking in nightly due to cumulative profiling-load instability; lane remains monitored and includes automated post-failure diagnostics.
 - **Operational policy:** nightly failures are triaged within 24–48 hours.
 
-### Nightly Tier3 policy (blocking vs follow-up quarantine)
+### Nightly Tier3 policy
 
-- **As of this doc:** `nightly-macos-tier3-heavy` and `nightly-linux-tier3-heavy` are ordinary blocking jobs (red Tier3 fails the run).
-- **If you introduce Tier3 quarantine** (non-blocking, `continue-on-error`, or a separate workflow): land it in a **dedicated PR** and update **this section** and the **Tier3 comments in `nightly.yml`** in the same change-set so YAML and docs stay aligned. Avoid a long gap where lane layout has merged but Tier3 policy text is stale.
+- **`nightly-macos-tier3-heavy`:** quarantined — `continue-on-error: true` in `nightly.yml`; a red Tier3 step does **not** fail the overall nightly workflow; logs and diagnostics still upload.
+- **`nightly-linux-tier3-heavy`:** blocking — a red step fails the workflow (Linux depth lane).
+- Any change to either policy should update **this file** and **`nightly.yml`** together so the two stay aligned.
 
 ### Nightly stability trade-offs (documented)
 
@@ -127,6 +129,85 @@ Use this table for day-to-day expectations.
 - `BlazeDB_Tier3_Heavy_Perf` is a **transitional companion target** containing reclassified legacy Tier1Perf suites under Tier3 ownership.
 - Declared in root `Package.swift`; run via `swift test --filter BlazeDB_Tier3_Heavy` or `./Scripts/run-tier3.sh`.
 - Manual/explicit use only; never default PR gate.
+
+## Lane Contract And Budget Enforcement Policy
+
+This section defines the behavioral contract for each lane. If observed behavior and lane name diverge, **behavior wins** and the test must move.
+
+### Lane definitions (required semantics)
+
+| Lane class | Purpose | Typical content | Not allowed |
+| ---- | ---- | ---- | ---- |
+| Tier1 fast signal | Fast breakage detection for PR feedback | Deterministic logic/invariant/regression checks with small fixtures | Long-running data/query/persistence/recovery or stress behavior |
+| Extended / Integration | Heavier correctness across realistic data and storage behavior | Query-heavy integration, persistence/recovery, larger fixtures, cross-component flows | Destructive/fault-injection and benchmark-like stress |
+| Perf / Stress | Long-running, scale-sensitive, destructive, or benchmark-adjacent behavior | High-cardinality datasets, soak runs, fuzz/stress, fault injection | Blocking fast-signal expectations |
+
+### Hard budgets
+
+These budgets are enforced as lane contracts, not suggestions.
+
+| Budget type | Tier1 fast signal | Extended / Integration | Perf / Stress |
+| ---- | ---- | ---- | ---- |
+| Lane total wall clock | <= 15 minutes | <= 120 minutes | <= 240 minutes (or explicit manual lane) |
+| Per-suite wall clock | <= 2 minutes | <= 20 minutes | no fixed cap; must be documented |
+| Per-test wall clock | <= 90 seconds | <= 10 minutes | no fixed cap; must be documented |
+
+Notes:
+- Any suite consistently above Tier1 thresholds is integration or stress by behavior and must be moved.
+- If CI hardware changes materially, rerun baseline and adjust thresholds in this file in the same PR.
+
+### Default enforcement rule (move by default)
+
+If a test or suite exceeds its lane budget:
+1. It moves to the appropriate heavier lane by default.
+2. It may remain only with a written exemption that includes:
+   - explicit reason it must stay in the current lane,
+   - measured timing evidence,
+   - owner,
+   - expiry/review date.
+
+No open-ended "temporary" exemptions.
+
+### CI rollout behavior
+
+Budget enforcement is staged to avoid noisy rollout:
+
+1. Baseline phase (warn-only):
+   - collect per-test and per-suite durations,
+   - publish over-budget warnings in CI summary/artifacts,
+   - open migration issues for repeated offenders.
+2. Enforcement phase (fail):
+   - fail CI when Tier1 budgets are exceeded without active exemption,
+   - fail CI when exemption metadata is missing or expired.
+
+Policy: once baseline is established, do not revert from fail -> warn without an explicit incident note and owner.
+
+### Migration checklist (required when moving tests)
+
+When re-tiering a test/suite:
+1. Move file/target ownership to the correct lane.
+2. Update `Package.swift` target membership/excludes as needed.
+3. Update lane runner scripts under `Scripts/`.
+4. Update workflow invocations under `.github/workflows/`.
+5. Update this file and any user-facing testing docs in the same PR.
+6. Capture before/after runtime evidence in the PR description.
+
+### Exemption checklist (only when necessary)
+
+A valid exemption must include:
+- suite/test identifier,
+- measured p50/p95 runtime,
+- reason it must stay in-lane,
+- risk of moving lanes,
+- owner and review date.
+
+If review date passes, exemption is invalid and CI should fail until renewed or removed.
+
+### Naming must match behavior
+
+Lane names are contracts. If a suite behaves like integration/stress, do not label it "Tier1."
+
+Mislabeling creates false expectations for developer feedback and hides CI cost. Rename lanes/targets when behavior changes.
 
 ## Reporting vocabulary
 
