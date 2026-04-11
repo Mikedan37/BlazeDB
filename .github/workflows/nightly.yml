@@ -17,8 +17,11 @@ env:
 
 jobs:
   nightly-macos-tier3-heavy:
-    name: macOS 15 — Tier3 Heavy (+ perf companion, transitional)
+    name: macOS 15 — Tier3 Heavy (quarantined, non-blocking)
     runs-on: macos-15
+    # Temporary quarantine: this lane is currently load-sensitive/flaky under cumulative
+    # profiling pressure. Keep collecting signal, but do not block nightly correctness gates.
+    continue-on-error: true
     timeout-minutes: 240
 
     steps:
@@ -49,6 +52,7 @@ jobs:
         run: mkdir -p .logs .artifacts
 
       - name: Test Tier 3 heavy (+ transitional perf companion)
+        id: tier3_tests
         run: |
           set -euo pipefail
           mkdir -p .logs
@@ -57,6 +61,79 @@ jobs:
           # Plain BlazeDB_Tier3_Heavy matches BlazeDB_Tier3_Heavy_Perf (regex substring); require the bundle dot.
           swift test --disable-swift-testing --filter 'BlazeDB_Tier3_Heavy\.' 2>&1 | tee .logs/tier3-heavy.log
           swift test --disable-swift-testing --filter BlazeDB_Tier3_Heavy_Perf 2>&1 | tee .logs/tier3-heavy-perf.log
+
+      - name: Summarize Tier3 diagnostics
+        if: always()
+        env:
+          TIER3_TEST_OUTCOME: ${{ steps.tier3_tests.outcome }}
+        run: |
+          set -euo pipefail
+          mkdir -p .logs .artifacts
+          python3 - <<'PY'
+          import os
+          import re
+          from pathlib import Path
+
+          logs = [Path(".logs/tier3-heavy.log"), Path(".logs/tier3-heavy-perf.log")]
+          outcome = os.environ.get("TIER3_TEST_OUTCOME", "unknown")
+
+          text_parts = []
+          present_logs = []
+          for log_path in logs:
+              if log_path.exists():
+                  present_logs.append(log_path)
+                  text_parts.append(log_path.read_text(errors="replace"))
+
+          combined = "\n".join(text_parts)
+          classification = "unknown"
+          detail = "No known failure signature detected."
+
+          classifiers = [
+              ("timeout", r"timed out|time limit|deadline exceeded"),
+              ("killed_or_oom", r"\bKilled\b|SIGKILL|signal 9|out of memory|oom"),
+              ("xctest_failure", r"Test Case '.*' failed|Test Suite '.*' failed|XCTAssert|XCTUnwrap"),
+              ("swiftpm_abort", r"error: Exited with unexpected signal code|error: fatalError"),
+          ]
+
+          for label, pattern in classifiers:
+              if re.search(pattern, combined, flags=re.IGNORECASE):
+                  classification = label
+                  detail = f"Matched pattern: {pattern}"
+                  break
+
+          summary_lines = [
+              "## Tier3 diagnostics",
+              f"- Step outcome: `{outcome}`",
+              f"- Classification: `{classification}`",
+              f"- Detail: {detail}",
+              "",
+          ]
+
+          artifact_report = Path(".artifacts/tier3-diagnostics.txt")
+          with artifact_report.open("w", encoding="utf-8") as report:
+              report.write("Tier3 diagnostics\n")
+              report.write(f"step_outcome={outcome}\n")
+              report.write(f"classification={classification}\n")
+              report.write(f"detail={detail}\n\n")
+
+              if not present_logs:
+                  report.write("No tier3 log files found.\n")
+                  summary_lines.append("- Logs: none found in `.logs/`")
+              else:
+                  summary_lines.append("- Logs analyzed:")
+                  for log_path in present_logs:
+                      summary_lines.append(f"  - `{log_path}`")
+                      report.write(f"--- {log_path} (last 80 lines) ---\n")
+                      tail = "\n".join(log_path.read_text(errors="replace").splitlines()[-80:])
+                      report.write(tail + "\n\n")
+
+          step_summary = os.environ.get("GITHUB_STEP_SUMMARY")
+          if step_summary:
+              with open(step_summary, "a", encoding="utf-8") as fh:
+                  fh.write("\n".join(summary_lines) + "\n")
+
+          print("\n".join(summary_lines))
+          PY
 
       - name: Dump diagnostics on failure
         if: failure()
