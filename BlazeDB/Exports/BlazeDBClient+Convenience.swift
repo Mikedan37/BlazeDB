@@ -13,10 +13,10 @@ extension BlazeDBClient {
     
     // MARK: - Convenience Initializers
     
-    /// Create or open a database by name (uses Application Support by default)
+    /// Create or open a database by name (uses Application Support by default).
     ///
-    /// This is the easiest way to create a database - just provide a name!
-    /// The database will be stored in `~/Library/Application Support/BlazeDB/`
+    /// Deprecated convenience initializer.
+    /// For most app code, prefer ``BlazeDB/open(name:password:)``.
     ///
     /// - Parameters:
     ///   - name: Database name (e.g., "MyApp", "UserData", "Cache")
@@ -39,7 +39,10 @@ extension BlazeDBClient {
         try self.init(name: name, fileURL: url, password: password, project: project)
     }
     
-    /// Create or open a database by name (failable, no try-catch needed)
+    /// Create or open a database by name (failable, no try-catch needed).
+    ///
+    /// Deprecated convenience helper.
+    /// For most app code, prefer ``BlazeDB/open(name:password:)`` and explicit error handling.
     ///
     /// - Parameters:
     ///   - name: Database name

@@ -2,12 +2,14 @@
 
 ## Your First 5 Minutes
 
-| Step | What to Do | Time |
-|------|------------|------|
-| 1 | [Install BlazeDB](#step-1-install) | 1 min |
-| 2 | [Run the example](#step-2-run-example) | 1 min |
-| 3 | [Copy the starter code](#step-3-starter-code) | 2 min |
-| 4 | [Learn the basics](#step-4-learn-basics) | 5 min |
+
+| Step | What to Do                                    | Time  |
+| ---- | --------------------------------------------- | ----- |
+| 1    | [Install BlazeDB](#step-1-install)            | 1 min |
+| 2    | [Run the example](#step-2-run-example)        | 1 min |
+| 3    | [Copy the starter code](#step-3-starter-code) | 2 min |
+| 4    | [Learn the basics](#step-4-learn-basics)      | 5 min |
+
 
 ---
 
@@ -48,33 +50,26 @@ Copy this into your project:
 import BlazeDB
 
 // 1. Define your model
-struct User: BlazeStorable {
+struct Bug: BlazeStorable {
     var id: UUID = UUID()
-    var name: String
-    var age: Int
-    var active: Bool
+    var title: String
+    var status: String
 }
 
 // 2. Open database (creates if needed, always encrypted)
-let db = try BlazeDBClient.open(named: "myapp", password: "My-Secure-Password-2026!")
+let db = try BlazeDB.open(name: "myapp", password: "My-Secure-Password-2026!")
 
-// 3. Insert
-try db.insert(User(name: "Alice", age: 30, active: true))
+// 3. Put
+let bug = Bug(title: "Crash", status: "open")
+try db.put(bug)
 
-// 4. Fetch
-let alice = try db.fetch(User.self, id: aliceId)
+// 4. Get by key (UUID or namespace:UUID)
+let loaded: Bug? = try db.get("bug:\(bug.id.uuidString)")
 
-// 5. Query with KeyPaths
-let activeUsers = try db.query(User.self)
-    .where(\.active, equals: true)
+// 5. Query by namespace
+let openBugs: [Bug] = try db.query("bug")
+    .where("status", equals: "open")
     .all()
-
-for user in activeUsers {
-    print(user.name)  // Type-safe, no casting
-}
-
-// 6. Close when done
-try db.close()
 ```
 
 **That's it.** You have a working, encrypted, crash-safe database with type-safe models.
@@ -92,12 +87,15 @@ Distributed sync/server/discovery and full telemetry behavior are conditional/de
 
 BlazeDB offers three API tiers. Use whichever fits your needs:
 
-| Tier | Protocol | Best for |
-|------|----------|----------|
-| **Direct CRUD (recommended)** | `BlazeStorable` + `db.insert(model)` / `db.fetch(T.self, id:)` | Most apps — Codable models, KeyPath queries, minimal boilerplate |
-| **TypedStore (optional)** | `db.typed(T.self)` → scoped handle | View models, service layers that want a bound store |
-| **Raw explicit** | `BlazeDataRecord` | Dynamic schemas, migration scripts, schemaless exploration |
-| **Manual mapping** | `BlazeDocument` | Custom serialization, non-Codable types, full field control |
+
+| Tier                            | Protocol                                                          | Best for                                                    |
+| ------------------------------- | ----------------------------------------------------------------- | ----------------------------------------------------------- |
+| **Default API (recommended)** | `BlazeDB.open(...)` + `db.put` / `db.get` / `db.query(namespace)` | Most apps — minimal onboarding path                         |
+| **Direct CRUD (secondary)**     | `BlazeStorable` + `db.insert(model)` / `db.fetch(T.self, id:)`    | Existing typed code and advanced query usage                |
+| **TypedStore (secondary)**      | `db.typed(T.self)` → scoped handle                                | View models, service layers that want a bound store         |
+| **Raw explicit (advanced)**     | `BlazeDataRecord`                                                 | Dynamic schemas, migration scripts, schemaless exploration  |
+| **Manual mapping**              | `BlazeDocument`                                                   | Custom serialization, non-Codable types, full field control |
+
 
 ### Direct CRUD (Recommended)
 
@@ -169,21 +167,25 @@ struct Bug: BlazeDocument {
 
 ## Where Is My Data Stored?
 
-| Platform | Location |
-|----------|----------|
-| macOS | `~/Library/Application Support/BlazeDB/myapp.blazedb` |
-| Linux | `~/.local/share/blazedb/myapp.blazedb` |
-| iOS | App sandbox (automatic) |
+
+| Platform | Location                                              |
+| -------- | ----------------------------------------------------- |
+| macOS    | `~/Library/Application Support/BlazeDB/myapp.blazedb` |
+| Linux    | `~/.local/share/blazedb/myapp.blazedb`                |
+| iOS      | App sandbox (automatic)                               |
+
 
 ---
 
 ## Next Steps
 
-| Guide | What You'll Learn |
-|-------|-------------------|
-| [HOW_TO_USE_BLAZEDB.md](HOW_TO_USE_BLAZEDB.md) | Complete guide: migrations, backups, health checks |
-| [Examples](../../Examples/) | Working code for common patterns |
-| [LINUX_GETTING_STARTED.md](LINUX_GETTING_STARTED.md) | Linux-specific setup |
+
+| Guide                                                | What You'll Learn                                  |
+| ---------------------------------------------------- | -------------------------------------------------- |
+| [HOW_TO_USE_BLAZEDB.md](HOW_TO_USE_BLAZEDB.md)       | Complete guide: migrations, backups, health checks |
+| [Examples](../../Examples/)                          | Working code for common patterns                   |
+| [LINUX_GETTING_STARTED.md](LINUX_GETTING_STARTED.md) | Linux-specific setup                               |
+
 
 ### Advanced / Conditional Discovery
 

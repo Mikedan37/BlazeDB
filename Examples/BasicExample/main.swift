@@ -11,7 +11,7 @@ struct BasicExample {
         // Create or open a database
         let db = try BlazeDBClient.open(
             named: "BasicExample",
-            password: "example-password-123"
+            password: "Example-Password-123!"
         )
         
         print("✅ Database opened: \(db.name)")

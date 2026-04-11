@@ -14,6 +14,9 @@ extension BlazeDBClient {
 
     /// Open a database by name.
     ///
+    /// For most app code, prefer ``BlazeDB/open(name:password:)``.
+    /// This method remains the underlying client-level opener.
+    ///
     /// BlazeDB always encrypts data. You must provide a password.
     ///
     /// ```swift
@@ -39,6 +42,9 @@ extension BlazeDBClient {
     }
 
     /// Open a database at a specific file URL.
+    ///
+    /// For most app code, prefer ``BlazeDB/open(at:password:)``.
+    /// This method remains the underlying client-level opener.
     ///
     /// Opens or creates an encrypted database at the given location.
     ///
