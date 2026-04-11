@@ -33,17 +33,19 @@ struct Bug: BlazeStorable {
     var status: String
 }
 
-let db = try BlazeDBClient.open(named: "demo", password: "DemoPass123!")
+let db = try BlazeDB.open(name: "demo", password: "DemoPass123!")
 let bug = Bug(title: "Crash on launch", status: "open")
-let bugID = try db.insert(bug)
+try db.put(bug)
 
-let loaded = try db.fetch(Bug.self, id: bugID)
-let openBugs = try db.query(Bug.self)
-    .where(\.status, equals: "open")
+let loaded: Bug? = try db.get("bug:\(bug.id.uuidString)")
+let openBugs: [Bug] = try db.query("bug")
+    .where("status", equals: "open")
     .all()
 ```
 
-That is the default beginner workflow: `open -> insert -> fetch -> query`.
+That is the default beginner workflow: `open -> put -> get -> query(namespace)`.
+
+Keys use the format `"type:UUID"` (for example, `"bug:123e4567-e89b-12d3-a456-426614174000"`). The prefix maps to the model type/namespace.
 
 ## What BlazeDB Is
 
@@ -178,6 +180,10 @@ let groceryItems: [ListItem] = try db.query("listitem")
 `listID` stores the parent list's `id`, so querying `listitem` by `listID` returns the items for that list.
 
 ---
+
+## Advanced Usage (Optional)
+
+If you are onboarding, you can stop after **Quick Start**. The rest of this README covers deeper architecture, advanced APIs, and operational details.
 
 ## Core Concepts
 
@@ -356,14 +362,17 @@ See [Compatibility Matrix](Docs/COMPATIBILITY.md) for details.
 
 ---
 
-## CLI Tools
+## Tools And Apps
 
-| Tool | Purpose |
-|------|---------|
-| `BlazeDoctor` | Opens a database and runs diagnostic checks (insert/fetch/delete probe, stats, health) |
-| `BlazeDump` | Export (`dump`), restore, and verify database backups |
-| `BlazeInfo` | Print database stats, health, and schema version |
-| `BlazeShell` | Interactive shell |
+| Tool/App | Type | What it does | Location | Status | Docs |
+|----------|------|--------------|----------|--------|------|
+| `BlazeDoctor` | CLI tool | Runs health diagnostics: open/auth check, layout integrity, read/write probe, stats + health output (`text` or `--json`) | `BlazeDoctor/` | Complete | [BlazeDoctor docs](Docs/Tools/BLAZEDOCTOR_DOCUMENTATION.md) |
+| `BlazeDump` | CLI tool | Backup lifecycle tool with `dump`, `restore`, and `verify` commands for `.blazedump` files | `BlazeDump/` | Complete | [BlazeDump docs](Docs/Tools/BLAZEDUMP_DOCUMENTATION.md) |
+| `BlazeInfo` | CLI tool | Prints database metadata and runtime state (size, records/pages/indexes, WAL size, health, schema version) | `BlazeInfo/` | Complete | [BlazeInfo docs](Docs/Tools/BLAZEINFO_DOCUMENTATION.md) |
+| `BlazeShell` | CLI tool | Interactive REPL for CRUD operations, plus manager mode for mounting/switching multiple databases | `BlazeShell/` | Complete | [BlazeShell docs](Docs/Tools/BLAZESHELL_DOCUMENTATION.md) |
+| `BlazeMCP` | MCP server tool | JSON-RPC MCP bridge exposing BlazeDB operations (schema/query/mutation/aggregation/index suggestions) to AI clients | `BlazeMCP/` | In repo (not in current `Package.swift` target graph) | [BlazeMCP docs](Docs/Tools/MCP_SERVER.md) |
+| `BlazeStudio` | Companion app (macOS) | Visual block/workspace companion focused on modeling and code generation workflows | `BlazeStudio/` | In repo, experimental companion app | [BlazeStudio docs](Docs/Tools/BLAZESTUDIO_DOCUMENTATION.md) |
+| `BlazeDBVisualizer` | Companion app (macOS) | GUI for browsing/editing data, running queries, and monitoring operational metrics | `BlazeDBVisualizer/` | In repo as separate app project | [BlazeDBVisualizer docs](Docs/Tools/BLAZEDBVISUALIZER_DOCUMENTATION.md) |
 
 Run with `swift run <ToolName>`.
 
