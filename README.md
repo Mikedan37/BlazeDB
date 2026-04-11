@@ -65,7 +65,7 @@ If you are building a SwiftUI app, start here next:
 
 ## What BlazeDB Is Not
 
-- **Not SQL.** No relational schema, no SQL query language.
+- **Not SQL commands.** You do not write `SELECT` statements here; you use BlazeDB's Swift query methods instead (see [Start Here](#start-here-new-users) and [Querying Data](Docs/GettingStarted/HOW_TO_USE_BLAZEDB.md#6-querying-data)).
 - **Not multi-process.** One process owns the database file. No concurrent access from separate processes.
 - **Not client/server.** No network listener, no remote connections.
 - **Not per-type table storage.** All record types coexist in a single encrypted collection.
