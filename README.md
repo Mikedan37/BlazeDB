@@ -7,8 +7,6 @@ An encrypted, embedded document database for Swift. Single-process, zero externa
 [![Swift](https://img.shields.io/badge/Swift-6.0+-orange.svg)](https://swift.org)
 [![Platforms](https://img.shields.io/badge/Platforms-macOS%20%7C%20iOS%20%7C%20watchOS%20%7C%20tvOS%20%7C%20visionOS%20%7C%20Linux%20%7C%20Android-lightgrey.svg)](Docs/COMPATIBILITY.md)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![CI](https://github.com/Mikedan37/BlazeDB/actions/workflows/ci.yml/badge.svg)](https://github.com/Mikedan37/BlazeDB/actions/workflows/ci.yml)
-[![Nightly](https://github.com/Mikedan37/BlazeDB/actions/workflows/nightly.yml/badge.svg)](https://github.com/Mikedan37/BlazeDB/actions/workflows/nightly.yml)
 
 ---
 
