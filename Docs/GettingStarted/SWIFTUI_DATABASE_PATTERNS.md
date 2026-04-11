@@ -1,33 +1,29 @@
-# BlazeDB in SwiftUI: Practical Patterns
+# BlazeDB in SwiftUI
 
-This guide shows simple ways to use BlazeDB from SwiftUI without fighting architecture.
+You do not need to open BlazeDB inside every view.
 
-## 1) Open once, pass as a dependency
+A simple pattern is:
+1. open the database once
+2. keep it in one shared app object
+3. pass that object into your screens
+4. load and save data from there
 
-Create one shared database object and pass it into your root view.
+## 1) Open BlazeDB once
 
 ```swift
 import SwiftUI
 import BlazeDB
 
-struct TodoItem: BlazeStorable {
-    var id: UUID = UUID()
-    var title: String
-    var isDone: Bool = false
-}
-
 final class AppDatabase {
     static let shared = AppDatabase()
 
-    let db = {
-        do {
-            return try BlazeDB.open(name: "myapp", password: "Password123!")
-        } catch {
-            fatalError("Failed to open BlazeDB: \(error)")
-        }
-    }()
+    let db = try! BlazeDB.open(name: "myapp", password: "Password123!")
 }
+```
 
+## 2) Pass it into your root view
+
+```swift
 @main
 struct MyApp: App {
     var body: some Scene {
@@ -38,13 +34,17 @@ struct MyApp: App {
 }
 ```
 
-## 2) Use the database object inside a view
-
-This is a clean beginner pattern for small screens.
+## 3) Use it in a screen
 
 ```swift
 import SwiftUI
 import BlazeDB
+
+struct TodoItem: BlazeStorable {
+    var id: UUID = UUID()
+    var title: String
+    var isDone: Bool = false
+}
 
 struct ContentView: View {
     let database: AppDatabase
@@ -57,7 +57,7 @@ struct ContentView: View {
                     try database.db.put(TodoItem(title: "Buy milk"))
                     items = try database.db.query("todoitem").all()
                 } catch {
-                    print("DB error: \(error)")
+                    print(error)
                 }
             }
 
@@ -69,51 +69,18 @@ struct ContentView: View {
             do {
                 items = try database.db.query("todoitem").all()
             } catch {
-                print("Failed to load items: \(error)")
+                print(error)
             }
         }
     }
 }
 ```
 
-## 3) Pass the database down to child screens
+## 4) When the app gets bigger
 
-If multiple screens need data, pass the same `database` through navigation.
+For a small screen, calling BlazeDB directly from the view is fine.
 
-```swift
-import SwiftUI
-import BlazeDB
-
-struct ListsView: View {
-    let database: AppDatabase
-
-    var body: some View {
-        NavigationStack {
-            NavigationLink("Open Todos") {
-                TodoListView(database: database)
-            }
-        }
-    }
-}
-
-struct TodoListView: View {
-    let database: AppDatabase
-    @State private var items: [TodoItem] = []
-
-    var body: some View {
-        List(items, id: \.id) { item in
-            Text(item.title)
-        }
-        .task {
-            items = (try? database.db.query("todoitem").all()) ?? []
-        }
-    }
-}
-```
-
-## 4) Move DB logic into a store when the app grows
-
-For larger features, keep SwiftUI views focused on UI and move reads/writes into an `ObservableObject`.
+For a bigger feature, move that logic into a store or view model so the view only handles UI.
 
 ```swift
 import Foundation
@@ -136,27 +103,13 @@ final class TodoStore: ObservableObject {
             try database.db.put(TodoItem(title: title))
             load()
         } catch {
-            print("DB error: \(error)")
+            print(error)
         }
     }
 }
 ```
 
-## Common DB methods you will call from SwiftUI
+## Avoid this
 
-- Load: `items = try database.db.query("todoitem").all()`
-- Save: `try database.db.put(TodoItem(title: "Call mom"))`
-- Update:
-
-```swift
-var updated = item
-updated.isDone.toggle()
-try database.db.put(updated)
-```
-
-## Bottom line
-
-- `AppDatabase.shared` is just a shared DB handle.
-- UI interacts with BlazeDB by receiving `database` and calling `database.db.put/get/query`.
-- For simple screens, call DB methods directly in view actions or `.task`.
-- For bigger features, pass `database` into a store/view model and keep UI code thin.
+Do not open BlazeDB inside `@State` or inside the view `body`.
+Open it once and pass it in.
