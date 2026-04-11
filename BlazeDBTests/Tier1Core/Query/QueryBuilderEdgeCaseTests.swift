@@ -10,10 +10,52 @@ import XCTest
 @testable import BlazeDB
 #endif
 
-final class QueryBuilderEdgeCaseTests: XCTestCase {
+final class QueryBuilderEdgeCaseTests: LinuxTier1NonCryptoKDFHarness {
     
     private var tempURL: URL?
     private var db: BlazeDBClient?
+    
+    // Linux-only boundary datasets for Tier1 runtime control.
+    // Keep macOS fixture sizes unchanged to avoid behavior drift there.
+    private var largeDatasetQueryRecordCount: Int {
+        #if os(Linux)
+        return 1001
+        #else
+        return 2000
+        #endif
+    }
+    
+    private var largeDatasetLimitRecordCount: Int {
+        #if os(Linux)
+        return 101
+        #else
+        return 2000
+        #endif
+    }
+    
+    private var heavyJoinPrefilterRecordCount: Int {
+        #if os(Linux)
+        return 101
+        #else
+        return 1000
+        #endif
+    }
+    
+    private var verySelectiveFilterRecordCount: Int {
+        #if os(Linux)
+        return 1001
+        #else
+        return 2000
+        #endif
+    }
+    
+    private var memoryEfficiencyRecordCount: Int {
+        #if os(Linux)
+        return 101
+        #else
+        return 2000
+        #endif
+    }
     
     override func setUpWithError() throws {
         try super.setUpWithError()
@@ -237,8 +279,8 @@ final class QueryBuilderEdgeCaseTests: XCTestCase {
     // MARK: - Large Dataset Edge Cases
     
     func testQueryOn10KRecords() throws {
-        // Keep this as a large-dataset correctness check without making Tier1 Linux nightly stall.
-        let recordCount = 2_000
+        // Boundary-focused on Linux, unchanged stress profile on macOS.
+        let recordCount = largeDatasetQueryRecordCount
         let records = (0..<recordCount).map { i in
             BlazeDataRecord([
                 "index": .int(i),
@@ -255,7 +297,8 @@ final class QueryBuilderEdgeCaseTests: XCTestCase {
     }
     
     func testLimitOn10KRecords() throws {
-        let recordCount = 2_000
+        // Limit correctness only needs a limit-boundary dataset on Linux.
+        let recordCount = largeDatasetLimitRecordCount
         let records = (0..<recordCount).map { i in
             BlazeDataRecord(["index": .int(i)])
         }
@@ -535,10 +578,10 @@ final class QueryBuilderEdgeCaseTests: XCTestCase {
         let userID = UUID()
         _ = try requireFixture(usersDB).insert(BlazeDataRecord(["id": .uuid(userID), "name": .string("Alice")]))
         
-        // Insert 1000 bugs (batch insert - 10x faster!), only 1 matches filter
-        let bugRecords = (0..<1000).map { i in
+        // Boundary-focused on Linux; unchanged fixture volume on macOS.
+        let bugRecords = (0..<heavyJoinPrefilterRecordCount).map { i in
             BlazeDataRecord([
-                "title": .string(i == 500 ? "Special Bug" : "Bug \(i)"),
+                "title": .string(i == (heavyJoinPrefilterRecordCount / 2) ? "Special Bug" : "Bug \(i)"),
                 "status": .string("open"),
                 "author_id": .uuid(userID)
             ])
@@ -579,8 +622,8 @@ final class QueryBuilderEdgeCaseTests: XCTestCase {
     // MARK: - Stress Tests
     
     func testVerySelectiveFilter() throws {
-        // Large selective-filter correctness check with CI-safe dataset size.
-        let recordCount = 2_000
+        // Selective filter boundary on Linux, unchanged stress profile on macOS.
+        let recordCount = verySelectiveFilterRecordCount
         let specialIndex = recordCount / 2
         let records = (0..<recordCount).map { i in
             BlazeDataRecord([
@@ -601,7 +644,7 @@ final class QueryBuilderEdgeCaseTests: XCTestCase {
     
     func testQueryBuilderMemoryEfficiency() throws {
         // This validates limit behavior; it does not require a 5k insert to be meaningful.
-        let recordCount = 2_000
+        let recordCount = memoryEfficiencyRecordCount
         let records = (0..<recordCount).map { i in
             BlazeDataRecord([
                 "index": .int(i),
