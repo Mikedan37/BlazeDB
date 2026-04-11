@@ -1,5 +1,7 @@
 #!/bin/bash
 set -euo pipefail
+. "$(dirname "$0")/lib/temp_lifecycle.sh"
+blazedb_temp_setup "oss-readiness"
 
 LOG_DIR="${TMPDIR:-/tmp}/blazedb-oss-readiness-$(date +%s)"
 mkdir -p "$LOG_DIR"

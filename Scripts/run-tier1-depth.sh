@@ -2,6 +2,8 @@
 # Tier2/Tier3 heavy depth lane.
 # See Docs/Testing/CI_AND_TEST_TIERS.md
 set -e
+. "$(dirname "$0")/lib/temp_lifecycle.sh"
+blazedb_temp_setup "tier1-depth"
 echo "=== Tier2/Tier3 heavy depth ==="
 RUN_ID="$(date +%Y%m%d-%H%M%S)"
 ARTIFACT_DIR=".artifacts/tier1-depth/${RUN_ID}"
