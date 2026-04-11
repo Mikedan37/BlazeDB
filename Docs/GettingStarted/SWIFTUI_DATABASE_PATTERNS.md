@@ -1,14 +1,10 @@
 # BlazeDB in SwiftUI
 
-You do not need to open BlazeDB inside every view.
+## Level 1 - Simple (start here)
 
-A simple pattern is:
-1. open the database once
-2. keep it in one shared app object
-3. pass that object into your screens
-4. load and save data from there
+Use this when: you want the fastest path to a working app.
 
-## 1) Open BlazeDB once
+Open BlazeDB once, keep it in one app object, and pass it into your screens.
 
 ```swift
 import SwiftUI
@@ -16,14 +12,9 @@ import BlazeDB
 
 final class AppDatabase {
     static let shared = AppDatabase()
-
     let db = try! BlazeDB.open(name: "myapp", password: "Password123!")
 }
-```
 
-## 2) Pass it into your root view
-
-```swift
 @main
 struct MyApp: App {
     var body: some Scene {
@@ -32,13 +23,6 @@ struct MyApp: App {
         }
     }
 }
-```
-
-## 3) Use it in a screen
-
-```swift
-import SwiftUI
-import BlazeDB
 
 struct TodoItem: BlazeStorable {
     var id: UUID = UUID()
@@ -76,11 +60,17 @@ struct ContentView: View {
 }
 ```
 
-## 4) When the app gets bigger
+Avoid this:
+- Do not open BlazeDB inside `@State`.
+- Do not open BlazeDB inside a view `body`.
 
-For a small screen, calling BlazeDB directly from the view is fine.
+---
 
-For a bigger feature, move that logic into a store or view model so the view only handles UI.
+## Level 2 - Use a store (cleaner UI code)
+
+Use this when: one screen starts having more buttons, states, and DB calls.
+
+Move read/write logic into a store so the view mostly handles UI.
 
 ```swift
 import Foundation
@@ -109,7 +99,49 @@ final class TodoStore: ObservableObject {
 }
 ```
 
-## Avoid this
+---
 
-Do not open BlazeDB inside `@State` or inside the view `body`.
-Open it once and pass it in.
+## Level 3 - Larger apps (multiple features)
+
+Use this when: your app has separate domains (for example Notes and Tasks).
+
+Keep one shared `AppDatabase`, but split feature logic into separate stores/services.
+
+```swift
+final class NotesStore: ObservableObject {
+    private let database: AppDatabase
+    init(database: AppDatabase) { self.database = database }
+}
+
+final class TasksStore: ObservableObject {
+    private let database: AppDatabase
+    init(database: AppDatabase) { self.database = database }
+}
+```
+
+---
+
+## Level 4 - Advanced (optional patterns)
+
+Use this when: you want cleaner dependency wiring for bigger apps and testing.
+
+```swift
+import SwiftUI
+
+struct DatabaseKey: EnvironmentKey {
+    static let defaultValue: AppDatabase = .shared
+}
+
+extension EnvironmentValues {
+    var database: AppDatabase {
+        get { self[DatabaseKey.self] }
+        set { self[DatabaseKey.self] = newValue }
+    }
+}
+```
+
+Then in a view:
+
+```swift
+@Environment(\.database) private var database
+```
