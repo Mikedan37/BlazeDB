@@ -2,6 +2,12 @@
 
 Complete reference guide. For a quick start, see [README.md](README.md).
 
+If you are new, read this in order:
+1. Quick Start
+2. Querying Data
+3. Opening and Closing Correctly
+4. Backups, Restore, and Trust
+
 ---
 
 ## 1. What BlazeDB Is
@@ -176,7 +182,7 @@ struct AddEmailField: BlazeDBMigration {
 
 **Step 3: Run migration**
 ```swift
-let db = try BlazeDBClient.open(named: "mydb", password: "your-password")
+let db = try BlazeDB.open(name: "mydb", password: "your-password")
 
 let migrations: [BlazeDBMigration] = [AddEmailField()]
 let targetVersion = MyAppSchema.version
@@ -202,6 +208,16 @@ try db.validateSchemaVersion(expectedVersion: MyAppSchema.version)
 ---
 
 ## 6. Querying Data
+
+Start with this style first:
+
+```swift
+let openItems: [Counter] = try db.query("counter")
+    .where("count", equals: 20)
+    .all()
+```
+
+If you need lower-level field-value queries, use the raw query builder:
 
 **Filter:**
 ```swift
@@ -254,7 +270,7 @@ Manual refresh and pull-to-refresh remain available when you want explicit refre
 **Open once per process. Close once at shutdown.**
 
 ```swift
-let db = try BlazeDBClient.open(named: "myapp", password: "your-password")
+let db = try BlazeDB.open(name: "myapp", password: "your-password")
 defer { try? db.close() }
 
 // Use database...
@@ -316,8 +332,8 @@ private struct BlazeDBKey: StorageKey {
 // In configure.swift
 public func configure(_ app: Application) throws {
  // Open database on startup
- let db = try BlazeDBClient.open(
- named: "myserver",
+ let db = try BlazeDB.open(
+ name: "myserver",
  password: ProcessInfo.processInfo.environment["BLAZEDB_PASSWORD"] ?? "change-me"
  )
  app.blazeDB = db
@@ -361,7 +377,7 @@ func routes(_ app: Application) throws {
 
 **Export database:**
 ```swift
-let db = try BlazeDBClient.open(named: "myapp", password: "your-password")
+let db = try BlazeDB.open(name: "myapp", password: "your-password")
 
 let backupURL = FileManager.default.temporaryDirectory
  .appendingPathComponent("backup.blazedump")
@@ -376,14 +392,14 @@ print("Exported to: \(backupURL.path)")
 
 If you are onboarding to BlazeDB, you can skip this subsection and continue to backup verification below.
 
-For most applications, **`BlazeDBClient` is the only API you need**. The following types are public
+For most applications, **the `db` returned by `BlazeDB.open(...)` is all you need**. The following types are public
 primarily for tooling, diagnostics, or migration and are **not** the default entrypoints:
 
-- `PageStore` — low-level encrypted page I/O and WAL integration, used by `BlazeDBClient` and tests.
+- `PageStore` — low-level encrypted page I/O and WAL integration, used by BlazeDB and tests.
 - `BlazeDBManager` — multi-database mount/switch helper for CLI and migration-style tools.
 - `BlazeTransaction` — page-level transaction wrapper used in advanced/legacy tooling paths.
 
-If you are building a normal app, stay on `BlazeDBClient` and ignore these unless the docs explicitly
+If you are building a normal app, stay on `BlazeDB.open(...)` + `db` methods and ignore these unless the docs explicitly
 tell you otherwise.
 
 **Verify backup:**
@@ -395,7 +411,7 @@ print("Record count: \(header.recordCount)")
 
 **Restore:**
 ```swift
-let restoredDB = try BlazeDBClient.open(named: "restored", password: "your-password")
+let restoredDB = try BlazeDB.open(name: "restored", password: "your-password")
 
 // Restore (target database must be empty)
 try BlazeDBImporter.restore(from: backupURL, to: restoredDB, allowSchemaMismatch: false)
@@ -516,7 +532,7 @@ blazedb info mydb --password "password"
 
 **Minimum viable usage:**
 ```swift
-let db = try BlazeDBClient.open(named: "myapp", password: "your-password")
+let db = try BlazeDB.open(name: "myapp", password: "your-password")
 defer { try? db.close() }
 
 // Use database...
