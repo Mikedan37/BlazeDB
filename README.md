@@ -218,7 +218,7 @@ let activeUsers: [User] = try db.query("user")
 
 ### Direct CRUD (secondary)
 
-If you need more control than the default facade, you can call typed methods directly on `BlazeDBClient`:
+If you need more control than the default API, you can call typed methods directly on `BlazeDBClient`:
 
 ```swift
 try db.insert(user)                              // Insert one
