@@ -51,8 +51,10 @@ jobs:
       - name: Test Tier 3 heavy (+ transitional perf companion)
         run: |
           set -euo pipefail
-          swift test --filter BlazeDB_Tier3_Heavy 2>&1 | tee .logs/tier3-heavy.log
-          swift test --filter BlazeDB_Tier3_Heavy_Perf 2>&1 | tee .logs/tier3-heavy-perf.log
+          # SwiftPM enables Swift Testing alongside XCTest; this repo has no @Test suites, so the
+          # Swift Testing runner exits non-zero ("0 tests") and fails the step unless disabled.
+          swift test --disable-swift-testing --filter BlazeDB_Tier3_Heavy 2>&1 | tee .logs/tier3-heavy.log
+          swift test --disable-swift-testing --filter BlazeDB_Tier3_Heavy_Perf 2>&1 | tee .logs/tier3-heavy-perf.log
 
       - name: Dump diagnostics on failure
         if: failure()
@@ -335,11 +337,10 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
 
-  nightly-linux-validation:
-    name: Linux (Swift 6.2) — Tier0 + Tier1
+  nightly-linux-tier0:
+    name: Linux (Swift 6.2) — Tier0
     runs-on: ubuntu-22.04
-    # 90m was too tight: a real run exceeded it (~90.23m wall) and the job was stopped as Cancelled.
-    timeout-minutes: 150
+    timeout-minutes: 90
 
     steps:
       - name: Checkout
@@ -373,12 +374,7 @@ jobs:
       - name: Test Tier 0
         run: |
           set -euo pipefail
-          swift test --filter BlazeDB_Tier0 2>&1 | tee .logs/tier0.log
-
-      - name: Test Tier 1
-        run: |
-          set -euo pipefail
-          swift test --skip-build --filter BlazeDB_Tier1 2>&1 | tee .logs/tier1.log
+          swift test --disable-swift-testing --filter BlazeDB_Tier0 2>&1 | tee .logs/tier0.log
 
       - name: Dump diagnostics on failure
         if: failure()
@@ -388,11 +384,79 @@ jobs:
           df -h > .logs/disk.txt || true
           swift --version > .logs/swift-version.txt 2>&1 || true
 
-      - name: Upload nightly Linux validation logs
+      - name: Upload nightly Linux Tier0 logs
         if: always()
         uses: actions/upload-artifact@v5
         with:
-          name: nightly-linux-validation-logs
+          name: nightly-linux-tier0-logs
+          path: |
+            .logs/
+            .artifacts/
+          if-no-files-found: ignore
+          retention-days: 7
+
+  nightly-linux-tier1:
+    name: Linux (Swift 6.2) — Tier1
+    runs-on: ubuntu-22.04
+    # Tier1 alone can exceed 2h wall (heavy query suites); keep headroom beyond the old combined 150m cap.
+    timeout-minutes: 240
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Cache SwiftPM build
+        uses: actions/cache@v5
+        with:
+          path: .build
+          key: nightly-${{ runner.os }}-spm-${{ hashFiles('Package.swift', 'Package.resolved') }}
+          restore-keys: |
+            nightly-${{ runner.os }}-spm-
+            ${{ runner.os }}-spm-
+
+      - name: Setup Swift 6.2
+        uses: swift-actions/setup-swift@v2
+        with:
+          swift-version: "6.2"
+
+      - name: Swift version
+        run: swift --version
+
+      - name: Build core
+        run: swift build --target BlazeDBCore
+
+      - name: Prepare CI log directories
+        run: mkdir -p .logs .artifacts
+
+      - name: Test Tier 1
+        run: |
+          set -euo pipefail
+          mkdir -p .logs
+          (
+            while sleep 60; do
+              echo "[tier1-heartbeat] $(date -u '+%Y-%m-%dT%H:%M:%SZ') swift-test still running"
+            done
+          ) &
+          _hb=$!
+          trap 'kill "$_hb" 2>/dev/null || true' EXIT
+          stdbuf -oL -eL swift test --disable-swift-testing --filter BlazeDB_Tier1 2>&1 \
+            | stdbuf -oL -eL tee .logs/tier1.log
+
+      - name: Dump diagnostics on failure
+        if: failure()
+        run: |
+          mkdir -p .logs
+          ps aux > .logs/ps.txt || true
+          df -h > .logs/disk.txt || true
+          swift --version > .logs/swift-version.txt 2>&1 || true
+
+      - name: Upload nightly Linux Tier1 logs
+        if: always()
+        uses: actions/upload-artifact@v5
+        with:
+          name: nightly-linux-tier1-logs
           path: |
             .logs/
             .artifacts/
