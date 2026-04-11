@@ -65,7 +65,7 @@ print("Database at: \(db.fileURL.path)")
 
 ## 4. Defining and Evolving a Schema
 
-BlazeDB is schema-optional. You can start without one and add schema enforcement later when your app grows.
+Most apps do not need schema or migrations right away. You can store data first and evolve later.
 
 BlazeDB doesn't enforce schemas by default. Insert records with whatever fields you want.
 
@@ -80,7 +80,7 @@ try db.insert(record)
 
 **What happens if the schema changes?**
 
-BlazeDB refuses to guess how to migrate your data. If you add a new field, existing records won't have it. If you remove a field, old records still have it.
+**BlazeDB refuses to guess how to migrate your data.** If you add a new field, existing records won't have it. If you remove a field, old records still have it.
 
 **Example: Adding a field**
 ```swift
@@ -113,6 +113,7 @@ for record in allRecords {
 ## 5. Schema Migrations (When You Need Them)
 
 BlazeDB will not auto-migrate your data. You write migrations explicitly.
+You only need this if your app is already in production and your data format changes.
 
 **Step 1: Define schema version**
 ```swift
@@ -174,8 +175,14 @@ try db.validateSchemaVersion(expectedVersion: MyAppSchema.version)
 Start with this style first:
 
 ```swift
-let openItems: [Counter] = try db.query("counter")
-    .where("count", equals: 20)
+struct TodoItem: BlazeStorable {
+    var id: UUID = UUID()
+    var title: String
+    var isDone: Bool = false
+}
+
+let openItems: [TodoItem] = try db.query("todoitem")
+    .where("isDone", equals: false)
     .all()
 ```
 
