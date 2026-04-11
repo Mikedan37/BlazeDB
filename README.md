@@ -13,6 +13,7 @@ An encrypted, embedded document database for Swift. Single-process, zero externa
 ## Quick Navigation
 
 - [Start Here (New Users)](#start-here-new-users)
+- [SwiftUI Path (Start Here)](#swiftui-path-start-here)
 - [Quick Start](#quick-start)
 - [Install](#install)
 - [Example: Lists and List Items](#example-lists-and-list-items)
@@ -46,6 +47,12 @@ let openBugs: [Bug] = try db.query("bug")
 That is the default beginner workflow: `open -> put -> get -> query(namespace)`.
 
 Keys use the format `"type:UUID"` (for example, `"bug:123e4567-e89b-12d3-a456-426614174000"`). The prefix maps to the model type/namespace.
+
+## SwiftUI Path (Start Here)
+
+If you are building a SwiftUI app, start here next:
+
+- [SwiftUI DB Patterns](Docs/GettingStarted/SWIFTUI_DATABASE_PATTERNS.md) - beginner-first setup, then clear Level 1 to Level 4 progression.
 
 ## What BlazeDB Is
 
