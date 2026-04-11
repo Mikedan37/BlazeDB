@@ -31,10 +31,10 @@ An encrypted, embedded document database for Swift. Single-process, zero externa
 
 | Tier | API | Use case |
 |------|-----|----------|
-| **Direct CRUD (recommended)** | `BlazeStorable` + `db.insert(model)` / `db.fetch(T.self, id:)` | Codable models, most app code |
-| **TypedStore (optional)** | `db.typed(T.self)` → scoped handle | View models, service layers that want a bound store |
-| **Raw** | `BlazeDataRecord` + `db.insert(record)` | Dynamic schemas, migrations |
-| **Manual mapping** | `BlazeDocument` | Custom storage control, `@BlazeQueryTyped` |
+| **Public facade (recommended)** | `BlazeDB.open(...)` + `db.put` / `db.get` / `db.query(namespace)` | Most app code and onboarding |
+| **TypedStore (secondary)** | `db.typed(T.self)` → scoped handle | View models or service layers that want a bound store |
+| **Raw (advanced)** | `BlazeDataRecord` + `db.insert(record)` | Dynamic schemas, migrations |
+| **Manual mapping (advanced)** | `BlazeDocument` | Custom storage control and manual serialization |
 
 ---
 
@@ -51,37 +51,27 @@ Or add BlazeDB to your own project and use this minimal example:
 ```swift
 import BlazeDB
 
-struct User: BlazeStorable {
+struct Bug: BlazeStorable {
     var id: UUID = UUID()
-    var name: String
-    var age: Int
-    var active: Bool
+    var title: String
+    var status: String
 }
 
-let db = try BlazeDBClient.open(named: "myapp", password: "MyApp-Password-2026A!")
+let db = try BlazeDB.open(name: "demo", password: "pass-123")
+let bug = Bug(title: "Crash on launch", status: "open")
 
-// Insert
-try db.insert(User(name: "Alice", age: 30, active: true))
+try db.put(bug)
 
-// Fetch one
-let alice = try db.fetch(User.self, id: aliceId)
-
-// Fetch all
-let everyone = try db.fetchAll(User.self)
-print("Users: \(everyone.count)")
-
-// Query with KeyPaths
-let activeUsers = try db.query(User.self)
-    .where(\.active, equals: true)
+let loaded: Bug? = try db.get("bug:\(bug.id.uuidString)")
+let openBugs: [Bug] = try db.query("bug")
+    .where("status", equals: "open")
     .all()
-
-try db.close()
 ```
 
 ### Getting started path
 
 1. **Run `swift run HelloBlazeDB`** from this repo to verify your environment.
-2. **Read [Examples/HelloBlazeDB/main.swift](Examples/HelloBlazeDB/main.swift)** — covers typed insert, KeyPath query, fetch, raw API, export, health, and close.
+2. **Read [Examples/PublicFacadeExample/main.swift](Examples/PublicFacadeExample/main.swift)** — canonical `open → put → get → query` flow.
 3. **Read [HOW_TO_USE_BLAZEDB.md](Docs/GettingStarted/HOW_TO_USE_BLAZEDB.md)** for the complete guide.
 
 ---
@@ -132,7 +122,21 @@ The production runtime is always encrypted at rest. Every data page is sealed wi
 
 ## API Overview
 
-### Direct CRUD (recommended)
+### Public facade (recommended)
+
+Use these as the default path in app code:
+
+```swift
+let db = try BlazeDB.open(name: "myapp", password: "secure-password-123")
+try db.put(user)
+let loaded: User? = try db.get("user:\(user.id.uuidString)")
+
+let activeUsers: [User] = try db.query("user")
+    .where("active", equals: true)
+    .all()
+```
+
+### Direct CRUD (secondary)
 
 Call typed methods directly on `BlazeDBClient`:
 
@@ -151,7 +155,7 @@ let results = try db.query(User.self)
     .all()
 ```
 
-### TypedStore (optional)
+### TypedStore (secondary)
 
 `TypedStore<T>` wraps the same operations into a scoped handle, useful when you want to pass a "users store" to a view model:
 
@@ -161,7 +165,7 @@ try users.insert(user)
 let all = try users.fetchAll()
 ```
 
-### Raw API
+### Raw API (advanced)
 
 For dynamic schemas or migration scripts, use `BlazeDataRecord` directly:
 
@@ -182,13 +186,13 @@ let results = try db.query()
 ### Opening a database
 
 ```swift
-// By name (stored in platform default location)
-let db = try BlazeDBClient.open(named: "myapp", password: "secure-password-123")
+// By name (recommended for most apps)
+let db = try BlazeDB.open(name: "myapp", password: "secure-password-123")
 
-// At a specific file URL
-let db = try BlazeDBClient.open(at: fileURL, password: "secure-password-123")
+// At a specific file URL (when your app controls the path)
+let db = try BlazeDB.open(at: fileURL, password: "secure-password-123")
 
-// For testing (uses temp directory)
+// Advanced/testing utility
 let db = try BlazeDBClient.openForTesting()
 ```
 

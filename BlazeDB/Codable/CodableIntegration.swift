@@ -54,6 +54,7 @@ extension BlazeStorable {
             storage[key] = try convertToBlazeField(value)
         }
         
+        storage[BlazeRecordKind.storageKey] = .string(BlazeRecordKind.normalizedName(for: Self.self))
         return BlazeDataRecord(storage)
     }
     

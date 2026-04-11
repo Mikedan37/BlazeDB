@@ -31,10 +31,11 @@ If you need multiple processes writing to the same database, BlazeDB is not the 
 
 BlazeDB has several API tiers:
 
-- **Direct CRUD (recommended):** `BlazeStorable` + `db.insert(model)` / `db.fetch(T.self, id:)` / `db.query(T.self)`
-- **TypedStore (optional):** `db.typed(T.self)` — scoped handle for view models / service layers
-- **Raw explicit:** `BlazeDataRecord` + string-field query builder
-- **Manual mapping:** `BlazeDocument` with `toStorage()` / `init(from:)`
+- **Public facade (recommended):** `BlazeDB.open(...)` + `db.put(...)` + `db.get(_:)` + `db.query(_:)`
+- **Direct CRUD (secondary):** `BlazeStorable` + `db.insert(model)` / `db.fetch(T.self, id:)` / `db.query(T.self)`
+- **TypedStore (secondary):** `db.typed(T.self)` — scoped handle for view models / service layers
+- **Raw explicit (advanced):** `BlazeDataRecord` + string-field query builder
+- **Manual mapping (advanced):** `BlazeDocument` with `toStorage()` / `init(from:)`
 
 ```swift
 import BlazeDB
@@ -46,21 +47,21 @@ struct Counter: BlazeStorable {
 }
 
 // Open database (creates if needed, always encrypted)
-let db = try BlazeDBClient.open(named: "myapp", password: "your-secure-password")
+let db = try BlazeDB.open(name: "myapp", password: "your-secure-password")
 
-// Insert
-try db.insert(Counter(name: "Alice", count: 10))
-try db.insert(Counter(name: "Bob", count: 20))
+let alice = Counter(name: "Alice", count: 10)
+let bob = Counter(name: "Bob", count: 20)
 
-// Query with KeyPaths
-let results = try db.query(Counter.self)
-    .where(\.count, greaterThan: 15)
+// Put / get / query
+try db.put(alice)
+try db.put(bob)
+
+let one: Counter? = try db.get("counter:\(alice.id.uuidString)")
+let results: [Counter] = try db.query("counter")
+    .where("count", equals: 20)
     .all()
 
 print("Found \(results.count) records")
-
-// Close database
-try db.close()
 ```
 
 That's it. You have a working database.
@@ -77,17 +78,18 @@ That's it. You have a working database.
 
 **Default location (recommended):**
 ```swift
-let db = try BlazeDBClient.open(named: "mydb", password: "your-password")
+let db = try BlazeDB.open(name: "mydb", password: "your-password")
 ```
 
 **Custom path:**
 ```swift
-let db = try BlazeDBClient.open(name: "mydb", path: "./data/mydb.blazedb", password: "password")
+let url = URL(fileURLWithPath: "./data/mydb.blazedb")
+let db = try BlazeDB.open(at: url, password: "password")
 ```
 
 **Find your database location:**
 ```swift
-let db = try BlazeDBClient.open(named: "mydb", password: "your-password")
+let db = try BlazeDB.open(name: "mydb", password: "your-password")
 print("Database at: \(db.fileURL.path)")
 ```
 

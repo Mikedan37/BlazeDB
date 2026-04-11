@@ -1,11 +1,12 @@
 # BlazeDB
 
-> **Status (2026 OSS core):** This page contains historical and architecture-level context. For the **current, supported OSS onboarding path**, start with:
-> 1. `README.md` (60‑second quick start)
-> 2. `Examples/HelloBlazeDB/` (end‑to‑end `BlazeDBClient` example)
-> 3. `Docs/GettingStarted/HOW_TO_USE_BLAZEDB.md` (complete guide)
+> **Status (2026 OSS core):** This page contains historical and architecture-level context. For the **current, supported onboarding path**, start with:
+> 1. `README.md` (60-second quick start)
+> 2. `Examples/PublicFacadeExample/` (canonical facade example)
+> 3. `Docs/GettingStarted/README.md` (getting-started path)
 >
-> The default public API for new applications is **`BlazeDBClient`** via `import BlazeDB`. Older references to `BlazeDB.open`, CBOR, or GitBlaze integration in this document are historical and not the primary OSS entrypoint.
+> The default public API for new applications is `import BlazeDB` + `BlazeDB.open(...)` + `db.put/get/query`.
+> Lower-level `BlazeDBClient`, `TypedStore`, and raw record APIs remain available as secondary/advanced paths.
 
 **Swift-native. Encrypted. Fast. Yours.**
 BlazeDB is a blazing fast embedded database engine written entirely in Swift. It's designed for security-conscious apps, cryptographic commit storage, and total local control.
@@ -161,27 +162,27 @@ BlazeDB/
 ├── Exports/ # Optional backup format
 └── BlazeDB.swift # Public interface
 
-## Usage Example (current `BlazeDBClient` API)
+## Usage Example (public facade first)
 
 ```swift
 import BlazeDB
 
 // Open database (creates if needed, always encrypted)
-let db = try BlazeDBClient.open(named: "myapp", password: "your-secure-password")
+let db = try BlazeDB.open(name: "myapp", password: "your-secure-password")
 
-// Insert a record
-let id = try db.insert(BlazeDataRecord([
- "name": .string("Alice"),
- "role": .string("engineer")
-]))
+struct Bug: BlazeStorable {
+    var id: UUID = UUID()
+    var title: String
+    var status: String
+}
 
-// Query records
-let recent = try db.query()
- .where("role", equals: .string("engineer"))
- .orderBy("created", descending: true)
- .limit(25)
- .execute()
- .records
+let bug = Bug(title: "Crash", status: "open")
+try db.put(bug)
+
+let loaded: Bug? = try db.get("bug:\(bug.id.uuidString)")
+let recent: [Bug] = try db.query("bug")
+    .where("status", equals: "open")
+    .all()
 ```
 
 Encryption Model (current core engine)
