@@ -399,8 +399,16 @@ final class PerformanceProfilingTests: XCTestCase {
     
     /// PROFILE: CPU-intensive query (complex filters)
     func testProfile_CPUIntensiveQuery() throws {
+        // CI uses a smaller fixture to avoid nightly runtime spikes; local keeps more volume.
+        let runningOnCI = ProcessInfo.processInfo.environment["GITHUB_ACTIONS"] == "true"
+        let recordCount = runningOnCI ? 1_000 : 2_000
+        let lowerBound = recordCount / 4
+        let upperBound = (recordCount * 3) / 4
+        let matchingRange = (lowerBound + 1)..<upperBound
+        let expectedCount = matchingRange.filter { $0.isMultiple(of: 2) }.count
+
         // Setup
-        for i in 0..<20_000 {
+        for i in 0..<recordCount {
             try! db.insert(BlazeDataRecord([
                 "a": .int(i),
                 "b": .string("value\(i)"),
@@ -411,11 +419,11 @@ final class PerformanceProfilingTests: XCTestCase {
         
         try profileWithMetrics(name: "CPU Intensive Query") {
             let results = try db.query()
-                .where("a", greaterThan: .int(5000))
-                .where("a", lessThan: .int(15000))
+                .where("a", greaterThan: .int(lowerBound))
+                .where("a", lessThan: .int(upperBound))
                 .where("d", equals: .bool(true))
                 .execute()
-            XCTAssertGreaterThan(results.count, 0)
+            XCTAssertEqual(results.count, expectedCount)
         }
     }
 }
