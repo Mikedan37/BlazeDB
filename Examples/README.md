@@ -8,10 +8,10 @@ Runnable examples from basic to advanced.
 
 | Order | Example | What You'll Learn | Run Command |
 |-------|---------|-------------------|-------------|
-| 1 | PublicFacadeExample | Canonical `open → put → get → query` flow | `swift run PublicFacadeExample` |
-| 2 | HelloBlazeDB | Broader tour (typed + raw APIs) | `swift run HelloBlazeDB` |
-| 3 | BasicExample | CRUD operations | `swift run BasicExample` |
-| 4 | QueryBuilderExample | Fluent query filters | See file |
+| 1 | HelloBlazeDB | Canonical `open → put → get → query` flow | `swift run HelloBlazeDB` |
+| 2 | BasicExample | CRUD operations | `swift run BasicExample` |
+| 3 | QueryBuilderExample | Fluent query filters | See file |
+| 4 | ReferenceConsumer | Lifecycle example | `swift run ReferenceConsumer` |
 
 ---
 
@@ -20,8 +20,7 @@ Runnable examples from basic to advanced.
 ### Core Embedded Examples (Default Shipped Path)
 | File | Description |
 |------|-------------|
-| `PublicFacadeExample/main.swift` | Minimal canonical facade path (`BlazeDB.open`, `put`, `get`, `query`) |
-| `HelloBlazeDB/main.swift` | Complete walkthrough: typed API, query, export, health |
+| `HelloBlazeDB/main.swift` | Minimal default API path (`BlazeDB.open`, `put`, `get`, `query`) |
 | `BasicExample/main.swift` | Core CRUD operations |
 | `QuickStart.swift` | Minimal typed working example |
 | `BasicUsageExample.swift` | Common embedded usage patterns |
@@ -70,7 +69,6 @@ See `SYNC_EXAMPLES_INDEX.md` for full sync design docs and caveats.
 swift run HelloBlazeDB
 swift run BasicExample
 swift run ReferenceConsumer
-swift run PublicFacadeExample
 ```
 
 **Single-file examples:**

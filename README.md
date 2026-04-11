@@ -31,7 +31,7 @@ An encrypted, embedded document database for Swift. Single-process, zero externa
 
 | Tier | API | Use case |
 |------|-----|----------|
-| **Public facade (recommended)** | `BlazeDB.open(...)` + `db.put` / `db.get` / `db.query(namespace)` | Most app code and onboarding |
+| **Default API (recommended)** | `BlazeDB.open(...)` + `db.put` / `db.get` / `db.query(namespace)` | Fastest path for most app code |
 | **TypedStore (secondary)** | `db.typed(T.self)` → scoped handle | View models or service layers that want a bound store |
 | **Raw (advanced)** | `BlazeDataRecord` + `db.insert(record)` | Dynamic schemas, migrations |
 | **Manual mapping (advanced)** | `BlazeDocument` | Custom storage control and manual serialization |
@@ -71,7 +71,7 @@ let openBugs: [Bug] = try db.query("bug")
 ### Getting started path
 
 1. **Run `swift run HelloBlazeDB`** from this repo to verify your environment.
-2. **Read [Examples/PublicFacadeExample/main.swift](Examples/PublicFacadeExample/main.swift)** — canonical `open → put → get → query` flow.
+2. **Read [Examples/HelloBlazeDB/main.swift](Examples/HelloBlazeDB/main.swift)** — canonical `open → put → get → query` flow.
 3. **Read [HOW_TO_USE_BLAZEDB.md](Docs/GettingStarted/HOW_TO_USE_BLAZEDB.md)** for the complete guide.
 
 ---
@@ -122,7 +122,7 @@ The production runtime is always encrypted at rest. Every data page is sealed wi
 
 ## API Overview
 
-### Public facade (recommended)
+### Default API (recommended)
 
 Use these as the default path in app code:
 
@@ -250,12 +250,22 @@ The default `BlazeDBClient` uses a binary write-ahead log (`WALMode.legacy`) tha
 | watchOS 8+ | Builds | Declared in Package.swift; limited CI |
 | tvOS 15+ | Builds | Declared in Package.swift; limited CI |
 | visionOS 1+ | Builds | Declared in Package.swift; limited CI |
-| Linux | Core support | Swift 6.0; CI runs Tier 0 tests; SwiftUI wrappers excluded |
+| Linux | Core support | Swift 6.2 in CI; nightly runs Tier0+Tier1, deep validation runs Tier0+Tier1+Tier2; SwiftUI wrappers excluded |
 | Android | Core support | `BLAZEDB_LINUX_CORE` path; Swift 6.3+ / Android NDK; best-effort CI |
 
 SwiftUI query wrappers (`@BlazeQuery`, `@BlazeQueryTyped`) are only available on Apple platforms. On Linux and Android, the `swift-crypto` package is used in place of Apple CryptoKit.
 
 See [Compatibility Matrix](Docs/COMPATIBILITY.md) for details.
+
+---
+
+## Testing And CI
+
+- PR/release validation on macOS runs `BlazeDB_Tier0`, `BlazeDB_Tier1`, and `BlazeDB_Tier2` as the main gate.
+- Nightly confidence runs macOS Tier1/Tier2 strict/Tier3 heavy lanes plus Linux Tier0 and Tier1 lanes.
+- Weekly deep validation runs broader coverage: macOS Tier0/1/2/3 + destructive + TSan, and Linux Tier0/1/2 (+ extended companion).
+- Additional nightly checks verify clean checkout and README quickstart scripts.
+- Entry docs for test/CI structure: `Docs/Testing/CI_AND_TEST_TIERS.md` and `Docs/Testing/README.md`.
 
 ---
 

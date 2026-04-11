@@ -90,7 +90,7 @@ BlazeDB offers three API tiers. Use whichever fits your needs:
 
 | Tier                            | Protocol                                                          | Best for                                                    |
 | ------------------------------- | ----------------------------------------------------------------- | ----------------------------------------------------------- |
-| **Public facade (recommended)** | `BlazeDB.open(...)` + `db.put` / `db.get` / `db.query(namespace)` | Most apps — minimal onboarding path                         |
+| **Default API (recommended)** | `BlazeDB.open(...)` + `db.put` / `db.get` / `db.query(namespace)` | Most apps — minimal onboarding path                         |
 | **Direct CRUD (secondary)**     | `BlazeStorable` + `db.insert(model)` / `db.fetch(T.self, id:)`    | Existing typed code and advanced query usage                |
 | **TypedStore (secondary)**      | `db.typed(T.self)` → scoped handle                                | View models, service layers that want a bound store         |
 | **Raw explicit (advanced)**     | `BlazeDataRecord`                                                 | Dynamic schemas, migration scripts, schemaless exploration  |

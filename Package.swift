@@ -93,11 +93,6 @@ var blazeTargets: [Target] = [
             exclude: ["README.md"]
         ),
         .executableTarget(
-            name: "PublicFacadeExample",
-            dependencies: ["BlazeDB"],
-            path: "Examples/PublicFacadeExample"
-        ),
-        .executableTarget(
             name: "BlazeDoctor",
             dependencies: ["BlazeDBCore"],
             path: "BlazeDoctor"

@@ -31,7 +31,7 @@ If you need multiple processes writing to the same database, BlazeDB is not the 
 
 BlazeDB has several API tiers:
 
-- **Public facade (recommended):** `BlazeDB.open(...)` + `db.put(...)` + `db.get(_:)` + `db.query(_:)`
+- **Default API (recommended):** `BlazeDB.open(...)` + `db.put(...)` + `db.get(_:)` + `db.query(_:)`
 - **Direct CRUD (secondary):** `BlazeStorable` + `db.insert(model)` / `db.fetch(T.self, id:)` / `db.query(T.self)`
 - **TypedStore (secondary):** `db.typed(T.self)` — scoped handle for view models / service layers
 - **Raw explicit (advanced):** `BlazeDataRecord` + string-field query builder

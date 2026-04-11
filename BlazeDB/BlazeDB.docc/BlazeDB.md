@@ -2,7 +2,7 @@
 
 > **Status (2026 OSS core):** This page contains historical and architecture-level context. For the **current, supported onboarding path**, start with:
 > 1. `README.md` (60-second quick start)
-> 2. `Examples/PublicFacadeExample/` (canonical facade example)
+> 2. `Examples/HelloBlazeDB/` (canonical start example)
 > 3. `Docs/GettingStarted/README.md` (getting-started path)
 >
 > The default public API for new applications is `import BlazeDB` + `BlazeDB.open(...)` + `db.put/get/query`.
@@ -162,7 +162,7 @@ BlazeDB/
 ├── Exports/ # Optional backup format
 └── BlazeDB.swift # Public interface
 
-## Usage Example (public facade first)
+## Usage Example (default API first)
 
 ```swift
 import BlazeDB
