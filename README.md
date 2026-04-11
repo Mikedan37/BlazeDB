@@ -401,6 +401,7 @@ Run with `swift run <ToolName>`.
 | Resource | Description |
 |----------|-------------|
 | [Getting Started Guide](Docs/GettingStarted/README.md) | Step-by-step setup |
+| [SwiftUI DB Patterns](Docs/GettingStarted/SWIFTUI_DATABASE_PATTERNS.md) | Practical SwiftUI patterns for passing and using `BlazeDBClient` |
 | [Complete Reference](Docs/GettingStarted/HOW_TO_USE_BLAZEDB.md) | Full usage guide with queries, backups, and health checks |
 | [API Reference](Docs/API/API_REFERENCE.md) | Public API documentation |
 | [Examples](Examples/) | Working code (HelloBlazeDB, BasicExample, ReferenceConsumer) |

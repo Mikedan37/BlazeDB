@@ -182,6 +182,7 @@ struct Bug: BlazeDocument {
 
 | Guide                                                | What You'll Learn                                  |
 | ---------------------------------------------------- | -------------------------------------------------- |
+| [SWIFTUI_DATABASE_PATTERNS.md](SWIFTUI_DATABASE_PATTERNS.md) | How to pass and use `BlazeDBClient` cleanly in SwiftUI |
 | [HOW_TO_USE_BLAZEDB.md](HOW_TO_USE_BLAZEDB.md)       | Complete guide: migrations, backups, health checks |
 | [Examples](../../Examples/)                          | Working code for common patterns                   |
 | [LINUX_GETTING_STARTED.md](LINUX_GETTING_STARTED.md) | Linux-specific setup                               |
