@@ -14,6 +14,7 @@ An encrypted, embedded document database for Swift. Single-process, zero externa
 
 - [Start Here (New Users)](#start-here-new-users)
 - [Quick Start](#quick-start)
+- [Model Nested Data (One-to-Many)](#model-nested-data-one-to-many)
 - [Install](#install)
 - [API Overview](#api-overview)
 - [Current Limitations](#current-limitations)
@@ -107,6 +108,62 @@ let openBugs: [Bug] = try db.query("bug")
 1. **Run `swift run HelloBlazeDB`** from this repo to verify your environment.
 2. **Read [Examples/HelloBlazeDB/main.swift](Examples/HelloBlazeDB/main.swift)** — canonical `open → put → get → query` flow.
 3. **Read [HOW_TO_USE_BLAZEDB.md](Docs/GettingStarted/HOW_TO_USE_BLAZEDB.md)** for the complete guide.
+
+---
+
+## Model Nested Data (One-to-Many)
+
+A common use case is building a to-do list or any list with items inside it.  
+For example, you might have a "Groceries" list with items like Milk and Eggs.
+
+At first, you might think to store one big `List` object that contains `[ListItem]` inside it. That seems simpler, but it causes problems.
+
+The easier model is:
+- each `List` is its own record
+- each `ListItem` is its own record
+- each item stores the parent list's id in `listID`
+- that shared id is the link between them
+
+```swift
+import Foundation
+import BlazeDB
+
+struct List: BlazeStorable {
+    var id: UUID = UUID()
+    var name: String
+}
+
+struct ListItem: BlazeStorable {
+    var id: UUID = UUID()
+    var listID: UUID   // ID of the parent list
+    var name: String
+    var isDone: Bool = false
+}
+
+let db = try BlazeDB.open(name: "demo", password: "DemoPass123!")
+
+let groceries = List(name: "Groceries")
+try db.put(groceries)
+
+// Save the parent list ID once so it's obvious what links records together.
+let groceriesListID = groceries.id
+
+try db.put(ListItem(listID: groceriesListID, name: "Milk"))
+try db.put(ListItem(listID: groceriesListID, name: "Eggs"))
+
+let lists: [List] = try db.query("list").all()
+
+let groceryItems: [ListItem] = try db.query("listitem")
+    .where("listID", equals: groceriesListID)
+    .all()
+```
+
+Mental model:
+- `List` = parent
+- `ListItem` = child
+- `listID` = the link
+
+To get the items for a list, query `listitem` where `listID` matches the list's `id`.
 
 ---
 
