@@ -22,7 +22,15 @@ enum KeyManagerError: Error {
 public final class KeyManager {
     nonisolated(unsafe) private static var passwordKeyCache = [String: SymmetricKey]()
     private static let passwordKeyCacheLock = NSLock()
+    private static let pbkdf2OverrideLock = NSLock()
+    nonisolated(unsafe) private static var pbkdf2IterationsOverride: Int?
     internal static var pbkdf2Iterations: Int {
+        pbkdf2OverrideLock.lock()
+        let override = pbkdf2IterationsOverride
+        pbkdf2OverrideLock.unlock()
+        if let override, override > 0 {
+            return override
+        }
         if let override = ProcessInfo.processInfo.environment["BLAZEDB_PBKDF2_ITERATIONS"],
            let parsed = Int(override), parsed > 0 {
             return parsed
@@ -31,6 +39,18 @@ public final class KeyManager {
             return 100_000
         }
         return 600_000
+    }
+
+    /// Test-only hook for bounding PBKDF2 cost in non-crypto-focused suites.
+    /// Set to `nil` to restore default behavior.
+    internal static func setTestPBKDF2IterationsOverride(_ iterations: Int?) {
+        pbkdf2OverrideLock.lock()
+        defer { pbkdf2OverrideLock.unlock() }
+        if let iterations, iterations > 0 {
+            pbkdf2IterationsOverride = iterations
+        } else {
+            pbkdf2IterationsOverride = nil
+        }
     }
 
     public static func getKey(from source: KeySource, createIfMissing: Bool = false) throws -> SymmetricKey {
