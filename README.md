@@ -32,17 +32,19 @@ struct Bug: BlazeStorable {
     var status: String
 }
 
-let db = try BlazeDBClient.open(named: "demo", password: "DemoPass123!")
+let db = try BlazeDB.open(name: "demo", password: "DemoPass123!")
 let bug = Bug(title: "Crash on launch", status: "open")
-let bugID = try db.insert(bug)
+try db.put(bug)
 
-let loaded = try db.fetch(Bug.self, id: bugID)
-let openBugs = try db.query(Bug.self)
-    .where(\.status, equals: "open")
+let loaded: Bug? = try db.get("bug:\(bug.id.uuidString)")
+let openBugs: [Bug] = try db.query("bug")
+    .where("status", equals: "open")
     .all()
 ```
 
-That is the default beginner workflow: `open -> insert -> fetch -> query`.
+That is the default beginner workflow: `open -> put -> get -> query(namespace)`.
+
+Keys use the format `"type:UUID"` (for example, `"bug:123e4567-e89b-12d3-a456-426614174000"`). The prefix maps to the model type/namespace.
 
 ## What BlazeDB Is
 
@@ -128,6 +130,10 @@ Or in Xcode: **File → Add Package Dependencies** → paste `https://github.com
 **Requirements:** Swift 6.0+, macOS 15+ / iOS 15+ / watchOS 8+ / tvOS 15+ / visionOS 1+ / Linux / Android
 
 ---
+
+## Advanced Usage (Optional)
+
+If you are onboarding, you can stop after **Quick Start**. The rest of this README covers deeper architecture, advanced APIs, and operational details.
 
 ## Core Concepts
 
