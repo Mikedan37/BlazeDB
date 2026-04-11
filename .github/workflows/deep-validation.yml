@@ -54,7 +54,7 @@ jobs:
           set -euo pipefail
           swift test --filter BlazeDB_Tier0 2>&1 | tee .logs/tier0.log
 
-      - name: Test Tier 1 (PR-critical subset)
+      - name: Test Tier 1
         run: |
           set -euo pipefail
           swift test --skip-build --filter BlazeDB_Tier1 2>&1 | tee .logs/tier1.log
@@ -203,13 +203,19 @@ jobs:
       - name: Test Tier 1
         run: |
           set -euo pipefail
-          swift test --skip-build --filter BlazeDB_Tier1 2>&1 | tee .logs/tier1.log
+          swift test --skip-build --filter 'BlazeDB_Tier1\.' 2>&1 | tee .logs/tier1.log
 
       - name: Test Tier 2
         run: |
           set -euo pipefail
           swift test --skip-build --filter BlazeDB_Tier2 2>&1 | tee .logs/tier2.log
           swift test --filter BlazeDB_Tier2_Extended 2>&1 | tee .logs/tier2-extended.log
+
+      - name: Test Tier 3 heavy (+ transitional perf companion)
+        run: |
+          set -euo pipefail
+          swift test --skip-build --filter 'BlazeDB_Tier3_Heavy\.' 2>&1 | tee .logs/tier3-heavy.log
+          swift test --filter BlazeDB_Tier3_Heavy_Perf 2>&1 | tee .logs/tier3-heavy-perf.log
 
       - name: Dump diagnostics on failure
         if: failure()
