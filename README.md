@@ -12,6 +12,40 @@ An encrypted, embedded document database for Swift. Single-process, zero externa
 
 ---
 
+## Quick Navigation
+
+- [Start Here (New Users)](#start-here-new-users)
+- [Quick Start](#quick-start)
+- [Install](#install)
+- [API Overview](#api-overview)
+- [Current Limitations](#current-limitations)
+- [Documentation](#documentation)
+
+## Start Here (New Users)
+
+If you are new, use this path first and ignore the advanced sections until you need them.
+
+```swift
+import BlazeDB
+
+struct Bug: BlazeStorable {
+    var id: UUID = UUID()
+    var title: String
+    var status: String
+}
+
+let db = try BlazeDBClient.open(named: "demo", password: "DemoPass123!")
+let bug = Bug(title: "Crash on launch", status: "open")
+let bugID = try db.insert(bug)
+
+let loaded = try db.fetch(Bug.self, id: bugID)
+let openBugs = try db.query(Bug.self)
+    .where(\.status, equals: "open")
+    .all()
+```
+
+That is the default beginner workflow: `open -> insert -> fetch -> query`.
+
 ## What BlazeDB Is
 
 - An **embedded** database — runs in your process, no server required
@@ -140,6 +174,7 @@ let activeUsers: [User] = try db.query("user")
 
 ### Direct CRUD (secondary)
 
+If you are new, use this section and skip ahead only when you need more control.
 Call typed methods directly on `BlazeDBClient`:
 
 ```swift
@@ -157,7 +192,9 @@ let results = try db.query(User.self)
     .all()
 ```
 
-### TypedStore (secondary)
+## Advanced APIs (Optional)
+
+### TypedStore
 
 `TypedStore<T>` wraps the same operations into a scoped handle, useful when you want to pass a "users store" to a view model:
 
