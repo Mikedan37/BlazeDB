@@ -12,7 +12,7 @@ import XCTest
 @testable import BlazeDB
 #endif
 
-final class QueryProfilingTests: XCTestCase {
+final class QueryProfilingTests: LinuxTier1NonCryptoKDFHarness {
     
     private var dbURL: URL?
     private var db: BlazeDBClient?
