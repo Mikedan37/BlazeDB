@@ -4,7 +4,7 @@ This guide shows simple ways to use BlazeDB from SwiftUI without fighting archit
 
 ## 1) Open once, pass as a dependency
 
-Create one shared database handle and pass it into your root view.
+Create one shared database object and pass it into your root view.
 
 ```swift
 import SwiftUI
@@ -16,8 +16,10 @@ struct TodoItem: BlazeStorable {
     var isDone: Bool = false
 }
 
-enum AppDatabase {
-    static let shared: BlazeDBClient = {
+final class AppDatabase {
+    static let shared = AppDatabase()
+
+    let db = {
         do {
             return try BlazeDB.open(name: "myapp", password: "Password123!")
         } catch {
@@ -30,13 +32,13 @@ enum AppDatabase {
 struct MyApp: App {
     var body: some Scene {
         WindowGroup {
-            ContentView(db: AppDatabase.shared)
+            ContentView(database: AppDatabase.shared)
         }
     }
 }
 ```
 
-## 2) Use the db directly inside a view
+## 2) Use the database object inside a view
 
 This is a clean beginner pattern for small screens.
 
@@ -45,15 +47,15 @@ import SwiftUI
 import BlazeDB
 
 struct ContentView: View {
-    let db: BlazeDBClient
+    let database: AppDatabase
     @State private var items: [TodoItem] = []
 
     var body: some View {
         VStack {
             Button("Add Sample Item") {
                 do {
-                    try db.put(TodoItem(title: "Buy milk"))
-                    items = try db.query("todoitem").all()
+                    try database.db.put(TodoItem(title: "Buy milk"))
+                    items = try database.db.query("todoitem").all()
                 } catch {
                     print("DB error: \(error)")
                 }
@@ -65,7 +67,7 @@ struct ContentView: View {
         }
         .task {
             do {
-                items = try db.query("todoitem").all()
+                items = try database.db.query("todoitem").all()
             } catch {
                 print("Failed to load items: \(error)")
             }
@@ -74,28 +76,28 @@ struct ContentView: View {
 }
 ```
 
-## 3) Pass db down to child screens
+## 3) Pass the database down to child screens
 
-If multiple screens need data, pass the same `db` through navigation.
+If multiple screens need data, pass the same `database` through navigation.
 
 ```swift
 import SwiftUI
 import BlazeDB
 
 struct ListsView: View {
-    let db: BlazeDBClient
+    let database: AppDatabase
 
     var body: some View {
         NavigationStack {
             NavigationLink("Open Todos") {
-                TodoListView(db: db)
+                TodoListView(database: database)
             }
         }
     }
 }
 
 struct TodoListView: View {
-    let db: BlazeDBClient
+    let database: AppDatabase
     @State private var items: [TodoItem] = []
 
     var body: some View {
@@ -103,7 +105,7 @@ struct TodoListView: View {
             Text(item.title)
         }
         .task {
-            items = (try? db.query("todoitem").all()) ?? []
+            items = (try? database.db.query("todoitem").all()) ?? []
         }
     }
 }
@@ -118,20 +120,20 @@ import Foundation
 import BlazeDB
 
 final class TodoStore: ObservableObject {
-    let db: BlazeDBClient
+    private let database: AppDatabase
     @Published var items: [TodoItem] = []
 
-    init(db: BlazeDBClient) {
-        self.db = db
+    init(database: AppDatabase) {
+        self.database = database
     }
 
     func load() {
-        items = (try? db.query("todoitem").all()) ?? []
+        items = (try? database.db.query("todoitem").all()) ?? []
     }
 
     func add(_ title: String) {
         do {
-            try db.put(TodoItem(title: title))
+            try database.db.put(TodoItem(title: title))
             load()
         } catch {
             print("DB error: \(error)")
@@ -142,19 +144,19 @@ final class TodoStore: ObservableObject {
 
 ## Common DB methods you will call from SwiftUI
 
-- Load: `items = try db.query("todoitem").all()`
-- Save: `try db.put(TodoItem(title: "Call mom"))`
+- Load: `items = try database.db.query("todoitem").all()`
+- Save: `try database.db.put(TodoItem(title: "Call mom"))`
 - Update:
 
 ```swift
 var updated = item
 updated.isDone.toggle()
-try db.put(updated)
+try database.db.put(updated)
 ```
 
 ## Bottom line
 
 - `AppDatabase.shared` is just a shared DB handle.
-- UI interacts with BlazeDB by receiving `db` and calling `put/get/query`.
+- UI interacts with BlazeDB by receiving `database` and calling `database.db.put/get/query`.
 - For simple screens, call DB methods directly in view actions or `.task`.
-- For bigger features, pass `db` into a store/view model and keep UI code thin.
+- For bigger features, pass `database` into a store/view model and keep UI code thin.
