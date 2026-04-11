@@ -35,7 +35,7 @@ Use this table for day-to-day expectations.
 - Runner: `macos-15`; **does not** use `swift-actions/setup-swift` — tests run with **Xcode’s** `swift` so XCTest/`XCTestCore` resolves (OSS Swift on macOS does not).
 - `actions/cache` on `.build` (keyed by `runner.os`, `Package.swift`, `Package.resolved`)
 - `swift build --target BlazeDBCore`, CLI targets (`BlazeDoctor`, `BlazeDump`, `BlazeInfo`)
-- `BLAZEDB_TEST_SCOPE=tier0 swift test --filter BlazeDB_Tier0`, then `swift test --skip-build --filter BlazeDB_Tier1` (macOS PR). **Linux** nightly splits Tier1 vs Tier2/Tier3 — see `nightly.yml` (macOS nightly jobs unchanged in structure).
+- `BLAZEDB_TEST_SCOPE=tier0 swift test --filter BlazeDB_Tier0`, then `swift test --skip-build --filter BlazeDB_Tier1` (macOS PR). **Nightly:** on macOS, `nightly-macos-tier3-heavy` is **quarantined** (`continue-on-error: true`, non-blocking for the workflow); **Linux** adds split Tier1 / Tier2 / Tier3 jobs — see `nightly.yml`.
 - `verify-clean-checkout.sh` and `verify-readme-quickstart.sh` are **not** part of the blocking PR lane (they remain in-repo and move to deeper lanes)
 - **Secondary (blocking):** `Linux (Swift 6.2) — core + Tier 0`
 - Runner: `ubuntu-22.04`
@@ -219,7 +219,8 @@ Use precise language so status and dashboards do not blur the PR gate with deepe
 | **Canonical tiers** | `BlazeDB_Tier0`, `BlazeDB_Tier1`, `BlazeDB_Tier2`, `BlazeDB_Tier3_Heavy`, `BlazeDB_Tier3_Destructive` (end-state model). |
 | **PR3 transitional companions** | `BlazeDB_Tier2_Extended`, `BlazeDB_Tier3_Heavy_Perf`; temporary bridge targets slated for PR4 filesystem/target normalization. |
 | **Depth lane** | `tier1-depth.yml` currently runs `BlazeDB_Tier2` + `BlazeDB_Tier2_Extended` + `BlazeDB_Tier3_Heavy` + `BlazeDB_Tier3_Heavy_Perf` (workflow filename kept for compatibility until PR4). |
-| **Nightly confidence lane** | `nightly.yml`: macOS Tier1/Tier2 strict/Tier3 heavy/etc.; **Linux** adds separate jobs for canonical Tier1, Tier2 (+ extended), and Tier3 heavy (+ perf) so slow suites are not folded into Tier1. |
+| **Nightly confidence lane** | `nightly.yml`: macOS Tier1, Tier2 strict, **Tier3 heavy (quarantined: does not fail the workflow)**; **Linux** adds separate blocking jobs for canonical Tier1, Tier2 (+ extended), Tier3 heavy (+ perf). |
+| **Nightly macOS Tier3 heavy** | Job `nightly-macos-tier3-heavy`: `continue-on-error: true` — red tests are monitored (logs/artifacts/diagnostics) but **do not** turn the nightly run red. Not the same as Linux Tier3 nightly (blocking). |
 | **Deep validation lane** | `deep-validation.yml`: macOS full stack; **Linux extended** runs Tier0 → canonical Tier1 → Tier2/Tier2_Extended → Tier3 heavy/perf (see workflow). |
 | **Canonical Tier1** | `BlazeDB_Tier1` (single canonical Tier1 target). |
 
