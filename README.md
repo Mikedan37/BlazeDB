@@ -83,27 +83,7 @@ Run the included example directly from this repository:
 swift run HelloBlazeDB
 ```
 
-Or add BlazeDB to your own project and use this minimal example:
-
-```swift
-import BlazeDB
-
-struct Bug: BlazeStorable {
-    var id: UUID = UUID()
-    var title: String
-    var status: String
-}
-
-let db = try BlazeDB.open(name: "demo", password: "DemoPass123!")
-let bug = Bug(title: "Crash on launch", status: "open")
-
-try db.put(bug)
-
-let loaded: Bug? = try db.get("bug:\(bug.id.uuidString)")
-let openBugs: [Bug] = try db.query("bug")
-    .where("status", equals: "open")
-    .all()
-```
+The complete beginner code path is shown in **Start Here (New Users)** above.
 
 ### Getting started path
 
@@ -193,7 +173,7 @@ Later, BlazeDB can find all items with that ID and return the items for Grocerie
 
 ## Advanced Usage (Optional)
 
-If you are onboarding, you can stop after **Quick Start**. The rest of this README covers deeper architecture, advanced APIs, and operational details.
+If you're new, the sections above are enough to get started. The rest of this README covers deeper architecture, advanced APIs, and operational details.
 
 ## Core Concepts
 
@@ -238,8 +218,7 @@ let activeUsers: [User] = try db.query("user")
 
 ### Direct CRUD (secondary)
 
-If you are new, use this section and skip ahead only when you need more control.
-Call typed methods directly on `BlazeDBClient`:
+If you need more control than the default facade, you can call typed methods directly on `BlazeDBClient`:
 
 ```swift
 try db.insert(user)                              // Insert one
