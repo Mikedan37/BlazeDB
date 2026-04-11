@@ -204,12 +204,7 @@ The production runtime is always encrypted at rest. Every data page is sealed wi
 
 ### Default API (recommended)
 
-Use these calls as your default app path (see **Start Here (New Users)** for the full end-to-end example):
-
-- `let db = try BlazeDB.open(name: "myapp", password: "secure-password-123")`
-- `try db.put(user)`
-- `let loaded: User? = try db.get("user:\(user.id.uuidString)")`
-- `let activeUsers: [User] = try db.query("user").where("active", equals: true).all()`
+Use this as your default app path. The full end-to-end example lives in **Start Here (New Users)**.
 
 ### Direct CRUD (secondary)
 
