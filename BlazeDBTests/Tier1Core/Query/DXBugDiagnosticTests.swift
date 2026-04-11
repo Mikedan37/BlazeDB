@@ -306,25 +306,103 @@ final class TransactionFailedMisuseBugTests: XCTestCase {
 /// The `useIndex()` and `forceTableScan()` stubs are now documented as unimplemented.
 final class QueryExplainBugTests: XCTestCase {
 
-    private var tempURL: URL?
+    private var tempDirectoryURL: URL?
+    private var dbFileURL: URL?
     private var db: BlazeDBClient?
 
-    override func setUpWithError() throws {
-        try super.setUpWithError()
-        let testID = UUID().uuidString
-        tempURL = FileManager.default.temporaryDirectory
-            .appendingPathComponent("ExplainBug-\(testID).blazedb")
-        db = try BlazeDBClient(name: "explain_bug_\(testID)", fileURL: try requireFixture(tempURL), password: "ExplainBugTest123!")
+    override class func setUp() {
+        super.setUp()
+        KeyManager.setTestPBKDF2IterationsOverride(10_000)
     }
 
-    override func tearDown() {
-        db = nil
-        if let url = tempURL {
-            try? FileManager.default.removeItem(at: url)
-            try? FileManager.default.removeItem(at: url.deletingPathExtension().appendingPathExtension("meta"))
-            try? FileManager.default.removeItem(at: url.deletingPathExtension().appendingPathExtension("wal"))
-        }
+    override class func tearDown() {
+        KeyManager.setTestPBKDF2IterationsOverride(nil)
         super.tearDown()
+    }
+
+    override func invokeTest() {
+        lifecycleLog("test begin: \(name)")
+        super.invokeTest()
+        lifecycleLog("test end: \(name)")
+    }
+
+    override func setUpWithError() throws {
+        lifecycleLog("setup start")
+        try super.setUpWithError()
+        let testID = UUID().uuidString
+        let tempDir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("ExplainBug-\(testID)", isDirectory: true)
+        lifecycleLog("setup create temp dir: \(tempDir.path)")
+        try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
+        tempDirectoryURL = tempDir
+        let dbURL = tempDir.appendingPathComponent("test.blazedb")
+        dbFileURL = dbURL
+        lifecycleLog("setup init db start")
+        db = try BlazeDBClient(name: "explain_bug_\(testID)", fileURL: dbURL, password: "ExplainBugTest123!")
+        lifecycleLog("setup init db end")
+        lifecycleLog("setup end")
+    }
+
+    override func tearDownWithError() throws {
+        teardownLog("tearDown start")
+        if let openDB = db {
+            teardownLog("about to close db")
+            do {
+                try openDB.close()
+                teardownLog("db close returned")
+            } catch {
+                teardownLog("db close failed: \(error)")
+                XCTFail("QueryExplainBugTests close() failed: \(error)")
+            }
+        } else {
+            teardownLog("db already nil")
+        }
+
+        db = nil
+        teardownLog("db nilled")
+
+        if let url = dbFileURL {
+            removeIfExists(url, label: "db file")
+            removeIfExists(url.deletingPathExtension().appendingPathExtension("meta"), label: "meta file")
+            removeIfExists(url.deletingPathExtension().appendingPathExtension("wal"), label: "wal file")
+        } else {
+            teardownLog("db file url missing")
+        }
+
+        if let dir = tempDirectoryURL {
+            removeIfExists(dir, label: "temp directory")
+        } else {
+            teardownLog("temp directory missing")
+        }
+
+        teardownLog("tearDown end")
+        try super.tearDownWithError()
+    }
+
+    private func removeIfExists(_ url: URL, label: String) {
+        let fm = FileManager.default
+        guard fm.fileExists(atPath: url.path) else {
+            teardownLog("\(label) already absent")
+            return
+        }
+        do {
+            try fm.removeItem(at: url)
+            teardownLog("\(label) removed")
+        } catch {
+            teardownLog("failed removing \(label): \(error)")
+            XCTFail("Failed removing \(label) at \(url.path): \(error)")
+        }
+    }
+
+    private func teardownLog(_ message: String) {
+        lifecycleLog("teardown: \(message)")
+    }
+
+    private func lifecycleLog(_ message: String) {
+#if os(Linux)
+        let timestamp = ISO8601DateFormatter().string(from: Date())
+        print("[QueryExplainBugTests][\(timestamp)] \(message)")
+#endif
     }
 
     /// Verify explain surfaces candidate indexes while clearly marking selection as advisory.
