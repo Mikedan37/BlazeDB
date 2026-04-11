@@ -72,7 +72,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p .logs
-          swift test --filter BlazeDB_Tier3_Heavy 2>&1 | tee .logs/tier3-heavy.log
+          swift test --filter 'BlazeDB_Tier3_Heavy\.' 2>&1 | tee .logs/tier3-heavy.log
           swift test --filter BlazeDB_Tier3_Heavy_Perf 2>&1 | tee .logs/tier3-heavy-perf.log
 
       - name: Test Tier 3 destructive/fault injection

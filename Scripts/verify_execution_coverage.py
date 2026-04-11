@@ -21,6 +21,17 @@ from pathlib import Path
 TEST_ID_RE = re.compile(r"^([A-Za-z0-9_]+)\.([A-Za-z0-9_]+)/([A-Za-z0-9_]+)$")
 
 
+def swift_test_filter_for_target(target: str) -> str:
+    """Regex for `swift test --filter`.
+
+    Plain `BlazeDB_Tier3_Heavy` matches `BlazeDB_Tier3_Heavy_Perf` (substring). Require the bundle
+    dot so only `BlazeDB_Tier3_Heavy.*` runs.
+    """
+    if target == "BlazeDB_Tier3_Heavy":
+        return r"BlazeDB_Tier3_Heavy\."
+    return target
+
+
 def run(
     cmd: list[str],
     cwd: Path,
@@ -95,11 +106,13 @@ def main() -> int:
 
     discovered = parse_discovered(str(list_proc.stdout), args.target)
     xunit_path = artifact_dir / f"{args.target}.xunit.xml"
+    filter_expr = swift_test_filter_for_target(args.target)
     run_cmd = [
         "swift",
         "test",
+        "--disable-swift-testing",
         "--filter",
-        args.target,
+        filter_expr,
         "--parallel",
         "--num-workers",
         str(args.num_workers),

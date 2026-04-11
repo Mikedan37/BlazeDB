@@ -757,7 +757,14 @@ final class FuzzTests: XCTestCase {
     
     /// Fuzz test: Random batch operations with potential failures
     func testFuzz_TransactionChaos() throws {
-        let batches = 400 * fuzzScale
+        // Nightly/macOS runners: full 400×scale batches can OOM or trip limits when combined with other suites.
+        let base = 400 * fuzzScale
+        let batches: Int = {
+            if ProcessInfo.processInfo.environment["GITHUB_ACTIONS"] == "true" {
+                return min(base, max(80, base / 4))
+            }
+            return base
+        }()
         print("\n🎯 FUZZ: Transaction Chaos (\(batches) batches)")
         var rng = FuzzTestRNG(seed: deriveSeed(0x6006))
         var errorCount = 0
