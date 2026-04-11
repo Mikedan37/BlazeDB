@@ -434,3 +434,5 @@ Run with `swift run <ToolName>`.
 ---
 
 **License:** MIT
+
+**Maintained by:** Danylchuk Studios, LLC

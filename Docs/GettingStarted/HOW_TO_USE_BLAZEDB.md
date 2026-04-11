@@ -1,70 +1,38 @@
 # How to Use BlazeDB
 
-Complete reference guide. For a quick start, see [README.md](README.md).
+This guide starts where the main README leaves off.
+
+Before this guide:
+- Do the onboarding flow in [README.md](../../README.md)
+- If you are building SwiftUI, also read [SWIFTUI_DATABASE_PATTERNS.md](SWIFTUI_DATABASE_PATTERNS.md)
+
+If you are new, read this in order:
+1. Querying Data
+2. Opening and Closing Correctly
+3. Backups, Restore, and Trust
+4. Sharp Edges
 
 ---
 
-## 1. What BlazeDB Is
+## 1. Scope of This Guide
 
-BlazeDB is an embedded database that runs inside your app. One process writes at a time. If your app crashes, committed data survives.
+This is the practical guide for day-2 usage: queries, lifecycle, backups, and production caveats.
 
-This guide prioritizes the **default shipped OSS core runtime**. Advanced/conditional surfaces (distributed sync, full telemetry path, staging features) are not the default onboarding path.
+The beginner setup and first end-to-end example are intentionally in the root README, so this file does not repeat them.
 
-**What it is:**
-- Embedded database (lives in your process)
-- Encrypted by default (AES-256-GCM)
-- Crash-safe (write-ahead logging)
-- Schemaless (no migrations required)
-- Runs on macOS, Linux, iOS, tvOS, watchOS
-
-**What it is NOT:**
-- Not distributed (no clustering)
-- Not multi-writer (one process writes)
-- Not a server database (files are local)
-- Not a replacement for Postgres (different use case)
-
-If you need multiple processes writing to the same database, BlazeDB is not the right tool.
+If you need a quick "what BlazeDB is / is not" summary, use [README.md](../../README.md).
 
 ---
 
-## 2. Quick Start
+## 2. Quick Recap (skip if you did README)
 
-BlazeDB has several API tiers:
+You will mainly use:
 
 - **Default API (recommended):** `BlazeDB.open(...)` + `db.put(...)` + `db.get(_:)` + `db.query(_:)`
 - **Direct CRUD (secondary):** `BlazeStorable` + `db.insert(model)` / `db.fetch(T.self, id:)` / `db.query(T.self)`
 - **TypedStore (secondary):** `db.typed(T.self)` — scoped handle for view models / service layers
 - **Raw explicit (advanced):** `BlazeDataRecord` + string-field query builder
 - **Manual mapping (advanced):** `BlazeDocument` with `toStorage()` / `init(from:)`
-
-```swift
-import BlazeDB
-
-struct Counter: BlazeStorable {
-    var id: UUID = UUID()
-    var name: String
-    var count: Int
-}
-
-// Open database (creates if needed, always encrypted)
-let db = try BlazeDB.open(name: "myapp", password: "your-secure-password")
-
-let alice = Counter(name: "Alice", count: 10)
-let bob = Counter(name: "Bob", count: 20)
-
-// Put / get / query
-try db.put(alice)
-try db.put(bob)
-
-let one: Counter? = try db.get("counter:\(alice.id.uuidString)")
-let results: [Counter] = try db.query("counter")
-    .where("count", equals: 20)
-    .all()
-
-print("Found \(results.count) records")
-```
-
-That's it. You have a working database.
 
 ---
 
@@ -97,7 +65,7 @@ print("Database at: \(db.fileURL.path)")
 
 ## 4. Defining and Evolving a Schema
 
-BlazeDB is schema-optional. You can start without one and add schema enforcement later when your app grows.
+Most apps do not need schema or migrations right away. You can store data first and evolve later.
 
 BlazeDB doesn't enforce schemas by default. Insert records with whatever fields you want.
 
@@ -112,7 +80,7 @@ try db.insert(record)
 
 **What happens if the schema changes?**
 
-BlazeDB refuses to guess how to migrate your data. If you add a new field, existing records won't have it. If you remove a field, old records still have it.
+**BlazeDB refuses to guess how to migrate your data.** If you add a new field, existing records won't have it. If you remove a field, old records still have it.
 
 **Example: Adding a field**
 ```swift
@@ -145,6 +113,7 @@ for record in allRecords {
 ## 5. Schema Migrations (When You Need Them)
 
 BlazeDB will not auto-migrate your data. You write migrations explicitly.
+You only need this if your app is already in production and your data format changes.
 
 **Step 1: Define schema version**
 ```swift
@@ -176,7 +145,7 @@ struct AddEmailField: BlazeDBMigration {
 
 **Step 3: Run migration**
 ```swift
-let db = try BlazeDBClient.open(named: "mydb", password: "your-password")
+let db = try BlazeDB.open(name: "mydb", password: "your-password")
 
 let migrations: [BlazeDBMigration] = [AddEmailField()]
 let targetVersion = MyAppSchema.version
@@ -202,6 +171,22 @@ try db.validateSchemaVersion(expectedVersion: MyAppSchema.version)
 ---
 
 ## 6. Querying Data
+
+Start with this style first:
+
+```swift
+struct TodoItem: BlazeStorable {
+    var id: UUID = UUID()
+    var title: String
+    var isDone: Bool = false
+}
+
+let openItems: [TodoItem] = try db.query("todoitem")
+    .where("isDone", equals: false)
+    .all()
+```
+
+If you need lower-level field-value queries, use the raw query builder:
 
 **Filter:**
 ```swift
@@ -254,7 +239,7 @@ Manual refresh and pull-to-refresh remain available when you want explicit refre
 **Open once per process. Close once at shutdown.**
 
 ```swift
-let db = try BlazeDBClient.open(named: "myapp", password: "your-password")
+let db = try BlazeDB.open(name: "myapp", password: "your-password")
 defer { try? db.close() }
 
 // Use database...
@@ -316,8 +301,8 @@ private struct BlazeDBKey: StorageKey {
 // In configure.swift
 public func configure(_ app: Application) throws {
  // Open database on startup
- let db = try BlazeDBClient.open(
- named: "myserver",
+ let db = try BlazeDB.open(
+ name: "myserver",
  password: ProcessInfo.processInfo.environment["BLAZEDB_PASSWORD"] ?? "change-me"
  )
  app.blazeDB = db
@@ -361,7 +346,7 @@ func routes(_ app: Application) throws {
 
 **Export database:**
 ```swift
-let db = try BlazeDBClient.open(named: "myapp", password: "your-password")
+let db = try BlazeDB.open(name: "myapp", password: "your-password")
 
 let backupURL = FileManager.default.temporaryDirectory
  .appendingPathComponent("backup.blazedump")
@@ -376,14 +361,14 @@ print("Exported to: \(backupURL.path)")
 
 If you are onboarding to BlazeDB, you can skip this subsection and continue to backup verification below.
 
-For most applications, **`BlazeDBClient` is the only API you need**. The following types are public
+For most applications, **the `db` returned by `BlazeDB.open(...)` is all you need**. The following types are public
 primarily for tooling, diagnostics, or migration and are **not** the default entrypoints:
 
-- `PageStore` — low-level encrypted page I/O and WAL integration, used by `BlazeDBClient` and tests.
+- `PageStore` — low-level encrypted page I/O and WAL integration, used by BlazeDB and tests.
 - `BlazeDBManager` — multi-database mount/switch helper for CLI and migration-style tools.
 - `BlazeTransaction` — page-level transaction wrapper used in advanced/legacy tooling paths.
 
-If you are building a normal app, stay on `BlazeDBClient` and ignore these unless the docs explicitly
+If you are building a normal app, stay on `BlazeDB.open(...)` + `db` methods and ignore these unless the docs explicitly
 tell you otherwise.
 
 **Verify backup:**
@@ -395,7 +380,7 @@ print("Record count: \(header.recordCount)")
 
 **Restore:**
 ```swift
-let restoredDB = try BlazeDBClient.open(named: "restored", password: "your-password")
+let restoredDB = try BlazeDB.open(name: "restored", password: "your-password")
 
 // Restore (target database must be empty)
 try BlazeDBImporter.restore(from: backupURL, to: restoredDB, allowSchemaMismatch: false)
@@ -516,7 +501,7 @@ blazedb info mydb --password "password"
 
 **Minimum viable usage:**
 ```swift
-let db = try BlazeDBClient.open(named: "myapp", password: "your-password")
+let db = try BlazeDB.open(name: "myapp", password: "your-password")
 defer { try? db.close() }
 
 // Use database...
