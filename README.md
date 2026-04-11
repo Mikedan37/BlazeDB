@@ -83,7 +83,23 @@ Run the included example directly from this repository:
 swift run HelloBlazeDB
 ```
 
-For the full beginner API walkthrough, use **Start Here (New Users)**.
+Or test a different minimal example in your own app:
+
+```swift
+import BlazeDB
+
+struct Note: BlazeStorable {
+    var id: UUID = UUID()
+    var text: String
+}
+
+let db = try BlazeDB.open(name: "quickstart", password: "DemoPass123!")
+try db.put(Note(text: "Ship first BlazeDB build"))
+
+let notes: [Note] = try db.query("note").all()
+```
+
+For the full beginner walkthrough (`open -> put -> get -> query`), use **Start Here (New Users)**.
 For deeper coverage, see [HOW_TO_USE_BLAZEDB.md](Docs/GettingStarted/HOW_TO_USE_BLAZEDB.md).
 
 ## Install
