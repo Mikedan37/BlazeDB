@@ -15,6 +15,40 @@ final class QueryExplainTests: XCTestCase {
     private var tempURL: URL?
     private var db: BlazeDBClient?
     
+    // Linux CI is currently the bottleneck lane for Tier1 wall time.
+    // Keep macOS stress sizes unchanged; use threshold-focused fixture sizes on Linux.
+    private var largeTableScanRecordCount: Int {
+        #if os(Linux)
+        return 1001
+        #else
+        return 15000
+        #endif
+    }
+    
+    private var largeSortRecordCount: Int {
+        #if os(Linux)
+        return 10001
+        #else
+        return 20000
+        #endif
+    }
+    
+    private var groupedAggregationRecordCount: Int {
+        #if os(Linux)
+        return 1200
+        #else
+        return 5000
+        #endif
+    }
+    
+    private var groupedAggregationFilterThreshold: Int {
+        #if os(Linux)
+        return 600
+        #else
+        return 2500
+        #endif
+    }
+    
     override func setUpWithError() throws {
         try super.setUpWithError()
         BlazeDBClient.clearCachedKey()
@@ -129,8 +163,7 @@ final class QueryExplainTests: XCTestCase {
     // MARK: - Warnings
     
     func testExplainWarnsLargeTableScan() throws {
-        // Batch insert 15k records (20x faster!)
-        let records = (0..<15000).map { i in
+        let records = (0..<largeTableScanRecordCount).map { i in
             BlazeDataRecord(["value": .int(i)])
         }
         _ = try requireFixture(db).insertMany(records)
@@ -138,7 +171,7 @@ final class QueryExplainTests: XCTestCase {
         let plan = try requireFixture(db).query().explain()
         
         // Should warn about large dataset
-        XCTAssertGreaterThan(plan.warnings.count, 0)
+        XCTAssertTrue(plan.warnings.contains { $0.contains("Large dataset") })
     }
     
     func testExplainWarnsManyFilters() throws {
@@ -158,8 +191,7 @@ final class QueryExplainTests: XCTestCase {
     }
     
     func testExplainWarnsLargeSort() throws {
-        // Batch insert 20k records (20x faster!)
-        let records = (0..<20000).map { i in
+        let records = (0..<largeSortRecordCount).map { i in
             BlazeDataRecord(["value": .int(i)])
         }
         _ = try requireFixture(db).insertMany(records)
@@ -169,7 +201,7 @@ final class QueryExplainTests: XCTestCase {
             .explain()
         
         // Should warn about sorting many records
-        XCTAssertGreaterThan(plan.warnings.count, 0)
+        XCTAssertTrue(plan.warnings.contains { $0.contains("Sorting") })
     }
     
     // MARK: - Estimation Accuracy
@@ -271,8 +303,7 @@ final class QueryExplainTests: XCTestCase {
     }
     
     func testExplainGroupedAggregation() throws {
-        // Batch insert 5000 records (15x faster!)
-        let records = (0..<5000).map { i in
+        let records = (0..<groupedAggregationRecordCount).map { i in
             BlazeDataRecord([
                 "team": .string("team_\(i % 10)"),
                 "value": .int(i)
@@ -281,7 +312,7 @@ final class QueryExplainTests: XCTestCase {
         _ = try requireFixture(db).insertMany(records)
         
         let plan = try requireFixture(db).query()
-            .where("value", greaterThan: .int(2500))
+            .where("value", greaterThan: .int(groupedAggregationFilterThreshold))
             .groupBy("team")
             .count()
             .sum("value")
