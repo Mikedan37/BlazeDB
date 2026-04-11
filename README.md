@@ -1,6 +1,6 @@
 # BlazeDB
 
-**Version:** 2.7.4 &nbsp;|&nbsp; **License:** MIT &nbsp;|&nbsp; **Swift 6 strict concurrency compliant**
+**Version:** 2.7.5 &nbsp;|&nbsp; **License:** MIT &nbsp;|&nbsp; **Swift 6 strict concurrency compliant**
 
 An encrypted, embedded document database for Swift. Single-process, zero external dependencies. Production runtime is always encrypted at rest.
 
@@ -13,8 +13,10 @@ An encrypted, embedded document database for Swift. Single-process, zero externa
 ## Quick Navigation
 
 - [Start Here (New Users)](#start-here-new-users)
+- [SwiftUI Path (Start Here)](#swiftui-path-start-here)
 - [Quick Start](#quick-start)
 - [Install](#install)
+- [Example: Lists and List Items](#example-lists-and-list-items)
 - [API Overview](#api-overview)
 - [Current Limitations](#current-limitations)
 - [Documentation](#documentation)
@@ -45,6 +47,12 @@ let openBugs: [Bug] = try db.query("bug")
 That is the default beginner workflow: `open -> put -> get -> query(namespace)`.
 
 Keys use the format `"type:UUID"` (for example, `"bug:123e4567-e89b-12d3-a456-426614174000"`). The prefix maps to the model type/namespace.
+
+## SwiftUI Path (Start Here)
+
+If you are building a SwiftUI app, start here next:
+
+- [SwiftUI DB Patterns](Docs/GettingStarted/SWIFTUI_DATABASE_PATTERNS.md) - beginner-first setup, then clear Level 1 to Level 4 progression.
 
 ## What BlazeDB Is
 
@@ -82,35 +90,24 @@ Run the included example directly from this repository:
 swift run HelloBlazeDB
 ```
 
-Or add BlazeDB to your own project and use this minimal example:
+Or test a different minimal example in your own app:
 
 ```swift
 import BlazeDB
 
-struct Bug: BlazeStorable {
+struct Note: BlazeStorable {
     var id: UUID = UUID()
-    var title: String
-    var status: String
+    var text: String
 }
 
-let db = try BlazeDB.open(name: "demo", password: "DemoPass123!")
-let bug = Bug(title: "Crash on launch", status: "open")
+let db = try BlazeDB.open(name: "quickstart", password: "DemoPass123!")
+try db.put(Note(text: "Ship first BlazeDB build"))
 
-try db.put(bug)
-
-let loaded: Bug? = try db.get("bug:\(bug.id.uuidString)")
-let openBugs: [Bug] = try db.query("bug")
-    .where("status", equals: "open")
-    .all()
+let notes: [Note] = try db.query("note").all()
 ```
 
-### Getting started path
-
-1. **Run `swift run HelloBlazeDB`** from this repo to verify your environment.
-2. **Read [Examples/HelloBlazeDB/main.swift](Examples/HelloBlazeDB/main.swift)** — canonical `open → put → get → query` flow.
-3. **Read [HOW_TO_USE_BLAZEDB.md](Docs/GettingStarted/HOW_TO_USE_BLAZEDB.md)** for the complete guide.
-
----
+For the full beginner walkthrough (`open -> put -> get -> query`), use **Start Here (New Users)**.
+For deeper coverage, see [HOW_TO_USE_BLAZEDB.md](Docs/GettingStarted/HOW_TO_USE_BLAZEDB.md).
 
 ## Install
 
@@ -118,7 +115,7 @@ Add to your `Package.swift`:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/Mikedan37/BlazeDB.git", from: "2.7.4")
+    .package(url: "https://github.com/Mikedan37/BlazeDB.git", from: "2.7.5")
 ],
 targets: [
     .target(name: "YourApp", dependencies: ["BlazeDB"])
@@ -131,9 +128,70 @@ Or in Xcode: **File → Add Package Dependencies** → paste `https://github.com
 
 ---
 
+## Example: Lists and List Items
+
+A common BlazeDB use case is building something like a to-do list.
+
+For example, you might have:
+- one list called Groceries
+- several items inside it, like Milk and Eggs
+
+At first, you might try to store the whole thing as one big object with an array of items inside it. That seems simpler, but it makes real app behavior harder: changing one item means rewriting the whole list, and querying items by themselves becomes awkward.
+
+A better pattern is:
+- store the list as one record
+- store each list item as its own record
+- give each item a `listID` field
+- set `listID` to the `id` of the list that item belongs to
+
+That shared value is the connection.
+
+```swift
+import Foundation
+import BlazeDB
+
+struct List: BlazeStorable {
+    var id: UUID = UUID()
+    var name: String
+}
+
+struct ListItem: BlazeStorable {
+    var id: UUID = UUID()
+    var listID: UUID   // The ID of the list this item belongs to
+    var name: String
+    var isDone: Bool = false
+}
+
+let db = try BlazeDB.open(name: "demo", password: "DemoPass123!")
+
+// Save the Groceries list first.
+// BlazeDB gives it a unique id that we can use to link items to it.
+let groceries = List(name: "Groceries")
+try db.put(groceries)
+
+// These items belong to the Groceries list because they store groceries.id
+// in their listID field.
+try db.put(ListItem(listID: groceries.id, name: "Milk"))
+try db.put(ListItem(listID: groceries.id, name: "Eggs"))
+
+// Load all lists
+let lists: [List] = try db.query("list").all()
+
+// Load only the items whose listID matches the Groceries list id
+let groceryItems: [ListItem] = try db.query("listitem")
+    .where("listID", equals: groceries.id)
+    .all()
+```
+
+When you save the Groceries list, it gets an ID.  
+When you save Milk and Eggs, you give them that same ID in `listID`.  
+Later, BlazeDB can find all items with that ID and return the items for Groceries.
+
+---
+
 ## Advanced Usage (Optional)
 
-If you are onboarding, you can stop after **Quick Start**. The rest of this README covers deeper architecture, advanced APIs, and operational details.
+If you're new, the sections above are enough to get started. The rest of this README covers deeper architecture, advanced APIs, and operational details.
 
 ## Core Concepts
 
@@ -164,22 +222,11 @@ The production runtime is always encrypted at rest. Every data page is sealed wi
 
 ### Default API (recommended)
 
-Use these as the default path in app code:
-
-```swift
-let db = try BlazeDB.open(name: "myapp", password: "secure-password-123")
-try db.put(user)
-let loaded: User? = try db.get("user:\(user.id.uuidString)")
-
-let activeUsers: [User] = try db.query("user")
-    .where("active", equals: true)
-    .all()
-```
+Use this as your default app path. The full end-to-end example lives in **Start Here (New Users)**.
 
 ### Direct CRUD (secondary)
 
-If you are new, use this section and skip ahead only when you need more control.
-Call typed methods directly on `BlazeDBClient`:
+If you need more control than the default API, you can call typed methods directly on `BlazeDBClient`:
 
 ```swift
 try db.insert(user)                              // Insert one
@@ -361,6 +408,7 @@ Run with `swift run <ToolName>`.
 | Resource | Description |
 |----------|-------------|
 | [Getting Started Guide](Docs/GettingStarted/README.md) | Step-by-step setup |
+| [SwiftUI DB Patterns](Docs/GettingStarted/SWIFTUI_DATABASE_PATTERNS.md) | Practical SwiftUI patterns for passing and using `BlazeDBClient` |
 | [Complete Reference](Docs/GettingStarted/HOW_TO_USE_BLAZEDB.md) | Full usage guide with queries, backups, and health checks |
 | [API Reference](Docs/API/API_REFERENCE.md) | Public API documentation |
 | [Examples](Examples/) | Working code (HelloBlazeDB, BasicExample, ReferenceConsumer) |
