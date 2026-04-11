@@ -2,12 +2,12 @@
 # Tier 0: Always-on (local + PR). Fast, deterministic, must pass.
 # See Docs/Testing/TEST_EXECUTION_MODEL.md
 set -e
+. "$(dirname "$0")/lib/temp_lifecycle.sh"
+blazedb_temp_setup "tier0"
 echo "=== Tier 0: Always-on deterministic gate ==="
 RUN_ID="$(date +%Y%m%d-%H%M%S)"
 ARTIFACT_DIR=".artifacts/quick/${RUN_ID}"
-TMP_BASE=".artifacts/tmp/${RUN_ID}"
-mkdir -p "$ARTIFACT_DIR" "$TMP_BASE"
-export TMPDIR="$(pwd)/$TMP_BASE"
+mkdir -p "$ARTIFACT_DIR"
 # Fail fast if Tier-2-only env is set (would change test behavior; Tier 0 must stay light)
 if [ -n "${RUN_HEAVY_STRESS}" ] && [ "${RUN_HEAVY_STRESS}" != "0" ]; then
   echo "ERROR: RUN_HEAVY_STRESS must not be set for Tier 0. Unset it or use run-tier2.sh for heavy stress."

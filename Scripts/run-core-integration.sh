@@ -1,6 +1,8 @@
 #!/bin/bash
 # Pre-release confidence lane: Tier 0 + Tier 1 + Tier 2.
 set -e
+. "$(dirname "$0")/lib/temp_lifecycle.sh"
+blazedb_temp_setup "core-integration"
 echo "=== Core+Integration (pre-release) ==="
 RUN_ID="$(date +%Y%m%d-%H%M%S)"
 ARTIFACT_DIR=".artifacts/core-integration/${RUN_ID}"
