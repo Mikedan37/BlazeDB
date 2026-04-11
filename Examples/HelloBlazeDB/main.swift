@@ -11,7 +11,7 @@ print("=== Hello BlazeDB ===\n")
 
 do {
     // 1) Open a database
-    let db = try BlazeDB.open(name: "HelloBlazeDB", password: "demo-password")
+    let db = try BlazeDB.open(name: "HelloBlazeDB", password: "DemoPass123!")
     print("Opened database")
 
     // 2) Put documents

@@ -57,7 +57,7 @@ struct Bug: BlazeStorable {
     var status: String
 }
 
-let db = try BlazeDB.open(name: "demo", password: "pass-123")
+let db = try BlazeDB.open(name: "demo", password: "DemoPass123!")
 let bug = Bug(title: "Crash on launch", status: "open")
 
 try db.put(bug)
