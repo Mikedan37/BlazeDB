@@ -399,14 +399,13 @@ final class PerformanceProfilingTests: XCTestCase {
     
     /// PROFILE: CPU-intensive query (complex filters)
     func testProfile_CPUIntensiveQuery() throws {
-        // Keep CI runtime bounded while preserving query-shape coverage.
+        // CI uses a smaller fixture to avoid nightly runtime spikes; local keeps more volume.
         let runningOnCI = ProcessInfo.processInfo.environment["GITHUB_ACTIONS"] == "true"
         let recordCount = runningOnCI ? 1_000 : 2_000
         let lowerBound = recordCount / 4
         let upperBound = (recordCount * 3) / 4
-        let expectedCount = (lowerBound + 1..<upperBound).reduce(0) { partial, value in
-            partial + (value.isMultiple(of: 2) ? 1 : 0)
-        }
+        let matchingRange = (lowerBound + 1)..<upperBound
+        let expectedCount = matchingRange.filter { $0.isMultiple(of: 2) }.count
 
         // Setup
         for i in 0..<recordCount {
