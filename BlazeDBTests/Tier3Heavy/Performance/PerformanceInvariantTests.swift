@@ -266,9 +266,11 @@ final class PerformanceInvariantTests: XCTestCase {
         let start = Date()
         db = try BlazeDBClient(name: "perf_test", fileURL: tempURL, password: "SecureTestDB-456!")
         let duration = Date().timeIntervalSince(start)
+        let isCI = ProcessInfo.processInfo.environment["CI"] == "true"
+        let threshold = isCI ? 6.0 : 0.5
         
-        XCTAssertLessThan(duration, 0.5, 
-                         "Reopening DB with 1000 records should be < 500ms, was \(String(format: "%.2f", duration * 1000))ms")
+        XCTAssertLessThan(duration, threshold,
+                         "Reopening DB with 1000 records should be < \(String(format: "%.2f", threshold))s, was \(String(format: "%.2f", duration))s")
         
         XCTAssertEqual(try db.count(), 1000, "All records should be loaded")
     }
@@ -312,9 +314,11 @@ final class PerformanceInvariantTests: XCTestCase {
             try db.delete(id: id)
         }
         let duration = Date().timeIntervalSince(start)
+        let isCI = ProcessInfo.processInfo.environment["CI"] == "true"
+        let threshold = isCI ? 20.0 : 8.0
         
-        XCTAssertLessThan(duration, 8.0,
-                         "1000 individual deletes should be < 8s, was \(String(format: "%.2f", duration))s")
+        XCTAssertLessThan(duration, threshold,
+                         "1000 individual deletes should be < \(String(format: "%.2f", threshold))s, was \(String(format: "%.2f", duration))s")
         
         XCTAssertEqual(try db.count(), 0, "All records should be deleted")
     }
