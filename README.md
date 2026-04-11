@@ -83,13 +83,8 @@ Run the included example directly from this repository:
 swift run HelloBlazeDB
 ```
 
-The complete beginner code path is shown in **Start Here (New Users)** above.
-
-### Getting started path
-
-1. **Run `swift run HelloBlazeDB`** from this repo to verify your environment.
-2. **Read [Examples/HelloBlazeDB/main.swift](Examples/HelloBlazeDB/main.swift)** — canonical `open → put → get → query` flow.
-3. **Read [HOW_TO_USE_BLAZEDB.md](Docs/GettingStarted/HOW_TO_USE_BLAZEDB.md)** for the complete guide.
+For the full beginner API walkthrough, use **Start Here (New Users)**.
+For deeper coverage, see [HOW_TO_USE_BLAZEDB.md](Docs/GettingStarted/HOW_TO_USE_BLAZEDB.md).
 
 ## Install
 
