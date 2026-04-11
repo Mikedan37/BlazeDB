@@ -134,14 +134,19 @@ Or in Xcode: **File → Add Package Dependencies** → paste `https://github.com
 
 A common BlazeDB use case is building something like a to-do list.
 
-At first, you might think to store one big `List` object with `[ListItem]` inside it. That seems simpler, but it makes real app behavior awkward: updating one item means rewriting the whole list, and querying items independently becomes harder.
+For example, you might have:
+- one list called Groceries
+- several items inside it, like Milk and Eggs
 
-Instead:
-- store each `List` as its own record
-- store each `ListItem` as its own record
-- store the parent list's `id` in each item's `listID`
+At first, you might try to store the whole thing as one big object with an array of items inside it. That seems simpler, but it makes real app behavior harder: changing one item means rewriting the whole list, and querying items by themselves becomes awkward.
 
-That shared `id` is the link.
+A better pattern is:
+- store the list as one record
+- store each list item as its own record
+- give each item a `listID` field
+- set `listID` to the `id` of the list that item belongs to
+
+That shared value is the connection.
 
 ```swift
 import Foundation
@@ -154,30 +159,35 @@ struct List: BlazeStorable {
 
 struct ListItem: BlazeStorable {
     var id: UUID = UUID()
-    var listID: UUID   // The ID of the parent list
+    var listID: UUID   // The ID of the list this item belongs to
     var name: String
     var isDone: Bool = false
 }
 
 let db = try BlazeDB.open(name: "demo", password: "DemoPass123!")
 
+// Save the Groceries list first.
+// BlazeDB gives it a unique id that we can use to link items to it.
 let groceries = List(name: "Groceries")
 try db.put(groceries)
 
-let groceriesListID = groceries.id
+// These items belong to the Groceries list because they store groceries.id
+// in their listID field.
+try db.put(ListItem(listID: groceries.id, name: "Milk"))
+try db.put(ListItem(listID: groceries.id, name: "Eggs"))
 
-try db.put(ListItem(listID: groceriesListID, name: "Milk"))
-try db.put(ListItem(listID: groceriesListID, name: "Eggs"))
-
+// Load all lists
 let lists: [List] = try db.query("list").all()
 
+// Load only the items whose listID matches the Groceries list id
 let groceryItems: [ListItem] = try db.query("listitem")
-    .where("listID", equals: groceriesListID)
+    .where("listID", equals: groceries.id)
     .all()
 ```
 
-`List` is the parent. `ListItem` is the child.  
-`listID` stores the parent list's `id`, so querying `listitem` by `listID` returns the items for that list.
+When you save the Groceries list, it gets an ID.  
+When you save Milk and Eggs, you give them that same ID in `listID`.  
+Later, BlazeDB can find all items with that ID and return the items for Groceries.
 
 ---
 
