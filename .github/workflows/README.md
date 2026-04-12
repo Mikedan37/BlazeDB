@@ -25,15 +25,7 @@ Tag `v*` releases.
 
 Daily (`schedule`) + manual (`workflow_dispatch`) nightly confidence workflow with **failure-domain isolation**.
 
-Jobs:
-
-- `macOS 15 — Tier1 depth`
-- `macOS 15 — Tier1`
-- `macOS 15 — Tier2 strict`
-- `macOS 15 — clean-checkout verification`
-- `macOS 15 — README quickstart verification`
-- `macOS 15 — Tier0 ThreadSanitizer`
-- `Linux (Swift 6.2) — Tier0 + Tier1`
+Jobs (see `nightly.yml` for ids): macOS Tier2 strict, clean-checkout verification, README quickstart, Tier0 ThreadSanitizer; Linux Tier1 and Tier2 **core**. Heavy/extended Tier3 companions run in weekly `deep-validation.yml`, not nightly.
 
 Nightly confidence runs root-owned targets only and avoids depending on `BlazeDBExtraTests`.
 This split keeps nightly rerunnable by concern and avoids bundling Tier2/verify/docs into one giant macOS job.

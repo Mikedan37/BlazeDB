@@ -285,7 +285,7 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
 
-  # Linux Tier2 core only in nightly; Tier2 extended + Tier3 heavy/perf run in tier1-depth / deep-validation — see CI_AND_TEST_TIERS.md.
+  # Linux Tier2 core only in nightly; Tier2 extended + Tier3 heavy/perf run in deep-validation — see CI_AND_TEST_TIERS.md.
   linux-tier2-core:
     name: Linux (Swift 6.2) — Tier2 (core)
     runs-on: ubuntu-22.04

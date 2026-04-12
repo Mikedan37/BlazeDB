@@ -3,7 +3,6 @@
 # deep-linux-extended), full macOS Tier0–Tier3 heavy/perf + destructive/fault-injection (see
 # deep-macos-full), and broader macOS Tier0+Tier1 TSan (see deep-macos-tsan).
 # Schedule: Sundays 03:00 UTC. Complements ci.yml (PR gate) and nightly.yml (daily confidence).
-# tier1-depth.yml is a separate weekly macOS lane (transitional naming); see CI_AND_TEST_TIERS.md.
 
 name: Deep validation
 
