@@ -17,7 +17,7 @@ env:
 
 jobs:
   nightly-macos-tier2-strict:
-    name: macOS 15 — Tier2 strict
+    name: macOS 15 — Tier2 (strict)
     runs-on: macos-15
     timeout-minutes: 180
 
@@ -76,7 +76,7 @@ jobs:
           retention-days: 7
 
   nightly-macos-clean-checkout:
-    name: macOS 15 — clean-checkout verification
+    name: macOS 15 — clean checkout verification
     runs-on: macos-15
     timeout-minutes: 120
 
@@ -172,7 +172,7 @@ jobs:
           retention-days: 7
 
   nightly-macos-tsan-tier0:
-    name: macOS 15 — Tier0 ThreadSanitizer
+    name: macOS 15 — Tier0 (ThreadSanitizer)
     runs-on: macos-15
     timeout-minutes: 90
 
@@ -220,8 +220,9 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
 
-  nightly-linux-tier1:
-    name: Linux (Swift 6.2) — Tier1 (canonical)
+
+  linux-tier1:
+    name: Linux (Swift 6.2) — Tier1
     runs-on: ubuntu-22.04
     timeout-minutes: 120
 
@@ -247,9 +248,6 @@ jobs:
 
       - name: Swift version
         run: swift --version
-
-      - name: Build core
-        run: swift build --target BlazeDBCore
 
       - name: Prepare CI log directories
         run: mkdir -p .logs .artifacts
@@ -287,8 +285,8 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
 
-  # Linux: canonical Tier2 bundle only (`BlazeDB_Tier2\.`). Tier2 extended + Tier3 run in weekly/deep — see CI_AND_TEST_TIERS.md.
-  nightly-linux-tier2:
+  # Linux: canonical Tier2 core only (`BlazeDB_Tier2\.`). Tier2 extended + Tier3 run in weekly/deep — see CI_AND_TEST_TIERS.md.
+  linux-tier2-core:
     name: Linux (Swift 6.2) — Tier2 (core)
     runs-on: ubuntu-22.04
     timeout-minutes: 240
@@ -316,9 +314,6 @@ jobs:
       - name: Swift version
         run: swift --version
 
-      - name: Build core
-        run: swift build --target BlazeDBCore
-
       - name: Prepare CI log directories
         run: mkdir -p .logs .artifacts
 
@@ -328,13 +323,13 @@ jobs:
           mkdir -p .logs
           (
             while sleep 60; do
-              echo "[tier2-heartbeat] $(date -u '+%Y-%m-%dT%H:%M:%SZ') swift-test still running"
+              echo "[tier2-core-heartbeat] $(date -u '+%Y-%m-%dT%H:%M:%SZ') swift-test still running"
             done
           ) &
           _hb=$!
           trap 'kill "$_hb" 2>/dev/null || true' EXIT
           stdbuf -oL -eL swift test --disable-swift-testing --filter 'BlazeDB_Tier2\.' 2>&1 \
-            | stdbuf -oL -eL tee .logs/tier2.log
+            | stdbuf -oL -eL tee .logs/tier2-core.log
 
       - name: Dump diagnostics on failure
         if: failure()
@@ -344,13 +339,14 @@ jobs:
           df -h > .logs/disk.txt || true
           swift --version > .logs/swift-version.txt 2>&1 || true
 
-      - name: Upload nightly Linux Tier2 logs
+      - name: Upload nightly Linux Tier2 core logs
         if: always()
         uses: actions/upload-artifact@v5
         with:
-          name: nightly-linux-tier2-logs
+          name: nightly-linux-tier2-core-logs
           path: |
             .logs/
             .artifacts/
           if-no-files-found: ignore
           retention-days: 7
+
