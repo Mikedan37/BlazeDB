@@ -90,6 +90,43 @@ final class BlazeQueryObservationIntegrationTests: LinuxTier1NonCryptoKDFHarness
         }
     }
 
+    /// Typed observer with `db: nil` matches env-only `@BlazeQuery` until the client is bound.
+    func testBlazeQueryTypedObserverBindsDatabaseLazily() async throws {
+        let client = try requireFixture(db)
+        let observer = BlazeQueryTypedObserver<QueryObsDoc>(
+            db: nil,
+            filters: [],
+            sortField: nil,
+            sortDescending: false,
+            limitCount: nil
+        )
+
+        XCTAssertTrue(observer.results.isEmpty)
+
+        observer.bindDatabaseIfNeeded(client)
+        try await waitUntil(timeout: 2.0) {
+            !observer.isLoading
+        }
+
+        let id = UUID()
+        _ = try await client.insert(
+            BlazeDataRecord([
+                "id": .uuid(id),
+                "status": .string("open"),
+                "title": .string("lazy bind")
+            ])
+        )
+
+        try await waitUntil(timeout: 2.0) {
+            observer.results.count == 1 && observer.results[0].title == "lazy bind"
+        }
+    }
+
+    /// `BlazeQueryTyped` remains a typealias for `BlazeQuery` (source compatibility).
+    func testBlazeQueryTypedTypealiasMatchesBlazeQuery() {
+        let _: BlazeQuery<QueryObsDoc>.Type = BlazeQueryTyped<QueryObsDoc>.self
+    }
+
     private func waitUntil(
         timeout: TimeInterval,
         pollIntervalNanoseconds: UInt64 = 50_000_000,

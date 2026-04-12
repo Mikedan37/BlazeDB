@@ -1,10 +1,46 @@
-# SwiftUI Integration Guide: @BlazeQuery
+# SwiftUI Integration Guide
 
-**How to use BlazeDB's SwiftUI property wrapper for reactive, auto-updating database queries.**
+**Reference material for reactive BlazeDB lists in SwiftUI.** For the **one standard app story** (inject once, `@BlazeQuery`, environment writes), read [SwiftUI DB Patterns](../GettingStarted/SWIFTUI_DATABASE_PATTERNS.md) first.
+
+## The rule (product default)
+
+For SwiftUI apps: **inject `BlazeDBClient` once**, use **`@BlazeQuery`** for typed reads, and **`@Environment(\.blazeDBClient)`** for writes. Do not present multiple equally-valid “first” patterns—start here, then use the sections below only when you need them.
+
+```swift
+// App root
+WindowGroup {
+    ContentView()
+        .blazeDBEnvironment(AppDatabase.shared.db)
+}
+
+// View
+struct ContentView: View {
+    @Environment(\.blazeDBClient) private var database
+    @BlazeQuery var items: [TodoItem]
+
+    var body: some View {
+        VStack {
+            Button("Add") {
+                try? database?.insert(TodoItem(id: UUID(), title: "Buy milk"))
+            }
+            List(items, id: \.id) { Text($0.title) }
+        }
+    }
+}
+```
+
+Filtered / sorted typed queries (optional):
+
+```swift
+@BlazeQuery(where: "status", equals: "open", sortBy: "priority", descending: true)
+var openItems: [TodoItem]
+```
+
+**Advanced / not the main path:** `@BlazeDataQuery` (raw rows), `@BlazeStorableQuery`, explicit `db:` on wrappers, `ObservableQuery`, and the `BlazeQueryTyped` alias are documented below for specialized use.
 
 ---
 
-## Quick Start
+## Advanced: Raw `BlazeDataRecord` (`@BlazeDataQuery`)
 
 ```swift
 import SwiftUI
@@ -12,7 +48,7 @@ import BlazeDBCore
 
 struct BugListView: View {
  // Auto-fetches and updates! No manual state management!
- @BlazeQuery(
+ @BlazeDataQuery(
  db: myDatabase,
  where: "status", equals: .string("open"),
  sortBy: "priority", descending: true
@@ -36,7 +72,7 @@ struct BugListView: View {
 
 ### Automatic Updates
 
-`@BlazeQuery` subscribes to database change notifications. When you modify data:
+`@BlazeDataQuery` and `@BlazeQuery` subscribe to database change notifications (via the same observer machinery). When you modify data:
 
 1. **You insert/update/delete:**
  ```swift
@@ -45,7 +81,7 @@ struct BugListView: View {
 
 2. **Change notification is sent** (batched, 50ms delay)
 
-3. **@BlazeQuery automatically refreshes** the query
+3. **The query wrapper automatically refreshes**
 
 4. **SwiftUI view updates** automatically
 
@@ -59,7 +95,7 @@ struct BugListView: View {
 
 ```swift
 struct BugListView: View {
- @BlazeQuery(db: myDatabase)
+ @BlazeDataQuery(db: myDatabase)
  var allBugs
 
  var body: some View {
@@ -74,7 +110,7 @@ struct BugListView: View {
 
 ```swift
 struct OpenBugsView: View {
- @BlazeQuery(
+ @BlazeDataQuery(
  db: myDatabase,
  where: "status", equals: .string("open")
  )
@@ -92,7 +128,7 @@ struct OpenBugsView: View {
 
 ```swift
 struct PriorityBugsView: View {
- @BlazeQuery(
+ @BlazeDataQuery(
  db: myDatabase,
  where: "status", equals: .string("open"),
  sortBy: "priority", descending: true
@@ -111,7 +147,7 @@ struct PriorityBugsView: View {
 
 ```swift
 struct HighPriorityBugsView: View {
- @BlazeQuery(
+ @BlazeDataQuery(
  db: myDatabase,
  where: "priority",
  .greaterThanOrEqual,
@@ -131,40 +167,33 @@ struct HighPriorityBugsView: View {
 
 ---
 
-## Type-Safe Queries
+## Typed queries with explicit `db:` (previews, tests, tools)
 
-For compile-time type safety, use `@BlazeQueryTyped`:
+Production SwiftUI code should prefer **environment injection** (see [SwiftUI DB Patterns](../GettingStarted/SWIFTUI_DATABASE_PATTERNS.md)). Pass **`db:`** on **`@BlazeQuery`** when you need an explicit client (Xcode previews, unit tests, small utilities).
 
 ```swift
-// Define your model
 struct Bug: BlazeDocument {
- var id: UUID
- var title: String
- var priority: Int
- var status: String
-
- // Required: Convert to/from BlazeDataRecord
- func toStorage() throws -> BlazeDataRecord { ... }
- init(from record: BlazeDataRecord) throws { ... }
+    var id: UUID
+    var title: String
+    var priority: Int
+    var status: String
+    func toStorage() throws -> BlazeDataRecord { /* ... */ }
+    init(from record: BlazeDataRecord) throws { /* ... */ }
 }
 
-// Use type-safe query
 struct BugListView: View {
- @BlazeQueryTyped(
- db: myDatabase,
- type: Bug.self,
- where: "status", equals: .string("open")
- )
- var openBugs: [Bug] // Type-safe!
+    @BlazeQuery(db: myDatabase, where: "status", equals: "open")
+    var openBugs: [Bug]
 
- var body: some View {
- List(openBugs) { bug in
- Text(bug.title) // Direct access!
- Text("P\(bug.priority)") // No .intValue!
- }
- }
+    var body: some View {
+        List(openBugs) { bug in
+            Text(bug.title)
+        }
+    }
 }
 ```
+
+The legacy name **`BlazeQueryTyped`** is a typealias for **`BlazeQuery`**; do not use it in new documentation.
 
 ---
 
@@ -176,7 +205,7 @@ When you modify data, views update automatically:
 
 ```swift
 struct CreateBugView: View {
- @BlazeQuery(
+ @BlazeDataQuery(
  db: myDatabase,
  where: "status", equals: .string("open")
  )
@@ -194,7 +223,7 @@ struct CreateBugView: View {
  "status": .string("open")
  ])
  try await myDatabase.insert(bug)
- // @BlazeQuery auto-refreshes!
+ // Query wrapper auto-refreshes!
  }
  }
  }
@@ -208,7 +237,7 @@ struct CreateBugView: View {
 struct BugDetailView: View {
  let bugID: UUID
 
- @BlazeQuery(db: myDatabase)
+ @BlazeDataQuery(db: myDatabase)
  var allBugs
 
  var bug: BlazeDataRecord? {
@@ -266,7 +295,7 @@ struct BugRow: View {
 
 ```swift
 struct BugListView: View {
- @BlazeQuery(db: myDatabase)
+ @BlazeDataQuery(db: myDatabase)
  var bugs
 
  var body: some View {
@@ -288,7 +317,7 @@ struct BugListView: View {
 
 ```swift
 struct BugListView: View {
- @BlazeQuery(db: myDatabase)
+ @BlazeDataQuery(db: myDatabase)
  var bugs
 
  var body: some View {
@@ -304,7 +333,7 @@ struct BugListView: View {
 
 ```swift
 struct BugDetailView: View {
- @BlazeQuery(db: myDatabase)
+ @BlazeDataQuery(db: myDatabase)
  var bugs
 
  var body: some View {
@@ -318,16 +347,16 @@ struct BugDetailView: View {
 
 ```swift
 struct DashboardView: View {
- @BlazeQuery(db: myDatabase)
+ @BlazeDataQuery(db: myDatabase)
  var allBugs
 
- @BlazeQuery(
+ @BlazeDataQuery(
  db: myDatabase,
  where: "status", equals: .string("open")
  )
  var openBugs
 
- @BlazeQuery(
+ @BlazeDataQuery(
  db: myDatabase,
  where: "priority",
  .greaterThanOrEqual,
@@ -371,7 +400,7 @@ class AppDatabase {
 
 // Use in views
 struct BugListView: View {
- @BlazeQuery(db: AppDatabase.shared.db)
+ @BlazeDataQuery(db: AppDatabase.shared.db)
  var bugs
 }
 ```
@@ -412,7 +441,7 @@ class DatabaseManager: ObservableObject {
 struct BugListView: View {
  @EnvironmentObject var database: DatabaseManager
 
- @BlazeQuery(db: database.db)
+ @BlazeDataQuery(db: database.db)
  var bugs
 }
 ```
@@ -448,7 +477,7 @@ struct BugListView: View {
 ```swift
 struct SearchView: View {
  @State private var searchText = ""
- @BlazeQuery(db: myDatabase)
+ @BlazeDataQuery(db: myDatabase)
  var allBugs
 
  var filteredBugs: [BlazeDataRecord] {
@@ -476,7 +505,7 @@ struct SearchView: View {
 ```swift
 struct BugDetailView: View {
  let bugID: UUID
- @BlazeQuery(db: myDatabase)
+ @BlazeDataQuery(db: myDatabase)
  var allBugs
 
  var bug: BlazeDataRecord? {
@@ -502,7 +531,7 @@ struct BugDetailView: View {
 ```swift
 struct CreateBugView: View {
  @Environment(\.dismiss) var dismiss
- @BlazeQuery(db: myDatabase)
+ @BlazeDataQuery(db: myDatabase)
  var bugs // Will auto-update after insert!
 
  @State private var title = ""
@@ -534,7 +563,7 @@ struct CreateBugView: View {
 **Problem:** Changes to database don't update the view.
 
 **Solutions:**
-1. Ensure you're using `@BlazeQuery` (not manual `@State`)
+1. Ensure you're using `@BlazeQuery` (typed) or `@BlazeDataQuery` (raw rows), not manual `@State`
 2. Check that database operations are completing successfully
 3. Verify database instance is the same across views
 4. Try manual refresh: `$query.refresh()`
@@ -557,21 +586,20 @@ struct CreateBugView: View {
 1. Ensure model conforms to `BlazeDocument`
 2. Implement `toStorage()` and `init(from:)` correctly
 3. Check field types match database schema
-4. Use regular `@BlazeQuery` if types don't match
+4. Use `@BlazeDataQuery` (raw ``BlazeDataRecord``) if types do not match your `BlazeDocument` model
 
 ---
 
 ## Summary
 
-**@BlazeQuery gives you:**
-- Automatic UI updates when data changes
-- Zero boilerplate (no manual state management)
-- Type-safe queries (with `@BlazeQueryTyped`)
-- Efficient change batching
-- Pull-to-refresh support
-- Manual refresh when needed
+**Default app path:** inject **`blazeDBClient` once**, use **`@BlazeQuery`** for typed lists; use **`@BlazeDataQuery`** only for raw ``BlazeDataRecord`` work.
 
-**Just use `@BlazeQuery` and your views update automatically!**
+**These wrappers give you:**
+- Automatic UI updates when data changes
+- Minimal boilerplate on reads when using `@BlazeQuery` + environment
+- Efficient change batching, pull-to-refresh, and manual refresh on the projected observer
+
+**Inject `\.blazeDBClient` at the root; use explicit `db:` only for advanced cases.**
 
 ---
 

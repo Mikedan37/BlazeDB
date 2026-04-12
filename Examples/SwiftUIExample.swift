@@ -3,7 +3,7 @@
 //  BlazeDB Examples
 //
 //  Real-world examples of using BlazeDB with SwiftUI.
-//  Shows @BlazeQuery wrappers refreshing from DB change notifications.
+//  Shows @BlazeDataQuery (raw records) and typed @BlazeQuery refreshing from DB change notifications.
 //
 //  Created by Michael Danylchuk on 7/1/25.
 //
@@ -15,7 +15,7 @@ import BlazeDB
 
 struct BugListView: View {
     // Auto-fetches and updates! No manual state management! 🔥
-    @BlazeQuery(
+    @BlazeDataQuery(
         db: AppDatabase.shared.db,
         where: "status", equals: .string("open"),
         sortBy: "priority", descending: true
@@ -103,7 +103,7 @@ struct BugDashboardView: View {
 }
 
 struct OpenBugsTab: View {
-    @BlazeQuery(
+    @BlazeDataQuery(
         db: AppDatabase.shared.db,
         where: "status", equals: .string("open")
     )
@@ -119,7 +119,7 @@ struct OpenBugsTab: View {
 }
 
 struct ClosedBugsTab: View {
-    @BlazeQuery(
+    @BlazeDataQuery(
         db: AppDatabase.shared.db,
         where: "status", equals: .string("closed"),
         sortBy: "closedAt", descending: true,
@@ -138,7 +138,7 @@ struct ClosedBugsTab: View {
 }
 
 struct HighPriorityTab: View {
-    @BlazeQuery(
+    @BlazeDataQuery(
         db: AppDatabase.shared.db,
         where: "priority",
         .greaterThanOrEqual,
@@ -162,7 +162,7 @@ struct HighPriorityTab: View {
 
 struct BugSearchView: View {
     @State private var searchText = ""
-    @BlazeQuery(db: AppDatabase.shared.db)
+    @BlazeDataQuery(db: AppDatabase.shared.db)
     var allBugs
     
     var filteredBugs: [BlazeDataRecord] {
@@ -189,7 +189,7 @@ struct BugSearchView: View {
 
 struct BugDetailView: View {
     let bugID: UUID
-    @BlazeQuery(db: AppDatabase.shared.db)
+    @BlazeDataQuery(db: AppDatabase.shared.db)
     var allBugs
     
     var bug: BlazeDataRecord? {
@@ -274,7 +274,7 @@ struct CreateBugView: View {
     @State private var priority = 5
     @State private var assignee = ""
     
-    @BlazeQuery(
+    @BlazeDataQuery(
         db: AppDatabase.shared.db,
         where: "status", equals: .string("open")
     )
@@ -330,7 +330,7 @@ struct CreateBugView: View {
                 
                 try await db.insert(bug)
                 
-                // @BlazeQuery will auto-refresh and show the new bug!
+                // @BlazeDataQuery will auto-refresh and show the new bug!
                 dismiss()
             } catch {
                 print("Error creating bug: \(error)")
@@ -342,16 +342,16 @@ struct CreateBugView: View {
 // MARK: - Example 6: Stats Dashboard with Auto-Refresh
 
 struct StatsDashboardView: View {
-    @BlazeQuery(db: AppDatabase.shared.db)
+    @BlazeDataQuery(db: AppDatabase.shared.db)
     var allBugs
     
-    @BlazeQuery(
+    @BlazeDataQuery(
         db: AppDatabase.shared.db,
         where: "status", equals: .string("open")
     )
     var openBugs
     
-    @BlazeQuery(
+    @BlazeDataQuery(
         db: AppDatabase.shared.db,
         where: "priority",
         .greaterThanOrEqual,
@@ -511,10 +511,10 @@ struct FilteredBugsList: View {
     init(db: BlazeDBClient, filters: [(field: String, comparison: BlazeQueryComparison, value: BlazeDocumentField)]) {
         self.db = db
         self.filters = filters
-        _query = BlazeQuery(db: db, filters: filters, sortBy: "priority", descending: true)
+        _query = BlazeDataQuery(db: db, filters: filters, sortBy: "priority", descending: true)
     }
     
-    @BlazeQuery var query: [BlazeDataRecord]
+    @BlazeDataQuery var query: [BlazeDataRecord]
     
     var body: some View {
         List(query, id: \.id) { bug in

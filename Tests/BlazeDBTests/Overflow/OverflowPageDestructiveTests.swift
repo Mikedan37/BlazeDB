@@ -985,7 +985,7 @@ final class OverflowPageDestructiveTests: XCTestCase {
         let db = try BlazeDBClient(name: "Test", fileURL: tempURL, password: "TestPass1234!")
         
         // Create reactive query
-        let query = BlazeQuery(db: db)
+        let query = BlazeDataQuery(db: db)
         var updateCount = 0
         let lock = NSLock()
         
@@ -1043,7 +1043,7 @@ final class OverflowPageDestructiveTests: XCTestCase {
         
         let db = try BlazeDBClient(name: "Test", fileURL: tempURL, password: "TestPass1234!")
         
-        let query = BlazeQuery(db: db)
+        let query = BlazeDataQuery(db: db)
         let initialCount = query.wrappedValue.count
         
         // Insert large record
@@ -1081,7 +1081,7 @@ final class OverflowPageDestructiveTests: XCTestCase {
         
         let db = try BlazeDBClient(name: "Test", fileURL: tempURL, password: "TestPass1234!")
         
-        let query = BlazeQuery(db: db)
+        let query = BlazeDataQuery(db: db)
         var deleteNotificationCount = 0
         
         let token = db.observe { changes in

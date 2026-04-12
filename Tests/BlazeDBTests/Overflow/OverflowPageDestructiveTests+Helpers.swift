@@ -229,7 +229,7 @@ extension OverflowPageDestructiveTests {
     
     /// Wait for reactive query update with timeout
     func waitForReactiveUpdate(
-        query: BlazeQuery,
+        query: BlazeDataQuery,
         initialCount: Int,
         timeout: TimeInterval = 2.0,
         expectedChange: Int? = nil

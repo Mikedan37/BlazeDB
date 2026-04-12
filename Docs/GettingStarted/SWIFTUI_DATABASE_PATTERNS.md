@@ -1,18 +1,18 @@
 # BlazeDB in SwiftUI
 
-BlazeDB is not tied to SwiftUI. This guide shows one clean way to use it in a SwiftUI app.
+**Standard SwiftUI pattern**
+
+- Open BlazeDB **once**
+- Inject the client **once** at the app root
+- Read typed models with **`@BlazeQuery`**
+- Write through **`@Environment(\.blazeDBClient)`**
+- Add a **store** only when write logic grows
+
+For deeper reference (explicit `db:`, raw queries, compatibility, custom environment), see the [SwiftUI Integration Guide](../Guides/SWIFTUI_INTEGRATION.md). Upgrading old examples: [SwiftUI facade migration](SWIFTUI_FACADE_MIGRATION.md).
 
 ---
 
-## Level 1 — Simple (start here)
-
-Use this when: you want the fastest path to a clean SwiftUI app.
-
-Open BlazeDB once, keep it in one app object, and pass it into your screens.  
-Think of `AppDatabase` as the place your app keeps its database.
-
-For SwiftUI, prefer `@BlazeQueryTyped` for reading data in views.  
-It keeps the view simple and avoids manual reloading after every change.
+## Level 1 — Standard pattern
 
 ```swift
 import SwiftUI
@@ -20,43 +20,65 @@ import BlazeDB
 
 final class AppDatabase {
     static let shared = AppDatabase()
-    let db = try! BlazeDB.open(name: "myapp", password: "Password123!")
+    let db: BlazeDBClient
+
+    private init() {
+        self.db = try! BlazeDB.open(
+            name: "myapp",
+            password: "Password123!"
+        )
+    }
+}
+
+struct TodoItem: BlazeDocument {
+    var id: UUID
+    var title: String
+    var isDone: Bool
+
+    init(id: UUID = UUID(), title: String, isDone: Bool = false) {
+        self.id = id
+        self.title = title
+        self.isDone = isDone
+    }
+
+    init(from storage: BlazeDataRecord) throws {
+        guard let id = storage.storage["id"]?.uuidValue,
+              let title = storage.storage["title"]?.stringValue else {
+            throw BlazeDBError.invalidData(reason: "Invalid TodoItem")
+        }
+        self.id = id
+        self.title = title
+        self.isDone = storage.storage["isDone"]?.boolValue ?? false
+    }
+
+    func toStorage() throws -> BlazeDataRecord {
+        BlazeDataRecord([
+            "id": .uuid(id),
+            "title": .string(title),
+            "isDone": .bool(isDone)
+        ])
+    }
 }
 
 @main
 struct MyApp: App {
     var body: some Scene {
         WindowGroup {
-            ContentView(database: AppDatabase.shared)
+            ContentView()
+                .blazeDBEnvironment(AppDatabase.shared.db)
         }
     }
 }
 
-struct TodoItem: BlazeStorable {
-    var id: UUID = UUID()
-    var title: String
-    var isDone: Bool = false
-}
-
 struct ContentView: View {
-    let database: AppDatabase
-
-    @BlazeQueryTyped var items: [TodoItem]
-
-    init(database: AppDatabase) {
-        self.database = database
-        self._items = BlazeQueryTyped(
-            db: database.db,
-            type: TodoItem.self
-        )
-    }
+    @Environment(\.blazeDBClient) private var database
+    @BlazeQuery var items: [TodoItem]
 
     var body: some View {
         VStack {
             Button("Add Sample Item") {
-                try? database.db.put(TodoItem(title: "Buy milk"))
+                try? database?.insert(TodoItem(title: "Buy milk"))
             }
-
             List(items, id: \.id) { item in
                 Text(item.title)
             }
@@ -65,68 +87,36 @@ struct ContentView: View {
 }
 ```
 
-### Why this works
+**Why this is the standard**
 
-- BlazeDB is opened once for the app
-- views read typed data directly
-- no manual reload logic
-- UI stays simple
-
-### Avoid
-
-- opening BlazeDB inside a view
-- storing the database in `@State`
-- manually re-querying after every write
+- BlazeDB opens once for the app.
+- `@BlazeQuery` keeps the list in sync with the database.
+- Views do not need custom query wiring or passing `BlazeDBClient` through every initializer.
 
 ---
 
-## Level 2 — Store pattern (cleaner structure)
+## Level 2 — Add a store when writes grow
 
-Use this when: your screen starts getting logic-heavy.
-
-Move write logic into a store.  
-Keep the view focused on UI and reading data.
+Keep reads in the view with `@BlazeQuery`. Move validation and multi-step writes into a store when the screen gets heavier.
 
 ```swift
-import Foundation
-import BlazeDB
-
-final class TodoStore: ObservableObject {
-    private let database: AppDatabase
-
-    init(database: AppDatabase) {
-        self.database = database
-    }
-
-    func add(_ title: String) {
-        try? database.db.put(TodoItem(title: title))
+@MainActor
+final class TodoWriteStore: ObservableObject {
+    func addSample(using database: BlazeDBClient?) {
+        try? database?.insert(TodoItem(title: "From store"))
     }
 }
-```
 
-Use it in a view:
-
-```swift
-import SwiftUI
-
-struct ContentView: View {
-    @StateObject private var store = TodoStore(database: AppDatabase.shared)
-
-    @BlazeQueryTyped var items: [TodoItem]
-
-    init() {
-        _items = BlazeQueryTyped(
-            db: AppDatabase.shared.db,
-            type: TodoItem.self
-        )
-    }
+struct TodoListWithStoreView: View {
+    @Environment(\.blazeDBClient) private var database
+    @StateObject private var store = TodoWriteStore()
+    @BlazeQuery var items: [TodoItem]
 
     var body: some View {
         VStack {
-            Button("Add") {
-                store.add("New item")
+            Button("Add via store") {
+                store.addSample(using: database)
             }
-
             List(items, id: \.id) { item in
                 Text(item.title)
             }
@@ -135,96 +125,33 @@ struct ContentView: View {
 }
 ```
 
-### Key idea
+---
 
-- **Store handles writes**
-- **View handles reads**
+## Level 3 — Larger apps
 
-Avoid introducing manual `load()` functions unless you actually need them.
+- One shared `BlazeDBClient` (or `AppDatabase`) for the process.
+- Use `@BlazeQuery` in feature views.
+- Add a store per feature when that feature needs coordinated writes.
 
 ---
 
-## Level 3 — Larger apps (multiple features)
+## Advanced patterns
 
-Use this when: your app has separate domains, for example Notes and Tasks.
+Use the [SwiftUI Integration Guide](../Guides/SWIFTUI_INTEGRATION.md) for:
 
-Each feature gets its own store.  
-All features share the same database.
-
-```swift
-struct Note: BlazeStorable {
-    var id: UUID = UUID()
-    var title: String
-}
-
-final class NotesStore: ObservableObject {
-    private let database: AppDatabase
-
-    init(database: AppDatabase) {
-        self.database = database
-    }
-
-    func add(_ title: String) {
-        try? database.db.put(Note(title: title))
-    }
-}
-
-final class TasksStore: ObservableObject {
-    private let database: AppDatabase
-
-    init(database: AppDatabase) {
-        self.database = database
-    }
-
-    func add(_ title: String) {
-        try? database.db.put(TodoItem(title: title))
-    }
-}
-```
-
-Each view declares its own query:
-
-```swift
-@BlazeQueryTyped var notes: [Note]
-@BlazeQueryTyped var tasks: [TodoItem]
-```
-
----
-
-## Level 4 — Advanced (optional patterns)
-
-Use this when: you want cleaner dependency wiring for bigger apps and testing.
-
-This is optional. Most apps do not need this.
-
-```swift
-import SwiftUI
-
-struct DatabaseKey: EnvironmentKey {
-    static let defaultValue: AppDatabase = .shared
-}
-
-extension EnvironmentValues {
-    var database: AppDatabase {
-        get { self[DatabaseKey.self] }
-        set { self[DatabaseKey.self] = newValue }
-    }
-}
-```
-
-Then in a view:
-
-```swift
-@Environment(\\.database) private var database
-```
+- explicit `db:` on query wrappers  
+- raw `@BlazeDataQuery`  
+- compatibility aliases and edge cases  
+- custom environment wrappers  
 
 ---
 
 ## Summary
 
-- Start simple with `@BlazeQueryTyped`
-- Keep reads in the view, writes in a store
-- Scale by adding more stores per feature
-- Only add dependency injection if the app actually needs it
+Default SwiftUI path:
 
-BlazeDB stays simple when you let SwiftUI do its job.
+- `.blazeDBEnvironment(AppDatabase.shared.db)`
+- `@BlazeQuery` for typed lists  
+- `@Environment(\.blazeDBClient)` for writes (`insert` for `BlazeDocument` models)
+
+That is the front door. Details live in the integration guide and migration doc.

@@ -3,7 +3,12 @@ import Foundation
 #if canImport(SwiftUI) && canImport(Combine) && (os(macOS) || os(iOS) || os(watchOS) || os(tvOS))
 import SwiftUI
 
-/// SwiftUI live-query wrapper for a ``BlazeStorable`` model.
+/// SwiftUI live-query wrapper for a ``BlazeStorable`` model (namespace-filtered decode).
+///
+/// **Relationship to other wrappers:** Prefer ``BlazeQuery`` when your model conforms to
+/// ``BlazeDocument`` (typed manual mapping). Use ``BlazeStorableQuery`` when you rely on
+/// ``BlazeStorable`` / Codable only and do not want ``BlazeDocument``. For raw
+/// ``BlazeDataRecord`` rows, use ``BlazeDataQuery``.
 ///
 /// Use this when your UI should stay in sync with database writes for one model type.
 ///
