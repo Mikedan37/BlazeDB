@@ -1,13 +1,15 @@
 # BlazeDB in SwiftUI
 
 BlazeDB is not tied to SwiftUI. This guide shows one way to use it in a SwiftUI app.
-
 ## Level 1 - Simple (start here)
 
-Use this when: you want the fastest path to a working app.
+Use this when: you want the fastest path to a clean SwiftUI app.
 
 Open BlazeDB once, keep it in one app object, and pass it into your screens.
 Think of `AppDatabase` as the place your app keeps its database.
+
+For SwiftUI, prefer `@BlazeQueryTyped` for reading data in views.
+It keeps the view simpler and avoids manual reloading after every change.
 
 ```swift
 import SwiftUI
@@ -35,16 +37,20 @@ struct TodoItem: BlazeStorable {
 
 struct ContentView: View {
     let database: AppDatabase
-    @State private var items: [TodoItem] = []
+
+    @BlazeQueryTyped(
+        db: AppDatabase.shared.db,
+        type: TodoItem.self
+    )
+    var items: [TodoItem]
 
     var body: some View {
         VStack {
             Button("Add Sample Item") {
                 do {
                     try database.db.put(TodoItem(title: "Buy milk"))
-                    items = try database.db.query("todoitem").all()
                 } catch {
-                    print(error)
+                    print("Failed to add item:", error)
                 }
             }
 
@@ -52,20 +58,8 @@ struct ContentView: View {
                 Text(item.title)
             }
         }
-        .task {
-            do {
-                items = try database.db.query("todoitem").all()
-            } catch {
-                print(error)
-            }
-        }
     }
 }
-```
-
-Avoid this:
-- Do not open BlazeDB inside `@State`.
-- Do not open BlazeDB inside a view `body`.
 
 ---
 
