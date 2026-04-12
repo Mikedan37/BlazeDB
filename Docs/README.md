@@ -13,7 +13,7 @@ This index separates the main public documentation path from maintainer-only or 
 
 ## Audience Segmentation
 
-*Who each pile of docs is for—helps you ignore the wrong shelf.*
+*Each pile targets a different reader so you can ignore the wrong shelf.*
 
 - **Public product docs:** what BlazeDB is, how to use it, what is supported now.
 - **Public maintainer docs:** release/testing/CI operations for contributors.
@@ -25,25 +25,25 @@ Internal analysis material lives under [`Docs/Internal/`](Internal/README.md) an
 
 *Map of the folders: what to trust for “how does it work today.”* BlazeDB documentation is organized into:
 
-- **Canonical docs (current, maintained)** — Use these first for behavior and APIs:
+- **Canonical docs (current, maintained):** Use these first for behavior and APIs:
   - [Repository README](../README.md) (Start Here, try from repo / add to app, product summary)
   - [Getting Started](GettingStarted/) (first run, HOW_TO_USE, Linux notes)
   - [Testing / CI](Testing/) (tiers, test layout, execution model)
   - [Release](Release/) (release-facing checklists and notes)
-  - [Architecture](Architecture/) — **core embedded runtime** (storage, queries, durability); prefer these over informal design notes for “what ships” in OSS.
+  - [Architecture](Architecture/): **core embedded runtime** (storage, queries, durability); prefer these over informal design notes for “what ships” in OSS.
 
-- **Design / forward-looking docs** — Distributed transport, sync topology, and related material may describe **non-default** or **deferred** surfaces. Always cross-check [Distributed transport deferred](Status/DISTRIBUTED_TRANSPORT_DEFERRED.md) and the root `README.md` for what the default SwiftPM product includes.
+- **Design / forward-looking docs:** Distributed transport, sync topology, and related material may describe **non-default** or **deferred** surfaces. Always cross-check [Distributed transport deferred](Status/DISTRIBUTED_TRANSPORT_DEFERRED.md) and the root `README.md` for what the default SwiftPM product includes.
 
-- **Archived / historical docs** — [`Archive/`](Archive/) holds snapshots, old milestones, and superseded write-ups. **Not authoritative** for current OSS behavior unless explicitly cross-linked from a maintained doc.
+- **Archived / historical docs:** [`Archive/`](Archive/) holds snapshots, old milestones, and superseded write-ups. **Not authoritative** for current OSS behavior unless explicitly cross-linked from a maintained doc.
 
 ## Start Here
 
-*If you’re new, hit these in roughly this order—you’ll stay on the happy path.*
+*If you’re new, hit these in roughly this order. You’ll stay on the happy path.*
 
-- [Getting Started](GettingStarted/README.md) — install the package, run `HelloBlazeDB`, paste the tiny starter snippet; the “I just want it working” path.
-- [Developer Guide](DEVELOPER_GUIDE.md) — longer walkthrough of the public API in prose (CRUD, queries, patterns); read after you’ve run something once.
-- [API Reference](API/API_REFERENCE.md) — lookup tables and signatures when you already know what you’re trying to call.
-- [Examples](../Examples/) — copy-paste runnable projects and patterns when docs need a concrete file to stare at.
+- [Getting Started](GettingStarted/README.md): install the package, run `HelloBlazeDB`, paste the tiny starter snippet; the “I just want it working” path.
+- [Developer Guide](DEVELOPER_GUIDE.md): longer walkthrough of the public API in prose (CRUD, queries, patterns); read after you’ve run something once.
+- [API Reference](API/API_REFERENCE.md): lookup tables and signatures when you already know what you’re trying to call.
+- [Examples](../Examples/): copy-paste runnable projects and patterns when docs need a concrete file to stare at.
 
 ## Core Product Docs
 
@@ -67,7 +67,7 @@ Internal analysis material lives under [`Docs/Internal/`](Internal/README.md) an
 
 ## Conditional / Deferred Features
 
-*May exist in the repo or docs but isn’t the default OSS story—read so you don’t cargo-cult sync/transport.*
+*May exist in the repo or docs but isn’t the default OSS story. Read so you don’t cargo-cult sync/transport.*
 
 - [Distributed Transport Deferred Status](Status/DISTRIBUTED_TRANSPORT_DEFERRED.md)
 - [Sync Docs](Sync/README.md) - design and deferred transport context; not default OSS onboarding
@@ -86,7 +86,7 @@ Internal analysis material lives under [`Docs/Internal/`](Internal/README.md) an
 
 ## Maintainer Docs
 
-*CI lanes, releases, checklists—for people merging PRs or cutting releases.*
+*CI lanes, releases, checklists for people merging PRs or cutting releases.*
 
 - [CI and Test Tiers](Testing/CI_AND_TEST_TIERS.md)
 - [Testing Guide](TESTING_GUIDE.md)
@@ -105,7 +105,7 @@ Internal analysis material lives under [`Docs/Internal/`](Internal/README.md) an
 
 ## Historical And Internal Material
 
-*Old milestones, superseded designs, audits—useful for archaeology, not “current truth” unless linked from a maintained doc.*
+*Old milestones, superseded designs, audits: useful for archaeology, not “current truth” unless linked from a maintained doc.*
 
 - [Archive](Archive/) for historical release and design records (see [Archive README](Archive/README.md)).
 - [Meta](Meta/README.md) for internal project-management documentation.

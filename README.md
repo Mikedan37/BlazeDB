@@ -10,12 +10,12 @@ An encrypted, embedded document database for Swift. Single-process, zero externa
 
 ## Quick Navigation
 
-*Primary links—everything else (examples, API details, deeper sections) is further down.*
+*Primary links; everything else (examples, API details, deeper sections) is further down.*
 
 This README is **onboarding-first**: most people start with [Start Here](#start-here-new-users) to get a mental model and copy-paste sample. Two explicit paths branch from there:
 
-- **Path A — try BlazeDB from this repo:** clone, then [Try BlazeDB from this repo](#try-blazedb-from-this-repo) (`swift run HelloBlazeDB`).
-- **Path B — add BlazeDB to your app:** [Add BlazeDB to your app](#add-blazedb-to-your-app) (SwiftPM or Xcode), then wire up code using Start Here, [SwiftUI path](#swiftui-path-start-here), or the full guide.
+- **Path A:** Clone, then [Try BlazeDB from this repo](#try-blazedb-from-this-repo) (`swift run HelloBlazeDB`).
+- **Path B:** [Add BlazeDB to your app](#add-blazedb-to-your-app) (SwiftPM or Xcode), then wire up code using Start Here, [SwiftUI path](#swiftui-path-start-here), or the full guide.
 
 - [Start Here](#start-here-new-users)
 - [Try BlazeDB from this repo](#try-blazedb-from-this-repo)
@@ -28,7 +28,7 @@ This README is **onboarding-first**: most people start with [Start Here](#start-
 
 If you are new, use this path first and ignore the advanced sections until you need them.
 
-**No database experience needed.** BlazeDB stores everything in **one encrypted file** per app name (`"demo"` here)—like a save slot on disk, not a separate server. You describe data with ordinary Swift structs: **`put`** saves a value, **`get`** loads one item when you know its id string, **`query`** returns a list you can filter (e.g. only open bugs). Nothing is sent over the network.
+**No database experience needed.** BlazeDB stores everything in **one encrypted file** per app name (`"demo"` here), like a save slot on disk, not a separate server. You describe data with ordinary Swift structs: **`put`** saves a value, **`get`** loads one item when you know its id string, **`query`** returns a list you can filter (e.g. only open bugs). Nothing is sent over the network.
 
 Read the sample **top to bottom**: `open` → `put` → `get` → `query`.
 
@@ -55,7 +55,7 @@ let openBugs: [Bug] = try db.query("bug")
     .all()
 ```
 
-The `"bug"` in `query("bug")` is a **label for which kind of record** (bugs vs notes vs something else). It is **not** a separate table—every record still lives in **one** collection inside that file.
+The `"bug"` in `query("bug")` is a **label for which kind of record** (bugs vs notes vs something else). It is **not** a separate table; every record still lives in **one** collection inside that file.
 
 **Think:** one file, one collection, many labeled records.
 
@@ -74,13 +74,13 @@ Id strings look like `"bug:<uuid>"`: `bug` = kind, uuid = which one.
 
 ## Try BlazeDB from this repo
 
-**Path A — repo demo.** From a clone of this repo (no `Package.swift` edit needed), run:
+**Path A (repo demo).** From a clone of this repo (no `Package.swift` edit needed), run:
 
 ```bash
 swift run HelloBlazeDB
 ```
 
-**Minimal sample** (after adding the package)—same idea as [Start Here](#start-here-new-users), shorter:
+**Minimal sample** (after adding the package), same idea as [Start Here](#start-here-new-users), shorter:
 
 ```swift
 import BlazeDB
@@ -101,7 +101,7 @@ For deeper coverage, see [HOW_TO_USE_BLAZEDB.md](Docs/GettingStarted/HOW_TO_USE_
 
 ## Add BlazeDB to your app
 
-**Path B — consumer integration.** Add the package to your project, then use the snippets in [Start Here](#start-here-new-users) or [Try BlazeDB from this repo](#try-blazedb-from-this-repo) (minimal sample).
+**Path B (consumer integration).** Add the package to your project, then use the snippets in [Start Here](#start-here-new-users) or [Try BlazeDB from this repo](#try-blazedb-from-this-repo) (minimal sample).
 
 Add to your `Package.swift`:
 
@@ -133,7 +133,7 @@ After `open` → `put` → `get` → `query` makes sense, pick **one** path:
 
 3. **How storage actually works** (single file, single collection, why there’s no SQL) → [Core Concepts](#core-concepts) below.
 
-If you skip straight to API tiers or raw APIs without that bridge, you’ll feel lost—that’s normal; come back to step 1–3.
+If you skip straight to API tiers or raw APIs without that bridge, you’ll feel lost. That’s normal; come back to step 1–3.
 
 ## SwiftUI Path (Start Here)
 
@@ -143,14 +143,14 @@ If you are building a SwiftUI app, start here next:
 
 ## What BlazeDB Is
 
-> **Optional background** — read [What to do next](#what-to-do-next) first if you only care about getting code running. This section is the mental model (embedded, encrypted, no SQL).
+> **Optional background.** Read [What to do next](#what-to-do-next) first if you only care about getting code running. This section is the mental model (embedded, encrypted, no SQL).
 
-- An **embedded** database — runs in your process, no server required
-- **Encrypted at rest** in production — AES-256-GCM on every data page
-- **Document-oriented** — schema-less records with typed Codable overlays
+- An **embedded** database: runs in your process, no server required
+- **Encrypted at rest** in production: AES-256-GCM on every data page
+- **Document-oriented:** schema-less records with typed Codable overlays
 - **ACID transactions** with WAL-backed crash recovery
-- **Single-process** — one process owns the database file at a time
-- **Single-collection** — all records (regardless of type) share one encrypted collection per database file; `TypedStore` is a typed lens, not a separate table
+- **Single-process:** one process owns the database file at a time
+- **Single-collection:** all records (regardless of type) share one encrypted collection per database file; `TypedStore` is a typed lens, not a separate table
 
 ## What BlazeDB Is Not
 
@@ -162,7 +162,7 @@ If you are building a SwiftUI app, start here next:
 
 ### API tiers
 
-*Skip this table until the default `open` / `put` / `get` / `query` flow feels boring—you don’t need to pick a “tier” on day one.*
+*Skip this table until the default `open` / `put` / `get` / `query` flow feels boring. You don’t need to pick a “tier” on day one.*
 
 | Tier | API | Use case |
 |------|-----|----------|
@@ -236,13 +236,13 @@ Later, BlazeDB can find all items with that ID and return the items for Grocerie
 
 ## Advanced Usage (Optional)
 
-If you're new, [What to do next](#what-to-do-next) + [Start Here](#start-here-new-users) are enough to ship something. Everything from **Core Concepts** downward is deeper architecture, alternate APIs, and ops—read when you need it, not in order.
+If you're new, [What to do next](#what-to-do-next) + [Start Here](#start-here-new-users) are enough to ship something. Everything from **Core Concepts** downward is deeper architecture, alternate APIs, and ops. Read when you need it, not in order.
 
 ## Core Concepts
 
 ### Single-collection architecture
 
-BlazeDB stores all records in one encrypted document collection per database file. All typed APIs (`db.insert(model)`, `db.typed(T.self)`, etc.) encode/decode through the `BlazeStorable` Codable bridge and filter records by decodability — they are not separate physical tables.
+BlazeDB stores all records in one encrypted document collection per database file. All typed APIs (`db.insert(model)`, `db.typed(T.self)`, etc.) encode/decode through the `BlazeStorable` Codable bridge and filter records by decodability; they are not separate physical tables.
 
 ### Two typed protocols
 
@@ -253,7 +253,7 @@ BlazeDB stores all records in one encrypted document collection per database fil
 
 `BlazeStorable` is the recommended starting point. `BlazeDocument` is for when you need manual control over how your model maps to `BlazeDataRecord` storage. Both require `Codable` and `Identifiable` with `ID == UUID`.
 
-> **`BlazeDocument` persistence:** Prefer `try model.toStorage()` or `try model.resolveStorage()` (or typed client APIs like `insert(model)`) when encoding can fail. The `storage` property is a **deprecated** compatibility shim: if `toStorage()` throws, it **logs** and falls back to an empty record — **do not** persist that value. Typed insert/update paths already use `toStorage()` and are unaffected.
+> **`BlazeDocument` persistence:** Prefer `try model.toStorage()` or `try model.resolveStorage()` (or typed client APIs like `insert(model)`) when encoding can fail. The `storage` property is a **deprecated** compatibility shim: if `toStorage()` throws, it **logs** and falls back to an empty record. **Do not** persist that value. Typed insert/update paths already use `toStorage()` and are unaffected.
 
 > **Do not use `@BlazeQueryTyped` with `BlazeStorable`-only models. It will not compile.** The `@BlazeQueryTyped` SwiftUI property wrapper requires `BlazeDocument`. If your model only conforms to `BlazeStorable`, you must add `BlazeDocument` conformance (with manual `toStorage()`/`init(from:)`) before you can use it in SwiftUI typed query wrappers.
 
@@ -265,7 +265,7 @@ The production runtime is always encrypted at rest. Every data page is sealed wi
 
 ## API Overview
 
-*Same idea as the [API tiers](#api-tiers) table above, with code—skip until the default API feels limiting.*
+*Same idea as the [API tiers](#api-tiers) table above, with code. Skip until the default API feels limiting.*
 
 ### Default API (recommended)
 
@@ -399,7 +399,7 @@ See [Compatibility Matrix](Docs/COMPATIBILITY.md) for details.
 ## Testing And CI
 
 - **PR gate** (macOS): `BlazeDB_Tier0` and `BlazeDB_Tier1` on every push/PR; Linux runs `BlazeDB_Tier0`. See `Docs/Testing/CI_AND_TEST_TIERS.md` for the full matrix.
-- **Release validation** (tagged releases): macOS runs Tier0–Tier2 (+ extended companion targets as defined in the release workflow)—not the same cadence as the PR gate.
+- **Release validation** (tagged releases): macOS runs Tier0–Tier2 (+ extended companion targets as defined in the release workflow), not the same cadence as the PR gate.
 - **Nightly Confidence (daily)** runs macOS Tier2 strict, clean checkout, README quickstart, Tier0 TSan, and Linux Tier1/Tier2 core lanes (see `Docs/Testing/CI_AND_TEST_TIERS.md`).
 - **Deep Validation (weekly)** runs broader coverage: macOS Tier0/1/2/3 + destructive + TSan, and Linux Tier0/1/2 (+ extended companion).
 - Additional nightly checks verify clean checkout and README quickstart scripts.
@@ -437,17 +437,17 @@ Run with `swift run <ToolName>`.
 
 ### Available but advanced / opt-in
 
-- **MVCC (multi-version concurrency control)** — opt-in via `db.setMVCCEnabled(true)`. Provides snapshot isolation when enabled. See `BlazeDBClient+MVCC.swift`.
-- **Full telemetry manager** — build-configuration dependent; core builds use stub/no-op telemetry.
+- **MVCC (multi-version concurrency control):** opt-in via `db.setMVCCEnabled(true)`. Provides snapshot isolation when enabled. See `BlazeDBClient+MVCC.swift`.
+- **Full telemetry manager:** build-configuration dependent; core builds use stub/no-op telemetry.
 
 ### Present in source, not primary stable onboarding surfaces
 
-- **Indexing** — B-tree, inverted (full-text), vector, and spatial index implementations exist in source. These are internal to the storage engine and do not yet have stable public creation APIs, onboarding docs, or runnable examples for end users.
-- **Row-level security (RLS)** — policy infrastructure exists in source, but full CRUD/query enforcement is not enabled by default.
+- **Indexing:** B-tree, inverted (full-text), vector, and spatial index implementations exist in source. These are internal to the storage engine and do not yet have stable public creation APIs, onboarding docs, or runnable examples for end users.
+- **Row-level security (RLS):** policy infrastructure exists in source, but full CRUD/query enforcement is not enabled by default.
 
 ### Deferred / not part of default runtime
 
-- **Distributed sync/transport** — infrastructure exists but is excluded from `BlazeDBCore`. See [Distributed Transport Status](Docs/Status/DISTRIBUTED_TRANSPORT_DEFERRED.md).
+- **Distributed sync/transport:** infrastructure exists but is excluded from `BlazeDBCore`. See [Distributed Transport Status](Docs/Status/DISTRIBUTED_TRANSPORT_DEFERRED.md).
 
 ---
 
