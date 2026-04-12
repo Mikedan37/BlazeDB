@@ -1,8 +1,6 @@
 # BlazeDB
 
-**Version:** 2.7.5 &nbsp;|&nbsp; **License:** MIT &nbsp;|&nbsp; **Swift 6 strict concurrency compliant**
-
-An encrypted, embedded document database for Swift. Single-process, zero external dependencies. Production runtime is always encrypted at rest.
+An encrypted, embedded document database for Swift. Single-process, zero external dependencies. Production runtime is always encrypted at rest. *MIT · Swift 6+ · current release **2.7.5** (add the package under [Add BlazeDB to your app](#add-blazedb-to-your-app)).*
 
 [![Swift](https://img.shields.io/badge/Swift-6.0+-orange.svg)](https://swift.org)
 [![Platforms](https://img.shields.io/badge/Platforms-macOS%20%7C%20iOS%20%7C%20watchOS%20%7C%20tvOS%20%7C%20visionOS%20%7C%20Linux%20%7C%20Android-lightgrey.svg)](Docs/COMPATIBILITY.md)
@@ -12,41 +10,130 @@ An encrypted, embedded document database for Swift. Single-process, zero externa
 
 ## Quick Navigation
 
-- [Start Here (New Users)](#start-here-new-users)
-- [SwiftUI Path (Start Here)](#swiftui-path-start-here)
-- [Quick Start](#quick-start)
-- [Install](#install)
-- [Example: Lists and List Items](#example-lists-and-list-items)
-- [API Overview](#api-overview)
-- [Current Limitations](#current-limitations)
+*Primary links—everything else (examples, API details, deeper sections) is further down.*
+
+This README is **onboarding-first**: most people start with [Start Here](#start-here-new-users) to get a mental model and copy-paste sample. Two explicit paths branch from there:
+
+- **Path A — try BlazeDB from this repo:** clone, then [Try BlazeDB from this repo](#try-blazedb-from-this-repo) (`swift run HelloBlazeDB`).
+- **Path B — add BlazeDB to your app:** [Add BlazeDB to your app](#add-blazedb-to-your-app) (SwiftPM or Xcode), then wire up code using Start Here, [SwiftUI path](#swiftui-path-start-here), or the full guide.
+
+- [Start Here](#start-here-new-users)
+- [Try BlazeDB from this repo](#try-blazedb-from-this-repo)
+- [Add BlazeDB to your app](#add-blazedb-to-your-app)
+- [What to do next](#what-to-do-next)
+- [SwiftUI path](#swiftui-path-start-here)
 - [Documentation](#documentation)
 
 ## Start Here (New Users)
 
 If you are new, use this path first and ignore the advanced sections until you need them.
 
+**No database experience needed.** BlazeDB stores everything in **one encrypted file** per app name (`"demo"` here)—like a save slot on disk, not a separate server. You describe data with ordinary Swift structs: **`put`** saves a value, **`get`** loads one item when you know its id string, **`query`** returns a list you can filter (e.g. only open bugs). Nothing is sent over the network.
+
+Read the sample **top to bottom**: `open` → `put` → `get` → `query`.
+
 ```swift
 import BlazeDB
 
+// One Bug’s shape in Swift
 struct Bug: BlazeStorable {
     var id: UUID = UUID()
     var title: String
     var status: String
 }
 
+// Open or create the file (password encrypts it; nothing leaves your machine)
 let db = try BlazeDB.open(name: "demo", password: "DemoPass123!")
 let bug = Bug(title: "Crash on launch", status: "open")
-try db.put(bug)
+try db.put(bug)  // save
 
+// Load by id: "bug" + this bug’s uuid
 let loaded: Bug? = try db.get("bug:\(bug.id.uuidString)")
+// All bugs with status "open"
 let openBugs: [Bug] = try db.query("bug")
     .where("status", equals: "open")
     .all()
 ```
 
-That is the default beginner workflow: `open -> put -> get -> query(namespace)`.
+The `"bug"` in `query("bug")` is a **label for which kind of record** (bugs vs notes vs something else). It is **not** a separate table—every record still lives in **one** collection inside that file.
 
-Keys use the format `"type:UUID"` (for example, `"bug:123e4567-e89b-12d3-a456-426614174000"`). The prefix maps to the model type/namespace.
+**Think:** one file, one collection, many labeled records.
+
+**Recap**
+
+| Step | What it does |
+|------|----------------|
+| `open` | Opens your encrypted file |
+| `put` | Saves a struct |
+| `get("bug:…")` | Loads one bug by id |
+| `query("bug")…` | Lists or filters bugs |
+
+Id strings look like `"bug:<uuid>"`: `bug` = kind, uuid = which one.
+
+---
+
+## Try BlazeDB from this repo
+
+**Path A — repo demo.** From a clone of this repo (no `Package.swift` edit needed), run:
+
+```bash
+swift run HelloBlazeDB
+```
+
+**Minimal sample** (after adding the package)—same idea as [Start Here](#start-here-new-users), shorter:
+
+```swift
+import BlazeDB
+
+struct Note: BlazeStorable {
+    var id: UUID = UUID()
+    var text: String
+}
+
+let db = try BlazeDB.open(name: "quickstart", password: "DemoPass123!")
+try db.put(Note(text: "Ship first BlazeDB build"))  // save
+
+let notes: [Note] = try db.query("note").all()  // all notes (or [] if empty)
+```
+
+For the full beginner walkthrough (`open -> put -> get -> query`), use **Start Here (New Users)**.
+For deeper coverage, see [HOW_TO_USE_BLAZEDB.md](Docs/GettingStarted/HOW_TO_USE_BLAZEDB.md).
+
+## Add BlazeDB to your app
+
+**Path B — consumer integration.** Add the package to your project, then use the snippets in [Start Here](#start-here-new-users) or [Try BlazeDB from this repo](#try-blazedb-from-this-repo) (minimal sample).
+
+Add to your `Package.swift`:
+
+```swift
+dependencies: [
+    .package(url: "https://github.com/Mikedan37/BlazeDB.git", from: "2.7.5")
+],
+targets: [
+    .target(name: "YourApp", dependencies: ["BlazeDB"])
+]
+```
+
+Or in Xcode: **File → Add Package Dependencies** → paste `https://github.com/Mikedan37/BlazeDB.git`.
+
+**Requirements:** Swift 6.0+, macOS 15+ / iOS 15+ / watchOS 8+ / tvOS 15+ / visionOS 1+ / Linux / Android
+
+---
+
+## What to do next
+
+After `open` → `put` → `get` → `query` makes sense, pick **one** path:
+
+1. **SwiftUI app** → [SwiftUI DB Patterns](Docs/GettingStarted/SWIFTUI_DATABASE_PATTERNS.md) (how to hold `BlazeDBClient` in an app and level-up patterns).
+
+2. **UIKit / CLI / server-style app**  
+   → [Try BlazeDB from this repo](#try-blazedb-from-this-repo) (`swift run HelloBlazeDB` from a clone)  
+   → [Add BlazeDB to your app](#add-blazedb-to-your-app) (SwiftPM or Xcode)  
+   → [HOW_TO_USE_BLAZEDB.md](Docs/GettingStarted/HOW_TO_USE_BLAZEDB.md)
+
+3. **How storage actually works** (single file, single collection, why there’s no SQL) → [Core Concepts](#core-concepts) below.
+
+If you skip straight to API tiers or raw APIs without that bridge, you’ll feel lost—that’s normal; come back to step 1–3.
 
 ## SwiftUI Path (Start Here)
 
@@ -55,6 +142,8 @@ If you are building a SwiftUI app, start here next:
 - [SwiftUI DB Patterns](Docs/GettingStarted/SWIFTUI_DATABASE_PATTERNS.md) - beginner-first setup, then clear Level 1 to Level 4 progression.
 
 ## What BlazeDB Is
+
+> **Optional background** — read [What to do next](#what-to-do-next) first if you only care about getting code running. This section is the mental model (embedded, encrypted, no SQL).
 
 - An **embedded** database — runs in your process, no server required
 - **Encrypted at rest** in production — AES-256-GCM on every data page
@@ -73,58 +162,14 @@ If you are building a SwiftUI app, start here next:
 
 ### API tiers
 
+*Skip this table until the default `open` / `put` / `get` / `query` flow feels boring—you don’t need to pick a “tier” on day one.*
+
 | Tier | API | Use case |
 |------|-----|----------|
 | **Default API (recommended)** | `BlazeDB.open(...)` + `db.put` / `db.get` / `db.query(namespace)` | Fastest path for most app code |
 | **TypedStore (secondary)** | `db.typed(T.self)` → scoped handle | View models or service layers that want a bound store |
 | **Raw (advanced)** | `BlazeDataRecord` + `db.insert(record)` | Dynamic schemas, migrations |
 | **Manual mapping (advanced)** | `BlazeDocument` | Custom storage control and manual serialization |
-
----
-
-## Quick Start
-
-Run the included example directly from this repository:
-
-```bash
-swift run HelloBlazeDB
-```
-
-Or test a different minimal example in your own app:
-
-```swift
-import BlazeDB
-
-struct Note: BlazeStorable {
-    var id: UUID = UUID()
-    var text: String
-}
-
-let db = try BlazeDB.open(name: "quickstart", password: "DemoPass123!")
-try db.put(Note(text: "Ship first BlazeDB build"))
-
-let notes: [Note] = try db.query("note").all()
-```
-
-For the full beginner walkthrough (`open -> put -> get -> query`), use **Start Here (New Users)**.
-For deeper coverage, see [HOW_TO_USE_BLAZEDB.md](Docs/GettingStarted/HOW_TO_USE_BLAZEDB.md).
-
-## Install
-
-Add to your `Package.swift`:
-
-```swift
-dependencies: [
-    .package(url: "https://github.com/Mikedan37/BlazeDB.git", from: "2.7.5")
-],
-targets: [
-    .target(name: "YourApp", dependencies: ["BlazeDB"])
-]
-```
-
-Or in Xcode: **File → Add Package Dependencies** → paste `https://github.com/Mikedan37/BlazeDB.git`.
-
-**Requirements:** Swift 6.0+, macOS 15+ / iOS 15+ / watchOS 8+ / tvOS 15+ / visionOS 1+ / Linux / Android
 
 ---
 
@@ -191,7 +236,7 @@ Later, BlazeDB can find all items with that ID and return the items for Grocerie
 
 ## Advanced Usage (Optional)
 
-If you're new, the sections above are enough to get started. The rest of this README covers deeper architecture, advanced APIs, and operational details.
+If you're new, [What to do next](#what-to-do-next) + [Start Here](#start-here-new-users) are enough to ship something. Everything from **Core Concepts** downward is deeper architecture, alternate APIs, and ops—read when you need it, not in order.
 
 ## Core Concepts
 
@@ -219,6 +264,8 @@ The production runtime is always encrypted at rest. Every data page is sealed wi
 ---
 
 ## API Overview
+
+*Same idea as the [API tiers](#api-tiers) table above, with code—skip until the default API feels limiting.*
 
 ### Default API (recommended)
 
@@ -351,7 +398,8 @@ See [Compatibility Matrix](Docs/COMPATIBILITY.md) for details.
 
 ## Testing And CI
 
-- PR/release validation on macOS runs `BlazeDB_Tier0`, `BlazeDB_Tier1`, and `BlazeDB_Tier2` as the main gate.
+- **PR gate** (macOS): `BlazeDB_Tier0` and `BlazeDB_Tier1` on every push/PR; Linux runs `BlazeDB_Tier0`. See `Docs/Testing/CI_AND_TEST_TIERS.md` for the full matrix.
+- **Release validation** (tagged releases): macOS runs Tier0–Tier2 (+ extended companion targets as defined in the release workflow)—not the same cadence as the PR gate.
 - **Nightly Confidence (daily)** runs macOS Tier2 strict, clean checkout, README quickstart, Tier0 TSan, and Linux Tier1/Tier2 core lanes (see `Docs/Testing/CI_AND_TEST_TIERS.md`).
 - **Deep Validation (weekly)** runs broader coverage: macOS Tier0/1/2/3 + destructive + TSan, and Linux Tier0/1/2 (+ extended companion).
 - Additional nightly checks verify clean checkout and README quickstart scripts.
