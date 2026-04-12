@@ -26,6 +26,27 @@ Use this table for day-to-day expectations.
 - In rollout:
   - deep soak lane (`deep-validation.yml`)
 
+## CI Philosophy: Tiered, Not Sequential
+
+BlazeDB uses a tiered testing model where tiers represent signal class and runtime cost, **not** promotion order.
+
+- Tiers are classification labels, not execution stages.
+- Linux nightly lanes run as independent sibling jobs.
+- There is no Linux Tier1 -> Tier2 -> Tier3 dependency chain.
+
+This is intentional:
+
+- Tier surfaces validate different behavior classes and do not consume each other's artifacts.
+- Sequential staging would add wall-clock without adding correctness.
+- Parallel sibling lanes maximize nightly signal by exposing failures across all surfaces in the same run.
+
+Design tradeoff (intentional):
+
+- Favor: broader signal per run + faster critical-path completion.
+- Accept: higher runner concurrency consumption versus staged early-exit gating.
+
+In short: nightly confidence optimizes for coverage visibility and time-to-signal, not strict tier promotion.
+
 ## Workflow Inventory
 
 - `.github/workflows/ci.yml`
