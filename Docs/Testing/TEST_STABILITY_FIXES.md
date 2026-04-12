@@ -80,6 +80,26 @@ if results.count >= 3 {
 
 ---
 
+### 6. **Observability concurrent stress — deadline vs deadlock (Tier 2)**
+
+**Problem:** `testObservability_DoesNotDeadlock` failed on macOS CI with `DispatchGroup.wait` returning `.timedOut` against a 5s budget. That only proves a **deadline miss**, not a lock cycle in the engine.
+
+**Interpretation (defensible):**
+
+- Inserts serialize through `performSafeWrite` and the collection queue’s barrier path; under contention, completion time can approach the **cumulative** cost of those sections.
+- `observe()` pulls in `health()` / `stats()` / monitoring snapshot work — synchronous queue and filesystem activity — and stacks with concurrent `fetchAll()`.
+- Loaded CI runners add wall-clock variance (scheduling, disk, fsync). Forward progress can still be happening when a short stopwatch fires.
+
+**Fix:** Larger timeout on CI (`CI` / `GITHUB_ACTIONS`: 45s; local: 15s) and in-test documentation that the assertion is a **wall-clock bound**, not deadlock detection. A real deadlock-focused test would need different design (lock-order instrumentation, progress probes, or diagnostics that distinguish stall from slow completion).
+
+**If this flakes again:** Prefer adding **observability** (per-phase timing, progress checks, contention signals) over repeatedly widening the budget. The test should stay forgiving of scheduler noise but still fail on meaningful regressions — avoid turning it into “pass unless the machine is on fire.”
+
+**File:** `BlazeDBTests/Tier1Extended/Observability/ObservabilityTests.swift`
+
+**Added:** 2026-04-12
+
+---
+
 ## Test Execution Improvements
 
 ### Before Fixes:

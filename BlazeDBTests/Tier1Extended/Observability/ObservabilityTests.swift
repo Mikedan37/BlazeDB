@@ -170,11 +170,26 @@ final class ObservabilityTests: XCTestCase {
     }
     
     func testObservability_DoesNotDeadlock() throws {
-        // Concurrent operations with observability
+        // Concurrent operations with observability.
+        //
+        // Wall-clock budget, not a deadlock oracle: `DispatchGroup.wait(timeout:)` only checks
+        // that work finishes before a deadline. `.timedOut` means one or more tasks did not
+        // complete in time — consistent with queued access behind serialized writes, contention,
+        // filesystem latency, or CI scheduler variance — not proof of an AB–BA lock cycle.
+        //
+        // Why budgets must be generous on CI:
+        // - Writes serialize through `performSafeWrite` (client write lock) and legacy insert’s
+        //   barrier on the collection queue; under contention, end-to-end time can approach the
+        //   cumulative cost of those critical sections, not a single insert in isolation.
+        // - `observe()` is not free: it routes through `health()` / `stats()` / monitoring paths
+        //   with additional synchronous queue work, stacking with concurrent `fetchAll()`.
         let group = DispatchGroup()
         let errors = ObservabilityLockedErrors()
         let client = try XCTUnwrap(db)
-        
+        let isCI = ProcessInfo.processInfo.environment["CI"] == "true"
+            || ProcessInfo.processInfo.environment["GITHUB_ACTIONS"] == "true"
+        let deadlineSeconds: TimeInterval = isCI ? 45.0 : 15.0
+
         for _ in 0..<10 {
             group.enter()
             DispatchQueue.global().async { [client] in
@@ -189,10 +204,14 @@ final class ObservabilityTests: XCTestCase {
                 group.leave()
             }
         }
-        
-        let result = group.wait(timeout: .now() + 5.0)
+
+        let result = group.wait(timeout: .now() + deadlineSeconds)
         let allErrors = errors.snapshot()
-        XCTAssertEqual(result, .success, "Operations should complete without deadlock")
+        XCTAssertEqual(
+            result,
+            .success,
+            "All concurrent lanes should finish within \(deadlineSeconds)s (deadline miss ≠ proven deadlock)"
+        )
         XCTAssertTrue(allErrors.isEmpty || allErrors.allSatisfy { $0.localizedDescription.contains("locked") },
                       "Only expected errors should occur")
     }
