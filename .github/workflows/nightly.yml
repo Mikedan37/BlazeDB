@@ -479,7 +479,7 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
 
-  nightly-linux-tier1:
+  linux-tier1:
     name: Linux (Swift 6.2) — Tier1 (canonical)
     runs-on: ubuntu-22.04
     timeout-minutes: 120
@@ -546,12 +546,11 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
 
-  # Linux-only: deeper suites (moved from long Tier1 runs) — split so core/extended run in parallel.
-  nightly-linux-tier2-core:
+  # Linux-only: deeper suites (moved from long Tier1 runs) as independent sibling lanes.
+  linux-tier2-core:
     name: Linux (Swift 6.2) — Tier2 (core)
     runs-on: ubuntu-22.04
     timeout-minutes: 240
-    needs: nightly-linux-tier1
 
     steps:
       - name: Checkout
@@ -615,11 +614,10 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
 
-  nightly-linux-tier2-extended:
+  linux-tier2-extended:
     name: Linux (Swift 6.2) — Tier2 (extended)
     runs-on: ubuntu-22.04
     timeout-minutes: 240
-    needs: nightly-linux-tier1
 
     steps:
       - name: Checkout
@@ -684,13 +682,10 @@ jobs:
           retention-days: 7
 
   # Linux Tier3 nightly is blocking (unlike macOS Tier3 quarantine above).
-  nightly-linux-tier3-heavy-core:
+  linux-tier3-heavy:
     name: Linux (Swift 6.2) — Tier3 heavy
     runs-on: ubuntu-22.04
     timeout-minutes: 240
-    needs:
-      - nightly-linux-tier2-core
-      - nightly-linux-tier2-extended
 
     steps:
       - name: Checkout
@@ -754,13 +749,10 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
 
-  nightly-linux-tier3-perf:
+  linux-tier3-perf:
     name: Linux (Swift 6.2) — Tier3 perf companion
     runs-on: ubuntu-22.04
     timeout-minutes: 240
-    needs:
-      - nightly-linux-tier2-core
-      - nightly-linux-tier2-extended
 
     steps:
       - name: Checkout
