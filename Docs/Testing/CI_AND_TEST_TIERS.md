@@ -13,6 +13,8 @@ Use this table for day-to-day expectations.
 | Lane | Goal | Trigger | Blocking | Current workflow(s) |
 | ---- | ---- | ------- | -------- | ------------------- |
 | PR fast gate | Catch obvious breakage quickly | `pull_request`, `push` | Yes | `ci.yml` |
+| Nightly confidence | Broad daily cross-platform confidence with independent lanes | Daily + manual | Mixed (macOS Tier3 non-blocking; most lanes blocking) | `nightly.yml` |
+| Deep validation | Longer-running soak/depth validation sweep | Weekly + manual | No | `deep-validation.yml` |
 | Tier1 depth | Broader Tier1 confidence | Weekly + manual | No | `tier1-depth.yml` |
 | Release validation | Validate tagged releases | `v*` tag + manual | Release-only | `release.yml` |
 | Tag probe | Check older tags still build | Manual | No | `tag-probe.yml` |
@@ -33,6 +35,8 @@ BlazeDB uses a tiered testing model where tiers represent signal class and runti
 - Tiers are classification labels, not execution stages.
 - Linux nightly lanes run as independent sibling jobs.
 - There is no Linux Tier1 -> Tier2 -> Tier3 dependency chain.
+
+**Important:** Linux nightly tiers are parallel classification lanes, not staged promotion gates.
 
 This is intentional:
 
@@ -68,7 +72,7 @@ In short: nightly confidence optimizes for coverage visibility and time-to-signa
 
 - `.github/workflows/tier1-depth.yml`
 - Trigger: **weekly schedule** and **manual** (`workflow_dispatch`)
-- Runs `BlazeDB_Tier2` + `BlazeDB_Tier2_Extended` and `BlazeDB_Tier3_Heavy` + `BlazeDB_Tier3_Heavy_Perf` (legacy workflow name retained pending PR4 cleanup).
+- Runs `BlazeDB_Tier2` + `BlazeDB_Tier2_Extended` and `BlazeDB_Tier3_Heavy` + `BlazeDB_Tier3_Heavy_Perf` (legacy workflow name retained pending PR4 cleanup; filename intentionally lags behavior).
 
 - `.github/workflows/nightly.yml`
 - Trigger: **daily schedule** and **manual** (`workflow_dispatch`)
