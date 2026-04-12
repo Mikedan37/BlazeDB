@@ -12,19 +12,19 @@ Use this table for day-to-day expectations.
 
 | Lane | Goal | Trigger | Blocking | Current workflow(s) |
 | ---- | ---- | ------- | -------- | ------------------- |
-| PR fast gate | Catch obvious breakage quickly | `pull_request`, `push` | Yes | `ci.yml` |
-| Nightly confidence | Broad daily cross-platform confidence with independent jobs | Daily + manual | Yes | `nightly.yml` |
-| Deep validation | Longer-running soak/depth validation sweep | Weekly + manual | No | `deep-validation.yml` |
+| PR Gate (push / pull request) | Catch obvious breakage quickly | `pull_request`, `push` | Yes | `ci.yml` |
+| Nightly Confidence (daily) | Broad daily cross-platform confidence with independent jobs | Daily + manual | Yes | `nightly.yml` |
+| Deep Validation (weekly) | Longer-running soak/depth validation sweep | Weekly + manual | No | `deep-validation.yml` |
 | Tier1 depth | Broader Tier1 confidence | Weekly + manual | No | `tier1-depth.yml` |
-| Release validation | Validate tagged releases | `v*` tag + manual | Release-only | `release.yml` |
-| Tag probe | Check older tags still build | Manual | No | `tag-probe.yml` |
+| Release Validation & Publish (tags / manual) | Validate tagged releases | `v*` tag + manual | Release-only | `release.yml` |
+| Legacy Tag Probe (manual) | Check older tags still build | Manual | No | `tag-probe.yml` |
 
 ### Rollout status
 
 - Completed:
   - PR gate caching and verify-step trim in `ci.yml`
   - Tier1 canonical target naming cleanup (`BlazeDB_Tier1`) in active workflows/scripts/docs
-  - Nightly confidence split into isolated failure-domain jobs in `nightly.yml`
+  - `nightly.yml` split into isolated failure-domain jobs
 - In rollout:
   - deep soak lane (`deep-validation.yml`)
 
@@ -49,7 +49,7 @@ Design tradeoff (intentional):
 - Favor: broader signal per run + faster critical-path completion.
 - Accept: higher runner concurrency consumption versus staged early-exit gating.
 
-In short: nightly confidence optimizes for coverage visibility and time-to-signal, not strict tier promotion.
+In short: the nightly workflow optimizes for coverage visibility and time-to-signal, not strict tier promotion.
 
 ## Workflow Inventory
 
@@ -83,7 +83,7 @@ In short: nightly confidence optimizes for coverage visibility and time-to-signa
   - `macOS 15 — Tier0 (ThreadSanitizer)`: `swift test --sanitize thread --filter BlazeDB_Tier0`
   - `Linux (Swift 6.2) — Tier1`: canonical `BlazeDB_Tier1` via filter `'BlazeDB_Tier1\.'` (`linux-tier1`)
   - `Linux (Swift 6.2) — Tier2 (core)`: `BlazeDB_Tier2` via `'BlazeDB_Tier2\.'` only (`linux-tier2-core`). Linux Tier2 extended and Tier3 heavy/perf are **not** nightly; they run in `tier1-depth.yml` / `deep-validation.yml`.
-- Nightly confidence lanes are root-owned and do not depend on `BlazeDBExtraTests`.
+- Jobs in `nightly.yml` are root-owned and do not depend on `BlazeDBExtraTests`.
 - **Operational policy:** nightly failures are triaged within 24–48 hours.
 
 ### Tier 3 profiling: CI vs local (do not “restore rigor” on runners)
@@ -248,8 +248,8 @@ Use precise language so status and dashboards do not blur the PR gate with deepe
 | **Canonical tiers** | `BlazeDB_Tier0`, `BlazeDB_Tier1`, `BlazeDB_Tier2`, `BlazeDB_Tier3_Heavy`, `BlazeDB_Tier3_Destructive` (end-state model). |
 | **PR3 transitional companions** | `BlazeDB_Tier2_Extended`, `BlazeDB_Tier3_Heavy_Perf`; temporary bridge targets slated for PR4 filesystem/target normalization. |
 | **Depth lane** | `tier1-depth.yml` currently runs `BlazeDB_Tier2` + `BlazeDB_Tier2_Extended` + `BlazeDB_Tier3_Heavy` + `BlazeDB_Tier3_Heavy_Perf` (workflow filename kept for compatibility until PR4). |
-| **Nightly confidence lane** | `nightly.yml`: macOS Tier2 strict, clean checkout, README quickstart, Tier0 TSan; **Linux** `linux-tier1` + `linux-tier2-core` only (no Linux Tier0 nightly — covered in PR `ci.yml`). |
-| **Deep validation lane** | `deep-validation.yml`: macOS full stack; **Linux extended** runs Tier0 → canonical Tier1 → Tier2/Tier2_Extended → Tier3 heavy/perf (see workflow). |
+| **Nightly Confidence (daily)** | `nightly.yml`: macOS Tier2 strict, clean checkout, README quickstart, Tier0 TSan; **Linux** `linux-tier1` + `linux-tier2-core` only (no Linux Tier0 nightly — covered in PR `ci.yml`). |
+| **Deep Validation (weekly)** | `deep-validation.yml` (weekly + manual): **`deep-macos-full`** (Tier0–Tier3 heavy/perf + destructive), **`deep-macos-tsan`** (Tier0–Tier1 TSan), **`deep-linux-extended`** (Linux Tier2 extended + Tier3 heavy/perf companions)—scheduled owner for heavy/extended surfaces not in nightly. |
 | **Canonical Tier1** | `BlazeDB_Tier1` (single canonical Tier1 target). |
 
 Inventory/bootstrap code may still bucket all three SwiftPM modules under a single **`T1`** label for file-level manifests; that is a storage convenience. **Human-facing** summaries (CI names, release notes, team chat) should use the table above, not a vague “T1 passed.”

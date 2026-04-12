@@ -35,5 +35,5 @@ Jobs:
 - `macOS 15 — Tier0 ThreadSanitizer`
 - `Linux (Swift 6.2) — Tier0 + Tier1`
 
-Nightly confidence runs root-owned targets only and avoids depending on `BlazeDBExtraTests`.
+The nightly workflow runs root-owned targets only and avoids depending on `BlazeDBExtraTests`.
 This split keeps nightly rerunnable by concern and avoids bundling Tier2/verify/docs into one giant macOS job.

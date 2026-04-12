@@ -1,4 +1,4 @@
-name: BlazeDB Release
+name: Release Validation & Publish (tags / manual)
 
 on:
   push:

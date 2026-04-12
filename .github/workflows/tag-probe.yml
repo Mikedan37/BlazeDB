@@ -1,5 +1,5 @@
 # Optional: probe last v* tags for release-build health. Manual only — not on every push.
-name: Legacy tag probe
+name: Legacy Tag Probe (manual)
 
 on:
   workflow_dispatch:
