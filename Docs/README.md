@@ -1,10 +1,10 @@
 # BlazeDB Documentation
 
-This index separates the main public documentation path from maintainer-only or historical material.
+This index separates the main public documentation path from maintainer-only or historical material. *Skim the headings to see where you are; you don’t have to read this file top to bottom.*
 
 ## Support-State Framing
 
-Use this quick framing before diving into detailed docs:
+*Quick mental model so you don’t assume sync/telemetry are in the default box.* Use this quick framing before diving into detailed docs:
 
 - **Default shipped core:** embedded encrypted engine, typed/raw APIs, durability, import/export, health/stats, CLI tooling.
 - **Advanced but supported:** migrations, schema validation, indexing/search tuning, manual mapping.
@@ -12,6 +12,8 @@ Use this quick framing before diving into detailed docs:
 - **Historical/internal:** archive and project-management docs are non-authoritative for first-time adopters.
 
 ## Audience Segmentation
+
+*Who each pile of docs is for—helps you ignore the wrong shelf.*
 
 - **Public product docs:** what BlazeDB is, how to use it, what is supported now.
 - **Public maintainer docs:** release/testing/CI operations for contributors.
@@ -21,7 +23,7 @@ Internal analysis material lives under [`Docs/Internal/`](Internal/README.md) an
 
 ## Documentation guide
 
-BlazeDB documentation is organized into:
+*Map of the folders: what to trust for “how does it work today.”* BlazeDB documentation is organized into:
 
 - **Canonical docs (current, maintained)** — Use these first for behavior and APIs:
   - [Repository README](../README.md) (install, quickstart, product summary)
@@ -36,12 +38,16 @@ BlazeDB documentation is organized into:
 
 ## Start Here
 
-- [Getting Started](GettingStarted/README.md) for first install, first run, and starter code.
-- [Developer Guide](DEVELOPER_GUIDE.md) for the main public API walkthrough.
-- [API Reference](API/API_REFERENCE.md) for reference-style documentation.
-- [Examples](../Examples/) for runnable usage patterns.
+*If you’re new, hit these in roughly this order—you’ll stay on the happy path.*
+
+- [Getting Started](GettingStarted/README.md) — install the package, run `HelloBlazeDB`, paste the tiny starter snippet; the “I just want it working” path.
+- [Developer Guide](DEVELOPER_GUIDE.md) — longer walkthrough of the public API in prose (CRUD, queries, patterns); read after you’ve run something once.
+- [API Reference](API/API_REFERENCE.md) — lookup tables and signatures when you already know what you’re trying to call.
+- [Examples](../Examples/) — copy-paste runnable projects and patterns when docs need a concrete file to stare at.
 
 ## Core Product Docs
+
+*Stuff you’ll want when something “should work on my OS” or “what happens on crash / upgrade.”*
 
 - [Compatibility](COMPATIBILITY.md) for supported platforms and release expectations.
 - [Security](../SECURITY.md) for vulnerability reporting and disclosure expectations.
@@ -53,17 +59,23 @@ BlazeDB documentation is organized into:
 
 ## Advanced Features (Supported)
 
+*Still supported, just not the first day’s reading.*
+
 - [Developer Guide](DEVELOPER_GUIDE.md) (advanced API sections)
 - [API Reference](API/API_REFERENCE.md) (full reference; includes advanced and conditional surfaces)
 - [Performance](Performance/README.md) (benchmark and tuning guidance)
 
 ## Conditional / Deferred Features
 
+*May exist in the repo or docs but isn’t the default OSS story—read so you don’t cargo-cult sync/transport.*
+
 - [Distributed Transport Deferred Status](Status/DISTRIBUTED_TRANSPORT_DEFERRED.md)
 - [Sync Docs](Sync/README.md) - design and deferred transport context; not default OSS onboarding
 - Telemetry and staging-related surfaces in source are conditional and should be treated as non-default runtime behavior
 
 ## Contributing And Project Policies
+
+*Legal/social/process: how to contribute, behave, report issues, and what stability means.*
 
 - [Contributing Guide](../CONTRIBUTING.md)
 - [Code of Conduct](../CODE_OF_CONDUCT.md)
@@ -73,6 +85,8 @@ BlazeDB documentation is organized into:
 - [Third-Party Notices](../THIRD_PARTY_NOTICES.md)
 
 ## Maintainer Docs
+
+*CI lanes, releases, checklists—for people merging PRs or cutting releases.*
 
 - [CI and Test Tiers](Testing/CI_AND_TEST_TIERS.md)
 - [Testing Guide](TESTING_GUIDE.md)
@@ -84,10 +98,14 @@ BlazeDB documentation is organized into:
 
 ## Internal Analysis Docs
 
+*Deep dives and positioning notes; interesting for maintainers, not required reading for app devs.*
+
 - [Internal Docs Index](Internal/README.md)
 - Analysis-style status artifacts are maintainer-facing and intentionally separated from user onboarding flow.
 
 ## Historical And Internal Material
+
+*Old milestones, superseded designs, audits—useful for archaeology, not “current truth” unless linked from a maintained doc.*
 
 - [Archive](Archive/) for historical release and design records (see [Archive README](Archive/README.md)).
 - [Meta](Meta/README.md) for internal project-management documentation.

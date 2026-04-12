@@ -44,29 +44,21 @@ If you see "Success!", BlazeDB is working.
 
 ## Step 3: Starter Code
 
-Copy this into your project:
+Copy into your project. Same flow as [README Start Here](../../README.md#start-here-new-users): one file, structs, save → load → query.
 
 ```swift
 import BlazeDB
 
-// 1. Define your model
 struct Bug: BlazeStorable {
     var id: UUID = UUID()
     var title: String
     var status: String
 }
 
-// 2. Open database (creates if needed, always encrypted)
 let db = try BlazeDB.open(name: "myapp", password: "My-Secure-Password-2026!")
-
-// 3. Put
 let bug = Bug(title: "Crash", status: "open")
 try db.put(bug)
-
-// 4. Get by key (UUID or namespace:UUID)
 let loaded: Bug? = try db.get("bug:\(bug.id.uuidString)")
-
-// 5. Query by namespace
 let openBugs: [Bug] = try db.query("bug")
     .where("status", equals: "open")
     .all()
