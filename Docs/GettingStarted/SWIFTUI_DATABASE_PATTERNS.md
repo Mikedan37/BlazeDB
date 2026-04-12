@@ -1,15 +1,14 @@
 # BlazeDB in SwiftUI
 
-BlazeDB is not tied to SwiftUI. This guide shows one way to use it in a SwiftUI app.
-## Level 1 - Simple (start here)
+BlazeDB is not tied to SwiftUI. This guide shows one clean way to use it in a SwiftUI app.
 
-Use this when: you want the fastest path to a clean SwiftUI app.
+---
 
-Open BlazeDB once, keep it in one app object, and pass it into your screens.
-Think of `AppDatabase` as the place your app keeps its database.
+## Level 1 — Simple (start here)
 
-For SwiftUI, prefer `@BlazeQueryTyped` for reading data in views.
-It keeps the view simpler and avoids manual reloading after every change.
+Use this when: you want the fastest path to a working app.
+
+Open BlazeDB once, and read data directly in your views using `@BlazeQueryTyped`.
 
 ```swift
 import SwiftUI
@@ -38,20 +37,20 @@ struct TodoItem: BlazeStorable {
 struct ContentView: View {
     let database: AppDatabase
 
-    @BlazeQueryTyped(
-        db: AppDatabase.shared.db,
-        type: TodoItem.self
-    )
-    var items: [TodoItem]
+    @BlazeQueryTyped var items: [TodoItem]
+
+    init(database: AppDatabase) {
+        self.database = database
+        self._items = BlazeQueryTyped(
+            db: database.db,
+            type: TodoItem.self
+        )
+    }
 
     var body: some View {
         VStack {
             Button("Add Sample Item") {
-                do {
-                    try database.db.put(TodoItem(title: "Buy milk"))
-                } catch {
-                    print("Failed to add item:", error)
-                }
+                try? database.db.put(TodoItem(title: "Buy milk"))
             }
 
             List(items, id: \.id) { item in
@@ -61,67 +60,85 @@ struct ContentView: View {
     }
 }
 
----
+Why this works
+	•	BlazeDB is opened once for the app
+	•	views read typed data directly
+	•	no manual reload logic
+	•	UI stays simple
 
-## Level 2 - Use a store (cleaner UI code)
+Avoid
+	•	opening BlazeDB inside a view
+	•	storing the database in @State
+	•	manually re-querying after every write
 
-Use this when: one screen starts having more buttons, states, and DB calls.
+⸻
 
-Move read/write logic into a store so the view mostly handles UI.
+Level 2 — Store pattern (cleaner structure)
 
-```swift
+Use this when: your screen starts getting logic-heavy.
+
+Move write logic into a store.
+Keep the view focused on UI and reading data.
+
 import Foundation
 import BlazeDB
 
 final class TodoStore: ObservableObject {
     private let database: AppDatabase
-    @Published var items: [TodoItem] = []
 
     init(database: AppDatabase) {
         self.database = database
     }
 
-    func load() {
-        items = (try? database.db.query("todoitem").all()) ?? []
-    }
-
     func add(_ title: String) {
-        do {
-            try database.db.put(TodoItem(title: title))
-            load()
-        } catch {
-            print(error)
-        }
+        try? database.db.put(TodoItem(title: title))
     }
 }
-```
 
-Use it in a screen:
+Use it in a view:
 
-```swift
+import SwiftUI
+
 struct ContentView: View {
     @StateObject private var store = TodoStore(database: AppDatabase.shared)
 
+    @BlazeQueryTyped var items: [TodoItem]
+
+    init() {
+        _items = BlazeQueryTyped(
+            db: AppDatabase.shared.db,
+            type: TodoItem.self
+        )
+    }
+
     var body: some View {
-        List(store.items, id: \.id) { item in
-            Text(item.title)
-        }
-        .task {
-            store.load()
+        VStack {
+            Button("Add") {
+                store.add("New item")
+            }
+
+            List(items, id: \.id) { item in
+                Text(item.title)
+            }
         }
     }
 }
-```
 
----
+Key idea
+	•	Store handles writes
+	•	View handles reads
 
-## Level 3 - Larger apps (multiple features)
+Avoid introducing manual load() functions unless you actually need them.
 
-Use this when: your app has separate domains (for example Notes and Tasks).
+⸻
 
-Each store handles its own feature, but they all use the same database.
+Level 3 — Multiple features
 
-```swift
+Use this when: your app has multiple domains (for example Notes and Tasks).
+
+Each feature gets its own store.
+All features share the same database.
+
 struct Note: BlazeStorable {
     var id: UUID = UUID()
     var title: String
@@ -129,29 +146,42 @@ struct Note: BlazeStorable {
 
 final class NotesStore: ObservableObject {
     private let database: AppDatabase
-    @Published var notes: [Note] = []
-    init(database: AppDatabase) { self.database = database }
 
-    func load() {
-        notes = (try? database.db.query("note").all()) ?? []
+    init(database: AppDatabase) {
+        self.database = database
+    }
+
+    func add(_ title: String) {
+        try? database.db.put(Note(title: title))
     }
 }
 
 final class TasksStore: ObservableObject {
     private let database: AppDatabase
-    init(database: AppDatabase) { self.database = database }
+
+    init(database: AppDatabase) {
+        self.database = database
+    }
+
+    func add(_ title: String) {
+        try? database.db.put(TodoItem(title: title))
+    }
 }
-```
 
----
+Each view declares its own query:
 
-## Level 4 - Advanced (optional patterns)
+@BlazeQueryTyped var notes: [Note]
+@BlazeQueryTyped var tasks: [TodoItem]
 
-Use this when: you want cleaner dependency wiring for bigger apps and testing.
-This is optional. You do not need this for most apps.
-This is useful for large apps or testing, but most apps do not need it.
 
-```swift
+⸻
+
+Level 4 — Dependency injection (optional)
+
+Use this when: you want cleaner dependency wiring for larger apps or testing.
+
+This is optional. Most apps do not need this.
+
 import SwiftUI
 
 struct DatabaseKey: EnvironmentKey {
@@ -164,10 +194,7 @@ extension EnvironmentValues {
         set { self[DatabaseKey.self] = newValue }
     }
 }
-```
 
 Then in a view:
 
-```swift
 @Environment(\.database) private var database
-```
