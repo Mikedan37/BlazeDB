@@ -9,7 +9,7 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Changed
 
-- **CI:** Retired redundant `.github/workflows/tier1-depth.yml`; weekly `deep-validation.yml` is the scheduled owner of overlapping Tier2/Tier3 companion coverage.
+- **CI:** Retired redundant legacy weekly macOS-only companion workflow; scheduled Tier2/Tier3 companion coverage lives in `deep-validation.yml`.
 - **Package surface simplified:** Published SwiftPM products reduced to `BlazeDB` (umbrella) and `BlazeDBCore` (advanced). Tool, example, and benchmark executables (BlazeShell, HelloBlazeDB, BlazeDoctor, BlazeDump, BlazeInfo, BlazeDBBenchmarks, BasicExample, ReferenceConsumer) are still buildable locally via `swift run <name>` but no longer appear in Xcode's "Add Package Dependencies" picker. If you previously depended on one of these executable products from another package, reference the target directly instead.
 - **Direct CRUD is now the documented primary API.** `db.insert(model)`, `db.fetch(T.self, id:)`, `db.fetchAll(T.self)`, `db.update(model)`, `db.upsert(model)`, `db.delete(model)`, and `db.query(T.self)` are the recommended path. `TypedStore` (`db.typed(T.self)`) remains available as an optional scoped handle for view models and service layers.
 
@@ -91,8 +91,7 @@ Tag `v2.7.3` is a narrow snapshot (TypedStore + OSS docs below). **Android, Linu
   - `.github/ISSUE_TEMPLATE/security_review_tracking.md`
 - README quickstart verification script:
   - `Scripts/verify-readme-quickstart.sh`
-- Tier1 depth workflow and release-validation workflow updates:
-  - `.github/workflows/tier1-depth.yml`
+- Weekly macOS Tier2/Tier3 companion CI lane and release-validation workflow updates (companion lane later consolidated into `deep-validation.yml`):
   - `.github/workflows/release.yml`
 
 ### Changed

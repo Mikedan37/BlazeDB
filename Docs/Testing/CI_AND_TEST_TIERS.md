@@ -297,7 +297,7 @@ All other `Tier1Core` directories and files (Aggregation, API, Query, Integratio
 - Tier runners:
 - `./Scripts/run-tier0.sh`
 - `./Scripts/run-tier1.sh` (Tier 0 + `BlazeDB_Tier1` + execution coverage)
-- `./Scripts/run-tier1-depth.sh` — local runner for `BlazeDB_Tier2` + `BlazeDB_Tier2_Extended` + `BlazeDB_Tier3_Heavy` + `BlazeDB_Tier3_Heavy_Perf` (same companion targets scheduled in `deep-validation.yml`; no separate `tier1-depth` workflow)
+- `./Scripts/run-tier2-tier3-companions.sh` — local runner for `BlazeDB_Tier2` + `BlazeDB_Tier2_Extended` + `BlazeDB_Tier3_Heavy` + `BlazeDB_Tier3_Heavy_Perf` (same companion targets as weekly `deep-validation.yml`)
 - `./Scripts/run-tier2.sh`
 - `./Scripts/run-tier3.sh`
 

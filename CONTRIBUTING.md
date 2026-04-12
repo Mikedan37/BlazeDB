@@ -51,7 +51,7 @@ swift test --filter BlazeDB_Tier0
 
 **Run depth locally (extended + perf):**
 ```bash
-./Scripts/run-tier1-depth.sh
+./Scripts/run-tier2-tier3-companions.sh
 ```
 
 ### Tier 2: Integration/Recovery (`BlazeDB_Tier2`, `BlazeDB_Tier2_Extended`)
