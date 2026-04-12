@@ -399,7 +399,7 @@ The default `BlazeDBClient` uses a binary write-ahead log (`WALMode.legacy`) tha
 | watchOS 8+ | Builds | Declared in Package.swift; limited CI |
 | tvOS 15+ | Builds | Declared in Package.swift; limited CI |
 | visionOS 1+ | Builds | Declared in Package.swift; limited CI |
-| Linux | Core support | Swift 6.2 in CI; nightly runs Tier0+Tier1, deep validation runs Tier0+Tier1+Tier2; SwiftUI wrappers excluded |
+| Linux | Core support | Swift 6.2 in CI: PR Tier0, nightly Tier1 + Tier2 core, weekly delta Tier2 extended + Tier3 heavy/perf; SwiftUI wrappers excluded |
 | Android | Core support | `BLAZEDB_LINUX_CORE` path; Swift 6.3+ / Android NDK; best-effort CI |
 
 SwiftUI query wrappers (`@BlazeQuery`, `@BlazeQueryTyped`) are only available on Apple platforms. On Linux and Android, the `swift-crypto` package is used in place of Apple CryptoKit.
@@ -413,7 +413,7 @@ See [Compatibility Matrix](Docs/COMPATIBILITY.md) for details.
 - **PR gate** (macOS): `BlazeDB_Tier0` and `BlazeDB_Tier1` on every push/PR; Linux runs `BlazeDB_Tier0`. See `Docs/Testing/CI_AND_TEST_TIERS.md` for the full matrix.
 - **Release validation** (tagged releases): macOS runs Tier0–Tier2 (+ extended companion targets as defined in the release workflow), not the same cadence as the PR gate.
 - **Nightly Confidence (daily)** runs macOS Tier2 strict, clean checkout, README quickstart, Tier0 TSan, and Linux Tier1/Tier2 core lanes (see `Docs/Testing/CI_AND_TEST_TIERS.md`).
-- **Deep Validation (weekly)** runs broader coverage: macOS Tier0/1/2/3 + destructive + TSan, and Linux Tier0/1/2 (+ extended companion).
+- **Deep Validation (weekly)** is **delta-only**: surfaces not already run by the PR gate and nightly (macOS Tier3 heavy + destructive, Tier1 TSan; Linux Tier2 extended + Tier3 heavy/perf). See `Docs/Testing/CI_AND_TEST_TIERS.md`.
 - Additional nightly checks verify clean checkout and README quickstart scripts.
 - Entry docs for test/CI structure: `Docs/Testing/CI_AND_TEST_TIERS.md` and `Docs/Testing/README.md`.
 
