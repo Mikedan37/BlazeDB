@@ -3,7 +3,7 @@
 BlazeDB is not tied to SwiftUI. This guide shows one clean way to use it in a SwiftUI app.
 
 
-Level 1 — Simple (start here)
+## Level 1 — Simple (start here)
 
 Use this when: you want the fastest path to a clean SwiftUI app.
 
@@ -75,7 +75,7 @@ Avoid
 
 ⸻
 
-Level 2 — Store pattern (cleaner structure)
+## Level 2 — Store pattern (cleaner structure)
 
 Use this when: your screen starts getting logic-heavy.
 
@@ -134,7 +134,7 @@ Avoid introducing manual load() functions unless you actually need them.
 
 ⸻
 
-Level 3 — Larger apps (multiple features)
+## Level 3 — Larger apps (multiple features)
 
 Use this when: your app has separate domains, for example Notes and Tasks.
 
@@ -178,7 +178,7 @@ Each view declares its own query:
 
 ⸻
 
-Level 4 — Advanced (optional patterns)
+## Level 4 — Advanced (optional patterns)
 
 Use this when: you want cleaner dependency wiring for bigger apps and testing.
 
