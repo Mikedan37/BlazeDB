@@ -18,7 +18,7 @@ env:
 jobs:
   # macOS Tier3: quarantined (continue-on-error). Linux Tier3: blocking. See Docs/Testing/CI_AND_TEST_TIERS.md § Nightly Tier3 policy.
   nightly-macos-tier3-heavy:
-    name: macOS 15 — Tier3 Heavy (quarantined, non-blocking)
+    name: macOS 15 — Tier3 (heavy, non-blocking)
     runs-on: macos-15
     # Tier3 XCTest perf uses reduced measure iterations and fixtures when GITHUB_ACTIONS is set
     # (see Docs/Testing/CI_AND_TEST_TIERS.md § "Tier 3 profiling: CI vs local"). Quarantined so
@@ -217,7 +217,7 @@ jobs:
           retention-days: 7
 
   nightly-macos-tier2-strict:
-    name: macOS 15 — Tier2 strict
+    name: macOS 15 — Tier2 (strict)
     runs-on: macos-15
     timeout-minutes: 180
 
@@ -276,7 +276,7 @@ jobs:
           retention-days: 7
 
   nightly-macos-clean-checkout:
-    name: macOS 15 — clean-checkout verification
+    name: macOS 15 — clean checkout verification
     runs-on: macos-15
     timeout-minutes: 120
 
@@ -372,7 +372,7 @@ jobs:
           retention-days: 7
 
   nightly-macos-tsan-tier0:
-    name: macOS 15 — Tier0 ThreadSanitizer
+    name: macOS 15 — Tier0 (ThreadSanitizer)
     runs-on: macos-15
     timeout-minutes: 90
 
@@ -420,7 +420,7 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
 
-  nightly-linux-tier0:
+  linux-tier0:
     name: Linux (Swift 6.2) — Tier0
     runs-on: ubuntu-22.04
     timeout-minutes: 90
@@ -480,7 +480,7 @@ jobs:
           retention-days: 7
 
   linux-tier1:
-    name: Linux (Swift 6.2) — Tier1 (canonical)
+    name: Linux (Swift 6.2) — Tier1
     runs-on: ubuntu-22.04
     timeout-minutes: 120
 
@@ -683,7 +683,7 @@ jobs:
 
   # Linux Tier3 nightly is blocking (unlike macOS Tier3 quarantine above).
   linux-tier3-heavy:
-    name: Linux (Swift 6.2) — Tier3 heavy
+    name: Linux (Swift 6.2) — Tier3 (heavy)
     runs-on: ubuntu-22.04
     timeout-minutes: 240
 
@@ -750,7 +750,7 @@ jobs:
           retention-days: 7
 
   linux-tier3-perf:
-    name: Linux (Swift 6.2) — Tier3 perf companion
+    name: Linux (Swift 6.2) — Tier3 (perf)
     runs-on: ubuntu-22.04
     timeout-minutes: 240
 
