@@ -59,9 +59,14 @@ struct ContentView: View {
     var body: some View {
         VStack {
             Button("Add Sample Item") {
-                try? database?.insert(TodoItem(title: "Buy milk"))
-            }
+                guard let database else { return }
 
+                do {
+                    try database.insert(TodoItem(title: "Buy milk"))
+                } catch {
+                    print("Failed to insert item:", error)
+                }
+            }
             List(items, id: \.id) { item in
                 Text(item.title)
             }
