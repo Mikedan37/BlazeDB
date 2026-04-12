@@ -17,6 +17,20 @@ import Crypto
 final class BlazeDBPerformanceTests: XCTestCase {
     var tempURL: URL!
     var db: BlazeDBClient!
+
+    #if !os(Linux)
+    /// XCTest `measure` on GitHub runners: one iteration, omit memory metric when it amplifies peak RSS / OOM risk.
+    private enum CIMeasure {
+        static var isGitHubActions: Bool {
+            ProcessInfo.processInfo.environment["GITHUB_ACTIONS"] == "true"
+        }
+        static func options(iterations: Int) -> XCTMeasureOptions {
+            let o = XCTMeasureOptions()
+            o.iterationCount = isGitHubActions ? 1 : iterations
+            return o
+        }
+    }
+    #endif
     
     override func setUpWithError() throws {
         tempURL = FileManager.default.temporaryDirectory
@@ -54,10 +68,12 @@ final class BlazeDBPerformanceTests: XCTestCase {
         #if os(Linux)
         runWorkload()
         #else
-        let options = XCTMeasureOptions()
-        options.iterationCount = 5
-        
-        measure(metrics: [XCTClockMetric(), XCTCPUMetric(), XCTMemoryMetric()], options: options, block: runWorkload)
+        let mem: [XCTMetric] = CIMeasure.isGitHubActions ? [] : [XCTMemoryMetric()]
+        measure(
+            metrics: [XCTClockMetric(), XCTCPUMetric()] + mem,
+            options: CIMeasure.options(iterations: 5),
+            block: runWorkload
+        )
         #endif
     }
     
@@ -82,15 +98,12 @@ final class BlazeDBPerformanceTests: XCTestCase {
         #if os(Linux)
         runWorkload()
         #else
-        let options = XCTMeasureOptions()
-        options.iterationCount = 3
-        
-        measure(metrics: [
-            XCTClockMetric(),
-            XCTCPUMetric(),
-            XCTMemoryMetric(),
-            XCTStorageMetric()
-        ], options: options, block: runWorkload)
+        let mem: [XCTMetric] = CIMeasure.isGitHubActions ? [] : [XCTMemoryMetric()]
+        measure(
+            metrics: [XCTClockMetric(), XCTCPUMetric()] + mem + [XCTStorageMetric()],
+            options: CIMeasure.options(iterations: 3),
+            block: runWorkload
+        )
         #endif
         
         print("✅ Batch insert performance measured")
@@ -112,10 +125,7 @@ final class BlazeDBPerformanceTests: XCTestCase {
         #if os(Linux)
         runWorkload()
         #else
-        let options = XCTMeasureOptions()
-        options.iterationCount = 3
-        
-        measure(metrics: [XCTClockMetric()], options: options, block: runWorkload)
+        measure(metrics: [XCTClockMetric()], options: CIMeasure.options(iterations: 3), block: runWorkload)
         #endif
         
         print("✅ Individual insert performance measured")
@@ -143,10 +153,11 @@ final class BlazeDBPerformanceTests: XCTestCase {
         #if os(Linux)
         runWorkload()
         #else
-        let options = XCTMeasureOptions()
-        options.iterationCount = 10
-        
-        measure(metrics: [XCTClockMetric(), XCTCPUMetric()], options: options, block: runWorkload)
+        measure(
+            metrics: [XCTClockMetric(), XCTCPUMetric()],
+            options: CIMeasure.options(iterations: 10),
+            block: runWorkload
+        )
         #endif
     }
     
@@ -169,13 +180,10 @@ final class BlazeDBPerformanceTests: XCTestCase {
         #if os(Linux)
         runWorkload()
         #else
-        let options = XCTMeasureOptions()
-        options.iterationCount = 5
-        
-        measure(metrics: [
-            XCTClockMetric(),
-            XCTMemoryMetric()
-        ], options: options, block: runWorkload)
+        let metrics: [XCTMetric] = CIMeasure.isGitHubActions
+            ? [XCTClockMetric()]
+            : [XCTClockMetric(), XCTMemoryMetric()]
+        measure(metrics: metrics, options: CIMeasure.options(iterations: 5), block: runWorkload)
         #endif
     }
     
@@ -195,10 +203,10 @@ final class BlazeDBPerformanceTests: XCTestCase {
         #if os(Linux)
         runWorkload()
         #else
-        let options = XCTMeasureOptions()
-        options.iterationCount = 10
-        
-        measure(metrics: [XCTClockMetric(), XCTMemoryMetric()], options: options, block: runWorkload)
+        let metrics: [XCTMetric] = CIMeasure.isGitHubActions
+            ? [XCTClockMetric()]
+            : [XCTClockMetric(), XCTMemoryMetric()]
+        measure(metrics: metrics, options: CIMeasure.options(iterations: 10), block: runWorkload)
         #endif
     }
     
@@ -227,10 +235,11 @@ final class BlazeDBPerformanceTests: XCTestCase {
         #if os(Linux)
         runWorkload()
         #else
-        let options = XCTMeasureOptions()
-        options.iterationCount = 5
-        
-        measure(metrics: [XCTClockMetric(), XCTCPUMetric(), XCTStorageMetric()], options: options, block: runWorkload)
+        measure(
+            metrics: [XCTClockMetric(), XCTCPUMetric(), XCTStorageMetric()],
+            options: CIMeasure.options(iterations: 5),
+            block: runWorkload
+        )
         #endif
     }
     
@@ -258,10 +267,11 @@ final class BlazeDBPerformanceTests: XCTestCase {
         #if os(Linux)
         runWorkload()
         #else
-        let options = XCTMeasureOptions()
-        options.iterationCount = 5
-        
-        measure(metrics: [XCTClockMetric(), XCTCPUMetric()], options: options, block: runWorkload)
+        measure(
+            metrics: [XCTClockMetric(), XCTCPUMetric()],
+            options: CIMeasure.options(iterations: 5),
+            block: runWorkload
+        )
         #endif
     }
     
@@ -295,10 +305,7 @@ final class BlazeDBPerformanceTests: XCTestCase {
         #if os(Linux)
         runWorkload()
         #else
-        let options = XCTMeasureOptions()
-        options.iterationCount = 10
-        
-        measure(metrics: [XCTClockMetric()], options: options, block: runWorkload)
+        measure(metrics: [XCTClockMetric()], options: CIMeasure.options(iterations: 10), block: runWorkload)
         #endif
     }
     
@@ -321,10 +328,11 @@ final class BlazeDBPerformanceTests: XCTestCase {
         #if os(Linux)
         runWorkload()
         #else
-        let options = XCTMeasureOptions()
-        options.iterationCount = 5
-        
-        measure(metrics: [XCTClockMetric(), XCTCPUMetric()], options: options, block: runWorkload)
+        measure(
+            metrics: [XCTClockMetric(), XCTCPUMetric()],
+            options: CIMeasure.options(iterations: 5),
+            block: runWorkload
+        )
         #endif
     }
     
@@ -348,10 +356,11 @@ final class BlazeDBPerformanceTests: XCTestCase {
         #if os(Linux)
         runWorkload()
         #else
-        let options = XCTMeasureOptions()
-        options.iterationCount = 5
-        
-        measure(metrics: [XCTClockMetric(), XCTCPUMetric()], options: options, block: runWorkload)
+        measure(
+            metrics: [XCTClockMetric(), XCTCPUMetric()],
+            options: CIMeasure.options(iterations: 5),
+            block: runWorkload
+        )
         #endif
     }
     
@@ -377,10 +386,9 @@ final class BlazeDBPerformanceTests: XCTestCase {
         #if os(Linux)
         runWorkload()
         #else
-        let options = XCTMeasureOptions()
-        options.iterationCount = 3
-        
-        measure(metrics: [XCTMemoryMetric()], options: options, block: runWorkload)
+        // On CI, memory-only measurement is replaced with wall clock so we still exercise the path without XCTMemoryMetric spikes.
+        let metrics: [XCTMetric] = CIMeasure.isGitHubActions ? [XCTClockMetric()] : [XCTMemoryMetric()]
+        measure(metrics: metrics, options: CIMeasure.options(iterations: 3), block: runWorkload)
         #endif
     }
     
@@ -402,10 +410,7 @@ final class BlazeDBPerformanceTests: XCTestCase {
         #if os(Linux)
         runWorkload()
         #else
-        let options = XCTMeasureOptions()
-        options.iterationCount = 3
-        
-        measure(metrics: [XCTStorageMetric()], options: options, block: runWorkload)
+        measure(metrics: [XCTStorageMetric()], options: CIMeasure.options(iterations: 3), block: runWorkload)
         #endif
     }
 }

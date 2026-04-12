@@ -47,16 +47,22 @@ final class PerformanceProfilingTests: XCTestCase {
         #if os(Linux)
         try block()
         #else
-        let metrics: [XCTMetric] = [
-            XCTClockMetric(),           // Wall clock time
-            XCTCPUMetric(),             // CPU usage
-            XCTMemoryMetric(),          // Memory footprint
-            XCTStorageMetric()          // Disk I/O
-        ]
-        
+        // On GitHub Actions, XCTMemoryMetric + repeated `measure` iterations has produced multi‑GB
+        // "peak physical" reports and subsequent runner exits (OOM / killed) between disk I/O tests.
+        // Keep wall clock, CPU, and storage; shrink iteration count to reduce cumulative load.
+        let runningOnCI = ProcessInfo.processInfo.environment["GITHUB_ACTIONS"] == "true"
+        let metrics: [XCTMetric] = runningOnCI
+            ? [XCTClockMetric(), XCTCPUMetric(), XCTStorageMetric()]
+            : [
+                XCTClockMetric(),
+                XCTCPUMetric(),
+                XCTMemoryMetric(),
+                XCTStorageMetric()
+            ]
+
         let options = XCTMeasureOptions()
-        options.iterationCount = 5  // Run 5 times for average
-        
+        options.iterationCount = runningOnCI ? 1 : 5
+
         measure(metrics: metrics, options: options) {
             try? block()
         }
@@ -365,8 +371,10 @@ final class PerformanceProfilingTests: XCTestCase {
     
     /// PROFILE: Memory usage during large batch insert
     func testProfile_MemoryUsage() throws {
+        let runningOnCI = ProcessInfo.processInfo.environment["GITHUB_ACTIONS"] == "true"
+        let count = runningOnCI ? 10_000 : 50_000
         try profileWithMetrics(name: "Memory Usage Large Batch") {
-            let records = (0..<50_000).map { i in
+            let records = (0..<count).map { i in
                 BlazeDataRecord([
                     "index": .int(i),
                     "name": .string("User \(i)"),
@@ -379,10 +387,12 @@ final class PerformanceProfilingTests: XCTestCase {
     
     // MARK: - Disk I/O Profiling
     
-    /// PROFILE: Disk writes (10,000 small records)
+    /// PROFILE: Disk writes (10,000 small records; smaller on CI to avoid runner memory limits)
     func testProfile_DiskWrites() throws {
-        try profileWithMetrics(name: "Disk Writes 10000") {
-            for i in 0..<10_000 {
+        let runningOnCI = ProcessInfo.processInfo.environment["GITHUB_ACTIONS"] == "true"
+        let n = runningOnCI ? 2_500 : 10_000
+        try profileWithMetrics(name: "Disk Writes \(n)") {
+            for i in 0..<n {
                 try? db.insert(BlazeDataRecord(["i": .int(i)]))
             }
         }
@@ -390,8 +400,10 @@ final class PerformanceProfilingTests: XCTestCase {
     
     /// PROFILE: Disk reads (fetch all)
     func testProfile_DiskReads() throws {
+        let runningOnCI = ProcessInfo.processInfo.environment["GITHUB_ACTIONS"] == "true"
+        let n = runningOnCI ? 2_500 : 10_000
         // Setup
-        for i in 0..<10_000 {
+        for i in 0..<n {
             try! db.insert(BlazeDataRecord(["i": .int(i)]))
         }
         try! db.persist()
@@ -402,9 +414,9 @@ final class PerformanceProfilingTests: XCTestCase {
         BlazeDBClient.clearCachedKey()
         db = try! BlazeDBClient(name: "profile_test", fileURL: tempURL, password: "SecureTestDB-456!")
         
-        try profileWithMetrics(name: "Disk Reads 10000") {
+        try profileWithMetrics(name: "Disk Reads \(n)") {
             let all = try db.fetchAll()
-            XCTAssertEqual(all.count, 10_000)
+            XCTAssertEqual(all.count, n)
         }
     }
     

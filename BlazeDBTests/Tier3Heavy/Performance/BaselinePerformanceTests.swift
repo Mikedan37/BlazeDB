@@ -48,6 +48,13 @@ final class BaselinePerformanceTests: XCTestCase {
     private var enforceRegressionGate: Bool {
         ProcessInfo.processInfo.environment["BLAZEDB_ENFORCE_PERF_BASELINE"] == "1"
     }
+
+    /// Smaller fixtures on GitHub-hosted runners so baselines finish without excessive wall time.
+    private var isGitHubActions: Bool { ProcessInfo.processInfo.environment["GITHUB_ACTIONS"] == "true" }
+    private var baselineN10k: Int { isGitHubActions ? 4_000 : 10_000 }
+    private var baselineN100k: Int { isGitHubActions ? 25_000 : 100_000 }
+    private var baselineN5k: Int { isGitHubActions ? 2_500 : 5_000 }
+    private var baselineConcurrentThreads: Int { isGitHubActions ? 50 : 100 }
     
     override func setUp() {
         super.setUp()
@@ -206,8 +213,9 @@ final class BaselinePerformanceTests: XCTestCase {
     
     /// BASELINE: Batch insert 10,000 records
     func testBaseline_BatchInsert10000Records() throws {
+        let n = baselineN10k
         try measure(name: "BatchInsert_10000_Records", allowedRegression: 0.15) {
-            let records = (0..<10_000).map { i in
+            let records = (0..<n).map { i in
                 BlazeDataRecord([
                     "index": .int(i),
                     "name": .string("User \(i)"),
@@ -220,8 +228,8 @@ final class BaselinePerformanceTests: XCTestCase {
     
     /// BASELINE: Fetch all 10,000 records
     func testBaseline_FetchAll10000Records() throws {
-        // Setup: Insert 10k records
-        let records = (0..<10_000).map { i in
+        let n = baselineN10k
+        let records = (0..<n).map { i in
             BlazeDataRecord([
                 "index": .int(i),
                 "name": .string("User \(i)")
@@ -231,14 +239,14 @@ final class BaselinePerformanceTests: XCTestCase {
         
         try measure(name: "FetchAll_10000_Records", allowedRegression: 0.20) {
             let all = try db.fetchAll()
-            XCTAssertEqual(all.count, 10_000)
+            XCTAssertEqual(all.count, n)
         }
     }
     
     /// BASELINE: Query with filter (10,000 records)
     func testBaseline_QueryWithFilter() throws {
-        // Setup - Use batch insert for speed!
-        let records = (0..<10_000).map { i in
+        let n = baselineN10k
+        let records = (0..<n).map { i in
             BlazeDataRecord([
                 "status": .string(i % 3 == 0 ? "active" : "inactive"),
                 "value": .int(i)
@@ -256,8 +264,8 @@ final class BaselinePerformanceTests: XCTestCase {
     
     /// BASELINE: Aggregation on 10,000 records
     func testBaseline_Aggregation() throws {
-        // Setup - Use batch insert for speed!
-        let records = (0..<10_000).map { i in
+        let n = baselineN10k
+        let records = (0..<n).map { i in
             BlazeDataRecord([
                 "category": .string(i % 5 == 0 ? "A" : "B"),
                 "value": .int(i)
@@ -310,8 +318,8 @@ final class BaselinePerformanceTests: XCTestCase {
     
     /// BASELINE: Persist 10,000 records
     func testBaseline_Persist10000Records() throws {
-        // Setup
-        let records = (0..<10_000).map { i in
+        let n = baselineN10k
+        let records = (0..<n).map { i in
             BlazeDataRecord(["index": .int(i)])
         }
         _ = try db.insertMany(records)
@@ -324,10 +332,11 @@ final class BaselinePerformanceTests: XCTestCase {
     /// BASELINE: Concurrent inserts (100 threads × 10 records)
     func testBaseline_ConcurrentInserts() throws {
         let db = self.db!
+        let threads = baselineConcurrentThreads
         try measure(name: "Concurrent_Inserts_1000", allowedRegression: 0.30) {
             let group = DispatchGroup()
             
-            for i in 0..<100 {
+            for i in 0..<threads {
                 group.enter()
                 DispatchQueue.global().async {
                     defer { group.leave() }
@@ -389,8 +398,9 @@ final class BaselinePerformanceTests: XCTestCase {
     
     /// BASELINE: Many small records (100,000)
     func testBaseline_ManySmallRecords() throws {
+        let n = baselineN100k
         try measure(name: "ManySmallRecords_100000", allowedRegression: 0.20) {
-            let records = (0..<100_000).map { i in
+            let records = (0..<n).map { i in
                 BlazeDataRecord(["i": .int(i)])
             }
             _ = try db.insertMany(records)
@@ -399,8 +409,8 @@ final class BaselinePerformanceTests: XCTestCase {
     
     /// BASELINE: Complex query (multiple filters)
     func testBaseline_ComplexQuery() throws {
-        // Setup - Use batch insert for speed!
-        let records = (0..<5000).map { i in
+        let n = baselineN5k
+        let records = (0..<n).map { i in
             BlazeDataRecord([
                 "status": .string(i % 3 == 0 ? "active" : "inactive"),
                 "priority": .int(i % 5),
@@ -409,11 +419,12 @@ final class BaselinePerformanceTests: XCTestCase {
         }
         _ = try db.insertMany(records)
         
+        let valueUpper = max(1, (n * 4) / 5)
         try measure(name: "ComplexQuery_MultipleFilters", allowedRegression: 0.25) {
             let results = try db.query()
                 .where("status", equals: .string("active"))
                 .where("priority", greaterThan: .int(2))
-                .where("value", lessThan: .int(4000))
+                .where("value", lessThan: .int(valueUpper))
                 .execute()
             XCTAssertGreaterThan(results.count, 0)
         }
