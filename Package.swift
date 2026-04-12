@@ -141,7 +141,7 @@ var blazeTargets: [Target] = [
 if !tier0OnlyTestScope {
     blazeTargets += [
         // Tier 1: canonical PR/local correctness gate.
-        // Runs nearly all of Tier1Core; only one file with a hard blocker remains excluded.
+        // Linux nightly splits Tier1 vs Tier2/Tier3 in workflows (see CI_AND_TEST_TIERS.md); slow suites live under Tier2/Tier3 targets.
         .testTarget(
             name: "BlazeDB_Tier1",
             dependencies: ["BlazeDBCore"],

@@ -2,6 +2,8 @@
 # Strict deterministic run for Tier 0 + Tier 1 only.
 # With tiered targets, strict mode now maps to target-level execution.
 set -e
+. "$(dirname "$0")/lib/temp_lifecycle.sh"
+blazedb_temp_setup "tier1-strict"
 echo "=== Tier 1 (strict): Tier 0 + Tier 1 deterministic ==="
 # Fail fast if Tier-2-only env is set
 if [ -n "${RUN_HEAVY_STRESS}" ] && [ "${RUN_HEAVY_STRESS}" != "0" ]; then

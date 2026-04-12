@@ -26,9 +26,14 @@ def swift_test_filter_for_target(target: str) -> str:
 
     Plain `BlazeDB_Tier3_Heavy` matches `BlazeDB_Tier3_Heavy_Perf` (substring). Require the bundle
     dot so only `BlazeDB_Tier3_Heavy.*` runs.
+
+    Plain `BlazeDB_Tier1` can match unrelated bundle prefixes in some regex modes; prefer `BlazeDB_Tier1.`
+    when isolating the canonical Tier1 bundle.
     """
     if target == "BlazeDB_Tier3_Heavy":
         return r"BlazeDB_Tier3_Heavy\."
+    if target == "BlazeDB_Tier1":
+        return r"BlazeDB_Tier1\."
     return target
 
 

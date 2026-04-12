@@ -2,6 +2,8 @@
 # Tier 1: CI gate. Tier 0 + Tier 1 deterministic lanes.
 # See Docs/Testing/TEST_EXECUTION_MODEL.md
 set -e
+. "$(dirname "$0")/lib/temp_lifecycle.sh"
+blazedb_temp_setup "tier1"
 echo "=== Tier 1: CI gate (Tier 0 + Tier1) ==="
 RUN_ID="$(date +%Y%m%d-%H%M%S)"
 ARTIFACT_DIR=".artifacts/core/${RUN_ID}"

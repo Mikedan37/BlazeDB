@@ -19,6 +19,7 @@ final class TriggerPersistenceAPITests: XCTestCase {
         try? FileManager.default.removeItem(at: try requireFixture(metaURL))
     }
 
+    #if !BLAZEDB_LINUX_CORE
     func testOnInsertTriggerDefinitionIsPersistedToLayoutMetadata() throws {
         let db = try BlazeDBClient(name: "trigger-persist", fileURL: try requireFixture(dbURL), password: "TriggerPass-123!")
         defer { try? requireFixture(db).close() }
@@ -48,4 +49,9 @@ final class TriggerPersistenceAPITests: XCTestCase {
             "Registering onInsert trigger should persist trigger metadata"
         )
     }
+    #else
+    func testOnInsertTriggerDefinitionIsPersistedToLayoutMetadata() throws {
+        throw XCTSkip("Trigger metadata persistence is disabled under BLAZEDB_LINUX_CORE")
+    }
+    #endif
 }
