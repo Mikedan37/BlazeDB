@@ -1,6 +1,8 @@
 # BlazeDB
 
-An encrypted, embedded document database for Swift. Single-process, zero external dependencies. Production runtime is always encrypted at rest. *MIT · Swift 6+ · current release **2.7.5** (add the package under [Add BlazeDB to your app](#add-blazedb-to-your-app)).*
+**Embedded, encrypted, single-process.** A document database for Swift with ACID transactions, WAL-backed crash recovery, and AES-256-GCM at rest. One encrypted file per database name; no standalone server and no required network calls.
+
+*MIT · Swift 6+ · current release **2.7.5** · [Add BlazeDB to your app](#add-blazedb-to-your-app)*
 
 [![Swift](https://img.shields.io/badge/Swift-6.0+-orange.svg)](https://swift.org)
 [![Platforms](https://img.shields.io/badge/Platforms-macOS%20%7C%20iOS%20%7C%20watchOS%20%7C%20tvOS%20%7C%20visionOS%20%7C%20Linux%20%7C%20Android-lightgrey.svg)](Docs/COMPATIBILITY.md)
@@ -12,16 +14,20 @@ An encrypted, embedded document database for Swift. Single-process, zero externa
 
 *Primary links; everything else (examples, API details, deeper sections) is further down.*
 
-This README is **onboarding-first**: most people start with [Start Here](#start-here-new-users) to get a mental model and copy-paste sample. Two explicit paths branch from there:
+### How you move through this README
+
+**Onboarding first:** read [Start Here](#start-here-new-users) for the mental model and a full copy-paste sample. After that, pick a lane:
 
 - **Path A:** Clone, then [Try BlazeDB from this repo](#try-blazedb-from-this-repo) (`swift run HelloBlazeDB`).
-- **Path B:** [Add BlazeDB to your app](#add-blazedb-to-your-app) (SwiftPM or Xcode), then wire up code using Start Here, [SwiftUI path](#swiftui-path-start-here), or the full guide.
+- **Path B:** [Add BlazeDB to your app](#add-blazedb-to-your-app) (SwiftPM or Xcode), then reuse [that sample](#start-here-new-users), follow [SwiftUI patterns](#swiftui-path), or open the [full usage guide](Docs/GettingStarted/HOW_TO_USE_BLAZEDB.md).
+
+### Jump to
 
 - [Start Here](#start-here-new-users)
 - [Try BlazeDB from this repo](#try-blazedb-from-this-repo)
 - [Add BlazeDB to your app](#add-blazedb-to-your-app)
 - [What to do next](#what-to-do-next)
-- [SwiftUI path](#swiftui-path-start-here)
+- [SwiftUI path](#swiftui-path)
 - [Documentation](#documentation)
 
 ## Start Here (New Users)
@@ -80,7 +86,7 @@ Id strings look like `"bug:<uuid>"`: `bug` = kind, uuid = which one.
 swift run HelloBlazeDB
 ```
 
-**Minimal sample** (after adding the package), same idea as [Start Here](#start-here-new-users), shorter:
+**Minimal sample** (after adding the package), same shape as [the opening sample](#start-here-new-users), shorter:
 
 ```swift
 import BlazeDB
@@ -96,12 +102,12 @@ try db.put(Note(text: "Ship first BlazeDB build"))  // save
 let notes: [Note] = try db.query("note").all()  // all notes (or [] if empty)
 ```
 
-For the full beginner walkthrough (`open -> put -> get -> query`), use **Start Here (New Users)**.
+For the full beginner walkthrough (`open` → `put` → `get` → `query`), use [the section above](#start-here-new-users).
 For deeper coverage, see [HOW_TO_USE_BLAZEDB.md](Docs/GettingStarted/HOW_TO_USE_BLAZEDB.md).
 
 ## Add BlazeDB to your app
 
-**Path B (consumer integration).** Add the package to your project, then use the snippets in [Start Here](#start-here-new-users) or [Try BlazeDB from this repo](#try-blazedb-from-this-repo) (minimal sample).
+**Path B (consumer integration).** Add the package to your project, then paste from [the opening sample](#start-here-new-users) or from [Try BlazeDB from this repo](#try-blazedb-from-this-repo) (minimal sample).
 
 Add to your `Package.swift`:
 
@@ -135,11 +141,13 @@ After `open` → `put` → `get` → `query` makes sense, pick **one** path:
 
 If you skip straight to API tiers or raw APIs without that bridge, you’ll feel lost. That’s normal; come back to step 1–3.
 
-## SwiftUI Path (Start Here)
+## SwiftUI Path
 
-If you are building a SwiftUI app, start here next:
+If you are building a SwiftUI app, use:
 
-- [SwiftUI DB Patterns](Docs/GettingStarted/SWIFTUI_DATABASE_PATTERNS.md) - beginner-first setup, then clear Level 1 to Level 4 progression.
+- [SwiftUI DB Patterns](Docs/GettingStarted/SWIFTUI_DATABASE_PATTERNS.md): beginner-first setup, then Level 1 through Level 4.
+
+---
 
 ## What BlazeDB Is
 
@@ -154,7 +162,7 @@ If you are building a SwiftUI app, start here next:
 
 ## What BlazeDB Is Not
 
-- **Not SQL commands.** You do not write `SELECT` statements here; you use BlazeDB's Swift query methods instead (see [Start Here](#start-here-new-users) and [Querying Data](Docs/GettingStarted/HOW_TO_USE_BLAZEDB.md#6-querying-data)).
+- **Not SQL commands.** You do not write `SELECT` statements here; you use BlazeDB's Swift query methods instead (see [the sample above](#start-here-new-users) and [Querying Data](Docs/GettingStarted/HOW_TO_USE_BLAZEDB.md#6-querying-data)).
 - **Not multi-process.** One process owns the database file. No concurrent access from separate processes.
 - **Not client/server.** No network listener, no remote connections.
 - **Not per-type table storage.** All record types coexist in a single encrypted collection.
@@ -174,6 +182,8 @@ If you are building a SwiftUI app, start here next:
 ---
 
 ## Example: Lists and List Items
+
+### One list, many items
 
 A common BlazeDB use case is building something like a to-do list.
 
@@ -236,7 +246,7 @@ Later, BlazeDB can find all items with that ID and return the items for Grocerie
 
 ## Advanced Usage (Optional)
 
-If you're new, [What to do next](#what-to-do-next) + [Start Here](#start-here-new-users) are enough to ship something. Everything from **Core Concepts** downward is deeper architecture, alternate APIs, and ops. Read when you need it, not in order.
+If you're new, [What to do next](#what-to-do-next) and [the opening sample](#start-here-new-users) are enough to ship something. Everything from **Core Concepts** downward is deeper architecture, alternate APIs, and ops. Read when you need it, not in order.
 
 ## Core Concepts
 
@@ -269,7 +279,7 @@ The production runtime is always encrypted at rest. Every data page is sealed wi
 
 ### Default API (recommended)
 
-Use this as your default app path. The full end-to-end example lives in **Start Here (New Users)**.
+Use this as your default app path. The full end-to-end example is [in the first section](#start-here-new-users).
 
 ### Direct CRUD (secondary)
 
