@@ -2,7 +2,6 @@
 
 BlazeDB is not tied to SwiftUI. This guide shows one clean way to use it in a SwiftUI app.
 
-⸻
 
 Level 1 — Simple (start here)
 
