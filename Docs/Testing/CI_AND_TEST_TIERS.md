@@ -63,8 +63,18 @@ Use this table for day-to-day expectations.
   - `Linux (Swift 6.2) — Tier2 (+ extended)`: `BlazeDB_Tier2` + `BlazeDB_Tier2_Extended` (Linux-only nightly job; deeper suites)
   - `Linux (Swift 6.2) — Tier3 heavy (+ perf)`: `BlazeDB_Tier3_Heavy` + `BlazeDB_Tier3_Heavy_Perf` (Linux-only nightly job)
 - Nightly confidence lanes are root-owned and do not depend on `BlazeDBExtraTests`.
-- Temporary quarantine policy (current): `macOS 15 — Tier3 Heavy` is non-blocking in nightly due to cumulative profiling-load instability; lane remains monitored and includes automated post-failure diagnostics.
+- Temporary quarantine policy (current): `macOS 15 — Tier3 Heavy` is non-blocking in nightly so Tier1/Tier2 gates stay authoritative; Tier3 remains monitored with post-failure diagnostics.
 - **Operational policy:** nightly failures are triaged within 24–48 hours.
+
+### Tier 3 profiling: CI vs local (do not “restore rigor” on runners)
+
+Treat CI as a **constrained environment that must produce trustworthy signal**, not a place where every XCTest metric runs at maximum intensity. More metrics on a hosted runner often means **benchmarking the runner dying** (process exit without assertion failures, OOM, or cumulative profiling load), not BlazeDB.
+
+**Why CI is lighter (not taste):** Tier3 jobs were failing when XCTest `measure` used **multiple iterations** plus **`XCTMemoryMetric`** on large fixtures—logs showed extreme reported memory peaks followed immediately by the test process exiting with a non-zero code and **no** `XCTAssert` failure. That is the failure mode this policy prevents.
+
+**Do not “fix” CI by increasing iterations or re-enabling full metrics for “rigor.”** That sentence is wrong here: rigor for profiling belongs on **local or manual runs**, where **`GITHUB_ACTIONS` is unset** and Tier3 sources keep **full `measure` iteration counts and full metric sets** (including memory where appropriate). If you change CI back toward heavier profiling, you must treat it as a **deliberate policy change**: re-measure runner memory and job duration, update this section with evidence, and expect red nightly Tier3 again.
+
+**What `GITHUB_ACTIONS=1` does in Tier3 perf sources (summary):** one `measure` iteration on CI, omit or replace `XCTMemoryMetric` where it amplified peaks, smaller fixtures on the heaviest baselines, clock-only where memory measurement was hostile—**local stays full-fat.**
 
 ### Nightly Tier3 policy
 
