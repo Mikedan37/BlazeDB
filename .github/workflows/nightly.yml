@@ -546,11 +546,12 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
 
-  # Linux-only: deeper suites (moved from long Tier1 runs) — not duplicated on macOS nightly jobs.
-  nightly-linux-tier2:
-    name: Linux (Swift 6.2) — Tier2 (+ extended)
+  # Linux-only: deeper suites (moved from long Tier1 runs) — split so core/extended run in parallel.
+  nightly-linux-tier2-core:
+    name: Linux (Swift 6.2) — Tier2 (core)
     runs-on: ubuntu-22.04
     timeout-minutes: 240
+    needs: nightly-linux-tier1
 
     steps:
       - name: Checkout
@@ -581,19 +582,85 @@ jobs:
       - name: Prepare CI log directories
         run: mkdir -p .logs .artifacts
 
-      - name: Test Tier 2 (+ extended companion)
+      - name: Test Tier 2 (core)
         run: |
           set -euo pipefail
           mkdir -p .logs
           (
             while sleep 60; do
-              echo "[tier2-heartbeat] $(date -u '+%Y-%m-%dT%H:%M:%SZ') swift-test still running"
+              echo "[tier2-core-heartbeat] $(date -u '+%Y-%m-%dT%H:%M:%SZ') swift-test still running"
             done
           ) &
           _hb=$!
           trap 'kill "$_hb" 2>/dev/null || true' EXIT
           stdbuf -oL -eL swift test --disable-swift-testing --filter 'BlazeDB_Tier2\.' 2>&1 \
-            | stdbuf -oL -eL tee .logs/tier2.log
+            | stdbuf -oL -eL tee .logs/tier2-core.log
+
+      - name: Dump diagnostics on failure
+        if: failure()
+        run: |
+          mkdir -p .logs
+          ps aux > .logs/ps.txt || true
+          df -h > .logs/disk.txt || true
+          swift --version > .logs/swift-version.txt 2>&1 || true
+
+      - name: Upload nightly Linux Tier2 core logs
+        if: always()
+        uses: actions/upload-artifact@v5
+        with:
+          name: nightly-linux-tier2-core-logs
+          path: |
+            .logs/
+            .artifacts/
+          if-no-files-found: ignore
+          retention-days: 7
+
+  nightly-linux-tier2-extended:
+    name: Linux (Swift 6.2) — Tier2 (extended)
+    runs-on: ubuntu-22.04
+    timeout-minutes: 240
+    needs: nightly-linux-tier1
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Cache SwiftPM build
+        uses: actions/cache@v5
+        with:
+          path: .build
+          key: nightly-${{ runner.os }}-spm-${{ hashFiles('Package.swift', 'Package.resolved') }}
+          restore-keys: |
+            nightly-${{ runner.os }}-spm-
+            ${{ runner.os }}-spm-
+
+      - name: Setup Swift 6.2
+        uses: swift-actions/setup-swift@v2
+        with:
+          swift-version: "6.2"
+
+      - name: Swift version
+        run: swift --version
+
+      - name: Build core
+        run: swift build --target BlazeDBCore
+
+      - name: Prepare CI log directories
+        run: mkdir -p .logs .artifacts
+
+      - name: Test Tier 2 (extended)
+        run: |
+          set -euo pipefail
+          mkdir -p .logs
+          (
+            while sleep 60; do
+              echo "[tier2-extended-heartbeat] $(date -u '+%Y-%m-%dT%H:%M:%SZ') swift-test still running"
+            done
+          ) &
+          _hb=$!
+          trap 'kill "$_hb" 2>/dev/null || true' EXIT
           stdbuf -oL -eL swift test --disable-swift-testing --filter BlazeDB_Tier2_Extended 2>&1 \
             | stdbuf -oL -eL tee .logs/tier2-extended.log
 
@@ -605,11 +672,11 @@ jobs:
           df -h > .logs/disk.txt || true
           swift --version > .logs/swift-version.txt 2>&1 || true
 
-      - name: Upload nightly Linux Tier2 logs
+      - name: Upload nightly Linux Tier2 extended logs
         if: always()
         uses: actions/upload-artifact@v5
         with:
-          name: nightly-linux-tier2-logs
+          name: nightly-linux-tier2-extended-logs
           path: |
             .logs/
             .artifacts/
@@ -617,10 +684,13 @@ jobs:
           retention-days: 7
 
   # Linux Tier3 nightly is blocking (unlike macOS Tier3 quarantine above).
-  nightly-linux-tier3-heavy:
-    name: Linux (Swift 6.2) — Tier3 heavy (+ perf companion)
+  nightly-linux-tier3-heavy-core:
+    name: Linux (Swift 6.2) — Tier3 heavy
     runs-on: ubuntu-22.04
     timeout-minutes: 240
+    needs:
+      - nightly-linux-tier2-core
+      - nightly-linux-tier2-extended
 
     steps:
       - name: Checkout
@@ -651,21 +721,19 @@ jobs:
       - name: Prepare CI log directories
         run: mkdir -p .logs .artifacts
 
-      - name: Test Tier 3 heavy (+ transitional perf companion)
+      - name: Test Tier 3 heavy
         run: |
           set -euo pipefail
           mkdir -p .logs
           (
             while sleep 120; do
-              echo "[tier3-linux-heartbeat] $(date -u '+%Y-%m-%dT%H:%M:%SZ') swift-test still running"
+              echo "[tier3-linux-heavy-heartbeat] $(date -u '+%Y-%m-%dT%H:%M:%SZ') swift-test still running"
             done
           ) &
           _hb=$!
           trap 'kill "$_hb" 2>/dev/null || true' EXIT
           stdbuf -oL -eL swift test --disable-swift-testing --filter 'BlazeDB_Tier3_Heavy\.' 2>&1 \
             | stdbuf -oL -eL tee .logs/tier3-heavy.log
-          stdbuf -oL -eL swift test --disable-swift-testing --filter BlazeDB_Tier3_Heavy_Perf 2>&1 \
-            | stdbuf -oL -eL tee .logs/tier3-heavy-perf.log
 
       - name: Dump diagnostics on failure
         if: failure()
@@ -679,7 +747,77 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v5
         with:
-          name: nightly-linux-tier3-heavy-logs
+          name: nightly-linux-tier3-heavy-core-logs
+          path: |
+            .logs/
+            .artifacts/
+          if-no-files-found: ignore
+          retention-days: 7
+
+  nightly-linux-tier3-perf:
+    name: Linux (Swift 6.2) — Tier3 perf companion
+    runs-on: ubuntu-22.04
+    timeout-minutes: 240
+    needs:
+      - nightly-linux-tier2-core
+      - nightly-linux-tier2-extended
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Cache SwiftPM build
+        uses: actions/cache@v5
+        with:
+          path: .build
+          key: nightly-${{ runner.os }}-spm-${{ hashFiles('Package.swift', 'Package.resolved') }}
+          restore-keys: |
+            nightly-${{ runner.os }}-spm-
+            ${{ runner.os }}-spm-
+
+      - name: Setup Swift 6.2
+        uses: swift-actions/setup-swift@v2
+        with:
+          swift-version: "6.2"
+
+      - name: Swift version
+        run: swift --version
+
+      - name: Build core
+        run: swift build --target BlazeDBCore
+
+      - name: Prepare CI log directories
+        run: mkdir -p .logs .artifacts
+
+      - name: Test Tier 3 perf companion
+        run: |
+          set -euo pipefail
+          mkdir -p .logs
+          (
+            while sleep 120; do
+              echo "[tier3-linux-perf-heartbeat] $(date -u '+%Y-%m-%dT%H:%M:%SZ') swift-test still running"
+            done
+          ) &
+          _hb=$!
+          trap 'kill "$_hb" 2>/dev/null || true' EXIT
+          stdbuf -oL -eL swift test --disable-swift-testing --filter BlazeDB_Tier3_Heavy_Perf 2>&1 \
+            | stdbuf -oL -eL tee .logs/tier3-heavy-perf.log
+
+      - name: Dump diagnostics on failure
+        if: failure()
+        run: |
+          mkdir -p .logs
+          ps aux > .logs/ps.txt || true
+          df -h > .logs/disk.txt || true
+          swift --version > .logs/swift-version.txt 2>&1 || true
+
+      - name: Upload nightly Linux Tier3 perf logs
+        if: always()
+        uses: actions/upload-artifact@v5
+        with:
+          name: nightly-linux-tier3-perf-logs
           path: |
             .logs/
             .artifacts/
