@@ -36,6 +36,8 @@ If you are new, use this path first and ignore the advanced sections until you n
 
 **No database experience needed.** BlazeDB stores everything in **one encrypted file** per app name (`"demo"` here), like a save slot on disk, not a separate server. You describe data with ordinary Swift structs: **`put`** saves a value, **`get`** loads one item when you know its id string, **`query`** returns a list you can filter (e.g. only open bugs). Nothing is sent over the network.
 
+**`put`** accepts either a single **`BlazeStorable`** model or a flat array of the same model type. If you need nested arrays, store them as fields inside a model rather than passing nested arrays directly to **`put`**.
+
 Read the sample **top to bottom**: `open` → `put` → `get` → `query`.
 
 ```swift
