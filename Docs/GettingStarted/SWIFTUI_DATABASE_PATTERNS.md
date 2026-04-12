@@ -107,7 +107,7 @@ final class TodoWriteStore: ObservableObject {
     }
 }
 
-struct ContentView: View {
+struct TodoListWithStoreView: View {
     @Environment(\.blazeDBClient) private var database
     @StateObject private var store = TodoWriteStore()
     @BlazeQuery var items: [TodoItem]
