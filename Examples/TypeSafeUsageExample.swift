@@ -142,9 +142,8 @@ func exampleFullyTypeSafe() async throws {
     
     // SWIFTUI - type-safe!
     struct BugListView: View {
-        @BlazeQueryTyped(
+        @BlazeQuery(
             db: db,
-            type: Bug.self,
             where: "status", equals: .string("open"),
             sortBy: "priority", descending: true
         )
@@ -200,7 +199,7 @@ func exampleFullyDynamic() async throws {
     
     // SWIFTUI - dynamic
     struct BugListView: View {
-        @BlazeQuery(
+        @BlazeDataQuery(
             db: db,
             where: "status", equals: .string("open")
         )
@@ -420,9 +419,8 @@ class BugTrackerService {
 
 // SwiftUI Views with Type-Safe Models
 struct TypeSafeBugListView: View {
-    @BlazeQueryTyped(
+    @BlazeQuery(
         db: AppDatabase.shared.db,
-        type: Bug.self,
         where: "status", equals: .string("open"),
         sortBy: "priority", descending: true
     )

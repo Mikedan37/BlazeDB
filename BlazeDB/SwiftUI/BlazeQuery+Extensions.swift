@@ -99,6 +99,12 @@ extension Array where Element == BlazeDataRecord {
 
 // MARK: - Observable Query (SwiftUI State Management)
 
+/// Imperative/async query holder for views that manually call ``load()`` or ``refresh()``.
+///
+/// **Relationship to property wrappers:** For lists that should track writes automatically,
+/// prefer ``BlazeDataQuery`` (raw records) or ``BlazeQuery`` (``BlazeDocument``), which subscribe
+/// to change notifications. Use ``ObservableQuery`` when you need a bespoke ``QueryBuilder``
+/// pipeline or non-wrapper-driven refresh.
 @MainActor
 public class ObservableQuery: ObservableObject {
     @Published public private(set) var records: [BlazeDataRecord] = []

@@ -154,7 +154,7 @@ final class FeatureVerificationTests: XCTestCase {
         
         // Test 2.1: Create a query
         print("\n📊 Test 2.1: Create @BlazeQuery")
-        let query = BlazeQuery(
+        let query = BlazeDataQuery(
             db: db,
             where: "status",
             equals: .string("open")

@@ -122,8 +122,8 @@ try db.delete(t)
 
 ### SwiftUI Query Observation (App Dev DX)
 
-If you are building a SwiftUI app, BlazeDB also provides `@BlazeQuery` and `@BlazeQueryTyped`.
-These wrappers use BlazeDB change observation to refresh query results after DB writes, so UI lists can stay in sync without relying only on timers.
+If you are building a SwiftUI app, BlazeDB provides `@BlazeQuery` (typed `BlazeDocument` lists; legacy alias `@BlazeQueryTyped`) and `@BlazeDataQuery` (raw ``BlazeDataRecord`` rows).
+These wrappers use BlazeDB change observation to refresh query results after DB writes, so UI lists can stay in sync without relying only on timers. See [SWIFTUI_DATABASE_PATTERNS.md](SWIFTUI_DATABASE_PATTERNS.md) and [SWIFTUI_INTEGRATION.md](../Guides/SWIFTUI_INTEGRATION.md).
 
 ### Raw Explicit API (Advanced)
 
@@ -175,6 +175,7 @@ struct Bug: BlazeDocument {
 | Guide                                                | What You'll Learn                                  |
 | ---------------------------------------------------- | -------------------------------------------------- |
 | [SWIFTUI_DATABASE_PATTERNS.md](SWIFTUI_DATABASE_PATTERNS.md) | How to pass and use `BlazeDBClient` cleanly in SwiftUI |
+| [SWIFTUI_FACADE_MIGRATION.md](SWIFTUI_FACADE_MIGRATION.md) | Renaming `@BlazeQuery` / `@BlazeQueryTyped` after the typed-default facade update |
 | [HOW_TO_USE_BLAZEDB.md](HOW_TO_USE_BLAZEDB.md)       | Complete guide: migrations, backups, health checks |
 | [Examples](../../Examples/)                          | Working code for common patterns                   |
 | [LINUX_GETTING_STARTED.md](LINUX_GETTING_STARTED.md) | Linux-specific setup                               |
@@ -199,7 +200,7 @@ Yes, by default. AES-256-GCM encryption is enabled automatically.
 Committed data survives. BlazeDB uses write-ahead logging for crash safety.
 
 **Can I use this with SwiftUI?**
-Yes. See `Examples/SwiftUIExample.swift` for `@BlazeQuery` / `@BlazeQueryTyped`. These wrappers can refresh from DB change notifications, and still support manual/pull refresh where useful.
+Yes. See `Examples/SwiftUIExample.swift` for `@BlazeDataQuery` (raw rows) and typed `@BlazeQuery`. These wrappers refresh from DB change notifications and still support manual/pull refresh where useful.
 
 **Can I use this with Vapor?**
 Yes. See [HOW_TO_USE_BLAZEDB.md](HOW_TO_USE_BLAZEDB.md#8-using-blazedb-in-a-server-vapor-example).
