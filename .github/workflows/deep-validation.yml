@@ -4,7 +4,7 @@
 # deep-macos-full), and broader macOS Tier0+Tier1 TSan (see deep-macos-tsan).
 # Schedule: Sundays 03:00 UTC. Complements ci.yml (PR gate) and nightly.yml (daily confidence).
 
-name: Deep validation
+name: Deep Validation (weekly)
 
 on:
   schedule:

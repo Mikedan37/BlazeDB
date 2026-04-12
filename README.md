@@ -352,8 +352,8 @@ See [Compatibility Matrix](Docs/COMPATIBILITY.md) for details.
 ## Testing And CI
 
 - PR/release validation on macOS runs `BlazeDB_Tier0`, `BlazeDB_Tier1`, and `BlazeDB_Tier2` as the main gate.
-- Nightly confidence runs macOS Tier1/Tier2 strict/Tier3 heavy lanes plus Linux Tier0 and Tier1 lanes.
-- Weekly deep validation runs broader coverage: macOS Tier0/1/2/3 + destructive + TSan, and Linux Tier0/1/2 (+ extended companion).
+- **Nightly Confidence (daily)** runs macOS Tier2 strict, clean checkout, README quickstart, Tier0 TSan, and Linux Tier1/Tier2 core lanes (see `Docs/Testing/CI_AND_TEST_TIERS.md`).
+- **Deep Validation (weekly)** runs broader coverage: macOS Tier0/1/2/3 + destructive + TSan, and Linux Tier0/1/2 (+ extended companion).
 - Additional nightly checks verify clean checkout and README quickstart scripts.
 - Entry docs for test/CI structure: `Docs/Testing/CI_AND_TEST_TIERS.md` and `Docs/Testing/README.md`.
 

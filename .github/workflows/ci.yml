@@ -1,7 +1,7 @@
 # Single workflow for push/PR: macOS gate + optional Linux. No duplicate OSS workflows.
 # See Docs/Testing/CI_AND_TEST_TIERS.md
 
-name: CI
+name: PR Gate (push / pull request)
 
 on:
   push:

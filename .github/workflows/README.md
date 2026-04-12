@@ -27,5 +27,5 @@ Daily (`schedule`) + manual (`workflow_dispatch`) nightly confidence workflow wi
 
 Jobs (see `nightly.yml` for ids): macOS Tier2 strict, clean-checkout verification, README quickstart, Tier0 ThreadSanitizer; Linux Tier1 and Tier2 **core**. Heavy/extended Tier3 companions run in weekly `deep-validation.yml`, not nightly.
 
-Nightly confidence runs root-owned targets only and avoids depending on `BlazeDBExtraTests`.
+The nightly workflow runs root-owned targets only and avoids depending on `BlazeDBExtraTests`.
 This split keeps nightly rerunnable by concern and avoids bundling Tier2/verify/docs into one giant macOS job.
