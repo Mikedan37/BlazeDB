@@ -8,8 +8,8 @@ Checkouts use **`fetch-depth: 0`**.
 
 | Job | Blocking |
 |-----|----------|
-| `macOS 15 — build, CLI, tests, clean-checkout, quickstart` | yes |
-| `Linux (Swift 6) — best-effort` | no (`continue-on-error`) |
+| `macOS 15 — build, CLI, tests` | yes |
+| `Linux (Swift 6.2) — core + Tier 0` | yes |
 
 **Deleted from the repo (must not return on `main`):** `oss-readiness-evidence.yml`, duplicate CI files. If GitHub still shows “OSS Readiness Evidence” or “Build & Test”, `main` has not picked up the latest workflow commits — merge and push.
 
@@ -29,3 +29,7 @@ Jobs (see `nightly.yml` for ids): macOS Tier2 strict, clean-checkout verificatio
 
 The nightly workflow runs root-owned targets only and avoids depending on `BlazeDBExtraTests`.
 This split keeps nightly rerunnable by concern and avoids bundling Tier2/verify/docs into one giant macOS job.
+
+## `deep-validation.yml`
+
+Weekly (`schedule`) + manual (`workflow_dispatch`). **Delta-only:** does not re-run Tier0/1/2 surfaces already owned by `ci.yml` and `nightly.yml`. Jobs: macOS Tier3 heavy + destructive, macOS Tier1 TSan (nightly already runs Tier0 TSan), Linux Tier2 extended + Tier3 heavy/perf. See `Docs/Testing/CI_AND_TEST_TIERS.md`.

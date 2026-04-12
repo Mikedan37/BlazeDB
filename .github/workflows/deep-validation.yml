@@ -1,8 +1,13 @@
-# Weekly deep validation (scheduled + manual). Owns slower-cadence, expensive surfaces that
-# intentionally do not run in bounded nightly: Linux Tier2 extended + Tier3 heavy/perf (see
-# deep-linux-extended), full macOS Tier0–Tier3 heavy/perf + destructive/fault-injection (see
-# deep-macos-full), and broader macOS Tier0+Tier1 TSan (see deep-macos-tsan).
-# Schedule: Sundays 03:00 UTC. Complements ci.yml (PR gate) and nightly.yml (daily confidence).
+# Weekly delta validation (scheduled + manual). Runs ONLY surfaces not already owned by
+# `ci.yml` (PR gate) and `nightly.yml`. Does not re-run Tier0/Tier1/Tier2 strict (macOS) or
+# Tier0/Tier1/Tier2 core (Linux) here — those belong to PR and nightly.
+#
+# Ownership:
+# - `deep-macos-tier3-heavy-destructive`: macOS Tier3 heavy (+ RUN_HEAVY_STRESS) + `./Scripts/run-tier3.sh` (destructive).
+# - `deep-macos-tsan-tier1`: Tier1 ThreadSanitizer only (nightly already runs Tier0 TSan).
+# - `deep-linux-tier2-extended-tier3`: Linux `BlazeDB_Tier2_Extended` + Tier3 heavy/perf (nightly runs Tier1 + Tier2 core only).
+#
+# Schedule: Sundays 03:00 UTC. Complements `ci.yml` and `nightly.yml` without duplicating their tiers.
 
 name: Deep Validation (weekly)
 
@@ -22,8 +27,8 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
-  deep-macos-full:
-    name: macOS 15 — full deep validation
+  deep-macos-tier3-heavy-destructive:
+    name: macOS 15 — Tier3 heavy + destructive (weekly delta)
     runs-on: macos-15
     timeout-minutes: 480
 
@@ -55,23 +60,6 @@ jobs:
       - name: Prepare CI log directories
         run: mkdir -p .logs .artifacts
 
-      - name: Test Tier 0
-        run: |
-          set -euo pipefail
-          swift test --filter BlazeDB_Tier0 2>&1 | tee .logs/tier0.log
-
-      - name: Test Tier 1
-        run: |
-          set -euo pipefail
-          swift test --skip-build --filter BlazeDB_Tier1 2>&1 | tee .logs/tier1.log
-
-      - name: Test Tier 2 integration/recovery
-        run: |
-          set -euo pipefail
-          mkdir -p .logs
-          echo ">>> ./Scripts/run-tier2.sh --strict (Tier 2 strict mode; script prints strict banner)" | tee .logs/tier2.log
-          ./Scripts/run-tier2.sh --strict 2>&1 | tee -a .logs/tier2.log
-
       - name: Test Tier 3 heavy stress/fuzz (+ transitional perf companion)
         env:
           RUN_HEAVY_STRESS: "1"
@@ -96,19 +84,19 @@ jobs:
           swift --version > .logs/swift-version.txt 2>&1 || true
           xcodebuild -version > .logs/xcode-version.txt 2>&1 || true
 
-      - name: Upload deep macOS full logs and artifacts
+      - name: Upload deep macOS Tier3 logs and artifacts
         if: always()
         uses: actions/upload-artifact@v5
         with:
-          name: deep-macos-full-logs
+          name: deep-macos-tier3-logs
           path: |
             .logs/
             .artifacts/
           if-no-files-found: ignore
           retention-days: 7
 
-  deep-macos-tsan:
-    name: macOS 15 — Tier0 + Tier1 ThreadSanitizer
+  deep-macos-tsan-tier1:
+    name: macOS 15 — Tier1 ThreadSanitizer (weekly delta)
     runs-on: macos-15
     timeout-minutes: 360
 
@@ -125,16 +113,6 @@ jobs:
 
       - name: Prepare CI log directories
         run: mkdir -p .logs .artifacts
-
-      - name: Run thread sanitizer on Tier 0
-        run: |
-          set -euo pipefail
-          mkdir -p .logs
-          swift test --sanitize thread --filter BlazeDB_Tier0 2>&1 | tee .logs/tsan-tier0.log
-          if grep -q "Executed 0 tests" .logs/tsan-tier0.log; then
-            echo "Tier 0 sanitizer lane ran zero tests"
-            exit 1
-          fi
 
       - name: Run thread sanitizer on Tier 1
         run: |
@@ -155,19 +133,19 @@ jobs:
           swift --version > .logs/swift-version.txt 2>&1 || true
           xcodebuild -version > .logs/xcode-version.txt 2>&1 || true
 
-      - name: Upload deep macOS TSan logs
+      - name: Upload deep macOS Tier1 TSan logs
         if: always()
         uses: actions/upload-artifact@v5
         with:
-          name: deep-macos-tsan-logs
+          name: deep-macos-tsan-tier1-logs
           path: |
             .logs/
             .artifacts/
           if-no-files-found: ignore
           retention-days: 7
 
-  deep-linux-extended:
-    name: Linux (Swift 6.2) — Tier0 + Tier1 + Tier2 (+ extended)
+  deep-linux-tier2-extended-tier3:
+    name: Linux (Swift 6.2) — Tier2 extended + Tier3 heavy/perf (weekly delta)
     runs-on: ubuntu-22.04
     timeout-minutes: 360
 
@@ -201,27 +179,20 @@ jobs:
       - name: Prepare CI log directories
         run: mkdir -p .logs .artifacts
 
-      - name: Test Tier 0
+      - name: Test Tier 2 extended
         run: |
           set -euo pipefail
-          swift test --filter BlazeDB_Tier0 2>&1 | tee .logs/tier0.log
-
-      - name: Test Tier 1
-        run: |
-          set -euo pipefail
-          swift test --skip-build --filter 'BlazeDB_Tier1\.' 2>&1 | tee .logs/tier1.log
-
-      - name: Test Tier 2
-        run: |
-          set -euo pipefail
-          swift test --skip-build --filter BlazeDB_Tier2 2>&1 | tee .logs/tier2.log
-          swift test --filter BlazeDB_Tier2_Extended 2>&1 | tee .logs/tier2-extended.log
+          mkdir -p .logs
+          stdbuf -oL -eL swift test --disable-swift-testing --filter BlazeDB_Tier2_Extended 2>&1 \
+            | stdbuf -oL -eL tee .logs/tier2-extended.log
 
       - name: Test Tier 3 heavy (+ transitional perf companion)
         run: |
           set -euo pipefail
-          swift test --skip-build --filter 'BlazeDB_Tier3_Heavy\.' 2>&1 | tee .logs/tier3-heavy.log
-          swift test --filter BlazeDB_Tier3_Heavy_Perf 2>&1 | tee .logs/tier3-heavy-perf.log
+          stdbuf -oL -eL swift test --skip-build --disable-swift-testing --filter 'BlazeDB_Tier3_Heavy\.' 2>&1 \
+            | stdbuf -oL -eL tee .logs/tier3-heavy.log
+          stdbuf -oL -eL swift test --skip-build --disable-swift-testing --filter BlazeDB_Tier3_Heavy_Perf 2>&1 \
+            | stdbuf -oL -eL tee .logs/tier3-heavy-perf.log
 
       - name: Dump diagnostics on failure
         if: failure()
@@ -231,11 +202,11 @@ jobs:
           df -h > .logs/disk.txt || true
           swift --version > .logs/swift-version.txt 2>&1 || true
 
-      - name: Upload deep Linux extended logs
+      - name: Upload deep Linux delta logs
         if: always()
         uses: actions/upload-artifact@v5
         with:
-          name: deep-linux-extended-logs
+          name: deep-linux-tier2-extended-tier3-logs
           path: |
             .logs/
             .artifacts/
