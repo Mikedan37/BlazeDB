@@ -1,19 +1,19 @@
 # SwiftUI Integration Guide
 
-**Reference material for reactive BlazeDB lists in SwiftUI.** For the **one standard app story** (inject once, `@BlazeQuery`, environment writes), read [SwiftUI DB Patterns](../GettingStarted/SWIFTUI_DATABASE_PATTERNS.md) first.
+Reference for **SwiftUI query wrappers** (`@BlazeQuery`, `@BlazeDataQuery`, refresh APIs, and related pieces). For app-level setup (open DB once, inject at root, first reads/writes), start with [SwiftUI DB Patterns](../GettingStarted/SWIFTUI_DATABASE_PATTERNS.md). This page covers **what the wrappers do** and **how to use them in views**.
+
+---
 
 ## The rule (product default)
 
-For SwiftUI apps: **inject `BlazeDBClient` once**, use **`@BlazeQuery`** for typed reads, and **`@Environment(\.blazeDBClient)`** for writes. Do not present multiple equally-valid “first” patterns—start here, then use the sections below only when you need them.
+In SwiftUI apps: **inject `BlazeDBClient` once**, use **`@BlazeQuery`** for typed lists (`BlazeDocument`), and **`@Environment(\.blazeDBClient)`** for writes. The sections below add detail—they are not competing “starter” patterns.
 
 ```swift
-// App root
 WindowGroup {
     ContentView()
         .blazeDBEnvironment(AppDatabase.shared.db)
 }
 
-// View
 struct ContentView: View {
     @Environment(\.blazeDBClient) private var database
     @BlazeQuery var items: [TodoItem]
@@ -21,7 +21,7 @@ struct ContentView: View {
     var body: some View {
         VStack {
             Button("Add") {
-                try? database?.insert(TodoItem(id: UUID(), title: "Buy milk"))
+                try? database?.insert(TodoItem(title: "Buy milk"))
             }
             List(items, id: \.id) { Text($0.title) }
         }
@@ -29,580 +29,208 @@ struct ContentView: View {
 }
 ```
 
-Filtered / sorted typed queries (optional):
+Optional filter and sort on the same wrapper:
 
 ```swift
 @BlazeQuery(where: "status", equals: "open", sortBy: "priority", descending: true)
 var openItems: [TodoItem]
 ```
 
-**Advanced / not the main path:** `@BlazeDataQuery` (raw rows), `@BlazeStorableQuery`, explicit `db:` on wrappers, `ObservableQuery`, and the `BlazeQueryTyped` alias are documented below for specialized use.
+**Secondary / specialized:** raw **`@BlazeDataQuery`**, explicit **`db:`** when you already hold a client, **`@BlazeStorableQuery`**, **`ObservableQuery`**, legacy **`BlazeQueryTyped`** alias—covered below.
 
 ---
 
-## Advanced: Raw `BlazeDataRecord` (`@BlazeDataQuery`)
+## `@BlazeQuery` (typed, default path)
+
+**Model:** The element type is inferred from `[Document]`; it must conform to **`BlazeDocument`** (see [`Examples/TypeSafeModels.swift`](../../Examples/TypeSafeModels.swift)).
+
+**Database:** Pass **`db:`** to the wrapper, **or** omit it and use **`EnvironmentValues.blazeDBClient`** from an ancestor (`.blazeDBEnvironment(_)` at the root is the usual choice). If you pass both, **`db:` wins.**
+
+### Fetch everything, optional sort/limit
+
+```swift
+@BlazeQuery(sortBy: "createdAt", descending: true, limit: 100)
+var recent: [TodoItem]
+```
+
+### Single `where` + equals (scalars)
+
+`equals:` has overloads for `String`, `Int`, `Bool`, `UUID`, `Date`, etc., in addition to `BlazeDocumentField`.
+
+```swift
+@BlazeQuery(where: "status", equals: "open")
+var openTodos: [TodoItem]
+```
+
+### Comparison filters
+
+```swift
+@BlazeQuery(
+    where: "priority",
+    .greaterThanOrEqual,
+    .int(7),
+    sortBy: "priority",
+    descending: true
+)
+var highPriority: [TodoItem]
+```
+
+### Multiple predicates
+
+Use the `filters:` initializer when you need more than one condition (same underlying representation as the query engine—see `BlazeQuery` in the BlazeDB module for the full initializer list).
+
+```swift
+@BlazeQuery(
+    filters: [
+        ("status", .equals, .string("open")),
+        ("priority", .greaterThanOrEqual, .int(5)),
+    ],
+    sortBy: "priority",
+    descending: true
+)
+var activeImportant: [TodoItem]
+```
+
+### Several queries in one view
+
+Each `@BlazeQuery` (or `@BlazeDataQuery`) property is independent: separate subscriptions and separate result arrays.
+
+```swift
+@BlazeQuery(where: "status", equals: "open") var openItems: [TodoItem]
+@BlazeQuery(where: "status", equals: "closed") var closedItems: [TodoItem]
+```
+
+---
+
+## Projected value: `refresh()`, loading, errors
+
+`@BlazeQuery` exposes **`$items`** as a **`BlazeQueryTypedObserver<Document>`**. Use it for:
+
+| API | Use |
+|-----|-----|
+| **`$items.refresh()`** | Force a reload (toolbar, debugging). |
+| **`$items.isLoading`** | Show progress while a fetch is in flight. |
+| **`$items.error`** | Surface the last query error, if any. |
+| **`.refreshable(query: $items)`** | Pull-to-refresh. |
+| **`.refreshOnAppear($items)`** | Refresh when the view appears. |
+
+```swift
+@BlazeQuery var items: [TodoItem]
+
+var body: some View {
+    List(items, id: \.id) { Text($0.title) }
+        .refreshable(query: $items)
+        .toolbar { Button("Reload") { $items.refresh() } }
+}
+```
+
+---
+
+## Explicit `db:` (previews, tests, tools)
+
+Shipped UI should prefer **environment injection**. Use **`db:`** when the view must be wired to a **specific** `BlazeDBClient` (previews, tests, one-off tools) without building a full `.blazeDBEnvironment` chain.
+
+```swift
+#Preview("Open bugs") {
+    BugListView()
+        .blazeDBEnvironment(previewDatabase)
+}
+
+// Or pass the client directly into the wrapper:
+@BlazeQuery(db: previewDatabase, where: "status", equals: "open")
+var openBugs: [Bug]
+```
+
+**Legacy:** `BlazeQueryTyped` is a **typealias** for `BlazeQuery`; do not use it in new examples.
+
+---
+
+## `@BlazeDataQuery` (raw `BlazeDataRecord`, secondary)
+
+Use **`@BlazeDataQuery`** when you want **`[BlazeDataRecord]`** without a `BlazeDocument` type (prototyping, bridging, or mismatched types). This wrapper **always** requires **`db:`**—there is no environment-based database resolution.
 
 ```swift
 import SwiftUI
-import BlazeDBCore
+import BlazeDB
 
-struct BugListView: View {
- // Auto-fetches and updates! No manual state management!
- @BlazeDataQuery(
- db: myDatabase,
- where: "status", equals: .string("open"),
- sortBy: "priority", descending: true
- )
- var openBugs
-
- var body: some View {
- List(openBugs, id: \.id) { bug in
- Text(bug["title"]?.stringValue ?? "")
- }
- // View automatically updates when database changes!
- }
-}
-```
-
-**That's it!** The view automatically refreshes when you insert, update, or delete records.
-
----
-
-## How It Works
-
-### Automatic Updates
-
-`@BlazeDataQuery` and `@BlazeQuery` subscribe to database change notifications (via the same observer machinery). When you modify data:
-
-1. **You insert/update/delete:**
- ```swift
- try db.insert(newBug)
- ```
-
-2. **Change notification is sent** (batched, 50ms delay)
-
-3. **The query wrapper automatically refreshes**
-
-4. **SwiftUI view updates** automatically
-
-**No manual refresh needed!**
-
----
-
-## Basic Usage
-
-### Simple Query
-
-```swift
-struct BugListView: View {
- @BlazeDataQuery(db: myDatabase)
- var allBugs
-
- var body: some View {
- List(allBugs, id: \.id) { bug in
- Text(bug["title"]?.stringValue ?? "")
- }
- }
-}
-```
-
-### Filtered Query
-
-```swift
-struct OpenBugsView: View {
- @BlazeDataQuery(
- db: myDatabase,
- where: "status", equals: .string("open")
- )
- var openBugs
-
- var body: some View {
- List(openBugs, id: \.id) { bug in
- BugRow(bug: bug)
- }
- }
-}
-```
-
-### Sorted Query
-
-```swift
-struct PriorityBugsView: View {
- @BlazeDataQuery(
- db: myDatabase,
- where: "status", equals: .string("open"),
- sortBy: "priority", descending: true
- )
- var bugs
-
- var body: some View {
- List(bugs, id: \.id) { bug in
- BugRow(bug: bug)
- }
- }
-}
-```
-
-### Comparison Filters
-
-```swift
-struct HighPriorityBugsView: View {
- @BlazeDataQuery(
- db: myDatabase,
- where: "priority",
- .greaterThanOrEqual,
- .int(7),
- sortBy: "priority",
- descending: true
- )
- var highPriorityBugs
-
- var body: some View {
- List(highPriorityBugs, id: \.id) { bug in
- BugRow(bug: bug)
- }
- }
-}
-```
-
----
-
-## Typed queries with explicit `db:` (previews, tests, tools)
-
-Production SwiftUI code should prefer **environment injection** (see [SwiftUI DB Patterns](../GettingStarted/SWIFTUI_DATABASE_PATTERNS.md)). Pass **`db:`** on **`@BlazeQuery`** when you need an explicit client (Xcode previews, unit tests, small utilities).
-
-```swift
-struct Bug: BlazeDocument {
-    var id: UUID
-    var title: String
-    var priority: Int
-    var status: String
-    func toStorage() throws -> BlazeDataRecord { /* ... */ }
-    init(from record: BlazeDataRecord) throws { /* ... */ }
-}
-
-struct BugListView: View {
-    @BlazeQuery(db: myDatabase, where: "status", equals: "open")
-    var openBugs: [Bug]
+struct RawBugListView: View {
+    @BlazeDataQuery(
+        db: db,
+        where: "status", equals: .string("open"),
+        sortBy: "priority", descending: true
+    )
+    var rows: [BlazeDataRecord]
 
     var body: some View {
-        List(openBugs) { bug in
-            Text(bug.title)
+        List(rows, id: \.id) { bug in
+            Text(bug["title"]?.stringValue ?? "")
         }
     }
 }
 ```
 
-The legacy name **`BlazeQueryTyped`** is a typealias for **`BlazeQuery`**; do not use it in new documentation.
+**Refresh** uses the **`BlazeQueryObserver`** from the projected value (same ideas as typed):
+
+- **`$rows.refresh()`**
+- **`.refreshable(query: $rows)`**
+- **`.refreshOnAppear($rows)`**
 
 ---
 
-## Updating Data (Auto-Refresh)
+## Writes and automatic list updates
 
-When you modify data, views update automatically:
-
-### Insert
+You do **not** need to copy query results into `@State` after every write. After **`insert`**, **`update`**, or **`delete`** on the **same** `BlazeDBClient` instance the wrapper uses, change notifications run, the wrapper **re-executes the query**, and SwiftUI updates.
 
 ```swift
-struct CreateBugView: View {
- @BlazeDataQuery(
- db: myDatabase,
- where: "status", equals: .string("open")
- )
- var openBugs // Will auto-update after insert!
-
- @State private var title = ""
-
- var body: some View {
- VStack {
- TextField("Title", text: $title)
- Button("Create") {
- Task {
- let bug = BlazeDataRecord([
- "title": .string(title),
- "status": .string("open")
- ])
- try await myDatabase.insert(bug)
- // Query wrapper auto-refreshes!
- }
- }
- }
- }
-}
+// Typed insert — list backed by @BlazeQuery updates when this succeeds.
+try database?.insert(TodoItem(title: title))
 ```
 
-### Update
-
-```swift
-struct BugDetailView: View {
- let bugID: UUID
-
- @BlazeDataQuery(db: myDatabase)
- var allBugs
-
- var bug: BlazeDataRecord? {
- allBugs.first { $0.id == bugID }
- }
-
- var body: some View {
- if let bug = bug {
- VStack {
- Text(bug["title"]?.stringValue ?? "")
- Button("Close Bug") {
- Task {
- try await myDatabase.update(
- id: bugID,
- with: BlazeDataRecord([
- "status": .string("closed")
- ])
- )
- // View auto-updates!
- }
- }
- }
- }
- }
-}
-```
-
-### Delete
-
-```swift
-struct BugRow: View {
- let bug: BlazeDataRecord
- let db: BlazeDBClient
-
- var body: some View {
- HStack {
- Text(bug["title"]?.stringValue ?? "")
- Spacer()
- Button("Delete") {
- Task {
- try await db.delete(id: bug.id)
- // List auto-updates!
- }
- }
- }
- }
-}
-```
+If something outside normal notifications mutates the file, or you suspect drift, call **`$query.refresh()`**.
 
 ---
 
-## Advanced Features
+## How it works (concise)
 
-### Manual Refresh
-
-```swift
-struct BugListView: View {
- @BlazeDataQuery(db: myDatabase)
- var bugs
-
- var body: some View {
- List(bugs, id: \.id) { bug in
- BugRow(bug: bug)
- }
- .toolbar {
- ToolbarItem {
- Button("Refresh") {
- $bugs.refresh() // Manual refresh
- }
- }
- }
- }
-}
-```
-
-### Pull-to-Refresh
-
-```swift
-struct BugListView: View {
- @BlazeDataQuery(db: myDatabase)
- var bugs
-
- var body: some View {
- List(bugs, id: \.id) { bug in
- BugRow(bug: bug)
- }
- .refreshable(query: $bugs) // Pull to refresh!
- }
-}
-```
-
-### Auto-Refresh on Appear
-
-```swift
-struct BugDetailView: View {
- @BlazeDataQuery(db: myDatabase)
- var bugs
-
- var body: some View {
- // View content...
- }
- .refreshOnAppear($bugs) // Refresh when view appears
-}
-```
-
-### Multiple Queries
-
-```swift
-struct DashboardView: View {
- @BlazeDataQuery(db: myDatabase)
- var allBugs
-
- @BlazeDataQuery(
- db: myDatabase,
- where: "status", equals: .string("open")
- )
- var openBugs
-
- @BlazeDataQuery(
- db: myDatabase,
- where: "priority",
- .greaterThanOrEqual,
- .int(7)
- )
- var highPriorityBugs
-
- var body: some View {
- VStack {
- Text("Total: \(allBugs.count)")
- Text("Open: \(openBugs.count)")
- Text("High Priority: \(highPriorityBugs.count)")
- }
- // All queries update independently!
- }
-}
-```
+1. The wrapper registers with **`BlazeDBClient`**’s change-observation path (shared with other reactive APIs).
+2. After writes (and batched coalescing—on the order of tens of milliseconds), the client notifies subscribers.
+3. The wrapper **re-runs** its query and assigns new results; **`@Published`** / SwiftUI integration drives a view update.
+4. Query work is scheduled so the UI thread is not blocked indefinitely; details live in [Reactive queries explained](../Features/REACTIVE_QUERIES_EXPLAINED.md).
 
 ---
 
-## Database Setup
+## Other reactive wrappers (short)
 
-### Singleton Pattern (Recommended)
-
-```swift
-class AppDatabase {
- static let shared = AppDatabase()
- let db: BlazeDBClient
-
- private init() {
- do {
- db = try BlazeDBClient.openDefault(
- name: "myapp",
- password: "secure-password"
- )
- } catch {
- fatalError("Failed to initialize database: \(error)")
- }
- }
-}
-
-// Use in views
-struct BugListView: View {
- @BlazeDataQuery(db: AppDatabase.shared.db)
- var bugs
-}
-```
-
-### Environment Object (Alternative)
-
-```swift
-// In your App
-@main
-struct MyApp: App {
- @StateObject private var database = DatabaseManager()
-
- var body: some Scene {
- WindowGroup {
- ContentView()
- .environmentObject(database)
- }
- }
-}
-
-// Database manager
-class DatabaseManager: ObservableObject {
- let db: BlazeDBClient
-
- init() {
- do {
- db = try BlazeDBClient.openDefault(
- name: "myapp",
- password: "secure-password"
- )
- } catch {
- fatalError("Failed to initialize database: \(error)")
- }
- }
-}
-
-// Use in views
-struct BugListView: View {
- @EnvironmentObject var database: DatabaseManager
-
- @BlazeDataQuery(db: database.db)
- var bugs
-}
-```
-
----
-
-## Performance
-
-### Change Batching
-
-- Changes are batched (50ms delay)
-- Multiple inserts/updates trigger one refresh
-- Reduces UI update overhead
-
-### Memory Impact
-
-- **Per query:** ~48 bytes
-- **100 queries:** ~4.8 KB
-- **Negligible overhead!**
-
-### CPU Impact
-
-- Queries run on background thread
-- Results update on main thread
-- Efficient for large datasets
-
----
-
-## Common Patterns
-
-### Search with Filtering
-
-```swift
-struct SearchView: View {
- @State private var searchText = ""
- @BlazeDataQuery(db: myDatabase)
- var allBugs
-
- var filteredBugs: [BlazeDataRecord] {
- if searchText.isEmpty {
- return allBugs
- }
- return allBugs.filter { bug in
- bug["title"]?.stringValue?
- .lowercased()
- .contains(searchText.lowercased()) ?? false
- }
- }
-
- var body: some View {
- List(filteredBugs, id: \.id) { bug in
- BugRow(bug: bug)
- }
- .searchable(text: $searchText)
- }
-}
-```
-
-### Detail View with Auto-Refresh
-
-```swift
-struct BugDetailView: View {
- let bugID: UUID
- @BlazeDataQuery(db: myDatabase)
- var allBugs
-
- var bug: BlazeDataRecord? {
- allBugs.first { $0.id == bugID }
- }
-
- var body: some View {
- Group {
- if let bug = bug {
- // Show bug details
- Text(bug["title"]?.stringValue ?? "")
- } else {
- Text("Bug not found")
- }
- }
- .refreshOnAppear($allBugs)
- }
-}
-```
-
-### Form with Database Updates
-
-```swift
-struct CreateBugView: View {
- @Environment(\.dismiss) var dismiss
- @BlazeDataQuery(db: myDatabase)
- var bugs // Will auto-update after insert!
-
- @State private var title = ""
-
- var body: some View {
- Form {
- TextField("Title", text: $title)
- Button("Create") {
- Task {
- let bug = BlazeDataRecord([
- "title": .string(title),
- "status": .string("open")
- ])
- try await myDatabase.insert(bug)
- dismiss() // View auto-updates!
- }
- }
- }
- }
-}
-```
+- **`@BlazeStorableQuery`** — `BlazeStorable` / Codable-style models (different protocol from `BlazeDocument`).
+- **`ObservableQuery`** — manual / async workflows when property wrappers are not a fit.
 
 ---
 
 ## Troubleshooting
 
-### View Not Updating
+| Symptom | What to check |
+|--------|----------------|
+| List never updates | Writes go through a **different** `BlazeDBClient` than the one bound to the wrapper (environment vs wrong `db:`). |
+| `@BlazeQuery` is empty on first paint | Environment not installed above this view: add **`.blazeDBEnvironment`** (or `\.blazeDBClient`) on an **ancestor** of the view that declares the wrapper. |
+| Raw vs typed | **`@BlazeDataQuery`** always needs an explicit **`db:`** argument. **`@BlazeQuery`** can use the environment **or** `db:`. |
+| `@BlazeQuery` type errors | Model must be **`BlazeDocument`** with **`init(from:)`** / **`toStorage()`**; see [TypeSafeModels.swift](../../Examples/TypeSafeModels.swift). |
+| Need to force a reload | **`$query.refresh()`** on the projected observer. |
 
-**Problem:** Changes to database don't update the view.
-
-**Solutions:**
-1. Ensure you're using `@BlazeQuery` (typed) or `@BlazeDataQuery` (raw rows), not manual `@State`
-2. Check that database operations are completing successfully
-3. Verify database instance is the same across views
-4. Try manual refresh: `$query.refresh()`
-
-### Performance Issues
-
-**Problem:** UI is slow with many queries.
-
-**Solutions:**
-1. Use filters to reduce result set size
-2. Use `limit` parameter for large datasets
-3. Consider pagination for very large lists
-4. Profile with Instruments
-
-### Type Errors
-
-**Problem:** Type-safe queries fail to compile.
-
-**Solutions:**
-1. Ensure model conforms to `BlazeDocument`
-2. Implement `toStorage()` and `init(from:)` correctly
-3. Check field types match database schema
-4. Use `@BlazeDataQuery` (raw ``BlazeDataRecord``) if types do not match your `BlazeDocument` model
+For slow queries or large result sets, see [Query performance](../GettingStarted/QUERY_PERFORMANCE.md) and [Performance overview](../Performance/README.md)—not wrapper-specific.
 
 ---
 
-## Summary
+## See also
 
-**Default app path:** inject **`blazeDBClient` once**, use **`@BlazeQuery`** for typed lists; use **`@BlazeDataQuery`** only for raw ``BlazeDataRecord`` work.
-
-**These wrappers give you:**
-- Automatic UI updates when data changes
-- Minimal boilerplate on reads when using `@BlazeQuery` + environment
-- Efficient change batching, pull-to-refresh, and manual refresh on the projected observer
-
-**Inject `\.blazeDBClient` at the root; use explicit `db:` only for advanced cases.**
+| Topic | Where |
+|-------|--------|
+| Blessed SwiftUI app shape | [SwiftUI DB Patterns](../GettingStarted/SWIFTUI_DATABASE_PATTERNS.md) |
+| Renaming old wrappers | [SwiftUI facade migration](../GettingStarted/SWIFTUI_FACADE_MIGRATION.md) |
+| Larger SwiftUI sample | [`Examples/SwiftUIExample.swift`](../../Examples/SwiftUIExample.swift) |
+| `BlazeDocument` examples | [`Examples/TypeSafeModels.swift`](../../Examples/TypeSafeModels.swift) |
+| Observation architecture | [Reactive queries explained](../Features/REACTIVE_QUERIES_EXPLAINED.md) |
+| Query cost / indexes | [Query performance](../GettingStarted/QUERY_PERFORMANCE.md) |
 
 ---
 
-**See also:**
-- `Examples/SwiftUIExample.swift` - Complete examples
-- `Docs/Features/REACTIVE_QUERIES_EXPLAINED.md` - Architecture details
+**Summary:** Prefer **`@BlazeQuery`** + **`\.blazeDBClient`**. Use **`@BlazeDataQuery`** when you need raw rows. Use **`db:`** and the **`$query` / `.refreshable` / `.refreshOnAppear`** helpers for previews, tests, and explicit refresh UX.
