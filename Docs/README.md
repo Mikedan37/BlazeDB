@@ -26,7 +26,7 @@ Internal analysis material lives under [`Docs/Internal/`](Internal/README.md) an
 *Map of the folders: what to trust for “how does it work today.”* BlazeDB documentation is organized into:
 
 - **Canonical docs (current, maintained)** — Use these first for behavior and APIs:
-  - [Repository README](../README.md) (install, quickstart, product summary)
+  - [Repository README](../README.md) (Start Here, try from repo / add to app, product summary)
   - [Getting Started](GettingStarted/) (first run, HOW_TO_USE, Linux notes)
   - [Testing / CI](Testing/) (tiers, test layout, execution model)
   - [Release](Release/) (release-facing checklists and notes)

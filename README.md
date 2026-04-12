@@ -1,6 +1,6 @@
 # BlazeDB
 
-An encrypted, embedded document database for Swift. Single-process, zero external dependencies. Production runtime is always encrypted at rest. *MIT · Swift 6+ · current release **2.7.5** (add the package under [Install](#install)).*
+An encrypted, embedded document database for Swift. Single-process, zero external dependencies. Production runtime is always encrypted at rest. *MIT · Swift 6+ · current release **2.7.5** (add the package under [Add BlazeDB to your app](#add-blazedb-to-your-app)).*
 
 [![Swift](https://img.shields.io/badge/Swift-6.0+-orange.svg)](https://swift.org)
 [![Platforms](https://img.shields.io/badge/Platforms-macOS%20%7C%20iOS%20%7C%20watchOS%20%7C%20tvOS%20%7C%20visionOS%20%7C%20Linux%20%7C%20Android-lightgrey.svg)](Docs/COMPATIBILITY.md)
@@ -10,12 +10,18 @@ An encrypted, embedded document database for Swift. Single-process, zero externa
 
 ## Quick Navigation
 
-*Primary links—everything else (Install, examples, API details) is further down.*
+*Primary links—everything else (examples, API details, deeper sections) is further down.*
+
+This README is **onboarding-first**: most people start with [Start Here](#start-here-new-users) to get a mental model and copy-paste sample. Two explicit paths branch from there:
+
+- **Path A — try BlazeDB from this repo:** clone, then [Try BlazeDB from this repo](#try-blazedb-from-this-repo) (`swift run HelloBlazeDB`).
+- **Path B — add BlazeDB to your app:** [Add BlazeDB to your app](#add-blazedb-to-your-app) (SwiftPM or Xcode), then wire up code using Start Here, [SwiftUI path](#swiftui-path-start-here), or the full guide.
 
 - [Start Here](#start-here-new-users)
+- [Try BlazeDB from this repo](#try-blazedb-from-this-repo)
+- [Add BlazeDB to your app](#add-blazedb-to-your-app)
 - [What to do next](#what-to-do-next)
 - [SwiftUI path](#swiftui-path-start-here)
-- [Try the demo](#try-the-demo)
 - [Documentation](#documentation)
 
 ## Start Here (New Users)
@@ -64,6 +70,56 @@ The `"bug"` in `query("bug")` is a **label for which kind of record** (bugs vs n
 
 Id strings look like `"bug:<uuid>"`: `bug` = kind, uuid = which one.
 
+---
+
+## Try BlazeDB from this repo
+
+**Path A — repo demo.** From a clone of this repo (no `Package.swift` edit needed), run:
+
+```bash
+swift run HelloBlazeDB
+```
+
+**Minimal sample** (after adding the package)—same idea as [Start Here](#start-here-new-users), shorter:
+
+```swift
+import BlazeDB
+
+struct Note: BlazeStorable {
+    var id: UUID = UUID()
+    var text: String
+}
+
+let db = try BlazeDB.open(name: "quickstart", password: "DemoPass123!")
+try db.put(Note(text: "Ship first BlazeDB build"))  // save
+
+let notes: [Note] = try db.query("note").all()  // all notes (or [] if empty)
+```
+
+For the full beginner walkthrough (`open -> put -> get -> query`), use **Start Here (New Users)**.
+For deeper coverage, see [HOW_TO_USE_BLAZEDB.md](Docs/GettingStarted/HOW_TO_USE_BLAZEDB.md).
+
+## Add BlazeDB to your app
+
+**Path B — consumer integration.** Add the package to your project, then use the snippets in [Start Here](#start-here-new-users) or [Try BlazeDB from this repo](#try-blazedb-from-this-repo) (minimal sample).
+
+Add to your `Package.swift`:
+
+```swift
+dependencies: [
+    .package(url: "https://github.com/Mikedan37/BlazeDB.git", from: "2.7.5")
+],
+targets: [
+    .target(name: "YourApp", dependencies: ["BlazeDB"])
+]
+```
+
+Or in Xcode: **File → Add Package Dependencies** → paste `https://github.com/Mikedan37/BlazeDB.git`.
+
+**Requirements:** Swift 6.0+, macOS 15+ / iOS 15+ / watchOS 8+ / tvOS 15+ / visionOS 1+ / Linux / Android
+
+---
+
 ## What to do next
 
 After `open` → `put` → `get` → `query` makes sense, pick **one** path:
@@ -71,8 +127,8 @@ After `open` → `put` → `get` → `query` makes sense, pick **one** path:
 1. **SwiftUI app** → [SwiftUI DB Patterns](Docs/GettingStarted/SWIFTUI_DATABASE_PATTERNS.md) (how to hold `BlazeDBClient` in an app and level-up patterns).
 
 2. **UIKit / CLI / server-style app**  
-   → [Try the demo](#try-the-demo) (`swift run HelloBlazeDB` from a clone)  
-   → [Install](#install) (add the package to your app)  
+   → [Try BlazeDB from this repo](#try-blazedb-from-this-repo) (`swift run HelloBlazeDB` from a clone)  
+   → [Add BlazeDB to your app](#add-blazedb-to-your-app) (SwiftPM or Xcode)  
    → [HOW_TO_USE_BLAZEDB.md](Docs/GettingStarted/HOW_TO_USE_BLAZEDB.md)
 
 3. **How storage actually works** (single file, single collection, why there’s no SQL) → [Core Concepts](#core-concepts) below.
@@ -114,52 +170,6 @@ If you are building a SwiftUI app, start here next:
 | **TypedStore (secondary)** | `db.typed(T.self)` → scoped handle | View models or service layers that want a bound store |
 | **Raw (advanced)** | `BlazeDataRecord` + `db.insert(record)` | Dynamic schemas, migrations |
 | **Manual mapping (advanced)** | `BlazeDocument` | Custom storage control and manual serialization |
-
----
-
-## Try the demo
-
-**From a clone of this repo** (no `Package.swift` edit needed), run:
-
-```bash
-swift run HelloBlazeDB
-```
-
-**Minimal sample** (after adding the package)—same idea as [Start Here](#start-here-new-users), shorter:
-
-```swift
-import BlazeDB
-
-struct Note: BlazeStorable {
-    var id: UUID = UUID()
-    var text: String
-}
-
-let db = try BlazeDB.open(name: "quickstart", password: "DemoPass123!")
-try db.put(Note(text: "Ship first BlazeDB build"))  // save
-
-let notes: [Note] = try db.query("note").all()  // all notes (or [] if empty)
-```
-
-For the full beginner walkthrough (`open -> put -> get -> query`), use **Start Here (New Users)**.
-For deeper coverage, see [HOW_TO_USE_BLAZEDB.md](Docs/GettingStarted/HOW_TO_USE_BLAZEDB.md).
-
-## Install
-
-Add to your `Package.swift`:
-
-```swift
-dependencies: [
-    .package(url: "https://github.com/Mikedan37/BlazeDB.git", from: "2.7.5")
-],
-targets: [
-    .target(name: "YourApp", dependencies: ["BlazeDB"])
-]
-```
-
-Or in Xcode: **File → Add Package Dependencies** → paste `https://github.com/Mikedan37/BlazeDB.git`.
-
-**Requirements:** Swift 6.0+, macOS 15+ / iOS 15+ / watchOS 8+ / tvOS 15+ / visionOS 1+ / Linux / Android
 
 ---
 

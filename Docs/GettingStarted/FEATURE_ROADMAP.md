@@ -58,7 +58,7 @@ extension BlazeDBClient {
 - Uses existing recovery code paths
 - No core changes needed
 
-### 4. README “Try the demo” / Start Here sections
+### 4. README “Try BlazeDB from this repo” / Start Here sections
 **Goal:** 3 copy-paste examples that work immediately
 
 **Examples:**
