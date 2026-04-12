@@ -96,7 +96,13 @@ import BlazeDB
 @MainActor
 final class TodoWriteStore: ObservableObject {
     func addSample(using database: BlazeDBClient?) {
-        try? database?.insert(TodoItem(title: "From store"))
+         guard let database else { return }
+
+        do {
+            try database.insert(TodoItem(title: "From store"))
+        } catch {
+            print("Failed to insert item:", error)
+        }
     }
 }
 
@@ -200,10 +206,6 @@ That is the front door.
 
 ---
 
-## Why this page is split this way
+## Note on `BlazeDocument`
 
-SwiftUI integration (environment, queries, writes) and **document serialization** (`BlazeDocument` field mapping) are separate learning steps. Mixing them on one getting-started page makes BlazeDB feel heavier than it needs to.
-
-## Product note
-
-`BlazeDocument` is a manual mapping protocol—you still have to implement `init(from:)` and `toStorage()` somewhere before typed queries and `insert` work. This doc defers that to the integration guide and examples so the first read stays about app shape, not serialization.
+`BlazeDocument` uses manual field mapping. You still need to implement `init(from:)` and `toStorage()` before typed queries and `insert` work. This page focuses on app shape and defers mapping details to the integration guide and examples.
