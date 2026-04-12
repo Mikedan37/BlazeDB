@@ -51,6 +51,7 @@ Use this table for day-to-day expectations.
 
 - `.github/workflows/nightly.yml`
 - Trigger: **daily schedule** and **manual** (`workflow_dispatch`)
+- Job naming convention: **`<Platform> — <Tier> (<variant/policy when needed>)`**
 - Runs medium-confidence coverage in **separate rerunnable jobs**:
   - `macOS 15 — Tier3 (heavy, non-blocking)`: root targets `BlazeDB_Tier3_Heavy` + `BlazeDB_Tier3_Heavy_Perf`
   - `macOS 15 — Tier1`: root target `BlazeDB_Tier1`
@@ -65,9 +66,27 @@ Use this table for day-to-day expectations.
   - `Linux (Swift 6.2) — Tier3 (heavy)`: `BlazeDB_Tier3_Heavy` (Linux-only nightly split job)
   - `Linux (Swift 6.2) — Tier3 (perf)`: `BlazeDB_Tier3_Heavy_Perf` (Linux-only nightly split job)
 - Linux Tier labels are grouping vocabulary, **not execution stages**: `linux-tier0`, `linux-tier1`, `linux-tier2-core`, `linux-tier2-extended`, `linux-tier3-heavy`, and `linux-tier3-perf` are independent sibling jobs in `nightly.yml` (no `needs` chain between Linux lanes).
+- Independent Linux sibling jobs can start together; practical parallelism is still bounded by available GitHub runner capacity.
 - Nightly confidence lanes are root-owned and do not depend on `BlazeDBExtraTests`.
 - Temporary quarantine policy (current): `macOS 15 — Tier3 (heavy, non-blocking)` is non-blocking in nightly so Tier1/Tier2 gates stay authoritative; Tier3 remains monitored with post-failure diagnostics.
 - **Operational policy:** nightly failures are triaged within 24–48 hours.
+
+### Nightly lane quick reference
+
+| Job label in Actions UI | Primary purpose | Blocking behavior |
+| ---- | ---- | ---- |
+| `macOS 15 — Tier0 (ThreadSanitizer)` | Tier0 correctness with sanitizer diagnostics on Apple toolchain | Blocking |
+| `macOS 15 — Tier1` | Canonical macOS Tier1 correctness lane | Blocking |
+| `macOS 15 — Tier2 (strict)` | Tier2/Tier2-extended strict enforcement on macOS | Blocking |
+| `macOS 15 — Tier3 (heavy, non-blocking)` | Heavy+perf monitoring on macOS under quarantine policy | Non-blocking (`continue-on-error`) |
+| `macOS 15 — README quickstart verification` | Verify README user path stays valid | Blocking |
+| `macOS 15 — clean checkout verification` | Verify clean-checkout/dev-env assumptions | Blocking |
+| `Linux (Swift 6.2) — Tier0` | Baseline Linux Tier0 signal | Blocking |
+| `Linux (Swift 6.2) — Tier1` | Canonical Linux Tier1 signal | Blocking |
+| `Linux (Swift 6.2) — Tier2 (core)` | Linux Tier2 core integration surface | Blocking |
+| `Linux (Swift 6.2) — Tier2 (extended)` | Linux Tier2 extended integration surface | Blocking |
+| `Linux (Swift 6.2) — Tier3 (heavy)` | Linux heavy stress/fuzz surface | Blocking |
+| `Linux (Swift 6.2) — Tier3 (perf)` | Linux perf companion surface | Blocking |
 
 ### Tier 3 profiling: CI vs local (do not “restore rigor” on runners)
 
