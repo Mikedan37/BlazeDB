@@ -9,6 +9,7 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Changed
 
+- **CI:** Retired redundant `.github/workflows/tier1-depth.yml`; weekly `deep-validation.yml` is the scheduled owner of overlapping Tier2/Tier3 companion coverage.
 - **Package surface simplified:** Published SwiftPM products reduced to `BlazeDB` (umbrella) and `BlazeDBCore` (advanced). Tool, example, and benchmark executables (BlazeShell, HelloBlazeDB, BlazeDoctor, BlazeDump, BlazeInfo, BlazeDBBenchmarks, BasicExample, ReferenceConsumer) are still buildable locally via `swift run <name>` but no longer appear in Xcode's "Add Package Dependencies" picker. If you previously depended on one of these executable products from another package, reference the target directly instead.
 - **Direct CRUD is now the documented primary API.** `db.insert(model)`, `db.fetch(T.self, id:)`, `db.fetchAll(T.self)`, `db.update(model)`, `db.upsert(model)`, `db.delete(model)`, and `db.query(T.self)` are the recommended path. `TypedStore` (`db.typed(T.self)`) remains available as an optional scoped handle for view models and service layers.
 
