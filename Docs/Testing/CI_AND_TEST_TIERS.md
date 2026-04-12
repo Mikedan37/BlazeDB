@@ -65,6 +65,7 @@ Use this table for day-to-day expectations.
   - `Linux (Swift 6.2) — Tier3 (heavy)`: `BlazeDB_Tier3_Heavy` (Linux-only nightly split job)
   - `Linux (Swift 6.2) — Tier3 (perf)`: `BlazeDB_Tier3_Heavy_Perf` (Linux-only nightly split job)
 - Linux Tier labels are grouping vocabulary, **not execution stages**: `linux-tier0`, `linux-tier1`, `linux-tier2-core`, `linux-tier2-extended`, `linux-tier3-heavy`, and `linux-tier3-perf` are independent sibling jobs in `nightly.yml` (no `needs` chain between Linux lanes).
+- Linux sibling jobs are intentionally `swift test`-first (no explicit `swift build --target BlazeDBCore` pre-step) to avoid redundant per-lane pre-build overhead.
 - Nightly confidence lanes are root-owned and do not depend on `BlazeDBExtraTests`.
 - Temporary quarantine policy (current): `macOS 15 — Tier3 (heavy, non-blocking)` is non-blocking in nightly so Tier1/Tier2 gates stay authoritative; Tier3 remains monitored with post-failure diagnostics.
 - **Operational policy:** nightly failures are triaged within 24–48 hours.

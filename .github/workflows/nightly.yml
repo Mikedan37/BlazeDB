@@ -448,9 +448,6 @@ jobs:
       - name: Swift version
         run: swift --version
 
-      - name: Build core
-        run: swift build --target BlazeDBCore
-
       - name: Prepare CI log directories
         run: mkdir -p .logs .artifacts
 
@@ -506,9 +503,6 @@ jobs:
 
       - name: Swift version
         run: swift --version
-
-      - name: Build core
-        run: swift build --target BlazeDBCore
 
       - name: Prepare CI log directories
         run: mkdir -p .logs .artifacts
@@ -575,9 +569,6 @@ jobs:
       - name: Swift version
         run: swift --version
 
-      - name: Build core
-        run: swift build --target BlazeDBCore
-
       - name: Prepare CI log directories
         run: mkdir -p .logs .artifacts
 
@@ -641,9 +632,6 @@ jobs:
 
       - name: Swift version
         run: swift --version
-
-      - name: Build core
-        run: swift build --target BlazeDBCore
 
       - name: Prepare CI log directories
         run: mkdir -p .logs .artifacts
@@ -710,9 +698,6 @@ jobs:
       - name: Swift version
         run: swift --version
 
-      - name: Build core
-        run: swift build --target BlazeDBCore
-
       - name: Prepare CI log directories
         run: mkdir -p .logs .artifacts
 
@@ -776,9 +761,6 @@ jobs:
 
       - name: Swift version
         run: swift --version
-
-      - name: Build core
-        run: swift build --target BlazeDBCore
 
       - name: Prepare CI log directories
         run: mkdir -p .logs .artifacts
