@@ -118,17 +118,64 @@ struct TodoListWithStoreView: View {
 
 ## Level 3 — Larger apps
 
-- One shared `BlazeDBClient` for the process
-- Use `@BlazeQuery` in feature views
-- Add a store per feature when coordinated writes are needed
+Keep **one** `BlazeDBClient` for the process (same `AppDatabase` + `.blazeDBEnvironment` as Level 1). Add tabs, navigation stacks, or feature modules as ordinary SwiftUI; each screen uses **`@BlazeQuery`** and, when needed, its own store—**do not** open a second database.
+
+```swift
+struct MainTabView: View {
+    var body: some View {
+        TabView {
+            ContentView()
+                .tabItem { Label("Active", systemImage: "list.bullet") }
+
+            DoneItemsView()
+                .tabItem { Label("Done", systemImage: "checkmark.circle") }
+        }
+    }
+}
+
+struct DoneItemsView: View {
+    @BlazeQuery(where: "isDone", equals: true, sortBy: "title", descending: false)
+    var items: [TodoItem]
+
+    var body: some View {
+        List(items, id: \.id) { Text($0.title) }
+    }
+}
+```
+
+Use **`MyApp`** with **`MainTabView()`** instead of **`ContentView()`** in the `WindowGroup` when you adopt this shape—the injection line is unchanged:
+
+```swift
+WindowGroup {
+    MainTabView()
+        .blazeDBEnvironment(AppDatabase.shared.db)
+}
+```
+
+- One shared client for the process.
+- Feature views only declare queries (and optional stores); they **inherit** the client from the root.
+- Add a **store per feature** when that feature’s writes are non-trivial (same idea as Level 2).
 
 ---
 
-## Advanced patterns
+## Level 4 — Advanced patterns
 
-Use the [SwiftUI Integration Guide](../Guides/SWIFTUI_INTEGRATION.md) for:
+Details live in the [SwiftUI Integration Guide](../Guides/SWIFTUI_INTEGRATION.md) (raw **`@BlazeDataQuery`**, full **`BlazeDocument`** mapping, aliases, edge cases). One pattern people hit early: **explicit `db:`** on a wrapper for **previews** or **tests** when you want a specific client without rebuilding the full environment chain:
 
-- explicit `db:` on query wrappers
+```swift
+struct TodoRowPreview: View {
+    @BlazeQuery(db: AppDatabase.shared.db, where: "isDone", equals: false)
+    var active: [TodoItem]
+
+    var body: some View {
+        List(active, id: \.id) { Text($0.title) }
+    }
+}
+```
+
+For everything else in this bucket, use the integration guide:
+
+- explicit `db:` on query wrappers (full matrix)
 - raw `@BlazeDataQuery`
 - compatibility aliases and edge cases
 - full `BlazeDocument` model mapping
