@@ -1,8 +1,14 @@
+# Weekly deep validation (scheduled + manual). Owns slower-cadence, expensive surfaces that
+# intentionally do not run in bounded nightly: Linux Tier2 extended + Tier3 heavy/perf (see
+# deep-linux-extended), full macOS Tier0–Tier3 heavy/perf + destructive/fault-injection (see
+# deep-macos-full), and broader macOS Tier0+Tier1 TSan (see deep-macos-tsan).
+# Schedule: Sundays 03:00 UTC. Complements ci.yml (PR gate) and nightly.yml (daily confidence).
+
 name: Deep Validation (weekly)
 
 on:
   schedule:
-    - cron: "0 3 * * 0"
+    - cron: "0 3 * * 0" # Weekly: Sunday 03:00 UTC
   workflow_dispatch:
 
 concurrency:
