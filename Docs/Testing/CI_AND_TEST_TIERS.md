@@ -13,6 +13,8 @@ Use this table for day-to-day expectations.
 | Lane | Goal | Trigger | Blocking | Current workflow(s) |
 | ---- | ---- | ------- | -------- | ------------------- |
 | PR fast gate | Catch obvious breakage quickly | `pull_request`, `push` | Yes | `ci.yml` |
+| Nightly confidence | Broad daily cross-platform confidence with independent jobs | Daily + manual | Yes | `nightly.yml` |
+| Deep validation | Longer-running soak/depth validation sweep | Weekly + manual | No | `deep-validation.yml` |
 | Tier1 depth | Broader Tier1 confidence | Weekly + manual | No | `tier1-depth.yml` |
 | Release validation | Validate tagged releases | `v*` tag + manual | Release-only | `release.yml` |
 | Tag probe | Check older tags still build | Manual | No | `tag-probe.yml` |
@@ -25,6 +27,29 @@ Use this table for day-to-day expectations.
   - Nightly confidence split into isolated failure-domain jobs in `nightly.yml`
 - In rollout:
   - deep soak lane (`deep-validation.yml`)
+
+## CI Philosophy: Tiered, Not Sequential
+
+BlazeDB uses a tiered testing model where tiers represent signal class and runtime cost, **not** promotion order.
+
+- Tiers are classification labels, not execution stages.
+- Linux nightly lanes run as independent sibling jobs.
+- There is no Linux Tier1 → Tier2 → Tier3 dependency chain.
+
+**Important:** Linux nightly tiers are parallel classification lanes, not staged promotion gates.
+
+This is intentional:
+
+- Tier surfaces validate different behavior classes and do not consume each other's artifacts.
+- Sequential staging would add wall-clock without adding correctness.
+- Parallel sibling lanes maximize nightly signal by exposing failures across all surfaces in the same run.
+
+Design tradeoff (intentional):
+
+- Favor: broader signal per run + faster critical-path completion.
+- Accept: higher runner concurrency consumption versus staged early-exit gating.
+
+In short: nightly confidence optimizes for coverage visibility and time-to-signal, not strict tier promotion.
 
 ## Workflow Inventory
 
@@ -47,7 +72,7 @@ Use this table for day-to-day expectations.
 
 - `.github/workflows/tier1-depth.yml`
 - Trigger: **weekly schedule** and **manual** (`workflow_dispatch`)
-- Runs `BlazeDB_Tier2` + `BlazeDB_Tier2_Extended` and `BlazeDB_Tier3_Heavy` + `BlazeDB_Tier3_Heavy_Perf` (legacy workflow name retained pending PR4 cleanup).
+- Runs `BlazeDB_Tier2` + `BlazeDB_Tier2_Extended` and `BlazeDB_Tier3_Heavy` + `BlazeDB_Tier3_Heavy_Perf` (legacy workflow name retained pending PR4 cleanup; filename intentionally lags behavior).
 
 - `.github/workflows/nightly.yml`
 - Trigger: **daily schedule** and **manual** (`workflow_dispatch`)
