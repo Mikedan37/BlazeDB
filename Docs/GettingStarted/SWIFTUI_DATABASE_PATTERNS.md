@@ -2,15 +2,18 @@
 
 BlazeDB is not tied to SwiftUI. This guide shows one clean way to use it in a SwiftUI app.
 
----
+⸻
 
-## Level 1 — Simple (start here)
+Level 1 — Simple (start here)
 
-Use this when: you want the fastest path to a working app.
+Use this when: you want the fastest path to a clean SwiftUI app.
 
-Open BlazeDB once, and read data directly in your views using `@BlazeQueryTyped`.
+Open BlazeDB once, keep it in one app object, and pass it into your screens.
+Think of AppDatabase as the place your app keeps its database.
 
-```swift
+For SwiftUI, prefer @BlazeQueryTyped for reading data in views.
+It keeps the view simple and avoids manual reloading after every change.
+
 import SwiftUI
 import BlazeDB
 
@@ -132,9 +135,9 @@ Avoid introducing manual load() functions unless you actually need them.
 
 ⸻
 
-Level 3 — Multiple features
+Level 3 — Larger apps (multiple features)
 
-Use this when: your app has multiple domains (for example Notes and Tasks).
+Use this when: your app has separate domains, for example Notes and Tasks.
 
 Each feature gets its own store.
 All features share the same database.
@@ -176,9 +179,9 @@ Each view declares its own query:
 
 ⸻
 
-Level 4 — Dependency injection (optional)
+Level 4 — Advanced (optional patterns)
 
-Use this when: you want cleaner dependency wiring for larger apps or testing.
+Use this when: you want cleaner dependency wiring for bigger apps and testing.
 
 This is optional. Most apps do not need this.
 
