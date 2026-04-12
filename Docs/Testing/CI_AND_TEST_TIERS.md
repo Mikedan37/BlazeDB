@@ -64,6 +64,7 @@ Use this table for day-to-day expectations.
   - `Linux (Swift 6.2) — Tier2 (extended)`: `BlazeDB_Tier2_Extended` (Linux-only nightly split job; deeper suites)
   - `Linux (Swift 6.2) — Tier3 heavy`: `BlazeDB_Tier3_Heavy` (Linux-only nightly split job)
   - `Linux (Swift 6.2) — Tier3 perf companion`: `BlazeDB_Tier3_Heavy_Perf` (Linux-only nightly split job)
+- Linux Tier labels are grouping vocabulary, **not execution stages**: `linux-tier1`, `linux-tier2-core`, `linux-tier2-extended`, `linux-tier3-heavy`, and `linux-tier3-perf` are independent sibling jobs in `nightly.yml` (no `needs` chain between Linux lanes).
 - Nightly confidence lanes are root-owned and do not depend on `BlazeDBExtraTests`.
 - Temporary quarantine policy (current): `macOS 15 — Tier3 Heavy` is non-blocking in nightly so Tier1/Tier2 gates stay authoritative; Tier3 remains monitored with post-failure diagnostics.
 - **Operational policy:** nightly failures are triaged within 24–48 hours.
@@ -81,7 +82,7 @@ Treat CI as a **constrained environment that must produce trustworthy signal**, 
 ### Nightly Tier3 policy
 
 - **`nightly-macos-tier3-heavy`:** quarantined — `continue-on-error: true` in `nightly.yml`; a red Tier3 step does **not** fail the overall nightly workflow; logs and diagnostics still upload.
-- **`nightly-linux-tier3-heavy-core`** and **`nightly-linux-tier3-perf`**: blocking — a red step fails the workflow (Linux depth lane).
+- **`linux-tier3-heavy`** and **`linux-tier3-perf`**: blocking — a red step fails the workflow (Linux depth lane).
 - Any change to either policy should update **this file** and **`nightly.yml`** together so the two stay aligned.
 
 ### Nightly stability trade-offs (documented)
@@ -240,19 +241,19 @@ Inventory/bootstrap code may still bucket all three SwiftPM modules under a sing
 
 ### Suites relocated off canonical Tier1 (inventory)
 
-These used to inflate Linux Tier1 wall-clock; they now live in **`BlazeDB_Tier2`** or **`BlazeDB_Tier3_Heavy`** and are exercised on **Linux** by `nightly-linux-tier2-core`, `nightly-linux-tier2-extended`, `nightly-linux-tier3-heavy-core`, `nightly-linux-tier3-perf`, and `deep-validation` → `deep-linux-extended`. macOS release/nightly still runs the same SPM targets—only Linux splits jobs for scheduling.
+These used to inflate Linux Tier1 wall-clock; they now live in **`BlazeDB_Tier2`** or **`BlazeDB_Tier3_Heavy`** and are exercised on **Linux** by `linux-tier2-core`, `linux-tier2-extended`, `linux-tier3-heavy`, `linux-tier3-perf`, and `deep-validation` → `deep-linux-extended`. macOS release/nightly still runs the same SPM targets—only Linux splits jobs for scheduling.
 
 | Logical area | File under `BlazeDBTests/…` | SPM module | Linux nightly |
 | ------------ | --------------------------- | ---------- | ------------- |
-| Type-safety edge cases | `Tier2Integration/BlazeDBIntegrationTests/EdgeCases/TypeSafetyEdgeCaseTests.swift` | `BlazeDB_Tier2` | `nightly-linux-tier2-core` |
-| Codable integration | `…/Integration/CodableIntegrationTests.swift` | `BlazeDB_Tier2` | `nightly-linux-tier2-core` |
-| Client API (`BlazeDBClientTests`) | `…/Core/BlazeDBTests.swift` | `BlazeDB_Tier2` | `nightly-linux-tier2-core` |
-| Persist API | `…/Persistence/BlazeDBPersistAPITests.swift` | `BlazeDB_Tier2` | `nightly-linux-tier2-core` |
-| Data seeding | `…/DataSeedingTests.swift` | `BlazeDB_Tier2` | `nightly-linux-tier2-core` |
-| Subqueries | `…/SQL/SubqueryTests.swift` | `BlazeDB_Tier2` | `nightly-linux-tier2-core` |
-| Filesystem errors | `…/Core/BlazeFileSystemErrorTests.swift` | `BlazeDB_Tier2` | `nightly-linux-tier2-core` |
-| Key-path query | `…/Features/KeyPathQueryTests.swift` | `BlazeDB_Tier2` | `nightly-linux-tier2-core` |
-| Query EXPLAIN (scale-heavy) | `Tier3Heavy/Query/QueryExplainTests.swift` | `BlazeDB_Tier3_Heavy` | `nightly-linux-tier3-heavy-core` |
+| Type-safety edge cases | `Tier2Integration/BlazeDBIntegrationTests/EdgeCases/TypeSafetyEdgeCaseTests.swift` | `BlazeDB_Tier2` | `linux-tier2-core` |
+| Codable integration | `…/Integration/CodableIntegrationTests.swift` | `BlazeDB_Tier2` | `linux-tier2-core` |
+| Client API (`BlazeDBClientTests`) | `…/Core/BlazeDBTests.swift` | `BlazeDB_Tier2` | `linux-tier2-core` |
+| Persist API | `…/Persistence/BlazeDBPersistAPITests.swift` | `BlazeDB_Tier2` | `linux-tier2-core` |
+| Data seeding | `…/DataSeedingTests.swift` | `BlazeDB_Tier2` | `linux-tier2-core` |
+| Subqueries | `…/SQL/SubqueryTests.swift` | `BlazeDB_Tier2` | `linux-tier2-core` |
+| Filesystem errors | `…/Core/BlazeFileSystemErrorTests.swift` | `BlazeDB_Tier2` | `linux-tier2-core` |
+| Key-path query | `…/Features/KeyPathQueryTests.swift` | `BlazeDB_Tier2` | `linux-tier2-core` |
+| Query EXPLAIN (scale-heavy) | `Tier3Heavy/Query/QueryExplainTests.swift` | `BlazeDB_Tier3_Heavy` | `linux-tier3-heavy` |
 
 `Tier1Core/DXQueryExplainTests.swift` remains in **`BlazeDB_Tier1`** (different, lighter DX coverage)—do not confuse with `QueryExplainTests` in Tier3.
 
