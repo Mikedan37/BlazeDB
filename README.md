@@ -132,7 +132,7 @@ Or in Xcode: **File → Add Package Dependencies** → paste `https://github.com
 
 After `open` → `put` → `get` → `query` makes sense, pick **one** path:
 
-1. **SwiftUI app** → [SwiftUI DB Patterns](Docs/GettingStarted/SWIFTUI_DATABASE_PATTERNS.md) (blessed path: inject once, `@BlazeQuery`, environment writes; then leveled patterns).
+1. **SwiftUI app** → [SwiftUI DB Patterns](Docs/GettingStarted/SWIFTUI_DATABASE_PATTERNS.md) (minimal example: inject once, `@BlazeQuery`, environment writes). Anything beyond that (filters, raw rows, explicit `db:`): [SwiftUI Integration Guide](Docs/Guides/SWIFTUI_INTEGRATION.md).
 
 2. **UIKit / CLI / server-style app**  
    → [Try BlazeDB from this repo](#try-blazedb-from-this-repo) (`swift run HelloBlazeDB` from a clone)  
@@ -147,7 +147,7 @@ If you skip straight to API tiers or raw APIs without that bridge, you’ll feel
 
 **Standard BlazeDB SwiftUI app:** inject **`BlazeDBClient` once** (`.blazeDBEnvironment(_)` or `.environment(\.blazeDBClient, …)`), use **`@BlazeQuery`** for typed reads, and **`@Environment(\.blazeDBClient)`** for writes (`insert` / `put` to match your model). Add a **store** only when the screen’s logic outgrows simple calls.
 
-Details and leveled patterns: [SwiftUI DB Patterns](Docs/GettingStarted/SWIFTUI_DATABASE_PATTERNS.md). Deeper reference (raw queries, edge cases): [SwiftUI Integration Guide](Docs/Guides/SWIFTUI_INTEGRATION.md).
+Starter: [SwiftUI DB Patterns](Docs/GettingStarted/SWIFTUI_DATABASE_PATTERNS.md). Full reference (raw queries, edge cases): [SwiftUI Integration Guide](Docs/Guides/SWIFTUI_INTEGRATION.md).
 
 ---
 
