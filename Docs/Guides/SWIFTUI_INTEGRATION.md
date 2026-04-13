@@ -86,6 +86,62 @@ Readable alias (same type as **`@BlazeStorableQuery`**):
 
 Writes on the **same** **`BlazeDBClient`** you injected cause the query to refetch; you usually do not need **`@State`** copies of the whole list. Call **`$items.refresh()`** on the projected value if you need a forced reload.
 
+### Multiple databases
+
+**`blazeDBClient`** is **one slot per environment subtree**, not one database per app.
+
+The default SwiftUI path assumes **one active `BlazeDBClient` for the current view subtree**. That keeps normal app code simple. If your app uses more than one database, you usually do one of these:
+
+**1. Different subtrees use different databases**
+
+This is the normal SwiftUI answer for multi-account, personal/work, or separate tabs.
+
+```swift
+TabView {
+    PersonalItemsView()
+        .tabItem { Label("Personal", systemImage: "person") }
+        .blazeDBEnvironment(personalDB)
+
+    WorkItemsView()
+        .tabItem { Label("Work", systemImage: "briefcase") }
+        .blazeDBEnvironment(workDB)
+}
+```
+
+Each subtree reads and writes using its own injected client.
+
+**2. One view intentionally uses another client**
+
+Use explicit **`db:`** when a screen, preview, or test should bypass the environment.
+
+```swift
+struct ItemListView: View {
+    let db: BlazeDBClient
+    @BlazeStorableQuery private var items: [Item]
+
+    init(db: BlazeDBClient) {
+        self.db = db
+        self._items = BlazeStorableQuery(db: db, kind: Item.self)
+    }
+
+    var body: some View {
+        List(items, id: \.id) { item in
+            Text(item.title)
+        }
+    }
+}
+```
+
+Explicit **`db:`** overrides the environment for that wrapper.
+
+**3. The active database changes at runtime**
+
+When the active database changes, re-apply **`.blazeDBEnvironment(...)`** at the **root of that subtree** so child views read from the new client.
+
+**Advanced: multiple named clients in one subtree**
+
+If one subtree truly needs multiple named clients at the same time, use custom **`EnvironmentKey`**s and explicit wrapper binding where needed. Most apps do not need this.
+
 ---
 
 ## Common mistakes
