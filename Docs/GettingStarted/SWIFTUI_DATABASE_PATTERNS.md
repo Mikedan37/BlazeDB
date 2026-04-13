@@ -79,10 +79,21 @@ struct ContentView: View {
 
 ### Why this is the standard
 
-- One **`BlazeDBClient`** for the app.
-- **`@BlazeStorableQuery`** stays in sync with writes; **no custom view `init`** just to pass **`db`** into the wrapper.
+- Open the database **once** per logical database; inject with **`.blazeDBEnvironment`** at the root of the subtree that should use it.
+- **`@BlazeStorableQuery`** stays in sync with writes; **no custom view `init`** just to pass **`db`** into the wrapper (unless you intentionally override — see **Multiple databases**).
 - No manual **`BlazeDataRecord`** mapping for normal Codable models.
-- Child views inherit the client from the root; you do not pretend there are two databases.
+- Child views inherit **`blazeDBClient`** from the **nearest** ancestor that set **`.blazeDBEnvironment`**; use a **different** injection on another branch when that subtree should use another database.
+
+### Multiple databases
+
+**`blazeDBClient`** is **one slot per environment subtree**, not one database per app.
+
+For most apps with multiple databases:
+
+- Inject a different client into each subtree with **`.blazeDBEnvironment(...)`**.
+- Use explicit **`db:`** only for previews, tests, or screens that intentionally bypass the default environment.
+
+Use custom environment keys only for advanced cases where one subtree genuinely needs multiple named clients at once. More detail: [SwiftUI Integration Guide — Multiple databases](../Guides/SWIFTUI_INTEGRATION.md#multiple-databases).
 
 ---
 
@@ -129,7 +140,7 @@ struct ListWithStoreView: View {
 
 ## Level 3 — Larger apps
 
-Keep **one** **`BlazeDBClient`** for the process (same **`AppDatabase`** + **`.blazeDBEnvironment`** as Level 1). Add tabs, navigation stacks, or feature modules as ordinary SwiftUI; each screen uses **`@BlazeStorableQuery`** (or **`@BlazeQuery`** if you use **`BlazeDocument`**) and, when needed, its own store — **do not** open a second database.
+For **one** shared app database, keep the same **`AppDatabase`** + **`.blazeDBEnvironment`** at the root as Level 1. Add tabs, navigation stacks, or feature modules as ordinary SwiftUI; each screen uses **`@BlazeStorableQuery`** (or **`@BlazeQuery`** if you use **`BlazeDocument`**) and, when needed, its own store. Avoid opening **extra** clients ad hoc in leaf views — if you have **separate** databases (e.g. personal vs. work), inject each at the **root of its subtree** (see **Multiple databases** under Level 1).
 
 Below, **`Item`** includes a **`isCompleted`** field so one tab can filter on it (same pattern as Level 1, one extra property).
 

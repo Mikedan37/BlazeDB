@@ -52,3 +52,9 @@ Do not imply symmetry (“pick either; both are standard”) unless there is a r
 ## 7. Developer-experience rationale
 
 Users should not need BlazeDB’s internal type graph to ship a list screen. The default path should be learnable from **one** short paragraph and **one** copy-paste shape. Everything else is opt-in depth.
+
+## 8. Multiple databases (documentation placement)
+
+- **`blazeDBClient`** is **one environment slot per subtree**, not “one database per app.” Say that in user docs; do not make readers infer it from implementation details.
+- **Where it lives:** [SwiftUI Integration Guide](../Guides/SWIFTUI_INTEGRATION.md) under **Default path (detail) → Multiple databases**, and a short recap in [SwiftUI DB Patterns](../GettingStarted/SWIFTUI_DATABASE_PATTERNS.md) after Level 1 **Why this is the standard**. Do **not** put multi-DB scenarios in the **opening** paragraph of the integration guide or README SwiftUI blurb.
+- **Preferred patterns:** different **`.blazeDBEnvironment(...)`** per branch; **`db:`** for previews/tests/intentional override; custom **`EnvironmentKey`**s only as an **advanced** footnote when one subtree needs multiple named clients at once.
