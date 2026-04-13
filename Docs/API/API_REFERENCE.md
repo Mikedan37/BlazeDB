@@ -729,22 +729,28 @@ func performSecurityAudit() -> SecurityAuditReport
 
 ---
 
-## ** SwiftUI Integration**
+## ** SwiftUI integration**
 
-For app-local SwiftUI usage, these wrappers can refresh query results after BlazeDB change notifications.
-They are refresh-on-change wrappers (query re-execution), not a generalized incremental diff engine.
+On Apple platforms, property wrappers re-run queries when BlazeDB posts change notifications (refresh-on-change, not incremental diff).
 
-### **Property Wrappers:**
+**Recommended (most apps):** **`BlazeStorable`** + **`@BlazeStorableQuery(kind: Self.self)`** + root **`.blazeDBEnvironment(BlazeDBClient)`**; omit **`db:`** to use **`EnvironmentValues.blazeDBClient`**.
+
+**Advanced (manual record mapping):** **`BlazeDocument`** + **`@BlazeQuery`**. Legacy alias **`BlazeQueryTyped`** = **`BlazeQuery`**.
+
+**Raw rows:** **`@BlazeDataQuery`**, always with **`db:`** (no environment shortcut).
 
 ```swift
-// Query property wrapper
-@BlazeQuery(db: BlazeDBClient, where: "status", equals:.string("open"))
-var records: [BlazeDataRecord]
+// Default: Codable models
+@BlazeStorableQuery(kind: Item.self) var items: [Item]
 
-// Typed query property wrapper
-@BlazeQueryTyped(db: BlazeDBClient, type: User.self, where: \.status, equals: "active")
-var users: [User]
+// Advanced: BlazeDocument + manual toStorage / init(from:)
+@BlazeQuery(where: "status", equals: "open") var bugs: [Bug]
+
+// Raw BlazeDataRecord rows
+@BlazeDataQuery(db: client, where: "status", equals: .string("open")) var rows: [BlazeDataRecord]
 ```
+
+See [SwiftUI Integration Guide](../Guides/SWIFTUI_INTEGRATION.md).
 
 ---
 

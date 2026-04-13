@@ -49,7 +49,7 @@ import BlazeDB // Database functionality
 
 // SwiftUI integration (macOS/iOS/watchOS/tvOS only)
 #if canImport(SwiftUI)
-import SwiftUI // @BlazeQuery is automatically available
+import SwiftUI // @BlazeStorableQuery, @BlazeQuery, @BlazeDataQuery on Apple platforms
 #endif
 ```
 
@@ -785,97 +785,17 @@ let tags = tagsArray.stringValues // ["swift", "database"]
 
 ---
 
-## SwiftUI Integration
+## SwiftUI integration
 
-### @BlazeQuery (Dynamic)
+Authoritative, user-facing docs: [SwiftUI Integration Guide](Guides/SWIFTUI_INTEGRATION.md), [SwiftUI DB Patterns](GettingStarted/SWIFTUI_DATABASE_PATTERNS.md). Maintainer rationale: [Internal/SWIFTUI_PATH_MAINTAINER_NOTE.md](Internal/SWIFTUI_PATH_MAINTAINER_NOTE.md).
 
-Reactive property wrapper for database queries.
-BlazeDB change notifications can trigger query refreshes for SwiftUI-bound results.
+**Default:** `BlazeStorable` + `@BlazeStorableQuery(kind:)` + `.blazeDBEnvironment` + `@Environment(\.blazeDBClient)` for writes.
 
-```swift
-struct BugListView: View {
- @BlazeQuery(
- db: AppDatabase.shared.db,
- where: "status", equals: .string("open"),
- sortBy: "priority", descending: true
- )
- var openBugs
+**Advanced:** `BlazeDocument` + `@BlazeQuery` (manual `BlazeDataRecord` mapping). **`BlazeQueryTyped`** is a legacy alias for **`BlazeQuery`**.
 
- var body: some View {
- List(openBugs, id: \.id) { bug in
- Text(bug["title"]?.stringValue ?? "")
- }
- }
-}
-```
+**Raw:** `@BlazeDataQuery` with explicit `db:`.
 
-### @BlazeQueryTyped (Type-Safe)
-
-Type-safe variant for compile-time safety.
-
-```swift
-struct BugListView: View {
- @BlazeQueryTyped(
- db: AppDatabase.shared.db,
- type: Bug.self,
- where: "status", equals: .string("open"),
- sortBy: "priority", descending: true
- )
- var openBugs: [Bug]
-
- var body: some View {
- List(openBugs) { bug in
- Text(bug.title) // Direct access!
- Text("P\(bug.priority)") // No .intValue!
- }
- }
-}
-```
-
-### Auto-Refresh
-
-```swift
-struct BugListView: View {
- @BlazeQuery(db: AppDatabase.shared.db)
- var allBugs
-
- var body: some View {
- List(allBugs, id: \.id) { bug in
- BugRowView(bug: bug)
- }
- .refreshable(query: $allBugs) // Pull to refresh
- .onAppear {
- $allBugs.enableAutoRefresh(interval: 10) // Auto-refresh every 10s
- }
- .onDisappear {
- $allBugs.disableAutoRefresh()
- }
- }
-}
-```
-
-`enableAutoRefresh(interval:)` is optional polling on top of notification-driven refresh.
-Use it when you want periodic safety refreshes; rely on default change observation for normal app-local writes.
-
-### Manual Refresh
-
-```swift
-struct BugListView: View {
- @BlazeQuery(db: AppDatabase.shared.db)
- var allBugs
-
- var body: some View {
- List(allBugs, id: \.id) { bug in
- BugRowView(bug: bug)
- }
- .toolbar {
- Button("Refresh") {
- $allBugs.refresh() // Manual refresh
- }
- }
- }
-}
-```
+`enableAutoRefresh(interval:)` on **`BlazeQueryTypedObserver`** is optional polling on top of change notifications; prefer notification-driven refresh for normal app writes.
 
 ---
 
@@ -1242,10 +1162,12 @@ let bugs = try db.query() // Blocks UI
  .execute()
 ```
 
-### 8. Use @BlazeQuery for SwiftUI
+### 8. SwiftUI reactive queries
+
+**Default app path:** `@BlazeStorableQuery(kind:)` with `BlazeStorable` models (see [SwiftUI Integration Guide](Guides/SWIFTUI_INTEGRATION.md)). **`@BlazeQuery`** is for **`BlazeDocument`** (manual `BlazeDataRecord` mapping).
 
 ```swift
-// Good: Reactive queries
+// Good: Reactive queries (BlazeDocument example)
 @BlazeQuery(db: db, where: "status", equals: .string("open"))
 var openBugs
 

@@ -3,6 +3,30 @@ import Foundation
 #if canImport(SwiftUI) && canImport(Combine) && (os(macOS) || os(iOS) || os(watchOS) || os(tvOS))
 import SwiftUI
 
+// MARK: - Change notification (same pattern as ``BlazeQueryTypedObserver``)
+
+@MainActor
+fileprivate protocol BlazeStorableQueryRefreshable: AnyObject {
+    func refresh()
+}
+
+extension BlazeStorableQueryObserver: BlazeStorableQueryRefreshable {}
+
+private final class BlazeStorableQueryRefreshSink: @unchecked Sendable {
+    private weak var target: (any BlazeStorableQueryRefreshable)?
+
+    func attach(_ o: any BlazeStorableQueryRefreshable) {
+        target = o
+    }
+
+    func notifyChange() {
+        guard let t = target else { return }
+        Task { @MainActor in
+            t.refresh()
+        }
+    }
+}
+
 /// SwiftUI live-query wrapper for a ``BlazeStorable`` model (namespace-filtered decode).
 ///
 /// **Relationship to other wrappers:** Prefer ``BlazeQuery`` when your model conforms to
@@ -10,26 +34,35 @@ import SwiftUI
 /// ``BlazeStorable`` / Codable only and do not want ``BlazeDocument``. For raw
 /// ``BlazeDataRecord`` rows, use ``BlazeDataQuery``.
 ///
-/// Use this when your UI should stay in sync with database writes for one model type.
+/// Pass ``BlazeDBClient`` with `db:` **or** inject ``EnvironmentValues/blazeDBClient`` from an ancestor
+/// (same as ``BlazeQuery``). If `db` is omitted, results stay empty until the environment provides a client.
 ///
 /// ```swift
-/// @BlazeStorableQuery(
-///     db: db,
-///     kind: Bug.self,
-///     where: "status",
-///     equals: .string("open")
-/// )
-/// var bugs: [Bug]
+/// RootView().blazeDBEnvironment(app.db)
+///
+/// @BlazeStorableQuery(kind: Bug.self) var bugs: [Bug]
 /// ```
 @propertyWrapper
 @MainActor
 public struct BlazeStorableQuery<T: BlazeStorable>: DynamicProperty {
+    private let explicitDB: BlazeDBClient?
+
+    @Environment(\.blazeDBClient) private var environmentDB
     @StateObject private var observer: BlazeStorableQueryObserver<T>
 
-    public var wrappedValue: [T] { observer.results }
-    public var projectedValue: BlazeStorableQueryObserver<T> { observer }
+    public var wrappedValue: [T] {
+        observer.bindDatabaseIfNeeded(explicitDB ?? environmentDB)
+        return observer.results
+    }
 
-    public init(db: BlazeDBClient, kind: T.Type) {
+    public var projectedValue: BlazeStorableQueryObserver<T> {
+        observer.bindDatabaseIfNeeded(explicitDB ?? environmentDB)
+        return observer
+    }
+
+    /// - Parameter db: Pass `nil` (default) to resolve the client from ``EnvironmentValues/blazeDBClient``.
+    public init(db: BlazeDBClient? = nil, kind: T.Type) {
+        self.explicitDB = db
         _observer = StateObject(wrappedValue: BlazeStorableQueryObserver(
             db: db,
             filters: [],
@@ -39,8 +72,9 @@ public struct BlazeStorableQuery<T: BlazeStorable>: DynamicProperty {
         ))
     }
 
+    /// - Parameter db: Pass `nil` (default) to resolve the client from ``EnvironmentValues/blazeDBClient``.
     public init(
-        db: BlazeDBClient,
+        db: BlazeDBClient? = nil,
         kind: T.Type,
         where field: String,
         equals value: BlazeDocumentField,
@@ -48,6 +82,7 @@ public struct BlazeStorableQuery<T: BlazeStorable>: DynamicProperty {
         descending: Bool = false,
         limit: Int? = nil
     ) {
+        self.explicitDB = db
         _observer = StateObject(wrappedValue: BlazeStorableQueryObserver(
             db: db,
             filters: [(field, .equals, value)],
@@ -58,22 +93,26 @@ public struct BlazeStorableQuery<T: BlazeStorable>: DynamicProperty {
     }
 }
 
+/// Alias for ``BlazeStorableQuery`` when you want a name that signals environment-driven resolution.
+public typealias BlazeStorableEnvironmentQuery<T: BlazeStorable> = BlazeStorableQuery<T>
+
 @MainActor
 public final class BlazeStorableQueryObserver<T: BlazeStorable>: ObservableObject {
     @Published public private(set) var results: [T] = []
     @Published public private(set) var isLoading: Bool = false
     @Published public private(set) var error: Error?
 
-    private let db: BlazeDBClient
+    private var db: BlazeDBClient?
     private let filters: [(field: String, comparison: BlazeQueryComparison, value: BlazeDocumentField)]
     private let sortField: String?
     private let sortDescending: Bool
     private let limitCount: Int?
     private var refreshTask: Task<Void, Never>?
     private var changeObserverToken: ObserverToken?
+    private let refreshSink = BlazeStorableQueryRefreshSink()
 
     fileprivate init(
-        db: BlazeDBClient,
+        db: BlazeDBClient?,
         filters: [(field: String, comparison: BlazeQueryComparison, value: BlazeDocumentField)],
         sortField: String?,
         sortDescending: Bool,
@@ -85,14 +124,37 @@ public final class BlazeStorableQueryObserver<T: BlazeStorable>: ObservableObjec
         self.sortField = sortField
         self.sortDescending = sortDescending
         self.limitCount = limitCount
+
+        refreshSink.attach(self)
+
+        if let db {
+            subscribeToChanges(db: db)
+            refresh()
+        }
+    }
+
+    /// Binds a ``BlazeDBClient`` from SwiftUI environment (or explicit injection) the first time it becomes available.
+    internal func bindDatabaseIfNeeded(_ client: BlazeDBClient?) {
+        guard db == nil, let client else { return }
+        db = client
+        subscribeToChanges(db: client)
         refresh()
-        self.changeObserverToken = db.observe { [weak self] _ in
-            Task { @MainActor in self?.refresh() }
+    }
+
+    private func subscribeToChanges(db: BlazeDBClient) {
+        changeObserverToken = db.observe { [refreshSink] _ in
+            refreshSink.notifyChange()
         }
     }
 
     public func refresh() {
         refreshTask?.cancel()
+
+        guard let db else {
+            isLoading = false
+            return
+        }
+
         refreshTask = Task { @MainActor in
             isLoading = true
             error = nil

@@ -120,10 +120,9 @@ try db.update(t)
 try db.delete(t)
 ```
 
-### SwiftUI Query Observation (App Dev DX)
+### SwiftUI (default path)
 
-If you are building a SwiftUI app, BlazeDB provides `@BlazeQuery` (typed `BlazeDocument` lists; legacy alias `@BlazeQueryTyped`) and `@BlazeDataQuery` (raw ``BlazeDataRecord`` rows).
-These wrappers use BlazeDB change observation to refresh query results after DB writes, so UI lists can stay in sync without relying only on timers. See [SWIFTUI_DATABASE_PATTERNS.md](SWIFTUI_DATABASE_PATTERNS.md) and [SWIFTUI_INTEGRATION.md](../Guides/SWIFTUI_INTEGRATION.md).
+For **most** SwiftUI apps: **`BlazeStorable`** models, **`.blazeDBEnvironment(_)`** once at the root, **`@BlazeStorableQuery(kind:)`** for lists, **`@Environment(\.blazeDBClient)`** for writes. **`@BlazeQuery`** is **only** for **`BlazeDocument`** (manual **`BlazeDataRecord`** mapping). **`@BlazeDataQuery`** is for raw rows (advanced). Wrappers refresh from change notifications. Start at [SWIFTUI_DATABASE_PATTERNS.md](SWIFTUI_DATABASE_PATTERNS.md) and [SWIFTUI_INTEGRATION.md](../Guides/SWIFTUI_INTEGRATION.md).
 
 ### Raw Explicit API (Advanced)
 
@@ -200,7 +199,7 @@ Yes, by default. AES-256-GCM encryption is enabled automatically.
 Committed data survives. BlazeDB uses write-ahead logging for crash safety.
 
 **Can I use this with SwiftUI?**
-Yes. See `Examples/SwiftUIExample.swift` for `@BlazeDataQuery` (raw rows) and typed `@BlazeQuery`. These wrappers refresh from DB change notifications and still support manual/pull refresh where useful.
+Yes. Default: **`BlazeStorable`** + **`@BlazeStorableQuery`** + **`.blazeDBEnvironment`** (see [SWIFTUI_DATABASE_PATTERNS.md](SWIFTUI_DATABASE_PATTERNS.md)). `Examples/SwiftUIExample.swift` focuses on **`@BlazeDataQuery`** (raw rows) and similar patterns; it is **not** the minimal default app shape.
 
 **Can I use this with Vapor?**
 Yes. See [HOW_TO_USE_BLAZEDB.md](HOW_TO_USE_BLAZEDB.md#8-using-blazedb-in-a-server-vapor-example).
