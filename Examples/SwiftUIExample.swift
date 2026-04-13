@@ -2,8 +2,12 @@
 //  SwiftUIExample.swift
 //  BlazeDB Examples
 //
-//  Real-world examples of using BlazeDB with SwiftUI.
-//  Shows @BlazeDataQuery (raw records) and typed @BlazeQuery refreshing from DB change notifications.
+//  This file focuses on @BlazeDataQuery (raw BlazeDataRecord rows), dynamic filters, and
+//  patterns that need explicit db: — not the minimal default app shape.
+//
+//  For normal SwiftUI apps, start here instead:
+//  - Docs/GettingStarted/SWIFTUI_DATABASE_PATTERNS.md
+//  - BlazeStorable + @BlazeStorableQuery(kind:) + .blazeDBEnvironment + @Environment(\.blazeDBClient)
 //
 //  Created by Michael Danylchuk on 7/1/25.
 //
@@ -11,7 +15,7 @@
 import SwiftUI
 import BlazeDB
 
-// MARK: - Example 1: Simple Bug List
+// MARK: - Example 1: Simple Bug List (raw rows via @BlazeDataQuery)
 
 struct BugListView: View {
     // Auto-fetches and updates! No manual state management! 🔥
