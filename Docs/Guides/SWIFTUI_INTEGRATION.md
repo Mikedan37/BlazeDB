@@ -1,45 +1,17 @@
 # SwiftUI Integration Guide
 
-## Recommended SwiftUI path
+## Default SwiftUI path
 
-For **most apps**, use **`BlazeStorable`** models, inject **`BlazeDBClient`** once with **`.blazeDBEnvironment(_)`**, read with **`@BlazeStorableQuery(kind:)`**, and write through **`@Environment(\.blazeDBClient)`** (for example **`put`**, **`insert`**, **`update`** on that client).
+For most apps:
 
-Use **`BlazeDocument`** and **`@BlazeQuery`** only when you need **manual** **`BlazeDataRecord`** mapping (**`toStorage()`** / **`init(from:)`**).
+- Make your model conform to **`BlazeStorable`**
+- Inject the database once with **`.blazeDBEnvironment(_)`**
+- Read with **`@BlazeStorableQuery(kind:)`**
+- Write with **`@Environment(\.blazeDBClient)`** (e.g. **`put`**, **`insert`**)
 
-This guide is ordered that way: default first, advanced second, niche/legacy last.
+That is the standard SwiftUI path.
 
----
-
-## When to use what
-
-| You have / need | Use |
-|-----------------|-----|
-| Normal Codable model (`struct` with `id: UUID`, etc.) | **`BlazeStorable`** |
-| Manual control of every `BlazeDocumentField` in a record | **`BlazeDocument`** + **`toStorage()`** / **`init(from storage:)`** |
-| Reactive typed list for a **`BlazeStorable`** model | **`@BlazeStorableQuery(kind: Model.self)`** |
-| Reactive typed list for a **`BlazeDocument`** model | **`@BlazeQuery`** |
-| Raw rows, dynamic keys, or debugging | **`@BlazeDataQuery`** (always pass **`db:`**) |
-| Writes from SwiftUI | **`@Environment(\.blazeDBClient)`** then **`put`** / **`insert`** / **`update`** on that client |
-
-**Writes and models:** **`put`** and **`insert(T: BlazeStorable)`** expect **`BlazeStorable`**. **`insert` / `update` / `upsert`** for **`BlazeDocument`** use **`toStorage()`**. Do not conform one model to **both** protocols unless you understand **`insert`/`upsert` ambiguity**; pick one primary path per type.
-
----
-
-## Common mistakes (read this if something won’t compile)
-
-| Symptom | What went wrong | Fix |
-|---------|-----------------|-----|
-| **`@BlazeQuery` errors** on a **`BlazeStorable`**-only type | **`@BlazeQuery`** requires **`BlazeDocument`**. | Use **`@BlazeStorableQuery(kind:)`**, or add full **`BlazeDocument`** mapping (advanced). |
-| **`Type does not conform to BlazeDocument`** | Missing **`toStorage()`** or **`init(from storage:)`**. | Implement both, or switch model to **`BlazeStorable`** and **`@BlazeStorableQuery`**. |
-| **`insert` is ambiguous** | Type conforms to **both** **`BlazeDocument`** and **`BlazeStorable`**. | Prefer one protocol; or call **`insert(BlazeDataRecord)`** / **`insert`** with an explicit path after reading overload rules. |
-| List never populates | Environment not set. | Apply **`.blazeDBEnvironment(db)`** above the view, or pass **`db:`** on the wrapper. |
-| **`@BlazeDataQuery` and empty results** | Expecting environment like other wrappers. | **`@BlazeDataQuery`** always needs **`db:`**. |
-
----
-
-## App shell (copy once)
-
-Use **`import BlazeDB`** only (the **`BlazeDB`** product re-exports core; **`import BlazeDBCore`** is not required for normal apps).
+Use **`import SwiftUI`** and **`import BlazeDB`** only (the **`BlazeDB`** product re-exports core; you do not need **`import BlazeDBCore`** for normal app targets).
 
 ```swift
 import SwiftUI
@@ -50,6 +22,11 @@ final class AppDatabase {
     let db = try! BlazeDB.open(name: "myapp", password: "Password123!")
 }
 
+struct Item: BlazeStorable {
+    var id: UUID = UUID()
+    var title: String
+}
+
 @main
 struct MyApp: App {
     var body: some Scene {
@@ -58,26 +35,6 @@ struct MyApp: App {
                 .blazeDBEnvironment(AppDatabase.shared.db)
         }
     }
-}
-```
-
-Do not open the database again in child views. One client per process, injected at the root.
-
----
-
-## Default: `@BlazeStorableQuery` + `BlazeStorable`
-
-Typed **`[YourModel]`** for **Codable** models. Omit **`db:`** when the root uses **`.blazeDBEnvironment`**; the wrapper resolves **`EnvironmentValues.blazeDBClient`** the same way **`@BlazeQuery`** does.
-
-**Core APIs:** **`@Environment(\.blazeDBClient)`**, **`@BlazeStorableQuery(kind: Model.self)`**, **`put`** / **`insert`**.
-
-```swift
-import SwiftUI
-import BlazeDB
-
-struct Item: BlazeStorable {
-    var id: UUID = UUID()
-    var title: String
 }
 
 struct ContentView: View {
@@ -98,32 +55,53 @@ struct ContentView: View {
 }
 ```
 
-Filtered query:
+Open the database **once**; do not create a second client for every screen.
+
+### Advanced path (one sentence)
+
+Use **`BlazeDocument`** and **`@BlazeQuery`** only when you need **manual** **`BlazeDataRecord`** mapping with **`toStorage()`** and **`init(from storage:)`**.
+
+---
+
+**Everything below** covers more detail, advanced usage, raw queries, refresh behavior, troubleshooting, and legacy names.
+
+---
+
+## Default path (detail)
+
+Omit **`db:`** on **`@BlazeStorableQuery`** when an ancestor applies **`.blazeDBEnvironment`**; the wrapper reads **`EnvironmentValues.blazeDBClient`**, same idea as **`@BlazeQuery`**.
+
+Filtered list:
 
 ```swift
 @BlazeStorableQuery(kind: Task.self, where: "isComplete", equals: .bool(false))
 private var openTasks: [Task]
 ```
 
-Alias (same type as **`@BlazeStorableQuery`**):
+Readable alias (same type as **`@BlazeStorableQuery`**):
 
 ```swift
 @BlazeStorableEnvironmentQuery(kind: Item.self) private var items: [Item]
 ```
 
-Writes (typical):
-
-```swift
-guard let db else { return }
-try db.put(Item(title: "New"))
-// or: try db.insert(item)
-```
+Writes on the **same** **`BlazeDBClient`** you injected cause the query to refetch; you usually do not need **`@State`** copies of the whole list. Call **`$items.refresh()`** on the projected value if you need a forced reload.
 
 ---
 
-## Advanced: `@BlazeQuery` + `BlazeDocument`
+## Common mistakes
 
-Use when you control **exact** **`BlazeDocumentField`** layout and implement **`toStorage()`** and **`init(from storage:)`** yourself. Skip **`db:`** when using **`.blazeDBEnvironment`**.
+| Problem | Fix |
+|---------|-----|
+| List never updates or stays empty | Put **`.blazeDBEnvironment(db)`** on an **ancestor** of the view that uses the wrapper (or pass **`db:`** explicitly). |
+| **`@BlazeQuery`** errors with a **`BlazeStorable`**-only model | Use **`@BlazeStorableQuery(kind:)`** for **`BlazeStorable`**. **`@BlazeQuery`** needs **`BlazeDocument`**. |
+| **`BlazeDocument`** / **`@BlazeQuery`** won’t compile | Implement **`toStorage()`** and **`init(from storage:)`**, or use **`BlazeStorable`** + **`@BlazeStorableQuery`** instead. |
+| **`@BlazeDataQuery`** never sees the client | It does **not** use the environment; pass **`db:`** always. |
+
+---
+
+## Advanced path: `BlazeDocument` + `@BlazeQuery`
+
+Implement **`toStorage()`** and **`init(from storage:)`**, then use **`@BlazeQuery`**. Omit **`db:`** when using **`.blazeDBEnvironment`** unless you are in a preview or test.
 
 ```swift
 @BlazeQuery var items: [TodoItem]
@@ -132,13 +110,28 @@ Use when you control **exact** **`BlazeDocumentField`** layout and implement **`
 var openItems: [TodoItem]
 ```
 
-Full mapping examples: [`TypeSafeModels.swift`](../../Examples/TypeSafeModels.swift) · [SwiftUI DB Patterns](../GettingStarted/SWIFTUI_DATABASE_PATTERNS.md) (advanced section).
+Examples: [`TypeSafeModels.swift`](../../Examples/TypeSafeModels.swift) · [SwiftUI DB Patterns](../GettingStarted/SWIFTUI_DATABASE_PATTERNS.md) (advanced section).
+
+### Writes, models, and overloads
+
+- **`put`** and **`insert(T: BlazeStorable)`** use **`BlazeStorable`** encoding.
+- Typed **`insert` / `update` / `upsert`** for **`BlazeDocument`** use **`toStorage()`**.
+
+Avoid conforming the **same** type to **both** **`BlazeDocument`** and **`BlazeStorable`** unless you understand **`insert` / `upsert` ambiguity** between overloads; pick one primary path per model.
+
+### Choosing wrappers and protocols
+
+| Need | Use |
+|------|-----|
+| Codable-style model + reactive list | **`BlazeStorable`** + **`@BlazeStorableQuery(kind:)`** |
+| Manual **`BlazeDocumentField`** layout | **`BlazeDocument`** + **`@BlazeQuery`** |
+| **`[BlazeDataRecord]`** | **`@BlazeDataQuery`** + **`db:`** |
 
 ---
 
 ## Raw rows: `@BlazeDataQuery`
 
-Returns **`[BlazeDataRecord]`**. You **always** pass **`db:`** (no environment shortcut).
+Returns **`[BlazeDataRecord]`**. Always pass **`db:`** (no environment shortcut).
 
 ```swift
 @BlazeDataQuery(
@@ -153,7 +146,7 @@ var rows: [BlazeDataRecord]
 
 ## Explicit `db:` on a wrapper
 
-Use when you are **not** using the normal environment chain — **previews**, **tests**, or a second client — and already have a **`BlazeDBClient`**.
+For **previews**, **tests**, or when you intentionally bypass the environment chain:
 
 ```swift
 @BlazeStorableQuery(db: testClient, kind: Item.self) var items: [Item]
@@ -167,38 +160,20 @@ Use when you are **not** using the normal environment chain — **previews**, **
 | Action | `@BlazeStorableQuery` / `@BlazeQuery` (`$items`) | `@BlazeDataQuery` (`$rows`) |
 |--------|--------------------------------------------------|-----------------------------|
 | Manual | `$items.refresh()` | `$rows.refresh()` |
-| Pull | `.refreshable(query: $items)` works for **`@BlazeQuery`** (see module). For **`@BlazeStorableQuery`**, use `.refreshable { $items.refresh() }` until a dedicated overload exists. | `.refreshable(query: $rows)` |
-| On appear | `.refreshOnAppear($items)` for **`@BlazeQuery`**. For **`@BlazeStorableQuery`**, use `.onAppear { $items.refresh() }` or wrap similarly. | `.refreshOnAppear($rows)` |
+| Pull | `.refreshable(query: $items)` for **`@BlazeQuery`**. For **`@BlazeStorableQuery`**, use `.refreshable { $items.refresh() }` until a dedicated overload exists. | `.refreshable(query: $rows)` |
+| On appear | `.refreshOnAppear($items)` for **`@BlazeQuery`**. For **`@BlazeStorableQuery`**, use `.onAppear { $items.refresh() }` or similar. | `.refreshOnAppear($rows)` |
 
-**`$…`** is the observer (reload / loading / errors). The property name without **`$`** is the array.
+**`$…`** is the observer (loading / errors / manual refresh). The plain property name is the array.
 
----
-
-## How it updates
-
-Writes on **that** client → wrapper refetches → list updates. No need to copy into **`@State`** for every change. Call **`$query.refresh()`** to force a reload.
-
-Details: [Reactive queries explained](../Features/REACTIVE_QUERIES_EXPLAINED.md)
+More detail: [Reactive queries explained](../Features/REACTIVE_QUERIES_EXPLAINED.md)
 
 ---
 
-## Quick fixes
-
-| Problem | Try |
-|---------|-----|
-| List doesn’t update | Same **`BlazeDBClient`** for writes and query? |
-| Query empty at startup | **`.blazeDBEnvironment`** above this view? |
-| `@BlazeDataQuery` “ignores” env | Pass **`db:`** — required. |
-| **`@BlazeQuery` won’t compile** | Model must be **`BlazeDocument`** with **`toStorage()`** / **`init(from:)`**. |
-| **`@BlazeStorableQuery` won’t compile** | Model must be **`BlazeStorable`**. |
-
----
-
-## Legacy / compatibility
+## Legacy and compatibility
 
 - **`BlazeQueryTyped`** — old name for **`BlazeQuery`**; ignore in new code.
-- Older migration notes: [SwiftUI facade migration](../GettingStarted/SWIFTUI_FACADE_MIGRATION.md).
-- **`ObservableQuery`** — imperative/async holder when property wrappers are not enough; see module docs.
+- Renames and migration: [SwiftUI facade migration](../GettingStarted/SWIFTUI_FACADE_MIGRATION.md).
+- **`ObservableQuery`** — when you need a custom query pipeline without these wrappers; see module docs.
 
 ---
 
@@ -206,7 +181,7 @@ Details: [Reactive queries explained](../Features/REACTIVE_QUERIES_EXPLAINED.md)
 
 | Topic | Link |
 |-------|------|
-| App wiring & levels (stores, tabs) | [SwiftUI DB Patterns](../GettingStarted/SWIFTUI_DATABASE_PATTERNS.md) |
-| Why docs are ordered this way (maintainers) | [SwiftUI path maintainer note](../Internal/SWIFTUI_PATH_MAINTAINER_NOTE.md) |
-| Raw-row / advanced SwiftUI samples | [`SwiftUIExample.swift`](../../Examples/SwiftUIExample.swift) (not the minimal default shape) |
-| Indexes / speed | [Query performance](../GettingStarted/QUERY_PERFORMANCE.md) |
+| App wiring (stores, tabs, levels) | [SwiftUI DB Patterns](../GettingStarted/SWIFTUI_DATABASE_PATTERNS.md) |
+| Maintainer rationale for doc ordering | [SwiftUI path maintainer note](../Internal/SWIFTUI_PATH_MAINTAINER_NOTE.md) |
+| Raw-row / filter examples | [`SwiftUIExample.swift`](../../Examples/SwiftUIExample.swift) |
+| Query performance | [Query performance](../GettingStarted/QUERY_PERFORMANCE.md) |
