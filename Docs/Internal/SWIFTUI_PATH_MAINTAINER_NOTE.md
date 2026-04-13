@@ -45,6 +45,10 @@ The prior SwiftUI story was easy to misuse because:
 
 Do not imply symmetry (“pick either; both are standard”) unless there is a rare, documented exception.
 
+**Guardrail:** Do not let advanced examples (**`BlazeDocument`**, **`@BlazeQuery`**, raw **`@BlazeDataQuery`**, migration trivia) drift back into the **first** sections of beginner docs (patterns Level 1, integration guide opening, README SwiftUI blurb). That is how the old “multiple standard paths” mess returns. Keep the default path **boring and obvious**; keep advanced material **labeled** and **later** on the page.
+
+**Imports in snippets:** App examples use **`import SwiftUI`** and **`import BlazeDB`** only (the **`BlazeDB`** product re-exports core). Do not introduce **`import SwiftDB`** (wrong module) or require **`import BlazeDBCore`** in the default path without a documented reason.
+
 ## 7. Developer-experience rationale
 
 Users should not need BlazeDB’s internal type graph to ship a list screen. The default path should be learnable from **one** short paragraph and **one** copy-paste shape. Everything else is opt-in depth.

@@ -39,21 +39,22 @@ This guide is ordered that way: default first, advanced second, niche/legacy las
 
 ## App shell (copy once)
 
+Use **`import BlazeDB`** only (the **`BlazeDB`** product re-exports core; **`import BlazeDBCore`** is not required for normal apps).
+
 ```swift
 import SwiftUI
 import BlazeDB
 
 final class AppDatabase {
     static let shared = AppDatabase()
-    let db: BlazeDBClient
-    private init() { self.db = try! BlazeDB.open(name: "myapp", password: "Password123!") }
+    let db = try! BlazeDB.open(name: "myapp", password: "Password123!")
 }
 
 @main
 struct MyApp: App {
     var body: some Scene {
         WindowGroup {
-            RootView()
+            ContentView()
                 .blazeDBEnvironment(AppDatabase.shared.db)
         }
     }
@@ -68,18 +69,31 @@ Do not open the database again in child views. One client per process, injected 
 
 Typed **`[YourModel]`** for **Codable** models. Omit **`db:`** when the root uses **`.blazeDBEnvironment`**; the wrapper resolves **`EnvironmentValues.blazeDBClient`** the same way **`@BlazeQuery`** does.
 
+**Core APIs:** **`@Environment(\.blazeDBClient)`**, **`@BlazeStorableQuery(kind: Model.self)`**, **`put`** / **`insert`**.
+
 ```swift
-struct ListItem: BlazeStorable {
+import SwiftUI
+import BlazeDB
+
+struct Item: BlazeStorable {
     var id: UUID = UUID()
-    var name: String
+    var title: String
 }
 
-struct RootView: View {
+struct ContentView: View {
     @Environment(\.blazeDBClient) private var db
-    @BlazeStorableQuery(kind: ListItem.self) private var items: [ListItem]
+    @BlazeStorableQuery(kind: Item.self) private var items: [Item]
 
     var body: some View {
-        List(items, id: \.id) { Text($0.name) }
+        List(items, id: \.id) { item in
+            Text(item.title)
+        }
+        .toolbar {
+            Button("Add") {
+                guard let db else { return }
+                try? db.put(Item(title: "New"))
+            }
+        }
     }
 }
 ```
@@ -94,15 +108,15 @@ private var openTasks: [Task]
 Alias (same type as **`@BlazeStorableQuery`**):
 
 ```swift
-@BlazeStorableEnvironmentQuery(kind: ListItem.self) private var items: [ListItem]
+@BlazeStorableEnvironmentQuery(kind: Item.self) private var items: [Item]
 ```
 
 Writes (typical):
 
 ```swift
 guard let db else { return }
-try db.put(ListItem(name: "Milk"))
-// or: try db.insert(listItem)
+try db.put(Item(title: "New"))
+// or: try db.insert(item)
 ```
 
 ---
@@ -143,7 +157,7 @@ Use when you are **not** using the normal environment chain — **previews**, **
 
 ```swift
 @BlazeStorableQuery(db: testClient, kind: Item.self) var items: [Item]
-@BlazeQuery(db: testClient, where: "status", equals: "open") var open: [Bug]
+@BlazeQuery(db: testClient, where: "status", equals: "open") var openBugs: [Bug]
 ```
 
 ---
