@@ -26,28 +26,17 @@ Use only when you need full control over **`BlazeDataRecord`** fields:
 
 ## Level 1 — Standard app wiring
 
+Use **`import BlazeDB`** only. The **`BlazeDB`** package product re-exports the core module, so you do not need **`import BlazeDBCore`** in normal app code.
+
+**APIs to remember:** open once → **`.blazeDBEnvironment(_)`** → **`@BlazeStorableQuery(kind:)`** → **`@Environment(\.blazeDBClient)`** + **`put`** / **`insert`**.
+
 ```swift
 import SwiftUI
 import BlazeDB
 
 final class AppDatabase {
     static let shared = AppDatabase()
-    let db: BlazeDBClient
-
-    private init() {
-        self.db = try! BlazeDB.open(
-            name: "myapp",
-            password: "Password123!"
-        )
-    }
-}
-
-struct ListItem: BlazeStorable {
-    var id: UUID = UUID()
-    var name: String
-    var description: String = ""
-    var createdAt: Date = Date()
-    var isDone: Bool = false
+    let db = try! BlazeDB.open(name: "myapp", password: "Password123!")
 }
 
 @main
@@ -59,31 +48,31 @@ struct MyApp: App {
         }
     }
 }
+```
+
+```swift
+import SwiftUI
+import BlazeDB
+
+struct Item: BlazeStorable {
+    var id: UUID = UUID()
+    var title: String
+}
 
 struct ContentView: View {
     @Environment(\.blazeDBClient) private var db
-    @BlazeStorableQuery(kind: ListItem.self) private var items: [ListItem]
+    @BlazeStorableQuery(kind: Item.self) private var items: [Item]
 
     var body: some View {
-        VStack {
-            Button("Add Sample Item") {
+        List(items, id: \.id) { item in
+            Text(item.title)
+        }
+        .toolbar {
+            Button("Add") {
                 guard let db else { return }
-                do {
-                    try db.put(ListItem(name: "Milk", description: "A carton of milk"))
-                } catch {
-                    print("Failed to write item:", error)
-                }
-            }
-            List(items, id: \.id) { item in
-                VStack(alignment: .leading) {
-                    Text(item.name)
-                    Text(item.description)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
+                try? db.put(Item(title: "New"))
             }
         }
-        .padding()
     }
 }
 ```
@@ -99,7 +88,7 @@ struct ContentView: View {
 
 ## Level 2 — Add a store when writes grow
 
-Keep reads in the view with **`@BlazeStorableQuery`**. Move validation and multi-step writes into a store when the screen gets heavier.
+Keep reads in the view with **`@BlazeStorableQuery`**. Move validation and multi-step writes into a store when the screen gets heavier. (Uses **`Item`** from Level 1.)
 
 ```swift
 import SwiftUI
@@ -111,7 +100,7 @@ final class ListWriteStore: ObservableObject {
     func addSample(using database: BlazeDBClient?) {
         guard let database else { return }
         do {
-            try database.put(ListItem(name: "From store", description: ""))
+            try database.put(Item(title: "From store"))
         } catch {
             print("Failed to write item:", error)
         }
@@ -121,7 +110,7 @@ final class ListWriteStore: ObservableObject {
 struct ListWithStoreView: View {
     @Environment(\.blazeDBClient) private var db
     @StateObject private var store = ListWriteStore()
-    @BlazeStorableQuery(kind: ListItem.self) private var items: [ListItem]
+    @BlazeStorableQuery(kind: Item.self) private var items: [Item]
 
     var body: some View {
         VStack {
@@ -129,7 +118,7 @@ struct ListWithStoreView: View {
                 store.addSample(using: db)
             }
             List(items, id: \.id) { item in
-                Text(item.name)
+                Text(item.title)
             }
         }
     }
@@ -142,7 +131,15 @@ struct ListWithStoreView: View {
 
 Keep **one** **`BlazeDBClient`** for the process (same **`AppDatabase`** + **`.blazeDBEnvironment`** as Level 1). Add tabs, navigation stacks, or feature modules as ordinary SwiftUI; each screen uses **`@BlazeStorableQuery`** (or **`@BlazeQuery`** if you use **`BlazeDocument`**) and, when needed, its own store — **do not** open a second database.
 
+Below, **`Item`** includes a **`isCompleted`** field so one tab can filter on it (same pattern as Level 1, one extra property).
+
 ```swift
+struct Item: BlazeStorable {
+    var id: UUID = UUID()
+    var title: String
+    var isCompleted: Bool = false
+}
+
 struct MainTabView: View {
     var body: some View {
         TabView {
@@ -157,16 +154,16 @@ struct MainTabView: View {
 
 struct DoneItemsView: View {
     @BlazeStorableQuery(
-        kind: ListItem.self,
-        where: "isDone",
+        kind: Item.self,
+        where: "isCompleted",
         equals: .bool(true),
-        sortBy: "name",
+        sortBy: "title",
         descending: false
     )
-    var items: [ListItem]
+    var items: [Item]
 
     var body: some View {
-        List(items, id: \.id) { Text($0.name) }
+        List(items, id: \.id) { Text($0.title) }
     }
 }
 ```
@@ -205,11 +202,11 @@ When you want a specific client without the full environment chain:
 
 ```swift
 struct ListPreview: View {
-    @BlazeStorableQuery(db: AppDatabase.shared.db, kind: ListItem.self)
-    var items: [ListItem]
+    @BlazeStorableQuery(db: AppDatabase.shared.db, kind: Item.self)
+    var items: [Item]
 
     var body: some View {
-        List(items, id: \.id) { Text($0.name) }
+        List(items, id: \.id) { Text($0.title) }
     }
 }
 ```
