@@ -1,6 +1,8 @@
-# Workflow And Style Guide
+# Workflow and style guide
 
-## Quick Workflow
+**PR policy in one place:** [CONTRIBUTING.md — PR expectations](../../CONTRIBUTING.md#pr-expectations). This file is **branch naming**, **local habits**, and **style**—not a second copy of CI rules.
+
+## Quick workflow
 
 1. `git switch main && git pull --ff-only`
 2. `git switch -c <feature|test|ci|docs>/<name>`
@@ -52,7 +54,8 @@ Before opening a PR, run:
 
 If it fails, fix it locally before pushing.
 
-## 4) CI Gates
+## 4) CI (do not duplicate here)
 
-- **Local**: `./Scripts/preflight.sh` (build + Tier0)
-- **PR CI**: `ci.yml` on **macOS 15** (BlazeDBCore + CLI builds, Tier0, Tier1); Linux job is best-effort and non-blocking
+- **Local:** `./Scripts/preflight.sh` (build + Tier0) before you push
+- **On GitHub:** [`.github/workflows/ci.yml`](../../.github/workflows/ci.yml) — **both** the macOS and Linux jobs are part of the default PR gate when Actions runs
+- **Authoritative narrative:** [`Docs/Testing/CI_AND_TEST_TIERS.md`](../Testing/CI_AND_TEST_TIERS.md) (if another doc disagrees, trust that file + the workflows)
