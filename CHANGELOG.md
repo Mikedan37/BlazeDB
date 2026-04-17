@@ -7,6 +7,10 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ## [Unreleased]
 
+### Tests
+
+- **Tier0:** `BlazeBinaryMisalignedSliceTests` decodes BlazeBinary from a `subdata` slice with a 1-byte prefix so the payload base is byte-offset from allocation alignment — regression guard for Linux misaligned-load crashes tracked in [#30](https://github.com/Mikedan37/BlazeDB/issues/30).
+
 ### Documentation
 
 - **SwiftUI:** [SWIFTUI_INTEGRATION.md](Docs/Guides/SWIFTUI_INTEGRATION.md) and [SWIFTUI_DATABASE_PATTERNS.md](Docs/GettingStarted/SWIFTUI_DATABASE_PATTERNS.md) now show **macOS** vs **iOS** minimal examples (list + toolbar vs **`NavigationStack`** + **`ToolbarItem(placement: .topBarTrailing)`**), plus a **wrong vs right** toolbar snippet and placement table so iOS navigation hierarchy issues are not mistaken for BlazeDB bugs.
