@@ -1566,15 +1566,10 @@ public final class DynamicCollection {
                 return
             }
             
-            // Legacy Path: Original implementation
-            #if !BLAZEDB_LINUX_CORE
+            // Legacy Path: Original implementation — barrier on all platforms (insert/delete already do).
             try queue.sync(flags: .barrier) {
                 try _updateNoSync(id: id, with: data)
             }
-            #else
-            // On Linux, use basic update without queue optimizations
-            try _updateNoSync(id: id, with: data)
-            #endif
         }
         
         public func contains(_ id: UUID) -> Bool {

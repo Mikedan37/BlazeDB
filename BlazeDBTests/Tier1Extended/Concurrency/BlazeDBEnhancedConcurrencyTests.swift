@@ -262,6 +262,43 @@ final class BlazeDBEnhancedConcurrencyTests: XCTestCase {
         }
     }
     
+    /// Regression (GitHub #81): legacy `update` must run under the same concurrent-queue barrier as reads.
+    /// Concurrent `fetchAll` walks `indexMap` inside `queue.sync` while `update` mutates it; without a barrier
+    /// on Linux (`BLAZEDB_LINUX_CORE`), that was a data race.
+    func testConcurrentFetchAllDuringSingleRecordUpdates() throws {
+        guard let dbRef = db else {
+            XCTFail("db not set")
+            return
+        }
+        let id = try dbRef.insert(BlazeDataRecord(["name": .string("initial")]))
+        try dbRef.collection.persist()
+        
+        let done = expectation(description: "fetch/update workers complete")
+        done.expectedFulfillmentCount = 2
+        
+        let workQueue = DispatchQueue(label: "test.fetchupdate.concurrent", attributes: .concurrent)
+        
+        workQueue.async {
+            for _ in 0..<400 {
+                _ = try? dbRef.fetchAll()
+            }
+            done.fulfill()
+        }
+        workQueue.async {
+            for i in 0..<400 {
+                try? dbRef.update(id: id, with: BlazeDataRecord(["name": .string("v\(i)")]))
+            }
+            done.fulfill()
+        }
+        
+        wait(for: [done], timeout: 60.0)
+        
+        let final = try requireFixture(db).fetch(id: id)
+        XCTAssertNotNil(final)
+        let name = final!.string("name", default: "")
+        XCTAssertTrue(name.hasPrefix("v"), "Expected updated name, got \(name)")
+    }
+    
     /// Test concurrent deletes don't cause corruption
     func testConcurrentDeletes() throws {
         // Insert 100 records
