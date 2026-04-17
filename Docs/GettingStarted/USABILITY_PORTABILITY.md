@@ -46,7 +46,10 @@ Make BlazeDB:
 
 **Platform Defaults:**
 - macOS: `~/Library/Application Support/BlazeDB`
+- iOS (and other Apple sandboxes): `Library/Application Support/BlazeDB` inside the app container (resolved via `applicationSupportDirectory`, not `homeDirectoryForCurrentUser`)
 - Linux: `~/.local/share/blazedb`
+
+**Canonical doc:** [DEFAULT_STORAGE_PATHS.md](DEFAULT_STORAGE_PATHS.md) (includes telemetry default path under Application Support).
 
 ---
 

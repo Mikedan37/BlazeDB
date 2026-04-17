@@ -30,6 +30,7 @@ extension BlazeDBClient {
     ///
     /// Database is stored in the platform default location:
     /// - macOS: `~/Library/Application Support/BlazeDB/`
+    /// - iOS: app sandbox `Library/Application Support/BlazeDB/` (see ``PathResolver`` / `Docs/GettingStarted/DEFAULT_STORAGE_PATHS.md`)
     /// - Linux: `~/.local/share/blazedb/`
     public static func open(
         named name: String,

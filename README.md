@@ -1,8 +1,8 @@
 # BlazeDB
 
-**Version:** 2.7.5 &nbsp;|&nbsp; **License:** MIT &nbsp;|&nbsp; **Swift 6 strict concurrency compliant**
+**Embedded, encrypted, single-process.** A document database for Swift with ACID transactions, WAL-backed crash recovery, and AES-256-GCM at rest. One encrypted file per database name; no standalone server and no required network calls.
 
-An encrypted, embedded document database for Swift. Single-process, zero external dependencies. Production runtime is always encrypted at rest.
+*MIT · Swift 6+ · current release **2.7.5** · [Add BlazeDB to your app](#add-blazedb-to-your-app)*
 
 [![Swift](https://img.shields.io/badge/Swift-6.0+-orange.svg)](https://swift.org)
 [![Platforms](https://img.shields.io/badge/Platforms-macOS%20%7C%20iOS%20%7C%20watchOS%20%7C%20tvOS%20%7C%20visionOS%20%7C%20Linux%20%7C%20Android-lightgrey.svg)](Docs/COMPATIBILITY.md)
@@ -12,85 +12,83 @@ An encrypted, embedded document database for Swift. Single-process, zero externa
 
 ## Quick Navigation
 
-- [Start Here (New Users)](#start-here-new-users)
-- [SwiftUI Path (Start Here)](#swiftui-path-start-here)
-- [Quick Start](#quick-start)
-- [Install](#install)
-- [Example: Lists and List Items](#example-lists-and-list-items)
-- [API Overview](#api-overview)
-- [Current Limitations](#current-limitations)
+*Primary links; everything else (examples, API details, deeper sections) is further down.*
+
+### How you move through this README
+
+**Onboarding first:** read [Start Here](#start-here-new-users) for the mental model and a full copy-paste sample. After that, pick a lane:
+
+- **Path A:** Clone, then [Try BlazeDB from this repo](#try-blazedb-from-this-repo) (`swift run HelloBlazeDB`).
+- **Path B:** [Add BlazeDB to your app](#add-blazedb-to-your-app) (SwiftPM or Xcode), then reuse [that sample](#start-here-new-users), follow [SwiftUI patterns](#swiftui-path), or open the [full usage guide](Docs/GettingStarted/HOW_TO_USE_BLAZEDB.md).
+
+### Jump to
+
+- [Start Here](#start-here-new-users)
+- [Try BlazeDB from this repo](#try-blazedb-from-this-repo)
+- [Add BlazeDB to your app](#add-blazedb-to-your-app)
+- [What to do next](#what-to-do-next)
+- [SwiftUI path](#swiftui-path)
 - [Documentation](#documentation)
 
 ## Start Here (New Users)
 
 If you are new, use this path first and ignore the advanced sections until you need them.
 
+**No database experience needed.** BlazeDB stores everything in **one encrypted file** per app name (`"demo"` here), like a save slot on disk, not a separate server. You describe data with ordinary Swift structs: **`put`** saves a value, **`get`** loads one item when you know its id string, **`query`** returns a list you can filter (e.g. only open bugs). Nothing is sent over the network.
+
+**`put`** accepts either a single **`BlazeStorable`** model or a flat array of the same model type. If you need nested arrays, store them as fields inside a model rather than passing nested arrays directly to **`put`**.
+
+Read the sample **top to bottom**: `open` → `put` → `get` → `query`.
+
 ```swift
 import BlazeDB
 
+// One Bug’s shape in Swift
 struct Bug: BlazeStorable {
     var id: UUID = UUID()
     var title: String
     var status: String
 }
 
+// Open or create the file (password encrypts it; nothing leaves your machine)
 let db = try BlazeDB.open(name: "demo", password: "DemoPass123!")
 let bug = Bug(title: "Crash on launch", status: "open")
-try db.put(bug)
+try db.put(bug)  // save
 
+// Load by id: "bug" + this bug’s uuid
 let loaded: Bug? = try db.get("bug:\(bug.id.uuidString)")
+// All bugs with status "open"
 let openBugs: [Bug] = try db.query("bug")
     .where("status", equals: "open")
     .all()
 ```
 
-That is the default beginner workflow: `open -> put -> get -> query(namespace)`.
+The `"bug"` in `query("bug")` is a **label for which kind of record** (bugs vs notes vs something else). It is **not** a separate table; every record still lives in **one** collection inside that file.
 
-Keys use the format `"type:UUID"` (for example, `"bug:123e4567-e89b-12d3-a456-426614174000"`). The prefix maps to the model type/namespace.
+**Think:** one file, one collection, many labeled records.
 
-## SwiftUI Path (Start Here)
+**Recap**
 
-If you are building a SwiftUI app, start here next:
+| Step | What it does |
+|------|----------------|
+| `open` | Opens your encrypted file |
+| `put` | Saves a struct |
+| `get("bug:…")` | Loads one bug by id |
+| `query("bug")…` | Lists or filters bugs |
 
-- [SwiftUI DB Patterns](Docs/GettingStarted/SWIFTUI_DATABASE_PATTERNS.md) - beginner-first setup, then clear Level 1 to Level 4 progression.
-
-## What BlazeDB Is
-
-- An **embedded** database — runs in your process, no server required
-- **Encrypted at rest** in production — AES-256-GCM on every data page
-- **Document-oriented** — schema-less records with typed Codable overlays
-- **ACID transactions** with WAL-backed crash recovery
-- **Single-process** — one process owns the database file at a time
-- **Single-collection** — all records (regardless of type) share one encrypted collection per database file; `TypedStore` is a typed lens, not a separate table
-
-## What BlazeDB Is Not
-
-- **Not SQL commands.** You do not write `SELECT` statements here; you use BlazeDB's Swift query methods instead (see [Start Here](#start-here-new-users) and [Querying Data](Docs/GettingStarted/HOW_TO_USE_BLAZEDB.md#6-querying-data)).
-- **Not multi-process.** One process owns the database file. No concurrent access from separate processes.
-- **Not client/server.** No network listener, no remote connections.
-- **Not per-type table storage.** All record types coexist in a single encrypted collection.
-- **Not distributed sync.** Sync infrastructure exists in source but is deferred and excluded from the default runtime.
-
-### API tiers
-
-| Tier | API | Use case |
-|------|-----|----------|
-| **Default API (recommended)** | `BlazeDB.open(...)` + `db.put` / `db.get` / `db.query(namespace)` | Fastest path for most app code |
-| **TypedStore (secondary)** | `db.typed(T.self)` → scoped handle | View models or service layers that want a bound store |
-| **Raw (advanced)** | `BlazeDataRecord` + `db.insert(record)` | Dynamic schemas, migrations |
-| **Manual mapping (advanced)** | `BlazeDocument` | Custom storage control and manual serialization |
+Id strings look like `"bug:<uuid>"`: `bug` = kind, uuid = which one.
 
 ---
 
-## Quick Start
+## Try BlazeDB from this repo
 
-Run the included example directly from this repository:
+**Path A (repo demo).** From a clone of this repo (no `Package.swift` edit needed), run:
 
 ```bash
 swift run HelloBlazeDB
 ```
 
-Or test a different minimal example in your own app:
+**Minimal sample** (after adding the package), same shape as [the opening sample](#start-here-new-users), shorter:
 
 ```swift
 import BlazeDB
@@ -101,15 +99,17 @@ struct Note: BlazeStorable {
 }
 
 let db = try BlazeDB.open(name: "quickstart", password: "DemoPass123!")
-try db.put(Note(text: "Ship first BlazeDB build"))
+try db.put(Note(text: "Ship first BlazeDB build"))  // save
 
-let notes: [Note] = try db.query("note").all()
+let notes: [Note] = try db.query("note").all()  // all notes (or [] if empty)
 ```
 
-For the full beginner walkthrough (`open -> put -> get -> query`), use **Start Here (New Users)**.
+For the full beginner walkthrough (`open` → `put` → `get` → `query`), use [the section above](#start-here-new-users).
 For deeper coverage, see [HOW_TO_USE_BLAZEDB.md](Docs/GettingStarted/HOW_TO_USE_BLAZEDB.md).
 
-## Install
+## Add BlazeDB to your app
+
+**Path B (consumer integration).** Add the package to your project, then paste from [the opening sample](#start-here-new-users) or from [Try BlazeDB from this repo](#try-blazedb-from-this-repo) (minimal sample).
 
 Add to your `Package.swift`:
 
@@ -128,7 +128,68 @@ Or in Xcode: **File → Add Package Dependencies** → paste `https://github.com
 
 ---
 
+## What to do next
+
+After `open` → `put` → `get` → `query` makes sense, pick **one** path:
+
+1. **SwiftUI app** → [SwiftUI DB Patterns](Docs/GettingStarted/SWIFTUI_DATABASE_PATTERNS.md) (default: `BlazeStorable`, inject once, `@BlazeStorableQuery`, environment writes). Advanced (`BlazeDocument`, `@BlazeQuery`, raw rows): [SwiftUI Integration Guide](Docs/Guides/SWIFTUI_INTEGRATION.md).
+
+2. **UIKit / CLI / server-style app**  
+   → [Try BlazeDB from this repo](#try-blazedb-from-this-repo) (`swift run HelloBlazeDB` from a clone)  
+   → [Add BlazeDB to your app](#add-blazedb-to-your-app) (SwiftPM or Xcode)  
+   → [HOW_TO_USE_BLAZEDB.md](Docs/GettingStarted/HOW_TO_USE_BLAZEDB.md)
+
+3. **How storage actually works** (single file, single collection, why there’s no SQL) → [Core Concepts](#core-concepts) below.
+
+If you skip straight to API tiers or raw APIs without that bridge, you’ll feel lost. That’s normal; come back to step 1–3.
+
+## SwiftUI Path
+
+**Standard BlazeDB SwiftUI app:** inject **`BlazeDBClient` once** (`.blazeDBEnvironment(_)` or `.environment(\.blazeDBClient, …)`), use **`@BlazeStorableQuery`** for typed reads with **`BlazeStorable`** models (type inferred from **`[Model]`**), and **`@Environment(\.blazeDBClient)`** for writes (`put` / `insert` / etc.). Add a **store** only when the screen’s logic outgrows simple calls.
+
+**Advanced:** **`BlazeDocument`** + **`@BlazeQuery`** only when you need manual **`BlazeDataRecord`** mapping (`toStorage()` / `init(from:)`).
+
+SwiftUI wiring: [SwiftUI DB Patterns](Docs/GettingStarted/SWIFTUI_DATABASE_PATTERNS.md). Full reference (filters, raw rows, `BlazeDocument`, explicit `db:`): [SwiftUI Integration Guide](Docs/Guides/SWIFTUI_INTEGRATION.md).
+
+**Multi-tab macOS harness (optional):** If you keep a sibling checkout, [BlazeDBTESTAPP](../BlazeDBTESTAPP/README.md) is a deliberately scoped SwiftUI app—multiple model types, dashboard aggregation, persistent settings, activity logging, and debug seed/reset on one shared database. Use it as a **validation app**, **integration example**, and **dogfooding** surface alongside the smaller examples under [`Examples/`](Examples/README.md).
+
+---
+
+## What BlazeDB Is
+
+> **Optional background.** Read [What to do next](#what-to-do-next) first if you only care about getting code running. This section is the mental model (embedded, encrypted, no SQL).
+
+- An **embedded** database: runs in your process, no server required
+- **Encrypted at rest** in production: AES-256-GCM on every data page
+- **Document-oriented:** schema-less records with typed Codable overlays
+- **ACID transactions** with WAL-backed crash recovery
+- **Single-process:** one process owns the database file at a time
+- **Single-collection:** all records (regardless of type) share one encrypted collection per database file; `TypedStore` is a typed lens, not a separate table
+
+## What BlazeDB Is Not
+
+- **Not SQL commands.** You do not write `SELECT` statements here; you use BlazeDB's Swift query methods instead (see [the sample above](#start-here-new-users) and [Querying Data](Docs/GettingStarted/HOW_TO_USE_BLAZEDB.md#6-querying-data)).
+- **Not multi-process.** One process owns the database file. No concurrent access from separate processes.
+- **Not client/server.** No network listener, no remote connections.
+- **Not per-type table storage.** All record types coexist in a single encrypted collection.
+- **Not distributed sync.** Sync infrastructure exists in source but is deferred and excluded from the default runtime.
+
+### API tiers
+
+*Skip this table until the default `open` / `put` / `get` / `query` flow feels boring. You don’t need to pick a “tier” on day one.*
+
+| Tier | API | Use case |
+|------|-----|----------|
+| **Default API (recommended)** | `BlazeDB.open(...)` + `db.put` / `db.get` / `db.query(namespace)` | Fastest path for most app code |
+| **TypedStore (secondary)** | `db.typed(T.self)` → scoped handle | View models or service layers that want a bound store |
+| **Raw (advanced)** | `BlazeDataRecord` + `db.insert(record)` | Dynamic schemas, migrations |
+| **Manual mapping (advanced)** | `BlazeDocument` | Custom storage control and manual serialization |
+
+---
+
 ## Example: Lists and List Items
+
+### One list, many items
 
 A common BlazeDB use case is building something like a to-do list.
 
@@ -191,26 +252,26 @@ Later, BlazeDB can find all items with that ID and return the items for Grocerie
 
 ## Advanced Usage (Optional)
 
-If you're new, the sections above are enough to get started. The rest of this README covers deeper architecture, advanced APIs, and operational details.
+If you're new, [What to do next](#what-to-do-next) and [the opening sample](#start-here-new-users) are enough to ship something. Everything from **Core Concepts** downward is deeper architecture, alternate APIs, and ops. Read when you need it, not in order.
 
 ## Core Concepts
 
 ### Single-collection architecture
 
-BlazeDB stores all records in one encrypted document collection per database file. All typed APIs (`db.insert(model)`, `db.typed(T.self)`, etc.) encode/decode through the `BlazeStorable` Codable bridge and filter records by decodability — they are not separate physical tables.
+BlazeDB stores all records in one encrypted document collection per database file. All typed APIs (`db.insert(model)`, `db.typed(T.self)`, etc.) encode/decode through the `BlazeStorable` Codable bridge and filter records by decodability; they are not separate physical tables.
 
 ### Two typed protocols
 
 | Protocol | Purpose | Used with |
 |----------|---------|-----------|
-| **`BlazeStorable`** | Automatic Codable serialization, KeyPath queries | `db.insert(model)`, `db.fetch(T.self, id:)`, `db.query(T.self)`, `db.typed(T.self)` |
-| **`BlazeDocument`** | Manual `toStorage()`/`init(from:)` mapping, more control | `@BlazeQueryTyped` SwiftUI wrapper |
+| **`BlazeStorable`** | Automatic Codable serialization, KeyPath queries | Default SwiftUI reads: **`@BlazeStorableQuery`** (type from **`[T]`**). Also: `db.insert(model)`, `db.put(model)`, `db.fetch(T.self, id:)`, `db.query(T.self)`, `db.typed(T.self)` |
+| **`BlazeDocument`** | Manual `toStorage()`/`init(from:)` mapping | **`@BlazeQuery`** when you need explicit `BlazeDataRecord` layout (legacy name: `@BlazeQueryTyped`) |
 
-`BlazeStorable` is the recommended starting point. `BlazeDocument` is for when you need manual control over how your model maps to `BlazeDataRecord` storage. Both require `Codable` and `Identifiable` with `ID == UUID`.
+**Default:** `BlazeStorable` for normal app models. **Advanced:** `BlazeDocument` only when you need manual control over `BlazeDataRecord` storage. Both require `Codable` and `Identifiable` with `ID == UUID`.
 
-> **`BlazeDocument` persistence:** Prefer `try model.toStorage()` or `try model.resolveStorage()` (or typed client APIs like `insert(model)`) when encoding can fail. The `storage` property is a **deprecated** compatibility shim: if `toStorage()` throws, it **logs** and falls back to an empty record — **do not** persist that value. Typed insert/update paths already use `toStorage()` and are unaffected.
+> **`BlazeDocument` persistence:** Prefer `try model.toStorage()` or `try model.resolveStorage()` (or typed client APIs like `insert(model)`) when encoding can fail. The `storage` property is a **deprecated** compatibility shim: if `toStorage()` throws, it **logs** and falls back to an empty record. **Do not** persist that value. Typed insert/update paths already use `toStorage()` and are unaffected.
 
-> **Do not use `@BlazeQueryTyped` with `BlazeStorable`-only models. It will not compile.** The `@BlazeQueryTyped` SwiftUI property wrapper requires `BlazeDocument`. If your model only conforms to `BlazeStorable`, you must add `BlazeDocument` conformance (with manual `toStorage()`/`init(from:)`) before you can use it in SwiftUI typed query wrappers.
+> **`@BlazeQuery` requires `BlazeDocument`.** For `BlazeStorable`-only models, use **`@BlazeStorableQuery`** (same environment injection as `@BlazeQuery`). Alternatively, add `BlazeDocument` with manual `toStorage()`/`init(from:)`, or use `@BlazeDataQuery` for raw ``BlazeDataRecord`` rows.
 
 ### Encryption
 
@@ -220,9 +281,11 @@ The production runtime is always encrypted at rest. Every data page is sealed wi
 
 ## API Overview
 
+*Same idea as the [API tiers](#api-tiers) table above, with code. Skip until the default API feels limiting.*
+
 ### Default API (recommended)
 
-Use this as your default app path. The full end-to-end example lives in **Start Here (New Users)**.
+Use this as your default app path. The full end-to-end example is [in the first section](#start-here-new-users).
 
 ### Direct CRUD (secondary)
 
@@ -286,22 +349,28 @@ let db = try BlazeDB.open(at: fileURL, password: "secure-password-123")
 let db = try BlazeDBClient.openForTesting()
 ```
 
-Default storage locations: `~/Library/Application Support/BlazeDB/` (macOS), `~/.local/share/blazedb/` (Linux).
+Default storage locations: **Application Support/BlazeDB/** on Apple platforms (macOS expands to `~/Library/Application Support/BlazeDB/`; iOS uses the app sandbox), and `~/.local/share/blazedb/` on Linux. Details: [DEFAULT_STORAGE_PATHS.md](Docs/GettingStarted/DEFAULT_STORAGE_PATHS.md).
 
 ### SwiftUI query wrappers (Apple platforms only)
 
-`@BlazeQuery` and `@BlazeQueryTyped` provide SwiftUI property wrappers that re-run queries when the database posts write notifications. These require Apple platforms (macOS, iOS, watchOS, tvOS).
+**Default app path:** inject the client once, then **`@BlazeStorableQuery`** for typed lists (**`BlazeStorable`**) and **`@Environment(\.blazeDBClient)`** for writes—see [SwiftUI DB Patterns](Docs/GettingStarted/SWIFTUI_DATABASE_PATTERNS.md). **`@BlazeQuery`** is for **`BlazeDocument`** (manual `BlazeDataRecord` mapping). **`@BlazeDataQuery`** is for raw ``BlazeDataRecord`` rows. Legacy alias **`BlazeQueryTyped`** = **`BlazeQuery`**. Apple platforms only.
 
-**`@BlazeQueryTyped` requires `BlazeDocument`, not `BlazeStorable`. Using a `BlazeStorable`-only model will not compile.**
+**Migrating from older wrappers:** [SwiftUI facade migration](Docs/GettingStarted/SWIFTUI_FACADE_MIGRATION.md).
 
 ```swift
-@BlazeQueryTyped(
-    db: AppDatabase.shared.db,
-    type: Bug.self,               // Bug must conform to BlazeDocument
-    where: "status", equals: .string("open"),
-    sortBy: "priority", descending: true
-)
-var openBugs: [Bug]
+// Standard: environment + Storable query (no per-view init just for the wrapper)
+MyRootView()
+    .blazeDBEnvironment(app.db)
+
+struct ListView: View {
+    @Environment(\.blazeDBClient) private var database
+    @BlazeStorableQuery private var items: [Item]
+
+    // writes: try? database?.put(Item(...))  or insert / update
+}
+
+// Advanced: BlazeDocument + @BlazeQuery, or explicit db: for previews/tests
+@BlazeQuery(db: app.db, where: "status", equals: "open") var openBugs: [Bug]
 ```
 
 ### Transactions
@@ -340,10 +409,10 @@ The default `BlazeDBClient` uses a binary write-ahead log (`WALMode.legacy`) tha
 | watchOS 8+ | Builds | Declared in Package.swift; limited CI |
 | tvOS 15+ | Builds | Declared in Package.swift; limited CI |
 | visionOS 1+ | Builds | Declared in Package.swift; limited CI |
-| Linux | Core support | Swift 6.2 in CI; nightly runs Tier0+Tier1, deep validation runs Tier0+Tier1+Tier2; SwiftUI wrappers excluded |
+| Linux | Core support | Swift 6.2 in CI: PR Tier0, nightly Tier1 + Tier2 core, weekly delta Tier2 extended + Tier3 heavy/perf; SwiftUI wrappers excluded |
 | Android | Core support | `BLAZEDB_LINUX_CORE` path; Swift 6.3+ / Android NDK; best-effort CI |
 
-SwiftUI query wrappers (`@BlazeQuery`, `@BlazeQueryTyped`) are only available on Apple platforms. On Linux and Android, the `swift-crypto` package is used in place of Apple CryptoKit.
+SwiftUI query wrappers (`@BlazeStorableQuery`, `@BlazeQuery`, `@BlazeDataQuery`) are only available on Apple platforms. On Linux and Android, the `swift-crypto` package is used in place of Apple CryptoKit.
 
 See [Compatibility Matrix](Docs/COMPATIBILITY.md) for details.
 
@@ -351,9 +420,10 @@ See [Compatibility Matrix](Docs/COMPATIBILITY.md) for details.
 
 ## Testing And CI
 
-- PR/release validation on macOS runs `BlazeDB_Tier0`, `BlazeDB_Tier1`, and `BlazeDB_Tier2` as the main gate.
-- Nightly confidence runs macOS Tier1/Tier2 strict/Tier3 heavy lanes plus Linux Tier0 and Tier1 lanes.
-- Weekly deep validation runs broader coverage: macOS Tier0/1/2/3 + destructive + TSan, and Linux Tier0/1/2 (+ extended companion).
+- **PR gate** (macOS): `BlazeDB_Tier0` and `BlazeDB_Tier1` on every push/PR; Linux runs `BlazeDB_Tier0`. See `Docs/Testing/CI_AND_TEST_TIERS.md` for the full matrix.
+- **Release validation** (tagged releases): macOS runs Tier0–Tier2 (+ extended companion targets as defined in the release workflow), not the same cadence as the PR gate.
+- **Nightly Confidence (daily)** runs macOS Tier2 strict, clean checkout, README quickstart, Tier0 TSan, and Linux Tier1/Tier2 core lanes (see `Docs/Testing/CI_AND_TEST_TIERS.md`).
+- **Deep Validation (weekly)** is **delta-only**: surfaces not already run by the PR gate and nightly (macOS Tier3 heavy + destructive, Tier1 TSan; Linux Tier2 extended + Tier3 heavy/perf). See `Docs/Testing/CI_AND_TEST_TIERS.md`.
 - Additional nightly checks verify clean checkout and README quickstart scripts.
 - Entry docs for test/CI structure: `Docs/Testing/CI_AND_TEST_TIERS.md` and `Docs/Testing/README.md`.
 
@@ -380,7 +450,7 @@ Run with `swift run <ToolName>`.
 - **Single-process only.** Do not share database files between multiple processes. File-level locking prevents concurrent access, but the database is designed for single-process use.
 - **Nested Codable types are not individually queryable.** Nested structs/classes are stored as `BlazeDocumentField.dictionary` values. Round-tripping works, but nested fields cannot be filtered via KeyPath queries. Flatten nested fields into top-level properties if you need to query them.
 - **Password minimum 8 characters.** Enforced at open time.
-- **`@BlazeQueryTyped` requires `BlazeDocument`.** It will not compile with `BlazeStorable`-only models. You must add `BlazeDocument` conformance with manual `toStorage()`/`init(from:)` implementations.
+- **`@BlazeQuery` / `@BlazeQueryTyped` require `BlazeDocument`.** For `BlazeStorable`-only models, use **`@BlazeStorableQuery`** instead, or add `BlazeDocument` (manual `toStorage()`/`init(from:)`), or use `@BlazeDataQuery` for raw rows.
 - **Android CI is best-effort.** Cross-compilation expects Swift 6.3+ with the Swift Android SDK + Android NDK in a manual lane.
 
 ---
@@ -389,17 +459,17 @@ Run with `swift run <ToolName>`.
 
 ### Available but advanced / opt-in
 
-- **MVCC (multi-version concurrency control)** — opt-in via `db.setMVCCEnabled(true)`. Provides snapshot isolation when enabled. See `BlazeDBClient+MVCC.swift`.
-- **Full telemetry manager** — build-configuration dependent; core builds use stub/no-op telemetry.
+- **MVCC (multi-version concurrency control):** opt-in via `db.setMVCCEnabled(true)`. Provides snapshot isolation when enabled. See `BlazeDBClient+MVCC.swift`.
+- **Full telemetry manager:** build-configuration dependent; core builds use stub/no-op telemetry.
 
 ### Present in source, not primary stable onboarding surfaces
 
-- **Indexing** — B-tree, inverted (full-text), vector, and spatial index implementations exist in source. These are internal to the storage engine and do not yet have stable public creation APIs, onboarding docs, or runnable examples for end users.
-- **Row-level security (RLS)** — policy infrastructure exists in source, but full CRUD/query enforcement is not enabled by default.
+- **Indexing:** B-tree, inverted (full-text), vector, and spatial index implementations exist in source. These are internal to the storage engine and do not yet have stable public creation APIs, onboarding docs, or runnable examples for end users.
+- **Row-level security (RLS):** policy infrastructure exists in source, but full CRUD/query enforcement is not enabled by default.
 
 ### Deferred / not part of default runtime
 
-- **Distributed sync/transport** — infrastructure exists but is excluded from `BlazeDBCore`. See [Distributed Transport Status](Docs/Status/DISTRIBUTED_TRANSPORT_DEFERRED.md).
+- **Distributed sync/transport:** infrastructure exists but is excluded from `BlazeDBCore`. See [Distributed Transport Status](Docs/Status/DISTRIBUTED_TRANSPORT_DEFERRED.md).
 
 ---
 

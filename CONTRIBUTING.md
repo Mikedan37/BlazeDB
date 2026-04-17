@@ -4,9 +4,34 @@
 
 This guide explains how to add tests, what will be accepted, and what will be rejected.
 
-## CI gate (GitHub Actions)
+## PR expectations
 
-The default branch workflow (`.github/workflows/ci.yml`) runs on every push/PR **when hosted CI is available**: a **macOS 15** blocking job (core + CLI + Tier0 + `BlazeDB_Tier1`) and a **Linux 6.2** blocking job (core + Tier0). `verify-clean-checkout.sh` and `verify-readme-quickstart.sh` are intentionally **not** in the blocking PR gate. Legacy **`v*` tag buildability** is **not** part of that automatic gate; it runs only from the manual workflow [`.github/workflows/tag-probe.yml`](.github/workflows/tag-probe.yml). Checkouts use full git history (`fetch-depth: 0`). **Forks and billing limits** can prevent workflows from running; in that case use the same commands locally (see [Hosted CI status](Docs/Status/OPEN_SOURCE_READINESS_CHECKLIST.md#hosted-ci-status)). The gate is **not** every test target or every file under `BlazeDBTests/` (some files are excluded per tier in `Package.swift`). Authoritative detail: [CI and test tiers](Docs/Testing/CI_AND_TEST_TIERS.md).
+Keep PRs **narrow** and **self-contained**.
+
+For **most** PRs:
+
+- Use **one branch** for **one concern**
+- Run **`./Scripts/preflight.sh`**
+- In the PR description, **list the exact validation commands** you ran (not just “tests pass”)
+- **Update docs in the same PR** if behavior or public usage changed
+- Prefer **squash merge** when merging to `main`
+
+**Also update these only when your change is relevant:**
+
+| File | When |
+|------|------|
+| [`Docs/SYSTEM_MAP.md`](Docs/SYSTEM_MAP.md) | Material changes to architecture, platforms, modules, or **public** feature surface (see that file for what counts as material) |
+| [`Docs/Testing/CI_AND_TEST_TIERS.md`](Docs/Testing/CI_AND_TEST_TIERS.md) | Changes to **test lanes**, **tier** meaning, or **CI** job behavior |
+
+**If two docs disagree about CI** (blocking jobs, tier scope, workflows), treat **[`Docs/Testing/CI_AND_TEST_TIERS.md`](Docs/Testing/CI_AND_TEST_TIERS.md)** plus **`.github/workflows/*.yml`** as the detailed source of truth—not this paragraph alone.
+
+Forks, billing limits, and hosted CI availability can prevent Actions from running; use the same commands locally if needed ([Hosted CI status](Docs/Status/OPEN_SOURCE_READINESS_CHECKLIST.md#hosted-ci-status)).
+
+---
+
+## CI at a glance
+
+The PR workflow is [`.github/workflows/ci.yml`](.github/workflows/ci.yml). Scheduled and weekly workflows add coverage on top; they are documented in [CI and test tiers](Docs/Testing/CI_AND_TEST_TIERS.md). Scripts such as `verify-clean-checkout.sh` and `verify-readme-quickstart.sh` are **not** part of the blocking PR gate unless that doc explicitly says otherwise. **`v*`** tag buildability uses the manual [tag-probe workflow](.github/workflows/tag-probe.yml).
 
 ---
 
@@ -51,7 +76,7 @@ swift test --filter BlazeDB_Tier0
 
 **Run depth locally (extended + perf):**
 ```bash
-./Scripts/run-tier1-depth.sh
+./Scripts/run-tier2-tier3-companions.sh
 ```
 
 ### Tier 2: Integration/Recovery (`BlazeDB_Tier2`, `BlazeDB_Tier2_Extended`)
@@ -158,9 +183,11 @@ Place test files under the correct `BlazeDBTests/...` paths; target names remain
 
 ---
 
-## Development Workflow
+## Development workflow
 
-### 1. Make Changes
+Normal PRs: follow **[PR expectations](#pr-expectations)** (`./Scripts/preflight.sh` + listed commands in the PR).
+
+### 1. Make changes
 
 ```bash
 # Make your changes
@@ -198,16 +225,6 @@ git commit -m "Description of changes"
 ```
 
 ---
-
-## Before Opening A PR
-
-Run:
-
-```bash
-./Scripts/preflight.sh
-```
-
-If this fails locally, fix it before pushing.
 
 ## Release Tagging Policy
 
@@ -256,41 +273,32 @@ If this fails locally, fix it before pushing.
 
 ---
 
-## Change Discipline
+## Change discipline
+
+See **[PR expectations](#pr-expectations)** for branch scope, docs-with-code, and when to touch `SYSTEM_MAP` / `CI_AND_TEST_TIERS`.
 
 ### Source of truth
 
-`Docs/SYSTEM_MAP.md` is the canonical engineering map for what exists, what state it is in, and where it lives. Read it before making major changes.
+[`Docs/SYSTEM_MAP.md`](Docs/SYSTEM_MAP.md) is the engineering map for what exists, where it lives, and support status. Read it before large or cross-cutting changes.
 
-### When to update the system map
+### Feature surface
 
-Any PR that materially changes feature surface, support status, platform support, or module boundaries must update `Docs/SYSTEM_MAP.md` in the same PR. See that file for what counts as "material."
-
-### Branch and scope rules
-
-- One branch per coherent unit of work. Do not mix unrelated changes.
-- Docs and code must land together — do not ship a feature in one PR and document it in another.
-- Test lane or target boundary changes must be documented in `Docs/Testing/CI_AND_TEST_TIERS.md`.
-- Prefer narrow, surgical edits. Do not rewrite unrelated doc sections.
-
-### Feature surface rules
-
-- Do not advertise internal or deferred features as shipped in `README.md` or other public-facing docs.
-- If a feature is in source but not in stable public onboarding, mark it accordingly in the system map.
-- Tests are evidence of implementation, not automatic evidence of public product maturity.
+- Do not advertise internal or deferred features as shipped in `README.md` or other public onboarding.
+- If something exists in source but is not stable for end users, say so in the system map.
+- Tests prove behavior in CI; they are not by themselves proof of “product ready.”
 
 ### Reconciliation
 
-- Rebase and reconcile `SYSTEM_MAP.md` carefully if multiple PRs touch it.
-- If `CI_AND_TEST_TIERS.md` conflicts, the file plus `.github/workflows/*.yml` are authoritative.
+If multiple PRs touch `SYSTEM_MAP.md`, reconcile carefully. CI/tier conflicts: **`CI_AND_TEST_TIERS.md`** + **workflows** win.
 
 ---
 
 ## Questions?
 
+- Start with **[PR expectations](#pr-expectations)** above
 - Check `Docs/SYSTEM_MAP.md` for the canonical feature inventory and status map
-- Check `Docs/Testing/CI_AND_TEST_TIERS.md` for authoritative CI and tier mapping
-- Check `Docs/Guides/WORKFLOW_AND_STYLE_GUIDE.md` for branch/PR workflow and style expectations
+- Check `Docs/Testing/CI_AND_TEST_TIERS.md` for CI jobs, tiers, and cadence
+- Check `Docs/Guides/WORKFLOW_AND_STYLE_GUIDE.md` for branch naming and local workflow
 - Check `Docs/Guarantees/SAFETY_MODEL.md` for safety guarantees
 - Check `Docs/Compliance/PHASE_1_FREEZE.md` for frozen core details
 

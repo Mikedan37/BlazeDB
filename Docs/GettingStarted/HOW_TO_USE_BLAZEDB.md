@@ -42,7 +42,9 @@ You will mainly use:
 |----------|----------|
 | macOS | `~/Library/Application Support/BlazeDB/{name}.blazedb` |
 | Linux | `~/.local/share/blazedb/{name}.blazedb` |
-| iOS/tvOS/watchOS | Inside your app's sandbox |
+| iOS / iPadOS / tvOS / watchOS | `<Sandbox>/Library/Application Support/BlazeDB/{name}.blazedb` (same **relative** path as macOS; no `homeDirectoryForCurrentUser` on iOS) |
+
+See **[DEFAULT_STORAGE_PATHS.md](DEFAULT_STORAGE_PATHS.md)** for implementation details and telemetry file layout.
 
 **Default location (recommended):**
 ```swift
@@ -221,16 +223,15 @@ let results = try query.execute().records
 
 A slow query scans all records because there's no index. If you filter by `user_id` without an index, BlazeDB reads every record. For small datasets, this is fine. For large datasets, add indexes (see API docs).
 
-### SwiftUI Query Observation
+### SwiftUI query observation
 
-For app-local UI integration, BlazeDB exposes:
+**Default:** **`@BlazeStorableQuery(kind:)`** with **`BlazeStorable`** models, plus root **`.blazeDBEnvironment(_)`** and **`@Environment(\.blazeDBClient)`** for writes.
 
-- `@BlazeQuery` for dynamic record views
-- `@BlazeQueryTyped` for typed SwiftUI views
+**Advanced:** **`@BlazeQuery`** with **`BlazeDocument`** (manual **`toStorage()`** / **`init(from:)`**). Legacy alias **`@BlazeQueryTyped`** = **`@BlazeQuery`**.
 
-These wrappers can re-run queries when BlazeDB emits change notifications after writes.
-They are useful for keeping SwiftUI lists current without relying only on timer polling.
-Manual refresh and pull-to-refresh remain available when you want explicit refresh behavior.
+**Raw rows:** **`@BlazeDataQuery`** (always pass **`db:`**).
+
+These wrappers re-run queries when BlazeDB emits change notifications after writes. Full detail: [SWIFTUI_DATABASE_PATTERNS.md](SWIFTUI_DATABASE_PATTERNS.md), [SWIFTUI_INTEGRATION.md](../Guides/SWIFTUI_INTEGRATION.md).
 
 ---
 

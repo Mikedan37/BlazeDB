@@ -9,12 +9,19 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Changed
 
+- **Apple platforms (iOS fix):** `PathResolver.defaultDatabaseDirectory()` no longer uses `FileManager.homeDirectoryForCurrentUser` (unavailable on iOS). macOS and iOS now both use **`FileManager.url(for: .applicationSupportDirectory, …)`** + `BlazeDB/` — same relative layout as before on macOS (`~/Library/Application Support/BlazeDB/`).
+- **Telemetry default path:** when using default `TelemetryConfiguration()`, metrics now resolve under **`<Application Support>/BlazeDB/metrics/telemetry.blazedb`** instead of **`~/.blazedb/metrics/telemetry.blazedb`**. Documented in [Docs/GettingStarted/DEFAULT_STORAGE_PATHS.md](Docs/GettingStarted/DEFAULT_STORAGE_PATHS.md).
+- **Documentation:** Getting Started, HOW_TO_USE, USABILITY_PORTABILITY, API Reference, Developer Guide, and `Docs/README.md` now describe **iOS sandbox** default paths and link to **DEFAULT_STORAGE_PATHS**. Source doc comments updated on `PathResolver`, `TelemetryConfiguration`, `BlazeDBClient+EasyOpen`, and `BlazeDBClient+Convenience`.
+- **Tests:** telemetry unit/integration teardown removes the default Application Support metrics file (and legacy `~/.blazedb/...` on **macOS** only) so cleanup matches production and avoids `homeDirectoryForCurrentUser` on iOS.
+- **GitHub Actions:** workflow display names now include cadence/trigger (for example **PR Gate (push / pull request)**, **Nightly Confidence (daily)**, **Deep Validation (weekly)**) so the Actions tab matches `Docs/Testing/CI_AND_TEST_TIERS.md`.
+- **CI:** Retired redundant legacy weekly macOS-only companion workflow; scheduled Tier2/Tier3 companion coverage lives in `deep-validation.yml`.
 - **Package surface simplified:** Published SwiftPM products reduced to `BlazeDB` (umbrella) and `BlazeDBCore` (advanced). Tool, example, and benchmark executables (BlazeShell, HelloBlazeDB, BlazeDoctor, BlazeDump, BlazeInfo, BlazeDBBenchmarks, BasicExample, ReferenceConsumer) are still buildable locally via `swift run <name>` but no longer appear in Xcode's "Add Package Dependencies" picker. If you previously depended on one of these executable products from another package, reference the target directly instead.
 - **Direct CRUD is now the documented primary API.** `db.insert(model)`, `db.fetch(T.self, id:)`, `db.fetchAll(T.self)`, `db.update(model)`, `db.upsert(model)`, `db.delete(model)`, and `db.query(T.self)` are the recommended path. `TypedStore` (`db.typed(T.self)`) remains available as an optional scoped handle for view models and service layers.
 
 ### Added
 
 - `BlazeDBClient.delete(_:)` typed convenience for `BlazeStorable` models (sync + async).
+- **Tier0 regression tests** (`PathResolverDefaultLocationTests`): on Apple platforms, default DB directory and the default telemetry metrics URL layout both resolve under **Application Support/BlazeDB/** (and Linux under **~/.local/share/blazedb**), guarding against `homeDirectoryForCurrentUser` regressions on iOS.
 
 ---
 
@@ -90,8 +97,7 @@ Tag `v2.7.3` is a narrow snapshot (TypedStore + OSS docs below). **Android, Linu
   - `.github/ISSUE_TEMPLATE/security_review_tracking.md`
 - README quickstart verification script:
   - `Scripts/verify-readme-quickstart.sh`
-- Tier1 depth workflow and release-validation workflow updates:
-  - `.github/workflows/tier1-depth.yml`
+- Weekly macOS Tier2/Tier3 companion CI lane and release-validation workflow updates (companion lane later consolidated into `deep-validation.yml`):
   - `.github/workflows/release.yml`
 
 ### Changed

@@ -2,7 +2,8 @@
 //  BlazeQueryTyped.swift
 //  BlazeDB
 //
-//  Type-safe variant of @BlazeQuery for compile-time safety.
+//  ``BlazeQueryTypedObserver`` powers typed SwiftUI queries (facade only).
+//  Use the ``BlazeQuery`` property wrapper for the preferred API.
 //
 //  Created by Michael Danylchuk on 7/1/25.
 //
@@ -11,117 +12,6 @@ import Foundation
 
 #if canImport(SwiftUI) && (os(macOS) || os(iOS) || os(watchOS) || os(tvOS))
 import SwiftUI
-
-// MARK: - Type-Safe BlazeQuery
-
-/// Type-safe SwiftUI property wrapper for database queries.
-///
-/// Use `@BlazeQueryTyped` when you want compile-time type safety for your models.
-///
-/// Example:
-/// ```swift
-/// struct BugListView: View {
-///     @BlazeQueryTyped(
-///         db: myDatabase,
-///         type: Bug.self,
-///         where: "status", equals: .string("open"),
-///         sortBy: "priority", descending: true
-///     )
-///     var openBugs: [Bug]  // Type-safe! ✅
-///
-///     var body: some View {
-///         List(openBugs) { bug in
-///             Text(bug.title)  // Direct access! ✅
-///             Text("P\(bug.priority)")  // No .intValue! ✅
-///         }
-///     }
-/// }
-/// ```
-@propertyWrapper
-@MainActor
-public struct BlazeQueryTyped<T: BlazeDocument>: DynamicProperty {
-    @StateObject private var observer: BlazeQueryTypedObserver<T>
-    
-    /// The fetched documents, automatically updated
-    public var wrappedValue: [T] {
-        observer.results
-    }
-    
-    /// Access to the underlying observer for advanced use cases
-    public var projectedValue: BlazeQueryTypedObserver<T> {
-        observer
-    }
-    
-    // MARK: - Initializers
-    
-    /// Create a type-safe query that fetches all records
-    public init(db: BlazeDBClient, type: T.Type) {
-        _observer = StateObject(wrappedValue: BlazeQueryTypedObserver<T>(
-            db: db,
-            filters: [],
-            sortField: nil,
-            sortDescending: false,
-            limitCount: nil
-        ))
-    }
-    
-    /// Create a type-safe query with a single filter
-    public init(
-        db: BlazeDBClient,
-        type: T.Type,
-        where field: String,
-        equals value: BlazeDocumentField,
-        sortBy: String? = nil,
-        descending: Bool = false,
-        limit: Int? = nil
-    ) {
-        _observer = StateObject(wrappedValue: BlazeQueryTypedObserver<T>(
-            db: db,
-            filters: [(field, .equals, value)],
-            sortField: sortBy,
-            sortDescending: descending,
-            limitCount: limit
-        ))
-    }
-    
-    /// Create a type-safe query with a comparison filter
-    public init(
-        db: BlazeDBClient,
-        type: T.Type,
-        where field: String,
-        _ comparison: BlazeQueryComparison,
-        _ value: BlazeDocumentField,
-        sortBy: String? = nil,
-        descending: Bool = false,
-        limit: Int? = nil
-    ) {
-        _observer = StateObject(wrappedValue: BlazeQueryTypedObserver<T>(
-            db: db,
-            filters: [(field, comparison, value)],
-            sortField: sortBy,
-            sortDescending: descending,
-            limitCount: limit
-        ))
-    }
-    
-    /// Create a type-safe query with multiple filters
-    public init(
-        db: BlazeDBClient,
-        type: T.Type,
-        filters: [(field: String, comparison: BlazeQueryComparison, value: BlazeDocumentField)],
-        sortBy: String? = nil,
-        descending: Bool = false,
-        limit: Int? = nil
-    ) {
-        _observer = StateObject(wrappedValue: BlazeQueryTypedObserver<T>(
-            db: db,
-            filters: filters,
-            sortField: sortBy,
-            sortDescending: descending,
-            limitCount: limit
-        ))
-    }
-}
 
 // MARK: - Type-Safe Query Observer
 
@@ -148,47 +38,48 @@ private final class BlazeQueryTypedRefreshSink: @unchecked Sendable {
     }
 }
 
-/// Observable object that manages type-safe query execution and result updates
+/// Observable object that manages type-safe query execution and result updates for ``BlazeQuery``.
 @MainActor
 public final class BlazeQueryTypedObserver<T: BlazeDocument>: ObservableObject {
     // MARK: - Published Properties
-    
+
     /// The current query results (type-safe!)
     @Published public private(set) var results: [T] = []
-    
+
     /// Whether the query is currently loading
     @Published public private(set) var isLoading: Bool = false
-    
+
     /// The last error that occurred, if any
     @Published public private(set) var error: Error?
-    
+
     /// The number of results
     public var count: Int {
         results.count
     }
-    
+
     /// Whether there are no results
     public var isEmpty: Bool {
         results.isEmpty
     }
-    
+
     // MARK: - Private Properties
-    
-    private let db: BlazeDBClient
+
+    private var db: BlazeDBClient?
     private let filters: [(field: String, comparison: BlazeQueryComparison, value: BlazeDocumentField)]
     private let sortField: String?
     private let sortDescending: Bool
     private let limitCount: Int?
-    
+
     private var refreshTask: Task<Void, Never>?
     private var changeObserverToken: ObserverToken?
     @MainActor private var autoRefreshTimer: Timer?
     private let refreshSink = BlazeQueryTypedRefreshSink()
-    
+
     // MARK: - Initialization
-    
+
+    /// - Parameter db: Pass `nil` when the database will be supplied later via ``bindDatabaseIfNeeded(_:)`` (SwiftUI environment).
     internal init(
-        db: BlazeDBClient,
+        db: BlazeDBClient?,
         filters: [(field: String, comparison: BlazeQueryComparison, value: BlazeDocumentField)],
         sortField: String?,
         sortDescending: Bool,
@@ -199,14 +90,25 @@ public final class BlazeQueryTypedObserver<T: BlazeDocument>: ObservableObject {
         self.sortField = sortField
         self.sortDescending = sortDescending
         self.limitCount = limitCount
-        
-        // Initial fetch
-        refresh()
 
         refreshSink.attach(self)
 
-        // Subscribe to DB change events so wrappers refresh on writes without polling.
-        self.changeObserverToken = db.observe { [refreshSink] _ in
+        if let db {
+            subscribeToChanges(db: db)
+            refresh()
+        }
+    }
+
+    /// Binds a ``BlazeDBClient`` from SwiftUI environment (or explicit injection) the first time it becomes available.
+    internal func bindDatabaseIfNeeded(_ client: BlazeDBClient?) {
+        guard db == nil, let client else { return }
+        db = client
+        subscribeToChanges(db: client)
+        refresh()
+    }
+
+    private func subscribeToChanges(db: BlazeDBClient) {
+        changeObserverToken = db.observe { [refreshSink] _ in
             refreshSink.notifyChange()
         }
     }
@@ -222,11 +124,16 @@ public final class BlazeQueryTypedObserver<T: BlazeDocument>: ObservableObject {
     /// Manually refresh the query results
     public func refresh() {
         refreshTask?.cancel()
-        
+
+        guard let db else {
+            isLoading = false
+            return
+        }
+
         refreshTask = Task { @MainActor in
             self.isLoading = true
             self.error = nil
-            
+
             do {
                 // Build query
                 var query = db.query()
@@ -268,14 +175,14 @@ public final class BlazeQueryTypedObserver<T: BlazeDocument>: ObservableObject {
                 let records = try result.records
                 let typed = try records.map { try T(from: $0) }
                 
-                BlazeLogger.debug("@BlazeQueryTyped fetched \(typed.count) documents of type \(T.self)")
-                
+                BlazeLogger.debug("@BlazeQuery fetched \(typed.count) documents of type \(T.self)")
+
                 // Update results on main thread
                 self.results = typed
                 self.isLoading = false
-                
+
             } catch {
-                BlazeLogger.error("@BlazeQueryTyped fetch failed: \(error)")
+                BlazeLogger.error("@BlazeQuery fetch failed: \(error)")
                 self.error = error
                 self.isLoading = false
             }

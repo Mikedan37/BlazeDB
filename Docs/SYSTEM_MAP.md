@@ -223,8 +223,8 @@ Additional example files in `Examples/` (`.swift` files) are standalone referenc
 | Tier 1 Extended | Stable | `BlazeDBTests/Tier1Extended/` | Weekly + manual; sync tests partially excluded |
 | Tier 1 Perf | Stable | `BlazeDBTests/Tier1Perf/` | `measure()` suites |
 | Tier 2 / Tier 3 | Stable | `BlazeDBExtraTests/` | Nested package; not in root `swift test` |
-| Nightly | Stable | `.github/workflows/nightly.yml` | Depth + TSan + Linux |
-| Deep validation | Stable | `.github/workflows/deep-validation.yml` | Weekly soak |
+| Nightly Confidence (daily) | Stable | `.github/workflows/nightly.yml` | Depth + TSan + Linux |
+| Deep Validation (weekly) | Stable | `.github/workflows/deep-validation.yml` | Weekly soak |
 
 ### Developer Tooling
 

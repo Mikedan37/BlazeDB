@@ -645,107 +645,81 @@ let bugs = try result.records(as: Bug.self) // Converts to [Bug]
 
 ---
 
-## SwiftUI Integration
+## SwiftUI integration
 
-**Design Intent:** Property wrappers provide automatic reactivity and eliminate manual state management for database queries.
+**Documentation principle:** One **default** path for normal apps; **advanced** paths are labeled, not presented as equal choices. See [SwiftUI Integration Guide](Guides/SWIFTUI_INTEGRATION.md) and [Internal: SwiftUI path note](Internal/SWIFTUI_PATH_MAINTAINER_NOTE.md).
 
-### Basic @BlazeQuery
+**Default (most apps):** `BlazeStorable` + `@BlazeStorableQuery(kind:)` + `.blazeDBEnvironment(_)` + `@Environment(\.blazeDBClient)` for writes.
+
+**Advanced:** `BlazeDocument` + `@BlazeQuery` + manual `toStorage()` / `init(from:)`.
+
+**Raw rows:** `@BlazeDataQuery` (always `db:`).
+
+### Default: Storable + environment
 
 ```swift
-struct BugListView: View {
- @BlazeQuery(
- db: AppDatabase.shared.db,
- where: "status", equals:.string("open"),
- sortBy: "priority", descending: true
- )
- var openBugs
+@main
+struct MyApp: App {
+    var body: some Scene {
+        WindowGroup {
+            ItemListView()
+                .blazeDBEnvironment(AppDatabase.shared.db)
+        }
+    }
+}
 
- var body: some View {
- List(openBugs, id: \.id) { bug in
- Text(bug["title"]?.stringValue?? "")
- }
- }
+struct Item: BlazeStorable {
+    var id: UUID = UUID()
+    var title: String
+}
+
+struct ItemListView: View {
+    @Environment(\.blazeDBClient) private var db
+    @BlazeStorableQuery(kind: Item.self) private var items: [Item]
+
+    var body: some View {
+        List(items, id: \.id) { Text($0.title) }
+    }
 }
 ```
 
-### Type-Safe @BlazeQueryTyped
+### Advanced: BlazeDocument + @BlazeQuery
 
 ```swift
-struct BugListView: View {
- @BlazeQueryTyped(
- db: AppDatabase.shared.db,
- type: Bug.self,
- where: "status", equals:.string("open"),
- sortBy: "priority", descending: true
- )
- var openBugs: [Bug] // Type-safe!
+// TodoItem must conform to BlazeDocument with toStorage() and init(from:).
+struct DocListView: View {
+    @BlazeQuery(where: "status", equals: "open", sortBy: "priority", descending: true)
+    var openItems: [TodoItem]
 
- var body: some View {
- List(openBugs) { bug in
- Text(bug.title) // Direct access, no optional unwrapping
- }
- }
+    var body: some View {
+        List(openItems, id: \.id) { Text($0.title) }
+    }
 }
 ```
 
-### Auto-Refresh
+### Raw records: @BlazeDataQuery
 
 ```swift
-struct BugListView: View {
- @BlazeQuery(db: AppDatabase.shared.db)
- var allBugs
+struct RawBugListView: View {
+    @BlazeDataQuery(
+        db: AppDatabase.shared.db,
+        where: "status", equals: .string("open"),
+        sortBy: "priority", descending: true
+    )
+    var openBugs: [BlazeDataRecord]
 
- var body: some View {
- List(allBugs, id: \.id) { bug in
- BugRowView(bug: bug)
- }
-.refreshable(query: $allBugs) // Pull to refresh
-.onAppear {
- $allBugs.enableAutoRefresh(interval: 10) // Auto-refresh every 10s
- }
-.onDisappear {
- $allBugs.disableAutoRefresh()
- }
- }
+    var body: some View {
+        List(openBugs, id: \.id) { bug in
+            Text(bug["title"]?.stringValue ?? "")
+        }
+        .refreshable(query: $openBugs)
+    }
 }
 ```
 
-### Form with Database Updates
+### Legacy naming
 
-```swift
-struct CreateBugView: View {
- @Environment(\.dismiss) var dismiss
- let db = AppDatabase.shared.db
-
- @State private var title = ""
- @State private var priority = 5
-
- @BlazeQuery(
- db: AppDatabase.shared.db,
- where: "status", equals:.string("open")
- )
- var openBugs // Auto-updates after insert!
-
- var body: some View {
- Form {
- TextField("Title", text: $title)
- Stepper("Priority: \(priority)", value: $priority, in: 1...10)
-
- Button("Create") {
- Task {
- let bug = BlazeDataRecord([
- "title":.string(title),
- "priority":.int(priority),
- "status":.string("open")
- ])
- try? await db.insert(bug)
- dismiss() // @BlazeQuery auto-refreshes
- }
- }
- }
- }
-}
-```
+`BlazeQueryTyped` is a typealias for `BlazeQuery`; do not use in new examples.
 
 ---
 
@@ -1349,23 +1323,26 @@ let bugs = try db.query() // Blocks UI
 .execute()
 ```
 
-### 8. Use @BlazeQuery for SwiftUI
+### 8. SwiftUI reactive lists
 
 ```swift
-// Good: Reactive queries
-@BlazeQuery(db: db, where: "status", equals:.string("open"))
-var openBugs
+// Good (default path): BlazeStorable + @BlazeStorableQuery
+@BlazeStorableQuery(kind: Item.self) var items: [Item]
 
-// Avoid: Manual state management
+// Good (advanced): BlazeDocument + @BlazeQuery
+@BlazeQuery(db: db, where: "status", equals: .string("open"))
+var openBugs: [Bug] // Bug: BlazeDocument
+
+// Avoid: Manual @State + onAppear for data that should track DB changes
 @State private var bugs: [BlazeDataRecord] = []
-.onAppear {
- bugs = try db.query()...
-}
+.onAppear { bugs = try db.query()... }
 ```
 
 ---
 
 ## Complete Example: Bug Tracker App
+
+**Advanced path** (`BlazeDocument` + manual mapping). For a minimal SwiftUI app, prefer **`BlazeStorable`** + **`@BlazeStorableQuery`** (see [SwiftUI DB Patterns](GettingStarted/SWIFTUI_DATABASE_PATTERNS.md)).
 
 ```swift
 import SwiftUI

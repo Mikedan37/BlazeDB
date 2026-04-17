@@ -1,5 +1,7 @@
 # Reactive Live Queries: How They Work & Performance Impact
 
+The same change-notification idea applies to **`@BlazeStorableQuery`**, **`@BlazeQuery`**, and **`@BlazeDataQuery`** (each uses an observer subscribed via **`db.observe`**). This doc uses **`@BlazeQuery`** in diagrams for historical reasons; see [SwiftUI Integration Guide](../Guides/SWIFTUI_INTEGRATION.md) for which wrapper matches which model protocol.
+
 ## **How Reactive Queries Work**
 
 ### **Architecture Overview**

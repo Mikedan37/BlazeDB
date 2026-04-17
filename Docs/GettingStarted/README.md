@@ -44,29 +44,21 @@ If you see "Success!", BlazeDB is working.
 
 ## Step 3: Starter Code
 
-Copy this into your project:
+Copy into your project. Same flow as [README Start Here](../../README.md#start-here-new-users): one file, structs, save → load → query.
 
 ```swift
 import BlazeDB
 
-// 1. Define your model
 struct Bug: BlazeStorable {
     var id: UUID = UUID()
     var title: String
     var status: String
 }
 
-// 2. Open database (creates if needed, always encrypted)
 let db = try BlazeDB.open(name: "myapp", password: "My-Secure-Password-2026!")
-
-// 3. Put
 let bug = Bug(title: "Crash", status: "open")
 try db.put(bug)
-
-// 4. Get by key (UUID or namespace:UUID)
 let loaded: Bug? = try db.get("bug:\(bug.id.uuidString)")
-
-// 5. Query by namespace
 let openBugs: [Bug] = try db.query("bug")
     .where("status", equals: "open")
     .all()
@@ -128,10 +120,9 @@ try db.update(t)
 try db.delete(t)
 ```
 
-### SwiftUI Query Observation (App Dev DX)
+### SwiftUI (default path)
 
-If you are building a SwiftUI app, BlazeDB also provides `@BlazeQuery` and `@BlazeQueryTyped`.
-These wrappers use BlazeDB change observation to refresh query results after DB writes, so UI lists can stay in sync without relying only on timers.
+For **most** SwiftUI apps: **`BlazeStorable`** models, **`.blazeDBEnvironment(_)`** once at the root, **`@BlazeStorableQuery(kind:)`** for lists, **`@Environment(\.blazeDBClient)`** for writes. **`@BlazeQuery`** is **only** for **`BlazeDocument`** (manual **`BlazeDataRecord`** mapping). **`@BlazeDataQuery`** is for raw rows (advanced). Wrappers refresh from change notifications. Start at [SWIFTUI_DATABASE_PATTERNS.md](SWIFTUI_DATABASE_PATTERNS.md) and [SWIFTUI_INTEGRATION.md](../Guides/SWIFTUI_INTEGRATION.md).
 
 ### Raw Explicit API (Advanced)
 
@@ -172,7 +163,9 @@ struct Bug: BlazeDocument {
 | -------- | ----------------------------------------------------- |
 | macOS    | `~/Library/Application Support/BlazeDB/myapp.blazedb` |
 | Linux    | `~/.local/share/blazedb/myapp.blazedb`                |
-| iOS      | App sandbox (automatic)                               |
+| iOS      | `<Sandbox>/Library/Application Support/BlazeDB/myapp.blazedb` |
+
+Canonical paths, telemetry defaults, and migration notes: **[DEFAULT_STORAGE_PATHS.md](DEFAULT_STORAGE_PATHS.md)**.
 
 
 ---
@@ -183,6 +176,7 @@ struct Bug: BlazeDocument {
 | Guide                                                | What You'll Learn                                  |
 | ---------------------------------------------------- | -------------------------------------------------- |
 | [SWIFTUI_DATABASE_PATTERNS.md](SWIFTUI_DATABASE_PATTERNS.md) | How to pass and use `BlazeDBClient` cleanly in SwiftUI |
+| [SWIFTUI_FACADE_MIGRATION.md](SWIFTUI_FACADE_MIGRATION.md) | Renaming `@BlazeQuery` / `@BlazeQueryTyped` after the typed-default facade update |
 | [HOW_TO_USE_BLAZEDB.md](HOW_TO_USE_BLAZEDB.md)       | Complete guide: migrations, backups, health checks |
 | [Examples](../../Examples/)                          | Working code for common patterns                   |
 | [LINUX_GETTING_STARTED.md](LINUX_GETTING_STARTED.md) | Linux-specific setup                               |
@@ -207,7 +201,7 @@ Yes, by default. AES-256-GCM encryption is enabled automatically.
 Committed data survives. BlazeDB uses write-ahead logging for crash safety.
 
 **Can I use this with SwiftUI?**
-Yes. See `Examples/SwiftUIExample.swift` for `@BlazeQuery` / `@BlazeQueryTyped`. These wrappers can refresh from DB change notifications, and still support manual/pull refresh where useful.
+Yes. Default: **`BlazeStorable`** + **`@BlazeStorableQuery`** + **`.blazeDBEnvironment`** (see [SWIFTUI_DATABASE_PATTERNS.md](SWIFTUI_DATABASE_PATTERNS.md)). `Examples/SwiftUIExample.swift` focuses on **`@BlazeDataQuery`** (raw rows) and similar patterns; it is **not** the minimal default app shape.
 
 **Can I use this with Vapor?**
 Yes. See [HOW_TO_USE_BLAZEDB.md](HOW_TO_USE_BLAZEDB.md#8-using-blazedb-in-a-server-vapor-example).

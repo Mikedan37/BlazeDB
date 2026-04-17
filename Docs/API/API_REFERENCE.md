@@ -27,7 +27,7 @@ This file documents broad repository API surfaces. They are **not all equal in d
 
 ## ** Convenience API (NEW!)**
 
-**Purpose:** Simplifies database creation and discovery without managing file paths manually. All databases are stored in `~/Library/Application Support/BlazeDB/` by default.
+**Purpose:** Simplifies database creation and discovery without managing file paths manually. Default storage uses Application Support + `BlazeDB/` on Apple platforms: **macOS** `~/Library/Application Support/BlazeDB/`, **iOS** `<Sandbox>/Library/Application Support/BlazeDB/`. See [DEFAULT_STORAGE_PATHS.md](../GettingStarted/DEFAULT_STORAGE_PATHS.md).
 
 ### **Create Database by Name:**
 
@@ -35,7 +35,7 @@ This file documents broad repository API surfaces. They are **not all equal in d
 
 ```swift
 // Super simple - just a name!
-// USAGE: Create/open database in default location (~/Library/Application Support/BlazeDB/)
+// USAGE: Create/open database in default location (Application Support/BlazeDB/ on Apple platforms)
 let db = try BlazeDBClient(name: "MyApp", password: "secure-password-123")
 
 // With project namespace
@@ -91,7 +91,7 @@ if let db = BlazeDBClient.getRegisteredDatabase(named: "MyApp") {
 let registered = BlazeDBClient.registeredDatabases()
 ```
 
-**Default Location:** `~/Library/Application Support/BlazeDB/`
+**Default Location (Apple):** Application Support + `BlazeDB/` — macOS: `~/Library/Application Support/BlazeDB/`; iOS: sandbox `Library/Application Support/BlazeDB/`. Linux: `~/.local/share/blazedb/`.
 
 ---
 
@@ -729,22 +729,28 @@ func performSecurityAudit() -> SecurityAuditReport
 
 ---
 
-## ** SwiftUI Integration**
+## ** SwiftUI integration**
 
-For app-local SwiftUI usage, these wrappers can refresh query results after BlazeDB change notifications.
-They are refresh-on-change wrappers (query re-execution), not a generalized incremental diff engine.
+On Apple platforms, property wrappers re-run queries when BlazeDB posts change notifications (refresh-on-change, not incremental diff).
 
-### **Property Wrappers:**
+**Recommended (most apps):** **`BlazeStorable`** + **`@BlazeStorableQuery(kind: Self.self)`** + root **`.blazeDBEnvironment(BlazeDBClient)`**; omit **`db:`** to use **`EnvironmentValues.blazeDBClient`**.
+
+**Advanced (manual record mapping):** **`BlazeDocument`** + **`@BlazeQuery`**. Legacy alias **`BlazeQueryTyped`** = **`BlazeQuery`**.
+
+**Raw rows:** **`@BlazeDataQuery`**, always with **`db:`** (no environment shortcut).
 
 ```swift
-// Query property wrapper
-@BlazeQuery(db: BlazeDBClient, where: "status", equals:.string("open"))
-var records: [BlazeDataRecord]
+// Default: Codable models
+@BlazeStorableQuery(kind: Item.self) var items: [Item]
 
-// Typed query property wrapper
-@BlazeQueryTyped(db: BlazeDBClient, type: User.self, where: \.status, equals: "active")
-var users: [User]
+// Advanced: BlazeDocument + manual toStorage / init(from:)
+@BlazeQuery(where: "status", equals: "open") var bugs: [Bug]
+
+// Raw BlazeDataRecord rows
+@BlazeDataQuery(db: client, where: "status", equals: .string("open")) var rows: [BlazeDataRecord]
 ```
+
+See [SwiftUI Integration Guide](../Guides/SWIFTUI_INTEGRATION.md).
 
 ---
 

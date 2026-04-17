@@ -2,88 +2,111 @@
 //  BlazeQuery.swift
 //  BlazeDB
 //
-//  SwiftUI property wrapper for reactive database queries.
-//  Automatically updates views when data changes, with zero boilerplate.
-//
-//  Created by Michael Danylchuk on 7/1/25.
+//  Preferred SwiftUI property wrapper for typed, reactive BlazeDB queries (facade only).
 //
 
 import Foundation
 
-#if canImport(SwiftUI) && canImport(Combine) && (os(macOS) || os(iOS) || os(watchOS) || os(tvOS))
+#if canImport(SwiftUI) && (os(macOS) || os(iOS) || os(watchOS) || os(tvOS))
 import SwiftUI
-import Combine
 
-// MARK: - BlazeQuery Property Wrapper
+// MARK: - Field encoding helpers (facade)
 
-/// A SwiftUI property wrapper that automatically executes and updates database queries.
+private enum BlazeQueryValueEncoding {
+    static func field(_ value: String) -> BlazeDocumentField { .string(value) }
+    static func field(_ value: Bool) -> BlazeDocumentField { .bool(value) }
+    static func field(_ value: Int) -> BlazeDocumentField { .int(value) }
+    static func field(_ value: Double) -> BlazeDocumentField { .double(value) }
+    static func field(_ value: UUID) -> BlazeDocumentField { .uuid(value) }
+    static func field(_ value: Date) -> BlazeDocumentField { .date(value) }
+}
+
+// MARK: - BlazeQuery (typed)
+
+/// The default SwiftUI-facing query wrapper for ``BlazeDocument`` models.
 ///
-/// Use `@BlazeQuery` to declaratively fetch and observe database records in SwiftUI views.
-/// The wrapper automatically updates the view when the underlying data changes.
+/// Document type is inferred from the wrapped property (`[Document]`), so you do not pass `type: Document.self`.
+/// Provide a database explicitly with `db:` **or** inject ``EnvironmentValues/blazeDBClient`` from an ancestor view.
 ///
-/// Example:
 /// ```swift
-/// struct BugListView: View {
-///     @BlazeQuery(
-///         db: myDatabase,
-///         where: "status", equals: .string("open"),
-///         sortBy: "priority", descending: true
-///     )
-///     var openBugs
+/// MyRootView()
+///     .environment(\.blazeDBClient, app.db)
+///
+/// struct TodosView: View {
+///     @BlazeQuery var items: [TodoItem]
 ///
 ///     var body: some View {
-///         List(openBugs, id: \.id) { bug in
-///             Text(bug["title"]?.stringValue ?? "")
-///         }
+///         List(items) { Text($0.title) }
 ///     }
 /// }
 /// ```
+///
+/// This type is a thin facade over ``BlazeQueryTypedObserver``; it does not change storage, SQL, or engine semantics.
+///
+/// ### Environment-only database
+/// If you omit `db:` and rely on ``EnvironmentValues/blazeDBClient``, the observer is bound on first access to
+/// ``wrappedValue`` / ``projectedValue`` after SwiftUI has injected the environment. Until then, ``wrappedValue``
+/// is empty and this is **not** a failed query—there is no client yet. Prefer setting
+/// ``EnvironmentValues/blazeDBClient`` on an ancestor (e.g. root) so the first read already has a database.
+///
+/// ### Binding from `wrappedValue`
+/// ``BlazeQueryTypedObserver/bindDatabaseIfNeeded(_:)`` runs when the wrapped value (or projected observer) is read,
+/// avoiding a separate `DynamicProperty.update()` entry point that tripped Swift 6 actor isolation for this wrapper.
+/// Exercise navigation, previews, and environment changes in your app if you customize injection heavily.
 @propertyWrapper
 @MainActor
-public struct BlazeQuery: DynamicProperty {
-    @StateObject private var observer: BlazeQueryObserver
-    
-    /// The fetched records, automatically updated
-    public var wrappedValue: [BlazeDataRecord] {
-        observer.results
+public struct BlazeQuery<Document: BlazeDocument>: DynamicProperty {
+    private let explicitDB: BlazeDBClient?
+
+    @Environment(\.blazeDBClient) private var environmentDB
+    @StateObject private var observer: BlazeQueryTypedObserver<Document>
+
+    /// Fetched documents, updated automatically from change notifications and query refresh.
+    public var wrappedValue: [Document] {
+        observer.bindDatabaseIfNeeded(explicitDB ?? environmentDB)
+        return observer.results
     }
-    
-    /// Access to the underlying observer for advanced use cases
-    public var projectedValue: BlazeQueryObserver {
-        observer
+
+    /// Advanced control (manual refresh, loading state, in-memory filtering).
+    public var projectedValue: BlazeQueryTypedObserver<Document> {
+        observer.bindDatabaseIfNeeded(explicitDB ?? environmentDB)
+        return observer
     }
-    
-    // MARK: - Type-Safe Variant
-    
-    /// The fetched records as a specific type (use with `as` parameter)
-    public func typed<T: BlazeDocument>(as type: T.Type) throws -> [T] {
-        return try observer.results.map { try T(from: $0) }
-    }
-    
-    // MARK: - Initializers
-    
-    /// Create a query that fetches all records
-    public init(db: BlazeDBClient) {
-        _observer = StateObject(wrappedValue: BlazeQueryObserver(
+
+    // MARK: - All documents
+
+    /// Fetches every stored document decoded as `Document`.
+    ///
+    /// - Parameter db: Pass `nil` (default) to resolve the client from ``EnvironmentValues/blazeDBClient``.
+    public init(
+        db: BlazeDBClient? = nil,
+        sortBy: String? = nil,
+        descending: Bool = false,
+        limit: Int? = nil
+    ) {
+        self.explicitDB = db
+        _observer = StateObject(wrappedValue: BlazeQueryTypedObserver<Document>(
             db: db,
             filters: [],
-            sortField: nil,
-            sortDescending: false,
-            limitCount: nil
+            sortField: sortBy,
+            sortDescending: descending,
+            limitCount: limit
         ))
     }
-    
-    /// Create a query with a single filter
-    @MainActor
+
+    // MARK: - Single filter (BlazeDocumentField)
+
+    /// Filter where a field equals a ``BlazeDocumentField`` value.
     public init(
-        db: BlazeDBClient,
+        db: BlazeDBClient? = nil,
         where field: String,
         equals value: BlazeDocumentField,
         sortBy: String? = nil,
         descending: Bool = false,
         limit: Int? = nil
     ) {
-        _observer = StateObject(wrappedValue: BlazeQueryObserver(
+        self.explicitDB = db
+        _observer = StateObject(wrappedValue: BlazeQueryTypedObserver<Document>(
             db: db,
             filters: [(field, .equals, value)],
             sortField: sortBy,
@@ -91,11 +114,79 @@ public struct BlazeQuery: DynamicProperty {
             limitCount: limit
         ))
     }
-    
-    /// Create a query with a comparison filter
-    @MainActor
+
+    // MARK: - Single filter (common Swift scalars)
+
     public init(
-        db: BlazeDBClient,
+        db: BlazeDBClient? = nil,
+        where field: String,
+        equals value: String,
+        sortBy: String? = nil,
+        descending: Bool = false,
+        limit: Int? = nil
+    ) {
+        self.init(db: db, where: field, equals: BlazeQueryValueEncoding.field(value), sortBy: sortBy, descending: descending, limit: limit)
+    }
+
+    public init(
+        db: BlazeDBClient? = nil,
+        where field: String,
+        equals value: Bool,
+        sortBy: String? = nil,
+        descending: Bool = false,
+        limit: Int? = nil
+    ) {
+        self.init(db: db, where: field, equals: BlazeQueryValueEncoding.field(value), sortBy: sortBy, descending: descending, limit: limit)
+    }
+
+    public init(
+        db: BlazeDBClient? = nil,
+        where field: String,
+        equals value: Int,
+        sortBy: String? = nil,
+        descending: Bool = false,
+        limit: Int? = nil
+    ) {
+        self.init(db: db, where: field, equals: BlazeQueryValueEncoding.field(value), sortBy: sortBy, descending: descending, limit: limit)
+    }
+
+    public init(
+        db: BlazeDBClient? = nil,
+        where field: String,
+        equals value: Double,
+        sortBy: String? = nil,
+        descending: Bool = false,
+        limit: Int? = nil
+    ) {
+        self.init(db: db, where: field, equals: BlazeQueryValueEncoding.field(value), sortBy: sortBy, descending: descending, limit: limit)
+    }
+
+    public init(
+        db: BlazeDBClient? = nil,
+        where field: String,
+        equals value: UUID,
+        sortBy: String? = nil,
+        descending: Bool = false,
+        limit: Int? = nil
+    ) {
+        self.init(db: db, where: field, equals: BlazeQueryValueEncoding.field(value), sortBy: sortBy, descending: descending, limit: limit)
+    }
+
+    public init(
+        db: BlazeDBClient? = nil,
+        where field: String,
+        equals value: Date,
+        sortBy: String? = nil,
+        descending: Bool = false,
+        limit: Int? = nil
+    ) {
+        self.init(db: db, where: field, equals: BlazeQueryValueEncoding.field(value), sortBy: sortBy, descending: descending, limit: limit)
+    }
+
+    // MARK: - Comparison + BlazeDocumentField
+
+    public init(
+        db: BlazeDBClient? = nil,
         where field: String,
         _ comparison: BlazeQueryComparison,
         _ value: BlazeDocumentField,
@@ -103,7 +194,8 @@ public struct BlazeQuery: DynamicProperty {
         descending: Bool = false,
         limit: Int? = nil
     ) {
-        _observer = StateObject(wrappedValue: BlazeQueryObserver(
+        self.explicitDB = db
+        _observer = StateObject(wrappedValue: BlazeQueryTypedObserver<Document>(
             db: db,
             filters: [(field, comparison, value)],
             sortField: sortBy,
@@ -111,17 +203,18 @@ public struct BlazeQuery: DynamicProperty {
             limitCount: limit
         ))
     }
-    
-    /// Create a query with multiple filters
-    @MainActor
+
+    // MARK: - Multiple filters
+
     public init(
-        db: BlazeDBClient,
+        db: BlazeDBClient? = nil,
         filters: [(field: String, comparison: BlazeQueryComparison, value: BlazeDocumentField)],
         sortBy: String? = nil,
         descending: Bool = false,
         limit: Int? = nil
     ) {
-        _observer = StateObject(wrappedValue: BlazeQueryObserver(
+        self.explicitDB = db
+        _observer = StateObject(wrappedValue: BlazeQueryTypedObserver<Document>(
             db: db,
             filters: filters,
             sortField: sortBy,
@@ -131,294 +224,56 @@ public struct BlazeQuery: DynamicProperty {
     }
 }
 
-// MARK: - Query Comparison Types
-
-/// Comparison operators for BlazeQuery filters
-public enum BlazeQueryComparison {
-    case equals
-    case notEquals
-    case greaterThan
-    case lessThan
-    case greaterThanOrEqual
-    case lessThanOrEqual
-    case contains // For strings
-}
-
-@MainActor
-fileprivate protocol BlazeQueryObserverRefreshable: AnyObject {
-    func refresh()
-}
-
-extension BlazeQueryObserver: BlazeQueryObserverRefreshable {}
-
-private final class BlazeQueryRefreshSink: @unchecked Sendable {
-    private weak var target: (any BlazeQueryObserverRefreshable)?
-
-    func attach(_ o: any BlazeQueryObserverRefreshable) {
-        target = o
-    }
-
-    func notifyChange() {
-        guard let t = target else { return }
-        Task { @MainActor in
-            t.refresh()
-        }
-    }
-}
-
-// MARK: - BlazeQuery Observer
-
-/// Observable object that manages query execution and result updates
-@MainActor
-public final class BlazeQueryObserver: ObservableObject {
-    // MARK: - Published Properties
-    
-    /// The current query results
-    @Published public private(set) var results: [BlazeDataRecord] = []
-    
-    /// Whether the query is currently loading
-    @Published public private(set) var isLoading: Bool = false
-    
-    /// The last error that occurred, if any
-    @Published public private(set) var error: Error?
-    
-    /// The number of results
-    public var count: Int {
-        results.count
-    }
-    
-    /// Whether there are no results
-    public var isEmpty: Bool {
-        results.isEmpty
-    }
-    
-    // MARK: - Private Properties
-    
-    private let db: BlazeDBClient
-    private let filters: [(field: String, comparison: BlazeQueryComparison, value: BlazeDocumentField)]
-    private let sortField: String?
-    private let sortDescending: Bool
-    private let limitCount: Int?
-    
-    private var refreshTask: Task<Void, Never>?
-    private var changeObserverToken: ObserverToken?
-    @MainActor private var autoRefreshTimer: Timer?
-    private let refreshSink = BlazeQueryRefreshSink()
-    
-    // MARK: - Initialization
-    
-    internal init(
-        db: BlazeDBClient,
-        filters: [(field: String, comparison: BlazeQueryComparison, value: BlazeDocumentField)],
-        sortField: String?,
-        sortDescending: Bool,
-        limitCount: Int?
-    ) {
-        self.db = db
-        self.filters = filters
-        self.sortField = sortField
-        self.sortDescending = sortDescending
-        self.limitCount = limitCount
-        
-        // Initial fetch
-        refresh()
-
-        refreshSink.attach(self)
-
-        // Subscribe to DB change events so wrappers refresh on writes without polling.
-        self.changeObserverToken = db.observe { [refreshSink] _ in
-            refreshSink.notifyChange()
-        }
-    }
-    
-    deinit {
-        refreshTask?.cancel()
-        // Timer cleanup - autoRefreshTimer is @MainActor, will be cleaned up automatically
-        // No explicit cleanup needed in deinit
-    }
-    
-    // MARK: - Public Methods
-    
-    /// Wait for the query to load (for testing)
-    public func waitForLoad() async throws {
-        refresh()
-        // Wait for the refresh task to complete
-        await refreshTask?.value
-    }
-    
-    /// Manually refresh the query results
-    public func refresh() {
-        // Cancel any existing refresh
-        refreshTask?.cancel()
-        
-        refreshTask = Task { @MainActor in
-            self.isLoading = true
-            self.error = nil
-            
-            do {
-                // Build query
-                var query = db.query()
-                
-                // Apply filters
-                for filter in filters {
-                    switch filter.comparison {
-                    case .equals:
-                        query = await query.where(filter.field, equals: filter.value)
-                    case .notEquals:
-                        query = await query.where(filter.field, notEquals: filter.value)
-                    case .greaterThan:
-                        query = await query.where(filter.field, greaterThan: filter.value)
-                    case .lessThan:
-                        query = await query.where(filter.field, lessThan: filter.value)
-                    case .greaterThanOrEqual:
-                        query = query.where(filter.field, greaterThanOrEqual: filter.value)
-                    case .lessThanOrEqual:
-                        query = query.where(filter.field, lessThanOrEqual: filter.value)
-                    case .contains:
-                        if let stringValue = filter.value.stringValue {
-                            query = query.where(filter.field, contains: stringValue)
-                        }
-                    }
-                }
-                
-                // Apply sorting
-                if let sortField = sortField {
-                    query = await query.orderBy(sortField, descending: sortDescending)
-                }
-                
-                // Apply limit
-                if let limit = limitCount {
-                    query = query.limit(limit)
-                }
-                
-                // Execute async
-                let result = try await query.execute()
-                let records = try result.records
-                
-                BlazeLogger.debug("@BlazeQuery fetched \(records.count) records")
-                
-                // Update results on main thread
-                self.results = records
-                self.isLoading = false
-                
-            } catch {
-                BlazeLogger.error("@BlazeQuery fetch failed: \(error)")
-                self.error = error
-                self.isLoading = false
-            }
-        }
-    }
-    
-    /// Enable auto-refresh at the specified interval
-    /// - Parameter interval: Time interval between refreshes in seconds
-    @MainActor
-    public func enableAutoRefresh(interval: TimeInterval = 5.0) {
-        autoRefreshTimer?.invalidate()
-        autoRefreshTimer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { [weak self] _ in
-            Task { @MainActor in
-                self?.refresh()
-            }
-        }
-    }
-    
-    /// Disable auto-refresh
-    @MainActor
-    public func disableAutoRefresh() {
-        autoRefreshTimer?.invalidate()
-        autoRefreshTimer = nil
-    }
-    
-    /// Get a specific record by ID
-    public func record(withID id: UUID) -> BlazeDataRecord? {
-        return results.first { record in
-            if let recordID = record.storage["id"] {
-                switch recordID {
-                case .uuid(let uuid):
-                    return uuid == id
-                case .string(let str):
-                    return UUID(uuidString: str) == id
-                default:
-                    return false
-                }
-            }
-            return false
-        }
-    }
-    
-    /// Filter results in memory (doesn't affect the database query)
-    public func filtered(by predicate: (BlazeDataRecord) -> Bool) -> [BlazeDataRecord] {
-        return results.filter(predicate)
-    }
-}
-
-// MARK: - Convenience Extensions
+// MARK: - Legacy `type:` initializers (source-compatible)
 
 extension BlazeQuery {
-    /// Create a query that fetches records with a specific status
-    public static func withStatus(
-        _ status: String,
-        db: BlazeDBClient,
-        sortBy: String = "createdAt",
-        descending: Bool = true,
-        limit: Int? = nil
-    ) -> BlazeQuery {
-        return BlazeQuery(
-            db: db,
-            where: "status",
-            equals: .string(status),
-            sortBy: sortBy,
-            descending: descending,
-            limit: limit
-        )
+    /// Deprecated: `Document` is inferred from the wrapped `[Document]` property type.
+    @available(*, deprecated, message: "Remove `type:`; the document type is inferred from `[Document]`.")
+    public init(db: BlazeDBClient, type: Document.Type, sortBy: String? = nil, descending: Bool = false, limit: Int? = nil) {
+        self.init(db: db, sortBy: sortBy, descending: descending, limit: limit)
     }
-    
-    /// Create a query that fetches high-priority records
-    public static func highPriority(
+
+    @available(*, deprecated, message: "Remove `type:`; the document type is inferred from `[Document]`.")
+    public init(
         db: BlazeDBClient,
-        threshold: Int = 5,
-        sortBy: String = "priority",
-        descending: Bool = true,
+        type: Document.Type,
+        where field: String,
+        equals value: BlazeDocumentField,
+        sortBy: String? = nil,
+        descending: Bool = false,
         limit: Int? = nil
-    ) -> BlazeQuery {
-        return BlazeQuery(
-            db: db,
-            where: "priority",
-            .greaterThanOrEqual,
-            .int(threshold),
-            sortBy: sortBy,
-            descending: descending,
-            limit: limit
-        )
+    ) {
+        self.init(db: db, where: field, equals: value, sortBy: sortBy, descending: descending, limit: limit)
+    }
+
+    @available(*, deprecated, message: "Remove `type:`; the document type is inferred from `[Document]`.")
+    public init(
+        db: BlazeDBClient,
+        type: Document.Type,
+        where field: String,
+        _ comparison: BlazeQueryComparison,
+        _ value: BlazeDocumentField,
+        sortBy: String? = nil,
+        descending: Bool = false,
+        limit: Int? = nil
+    ) {
+        self.init(db: db, where: field, comparison, value, sortBy: sortBy, descending: descending, limit: limit)
+    }
+
+    @available(*, deprecated, message: "Remove `type:`; the document type is inferred from `[Document]`.")
+    public init(
+        db: BlazeDBClient,
+        type: Document.Type,
+        filters: [(field: String, comparison: BlazeQueryComparison, value: BlazeDocumentField)],
+        sortBy: String? = nil,
+        descending: Bool = false,
+        limit: Int? = nil
+    ) {
+        self.init(db: db, filters: filters, sortBy: sortBy, descending: descending, limit: limit)
     }
 }
 
-// MARK: - SwiftUI View Extensions
+/// Legacy alias for ``BlazeQuery`` kept for source compatibility.
+public typealias BlazeQueryTyped<Document: BlazeDocument> = BlazeQuery<Document>
 
-extension View {
-    /// Trigger a refresh of a BlazeQuery when this view appears
-    public func refreshOnAppear(_ query: BlazeQueryObserver) -> some View {
-        self.onAppear {
-            Task { @MainActor in
-                query.refresh()
-            }
-        }
-    }
-    
-    /// Enable pull-to-refresh for a BlazeQuery
-    public func refreshable(query: BlazeQueryObserver) -> some View {
-        self.refreshable {
-            await withCheckedContinuation { continuation in
-                Task { @MainActor in
-                    query.refresh()
-                }
-                // Wait for loading to complete
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                    continuation.resume()
-                }
-            }
-        }
-    }
-}
-
-#endif // canImport(SwiftUI) && canImport(Combine) && (os(macOS) || os(iOS) || os(watchOS) || os(tvOS))
-
+#endif
