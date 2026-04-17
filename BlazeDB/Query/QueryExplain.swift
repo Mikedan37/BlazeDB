@@ -19,10 +19,20 @@ public struct DetailedQueryPlan: CustomStringConvertible {
     public let candidateIndexes: [String]
     public let estimatedTime: TimeInterval
     public let warnings: [String]
+    /// Count of chained filter predicates (same notion as deprecated `QueryExplanation.filterCount`).
+    public let filterPredicateCount: Int
+    /// Field names from `where` clauses, sorted for stable logging and tests.
+    public let referencedFilterFields: [String]
 
     public var description: String {
         var output = "Query Execution Plan:\n"
         output += "  Estimated records: \(estimatedRecords)\n"
+        output += "  Filter predicates: \(filterPredicateCount)\n"
+        if referencedFilterFields.isEmpty {
+            output += "  Filter fields: none\n"
+        } else {
+            output += "  Filter fields: \(referencedFilterFields.joined(separator: ", "))\n"
+        }
 
         if !candidateIndexes.isEmpty {
             output += "  Candidate indexes: \(candidateIndexes.joined(separator: ", "))\n"
@@ -237,7 +247,9 @@ extension QueryBuilder {
             estimatedRecords: estimatedRecords,
             candidateIndexes: candidateIndexes,
             estimatedTime: estimatedTime,
-            warnings: warnings
+            warnings: warnings,
+            filterPredicateCount: filters.count,
+            referencedFilterFields: Array(filterFields).sorted()
         )
     }
     

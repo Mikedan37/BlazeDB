@@ -26,12 +26,13 @@ final class DXQueryExplainTests: XCTestCase {
         // Insert test data
         try db.insert(BlazeDataRecord(["name": .string("Alice"), "age": .int(30)]))
         
-        let explanation = try db.query()
+        let plan = try db.query()
             .where("name", equals: .string("Alice"))
             .where("age", greaterThan: .int(25))
-            .explainCost()
+            .explain()
         
-        XCTAssertEqual(explanation.filterCount, 2)
+        XCTAssertEqual(plan.filterPredicateCount, 2)
+        XCTAssertEqual(Set(plan.referencedFilterFields), ["age", "name"])
     }
     
     func testExplain_WarnsForUnindexedFilter() throws {
@@ -39,16 +40,15 @@ final class DXQueryExplainTests: XCTestCase {
         try db.insert(BlazeDataRecord(["name": .string("Alice"), "status": .string("active")]))
         
         // Query without index
-        let explanation = try db.query()
+        let plan = try db.query()
             .where("status", equals: .string("active"))
-            .explainCost()
+            .explain()
         
-        // Should warn about unindexed filter (if index detection works)
-        // If index detection is unavailable, riskLevel will be .unknown
-        XCTAssertTrue(
-            explanation.riskLevel == .warnUnindexedFilter ||
-            explanation.riskLevel == .unknown
-        )
+        XCTAssertEqual(plan.filterPredicateCount, 1)
+        XCTAssertEqual(plan.referencedFilterFields, ["status"])
+        XCTAssertTrue(plan.candidateIndexes.isEmpty)
+        XCTAssertTrue(plan.steps.contains { if case .tableScan = $0.type { return true }; return false })
+        XCTAssertTrue(plan.steps.contains { if case .filter = $0.type { return true }; return false })
     }
     
     func testExecuteWithWarnings_ReturnsSameResultsAsExecute() throws {
@@ -72,9 +72,9 @@ final class DXQueryExplainTests: XCTestCase {
     }
     
     func testExplain_HandlesEmptyQuery() throws {
-        let explanation = try db.query().explainCost()
+        let plan = try db.query().explain()
         
-        XCTAssertEqual(explanation.filterCount, 0)
-        XCTAssertTrue(explanation.filterFields.isEmpty)
+        XCTAssertEqual(plan.filterPredicateCount, 0)
+        XCTAssertTrue(plan.referencedFilterFields.isEmpty)
     }
 }

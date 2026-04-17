@@ -24,6 +24,7 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Added
 
+- **`DetailedQueryPlan`:** `filterPredicateCount` and `referencedFilterFields` mirror filter metadata previously only available via deprecated `explainCost()` ([#84](https://github.com/Mikedan37/BlazeDB/issues/84)).
 - `BlazeDBClient.delete(_:)` typed convenience for `BlazeStorable` models (sync + async).
 - **Tier0 regression tests** (`PathResolverDefaultLocationTests`): on Apple platforms, default DB directory and the default telemetry metrics URL layout both resolve under **Application Support/BlazeDB/** (and Linux under **~/.local/share/blazedb**), guarding against `homeDirectoryForCurrentUser` regressions on iOS.
 
