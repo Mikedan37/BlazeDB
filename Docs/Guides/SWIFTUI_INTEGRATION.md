@@ -13,6 +13,8 @@ That is the standard SwiftUI path.
 
 Use **`import SwiftUI`** and **`import BlazeDB`** only (the **`BlazeDB`** product re-exports core; you do not need **`import BlazeDBCore`** for normal app targets).
 
+Shared setup (all platforms): one **`App`** injects **`BlazeDBClient`**; the model is **`BlazeStorable`**.
+
 ```swift
 import SwiftUI
 import BlazeDB
@@ -36,7 +38,13 @@ struct MyApp: App {
         }
     }
 }
+```
 
+### macOS — minimal list + toolbar
+
+On **macOS**, a **`List`** with **`.toolbar { ... }`** is often enough: the **Add** button shows in the **window** toolbar without wrapping the list in **`NavigationStack`**.
+
+```swift
 struct ContentView: View {
     @Environment(\.blazeDBClient) private var db
     @BlazeStorableQuery(kind: Item.self) private var items: [Item]
@@ -54,6 +62,86 @@ struct ContentView: View {
     }
 }
 ```
+
+### iOS / iPadOS — `NavigationStack` + explicit toolbar placement
+
+On **iPhone and iPad**, toolbar items are tied to a **navigation bar**. Put the list inside **`NavigationStack`** (or **`NavigationView`**) and use **`ToolbarItem`** with an explicit **placement** so the button lands where users expect (usually trailing top).
+
+```swift
+struct ContentView: View {
+    @Environment(\.blazeDBClient) private var db
+    @BlazeStorableQuery(kind: Item.self) private var items: [Item]
+
+    var body: some View {
+        NavigationStack {
+            List(items, id: \.id) { item in
+                Text(item.title)
+            }
+            .navigationTitle("Items")
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Add") {
+                        guard let db else { return }
+                        _ = try? db.put(Item(title: "New"))
+                    }
+                }
+            }
+            .onAppear {
+                print("view did appear")
+            }
+        }
+    }
+}
+```
+
+### Toolbars and NavigationStack on iOS
+
+Docs often show **`.toolbar { Button("Add") { ... } }`** as if the button materializes by itself. On **iOS**, it does not: **toolbar items are rendered in a navigation bar** (or tab bar / bottom bar, depending on placement). If there is **no** navigation container, the bar — and your button — may be **invisible**, which feels like BlazeDB or SwiftUI is broken. It is not; the view hierarchy is incomplete.
+
+**Requirement:** On iOS, embed content that needs a top bar button in **`NavigationStack { ... }`** (or an equivalent that provides a navigation bar).
+
+**Does not show the button** (no navigation bar to attach to):
+
+```swift
+List(items, id: \.id) { item in
+    Text(item.title)
+}
+.toolbar {
+    Button("Add") {
+        guard let db else { return }
+        try? db.put(Item(title: "New"))
+    }
+}
+```
+
+**Works** — bar exists, **`ToolbarItem`** has a home:
+
+```swift
+NavigationStack {
+    List(items, id: \.id) { item in
+        Text(item.title)
+    }
+    .navigationTitle("Items")
+    .toolbar {
+        ToolbarItem(placement: .topBarTrailing) {
+            Button("Add") {
+                guard let db else { return }
+                try? db.put(Item(title: "New"))
+            }
+        }
+    }
+}
+```
+
+**Placement (be explicit):**
+
+| Placement | Typical use |
+|-----------|-------------|
+| **`.topBarTrailing`** | Trailing navigation bar — what most “+ / Add” actions want on iPhone. |
+| **`.bottomBar`** | Bottom of the screen when you want an action near the thumb or tab bar. |
+| **Omitted / default** | Behavior can vary by OS version and container; when something looks “random” or missing, set **`ToolbarItem(placement:)`** explicitly. |
+
+**BlazeDB writes** stay the same: resolve **`db`** from **`@Environment(\.blazeDBClient)`**, then **`put`** / **`insert`** as above. The only SwiftUI pitfall is **where** the button lives in the UI hierarchy, not the database API.
 
 Open the database **once**; do not create a second client for every screen.
 

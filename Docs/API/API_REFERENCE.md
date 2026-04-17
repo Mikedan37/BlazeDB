@@ -750,7 +750,7 @@ On Apple platforms, property wrappers re-run queries when BlazeDB posts change n
 @BlazeDataQuery(db: client, where: "status", equals: .string("open")) var rows: [BlazeDataRecord]
 ```
 
-See [SwiftUI Integration Guide](../Guides/SWIFTUI_INTEGRATION.md).
+See [SwiftUI Integration Guide](../Guides/SWIFTUI_INTEGRATION.md). On **iOS / iPadOS**, put lists that need a nav bar **Add** action inside **`NavigationStack`** and use **`ToolbarItem(placement:)`** — see **Toolbars and NavigationStack on iOS** in that guide (toolbar-only **`List`** often shows **no** top button without a navigation container).
 
 ---
 
