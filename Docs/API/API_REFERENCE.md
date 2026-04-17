@@ -27,7 +27,7 @@ This file documents broad repository API surfaces. They are **not all equal in d
 
 ## ** Convenience API (NEW!)**
 
-**Purpose:** Simplifies database creation and discovery without managing file paths manually. All databases are stored in `~/Library/Application Support/BlazeDB/` by default.
+**Purpose:** Simplifies database creation and discovery without managing file paths manually. Default storage uses Application Support + `BlazeDB/` on Apple platforms: **macOS** `~/Library/Application Support/BlazeDB/`, **iOS** `<Sandbox>/Library/Application Support/BlazeDB/`. See [DEFAULT_STORAGE_PATHS.md](../GettingStarted/DEFAULT_STORAGE_PATHS.md).
 
 ### **Create Database by Name:**
 
@@ -35,7 +35,7 @@ This file documents broad repository API surfaces. They are **not all equal in d
 
 ```swift
 // Super simple - just a name!
-// USAGE: Create/open database in default location (~/Library/Application Support/BlazeDB/)
+// USAGE: Create/open database in default location (Application Support/BlazeDB/ on Apple platforms)
 let db = try BlazeDBClient(name: "MyApp", password: "secure-password-123")
 
 // With project namespace
@@ -91,7 +91,7 @@ if let db = BlazeDBClient.getRegisteredDatabase(named: "MyApp") {
 let registered = BlazeDBClient.registeredDatabases()
 ```
 
-**Default Location:** `~/Library/Application Support/BlazeDB/`
+**Default Location (Apple):** Application Support + `BlazeDB/` — macOS: `~/Library/Application Support/BlazeDB/`; iOS: sandbox `Library/Application Support/BlazeDB/`. Linux: `~/.local/share/blazedb/`.
 
 ---
 

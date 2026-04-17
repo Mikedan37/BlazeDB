@@ -42,7 +42,9 @@ You will mainly use:
 |----------|----------|
 | macOS | `~/Library/Application Support/BlazeDB/{name}.blazedb` |
 | Linux | `~/.local/share/blazedb/{name}.blazedb` |
-| iOS/tvOS/watchOS | Inside your app's sandbox |
+| iOS / iPadOS / tvOS / watchOS | `<Sandbox>/Library/Application Support/BlazeDB/{name}.blazedb` (same **relative** path as macOS; no `homeDirectoryForCurrentUser` on iOS) |
+
+See **[DEFAULT_STORAGE_PATHS.md](DEFAULT_STORAGE_PATHS.md)** for implementation details and telemetry file layout.
 
 **Default location (recommended):**
 ```swift

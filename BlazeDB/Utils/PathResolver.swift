@@ -3,7 +3,7 @@
 //  BlazeDB
 //
 //  Platform-safe path resolution and directory management
-//  Ensures Linux and macOS compatibility
+//  Ensures Linux, macOS, and iOS compatibility
 //
 
 import Foundation
@@ -12,6 +12,12 @@ import Foundation
 ///
 /// Provides consistent, safe default paths across platforms.
 /// Handles directory creation and permission errors explicitly.
+///
+/// **Apple platforms:** Uses `FileManager.url(for: .applicationSupportDirectory, …)` plus `BlazeDB/`
+/// so the same logic works on **macOS** (`~/Library/Application Support/BlazeDB`) and **iOS** (sandbox
+/// Application Support). Do not use `homeDirectoryForCurrentUser` here — it is unavailable on iOS.
+///
+/// Documentation: `Docs/GettingStarted/DEFAULT_STORAGE_PATHS.md`
 public struct PathResolver {
     
     /// Get default database directory for current platform
@@ -21,11 +27,17 @@ public struct PathResolver {
     ///
     /// Platform-specific defaults:
     /// - macOS: ~/Library/Application Support/BlazeDB
+    /// - iOS: app container Library/Application Support/BlazeDB (`homeDirectoryForCurrentUser` is unavailable on iOS)
     /// - Linux: ~/.local/share/blazedb
     public static func defaultDatabaseDirectory() throws -> URL {
         #if os(macOS) || os(iOS)
-        let home = FileManager.default.homeDirectoryForCurrentUser
-        let appSupport = home.appendingPathComponent("Library/Application Support/BlazeDB")
+        let base = try FileManager.default.url(
+            for: .applicationSupportDirectory,
+            in: .userDomainMask,
+            appropriateFor: nil,
+            create: true
+        )
+        let appSupport = base.appendingPathComponent("BlazeDB", isDirectory: true)
         #elseif os(Linux)
         let home = FileManager.default.homeDirectoryForCurrentUser
         let appSupport = home.appendingPathComponent(".local/share/blazedb")

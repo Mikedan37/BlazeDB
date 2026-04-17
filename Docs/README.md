@@ -41,6 +41,7 @@ Internal analysis material lives under [`Docs/Internal/`](Internal/README.md) an
 *If you’re new, hit these in roughly this order. You’ll stay on the happy path.*
 
 - [Getting Started](GettingStarted/README.md): install the package, run `HelloBlazeDB`, paste the tiny starter snippet; the “I just want it working” path.
+- [Default storage paths](GettingStarted/DEFAULT_STORAGE_PATHS.md): macOS / iOS / Linux default DB and telemetry locations (canonical reference when paths matter).
 - [Developer Guide](DEVELOPER_GUIDE.md): longer walkthrough of the public API in prose (CRUD, queries, patterns); read after you’ve run something once.
 - [API Reference](API/API_REFERENCE.md): lookup tables and signatures when you already know what you’re trying to call.
 - [Examples](../Examples/): copy-paste runnable projects and patterns when docs need a concrete file to stare at.

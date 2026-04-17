@@ -163,7 +163,9 @@ struct Bug: BlazeDocument {
 | -------- | ----------------------------------------------------- |
 | macOS    | `~/Library/Application Support/BlazeDB/myapp.blazedb` |
 | Linux    | `~/.local/share/blazedb/myapp.blazedb`                |
-| iOS      | App sandbox (automatic)                               |
+| iOS      | `<Sandbox>/Library/Application Support/BlazeDB/myapp.blazedb` |
+
+Canonical paths, telemetry defaults, and migration notes: **[DEFAULT_STORAGE_PATHS.md](DEFAULT_STORAGE_PATHS.md)**.
 
 
 ---

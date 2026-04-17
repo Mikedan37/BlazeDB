@@ -175,7 +175,7 @@ public enum BlazeDBError: Error, LocalizedError, CustomStringConvertible {
 
 ### Pattern 1: Convenience Initializer (Recommended)
 
-Creates database in `~/Library/Application Support/BlazeDB/` automatically.
+Creates the database under the platform default directory automatically: **macOS** `~/Library/Application Support/BlazeDB/`, **iOS** app sandbox `Library/Application Support/BlazeDB/`, **Linux** `~/.local/share/blazedb/`. Details: [DEFAULT_STORAGE_PATHS.md](GettingStarted/DEFAULT_STORAGE_PATHS.md).
 
 ```swift
 // Simple - just name and password

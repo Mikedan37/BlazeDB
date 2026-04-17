@@ -30,8 +30,9 @@ extension BlazeDBClient {
     /// // Super simple - just a name!
     /// let db = try BlazeDBClient(name: "MyApp", password: "secure-password-123")
     ///
-    /// // Database is automatically stored in:
-    /// // ~/Library/Application Support/BlazeDB/MyApp.blazedb
+    /// // Database is automatically stored under Application Support/BlazeDB/, e.g.:
+    /// // macOS: ~/Library/Application Support/BlazeDB/MyApp.blazedb
+    /// // iOS: <Sandbox>/Library/Application Support/BlazeDB/MyApp.blazedb
     /// ```
     @available(*, deprecated, message: "Use BlazeDBClient.open(named:password:) or open(at:password:) instead.")
     public convenience init(name: String, password: String, project: String = "Default") throws {
@@ -72,7 +73,7 @@ extension BlazeDBClient {
     
     /// Get the default database URL for a given name
     ///
-    /// Databases are stored in: `~/Library/Application Support/BlazeDB/`
+    /// Databases are stored under Application Support + `BlazeDB/` (macOS: `~/Library/...`; iOS: sandbox).
     ///
     /// - Parameter name: Database name
     /// - Returns: URL to the database file
@@ -111,7 +112,7 @@ extension BlazeDBClient {
     
     /// Get the default database directory
     ///
-    /// Returns: `~/Library/Application Support/BlazeDB/`
+    /// Returns the default BlazeDB directory (Application Support + `BlazeDB/`).
     public static var defaultDatabaseDirectory: URL {
         get throws {
             let fileManager = FileManager.default
@@ -144,7 +145,7 @@ extension BlazeDBClient {
     
     /// Discover all databases in the default location
     ///
-    /// Scans `~/Library/Application Support/BlazeDB/` for all `.blazedb` files
+    /// Scans the default Application Support `BlazeDB/` directory for all `.blazedb` files
     ///
     /// - Returns: Array of discovered database information
     /// - Throws: BlazeDBError if discovery fails

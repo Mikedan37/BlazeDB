@@ -30,17 +30,23 @@ public struct TelemetryConfiguration {
     /// Slow operation threshold (ms) - log warnings for operations slower than this
     public var slowOperationThreshold: Double = 100.0
     
-    /// Metrics database URL (where to store metrics)
+    /// Metrics database URL (where to store metrics).
+    ///
+    /// Default when `nil`: `<Application Support>/BlazeDB/metrics/telemetry.blazedb` on Apple platforms
+    /// (macOS: under `~/Library/...`; iOS: app sandbox). Legacy layouts used `~/.blazedb/metrics/`; see
+    /// `Docs/GettingStarted/DEFAULT_STORAGE_PATHS.md`.
     public var metricsURL: URL
     
     public init(metricsURL: URL? = nil) {
         if let url = metricsURL {
             self.metricsURL = url
         } else {
-            // Default: ~/.blazedb/metrics/
-            self.metricsURL = FileManager.default.homeDirectoryForCurrentUser
-                .appendingPathComponent(".blazedb")
-                .appendingPathComponent("metrics")
+            // Default: Application Support/BlazeDB/metrics/ (macOS + iOS sandbox; avoid homeDirectoryForCurrentUser on iOS)
+            let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
+                ?? FileManager.default.temporaryDirectory
+            self.metricsURL = base
+                .appendingPathComponent("BlazeDB", isDirectory: true)
+                .appendingPathComponent("metrics", isDirectory: true)
                 .appendingPathComponent("telemetry.blazedb")
         }
     }

@@ -38,10 +38,20 @@ final class TelemetryUnitTests: XCTestCase {
             try? FileManager.default.removeItem(at: url)
         }
         
-        // Clean up metrics database
-        let metricsURL = FileManager.default.homeDirectoryForCurrentUser
+        // Clean up metrics database (matches default `TelemetryConfiguration` path; legacy ~/.blazedb on macOS only)
+        #if os(macOS)
+        let legacyMetrics = FileManager.default.homeDirectoryForCurrentUser
             .appendingPathComponent(".blazedb/metrics/telemetry.blazedb")
-        try? FileManager.default.removeItem(at: metricsURL)
+        try? FileManager.default.removeItem(at: legacyMetrics)
+        #endif
+        let fm = FileManager.default
+        if let base = fm.urls(for: .applicationSupportDirectory, in: .userDomainMask).first {
+            let metricsURL = base
+                .appendingPathComponent("BlazeDB", isDirectory: true)
+                .appendingPathComponent("metrics", isDirectory: true)
+                .appendingPathComponent("telemetry.blazedb")
+            try? fm.removeItem(at: metricsURL)
+        }
         
         super.tearDown()
     }
