@@ -50,6 +50,8 @@ struct MyApp: App {
 }
 ```
 
+**Model** (shared):
+
 ```swift
 import SwiftUI
 import BlazeDB
@@ -58,7 +60,11 @@ struct Item: BlazeStorable {
     var id: UUID = UUID()
     var title: String
 }
+```
 
+**macOS** — list + window toolbar (no **`NavigationStack`** required for a typical window toolbar):
+
+```swift
 struct ContentView: View {
     @Environment(\.blazeDBClient) private var db
     @BlazeStorableQuery(kind: Item.self) private var items: [Item]
@@ -71,6 +77,35 @@ struct ContentView: View {
             Button("Add") {
                 guard let db else { return }
                 try? db.put(Item(title: "New"))
+            }
+        }
+    }
+}
+```
+
+**iOS / iPadOS** — wrap in **`NavigationStack`** and use **`ToolbarItem(placement:)`** so the **Add** button appears in the navigation bar (see [SwiftUI Integration Guide — toolbars on iOS](../Guides/SWIFTUI_INTEGRATION.md#toolbars-and-navigationstack-on-ios)):
+
+```swift
+struct ContentView: View {
+    @Environment(\.blazeDBClient) private var db
+    @BlazeStorableQuery(kind: Item.self) private var items: [Item]
+
+    var body: some View {
+        NavigationStack {
+            List(items, id: \.id) { item in
+                Text(item.title)
+            }
+            .navigationTitle("Items")
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Add") {
+                        guard let db else { return }
+                        _ = try? db.put(Item(title: "New"))
+                    }
+                }
+            }
+            .onAppear {
+                print("view did appear")
             }
         }
     }

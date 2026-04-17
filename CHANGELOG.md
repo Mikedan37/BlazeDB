@@ -7,6 +7,10 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ## [Unreleased]
 
+### Documentation
+
+- **SwiftUI:** [SWIFTUI_INTEGRATION.md](Docs/Guides/SWIFTUI_INTEGRATION.md) and [SWIFTUI_DATABASE_PATTERNS.md](Docs/GettingStarted/SWIFTUI_DATABASE_PATTERNS.md) now show **macOS** vs **iOS** minimal examples (list + toolbar vs **`NavigationStack`** + **`ToolbarItem(placement: .topBarTrailing)`**), plus a **wrong vs right** toolbar snippet and placement table so iOS navigation hierarchy issues are not mistaken for BlazeDB bugs.
+
 ### Changed
 
 - **Apple platforms (iOS fix):** `PathResolver.defaultDatabaseDirectory()` no longer uses `FileManager.homeDirectoryForCurrentUser` (unavailable on iOS). macOS and iOS now both use **`FileManager.url(for: .applicationSupportDirectory, …)`** + `BlazeDB/` — same relative layout as before on macOS (`~/Library/Application Support/BlazeDB/`).
