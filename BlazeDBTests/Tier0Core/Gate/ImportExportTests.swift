@@ -151,6 +151,19 @@ final class ImportExportTests: XCTestCase {
         XCTAssertNotNil(header)
         XCTAssertEqual(header.databaseName, "verify-test")
     }
+
+    func testVerify_ManifestHashes_AreSha256Hex() throws {
+        let db = try BlazeDBClient(name: "hash-format-test", fileURL: tempDBURL, password: password)
+        _ = try db.insert(BlazeDataRecord(["test": .string("value")]))
+        try db.export(to: tempDumpURL)
+
+        let dumpData = try Data(contentsOf: tempDumpURL)
+        let dump = try DatabaseDump.decodeAndVerify(dumpData)
+
+        XCTAssertTrue(isSHA256Hex(dump.manifest.headerHash), "headerHash must be 64-char lowercase hex SHA256")
+        XCTAssertTrue(isSHA256Hex(dump.manifest.payloadHash), "payloadHash must be 64-char lowercase hex SHA256")
+        XCTAssertTrue(isSHA256Hex(dump.manifest.combinedHash), "combinedHash must be 64-char lowercase hex SHA256")
+    }
     
     func testVerify_TamperedDump_Fails() throws {
         // Create and export database
@@ -238,5 +251,17 @@ final class ImportExportTests: XCTestCase {
         XCTAssertEqual(records.count, 1)
         
         try? FileManager.default.removeItem(at: targetURL)
+    }
+
+    private func isSHA256Hex(_ value: String) -> Bool {
+        guard value.count == 64 else { return false }
+        return value.unicodeScalars.allSatisfy { scalar in
+            switch scalar.value {
+            case 48...57, 97...102: // 0-9, a-f
+                return true
+            default:
+                return false
+            }
+        }
     }
 }

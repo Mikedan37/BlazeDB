@@ -64,7 +64,7 @@ For release line policy, see `Docs/RELEASE_POSTURE.md`.
 | Vacuum / compaction | Internal | Internal | `Storage/VacuumCompaction.swift`, `VacuumOperations.swift`, `VacuumRecovery.swift` | — | Page reclamation; no public API |
 | Page reuse GC | Internal | Internal | `Core/PageReuseGC.swift` | — | Free-page allocation/reclaim; distinct from vacuum compaction |
 | Storage manager | Partial | Public with caveats | `Storage/StorageManager.swift` | — | Public `performCleanup()`, `databaseDiskUsage()`; no docs or onboarding path |
-| Backup / export | Stable | Public | `Storage/BlazeDBBackup.swift`, `Exports/BlazeDBClient+Export.swift`, `Exports/BlazeDBImporter.swift` | — | `db.export(to:)` produces deterministic JSON (`DatabaseDump`); SHA256 tamper detection on Apple; **base64 fallback on Linux (not cryptographic)** — see `Core/DumpFormat.swift` |
+| Backup / export | Stable | Public | `Storage/BlazeDBBackup.swift`, `Exports/BlazeDBClient+Export.swift`, `Exports/BlazeDBImporter.swift` | — | `db.export(to:)` produces deterministic JSON (`DatabaseDump`) with SHA256 tamper detection across supported platforms — see `Core/DumpFormat.swift` |
 | Forensics | Internal | Internal | `Storage/BlazeDBForensics.swift` | — | Low-level page inspection |
 
 ### Transactions and Concurrency
