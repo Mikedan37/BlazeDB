@@ -2,6 +2,8 @@
 
 **Easy database creation - just provide a name! No file paths needed.**
 
+**Passwords:** `open` enforces a [password policy](../GettingStarted/PASSWORD_POLICY.md) (recommended: ≥12 characters with uppercase, lowercase, and digit). The strings below are **placeholders** that satisfy that policy. If you copy a shorter or simpler password from older docs, `BlazeDBError.passwordTooWeak` is thrown — and `try?` hides it, so the failure looks like “nothing happened.”
+
 ---
 
 ## ** Quick Start**
@@ -10,13 +12,13 @@
 ```swift
 let url = FileManager.default.urls(for:.documentDirectory, in:.userDomainMask)[0]
 .appendingPathComponent("myapp.blazedb")
-let db = try BlazeDBClient(name: "MyApp", fileURL: url, password: "password")
+let db = try BlazeDBClient(name: "MyApp", fileURL: url, password: "MyApp-Open-2026!")
 ```
 
 ### **After (Simple):**
 ```swift
 // Just a name - that's it!
-let db = try BlazeDBClient(name: "MyApp", password: "password")
+let db = try BlazeDBClient(name: "MyApp", password: "MyApp-Open-2026!")
 ```
 
 **Database is automatically stored in:**
@@ -30,13 +32,13 @@ let db = try BlazeDBClient(name: "MyApp", password: "password")
 
 ```swift
 // Standard initialization
-let db = try BlazeDBClient(name: "MyApp", password: "secure-password-123")
+let db = try BlazeDBClient(name: "MyApp", password: "MyApp-Secure-2026!")
 
 // With project namespace
-let db = try BlazeDBClient(name: "MyApp", password: "secure-password-123", project: "MyProject")
+let db = try BlazeDBClient(name: "MyApp", password: "MyApp-Secure-2026!", project: "MyProject")
 
 // Failable (no try-catch needed)
-guard let db = BlazeDBClient.create(name: "MyApp", password: "secure-password-123") else {
+guard let db = BlazeDBClient.create(name: "MyApp", password: "MyApp-Secure-2026!") else {
  print("Failed to create database")
  return
 }
@@ -80,7 +82,7 @@ if BlazeDBClient.databaseExists(named: "MyApp") {
 
 ```swift
 // Register database for easy lookup
-let db = try BlazeDBClient(name: "MyApp", password: "password")
+let db = try BlazeDBClient(name: "MyApp", password: "MyApp-Open-2026!")
 BlazeDBClient.registerDatabase(name: "MyApp", client: db)
 
 // Get registered database
@@ -106,7 +108,7 @@ BlazeDBClient.unregisterDatabase(named: "MyApp")
 import BlazeDB
 
 // Create database
-let db = try BlazeDBClient(name: "MyApp", password: "secure-password-123")
+let db = try BlazeDBClient(name: "MyApp", password: "MyApp-Secure-2026!")
 
 // Use it!
 let id = try db.insert(BlazeDataRecord(["title":.string("Hello")]))
@@ -117,9 +119,9 @@ let record = try db.fetch(id: id)
 
 ```swift
 // Create multiple databases easily
-let userDB = try BlazeDBClient(name: "UserData", password: "password1")
-let cacheDB = try BlazeDBClient(name: "Cache", password: "password2")
-let settingsDB = try BlazeDBClient(name: "Settings", password: "password3")
+let userDB = try BlazeDBClient(name: "UserData", password: "UserData-Key-2026!")
+let cacheDB = try BlazeDBClient(name: "Cache", password: "Cache-Key-2026!")
+let settingsDB = try BlazeDBClient(name: "Settings", password: "Settings-Key-2026!")
 
 // Each is stored separately in Application Support
 ```
@@ -138,7 +140,7 @@ for dbInfo in databases {
 
  // Open database (requires password)
  // In production, you'd get password from secure storage
- let db = try BlazeDBClient(name: dbInfo.name, password: "password")
+ let db = try BlazeDBClient(name: dbInfo.name, password: "MyApp-Open-2026!")
  // Use db...
 }
 ```
@@ -147,8 +149,8 @@ for dbInfo in databases {
 
 ```swift
 // Register databases at app startup
-let userDB = try BlazeDBClient(name: "UserData", password: "password")
-let cacheDB = try BlazeDBClient(name: "Cache", password: "password")
+let userDB = try BlazeDBClient(name: "UserData", password: "MyApp-Open-2026!")
+let cacheDB = try BlazeDBClient(name: "Cache", password: "MyApp-Open-2026!")
 
 BlazeDBClient.registerDatabase(name: "UserData", client: userDB)
 BlazeDBClient.registerDatabase(name: "Cache", client: cacheDB)
@@ -203,12 +205,12 @@ if let db = BlazeDBClient.getRegisteredDatabase(named: "UserData") {
 ```swift
 let url = FileManager.default.urls(for:.documentDirectory, in:.userDomainMask)[0]
 .appendingPathComponent("myapp.blazedb")
-let db = try BlazeDBClient(name: "MyApp", fileURL: url, password: "password")
+let db = try BlazeDBClient(name: "MyApp", fileURL: url, password: "MyApp-Open-2026!")
 ```
 
 ### **New Way:**
 ```swift
-let db = try BlazeDBClient(name: "MyApp", password: "password")
+let db = try BlazeDBClient(name: "MyApp", password: "MyApp-Open-2026!")
 ```
 
 **That's it!** The old API still works, but the new one is much easier.
@@ -220,18 +222,18 @@ let db = try BlazeDBClient(name: "MyApp", password: "password")
 ### **1. Use Descriptive Names:**
 ```swift
 // Good
-let db = try BlazeDBClient(name: "UserData", password: "password")
-let db = try BlazeDBClient(name: "AppCache", password: "password")
+let db = try BlazeDBClient(name: "UserData", password: "MyApp-Open-2026!")
+let db = try BlazeDBClient(name: "AppCache", password: "MyApp-Open-2026!")
 
 // Bad
-let db = try BlazeDBClient(name: "db1", password: "password")
-let db = try BlazeDBClient(name: "data", password: "password")
+let db = try BlazeDBClient(name: "db1", password: "MyApp-Open-2026!")
+let db = try BlazeDBClient(name: "data", password: "MyApp-Open-2026!")
 ```
 
 ### **2. Register Important Databases:**
 ```swift
 // Register at app startup
-let db = try BlazeDBClient(name: "MyApp", password: "password")
+let db = try BlazeDBClient(name: "MyApp", password: "MyApp-Open-2026!")
 BlazeDBClient.registerDatabase(name: "MyApp", client: db)
 
 // Use throughout app

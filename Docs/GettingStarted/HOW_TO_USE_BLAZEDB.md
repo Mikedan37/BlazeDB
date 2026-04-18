@@ -8,7 +8,7 @@ Before this guide:
 
 If you are new, read this in order:
 1. Querying Data
-2. Opening and Closing Correctly
+2. Opening and Closing Correctly (**includes [password policy](PASSWORD_POLICY.md)**)
 3. Backups, Restore, and Trust
 4. Sharp Edges
 
@@ -21,6 +21,8 @@ This is the practical guide for day-2 usage: queries, lifecycle, backups, and pr
 The beginner setup and first end-to-end example are intentionally in the root README, so this file does not repeat them.
 
 If you need a quick "what BlazeDB is / is not" summary, use [README.md](../../README.md).
+
+**Encryption passwords:** BlazeDB rejects weak passwords when you call `open`. Read **[PASSWORD_POLICY.md](PASSWORD_POLICY.md)** so failures are not mistaken for bugs (especially avoid `try?` during development).
 
 ---
 
@@ -237,10 +239,18 @@ These wrappers re-run queries when BlazeDB emits change notifications after writ
 
 ## 7. Opening and Closing Correctly
 
+### Password requirements
+
+Every `BlazeDB.open(...)` goes through **`PasswordStrengthValidator`** with **`Requirements.recommended`** (minimum length **12**, at least one **uppercase**, **lowercase**, and **digit**, plus a minimum strength score). Non‑compliant passwords throw **`BlazeDBError.passwordTooWeak`** with guidance in **`error.localizedDescription`**.
+
+**Common pitfall:** `try? BlazeDB.open(...)` hides that error — it looks like the database “failed to open” with no explanation. Prefer `try`/`catch` or inspect the thrown error.
+
+Canonical reference: **[PASSWORD_POLICY.md](PASSWORD_POLICY.md)**.
+
 **Open once per process. Close once at shutdown.**
 
 ```swift
-let db = try BlazeDB.open(name: "myapp", password: "your-password")
+let db = try BlazeDB.open(name: "myapp", password: "YourPass-123!")
 defer { try? db.close() }
 
 // Use database...

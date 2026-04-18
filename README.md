@@ -26,6 +26,7 @@
 - [Start Here](#start-here-new-users)
 - [Try BlazeDB from this repo](#try-blazedb-from-this-repo)
 - [Add BlazeDB to your app](#add-blazedb-to-your-app)
+- [Password policy](#password-policy-for-open)
 - [What to do next](#what-to-do-next)
 - [SwiftUI path](#swiftui-path)
 - [Documentation](#documentation)
@@ -77,6 +78,14 @@ The `"bug"` in `query("bug")` is a **label for which kind of record** (bugs vs n
 | `query("bug")…` | Lists or filters bugs |
 
 Id strings look like `"bug:<uuid>"`: `bug` = kind, uuid = which one.
+
+---
+
+## Password policy for `open`
+
+BlazeDB derives the AES key from your password **before** any database file is created. Passwords must meet **production defaults** (length, character classes, and a minimum strength score). Weak passwords fail **at open time** with `BlazeDBError.passwordTooWeak` — not as a silent no-op.
+
+**Do not** use `try? BlazeDB.open(...)` while prototyping unless you handle failures: a rejected password looks like “nothing happened.” Use `try` / `catch` and read `error.localizedDescription`, or see the full rules in **[PASSWORD_POLICY.md](Docs/GettingStarted/PASSWORD_POLICY.md)**.
 
 ---
 
@@ -275,7 +284,7 @@ BlazeDB stores all records in one encrypted document collection per database fil
 
 ### Encryption
 
-The production runtime is always encrypted at rest. Every data page is sealed with AES-256-GCM. A password is required to open any database (minimum 8 characters). Metadata is HMAC-SHA256 signed for tamper detection. A benchmark-only flag (`BLAZEDB_BENCHMARK_NO_ENCRYPTION`) exists for performance isolation testing but must not be used with real data.
+The production runtime is always encrypted at rest. Every data page is sealed with AES-256-GCM. Opening a database requires a **strong password** (see [Password policy](#password-policy-for-open) and [PASSWORD_POLICY.md](Docs/GettingStarted/PASSWORD_POLICY.md)). Metadata is HMAC-SHA256 signed for tamper detection. A benchmark-only flag (`BLAZEDB_BENCHMARK_NO_ENCRYPTION`) exists for performance isolation testing but must not be used with real data.
 
 ---
 
@@ -449,7 +458,7 @@ Run with `swift run <ToolName>`.
 
 - **Single-process only.** Do not share database files between multiple processes. File-level locking prevents concurrent access, but the database is designed for single-process use.
 - **Nested Codable types are not individually queryable.** Nested structs/classes are stored as `BlazeDocumentField.dictionary` values. Round-tripping works, but nested fields cannot be filtered via KeyPath queries. Flatten nested fields into top-level properties if you need to query them.
-- **Password minimum 8 characters.** Enforced at open time.
+- **Password strength policy.** Not a fixed “N characters only” rule — see [PASSWORD_POLICY.md](Docs/GettingStarted/PASSWORD_POLICY.md). Weak passwords throw `BlazeDBError.passwordTooWeak` when opening or creating a database.
 - **`@BlazeQuery` / `@BlazeQueryTyped` require `BlazeDocument`.** For `BlazeStorable`-only models, use **`@BlazeStorableQuery`** instead, or add `BlazeDocument` (manual `toStorage()`/`init(from:)`), or use `@BlazeDataQuery` for raw rows.
 - **Android CI is best-effort.** Cross-compilation expects Swift 6.3+ with the Swift Android SDK + Android NDK in a manual lane.
 
@@ -477,6 +486,7 @@ Run with `swift run <ToolName>`.
 
 | Resource | Description |
 |----------|-------------|
+| [Password policy](Docs/GettingStarted/PASSWORD_POLICY.md) | Required complexity for `open` / key derivation; errors and testing |
 | [Getting Started Guide](Docs/GettingStarted/README.md) | Step-by-step setup |
 | [SwiftUI DB Patterns](Docs/GettingStarted/SWIFTUI_DATABASE_PATTERNS.md) | Practical SwiftUI patterns for passing and using `BlazeDBClient` |
 | [Complete Reference](Docs/GettingStarted/HOW_TO_USE_BLAZEDB.md) | Full usage guide with queries, backups, and health checks |

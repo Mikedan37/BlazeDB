@@ -13,10 +13,12 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Documentation
 
+- **Password policy:** added [PASSWORD_POLICY.md](Docs/GettingStarted/PASSWORD_POLICY.md) as the canonical rules for encryption passwords (recommended complexity, `try?` pitfalls, testing). README and [HOW_TO_USE_BLAZEDB.md](Docs/GettingStarted/HOW_TO_USE_BLAZEDB.md) link it prominently; `BlazeDBError.passwordTooWeak` localized descriptions reference the doc. [CONVENIENCE_API_GUIDE.md](Docs/Guides/CONVENIENCE_API_GUIDE.md) examples use policy-compliant placeholders.
 - **SwiftUI:** [SWIFTUI_INTEGRATION.md](Docs/Guides/SWIFTUI_INTEGRATION.md) and [SWIFTUI_DATABASE_PATTERNS.md](Docs/GettingStarted/SWIFTUI_DATABASE_PATTERNS.md) now show **macOS** vs **iOS** minimal examples (list + toolbar vs **`NavigationStack`** + **`ToolbarItem(placement: .topBarTrailing)`**), plus a **wrong vs right** toolbar snippet and placement table so iOS navigation hierarchy issues are not mistaken for BlazeDB bugs.
 
 ### Changed
 
+- **`BlazeDBClient.openForTesting`:** default encryption password updated to satisfy the recommended policy so “just call `openForTesting()`” works without a silent `passwordTooWeak` failure (see [PASSWORD_POLICY.md](Docs/GettingStarted/PASSWORD_POLICY.md)). Apps that depended on the previous default string must pass `password:` explicitly if they still need that value.
 - **Apple platforms (iOS fix):** `PathResolver.defaultDatabaseDirectory()` no longer uses `FileManager.homeDirectoryForCurrentUser` (unavailable on iOS). macOS and iOS now both use **`FileManager.url(for: .applicationSupportDirectory, …)`** + `BlazeDB/` — same relative layout as before on macOS (`~/Library/Application Support/BlazeDB/`).
 - **Telemetry default path:** when using default `TelemetryConfiguration()`, metrics now resolve under **`<Application Support>/BlazeDB/metrics/telemetry.blazedb`** instead of **`~/.blazedb/metrics/telemetry.blazedb`**. Documented in [Docs/GettingStarted/DEFAULT_STORAGE_PATHS.md](Docs/GettingStarted/DEFAULT_STORAGE_PATHS.md).
 - **Documentation:** Getting Started, HOW_TO_USE, USABILITY_PORTABILITY, API Reference, Developer Guide, and `Docs/README.md` now describe **iOS sandbox** default paths and link to **DEFAULT_STORAGE_PATHS**. Source doc comments updated on `PathResolver`, `TelemetryConfiguration`, `BlazeDBClient+EasyOpen`, and `BlazeDBClient+Convenience`.

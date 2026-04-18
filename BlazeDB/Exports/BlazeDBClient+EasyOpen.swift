@@ -25,7 +25,7 @@ extension BlazeDBClient {
     ///
     /// - Parameters:
     ///   - name: Database name (becomes the filename)
-    ///   - password: Encryption password (required, minimum 8 characters)
+    ///   - password: Encryption password (`PasswordStrengthValidator.Requirements.recommended`; see `Docs/GettingStarted/PASSWORD_POLICY.md`)
     /// - Returns: Ready-to-use database client
     ///
     /// Database is stored in the platform default location:
@@ -56,7 +56,7 @@ extension BlazeDBClient {
     ///
     /// - Parameters:
     ///   - url: File URL for the database
-    ///   - password: Encryption password (required, minimum 8 characters)
+    ///   - password: Encryption password (`PasswordStrengthValidator.Requirements.recommended`; see `Docs/GettingStarted/PASSWORD_POLICY.md`)
     /// - Returns: Ready-to-use database client
     public static func open(
         at url: URL,
@@ -201,7 +201,7 @@ extension BlazeDBClient {
     ///
     /// - Parameters:
     ///   - name: Database name (optional, defaults to UUID)
-    ///   - password: Encryption password (can be simple for tests)
+    ///   - password: Encryption password (**same strength rules as production**; default satisfies `PasswordStrengthValidator.Requirements.recommended`)
     /// - Returns: Configured BlazeDB client
     /// - Throws: Error if database cannot be opened
     ///
@@ -213,7 +213,7 @@ extension BlazeDBClient {
     /// ```
     public static func openForTesting(
         name: String? = nil,
-        password: String = "test-password"
+        password: String = "TestPass-123!"
     ) throws -> BlazeDBClient {
         // Use temporary directory for tests
         let tempDir = FileManager.default.temporaryDirectory

@@ -158,7 +158,7 @@ public enum BlazeDBError: Error, LocalizedError, CustomStringConvertible {
             return "Data corruption detected at \(location): \(reason). Database integrity may be compromised. Restore from backup if available."
             
         case .passwordTooWeak(let requirements):
-            return "Password is too weak. Requirements: \(requirements). Use a stronger password with letters, numbers, and special characters."
+            return "Password does not meet BlazeDB encryption policy (recommended: ≥12 characters, uppercase, lowercase, digit, minimum strength—see PASSWORD_POLICY.md in Docs/GettingStarted/). \(requirements)"
             
         case .invalidData(let reason):
             return "Invalid data: \(reason). Check input data format and types."

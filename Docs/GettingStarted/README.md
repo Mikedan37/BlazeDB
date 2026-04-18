@@ -64,6 +64,8 @@ let openBugs: [Bug] = try db.query("bug")
     .all()
 ```
 
+The passphrase in the snippet is only an example — it must meet BlazeDB’s [password policy](PASSWORD_POLICY.md). Short or simple passwords are rejected when opening the database (`BlazeDBError.passwordTooWeak`). Avoid `try?` while learning: a failed open returns `nil` with no explanation.
+
 **That's it.** You have a working, encrypted, crash-safe database with type-safe models.
 
 ---

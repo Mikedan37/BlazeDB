@@ -98,9 +98,16 @@ final class BlazeDBInitializationTests: XCTestCase {
             password: "weak"  // Only 4 characters
         )) { error in
             XCTAssertTrue(error is BlazeDBError, "Should throw BlazeDBError")
-            if case BlazeDBError.transactionFailed(let msg, _) = error {
-                XCTAssertTrue(msg.contains("8 characters"), "Should mention 8 character requirement")
-                XCTAssertTrue(msg.contains("weak") || msg.contains("4"), "Should mention actual length")
+            guard let blaze = error as? BlazeDBError else { return }
+            if case .passwordTooWeak(let requirements) = blaze {
+                XCTAssertFalse(requirements.isEmpty, "Should include validation hints")
+                let desc = blaze.errorDescription ?? ""
+                XCTAssertTrue(
+                    desc.localizedCaseInsensitiveContains("12") || desc.localizedCaseInsensitiveContains("policy"),
+                    "Error should mention policy or length: \(desc)"
+                )
+            } else {
+                XCTFail("Expected passwordTooWeak, got \(blaze)")
             }
         }
         
@@ -116,7 +123,7 @@ final class BlazeDBInitializationTests: XCTestCase {
         XCTAssertThrowsError(try BlazeDBClient(
             name: "TestDB",
             fileURL: invalidURL,
-            password: "secure-password-123"
+            password: "SecurePass-123!"
         )) { error in
             // Should throw some error (storage initialization failure)
             XCTAssertTrue(error is BlazeDBError || error is CocoaError)
