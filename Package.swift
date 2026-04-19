@@ -273,7 +273,7 @@ let package = Package(
     dependencies: [
         // Core OSS dependency set only. Distributed transport dependencies
         // (for example BlazeTransport) are intentionally deferred.
-        .package(url: "https://github.com/apple/swift-crypto.git", from: "3.0.0"),
+        .package(url: "https://github.com/apple/swift-crypto.git", from: "4.4.0"),
     ],
     targets: blazeTargets
 )
