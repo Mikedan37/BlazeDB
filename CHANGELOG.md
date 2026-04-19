@@ -7,6 +7,10 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ## [Unreleased]
 
+### CI
+
+- **Nightly (Linux Tier2 core):** Set `XCTEST_MEASURE_MAX_STDDEV` so XCTest `measure()` tolerates noisy shared runners; `DataSeedingTests.testSeedPerformance` uses explicit `XCTClockMetric` with multiple iterations instead of bare `measure { }`, avoiding false failures when relative timing σ exceeded the default 10% cap.
+
 ### Tests
 
 - **Tier0:** `BlazeBinaryMisalignedSliceTests` decodes BlazeBinary from a `subdata` slice with a 1-byte prefix so the payload base is byte-offset from allocation alignment — regression guard for Linux misaligned-load crashes tracked in [#30](https://github.com/Mikedan37/BlazeDB/issues/30).
