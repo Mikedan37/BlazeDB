@@ -336,12 +336,21 @@ final class DataSeedingTests: XCTestCase {
     }
     
     func testSeedPerformance() throws {
-        // Bare `measure { }` triggers XCTest variance checks (~10% max σ). Linux nightly GitHub
-        // runners frequently exceed that; `XCTEST_MEASURE_MAX_STDDEV` is honored on
-        // swift-corelibs-xctest — see nightly.yml linux-tier2-core env.
+        // Keep richer metrics on Apple XCTest while preserving Linux corelibs compatibility.
+        #if os(Linux) || os(Android)
+        measure {
+            do {
+                _ = try requireFixture(db).seed(Bug.self, count: 100) { i in
+                    Bug(title: "Perf Bug \(i)", priority: i % 10)
+                }
+                _ = try requireFixture(db).deleteMany { _ in true }
+            } catch {
+                XCTFail("measure block failed: \(error)")
+            }
+        }
+        #else
         let options = XCTMeasureOptions()
         options.iterationCount = 10
-
         measure(metrics: [XCTClockMetric()], options: options) {
             do {
                 _ = try requireFixture(db).seed(Bug.self, count: 100) { i in
@@ -352,6 +361,7 @@ final class DataSeedingTests: XCTestCase {
                 XCTFail("measure block failed: \(error)")
             }
         }
+        #endif
     }
     
     // MARK: - Edge Cases
