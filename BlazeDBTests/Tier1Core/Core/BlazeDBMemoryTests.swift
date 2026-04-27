@@ -6,6 +6,9 @@ import XCTest
 #if canImport(Darwin)
 @preconcurrency import Darwin
 #endif
+#if canImport(Glibc)
+import Glibc
+#endif
 #if canImport(CryptoKit)
 #if canImport(CryptoKit)
 import CryptoKit
@@ -28,6 +31,19 @@ private func runMemoryPool(_ body: () throws -> Void) rethrows {
     #else
     try autoreleasepool(invoking: body)
     #endif
+}
+
+private func isThreadSanitizerEnabled() -> Bool {
+    // CI sets this for TSan lanes because `dlsym(__tsan_init)` is not always visible after linking.
+    if ProcessInfo.processInfo.environment["BLAZEDB_THREAD_SANITIZER"] == "1" { return true }
+    if ProcessInfo.processInfo.environment["TSAN_OPTIONS"] != nil { return true }
+    #if canImport(Darwin)
+    if dlsym(UnsafeMutableRawPointer(bitPattern: -2), "__tsan_init") != nil { return true }
+    if let mh = dlopen(nil, RTLD_NOW), dlsym(mh, "__tsan_init") != nil { return true }
+    #elseif canImport(Glibc)
+    if dlsym(nil, "__tsan_init") != nil { return true }
+    #endif
+    return false
 }
 
 final class BlazeDBMemoryTests: XCTestCase {
@@ -357,8 +373,11 @@ final class BlazeDBMemoryTests: XCTestCase {
         print("   Growth: \(formatBytes(growth)) (\(String(format: "%.1f", growthPercent))%)")
         
         // Memory usage can grow noticeably in debug/tooling environments due to allocator and cache behavior.
-        // Guard against runaway leaks using an absolute cap plus a loose percentage signal.
-        XCTAssertLessThan(growth, 700 * 1024 * 1024, "Absolute memory growth should remain bounded under load")
+        // ThreadSanitizer in particular inflates RSS substantially; keep strict non-TSan bounds.
+        let absoluteGrowthCap = isThreadSanitizerEnabled()
+            ? 1400 * 1024 * 1024
+            : 700 * 1024 * 1024
+        XCTAssertLessThan(growth, absoluteGrowthCap, "Absolute memory growth should remain bounded under load")
         XCTAssertLessThan(growthPercent, 700, "Relative memory growth should remain bounded under load")
     }
     

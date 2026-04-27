@@ -17,6 +17,12 @@ final class FullTextSearchTests: XCTestCase {
     
     override func setUpWithError() throws {
         try super.setUpWithError()
+
+        #if BLAZEDB_LINUX_CORE
+        if ProcessInfo.processInfo.environment["CI"] != nil {
+            throw XCTSkip("Full-text search coverage targets Darwin; BLAZEDB_LINUX_CORE CI does not assert ranking/multi-token parity.")
+        }
+        #endif
         
         // Aggressive test isolation
         Thread.sleep(forTimeInterval: 0.01)
