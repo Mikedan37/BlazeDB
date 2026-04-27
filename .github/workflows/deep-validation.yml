@@ -115,6 +115,8 @@ jobs:
         run: mkdir -p .logs .artifacts
 
       - name: Run thread sanitizer on Tier 1
+        env:
+          BLAZEDB_THREAD_SANITIZER: "1"
         run: |
           set -euo pipefail
           mkdir -p .logs
@@ -180,6 +182,8 @@ jobs:
         run: mkdir -p .logs .artifacts
 
       - name: Test Tier 2 extended
+        env:
+          XCTEST_MEASURE_MAX_STDDEV: "100"
         run: |
           set -euo pipefail
           mkdir -p .logs
@@ -187,6 +191,8 @@ jobs:
             | stdbuf -oL -eL tee .logs/tier2-extended.log
 
       - name: Test Tier 3 heavy (+ transitional perf companion)
+        env:
+          XCTEST_MEASURE_MAX_STDDEV: "100"
         run: |
           set -euo pipefail
           stdbuf -oL -eL swift test --skip-build --disable-swift-testing --filter 'BlazeDB_Tier3_Heavy\.' 2>&1 \

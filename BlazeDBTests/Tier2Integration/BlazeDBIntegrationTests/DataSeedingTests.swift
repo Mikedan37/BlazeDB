@@ -338,16 +338,19 @@ final class DataSeedingTests: XCTestCase {
     func testSeedPerformance() throws {
         // Keep richer metrics on Apple XCTest while preserving Linux corelibs compatibility.
         #if os(Linux) || os(Android)
-        measure {
-            do {
-                _ = try requireFixture(db).seed(Bug.self, count: 100) { i in
-                    Bug(title: "Perf Bug \(i)", priority: i % 10)
-                }
-                _ = try requireFixture(db).deleteMany { _ in true }
-            } catch {
-                XCTFail("measure block failed: \(error)")
+        // Avoid XCTest measure() σ checks on Linux CI: shared runners often exceed corelibs-xctest
+        // relative standard deviation limits even when work is correct.
+        let start = Date()
+        do {
+            _ = try requireFixture(db).seed(Bug.self, count: 100) { i in
+                Bug(title: "Perf Bug \(i)", priority: i % 10)
             }
+            _ = try requireFixture(db).deleteMany { _ in true }
+        } catch {
+            XCTFail("seed perf block failed: \(error)")
         }
+        let elapsed = Date().timeIntervalSince(start)
+        XCTAssertLessThan(elapsed, 300, "seed+delete should finish within a generous wall-clock budget")
         #else
         let options = XCTMeasureOptions()
         options.iterationCount = 10

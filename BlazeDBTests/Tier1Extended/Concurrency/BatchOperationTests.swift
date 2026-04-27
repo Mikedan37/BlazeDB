@@ -14,6 +14,15 @@ final class BatchOperationTests: XCTestCase {
     
     private var tempURL: URL?
     private var db: BlazeDBClient?
+
+    /// Timing and XCTest `measure()` gates assume non-virtualized dev hardware; Linux CI is too noisy.
+    private func skipTimingSensitiveBatchTestsOnLinuxCI() throws {
+        #if os(Linux)
+        if ProcessInfo.processInfo.environment["CI"] != nil {
+            throw XCTSkip("Batch perf tests are skipped on Linux CI (noisy shared runners); correctness tests still run on Linux.")
+        }
+        #endif
+    }
     
     override func setUpWithError() throws {
         try super.setUpWithError()
@@ -86,6 +95,7 @@ final class BatchOperationTests: XCTestCase {
     }
     
     func testInsertManyPerformance() throws {
+        try skipTimingSensitiveBatchTestsOnLinuxCI()
         let records = (0..<1000).map { i in
             BlazeDataRecord(["index": .int(i)])
         }
@@ -508,6 +518,7 @@ final class BatchOperationTests: XCTestCase {
     // MARK: - Performance Comparison
     
     func testIndividualVsBatchInsertPerformance() throws {
+        try skipTimingSensitiveBatchTestsOnLinuxCI()
         // Individual inserts
         let individualURL = FileManager.default.temporaryDirectory
             .appendingPathComponent("Individual-\(UUID().uuidString).blazedb")
@@ -626,6 +637,7 @@ final class BatchOperationTests: XCTestCase {
     }
     
     func testLargeBatchInsert() throws {
+        try skipTimingSensitiveBatchTestsOnLinuxCI()
         let records = (0..<5000).map { i in
             BlazeDataRecord(["index": .int(i)])
         }
@@ -644,6 +656,7 @@ final class BatchOperationTests: XCTestCase {
     
     /// Measure insertMany performance with 100 records
     func testPerformance_InsertMany100() throws {
+        try skipTimingSensitiveBatchTestsOnLinuxCI()
         measure {
             do {
                 let records = (0..<100).map { i in
@@ -658,6 +671,7 @@ final class BatchOperationTests: XCTestCase {
     
     /// Measure updateMany performance
     func testPerformance_UpdateMany() throws {
+        try skipTimingSensitiveBatchTestsOnLinuxCI()
         // Setup: Insert 100 records
         let records = (0..<100).map { i in
             BlazeDataRecord(["index": .int(i), "status": .string("pending")])
@@ -688,6 +702,7 @@ final class BatchOperationTests: XCTestCase {
     
     /// Measure deleteMany performance
     func testPerformance_DeleteMany() throws {
+        try skipTimingSensitiveBatchTestsOnLinuxCI()
         measure {
             do {
                 // Insert and delete in measure block
@@ -706,6 +721,7 @@ final class BatchOperationTests: XCTestCase {
     
     /// Measure upsert performance
     func testPerformance_Upsert() throws {
+        try skipTimingSensitiveBatchTestsOnLinuxCI()
         let id = UUID()
         
         measure {

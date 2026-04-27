@@ -80,6 +80,8 @@ jobs:
 
       - name: Run sanitizer tests
         if: github.event_name == 'workflow_dispatch' && inputs.run_deep_validation == true
+        env:
+          BLAZEDB_THREAD_SANITIZER: "1"
         run: |
           set -euo pipefail
           mkdir -p .logs
