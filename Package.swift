@@ -46,13 +46,13 @@ var blazeTargets: [Target] = [
                 "BlazeDB-Package.xctestplan"
             ],
             swiftSettings: [
-                .define("BLAZEDB_LINUX_CORE", .when(platforms: [.linux, .android])),
-                // Swift 6.0.x: IRGen can abort on SwiftUI Binding<> debug reconstruction (e.g. BlazeQuery+Extensions.swift).
-                // Matches swiftc hint: -Xfrontend -disable-round-trip-debug-types
-                .unsafeFlags(
-                    ["-Xfrontend", "-disable-round-trip-debug-types"],
-                    .when(configuration: .debug)
-                )
+                .define("BLAZEDB_LINUX_CORE", .when(platforms: [.linux, .android]))
+                // NOTE: An older Swift 6.0.x IRGen bug could abort during SwiftUI Binding<>
+                // debug reconstruction (e.g. BlazeQuery+Extensions.swift). The previous
+                // workaround used `.unsafeFlags(["-Xfrontend", "-disable-round-trip-debug-types"])`,
+                // but unsafeFlags propagate through SwiftPM's consumer-safety check and
+                // make BlazeDB unusable as a dependency. If a consumer hits that IRGen
+                // crash on Swift 6.0.x, they can add the same flag to their own target.
             ]
         ),
         
