@@ -17,12 +17,11 @@ import XCTest
 final class PathResolverDefaultLocationTests: XCTestCase {
 
     /// Mirrors `TelemetryConfiguration.init(metricsURL: nil)` layout; Telemetry sources are excluded
-    /// from the SwiftPM `BlazeDBCore` product, so this string must stay aligned with that type.
+    /// from the SwiftPM `BlazeDBCore` product, so this helper verifies the same root selection.
     private static func defaultMetricsURLAsTelemetryWould() -> URL {
-        let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
-            ?? FileManager.default.temporaryDirectory
+        let base = (try? PathResolver.defaultDatabaseDirectory())
+            ?? FileManager.default.temporaryDirectory.appendingPathComponent("BlazeDB", isDirectory: true)
         return base
-            .appendingPathComponent("BlazeDB", isDirectory: true)
             .appendingPathComponent("metrics", isDirectory: true)
             .appendingPathComponent("telemetry.blazedb")
     }
@@ -57,6 +56,29 @@ final class PathResolverDefaultLocationTests: XCTestCase {
         let dir = try PathResolver.defaultDatabaseDirectory()
         XCTAssertEqual(dir.lastPathComponent, "blazedb")
         XCTAssertTrue(dir.path.contains(".local/share/blazedb"), dir.path)
+    }
+
+    func testConvenienceDefaultDatabaseURL_Linux_MatchesPathResolverRoot() throws {
+        let dir = try PathResolver.defaultDatabaseDirectory()
+        let dbURL = try BlazeDBClient.defaultDatabaseURL(for: "myapp")
+
+        XCTAssertEqual(dbURL.deletingLastPathComponent().path, dir.path)
+        XCTAssertEqual(dbURL.lastPathComponent, "myapp.blazedb")
+    }
+
+    func testDefaultMetricsPath_Linux_AlignedWithPathResolverBlazedbRoot() throws {
+        let dbRoot = try PathResolver.defaultDatabaseDirectory()
+        let metrics = Self.defaultMetricsURLAsTelemetryWould()
+        let metricsBlazeRoot = metrics
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+        XCTAssertEqual(
+            metricsBlazeRoot.path,
+            dbRoot.path,
+            "Default metrics DB must live under the same blazedb/ directory as PathResolver"
+        )
+        XCTAssertEqual(metrics.lastPathComponent, "telemetry.blazedb")
+        XCTAssertEqual(metrics.deletingLastPathComponent().lastPathComponent, "metrics")
     }
     #else
     func testDefaultDatabaseDirectory_Fallback_UsesTemporaryBlazeDB() throws {

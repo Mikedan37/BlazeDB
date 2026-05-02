@@ -72,7 +72,7 @@ public enum BlazeDBServer {
     /// - Returns: The underlying `BlazeServer` actor so callers can stop it or query state.
     @discardableResult
     public static func start(_ config: BlazeDBServerConfig) async throws -> BlazeServer {
-        // Create or open the database using the convenience API (Application Support/BlazeDB).
+        // Create or open the database using the platform default directory.
         let client = try BlazeDBClient(
             name: config.databaseName,
             password: config.password,
