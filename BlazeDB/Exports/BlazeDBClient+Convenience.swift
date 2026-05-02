@@ -71,73 +71,26 @@ extension BlazeDBClient {
     
     // MARK: - Default Database Location
     
-    /// Get the default database URL for a given name
+    /// Get the default database URL for a given name.
     ///
-    /// Databases are stored under Application Support + `BlazeDB/` (macOS: `~/Library/...`; iOS: sandbox).
+    /// Databases are stored under the same platform default directory used by
+    /// ``BlazeDBClient/open(named:password:)`` and ``PathResolver``.
     ///
     /// - Parameter name: Database name
     /// - Returns: URL to the database file
-    /// - Throws: BlazeDBError if Application Support directory cannot be accessed
+    /// - Throws: BlazeDBError if the default directory cannot be accessed
     public static func defaultDatabaseURL(for name: String) throws -> URL {
-        let fileManager = FileManager.default
-        
-        // Get Application Support directory
-        guard let appSupport = fileManager.urls(
-            for: .applicationSupportDirectory,
-            in: .userDomainMask
-        ).first else {
-            throw BlazeDBError.permissionDenied(
-                operation: "access Application Support",
-                path: nil
-            )
-        }
-        
-        // Create BlazeDB subdirectory
-        let blazeDBDir = appSupport.appendingPathComponent("BlazeDB", isDirectory: true)
-        
-        // Create directory if it doesn't exist
-        if !fileManager.fileExists(atPath: blazeDBDir.path) {
-            try fileManager.createDirectory(
-                at: blazeDBDir,
-                withIntermediateDirectories: true,
-                attributes: [.posixPermissions: 0o700]  // Secure permissions
-            )
-            BlazeLogger.info("Created BlazeDB directory: \(blazeDBDir.path)")
-        }
-        
-        // Return database file URL
+        let blazeDBDir = try PathResolver.defaultDatabaseDirectory()
         let dbName = name.hasSuffix(".blazedb") ? name : "\(name).blazedb"
         return blazeDBDir.appendingPathComponent(dbName)
     }
     
     /// Get the default database directory
     ///
-    /// Returns the default BlazeDB directory (Application Support + `BlazeDB/`).
+    /// Returns the default BlazeDB directory used by ``PathResolver``.
     public static var defaultDatabaseDirectory: URL {
         get throws {
-            let fileManager = FileManager.default
-            guard let appSupport = fileManager.urls(
-                for: .applicationSupportDirectory,
-                in: .userDomainMask
-            ).first else {
-                throw BlazeDBError.permissionDenied(
-                    operation: "access Application Support",
-                    path: nil
-                )
-            }
-            
-            let blazeDBDir = appSupport.appendingPathComponent("BlazeDB", isDirectory: true)
-            
-            // Create if needed
-            if !fileManager.fileExists(atPath: blazeDBDir.path) {
-                try fileManager.createDirectory(
-                    at: blazeDBDir,
-                    withIntermediateDirectories: true,
-                    attributes: [.posixPermissions: 0o700]
-                )
-            }
-            
-            return blazeDBDir
+            try PathResolver.defaultDatabaseDirectory()
         }
     }
     

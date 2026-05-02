@@ -41,11 +41,9 @@ public struct TelemetryConfiguration {
         if let url = metricsURL {
             self.metricsURL = url
         } else {
-            // Default: Application Support/BlazeDB/metrics/ (macOS + iOS sandbox; avoid homeDirectoryForCurrentUser on iOS)
-            let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
-                ?? FileManager.default.temporaryDirectory
+            let base = (try? PathResolver.defaultDatabaseDirectory())
+                ?? FileManager.default.temporaryDirectory.appendingPathComponent("BlazeDB", isDirectory: true)
             self.metricsURL = base
-                .appendingPathComponent("BlazeDB", isDirectory: true)
                 .appendingPathComponent("metrics", isDirectory: true)
                 .appendingPathComponent("telemetry.blazedb")
         }
