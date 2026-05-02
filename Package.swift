@@ -48,10 +48,11 @@ var blazeTargets: [Target] = [
             swiftSettings: [
                 .define("BLAZEDB_LINUX_CORE", .when(platforms: [.linux, .android])),
                 // Swift 6.0.x: IRGen can abort on SwiftUI Binding<> debug reconstruction (e.g. BlazeQuery+Extensions.swift).
-                // Matches swiftc hint: -Xfrontend -disable-round-trip-debug-types
+                // Apple platforms only: SwiftUI bindings are not compiled on Linux/Android (`#if canImport(SwiftUI)` + OS gates).
+                // Avoid applying unsafeFlags on Linux — SwiftPM propagates them to dependents ("poison") and is unnecessary there.
                 .unsafeFlags(
                     ["-Xfrontend", "-disable-round-trip-debug-types"],
-                    .when(configuration: .debug)
+                    .when(platforms: [.macOS, .iOS, .tvOS, .watchOS, .visionOS], configuration: .debug)
                 )
             ]
         ),

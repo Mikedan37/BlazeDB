@@ -25,6 +25,16 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ---
 
+## [2.7.7] - 2026-05-02
+
+### Fixed
+
+- **SwiftPM / Linux and Android consumers:** `BlazeDBCore` no longer passes `-Xfrontend -disable-round-trip-debug-types` through `unsafeFlags` on Linux or Android. The Swift 6 IRGen workaround for SwiftUI `Binding` debug metadata remains applied only on **Apple platforms** in **debug** builds, where the failure occurs. Dependents building BlazeDB on non-Apple hosts are no longer required to enable unsafe SwiftPM build settings.
+
+**Full changelog:** https://github.com/Mikedan37/BlazeDB/compare/v2.7.6...v2.7.7
+
+---
+
 ## [2.7.4] - 2026-04-08
 
 ### Added

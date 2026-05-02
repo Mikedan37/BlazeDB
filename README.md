@@ -2,11 +2,19 @@
 
 **Embedded, encrypted, single-process.** A document database for Swift with ACID transactions, WAL-backed crash recovery, and AES-256-GCM at rest. One encrypted file per database name; no standalone server and no required network calls.
 
-*MIT · Swift 6+ · current release **2.7.5** · [Add BlazeDB to your app](#add-blazedb-to-your-app)*
+*MIT · Swift 6+ · current release **2.7.7** · [Add BlazeDB to your app](#add-blazedb-to-your-app)*
 
 [![Swift](https://img.shields.io/badge/Swift-6.0+-orange.svg)](https://swift.org)
 [![Platforms](https://img.shields.io/badge/Platforms-macOS%20%7C%20iOS%20%7C%20watchOS%20%7C%20tvOS%20%7C%20visionOS%20%7C%20Linux%20%7C%20Android-lightgrey.svg)](Docs/COMPATIBILITY.md)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
+---
+
+## Linux Backend Positioning
+
+- **Supported:** Linux embedded usage with BlazeDB core APIs in a single process.
+- **Reference Integration:** Vapor embedding patterns are documented/examples-only and show how to host BlazeDB inside your app process.
+- **Non-goal:** BlazeDB does not ship an official server runtime product (no shared-file multi-process access, clustering, or distributed hosted control plane).
 
 ---
 
@@ -115,7 +123,7 @@ Add to your `Package.swift`:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/Mikedan37/BlazeDB.git", from: "2.7.5")
+    .package(url: "https://github.com/Mikedan37/BlazeDB.git", from: "2.7.7")
 ],
 targets: [
     .target(name: "YourApp", dependencies: ["BlazeDB"])
