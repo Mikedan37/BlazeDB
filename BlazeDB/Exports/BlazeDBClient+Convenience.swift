@@ -30,7 +30,7 @@ extension BlazeDBClient {
     /// // Super simple - just a name!
     /// let db = try BlazeDBClient(name: "MyApp", password: "secure-password-123")
     ///
-    /// // Database is automatically stored under Application Support/BlazeDB/, e.g.:
+    /// // Database is automatically stored under the platform default directory, e.g.:
     /// // macOS: ~/Library/Application Support/BlazeDB/MyApp.blazedb
     /// // iOS: <Sandbox>/Library/Application Support/BlazeDB/MyApp.blazedb
     /// ```
@@ -98,7 +98,7 @@ extension BlazeDBClient {
     
     /// Discover all databases in the default location
     ///
-    /// Scans the default Application Support `BlazeDB/` directory for all `.blazedb` files
+    /// Scans the platform default BlazeDB directory for all `.blazedb` files
     ///
     /// - Returns: Array of discovered database information
     /// - Throws: BlazeDBError if discovery fails
