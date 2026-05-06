@@ -82,8 +82,32 @@ extension BlazeDBClient {
     public static func defaultDatabaseURL(for name: String) throws -> URL {
         let blazeDBDir = try PathResolver.defaultDatabaseDirectory()
         let dbName = name.hasSuffix(".blazedb") ? name : "\(name).blazedb"
-        return blazeDBDir.appendingPathComponent(dbName)
+        let canonicalURL = blazeDBDir.appendingPathComponent(dbName)
+
+        #if os(Linux)
+        if !FileManager.default.fileExists(atPath: canonicalURL.path),
+           let legacyURL = legacyApplicationSupportDatabaseURL(named: dbName),
+           FileManager.default.fileExists(atPath: legacyURL.path) {
+            return legacyURL
+        }
+        #endif
+
+        return canonicalURL
     }
+
+    #if os(Linux)
+    /// Linux builds briefly used Foundation's Application Support directory here,
+    /// which resolves near the XDG data directory but with a capitalized BlazeDB
+    /// component. Prefer that existing file only to avoid hiding user data.
+    private static func legacyApplicationSupportDatabaseURL(named dbName: String) -> URL? {
+        FileManager.default.urls(
+            for: .applicationSupportDirectory,
+            in: .userDomainMask
+        ).first?
+            .appendingPathComponent("BlazeDB", isDirectory: true)
+            .appendingPathComponent(dbName)
+    }
+    #endif
     
     /// Get the default database directory
     ///
