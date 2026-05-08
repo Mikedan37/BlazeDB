@@ -27,20 +27,19 @@ final class ConvenienceAPITests: XCTestCase {
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
 
         // Ensure default convenience location is writable for this test process.
-        if let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first {
-            let blazeDBDir = appSupport.appendingPathComponent("BlazeDB")
-            try? FileManager.default.createDirectory(
-                at: blazeDBDir,
-                withIntermediateDirectories: true,
-                attributes: [.posixPermissions: 0o700]
-            )
-        }
+        let blazeDBDir = try PathResolver.defaultDatabaseDirectory()
+        try? FileManager.default.createDirectory(
+            at: blazeDBDir,
+            withIntermediateDirectories: true,
+            attributes: [.posixPermissions: 0o700]
+        )
     }
     
     override func tearDown() {
-        // Cleanup: Remove test databases from Application Support
-        let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
-        let blazeDBDir = appSupport.appendingPathComponent("BlazeDB")
+        // Cleanup: Remove test databases from the platform default directory
+        let blazeDBDir = (try? PathResolver.defaultDatabaseDirectory())
+            ?? FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
+                .appendingPathComponent("BlazeDB")
         
         // Remove test databases
         let testNames = ["TestDB", "TestDB2", "MyApp", "UserData", "App1", "App2"]
@@ -107,9 +106,8 @@ final class ConvenienceAPITests: XCTestCase {
     func testDefaultDatabaseURL() throws {
         let url = try BlazeDBClient.defaultDatabaseURL(for: "MyApp")
         
-        // Should be in Application Support/BlazeDB
-        let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
-        let expectedDir = appSupport.appendingPathComponent("BlazeDB")
+        // Must match PathResolver (Apple: Application Support/BlazeDB; Linux: ~/.local/share/blazedb; etc.)
+        let expectedDir = try PathResolver.defaultDatabaseDirectory()
         
         XCTAssertEqual(
             url.deletingLastPathComponent().standardizedFileURL,
@@ -133,10 +131,13 @@ final class ConvenienceAPITests: XCTestCase {
     func testDefaultDatabaseDirectory() throws {
         let directory = try BlazeDBClient.defaultDatabaseDirectory
         
-        let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
-        let expectedDir = appSupport.appendingPathComponent("BlazeDB")
+        let expectedDir = try PathResolver.defaultDatabaseDirectory()
         
-        XCTAssertEqual(directory, expectedDir, "Should return Application Support/BlazeDB")
+        XCTAssertEqual(
+            directory.standardizedFileURL,
+            expectedDir.standardizedFileURL,
+            "Convenience API should match PathResolver default root"
+        )
         XCTAssertTrue(FileManager.default.fileExists(atPath: directory.path), "Directory should exist")
     }
     
