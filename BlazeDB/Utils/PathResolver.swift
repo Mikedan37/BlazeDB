@@ -19,6 +19,7 @@ import Foundation
 ///
 /// Documentation: `Docs/GettingStarted/DEFAULT_STORAGE_PATHS.md`
 public struct PathResolver {
+    private static let privateDirectoryPermissions: Int = 0o700
     
     /// Get default database directory for current platform
     ///
@@ -70,6 +71,7 @@ public struct PathResolver {
                     reason: "Path exists but is not a directory: \(url.path)"
                 )
             }
+            try secureDirectoryPermissions(at: url)
             // Verify we can write to it
             if !fileManager.isWritableFile(atPath: url.path) {
                 throw BlazeDBError.permissionDenied(
@@ -86,7 +88,7 @@ public struct PathResolver {
                 at: url,
                 withIntermediateDirectories: true,
                 attributes: [
-                    .posixPermissions: 0o755  // rwxr-xr-x
+                    .posixPermissions: privateDirectoryPermissions
                 ]
             )
         } catch {
@@ -102,6 +104,36 @@ public struct PathResolver {
                 reason: "Failed to create directory: \(url.path)"
             )
         }
+    }
+
+    /// Default database roots contain encrypted user data and must not be traversable by other local users.
+    private static func secureDirectoryPermissions(at url: URL) throws {
+        #if os(Windows)
+        return
+        #else
+        let fileManager = FileManager.default
+        do {
+            let attributes = try fileManager.attributesOfItem(atPath: url.path)
+            guard let permissions = attributes[.posixPermissions] as? NSNumber else {
+                return
+            }
+
+            let mode = permissions.intValue
+            guard mode & 0o077 != 0 else {
+                return
+            }
+
+            try fileManager.setAttributes(
+                [.posixPermissions: privateDirectoryPermissions],
+                ofItemAtPath: url.path
+            )
+        } catch {
+            throw BlazeDBError.permissionDenied(
+                operation: "secure directory permissions",
+                path: url.path
+            )
+        }
+        #endif
     }
     
     /// Resolve database path (handles relative and absolute paths)

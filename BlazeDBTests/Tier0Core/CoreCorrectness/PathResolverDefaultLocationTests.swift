@@ -26,6 +26,30 @@ final class PathResolverDefaultLocationTests: XCTestCase {
             .appendingPathComponent("telemetry.blazedb")
     }
 
+    #if !os(Windows)
+    private static func assertPrivateDirectoryPermissions(_ url: URL, file: StaticString = #filePath, line: UInt = #line) throws {
+        let attributes = try FileManager.default.attributesOfItem(atPath: url.path)
+        let permissions = try XCTUnwrap(attributes[.posixPermissions] as? NSNumber, file: file, line: line).intValue
+        XCTAssertEqual(permissions & 0o077, 0, "Default database root must not be group/world accessible", file: file, line: line)
+    }
+
+    func testDefaultDatabaseDirectory_RepairsGroupWorldAccessiblePermissions() throws {
+        let fileManager = FileManager.default
+        let dir = try PathResolver.defaultDatabaseDirectory()
+        let originalPermissions = try XCTUnwrap(
+            fileManager.attributesOfItem(atPath: dir.path)[.posixPermissions] as? NSNumber
+        )
+        defer {
+            try? fileManager.setAttributes([.posixPermissions: originalPermissions], ofItemAtPath: dir.path)
+        }
+
+        try fileManager.setAttributes([.posixPermissions: 0o755], ofItemAtPath: dir.path)
+        _ = try PathResolver.defaultDatabaseDirectory()
+
+        try Self.assertPrivateDirectoryPermissions(dir)
+    }
+    #endif
+
     #if os(macOS) || os(iOS)
     func testDefaultDatabaseDirectory_Apple_UsesApplicationSupportBlazeDB() throws {
         let dir = try PathResolver.defaultDatabaseDirectory()
@@ -35,6 +59,7 @@ final class PathResolverDefaultLocationTests: XCTestCase {
             path.contains("Application Support"),
             "Expected Library/Application Support on Apple platforms; got \(path)"
         )
+        try Self.assertPrivateDirectoryPermissions(dir)
     }
 
     func testDefaultMetricsPath_AlignedWithPathResolverBlazeDBRoot() throws {
@@ -56,6 +81,7 @@ final class PathResolverDefaultLocationTests: XCTestCase {
         let dir = try PathResolver.defaultDatabaseDirectory()
         XCTAssertEqual(dir.lastPathComponent, "blazedb")
         XCTAssertTrue(dir.path.contains(".local/share/blazedb"), dir.path)
+        try Self.assertPrivateDirectoryPermissions(dir)
     }
 
     func testConvenienceDefaultDatabaseURL_Linux_MatchesPathResolverRoot() throws {
