@@ -92,6 +92,36 @@ final class PathResolverDefaultLocationTests: XCTestCase {
         XCTAssertEqual(dbURL.lastPathComponent, "myapp.blazedb")
     }
 
+    func testConvenienceDefaultDatabaseURL_Linux_PreservesExistingLegacyApplicationSupportFile() throws {
+        let fileManager = FileManager.default
+        guard let applicationSupport = fileManager.urls(
+            for: .applicationSupportDirectory,
+            in: .userDomainMask
+        ).first else {
+            throw XCTSkip("Application Support directory is unavailable")
+        }
+
+        let name = "legacy-\(UUID().uuidString)"
+        let legacyDirectory = applicationSupport.appendingPathComponent("BlazeDB", isDirectory: true)
+        let legacyURL = legacyDirectory.appendingPathComponent("\(name).blazedb")
+        let canonicalURL = try PathResolver.defaultDatabaseDirectory()
+            .appendingPathComponent("\(name).blazedb")
+
+        try fileManager.createDirectory(
+            at: legacyDirectory,
+            withIntermediateDirectories: true
+        )
+        fileManager.createFile(atPath: legacyURL.path, contents: Data("legacy".utf8))
+        defer {
+            try? fileManager.removeItem(at: legacyURL)
+            try? fileManager.removeItem(at: canonicalURL)
+        }
+
+        XCTAssertFalse(fileManager.fileExists(atPath: canonicalURL.path))
+        let resolved = try BlazeDBClient.defaultDatabaseURL(for: name)
+        XCTAssertEqual(resolved.standardizedFileURL, legacyURL.standardizedFileURL)
+    }
+
     func testDefaultMetricsPath_Linux_AlignedWithPathResolverBlazedbRoot() throws {
         let dbRoot = try PathResolver.defaultDatabaseDirectory()
         let metrics = Self.defaultMetricsURLAsTelemetryWould()
