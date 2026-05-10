@@ -122,6 +122,63 @@ final class PathResolverDefaultLocationTests: XCTestCase {
         XCTAssertEqual(resolved.standardizedFileURL, legacyURL.standardizedFileURL)
     }
 
+    func testNameBasedOpenAndDiscovery_Linux_PreserveExistingLegacyApplicationSupportDatabase() throws {
+        let fileManager = FileManager.default
+        guard let applicationSupport = fileManager.urls(
+            for: .applicationSupportDirectory,
+            in: .userDomainMask
+        ).first else {
+            throw XCTSkip("Application Support directory is unavailable")
+        }
+
+        let name = "legacy-primary-\(UUID().uuidString)"
+        let password = "LegacyPrimaryTest-123!"
+        let legacyDirectory = applicationSupport.appendingPathComponent("BlazeDB", isDirectory: true)
+        let legacyURL = legacyDirectory.appendingPathComponent("\(name).blazedb")
+        let canonicalURL = try PathResolver.defaultDatabaseDirectory()
+            .appendingPathComponent("\(name).blazedb")
+
+        try fileManager.createDirectory(
+            at: legacyDirectory,
+            withIntermediateDirectories: true
+        )
+        Self.removeDatabaseArtifacts(at: legacyURL)
+        Self.removeDatabaseArtifacts(at: canonicalURL)
+        defer {
+            BlazeDBClient.clearCachedKey(for: legacyURL.path)
+            BlazeDBClient.clearCachedKey(for: canonicalURL.path)
+            Self.removeDatabaseArtifacts(at: legacyURL)
+            Self.removeDatabaseArtifacts(at: canonicalURL)
+        }
+
+        var legacyDB: BlazeDBClient? = try BlazeDBClient.open(at: legacyURL, password: password)
+        let id = try legacyDB!.insert(BlazeDataRecord(["legacy": .string("value")]))
+        try legacyDB!.persist()
+        try legacyDB!.close()
+        legacyDB = nil
+        BlazeDBClient.clearCachedKey()
+
+        XCTAssertFalse(fileManager.fileExists(atPath: canonicalURL.path))
+
+        let found = try BlazeDBClient.findDatabase(named: name)
+        XCTAssertEqual(found?.path, legacyURL.path)
+
+        let reopened = try BlazeDBClient.open(named: name, password: password)
+        defer { try? reopened.close() }
+
+        XCTAssertEqual(reopened.fileURL.standardizedFileURL, legacyURL.standardizedFileURL)
+        let fetched = try reopened.fetch(id: id)
+        XCTAssertEqual(fetched?["legacy"]?.stringValue, "value")
+        XCTAssertFalse(fileManager.fileExists(atPath: canonicalURL.path))
+    }
+
+    private static func removeDatabaseArtifacts(at dbURL: URL) {
+        let base = dbURL.deletingPathExtension()
+        for pathExtension in ["blazedb", "meta", "salt", "wal", "wal-meta"] {
+            try? FileManager.default.removeItem(at: base.appendingPathExtension(pathExtension))
+        }
+    }
+
     func testDefaultMetricsPath_Linux_AlignedWithPathResolverBlazedbRoot() throws {
         let dbRoot = try PathResolver.defaultDatabaseDirectory()
         let metrics = Self.defaultMetricsURLAsTelemetryWould()

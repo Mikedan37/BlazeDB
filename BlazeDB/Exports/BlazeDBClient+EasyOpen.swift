@@ -31,13 +31,12 @@ extension BlazeDBClient {
     /// Database is stored in the platform default location:
     /// - macOS: `~/Library/Application Support/BlazeDB/`
     /// - iOS: app sandbox `Library/Application Support/BlazeDB/` (see ``PathResolver`` / `Docs/GettingStarted/DEFAULT_STORAGE_PATHS.md`)
-    /// - Linux: `~/.local/share/blazedb/`
+    /// - Linux: `~/.local/share/blazedb/` (existing legacy `Application Support/BlazeDB/` files are reused)
     public static func open(
         named name: String,
         password: String
     ) throws -> BlazeDBClient {
-        let baseDirectory = try PathResolver.defaultDatabaseDirectory()
-        let dbURL = baseDirectory.appendingPathComponent("\(name).blazedb")
+        let dbURL = try defaultDatabaseURL(for: name)
         try PathResolver.validateDatabasePath(dbURL)
         return try BlazeDBClient(name: name, fileURL: dbURL, password: password)
     }
@@ -77,16 +76,8 @@ extension BlazeDBClient {
         name: String,
         password: String
     ) throws -> BlazeDBClient {
-        // Get default directory
-        let baseDirectory = try PathResolver.defaultDatabaseDirectory()
-        
-        // Construct database path
-        let dbURL = baseDirectory.appendingPathComponent("\(name).blazedb")
-        
-        // Validate path
+        let dbURL = try defaultDatabaseURL(for: name)
         try PathResolver.validateDatabasePath(dbURL)
-        
-        // Open with defaults
         return try BlazeDBClient(name: name, fileURL: dbURL, password: password)
     }
     

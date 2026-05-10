@@ -100,12 +100,16 @@ extension BlazeDBClient {
     /// which resolves near the XDG data directory but with a capitalized BlazeDB
     /// component. Prefer that existing file only to avoid hiding user data.
     private static func legacyApplicationSupportDatabaseURL(named dbName: String) -> URL? {
+        legacyApplicationSupportDatabaseDirectory()?
+            .appendingPathComponent(dbName)
+    }
+
+    private static func legacyApplicationSupportDatabaseDirectory() -> URL? {
         FileManager.default.urls(
             for: .applicationSupportDirectory,
             in: .userDomainMask
         ).first?
             .appendingPathComponent("BlazeDB", isDirectory: true)
-            .appendingPathComponent(dbName)
     }
     #endif
     
@@ -123,6 +127,7 @@ extension BlazeDBClient {
     /// Discover all databases in the default location
     ///
     /// Scans the platform default BlazeDB directory for all `.blazedb` files
+    /// (plus existing legacy Linux convenience files when no canonical file of the same name exists).
     ///
     /// - Returns: Array of discovered database information
     /// - Throws: BlazeDBError if discovery fails
@@ -136,7 +141,22 @@ extension BlazeDBClient {
     /// ```
     public static func discoverDatabases() throws -> [DatabaseDiscoveryInfo] {
         let directory = try defaultDatabaseDirectory
-        return try discoverDatabases(in: directory)
+        var databases = try discoverDatabases(in: directory)
+
+        #if os(Linux)
+        if let legacyDirectory = legacyApplicationSupportDatabaseDirectory(),
+           legacyDirectory.standardizedFileURL != directory.standardizedFileURL {
+            var isDirectory: ObjCBool = false
+            if FileManager.default.fileExists(atPath: legacyDirectory.path, isDirectory: &isDirectory),
+               isDirectory.boolValue,
+               let legacyDatabases = try? discoverDatabases(in: legacyDirectory) {
+                let canonicalNames = Set(databases.map { $0.name })
+                databases.append(contentsOf: legacyDatabases.filter { !canonicalNames.contains($0.name) })
+            }
+        }
+        #endif
+
+        return databases
     }
     
     /// Discover databases by name in the default location
