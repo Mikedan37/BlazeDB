@@ -122,6 +122,55 @@ final class PathResolverDefaultLocationTests: XCTestCase {
         XCTAssertEqual(resolved.standardizedFileURL, legacyURL.standardizedFileURL)
     }
 
+    func testOpenNamed_Linux_PreservesExistingLegacyApplicationSupportDatabase() throws {
+        let fileManager = FileManager.default
+        guard let applicationSupport = fileManager.urls(
+            for: .applicationSupportDirectory,
+            in: .userDomainMask
+        ).first else {
+            throw XCTSkip("Application Support directory is unavailable")
+        }
+
+        let name = "legacy-open-\(UUID().uuidString)"
+        let password = "SecureLegacy-123!"
+        let legacyDirectory = applicationSupport.appendingPathComponent("BlazeDB", isDirectory: true)
+        let legacyURL = legacyDirectory.appendingPathComponent("\(name).blazedb")
+        let canonicalURL = try PathResolver.defaultDatabaseDirectory()
+            .appendingPathComponent("\(name).blazedb")
+
+        func databaseArtifacts(for url: URL) -> [URL] {
+            [
+                url,
+                url.deletingPathExtension().appendingPathExtension("meta"),
+                url.deletingPathExtension().appendingPathExtension("salt"),
+                url.deletingPathExtension().appendingPathExtension("wal")
+            ]
+        }
+
+        try fileManager.createDirectory(
+            at: legacyDirectory,
+            withIntermediateDirectories: true
+        )
+        defer {
+            for artifact in databaseArtifacts(for: legacyURL) + databaseArtifacts(for: canonicalURL) {
+                try? fileManager.removeItem(at: artifact)
+            }
+        }
+
+        let seeded = try BlazeDBClient(name: name, fileURL: legacyURL, password: password)
+        let recordID = try seeded.insert(BlazeDataRecord(["marker": .string("legacy")]))
+        try seeded.close()
+
+        XCTAssertFalse(fileManager.fileExists(atPath: canonicalURL.path))
+
+        let reopened = try BlazeDBClient.open(named: name, password: password)
+        defer { try? reopened.close() }
+
+        XCTAssertEqual(reopened.fileURL.standardizedFileURL, legacyURL.standardizedFileURL)
+        XCTAssertNotNil(try reopened.fetch(id: recordID), "open(named:) must read the existing legacy database")
+        XCTAssertFalse(fileManager.fileExists(atPath: canonicalURL.path))
+    }
+
     func testDefaultMetricsPath_Linux_AlignedWithPathResolverBlazedbRoot() throws {
         let dbRoot = try PathResolver.defaultDatabaseDirectory()
         let metrics = Self.defaultMetricsURLAsTelemetryWould()

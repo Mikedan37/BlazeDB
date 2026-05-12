@@ -80,8 +80,12 @@ extension BlazeDBClient {
     /// - Returns: URL to the database file
     /// - Throws: BlazeDBError if the default directory cannot be accessed
     public static func defaultDatabaseURL(for name: String) throws -> URL {
-        let blazeDBDir = try PathResolver.defaultDatabaseDirectory()
         let dbName = name.hasSuffix(".blazedb") ? name : "\(name).blazedb"
+        return try defaultDatabaseURL(forDatabaseFileName: dbName)
+    }
+
+    static func defaultDatabaseURL(forDatabaseFileName dbName: String) throws -> URL {
+        let blazeDBDir = try PathResolver.defaultDatabaseDirectory()
         let canonicalURL = blazeDBDir.appendingPathComponent(dbName)
 
         #if os(Linux)
