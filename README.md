@@ -503,6 +503,16 @@ Run with `swift run <ToolName>`.
 
 ---
 
+## Support BlazeDB
+
+BlazeDB is an open-source Swift-native embedded database focused on deterministic storage, crash recovery, encrypted local persistence, and local-first developer infrastructure.
+
+If BlazeDB helps your work, you can support ongoing maintenance through GitHub Sponsors.
+
+[Become a sponsor](https://github.com/sponsors/Mikedan37)
+
+---
+
 **License:** MIT
 
 **Maintained by:** Danylchuk Studios, LLC
