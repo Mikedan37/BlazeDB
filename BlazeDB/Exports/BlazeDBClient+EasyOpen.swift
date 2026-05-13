@@ -36,8 +36,7 @@ extension BlazeDBClient {
         named name: String,
         password: String
     ) throws -> BlazeDBClient {
-        let baseDirectory = try PathResolver.defaultDatabaseDirectory()
-        let dbURL = baseDirectory.appendingPathComponent("\(name).blazedb")
+        let dbURL = try defaultDatabaseURL(for: name)
         try PathResolver.validateDatabasePath(dbURL)
         return try BlazeDBClient(name: name, fileURL: dbURL, password: password)
     }
@@ -77,17 +76,7 @@ extension BlazeDBClient {
         name: String,
         password: String
     ) throws -> BlazeDBClient {
-        // Get default directory
-        let baseDirectory = try PathResolver.defaultDatabaseDirectory()
-        
-        // Construct database path
-        let dbURL = baseDirectory.appendingPathComponent("\(name).blazedb")
-        
-        // Validate path
-        try PathResolver.validateDatabasePath(dbURL)
-        
-        // Open with defaults
-        return try BlazeDBClient(name: name, fileURL: dbURL, password: password)
+        return try open(named: name, password: password)
     }
     
     /// Open database with custom path (advanced)
