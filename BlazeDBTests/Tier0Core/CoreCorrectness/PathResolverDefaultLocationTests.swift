@@ -122,6 +122,48 @@ final class PathResolverDefaultLocationTests: XCTestCase {
         XCTAssertEqual(resolved.standardizedFileURL, legacyURL.standardizedFileURL)
     }
 
+    func testOpenNamed_Linux_ReopensExistingLegacyApplicationSupportFile() throws {
+        let fileManager = FileManager.default
+        guard let applicationSupport = fileManager.urls(
+            for: .applicationSupportDirectory,
+            in: .userDomainMask
+        ).first else {
+            throw XCTSkip("Application Support directory is unavailable")
+        }
+
+        let name = "legacy-open-\(UUID().uuidString)"
+        let password = "TestPassword-123!"
+        let legacyDirectory = applicationSupport.appendingPathComponent("BlazeDB", isDirectory: true)
+        let legacyURL = legacyDirectory.appendingPathComponent("\(name).blazedb")
+        let canonicalURL = try PathResolver.defaultDatabaseDirectory()
+            .appendingPathComponent("\(name).blazedb")
+
+        try fileManager.createDirectory(
+            at: legacyDirectory,
+            withIntermediateDirectories: true
+        )
+        defer {
+            try? fileManager.removeItem(at: legacyURL)
+            try? fileManager.removeItem(at: canonicalURL)
+        }
+
+        let legacyDB = try BlazeDBClient.open(at: legacyURL, password: password)
+        _ = try legacyDB.insert(BlazeDataRecord(["source": .string("legacy")]))
+        try legacyDB.close()
+
+        XCTAssertFalse(fileManager.fileExists(atPath: canonicalURL.path))
+
+        let reopened = try BlazeDBClient.open(named: name, password: password)
+        defer { try? reopened.close() }
+
+        XCTAssertEqual(reopened.fileURL.standardizedFileURL, legacyURL.standardizedFileURL)
+        XCTAssertEqual(try reopened.fetchAll().first?.string("source"), "legacy")
+        XCTAssertFalse(
+            fileManager.fileExists(atPath: canonicalURL.path),
+            "Opening by name must not create a split canonical database when only the legacy file exists"
+        )
+    }
+
     func testDefaultMetricsPath_Linux_AlignedWithPathResolverBlazedbRoot() throws {
         let dbRoot = try PathResolver.defaultDatabaseDirectory()
         let metrics = Self.defaultMetricsURLAsTelemetryWould()
