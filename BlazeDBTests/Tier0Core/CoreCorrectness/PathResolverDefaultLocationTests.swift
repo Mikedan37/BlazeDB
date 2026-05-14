@@ -137,14 +137,23 @@ final class PathResolverDefaultLocationTests: XCTestCase {
         let legacyURL = legacyDirectory.appendingPathComponent("\(name).blazedb")
         let canonicalURL = try PathResolver.defaultDatabaseDirectory()
             .appendingPathComponent("\(name).blazedb")
+        func removeDatabaseFiles(at url: URL) {
+            let baseURL = url.deletingPathExtension()
+            [
+                url,
+                baseURL.appendingPathExtension("meta"),
+                baseURL.appendingPathExtension("salt"),
+                baseURL.appendingPathExtension("wal")
+            ].forEach { try? fileManager.removeItem(at: $0) }
+        }
 
         try fileManager.createDirectory(
             at: legacyDirectory,
             withIntermediateDirectories: true
         )
         defer {
-            try? fileManager.removeItem(at: legacyURL)
-            try? fileManager.removeItem(at: canonicalURL)
+            removeDatabaseFiles(at: legacyURL)
+            removeDatabaseFiles(at: canonicalURL)
         }
 
         let legacyDB = try BlazeDBClient.open(at: legacyURL, password: password)
