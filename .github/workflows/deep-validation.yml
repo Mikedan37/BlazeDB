@@ -66,8 +66,9 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p .logs
-          swift test --filter 'BlazeDB_Tier3_Heavy\.' 2>&1 | tee .logs/tier3-heavy.log
-          swift test --filter BlazeDB_Tier3_Heavy_Perf 2>&1 | tee .logs/tier3-heavy-perf.log
+          # Match Linux deep lanes: skip Swift Testing harness when no Swift tests exist (avoids spurious exit 1 after XCTest passes).
+          swift test --disable-swift-testing --filter 'BlazeDB_Tier3_Heavy\.' 2>&1 | tee .logs/tier3-heavy.log
+          swift test --skip-build --disable-swift-testing --filter BlazeDB_Tier3_Heavy_Perf 2>&1 | tee .logs/tier3-heavy-perf.log
 
       - name: Test Tier 3 destructive/fault injection
         run: |
@@ -120,7 +121,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p .logs
-          swift test --sanitize thread --filter BlazeDB_Tier1 2>&1 | tee .logs/tsan-tier1.log
+          swift test --sanitize thread --disable-swift-testing --filter BlazeDB_Tier1 2>&1 | tee .logs/tsan-tier1.log
           if grep -q "Executed 0 tests" .logs/tsan-tier1.log; then
             echo "Tier 1 sanitizer lane ran zero tests"
             exit 1

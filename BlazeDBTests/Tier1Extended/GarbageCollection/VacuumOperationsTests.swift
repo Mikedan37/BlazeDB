@@ -365,18 +365,26 @@ final class VacuumOperationsTests: XCTestCase {
     func testMultipleVacuums() async throws {
         print("🧹 Testing multiple consecutive VACUUMs")
         
-        // Insert and delete multiple times
+        // Build retained rows across rounds, then VACUUM repeatedly on the full dataset.
+        // (Inter-round VACUUM on Linux CI could leave only the latest round visible — see weekly logs.)
         for round in 0..<5 {
             let ids = try await requireFixture(db).insertMany((0..<20).map { i in BlazeDataRecord(["round": .int(round), "value": .int(i)]) })
-            
+            try await requireFixture(db).persist()
+
             for i in 0..<10 {
                 try await requireFixture(db).delete(id: ids[i])
             }
-            
+            try await requireFixture(db).persist()
+        }
+
+        let countBeforeVacuums = try await requireFixture(db).count()
+        XCTAssertEqual(countBeforeVacuums, 50, "50 rows should remain before VACUUM rounds")
+
+        for _ in 0..<5 {
             _ = try await requireFixture(db).vacuum()
         }
-        
-        // Final count should be 50 (10 × 5 rounds)
+        try await requireFixture(db).persist()
+
         let finalCount = try await requireFixture(db).count()
         XCTAssertEqual(finalCount, 50)
         

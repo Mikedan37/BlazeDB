@@ -721,6 +721,16 @@ final class TypeSafetyTests: XCTestCase {
             init(_ db: BlazeDBClient) { self.db = db }
         }
         let dbRef = SendableDBRef(try XCTUnwrap(self.db))
+        #if os(Linux) || os(Android)
+        // corelibs-xctest `measure()` enforces tight σ on shared runners; use wall clock like DataSeedingTests.
+        let start = Date()
+        let bugs = (1...100).map { i in
+            TestBug(title: "Bug \(i)", priority: i % 10, status: "open")
+        }
+        _ = try await dbRef.db.insertMany(bugs)
+        let elapsed = Date().timeIntervalSince(start)
+        XCTAssertLessThan(elapsed, 300, "type-safe insertMany should finish within a generous wall-clock budget")
+        #else
         measure {
             let expectation = XCTestExpectation(description: "Type-safe insert performance")
             Task { [dbRef] in
@@ -738,6 +748,7 @@ final class TypeSafetyTests: XCTestCase {
             }
             wait(for: [expectation], timeout: 5.0)
         }
+        #endif
     }
     
     func testTypeSafeFetchPerformance() async throws {
@@ -758,6 +769,12 @@ final class TypeSafetyTests: XCTestCase {
             init(_ db: BlazeDBClient) { self.db = db }
         }
         let dbRef = SendableDBRef(try XCTUnwrap(self.db))
+        #if os(Linux) || os(Android)
+        let start = Date()
+        _ = try await dbRef.db.fetchAll(TestBug.self)
+        let elapsed = Date().timeIntervalSince(start)
+        XCTAssertLessThan(elapsed, 300, "type-safe fetchAll should finish within a generous wall-clock budget")
+        #else
         measure {
             let expectation = XCTestExpectation(description: "Type-safe fetch performance")
             Task { [dbRef] in
@@ -770,6 +787,7 @@ final class TypeSafetyTests: XCTestCase {
             }
             wait(for: [expectation], timeout: 5.0)
         }
+        #endif
     }
     
     func testTypeSafeConversionOverhead() async throws {
@@ -789,6 +807,13 @@ final class TypeSafetyTests: XCTestCase {
         let result = try await requireFixture(db).query().execute()
         let records = try result.records
         
+        #if os(Linux) || os(Android)
+        let start = Date()
+        let converted = try records.map { try TestBug(from: $0) }
+        XCTAssertEqual(converted.count, records.count)
+        let elapsed = Date().timeIntervalSince(start)
+        XCTAssertLessThan(elapsed, 300, "type conversion pass should finish within a generous wall-clock budget")
+        #else
         measure {
             do {
                 let _ = try records.map { try TestBug(from: $0) }
@@ -796,6 +821,7 @@ final class TypeSafetyTests: XCTestCase {
                 XCTFail("Conversion failed: \(error)")
             }
         }
+        #endif
         
         // Should be fast (< 10ms for 1000 records)
     }
