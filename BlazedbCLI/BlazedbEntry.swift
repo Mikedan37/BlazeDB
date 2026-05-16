@@ -9,6 +9,13 @@ private func printHelp() {
     CLIHelp.printGlobal()
 }
 
+/// Write a line to stderr without touching the C `stderr` global, which Swift 6
+/// strict-concurrency on Linux rejects as a non-Sendable mutable extern.
+private func writeStderrLine(_ message: String) {
+    guard let data = (message + "\n").data(using: .utf8) else { return }
+    FileHandle.standardError.write(data)
+}
+
 private func handleRestoreBackup(dest: String) {
     let fileManager = FileManager.default
     let backupURL = URL(fileURLWithPath: "./lastKnownGood.blazedb")
@@ -354,8 +361,8 @@ enum BlazedbEntry {
         }
 
         if filtered.first?.hasPrefix("-") == true {
-            fputs("Unknown option: \(filtered[0])\n", stderr)
-            fputs("Try `blazedb --help`.\n", stderr)
+            writeStderrLine("Unknown option: \(filtered[0])")
+            writeStderrLine("Try `blazedb --help`.")
             exit(1)
         }
 
