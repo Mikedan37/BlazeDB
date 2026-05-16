@@ -22,7 +22,7 @@ public enum BlazedbRepl {
         print(CLIColors.muted("  Connected to \(url.lastPathComponent)"))
         print(CLIColors.muted("  Type \(CLIColors.ice("help")) or \(CLIColors.ice("?")) for shortcuts"))
         print("")
-        fflush(stdout)
+        CLITerminalDraw.flush()
     }
 
     private static func isHelpCommand(_ trimmed: String) -> Bool {
