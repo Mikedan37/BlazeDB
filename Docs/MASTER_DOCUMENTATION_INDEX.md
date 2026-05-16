@@ -130,7 +130,7 @@ Removed legacy “complete/final/status” variants to avoid duplication.
 - **...sync databases?** → `SYNC_TRANSPORT_GUIDE.md`
 - **...use examples?** → `Examples/README.md`
 - **...understand tests?** → `TEST_COVERAGE_DOCUMENTATION.md`
-- **...use BlazeShell?** → `BLAZESHELL_DOCUMENTATION.md`
+- **...use blazedb (CLI)?** → `BLAZESHELL_DOCUMENTATION.md`
 - **...use BlazeStudio?** → `BLAZESTUDIO_DOCUMENTATION.md`
 - **...use Visualizer?** → `BLAZEDBVISUALIZER_DOCUMENTATION.md`
 

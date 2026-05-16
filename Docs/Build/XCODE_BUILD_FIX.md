@@ -27,7 +27,7 @@ This happens when Xcode doesn't know which platform to build for.
 Instead of building the package, build a specific target:
 
 1. **In Xcode**, go to **Product → Scheme → Manage Schemes...**
-2. **Select a scheme** (e.g., "BlazeDB" library, "BlazeShell", "BlazeServer")
+2. **Select a scheme** (e.g., "BlazeDB" library)
 3. **Click "Build"** (Cmd+B)
 
 Or use the scheme selector in the toolbar (next to the device selector).
@@ -48,7 +48,7 @@ swift package clean
 swift build
 
 # Or build a specific executable
-swift build --product BlazeShell
+swift build --product blazedb
 swift build --product BlazeServer
 swift build --product BlazeMCP
 ```

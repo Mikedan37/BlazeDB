@@ -1,55 +1,83 @@
-# BlazeShell - CLI Documentation
+# blazedb CLI (formerly BlazeShell)
 
-**Command-line interface for BlazeDB operations.**
+**Command-line interface for BlazeDB.** The SwiftPM product is **`blazedb`** (target `BlazedbCLI`); shared implementation lives in the **`BlazeCLICore`** module under [`BlazeShell/`](../../BlazeShell/).
 
 ---
 
 ## **Overview**
 
-BlazeShell is a powerful command-line tool for interacting with BlazeDB databases. It provides a REPL (Read-Eval-Print Loop) interface for database operations.
+`blazedb` provides a terminal-first workflow: on macOS and Linux, run it with no arguments to open an **interactive picker** (recents, default-folder discovery, optional home scan, metadata and chips), then enter your password and use the **REPL** for CRUD. Other platforms can still open a database by path and password.
 
 ---
 
 ## **Installation**
 
-BlazeShell is included in the BlazeDB package. Build it with:
+`blazedb` is included in the BlazeDB package. Build or run:
 
 ```bash
-swift build -c release
+swift build -c release --product blazedb
+swift run blazedb --help
 ```
 
-Or use it directly from Xcode by running the `BlazeShell` target.
+The CLI is built via SwiftPM. The Xcode project no longer ships a separate shell scheme; use **`swift run blazedb`** from a package checkout.
 
 ---
 
 ## **Usage**
 
-### **Basic Mode:**
+### **Interactive picker (no arguments)**
 
 ```bash
-BlazeShell <db-path> <password>
+swift run blazedb
 ```
 
-**Example:**
+- **Recent** databases (MRU after successful opens) appear first, then **Found** (non-recursive `*.blazedb` under the default Application Support / Linux data directory).
+- **Arrow keys** move selection, **Enter** opens, **q** quits, **s** starts an **opt-in home-directory scan** (incremental; status shows `Scanning home… (N found)`).
+- **`--scan-home`** starts the home scan immediately when the picker opens.
+- Rows show **size and last-modified** plus chips **`[recent]`**, **`[bookmarked]`**, **`[locked]`** (password still required).
+
+### **Direct open (path + password)**
+
 ```bash
-BlazeShell /path/to/database.blazedb mypassword
+swift run blazedb /path/to/database.blazedb mypassword
 ```
 
-### **Manager Mode:**
+Prefer the environment variable so the password does not appear in `ps`:
 
 ```bash
-BlazeShell --manager
+export BLAZEDB_PASSWORD='yourpassword'
+swift run blazedb /path/to/database.blazedb
 ```
 
-Manages multiple databases with mount/unmount capabilities.
-
-### **Test Database Creation:**
+### **Manager mode**
 
 ```bash
-BlazeShell --create-test
+swift run blazedb --manager
+```
+
+### **Bookmarks (picker chips)**
+
+```bash
+swift run blazedb bookmark add /path/to/db.blazedb
+swift run blazedb bookmark remove /path/to/db.blazedb
+```
+
+Registry (recents + bookmarks) is stored next to other app data: `cli-registry.json` under the directory returned by `PathResolver.defaultDatabaseDirectory()`.
+
+### **Test database creation**
+
+```bash
+swift run blazedb --create-test
 ```
 
 Creates a test database with 50 sample records for BlazeDBVisualizer.
+
+### **Backup helpers**
+
+```bash
+swift run blazedb restore-backup <destination-path>
+swift run blazedb show-backup
+```
 
 ---
 
@@ -185,7 +213,7 @@ Show help message.
 ### **Example 1: Basic Workflow**
 
 ```bash
-$ BlazeShell /tmp/test.blazedb password123
+$ swift run blazedb /tmp/test.blazedb password123
 
  BlazeDB Shell — type 'exit' to quit
 > insert {"title": "Hello", "value": 42}
@@ -206,7 +234,7 @@ BlazeDataRecord(storage: ["id":.uuid(123e4567...), "title":.string("Updated"), "
 ### **Example 2: Manager Mode**
 
 ```bash
-$ BlazeShell --manager
+$ swift run blazedb --manager
 
  BlazeDBManager CLI — type 'help' for commands
 > mount DB1 /path/to/db1.blazedb pass1
@@ -231,7 +259,7 @@ $ BlazeShell --manager
 ### **Example 3: Create Test Database**
 
 ```bash
-$ BlazeShell --create-test
+$ swift run blazedb --create-test
 
  Creating test database for BlazeDBVisualizer...
  Adding 50 test records...
@@ -245,7 +273,7 @@ $ BlazeShell --create-test
 
 ## **Error Handling**
 
-BlazeShell provides clear error messages:
+`blazedb` provides clear error messages:
 
 ```bash
 > fetch invalid-uuid
@@ -281,10 +309,19 @@ BlazeShell provides clear error messages:
 
 ## **Integration with Other Tools**
 
-BlazeShell works great with:
+`blazedb` works great with:
 - **BlazeDBVisualizer** - Use `--create-test` to create test data
 - **Scripts** - Pipe commands for automation
 - **CI/CD** - Use in build scripts for database setup
+
+---
+
+## **Manual verification (picker TUI)**
+
+After changing terminal UI code, smoke-test on macOS:
+
+- **Terminal.app** and **iTerm2**: `swift run blazedb` — arrows move highlight, Enter prompts for password (or uses `BLAZEDB_PASSWORD`), `q` exits, `s` starts home scan and list grows with a live count.
+- **Resize**: v1 does not handle `SIGWINCH`; quick resize may misdraw until next key or scan tick.
 
 ---
 
