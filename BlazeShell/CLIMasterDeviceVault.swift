@@ -12,7 +12,7 @@ import Security
 public enum CLIMasterDeviceVaultError: Error, LocalizedError {
     case unsupportedPlatform
     case notFound
-    case keychainFailure(OSStatus)
+    case keychainFailure(Int32)
 
     public var errorDescription: String? {
         switch self {

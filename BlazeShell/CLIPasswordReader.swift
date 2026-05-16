@@ -12,6 +12,11 @@ import Foundation
 
 #if os(macOS) || os(Linux)
 public enum CLIPasswordReader {
+    private static func writeStderr(_ text: String) {
+        guard let data = text.data(using: .utf8) else { return }
+        FileHandle.standardError.write(data)
+    }
+
     /// Reads a single line from stdin with echo disabled (restores tty afterward).
     public static func readLineHidden(prompt: String) throws -> String {
         let fd = STDIN_FILENO
@@ -27,8 +32,7 @@ public enum CLIPasswordReader {
         }
         defer { _ = tcsetattr(fd, TCSANOW, &saved) }
 
-        fputs(prompt, stderr)
-        fflush(stderr)
+        writeStderr(prompt)
         guard let line = Swift.readLine() else {
             throw CLIError.cancelled
         }
