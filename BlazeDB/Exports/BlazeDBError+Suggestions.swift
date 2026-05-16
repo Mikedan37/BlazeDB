@@ -112,10 +112,8 @@ extension BlazeDBError {
             msg += "\n💡 Suggestion: Restore from backup if available. Run 'blazedb doctor' to check database health."
             return msg
             
-        case .passwordTooWeak(let requirements):
-            var msg = "Password is too weak. Requirements: \(requirements)."
-            msg += "\n💡 Suggestion: Use a stronger password (8+ chars, letters, numbers, special characters)."
-            return msg
+        case .passwordTooWeak(let failure):
+            return failure.userMessage
             
         case .invalidInput(let reason):
             var msg = "Invalid input: \(reason)."

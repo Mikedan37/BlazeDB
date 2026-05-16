@@ -474,7 +474,7 @@ final class PublicAPIVerificationTests: XCTestCase {
             .recordExists(id: UUID()),
             .transactionFailed("test"),
             .invalidQuery(reason: "bad"),
-            .passwordTooWeak(requirements: "8+ chars"),
+            .passwordTooWeak(PasswordStrengthValidator.PolicyFailure.testFixture),
             .invalidData(reason: "corrupt"),
             .invalidInput(reason: "bad input"),
             .diskFull(availableSpace: 0),

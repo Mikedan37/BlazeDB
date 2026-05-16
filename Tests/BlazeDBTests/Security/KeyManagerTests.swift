@@ -42,10 +42,11 @@ final class KeyManagerTests: XCTestCase {
 
     func testWeakPasswordFails() throws {
         XCTAssertThrowsError(try KeyManager.getKey(from: .password("123"))) { error in
-            guard case KeyManagerError.passwordTooWeak = error else {
+            guard case KeyManagerError.passwordTooWeak(let failure) = error else {
                 XCTFail("Expected passwordTooWeak error, got \(error)")
                 return
             }
+            XCTAssertFalse(failure.missingRequirements.isEmpty)
         }
     }
     

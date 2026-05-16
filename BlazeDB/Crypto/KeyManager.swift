@@ -16,7 +16,8 @@ public enum KeySource {
 enum KeyManagerError: Error {
     case secureEnclaveUnavailable
     case keychainError
-    case passwordTooWeak
+    /// Legacy name; password failed hard policy rules (not necessarily low estimated strength).
+    case passwordTooWeak(PasswordStrengthValidator.PolicyFailure)
 }
 
 public final class KeyManager {
@@ -76,10 +77,8 @@ public final class KeyManager {
         // Use recommended requirements by default (can be overridden)
         do {
             try PasswordStrengthValidator.validate(password, requirements: .recommended)
-        } catch {
-            // Provide detailed error message
-            _ = PasswordStrengthValidator.analyze(password)
-            throw KeyManagerError.passwordTooWeak
+        } catch let failure as PasswordStrengthValidator.PolicyFailure {
+            throw KeyManagerError.passwordTooWeak(failure)
         }
 
         // Use CryptoKit's native PBKDF2 (SHA256)
@@ -155,8 +154,8 @@ public final class KeyManager {
     #endif
 
     private static func deriveKeyFromPassword(_ password: String, salt: Data) throws -> SymmetricKey {
-        guard password.count >= 8 else {
-            throw KeyManagerError.passwordTooWeak
+        if let failure = PasswordStrengthValidator.evaluatePolicy(password, requirements: .init(minLength: 8)) {
+            throw KeyManagerError.passwordTooWeak(failure)
         }
 
         let passwordData = Data(password.utf8)

@@ -11,7 +11,7 @@
 import Foundation
 
 /// Password strength levels
-public enum PasswordStrength: Int, Comparable {
+public enum PasswordStrength: Int, Comparable, Sendable {
     case veryWeak = 0
     case weak = 1
     case fair = 2
@@ -95,36 +95,107 @@ public struct PasswordStrengthValidator {
             requireSymbols: true,
             minStrength: .strong
         )
+
+        /// Short policy line for user-facing errors (independent of estimated strength).
+        public var policySummary: String {
+            var parts = ["\(minLength)+ chars"]
+            if requireUppercase { parts.append("uppercase") }
+            if requireLowercase { parts.append("lowercase") }
+            if requireNumbers { parts.append("number") }
+            if requireSymbols {
+                parts.append("special character")
+            } else if minLength == 12 && requireUppercase && requireLowercase && requireNumbers && minStrength == .good {
+                // Default production profile: symbols optional in rules but listed in guidance.
+                parts.append("special character")
+            }
+            return parts.joined(separator: ", ")
+        }
+    }
+
+    /// Policy rejection details: hard rules failed even when estimated strength may be high.
+    public struct PolicyFailure: Error, Sendable, CustomStringConvertible {
+        public let estimatedStrength: PasswordStrength
+        public let missingRequirements: [String]
+        public let policySummary: String
+
+        public init(
+            estimatedStrength: PasswordStrength,
+            missingRequirements: [String],
+            policySummary: String
+        ) {
+            self.estimatedStrength = estimatedStrength
+            self.missingRequirements = missingRequirements
+            self.policySummary = policySummary
+        }
+
+        /// User-facing message (no contradictory "too weak" + "Strong").
+        public var userMessage: String {
+            "Password rejected.\nRequirements: \(policySummary)."
+        }
+
+        /// Detailed message for logs / diagnostics.
+        public var logMessage: String {
+            var lines = [
+                "Password rejected by policy.",
+                "Detected strength: \(estimatedStrength.description)",
+            ]
+            for requirement in missingRequirements {
+                lines.append("Missing requirement: \(requirement)")
+            }
+            return lines.joined(separator: "\n")
+        }
+
+        public var description: String { userMessage }
+
+        /// Stable fixture for error-description tests.
+        public static var testFixture: PolicyFailure {
+            PolicyFailure(
+                estimatedStrength: .veryWeak,
+                missingRequirements: ["at least 12 characters"],
+                policySummary: Requirements.recommended.policySummary
+            )
+        }
+    }
+
+    /// Evaluate hard policy rules. Returns nil when the password satisfies policy.
+    public static func evaluatePolicy(
+        _ password: String,
+        requirements: Requirements = .recommended
+    ) -> PolicyFailure? {
+        let estimatedStrength = calculateStrength(password)
+        var missing: [String] = []
+
+        if password.count < requirements.minLength {
+            missing.append("at least \(requirements.minLength) characters")
+        }
+        if requirements.requireUppercase && !password.contains(where: { $0.isUppercase }) {
+            missing.append("uppercase letter")
+        }
+        if requirements.requireLowercase && !password.contains(where: { $0.isLowercase }) {
+            missing.append("lowercase letter")
+        }
+        if requirements.requireNumbers && !password.contains(where: { $0.isNumber }) {
+            missing.append("number")
+        }
+        if requirements.requireSymbols && !password.contains(where: { !$0.isLetter && !$0.isNumber && !$0.isWhitespace }) {
+            missing.append("special character")
+        }
+        if estimatedStrength < requirements.minStrength {
+            missing.append("estimated strength at least \(requirements.minStrength.description)")
+        }
+
+        guard !missing.isEmpty else { return nil }
+        return PolicyFailure(
+            estimatedStrength: estimatedStrength,
+            missingRequirements: missing,
+            policySummary: requirements.policySummary
+        )
     }
     
     /// Validate password against requirements
     public static func validate(_ password: String, requirements: Requirements = .recommended) throws {
-        // Check length
-        guard password.count >= requirements.minLength else {
-            throw KeyManagerError.passwordTooWeak
-        }
-        
-        // Check character requirements
-        if requirements.requireUppercase && !password.contains(where: { $0.isUppercase }) {
-            throw KeyManagerError.passwordTooWeak
-        }
-        
-        if requirements.requireLowercase && !password.contains(where: { $0.isLowercase }) {
-            throw KeyManagerError.passwordTooWeak
-        }
-        
-        if requirements.requireNumbers && !password.contains(where: { $0.isNumber }) {
-            throw KeyManagerError.passwordTooWeak
-        }
-        
-        if requirements.requireSymbols && !password.contains(where: { !$0.isLetter && !$0.isNumber && !$0.isWhitespace }) {
-            throw KeyManagerError.passwordTooWeak
-        }
-        
-        // Check strength
-        let strength = calculateStrength(password)
-        guard strength >= requirements.minStrength else {
-            throw KeyManagerError.passwordTooWeak
+        if let failure = evaluatePolicy(password, requirements: requirements) {
+            throw failure
         }
     }
     
@@ -201,10 +272,6 @@ public struct PasswordStrengthValidator {
         
         if !password.contains(where: { !$0.isLetter && !$0.isNumber && !$0.isWhitespace }) {
             recommendations.append("Consider adding symbols for extra security")
-        }
-        
-        if strength < .good {
-            recommendations.append(strength.recommendation)
         }
         
         return (strength, recommendations)

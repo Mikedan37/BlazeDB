@@ -187,7 +187,7 @@ final class EnhancedErrorMessagesTests: XCTestCase {
             .permissionDenied(operation: "test"),
             .databaseLocked(operation: "test"),
             .corruptedData(location: "test", reason: "test"),
-            .passwordTooWeak(requirements: "8+ chars"),
+            .passwordTooWeak(PasswordStrengthValidator.PolicyFailure.testFixture),
             .invalidData(reason: "test")
         ]
         

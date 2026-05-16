@@ -61,7 +61,7 @@ public enum BlazeDBError: Error, LocalizedError, CustomStringConvertible {
     /// Single-process only: another process (or a second handle in the same process) already holds the DB lock.
     case concurrentProcessAccessNotSupported(operation: String, path: URL? = nil)
     case corruptedData(location: String, reason: String)
-    case passwordTooWeak(requirements: String)
+    case passwordTooWeak(PasswordStrengthValidator.PolicyFailure)
     case invalidData(reason: String)
     case invalidInput(reason: String)
     
@@ -157,8 +157,8 @@ public enum BlazeDBError: Error, LocalizedError, CustomStringConvertible {
         case .corruptedData(let location, let reason):
             return "Data corruption detected at \(location): \(reason). Database integrity may be compromised. Restore from backup if available."
             
-        case .passwordTooWeak(let requirements):
-            return "Password is too weak. Requirements: \(requirements). Use a stronger password with letters, numbers, and special characters."
+        case .passwordTooWeak(let failure):
+            return failure.userMessage
             
         case .invalidData(let reason):
             return "Invalid data: \(reason). Check input data format and types."
@@ -370,16 +370,9 @@ public final class BlazeDBClient: @unchecked Sendable {
                 key = try KeyManager.getKey(from: password, salt: kdfSalt)
                 BlazeDBClient.setCachedKey(key, for: dbPath)
                 BlazeLogger.debug("✅ Encryption key derived from password and cached")
-            } catch KeyManagerError.passwordTooWeak {
-                // SECURITY AUDIT: Enhanced password error with recommendations
-                let (strength, recommendations) = PasswordStrengthValidator.analyze(password)
-                let errorMsg = """
-                ❌ Password too weak (strength: \(strength.description))
-                Recommendations: \(recommendations.joined(separator: ". "))
-                Use at least 12 characters with uppercase, lowercase, and numbers.
-                """
-                BlazeLogger.error(errorMsg)
-                throw BlazeDBError.passwordTooWeak(requirements: recommendations.joined(separator: ". "))
+            } catch KeyManagerError.passwordTooWeak(let failure) {
+                BlazeLogger.error(failure.logMessage)
+                throw BlazeDBError.passwordTooWeak(failure)
             } catch {
                 let errorMsg = "❌ Failed to derive encryption key: \(error.localizedDescription)"
                 BlazeLogger.error(errorMsg)

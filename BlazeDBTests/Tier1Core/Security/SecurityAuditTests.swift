@@ -42,8 +42,22 @@ final class SecurityAuditTests: XCTestCase {
     
     func testPasswordStrength_Validation_Weak() {
         XCTAssertThrowsError(try PasswordStrengthValidator.validate("12345678", requirements: .recommended)) { error in
-            XCTAssertTrue(error is KeyManagerError)
+            XCTAssertTrue(error is PasswordStrengthValidator.PolicyFailure)
         }
+    }
+
+    func testPasswordPolicyFailure_StrongEstimateStillRejectedForLength() {
+        // Long/complex enough for a high score, but fails min length policy.
+        let failure = PasswordStrengthValidator.evaluatePolicy("Short1!", requirements: .recommended)
+        XCTAssertNotNil(failure)
+        XCTAssertGreaterThanOrEqual(failure!.estimatedStrength, .fair)
+        XCTAssertTrue(failure!.missingRequirements.contains("at least 12 characters"))
+        XCTAssertTrue(failure!.userMessage.contains("Password rejected."))
+        XCTAssertFalse(failure!.userMessage.lowercased().contains("too weak"))
+    }
+
+    func testPasswordPolicyFailure_AcceptsProductionExample() {
+        XCTAssertNil(PasswordStrengthValidator.evaluatePolicy("BlazeViz2026!TestOk", requirements: .recommended))
     }
     
     func testPasswordStrength_Validation_Strong() {

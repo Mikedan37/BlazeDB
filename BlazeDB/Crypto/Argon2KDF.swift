@@ -201,9 +201,8 @@ extension KeyManager {
         // Validate password strength
         do {
             try PasswordStrengthValidator.validate(password, requirements: .recommended)
-        } catch {
-            _ = PasswordStrengthValidator.analyze(password)
-            throw KeyManagerError.passwordTooWeak
+        } catch let failure as PasswordStrengthValidator.PolicyFailure {
+            throw KeyManagerError.passwordTooWeak(failure)
         }
         
         // Use Argon2id for key derivation

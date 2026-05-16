@@ -19,7 +19,7 @@ final class ErrorSurfaceTests: XCTestCase {
         XCTAssertEqual(BlazeDBError.corruptedData(location: "page 5", reason: "invalid header").category, .corruption)
         XCTAssertEqual(BlazeDBError.invalidField(name: "age", expectedType: "Int", actualType: "String").category, .schemaMismatch)
         XCTAssertEqual(BlazeDBError.indexNotFound(field: "email").category, .missingIndex)
-        XCTAssertEqual(BlazeDBError.passwordTooWeak(requirements: "8+ chars").category, .encryptionKey)
+        XCTAssertEqual(BlazeDBError.passwordTooWeak(PasswordStrengthValidator.PolicyFailure.testFixture).category, .encryptionKey)
         XCTAssertEqual(BlazeDBError.diskFull().category, .ioFailure)
         XCTAssertEqual(BlazeDBError.invalidInput(reason: "bad input").category, .invalidInput)
         XCTAssertEqual(BlazeDBError.transactionFailed("test").category, .transaction)
@@ -31,7 +31,7 @@ final class ErrorSurfaceTests: XCTestCase {
             .corruptedData(location: "page 5", reason: "invalid header"),
             .invalidField(name: "age", expectedType: "Int", actualType: "String"),
             .indexNotFound(field: "email", availableIndexes: ["name", "id"]),
-            .passwordTooWeak(requirements: "8+ characters"),
+            .passwordTooWeak(PasswordStrengthValidator.PolicyFailure.testFixture),
             .diskFull(availableSpace: 1024 * 1024),
             .databaseLocked(operation: "open", path: URL(fileURLWithPath: "/test.db")),
             .recordNotFound(id: UUID()),

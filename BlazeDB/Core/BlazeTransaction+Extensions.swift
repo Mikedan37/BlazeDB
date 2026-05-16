@@ -284,8 +284,8 @@ extension BlazeDBError {
             return "Concurrent process access not supported (single-process only): \(operation)"
         case .corruptedData(let location, let reason):
             return "Data corrupted at \(location): \(reason)"
-        case .passwordTooWeak(let requirements):
-            return "Password too weak. Requirements: \(requirements)"
+        case .passwordTooWeak(let failure):
+            return failure.userMessage
         case .invalidData(let reason):
             return "Invalid data: \(reason)"
         case .invalidInput(let reason):
