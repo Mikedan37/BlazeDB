@@ -10,6 +10,21 @@
 import Foundation
 
 extension BlazeDBClient {
+    private static let canonicalDatabaseExtension = "blazedb"
+    
+    public enum DatabaseNameConventionError: LocalizedError {
+        case emptyName
+        case unsupportedExtension(found: String, expected: String)
+        
+        public var errorDescription: String? {
+            switch self {
+            case .emptyName:
+                return "Database name is empty."
+            case .unsupportedExtension(let found, let expected):
+                return "Unsupported database extension '.\(found)'. Expected '.\(expected)'."
+            }
+        }
+    }
     
     // MARK: - Convenience Initializers
     
@@ -81,7 +96,7 @@ extension BlazeDBClient {
     /// - Throws: BlazeDBError if the default directory cannot be accessed
     public static func defaultDatabaseURL(for name: String) throws -> URL {
         let blazeDBDir = try PathResolver.defaultDatabaseDirectory()
-        let dbName = name.hasSuffix(".blazedb") ? name : "\(name).blazedb"
+        let dbName = try normalizedDatabaseFileName(fromUserInput: name)
         let canonicalURL = blazeDBDir.appendingPathComponent(dbName)
 
         #if os(Linux)
@@ -93,6 +108,41 @@ extension BlazeDBClient {
         #endif
 
         return canonicalURL
+    }
+
+    /// Normalize user input to canonical `.blazedb` naming.
+    ///
+    /// Rules:
+    /// - `foo` -> `foo.blazedb`
+    /// - `foo.blazedb` -> `foo.blazedb`
+    /// - `foo.anything` -> error (explicit unsupported extension)
+    ///
+    /// Note: extension detection only inspects the final path component suffix.
+    public static func normalizedDatabaseFileName(fromUserInput raw: String) throws -> String {
+        let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmed.isEmpty {
+            throw DatabaseNameConventionError.emptyName
+        }
+
+        // Strip any path components if a caller accidentally passes a path-like string.
+        let lastComponent = (trimmed as NSString).lastPathComponent
+        let ext = (lastComponent as NSString).pathExtension.lowercased()
+        let base = (lastComponent as NSString).deletingPathExtension.trimmingCharacters(in: .whitespacesAndNewlines)
+        if base.isEmpty {
+            throw DatabaseNameConventionError.emptyName
+        }
+
+        switch ext {
+        case "":
+            return "\(lastComponent).\(canonicalDatabaseExtension)"
+        case canonicalDatabaseExtension:
+            return lastComponent
+        default:
+            throw DatabaseNameConventionError.unsupportedExtension(
+                found: ext,
+                expected: canonicalDatabaseExtension
+            )
+        }
     }
 
     #if os(Linux)
@@ -152,7 +202,7 @@ extension BlazeDBClient {
     /// ```
     public static func findDatabase(named name: String) throws -> DatabaseDiscoveryInfo? {
         let databases = try discoverDatabases()
-        let searchName = name.hasSuffix(".blazedb") ? name : "\(name).blazedb"
+        let searchName = try normalizedDatabaseFileName(fromUserInput: name)
         return databases.first { $0.path.hasSuffix(searchName) }
     }
     
