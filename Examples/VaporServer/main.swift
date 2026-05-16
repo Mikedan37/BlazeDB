@@ -1,16 +1,13 @@
-//
-//  main.swift
-//  VaporServer
-//
-//  Example Vapor server with embedded BlazeDB
-//  Demonstrates proper lifecycle, health endpoints, and signal handling
-//
-//  Created by Auto on 1/XX/25.
-//
+// Reference Integration: Vapor + embedded BlazeDB.
+// This example demonstrates app-level wiring/lifecycle and is not a first-class BlazeDB server runtime product target.
 
 import Vapor
 import BlazeDB
 import Foundation
+
+private enum BlazeDBKey: StorageKey {
+    typealias Value = BlazeDBClient
+}
 
 // MARK: - Application Setup
 
@@ -22,7 +19,7 @@ func configure(_ app: Application) throws {
     )
     
     // Store database in application storage
-    app.storage["blazedb"] = db
+    app.storage[BlazeDBKey.self] = db
     
     // Register routes
     try routes(app)
@@ -36,7 +33,7 @@ func configure(_ app: Application) throws {
 func routes(_ app: Application) throws {
     // Health endpoint
     app.get("db", "health") { req -> HealthResponse in
-        guard let db = req.application.storage["blazedb"] as? BlazeDBClient else {
+        guard let db = req.application.storage[BlazeDBKey.self] else {
             throw Abort(.internalServerError, reason: "Database not initialized")
         }
         
@@ -54,7 +51,7 @@ func routes(_ app: Application) throws {
     
     // Stats endpoint
     app.get("db", "stats") { req -> StatsResponse in
-        guard let db = req.application.storage["blazedb"] as? BlazeDBClient else {
+        guard let db = req.application.storage[BlazeDBKey.self] else {
             throw Abort(.internalServerError, reason: "Database not initialized")
         }
         
@@ -76,7 +73,7 @@ func routes(_ app: Application) throws {
     // Dump endpoint (DEV ONLY - remove in production)
     #if DEBUG
     app.post("db", "dump") { req -> DumpResponse in
-        guard let db = req.application.storage["blazedb"] as? BlazeDBClient else {
+        guard let db = req.application.storage[BlazeDBKey.self] else {
             throw Abort(.internalServerError, reason: "Database not initialized")
         }
         
@@ -98,7 +95,7 @@ func routes(_ app: Application) throws {
     
     // Example CRUD endpoints
     app.get("users") { req -> [UserRecord] in
-        guard let db = req.application.storage["blazedb"] as? BlazeDBClient else {
+        guard let db = req.application.storage[BlazeDBKey.self] else {
             throw Abort(.internalServerError, reason: "Database not initialized")
         }
         
@@ -115,7 +112,7 @@ func routes(_ app: Application) throws {
     }
     
     app.post("users") { req -> UserRecord in
-        guard let db = req.application.storage["blazedb"] as? BlazeDBClient else {
+        guard let db = req.application.storage[BlazeDBKey.self] else {
             throw Abort(.internalServerError, reason: "Database not initialized")
         }
         
@@ -219,7 +216,7 @@ final class DatabaseLifecycle: LifecycleHandler {
 
 @main
 enum Entry {
-    static func main() async throws {
+    static func main() throws {
         var env = try Environment.detect()
         try LoggingSystem.bootstrap(from: &env)
         
@@ -227,6 +224,6 @@ enum Entry {
         defer { app.shutdown() }
         
         try configure(app)
-        try await app.execute()
+        try app.execute()
     }
 }
