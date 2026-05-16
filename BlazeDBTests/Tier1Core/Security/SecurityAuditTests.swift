@@ -26,6 +26,7 @@ final class SecurityAuditTests: XCTestCase {
     override func tearDownWithError() throws {
         try? FileManager.default.removeItem(at: try requireFixture(tempURL))
         try? FileManager.default.removeItem(at: try requireFixture(tempURL).deletingPathExtension().appendingPathExtension("meta"))
+        try? FileManager.default.removeItem(at: try requireFixture(tempURL).deletingPathExtension().appendingPathExtension("salt"))
     }
     
     // MARK: - Password Strength Tests
@@ -62,6 +63,29 @@ final class SecurityAuditTests: XCTestCase {
     
     func testPasswordStrength_Validation_Strong() {
         XCTAssertNoThrow(try PasswordStrengthValidator.validate("MySecurePass123!", requirements: .recommended))
+    }
+
+    func testOpenSamePathDoesNotBypassPasswordPolicyViaCachedKey() throws {
+        let db = try BlazeDBClient(
+            name: "cache-policy",
+            fileURL: try requireFixture(tempURL),
+            password: "CachePolicy-123!Ok"
+        )
+        defer { try? db.close() }
+
+        XCTAssertThrowsError(
+            try BlazeDBClient(
+                name: "cache-policy",
+                fileURL: try requireFixture(tempURL),
+                password: "123"
+            )
+        ) { error in
+            guard case BlazeDBError.passwordTooWeak(let failure) = error else {
+                XCTFail("Expected password policy rejection before any cached key reuse, got \(error)")
+                return
+            }
+            XCTAssertFalse(failure.missingRequirements.isEmpty)
+        }
     }
     
     // MARK: - Security Audit Tests

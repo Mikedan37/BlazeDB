@@ -185,39 +185,17 @@ public final class BlazeDBClient: @unchecked Sendable {
     internal var collection: DynamicCollection
     public let name: String
     
-    // Thread-safe per-database cached key storage
-    nonisolated(unsafe) private static var _cachedKeys: [String: SymmetricKey] = [:]
-    private static let cachedKeyLock = NSLock()
-    
-    private static func getCachedKey(for path: String) -> SymmetricKey? {
-        cachedKeyLock.lock()
-        defer { cachedKeyLock.unlock() }
-        return _cachedKeys[path]
-    }
-    
-    private static func setCachedKey(_ key: SymmetricKey, for path: String) {
-        cachedKeyLock.lock()
-        defer { cachedKeyLock.unlock() }
-        _cachedKeys[path] = key
-    }
-    
     private let writeLock = NSRecursiveLock()
     private let transactionLogLock = NSLock()  // 🔒 Dedicated lock for WAL writes
     
     /// Clear all cached encryption keys (useful for testing)
-    /// Also clears KeyManager's password key cache to ensure fresh key derivation
+    /// Clears KeyManager's password+salt key cache to ensure fresh key derivation
     public static func clearCachedKey() {
-        cachedKeyLock.lock()
-        defer { cachedKeyLock.unlock() }
-        _cachedKeys.removeAll()
         KeyManager.clearKeyCache()
     }
     
     /// Clear cached key for a specific database path
     public static func clearCachedKey(for path: String) {
-        cachedKeyLock.lock()
-        defer { cachedKeyLock.unlock() }
-        _cachedKeys.removeValue(forKey: path)
         KeyManager.clearKeyCache()
     }
 
@@ -357,27 +335,19 @@ public final class BlazeDBClient: @unchecked Sendable {
             )
         }
 
-        // 🔑 Derive or reuse key.
-        // Use a path-independent password key so backups/restores remain portable
-        // across file locations on the same machine.
-        let dbPath = fileURL.path
+        // 🔑 Derive or reuse key. KeyManager caches by password+salt so every open
+        // still validates the supplied password and cannot reuse a path-only key.
         let key: SymmetricKey
-        if let cached = BlazeDBClient.getCachedKey(for: dbPath) {
-            key = cached
-            BlazeLogger.debug("Using cached encryption key for \(name)")
-        } else {
-            do {
-                key = try KeyManager.getKey(from: password, salt: kdfSalt)
-                BlazeDBClient.setCachedKey(key, for: dbPath)
-                BlazeLogger.debug("✅ Encryption key derived from password and cached")
-            } catch KeyManagerError.passwordTooWeak(let failure) {
-                BlazeLogger.error(failure.logMessage)
-                throw BlazeDBError.passwordTooWeak(failure)
-            } catch {
-                let errorMsg = "❌ Failed to derive encryption key: \(error.localizedDescription)"
-                BlazeLogger.error(errorMsg)
-                throw BlazeDBError.transactionFailed(errorMsg)
-            }
+        do {
+            key = try KeyManager.getKey(from: password, salt: kdfSalt)
+            BlazeLogger.debug("✅ Encryption key derived from password and cached")
+        } catch KeyManagerError.passwordTooWeak(let failure) {
+            BlazeLogger.error(failure.logMessage)
+            throw BlazeDBError.passwordTooWeak(failure)
+        } catch {
+            let errorMsg = "❌ Failed to derive encryption key: \(error.localizedDescription)"
+            BlazeLogger.error(errorMsg)
+            throw BlazeDBError.transactionFailed(errorMsg)
         }
         self.encryptionKey = key
 
