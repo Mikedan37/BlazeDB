@@ -4,6 +4,16 @@
 
 ---
 
+## Support Boundaries
+
+- **Supported:** Linux/macOS embedded BlazeDB usage in a single process using core APIs.
+- **Reference Integration:** Vapor embedding examples in this repo demonstrate lifecycle and wiring patterns.
+- **Non-goal:** A hosted BlazeDB server runtime product (shared-file multi-process access, clustering, or distributed control-plane operations).
+
+Backend/server examples are provided to demonstrate embedding patterns, not to define a daemonized BlazeDB runtime model.
+
+---
+
 ## What BlazeDB Is
 
 **Embedded database:** Single-process, single-writer database.
@@ -42,9 +52,9 @@ import BlazeDB
 let app = Application(.development)
 
 // Open database (one per server process)
-let db = try BlazeDB.openForDaemon(
- name: "myserver",
- password: ProcessInfo.processInfo.environment["DB_PASSWORD"] ?? "default-password"
+let db = try BlazeDBClient.open(
+    named: "myserver",
+    password: ProcessInfo.processInfo.environment["DB_PASSWORD"] ?? "default-password"
 )
 
 // Routes
@@ -87,7 +97,7 @@ If you attempt to open a database that is already open in another process, you w
 
 ```swift
 // 1. Open database
-let db = try BlazeDB.openForDaemon(name: "server", password: "secure-password")
+let db = try BlazeDBClient.open(named: "server", password: "secure-password")
 
 // 2. Validate schema (if using schema versioning)
 struct ServerSchema: BlazeSchema {
@@ -165,7 +175,7 @@ class Server {
  let db: BlazeDBClient
 
  init() throws {
- self.db = try BlazeDB.openForDaemon(name: "server", password: "pass")
+ self.db = try BlazeDBClient.open(named: "server", password: "pass")
  }
 }
 ```

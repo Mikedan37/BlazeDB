@@ -204,7 +204,7 @@ Committed data survives. BlazeDB uses write-ahead logging for crash safety.
 Yes. Default: **`BlazeStorable`** + **`@BlazeStorableQuery`** + **`.blazeDBEnvironment`** (see [SWIFTUI_DATABASE_PATTERNS.md](SWIFTUI_DATABASE_PATTERNS.md)). `Examples/SwiftUIExample.swift` focuses on **`@BlazeDataQuery`** (raw rows) and similar patterns; it is **not** the minimal default app shape.
 
 **Can I use this with Vapor?**
-Yes. See [HOW_TO_USE_BLAZEDB.md](HOW_TO_USE_BLAZEDB.md#8-using-blazedb-in-a-server-vapor-example).
+Yes, as a **Reference Integration** pattern (embedded single-process usage), not as an official BlazeDB server runtime product. See [Running BlazeDB in Servers](../Guides/RUNNING_IN_SERVERS.md) and [Examples/VaporServer](../../Examples/VaporServer/README.md).
 
 **What about nested Codable types?**
 Nested structs are stored as serialized JSON strings. They round-trip correctly, but nested fields are not individually queryable via KeyPath filters. Flatten fields you need to query.

@@ -42,14 +42,14 @@ Runnable examples from basic to advanced.
 | `DataSeedingExample.swift` | Test/seed data generation |
 | `PrettyPrintExample.swift` | Debug formatting and inspection |
 
-### Conditional / Deferred / Platform-Gated Examples
+### Reference Integration / Conditional / Platform-Gated Examples
 | File | Description |
 |------|-------------|
 | `SyncExample_*.swift` | Sync/distributed examples; deferred from default OSS runtime packaging |
 | `TelemetryBasicExample.swift` | Telemetry API walkthrough; full telemetry behavior is build-configuration dependent |
 | `VectorIndexExample.swift` | Advanced indexing with platform/build caveats |
 | `SwiftUIExample.swift` | SwiftUI integration with `@BlazeQuery` / `@BlazeQueryTyped` and DB-change-driven query refresh |
-| `VaporServer/main.swift` | Server integration example; optional deployment model |
+| `VaporServer/main.swift` | **Reference Integration** for embedding BlazeDB in a Vapor app process (not a first-class BlazeDB server runtime target) |
 
 See `SYNC_EXAMPLES_INDEX.md` for full sync design docs and caveats.
 
