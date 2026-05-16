@@ -80,11 +80,16 @@ var blazeTargets: [Target] = [
             path: "BlazeDB/TelemetryStaging"
         ),
         
-        // MARK: - Executables
-        .executableTarget(
-            name: "BlazeShell",
+        // MARK: - CLI (blazedb)
+        .target(
+            name: "BlazeCLICore",
             dependencies: ["BlazeDBCore"],
             path: "BlazeShell"
+        ),
+        .executableTarget(
+            name: "BlazedbCLI",
+            dependencies: ["BlazeDBCore", "BlazeCLICore"],
+            path: "BlazedbCLI"
         ),
         .executableTarget(
             name: "BasicExample",
@@ -135,6 +140,11 @@ var blazeTargets: [Target] = [
                 .define("BLAZEDB_CORE_ONLY"),
                 .define("BLAZEDB_LINUX_CORE", .when(platforms: [.linux, .android]))
             ]
+        ),
+        .testTarget(
+            name: "BlazeDB_CLITests",
+            dependencies: ["BlazeCLICore"],
+            path: "BlazeDBCLITests"
         )
 ]
 
@@ -266,9 +276,11 @@ let package = Package(
         .library(
             name: "BlazeDBCore",
             targets: ["BlazeDBCore"]),
-        // Tool / example / benchmark executable targets remain in the package for local
-        // `swift run` but are not published as products — they are not intended as
-        // downstream SwiftPM dependencies. See CHANGELOG.md for the migration note.
+        .executable(
+            name: "blazedb",
+            targets: ["BlazedbCLI"]),
+        // Other tool / example / benchmark executables remain buildable locally via
+        // `swift run <TargetName>` but are not published as SwiftPM products.
     ],
     dependencies: [
         // Core OSS dependency set only. Distributed transport dependencies
