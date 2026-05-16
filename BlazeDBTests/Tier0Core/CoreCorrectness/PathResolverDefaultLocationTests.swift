@@ -26,6 +26,43 @@ final class PathResolverDefaultLocationTests: XCTestCase {
             .appendingPathComponent("telemetry.blazedb")
     }
 
+    func testDefaultDatabaseURL_AddsCanonicalExtensionWhenMissing() throws {
+        let bare = try BlazeDBClient.defaultDatabaseURL(for: "ashpile")
+        XCTAssertEqual(bare.lastPathComponent, "ashpile.blazedb")
+    }
+
+    func testDefaultDatabaseURL_PreservesCanonicalExtension() throws {
+        let canonical = try BlazeDBClient.defaultDatabaseURL(for: "ashpile.blazedb")
+        XCTAssertEqual(canonical.lastPathComponent, "ashpile.blazedb")
+    }
+
+    func testDefaultDatabaseURL_RejectsUnsupportedExtension() throws {
+        XCTAssertThrowsError(try BlazeDBClient.defaultDatabaseURL(for: "ashpile.blaze")) { error in
+            XCTAssertTrue(error.localizedDescription.contains(".blaze"))
+        }
+        XCTAssertThrowsError(try BlazeDBClient.defaultDatabaseURL(for: "ashpile.db")) { error in
+            XCTAssertTrue(error.localizedDescription.contains(".db"))
+        }
+        XCTAssertThrowsError(try BlazeDBClient.defaultDatabaseURL(for: "my.project")) { error in
+            XCTAssertTrue(error.localizedDescription.contains(".project"))
+        }
+    }
+
+    func testDefaultDatabaseURL_PathLikeInput_UsesFinalNameComponent() throws {
+        let fromPathNoExt = try BlazeDBClient.defaultDatabaseURL(for: "folder/mydb")
+        XCTAssertEqual(fromPathNoExt.lastPathComponent, "mydb.blazedb")
+
+        let fromPathCanonical = try BlazeDBClient.defaultDatabaseURL(for: "folder/mydb.blazedb")
+        XCTAssertEqual(fromPathCanonical.lastPathComponent, "mydb.blazedb")
+    }
+
+    func testDefaultDatabaseURL_DotfileLikeName_NormalizesPredictably() throws {
+        // NSString.pathExtension treats ".hiddenname" as extensionless.
+        // We lock behavior: auto-append canonical suffix.
+        let hidden = try BlazeDBClient.defaultDatabaseURL(for: ".hiddenname")
+        XCTAssertEqual(hidden.lastPathComponent, ".hiddenname.blazedb")
+    }
+
     #if !os(Windows)
     private static func assertPrivateDirectoryPermissions(_ url: URL, file: StaticString = #filePath, line: UInt = #line) throws {
         let attributes = try FileManager.default.attributesOfItem(atPath: url.path)
