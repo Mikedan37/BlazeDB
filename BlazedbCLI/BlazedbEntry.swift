@@ -62,32 +62,33 @@ private func handleCreateTest() throws {
     print("📊 Records: 50")
 }
 
-private func runStartFlow() {
-    runPickerThenRepl(startHomeScan: true, showStartupSplash: true, masterMode: false)
+private func runStartFlow(masterMode: Bool = false) {
+    runPickerThenRepl(startHomeScan: true, showStartupSplash: true, masterMode: masterMode)
 }
 
 private func readDatabasePasswordPrompt() throws -> String {
     try CLIPasswordReader.readLineHidden(prompt: "Database password: ")
 }
 
-private func resolvePasswordForDatabase(path: String, masterMode: Bool, fallbackPrompt: Bool = true) throws -> String {
-    if let envPassword = ProcessInfo.processInfo.environment["BLAZEDB_PASSWORD"], !envPassword.isEmpty {
-        return envPassword
-    }
-
-    guard masterMode else {
-        if fallbackPrompt { return try CLIPasswordReader.readLineHidden(prompt: "Password: ") }
-        throw NSError(domain: "blazedb.password", code: 1, userInfo: [NSLocalizedDescriptionKey: "Password required"])
-    }
-
-    let passphrase = try readMasterPassphrase(confirm: false)
-    if let stored = try CLIMasterKeyringStore.resolveSecret(passphrase: passphrase, dbPath: path) {
-        return stored
-    }
-    if fallbackPrompt {
-        return try readDatabasePasswordPrompt()
-    }
-    throw NSError(domain: "blazedb.master", code: 2, userInfo: [NSLocalizedDescriptionKey: "No stored secret for this database"])
+private func resolvePasswordForDatabase(
+    path: String,
+    masterMode: Bool,
+    explicitPassword: String? = nil,
+    fallbackPrompt: Bool = true
+) throws -> String {
+    try CLIDatabasePasswordResolver.resolve(
+        path: path,
+        masterMode: masterMode,
+        explicitPassword: explicitPassword,
+        envPassword: ProcessInfo.processInfo.environment["BLAZEDB_PASSWORD"],
+        fallbackPrompt: fallbackPrompt,
+        readMasterPassphrase: { try readMasterPassphrase(confirm: false) },
+        readStandardPassword: { try CLIPasswordReader.readLineHidden(prompt: "Password: ") },
+        readDatabasePassword: { try readDatabasePasswordPrompt() },
+        resolveStoredSecret: { passphrase, dbPath in
+            try CLIMasterKeyringStore.resolveSecret(passphrase: passphrase, dbPath: dbPath)
+        }
+    )
 }
 
 private func runPickerThenRepl(startHomeScan: Bool, showStartupSplash: Bool = false, masterMode: Bool) {
@@ -353,7 +354,7 @@ enum BlazedbEntry {
 
         if filtered.isEmpty {
             if scanHome {
-                runStartFlow()
+                runStartFlow(masterMode: masterMode)
             } else {
                 runPickerThenRepl(startHomeScan: false, masterMode: masterMode)
             }
@@ -371,16 +372,18 @@ enum BlazedbEntry {
             exit(1)
         }
 
+        let explicitPassword = filtered.count >= 2 ? filtered[1] : nil
         let shellPassword: String
-        if filtered.count >= 2 {
-            shellPassword = filtered[1]
-        } else {
-            do {
-                shellPassword = try resolvePasswordForDatabase(path: dbPath, masterMode: masterMode, fallbackPrompt: true)
-            } catch {
-                print("Error: password required. Set BLAZEDB_PASSWORD env var, use --master, or pass as second argument.")
-                exit(1)
-            }
+        do {
+            shellPassword = try resolvePasswordForDatabase(
+                path: dbPath,
+                masterMode: masterMode,
+                explicitPassword: explicitPassword,
+                fallbackPrompt: true
+            )
+        } catch {
+            print("Error: password required. Set BLAZEDB_PASSWORD env var, use --master, or pass as second argument.")
+            exit(1)
         }
 
         do {

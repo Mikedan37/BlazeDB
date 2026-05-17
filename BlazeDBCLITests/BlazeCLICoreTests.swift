@@ -225,3 +225,114 @@ final class CLIMasterKeyringTests: XCTestCase {
         XCTAssertEqual(try CLIMasterKeyringStore.listEntries(passphrase: "MasterPassphrase_For_Test_123!").count, 0)
     }
 }
+
+final class CLIDatabasePasswordResolverTests: XCTestCase {
+    func testMasterModePrefersStoredSecretOverEnvAndExplicitPasswords() throws {
+        var masterPromptCount = 0
+        var databasePromptCount = 0
+        var standardPromptCount = 0
+
+        let resolved = try CLIDatabasePasswordResolver.resolve(
+            path: "/tmp/foo.blazedb",
+            masterMode: true,
+            explicitPassword: "argv-secret",
+            envPassword: "env-secret",
+            fallbackPrompt: true,
+            readMasterPassphrase: {
+                masterPromptCount += 1
+                return "master-passphrase"
+            },
+            readStandardPassword: {
+                standardPromptCount += 1
+                return "standard-prompt-secret"
+            },
+            readDatabasePassword: {
+                databasePromptCount += 1
+                return "database-prompt-secret"
+            },
+            resolveStoredSecret: { passphrase, dbPath in
+                XCTAssertEqual(passphrase, "master-passphrase")
+                XCTAssertEqual(dbPath, "/tmp/foo.blazedb")
+                return "stored-secret"
+            }
+        )
+
+        XCTAssertEqual(resolved, "stored-secret")
+        XCTAssertEqual(masterPromptCount, 1)
+        XCTAssertEqual(databasePromptCount, 0)
+        XCTAssertEqual(standardPromptCount, 0)
+    }
+
+    func testMasterModeFallsBackToDatabasePromptInsteadOfEnvPassword() throws {
+        var masterPromptCount = 0
+        var databasePromptCount = 0
+
+        let resolved = try CLIDatabasePasswordResolver.resolve(
+            path: "/tmp/missing.blazedb",
+            masterMode: true,
+            explicitPassword: nil,
+            envPassword: "env-secret",
+            fallbackPrompt: true,
+            readMasterPassphrase: {
+                masterPromptCount += 1
+                return "master-passphrase"
+            },
+            readStandardPassword: {
+                XCTFail("regular password prompt should not be used in master mode")
+                return "standard-prompt-secret"
+            },
+            readDatabasePassword: {
+                databasePromptCount += 1
+                return "database-prompt-secret"
+            },
+            resolveStoredSecret: { _, _ in nil }
+        )
+
+        XCTAssertEqual(resolved, "database-prompt-secret")
+        XCTAssertEqual(masterPromptCount, 1)
+        XCTAssertEqual(databasePromptCount, 1)
+    }
+
+    func testRegularModeUsesExplicitThenEnvironmentThenPrompt() throws {
+        let explicit = try CLIDatabasePasswordResolver.resolve(
+            path: "/tmp/foo.blazedb",
+            masterMode: false,
+            explicitPassword: "argv-secret",
+            envPassword: "env-secret",
+            fallbackPrompt: true,
+            readMasterPassphrase: {
+                XCTFail("master passphrase should not be read outside master mode")
+                return "master-passphrase"
+            },
+            readStandardPassword: {
+                XCTFail("prompt should not be used when explicit password is present")
+                return "standard-prompt-secret"
+            },
+            readDatabasePassword: {
+                XCTFail("database prompt should not be used outside master mode")
+                return "database-prompt-secret"
+            },
+            resolveStoredSecret: { _, _ in
+                XCTFail("keyring should not be consulted outside master mode")
+                return nil
+            }
+        )
+        XCTAssertEqual(explicit, "argv-secret")
+
+        let environment = try CLIDatabasePasswordResolver.resolve(
+            path: "/tmp/foo.blazedb",
+            masterMode: false,
+            explicitPassword: nil,
+            envPassword: "env-secret",
+            fallbackPrompt: true,
+            readMasterPassphrase: { "master-passphrase" },
+            readStandardPassword: {
+                XCTFail("prompt should not be used when env password is present")
+                return "standard-prompt-secret"
+            },
+            readDatabasePassword: { "database-prompt-secret" },
+            resolveStoredSecret: { _, _ in nil }
+        )
+        XCTAssertEqual(environment, "env-secret")
+    }
+}
