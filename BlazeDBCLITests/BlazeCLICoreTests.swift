@@ -140,6 +140,39 @@ final class CLIDiscoveryTests: XCTestCase {
         XCTAssertEqual(merged.map(\.path), [r2.path])
     }
 
+    #if os(Linux)
+    func testFastFoundURLsIncludesLegacyApplicationSupportFiles() throws {
+        let fileManager = FileManager.default
+        guard let applicationSupport = fileManager.urls(
+            for: .applicationSupportDirectory,
+            in: .userDomainMask
+        ).first else {
+            throw XCTSkip("Application Support directory is unavailable")
+        }
+
+        let name = "cli-legacy-\(UUID().uuidString)"
+        let legacyDirectory = applicationSupport.appendingPathComponent("BlazeDB", isDirectory: true)
+        let legacyURL = legacyDirectory.appendingPathComponent("\(name).blazedb")
+        let canonicalURL = FileManager.default.homeDirectoryForCurrentUser
+            .appendingPathComponent(".local/share/blazedb", isDirectory: true)
+            .appendingPathComponent("\(name).blazedb")
+
+        try fileManager.createDirectory(at: legacyDirectory, withIntermediateDirectories: true)
+        fileManager.createFile(atPath: legacyURL.path, contents: Data("legacy".utf8))
+        defer {
+            try? fileManager.removeItem(at: legacyURL)
+            try? fileManager.removeItem(at: canonicalURL)
+        }
+
+        XCTAssertFalse(fileManager.fileExists(atPath: canonicalURL.path))
+        let urls = try CLIDiscovery.fastFoundURLs()
+        XCTAssertTrue(
+            urls.map { $0.standardizedFileURL.path }.contains(legacyURL.standardizedFileURL.path),
+            "CLI discovery should show legacy files that BlazeDBClient.open(named:) can resolve."
+        )
+    }
+    #endif
+
     func testHomeScannerSkipsExcludedDirs() throws {
         let home = FileManager.default.temporaryDirectory.appendingPathComponent("home-\(UUID().uuidString)", isDirectory: true)
         try FileManager.default.createDirectory(at: home, withIntermediateDirectories: true)

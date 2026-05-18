@@ -110,6 +110,21 @@ extension BlazeDBClient {
         return canonicalURL
     }
 
+    private static func defaultDatabaseDirectoriesForDiscovery() throws -> [URL] {
+        let canonicalDirectory = try PathResolver.defaultDatabaseDirectory()
+        var directories = [canonicalDirectory]
+
+        #if os(Linux)
+        if let legacyDirectory = legacyApplicationSupportDatabaseDirectory(),
+           FileManager.default.fileExists(atPath: legacyDirectory.path),
+           legacyDirectory.standardizedFileURL.path != canonicalDirectory.standardizedFileURL.path {
+            directories.append(legacyDirectory)
+        }
+        #endif
+
+        return directories
+    }
+
     /// Normalize user input to canonical `.blazedb` naming.
     ///
     /// Rules:
@@ -149,12 +164,16 @@ extension BlazeDBClient {
     /// Linux builds briefly used Foundation's Application Support directory here,
     /// which resolves near the XDG data directory but with a capitalized BlazeDB
     /// component. Prefer that existing file only to avoid hiding user data.
-    private static func legacyApplicationSupportDatabaseURL(named dbName: String) -> URL? {
+    private static func legacyApplicationSupportDatabaseDirectory() -> URL? {
         FileManager.default.urls(
             for: .applicationSupportDirectory,
             in: .userDomainMask
         ).first?
             .appendingPathComponent("BlazeDB", isDirectory: true)
+    }
+
+    private static func legacyApplicationSupportDatabaseURL(named dbName: String) -> URL? {
+        legacyApplicationSupportDatabaseDirectory()?
             .appendingPathComponent(dbName)
     }
     #endif
@@ -172,7 +191,8 @@ extension BlazeDBClient {
     
     /// Discover all databases in the default location
     ///
-    /// Scans the platform default BlazeDB directory for all `.blazedb` files
+    /// Scans the platform default BlazeDB directory for all `.blazedb` files.
+    /// On Linux, this also includes the legacy Application Support directory when it exists.
     ///
     /// - Returns: Array of discovered database information
     /// - Throws: BlazeDBError if discovery fails
@@ -185,8 +205,30 @@ extension BlazeDBClient {
     /// }
     /// ```
     public static func discoverDatabases() throws -> [DatabaseDiscoveryInfo] {
-        let directory = try defaultDatabaseDirectory
-        return try discoverDatabases(in: directory)
+        var seenPaths = Set<String>()
+        var databases: [DatabaseDiscoveryInfo] = []
+        let directories = try defaultDatabaseDirectoriesForDiscovery()
+
+        for (index, directory) in directories.enumerated() {
+            let discovered: [DatabaseDiscoveryInfo]
+            do {
+                discovered = try discoverDatabases(in: directory)
+            } catch {
+                if index == 0 {
+                    throw error
+                }
+                continue
+            }
+
+            for database in discovered {
+                let normalizedPath = URL(fileURLWithPath: database.path).standardizedFileURL.path
+                if seenPaths.insert(normalizedPath).inserted {
+                    databases.append(database)
+                }
+            }
+        }
+
+        return databases
     }
     
     /// Discover databases by name in the default location
@@ -201,9 +243,14 @@ extension BlazeDBClient {
     /// }
     /// ```
     public static func findDatabase(named name: String) throws -> DatabaseDiscoveryInfo? {
+        let resolvedPath = try defaultDatabaseURL(for: name).standardizedFileURL.path
         let databases = try discoverDatabases()
         let searchName = try normalizedDatabaseFileName(fromUserInput: name)
-        return databases.first { $0.path.hasSuffix(searchName) }
+        return databases.first {
+            URL(fileURLWithPath: $0.path).standardizedFileURL.path == resolvedPath
+        } ?? databases.first {
+            URL(fileURLWithPath: $0.path).lastPathComponent == searchName
+        }
     }
     
     /// Check if a database exists by name

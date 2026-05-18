@@ -9,10 +9,9 @@ import BlazeDBCore
 public enum CLIDiscovery {
     public static let defaultPageSize = CLIPickerRender.pageSize
 
-    /// Non-recursive `*.blazedb` under PathResolver default directory.
+    /// Non-recursive `*.blazedb` files under the default discovery roots.
     public static func fastFoundURLs() throws -> [URL] {
-        let dir = try PathResolver.defaultDatabaseDirectory()
-        return try listBlazedbFiles(in: dir)
+        try BlazeDBClient.discoverDatabases().map { URL(fileURLWithPath: $0.path) }
     }
 
     public static func listBlazedbFiles(in directory: URL) throws -> [URL] {

@@ -63,6 +63,31 @@ final class PathResolverDefaultLocationTests: XCTestCase {
         XCTAssertEqual(hidden.lastPathComponent, ".hiddenname.blazedb")
     }
 
+    func testFindDatabaseRequiresExactFileNameMatch() throws {
+        let fileManager = FileManager.default
+        let directory = try PathResolver.defaultDatabaseDirectory()
+        let name = "exact-\(UUID().uuidString)"
+        let collidingURL = directory.appendingPathComponent("prefix-\(name).blazedb")
+        let exactURL = directory.appendingPathComponent("\(name).blazedb")
+        defer {
+            try? fileManager.removeItem(at: collidingURL)
+            try? fileManager.removeItem(at: exactURL)
+        }
+
+        fileManager.createFile(atPath: collidingURL.path, contents: Data("collision".utf8))
+        XCTAssertNil(
+            try BlazeDBClient.findDatabase(named: name),
+            "A database whose filename merely ends with the requested name must not be selected."
+        )
+
+        fileManager.createFile(atPath: exactURL.path, contents: Data("exact".utf8))
+        let found = try XCTUnwrap(try BlazeDBClient.findDatabase(named: name))
+        XCTAssertEqual(
+            URL(fileURLWithPath: found.path).standardizedFileURL.path,
+            exactURL.standardizedFileURL.path
+        )
+    }
+
     #if !os(Windows)
     private static func assertPrivateDirectoryPermissions(_ url: URL, file: StaticString = #filePath, line: UInt = #line) throws {
         let attributes = try FileManager.default.attributesOfItem(atPath: url.path)
@@ -157,6 +182,45 @@ final class PathResolverDefaultLocationTests: XCTestCase {
         XCTAssertFalse(fileManager.fileExists(atPath: canonicalURL.path))
         let resolved = try BlazeDBClient.defaultDatabaseURL(for: name)
         XCTAssertEqual(resolved.standardizedFileURL, legacyURL.standardizedFileURL)
+    }
+
+    func testDiscoverDatabases_Linux_IncludesLegacyApplicationSupportFiles() throws {
+        let fileManager = FileManager.default
+        guard let applicationSupport = fileManager.urls(
+            for: .applicationSupportDirectory,
+            in: .userDomainMask
+        ).first else {
+            throw XCTSkip("Application Support directory is unavailable")
+        }
+
+        let name = "legacy-discovery-\(UUID().uuidString)"
+        let legacyDirectory = applicationSupport.appendingPathComponent("BlazeDB", isDirectory: true)
+        let legacyURL = legacyDirectory.appendingPathComponent("\(name).blazedb")
+        let canonicalURL = try PathResolver.defaultDatabaseDirectory()
+            .appendingPathComponent("\(name).blazedb")
+
+        try fileManager.createDirectory(
+            at: legacyDirectory,
+            withIntermediateDirectories: true
+        )
+        fileManager.createFile(atPath: legacyURL.path, contents: Data("legacy".utf8))
+        defer {
+            try? fileManager.removeItem(at: legacyURL)
+            try? fileManager.removeItem(at: canonicalURL)
+        }
+
+        XCTAssertFalse(fileManager.fileExists(atPath: canonicalURL.path))
+
+        let discoveredPaths = try BlazeDBClient.discoverDatabases().map {
+            URL(fileURLWithPath: $0.path).standardizedFileURL.path
+        }
+        XCTAssertTrue(discoveredPaths.contains(legacyURL.standardizedFileURL.path))
+
+        let found = try XCTUnwrap(try BlazeDBClient.findDatabase(named: name))
+        XCTAssertEqual(
+            URL(fileURLWithPath: found.path).standardizedFileURL.path,
+            legacyURL.standardizedFileURL.path
+        )
     }
 
     func testDefaultMetricsPath_Linux_AlignedWithPathResolverBlazedbRoot() throws {
