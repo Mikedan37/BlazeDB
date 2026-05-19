@@ -136,7 +136,7 @@ extension BlazeDBClient {
         case "":
             return "\(lastComponent).\(canonicalDatabaseExtension)"
         case canonicalDatabaseExtension:
-            return lastComponent
+            return "\(base).\(canonicalDatabaseExtension)"
         default:
             throw DatabaseNameConventionError.unsupportedExtension(
                 found: ext,
