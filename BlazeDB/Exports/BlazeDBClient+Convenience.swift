@@ -11,15 +11,24 @@ import Foundation
 
 extension BlazeDBClient {
     private static let canonicalDatabaseExtension = "blazedb"
+    private static let unsupportedDatabaseExtensions: Set<String> = [
+        "blaze",
+        "db",
+        "sqlite",
+        "sqlite3",
+    ]
     
     public enum DatabaseNameConventionError: LocalizedError {
         case emptyName
+        case pathComponentNotAllowed
         case unsupportedExtension(found: String, expected: String)
         
         public var errorDescription: String? {
             switch self {
             case .emptyName:
                 return "Database name is empty."
+            case .pathComponentNotAllowed:
+                return "Database name must not contain path separators. Use open(at:password:) for explicit paths."
             case .unsupportedExtension(let found, let expected):
                 return "Unsupported database extension '.\(found)'. Expected '.\(expected)'."
             }
@@ -114,34 +123,39 @@ extension BlazeDBClient {
     ///
     /// Rules:
     /// - `foo` -> `foo.blazedb`
+    /// - `foo.bar` -> `foo.bar.blazedb`
     /// - `foo.blazedb` -> `foo.blazedb`
-    /// - `foo.anything` -> error (explicit unsupported extension)
-    ///
-    /// Note: extension detection only inspects the final path component suffix.
+    /// - `foo.db` / `foo.blaze` / `foo.sqlite` -> error (explicit unsupported database extension)
+    /// - `folder/foo` -> error (use explicit path APIs for paths)
     public static func normalizedDatabaseFileName(fromUserInput raw: String) throws -> String {
         let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
         if trimmed.isEmpty {
             throw DatabaseNameConventionError.emptyName
         }
 
-        // Strip any path components if a caller accidentally passes a path-like string.
-        let lastComponent = (trimmed as NSString).lastPathComponent
-        let ext = (lastComponent as NSString).pathExtension.lowercased()
-        let base = (lastComponent as NSString).deletingPathExtension.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmed.rangeOfCharacter(from: CharacterSet(charactersIn: "/\\")) != nil {
+            throw DatabaseNameConventionError.pathComponentNotAllowed
+        }
+
+        let ext = (trimmed as NSString).pathExtension.lowercased()
+        let base = (trimmed as NSString).deletingPathExtension.trimmingCharacters(in: .whitespacesAndNewlines)
         if base.isEmpty {
             throw DatabaseNameConventionError.emptyName
         }
 
         switch ext {
         case "":
-            return "\(lastComponent).\(canonicalDatabaseExtension)"
+            return "\(trimmed).\(canonicalDatabaseExtension)"
         case canonicalDatabaseExtension:
-            return lastComponent
+            return trimmed
         default:
-            throw DatabaseNameConventionError.unsupportedExtension(
-                found: ext,
-                expected: canonicalDatabaseExtension
-            )
+            if unsupportedDatabaseExtensions.contains(ext) {
+                throw DatabaseNameConventionError.unsupportedExtension(
+                    found: ext,
+                    expected: canonicalDatabaseExtension
+                )
+            }
+            return "\(trimmed).\(canonicalDatabaseExtension)"
         }
     }
 

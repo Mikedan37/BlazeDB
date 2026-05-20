@@ -43,17 +43,23 @@ final class PathResolverDefaultLocationTests: XCTestCase {
         XCTAssertThrowsError(try BlazeDBClient.defaultDatabaseURL(for: "ashpile.db")) { error in
             XCTAssertTrue(error.localizedDescription.contains(".db"))
         }
-        XCTAssertThrowsError(try BlazeDBClient.defaultDatabaseURL(for: "my.project")) { error in
-            XCTAssertTrue(error.localizedDescription.contains(".project"))
+        XCTAssertThrowsError(try BlazeDBClient.defaultDatabaseURL(for: "ashpile.sqlite")) { error in
+            XCTAssertTrue(error.localizedDescription.contains(".sqlite"))
         }
     }
 
-    func testDefaultDatabaseURL_PathLikeInput_UsesFinalNameComponent() throws {
-        let fromPathNoExt = try BlazeDBClient.defaultDatabaseURL(for: "folder/mydb")
-        XCTAssertEqual(fromPathNoExt.lastPathComponent, "mydb.blazedb")
+    func testDefaultDatabaseURL_DottedLogicalName_AppendsCanonicalExtension() throws {
+        let dotted = try BlazeDBClient.defaultDatabaseURL(for: "my.project")
+        XCTAssertEqual(dotted.lastPathComponent, "my.project.blazedb")
+    }
 
-        let fromPathCanonical = try BlazeDBClient.defaultDatabaseURL(for: "folder/mydb.blazedb")
-        XCTAssertEqual(fromPathCanonical.lastPathComponent, "mydb.blazedb")
+    func testDefaultDatabaseURL_PathLikeInput_Throws() throws {
+        XCTAssertThrowsError(try BlazeDBClient.defaultDatabaseURL(for: "folder/mydb")) { error in
+            XCTAssertTrue(error.localizedDescription.contains("path separators"))
+        }
+        XCTAssertThrowsError(try BlazeDBClient.defaultDatabaseURL(for: "folder/mydb.blazedb")) { error in
+            XCTAssertTrue(error.localizedDescription.contains("path separators"))
+        }
     }
 
     func testDefaultDatabaseURL_DotfileLikeName_NormalizesPredictably() throws {
