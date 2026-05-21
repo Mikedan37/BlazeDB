@@ -96,8 +96,21 @@ extension BlazeDBClient {
     /// - Throws: BlazeDBError if the default directory cannot be accessed
     public static func defaultDatabaseURL(for name: String) throws -> URL {
         let blazeDBDir = try PathResolver.defaultDatabaseDirectory()
-        let dbName = try normalizedDatabaseFileName(fromUserInput: name)
+        let dbName: String
+        do {
+            dbName = try normalizedDatabaseFileName(fromUserInput: name)
+        } catch {
+            if let legacyURL = legacyExistingDefaultDatabaseURL(for: name, in: blazeDBDir) {
+                return legacyURL
+            }
+            throw error
+        }
+
         let canonicalURL = blazeDBDir.appendingPathComponent(dbName)
+        if !FileManager.default.fileExists(atPath: canonicalURL.path),
+           let legacyURL = legacyExistingDefaultDatabaseURL(for: name, in: blazeDBDir) {
+            return legacyURL
+        }
 
         #if os(Linux)
         if !FileManager.default.fileExists(atPath: canonicalURL.path),
@@ -143,6 +156,35 @@ extension BlazeDBClient {
                 expected: canonicalDatabaseExtension
             )
         }
+    }
+
+    /// Return an existing database path created by the pre-normalization named opener.
+    ///
+    /// Older releases appended `.blazedb` to the raw name. Keep that path reachable
+    /// only when a file already exists so new databases still follow strict naming.
+    private static func legacyExistingDefaultDatabaseURL(for raw: String, in defaultDirectory: URL) -> URL? {
+        let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty,
+              !trimmed.hasPrefix("/"),
+              !trimmed.hasPrefix("~"),
+              !trimmed.contains("..") else {
+            return nil
+        }
+
+        let legacyName: String
+        if trimmed.hasSuffix(".\(canonicalDatabaseExtension)") {
+            legacyName = trimmed
+        } else {
+            legacyName = "\(trimmed).\(canonicalDatabaseExtension)"
+        }
+        let candidate = defaultDirectory.appendingPathComponent(legacyName)
+        let defaultPath = defaultDirectory.standardizedFileURL.path
+        let candidatePath = candidate.standardizedFileURL.path
+        guard candidatePath == defaultPath || candidatePath.hasPrefix(defaultPath + "/"),
+              FileManager.default.fileExists(atPath: candidate.path) else {
+            return nil
+        }
+        return candidate
     }
 
     #if os(Linux)
@@ -202,8 +244,37 @@ extension BlazeDBClient {
     /// ```
     public static func findDatabase(named name: String) throws -> DatabaseDiscoveryInfo? {
         let databases = try discoverDatabases()
-        let searchName = try normalizedDatabaseFileName(fromUserInput: name)
-        return databases.first { $0.path.hasSuffix(searchName) }
+        if let searchName = try? normalizedDatabaseFileName(fromUserInput: name),
+           let discovered = databases.first(where: { $0.path.hasSuffix(searchName) }) {
+            return discovered
+        }
+
+        let url = try defaultDatabaseURL(for: name)
+        guard FileManager.default.fileExists(atPath: url.path) else {
+            return nil
+        }
+        return databaseDiscoveryInfo(at: url)
+    }
+
+    private static func databaseDiscoveryInfo(at url: URL) -> DatabaseDiscoveryInfo? {
+        guard let attrs = try? FileManager.default.attributesOfItem(atPath: url.path) else {
+            return nil
+        }
+
+        let fileSize = (attrs[.size] as? NSNumber)?.int64Value ?? 0
+        let createdAt = attrs[.creationDate] as? Date
+        let modifiedAt = attrs[.modificationDate] as? Date
+        let metaURL = url.deletingPathExtension().appendingPathExtension("meta")
+        let recordCount = (try? StorageLayout.load(from: metaURL).indexMap.count) ?? 0
+
+        return DatabaseDiscoveryInfo(
+            name: url.deletingPathExtension().lastPathComponent,
+            path: url.path,
+            fileSizeBytes: fileSize,
+            recordCount: recordCount,
+            createdAt: createdAt,
+            lastModified: modifiedAt
+        )
     }
     
     /// Check if a database exists by name

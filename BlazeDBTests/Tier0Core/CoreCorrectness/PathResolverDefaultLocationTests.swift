@@ -37,15 +37,54 @@ final class PathResolverDefaultLocationTests: XCTestCase {
     }
 
     func testDefaultDatabaseURL_RejectsUnsupportedExtension() throws {
-        XCTAssertThrowsError(try BlazeDBClient.defaultDatabaseURL(for: "ashpile.blaze")) { error in
+        let unsupportedBlaze = "ashpile-\(UUID().uuidString).blaze"
+        let unsupportedDatabase = "ashpile-\(UUID().uuidString).db"
+        let dottedName = "my-\(UUID().uuidString).project"
+
+        XCTAssertThrowsError(try BlazeDBClient.defaultDatabaseURL(for: unsupportedBlaze)) { error in
             XCTAssertTrue(error.localizedDescription.contains(".blaze"))
         }
-        XCTAssertThrowsError(try BlazeDBClient.defaultDatabaseURL(for: "ashpile.db")) { error in
+        XCTAssertThrowsError(try BlazeDBClient.defaultDatabaseURL(for: unsupportedDatabase)) { error in
             XCTAssertTrue(error.localizedDescription.contains(".db"))
         }
-        XCTAssertThrowsError(try BlazeDBClient.defaultDatabaseURL(for: "my.project")) { error in
+        XCTAssertThrowsError(try BlazeDBClient.defaultDatabaseURL(for: dottedName)) { error in
             XCTAssertTrue(error.localizedDescription.contains(".project"))
         }
+    }
+
+    func testDefaultDatabaseURL_PreservesExistingLegacyDottedDatabase() throws {
+        let fileManager = FileManager.default
+        let directory = try PathResolver.defaultDatabaseDirectory()
+        let name = "legacy-\(UUID().uuidString).db"
+        let legacyURL = directory.appendingPathComponent("\(name).blazedb")
+        defer {
+            try? fileManager.removeItem(at: legacyURL)
+        }
+
+        XCTAssertTrue(fileManager.createFile(atPath: legacyURL.path, contents: Data("legacy".utf8)))
+
+        let resolved = try BlazeDBClient.defaultDatabaseURL(for: name)
+        XCTAssertEqual(resolved.standardizedFileURL, legacyURL.standardizedFileURL)
+        XCTAssertTrue(BlazeDBClient.databaseExists(named: name))
+    }
+
+    func testDefaultDatabaseURL_PreservesExistingLegacyNestedDatabase() throws {
+        let fileManager = FileManager.default
+        let directory = try PathResolver.defaultDatabaseDirectory()
+        let folderName = "legacy-\(UUID().uuidString)"
+        let name = "\(folderName)/orders"
+        let legacyDirectory = directory.appendingPathComponent(folderName, isDirectory: true)
+        let legacyURL = legacyDirectory.appendingPathComponent("orders.blazedb")
+        defer {
+            try? fileManager.removeItem(at: legacyDirectory)
+        }
+
+        try fileManager.createDirectory(at: legacyDirectory, withIntermediateDirectories: true)
+        XCTAssertTrue(fileManager.createFile(atPath: legacyURL.path, contents: Data("legacy".utf8)))
+
+        let resolved = try BlazeDBClient.defaultDatabaseURL(for: name)
+        XCTAssertEqual(resolved.standardizedFileURL, legacyURL.standardizedFileURL)
+        XCTAssertTrue(BlazeDBClient.databaseExists(named: name))
     }
 
     func testDefaultDatabaseURL_PathLikeInput_UsesFinalNameComponent() throws {
