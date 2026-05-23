@@ -111,6 +111,8 @@ public enum CLIMasterKeyringStore {
     private static let schemaVersion = 1
 
     public static func initialize(passphrase: String) throws -> CLIMasterKeyringStatus {
+        try PasswordStrengthValidator.validate(passphrase, requirements: .recommended)
+
         let url = try CLIPaths.masterKeyringURL()
         if FileManager.default.fileExists(atPath: url.path) {
             throw CLIMasterKeyringError.alreadyInitialized(url.path)

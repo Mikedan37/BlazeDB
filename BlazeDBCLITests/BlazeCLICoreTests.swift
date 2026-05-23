@@ -167,6 +167,18 @@ final class CLIDiscoveryTests: XCTestCase {
 }
 
 final class CLIMasterKeyringTests: XCTestCase {
+    func testMasterKeyringInitRejectsWeakPassphrase() throws {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("master-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        let keyringPath = dir.appendingPathComponent("keyring.json.enc").path
+        setenv("BLAZEDB_MASTER_KEYRING_PATH", keyringPath, 1)
+        defer { unsetenv("BLAZEDB_MASTER_KEYRING_PATH") }
+
+        XCTAssertThrowsError(try CLIMasterKeyringStore.initialize(passphrase: "1234"))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: keyringPath))
+    }
+
     func testMasterKeyringInitStatusAndDecrypt() throws {
         let dir = FileManager.default.temporaryDirectory
             .appendingPathComponent("master-\(UUID().uuidString)", isDirectory: true)
