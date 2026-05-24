@@ -4,10 +4,10 @@
 //
 
 import Foundation
-#if canImport(Glibc)
-import Glibc
-#elseif canImport(Darwin)
+#if canImport(Darwin)
 import Darwin
+#elseif canImport(Glibc)
+import Glibc
 #endif
 #if canImport(CryptoKit)
 import CryptoKit
@@ -441,23 +441,51 @@ public enum CLIMasterKeyringStore {
 
     private static func withExclusiveKeyringMutationLock<T>(_ body: () throws -> T) throws -> T {
         try inProcessKeyringLock.withLock {
-
-            #if os(macOS) || os(Linux)
+            #if canImport(Darwin) || canImport(Glibc)
             let keyringURL = try CLIPaths.masterKeyringURL()
             let lockURL = keyringURL
                 .deletingLastPathComponent()
                 .appendingPathComponent("\(keyringURL.lastPathComponent).lock", isDirectory: false)
-            let fd = open(lockURL.path, O_CREAT | O_RDWR, mode_t(0o600))
-            guard fd >= 0 else {
-                throw POSIXError(POSIXErrorCode(rawValue: errno) ?? .EIO)
+            let flags: Int32 = O_CREAT | O_RDWR
+            let mode: mode_t = 0o600
+            let fd = lockURL.path.withCString { path in
+                #if canImport(Darwin)
+                Darwin.open(path, flags, mode)
+                #elseif canImport(Glibc)
+                Glibc.open(path, flags, mode)
+                #endif
             }
-            defer { _ = close(fd) }
+            guard fd >= 0 else {
+                let err = errno
+                throw POSIXError(POSIXErrorCode(rawValue: err) ?? .EIO)
+            }
+            defer {
+                #if canImport(Darwin)
+                _ = Darwin.close(fd)
+                #elseif canImport(Glibc)
+                _ = Glibc.close(fd)
+                #endif
+            }
 
             try lockDownPermissionsIfPossible(url: lockURL)
-            guard flock(fd, LOCK_EX) == 0 else {
-                throw POSIXError(POSIXErrorCode(rawValue: errno) ?? .EIO)
+            let lockResult: Int32 = {
+                #if canImport(Darwin)
+                return Darwin.flock(fd, LOCK_EX)
+                #elseif canImport(Glibc)
+                return Glibc.flock(fd, LOCK_EX)
+                #endif
+            }()
+            guard lockResult == 0 else {
+                let err = errno
+                throw POSIXError(POSIXErrorCode(rawValue: err) ?? .EIO)
             }
-            defer { _ = flock(fd, LOCK_UN) }
+            defer {
+                #if canImport(Darwin)
+                _ = Darwin.flock(fd, LOCK_UN)
+                #elseif canImport(Glibc)
+                _ = Glibc.flock(fd, LOCK_UN)
+                #endif
+            }
             #endif
 
             return try body()
