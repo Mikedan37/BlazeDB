@@ -1,5 +1,10 @@
 import XCTest
 import Foundation
+#if canImport(Darwin)
+import Darwin
+#elseif canImport(Glibc)
+import Glibc
+#endif
 @testable import BlazeCLICore
 
 private final class HitCollector: @unchecked Sendable {
@@ -164,6 +169,43 @@ final class CLIDiscoveryTests: XCTestCase {
         wait(for: [exp], timeout: 10)
         XCTAssertEqual(collector.snapshot.map(\.lastPathComponent), ["good.blazedb"])
     }
+}
+
+final class BlazedbPickerInputTests: XCTestCase {
+    #if os(macOS) || os(Linux)
+    func testReadByteReadsAvailableByte() throws {
+        var fds = [Int32](repeating: 0, count: 2)
+        XCTAssertEqual(pipe(&fds), 0)
+        let readFD = fds[0]
+        let writeFD = fds[1]
+        defer {
+            close(readFD)
+            close(writeFD)
+        }
+
+        var byte = UInt8(ascii: "q")
+        let written = withUnsafeBytes(of: byte) { buffer in
+            write(writeFD, buffer.baseAddress, buffer.count)
+        }
+        XCTAssertEqual(written, 1)
+
+        let read = try BlazedbPicker.readByte(timeoutMs: 100, fd: readFD)
+        XCTAssertEqual(read, byte)
+    }
+
+    func testReadByteThrowsCancelledOnEOF() throws {
+        var fds = [Int32](repeating: 0, count: 2)
+        XCTAssertEqual(pipe(&fds), 0)
+        let readFD = fds[0]
+        let writeFD = fds[1]
+        close(writeFD)
+        defer { close(readFD) }
+
+        XCTAssertThrowsError(try BlazedbPicker.readByte(timeoutMs: 100, fd: readFD)) { error in
+            XCTAssertEqual(error as? CLIError, .cancelled)
+        }
+    }
+    #endif
 }
 
 final class CLIMasterKeyringTests: XCTestCase {
