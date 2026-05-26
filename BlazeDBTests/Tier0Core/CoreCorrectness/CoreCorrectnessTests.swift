@@ -282,6 +282,30 @@ final class CoreCorrectnessTests: XCTestCase {
         }
     }
 
+    /// Soft delete must retain the original payload so a recoverable delete does
+    /// not destroy the record before purge runs.
+    func testSoftDelete_PreservesStoredFieldsUntilPurge() throws {
+        let db = try openDB()
+        defer { try? db.close() }
+
+        let id = try db.insert(makeRecord([
+            "title": .string("recoverable"),
+            "version": .int(7),
+            "active": .bool(true)
+        ]))
+
+        try db.softDelete(id: id)
+
+        XCTAssertNil(try db.fetch(id: id), "Public fetch should hide soft-deleted records")
+
+        let stored = try db.collection.fetch(id: id)
+        XCTAssertNotNil(stored, "Soft-deleted record should remain stored until purge")
+        XCTAssertEqual(stored?.storage["title"], .string("recoverable"))
+        XCTAssertEqual(stored?.storage["version"], .int(7))
+        XCTAssertEqual(stored?.storage["active"], .bool(true))
+        XCTAssertEqual(stored?.storage["isDeleted"], .bool(true))
+    }
+
     // MARK: - Test 5: Single-Writer Serialization
 
     /// Multiple concurrent writers must not lose updates.
