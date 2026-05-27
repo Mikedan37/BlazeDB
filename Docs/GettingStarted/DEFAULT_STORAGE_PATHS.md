@@ -18,6 +18,8 @@ BlazeDB resolves default file locations through `PathResolver.defaultDatabaseDir
 
 On Apple platforms the implementation is: **Application Support** + **`BlazeDB`** (see `PathResolver.swift`).
 
+On Linux, older builds may have created default databases under Foundation's Application Support path with a capitalized `BlazeDB` component. If both the current `~/.local/share/blazedb/` file and that legacy file exist for the same database name, name-based opens fail with both paths instead of choosing one silently. Open the intended file with `open(at:password:)` or move one of the files before using `open(named:password:)`.
+
 ## Telemetry metrics file (when telemetry is enabled)
 
 Default metrics store path **changed** to live next to other app data under Application Support:
