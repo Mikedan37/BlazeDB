@@ -5,7 +5,8 @@
 # Ownership:
 # - `deep-macos-tier3-heavy-destructive`: macOS Tier3 heavy (+ RUN_HEAVY_STRESS) + `./Scripts/run-tier3.sh` (destructive).
 # - `deep-macos-tsan-tier1`: Tier1 ThreadSanitizer only (nightly already runs Tier0 TSan).
-# - `deep-linux-tier2-extended-tier3`: Linux `BlazeDB_Tier2_Extended` + Tier3 heavy/perf (nightly runs Tier1 + Tier2 core only).
+# - `deep-linux-tier2-extended`: Linux `BlazeDB_Tier2_Extended` only (parallel with Tier3 job).
+# - `deep-linux-tier3-heavy-perf`: Linux Tier3 heavy/perf (dedicated timeout; nightly runs Tier1 + Tier2 core only).
 #
 # Schedule: Sundays 03:00 UTC. Complements `ci.yml` and `nightly.yml` without duplicating their tiers.
 
@@ -66,6 +67,13 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p .logs
+          (
+            while sleep 60; do
+              echo "[tier3-heavy-heartbeat] $(date -u '+%Y-%m-%dT%H:%M:%SZ') swift-test still running"
+            done
+          ) &
+          _hb=$!
+          trap 'kill "$_hb" 2>/dev/null || true' EXIT
           # Match Linux deep lanes: skip Swift Testing harness when no Swift tests exist (avoids spurious exit 1 after XCTest passes).
           swift test --disable-swift-testing --filter 'BlazeDB_Tier3_Heavy\.' 2>&1 | tee .logs/tier3-heavy.log
           swift test --skip-build --disable-swift-testing --filter BlazeDB_Tier3_Heavy_Perf 2>&1 | tee .logs/tier3-heavy-perf.log
@@ -147,10 +155,10 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
 
-  deep-linux-tier2-extended-tier3:
-    name: Linux (Swift 6.2) — Tier2 extended + Tier3 heavy/perf (weekly delta)
+  deep-linux-tier2-extended:
+    name: Linux (Swift 6.2) — Tier2 extended (weekly delta)
     runs-on: ubuntu-22.04
-    timeout-minutes: 360
+    timeout-minutes: 240
 
     steps:
       - name: Checkout
@@ -191,12 +199,74 @@ jobs:
           stdbuf -oL -eL swift test --disable-swift-testing --filter BlazeDB_Tier2_Extended 2>&1 \
             | stdbuf -oL -eL tee .logs/tier2-extended.log
 
+      - name: Dump diagnostics on failure
+        if: failure()
+        run: |
+          mkdir -p .logs
+          ps aux > .logs/ps.txt || true
+          df -h > .logs/disk.txt || true
+          swift --version > .logs/swift-version.txt 2>&1 || true
+
+      - name: Upload deep Linux Tier2 extended logs
+        if: always()
+        uses: actions/upload-artifact@v5
+        with:
+          name: deep-linux-tier2-extended-logs
+          path: |
+            .logs/
+            .artifacts/
+          if-no-files-found: ignore
+          retention-days: 7
+
+  deep-linux-tier3-heavy-perf:
+    name: Linux (Swift 6.2) — Tier3 heavy/perf (weekly delta)
+    runs-on: ubuntu-22.04
+    timeout-minutes: 480
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Cache SwiftPM build
+        uses: actions/cache@v5
+        with:
+          path: .build
+          key: deep-${{ runner.os }}-spm-${{ hashFiles('Package.swift', 'Package.resolved') }}
+          restore-keys: |
+            deep-${{ runner.os }}-spm-
+            nightly-${{ runner.os }}-spm-
+            ${{ runner.os }}-spm-
+
+      - name: Setup Swift 6.2
+        uses: swift-actions/setup-swift@v2
+        with:
+          swift-version: "6.2"
+
+      - name: Swift version
+        run: swift --version
+
+      - name: Build core
+        run: swift build --target BlazeDBCore
+
+      - name: Prepare CI log directories
+        run: mkdir -p .logs .artifacts
+
       - name: Test Tier 3 heavy (+ transitional perf companion)
         env:
           XCTEST_MEASURE_MAX_STDDEV: "100"
         run: |
           set -euo pipefail
-          stdbuf -oL -eL swift test --skip-build --disable-swift-testing --filter 'BlazeDB_Tier3_Heavy\.' 2>&1 \
+          mkdir -p .logs
+          (
+            while sleep 60; do
+              echo "[tier3-heavy-heartbeat] $(date -u '+%Y-%m-%dT%H:%M:%SZ') swift-test still running"
+            done
+          ) &
+          _hb=$!
+          trap 'kill "$_hb" 2>/dev/null || true' EXIT
+          stdbuf -oL -eL swift test --disable-swift-testing --filter 'BlazeDB_Tier3_Heavy\.' 2>&1 \
             | stdbuf -oL -eL tee .logs/tier3-heavy.log
           stdbuf -oL -eL swift test --skip-build --disable-swift-testing --filter BlazeDB_Tier3_Heavy_Perf 2>&1 \
             | stdbuf -oL -eL tee .logs/tier3-heavy-perf.log
@@ -209,11 +279,11 @@ jobs:
           df -h > .logs/disk.txt || true
           swift --version > .logs/swift-version.txt 2>&1 || true
 
-      - name: Upload deep Linux delta logs
+      - name: Upload deep Linux Tier3 logs
         if: always()
         uses: actions/upload-artifact@v5
         with:
-          name: deep-linux-tier2-extended-tier3-logs
+          name: deep-linux-tier3-heavy-perf-logs
           path: |
             .logs/
             .artifacts/
