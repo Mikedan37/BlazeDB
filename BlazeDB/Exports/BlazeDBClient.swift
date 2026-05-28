@@ -185,39 +185,18 @@ public final class BlazeDBClient: @unchecked Sendable {
     internal var collection: DynamicCollection
     public let name: String
     
-    // Thread-safe per-database cached key storage
-    nonisolated(unsafe) private static var _cachedKeys: [String: SymmetricKey] = [:]
-    private static let cachedKeyLock = NSLock()
-    
-    private static func getCachedKey(for path: String) -> SymmetricKey? {
-        cachedKeyLock.lock()
-        defer { cachedKeyLock.unlock() }
-        return _cachedKeys[path]
-    }
-    
-    private static func setCachedKey(_ key: SymmetricKey, for path: String) {
-        cachedKeyLock.lock()
-        defer { cachedKeyLock.unlock() }
-        _cachedKeys[path] = key
-    }
-    
     private let writeLock = NSRecursiveLock()
     private let transactionLogLock = NSLock()  // 🔒 Dedicated lock for WAL writes
     
     /// Clear all cached encryption keys (useful for testing)
-    /// Also clears KeyManager's password key cache to ensure fresh key derivation
+    /// Clears KeyManager's password+salt key cache to ensure fresh key derivation.
     public static func clearCachedKey() {
-        cachedKeyLock.lock()
-        defer { cachedKeyLock.unlock() }
-        _cachedKeys.removeAll()
         KeyManager.clearKeyCache()
     }
     
-    /// Clear cached key for a specific database path
+    /// Clear cached key material. The path is retained for source compatibility.
     public static func clearCachedKey(for path: String) {
-        cachedKeyLock.lock()
-        defer { cachedKeyLock.unlock() }
-        _cachedKeys.removeValue(forKey: path)
+        _ = path
         KeyManager.clearKeyCache()
     }
 
@@ -230,6 +209,24 @@ public final class BlazeDBClient: @unchecked Sendable {
         fileURL.deletingPathExtension().appendingPathExtension("salt")
     }
 
+    private static func existingDatabaseArtifactsPresent(for fileURL: URL) -> Bool {
+        let sidecarBase = fileURL.deletingPathExtension()
+        let candidates = [
+            fileURL,
+            sidecarBase.appendingPathExtension("meta"),
+            sidecarBase.appendingPathExtension("wal")
+        ]
+
+        return candidates.contains { url in
+            guard FileManager.default.fileExists(atPath: url.path),
+                  let attrs = try? FileManager.default.attributesOfItem(atPath: url.path),
+                  let size = attrs[.size] as? NSNumber else {
+                return false
+            }
+            return size.uint64Value > 0
+        }
+    }
+
     private static func loadOrCreateKDFSalt(for fileURL: URL) throws -> Data {
         let saltURL = kdfSaltURL(for: fileURL)
         let fm = FileManager.default
@@ -239,6 +236,13 @@ public final class BlazeDBClient: @unchecked Sendable {
             if !existing.isEmpty {
                 return existing
             }
+        }
+
+        guard !existingDatabaseArtifactsPresent(for: fileURL) else {
+            throw BlazeDBError.corruptedData(
+                location: saltURL.path,
+                reason: "Missing or empty KDF salt sidecar for an existing encrypted database. Restore the original .salt file from backup."
+            )
         }
 
         let salt = try SecureRandom.bytesStrict(count: 16)
@@ -357,27 +361,20 @@ public final class BlazeDBClient: @unchecked Sendable {
             )
         }
 
-        // 🔑 Derive or reuse key.
+        // 🔑 Derive key from the provided password and per-database salt.
         // Use a path-independent password key so backups/restores remain portable
         // across file locations on the same machine.
-        let dbPath = fileURL.path
         let key: SymmetricKey
-        if let cached = BlazeDBClient.getCachedKey(for: dbPath) {
-            key = cached
-            BlazeLogger.debug("Using cached encryption key for \(name)")
-        } else {
-            do {
-                key = try KeyManager.getKey(from: password, salt: kdfSalt)
-                BlazeDBClient.setCachedKey(key, for: dbPath)
-                BlazeLogger.debug("✅ Encryption key derived from password and cached")
-            } catch KeyManagerError.passwordTooWeak(let failure) {
-                BlazeLogger.error(failure.logMessage)
-                throw BlazeDBError.passwordTooWeak(failure)
-            } catch {
-                let errorMsg = "❌ Failed to derive encryption key: \(error.localizedDescription)"
-                BlazeLogger.error(errorMsg)
-                throw BlazeDBError.transactionFailed(errorMsg)
-            }
+        do {
+            key = try KeyManager.getKey(from: password, salt: kdfSalt)
+            BlazeLogger.debug("✅ Encryption key derived from password")
+        } catch KeyManagerError.passwordTooWeak(let failure) {
+            BlazeLogger.error(failure.logMessage)
+            throw BlazeDBError.passwordTooWeak(failure)
+        } catch {
+            let errorMsg = "❌ Failed to derive encryption key: \(error.localizedDescription)"
+            BlazeLogger.error(errorMsg)
+            throw BlazeDBError.transactionFailed(errorMsg)
         }
         self.encryptionKey = key
 

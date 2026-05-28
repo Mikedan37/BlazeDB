@@ -419,6 +419,53 @@ final class CoreCorrectnessTests: XCTestCase {
         }
     }
 
+    /// A failed wrong-password open must not poison a later correct-password retry.
+    func testKeyDerivation_FailedWrongPasswordOpenDoesNotPoisonRetry() throws {
+        let retryURL = tempDir.appendingPathComponent("wrong-pw-retry.blazedb")
+
+        do {
+            let db = try BlazeDBClient(name: "pw-retry", fileURL: retryURL, password: "CorrectPassword-123!")
+            _ = try db.insert(makeRecord(["data": .string("sensitive")]))
+            try db.persist()
+            try db.close()
+        }
+
+        XCTAssertThrowsError(
+            try BlazeDBClient(name: "pw-retry", fileURL: retryURL, password: "WrongPassword-456!")
+        )
+
+        let reopened = try BlazeDBClient(name: "pw-retry", fileURL: retryURL, password: "CorrectPassword-123!")
+        defer { try? reopened.close() }
+
+        let records = try reopened.fetchAll()
+        XCTAssertEqual(records.count, 1)
+        XCTAssertEqual(try records.first?.string("data"), "sensitive")
+    }
+
+    /// Existing encrypted stores must fail closed if the required KDF salt sidecar is missing.
+    func testKeyDerivation_MissingSaltDoesNotCreateReplacementForExistingDatabase() throws {
+        let missingSaltURL = tempDir.appendingPathComponent("missing-salt.blazedb")
+        let saltURL = missingSaltURL.deletingPathExtension().appendingPathExtension("salt")
+
+        do {
+            let db = try BlazeDBClient(name: "missing-salt", fileURL: missingSaltURL, password: "CorrectPassword-123!")
+            _ = try db.insert(makeRecord(["data": .string("recoverable only with original salt")]))
+            try db.persist()
+            try db.close()
+        }
+
+        XCTAssertTrue(FileManager.default.fileExists(atPath: saltURL.path))
+        try FileManager.default.removeItem(at: saltURL)
+
+        XCTAssertThrowsError(
+            try BlazeDBClient(name: "missing-salt", fileURL: missingSaltURL, password: "CorrectPassword-123!")
+        )
+        XCTAssertFalse(
+            FileManager.default.fileExists(atPath: saltURL.path),
+            "Opening an existing database without its salt must not overwrite recovery material with a new salt."
+        )
+    }
+
     // MARK: - Test 7: Torn Write / Corruption Detection
 
     /// If a page on disk is corrupted (bit flip), reading it must fail — not silently

@@ -165,6 +165,24 @@ public final class BlazeDBManager {
         fileURL.deletingPathExtension().appendingPathExtension("salt")
     }
 
+    private static func existingDatabaseArtifactsPresent(for fileURL: URL) -> Bool {
+        let sidecarBase = fileURL.deletingPathExtension()
+        let candidates = [
+            fileURL,
+            sidecarBase.appendingPathExtension("meta"),
+            sidecarBase.appendingPathExtension("wal")
+        ]
+
+        return candidates.contains { url in
+            guard FileManager.default.fileExists(atPath: url.path),
+                  let attrs = try? FileManager.default.attributesOfItem(atPath: url.path),
+                  let size = attrs[.size] as? NSNumber else {
+                return false
+            }
+            return size.uint64Value > 0
+        }
+    }
+
     private static func loadOrCreateKDFSalt(for fileURL: URL) throws -> Data {
         let saltURL = kdfSaltURL(for: fileURL)
         let fm = FileManager.default
@@ -174,6 +192,13 @@ public final class BlazeDBManager {
             if !existing.isEmpty {
                 return existing
             }
+        }
+
+        guard !existingDatabaseArtifactsPresent(for: fileURL) else {
+            throw BlazeDBError.corruptedData(
+                location: saltURL.path,
+                reason: "Missing or empty KDF salt sidecar for an existing encrypted database. Restore the original .salt file from backup."
+            )
         }
 
         let salt = try SecureRandom.bytesStrict(count: 16)
