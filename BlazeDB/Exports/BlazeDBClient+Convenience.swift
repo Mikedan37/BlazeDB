@@ -100,10 +100,23 @@ extension BlazeDBClient {
         let canonicalURL = blazeDBDir.appendingPathComponent(dbName)
 
         #if os(Linux)
-        if !FileManager.default.fileExists(atPath: canonicalURL.path),
-           let legacyURL = legacyApplicationSupportDatabaseURL(named: dbName),
+        if let legacyURL = legacyApplicationSupportDatabaseURL(named: dbName),
            FileManager.default.fileExists(atPath: legacyURL.path) {
-            return legacyURL
+            let legacyResolved = legacyURL.resolvingSymlinksInPath()
+            let canonicalResolved = canonicalURL.resolvingSymlinksInPath()
+
+            if FileManager.default.fileExists(atPath: canonicalURL.path),
+               legacyResolved != canonicalResolved {
+                throw BlazeDBError.invalidInput(
+                    reason: """
+                    Ambiguous Linux default database paths for '\(dbName)': both legacy path '\(legacyURL.path)' and canonical path '\(canonicalURL.path)' exist. Refusing to choose automatically because opening the wrong file can hide existing data. Move or merge one database, or open the desired file explicitly with open(at:password:).
+                    """
+                )
+            }
+
+            if legacyResolved != canonicalResolved {
+                return legacyURL
+            }
         }
         #endif
 

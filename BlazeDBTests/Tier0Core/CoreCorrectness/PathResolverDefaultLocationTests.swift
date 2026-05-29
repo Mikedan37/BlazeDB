@@ -159,6 +159,40 @@ final class PathResolverDefaultLocationTests: XCTestCase {
         XCTAssertEqual(resolved.standardizedFileURL, legacyURL.standardizedFileURL)
     }
 
+    func testConvenienceDefaultDatabaseURL_Linux_RejectsAmbiguousLegacyAndCanonicalFiles() throws {
+        let fileManager = FileManager.default
+        guard let applicationSupport = fileManager.urls(
+            for: .applicationSupportDirectory,
+            in: .userDomainMask
+        ).first else {
+            throw XCTSkip("Application Support directory is unavailable")
+        }
+
+        let name = "split-brain-\(UUID().uuidString)"
+        let legacyDirectory = applicationSupport.appendingPathComponent("BlazeDB", isDirectory: true)
+        let legacyURL = legacyDirectory.appendingPathComponent("\(name).blazedb")
+        let canonicalURL = try PathResolver.defaultDatabaseDirectory()
+            .appendingPathComponent("\(name).blazedb")
+
+        try fileManager.createDirectory(
+            at: legacyDirectory,
+            withIntermediateDirectories: true
+        )
+        fileManager.createFile(atPath: legacyURL.path, contents: Data("legacy".utf8))
+        fileManager.createFile(atPath: canonicalURL.path, contents: Data("canonical".utf8))
+        defer {
+            try? fileManager.removeItem(at: legacyURL)
+            try? fileManager.removeItem(at: canonicalURL)
+        }
+
+        XCTAssertThrowsError(try BlazeDBClient.defaultDatabaseURL(for: name)) { error in
+            let message = error.localizedDescription
+            XCTAssertTrue(message.contains("Ambiguous Linux default database paths"), message)
+            XCTAssertTrue(message.contains(legacyURL.path), message)
+            XCTAssertTrue(message.contains(canonicalURL.path), message)
+        }
+    }
+
     func testDefaultMetricsPath_Linux_AlignedWithPathResolverBlazedbRoot() throws {
         let dbRoot = try PathResolver.defaultDatabaseDirectory()
         let metrics = Self.defaultMetricsURLAsTelemetryWould()
