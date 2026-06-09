@@ -36,6 +36,48 @@ final class PathResolverDefaultLocationTests: XCTestCase {
         XCTAssertEqual(canonical.lastPathComponent, "ashpile.blazedb")
     }
 
+    func testDefaultDatabaseURL_WithExtension_PreservesExistingDoubleExtensionFile() throws {
+        let fileManager = FileManager.default
+        let name = "double-extension-\(UUID().uuidString).blazedb"
+        let canonicalURL = try PathResolver.defaultDatabaseDirectory()
+            .appendingPathComponent(name)
+        let legacyDoubleExtensionURL = canonicalURL.appendingPathExtension("blazedb")
+
+        try? fileManager.removeItem(at: canonicalURL)
+        try? fileManager.removeItem(at: legacyDoubleExtensionURL)
+        XCTAssertTrue(fileManager.createFile(atPath: legacyDoubleExtensionURL.path, contents: Data("legacy".utf8)))
+        defer {
+            try? fileManager.removeItem(at: canonicalURL)
+            try? fileManager.removeItem(at: legacyDoubleExtensionURL)
+        }
+
+        XCTAssertFalse(fileManager.fileExists(atPath: canonicalURL.path))
+        let resolved = try BlazeDBClient.defaultDatabaseURL(for: name)
+        XCTAssertEqual(resolved.standardizedFileURL, legacyDoubleExtensionURL.standardizedFileURL)
+    }
+
+    func testDefaultDatabaseURL_WithExtension_RejectsAmbiguousCanonicalAndDoubleExtensionFiles() throws {
+        let fileManager = FileManager.default
+        let name = "ambiguous-double-extension-\(UUID().uuidString).blazedb"
+        let canonicalURL = try PathResolver.defaultDatabaseDirectory()
+            .appendingPathComponent(name)
+        let legacyDoubleExtensionURL = canonicalURL.appendingPathExtension("blazedb")
+
+        try? fileManager.removeItem(at: canonicalURL)
+        try? fileManager.removeItem(at: legacyDoubleExtensionURL)
+        XCTAssertTrue(fileManager.createFile(atPath: canonicalURL.path, contents: Data("canonical".utf8)))
+        XCTAssertTrue(fileManager.createFile(atPath: legacyDoubleExtensionURL.path, contents: Data("legacy".utf8)))
+        defer {
+            try? fileManager.removeItem(at: canonicalURL)
+            try? fileManager.removeItem(at: legacyDoubleExtensionURL)
+        }
+
+        XCTAssertThrowsError(try BlazeDBClient.defaultDatabaseURL(for: name)) { error in
+            XCTAssertTrue(error.localizedDescription.contains("Multiple default database files exist"))
+            XCTAssertTrue(error.localizedDescription.contains("open(at:password:)"))
+        }
+    }
+
     func testDefaultDatabaseURL_RejectsUnsupportedExtension() throws {
         XCTAssertThrowsError(try BlazeDBClient.defaultDatabaseURL(for: "ashpile.blaze")) { error in
             XCTAssertTrue(error.localizedDescription.contains(".blaze"))
@@ -157,6 +199,40 @@ final class PathResolverDefaultLocationTests: XCTestCase {
         XCTAssertFalse(fileManager.fileExists(atPath: canonicalURL.path))
         let resolved = try BlazeDBClient.defaultDatabaseURL(for: name)
         XCTAssertEqual(resolved.standardizedFileURL, legacyURL.standardizedFileURL)
+    }
+
+    func testConvenienceDefaultDatabaseURL_Linux_RejectsAmbiguousCanonicalAndLegacyFiles() throws {
+        let fileManager = FileManager.default
+        guard let applicationSupport = fileManager.urls(
+            for: .applicationSupportDirectory,
+            in: .userDomainMask
+        ).first else {
+            throw XCTSkip("Application Support directory is unavailable")
+        }
+
+        let name = "ambiguous-legacy-\(UUID().uuidString)"
+        let legacyDirectory = applicationSupport.appendingPathComponent("BlazeDB", isDirectory: true)
+        let legacyURL = legacyDirectory.appendingPathComponent("\(name).blazedb")
+        let canonicalURL = try PathResolver.defaultDatabaseDirectory()
+            .appendingPathComponent("\(name).blazedb")
+
+        try fileManager.createDirectory(
+            at: legacyDirectory,
+            withIntermediateDirectories: true
+        )
+        try? fileManager.removeItem(at: legacyURL)
+        try? fileManager.removeItem(at: canonicalURL)
+        XCTAssertTrue(fileManager.createFile(atPath: legacyURL.path, contents: Data("legacy".utf8)))
+        XCTAssertTrue(fileManager.createFile(atPath: canonicalURL.path, contents: Data("canonical".utf8)))
+        defer {
+            try? fileManager.removeItem(at: legacyURL)
+            try? fileManager.removeItem(at: canonicalURL)
+        }
+
+        XCTAssertThrowsError(try BlazeDBClient.defaultDatabaseURL(for: name)) { error in
+            XCTAssertTrue(error.localizedDescription.contains("Multiple default database files exist"))
+            XCTAssertTrue(error.localizedDescription.contains("legacy Linux Application Support"))
+        }
     }
 
     func testDefaultMetricsPath_Linux_AlignedWithPathResolverBlazedbRoot() throws {

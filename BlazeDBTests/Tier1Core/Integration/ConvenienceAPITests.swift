@@ -151,6 +151,50 @@ final class ConvenienceAPITests: XCTestCase {
         XCTAssertFalse(db.fileURL.lastPathComponent.hasSuffix(".blazedb.blazedb"))
     }
 
+    func testOpenNamed_WithExtensionPreservesExistingDoubleExtensionDatabase() throws {
+        let fileManager = FileManager.default
+        let password = "SecureTestDB-456!"
+        let name = "OpenNamedLegacy-\(UUID().uuidString).blazedb"
+        let canonicalURL = try PathResolver.defaultDatabaseDirectory()
+            .appendingPathComponent(name)
+        let canonicalMetaURL = canonicalURL.deletingPathExtension().appendingPathExtension("meta")
+        let legacyDoubleExtensionURL = canonicalURL.appendingPathExtension("blazedb")
+        let legacyDoubleExtensionMetaURL = legacyDoubleExtensionURL
+            .deletingPathExtension()
+            .appendingPathExtension("meta")
+
+        try? fileManager.removeItem(at: canonicalURL)
+        try? fileManager.removeItem(at: canonicalMetaURL)
+        try? fileManager.removeItem(at: legacyDoubleExtensionURL)
+        try? fileManager.removeItem(at: legacyDoubleExtensionMetaURL)
+        defer {
+            try? fileManager.removeItem(at: canonicalURL)
+            try? fileManager.removeItem(at: canonicalMetaURL)
+            try? fileManager.removeItem(at: legacyDoubleExtensionURL)
+            try? fileManager.removeItem(at: legacyDoubleExtensionMetaURL)
+        }
+
+        let seedDB = try BlazeDBClient.open(at: legacyDoubleExtensionURL, password: password)
+        let id = try seedDB.insert(BlazeDataRecord(["source": .string("double-extension")]))
+        try seedDB.close()
+
+        XCTAssertFalse(fileManager.fileExists(atPath: canonicalURL.path))
+        let reopened = try BlazeDBClient.open(named: name, password: password)
+        defer { try? reopened.close() }
+
+        XCTAssertEqual(
+            reopened.fileURL.standardizedFileURL,
+            legacyDoubleExtensionURL.standardizedFileURL,
+            "open(named:) must preserve data written by the former double-extension resolution"
+        )
+        let fetched = try reopened.fetch(id: id)
+        XCTAssertEqual(fetched?.storage["source"]?.stringValue, "double-extension")
+        XCTAssertFalse(
+            fileManager.fileExists(atPath: canonicalURL.path),
+            "open(named:) must not create a split-brain canonical database when double-extension data exists"
+        )
+    }
+
     #if os(Linux)
     func testOpenNamed_Linux_PreservesExistingLegacyApplicationSupportDatabase() throws {
         let fileManager = FileManager.default

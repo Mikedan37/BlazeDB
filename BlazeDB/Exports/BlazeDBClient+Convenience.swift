@@ -11,6 +11,10 @@ import Foundation
 
 extension BlazeDBClient {
     private static let canonicalDatabaseExtension = "blazedb"
+    private struct DefaultDatabaseLocationCandidate {
+        let url: URL
+        let label: String
+    }
     
     public enum DatabaseNameConventionError: LocalizedError {
         case emptyName
@@ -98,14 +102,38 @@ extension BlazeDBClient {
         let blazeDBDir = try PathResolver.defaultDatabaseDirectory()
         let dbName = try normalizedDatabaseFileName(fromUserInput: name)
         let canonicalURL = blazeDBDir.appendingPathComponent(dbName)
+        let fileManager = FileManager.default
 
-        #if os(Linux)
-        if !FileManager.default.fileExists(atPath: canonicalURL.path),
-           let legacyURL = legacyApplicationSupportDatabaseURL(named: dbName),
-           FileManager.default.fileExists(atPath: legacyURL.path) {
-            return legacyURL
+        let alternatives = legacyDefaultDatabaseLocationCandidates(
+            fromUserInput: name,
+            normalizedName: dbName,
+            canonicalURL: canonicalURL
+        )
+        let existingAlternatives = alternatives.filter {
+            fileManager.fileExists(atPath: $0.url.path)
         }
-        #endif
+        let canonicalExists = fileManager.fileExists(atPath: canonicalURL.path)
+
+        if canonicalExists {
+            if !existingAlternatives.isEmpty {
+                throw ambiguousDefaultDatabaseLocationError(
+                    for: name,
+                    candidates: [DefaultDatabaseLocationCandidate(url: canonicalURL, label: "canonical")] + existingAlternatives
+                )
+            }
+            return canonicalURL
+        }
+
+        if existingAlternatives.count > 1 {
+            throw ambiguousDefaultDatabaseLocationError(
+                for: name,
+                candidates: existingAlternatives
+            )
+        }
+
+        if let existingAlternative = existingAlternatives.first {
+            return existingAlternative.url
+        }
 
         return canonicalURL
     }
@@ -143,6 +171,64 @@ extension BlazeDBClient {
                 expected: canonicalDatabaseExtension
             )
         }
+    }
+
+    private static func legacyDefaultDatabaseLocationCandidates(
+        fromUserInput raw: String,
+        normalizedName dbName: String,
+        canonicalURL: URL
+    ) -> [DefaultDatabaseLocationCandidate] {
+        var candidates: [DefaultDatabaseLocationCandidate] = []
+
+        if let doubleExtensionURL = legacyDoubleExtensionDatabaseURL(
+            fromUserInput: raw,
+            canonicalURL: canonicalURL
+        ) {
+            candidates.append(DefaultDatabaseLocationCandidate(
+                url: doubleExtensionURL,
+                label: "legacy double-extension"
+            ))
+        }
+
+        #if os(Linux)
+        if let legacyURL = legacyApplicationSupportDatabaseURL(named: dbName) {
+            candidates.append(DefaultDatabaseLocationCandidate(
+                url: legacyURL,
+                label: "legacy Linux Application Support"
+            ))
+        }
+        #endif
+
+        return candidates
+    }
+
+    private static func legacyDoubleExtensionDatabaseURL(
+        fromUserInput raw: String,
+        canonicalURL: URL
+    ) -> URL? {
+        let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        let lastComponent = (trimmed as NSString).lastPathComponent
+        let ext = (lastComponent as NSString).pathExtension.lowercased()
+        guard ext == canonicalDatabaseExtension else {
+            return nil
+        }
+
+        // Before the shared normalization fix, named opens with "foo.blazedb"
+        // created "foo.blazedb.blazedb". Keep that file reachable when it is
+        // the only existing default-location candidate.
+        return canonicalURL.appendingPathExtension(canonicalDatabaseExtension)
+    }
+
+    private static func ambiguousDefaultDatabaseLocationError(
+        for name: String,
+        candidates: [DefaultDatabaseLocationCandidate]
+    ) -> BlazeDBError {
+        let candidateList = candidates
+            .map { "\($0.label): \($0.url.path)" }
+            .joined(separator: "; ")
+        return .invalidInput(
+            reason: "Multiple default database files exist for '\(name)': \(candidateList). Open the intended file with open(at:password:) and remove or migrate the duplicate before using name-based open."
+        )
     }
 
     #if os(Linux)
