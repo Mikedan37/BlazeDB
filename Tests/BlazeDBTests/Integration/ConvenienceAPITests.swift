@@ -151,6 +151,30 @@ final class ConvenienceAPITests: XCTestCase {
         XCTAssertNil(found, "Should not find non-existent database")
     }
     
+    func testFindDatabase_DoesNotMatchSuffixCollision() throws {
+        let suffix = UUID().uuidString.replacingOccurrences(of: "-", with: "")
+        let requestedName = "App\(suffix)"
+        let existingName = "My\(requestedName)"
+        defer {
+            for name in [requestedName, existingName] {
+                if let dbURL = try? BlazeDBClient.defaultDatabaseURL(for: name) {
+                    let metaURL = dbURL.deletingPathExtension().appendingPathExtension("meta")
+                    try? FileManager.default.removeItem(at: dbURL)
+                    try? FileManager.default.removeItem(at: metaURL)
+                }
+            }
+        }
+        
+        _ = try BlazeDBClient(name: existingName, password: "ConvenienceAPITest123!")
+        
+        let falsePositive = try BlazeDBClient.findDatabase(named: requestedName)
+        XCTAssertNil(falsePositive, "Should not find a database whose filename only has the requested name as a suffix")
+        
+        let exactMatch = try BlazeDBClient.findDatabase(named: existingName)
+        XCTAssertNotNil(exactMatch, "Should still find the exact database name")
+        XCTAssertEqual(exactMatch.map { URL(fileURLWithPath: $0.path).lastPathComponent }, "\(existingName).blazedb")
+    }
+    
     func testDatabaseExists() {
         // Create a database
         _ = try? BlazeDBClient(name: "MyApp", password: "ConvenienceAPITest123!")

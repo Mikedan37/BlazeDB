@@ -203,7 +203,9 @@ extension BlazeDBClient {
     public static func findDatabase(named name: String) throws -> DatabaseDiscoveryInfo? {
         let databases = try discoverDatabases()
         let searchName = try normalizedDatabaseFileName(fromUserInput: name)
-        return databases.first { $0.path.hasSuffix(searchName) }
+        return databases.first {
+            URL(fileURLWithPath: $0.path).lastPathComponent == searchName
+        }
     }
     
     /// Check if a database exists by name
