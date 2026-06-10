@@ -172,7 +172,9 @@ final class ConvenienceAPITests: XCTestCase {
         
         let exactMatch = try BlazeDBClient.findDatabase(named: existingName)
         XCTAssertNotNil(exactMatch, "Should still find the exact database name")
-        XCTAssertEqual(exactMatch.map { URL(fileURLWithPath: $0.path).lastPathComponent }, "\(existingName).blazedb")
+        if let exactMatch {
+            XCTAssertEqual(URL(fileURLWithPath: exactMatch.path).lastPathComponent, "\(existingName).blazedb")
+        }
     }
     
     func testDatabaseExists() {
