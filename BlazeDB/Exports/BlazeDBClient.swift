@@ -362,14 +362,16 @@ public final class BlazeDBClient: @unchecked Sendable {
         // across file locations on the same machine.
         let dbPath = fileURL.path
         let key: SymmetricKey
+        let shouldCacheKey: Bool
         if let cached = BlazeDBClient.getCachedKey(for: dbPath) {
             key = cached
+            shouldCacheKey = false
             BlazeLogger.debug("Using cached encryption key for \(name)")
         } else {
             do {
                 key = try KeyManager.getKey(from: password, salt: kdfSalt)
-                BlazeDBClient.setCachedKey(key, for: dbPath)
-                BlazeLogger.debug("✅ Encryption key derived from password and cached")
+                shouldCacheKey = true
+                BlazeLogger.debug("✅ Encryption key derived from password")
             } catch KeyManagerError.passwordTooWeak(let failure) {
                 BlazeLogger.error(failure.logMessage)
                 throw BlazeDBError.passwordTooWeak(failure)
@@ -471,6 +473,11 @@ public final class BlazeDBClient: @unchecked Sendable {
             BlazeLogger.error("📊 [LIFECYCLE] recovery_failed reason=\(error.localizedDescription)")
 
             throw BlazeDBError.transactionFailed(errorMsg)
+        }
+
+        if shouldCacheKey {
+            BlazeDBClient.setCachedKey(key, for: dbPath)
+            BlazeLogger.debug("✅ Encryption key cached after successful initialization")
         }
 
         BlazeLogger.info("✅ BlazeDB '\(name)' initialized successfully")
