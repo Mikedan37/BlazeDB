@@ -100,10 +100,17 @@ extension BlazeDBClient {
         let canonicalURL = blazeDBDir.appendingPathComponent(dbName)
 
         #if os(Linux)
-        if !FileManager.default.fileExists(atPath: canonicalURL.path),
-           let legacyURL = legacyApplicationSupportDatabaseURL(named: dbName),
+        if let legacyURL = legacyApplicationSupportDatabaseURL(named: dbName),
            FileManager.default.fileExists(atPath: legacyURL.path) {
-            return legacyURL
+            let canonicalExists = FileManager.default.fileExists(atPath: canonicalURL.path)
+            if !canonicalExists {
+                return legacyURL
+            }
+
+            if linuxDatabaseRecordCountHint(at: legacyURL).map({ $0 > 0 }) == true,
+               linuxLooksLikeEmptyDatabaseShell(at: canonicalURL) {
+                return legacyURL
+            }
         }
         #endif
 
@@ -156,6 +163,29 @@ extension BlazeDBClient {
         ).first?
             .appendingPathComponent("BlazeDB", isDirectory: true)
             .appendingPathComponent(dbName)
+    }
+
+    private static func linuxDatabaseRecordCountHint(at dbURL: URL) -> Int? {
+        let metaURL = dbURL.deletingPathExtension().appendingPathExtension("meta")
+        guard FileManager.default.fileExists(atPath: metaURL.path),
+              let layout = try? StorageLayout.load(from: metaURL) else {
+            return nil
+        }
+        return layout.indexMap.count
+    }
+
+    private static func linuxLooksLikeEmptyDatabaseShell(at dbURL: URL) -> Bool {
+        if linuxDatabaseRecordCountHint(at: dbURL) == 0 {
+            return true
+        }
+
+        let metaURL = dbURL.deletingPathExtension().appendingPathExtension("meta")
+        guard !FileManager.default.fileExists(atPath: metaURL.path),
+              let attributes = try? FileManager.default.attributesOfItem(atPath: dbURL.path),
+              let fileSize = attributes[.size] as? NSNumber else {
+            return false
+        }
+        return fileSize.int64Value == 0
     }
     #endif
     
