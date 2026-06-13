@@ -116,9 +116,14 @@ extension BlazeDBClient {
                 return legacyURL
             }
 
-            if linuxDatabaseRecordCountHint(at: legacyURL).map({ $0 > 0 }) == true,
-               linuxLooksLikeEmptyDatabaseShell(at: canonicalURL) {
-                return legacyURL
+            if linuxDatabaseRecordCountHint(at: legacyURL).map({ $0 > 0 }) == true {
+                if linuxLooksLikeEmptyDatabaseShell(at: canonicalURL) {
+                    return legacyURL
+                }
+
+                throw BlazeDBError.invalidInput(
+                    reason: "Ambiguous Linux default database locations for '\(dbName)': both legacy '\(legacyURL.path)' and canonical '\(canonicalURL.path)' exist and may contain data. Move one database aside or open the intended file with open(at:password:)."
+                )
             }
         }
         #endif
@@ -249,7 +254,7 @@ extension BlazeDBClient {
     public static func findDatabase(named name: String) throws -> DatabaseDiscoveryInfo? {
         let databases = try discoverDatabases()
         let searchName = try normalizedDatabaseFileName(fromUserInput: name)
-        return databases.first { $0.path.hasSuffix(searchName) }
+        return databases.first { URL(fileURLWithPath: $0.path).lastPathComponent == searchName }
     }
     
     /// Check if a database exists by name

@@ -17,6 +17,11 @@ BlazeDB resolves default file locations through `PathResolver.defaultDatabaseDir
 | **Linux** | `~/.local/share/blazedb/` | `myapp.blazedb` |
 
 On Apple platforms the implementation is: **Application Support** + **`BlazeDB`** (see `PathResolver.swift`).
+On Linux, name-based opens preserve a populated database from the brief legacy
+`Application Support/BlazeDB/` location when the canonical `~/.local/share/blazedb/`
+file is missing or empty. If both locations contain data for the same name,
+BlazeDB fails closed; move one file aside or use `BlazeDB.open(at:password:)` to
+open the intended path explicitly.
 
 Name-based opens normalize the supplied database name to a file in the default directory:
 

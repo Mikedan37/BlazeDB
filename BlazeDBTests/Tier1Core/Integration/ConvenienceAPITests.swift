@@ -34,6 +34,19 @@ final class ConvenienceAPITests: XCTestCase {
             attributes: [.posixPermissions: 0o700]
         )
     }
+
+    private func removeDatabaseArtifacts(at dbURL: URL) {
+        let baseURL = dbURL.deletingPathExtension()
+        for url in [
+            dbURL,
+            baseURL.appendingPathExtension("meta"),
+            baseURL.appendingPathExtension("meta.indexes"),
+            baseURL.appendingPathExtension("wal"),
+            baseURL.appendingPathExtension("salt"),
+        ] {
+            try? FileManager.default.removeItem(at: url)
+        }
+    }
     
     override func tearDown() {
         // Cleanup: Remove test databases from the platform default directory
@@ -259,6 +272,50 @@ final class ConvenienceAPITests: XCTestCase {
         let fetched = try reopened.fetch(id: id)
         XCTAssertEqual(fetched?.storage["source"]?.stringValue, "legacy")
     }
+
+    func testOpenNamed_Linux_ThrowsWhenLegacyAndCanonicalBothContainData() throws {
+        let fileManager = FileManager.default
+        guard let applicationSupport = fileManager.urls(
+            for: .applicationSupportDirectory,
+            in: .userDomainMask
+        ).first else {
+            throw XCTSkip("Application Support directory is unavailable")
+        }
+
+        let password = "SecureTestDB-456!"
+        let name = "LegacyAmbiguous-\(UUID().uuidString)"
+        let legacyDirectory = applicationSupport.appendingPathComponent("BlazeDB", isDirectory: true)
+        let legacyURL = legacyDirectory.appendingPathComponent("\(name).blazedb")
+        let canonicalURL = try PathResolver.defaultDatabaseDirectory()
+            .appendingPathComponent("\(name).blazedb")
+
+        try fileManager.createDirectory(
+            at: legacyDirectory,
+            withIntermediateDirectories: true,
+            attributes: [.posixPermissions: 0o700]
+        )
+        removeDatabaseArtifacts(at: legacyURL)
+        removeDatabaseArtifacts(at: canonicalURL)
+        defer {
+            removeDatabaseArtifacts(at: legacyURL)
+            removeDatabaseArtifacts(at: canonicalURL)
+        }
+
+        let legacyDB = try BlazeDBClient.open(at: legacyURL, password: password)
+        _ = try legacyDB.insert(BlazeDataRecord(["source": .string("legacy")]))
+        try legacyDB.close()
+
+        let canonicalDB = try BlazeDBClient.open(at: canonicalURL, password: password)
+        _ = try canonicalDB.insert(BlazeDataRecord(["source": .string("canonical")]))
+        try canonicalDB.close()
+
+        XCTAssertThrowsError(try BlazeDBClient.open(named: name, password: password)) { error in
+            XCTAssertTrue(
+                error.localizedDescription.contains("Ambiguous Linux default database locations"),
+                "Expected ambiguous Linux default locations error, got \(error)"
+            )
+        }
+    }
     #endif
     
     func testDefaultDatabaseDirectory() throws {
@@ -305,6 +362,28 @@ final class ConvenienceAPITests: XCTestCase {
         
         XCTAssertNotNil(found, "Should find database")
         XCTAssertTrue(found?.path.contains("MyApp") ?? false, "Path should contain MyApp")
+    }
+
+    func testFindDatabase_RequiresExactFilenameMatch() throws {
+        let name = "Lookup-\(UUID().uuidString)"
+        let collidingName = "backup.\(name)"
+        let exactURL = try BlazeDBClient.defaultDatabaseURL(for: name)
+        let collidingURL = try BlazeDBClient.defaultDatabaseURL(for: collidingName)
+
+        removeDatabaseArtifacts(at: exactURL)
+        removeDatabaseArtifacts(at: collidingURL)
+        defer {
+            removeDatabaseArtifacts(at: exactURL)
+            removeDatabaseArtifacts(at: collidingURL)
+        }
+
+        let collidingDB = try BlazeDBClient.open(named: collidingName, password: "SecureTestDB-456!")
+        defer { try? collidingDB.close() }
+        _ = try collidingDB.insert(BlazeDataRecord(["source": .string("colliding")]))
+        try collidingDB.persist()
+
+        let found = try BlazeDBClient.findDatabase(named: name)
+        XCTAssertNil(found, "Lookup must not return backup.\(name).blazedb for \(name).blazedb")
     }
     
     func testFindDatabase_NotFound() throws {
