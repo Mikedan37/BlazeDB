@@ -69,6 +69,19 @@ private final class ScanState: @unchecked Sendable {
 }
 
 public enum BlazedbPicker {
+    static func readByte(timeoutMs: Int32, fd: Int32 = STDIN_FILENO) throws -> UInt8? {
+        var pfd = pollfd(fd: fd, events: Int16(POLLIN), revents: 0)
+        let pr = poll(&pfd, 1, timeoutMs)
+        if pr <= 0 { return nil }
+        if (pfd.revents & Int16(POLLIN | POLLHUP | POLLERR)) == 0 { return nil }
+
+        var b: UInt8 = 0
+        let bytesRead = read(fd, &b, 1)
+        if bytesRead == 1 { return b }
+        if bytesRead == 0 { throw CLIError.cancelled }
+        return nil
+    }
+
     public static func pickDatabase(
         registry: inout CLIRegistry,
         registryURL: URL,
@@ -137,16 +150,6 @@ public enum BlazedbPicker {
         let raw = try TerminalRawMode()
         _ = raw
 
-        func readByte(timeoutMs: Int32) -> UInt8? {
-            var pfd = pollfd(fd: STDIN_FILENO, events: Int16(POLLIN), revents: 0)
-            let pr = poll(&pfd, 1, timeoutMs)
-            if pr <= 0 { return nil }
-            if (pfd.revents & Int16(POLLIN)) == 0 { return nil }
-            var b: UInt8 = 0
-            if read(STDIN_FILENO, &b, 1) == 1 { return b }
-            return nil
-        }
-
         func clampSelection(for snap: PickerSnapshot) {
             if snap.selectableIndices.isEmpty {
                 selection = 0
@@ -205,7 +208,7 @@ public enum BlazedbPicker {
                 try redraw(force: sizeChanged)
             }
 
-            guard let b = readByte(timeoutMs: 120) else {
+            guard let b = try Self.readByte(timeoutMs: 120) else {
                 continue
             }
 
@@ -238,8 +241,8 @@ public enum BlazedbPicker {
             }
 
             if b == 27 {
-                if let b2 = readByte(timeoutMs: 80), b2 == UInt8(ascii: "["),
-                   let b3 = readByte(timeoutMs: 80) {
+                if let b2 = try Self.readByte(timeoutMs: 80), b2 == UInt8(ascii: "["),
+                   let b3 = try Self.readByte(timeoutMs: 80) {
                     let snap = try makeSnapshot()
                     if snap.selectableIndices.isEmpty { continue }
                     if b3 == UInt8(ascii: "A") {
@@ -313,7 +316,7 @@ public enum BlazedbPicker {
                 lines.append("  " + CLIColors.muted("press any key to return…"))
                 lines.append(CLIBranding.separator(width: cols))
                 CLITerminalDraw.presentFrame(lines.joined(separator: "\n"))
-                _ = readByte(timeoutMs: 300_000)
+                _ = try Self.readByte(timeoutMs: 300_000)
                 try redraw(force: true)
                 continue
             }
