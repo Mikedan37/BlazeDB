@@ -361,20 +361,29 @@ public final class BlazeDBClient: @unchecked Sendable {
             )
         }
 
-        // 🔑 Derive key from the provided password and per-database salt.
+        // 🔑 Derive or reuse key after successful initialization (cache only verified opens).
         // Use a path-independent password key so backups/restores remain portable
         // across file locations on the same machine.
+        let dbPath = fileURL.path
         let key: SymmetricKey
-        do {
-            key = try KeyManager.getKey(from: password, salt: kdfSalt)
-            BlazeLogger.debug("✅ Encryption key derived from password")
-        } catch KeyManagerError.passwordTooWeak(let failure) {
-            BlazeLogger.error(failure.logMessage)
-            throw BlazeDBError.passwordTooWeak(failure)
-        } catch {
-            let errorMsg = "❌ Failed to derive encryption key: \(error.localizedDescription)"
-            BlazeLogger.error(errorMsg)
-            throw BlazeDBError.transactionFailed(errorMsg)
+        let shouldCacheKey: Bool
+        if let cached = BlazeDBClient.getCachedKey(for: dbPath) {
+            key = cached
+            shouldCacheKey = false
+            BlazeLogger.debug("Using cached encryption key for \(name)")
+        } else {
+            do {
+                key = try KeyManager.getKey(from: password, salt: kdfSalt)
+                shouldCacheKey = true
+                BlazeLogger.debug("✅ Encryption key derived from password")
+            } catch KeyManagerError.passwordTooWeak(let failure) {
+                BlazeLogger.error(failure.logMessage)
+                throw BlazeDBError.passwordTooWeak(failure)
+            } catch {
+                let errorMsg = "❌ Failed to derive encryption key: \(error.localizedDescription)"
+                BlazeLogger.error(errorMsg)
+                throw BlazeDBError.transactionFailed(errorMsg)
+            }
         }
         self.encryptionKey = key
 
@@ -468,6 +477,11 @@ public final class BlazeDBClient: @unchecked Sendable {
             BlazeLogger.error("📊 [LIFECYCLE] recovery_failed reason=\(error.localizedDescription)")
 
             throw BlazeDBError.transactionFailed(errorMsg)
+        }
+
+        if shouldCacheKey {
+            BlazeDBClient.setCachedKey(key, for: dbPath)
+            BlazeLogger.debug("✅ Encryption key cached after successful initialization")
         }
 
         BlazeLogger.info("✅ BlazeDB '\(name)' initialized successfully")
