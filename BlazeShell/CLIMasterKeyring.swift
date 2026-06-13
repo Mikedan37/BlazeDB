@@ -4,6 +4,16 @@
 //
 
 import Foundation
+#if canImport(Darwin)
+import Darwin
+#elseif canImport(Glibc)
+import Glibc
+#endif
+
+#if canImport(Darwin) || canImport(Glibc)
+@_silgen_name("flock")
+private func posixFlock(_ fd: Int32, _ operation: Int32) -> Int32
+#endif
 #if canImport(CryptoKit)
 import CryptoKit
 #else
@@ -107,47 +117,60 @@ public enum CLIMasterKeyringError: Error, LocalizedError {
     }
 }
 
+private final class CLIMasterKeyringMutationLock: @unchecked Sendable {
+    private let lock = NSLock()
+
+    func withLock<T>(_ body: () throws -> T) rethrows -> T {
+        lock.lock()
+        defer { lock.unlock() }
+        return try body()
+    }
+}
+
 public enum CLIMasterKeyringStore {
     private static let schemaVersion = 1
+    private static let inProcessKeyringLock = CLIMasterKeyringMutationLock()
 
     public static func initialize(passphrase: String) throws -> CLIMasterKeyringStatus {
-        let url = try CLIPaths.masterKeyringURL()
-        if FileManager.default.fileExists(atPath: url.path) {
-            throw CLIMasterKeyringError.alreadyInitialized(url.path)
+        try withExclusiveKeyringMutationLock {
+            let url = try CLIPaths.masterKeyringURL()
+            if FileManager.default.fileExists(atPath: url.path) {
+                throw CLIMasterKeyringError.alreadyInitialized(url.path)
+            }
+
+            let createdAt = Date()
+            let payload = CLIMasterKeyringPayload()
+            let payloadData = try jsonEncoder().encode(payload)
+
+            let isTest = ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
+            let kdf = CLIMasterKDFRecord(
+                algorithm: "argon2id",
+                saltBase64: Data((0..<16).map { _ in UInt8.random(in: 0...255) }).base64EncodedString(),
+                memoryCost: isTest ? 16_384 : 65_536,
+                timeCost: isTest ? 2 : 3,
+                parallelism: isTest ? 2 : 4,
+                keyLength: 32,
+                pbkdf2Iterations: nil
+            )
+            let key = try deriveMasterKey(passphrase: passphrase, kdf: kdf)
+            let box = try AES.GCM.seal(payloadData, using: key)
+
+            let envelope = CLIMasterEnvelope(
+                schemaVersion: schemaVersion,
+                createdAt: createdAt,
+                updatedAt: createdAt,
+                entryCountHint: 0,
+                kdf: kdf,
+                nonceBase64: Data(box.nonce).base64EncodedString(),
+                ciphertextBase64: box.ciphertext.base64EncodedString(),
+                tagBase64: box.tag.base64EncodedString()
+            )
+
+            let data = try jsonEncoder().encode(envelope)
+            try data.write(to: url, options: .atomic)
+            try lockDownPermissionsIfPossible(url: url)
+            return try status()
         }
-
-        let createdAt = Date()
-        let payload = CLIMasterKeyringPayload()
-        let payloadData = try jsonEncoder().encode(payload)
-
-        let isTest = ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
-        let kdf = CLIMasterKDFRecord(
-            algorithm: "argon2id",
-            saltBase64: Data((0..<16).map { _ in UInt8.random(in: 0...255) }).base64EncodedString(),
-            memoryCost: isTest ? 16_384 : 65_536,
-            timeCost: isTest ? 2 : 3,
-            parallelism: isTest ? 2 : 4,
-            keyLength: 32,
-            pbkdf2Iterations: nil
-        )
-        let key = try deriveMasterKey(passphrase: passphrase, kdf: kdf)
-        let box = try AES.GCM.seal(payloadData, using: key)
-
-        let envelope = CLIMasterEnvelope(
-            schemaVersion: schemaVersion,
-            createdAt: createdAt,
-            updatedAt: createdAt,
-            entryCountHint: 0,
-            kdf: kdf,
-            nonceBase64: Data(box.nonce).base64EncodedString(),
-            ciphertextBase64: box.ciphertext.base64EncodedString(),
-            tagBase64: box.tag.base64EncodedString()
-        )
-
-        let data = try jsonEncoder().encode(envelope)
-        try data.write(to: url, options: .atomic)
-        try lockDownPermissionsIfPossible(url: url)
-        return try status()
     }
 
     public static func status() throws -> CLIMasterKeyringStatus {
@@ -185,6 +208,18 @@ public enum CLIMasterKeyringStore {
     }
 
     public static func loadPayload(passphrase: String) throws -> CLIMasterKeyringPayload {
+        try withExclusiveKeyringMutationLock {
+            try loadPayloadUnlocked(passphrase: passphrase)
+        }
+    }
+
+    public static func savePayload(passphrase: String, payload: CLIMasterKeyringPayload) throws -> CLIMasterKeyringStatus {
+        try withExclusiveKeyringMutationLock {
+            try savePayloadUnlocked(passphrase: passphrase, payload: payload)
+        }
+    }
+
+    private static func loadPayloadUnlocked(passphrase: String) throws -> CLIMasterKeyringPayload {
         let url = try CLIPaths.masterKeyringURL()
         guard FileManager.default.fileExists(atPath: url.path) else {
             throw CLIMasterKeyringError.notInitialized(url.path)
@@ -207,7 +242,7 @@ public enum CLIMasterKeyringStore {
         return try jsonDecoder().decode(CLIMasterKeyringPayload.self, from: clear)
     }
 
-    public static func savePayload(passphrase: String, payload: CLIMasterKeyringPayload) throws -> CLIMasterKeyringStatus {
+    private static func savePayloadUnlocked(passphrase: String, payload: CLIMasterKeyringPayload) throws -> CLIMasterKeyringStatus {
         let url = try CLIPaths.masterKeyringURL()
         guard FileManager.default.fileExists(atPath: url.path) else {
             throw CLIMasterKeyringError.notInitialized(url.path)
@@ -279,55 +314,59 @@ public enum CLIMasterKeyringStore {
                 lastOpened: now
             )
         case .device, .persistent:
-            var payload = try loadPayload(passphrase: passphrase)
-            var entry = payload.databases[hash] ?? CLIMasterDatabaseEntry(
-                dbID: databaseID(forCanonicalPath: canonical),
-                label: label,
-                canonicalPath: canonical,
-                pathHash: hash,
-                scope: scope,
-                encryptedDBKey: nil,
-                keychainReference: nil,
-                createdAt: now,
-                lastOpened: nil
-            )
-            entry.label = label ?? entry.label
-            entry.scope = scope
-            entry.lastOpened = now
+            return try withExclusiveKeyringMutationLock {
+                var payload = try loadPayloadUnlocked(passphrase: passphrase)
+                var entry = payload.databases[hash] ?? CLIMasterDatabaseEntry(
+                    dbID: databaseID(forCanonicalPath: canonical),
+                    label: label,
+                    canonicalPath: canonical,
+                    pathHash: hash,
+                    scope: scope,
+                    encryptedDBKey: nil,
+                    keychainReference: nil,
+                    createdAt: now,
+                    lastOpened: nil
+                )
+                entry.label = label ?? entry.label
+                entry.scope = scope
+                entry.lastOpened = now
 
-            if scope == .device {
-                let ref = try CLIMasterDeviceVault.store(secret: dbSecret, account: hash)
-                entry.keychainReference = ref
-                entry.encryptedDBKey = nil
-            } else {
-                entry.encryptedDBKey = Data(dbSecret.utf8).base64EncodedString()
-                entry.keychainReference = nil
+                if scope == .device {
+                    let ref = try CLIMasterDeviceVault.store(secret: dbSecret, account: hash)
+                    entry.keychainReference = ref
+                    entry.encryptedDBKey = nil
+                } else {
+                    entry.encryptedDBKey = Data(dbSecret.utf8).base64EncodedString()
+                    entry.keychainReference = nil
+                }
+                payload.databases[hash] = entry
+                _ = try savePayloadUnlocked(passphrase: passphrase, payload: payload)
+                return entry
             }
-            payload.databases[hash] = entry
-            _ = try savePayload(passphrase: passphrase, payload: payload)
-            return entry
         }
     }
 
     public static func removeEntry(passphrase: String, dbPathOrID: String) throws -> Bool {
-        var payload = try loadPayload(passphrase: passphrase)
-        let canonical = canonicalPath(dbPathOrID)
-        let hashByPath = pathHash(forCanonicalPath: canonical)
+        try withExclusiveKeyringMutationLock {
+            var payload = try loadPayloadUnlocked(passphrase: passphrase)
+            let canonical = canonicalPath(dbPathOrID)
+            let hashByPath = pathHash(forCanonicalPath: canonical)
 
-        let targetKey: String? = {
-            if payload.databases[dbPathOrID] != nil { return dbPathOrID }
-            if payload.databases[hashByPath] != nil { return hashByPath }
-            return payload.databases.first { $0.value.dbID == dbPathOrID || $0.value.canonicalPath == canonical }?.key
-        }()
+            let targetKey: String? = {
+                if payload.databases[dbPathOrID] != nil { return dbPathOrID }
+                if payload.databases[hashByPath] != nil { return hashByPath }
+                return payload.databases.first { $0.value.dbID == dbPathOrID || $0.value.canonicalPath == canonical }?.key
+            }()
 
-        guard let key = targetKey, let entry = payload.databases.removeValue(forKey: key) else {
-            return false
+            guard let key = targetKey, let entry = payload.databases.removeValue(forKey: key) else {
+                return false
+            }
+            if entry.scope == .device, let ref = entry.keychainReference {
+                try? CLIMasterDeviceVault.remove(account: ref)
+            }
+            _ = try savePayloadUnlocked(passphrase: passphrase, payload: payload)
+            return true
         }
-        if entry.scope == .device, let ref = entry.keychainReference {
-            try? CLIMasterDeviceVault.remove(account: ref)
-        }
-        _ = try savePayload(passphrase: passphrase, payload: payload)
-        return true
     }
 
     public static func resolveSecret(passphrase: String, dbPath: String) throws -> String? {
@@ -408,6 +447,49 @@ public enum CLIMasterKeyringStore {
             out.append(t)
         }
         return out.prefix(keyLength)
+    }
+
+    private static func withExclusiveKeyringMutationLock<T>(_ body: () throws -> T) throws -> T {
+        try inProcessKeyringLock.withLock {
+            #if canImport(Darwin) || canImport(Glibc)
+            let keyringURL = try CLIPaths.masterKeyringURL()
+            let lockURL = keyringURL
+                .deletingLastPathComponent()
+                .appendingPathComponent("\(keyringURL.lastPathComponent).lock", isDirectory: false)
+            let flags: Int32 = O_CREAT | O_RDWR
+            let mode: mode_t = 0o600
+            let fd = lockURL.path.withCString { path in
+                #if canImport(Darwin)
+                Darwin.open(path, flags, mode)
+                #elseif canImport(Glibc)
+                Glibc.open(path, flags, mode)
+                #endif
+            }
+            guard fd >= 0 else {
+                let err = errno
+                throw POSIXError(POSIXErrorCode(rawValue: err) ?? .EIO)
+            }
+            defer {
+                #if canImport(Darwin)
+                _ = Darwin.close(fd)
+                #elseif canImport(Glibc)
+                _ = Glibc.close(fd)
+                #endif
+            }
+
+            try lockDownPermissionsIfPossible(url: lockURL)
+            let lockResult = posixFlock(fd, LOCK_EX)
+            guard lockResult == 0 else {
+                let err = errno
+                throw POSIXError(POSIXErrorCode(rawValue: err) ?? .EIO)
+            }
+            defer {
+                _ = posixFlock(fd, LOCK_UN)
+            }
+            #endif
+
+            return try body()
+        }
     }
 
     private static func lockDownPermissionsIfPossible(url: URL) throws {

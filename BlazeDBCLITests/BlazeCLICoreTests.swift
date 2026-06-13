@@ -24,6 +24,23 @@ private final class HitCollector: @unchecked Sendable {
     }
 }
 
+private final class ErrorCollector: @unchecked Sendable {
+    private let lock = NSLock()
+    private var messages: [String] = []
+
+    func append(_ message: String) {
+        lock.lock()
+        messages.append(message)
+        lock.unlock()
+    }
+
+    var snapshot: [String] {
+        lock.lock()
+        defer { lock.unlock() }
+        return messages
+    }
+}
+
 final class CLIRegistryTests: XCTestCase {
     func testMRURecordOpen() {
         var reg = CLIRegistry()
@@ -284,5 +301,59 @@ final class CLIMasterKeyringTests: XCTestCase {
         )
         XCTAssertTrue(removed)
         XCTAssertEqual(try CLIMasterKeyringStore.listEntries(passphrase: "MasterPassphrase_For_Test_123!").count, 0)
+    }
+
+    func testConcurrentPersistentAddsPreserveAllEntries() throws {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("master-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        let keyringPath = dir.appendingPathComponent("keyring.json.enc").path
+        setenv("BLAZEDB_MASTER_KEYRING_PATH", keyringPath, 1)
+        defer { unsetenv("BLAZEDB_MASTER_KEYRING_PATH") }
+
+        let passphrase = "MasterPassphrase_For_Test_123!"
+        _ = try CLIMasterKeyringStore.initialize(passphrase: passphrase)
+
+        let workerCount = 6
+        let start = DispatchSemaphore(value: 0)
+        let group = DispatchGroup()
+        let errors = ErrorCollector()
+
+        for index in 0..<workerCount {
+            group.enter()
+            DispatchQueue.global(qos: .userInitiated).async {
+                start.wait()
+                do {
+                    _ = try CLIMasterKeyringStore.addEntry(
+                        passphrase: passphrase,
+                        dbPath: dir.appendingPathComponent("db-\(index).blazedb").path,
+                        dbSecret: "DBSecret_\(index)_For_Test_123!",
+                        scope: .persistent,
+                        label: "DB \(index)"
+                    )
+                } catch {
+                    errors.append(String(describing: error))
+                }
+                group.leave()
+            }
+        }
+
+        for _ in 0..<workerCount {
+            start.signal()
+        }
+
+        XCTAssertEqual(group.wait(timeout: .now() + 60), .success)
+        let capturedErrors = errors.snapshot
+        XCTAssertTrue(capturedErrors.isEmpty, capturedErrors.joined(separator: "\n"))
+
+        let listed = try CLIMasterKeyringStore.listEntries(passphrase: passphrase)
+        XCTAssertEqual(listed.count, workerCount)
+        for index in 0..<workerCount {
+            let resolved = try CLIMasterKeyringStore.resolveSecret(
+                passphrase: passphrase,
+                dbPath: dir.appendingPathComponent("db-\(index).blazedb").path
+            )
+            XCTAssertEqual(resolved, "DBSecret_\(index)_For_Test_123!")
+        }
     }
 }
