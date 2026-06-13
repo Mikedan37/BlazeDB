@@ -372,6 +372,11 @@ public enum CLIMasterKeyringStore {
             return inSession
         }
 
+        let status = try status()
+        guard status.exists else {
+            return nil
+        }
+
         let payload = try loadPayload(passphrase: passphrase)
         guard let entry = payload.databases[hash] else { return nil }
 

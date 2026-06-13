@@ -14,12 +14,15 @@ extension BlazeDBClient {
     
     public enum DatabaseNameConventionError: LocalizedError {
         case emptyName
+        case pathNotAllowed
         case unsupportedExtension(found: String, expected: String)
         
         public var errorDescription: String? {
             switch self {
             case .emptyName:
                 return "Database name is empty."
+            case .pathNotAllowed:
+                return "Database name must not contain path separators. Use open(at:password:) for filesystem paths."
             case .unsupportedExtension(let found, let expected):
                 return "Unsupported database extension '.\(found)'. Expected '.\(expected)'."
             }
@@ -100,10 +103,17 @@ extension BlazeDBClient {
         let canonicalURL = blazeDBDir.appendingPathComponent(dbName)
 
         #if os(Linux)
-        if !FileManager.default.fileExists(atPath: canonicalURL.path),
-           let legacyURL = legacyApplicationSupportDatabaseURL(named: dbName),
+        if let legacyURL = legacyApplicationSupportDatabaseURL(named: dbName),
            FileManager.default.fileExists(atPath: legacyURL.path) {
-            return legacyURL
+            let canonicalExists = FileManager.default.fileExists(atPath: canonicalURL.path)
+            if !canonicalExists {
+                return legacyURL
+            }
+
+            if linuxDatabaseRecordCountHint(at: legacyURL).map({ $0 > 0 }) == true,
+               linuxLooksLikeEmptyDatabaseShell(at: canonicalURL) {
+                return legacyURL
+            }
         }
         #endif
 
@@ -117,26 +127,29 @@ extension BlazeDBClient {
     /// - `foo.blazedb` -> `foo.blazedb`
     /// - `foo.anything` -> error (explicit unsupported extension)
     ///
-    /// Note: extension detection only inspects the final path component suffix.
+    /// Path-like input is rejected to avoid silently opening a different database
+    /// than the caller intended. Use `open(at:password:)` for filesystem paths.
     public static func normalizedDatabaseFileName(fromUserInput raw: String) throws -> String {
         let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
         if trimmed.isEmpty {
             throw DatabaseNameConventionError.emptyName
         }
 
-        // Strip any path components if a caller accidentally passes a path-like string.
-        let lastComponent = (trimmed as NSString).lastPathComponent
-        let ext = (lastComponent as NSString).pathExtension.lowercased()
-        let base = (lastComponent as NSString).deletingPathExtension.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmed.rangeOfCharacter(from: CharacterSet(charactersIn: "/\\")) != nil {
+            throw DatabaseNameConventionError.pathNotAllowed
+        }
+
+        let ext = (trimmed as NSString).pathExtension.lowercased()
+        let base = (trimmed as NSString).deletingPathExtension.trimmingCharacters(in: .whitespacesAndNewlines)
         if base.isEmpty {
             throw DatabaseNameConventionError.emptyName
         }
 
         switch ext {
         case "":
-            return "\(lastComponent).\(canonicalDatabaseExtension)"
+            return "\(trimmed).\(canonicalDatabaseExtension)"
         case canonicalDatabaseExtension:
-            return lastComponent
+            return trimmed
         default:
             throw DatabaseNameConventionError.unsupportedExtension(
                 found: ext,
@@ -156,6 +169,29 @@ extension BlazeDBClient {
         ).first?
             .appendingPathComponent("BlazeDB", isDirectory: true)
             .appendingPathComponent(dbName)
+    }
+
+    private static func linuxDatabaseRecordCountHint(at dbURL: URL) -> Int? {
+        let metaURL = dbURL.deletingPathExtension().appendingPathExtension("meta")
+        guard FileManager.default.fileExists(atPath: metaURL.path),
+              let layout = try? StorageLayout.load(from: metaURL) else {
+            return nil
+        }
+        return layout.indexMap.count
+    }
+
+    private static func linuxLooksLikeEmptyDatabaseShell(at dbURL: URL) -> Bool {
+        if linuxDatabaseRecordCountHint(at: dbURL) == 0 {
+            return true
+        }
+
+        let metaURL = dbURL.deletingPathExtension().appendingPathExtension("meta")
+        guard !FileManager.default.fileExists(atPath: metaURL.path),
+              let attributes = try? FileManager.default.attributesOfItem(atPath: dbURL.path),
+              let fileSize = attributes[.size] as? NSNumber else {
+            return false
+        }
+        return fileSize.int64Value == 0
     }
     #endif
     

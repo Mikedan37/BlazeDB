@@ -86,6 +86,38 @@ final class KeyManagerTests: XCTestCase {
         XCTAssertEqual(key1Data, key2Data, "Cached key should be identical")
         XCTAssertLessThan(duration2, duration1 / 10, "Cached key should be much faster")
     }
+
+    func testWrongPasswordOpenDoesNotPoisonPathKeyCache() throws {
+        let dbURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("cache-poison-\(UUID().uuidString).blazedb")
+        let correctPassword = "CorrectPass-123!"
+        let wrongPassword = "WrongPass-123!"
+        var db: BlazeDBClient?
+
+        defer {
+            try? db?.close()
+            BlazeDBClient.clearCachedKey()
+            cleanupBlazeDBFiles(at: dbURL)
+            try? FileManager.default.removeItem(at: dbURL.deletingPathExtension().appendingPathExtension("salt"))
+            try? FileManager.default.removeItem(at: dbURL.deletingPathExtension().appendingPathExtension("wal"))
+        }
+
+        db = try BlazeDBClient(name: "CachePoisonRegression", fileURL: dbURL, password: correctPassword)
+        let id = try XCTUnwrap(db).insert(BlazeDataRecord(["message": .string("still-readable")]))
+        try db?.persist()
+        try db?.close()
+        db = nil
+
+        XCTAssertThrowsError(
+            try BlazeDBClient(name: "CachePoisonRegression", fileURL: dbURL, password: wrongPassword),
+            "Opening with the wrong password must fail and must not cache that wrong key for the path."
+        )
+
+        let reopened = try BlazeDBClient(name: "CachePoisonRegression", fileURL: dbURL, password: correctPassword)
+        db = reopened
+        let record = try XCTUnwrap(reopened.fetch(id: id))
+        XCTAssertEqual(record["message"], .string("still-readable"))
+    }
     
     func testConcurrentKeyDerivationReturnsSameKeys() async throws {
         // Verify concurrent derivation of the same password/salt returns identical keys

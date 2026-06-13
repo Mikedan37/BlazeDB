@@ -31,6 +31,15 @@ final class MigrationVersioningTests: XCTestCase {
         }
         super.tearDown()
     }
+
+    /// Release file locks before simulating app restart in migration scenarios.
+    private func closeAndRelease(_ db: inout BlazeDBClient?) throws {
+        if let db {
+            try db.close()
+        }
+        db = nil
+        BlazeDBClient.clearCachedKey()
+    }
     
     // MARK: - Schema Evolution Scenarios
     
@@ -57,7 +66,7 @@ final class MigrationVersioningTests: XCTestCase {
         print("    ✅ V1: 100 bugs with 2 fields (title, status)")
         
         try await db!.persist()
-        db = nil
+        try closeAndRelease(&db)
         
         // ═══════════════════════════════════════════════════════
         // V2.0: Add new fields (priority, assignee)
@@ -92,7 +101,7 @@ final class MigrationVersioningTests: XCTestCase {
         print("    ✅ Query by new field: \(highPriority.count) P5 bugs")
         
         try await db!.persist()
-        db = nil
+        try closeAndRelease(&db)
         
         // ═══════════════════════════════════════════════════════
         // V3.0: Add tags (array), remove assignee (rename to owner)
