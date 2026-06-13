@@ -132,7 +132,8 @@ public enum CLIMasterKeyringStore {
     private static let inProcessKeyringLock = CLIMasterKeyringMutationLock()
 
     public static func initialize(passphrase: String) throws -> CLIMasterKeyringStatus {
-        try withExclusiveKeyringMutationLock {
+        try PasswordStrengthValidator.validate(passphrase, requirements: .recommended)
+        return try withExclusiveKeyringMutationLock {
             let url = try CLIPaths.masterKeyringURL()
             if FileManager.default.fileExists(atPath: url.path) {
                 throw CLIMasterKeyringError.alreadyInitialized(url.path)

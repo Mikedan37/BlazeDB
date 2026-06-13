@@ -226,6 +226,21 @@ final class BlazedbPickerInputTests: XCTestCase {
 }
 
 final class CLIMasterKeyringTests: XCTestCase {
+    func testMasterKeyringInitRejectsWeakPassphrase() throws {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("master-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        let keyringPath = dir.appendingPathComponent("keyring.json.enc").path
+        setenv("BLAZEDB_MASTER_KEYRING_PATH", keyringPath, 1)
+        defer {
+            unsetenv("BLAZEDB_MASTER_KEYRING_PATH")
+            try? FileManager.default.removeItem(at: dir)
+        }
+
+        XCTAssertThrowsError(try CLIMasterKeyringStore.initialize(passphrase: "1234"))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: keyringPath))
+    }
+
     func testResolveSecretReturnsNilWhenKeyringIsNotInitialized() throws {
         let dir = FileManager.default.temporaryDirectory
             .appendingPathComponent("master-\(UUID().uuidString)", isDirectory: true)
