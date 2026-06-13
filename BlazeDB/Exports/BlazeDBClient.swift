@@ -1316,7 +1316,11 @@ public final class BlazeDBClient: @unchecked Sendable {
     public func softDelete(id: UUID) throws {
         try ensureNotClosed()
         try performSafeWrite {
-            try collection.update(id: id, with: BlazeDataRecord(["isDeleted": .bool(true)]))
+            guard var record = try collection.fetch(id: id) else {
+                throw BlazeDBError.recordNotFound(id: id)
+            }
+            record.storage["isDeleted"] = .bool(true)
+            try collection.update(id: id, with: record)
         }
     }
 
