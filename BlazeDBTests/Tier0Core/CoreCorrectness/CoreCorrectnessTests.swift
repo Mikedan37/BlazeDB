@@ -282,6 +282,30 @@ final class CoreCorrectnessTests: XCTestCase {
         }
     }
 
+    /// Soft delete must retain the original payload so a recoverable delete does
+    /// not destroy the record before purge runs.
+    func testSoftDelete_PreservesStoredFieldsUntilPurge() throws {
+        let db = try openDB()
+        defer { try? db.close() }
+
+        let id = try db.insert(makeRecord([
+            "title": .string("recoverable"),
+            "version": .int(7),
+            "active": .bool(true)
+        ]))
+
+        try db.softDelete(id: id)
+
+        XCTAssertNil(try db.fetch(id: id), "Public fetch should hide soft-deleted records")
+
+        let stored = try db.collection.fetch(id: id)
+        XCTAssertNotNil(stored, "Soft-deleted record should remain stored until purge")
+        XCTAssertEqual(stored?.storage["title"], .string("recoverable"))
+        XCTAssertEqual(stored?.storage["version"], .int(7))
+        XCTAssertEqual(stored?.storage["active"], .bool(true))
+        XCTAssertEqual(stored?.storage["isDeleted"], .bool(true))
+    }
+
     // MARK: - Test 5: Single-Writer Serialization
 
     /// Multiple concurrent writers must not lose updates.
@@ -417,6 +441,53 @@ final class CoreCorrectnessTests: XCTestCase {
         } catch {
             // This is the CORRECT behavior — wrong password should throw
         }
+    }
+
+    /// A failed wrong-password open must not poison a later correct-password retry.
+    func testKeyDerivation_FailedWrongPasswordOpenDoesNotPoisonRetry() throws {
+        let retryURL = tempDir.appendingPathComponent("wrong-pw-retry.blazedb")
+
+        do {
+            let db = try BlazeDBClient(name: "pw-retry", fileURL: retryURL, password: "CorrectPassword-123!")
+            _ = try db.insert(makeRecord(["data": .string("sensitive")]))
+            try db.persist()
+            try db.close()
+        }
+
+        XCTAssertThrowsError(
+            try BlazeDBClient(name: "pw-retry", fileURL: retryURL, password: "WrongPassword-456!")
+        )
+
+        let reopened = try BlazeDBClient(name: "pw-retry", fileURL: retryURL, password: "CorrectPassword-123!")
+        defer { try? reopened.close() }
+
+        let records = try reopened.fetchAll()
+        XCTAssertEqual(records.count, 1)
+        XCTAssertEqual(try records.first?.string("data"), "sensitive")
+    }
+
+    /// Existing encrypted stores must fail closed if the required KDF salt sidecar is missing.
+    func testKeyDerivation_MissingSaltDoesNotCreateReplacementForExistingDatabase() throws {
+        let missingSaltURL = tempDir.appendingPathComponent("missing-salt.blazedb")
+        let saltURL = missingSaltURL.deletingPathExtension().appendingPathExtension("salt")
+
+        do {
+            let db = try BlazeDBClient(name: "missing-salt", fileURL: missingSaltURL, password: "CorrectPassword-123!")
+            _ = try db.insert(makeRecord(["data": .string("recoverable only with original salt")]))
+            try db.persist()
+            try db.close()
+        }
+
+        XCTAssertTrue(FileManager.default.fileExists(atPath: saltURL.path))
+        try FileManager.default.removeItem(at: saltURL)
+
+        XCTAssertThrowsError(
+            try BlazeDBClient(name: "missing-salt", fileURL: missingSaltURL, password: "CorrectPassword-123!")
+        )
+        XCTAssertFalse(
+            FileManager.default.fileExists(atPath: saltURL.path),
+            "Opening an existing database without its salt must not overwrite recovery material with a new salt."
+        )
     }
 
     // MARK: - Test 7: Torn Write / Corruption Detection

@@ -48,12 +48,12 @@ final class PathResolverDefaultLocationTests: XCTestCase {
         }
     }
 
-    func testDefaultDatabaseURL_PathLikeInput_UsesFinalNameComponent() throws {
-        let fromPathNoExt = try BlazeDBClient.defaultDatabaseURL(for: "folder/mydb")
-        XCTAssertEqual(fromPathNoExt.lastPathComponent, "mydb.blazedb")
-
-        let fromPathCanonical = try BlazeDBClient.defaultDatabaseURL(for: "folder/mydb.blazedb")
-        XCTAssertEqual(fromPathCanonical.lastPathComponent, "mydb.blazedb")
+    func testDefaultDatabaseURL_RejectsPathLikeInput() throws {
+        for name in ["folder/mydb", "folder/mydb.blazedb", "/tmp/mydb.blazedb", #"folder\mydb.blazedb"#] {
+            XCTAssertThrowsError(try BlazeDBClient.defaultDatabaseURL(for: name)) { error in
+                XCTAssertTrue(error.localizedDescription.contains("path separators"))
+            }
+        }
     }
 
     func testDefaultDatabaseURL_DotfileLikeName_NormalizesPredictably() throws {

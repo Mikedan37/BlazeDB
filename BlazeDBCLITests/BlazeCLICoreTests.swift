@@ -1,5 +1,10 @@
 import XCTest
 import Foundation
+#if canImport(Darwin)
+import Darwin
+#elseif canImport(Glibc)
+import Glibc
+#endif
 @testable import BlazeCLICore
 
 private final class HitCollector: @unchecked Sendable {
@@ -166,7 +171,63 @@ final class CLIDiscoveryTests: XCTestCase {
     }
 }
 
+final class BlazedbPickerInputTests: XCTestCase {
+    #if os(macOS) || os(Linux)
+    func testReadByteReadsAvailableByte() throws {
+        var fds = [Int32](repeating: 0, count: 2)
+        XCTAssertEqual(pipe(&fds), 0)
+        let readFD = fds[0]
+        let writeFD = fds[1]
+        defer {
+            close(readFD)
+            close(writeFD)
+        }
+
+        var byte = UInt8(ascii: "q")
+        let written = withUnsafeBytes(of: byte) { buffer in
+            write(writeFD, buffer.baseAddress, buffer.count)
+        }
+        XCTAssertEqual(written, 1)
+
+        let read = try BlazedbPicker.readByte(timeoutMs: 100, fd: readFD)
+        XCTAssertEqual(read, byte)
+    }
+
+    func testReadByteThrowsCancelledOnEOF() throws {
+        var fds = [Int32](repeating: 0, count: 2)
+        XCTAssertEqual(pipe(&fds), 0)
+        let readFD = fds[0]
+        let writeFD = fds[1]
+        close(writeFD)
+        defer { close(readFD) }
+
+        XCTAssertThrowsError(try BlazedbPicker.readByte(timeoutMs: 100, fd: readFD)) { error in
+            XCTAssertEqual(error as? CLIError, .cancelled)
+        }
+    }
+    #endif
+}
+
 final class CLIMasterKeyringTests: XCTestCase {
+    func testResolveSecretReturnsNilWhenKeyringIsNotInitialized() throws {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("master-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        let keyringPath = dir.appendingPathComponent("keyring.json.enc").path
+        setenv("BLAZEDB_MASTER_KEYRING_PATH", keyringPath, 1)
+        defer {
+            unsetenv("BLAZEDB_MASTER_KEYRING_PATH")
+            try? FileManager.default.removeItem(at: dir)
+        }
+
+        XCTAssertFalse(try CLIMasterKeyringStore.status().exists)
+        let resolved = try CLIMasterKeyringStore.resolveSecret(
+            passphrase: "VeryStrongMasterPassphrase_123!",
+            dbPath: "/tmp/missing.blazedb"
+        )
+        XCTAssertNil(resolved)
+    }
+
     func testMasterKeyringInitStatusAndDecrypt() throws {
         let dir = FileManager.default.temporaryDirectory
             .appendingPathComponent("master-\(UUID().uuidString)", isDirectory: true)
