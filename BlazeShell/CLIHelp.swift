@@ -23,7 +23,7 @@ public enum CLIHelp {
         blazedb bookmark add <path>    Pin a path in the picker
         blazedb restore-backup <dest>  Restore ./lastKnownGood.blazedb
 
-      \(CLIColors.muted("Tip: export BLAZEDB_PASSWORD=… to skip the unlock prompt."))
+      \(CLIColors.muted("Tip: export BLAZEDB_PASSWORD=… to skip regular unlock prompts (ignored by --master)."))
       \(CLIColors.muted("Master tip: BLAZEDB_MASTER_PASSWORD is for automation only; avoid in shell history."))
       """
     )
