@@ -11,6 +11,12 @@ import Foundation
 
 extension BlazeDBClient {
     private static let canonicalDatabaseExtension = "blazedb"
+    private static let unsupportedDatabaseExtensions: Set<String> = [
+        "blaze",
+        "db",
+        "sqlite",
+        "sqlite3",
+    ]
     
     public enum DatabaseNameConventionError: LocalizedError {
         case emptyName
@@ -124,8 +130,9 @@ extension BlazeDBClient {
     ///
     /// Rules:
     /// - `foo` -> `foo.blazedb`
+    /// - `foo.bar` -> `foo.bar.blazedb`
     /// - `foo.blazedb` -> `foo.blazedb`
-    /// - `foo.anything` -> error (explicit unsupported extension)
+    /// - `foo.db` / `foo.blaze` / `foo.sqlite` -> error (explicit unsupported database extension)
     ///
     /// Path-like input is rejected to avoid silently opening a different database
     /// than the caller intended. Use `open(at:password:)` for filesystem paths.
@@ -149,12 +156,15 @@ extension BlazeDBClient {
         case "":
             return "\(trimmed).\(canonicalDatabaseExtension)"
         case canonicalDatabaseExtension:
-            return trimmed
+            return "\(base).\(canonicalDatabaseExtension)"
         default:
-            throw DatabaseNameConventionError.unsupportedExtension(
-                found: ext,
-                expected: canonicalDatabaseExtension
-            )
+            if unsupportedDatabaseExtensions.contains(ext) {
+                throw DatabaseNameConventionError.unsupportedExtension(
+                    found: ext,
+                    expected: canonicalDatabaseExtension
+                )
+            }
+            return "\(trimmed).\(canonicalDatabaseExtension)"
         }
     }
 

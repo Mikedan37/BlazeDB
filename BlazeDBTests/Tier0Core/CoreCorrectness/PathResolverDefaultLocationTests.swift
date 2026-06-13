@@ -43,9 +43,22 @@ final class PathResolverDefaultLocationTests: XCTestCase {
         XCTAssertThrowsError(try BlazeDBClient.defaultDatabaseURL(for: "ashpile.db")) { error in
             XCTAssertTrue(error.localizedDescription.contains(".db"))
         }
-        XCTAssertThrowsError(try BlazeDBClient.defaultDatabaseURL(for: "my.project")) { error in
-            XCTAssertTrue(error.localizedDescription.contains(".project"))
+        XCTAssertThrowsError(try BlazeDBClient.defaultDatabaseURL(for: "ashpile.sqlite")) { error in
+            XCTAssertTrue(error.localizedDescription.contains(".sqlite"))
         }
+    }
+
+    func testDefaultDatabaseURL_DottedLogicalName_AppendsCanonicalExtension() throws {
+        let dotted = try BlazeDBClient.defaultDatabaseURL(for: "my.project")
+        XCTAssertEqual(dotted.lastPathComponent, "my.project.blazedb")
+    }
+
+    func testDefaultDatabaseURL_NormalizesCanonicalExtensionCase() throws {
+        let lowercase = try BlazeDBClient.defaultDatabaseURL(for: "ashpile.blazedb")
+        let uppercase = try BlazeDBClient.defaultDatabaseURL(for: "ashpile.BLAZEDB")
+
+        XCTAssertEqual(uppercase, lowercase)
+        XCTAssertEqual(uppercase.lastPathComponent, "ashpile.blazedb")
     }
 
     func testDefaultDatabaseURL_RejectsPathLikeInput() throws {

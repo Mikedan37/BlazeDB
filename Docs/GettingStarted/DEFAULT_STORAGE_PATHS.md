@@ -18,6 +18,14 @@ BlazeDB resolves default file locations through `PathResolver.defaultDatabaseDir
 
 On Apple platforms the implementation is: **Application Support** + **`BlazeDB`** (see `PathResolver.swift`).
 
+Name-based opens normalize the supplied database name to a file in the default directory:
+
+- Bare names append the canonical extension: `myapp` -> `myapp.blazedb`.
+- Dotted logical names are preserved before appending: `com.example.app` -> `com.example.app.blazedb`.
+- Names that already end in `.blazedb` are used as-is.
+- Explicit non-BlazeDB database extensions such as `.db`, `.blaze`, `.sqlite`, and `.sqlite3` are rejected.
+- Path-like input is rejected; use `BlazeDB.open(at:password:)` when your app controls the path.
+
 ## Telemetry metrics file (when telemetry is enabled)
 
 Default metrics store path **changed** to live next to other app data under Application Support:
