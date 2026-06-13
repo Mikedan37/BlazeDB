@@ -242,7 +242,9 @@ final class ContractAPIStabilityTests: XCTestCase {
         ]))
         
         try await db!.persist()
+        try db!.close()
         db = nil
+        BlazeDBClient.clearCachedKey(for: dbURL.path)
         
         // V1 code: Read without knowing about newField
         db = try BlazeDBClient(name: "Compat", fileURL: dbURL, password: "Compat-123Aa!")
