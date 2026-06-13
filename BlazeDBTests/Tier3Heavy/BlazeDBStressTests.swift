@@ -71,11 +71,20 @@ final class BlazeDBStressTests: XCTestCase {
         if let collection = db?.collection as? DynamicCollection {
             try? collection.persist()
         }
-        
+
+        try? db?.close()
         db = nil
         try? FileManager.default.removeItem(at: tempURL)
         try? FileManager.default.removeItem(at: tempURL.deletingPathExtension().appendingPathExtension("meta"))
         try? FileManager.default.removeItem(at: tempURL.deletingPathExtension().appendingPathExtension("meta.indexes"))
+    }
+
+    /// Scale stress counts for weekly CI: full `RUN_HEAVY_STRESS` locally, capped on shared runners.
+    private func stressRecordCount(heavy: Int, default defaultCount: Int, ciHeavy: Int) -> Int {
+        guard ProcessInfo.processInfo.environment["RUN_HEAVY_STRESS"] == "1" else {
+            return defaultCount
+        }
+        return CICDDetection.isRunningInCI ? ciHeavy : heavy
     }
     
     // MARK: - Scale Tests
@@ -83,7 +92,7 @@ final class BlazeDBStressTests: XCTestCase {
     /// Test inserting records and verifying they all persist
     /// Note: Set RUN_HEAVY_STRESS=1 to use 10k records, otherwise uses 1k
     func testInsert10kRecords() throws {
-        let count = ProcessInfo.processInfo.environment["RUN_HEAVY_STRESS"] == "1" ? 10_000 : 1_000
+        let count = stressRecordCount(heavy: 10_000, default: 1_000, ciHeavy: 4_000)
         
         print("📊 Starting insertion of \(count) records...")
         let startTime = Date()
@@ -138,7 +147,7 @@ final class BlazeDBStressTests: XCTestCase {
     /// Test fetchAll performance
     /// Note: Set RUN_HEAVY_STRESS=1 to use 5k records, otherwise uses 500
     func testFetchAllWith5kRecords() throws {
-        let count = ProcessInfo.processInfo.environment["RUN_HEAVY_STRESS"] == "1" ? 5_000 : 500
+        let count = stressRecordCount(heavy: 5_000, default: 500, ciHeavy: 2_500)
         
         print("📊 Inserting \(count) records for fetchAll test...")
         // ✅ OPTIMIZED: Batch insert
@@ -159,29 +168,40 @@ final class BlazeDBStressTests: XCTestCase {
         print("✅ fetchAll() retrieved \(count) records in \(String(format: "%.3f", duration))s")
         print("   Rate: \(String(format: "%.0f", Double(count) / duration)) records/sec")
         
-        // Performance assertion: should complete in reasonable time
-        XCTAssertLessThan(duration, 5.0, "fetchAll should complete in < 5 seconds for 5k records")
+        // Performance assertion: should complete in reasonable time on shared CI runners.
+        let maxFetchSeconds = CICDDetection.isRunningInCI ? 15.0 : 5.0
+        XCTAssertLessThan(
+            duration,
+            maxFetchSeconds,
+            "fetchAll should complete in < \(maxFetchSeconds)s for \(count) records"
+        )
     }
     
     /// Test database file growth with large dataset
     /// Note: Set RUN_HEAVY_STRESS=1 to use 20k records, otherwise uses 2k
     func testFileGrowthWith20kRecords() throws {
-        let count = ProcessInfo.processInfo.environment["RUN_HEAVY_STRESS"] == "1" ? 20_000 : 2_000
+        let count = stressRecordCount(heavy: 20_000, default: 2_000, ciHeavy: 5_000)
         
         print("📊 Testing file growth with \(count) records...")
         let startSize = try getFileSize(tempURL)
         print("  Initial size: \(formatBytes(startSize))")
-        
-        for i in 0..<count {
-            let record = BlazeDataRecord([
-                "id": .int(i),
-                "payload": .string(String(repeating: "A", count: 200))  // 200 bytes each
-            ])
-            _ = try db.insert(record)
-            
-            if i % 5000 == 0 && i > 0 {
+
+        let batchSize = 500
+        var inserted = 0
+        while inserted < count {
+            let end = min(inserted + batchSize, count)
+            let batch = (inserted..<end).map { i in
+                BlazeDataRecord([
+                    "id": .int(i),
+                    "payload": .string(String(repeating: "A", count: 200))  // 200 bytes each
+                ])
+            }
+            _ = try db.insertMany(batch)
+            inserted = end
+
+            if inserted % 5000 == 0 && inserted > 0 {
                 let currentSize = try getFileSize(tempURL)
-                print("  After \(i) records: \(formatBytes(currentSize))")
+                print("  After \(inserted) records: \(formatBytes(currentSize))")
             }
         }
         
@@ -411,6 +431,7 @@ final class BlazeDBStressTests: XCTestCase {
         
         // Close and reopen database
         print("🔄 Closing and reopening database...")
+        try db.close()
         db = nil
         
         db = try BlazeDBClient(name: "StressTest", fileURL: tempURL, password: "TestPassword-123!")

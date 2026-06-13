@@ -53,12 +53,19 @@ final class PathResolverDefaultLocationTests: XCTestCase {
         XCTAssertEqual(dotted.lastPathComponent, "my.project.blazedb")
     }
 
-    func testDefaultDatabaseURL_PathLikeInput_Throws() throws {
-        XCTAssertThrowsError(try BlazeDBClient.defaultDatabaseURL(for: "folder/mydb")) { error in
-            XCTAssertTrue(error.localizedDescription.contains("path separators"))
-        }
-        XCTAssertThrowsError(try BlazeDBClient.defaultDatabaseURL(for: "folder/mydb.blazedb")) { error in
-            XCTAssertTrue(error.localizedDescription.contains("path separators"))
+    func testDefaultDatabaseURL_NormalizesCanonicalExtensionCase() throws {
+        let lowercase = try BlazeDBClient.defaultDatabaseURL(for: "ashpile.blazedb")
+        let uppercase = try BlazeDBClient.defaultDatabaseURL(for: "ashpile.BLAZEDB")
+
+        XCTAssertEqual(uppercase, lowercase)
+        XCTAssertEqual(uppercase.lastPathComponent, "ashpile.blazedb")
+    }
+
+    func testDefaultDatabaseURL_RejectsPathLikeInput() throws {
+        for name in ["folder/mydb", "folder/mydb.blazedb", "/tmp/mydb.blazedb", #"folder\mydb.blazedb"#] {
+            XCTAssertThrowsError(try BlazeDBClient.defaultDatabaseURL(for: name)) { error in
+                XCTAssertTrue(error.localizedDescription.contains("path separators"))
+            }
         }
     }
 

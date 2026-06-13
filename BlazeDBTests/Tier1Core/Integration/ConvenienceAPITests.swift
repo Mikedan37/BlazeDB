@@ -206,6 +206,59 @@ final class ConvenienceAPITests: XCTestCase {
             "open(named:) must not create a split-brain canonical database when legacy data exists"
         )
     }
+
+    func testOpenNamed_Linux_PrefersPopulatedLegacyDatabaseOverEmptyCanonicalShell() throws {
+        let fileManager = FileManager.default
+        guard let applicationSupport = fileManager.urls(
+            for: .applicationSupportDirectory,
+            in: .userDomainMask
+        ).first else {
+            throw XCTSkip("Application Support directory is unavailable")
+        }
+
+        let password = "SecureTestDB-456!"
+        let name = "LegacySplitBrain-\(UUID().uuidString)"
+        let legacyDirectory = applicationSupport.appendingPathComponent("BlazeDB", isDirectory: true)
+        let legacyURL = legacyDirectory.appendingPathComponent("\(name).blazedb")
+        let legacyMetaURL = legacyURL.deletingPathExtension().appendingPathExtension("meta")
+        let canonicalURL = try PathResolver.defaultDatabaseDirectory()
+            .appendingPathComponent("\(name).blazedb")
+        let canonicalMetaURL = canonicalURL.deletingPathExtension().appendingPathExtension("meta")
+
+        try fileManager.createDirectory(
+            at: legacyDirectory,
+            withIntermediateDirectories: true,
+            attributes: [.posixPermissions: 0o700]
+        )
+        try? fileManager.removeItem(at: legacyURL)
+        try? fileManager.removeItem(at: legacyMetaURL)
+        try? fileManager.removeItem(at: canonicalURL)
+        try? fileManager.removeItem(at: canonicalMetaURL)
+        defer {
+            try? fileManager.removeItem(at: legacyURL)
+            try? fileManager.removeItem(at: legacyMetaURL)
+            try? fileManager.removeItem(at: canonicalURL)
+            try? fileManager.removeItem(at: canonicalMetaURL)
+        }
+
+        let legacyDB = try BlazeDBClient.open(at: legacyURL, password: password)
+        let id = try legacyDB.insert(BlazeDataRecord(["source": .string("legacy")]))
+        try legacyDB.close()
+
+        let emptyCanonicalDB = try BlazeDBClient.open(at: canonicalURL, password: password)
+        try emptyCanonicalDB.close()
+
+        let reopened = try BlazeDBClient.open(named: name, password: password)
+        defer { try? reopened.close() }
+
+        XCTAssertEqual(
+            reopened.fileURL.standardizedFileURL,
+            legacyURL.standardizedFileURL,
+            "open(named:) must not let an empty canonical shell hide populated legacy data"
+        )
+        let fetched = try reopened.fetch(id: id)
+        XCTAssertEqual(fetched?.storage["source"]?.stringValue, "legacy")
+    }
     #endif
     
     func testDefaultDatabaseDirectory() throws {

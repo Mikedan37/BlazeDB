@@ -20,15 +20,15 @@ extension BlazeDBClient {
     
     public enum DatabaseNameConventionError: LocalizedError {
         case emptyName
-        case pathComponentNotAllowed
+        case pathNotAllowed
         case unsupportedExtension(found: String, expected: String)
         
         public var errorDescription: String? {
             switch self {
             case .emptyName:
                 return "Database name is empty."
-            case .pathComponentNotAllowed:
-                return "Database name must not contain path separators. Use open(at:password:) for explicit paths."
+            case .pathNotAllowed:
+                return "Database name must not contain path separators. Use open(at:password:) for filesystem paths."
             case .unsupportedExtension(let found, let expected):
                 return "Unsupported database extension '.\(found)'. Expected '.\(expected)'."
             }
@@ -109,10 +109,17 @@ extension BlazeDBClient {
         let canonicalURL = blazeDBDir.appendingPathComponent(dbName)
 
         #if os(Linux)
-        if !FileManager.default.fileExists(atPath: canonicalURL.path),
-           let legacyURL = legacyApplicationSupportDatabaseURL(named: dbName),
+        if let legacyURL = legacyApplicationSupportDatabaseURL(named: dbName),
            FileManager.default.fileExists(atPath: legacyURL.path) {
-            return legacyURL
+            let canonicalExists = FileManager.default.fileExists(atPath: canonicalURL.path)
+            if !canonicalExists {
+                return legacyURL
+            }
+
+            if linuxDatabaseRecordCountHint(at: legacyURL).map({ $0 > 0 }) == true,
+               linuxLooksLikeEmptyDatabaseShell(at: canonicalURL) {
+                return legacyURL
+            }
         }
         #endif
 
@@ -126,7 +133,9 @@ extension BlazeDBClient {
     /// - `foo.bar` -> `foo.bar.blazedb`
     /// - `foo.blazedb` -> `foo.blazedb`
     /// - `foo.db` / `foo.blaze` / `foo.sqlite` -> error (explicit unsupported database extension)
-    /// - `folder/foo` -> error (use explicit path APIs for paths)
+    ///
+    /// Path-like input is rejected to avoid silently opening a different database
+    /// than the caller intended. Use `open(at:password:)` for filesystem paths.
     public static func normalizedDatabaseFileName(fromUserInput raw: String) throws -> String {
         let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
         if trimmed.isEmpty {
@@ -134,7 +143,7 @@ extension BlazeDBClient {
         }
 
         if trimmed.rangeOfCharacter(from: CharacterSet(charactersIn: "/\\")) != nil {
-            throw DatabaseNameConventionError.pathComponentNotAllowed
+            throw DatabaseNameConventionError.pathNotAllowed
         }
 
         let ext = (trimmed as NSString).pathExtension.lowercased()
@@ -147,7 +156,7 @@ extension BlazeDBClient {
         case "":
             return "\(trimmed).\(canonicalDatabaseExtension)"
         case canonicalDatabaseExtension:
-            return trimmed
+            return "\(base).\(canonicalDatabaseExtension)"
         default:
             if unsupportedDatabaseExtensions.contains(ext) {
                 throw DatabaseNameConventionError.unsupportedExtension(
@@ -170,6 +179,29 @@ extension BlazeDBClient {
         ).first?
             .appendingPathComponent("BlazeDB", isDirectory: true)
             .appendingPathComponent(dbName)
+    }
+
+    private static func linuxDatabaseRecordCountHint(at dbURL: URL) -> Int? {
+        let metaURL = dbURL.deletingPathExtension().appendingPathExtension("meta")
+        guard FileManager.default.fileExists(atPath: metaURL.path),
+              let layout = try? StorageLayout.load(from: metaURL) else {
+            return nil
+        }
+        return layout.indexMap.count
+    }
+
+    private static func linuxLooksLikeEmptyDatabaseShell(at dbURL: URL) -> Bool {
+        if linuxDatabaseRecordCountHint(at: dbURL) == 0 {
+            return true
+        }
+
+        let metaURL = dbURL.deletingPathExtension().appendingPathExtension("meta")
+        guard !FileManager.default.fileExists(atPath: metaURL.path),
+              let attributes = try? FileManager.default.attributesOfItem(atPath: dbURL.path),
+              let fileSize = attributes[.size] as? NSNumber else {
+            return false
+        }
+        return fileSize.int64Value == 0
     }
     #endif
     

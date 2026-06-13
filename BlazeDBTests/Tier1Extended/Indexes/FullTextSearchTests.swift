@@ -304,7 +304,13 @@ final class FullTextSearchTests: XCTestCase {
         let duration = Date().timeIntervalSince(start)
         
         XCTAssertEqual(results.count, 1000, "Should find 1000 'Login bug' records (10%)")
-        XCTAssertLessThan(duration, 2.0, "Search on 10k records should be < 2s")
+        // Shared CI runners have variable I/O; keep this a regression guard, not a hard perf benchmark.
+        let maxSearchSeconds: TimeInterval = CICDDetection.isRunningInCI ? 5.0 : 2.0
+        XCTAssertLessThan(
+            duration,
+            maxSearchSeconds,
+            "Search on 10k records should be < \(maxSearchSeconds)s, was \(String(format: "%.3f", duration))s"
+        )
     }
     
     func testSearchWithFilterPerformance() throws {
@@ -543,7 +549,12 @@ final class FullTextSearchTests: XCTestCase {
         let duration = Date().timeIntervalSince(start)
         
         XCTAssertEqual(searchResults.count, 50, "Should find 50 'Login bug' records")
-        XCTAssertLessThan(duration, 1.0, "Search should complete in under 1 second")
+        let maxSearchSeconds: TimeInterval = CICDDetection.isRunningInCI ? 3.0 : 1.0
+        XCTAssertLessThan(
+            duration,
+            maxSearchSeconds,
+            "Search should complete in under \(maxSearchSeconds)s, was \(String(format: "%.3f", duration))s"
+        )
     }
     
     // MARK: - No Matches
