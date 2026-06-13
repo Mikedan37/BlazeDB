@@ -9,6 +9,11 @@ import Darwin
 #elseif canImport(Glibc)
 import Glibc
 #endif
+
+#if canImport(Darwin) || canImport(Glibc)
+@_silgen_name("flock")
+private func posixFlock(_ fd: Int32, _ operation: Int32) -> Int32
+#endif
 #if canImport(CryptoKit)
 import CryptoKit
 #else
@@ -473,23 +478,13 @@ public enum CLIMasterKeyringStore {
             }
 
             try lockDownPermissionsIfPossible(url: lockURL)
-            let lockResult: Int32 = {
-                #if canImport(Darwin)
-                return Darwin.flock(fd, LOCK_EX)
-                #elseif canImport(Glibc)
-                return Glibc.flock(fd, LOCK_EX)
-                #endif
-            }()
+            let lockResult = posixFlock(fd, LOCK_EX)
             guard lockResult == 0 else {
                 let err = errno
                 throw POSIXError(POSIXErrorCode(rawValue: err) ?? .EIO)
             }
             defer {
-                #if canImport(Darwin)
-                _ = Darwin.flock(fd, LOCK_UN)
-                #elseif canImport(Glibc)
-                _ = Glibc.flock(fd, LOCK_UN)
-                #endif
+                _ = posixFlock(fd, LOCK_UN)
             }
             #endif
 

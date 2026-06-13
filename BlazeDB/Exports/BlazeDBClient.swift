@@ -185,18 +185,39 @@ public final class BlazeDBClient: @unchecked Sendable {
     internal var collection: DynamicCollection
     public let name: String
     
+    // Thread-safe per-database cached key storage (populated only after verified open).
+    nonisolated(unsafe) private static var _cachedKeys: [String: SymmetricKey] = [:]
+    private static let cachedKeyLock = NSLock()
+    
+    private static func getCachedKey(for path: String) -> SymmetricKey? {
+        cachedKeyLock.lock()
+        defer { cachedKeyLock.unlock() }
+        return _cachedKeys[path]
+    }
+    
+    private static func setCachedKey(_ key: SymmetricKey, for path: String) {
+        cachedKeyLock.lock()
+        defer { cachedKeyLock.unlock() }
+        _cachedKeys[path] = key
+    }
+    
     private let writeLock = NSRecursiveLock()
     private let transactionLogLock = NSLock()  // 🔒 Dedicated lock for WAL writes
     
     /// Clear all cached encryption keys (useful for testing)
-    /// Clears KeyManager's password+salt key cache to ensure fresh key derivation.
+    /// Also clears KeyManager's password key cache to ensure fresh key derivation.
     public static func clearCachedKey() {
+        cachedKeyLock.lock()
+        defer { cachedKeyLock.unlock() }
+        _cachedKeys.removeAll()
         KeyManager.clearKeyCache()
     }
     
-    /// Clear cached key material. The path is retained for source compatibility.
+    /// Clear cached key for a specific database path.
     public static func clearCachedKey(for path: String) {
-        _ = path
+        cachedKeyLock.lock()
+        defer { cachedKeyLock.unlock() }
+        _cachedKeys.removeValue(forKey: path)
         KeyManager.clearKeyCache()
     }
 
