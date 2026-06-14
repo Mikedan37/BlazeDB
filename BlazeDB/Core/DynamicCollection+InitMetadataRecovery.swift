@@ -6,6 +6,18 @@ import Foundation
 
 extension DynamicCollection {
 
+    func initMetadataRecoveryExistingDataPageCount() -> Int {
+        guard let attrs = try? FileManager.default.attributesOfItem(atPath: store.fileURL.path),
+              let size = attrs[.size] as? NSNumber,
+              size.uint64Value > 0,
+              store.pageSize > 0 else {
+            return 0
+        }
+
+        let pageSize = UInt64(store.pageSize)
+        return Int((size.uint64Value + pageSize - 1) / pageSize)
+    }
+
     /// Rebuilds `indexMap` / `nextPageIndex` by scanning `store` pages; restores secondary
     /// indexes from `preservedIndexDefinitions` or infers them; persists via `saveLayout()`.
     /// - Important: Call only after removing or invalidating untrusted `.meta` when appropriate.
@@ -13,6 +25,9 @@ extension DynamicCollection {
         var rebuiltIndexMap: [UUID: [Int]] = [:]
         var rebuiltNextPageIndex = 0
         var pageIndex = 0
+        let existingDataPageCount = initMetadataRecoveryExistingDataPageCount()
+        var unreadableExistingPages = 0
+        var undecodableExistingPages = 0
 
         var consecutiveEmptyPages = 0
         let maxConsecutiveEmpty = 10
@@ -53,18 +68,33 @@ extension DynamicCollection {
                         BlazeLogger.debug("Page \(pageIndex) decoded but has no ID field")
                     }
                 } catch {
+                    if pageIndex < existingDataPageCount {
+                        undecodableExistingPages += 1
+                    }
                     BlazeLogger.debug("Page \(pageIndex) is not a valid record: \(error)")
                 }
 
                 rebuiltNextPageIndex = max(rebuiltNextPageIndex, pageIndex + 1)
                 pageIndex += 1
             } catch {
+                if pageIndex < existingDataPageCount {
+                    unreadableExistingPages += 1
+                }
                 consecutiveEmptyPages += 1
                 if consecutiveEmptyPages >= maxConsecutiveEmpty {
                     break
                 }
                 pageIndex += 1
             }
+        }
+
+        if rebuiltIndexMap.isEmpty,
+           existingDataPageCount > 0,
+           unreadableExistingPages > 0 || undecodableExistingPages > 0 {
+            throw BlazeDBError.corruptedData(
+                location: store.fileURL.path,
+                reason: "Unable to rebuild metadata from existing encrypted data pages. The password may be incorrect or the data pages are corrupted; refusing to save an empty replacement layout."
+            )
         }
 
         self.indexMap = rebuiltIndexMap
@@ -169,8 +199,8 @@ extension DynamicCollection {
         }
 
         BlazeLogger.info("✅ [INIT] Successfully rebuilt layout from data file: \(rebuiltIndexMap.count) records found")
-        try saveLayout()
         layoutSignatureVerified = true
+        try saveLayout()
         BlazeLogger.info("✅ [INIT] Rebuilt layout saved successfully")
     }
 }

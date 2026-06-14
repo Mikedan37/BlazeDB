@@ -306,6 +306,23 @@ final class ConvenienceAPITests: XCTestCase {
         XCTAssertNotNil(found, "Should find database")
         XCTAssertTrue(found?.path.contains("MyApp") ?? false, "Path should contain MyApp")
     }
+
+    func testFindDatabaseRequiresExactFilenameMatch() throws {
+        let searchName = "Exact-\(UUID().uuidString)"
+        let collidingName = "Prefix\(searchName)"
+        let db = try BlazeDBClient(name: collidingName, password: "SecureTestDB-456!")
+        let collidingURL = try BlazeDBClient.defaultDatabaseURL(for: collidingName)
+        let collidingMetaURL = collidingURL.deletingPathExtension().appendingPathExtension("meta")
+        defer {
+            try? requireFixture(db).close()
+            try? FileManager.default.removeItem(at: collidingURL)
+            try? FileManager.default.removeItem(at: collidingMetaURL)
+        }
+
+        let found = try BlazeDBClient.findDatabase(named: searchName)
+
+        XCTAssertNil(found, "findDatabase(named:) must not suffix-match \(collidingName).blazedb")
+    }
     
     func testFindDatabase_NotFound() throws {
         // Try to find non-existent database

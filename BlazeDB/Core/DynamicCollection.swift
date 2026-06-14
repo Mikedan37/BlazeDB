@@ -557,14 +557,7 @@ public final class DynamicCollection {
                     layoutSignatureVerified = false
                     throw error
                 } else {
-                    BlazeLogger.error("❌ [INIT] Metadata load failed — removing .meta and rebuilding from data pages...")
-                }
-
-                do {
-                    try FileManager.default.removeItem(at: metaURL)
-                    BlazeLogger.info("✅ [INIT] Removed meta file prior to authoritative page-scan rebuild")
-                } catch let deleteError {
-                    BlazeLogger.error("❌ [INIT] Failed to delete meta file (may already be missing): \(deleteError)")
+                    BlazeLogger.error("❌ [INIT] Metadata load failed — rebuilding from data pages before replacing .meta...")
                 }
 
                 BlazeLogger.info("📋 [INIT] Rebuilding metadata from data file...")
@@ -572,18 +565,15 @@ public final class DynamicCollection {
                     try performInitMetadataRebuildFromPages(preservedIndexDefinitions: preservedIndexDefinitions)
                 } catch let rebuildError {
                     BlazeLogger.error("❌ [INIT] Failed to rebuild layout: \(rebuildError)")
-                    BlazeLogger.warn("⚠️ [INIT] Starting with empty layout (data may be lost)")
-                    self.indexMap = [:]
-                    self.nextPageIndex = 0
-                    self.secondaryIndexes = [:]
-                    self.cachedSearchIndex = nil
-                    self.cachedSearchIndexedFields = []
-                    self.secondaryIndexDefinitions = preservedIndexDefinitions
                     layoutSignatureVerified = false
-                    try saveLayout()
+                    throw rebuildError
                 }
             }
         } else {
+            if initMetadataRecoveryExistingDataPageCount() > 0 {
+                BlazeLogger.warn("⚠️ [INIT] No layout found for existing data file; rebuilding metadata from data pages")
+                try performInitMetadataRebuildFromPages(preservedIndexDefinitions: [:])
+            } else {
                 BlazeLogger.info("No layout found. Starting fresh.")
                 self.indexMap = [:]
                 self.nextPageIndex = 0
@@ -592,6 +582,7 @@ public final class DynamicCollection {
                 self.cachedSearchIndexedFields = []
                 try saveLayout()
             }
+        }
         }
         
         /// Initializes a DynamicCollection using a preloaded StorageLayout.

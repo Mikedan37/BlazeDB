@@ -249,6 +249,63 @@ final class CoreCorrectnessTests: XCTestCase {
         }
     }
 
+    func testMissingMetadataRebuildsFromExistingDataPages() throws {
+        let url = freshDBURL("missing-meta-rebuild")
+        let metaURL = url.deletingPathExtension().appendingPathExtension("meta")
+        let id: UUID
+
+        do {
+            let db = try openDB(name: "missing-meta-rebuild", url: url)
+            id = try db.insert(makeRecord(["name": .string("recoverable")]))
+            try db.persist()
+            try db.close()
+        }
+
+        BlazeDBClient.clearCachedKey()
+        try FileManager.default.removeItem(at: metaURL)
+
+        let reopened = try openDB(name: "missing-meta-rebuild", url: url)
+        defer { try? reopened.close() }
+
+        let fetched = try reopened.fetch(id: id)
+        XCTAssertEqual(try fetched?.string("name"), "recoverable")
+        XCTAssertTrue(FileManager.default.fileExists(atPath: metaURL.path), "Recovered open should persist rebuilt metadata")
+    }
+
+    func testMissingMetadataWrongPasswordDoesNotWriteEmptyLayout() throws {
+        let url = freshDBURL("missing-meta-wrong-password")
+        let metaURL = url.deletingPathExtension().appendingPathExtension("meta")
+        let id: UUID
+
+        do {
+            let db = try openDB(name: "missing-meta-wrong-password", url: url)
+            id = try db.insert(makeRecord(["name": .string("must-survive")]))
+            try db.persist()
+            try db.close()
+        }
+
+        BlazeDBClient.clearCachedKey()
+        try FileManager.default.removeItem(at: metaURL)
+
+        XCTAssertThrowsError(
+            try BlazeDBClient(
+                name: "missing-meta-wrong-password",
+                fileURL: url,
+                password: "Definitely-Wrong-Password-2026!"
+            )
+        )
+        XCTAssertFalse(
+            FileManager.default.fileExists(atPath: metaURL.path),
+            "Wrong-password recovery must not create a replacement empty .meta file"
+        )
+
+        let reopened = try openDB(name: "missing-meta-wrong-password", url: url)
+        defer { try? reopened.close() }
+
+        let fetched = try reopened.fetch(id: id)
+        XCTAssertEqual(try fetched?.string("name"), "must-survive")
+    }
+
     // MARK: - Test 4: Delete Consistency
 
     /// After delete, the record must be gone immediately and after restart.
