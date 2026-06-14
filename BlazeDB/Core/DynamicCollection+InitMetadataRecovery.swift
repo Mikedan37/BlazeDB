@@ -28,6 +28,7 @@ extension DynamicCollection {
         let existingDataPageCount = initMetadataRecoveryExistingDataPageCount()
         var unreadableExistingPages = 0
         var undecodableExistingPages = 0
+        var emptyExistingPages = 0
 
         var consecutiveEmptyPages = 0
         let maxConsecutiveEmpty = 10
@@ -37,6 +38,9 @@ extension DynamicCollection {
                 guard let data = try store.readPageWithOverflow(index: pageIndex),
                       !data.isEmpty,
                       !data.allSatisfy({ $0 == 0 }) else {
+                    if pageIndex < existingDataPageCount {
+                        emptyExistingPages += 1
+                    }
                     consecutiveEmptyPages += 1
                     rebuiltNextPageIndex = max(rebuiltNextPageIndex, pageIndex + 1)
                     pageIndex += 1
@@ -90,7 +94,7 @@ extension DynamicCollection {
 
         if rebuiltIndexMap.isEmpty,
            existingDataPageCount > 0,
-           unreadableExistingPages > 0 || undecodableExistingPages > 0 {
+           unreadableExistingPages > 0 || undecodableExistingPages > 0 || emptyExistingPages > 0 {
             throw BlazeDBError.corruptedData(
                 location: store.fileURL.path,
                 reason: "Unable to rebuild metadata from existing encrypted data pages. The password may be incorrect or the data pages are corrupted; refusing to save an empty replacement layout."
