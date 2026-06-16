@@ -118,6 +118,41 @@ final class KeyManagerTests: XCTestCase {
         let record = try XCTUnwrap(reopened.fetch(id: id))
         XCTAssertEqual(record["message"], .string("still-readable"))
     }
+
+    func testWrongPasswordOpenFailsAfterStorageLockReleasedBeforeClientClose() throws {
+        let dbURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("cache-window-\(UUID().uuidString).blazedb")
+        let correctPassword = "CorrectPass-123!"
+        let wrongPassword = "WrongPass-123!"
+        var db: BlazeDBClient?
+        var unauthorized: BlazeDBClient?
+
+        defer {
+            try? unauthorized?.close()
+            try? db?.close()
+            BlazeDBClient.clearCachedKey()
+            cleanupBlazeDBFiles(at: dbURL)
+            try? FileManager.default.removeItem(at: dbURL.deletingPathExtension().appendingPathExtension("salt"))
+            try? FileManager.default.removeItem(at: dbURL.deletingPathExtension().appendingPathExtension("wal"))
+        }
+
+        db = try BlazeDBClient(name: "CacheWindowRegression", fileURL: dbURL, password: correctPassword)
+        _ = try XCTUnwrap(db).insert(BlazeDataRecord(["message": .string("secret")]))
+        try db?.persist()
+
+        // Reproduce the close() ordering window deterministically: storage resources
+        // are released, but BlazeDBClient.close() has not yet cleared client state.
+        try XCTUnwrap(db).collection.close()
+
+        do {
+            unauthorized = try BlazeDBClient(name: "CacheWindowRegression", fileURL: dbURL, password: wrongPassword)
+            XCTFail("Opening with the wrong password must fail even after a verified open in the same process.")
+        } catch BlazeDBError.concurrentProcessAccessNotSupported {
+            XCTFail("The test setup should have released the storage lock before reopening.")
+        } catch {
+            // Expected: the supplied password is still validated, not bypassed by path-only key reuse.
+        }
+    }
     
     func testConcurrentKeyDerivationReturnsSameKeys() async throws {
         // Verify concurrent derivation of the same password/salt returns identical keys
