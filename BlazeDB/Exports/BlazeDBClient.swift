@@ -197,7 +197,7 @@ public final class BlazeDBClient: @unchecked Sendable {
     ///
     /// The path parameter is retained for source compatibility; key caching is keyed by
     /// password and KDF salt, not by database path.
-    public static func clearCachedKey(for path: String) {
+    public static func clearCachedKey(for _: String) {
         KeyManager.clearKeyCache()
     }
 
