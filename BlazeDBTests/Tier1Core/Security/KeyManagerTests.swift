@@ -118,6 +118,36 @@ final class KeyManagerTests: XCTestCase {
         let record = try XCTUnwrap(reopened.fetch(id: id))
         XCTAssertEqual(record["message"], .string("still-readable"))
     }
+
+    func testWarmDatabasePathDoesNotBypassSuppliedPasswordValidation() throws {
+        let dbURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("warm-path-password-\(UUID().uuidString).blazedb")
+        let correctPassword = "CorrectPass-123!"
+        let invalidPassword = "short"
+        var db: BlazeDBClient?
+
+        defer {
+            try? db?.close()
+            BlazeDBClient.clearCachedKey()
+            cleanupBlazeDBFiles(at: dbURL)
+            try? FileManager.default.removeItem(at: dbURL.deletingPathExtension().appendingPathExtension("salt"))
+            try? FileManager.default.removeItem(at: dbURL.deletingPathExtension().appendingPathExtension("wal"))
+        }
+
+        db = try BlazeDBClient(name: "WarmPathRegression", fileURL: dbURL, password: correctPassword)
+        _ = try XCTUnwrap(db).insert(BlazeDataRecord(["message": .string("secret")]))
+        try db?.persist()
+
+        XCTAssertThrowsError(
+            try BlazeDBClient(name: "WarmPathRegression", fileURL: dbURL, password: invalidPassword),
+            "Every open must validate the password supplied to that open, even if the database path was opened earlier."
+        ) { error in
+            guard case BlazeDBError.passwordTooWeak = error else {
+                XCTFail("Expected password validation to run before any storage open, got \(error)")
+                return
+            }
+        }
+    }
     
     func testConcurrentKeyDerivationReturnsSameKeys() async throws {
         // Verify concurrent derivation of the same password/salt returns identical keys
