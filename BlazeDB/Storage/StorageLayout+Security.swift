@@ -784,18 +784,8 @@ extension StorageLayout {
                         return try secureLayout.resolvedLayout(using: decoder)
                     } else {
                         BlazeLogger.debug("❌ Argon2 key did not match signature")
-                        // Check if Argon2 key matches the provided signingKey
                         if argon2KeyData == signingKeyData {
-                            BlazeLogger.debug("⚠️ Argon2 key matches provided signingKey but signature verification still failed")
-                            if secureLayout.secureLayoutVersion >= 2 {
-                                throw NSError(
-                                    domain: "StorageLayout",
-                                    code: 5,
-                                    userInfo: [NSLocalizedDescriptionKey: "secure_layout_v2_signature_mismatch_strict"]
-                                )
-                            }
-                            BlazeLogger.debug("🔧 Accepting legacy v1 layout with matching key bytes despite signature mismatch")
-                            return try secureLayout.resolvedLayout(using: decoder)
+                            BlazeLogger.debug("⚠️ Argon2 key matches provided signingKey but metadata signature still failed")
                         }
                     }
                 } catch {
@@ -822,18 +812,8 @@ extension StorageLayout {
                         return try secureLayout.resolvedLayout(using: decoder)
                     } else {
                         BlazeLogger.debug("❌ PBKDF2 key did not match signature")
-                        // Check if PBKDF2 key matches the provided signingKey
                         if pbkdf2KeyDataForCompare10k == signingKeyData {
-                            BlazeLogger.debug("⚠️ PBKDF2 key matches provided signingKey but signature verification still failed")
-                            if secureLayout.secureLayoutVersion >= 2 {
-                                throw NSError(
-                                    domain: "StorageLayout",
-                                    code: 5,
-                                    userInfo: [NSLocalizedDescriptionKey: "secure_layout_v2_signature_mismatch_strict"]
-                                )
-                            }
-                            BlazeLogger.debug("🔧 Accepting legacy v1 layout with matching key bytes despite signature mismatch")
-                            return try secureLayout.resolvedLayout(using: decoder)
+                            BlazeLogger.debug("⚠️ PBKDF2 key matches provided signingKey but metadata signature still failed")
                         }
                     }
                     
@@ -853,18 +833,8 @@ extension StorageLayout {
                         return try secureLayout.resolvedLayout(using: decoder)
                     } else {
                         BlazeLogger.debug("❌ PBKDF2 (100k) key did not match signature")
-                        // Check if PBKDF2 (100k) key matches the provided signingKey
                         if pbkdf2KeyDataForCompare100k == signingKeyData {
-                            BlazeLogger.debug("⚠️ PBKDF2 (100k) key matches provided signingKey but signature verification still failed")
-                            if secureLayout.secureLayoutVersion >= 2 {
-                                throw NSError(
-                                    domain: "StorageLayout",
-                                    code: 5,
-                                    userInfo: [NSLocalizedDescriptionKey: "secure_layout_v2_signature_mismatch_strict"]
-                                )
-                            }
-                            BlazeLogger.debug("🔧 Accepting legacy v1 layout with matching key bytes despite signature mismatch")
-                            return try secureLayout.resolvedLayout(using: decoder)
+                            BlazeLogger.debug("⚠️ PBKDF2 (100k) key matches provided signingKey but metadata signature still failed")
                         }
                     }
                 } catch {

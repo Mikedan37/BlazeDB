@@ -105,6 +105,62 @@ final class SecureLayoutSignatureTests: XCTestCase {
         XCTAssertEqual(loaded.indexMap.count, layout.indexMap.count)
     }
 
+    func testLoadSecureRejectsTamperedLegacyV1EvenWhenPasswordMatchesKey() throws {
+        let password = "SecureLayoutTamper-123!"
+        let salt = Data("secure-layout-v1-salt".utf8)
+        KeyManager.setTestPBKDF2IterationsOverride(1_000)
+        defer {
+            KeyManager.setTestPBKDF2IterationsOverride(nil)
+            KeyManager.clearKeyCache()
+        }
+
+        let key = try KeyManager.getKey(from: password, salt: salt)
+        let layout = makeLayout()
+        let unsignedV1 = StorageLayout.SecureLayout(
+            secureLayoutVersion: 1,
+            layout: layout,
+            signedPayload: nil,
+            signature: Data(),
+            signedAt: Date()
+        )
+        let signature = try unsignedV1.expectedSignature(using: key)
+        let secure = StorageLayout.SecureLayout(
+            secureLayoutVersion: 1,
+            layout: layout,
+            signedPayload: nil,
+            signature: signature,
+            signedAt: Date()
+        )
+
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        var object = try XCTUnwrap(JSONSerialization.jsonObject(with: encoder.encode(secure)) as? [String: Any])
+        var tamperedLayout = try XCTUnwrap(object["layout"] as? [String: Any])
+        tamperedLayout["nextPageIndex"] = 0
+        tamperedLayout["indexMap"] = []
+        object["layout"] = tamperedLayout
+        object.removeValue(forKey: "secureLayoutVersion")
+        object.removeValue(forKey: "signedPayload")
+        let tamperedData = try JSONSerialization.data(withJSONObject: object, options: [.sortedKeys])
+
+        let url = tempMetaURL("legacy-v1-tamper-reject")
+        defer { try? FileManager.default.removeItem(at: url) }
+        try tamperedData.write(to: url, options: .atomic)
+
+        XCTAssertThrowsError(
+            try StorageLayout.loadSecure(
+                from: url,
+                signingKey: key,
+                password: password,
+                salt: salt
+            )
+        ) { error in
+            let nsError = error as NSError
+            XCTAssertEqual(nsError.domain, "StorageLayout")
+            XCTAssertEqual(nsError.code, 1)
+        }
+    }
+
     func testLoadSecureRejectsUnsignedPlainLayoutByDefault() throws {
         let key = SymmetricKey(data: Data(repeating: 0x11, count: 32))
         let layout = makeLayout()
