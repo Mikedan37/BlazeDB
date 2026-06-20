@@ -18,6 +18,8 @@ BlazeDB resolves default file locations through `PathResolver.defaultDatabaseDir
 
 On Apple platforms the implementation is: **Application Support** + **`BlazeDB`** (see `PathResolver.swift`).
 
+Linux name-based opens also check the brief legacy Application Support location so existing data is not hidden after upgrading. If a populated legacy database and an initialized empty canonical database both exist for the same name, BlazeDB treats the choice as ambiguous and throws; use `BlazeDB.open(at:password:)` with the intended path to resolve it.
+
 Name-based opens normalize the supplied database name to a file in the default directory:
 
 - Bare names append the canonical extension: `myapp` -> `myapp.blazedb`.
