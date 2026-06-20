@@ -362,10 +362,10 @@ public enum CLIMasterKeyringStore {
             guard let key = targetKey, let entry = payload.databases.removeValue(forKey: key) else {
                 return false
             }
+            _ = try savePayloadUnlocked(passphrase: passphrase, payload: payload)
             if entry.scope == .device, let ref = entry.keychainReference {
                 try? CLIMasterDeviceVault.remove(account: ref)
             }
-            _ = try savePayloadUnlocked(passphrase: passphrase, payload: payload)
             return true
         }
     }

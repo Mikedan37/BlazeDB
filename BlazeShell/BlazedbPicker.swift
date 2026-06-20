@@ -69,6 +69,12 @@ private final class ScanState: @unchecked Sendable {
 }
 
 public enum BlazedbPicker {
+    static func selectedLineIndex(in snap: PickerSnapshot, selection: Int) -> Int? {
+        guard !snap.selectableIndices.isEmpty else { return nil }
+        let clampedSelection = min(max(0, selection), snap.selectableIndices.count - 1)
+        return snap.selectableIndices[clampedSelection]
+    }
+
     static func readByte(timeoutMs: Int32, fd: Int32 = STDIN_FILENO) throws -> UInt8? {
         var pfd = pollfd(fd: fd, events: Int16(POLLIN), revents: 0)
         let pr = poll(&pfd, 1, timeoutMs)
@@ -342,8 +348,7 @@ public enum BlazedbPicker {
 
             if b == 10 || b == 13 {
                 let snap = try makeSnapshot()
-                guard !snap.selectableIndices.isEmpty else { continue }
-                let lineIdx = snap.selectableIndices[selection]
+                guard let lineIdx = Self.selectedLineIndex(in: snap, selection: selection) else { continue }
                 if case .row(let row) = snap.lines[lineIdx] {
                     return row.url
                 }

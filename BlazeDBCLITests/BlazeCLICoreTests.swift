@@ -133,6 +133,29 @@ final class CLIDiscoveryTests: XCTestCase {
         XCTAssertFalse(frame.contains("\u{1b}["), "picker frame must be plain text")
     }
 
+    #if os(macOS) || os(Linux)
+    func testPickerSelectionClampsStaleIndex() throws {
+        let row = PickerRow(
+            url: URL(fileURLWithPath: "/tmp/only.blazedb"),
+            section: .found,
+            isRecent: false,
+            isBookmarked: false,
+            isLocked: false,
+            subtitle: "",
+            sizeLabel: "1 KB",
+            modifiedLabel: "now"
+        )
+        let snap = PickerSnapshot(
+            lines: [.row(row)],
+            selectableIndices: [0],
+            pageInfo: PickerPageInfo(page: 0, pageCount: 1, total: 1, rangeStart: 1, rangeEnd: 1)
+        )
+
+        XCTAssertEqual(BlazedbPicker.selectedLineIndex(in: snap, selection: 99), 0)
+        XCTAssertEqual(BlazedbPicker.selectedLineIndex(in: snap, selection: -5), 0)
+    }
+    #endif
+
     func testApplyFilters() {
         let reg = CLIRegistry(bookmarks: ["/tmp/a.blazedb"])
         let urls = [

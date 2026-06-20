@@ -116,9 +116,15 @@ extension BlazeDBClient {
                 return legacyURL
             }
 
-            if linuxDatabaseRecordCountHint(at: legacyURL).map({ $0 > 0 }) == true,
-               linuxLooksLikeEmptyDatabaseShell(at: canonicalURL) {
-                return legacyURL
+            if linuxDatabaseRecordCountHint(at: legacyURL).map({ $0 > 0 }) == true {
+                if linuxLooksLikeEmptyDatabaseShell(at: canonicalURL) {
+                    return legacyURL
+                }
+                if linuxDatabaseRecordCountHint(at: canonicalURL) == 0 {
+                    throw BlazeDBError.invalidInput(
+                        reason: "Ambiguous Linux default database locations for '\(dbName)': both a populated legacy database and an initialized empty canonical database exist. Use open(at:password:) with the intended path."
+                    )
+                }
             }
         }
         #endif
@@ -191,10 +197,6 @@ extension BlazeDBClient {
     }
 
     private static func linuxLooksLikeEmptyDatabaseShell(at dbURL: URL) -> Bool {
-        if linuxDatabaseRecordCountHint(at: dbURL) == 0 {
-            return true
-        }
-
         let metaURL = dbURL.deletingPathExtension().appendingPathExtension("meta")
         guard !FileManager.default.fileExists(atPath: metaURL.path),
               let attributes = try? FileManager.default.attributesOfItem(atPath: dbURL.path),

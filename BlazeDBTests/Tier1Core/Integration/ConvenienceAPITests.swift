@@ -207,7 +207,7 @@ final class ConvenienceAPITests: XCTestCase {
         )
     }
 
-    func testOpenNamed_Linux_PrefersPopulatedLegacyDatabaseOverEmptyCanonicalShell() throws {
+    func testOpenNamed_Linux_PrefersPopulatedLegacyDatabaseOverZeroByteCanonicalShell() throws {
         let fileManager = FileManager.default
         guard let applicationSupport = fileManager.urls(
             for: .applicationSupportDirectory,
@@ -221,9 +221,11 @@ final class ConvenienceAPITests: XCTestCase {
         let legacyDirectory = applicationSupport.appendingPathComponent("BlazeDB", isDirectory: true)
         let legacyURL = legacyDirectory.appendingPathComponent("\(name).blazedb")
         let legacyMetaURL = legacyURL.deletingPathExtension().appendingPathExtension("meta")
+        let legacySaltURL = legacyURL.deletingPathExtension().appendingPathExtension("salt")
         let canonicalURL = try PathResolver.defaultDatabaseDirectory()
             .appendingPathComponent("\(name).blazedb")
         let canonicalMetaURL = canonicalURL.deletingPathExtension().appendingPathExtension("meta")
+        let canonicalSaltURL = canonicalURL.deletingPathExtension().appendingPathExtension("salt")
 
         try fileManager.createDirectory(
             at: legacyDirectory,
@@ -232,21 +234,29 @@ final class ConvenienceAPITests: XCTestCase {
         )
         try? fileManager.removeItem(at: legacyURL)
         try? fileManager.removeItem(at: legacyMetaURL)
+        try? fileManager.removeItem(at: legacySaltURL)
         try? fileManager.removeItem(at: canonicalURL)
         try? fileManager.removeItem(at: canonicalMetaURL)
+        try? fileManager.removeItem(at: canonicalSaltURL)
         defer {
             try? fileManager.removeItem(at: legacyURL)
             try? fileManager.removeItem(at: legacyMetaURL)
+            try? fileManager.removeItem(at: legacySaltURL)
             try? fileManager.removeItem(at: canonicalURL)
             try? fileManager.removeItem(at: canonicalMetaURL)
+            try? fileManager.removeItem(at: canonicalSaltURL)
         }
 
         let legacyDB = try BlazeDBClient.open(at: legacyURL, password: password)
         let id = try legacyDB.insert(BlazeDataRecord(["source": .string("legacy")]))
         try legacyDB.close()
 
-        let emptyCanonicalDB = try BlazeDBClient.open(at: canonicalURL, password: password)
-        try emptyCanonicalDB.close()
+        try fileManager.createDirectory(
+            at: canonicalURL.deletingLastPathComponent(),
+            withIntermediateDirectories: true,
+            attributes: [.posixPermissions: 0o700]
+        )
+        try Data().write(to: canonicalURL)
 
         let reopened = try BlazeDBClient.open(named: name, password: password)
         defer { try? reopened.close() }
@@ -258,6 +268,65 @@ final class ConvenienceAPITests: XCTestCase {
         )
         let fetched = try reopened.fetch(id: id)
         XCTAssertEqual(fetched?.storage["source"]?.stringValue, "legacy")
+    }
+
+    func testOpenNamed_Linux_RejectsAmbiguousPopulatedLegacyAndInitializedEmptyCanonical() throws {
+        let fileManager = FileManager.default
+        guard let applicationSupport = fileManager.urls(
+            for: .applicationSupportDirectory,
+            in: .userDomainMask
+        ).first else {
+            throw XCTSkip("Application Support directory is unavailable")
+        }
+
+        let password = "SecureTestDB-456!"
+        let name = "LegacyAmbiguous-\(UUID().uuidString)"
+        let legacyDirectory = applicationSupport.appendingPathComponent("BlazeDB", isDirectory: true)
+        let legacyURL = legacyDirectory.appendingPathComponent("\(name).blazedb")
+        let legacyMetaURL = legacyURL.deletingPathExtension().appendingPathExtension("meta")
+        let legacySaltURL = legacyURL.deletingPathExtension().appendingPathExtension("salt")
+        let canonicalURL = try PathResolver.defaultDatabaseDirectory()
+            .appendingPathComponent("\(name).blazedb")
+        let canonicalMetaURL = canonicalURL.deletingPathExtension().appendingPathExtension("meta")
+        let canonicalSaltURL = canonicalURL.deletingPathExtension().appendingPathExtension("salt")
+
+        try fileManager.createDirectory(
+            at: legacyDirectory,
+            withIntermediateDirectories: true,
+            attributes: [.posixPermissions: 0o700]
+        )
+        try? fileManager.removeItem(at: legacyURL)
+        try? fileManager.removeItem(at: legacyMetaURL)
+        try? fileManager.removeItem(at: legacySaltURL)
+        try? fileManager.removeItem(at: canonicalURL)
+        try? fileManager.removeItem(at: canonicalMetaURL)
+        try? fileManager.removeItem(at: canonicalSaltURL)
+        defer {
+            try? fileManager.removeItem(at: legacyURL)
+            try? fileManager.removeItem(at: legacyMetaURL)
+            try? fileManager.removeItem(at: legacySaltURL)
+            try? fileManager.removeItem(at: canonicalURL)
+            try? fileManager.removeItem(at: canonicalMetaURL)
+            try? fileManager.removeItem(at: canonicalSaltURL)
+        }
+
+        let legacyDB = try BlazeDBClient.open(at: legacyURL, password: password)
+        _ = try legacyDB.insert(BlazeDataRecord(["source": .string("legacy")]))
+        try legacyDB.close()
+
+        let canonicalDB = try BlazeDBClient.open(at: canonicalURL, password: password)
+        try canonicalDB.close()
+        XCTAssertTrue(
+            fileManager.fileExists(atPath: canonicalMetaURL.path),
+            "Test setup requires an initialized canonical database with metadata"
+        )
+
+        XCTAssertThrowsError(try BlazeDBClient.open(named: name, password: password)) { error in
+            guard case BlazeDBError.invalidInput(let reason) = error else {
+                return XCTFail("Expected invalidInput for ambiguous Linux default databases, got \(error)")
+            }
+            XCTAssertTrue(reason.contains("Ambiguous Linux default database locations"))
+        }
     }
     #endif
     
