@@ -118,6 +118,35 @@ final class KeyManagerTests: XCTestCase {
         let record = try XCTUnwrap(reopened.fetch(id: id))
         XCTAssertEqual(record["message"], .string("still-readable"))
     }
+
+    func testWarmPathKeyCacheDoesNotBypassPasswordVerification() throws {
+        let dbURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("warm-cache-bypass-\(UUID().uuidString).blazedb")
+        let correctPassword = "CorrectPass-123!"
+        let wrongPassword = "WrongPass-123!"
+        var db: BlazeDBClient?
+
+        defer {
+            try? db?.close()
+            BlazeDBClient.clearCachedKey()
+            cleanupBlazeDBFiles(at: dbURL)
+            try? FileManager.default.removeItem(at: dbURL.deletingPathExtension().appendingPathExtension("salt"))
+            try? FileManager.default.removeItem(at: dbURL.deletingPathExtension().appendingPathExtension("wal"))
+        }
+
+        db = try BlazeDBClient(name: "WarmCacheBypassRegression", fileURL: dbURL, password: correctPassword)
+        _ = try XCTUnwrap(db).insert(BlazeDataRecord(["message": .string("secret")]))
+        try db?.persist()
+
+        // Release the file lock without closing the client. The old path-key cache
+        // stayed warm in this state and let a wrong-password reopen use the cached key.
+        try XCTUnwrap(db).collection.close()
+
+        XCTAssertThrowsError(
+            try BlazeDBClient(name: "WarmCacheBypassRegression", fileURL: dbURL, password: wrongPassword),
+            "A warm path cache must never authenticate a different supplied password."
+        )
+    }
     
     func testConcurrentKeyDerivationReturnsSameKeys() async throws {
         // Verify concurrent derivation of the same password/salt returns identical keys

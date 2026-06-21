@@ -207,7 +207,7 @@ final class ConvenienceAPITests: XCTestCase {
         )
     }
 
-    func testOpenNamed_Linux_PrefersPopulatedLegacyDatabaseOverEmptyCanonicalShell() throws {
+    func testOpenNamed_Linux_PrefersPopulatedLegacyDatabaseOverUninitializedCanonicalShell() throws {
         let fileManager = FileManager.default
         guard let applicationSupport = fileManager.urls(
             for: .applicationSupportDirectory,
@@ -245,8 +245,8 @@ final class ConvenienceAPITests: XCTestCase {
         let id = try legacyDB.insert(BlazeDataRecord(["source": .string("legacy")]))
         try legacyDB.close()
 
-        let emptyCanonicalDB = try BlazeDBClient.open(at: canonicalURL, password: password)
-        try emptyCanonicalDB.close()
+        XCTAssertTrue(fileManager.createFile(atPath: canonicalURL.path, contents: Data()))
+        XCTAssertFalse(fileManager.fileExists(atPath: canonicalMetaURL.path))
 
         let reopened = try BlazeDBClient.open(named: name, password: password)
         defer { try? reopened.close() }
@@ -258,6 +258,62 @@ final class ConvenienceAPITests: XCTestCase {
         )
         let fetched = try reopened.fetch(id: id)
         XCTAssertEqual(fetched?.storage["source"]?.stringValue, "legacy")
+    }
+
+    func testOpenNamed_Linux_PrefersCanonicalWhenEmptyDatabaseHasMetadata() throws {
+        let fileManager = FileManager.default
+        guard let applicationSupport = fileManager.urls(
+            for: .applicationSupportDirectory,
+            in: .userDomainMask
+        ).first else {
+            throw XCTSkip("Application Support directory is unavailable")
+        }
+
+        let password = "SecureTestDB-456!"
+        let name = "CanonicalEmpty-\(UUID().uuidString)"
+        let legacyDirectory = applicationSupport.appendingPathComponent("BlazeDB", isDirectory: true)
+        let legacyURL = legacyDirectory.appendingPathComponent("\(name).blazedb")
+        let legacyMetaURL = legacyURL.deletingPathExtension().appendingPathExtension("meta")
+        let canonicalURL = try PathResolver.defaultDatabaseDirectory()
+            .appendingPathComponent("\(name).blazedb")
+        let canonicalMetaURL = canonicalURL.deletingPathExtension().appendingPathExtension("meta")
+
+        try fileManager.createDirectory(
+            at: legacyDirectory,
+            withIntermediateDirectories: true,
+            attributes: [.posixPermissions: 0o700]
+        )
+        try? fileManager.removeItem(at: legacyURL)
+        try? fileManager.removeItem(at: legacyMetaURL)
+        try? fileManager.removeItem(at: canonicalURL)
+        try? fileManager.removeItem(at: canonicalMetaURL)
+        defer {
+            try? fileManager.removeItem(at: legacyURL)
+            try? fileManager.removeItem(at: legacyMetaURL)
+            try? fileManager.removeItem(at: canonicalURL)
+            try? fileManager.removeItem(at: canonicalMetaURL)
+        }
+
+        let legacyDB = try BlazeDBClient.open(at: legacyURL, password: password)
+        let legacyID = try legacyDB.insert(BlazeDataRecord(["source": .string("legacy")]))
+        try legacyDB.close()
+
+        let emptyCanonicalDB = try BlazeDBClient.open(at: canonicalURL, password: password)
+        try emptyCanonicalDB.close()
+        XCTAssertTrue(fileManager.fileExists(atPath: canonicalMetaURL.path))
+
+        let reopened = try BlazeDBClient.open(named: name, password: password)
+        defer { try? reopened.close() }
+
+        XCTAssertEqual(
+            reopened.fileURL.standardizedFileURL,
+            canonicalURL.standardizedFileURL,
+            "An initialized canonical database remains authoritative even when it has zero records"
+        )
+        XCTAssertNil(
+            try reopened.fetch(id: legacyID),
+            "Opening by name must not resurrect stale legacy records after canonical has been initialized"
+        )
     }
     #endif
     

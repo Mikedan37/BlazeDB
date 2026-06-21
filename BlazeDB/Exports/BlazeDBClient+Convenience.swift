@@ -117,7 +117,7 @@ extension BlazeDBClient {
             }
 
             if linuxDatabaseRecordCountHint(at: legacyURL).map({ $0 > 0 }) == true,
-               linuxLooksLikeEmptyDatabaseShell(at: canonicalURL) {
+               linuxLooksLikeUninitializedDatabaseShell(at: canonicalURL) {
                 return legacyURL
             }
         }
@@ -190,11 +190,7 @@ extension BlazeDBClient {
         return layout.indexMap.count
     }
 
-    private static func linuxLooksLikeEmptyDatabaseShell(at dbURL: URL) -> Bool {
-        if linuxDatabaseRecordCountHint(at: dbURL) == 0 {
-            return true
-        }
-
+    private static func linuxLooksLikeUninitializedDatabaseShell(at dbURL: URL) -> Bool {
         let metaURL = dbURL.deletingPathExtension().appendingPathExtension("meta")
         guard !FileManager.default.fileExists(atPath: metaURL.path),
               let attributes = try? FileManager.default.attributesOfItem(atPath: dbURL.path),
