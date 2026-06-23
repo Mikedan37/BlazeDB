@@ -118,6 +118,48 @@ final class KeyManagerTests: XCTestCase {
         let record = try XCTUnwrap(reopened.fetch(id: id))
         XCTAssertEqual(record["message"], .string("still-readable"))
     }
+
+    func testCachedPathKeyStillRequiresMatchingPassword() throws {
+        let dbURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("cached-key-password-\(UUID().uuidString).blazedb")
+        let saltURL = dbURL.deletingPathExtension().appendingPathExtension("salt")
+        let correctPassword = "CorrectPass-123!"
+        let wrongPassword = "WrongPass-123!"
+        var db: BlazeDBClient?
+
+        defer {
+            try? db?.close()
+            BlazeDBClient.clearCachedKey()
+            cleanupBlazeDBFiles(at: dbURL)
+            try? FileManager.default.removeItem(at: saltURL)
+            try? FileManager.default.removeItem(at: dbURL.deletingPathExtension().appendingPathExtension("wal"))
+        }
+
+        db = try BlazeDBClient(name: "CachedKeyPasswordRegression", fileURL: dbURL, password: correctPassword)
+        let id = try XCTUnwrap(db).insert(BlazeDataRecord(["message": .string("cached-key-must-not-bypass-password")]))
+        try db?.persist()
+        try db?.close()
+        db = nil
+
+        let salt = try Data(contentsOf: saltURL)
+        let verifiedKey = try KeyManager.getKey(from: correctPassword, salt: salt)
+        BlazeDBClient.seedCachedKeyForTesting(verifiedKey, for: dbURL.path)
+
+        XCTAssertThrowsError(
+            try BlazeDBClient(name: "CachedKeyPasswordRegression", fileURL: dbURL, password: wrongPassword),
+            "A cached path key must not bypass verification of the supplied password."
+        ) { error in
+            guard case BlazeDBError.permissionDenied = error else {
+                XCTFail("Expected permissionDenied for mismatched cached key, got \(error)")
+                return
+            }
+        }
+
+        let reopened = try BlazeDBClient(name: "CachedKeyPasswordRegression", fileURL: dbURL, password: correctPassword)
+        db = reopened
+        let record = try XCTUnwrap(reopened.fetch(id: id))
+        XCTAssertEqual(record["message"], .string("cached-key-must-not-bypass-password"))
+    }
     
     func testConcurrentKeyDerivationReturnsSameKeys() async throws {
         // Verify concurrent derivation of the same password/salt returns identical keys

@@ -200,6 +200,25 @@ public final class BlazeDBClient: @unchecked Sendable {
         defer { cachedKeyLock.unlock() }
         _cachedKeys[path] = key
     }
+
+    internal static func seedCachedKeyForTesting(_ key: SymmetricKey, for path: String) {
+        setCachedKey(key, for: path)
+    }
+
+    private static func constantTimeEquals(_ lhs: SymmetricKey, _ rhs: SymmetricKey) -> Bool {
+        let lhsData = lhs.withUnsafeBytes { Data($0) }
+        let rhsData = rhs.withUnsafeBytes { Data($0) }
+        let maxLen = max(lhsData.count, rhsData.count)
+        var diff = UInt(lhsData.count) ^ UInt(rhsData.count)
+
+        for index in 0..<maxLen {
+            let lhsByte = index < lhsData.count ? lhsData[index] : 0
+            let rhsByte = index < rhsData.count ? rhsData[index] : 0
+            diff |= UInt(lhsByte ^ rhsByte)
+        }
+
+        return diff == 0
+    }
     
     private let writeLock = NSRecursiveLock()
     private let transactionLogLock = NSLock()  // 🔒 Dedicated lock for WAL writes
@@ -386,25 +405,33 @@ public final class BlazeDBClient: @unchecked Sendable {
         // Use a path-independent password key so backups/restores remain portable
         // across file locations on the same machine.
         let dbPath = fileURL.path
+        let derivedKey: SymmetricKey
+        do {
+            derivedKey = try KeyManager.getKey(from: password, salt: kdfSalt)
+            BlazeLogger.debug("✅ Encryption key derived from password")
+        } catch KeyManagerError.passwordTooWeak(let failure) {
+            BlazeLogger.error(failure.logMessage)
+            throw BlazeDBError.passwordTooWeak(failure)
+        } catch {
+            let errorMsg = "❌ Failed to derive encryption key: \(error.localizedDescription)"
+            BlazeLogger.error(errorMsg)
+            throw BlazeDBError.transactionFailed(errorMsg)
+        }
+
         let key: SymmetricKey
         let shouldCacheKey: Bool
         if let cached = BlazeDBClient.getCachedKey(for: dbPath) {
+            guard BlazeDBClient.constantTimeEquals(cached, derivedKey) else {
+                BlazeLogger.error("Cached encryption key did not match supplied password for \(name)")
+                BlazeDBClient.clearCachedKey(for: dbPath)
+                throw BlazeDBError.permissionDenied(operation: "open database", path: dbPath)
+            }
             key = cached
             shouldCacheKey = false
             BlazeLogger.debug("Using cached encryption key for \(name)")
         } else {
-            do {
-                key = try KeyManager.getKey(from: password, salt: kdfSalt)
-                shouldCacheKey = true
-                BlazeLogger.debug("✅ Encryption key derived from password")
-            } catch KeyManagerError.passwordTooWeak(let failure) {
-                BlazeLogger.error(failure.logMessage)
-                throw BlazeDBError.passwordTooWeak(failure)
-            } catch {
-                let errorMsg = "❌ Failed to derive encryption key: \(error.localizedDescription)"
-                BlazeLogger.error(errorMsg)
-                throw BlazeDBError.transactionFailed(errorMsg)
-            }
+            key = derivedKey
+            shouldCacheKey = true
         }
         self.encryptionKey = key
 
