@@ -200,6 +200,14 @@ public final class BlazeDBClient: @unchecked Sendable {
         defer { cachedKeyLock.unlock() }
         _cachedKeys[path] = key
     }
+
+    private static func keysEqual(_ lhs: SymmetricKey, _ rhs: SymmetricKey) -> Bool {
+        lhs.withUnsafeBytes { lhsBytes in
+            rhs.withUnsafeBytes { rhsBytes in
+                Data(lhsBytes) == Data(rhsBytes)
+            }
+        }
+    }
     
     private let writeLock = NSRecursiveLock()
     private let transactionLogLock = NSLock()  // 🔒 Dedicated lock for WAL writes
@@ -382,29 +390,34 @@ public final class BlazeDBClient: @unchecked Sendable {
             )
         }
 
-        // 🔑 Derive or reuse key after successful initialization (cache only verified opens).
+        // 🔑 Derive key from the supplied password. A cached path key is only reused
+        // after it is proven to match this password-derived key.
         // Use a path-independent password key so backups/restores remain portable
         // across file locations on the same machine.
         let dbPath = fileURL.path
         let key: SymmetricKey
         let shouldCacheKey: Bool
-        if let cached = BlazeDBClient.getCachedKey(for: dbPath) {
+        let derivedKey: SymmetricKey
+        do {
+            derivedKey = try KeyManager.getKey(from: password, salt: kdfSalt)
+            BlazeLogger.debug("✅ Encryption key derived from password")
+        } catch KeyManagerError.passwordTooWeak(let failure) {
+            BlazeLogger.error(failure.logMessage)
+            throw BlazeDBError.passwordTooWeak(failure)
+        } catch {
+            let errorMsg = "❌ Failed to derive encryption key: \(error.localizedDescription)"
+            BlazeLogger.error(errorMsg)
+            throw BlazeDBError.transactionFailed(errorMsg)
+        }
+
+        if let cached = BlazeDBClient.getCachedKey(for: dbPath),
+           BlazeDBClient.keysEqual(cached, derivedKey) {
             key = cached
             shouldCacheKey = false
-            BlazeLogger.debug("Using cached encryption key for \(name)")
+            BlazeLogger.debug("Using verified cached encryption key for \(name)")
         } else {
-            do {
-                key = try KeyManager.getKey(from: password, salt: kdfSalt)
-                shouldCacheKey = true
-                BlazeLogger.debug("✅ Encryption key derived from password")
-            } catch KeyManagerError.passwordTooWeak(let failure) {
-                BlazeLogger.error(failure.logMessage)
-                throw BlazeDBError.passwordTooWeak(failure)
-            } catch {
-                let errorMsg = "❌ Failed to derive encryption key: \(error.localizedDescription)"
-                BlazeLogger.error(errorMsg)
-                throw BlazeDBError.transactionFailed(errorMsg)
-            }
+            key = derivedKey
+            shouldCacheKey = true
         }
         self.encryptionKey = key
 
@@ -1129,7 +1142,7 @@ public final class BlazeDBClient: @unchecked Sendable {
     /// - Returns: Array of unique field values
     public func distinct(field: String) throws -> [BlazeDocumentField] {
         try ensureNotClosed()
-        let records = try collection.fetchAll()
+        let records = try fetchAll()
         let values = records.compactMap { $0.storage[field] }
         let uniqueValues = Array(Set(values))
         BlazeLogger.info("Found \(uniqueValues.count) distinct values for field '\(field)' from \(records.count) records")
@@ -1145,14 +1158,28 @@ public final class BlazeDBClient: @unchecked Sendable {
     /// - Returns: Array of records for the requested page
     public func fetchPage(offset: Int, limit: Int) throws -> [BlazeDataRecord] {
         try ensureNotClosed()
-        return try collection.fetchPage(offset: offset, limit: limit)
+        guard offset >= 0, limit > 0 else {
+            return []
+        }
+
+        let sortedRecords = try fetchAll().sorted {
+            let lhsID = $0.storage["id"]?.uuidValue?.uuidString ?? ""
+            let rhsID = $1.storage["id"]?.uuidValue?.uuidString ?? ""
+            return lhsID < rhsID
+        }
+
+        guard offset < sortedRecords.count else {
+            return []
+        }
+
+        return Array(sortedRecords.dropFirst(offset).prefix(limit))
     }
     
     /// Get total count of records without loading them all
     /// - Returns: Total number of records
     public func count() throws -> Int {
         try ensureNotClosed()
-        return collection.count()
+        return try fetchAll().count
     }
     
     /// Fetch multiple records by their IDs

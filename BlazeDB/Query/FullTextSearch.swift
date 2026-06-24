@@ -196,10 +196,11 @@ extension QueryBuilder {
         // searchOptimized() will automatically fall back to manual search if caseSensitive is true
         #if !BLAZEDB_LINUX_CORE
         var results = try collection.searchOptimized(query: query, in: fields, config: searchConfig)
+            .filter { !Self.isSoftDeleted($0.record) }
         #else
         var results: [FullTextSearchResult] = []
         // Fallback to manual search on Linux
-        let allRecords = try collection.fetchAll()
+        let allRecords = visibleRecords(try collection.fetchAll())
         for record in allRecords {
             for field in fields {
                 if let value = record.storage[field]?.stringValue {

@@ -62,6 +62,10 @@ extension BlazeDBClient {
             BlazeLogger.warn("Skipping persist during close for '\(name)' because transaction rollback failed")
         }
 
+        // Remove path-level key cache before releasing the file lock so an
+        // immediate reopen cannot authenticate with a stale cached key.
+        BlazeDBClient.clearCachedKey(for: fileURL.path)
+
         // Deterministically release underlying storage resources (locks/file handles).
         do {
             try collection.close()
@@ -71,7 +75,6 @@ extension BlazeDBClient {
 
         // Reduce plaintext secret lifetime after shutdown.
         password = nil
-        BlazeDBClient.clearCachedKey(for: fileURL.path)
 
         // Mark closed after cleanup.
         _isClosed = true

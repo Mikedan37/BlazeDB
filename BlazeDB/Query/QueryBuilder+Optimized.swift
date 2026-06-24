@@ -28,7 +28,7 @@ extension QueryBuilder {
         let startTime = Date()
         
         // Get all records (or use index if available)
-        let allRecords = try collection.fetchAll()
+        let allRecords = visibleRecords(try collection.fetchAll())
         
         // Early exit if no records
         guard !allRecords.isEmpty else {
@@ -101,7 +101,7 @@ extension QueryBuilder {
             throw BlazeDBError.invalidData(reason: "Collection not available")
         }
         
-        let allRecords = try collection.fetchAll()
+        let allRecords = visibleRecords(try collection.fetchAll())
         
         // Create lazy sequence with filters
         var lazy = allRecords.lazy.filter { _ in true }  // Start with identity filter
@@ -123,7 +123,7 @@ extension QueryBuilder {
         }
         
         let startTime = Date()
-        let allRecords = try collection.fetchAll()
+        let allRecords = visibleRecords(try collection.fetchAll())
         
         // Serial processing for Swift 6 strict concurrency compliance
         var filtered: [BlazeDataRecord] = []
