@@ -118,6 +118,40 @@ final class KeyManagerTests: XCTestCase {
         let record = try XCTUnwrap(reopened.fetch(id: id))
         XCTAssertEqual(record["message"], .string("still-readable"))
     }
+
+    func testStalePathKeyCacheDoesNotBypassPasswordVerification() throws {
+        let dbURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("stale-cache-bypass-\(UUID().uuidString).blazedb")
+        let correctPassword = "CorrectPass-456!"
+        let wrongPassword = "WrongPass-456!"
+        var db: BlazeDBClient?
+
+        defer {
+            db = nil
+            BlazeDBClient.clearCachedKey()
+            cleanupBlazeDBFiles(at: dbURL)
+            try? FileManager.default.removeItem(at: dbURL.deletingPathExtension().appendingPathExtension("salt"))
+            try? FileManager.default.removeItem(at: dbURL.deletingPathExtension().appendingPathExtension("wal"))
+        }
+
+        db = try BlazeDBClient(name: "StaleCacheRegression", fileURL: dbURL, password: correctPassword)
+        let id = try XCTUnwrap(db).insert(BlazeDataRecord(["message": .string("protected")]))
+        try db?.persist()
+
+        // Simulate the stale-cache window: storage lock released, old client object
+        // still alive, and the per-path key cache entry still present.
+        try XCTUnwrap(db).collection.close()
+
+        XCTAssertThrowsError(
+            try BlazeDBClient(name: "StaleCacheRegression", fileURL: dbURL, password: wrongPassword),
+            "A stale cached path key must not let a wrong password open the database."
+        )
+
+        let reopened = try BlazeDBClient(name: "StaleCacheRegression", fileURL: dbURL, password: correctPassword)
+        let record = try XCTUnwrap(reopened.fetch(id: id))
+        XCTAssertEqual(record["message"], .string("protected"))
+        try reopened.close()
+    }
     
     func testConcurrentKeyDerivationReturnsSameKeys() async throws {
         // Verify concurrent derivation of the same password/salt returns identical keys

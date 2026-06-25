@@ -504,8 +504,8 @@ public final class QueryBuilder: @unchecked Sendable {
         let startTime = Date()
         BlazeLogger.info("Executing query with \(filters.count) filters, \(sortOperations.count) sorts, limit: \(limitValue.map { String($0) } ?? "none"), offset: \(offsetValue)")
         
-        // Step 1: Fetch all records
-        var records = try collection.fetchAll()
+        // Step 1: Fetch all visible records
+        var records = visibleRecords(try collection.fetchAll())
         BlazeLogger.debug("Loaded \(records.count) records from storage")
         
         // Step 2: Apply filters using lazy evaluation (single allocation at end)
@@ -591,7 +591,7 @@ public final class QueryBuilder: @unchecked Sendable {
         BlazeLogger.info("Executing JOIN query with \(filters.count) pre-filters, \(joinOperations.count) join(s)")
         
         // Step 1: Apply pre-join filters (OPTIMIZATION: reduce data before joining!)
-        var records = try collection.fetchAll()
+        var records = visibleRecords(try collection.fetchAll())
         let originalCount = records.count
         BlazeLogger.debug("Loaded \(records.count) records from left collection")
         
@@ -683,7 +683,7 @@ public final class QueryBuilder: @unchecked Sendable {
         BlazeLogger.info("Executing aggregation query with \(aggregations.count) operations")
         
         // Fetch and filter records
-        var records = try collection.fetchAll()
+        var records = visibleRecords(try collection.fetchAll())
         let originalCount = records.count
         BlazeLogger.debug("Loaded \(records.count) records from storage")
         
@@ -736,7 +736,7 @@ public final class QueryBuilder: @unchecked Sendable {
         BlazeLogger.info("Executing grouped aggregation: GROUP BY \(groupByFields.joined(separator: ", ")) with \(aggregations.count) operations")
         
         // Fetch and filter records
-        var records = try collection.fetchAll()
+        var records = visibleRecords(try collection.fetchAll())
         let originalCount = records.count
         BlazeLogger.debug("Loaded \(records.count) records from storage")
         
@@ -821,6 +821,14 @@ public final class QueryBuilder: @unchecked Sendable {
 
         return key
     }
+
+    internal func visibleRecords(_ records: [BlazeDataRecord]) -> [BlazeDataRecord] {
+        records.filter { !Self.isSoftDeleted($0) }
+    }
+
+    internal static func isSoftDeleted(_ record: BlazeDataRecord) -> Bool {
+        record.storage["isDeleted"]?.boolValue == true
+    }
     
     private func applySorts(to records: [BlazeDataRecord]) -> [BlazeDataRecord] {
         return records.sorted { (left: BlazeDataRecord, right: BlazeDataRecord) -> Bool in
@@ -883,6 +891,7 @@ public final class QueryBuilder: @unchecked Sendable {
         // Batch fetch from right collection
         BlazeLogger.trace("Batch fetching \(foreignKeyValues.count) records from right collection")
         let rightRecords = try operation.collection.fetchBatch(ids: Array(foreignKeyValues))
+            .filter { !Self.isSoftDeleted($0.value) }
         BlazeLogger.debug("Fetched \(rightRecords.count) records from right collection")
         
         // Build joined results

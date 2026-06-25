@@ -324,7 +324,7 @@ extension QueryBuilder {
                 BlazeLogger.info("📊 [INDEX] Using index '\(indexName)' for field '\(field)'")
                 
                 // Step 1: Fetch records using index
-                var records = try collection.fetch(byIndexedField: field, value: hashableValue)
+                var records = visibleRecords(try collection.fetch(byIndexedField: field, value: hashableValue))
                 BlazeLogger.debug("📊 [INDEX] Index lookup returned \(records.count) records")
                 
                 // Step 2: Apply remaining filters (skip the one we used for index lookup)
@@ -390,7 +390,7 @@ extension QueryBuilder {
                 BlazeLogger.info("📊 [INDEX] Using compound index '\(indexName)'")
                 
                 let values = fieldValues.map { $0.1 }
-                var records = try collection.fetch(byIndexedFields: indexFields, values: values)
+                var records = visibleRecords(try collection.fetch(byIndexedFields: indexFields, values: values))
                 BlazeLogger.debug("📊 [INDEX] Compound index lookup returned \(records.count) records")
                 
                 // Apply remaining filters (skip the ones we used for index)
@@ -448,7 +448,7 @@ extension QueryBuilder {
         BlazeLogger.info("📊 [INDEX] Executing with indexed lookup on '\(field)'")
         
         // Step 1: Fetch records using index
-        var records = try collection.fetch(byIndexedField: field, value: value)
+        var records = visibleRecords(try collection.fetch(byIndexedField: field, value: value))
         BlazeLogger.debug("📊 [INDEX] Index lookup returned \(records.count) records")
         
         // Step 2: Apply remaining filters (skip the one we used for index lookup)
