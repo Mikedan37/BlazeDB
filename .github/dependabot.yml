@@ -1,13 +1,16 @@
+# Dependabot version-update PRs are disabled (open-pull-requests-limit: 0).
+# Security advisories still appear in GitHub → Security → Dependabot alerts.
+# Routine dependency bumps are applied directly on main during maintenance.
 version: 2
 updates:
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 0
 
   - package-ecosystem: "swift"
     directory: "/"
     schedule:
       interval: "weekly"
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 0

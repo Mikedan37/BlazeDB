@@ -1,0 +1,43 @@
+# Close unsolicited PRs opened by Cursor/Bugbot cloud agents.
+# Human PRs and explicit agent PRs (when you ask for one) are unaffected.
+name: Reject unsolicited Cursor bot PRs
+
+on:
+  pull_request_target:
+    types: [opened, reopened, ready_for_review]
+
+permissions:
+  pull-requests: write
+
+jobs:
+  close-cursor-bot-pr:
+    if: >-
+      github.event.pull_request.user.login == 'cursor[bot]' ||
+      github.event.pull_request.user.login == 'app/cursor' ||
+      startsWith(github.event.pull_request.head.ref, 'cursor/')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Close PR
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            await github.rest.pulls.update({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: pr.number,
+              state: 'closed'
+            });
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: pr.number,
+              body: [
+                'This pull request was closed automatically.',
+                '',
+                'This repository does not accept unsolicited Cursor/Bugbot pull requests.',
+                'Work locally or open a PR manually when you are ready.',
+                '',
+                'To stop these from being created: Cursor dashboard → Bugbot → disable Autofix and remove this repo from enabled repositories.'
+              ].join('\n')
+            });

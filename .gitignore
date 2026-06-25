@@ -20,7 +20,10 @@ DerivedData/
 
 # Claude Code / AI tooling
 .claude/
-.cursor/
+.cursor/*
+!.cursor/rules/
+!.cursor/rules/**
+!.cursor/cli.json
 .artifacts/
 .logs/
 .tagcheck-*.log

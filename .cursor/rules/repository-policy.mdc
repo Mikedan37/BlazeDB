@@ -1,0 +1,23 @@
+---
+description: No bot PRs, no Cursor attribution — work as the repo owner
+alwaysApply: true
+---
+
+# Repository policy
+
+## Pull requests
+
+- Never open a pull request unless the user explicitly asks for one.
+- Never push a branch intended for automatic review by Cursor Bugbot or cloud agents.
+- Do all work locally; the user merges when they choose.
+
+## Git attribution
+
+- Never add `Co-authored-by: Cursor`, `Co-authored-by: Cursor Agent`, `cursoragent@cursor.com`, or similar trailers.
+- Never add `Made-with: Cursor` or other Cursor/Bugbot attribution to commits or PR descriptions.
+- Commits should reflect the user's authorship only. Do not sign or attribute work to Cursor or cursor[bot].
+
+## Dependencies
+
+- Do not open Dependabot-style PRs for dependency bumps.
+- When a dependency update is needed, apply the bump directly in the working tree and verify with build/tests.
