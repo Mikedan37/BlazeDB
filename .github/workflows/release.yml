@@ -184,7 +184,11 @@ jobs:
           echo "" >> release_notes.md
           echo "- Tier 0 gate tests: passing" >> release_notes.md
           echo "- Tier 1 contract tests: passing" >> release_notes.md
-          echo "- Tier 3 heavy tests: passing" >> release_notes.md
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" && "${{ inputs.run_deep_validation }}" == "true" ]]; then
+            echo "- Tier 3 heavy tests: passing" >> release_notes.md
+          else
+            echo "- Tier 3 heavy tests: not executed in this run" >> release_notes.md
+          fi
           echo "" >> release_notes.md
           echo "### Installation" >> release_notes.md
           echo "" >> release_notes.md

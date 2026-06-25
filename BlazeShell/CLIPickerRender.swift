@@ -163,7 +163,7 @@ public enum CLIPickerRender {
     /// Page size that fits the picker inside the current terminal.
     /// Reserves space for the banner, headers, status, hint and frame lines.
     public static func adaptivePageSize(rows: Int, compactBanner: Bool) -> Int {
-        let bannerHeight = compactBanner ? 3 : 9 // 7 art rows + 2 bars vs 3
+        let bannerHeight = compactBanner ? 3 : 8 // 6 art rows + 2 bars vs 3
         // chrome non-data lines: blank + status + header + rule + hint + footer = 6
         let chrome = bannerHeight + 6
         let usable = rows - chrome

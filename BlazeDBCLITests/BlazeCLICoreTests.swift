@@ -6,6 +6,7 @@ import Darwin
 import Glibc
 #endif
 @testable import BlazeCLICore
+import BlazeDBCore
 
 private final class HitCollector: @unchecked Sendable {
     private let lock = NSLock()
@@ -373,6 +374,7 @@ final class CLIMasterKeyringTests: XCTestCase {
     }
 }
 
+
 final class CLIDatabasePasswordResolverTests: XCTestCase {
     func testMasterModePrefersStoredSecretOverEnvAndExplicitPasswords() throws {
         var masterPromptCount = 0
@@ -481,5 +483,421 @@ final class CLIDatabasePasswordResolverTests: XCTestCase {
             resolveStoredSecret: { _, _ in nil }
         )
         XCTAssertEqual(environment, "env-secret")
+    }
+}
+
+final class CLIProjectPasswordResolverTests: XCTestCase {
+    func testResolveCandidatesFindsSwiftConfigLiteralForDBName() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("resolver-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        try " // marker ".write(
+            to: root.appendingPathComponent("Package.swift"),
+            atomically: true,
+            encoding: .utf8
+        )
+
+        let dbURL = root.appendingPathComponent("users.blazedb")
+        try Data().write(to: dbURL)
+
+        let swift = """
+        import BlazeDBCore
+        let dbURL = URL(fileURLWithPath: "/tmp/users.blazedb")
+        let db = try BlazeDBClient(name: "users", fileURL: dbURL, password: "SwiftLiteralPass_123A")
+        """
+        try swift.write(
+            to: root.appendingPathComponent("main.swift"),
+            atomically: true,
+            encoding: .utf8
+        )
+
+        let candidates = CLIProjectPasswordResolver.resolveCandidates(dbPath: dbURL.path)
+        XCTAssertTrue(candidates.contains(where: { $0.password == "SwiftLiteralPass_123A" }))
+    }
+
+    func testResolveCandidatesFindsGenericEnvFallback() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("resolver-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        try " // marker ".write(
+            to: root.appendingPathComponent("Package.swift"),
+            atomically: true,
+            encoding: .utf8
+        )
+
+        let dbURL = root.appendingPathComponent("orders.blazedb")
+        try Data().write(to: dbURL)
+        try "BLAZEDB_PASSWORD=EnvFallback_123A\n".write(
+            to: root.appendingPathComponent(".env"),
+            atomically: true,
+            encoding: .utf8
+        )
+
+        let candidates = CLIProjectPasswordResolver.resolveCandidates(dbPath: dbURL.path)
+        XCTAssertTrue(candidates.contains(where: { $0.password == "EnvFallback_123A" }))
+    }
+}
+
+final class BlazedbReplTrustTests: XCTestCase {
+    private func makeClient() throws -> BlazeDBClient {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("repl-trust-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        let dbURL = root.appendingPathComponent("trust.blazedb")
+        return try BlazeDBClient(name: "trust", fileURL: dbURL, password: "TrustPassword_123A")
+    }
+
+    private func insertRecord(client: BlazeDBClient, id: UUID = UUID()) throws -> UUID {
+        let record = BlazeDataRecord([
+            "id": .uuid(id),
+            "kind": .string("test"),
+            "name": .string("sample"),
+        ])
+        _ = try client.insert(record)
+        return id
+    }
+
+    func testSoftDeleteSuccess() throws {
+        let client = try makeClient()
+        let id = try insertRecord(client: client)
+
+        let output = BlazedbRepl.runSoftDelete(client: client, id: id)
+        XCTAssertEqual(output, "🗑️ Soft deleted")
+    }
+
+    func testSoftDeleteFailure() throws {
+        let client = try makeClient()
+        try client.close()
+
+        let output = BlazedbRepl.runSoftDelete(client: client, id: UUID())
+        XCTAssertTrue(output.hasPrefix("❌ Soft delete failed:"))
+    }
+
+    func testDeleteSuccess() throws {
+        let client = try makeClient()
+        let id = try insertRecord(client: client)
+
+        let output = BlazedbRepl.runDelete(client: client, id: id)
+        XCTAssertEqual(output, "🗑️ Deleted record \(id)")
+    }
+
+    func testDeleteFailure() throws {
+        let client = try makeClient()
+        try client.close()
+
+        let output = BlazedbRepl.runDelete(client: client, id: UUID())
+        XCTAssertTrue(output.hasPrefix("❌ Delete failed:"))
+    }
+
+    func testUpdateSuccess() throws {
+        let client = try makeClient()
+        let id = try insertRecord(client: client)
+
+        let output = BlazedbRepl.runUpdate(
+            client: client,
+            id: id,
+            json: #"{"kind":"test","name":"updated"}"#
+        )
+        XCTAssertEqual(output, "✏️ Updated record \(id)")
+    }
+
+    func testUpdateFailure() throws {
+        let client = try makeClient()
+        try client.close()
+
+        let output = BlazedbRepl.runUpdate(
+            client: client,
+            id: UUID(),
+            json: #"{"kind":"test","name":"updated"}"#
+        )
+        XCTAssertTrue(output.hasPrefix("❌ Update failed:"))
+    }
+
+    func testRowIndexMissingIDShowsUnavailable() {
+        let record = BlazeDataRecord([
+            "kind": .string("chatmessage"),
+            "text": .string("hello"),
+        ])
+        let display = BlazedbRepl.recordIDDisplayText(record: record, requestedID: nil)
+        XCTAssertEqual(display, "<id unavailable>")
+    }
+
+    func testRowIndexNonUUIDIDShowsInvalid() {
+        let record = BlazeDataRecord([
+            "id": .string("not-a-uuid"),
+            "kind": .string("chatmessage"),
+        ])
+        let display = BlazedbRepl.recordIDDisplayText(record: record, requestedID: nil)
+        XCTAssertEqual(display, "<id invalid: not-a-uuid>")
+    }
+
+    func testRunShellStartupUsesSingleInitialFetchAllSourceGuard() throws {
+        let fileURL = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .appendingPathComponent("BlazeShell/BlazedbRepl.swift")
+        let source = try String(contentsOf: fileURL, encoding: .utf8)
+        XCTAssertTrue(source.contains("let initialRecords = (try? client.fetchAll()) ?? []"))
+        XCTAssertTrue(source.contains("printDatabaseSnapshot(client: client, databasePath: dbPath, records: initialRecords)"))
+        XCTAssertTrue(source.contains("var lastTableRecords: [BlazeDataRecord] = initialRecords"))
+    }
+
+    func testHistoryNavigationWrapsBackwardAndForward() {
+        let count = 3
+        XCTAssertEqual(BlazedbRepl.nextHistoryIndex(current: nil, direction: -1, count: count), 2)
+        XCTAssertEqual(BlazedbRepl.nextHistoryIndex(current: 0, direction: -1, count: count), 2)
+        XCTAssertEqual(BlazedbRepl.nextHistoryIndex(current: nil, direction: 1, count: count), 0)
+        XCTAssertEqual(BlazedbRepl.nextHistoryIndex(current: 2, direction: 1, count: count), 0)
+    }
+}
+
+final class BlazedbRLSCLITests: XCTestCase {
+    private struct CLIResult {
+        let status: Int32
+        let output: String
+    }
+
+    private func makeDatabase() throws -> (dbURL: URL, password: String) {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("rls-cli-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        let dbURL = root.appendingPathComponent("test.blazedb")
+        let password = "RLSCliPass_123A"
+        let client = try BlazeDBClient(name: "rls-cli", fileURL: dbURL, password: password)
+        _ = try client.insert(BlazeDataRecord([
+            "id": .uuid(UUID()),
+            "ownerId": .string("owner-1"),
+            "teamId": .string("team-1"),
+            "kind": .string("seed")
+        ]))
+        try client.persist()
+        try client.close()
+        return (dbURL, password)
+    }
+
+    private func projectRootURL() -> URL {
+        URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+    }
+
+    private func blazedbExecutableURL() throws -> URL {
+        if let override = ProcessInfo.processInfo.environment["BLAZEDB_CLI_PATH"], !override.isEmpty {
+            return URL(fileURLWithPath: override)
+        }
+        let fallback = projectRootURL()
+            .appendingPathComponent(".build")
+            .appendingPathComponent("debug")
+            .appendingPathComponent("blazedb")
+        guard FileManager.default.isExecutableFile(atPath: fallback.path) else {
+            throw XCTSkip("blazedb executable not found at \(fallback.path). Run `swift build --product blazedb` first.")
+        }
+        return fallback
+    }
+
+    private func runCLI(_ args: [String], env: [String: String] = [:]) throws -> CLIResult {
+        let process = Process()
+        process.executableURL = try blazedbExecutableURL()
+        process.arguments = args
+        process.currentDirectoryURL = projectRootURL()
+
+        var mergedEnv = ProcessInfo.processInfo.environment
+        for (k, v) in env {
+            mergedEnv[k] = v
+        }
+        process.environment = mergedEnv
+
+        let out = Pipe()
+        let err = Pipe()
+        process.standardOutput = out
+        process.standardError = err
+        try process.run()
+        process.waitUntilExit()
+
+        let outputData = out.fileHandleForReading.readDataToEndOfFile()
+            + err.fileHandleForReading.readDataToEndOfFile()
+        let output = String(data: outputData, encoding: .utf8) ?? ""
+        return CLIResult(status: process.terminationStatus, output: output)
+    }
+
+    func testRLSStatusDisabled() throws {
+        let (dbURL, password) = try makeDatabase()
+        let result = try runCLI(["rls", "status", "--db", dbURL.path], env: ["BLAZEDB_PASSWORD": password])
+        XCTAssertEqual(result.status, 0)
+        XCTAssertTrue(result.output.contains("RLS: disabled"))
+        XCTAssertTrue(result.output.contains("Policies: 0"))
+        XCTAssertTrue(result.output.contains("Runtime context set: no"))
+    }
+
+    func testRLSEnableThenStatusEnabled() throws {
+        let (dbURL, password) = try makeDatabase()
+        let enable = try runCLI(["rls", "enable", "--db", dbURL.path], env: ["BLAZEDB_PASSWORD": password])
+        XCTAssertEqual(enable.status, 0)
+        XCTAssertTrue(enable.output.contains("RLS enabled"))
+
+        let status = try runCLI(["rls", "status", "--db", dbURL.path], env: ["BLAZEDB_PASSWORD": password])
+        XCTAssertEqual(status.status, 0)
+        XCTAssertTrue(status.output.contains("RLS: enabled"))
+    }
+
+    func testRLSDisableThenStatusDisabled() throws {
+        let (dbURL, password) = try makeDatabase()
+        _ = try runCLI(["rls", "enable", "--db", dbURL.path], env: ["BLAZEDB_PASSWORD": password])
+        let disable = try runCLI(["rls", "disable", "--db", dbURL.path], env: ["BLAZEDB_PASSWORD": password])
+        XCTAssertEqual(disable.status, 0)
+        XCTAssertTrue(disable.output.contains("RLS disabled"))
+
+        let status = try runCLI(["rls", "status", "--db", dbURL.path], env: ["BLAZEDB_PASSWORD": password])
+        XCTAssertEqual(status.status, 0)
+        XCTAssertTrue(status.output.contains("RLS: disabled"))
+    }
+
+    func testRLSPolicyAddEachPresetAndList() throws {
+        let (dbURL, password) = try makeDatabase()
+        let addAdminOwner = try runCLI([
+            "rls", "policy", "add",
+            "--db", dbURL.path,
+            "--preset", "admin-owner",
+            "--owner-field", "ownerId"
+        ], env: ["BLAZEDB_PASSWORD": password])
+        XCTAssertEqual(addAdminOwner.status, 0)
+
+        let addAdminTeam = try runCLI([
+            "rls", "policy", "add",
+            "--db", dbURL.path,
+            "--preset", "admin-team",
+            "--team-field", "teamId"
+        ], env: ["BLAZEDB_PASSWORD": password])
+        XCTAssertEqual(addAdminTeam.status, 0)
+
+        let addViewer = try runCLI([
+            "rls", "policy", "add",
+            "--db", dbURL.path,
+            "--preset", "viewer-readonly"
+        ], env: ["BLAZEDB_PASSWORD": password])
+        XCTAssertEqual(addViewer.status, 0)
+
+        let list = try runCLI(["rls", "policy", "list", "--db", dbURL.path], env: ["BLAZEDB_PASSWORD": password])
+        XCTAssertEqual(list.status, 0)
+        XCTAssertTrue(list.output.contains("admin_full_access"))
+        XCTAssertTrue(list.output.contains("user_owns_record"))
+        XCTAssertTrue(list.output.contains("user_in_team"))
+        XCTAssertTrue(list.output.contains("viewer_can_select"))
+        XCTAssertTrue(list.output.contains("viewer_read_only"))
+    }
+
+    func testRLSPolicyClear() throws {
+        let (dbURL, password) = try makeDatabase()
+        _ = try runCLI([
+            "rls", "policy", "add",
+            "--db", dbURL.path,
+            "--preset", "admin-owner"
+        ], env: ["BLAZEDB_PASSWORD": password])
+
+        let clear = try runCLI(["rls", "policy", "clear", "--db", dbURL.path], env: ["BLAZEDB_PASSWORD": password])
+        XCTAssertEqual(clear.status, 0)
+        XCTAssertTrue(clear.output.contains("RLS policies cleared"))
+
+        let list = try runCLI(["rls", "policy", "list", "--db", dbURL.path], env: ["BLAZEDB_PASSWORD": password])
+        XCTAssertEqual(list.status, 0)
+        XCTAssertTrue(list.output.contains("No RLS policies configured."))
+    }
+
+    func testRLSInvalidPresetFailsNonzero() throws {
+        let (dbURL, password) = try makeDatabase()
+        let result = try runCLI([
+            "rls", "policy", "add",
+            "--db", dbURL.path,
+            "--preset", "bad-preset"
+        ], env: ["BLAZEDB_PASSWORD": password])
+        XCTAssertNotEqual(result.status, 0)
+        XCTAssertTrue(result.output.contains("Invalid preset"))
+    }
+
+    func testRLSMissingDBPathFailsDeterministically() throws {
+        let result = try runCLI(["rls", "status"], env: ["BLAZEDB_PASSWORD": "irrelevant"])
+        XCTAssertNotEqual(result.status, 0)
+        XCTAssertTrue(result.output.contains("Missing required --db <path> argument"))
+    }
+}
+
+final class BlazedbRLSIntegrationSurfaceTests: XCTestCase {
+    private func makeDatabase() throws -> (dbURL: URL, password: String) {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("rls-surface-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        let dbURL = root.appendingPathComponent("surface.blazedb")
+        let password = "RLSConfigPass_123A"
+        _ = try BlazeDBClient(name: "surface", fileURL: dbURL, password: password)
+        return (dbURL, password)
+    }
+
+    func testRLSConfigStoreRoundTripAndApply() throws {
+        let (dbURL, password) = try makeDatabase()
+        let config = CLIRLSConfig(
+            enabled: true,
+            policies: [CLIRLSPolicySpec(preset: "admin-owner", ownerField: "userId", teamField: nil)]
+        )
+
+        try CLIRLSConfigStore.save(config, forDBPath: dbURL.path)
+        let loaded = try CLIRLSConfigStore.load(forDBPath: dbURL.path)
+        XCTAssertEqual(loaded, config)
+
+        let client = try BlazeDBClient(name: "surface", fileURL: dbURL, password: password)
+        _ = try CLIRLSConfigStore.loadAndApply(forDBPath: dbURL.path, to: client)
+        XCTAssertTrue(client.isRLSEnabled)
+        XCTAssertTrue(client.listRLSPolicyNames().contains("admin_full_access"))
+        XCTAssertTrue(client.listRLSPolicyNames().contains("user_owns_record"))
+    }
+
+    func testGlobalHelpMentionsRLSCommandsSourceGuard() throws {
+        let fileURL = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .appendingPathComponent("BlazeShell/CLIHelp.swift")
+        let source = try String(contentsOf: fileURL, encoding: .utf8)
+        XCTAssertTrue(source.contains("blazedb rls <command>"))
+    }
+
+    func testRunShellAppliesRLSConfigAndFetchAllJSONUpdatesContextSourceGuard() throws {
+        let fileURL = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .appendingPathComponent("BlazeShell/BlazedbRepl.swift")
+        let source = try String(contentsOf: fileURL, encoding: .utf8)
+        XCTAssertTrue(source.contains("CLIRLSConfigStore.loadAndApply(forDBPath: dbPath, to: client)"))
+        XCTAssertTrue(source.contains("} else if trimmed == \"fetchAll --json\""))
+        XCTAssertTrue(source.contains("lastTableRecords = records"))
+        XCTAssertTrue(source.contains("} else if trimmed == \"fetchAll --ndjson\""))
+    }
+
+    func testReplIncludesOperatorConsoleCommandsSourceGuard() throws {
+        let replURL = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .appendingPathComponent("BlazeShell/BlazedbRepl.swift")
+        let replSource = try String(contentsOf: replURL, encoding: .utf8)
+        XCTAssertTrue(replSource.contains("if trimmed == \"status\""))
+        XCTAssertTrue(replSource.contains("if trimmed == \"schema\""))
+        XCTAssertTrue(replSource.contains("if trimmed == \"doctor\" || trimmed == \"doctor --json\""))
+        XCTAssertTrue(replSource.contains("trimmed.starts(with: \"explain query \")"))
+        XCTAssertTrue(replSource.contains("if trimmed == \"begin\""))
+        XCTAssertTrue(replSource.contains("if trimmed == \"commit\""))
+        XCTAssertTrue(replSource.contains("if trimmed == \"rollback\""))
+    }
+
+    func testReplHelpIncludesOperatorConsoleCommandsSourceGuard() throws {
+        let helpURL = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .appendingPathComponent("BlazeShell/CLIHelp.swift")
+        let source = try String(contentsOf: helpURL, encoding: .utf8)
+        XCTAssertTrue(source.contains("explain query <...>"))
+        XCTAssertTrue(source.contains("status                           Runtime health and performance summary"))
+        XCTAssertTrue(source.contains("schema                           Inferred fields/types + indexes"))
+        XCTAssertTrue(source.contains("doctor                           Operator health checks"))
+        XCTAssertTrue(source.contains("begin                            Begin transaction"))
+        XCTAssertTrue(source.contains("rollback                         Roll back transaction"))
+        XCTAssertTrue(source.contains("Global commands: blazedb start · blazedb --help"))
     }
 }

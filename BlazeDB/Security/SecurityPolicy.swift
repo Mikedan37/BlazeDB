@@ -34,9 +34,9 @@ internal struct SecurityPolicy {
     /// Type of policy (permissive or restrictive)
     internal let type: PolicyType
     
-    /// Check function: (context, record) -> Bool
-    /// Returns true if access should be granted
-    internal let check: (SecurityContext, BlazeDataRecord) -> Bool
+    /// Check function: (context, record, operation) -> Bool
+    /// Returns true if access should be granted.
+    internal let checkWithOperation: (SecurityContext, BlazeDataRecord, PolicyOperation) -> Bool
     
     /// Optional description for debugging
     internal let description: String?
@@ -52,7 +52,31 @@ internal struct SecurityPolicy {
         self.operation = operation
         self.type = type
         self.description = description
-        self.check = check
+        self.checkWithOperation = { context, record, _ in
+            check(context, record)
+        }
+    }
+
+    internal init(
+        name: String,
+        operation: PolicyOperation = .all,
+        type: PolicyType = .restrictive,
+        description: String? = nil,
+        checkWithOperation: @escaping (SecurityContext, BlazeDataRecord, PolicyOperation) -> Bool
+    ) {
+        self.name = name
+        self.operation = operation
+        self.type = type
+        self.description = description
+        self.checkWithOperation = checkWithOperation
+    }
+
+    internal func evaluate(
+        operation: PolicyOperation,
+        context: SecurityContext,
+        record: BlazeDataRecord
+    ) -> Bool {
+        checkWithOperation(context, record, operation)
     }
 }
 
@@ -112,9 +136,9 @@ extension SecurityPolicy {
             operation: .all,
             type: .restrictive,
             description: "Viewers can read but not modify"
-        ) { context, _ in
+        ) { context, _, operation in
             guard context.hasRole(viewerRole) else { return true }  // Non-viewers: don't restrict
-            return false  // Viewers: deny by default (overridden by permissive select policy below)
+            return operation == .select
         }
     }
 

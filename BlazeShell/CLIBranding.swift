@@ -8,11 +8,11 @@ import Foundation
 public enum CLIBranding {
     public static let spinnerFrames = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
 
-    /// Full hero block: 7 art rows + top/bottom rules.
+    /// Full hero block: 6 art rows + top/bottom rules.
     /// Layout per row (visible widths):
     ///   "  " (2) + fireL (5) + "  " (2) + cylinder (9) + "  " (2) + fireR (5) + "    " (4) + title-side
-    /// The cylinder is a rounded 3-layer database; flames hug both sides;
-    /// BLAZEDB title appears as 3-row block letters on rows 2-4, subtitle on rows 5-6.
+    /// The cylinder/fire glyph is intentionally shorter; title block is taller so
+    /// branding and symbol feel visually balanced.
     public static func heroLines() -> [String] {
         let tip = CLIColors.flameTip
         let yellow = CLIColors.flameYellow
@@ -24,42 +24,41 @@ public enum CLIBranding {
         let fill = CLIColors.dbFill
 
         let bar = CLIColors.accentBar("▌")
-        // Big 3-row block letters for BLAZEDB. Each letter has fixed visible width.
-        // Letters: B(5) L(4) A(5) Z(4) E(4) D(5) B(5)  with 1-col gaps  → 32 visible cols + 6 gaps = 38.
-        let t1 = "█▀▀▄ █    ▄▀▄  ▀▀▀█ █▀▀  █▀▀▄ █▀▀▄"
-        let t2 = "█▀▀▄ █    █▀█   ▄▀  █▀▀  █  █ █▀▀▄"
-        let t3 = "▀▀▀  ▀▀▀▀ ▀ ▀  ▀▀▀▀ ▀▀▀▀ ▀▀▀  ▀▀▀ "
+        // Taller 4-row block letters for BLAZEDB.
+        let t0 = "█▀▀█ █    ▄▀▄   ▀▀▀█ █▀▀  █▀▀▄ █▀▀█"
+        let t1 = "█▀▀▄ █    █▀█    ▄▀  █▀▀  █  █ █▀▀▄"
+        let t2 = "█▀▀█ █    █ █   ▄▀   █▀▀  █  █ █▀▀█"
+        let t3 = "▀▀▀  ▀▀▀▀ ▀ ▀  ▀▀▀▀  ▀▀▀▀ ▀▀▀  ▀▀▀ "
         let titleBold = CLIColors.titleBold
+        let title0 = titleBold(t0)
         let title1 = titleBold(t1)
         let title2 = titleBold(t2)
         let title3 = titleBold(t3)
-        let tag1 = CLIColors.tagline("local encrypted databases")
-        let tag2 = CLIColors.subline("pick · unlock · query")
+        let tag1 = CLIColors.tagline("LOCAL ENCRYPTED DATABASES")
+        let tag2 = CLIColors.subline("pick · unlock · inspect · query")
 
-        // Flames: 7 rows, each exactly 5 visible cells.
+        // Flames: 6 rows, each exactly 5 visible cells.
         // Hottest at the wide middle, cooler tips and base.
         let f1 = tip("  ░  ")
         let f2 = yellow(" ░▒░ ")
         let f3 = orange("▒▓█▓▒")
         let f4 = red("▓███▓")
-        let f5 = red(" ▓█▓ ")
+        let f5 = orange(" ▓█▓ ")
         let f6 = deep("  ▀  ")
-        let f7 = "     "
 
-        // 3-layer rounded cylinder, 7 rows, 9 visible cells wide each.
+        // Shorter rounded cylinder, 6 rows, 9 visible cells wide each.
         let cap1 = edge("╭───────╮")
         let body = edge("│") + fill("░░░░░░░") + edge("│")
         let mid  = edge("╞═══════╡")
         let cap2 = edge("╰───────╯")
 
         return [
-            "  " + f1 + "  " + cap1 + "  " + f1 + "    " + title1,
-            "  " + f2 + "  " + body + "  " + f2 + "    " + title2,
-            "  " + f3 + "  " + mid  + "  " + f3 + "    " + title3,
-            "  " + f4 + "  " + body + "  " + f4 + "    " + bar + " " + tag1,
-            "  " + f5 + "  " + mid  + "  " + f5 + "    " + bar + " " + tag2,
-            "  " + f6 + "  " + body + "  " + f6,
-            "  " + f7 + "  " + cap2 + "  " + f7,
+            "  " + f1 + "  " + cap1 + "  " + f1 + "    " + title0,
+            "  " + f2 + "  " + body + "  " + f2 + "    " + title1,
+            "  " + f3 + "  " + mid  + "  " + f3 + "    " + title2,
+            "  " + f4 + "  " + body + "  " + f4 + "    " + title3,
+            "  " + f5 + "  " + mid  + "  " + f5 + "    " + bar + " " + tag1,
+            "  " + f6 + "  " + cap2 + "  " + f6 + "    " + bar + " " + tag2,
         ]
     }
 

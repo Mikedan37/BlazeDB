@@ -89,6 +89,96 @@ Id strings look like `"bug:<uuid>"`: `bug` = kind, uuid = which one.
 swift run HelloBlazeDB
 ```
 
+**Install the `blazedb` CLI globally (one command):**
+
+```bash
+./install-blazedb.sh
+```
+
+After that, from any directory:
+
+```bash
+blazedb start
+```
+
+### Homebrew install (blazerepl tap)
+
+Use Homebrew when you want a globally installed CLI managed by `brew`.
+
+#### What gets installed
+
+The tap formula installs:
+
+- `blazedb` (canonical command)
+- `blazerepl` (symlink alias to `blazedb`)
+
+Both commands run the same binary.
+
+#### Install from tap
+
+```bash
+brew update
+brew tap Mikedan37/blazedb
+brew install blazerepl
+```
+
+#### Verify installation
+
+```bash
+which blazedb
+blazedb --help
+blazerepl --help
+```
+
+You should see CLI help output containing `blazedb start`.
+
+#### Basic usage
+
+From any directory:
+
+```bash
+blazedb start
+```
+
+or:
+
+```bash
+blazerepl start
+```
+
+You can also open a specific database path directly:
+
+```bash
+blazedb "/absolute/path/to/your-db.blazedb"
+```
+
+#### Upgrade
+
+```bash
+brew update
+brew upgrade blazerepl
+```
+
+#### Uninstall
+
+```bash
+brew uninstall blazerepl
+brew untap Mikedan37/blazedb
+```
+
+#### Notes and troubleshooting
+
+- The current formula builds `blazedb` from source using Swift during install.
+- If install fails due to toolchain issues, install/update Xcode Command Line Tools:
+  ```bash
+  xcode-select --install
+  ```
+- If you have multiple `blazedb` binaries on PATH, check precedence:
+  ```bash
+  which -a blazedb
+  ```
+  Keep the Homebrew path first if you want the tap-managed version by default.
+
 **Minimal sample** (after adding the package), same shape as [the opening sample](#start-here-new-users), shorter:
 
 ```swift
