@@ -1187,7 +1187,9 @@ public final class BlazeDBClient: @unchecked Sendable {
     /// - Returns: Dictionary mapping UUID to record
     public func fetchBatch(ids: [UUID]) throws -> [UUID: BlazeDataRecord] {
         try ensureNotClosed()
-        return try collection.fetchBatch(ids: ids)
+        return try collection.fetchBatch(ids: ids).filter { element in
+            element.value.storage["isDeleted"]?.boolValue != true
+        }
     }
 
     /// Updates an existing record by its UUID.

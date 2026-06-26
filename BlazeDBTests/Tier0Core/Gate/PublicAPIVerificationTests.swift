@@ -169,6 +169,7 @@ final class PublicAPIVerificationTests: XCTestCase {
         XCTAssertTrue(all.isEmpty)
         XCTAssertEqual(try db.count(), 0)
         XCTAssertTrue(try db.fetchPage(offset: 0, limit: 10).isEmpty)
+        XCTAssertTrue(try db.fetchBatch(ids: [id]).isEmpty)
         XCTAssertTrue(try db.distinct(field: "x").isEmpty)
         XCTAssertEqual(try db.query().execute().records.count, 0)
         XCTAssertEqual(try db.query().count().execute().aggregation.count, 0)
