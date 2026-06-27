@@ -32,7 +32,7 @@ Use this table for day-to-day expectations.
 
 ### Cadence: PR gate vs nightly vs weekly deep
 
-- **PR (`ci.yml`):** Fast gate on every push/PR — macOS Tier0 + Tier1, Linux Tier0 (see workflow file for CLI/build steps).
+- **PR (`ci.yml`):** Fast gate on every push/PR — macOS Tier0 + Tier1, Linux Tier0, Android `BlazeDBCore` cross-compile (see workflow file for CLI/build steps).
 - **Nightly (`nightly.yml`):** **Bounded** daily confidence — macOS Tier2 strict, clean checkout, README quickstart, Tier0 TSan, Linux Tier1 + Tier2 **core** only. It does **not** own Linux Tier2 extended, Linux Tier3 heavy/perf, macOS Tier3, or Tier1 TSan.
 - **Weekly deep (`deep-validation.yml`):** **Delta-only** — runs **only** surfaces not already owned above: macOS Tier3 heavy (+ `RUN_HEAVY_STRESS`) + Tier3 destructive (`./Scripts/run-tier3.sh`), macOS **Tier1** ThreadSanitizer (nightly already runs Tier0 TSan), Linux **`BlazeDB_Tier2_Extended`** + Tier3 heavy/perf. No full-stack re-run of Tier0–Tier2 on a weekly schedule.
 
@@ -82,6 +82,13 @@ In short: the nightly workflow optimizes for coverage visibility and time-to-sig
 - **Secondary (blocking):** `Linux (Swift 6.2) — core + Tier 0`
 - Runner: `ubuntu-22.04`
 - `actions/cache` on `.build` (same key shape), then `swift build` + CLI targets + `swift test --filter BlazeDB_Tier0`
+
+- **Secondary (blocking):** `Android — BlazeDBCore cross-compile (OSS Swift 6.3)`
+- Runner: `ubuntu-22.04`
+- OSS Swift **6.3.2** via `./Scripts/install-android-swift.sh` (must match Android SDK bundle in `Scripts/android-swift-config.sh` — **not** Xcode Swift)
+- Caches `.build`, `~/.swiftpm/swift-sdks`, and NDK under the SDK bundle
+- Runs `./Scripts/ci-android-cross-compile.sh` (`swift build --target BlazeDBCore --swift-sdk aarch64-unknown-linux-android28 --static-swift-stdlib`)
+- Does **not** run on device; compile-only gate. See `Docs/android-status.md`.
 
 - `.github/workflows/tag-probe.yml`
 - Trigger: **manual** (`workflow_dispatch`) only

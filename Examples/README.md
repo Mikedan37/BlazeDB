@@ -9,7 +9,9 @@ Runnable examples from basic to advanced.
 | Order | Example | What You'll Learn | Run Command |
 |-------|---------|-------------------|-------------|
 | 1 | HelloBlazeDB | Canonical `open → put → get → query` flow | `swift run HelloBlazeDB` |
-| 2 | BasicExample | CRUD operations | `swift run BasicExample` |
+| 2 | CorePathSmoke | Portable core path (`BLAZEDB_LINUX_CORE`): open, put, get, query, observe | `swift run CorePathSmoke` |
+| 3 | MVVMPattern | Repository + ViewModel without SwiftUI (Android-shaped architecture) | `swift run MVVMPattern` |
+| 4 | BasicExample | CRUD operations | `swift run BasicExample` |
 | 3 | QueryBuilderExample | Fluent query filters | See file |
 | 4 | ReferenceConsumer | Lifecycle example | `swift run ReferenceConsumer` |
 
@@ -21,6 +23,7 @@ Runnable examples from basic to advanced.
 | File | Description |
 |------|-------------|
 | `HelloBlazeDB/main.swift` | Minimal default API path (`BlazeDB.open`, `put`, `get`, `query`) |
+| `CorePathSmoke/main.swift` | Portable core-path smoke test (Linux/Android compile mode; runs on host) |
 | `BasicExample/main.swift` | Core CRUD operations |
 | `QuickStart.swift` | Minimal typed working example |
 | `BasicUsageExample.swift` | Common embedded usage patterns |

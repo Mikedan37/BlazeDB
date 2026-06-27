@@ -212,7 +212,7 @@ Additional example files in `Examples/` (`.swift` files) are standalone referenc
 | tvOS 15+ | Stable | Declared in Package.swift | Limited CI |
 | visionOS 1+ | Stable | Declared in Package.swift | Limited CI |
 | Linux (Swift 6.0+) | Stable | Blocking lane (core + Tier0) | `BLAZEDB_LINUX_CORE` gates **69 files** across spatial, vector, async APIs, trigger persistence, FTS internals, query planner branches — effectively a second operating mode, not just SwiftUI exclusion |
-| Android | Partial | Best-effort | `BLAZEDB_LINUX_CORE` path; Swift 6.3+ / NDK |
+| Android | Partial | Blocking cross-compile lane (`ci.yml`, OSS Swift 6.3.2) | Same `BLAZEDB_LINUX_CORE` path as Linux; app/KMM integration not yet supported — see `Docs/android-status.md` |
 
 ### Testing and CI
 
@@ -270,6 +270,7 @@ This section clarifies what each key document is responsible for to prevent dupl
 | **`Docs/RELEASE_POSTURE.md`** | Release line policy, version strategy, support expectations | Code-level feature inventory |
 | **`Docs/Status/DISTRIBUTED_TRANSPORT_DEFERRED.md`** | Why distributed transport is deferred, re-enablement steps | Core engine features |
 | **`Docs/COMPATIBILITY.md`** | Platform and Swift version compatibility matrix | Feature inventory |
+| **`Docs/android-status.md`** | Android / Swift-on-Android / KMM honest status, architecture diagram, engineering roadmap | Full Android setup guide (not written until sample exists) |
 | **`Docs/Architecture/`** | Deep design docs (storage engine, MVCC, etc.) | Status tracking, issue references |
 
 ---

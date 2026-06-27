@@ -4,6 +4,7 @@ This directory contains architecture documentation for BlazeDB.
 
 ## Core Architecture
 
+- **LIVE_QUERY_ARCHITECTURE.md** - Design of ``BlazeLiveQuery`` (observe → refresh → decode), adapters, and evidence hierarchy
 - **ARCHITECTURE.md** - Main architecture overview
 - **ARCHITECTURE_COMPARISON.md** - Comparison with other databases
 - **ARCHITECTURE_DETAILED.md** - Detailed architecture documentation

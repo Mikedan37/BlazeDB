@@ -10,6 +10,7 @@ Checkouts use **`fetch-depth: 0`**.
 |-----|----------|
 | `macOS 15 — build, CLI, tests` | yes |
 | `Linux (Swift 6.2) — core + Tier 0` | yes |
+| `Android — BlazeDBCore cross-compile (OSS Swift 6.3)` | yes |
 
 **Deleted from the repo (must not return on `main`):** `oss-readiness-evidence.yml`, duplicate CI files. If GitHub still shows “OSS Readiness Evidence” or “Build & Test”, `main` has not picked up the latest workflow commits — merge and push.
 

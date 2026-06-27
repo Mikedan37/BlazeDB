@@ -67,8 +67,29 @@
 - **Notes:** Some advanced features disabled (`BLAZEDB_LINUX_CORE`). CI baseline lane targets Swift 6.0 for core + Tier 0 stability checks.
 
 ### Android
-- **Status:** Core path supported (same compile-time path as Linux)
-- **Notes:** Builds with `BLAZEDB_LINUX_CORE` path; advanced platform-dependent features may be excluded. Android cross-compilation currently expects Swift 6.3+ plus the Swift Android SDK and Android NDK (manual/best-effort lane).
+- **Status:** Core path only — **not yet officially supported** for app integration
+- **Notes:** Same compile-time mode as Linux (`BLAZEDB_LINUX_CORE`). Cross-compilation requires **OSS Swift 6.3.2+** (matching the Android SDK bundle), the [Swift SDK for Android](https://swift.org/documentation/articles/swift-sdk-for-android-getting-started.html), and NDK r27d+. PR CI cross-compiles `BlazeDBCore` on Linux with OSS Swift.
+- **Detail:** [android-status.md](android-status.md)
+
+#### OSS Swift vs Xcode Swift (Android cross-compile)
+
+Android cross-compilation **must** use the **open-source Swift toolchain** from [swift.org](https://www.swift.org/install/), not the `swift` bundled with Xcode on macOS.
+
+If you run:
+
+```bash
+swift build --swift-sdk aarch64-unknown-linux-android28 --static-swift-stdlib
+```
+
+with **Apple Swift**, the build typically fails inside dependencies (`swift-crypto`, etc.) with:
+
+```text
+compiled module was created by an older version of the compiler; rebuild 'Foundation' ...
+```
+
+That is a toolchain mismatch, not a BlazeDB bug. Install OSS Swift 6.3.2+ (for example via [swiftly](https://www.swift.org/install/)) and ensure `swift --version` does **not** report `Apple Swift`. Use `./Scripts/ci-android-cross-compile.sh` on CI or locally.
+
+**KMM:** BlazeDB does **not** support Kotlin Multiplatform today. Swift-on-Android (native library + JNI) is the realistic integration path; see [android-status.md](android-status.md).
 
 ---
 
@@ -112,7 +133,7 @@ These APIs may change:
 - **Minimum:** Swift 6.0
 - **Recommended:** Latest Swift 6.x
 - **Strict Concurrency:** Enabled for core modules
-- **CI lane policy:** Linux CI runs a Swift 6.0 baseline lane for deterministic core validation; Android toolchain bring-up uses Swift 6.3+ outside the baseline lane.
+- **CI lane policy:** Linux CI runs a Swift 6.2 baseline lane for deterministic core validation; Android cross-compile CI uses OSS Swift 6.3.2 + Android SDK on Ubuntu (see `ci.yml` and [android-status.md](android-status.md)).
 
 ---
 
@@ -164,12 +185,13 @@ See `CONTRIBUTING.md` for bug report templates and guidelines.
 
 ## Summary
 
-**Core:** Swift 6 compliant, stable, production-ready (macOS/iOS) and core-path supported on Linux/Android
+**Core:** Swift 6 compliant, stable, production-ready on macOS/iOS; core-path supported on Linux (CI); Android cross-compile verified in CI — app integration not yet officially supported (see [android-status.md](android-status.md))
 **Distributed:** Not yet compliant, excluded from core
 **Storage:** Stable format, migration support
 **APIs:** Core APIs stable, experimental APIs clearly marked
 
 For detailed status, see:
+- `android-status.md` - Android / Swift-on-Android / KMM status (not full platform docs)
 - `CONCURRENCY_COMPLIANCE.md` - Concurrency details
 - `BUILD_STATUS.md` - Current build state
 - `PRE_USER_HARDENING.md` - Trust features

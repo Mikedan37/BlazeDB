@@ -1,31 +1,15 @@
+//
+//  BlazeStorableLiveQuery.swift
+//  BlazeDB
+//
+//  SwiftUI integration composes ``BlazeLiveQuery`` (core) with
+//  ``@Published`` state and environment injection (Apple-only ergonomics).
+//
+
 import Foundation
 
 #if canImport(SwiftUI) && canImport(Combine) && (os(macOS) || os(iOS) || os(watchOS) || os(tvOS))
 import SwiftUI
-
-// MARK: - Change notification (same pattern as ``BlazeQueryTypedObserver``)
-
-@MainActor
-fileprivate protocol BlazeStorableQueryRefreshable: AnyObject {
-    func refresh()
-}
-
-extension BlazeStorableQueryObserver: BlazeStorableQueryRefreshable {}
-
-private final class BlazeStorableQueryRefreshSink: @unchecked Sendable {
-    private weak var target: (any BlazeStorableQueryRefreshable)?
-
-    func attach(_ o: any BlazeStorableQueryRefreshable) {
-        target = o
-    }
-
-    func notifyChange() {
-        guard let t = target else { return }
-        Task { @MainActor in
-            t.refresh()
-        }
-    }
-}
 
 /// SwiftUI live-query wrapper for a ``BlazeStorable`` model (namespace-filtered decode).
 ///
@@ -34,14 +18,8 @@ private final class BlazeStorableQueryRefreshSink: @unchecked Sendable {
 /// ``BlazeStorable`` / Codable only and do not want ``BlazeDocument``. For raw
 /// ``BlazeDataRecord`` rows, use ``BlazeDataQuery``.
 ///
-/// Pass ``BlazeDBClient`` with `db:` **or** inject ``EnvironmentValues/blazeDBClient`` from an ancestor
-/// (same as ``BlazeQuery``). If `db` is omitted, results stay empty until the environment provides a client.
-///
-/// ```swift
-/// RootView().blazeDBEnvironment(app.db)
-///
-/// @BlazeStorableQuery(kind: Bug.self) var bugs: [Bug]
-/// ```
+/// Under the hood this composes ``BlazeLiveQuery`` — the same observe → refresh → decode
+/// pipeline used outside SwiftUI.
 @propertyWrapper
 @MainActor
 public struct BlazeStorableQuery<T: BlazeStorable>: DynamicProperty {
@@ -107,9 +85,7 @@ public final class BlazeStorableQueryObserver<T: BlazeStorable>: ObservableObjec
     private let sortField: String?
     private let sortDescending: Bool
     private let limitCount: Int?
-    private var refreshTask: Task<Void, Never>?
-    private var changeObserverToken: ObserverToken?
-    private let refreshSink = BlazeStorableQueryRefreshSink()
+    private var liveQuery: BlazeLiveQuery<T>?
 
     fileprivate init(
         db: BlazeDBClient?,
@@ -119,17 +95,13 @@ public final class BlazeStorableQueryObserver<T: BlazeStorable>: ObservableObjec
         limitCount: Int?
     ) {
         self.db = db
-        let kindValue: BlazeDocumentField = .string(BlazeRecordKind.normalizedName(for: T.self))
-        self.filters = [(BlazeRecordKind.storageKey, .equals, kindValue)] + filters
+        self.filters = filters
         self.sortField = sortField
         self.sortDescending = sortDescending
         self.limitCount = limitCount
 
-        refreshSink.attach(self)
-
         if let db {
-            subscribeToChanges(db: db)
-            refresh()
+            attachLiveQuery(db: db)
         }
     }
 
@@ -137,64 +109,37 @@ public final class BlazeStorableQueryObserver<T: BlazeStorable>: ObservableObjec
     internal func bindDatabaseIfNeeded(_ client: BlazeDBClient?) {
         guard db == nil, let client else { return }
         db = client
-        subscribeToChanges(db: client)
-        refresh()
+        attachLiveQuery(db: client)
     }
 
-    private func subscribeToChanges(db: BlazeDBClient) {
-        changeObserverToken = db.observe { [refreshSink] _ in
-            refreshSink.notifyChange()
+    private func attachLiveQuery(db: BlazeDBClient) {
+        liveQuery?.stop()
+        let query = BlazeLiveQuery<T>(
+            db: db,
+            filters: filters,
+            sortBy: sortField,
+            descending: sortDescending,
+            limit: limitCount
+        )
+        query.onResults = { [weak self] result in
+            guard let self else { return }
+            self.isLoading = false
+            switch result {
+            case .success(let rows):
+                self.results = rows
+                self.error = nil
+            case .failure(let error):
+                self.error = error
+            }
         }
+        liveQuery = query
+        isLoading = true
+        query.start()
     }
 
     public func refresh() {
-        refreshTask?.cancel()
-
-        guard let db else {
-            isLoading = false
-            return
-        }
-
-        refreshTask = Task { @MainActor in
-            isLoading = true
-            error = nil
-            do {
-                var query = db.query()
-                for filter in filters {
-                    switch filter.comparison {
-                    case .equals:
-                        query = await query.where(filter.field, equals: filter.value)
-                    case .notEquals:
-                        query = await query.where(filter.field, notEquals: filter.value)
-                    case .greaterThan:
-                        query = await query.where(filter.field, greaterThan: filter.value)
-                    case .lessThan:
-                        query = await query.where(filter.field, lessThan: filter.value)
-                    case .greaterThanOrEqual:
-                        query = query.where(filter.field, greaterThanOrEqual: filter.value)
-                    case .lessThanOrEqual:
-                        query = query.where(filter.field, lessThanOrEqual: filter.value)
-                    case .contains:
-                        if let stringValue = filter.value.stringValue {
-                            query = query.where(filter.field, contains: stringValue)
-                        }
-                    }
-                }
-                if let sortField {
-                    query = await query.orderBy(sortField, descending: sortDescending)
-                }
-                if let limitCount {
-                    query = query.limit(limitCount)
-                }
-                let result = try await query.execute()
-                let records = try result.records
-                results = records.compactMap { try? T.fromBlazeRecord($0) }
-                isLoading = false
-            } catch {
-                self.error = error
-                isLoading = false
-            }
-        }
+        isLoading = true
+        liveQuery?.refresh()
     }
 }
 
