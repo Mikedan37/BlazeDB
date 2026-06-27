@@ -22,6 +22,7 @@ For **most** PRs:
 |------|------|
 | [`Docs/SYSTEM_MAP.md`](Docs/SYSTEM_MAP.md) | Material changes to architecture, platforms, modules, or **public** feature surface (see that file for what counts as material) |
 | [`Docs/Testing/CI_AND_TEST_TIERS.md`](Docs/Testing/CI_AND_TEST_TIERS.md) | Changes to **test lanes**, **tier** meaning, or **CI** job behavior |
+| [`Examples/ReadmeSamples/README.md`](Examples/ReadmeSamples/README.md) | New/changed **executable README samples** or L3 verification scope |
 
 **If two docs disagree about CI** (blocking jobs, tier scope, workflows), treat **[`Docs/Testing/CI_AND_TEST_TIERS.md`](Docs/Testing/CI_AND_TEST_TIERS.md)** plus **`.github/workflows/*.yml`** as the detailed source of truth—not this paragraph alone.
 
@@ -31,7 +32,18 @@ Forks, billing limits, and hosted CI availability can prevent Actions from runni
 
 ## CI at a glance
 
-The PR workflow is [`.github/workflows/ci.yml`](.github/workflows/ci.yml). Scheduled and weekly workflows add coverage on top; they are documented in [CI and test tiers](Docs/Testing/CI_AND_TEST_TIERS.md). Scripts such as `verify-clean-checkout.sh` and `verify-readme-quickstart.sh` are **not** part of the blocking PR gate unless that doc explicitly says otherwise. **`v*`** tag buildability uses the manual [tag-probe workflow](.github/workflows/tag-probe.yml).
+The PR workflow is [`.github/workflows/ci.yml`](.github/workflows/ci.yml). Scheduled and weekly workflows add coverage on top; they are documented in [CI and test tiers](Docs/Testing/CI_AND_TEST_TIERS.md). The macOS PR gate runs Tier0, Tier1, **`verify-readme-quickstart.sh` (L1)**, and **`verify-readme-samples.sh` (L3)**. **`verify-clean-checkout.sh`** runs in nightly only. **`v*`** tag buildability uses the manual [tag-probe workflow](.github/workflows/tag-probe.yml).
+
+### Documentation verification (maintainers)
+
+| Level | What | Script / target |
+|-------|------|-----------------|
+| **L1 — Quickstart** | `swift run HelloBlazeDB` from clean worktree | `./Scripts/verify-readme-quickstart.sh` |
+| **L2 — Public API** | Core exported APIs | `BlazeDB_Tier0` → `PublicAPIVerificationTests` |
+| **L3 — README samples** | Runnable README Swift patterns | `./Scripts/verify-readme-samples.sh` → `ReadmeSamples` |
+
+Coverage mapping and contributor rules: [`Examples/ReadmeSamples/README.md`](Examples/ReadmeSamples/README.md).  
+If you change executable README samples, update the harness **and** the coverage table, or document the section as **Manual** / **Out of scope** there.
 
 ---
 
@@ -199,8 +211,10 @@ Normal PRs: follow **[PR expectations](#pr-expectations)** (`./Scripts/preflight
 # Run clean-checkout verification (recommended before release)
 ./Scripts/verify-clean-checkout.sh
 
-# Verify README quickstart behavior and runtime budget
+# Verify README quickstart (L1) and samples (L3)
 ./Scripts/verify-readme-quickstart.sh
+./Scripts/verify-readme-samples.sh
+./Scripts/check-readme-sample-coverage.sh
 
 # Run local preflight (required)
 ./Scripts/preflight.sh

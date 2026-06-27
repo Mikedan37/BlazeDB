@@ -11,6 +11,10 @@ cleanup() {
 trap cleanup EXIT
 
 echo "=== BlazeDB README sample verification ==="
+
+echo "Checking coverage checklist ↔ harness sync"
+"$ROOT_DIR/Scripts/check-readme-sample-coverage.sh"
+
 echo "Creating detached worktree at: $TMP_DIR"
 git -C "$ROOT_DIR" worktree add --detach "$TMP_DIR" HEAD >/dev/null
 

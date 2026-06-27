@@ -15,7 +15,7 @@ BlazeDB includes GitHub Actions workflows under `.github/workflows/` for CI vali
 
 - `./Scripts/preflight.sh` (or `swift test --filter BlazeDB_Tier0` plus build as documented in `CONTRIBUTING.md`)
 - `./Scripts/run-tier1.sh` for the Tier0 + Tier1 fast gate with coverage checks
-- `./Scripts/verify-clean-checkout.sh` and `./Scripts/verify-readme-quickstart.sh` before release-style confidence
+- `./Scripts/verify-clean-checkout.sh` and `./Scripts/verify-readme-quickstart.sh` (L1) + `./Scripts/verify-readme-samples.sh` (L3) before release-style confidence
 
 ## 1) Core Quality Gates
 
@@ -24,8 +24,8 @@ BlazeDB includes GitHub Actions workflows under `.github/workflows/` for CI vali
 - [ ] Tier0 + Tier1 (`BlazeDB_Tier1`) are green in **hosted** CI when workflows are allowed to run (see [Hosted CI status](#hosted-ci-status) above).
 - If hosted Actions cannot run (billing, forks, or org policy), treat **local** runs of the same commands as the merge gate evidence until CI is restored.
 - [x] Next public release tag candidate build passes from a fresh clone.
-- Verified locally via `Scripts/verify-clean-checkout.sh` and `Scripts/verify-readme-quickstart.sh`.
-- OSS verification runs on **macOS** in `.github/workflows/ci.yml` (clean checkout + README quickstart on every push/PR).
+- Verified locally via `Scripts/verify-clean-checkout.sh`, `Scripts/verify-readme-quickstart.sh` (L1), and `Scripts/verify-readme-samples.sh` (L3).
+- OSS verification runs on **macOS** in `.github/workflows/ci.yml` (Tier0/Tier1, README quickstart L1, README samples L3 on every push/PR).
 - Legacy **`v*` tag buildability** (optional): manual workflow `.github/workflows/tag-probe.yml` and helper `Scripts/check-release-tag-builds.sh` (not run on every push/PR; see `Docs/Testing/CI_AND_TEST_TIERS.md`).
 - Tooling in place: `Scripts/verify-clean-checkout.sh` (release build + clean-worktree validation path).
 - Tag build probe: `Scripts/check-release-tag-builds.sh`.

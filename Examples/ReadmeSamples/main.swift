@@ -3,7 +3,7 @@
 //  BlazeDB
 //
 //  Executes README code patterns so documentation drift fails CI.
-//  Keep in sync with README.md samples (Scripts/verify-readme-samples.sh).
+//  Keep in sync with README.md and Examples/ReadmeSamples/README.md (coverage table).
 //
 
 import Foundation
@@ -236,10 +236,7 @@ private func verifyOpening() throws {
     let dir = FileManager.default.temporaryDirectory
         .appendingPathComponent("ReadmeSamples-open-\(UUID().uuidString)", isDirectory: true)
     try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
-    defer {
-        try? db.close()
-        cleanup(dir)
-    }
+    defer { cleanup(dir) }
     let atURL = dir.appendingPathComponent("at.blazedb")
     let atDB = try BlazeDB.open(at: atURL, password: demoPassword)
 
@@ -324,17 +321,78 @@ private func verifyUtilities() throws {
 
 @main
 enum ReadmeSamples {
+    private enum Section: String, CaseIterable {
+        case startHere = "start-here"
+        case minimalNote = "minimal-note"
+        case listItems = "list-items"
+        case directCRUD = "direct-crud"
+        case typedStore = "typed-store"
+        case rawAPI = "raw-api"
+        case opening = "opening"
+        case transactions = "transactions"
+        case utilities = "utilities"
+
+        func run() throws {
+            switch self {
+            case .startHere: try verifyStartHere()
+            case .minimalNote: try verifyMinimalNote()
+            case .listItems: try verifyListItems()
+            case .directCRUD: try verifyDirectCRUD()
+            case .typedStore: try verifyTypedStore()
+            case .rawAPI: try verifyRawAPI()
+            case .opening: try verifyOpening()
+            case .transactions: try verifyTransactions()
+            case .utilities: try verifyUtilities()
+            }
+        }
+    }
+
+    private static func printUsage() {
+        let keys = Section.allCases.map(\.rawValue).joined(separator: ", ")
+        fputs(
+            """
+            Usage: swift run ReadmeSamples [--only <section>]
+
+            Sections: \(keys)
+
+            Example: swift run ReadmeSamples --only transactions
+
+            """,
+            stderr
+        )
+    }
+
     static func main() throws {
+        let args = CommandLine.arguments
+        if args.contains("--help") || args.contains("-h") {
+            printUsage()
+            return
+        }
+
+        let sections: [Section]
+        if let onlyIndex = args.firstIndex(of: "--only") {
+            guard onlyIndex + 1 < args.count else {
+                printUsage()
+                throw sampleError("missing value for --only")
+            }
+            let key = args[onlyIndex + 1]
+            guard let section = Section(rawValue: key) else {
+                printUsage()
+                throw sampleError("unknown section '\(key)'")
+            }
+            sections = [section]
+        } else {
+            sections = Array(Section.allCases)
+        }
+
         print("=== README sample verification ===")
-        try verifyStartHere()
-        try verifyMinimalNote()
-        try verifyListItems()
-        try verifyDirectCRUD()
-        try verifyTypedStore()
-        try verifyRawAPI()
-        try verifyOpening()
-        try verifyTransactions()
-        try verifyUtilities()
-        print("=== PASS: all README samples verified ===")
+        for section in sections {
+            try section.run()
+        }
+        if sections.count == 1 {
+            print("=== PASS: README sample '\(sections[0].rawValue)' verified ===")
+        } else {
+            print("=== PASS: all README samples verified ===")
+        }
     }
 }

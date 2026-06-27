@@ -7,7 +7,7 @@ This file is the release-facing checklist only. Historical strategy notes and sp
 ## 1) Release Preconditions
 
 - [ ] Branch is clean and intentional (`git status`, `git diff`).
-- [ ] PR gate is green (`macOS 15 — build, CLI, tests, clean-checkout, quickstart` from `.github/workflows/ci.yml`).
+- [ ] PR gate is green (`macOS 15 — build, CLI, tests`, README quickstart + samples from `.github/workflows/ci.yml`).
 - [ ] `CHANGELOG.md` contains release notes for `vX.Y.Z`.
 - [ ] Install snippets are current (`README.md`, `Docs/GettingStarted/*`).
 - [ ] `Docs/Testing/CI_AND_TEST_TIERS.md` matches current workflow behavior.
@@ -17,7 +17,8 @@ This file is the release-facing checklist only. Historical strategy notes and sp
 - [ ] `./Scripts/preflight.sh` passes.
 - [ ] `./Scripts/run-tier1.sh` passes (Tier 0 + Tier1 with coverage checks).
 - [ ] `./Scripts/verify-clean-checkout.sh` passes.
-- [ ] `./Scripts/verify-readme-quickstart.sh` passes.
+- [ ] `./Scripts/verify-readme-quickstart.sh` passes (L1).
+- [ ] `./Scripts/verify-readme-samples.sh` passes (L3).
 
 ## 3) Required Validation (CI)
 
@@ -26,7 +27,8 @@ This file is the release-facing checklist only. Historical strategy notes and sp
 - Tier 0
 - Tier1
 - clean-checkout verification
-- README quickstart verification
+- README quickstart verification (L1)
+- README sample verification (L3)
 - [ ] Release workflow passes for tag `vX.Y.Z` (`.github/workflows/release.yml`):
 - Tier 0
 - Tier1

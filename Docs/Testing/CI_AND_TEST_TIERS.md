@@ -4,6 +4,16 @@ This file is the single source of truth for BlazeDB CI lanes and test-tier inten
 
 If this file conflicts with other docs, treat this file and `.github/workflows/*.yml` as authoritative.
 
+### Documentation verification (maintainers)
+
+| Level | What | Script / target |
+|-------|------|-----------------|
+| **L1 — Quickstart** | `swift run HelloBlazeDB` from clean worktree | `./Scripts/verify-readme-quickstart.sh` |
+| **L2 — Public API** | Core exported APIs | `BlazeDB_Tier0` → `PublicAPIVerificationTests` |
+| **L3 — README samples** | Runnable README Swift patterns | `./Scripts/verify-readme-samples.sh` → `ReadmeSamples` |
+
+Coverage mapping, status classifications (**Verified** / **Manual** / **Out of scope**), and contributor rules: [`Examples/ReadmeSamples/README.md`](../../Examples/ReadmeSamples/README.md). Checklist ↔ harness sync: `./Scripts/check-readme-sample-coverage.sh` (runs before L3 verification).
+
 For **normal PR expectations** (one branch, preflight, validation list, docs, squash merge), see **[CONTRIBUTING.md](../../CONTRIBUTING.md#pr-expectations)**. For **branch naming** and local habits, see `Docs/Guides/WORKFLOW_AND_STYLE_GUIDE.md`.
 
 ## CI Lane Snapshot
