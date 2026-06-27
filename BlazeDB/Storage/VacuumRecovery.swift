@@ -68,7 +68,12 @@ extension BlazeDBClient {
         BlazeLogger.info("VACUUM crash recovery complete")
     }
     
-    /// Recover from a crashed VACUUM operation (post-open safety net; normally a no-op).
+    /// Post-open VACUUM recovery hook (legacy call site; normally a no-op).
+    ///
+    /// Authoritative restore runs in `init` via the static overload above, before PageStore
+    /// opens files. This instance method remains so existing init sequencing is unchanged and
+    /// so a future refactor cannot drop pre-open recovery just because another recovery symbol
+    /// still exists — if pre-init recovery ran, the intent marker is already gone.
     internal func recoverFromVacuumCrashIfNeeded() throws {
         try Self.recoverFromVacuumCrashIfNeeded(fileURL: collection.store.fileURL, metaURL: collection.metaURL)
     }
