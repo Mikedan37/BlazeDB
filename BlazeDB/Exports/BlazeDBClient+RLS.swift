@@ -92,6 +92,10 @@ internal final class RLS {
     internal func getPolicies() -> [SecurityPolicy] {
         return policyEngine.getPolicies()
     }
+
+    internal func hasPolicies() -> Bool {
+        !policyEngine.getPolicies().isEmpty
+    }
     
     // MARK: - User Management
     
@@ -178,7 +182,11 @@ internal final class RLS {
     /// Check if operation is allowed on record
     internal func isAllowed(operation: PolicyOperation, record: BlazeDataRecord) -> Bool {
         guard let context = getContext() else {
-            // No context = allow (RLS optional)
+            // Fail closed when RLS is actively configured.
+            if isEnabled() && hasPolicies() {
+                BlazeLogger.warn("🔐 RLS denied \(operation.rawValue.uppercased()) due to missing security context")
+                return false
+            }
             return true
         }
         
@@ -188,6 +196,10 @@ internal final class RLS {
     /// Filter records based on policies
     internal func filterRecords(operation: PolicyOperation, records: [BlazeDataRecord]) -> [BlazeDataRecord] {
         guard let context = getContext() else {
+            if isEnabled() && hasPolicies() {
+                BlazeLogger.warn("🔐 RLS returned 0 records for \(operation.rawValue.uppercased()) due to missing security context")
+                return []
+            }
             return records  // No context = return all
         }
         
@@ -199,12 +211,13 @@ internal final class RLS {
 
 extension BlazeDBClient {
     
-    nonisolated(unsafe) private static var rlsManagers: [String: RLS] = [:]
+    nonisolated(unsafe) private static var rlsManagers: [ObjectIdentifier: RLS] = [:]
     private static let rlsLock = NSLock()
+    private var rlsManagerKey: ObjectIdentifier { ObjectIdentifier(self) }
     
     /// RLS manager for this database
     internal var rls: RLS {
-        let key = "\(name)-\(fileURL.path)"
+        let key = rlsManagerKey
         
         Self.rlsLock.lock()
         defer { Self.rlsLock.unlock() }
@@ -216,6 +229,90 @@ extension BlazeDBClient {
         let manager = RLS(client: self)
         Self.rlsManagers[key] = manager
         return manager
+    }
+
+    internal func detachRLSManager() {
+        Self.rlsLock.lock()
+        defer { Self.rlsLock.unlock() }
+        Self.rlsManagers.removeValue(forKey: rlsManagerKey)
+    }
+
+    // MARK: - Public RLS Management (safe wrappers)
+
+    /// Enable Row-Level Security evaluation for this database client.
+    public func enableRLS() {
+        rls.enable()
+    }
+
+    /// Disable Row-Level Security evaluation for this database client.
+    public func disableRLS() {
+        rls.disable()
+    }
+
+    /// Returns whether RLS evaluation is enabled.
+    public var isRLSEnabled: Bool {
+        rls.isEnabled()
+    }
+
+    /// Set the active security context used for RLS checks.
+    public func setRLSContext(
+        userID: UUID,
+        teamIDs: [UUID] = [],
+        roles: Set<String> = [],
+        customClaims: [String: String] = [:]
+    ) {
+        rls.setContext(
+            SecurityContext(
+                userID: userID,
+                teamIDs: teamIDs,
+                roles: roles,
+                customClaims: customClaims
+            )
+        )
+    }
+
+    /// Clear the active RLS security context.
+    public func clearRLSContext() {
+        rls.clearContext()
+    }
+
+    /// Returns whether a runtime security context is currently set for this process.
+    public var hasRLSContext: Bool {
+        rls.getContext() != nil
+    }
+
+    /// Install common baseline policies:
+    /// - `adminFullAccess`
+    /// - `userOwnsRecord(userIDField:)`
+    public func configureRLSAdminAndOwnerPolicies(userIDField: String = "userId") {
+        rls.addPolicy(.adminFullAccess())
+        rls.addPolicy(.userOwnsRecord(userIDField: userIDField))
+    }
+
+    /// Install common team-based policies:
+    /// - `adminFullAccess`
+    /// - `userInTeam(teamIDField:)`
+    public func configureRLSAdminAndTeamPolicies(teamIDField: String = "teamId") {
+        rls.addPolicy(.adminFullAccess())
+        rls.addPolicy(.userInTeam(teamIDField: teamIDField))
+    }
+
+    /// Install common viewer policies:
+    /// - `viewerCanSelect(viewerRole:)`
+    /// - `viewerReadOnly(viewerRole:)`
+    public func configureRLSViewerReadOnlyPolicies(viewerRole: String = "viewer") {
+        rls.addPolicy(.viewerCanSelect(viewerRole: viewerRole))
+        rls.addPolicy(.viewerReadOnly(viewerRole: viewerRole))
+    }
+
+    /// Remove all configured RLS policies.
+    public func clearRLSPolicies() {
+        rls.clearPolicies()
+    }
+
+    /// Return currently configured RLS policy names.
+    public func listRLSPolicyNames() -> [String] {
+        rls.getPolicies().map(\.name)
     }
     
     // MARK: - RLS-Aware Operations

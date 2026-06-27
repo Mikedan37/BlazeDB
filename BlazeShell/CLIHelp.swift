@@ -20,6 +20,7 @@ public enum CLIHelp {
         blazedb --manager              Multi-database manager
         blazedb --master               Launch in master mode (vault flow)
         blazedb master <command>       Master keyring operations
+        blazedb rls <command>          RLS management (status/enable/policy)
         blazedb bookmark add <path>    Pin a path in the picker
         blazedb restore-backup <dest>  Restore ./lastKnownGood.blazedb
 
@@ -65,18 +66,49 @@ public enum CLIHelp {
         \(CLIColors.ice("exit"))                              Leave the shell
 
       \(CLIColors.bold("Commands"))
-        fetchAll                         List all records
+        fetchAll                         List all records (pretty table)
+        fetchAll --json                  Export all rows as pretty JSON array
+        fetchAll --ndjson                Export all rows as newline-delimited JSON
+        fetchAll --raw                   Full rows as plain JSON values
         insert <json>                    Insert a document
-        fetch <uuid>                     Fetch one record
+        fetch <uuid>                     Inspector view for one record
+        fetch <row-index>                Inspector view from current fetchAll table
+        fetch <uuid> --json              One record as JSON
+        fetch <row-index> --json         One table row as JSON
+        query <field> <op> <value>       Filtered query (ops: = != > < >= <= contains)
+        query ... and ...                Chain query filters
+        query ... --json                 Query results as JSON array
+        query ... --ndjson               Query results as NDJSON
+        query ... sort <field> [desc]    Query with ordering
+        query ... limit <n> offset <n>   Query pagination controls
+        explain query <...>              Query execution plan + estimate
+        explain query <...> --json       Query plan as JSON
         update <uuid> <json>             Replace a record
         softDelete <uuid>                Soft-delete
         delete <uuid>                    Hard-delete
+        inspect                          Show DB info + table preview
+        snapshot                         Alias for inspect
+        status                           Runtime health and performance summary
+        schema                           Inferred fields/types + indexes
+        doctor                           Operator health checks
+        doctor --json                    Health checks as JSON
+        begin                            Begin transaction
+        commit                           Commit transaction
+        rollback                         Roll back transaction
+        master lock [--scope ...]        Save current DB/password into master vault
+        master add [--scope ...]         Alias for master lock
 
       \(CLIColors.bold("Examples"))
         insert {"name": "Ada", "score": 99}
         fetch 550e8400-e29b-41d4-a716-446655440000
+        fetch 3
+        query role = assistant and project = Default sort createdAt desc limit 20
+        explain query role = assistant and project = Default
+        status
+        doctor --json
+        master lock --scope persistent --label primary
 
-      \(CLIColors.muted("Outside the shell: blazedb start · blazedb --help"))
+      \(CLIColors.muted("Global commands: blazedb start · blazedb --help"))
       """
     )
   }
@@ -114,9 +146,9 @@ public enum CLIHelp {
         \(CLIColors.ice("--scope session"))               In-memory for current process only
 
       \(CLIColors.bold("Security guardrails"))
-        - No source code credential scanning
-        - No password extraction from app files
-        - No arbitrary filesystem secret discovery
+        - No blind/feral repository grep for secrets
+        - Structured local resolver chain only (metadata/config/env/known app files)
+        - No shell-history scraping or arbitrary credential exfiltration
 
       \(CLIColors.bold("Automation"))
         \(CLIColors.ice("BLAZEDB_MASTER_PASSWORD")) is supported for local automation/tests only.

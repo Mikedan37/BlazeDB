@@ -109,7 +109,7 @@ internal final class PolicyEngine {
         var restrictiveResult = true
         
         for policy in applicablePolicies {
-            let result = policy.check(context, record)
+            let result = policy.evaluate(operation: operation, context: context, record: record)
             
             switch policy.type {
             case .permissive:
@@ -125,10 +125,10 @@ internal final class PolicyEngine {
         // Combine results:
         // - If has permissive policies: allow if ANY granted
         // - If has restrictive policies: allow if ALL granted
-        // - If both: allow if EITHER condition met
+        // - If both: allow only when BOTH conditions are met
         
         if hasPermissive && hasRestrictive {
-            return permissiveResult || restrictiveResult
+            return permissiveResult && restrictiveResult
         } else if hasPermissive {
             return permissiveResult
         } else if hasRestrictive {
@@ -180,7 +180,8 @@ internal final class PolicyEngine {
         let dummyRecord = BlazeDataRecord([:])
         
         for policy in applicablePolicies {
-            if policy.type == .permissive && policy.check(context, dummyRecord) {
+            if policy.type == .permissive &&
+                policy.evaluate(operation: operation, context: context, record: dummyRecord) {
                 return true  // At least one permissive policy grants access
             }
         }

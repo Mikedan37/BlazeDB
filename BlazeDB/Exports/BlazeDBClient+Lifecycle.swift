@@ -75,6 +75,7 @@ extension BlazeDBClient {
 
         // Reduce plaintext secret lifetime after shutdown.
         password = nil
+        detachRLSManager()
 
         // Mark closed after cleanup.
         _isClosed = true

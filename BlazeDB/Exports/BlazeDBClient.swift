@@ -319,6 +319,21 @@ public final class BlazeDBClient: @unchecked Sendable {
     internal let kdfSalt: Data
     internal let encryptionKey: SymmetricKey
 
+    @inline(__always)
+    private var shouldEnforceRLS: Bool {
+        rls.isEnabled() && rls.hasPolicies()
+    }
+
+    private func enforceRLS(_ operation: PolicyOperation, record: BlazeDataRecord) throws {
+        guard shouldEnforceRLS else { return }
+        guard rls.isAllowed(operation: operation, record: record) else {
+            throw BlazeDBError.permissionDenied(
+                operation: "RLS denied \(operation.rawValue.uppercased())",
+                path: fileURL.path
+            )
+        }
+    }
+
     // MARK: - Init
     
     /// Initializes a new BlazeDB client instance.
@@ -790,6 +805,8 @@ public final class BlazeDBClient: @unchecked Sendable {
             // Execute enhanced triggers
             try executeEnhancedTriggers(for: .beforeInsert, record: record, modifiedRecord: &modifiedRecord, collection: collection, collectionName: name)
             let recordToInsert = modifiedRecord ?? record
+
+            try enforceRLS(.insert, record: recordToInsert)
             
             // Validate foreign keys
             try validateForeignKeys(for: recordToInsert, operation: "insert")
@@ -835,6 +852,7 @@ public final class BlazeDBClient: @unchecked Sendable {
         if record.storage["createdAt"] == nil {
             record.storage["createdAt"] = .date(Date())
         }
+        try enforceRLS(.insert, record: record)
         try performSafeWrite { _ = try collection.insert(record) }
         legacyTransactionLogNoOp("insert", payload: record.storage)
         
@@ -853,6 +871,11 @@ public final class BlazeDBClient: @unchecked Sendable {
         let startTime = Date()
         
         do {
+            if shouldEnforceRLS {
+                for record in records {
+                    try enforceRLS(.insert, record: record)
+                }
+            }
             var ids: [UUID] = []
             try performSafeWrite {
                 #if !BLAZEDB_LINUX_CORE
@@ -918,6 +941,7 @@ public final class BlazeDBClient: @unchecked Sendable {
                 
                 // Check if record matches predicate
                 guard predicate(record) else { continue }
+                try enforceRLS(.update, record: record)
                 
                 // Update matching record
                 var updated = record
@@ -953,12 +977,21 @@ public final class BlazeDBClient: @unchecked Sendable {
         let startTime = Date()
         
         do {
+            var allowedIDs = ids
+            if shouldEnforceRLS {
+                allowedIDs = []
+                for id in ids {
+                    guard let record = try collection.fetch(id: id) else { continue }
+                    try enforceRLS(.delete, record: record)
+                    allowedIDs.append(id)
+                }
+            }
             var deletedCount = 0
             try performSafeWrite {
                 #if !BLAZEDB_LINUX_CORE
-                deletedCount = try collection.deleteBatch(ids)
+                deletedCount = try collection.deleteBatch(allowedIDs)
                 #else
-                for id in ids {
+                for id in allowedIDs {
                     if try collection.fetch(id: id) != nil {
                         try collection.delete(id: id)
                         deletedCount += 1
@@ -967,7 +1000,7 @@ public final class BlazeDBClient: @unchecked Sendable {
                 #endif
                 
                 // Log to transaction log
-                for id in ids {
+                for id in allowedIDs {
                     legacyTransactionLogNoOp("delete", payload: ["id": .uuid(id)])
                 }
             }
@@ -975,7 +1008,7 @@ public final class BlazeDBClient: @unchecked Sendable {
             BlazeLogger.info("Deleted \(deletedCount) records in optimized batch")
             
             // Notify change observers (for sync) - batch notification
-            let changes = ids.map { DatabaseChange(type: .delete($0), collectionName: name) }
+            let changes = allowedIDs.map { DatabaseChange(type: .delete($0), collectionName: name) }
             notifyBatchChanges(changes)
             
             #if !BLAZEDB_LINUX_CORE
@@ -1015,6 +1048,7 @@ public final class BlazeDBClient: @unchecked Sendable {
                 
                 // Check if record matches predicate
                 guard predicate(record) else { continue }
+                try enforceRLS(.delete, record: record)
                 
                 // Delete matching record
                 try collection.delete(id: id)
@@ -1083,6 +1117,16 @@ public final class BlazeDBClient: @unchecked Sendable {
                 return nil
             }
 
+            if let record = record, shouldEnforceRLS {
+                guard rls.isAllowed(operation: .select, record: record) else {
+                    #if !BLAZEDB_LINUX_CORE
+                    let duration = Date().timeIntervalSince(startTime) * 1000
+                    telemetry.record(operation: "fetch", duration: duration, success: true, recordCount: 0)
+                    #endif
+                    return nil
+                }
+            }
+
             #if !BLAZEDB_LINUX_CORE
             // Track telemetry
             let duration = Date().timeIntervalSince(startTime) * 1000
@@ -1122,14 +1166,17 @@ public final class BlazeDBClient: @unchecked Sendable {
                 guard let isDeleted = record.storage["isDeleted"]?.boolValue else { return true }
                 return !isDeleted
             }
+            let visibleRecords = shouldEnforceRLS
+                ? rls.filterRecords(operation: .select, records: records)
+                : records
 
             #if !BLAZEDB_LINUX_CORE
             // Track telemetry
             let duration = Date().timeIntervalSince(startTime) * 1000
-            telemetry.record(operation: "fetchAll", duration: duration, success: true, recordCount: records.count)
+            telemetry.record(operation: "fetchAll", duration: duration, success: true, recordCount: visibleRecords.count)
             #endif
 
-            return records
+            return visibleRecords
         } catch {
             #if !BLAZEDB_LINUX_CORE
             // Track telemetry for failure
@@ -1161,9 +1208,10 @@ public final class BlazeDBClient: @unchecked Sendable {
     /// - Returns: Array of records for the requested page
     public func fetchPage(offset: Int, limit: Int) throws -> [BlazeDataRecord] {
         try ensureNotClosed()
-        guard offset >= 0, limit > 0 else {
-            return []
+        if offset < 0 || limit < 0 {
+            throw BlazeDBError.invalidInput(reason: "fetchPage requires non-negative offset and limit")
         }
+        guard limit > 0 else { return [] }
 
         let sortedRecords = try fetchAll().sorted {
             let lhsID = $0.storage["id"]?.uuidValue?.uuidString ?? ""
@@ -1171,10 +1219,7 @@ public final class BlazeDBClient: @unchecked Sendable {
             return lhsID < rhsID
         }
 
-        guard offset < sortedRecords.count else {
-            return []
-        }
-
+        guard offset < sortedRecords.count else { return [] }
         return Array(sortedRecords.dropFirst(offset).prefix(limit))
     }
     
@@ -1190,7 +1235,13 @@ public final class BlazeDBClient: @unchecked Sendable {
     /// - Returns: Dictionary mapping UUID to record
     public func fetchBatch(ids: [UUID]) throws -> [UUID: BlazeDataRecord] {
         try ensureNotClosed()
-        return try collection.fetchBatch(ids: ids)
+        var out: [UUID: BlazeDataRecord] = [:]
+        for id in ids {
+            if let record = try fetch(id: id) {
+                out[id] = record
+            }
+        }
+        return out
     }
 
     /// Updates an existing record by its UUID.
@@ -1214,6 +1265,8 @@ public final class BlazeDBClient: @unchecked Sendable {
         guard let existingRecord = try collection.fetch(id: id) else {
             throw BlazeDBError.recordNotFound(id: id)
         }
+
+        try enforceRLS(.update, record: existingRecord)
         
         // Execute BEFORE UPDATE triggers
         var modifiedRecord: BlazeDataRecord? = data
@@ -1320,6 +1373,8 @@ public final class BlazeDBClient: @unchecked Sendable {
                 #endif
                 return
             }
+
+            try enforceRLS(.delete, record: existingRecord)
             
             // Execute BEFORE DELETE triggers
             var modifiedRecord: BlazeDataRecord? = existingRecord
@@ -1377,6 +1432,10 @@ public final class BlazeDBClient: @unchecked Sendable {
     /// ```
     public func softDelete(id: UUID) throws {
         try ensureNotClosed()
+        guard let existingRecord = try collection.fetch(id: id) else {
+            throw BlazeDBError.recordNotFound(id: id)
+        }
+        try enforceRLS(.delete, record: existingRecord)
         try performSafeWrite {
             guard var record = try collection.fetch(id: id) else {
                 throw BlazeDBError.recordNotFound(id: id)
@@ -1463,12 +1522,50 @@ public final class BlazeDBClient: @unchecked Sendable {
         equals primaryKey: String = "id",
         type: JoinType = .inner
     ) throws -> [JoinedRecord] {
-        return try collection.join(
-            with: other.collection,
-            on: foreignKey,
-            equals: primaryKey,
-            type: type
-        )
+        try ensureNotClosed()
+        try other.ensureNotClosed()
+
+        let leftRecords = try fetchAll()
+        let rightRecords = try other.fetchAll()
+
+        var rightIndex: [BlazeDocumentField: [BlazeDataRecord]] = [:]
+        for right in rightRecords {
+            guard let key = right.storage[primaryKey] else { continue }
+            rightIndex[key, default: []].append(right)
+        }
+
+        var joined: [JoinedRecord] = []
+        var matchedRightIDs = Set<UUID>()
+
+        for left in leftRecords {
+            guard let key = left.storage[foreignKey],
+                  let matches = rightIndex[key],
+                  !matches.isEmpty else {
+                if type == .left || type == .full {
+                    joined.append(JoinedRecord(left: left, right: nil))
+                }
+                continue
+            }
+
+            for right in matches {
+                joined.append(JoinedRecord(left: left, right: right))
+                if let rid = right.storage["id"]?.uuidValue {
+                    matchedRightIDs.insert(rid)
+                }
+            }
+        }
+
+        if type == .right || type == .full {
+            let emptyLeft = BlazeDataRecord([:])
+            for right in rightRecords {
+                if let rid = right.storage["id"]?.uuidValue, matchedRightIDs.contains(rid) {
+                    continue
+                }
+                joined.append(JoinedRecord(left: emptyLeft, right: right))
+            }
+        }
+
+        return joined
     }
     
     // MARK: - Query Builder
@@ -1488,7 +1585,13 @@ public final class BlazeDBClient: @unchecked Sendable {
     public func query() -> QueryBuilder {
         // Note: QueryBuilder operations will fail when executed if database is closed
         // We don't check here to allow query builder construction
-        return collection.query()
+        let builder: QueryBuilder = collection.query()
+        if shouldEnforceRLS {
+            _ = builder.where { [rls] record in
+                rls.isAllowed(operation: .select, record: record)
+            }
+        }
+        return builder
     }
 
     // MARK: - Sync Index Management

@@ -191,5 +191,32 @@ final class RLSPolicyEngineTests: XCTestCase {
         XCTAssertTrue(engine.isAllowed(operation: .update, context: context, record: approvedRecord))
         XCTAssertFalse(engine.isAllowed(operation: .update, context: context, record: unapprovedRecord))
     }
+
+    func testPolicyEngine_PermissiveAndRestrictiveBothMustPass() {
+        let context = SecurityContext(userID: UUID(), roles: ["member"])
+        let record = BlazeDataRecord(["allowed": .bool(false)])
+
+        engine.addPolicy(
+            SecurityPolicy(
+                name: "perm_true",
+                operation: .select,
+                type: .permissive
+            ) { _, _ in true }
+        )
+        engine.addPolicy(
+            SecurityPolicy(
+                name: "restrict_false",
+                operation: .select,
+                type: .restrictive
+            ) { _, rec in
+                rec.storage["allowed"]?.boolValue == true
+            }
+        )
+
+        XCTAssertFalse(
+            engine.isAllowed(operation: .select, context: context, record: record),
+            "When both permissive and restrictive policies exist, restrictive denies must not be bypassed."
+        )
+    }
 }
 

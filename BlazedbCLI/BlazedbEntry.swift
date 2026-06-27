@@ -70,25 +70,245 @@ private func readDatabasePasswordPrompt() throws -> String {
     try CLIPasswordReader.readLineHidden(prompt: "Database password: ")
 }
 
-private func resolvePasswordForDatabase(
-    path: String,
-    masterMode: Bool,
-    explicitPassword: String? = nil,
-    fallbackPrompt: Bool = true
-) throws -> String {
-    try CLIDatabasePasswordResolver.resolve(
-        path: path,
-        masterMode: masterMode,
-        explicitPassword: explicitPassword,
-        envPassword: ProcessInfo.processInfo.environment["BLAZEDB_PASSWORD"],
-        fallbackPrompt: fallbackPrompt,
-        readMasterPassphrase: { try readMasterPassphrase(confirm: false) },
-        readStandardPassword: { try CLIPasswordReader.readLineHidden(prompt: "Password: ") },
-        readDatabasePassword: { try readDatabasePasswordPrompt() },
-        resolveStoredSecret: { passphrase, dbPath in
-            try CLIMasterKeyringStore.resolveSecret(passphrase: passphrase, dbPath: dbPath)
+private struct MasterLookupResult {
+    let password: String?
+    let passphraseUsed: String?
+    let keyringExists: Bool
+}
+
+private struct PasswordResolutionResult {
+    let password: String
+    let source: String
+    let enrolledInMasterLock: Bool
+}
+
+private func resolveViaMasterKeyring(path: String, masterMode: Bool) throws -> MasterLookupResult {
+    let status = try CLIMasterKeyringStore.status()
+    guard status.exists else {
+        return MasterLookupResult(password: nil, passphraseUsed: nil, keyringExists: false)
+    }
+
+    let passphrase: String
+    if masterMode {
+        passphrase = try readMasterPassphrase(confirm: false)
+    } else if let envPassword = ProcessInfo.processInfo.environment["BLAZEDB_MASTER_PASSWORD"], !envPassword.isEmpty {
+        passphrase = envPassword
+    } else {
+        let maybePassphrase = try CLIPasswordReader.readLineHidden(prompt: "Master passphrase (press Enter to skip): ")
+        guard !maybePassphrase.isEmpty else {
+            return MasterLookupResult(password: nil, passphraseUsed: nil, keyringExists: true)
         }
-    )
+        passphrase = maybePassphrase
+    }
+
+    do {
+        let resolved = try CLIMasterKeyringStore.resolveSecret(passphrase: passphrase, dbPath: path)
+        return MasterLookupResult(password: resolved, passphraseUsed: passphrase, keyringExists: true)
+    } catch CLIMasterKeyringError.invalidPassphrase {
+        if masterMode {
+            let retry = try readMasterPassphrase(confirm: false)
+            let resolved = try CLIMasterKeyringStore.resolveSecret(passphrase: retry, dbPath: path)
+            return MasterLookupResult(password: resolved, passphraseUsed: retry, keyringExists: true)
+        }
+        print("⚠️ Invalid master passphrase. Falling back to database password.")
+        return MasterLookupResult(password: nil, passphraseUsed: nil, keyringExists: true)
+    } catch CLIMasterKeyringError.notInitialized {
+        return MasterLookupResult(password: nil, passphraseUsed: nil, keyringExists: false)
+    }
+}
+
+private func maybeSavePasswordToMasterLock(
+    dbPath: String,
+    dbPassword: String,
+    masterMode: Bool,
+    keyringExists: Bool,
+    lookupPassphrase: String?
+) -> Bool {
+    do {
+        let passphrase: String?
+        let hasEnvPassphrase = ProcessInfo.processInfo.environment["BLAZEDB_MASTER_PASSWORD"]?.isEmpty == false
+        // In normal picker mode, do not force users through master setup prompts.
+        // Auto-enroll only when keyring already exists or when user explicitly opts into master mode.
+        if !masterMode && !keyringExists && lookupPassphrase == nil && !hasEnvPassphrase {
+            return false
+        }
+        if let envPassphrase = ProcessInfo.processInfo.environment["BLAZEDB_MASTER_PASSWORD"], !envPassphrase.isEmpty {
+            passphrase = envPassphrase
+        } else if let lookupPassphrase, !lookupPassphrase.isEmpty {
+            passphrase = lookupPassphrase
+        } else if masterMode {
+            if keyringExists {
+                passphrase = try CLIPasswordReader.readLineHidden(prompt: "Master passphrase (save for future opens): ")
+            } else {
+                let first = try CLIPasswordReader.readLineHidden(prompt: "Create master passphrase to save this DB (or press Enter to skip): ")
+                if first.isEmpty {
+                    passphrase = nil
+                } else {
+                    let confirm = try CLIPasswordReader.readLineHidden(prompt: "Confirm master passphrase: ")
+                    if first != confirm {
+                        print("⚠️ Master passphrases did not match. Skipped auto-save to Master Lock.")
+                        return false
+                    }
+                    passphrase = first
+                }
+            }
+        } else if keyringExists {
+            let maybe = try CLIPasswordReader.readLineHidden(prompt: "Save this password to master lock? Enter master passphrase (or press Enter to skip): ")
+            passphrase = maybe.isEmpty ? nil : maybe
+        } else {
+            let first = try CLIPasswordReader.readLineHidden(prompt: "Create master passphrase to auto-save this DB (or press Enter to skip): ")
+            if first.isEmpty {
+                passphrase = nil
+            } else {
+                let confirm = try CLIPasswordReader.readLineHidden(prompt: "Confirm master passphrase: ")
+                if first != confirm {
+                    print("⚠️ Master passphrases did not match. Skipped auto-save to Master Lock.")
+                    return false
+                }
+                passphrase = first
+            }
+        }
+
+        guard let passphrase, !passphrase.isEmpty else { return false }
+
+        if !keyringExists {
+            _ = try CLIMasterKeyringStore.initialize(passphrase: passphrase)
+        }
+
+        _ = try CLIMasterKeyringStore.addEntry(
+            passphrase: passphrase,
+            dbPath: dbPath,
+            dbSecret: dbPassword,
+            scope: .persistent,
+            label: nil
+        )
+        return true
+    } catch {
+        print("⚠️ Could not save password to Master Lock: \(error.localizedDescription)")
+        return false
+    }
+}
+
+private func satisfiesPasswordPolicyShape(_ password: String) -> Bool {
+    if password.count < 12 { return false }
+    let hasUpper = password.rangeOfCharacter(from: .uppercaseLetters) != nil
+    let hasLower = password.rangeOfCharacter(from: .lowercaseLetters) != nil
+    let hasDigit = password.rangeOfCharacter(from: .decimalDigits) != nil
+    return hasUpper && hasLower && hasDigit
+}
+
+private func readValidatedPasswordOrCancel() throws -> String {
+    var prompted = try readDatabasePasswordPrompt()
+    if prompted.isEmpty {
+        throw CLIError.cancelled
+    }
+    while !satisfiesPasswordPolicyShape(prompted) {
+        print("Password format looks invalid (need 12+ chars with uppercase, lowercase, number). Press Enter to cancel.")
+        prompted = try readDatabasePasswordPrompt()
+        if prompted.isEmpty {
+            throw CLIError.cancelled
+        }
+    }
+    return prompted
+}
+
+private enum PasswordValidationResult {
+    case valid
+    case invalid
+    case locked(String)
+    case signatureMismatch
+}
+
+private func validateDatabasePassword(path: String, password: String) -> PasswordValidationResult {
+    let url = URL(fileURLWithPath: path)
+    guard FileManager.default.fileExists(atPath: url.path) else { return .invalid }
+    let previousLogLevel = BlazeLogger.level
+    BlazeLogger.level = .silent
+    defer { BlazeLogger.level = previousLogLevel }
+    do {
+        _ = try BlazeDBClient(name: "cli_password_probe", fileURL: url, password: password)
+        return .valid
+    } catch {
+        let ns = error as NSError
+        let message = error.localizedDescription
+        if ns.code == 10 || message.localizedCaseInsensitiveContains("Concurrent process access") || message.localizedCaseInsensitiveContains("held by another process") {
+            return .locked(message)
+        }
+        if ns.domain == "StorageLayout" && ns.code == 1 {
+            return .signatureMismatch
+        }
+        if message.localizedCaseInsensitiveContains("signature verification failed")
+            || message.localizedCaseInsensitiveContains("signing key mismatch")
+            || message.localizedCaseInsensitiveContains("metadata may have been tampered with") {
+            return .signatureMismatch
+        }
+        return .invalid
+    }
+}
+
+private func resolvePasswordForDatabase(path: String, masterMode: Bool, fallbackPrompt: Bool = true) throws -> PasswordResolutionResult {
+    if let envPassword = ProcessInfo.processInfo.environment["BLAZEDB_PASSWORD"], !envPassword.isEmpty {
+        return PasswordResolutionResult(password: envPassword, source: "BLAZEDB_PASSWORD", enrolledInMasterLock: false)
+    }
+
+    let masterLookup = try resolveViaMasterKeyring(path: path, masterMode: masterMode)
+    if let fromMaster = masterLookup.password {
+        return PasswordResolutionResult(password: fromMaster, source: "Master Lock", enrolledInMasterLock: false)
+    }
+
+    let discoveredCandidates = CLIProjectPasswordResolver.resolveCandidates(dbPath: path)
+    var uniquePasswordsTried = Set<String>()
+    let maxPasswordProbeAttempts = 8
+    let maxSignatureMismatchAttempts = 3
+    var sawSignatureMismatch = false
+    var signatureMismatchCount = 0
+    for discovered in discoveredCandidates {
+        if !uniquePasswordsTried.insert(discovered.password).inserted {
+            continue
+        }
+        if uniquePasswordsTried.count > maxPasswordProbeAttempts {
+            break
+        }
+        switch validateDatabasePassword(path: path, password: discovered.password) {
+        case .valid:
+            let enrolled = maybeSavePasswordToMasterLock(
+                dbPath: path,
+                dbPassword: discovered.password,
+                masterMode: masterMode,
+                keyringExists: masterLookup.keyringExists,
+                lookupPassphrase: masterLookup.passphraseUsed
+            )
+            return PasswordResolutionResult(password: discovered.password, source: discovered.source, enrolledInMasterLock: enrolled)
+        case .invalid:
+            continue
+        case .signatureMismatch:
+            sawSignatureMismatch = true
+            signatureMismatchCount += 1
+            if signatureMismatchCount >= maxSignatureMismatchAttempts {
+                break
+            }
+            continue
+        case .locked(let reason):
+            throw NSError(domain: "blazedb.locked", code: 10, userInfo: [NSLocalizedDescriptionKey: reason])
+        }
+    }
+
+    if fallbackPrompt {
+        if sawSignatureMismatch {
+            print("⚠️ Found candidate credentials, but metadata signature verification failed for this database. Using wrong password can trigger this; enter the correct DB password to continue.")
+        }
+        print("No saved or project-resolved password found. Enter DB password:")
+        let prompted = try readValidatedPasswordOrCancel()
+        let enrolled = maybeSavePasswordToMasterLock(
+            dbPath: path,
+            dbPassword: prompted,
+            masterMode: masterMode,
+            keyringExists: masterLookup.keyringExists,
+            lookupPassphrase: masterLookup.passphraseUsed
+        )
+        return PasswordResolutionResult(password: prompted, source: "manual entry", enrolledInMasterLock: enrolled)
+    }
+    throw NSError(domain: "blazedb.master", code: 2, userInfo: [NSLocalizedDescriptionKey: "No stored secret for this database"])
 }
 
 private func runPickerThenRepl(startHomeScan: Bool, showStartupSplash: Bool = false, masterMode: Bool) {
@@ -96,15 +316,43 @@ private func runPickerThenRepl(startHomeScan: Bool, showStartupSplash: Bool = fa
     do {
         let registryURL = try CLIPaths.registryURL()
         var registry = try CLIRegistry.load(from: registryURL)
+        var preResolved: PasswordResolutionResult?
         let picked = try BlazedbPicker.pickDatabase(
             registry: &registry,
             registryURL: registryURL,
             startHomeScanImmediately: startHomeScan,
-            showStartupSplash: showStartupSplash
+            showStartupSplash: showStartupSplash,
+            onOpenSelected: { selectedURL in
+                do {
+                    let resolved = try resolvePasswordForDatabase(
+                        path: selectedURL.path,
+                        masterMode: masterMode,
+                        fallbackPrompt: false
+                    )
+                    preResolved = resolved
+                    return true
+                } catch {
+                    let ns = error as NSError
+                    // No stored/project credential: open and fall back to prompt outside picker.
+                    if ns.domain == "blazedb.master" && ns.code == 2 {
+                        return true
+                    }
+                    // Locked/concurrency and other hard failures should bubble immediately.
+                    throw error
+                }
+            }
         )
         guard let url = picked else { exit(0) }
-        let shellPassword = try resolvePasswordForDatabase(path: url.path, masterMode: masterMode, fallbackPrompt: true)
-        try BlazedbRepl.runShell(dbPath: url.path, password: shellPassword, registryURL: registryURL)
+        let resolved = if let preResolved {
+            preResolved
+        } else {
+            try resolvePasswordForDatabase(path: url.path, masterMode: masterMode, fallbackPrompt: true)
+        }
+        let message = resolved.enrolledInMasterLock && resolved.source != "Master Lock"
+            ? "✓ Opened \(url.lastPathComponent) · password source: \(resolved.source) · enrolled in Master Lock"
+            : "✓ Opened \(url.lastPathComponent) · password source: \(resolved.source)"
+        print(message)
+        try BlazedbRepl.runShell(dbPath: url.path, password: resolved.password, registryURL: registryURL)
     } catch {
         print("💥 \(error)")
         exit(1)
@@ -172,6 +420,161 @@ private func parseMasterTargetPath(args: [String]) -> String? {
         return token
     }
     return nil
+}
+
+private enum CLIRLSError: LocalizedError {
+    case missingDBPath
+    case missingPreset
+    case invalidPreset(String)
+    case missingPassword
+
+    var errorDescription: String? {
+        switch self {
+        case .missingDBPath:
+            return "Missing required --db <path> argument."
+        case .missingPreset:
+            return "Missing required --preset admin-owner|admin-team|viewer-readonly argument."
+        case .invalidPreset(let value):
+            return "Invalid preset '\(value)'. Expected admin-owner, admin-team, or viewer-readonly."
+        case .missingPassword:
+            return "Missing database password. Provide --password <value> or set BLAZEDB_PASSWORD."
+        }
+    }
+}
+
+private func parseFlagValue(_ args: [String], flag: String) -> String? {
+    guard let idx = args.firstIndex(of: flag), idx + 1 < args.count else { return nil }
+    return args[idx + 1]
+}
+
+private func parseRequiredDBPath(_ args: [String]) throws -> String {
+    guard let value = parseFlagValue(args, flag: "--db"), !value.isEmpty else {
+        throw CLIRLSError.missingDBPath
+    }
+    return value
+}
+
+private func parseDBPassword(_ args: [String]) throws -> String {
+    if let value = parseFlagValue(args, flag: "--password"), !value.isEmpty {
+        return value
+    }
+    if let envValue = ProcessInfo.processInfo.environment["BLAZEDB_PASSWORD"], !envValue.isEmpty {
+        return envValue
+    }
+    throw CLIRLSError.missingPassword
+}
+
+private func openRLSClient(args: [String]) throws -> (dbPath: String, client: BlazeDBClient, config: CLIRLSConfig) {
+    let dbPath = try parseRequiredDBPath(args)
+    let password = try parseDBPassword(args)
+    let dbURL = URL(fileURLWithPath: dbPath)
+    let config = try CLIRLSConfigStore.load(forDBPath: dbPath)
+    let client = try BlazeDBClient(name: "blazedb_rls_cli", fileURL: dbURL, password: password)
+    CLIRLSConfigStore.apply(config, to: client)
+    return (dbPath, client, config)
+}
+
+private func printRLSStatus(client: BlazeDBClient) {
+    let names = client.listRLSPolicyNames().sorted()
+    print("RLS: \(client.isRLSEnabled ? "enabled" : "disabled")")
+    print("Policies: \(names.count)")
+    if names.isEmpty {
+        print("Policy names: (none)")
+    } else {
+        print("Policy names: \(names.joined(separator: ", "))")
+    }
+    print("Runtime context set: \(client.hasRLSContext ? "yes" : "no") (process-local only)")
+}
+
+private func handleRLSPolicyCommand(_ args: [String]) throws {
+    let policySub = args.first ?? "list"
+    let globalArgs = Array(args.dropFirst())
+    switch policySub {
+    case "list":
+        let (_, client, _) = try openRLSClient(args: globalArgs)
+        let names = client.listRLSPolicyNames().sorted()
+        if names.isEmpty {
+            print("No RLS policies configured.")
+        } else {
+            for name in names {
+                print(name)
+            }
+        }
+    case "clear":
+        let (dbPath, client, loadedConfig) = try openRLSClient(args: globalArgs)
+        var config = loadedConfig
+        config.policies = []
+        client.clearRLSPolicies()
+        try CLIRLSConfigStore.save(config, forDBPath: dbPath)
+        print("✅ RLS policies cleared.")
+    case "add":
+        let (dbPath, client, loadedConfig) = try openRLSClient(args: globalArgs)
+        var config = loadedConfig
+        guard let preset = parseFlagValue(globalArgs, flag: "--preset"), !preset.isEmpty else {
+            throw CLIRLSError.missingPreset
+        }
+        let allowed = Set(["admin-owner", "admin-team", "viewer-readonly"])
+        guard allowed.contains(preset) else {
+            throw CLIRLSError.invalidPreset(preset)
+        }
+        let ownerField = parseFlagValue(globalArgs, flag: "--owner-field")
+        let teamField = parseFlagValue(globalArgs, flag: "--team-field")
+        let spec = CLIRLSPolicySpec(preset: preset, ownerField: ownerField, teamField: teamField)
+        if !config.policies.contains(spec) {
+            config.policies.append(spec)
+        }
+        CLIRLSConfigStore.apply(config, to: client)
+        try CLIRLSConfigStore.save(config, forDBPath: dbPath)
+        print("✅ Added RLS preset '\(preset)'.")
+    default:
+        throw NSError(domain: "blazedb.rls", code: 1, userInfo: [
+            NSLocalizedDescriptionKey: "Unknown rls policy subcommand: \(policySub)"
+        ])
+    }
+}
+
+private func handleRLSCommand(_ args: [String]) {
+    let sub = args.first ?? "status"
+    let subArgs = Array(args.dropFirst())
+    do {
+        switch sub {
+        case "status":
+            let (_, client, _) = try openRLSClient(args: subArgs)
+            printRLSStatus(client: client)
+        case "enable":
+            let (dbPath, client, loadedConfig) = try openRLSClient(args: subArgs)
+            var config = loadedConfig
+            config.enabled = true
+            client.enableRLS()
+            try CLIRLSConfigStore.save(config, forDBPath: dbPath)
+            print("✅ RLS enabled.")
+        case "disable":
+            let (dbPath, client, loadedConfig) = try openRLSClient(args: subArgs)
+            var config = loadedConfig
+            config.enabled = false
+            client.disableRLS()
+            try CLIRLSConfigStore.save(config, forDBPath: dbPath)
+            print("✅ RLS disabled.")
+        case "policy":
+            try handleRLSPolicyCommand(subArgs)
+        case "help", "--help", "-h":
+            print("Usage:")
+            print("  blazedb rls status --db <path> [--password <value>]")
+            print("  blazedb rls enable --db <path> [--password <value>]")
+            print("  blazedb rls disable --db <path> [--password <value>]")
+            print("  blazedb rls policy list --db <path> [--password <value>]")
+            print("  blazedb rls policy clear --db <path> [--password <value>]")
+            print("  blazedb rls policy add --db <path> --preset admin-owner|admin-team|viewer-readonly [--owner-field <field>] [--team-field <field>] [--password <value>]")
+            print("Note: Runtime security context is process-local and is not persisted.")
+        default:
+            throw NSError(domain: "blazedb.rls", code: 1, userInfo: [
+                NSLocalizedDescriptionKey: "Unknown rls subcommand: \(sub)"
+            ])
+        }
+    } catch {
+        print("💥 \(error.localizedDescription)")
+        exit(1)
+    }
 }
 
 private func handleMasterCommand(_ args: [String]) {
@@ -333,6 +736,11 @@ enum BlazedbEntry {
             return
         }
 
+        if argv.first == "rls" {
+            handleRLSCommand(Array(argv.dropFirst()))
+            return
+        }
+
         if argv.contains("--manager") {
             BlazedbRepl.runManager()
             return
@@ -372,22 +780,35 @@ enum BlazedbEntry {
             exit(1)
         }
 
-        let explicitPassword = filtered.count >= 2 ? filtered[1] : nil
         let shellPassword: String
-        do {
-            shellPassword = try resolvePasswordForDatabase(
-                path: dbPath,
-                masterMode: masterMode,
-                explicitPassword: explicitPassword,
-                fallbackPrompt: true
-            )
-        } catch {
-            print("Error: password required. Set BLAZEDB_PASSWORD env var, use --master, or pass as second argument.")
-            exit(1)
+        var passwordSource = "explicit argument"
+        var enrolledInMasterLock = false
+        if filtered.count >= 2 {
+            shellPassword = filtered[1]
+        } else {
+            do {
+                let resolved = try resolvePasswordForDatabase(path: dbPath, masterMode: masterMode, fallbackPrompt: true)
+                shellPassword = resolved.password
+                passwordSource = resolved.source
+                enrolledInMasterLock = resolved.enrolledInMasterLock
+            } catch {
+                let ns = error as NSError
+                if ns.code == 10 || error.localizedDescription.localizedCaseInsensitiveContains("Concurrent process access") {
+                    print("Error: \(error.localizedDescription)")
+                } else {
+                    print("Error: password required. Set BLAZEDB_PASSWORD env var, use --master, or pass as second argument.")
+                }
+                exit(1)
+            }
         }
 
         do {
             let registryURL = try CLIPaths.registryURL()
+            let name = URL(fileURLWithPath: dbPath).lastPathComponent
+            let message = enrolledInMasterLock && passwordSource != "Master Lock"
+                ? "✓ Opened \(name) · password source: \(passwordSource) · enrolled in Master Lock"
+                : "✓ Opened \(name) · password source: \(passwordSource)"
+            print(message)
             try BlazedbRepl.runShell(dbPath: dbPath, password: shellPassword, registryURL: registryURL)
         } catch {
             print("💥 Error: \(error)")

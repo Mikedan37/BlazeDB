@@ -86,7 +86,8 @@ public enum BlazedbPicker {
         registry: inout CLIRegistry,
         registryURL: URL,
         startHomeScanImmediately: Bool,
-        showStartupSplash: Bool = true
+        showStartupSplash: Bool = true,
+        onOpenSelected: ((URL) throws -> Bool)? = nil
     ) throws -> URL? {
         _ = registryURL
         let state = ScanState()
@@ -95,6 +96,7 @@ public enum BlazedbPicker {
         var selection = 0
         var filterDraft = ""
         var isFilterMode = false
+        var transientStatus: String?
         var lastRedraw = Date.distantPast
         var lastWidth = CLITerminalDraw.layoutColumns()
         var lastRows = CLITerminalDraw.layoutRows()
@@ -104,6 +106,9 @@ public enum BlazedbPicker {
         defer { CLITerminalDraw.leaveAlternateScreen() }
 
         func scanStatusLine(totalVisible: Int) -> String? {
+            if let transientStatus, !transientStatus.isEmpty {
+                return transientStatus
+            }
             if scanStartRequested && state.isScanActive() {
                 return "Scanning… (\(state.scanHitCount) new paths; \(totalVisible) shown after filters)"
             }
@@ -345,6 +350,17 @@ public enum BlazedbPicker {
                 guard !snap.selectableIndices.isEmpty else { continue }
                 let lineIdx = snap.selectableIndices[selection]
                 if case .row(let row) = snap.lines[lineIdx] {
+                    if let onOpenSelected {
+                        transientStatus = "\(CLIBranding.spinnerFrames[0]) Resolving password for \(row.url.lastPathComponent)…"
+                        try redraw(force: true)
+                        let shouldOpen = try onOpenSelected(row.url)
+                        if shouldOpen {
+                            return row.url
+                        }
+                        transientStatus = nil
+                        state.markDirty()
+                        continue
+                    }
                     return row.url
                 }
             }
@@ -359,7 +375,8 @@ public enum BlazedbPicker {
         registry: inout CLIRegistry,
         registryURL: URL,
         startHomeScanImmediately: Bool,
-        showStartupSplash: Bool = true
+        showStartupSplash: Bool = true,
+        onOpenSelected: ((URL) throws -> Bool)? = nil
     ) throws -> URL? {
         throw CLIError.terminal("Interactive picker requires macOS or Linux")
     }
