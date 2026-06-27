@@ -473,6 +473,77 @@ final class CriticalBlockerTests: XCTestCase {
         print("   ✅ VACUUM recovery restores from backup!")
     }
     
+    /// Regression: VACUUM backup restore must run before PageStore opens files.
+    ///
+    /// If recovery is deferred until after PageStore init, metadata can still list records while
+    /// encrypted pages are unreadable through a stale handle. Public `count()` reads real records
+    /// (via `fetchAll()`), so the mismatch surfaces as 0 readable rows — see
+    /// `testBlocker3_VACUUMRecovery_RestoresReadableRecordsBeforePageStoreOpen`.
+    func testBlocker3_VACUUMRecovery_RestoresReadableRecordsBeforePageStoreOpen() throws {
+        print("\n🔴 BLOCKER #3: VACUUM recovery ordering (pre-PageStore invariant)")
+        
+        for i in 0..<50 {
+            _ = try requireFixture(db).insert(BlazeDataRecord([
+                "i": .int(i),
+                "marker": .string("vacuum-ordering-regression"),
+            ]))
+        }
+        try requireFixture(db).persist()
+        
+        let baseURL = try XCTUnwrap(tempURL)
+        let metaURL = baseURL.deletingPathExtension().appendingPathExtension("meta")
+        let backupDataURL = baseURL
+            .deletingPathExtension()
+            .appendingPathExtension("vacuum_backup.blazedb")
+        let backupMetaURL = baseURL
+            .deletingPathExtension()
+            .appendingPathExtension("vacuum_backup.meta")
+        
+        try FileManager.default.copyItem(at: baseURL, to: backupDataURL)
+        try FileManager.default.copyItem(at: metaURL, to: backupMetaURL)
+        
+        let vacuumLogURL = baseURL
+            .deletingPathExtension()
+            .appendingPathExtension("vacuum_in_progress")
+        try Data().write(to: vacuumLogURL, options: .atomic)
+        
+        // Corrupt only the primary data file; metadata stays intact to expose stale-handle bugs.
+        try Data(repeating: 0xFF, count: 1000).write(to: baseURL)
+        
+        db = nil
+        Thread.sleep(forTimeInterval: 0.1)
+        BlazeDBClient.clearCachedKey()
+        
+        let reopened = try BlazeDBClient(
+            name: "blocker_test",
+            fileURL: baseURL,
+            password: "SecureTestDB-456!"
+        )
+        db = reopened
+        
+        let readable = try reopened.fetchAll()
+        let indexCount = reopened.collection.count()
+        
+        XCTAssertEqual(
+            readable.count,
+            50,
+            "Recovery must restore readable records, not just metadata index entries"
+        )
+        XCTAssertEqual(
+            indexCount,
+            readable.count,
+            "Index count must match readable records; mismatch means recovery ran after PageStore opened corrupt data"
+        )
+        XCTAssertTrue(
+            readable.allSatisfy { $0.storage["marker"]?.stringValue == "vacuum-ordering-regression" },
+            "Recovered records must contain payload from backup pages, not stale in-memory state"
+        )
+        let recoveredIndices = Set(readable.compactMap { $0.storage["i"]?.intValue })
+        XCTAssertEqual(recoveredIndices, Set(0..<50))
+        
+        print("   ✅ VACUUM recovery restores readable data before PageStore use!")
+    }
+    
     /// BLOCKER #3: Atomic file replacement
     func testBlocker3_VACUUMAtomicReplacement() throws {
         print("\n🔴 BLOCKER #3: Testing VACUUM Atomic File Replacement")

@@ -79,6 +79,16 @@ jobs:
           set -euo pipefail
           swift test --skip-build --filter BlazeDB_CLITests 2>&1 | tee .logs/cli.log
 
+      - name: Verify README quickstart
+        run: |
+          set -euo pipefail
+          ./Scripts/verify-readme-quickstart.sh 2>&1 | tee .logs/verify-readme-quickstart.log
+
+      - name: Verify README samples
+        run: |
+          set -euo pipefail
+          ./Scripts/verify-readme-samples.sh 2>&1 | tee .logs/verify-readme-samples.log
+
       - name: Dump diagnostics on failure
         if: failure()
         run: |

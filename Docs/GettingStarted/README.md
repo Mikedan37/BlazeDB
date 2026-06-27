@@ -19,7 +19,7 @@ Add to your `Package.swift`:
 
 ```swift
 dependencies: [
- .package(url: "https://github.com/Mikedan37/BlazeDB.git", from: "2.7.4")
+ .package(url: "https://github.com/Mikedan37/BlazeDB.git", from: "2.7.5")
 ],
 targets: [
  .target(name: "YourApp", dependencies: ["BlazeDB"])
@@ -55,7 +55,7 @@ struct Bug: BlazeStorable {
     var status: String
 }
 
-let db = try BlazeDB.open(name: "myapp", password: "My-Secure-Password-2026!")
+let db = try BlazeDB.open(name: "myapp", password: "DemoPass123!")
 let bug = Bug(title: "Crash", status: "open")
 try db.put(bug)
 let loaded: Bug? = try db.get("bug:\(bug.id.uuidString)")

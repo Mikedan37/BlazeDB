@@ -123,6 +123,11 @@ var blazeTargets: [Target] = [
             path: "Examples/HelloBlazeDB"
         ),
         .executableTarget(
+            name: "ReadmeSamples",
+            dependencies: ["BlazeDB"],
+            path: "Examples/ReadmeSamples"
+        ),
+        .executableTarget(
             name: "ReferenceConsumer",
             dependencies: ["BlazeDB"],
             path: "Examples/ReferenceConsumer",

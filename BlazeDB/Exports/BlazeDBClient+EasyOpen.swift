@@ -199,12 +199,12 @@ extension BlazeDBClient {
     /// ## Example
     /// ```swift
     /// // Test
-    /// let db = try BlazeDB.openForTesting(name: "testdb", password: "test-password")
+    /// let db = try BlazeDB.openForTesting(name: "testdb", password: "DemoPass123!")
     /// defer { try? FileManager.default.removeItem(at: db.fileURL) }
     /// ```
     public static func openForTesting(
         name: String? = nil,
-        password: String = "test-password"
+        password: String = "DemoPass123!"
     ) throws -> BlazeDBClient {
         // Use temporary directory for tests
         let tempDir = FileManager.default.temporaryDirectory

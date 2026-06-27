@@ -405,6 +405,9 @@ public final class BlazeDBClient: @unchecked Sendable {
             )
         }
 
+        // Restore VACUUM backups before PageStore opens files (avoids stale handles).
+        try Self.recoverFromVacuumCrashIfNeeded(fileURL: fileURL, metaURL: self.metaURL)
+
         // 🔑 Derive key from the supplied password. A cached path key is only reused
         // after it is proven to match this password-derived key.
         // Use a path-independent password key so backups/restores remain portable
