@@ -30,6 +30,29 @@ Forks, billing limits, and hosted CI availability can prevent Actions from runni
 
 ---
 
+## Android cross-compilation (contributors)
+
+BlazeDBCore can be cross-compiled for Android from a Linux or macOS host. This is **not** the same as shipping a Kotlin or KMM SDK.
+
+**Requirements:**
+
+- **OSS Swift 6.3.2+** — do **not** use Xcode’s `swift` on macOS
+- Swift SDK for Android (`swift sdk install …`) matching the host Swift version
+- Android NDK r27d+
+
+**Run the same check as CI:**
+
+```bash
+./Scripts/install-android-swift.sh   # Linux CI / ubuntu22.04 hosts only
+./Scripts/ci-android-cross-compile.sh
+```
+
+If you see `compiled module was created by an older version of the compiler` for `Foundation.swiftmodule`, you are almost certainly on Apple Swift. Switch to OSS Swift and retry.
+
+**Status and roadmap:** [Docs/android-status.md](Docs/android-status.md)
+
+---
+
 ## CI at a glance
 
 The PR workflow is [`.github/workflows/ci.yml`](.github/workflows/ci.yml). Scheduled and weekly workflows add coverage on top; they are documented in [CI and test tiers](Docs/Testing/CI_AND_TEST_TIERS.md). The macOS PR gate runs Tier0, Tier1, **`verify-readme-quickstart.sh` (L1)**, and **`verify-readme-samples.sh` (L3)**. **`verify-clean-checkout.sh`** runs in nightly only. **`v*`** tag buildability uses the manual [tag-probe workflow](.github/workflows/tag-probe.yml).

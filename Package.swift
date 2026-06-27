@@ -128,6 +128,24 @@ var blazeTargets: [Target] = [
             path: "Examples/ReadmeSamples"
         ),
         .executableTarget(
+            name: "CorePathSmoke",
+            dependencies: ["BlazeDBCore"],
+            path: "Examples/CorePathSmoke",
+            exclude: ["README.md"],
+            swiftSettings: [
+                .define("BLAZEDB_LINUX_CORE")
+            ]
+        ),
+        .executableTarget(
+            name: "MVVMPattern",
+            dependencies: ["BlazeDBCore"],
+            path: "Examples/MVVMPattern",
+            exclude: ["README.md"],
+            swiftSettings: [
+                .define("BLAZEDB_LINUX_CORE")
+            ]
+        ),
+        .executableTarget(
             name: "ReferenceConsumer",
             dependencies: ["BlazeDB"],
             path: "Examples/ReferenceConsumer",

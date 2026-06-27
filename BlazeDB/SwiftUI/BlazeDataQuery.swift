@@ -130,16 +130,7 @@ public struct BlazeDataQuery: DynamicProperty {
 
 // MARK: - Query Comparison Types
 
-/// Comparison operators for ``BlazeDataQuery`` / ``BlazeQuery`` filters (facade-level; query semantics are unchanged).
-public enum BlazeQueryComparison {
-    case equals
-    case notEquals
-    case greaterThan
-    case lessThan
-    case greaterThanOrEqual
-    case lessThanOrEqual
-    case contains // For strings
-}
+// ``BlazeQueryComparison`` lives in Core/BlazeQueryComparison.swift (shared with ``BlazeLiveQuery``).
 
 @MainActor
 fileprivate protocol BlazeQueryObserverRefreshable: AnyObject {
