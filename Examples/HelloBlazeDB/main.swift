@@ -10,8 +10,16 @@ struct Bug: BlazeStorable {
 print("=== Hello BlazeDB ===\n")
 
 do {
+    // Use an isolated temp file so each run starts fresh (deterministic counts).
+    let demoDir = FileManager.default.temporaryDirectory
+        .appendingPathComponent("HelloBlazeDB-\(UUID().uuidString)", isDirectory: true)
+    try FileManager.default.createDirectory(at: demoDir, withIntermediateDirectories: true)
+    defer { try? FileManager.default.removeItem(at: demoDir) }
+
+    let dbURL = demoDir.appendingPathComponent("demo.blazedb")
+
     // 1) Open a database
-    let db = try BlazeDB.open(name: "HelloBlazeDB", password: "DemoPass123!")
+    let db = try BlazeDB.open(at: dbURL, password: "DemoPass123!")
     print("Opened database")
 
     // 2) Put documents
@@ -30,6 +38,11 @@ do {
         .where("status", equals: "open")
         .all()
     print("Open bugs: \(openBugs.count)")
+
+    guard openBugs.count == 2 else {
+        print("Error: expected 2 open bugs on a fresh database, got \(openBugs.count)")
+        exit(1)
+    }
 
     print("\nSuccess")
     print("Next: Docs/GettingStarted/README.md")

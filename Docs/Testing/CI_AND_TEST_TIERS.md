@@ -67,7 +67,8 @@ In short: the nightly workflow optimizes for coverage visibility and time-to-sig
 - `actions/cache` on `.build` (keyed by `runner.os`, `Package.swift`, `Package.resolved`)
 - `swift build --target BlazeDBCore`, CLI targets (`BlazeDoctor`, `BlazeDump`, `BlazeInfo`)
 - `BLAZEDB_TEST_SCOPE=tier0 swift test --filter BlazeDB_Tier0`, then `swift test --skip-build --filter BlazeDB_Tier1` (macOS PR). **Nightly** adds **Linux** canonical Tier1 plus Tier2 **core** — see `nightly.yml`.
-- `verify-clean-checkout.sh` and `verify-readme-quickstart.sh` are **not** part of the blocking PR lane (they remain in-repo and move to deeper lanes)
+- `./Scripts/verify-readme-quickstart.sh` and `./Scripts/verify-readme-samples.sh` (README `HelloBlazeDB` + all documented Swift samples via `ReadmeSamples`)
+- `verify-clean-checkout.sh` runs in nightly only. **`verify-readme-quickstart.sh`** and **`verify-readme-samples.sh`** run in the **PR gate** (macOS) and nightly README verification jobs.
 - **Secondary (blocking):** `Linux (Swift 6.2) — core + Tier 0`
 - Runner: `ubuntu-22.04`
 - `actions/cache` on `.build` (same key shape), then `swift build` + CLI targets + `swift test --filter BlazeDB_Tier0`
@@ -81,7 +82,7 @@ In short: the nightly workflow optimizes for coverage visibility and time-to-sig
 - Runs medium-confidence coverage in **separate rerunnable jobs** (Linux Tier1 and Tier2 core are sibling jobs, not a promotion pipeline):
   - `macOS 15 — Tier2 (strict)`: `BlazeDB_Tier2` + `BlazeDB_Tier2_Extended` via `./Scripts/run-tier2.sh --strict`
   - `macOS 15 — clean checkout verification`: `./Scripts/verify-clean-checkout.sh`
-  - `macOS 15 — README quickstart verification`: `./Scripts/verify-readme-quickstart.sh`
+  - `macOS 15 — README quickstart verification`: `./Scripts/verify-readme-quickstart.sh` and `./Scripts/verify-readme-samples.sh`
   - `macOS 15 — Tier0 (ThreadSanitizer)`: `swift test --sanitize thread --filter BlazeDB_Tier0`
   - `Linux (Swift 6.2) — Tier1`: canonical `BlazeDB_Tier1` via filter `'BlazeDB_Tier1\.'` (`linux-tier1`)
   - `Linux (Swift 6.2) — Tier2 (core)`: `BlazeDB_Tier2` via `'BlazeDB_Tier2\.'` only (`linux-tier2-core`). Linux Tier2 extended and Tier3 heavy/perf are **not** nightly; they run in weekly **`deep-validation.yml`** (`deep-linux-tier2-extended-tier3`).

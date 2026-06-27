@@ -79,6 +79,31 @@ The `"bug"` in `query("bug")` is a **label for which kind of record** (bugs vs n
 
 Id strings look like `"bug:<uuid>"`: `bug` = kind, uuid = which one.
 
+### Which API should I use?
+
+BlazeDB exposes a few overlapping entry points on purpose. Pick the row that matches what you are doing:
+
+**Save or update**
+
+| If you want to… | Use |
+|-----------------|-----|
+| Save or update a model by its `id` (default app path) | `put(_:)` |
+| Insert a new typed record | `insert(_:)` |
+| Replace-or-create a typed record by `id` | `upsert(_:)` |
+
+**Read one record**
+
+| If you want to… | Use |
+|-----------------|-----|
+| Load by `"kind:<uuid>"` string key | `get(_:)` — default facade |
+| Load by `UUID` with a Swift model type | `fetch(_:id:)` — typed API |
+
+**Query lists**
+
+Use **namespace queries** (`query("bug")`) when filtering by record kind labels. The label matches your **`BlazeStorable` struct name lowercased** (`struct Bug` → `"bug"`). Use **typed queries** (`query(Bug.self)`) when working with Swift models and KeyPath filters.
+
+All samples below use the same demo password: **`DemoPass123!`** (meets the recommended open-time password policy).
+
 ---
 
 ## Try BlazeDB from this repo
@@ -239,9 +264,9 @@ try db.put(ListItem(listID: groceries.id, name: "Eggs"))
 // Load all lists
 let lists: [List] = try db.query("list").all()
 
-// Load only the items whose listID matches the Groceries list id
-let groceryItems: [ListItem] = try db.query("listitem")
-    .where("listID", equals: groceries.id)
+// Load only the items whose listID matches the Groceries list id (typed KeyPath query)
+let groceryItems: [ListItem] = try db.query(ListItem.self)
+    .where(\.listID, equals: groceries.id)
     .all()
 ```
 
@@ -276,7 +301,7 @@ BlazeDB stores all records in one encrypted document collection per database fil
 
 ### Encryption
 
-The production runtime is always encrypted at rest. Every data page is sealed with AES-256-GCM. A password is required to open any database (minimum 8 characters). Metadata is HMAC-SHA256 signed for tamper detection. A benchmark-only flag (`BLAZEDB_BENCHMARK_NO_ENCRYPTION`) exists for performance isolation testing but must not be used with real data.
+The production runtime is always encrypted at rest. Every data page is sealed with AES-256-GCM. Opening a database requires a password that satisfies the recommended policy (12+ characters with uppercase, lowercase, and a number, plus **Good** estimated strength or better). Metadata is HMAC-SHA256 signed for tamper detection. A benchmark-only flag (`BLAZEDB_BENCHMARK_NO_ENCRYPTION`) exists for performance isolation testing but must not be used with real data.
 
 ---
 
@@ -293,6 +318,12 @@ Use this as your default app path. The full end-to-end example is [in the first 
 If you need more control than the default API, you can call typed methods directly on `BlazeDBClient`:
 
 ```swift
+struct User: BlazeStorable {
+    var id: UUID = UUID()
+    var name: String
+    var age: Int
+}
+
 try db.insert(user)                              // Insert one
 try db.insertMany([user1, user2])                // Insert batch
 let user = try db.fetch(User.self, id: userId)   // Fetch by UUID
@@ -341,13 +372,13 @@ let results = try db.query()
 
 ```swift
 // By name (recommended for most apps)
-let db = try BlazeDB.open(name: "myapp", password: "secure-password-123")
+let db = try BlazeDB.open(name: "myapp", password: "DemoPass123!")
 
 // At a specific file URL (when your app controls the path)
-let db = try BlazeDB.open(at: fileURL, password: "secure-password-123")
+let db = try BlazeDB.open(at: fileURL, password: "DemoPass123!")
 
-// Advanced/testing utility
-let db = try BlazeDBClient.openForTesting()
+// Advanced/testing utility (isolated temp file; pass the same demo password)
+let db = try BlazeDBClient.openForTesting(password: "DemoPass123!")
 ```
 
 Default storage locations: **Application Support/BlazeDB/** on Apple platforms (macOS expands to `~/Library/Application Support/BlazeDB/`; iOS uses the app sandbox), and `~/.local/share/blazedb/` on Linux. Details: [DEFAULT_STORAGE_PATHS.md](Docs/GettingStarted/DEFAULT_STORAGE_PATHS.md).
@@ -377,6 +408,7 @@ struct ListView: View {
 ### Transactions
 
 ```swift
+let users = db.typed(User.self)
 try db.beginTransaction()
 try users.insert(user1)
 try users.insert(user2)
@@ -425,7 +457,7 @@ See [Compatibility Matrix](Docs/COMPATIBILITY.md) for details.
 - **Release validation** (tagged releases): macOS runs Tier0–Tier2 (+ extended companion targets as defined in the release workflow), not the same cadence as the PR gate.
 - **Nightly Confidence (daily)** runs macOS Tier2 strict, clean checkout, README quickstart, Tier0 TSan, and Linux Tier1/Tier2 core lanes (see `Docs/Testing/CI_AND_TEST_TIERS.md`).
 - **Deep Validation (weekly)** is **delta-only**: surfaces not already run by the PR gate and nightly (macOS Tier3 heavy + destructive, Tier1 TSan; Linux Tier2 extended + Tier3 heavy/perf). See `Docs/Testing/CI_AND_TEST_TIERS.md`.
-- Additional nightly checks verify clean checkout and README quickstart scripts.
+- Additional nightly checks verify clean checkout, README quickstart (`HelloBlazeDB`), and README sample compilation/runtime (`ReadmeSamples`).
 - Entry docs for test/CI structure: `Docs/Testing/CI_AND_TEST_TIERS.md` and `Docs/Testing/README.md`.
 
 ---
@@ -450,7 +482,7 @@ Run with `swift run <ToolName>` (for the published CLI database tool, use `swift
 
 - **Single-process only.** Do not share database files between multiple processes. File-level locking prevents concurrent access, but the database is designed for single-process use.
 - **Nested Codable types are not individually queryable.** Nested structs/classes are stored as `BlazeDocumentField.dictionary` values. Round-tripping works, but nested fields cannot be filtered via KeyPath queries. Flatten nested fields into top-level properties if you need to query them.
-- **Password minimum 8 characters.** Enforced at open time.
+- **Password policy at open time.** Production open uses the recommended policy: at least 12 characters with uppercase, lowercase, and a number, plus estimated strength **Good** or better (see `PasswordStrengthValidator.recommended`). Weaker passwords are rejected before the database opens.
 - **`@BlazeQuery` / `@BlazeQueryTyped` require `BlazeDocument`.** For `BlazeStorable`-only models, use **`@BlazeStorableQuery`** instead, or add `BlazeDocument` (manual `toStorage()`/`init(from:)`), or use `@BlazeDataQuery` for raw rows.
 - **Android CI is best-effort.** Cross-compilation expects Swift 6.3+ with the Swift Android SDK + Android NDK in a manual lane.
 
