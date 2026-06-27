@@ -730,12 +730,15 @@ final class ExtremeEdgeCaseTests: XCTestCase {
         
         _ = try await requireFixture(db).insertMany((0..<10).map { i in BlazeDataRecord(["value": .int(i)]) })
         
-        // Negative offset is clamped to an empty page in current API.
-        let page = try requireFixture(db).fetchPage(offset: -10, limit: 5)
+        XCTAssertThrowsError(try requireFixture(db).fetchPage(offset: -10, limit: 5)) { error in
+            guard case BlazeDBError.invalidInput(let reason) = error else {
+                XCTFail("Expected invalidInput, got \(error)")
+                return
+            }
+            XCTAssertTrue(reason.contains("non-negative"), reason)
+        }
         
-        XCTAssertEqual(page.count, 0)
-        
-        print("  ✅ Negative offset handled (clamped)")
+        print("  ✅ Negative offset rejected with invalidInput")
     }
     
     func testPaginationZeroLimit() async throws {

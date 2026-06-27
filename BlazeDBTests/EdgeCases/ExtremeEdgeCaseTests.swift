@@ -714,13 +714,15 @@ final class ExtremeEdgeCaseTests: XCTestCase {
         
         _ = try await db.insertMany((0..<10).map { i in BlazeDataRecord(["value": .int(i)]) })
         
-        // Negative offset should be treated as 0
-        let page = try await db.fetchPage(offset: -10, limit: 5)
+        XCTAssertThrowsError(try await db.fetchPage(offset: -10, limit: 5)) { error in
+            guard case BlazeDBError.invalidInput(let reason) = error else {
+                XCTFail("Expected invalidInput, got \(error)")
+                return
+            }
+            XCTAssertTrue(reason.contains("non-negative"), reason)
+        }
         
-        // Should return first page
-        XCTAssertGreaterThan(page.count, 0)
-        
-        print("  ✅ Negative offset handled (treated as 0)")
+        print("  ✅ Negative offset rejected with invalidInput")
     }
     
     func testPaginationZeroLimit() async throws {
