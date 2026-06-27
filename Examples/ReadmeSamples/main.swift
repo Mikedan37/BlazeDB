@@ -33,6 +33,12 @@ private func sampleError(_ context: String) -> SampleError {
     SampleError(message: "README sample failed: \(context)")
 }
 
+/// Write to stderr without the C `stderr` global (Swift 6 Linux strict concurrency).
+private func writeStderr(_ message: String) {
+    guard let data = message.data(using: .utf8) else { return }
+    FileHandle.standardError.write(data)
+}
+
 // MARK: - Start Here (struct names match README → namespace keys match get/query)
 
 private func verifyStartHere() throws {
@@ -349,7 +355,7 @@ enum ReadmeSamples {
 
     private static func printUsage() {
         let keys = Section.allCases.map(\.rawValue).joined(separator: ", ")
-        fputs(
+        writeStderr(
             """
             Usage: swift run ReadmeSamples [--only <section>]
 
@@ -357,8 +363,7 @@ enum ReadmeSamples {
 
             Example: swift run ReadmeSamples --only transactions
 
-            """,
-            stderr
+            """
         )
     }
 
