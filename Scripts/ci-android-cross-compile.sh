@@ -187,14 +187,31 @@ resolve_ndk_cxx_include() {
   echo "$NDK_HOME/toolchains/llvm/prebuilt/$host_tag/sysroot/usr/include/c++/v1"
 }
 
+resolve_ndk_clang_binary() {
+  local suffix="$1"
+  local bin_dir="$NDK_HOME/toolchains/llvm/prebuilt/$(resolve_ndk_host_tag)/bin"
+  local short_triple="${BLAZEDB_ANDROID_SWIFT_TRIPLE/-unknown-linux-/-linux-}"
+  local candidate name
+  for name in "${short_triple}-${suffix}" "${BLAZEDB_ANDROID_SWIFT_TRIPLE}-${suffix}"; do
+    candidate="$bin_dir/$name"
+    if [[ -x "$candidate" ]]; then
+      echo "$candidate"
+      return 0
+    fi
+  done
+  echo "error: no NDK ${suffix} wrapper in $bin_dir (tried ${short_triple}-${suffix})" >&2
+  ls "$bin_dir" 2>/dev/null | grep -E 'android.*clang' | head -10 >&2 || true
+  return 1
+}
+
 cross_compile_blazedb_targets() {
   local android_c_sysroot="$SDK_ROOT/ndk-sysroot"
   local host_tag clang_include ndk_cxx_include ndk_clang ndk_clangxx
   host_tag="$(resolve_ndk_host_tag)"
   clang_include="$(resolve_android_clang_include)"
   ndk_cxx_include="$(resolve_ndk_cxx_include)"
-  ndk_clang="$NDK_HOME/toolchains/llvm/prebuilt/$host_tag/bin/${BLAZEDB_ANDROID_SWIFT_TRIPLE}-clang"
-  ndk_clangxx="$NDK_HOME/toolchains/llvm/prebuilt/$host_tag/bin/${BLAZEDB_ANDROID_SWIFT_TRIPLE}-clang++"
+  ndk_clang="$(resolve_ndk_clang_binary clang)"
+  ndk_clangxx="$(resolve_ndk_clang_binary clang++)"
 
   if [[ ! -d "$android_c_sysroot" ]]; then
     echo "error: missing Android C sysroot at $android_c_sysroot" >&2
@@ -206,6 +223,10 @@ cross_compile_blazedb_targets() {
   fi
   if [[ ! -x "$ndk_clang" ]]; then
     echo "error: missing NDK clang wrapper at $ndk_clang" >&2
+    exit 1
+  fi
+  if [[ ! -x "$ndk_clangxx" ]]; then
+    echo "error: missing NDK clang++ wrapper at $ndk_clangxx" >&2
     exit 1
   fi
 
