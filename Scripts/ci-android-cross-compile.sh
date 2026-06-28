@@ -245,21 +245,24 @@ cross_compile_blazedb_targets() {
 
   local -a xcc_flags=(
     -Xcc "--sysroot=${android_c_sysroot}"
-    -Xcc -isystem -Xcc "${clang_include}"
-    -Xcc -isystem -Xcc "${android_c_sysroot}/usr/include"
-    -Xcc -isystem -Xcc "${SDK_ROOT}/swift-resources/usr/include"
+    -Xcc -isystem
+    -Xcc "${clang_include}"
+    -Xcc -isystem
+    -Xcc "${android_c_sysroot}/usr/include"
+    -Xcc -isystem
+    -Xcc "${SDK_ROOT}/swift-resources/usr/include"
   )
 
   # Do not use -nostdinc++ — swift-crypto CCryptoBoringSSL needs libc++ (<memory>, etc.).
   local -a xcxx_flags=(
-    -Xcxx -Xcxx "--sysroot=${android_c_sysroot}"
-    -Xcxx -Xcxx -stdlib=libc++
-    -Xcxx -Xcxx -isystem
-    -Xcxx -Xcxx "${ndk_cxx_include}"
-    -Xcxx -Xcxx -isystem
-    -Xcxx -Xcxx "${clang_include}"
-    -Xcxx -Xcxx -isystem
-    -Xcxx -Xcxx "${android_c_sysroot}/usr/include"
+    -Xcxx "--sysroot=${android_c_sysroot}"
+    -Xcxx -stdlib=libc++
+    -Xcxx -isystem
+    -Xcxx "${ndk_cxx_include}"
+    -Xcxx -isystem
+    -Xcxx "${clang_include}"
+    -Xcxx -isystem
+    -Xcxx "${android_c_sysroot}/usr/include"
   )
 
   for target in BlazeDBCore BlazeDBAndroidBridge; do
