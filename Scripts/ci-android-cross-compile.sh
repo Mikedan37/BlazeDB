@@ -159,16 +159,20 @@ EOF
   rm -rf "$tmp"
 }
 
-resolve_android_clang_include() {
-  local ndk_prebuilt="$NDK_HOME/toolchains/llvm/prebuilt"
-  local host_tag="linux-x86_64"
+resolve_ndk_host_tag() {
   case "$(uname -s)-$(uname -m)" in
-    Linux-x86_64) host_tag=linux-x86_64 ;;
-    Darwin-arm64) host_tag=darwin-arm64 ;;
-    Darwin-x86_64) host_tag=darwin-x86_64 ;;
+    Linux-x86_64) echo "linux-x86_64" ;;
+    Darwin-arm64) echo "darwin-arm64" ;;
+    Darwin-x86_64) echo "darwin-x86_64" ;;
+    *) echo "linux-x86_64" ;;
   esac
-  local clang_root="$ndk_prebuilt/$host_tag/lib/clang"
-  local include_dir
+}
+
+resolve_android_clang_include() {
+  local host_tag ndk_prebuilt clang_root include_dir
+  host_tag="$(resolve_ndk_host_tag)"
+  ndk_prebuilt="$NDK_HOME/toolchains/llvm/prebuilt/$host_tag"
+  clang_root="$ndk_prebuilt/lib/clang"
   include_dir="$(find "$clang_root" -maxdepth 2 -type d -name include 2>/dev/null | head -1)"
   if [[ -z "$include_dir" ]]; then
     echo "error: could not locate NDK clang include directory under $clang_root" >&2
@@ -177,15 +181,40 @@ resolve_android_clang_include() {
   echo "$include_dir"
 }
 
+resolve_ndk_cxx_include() {
+  local host_tag
+  host_tag="$(resolve_ndk_host_tag)"
+  echo "$NDK_HOME/toolchains/llvm/prebuilt/$host_tag/sysroot/usr/include/c++/v1"
+}
+
 cross_compile_blazedb_targets() {
   local android_c_sysroot="$SDK_ROOT/ndk-sysroot"
-  local clang_include
+  local host_tag clang_include ndk_cxx_include ndk_clang ndk_clangxx
+  host_tag="$(resolve_ndk_host_tag)"
   clang_include="$(resolve_android_clang_include)"
+  ndk_cxx_include="$(resolve_ndk_cxx_include)"
+  ndk_clang="$NDK_HOME/toolchains/llvm/prebuilt/$host_tag/bin/${BLAZEDB_ANDROID_SWIFT_TRIPLE}-clang"
+  ndk_clangxx="$NDK_HOME/toolchains/llvm/prebuilt/$host_tag/bin/${BLAZEDB_ANDROID_SWIFT_TRIPLE}-clang++"
 
   if [[ ! -d "$android_c_sysroot" ]]; then
     echo "error: missing Android C sysroot at $android_c_sysroot" >&2
     exit 1
   fi
+  if [[ ! -d "$ndk_cxx_include" ]]; then
+    echo "error: missing NDK libc++ headers at $ndk_cxx_include" >&2
+    exit 1
+  fi
+  if [[ ! -x "$ndk_clang" ]]; then
+    echo "error: missing NDK clang wrapper at $ndk_clang" >&2
+    exit 1
+  fi
+
+  # Route SwiftPM C/C++ dependency builds through the NDK wrappers (swift-crypto CCryptoBoringSSL).
+  export CC="$ndk_clang"
+  export CXX="$ndk_clangxx"
+
+  echo ">>> NDK CC=$CC"
+  echo ">>> NDK libc++ include=$ndk_cxx_include"
 
   echo ">>> Reset Swift SDK configuration (clear stale CI cache state)"
   swift sdk configure --reset "$BLAZEDB_ANDROID_SDK_NAME" "$BLAZEDB_ANDROID_SWIFT_TRIPLE" 2>/dev/null || true
@@ -194,11 +223,22 @@ cross_compile_blazedb_targets() {
   rm -rf .build
 
   local -a xcc_flags=(
-    -Xcc -nostdinc++
     -Xcc "--sysroot=${android_c_sysroot}"
     -Xcc -isystem -Xcc "${clang_include}"
     -Xcc -isystem -Xcc "${android_c_sysroot}/usr/include"
     -Xcc -isystem -Xcc "${SDK_ROOT}/swift-resources/usr/include"
+  )
+
+  # Do not use -nostdinc++ — swift-crypto CCryptoBoringSSL needs libc++ (<memory>, etc.).
+  local -a xcxx_flags=(
+    -Xcxx -Xcxx "--sysroot=${android_c_sysroot}"
+    -Xcxx -Xcxx -stdlib=libc++
+    -Xcxx -Xcxx -isystem
+    -Xcxx -Xcxx "${ndk_cxx_include}"
+    -Xcxx -Xcxx -isystem
+    -Xcxx -Xcxx "${clang_include}"
+    -Xcxx -Xcxx -isystem
+    -Xcxx -Xcxx "${android_c_sysroot}/usr/include"
   )
 
   for target in BlazeDBCore BlazeDBAndroidBridge; do
@@ -207,7 +247,8 @@ cross_compile_blazedb_targets() {
       --target "$target" \
       --swift-sdk "$BLAZEDB_ANDROID_SWIFT_TRIPLE" \
       --static-swift-stdlib \
-      "${xcc_flags[@]}"
+      "${xcc_flags[@]}" \
+      "${xcxx_flags[@]}"
   done
 }
 

@@ -133,7 +133,7 @@ See [Examples/CorePathSmoke/README.md](../Examples/CorePathSmoke/README.md).
 
 ### Android cross-compile (contributors)
 
-Use **OSS Swift 6.3.2+**, the [Swift SDK for Android](https://swift.org/documentation/articles/swift-sdk-for-android-getting-started.html), and NDK r27d+. Then:
+Use **OSS Swift 6.3.2+**, the [Swift SDK for Android](https://swift.org/documentation/articles/swift-sdk-for-android-getting-started.html), and NDK r27d+. `./Scripts/ci-android-cross-compile.sh` runs hello-world smoke, then cross-compiles `BlazeDBCore` and `BlazeDBAndroidBridge` using NDK clang + libc++ headers (required for `swift-crypto`).
 
 ```bash
 ./Scripts/ci-android-cross-compile.sh
