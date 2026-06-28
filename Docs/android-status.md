@@ -26,10 +26,11 @@ For the full design of ``BlazeLiveQuery`` (lifecycle, threading, adapters, evide
 | Core compiles with `BLAZEDB_LINUX_CORE` (same path as Linux core) | Verified in CI (Linux host cross-compile) and locally via `CorePathSmoke` |
 | Portable database APIs (`open`, `put`, `get`, `query`, `observe`, RLS, stats, health, export) | Verified on the core path; advanced APIs gated off |
 | ``BlazeLiveQuery`` (observe → refresh → decode in core) | Verified via `BlazeLiveQueryTests` (Tier 1 PR gate), `MVVMPattern`, and SwiftUI wrappers |
-| Swift-on-Android cross-compile | Verified in CI when OSS Swift + Android SDK + NDK are installed |
+| Swift-on-Android cross-compile | CI: hello-world smoke + `BlazeDBCore` + `BlazeDBAndroidBridge` (`./Scripts/ci-android-cross-compile.sh`) |
 | Requires **OSS Swift** toolchain (not Xcode `swift`) | Verified — Apple Swift fails with Foundation module mismatch |
 | Android CI | Present in PR gate (`ci.yml`) |
-| Runnable example on device/emulator | Not yet |
+| C ABI + JNI sample | `Examples/BlazeDBAndroidBridge` + `examples/android/` (Gradle, Flow adapter) |
+| Runnable example on device/emulator | Scaffold present; link Swift libs with `-PBLAZEDB_SWIFT_BUILD` |
 | Kotlin bindings / JNI wrapper | Not yet |
 | KMM sample or Gradle integration | Not yet |
 | Default database directory on Android | Not defined — use `BlazeDB.open(at:password:)` with an app-scoped path |
@@ -107,6 +108,7 @@ query() + decode                      query() + decode
 |---------|------------------|------------------------------|
 | `CorePathSmoke` | CRUD, `observe`, portable core path | Android runtime, JNI, Compose |
 | `MVVMPattern` | Repository + ViewModel + ``BlazeLiveQuery`` using public APIs | Android runtime, JNI, Kotlin interop |
+| `examples/android/` | JNI shim + Kotlin `Flow` adapter + Compose UI scaffold | End-to-end device smoke in CI |
 
 The Repository + ViewModel pattern is **demonstrated** in `MVVMPattern` using only BlazeDB’s public APIs. Android-specific integration (JNI, Kotlin, Compose) follows the same architecture but is **not yet implemented**.
 
@@ -158,13 +160,13 @@ Use **OSS Swift 6.3.2+**, the [Swift SDK for Android](https://swift.org/document
 |---|------|-----|
 | 1 | Keep Android cross-compile CI green | Prevents “works on my Mac” drift |
 | 2 | Define Android storage paths (or document required `open(at:)`) | `PathResolver` currently falls back to temp on unknown OS |
-| 3 | Minimal Swift library target packaged for Android (`*.so` per ABI) | Apps need a linkable artifact |
-| 4 | JNI bridge ([swift-java](https://github.com/swiftlang/swift-java) or hand-rolled) | Kotlin cannot call Swift directly |
-| 5 | Thin Kotlin API (`observeQuery<T>().asFlow()`) over ``BlazeLiveQuery`` | High DX, low line count — not a full SDK rewrite |
-| 6 | Gradle/AAR publishing story | `./gradlew` consumption, versioned releases |
-| 7 | JNI smoke test (`open` / `put` / `query` / `close` from Kotlin) | Proves interop exists — not just cross-compile |
-| 8 | Device/emulator smoke test | open → put → query → observe on real Android |
-| 9 | `examples/android/` sample (Swift-on-Android first) | Code as documentation |
+| 3 | Minimal Swift library target packaged for Android (`*.so` per ABI) | `BlazeDBAndroidBridge` cross-compiles in CI; Gradle sample links static Swift libs locally |
+| 4 | JNI bridge ([swift-java](https://github.com/swiftlang/swift-java) or hand-rolled) | Hand-rolled C shim in `examples/android/app/src/main/cpp/` |
+| 5 | Thin Kotlin API (`observeQuery<T>().asFlow()`) over ``BlazeLiveQuery`` | `BlazeLiveQueryFlow.kt` over JNI |
+| 6 | Gradle/AAR publishing story | Sample Gradle project under `examples/android/` |
+| 7 | JNI smoke test (`open` / `put` / `query` / `close` from Kotlin) | `BlazeDBBridge.nativeSmoke()` + `MainActivity` |
+| 8 | Device/emulator smoke test | Build with `-PBLAZEDB_SWIFT_BUILD`; not yet automated in CI |
+| 9 | `examples/android/` sample (Swift-on-Android first) | **Scaffold added** — verify on device |
 | 10 | Compose sample (optional, after JNI) | Ergonomic Android developer experience |
 | 11 | Only then update README / claim “Android supported” | Avoid soufflé documentation |
 

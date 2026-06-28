@@ -145,6 +145,15 @@ var blazeTargets: [Target] = [
                 .define("BLAZEDB_LINUX_CORE")
             ]
         ),
+        .target(
+            name: "BlazeDBAndroidBridge",
+            dependencies: ["BlazeDBCore"],
+            path: "Examples/BlazeDBAndroidBridge",
+            exclude: ["README.md", "include"],
+            swiftSettings: [
+                .define("BLAZEDB_LINUX_CORE")
+            ]
+        ),
         .executableTarget(
             name: "ReferenceConsumer",
             dependencies: ["BlazeDB"],

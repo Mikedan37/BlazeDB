@@ -179,7 +179,7 @@ jobs:
           retention-days: 7
 
   android-cross-compile:
-    name: Android — Swift SDK toolchain smoke (OSS Swift 6.3)
+    name: Android — toolchain smoke + BlazeDBCore cross-compile
     runs-on: ubuntu-22.04
     timeout-minutes: 60
 

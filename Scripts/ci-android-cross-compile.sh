@@ -159,7 +159,62 @@ EOF
   rm -rf "$tmp"
 }
 
+resolve_android_clang_include() {
+  local ndk_prebuilt="$NDK_HOME/toolchains/llvm/prebuilt"
+  local host_tag="linux-x86_64"
+  case "$(uname -s)-$(uname -m)" in
+    Linux-x86_64) host_tag=linux-x86_64 ;;
+    Darwin-arm64) host_tag=darwin-arm64 ;;
+    Darwin-x86_64) host_tag=darwin-x86_64 ;;
+  esac
+  local clang_root="$ndk_prebuilt/$host_tag/lib/clang"
+  local include_dir
+  include_dir="$(find "$clang_root" -maxdepth 2 -type d -name include 2>/dev/null | head -1)"
+  if [[ -z "$include_dir" ]]; then
+    echo "error: could not locate NDK clang include directory under $clang_root" >&2
+    return 1
+  fi
+  echo "$include_dir"
+}
+
+cross_compile_blazedb_targets() {
+  local android_c_sysroot="$SDK_ROOT/ndk-sysroot"
+  local clang_include
+  clang_include="$(resolve_android_clang_include)"
+
+  if [[ ! -d "$android_c_sysroot" ]]; then
+    echo "error: missing Android C sysroot at $android_c_sysroot" >&2
+    exit 1
+  fi
+
+  echo ">>> Reset Swift SDK configuration (clear stale CI cache state)"
+  swift sdk configure --reset "$BLAZEDB_ANDROID_SDK_NAME" "$BLAZEDB_ANDROID_SWIFT_TRIPLE" 2>/dev/null || true
+
+  echo ">>> Clean SwiftPM build directory for Android cross-compile"
+  rm -rf .build
+
+  local -a xcc_flags=(
+    -Xcc -nostdinc++
+    -Xcc "--sysroot=${android_c_sysroot}"
+    -Xcc -isystem -Xcc "${clang_include}"
+    -Xcc -isystem -Xcc "${android_c_sysroot}/usr/include"
+    -Xcc -isystem -Xcc "${SDK_ROOT}/swift-resources/usr/include"
+  )
+
+  for target in BlazeDBCore BlazeDBAndroidBridge; do
+    echo ">>> Cross-compile $target for $BLAZEDB_ANDROID_SWIFT_TRIPLE"
+    swift build \
+      --target "$target" \
+      --swift-sdk "$BLAZEDB_ANDROID_SWIFT_TRIPLE" \
+      --static-swift-stdlib \
+      "${xcc_flags[@]}"
+  done
+}
+
 echo ">>> Android toolchain smoke (hello world for $BLAZEDB_ANDROID_SWIFT_TRIPLE)"
 run_android_toolchain_smoke
+
+echo ">>> Cross-compile BlazeDBCore + BlazeDBAndroidBridge"
+cross_compile_blazedb_targets
 
 echo ">>> Android cross-compile: ok"
