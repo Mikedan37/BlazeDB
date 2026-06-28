@@ -205,37 +205,26 @@ resolve_ndk_clang_binary() {
 }
 
 cross_compile_blazedb_targets() {
-  local android_c_sysroot="$SDK_ROOT/ndk-sysroot"
-  local host_tag clang_include ndk_cxx_include ndk_clang ndk_clangxx
-  host_tag="$(resolve_ndk_host_tag)"
-  clang_include="$(resolve_android_clang_include)"
-  ndk_cxx_include="$(resolve_ndk_cxx_include)"
+  local ndk_clang ndk_clangxx
   ndk_clang="$(resolve_ndk_clang_binary clang)"
   ndk_clangxx="$(resolve_ndk_clang_binary clang++)"
 
-  if [[ ! -d "$android_c_sysroot" ]]; then
-    echo "error: missing Android C sysroot at $android_c_sysroot" >&2
+  if [[ ! -d "$SDK_ROOT/ndk-sysroot" ]]; then
+    echo "error: missing Android C sysroot at $SDK_ROOT/ndk-sysroot" >&2
     exit 1
   fi
-  if [[ ! -d "$ndk_cxx_include" ]]; then
-    echo "error: missing NDK libc++ headers at $ndk_cxx_include" >&2
-    exit 1
-  fi
-  if [[ ! -x "$ndk_clang" ]]; then
-    echo "error: missing NDK clang wrapper at $ndk_clang" >&2
-    exit 1
-  fi
-  if [[ ! -x "$ndk_clangxx" ]]; then
-    echo "error: missing NDK clang++ wrapper at $ndk_clangxx" >&2
+  if [[ ! -d "$(resolve_ndk_cxx_include)" ]]; then
+    echo "error: missing NDK libc++ headers under $(resolve_ndk_cxx_include)" >&2
     exit 1
   fi
 
-  # Route SwiftPM C/C++ dependency builds through the NDK wrappers (swift-crypto CCryptoBoringSSL).
+  # NDK clang wrappers embed sysroot + libc++ search paths. Manual -Xcc -isystem for
+  # the Android usr/include tree breaks libc++ wrapped C headers (<cstddef> errors).
   export CC="$ndk_clang"
   export CXX="$ndk_clangxx"
 
   echo ">>> NDK CC=$CC"
-  echo ">>> NDK libc++ include=$ndk_cxx_include"
+  echo ">>> NDK CXX=$CXX"
 
   echo ">>> Reset Swift SDK configuration (clear stale CI cache state)"
   swift sdk configure --reset "$BLAZEDB_ANDROID_SDK_NAME" "$BLAZEDB_ANDROID_SWIFT_TRIPLE" 2>/dev/null || true
@@ -243,36 +232,12 @@ cross_compile_blazedb_targets() {
   echo ">>> Clean SwiftPM build directory for Android cross-compile"
   rm -rf .build
 
-  local -a xcc_flags=(
-    -Xcc "--sysroot=${android_c_sysroot}"
-    -Xcc -isystem
-    -Xcc "${clang_include}"
-    -Xcc -isystem
-    -Xcc "${android_c_sysroot}/usr/include"
-    -Xcc -isystem
-    -Xcc "${SDK_ROOT}/swift-resources/usr/include"
-  )
-
-  # Do not use -nostdinc++ — swift-crypto CCryptoBoringSSL needs libc++ (<memory>, etc.).
-  local -a xcxx_flags=(
-    -Xcxx "--sysroot=${android_c_sysroot}"
-    -Xcxx -stdlib=libc++
-    -Xcxx -isystem
-    -Xcxx "${ndk_cxx_include}"
-    -Xcxx -isystem
-    -Xcxx "${clang_include}"
-    -Xcxx -isystem
-    -Xcxx "${android_c_sysroot}/usr/include"
-  )
-
   for target in BlazeDBCore BlazeDBAndroidBridge; do
     echo ">>> Cross-compile $target for $BLAZEDB_ANDROID_SWIFT_TRIPLE"
     swift build \
       --target "$target" \
       --swift-sdk "$BLAZEDB_ANDROID_SWIFT_TRIPLE" \
-      --static-swift-stdlib \
-      "${xcc_flags[@]}" \
-      "${xcxx_flags[@]}"
+      --static-swift-stdlib
   done
 }
 
