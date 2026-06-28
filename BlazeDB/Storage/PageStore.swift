@@ -1023,11 +1023,12 @@ public final class PageStore: @unchecked Sendable {
             let totalPages = max(0, currentFileSize / pageSize)
 
             var orphanedPages = 0
-            let expectedHeaderV1 = ("BZDB".data(using: .utf8) ?? Data()) + Data([0x01])
-            let expectedHeaderV2 = ("BZDB".data(using: .utf8) ?? Data()) + Data([0x02])
+            let magic = "BZDB".data(using: .utf8) ?? Data()
+            // Match read() page versions: 0x01 plaintext, 0x02 encrypted, 0x03 compressed+encrypted.
+            let validHeaders: [Data] = [0x01, 0x02, 0x03].map { magic + Data([$0]) }
             for i in 0..<totalPages {
                 let header = try atomicRead(offset: off_t(i * pageSize), count: 5)
-                if header != expectedHeaderV1 && header != expectedHeaderV2 {
+                if !validHeaders.contains(header) {
                     orphanedPages += 1
                 }
             }
