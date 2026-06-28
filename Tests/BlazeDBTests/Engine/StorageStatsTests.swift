@@ -139,8 +139,8 @@ final class StorageStatsTests: XCTestCase {
         let (store, url) = try openStore(named: #function)
         let pageSize = try detectPageSize(via: url, store: store)
         _ = try store.write("valid".data(using: .utf8)!) // page 1
-        // "BZDB" + wrong version 0x02
-        let wrongVersion = ("BZDB".data(using: .utf8) ?? Data()) + Data([0x02])
+        // "BZDB" + unsupported version (0x01 plaintext and 0x02 encrypted are valid)
+        let wrongVersion = ("BZDB".data(using: .utf8) ?? Data()) + Data([0xFF])
         try overwriteHeader(url: url, pageIndex: 1, pageSize: pageSize, with: wrongVersion)
         let stats = try store.getStorageStats()
         XCTAssertEqual(stats.totalPages, 2)
