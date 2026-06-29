@@ -32,7 +32,7 @@ Use this table for day-to-day expectations.
 
 ### Cadence: PR gate vs nightly vs weekly deep
 
-- **PR (`ci.yml`):** Fast gate on every push/PR — macOS Tier0 + Tier1, Linux Tier0, Android `BlazeDBCore` cross-compile (see workflow file for CLI/build steps).
+- **PR (`ci.yml`):** Fast gate on every push/PR — macOS Tier0 + Tier1, Apple platform cross-compile (iOS/watchOS/tvOS/visionOS), Linux Tier0, Android `BlazeDBCore` cross-compile (see workflow file for CLI/build steps).
 - **Nightly (`nightly.yml`):** **Bounded** daily confidence — macOS Tier2 strict, clean checkout, README quickstart, Tier0 TSan, Linux Tier1 + Tier2 **core** only. It does **not** own Linux Tier2 extended, Linux Tier3 heavy/perf, macOS Tier3, or Tier1 TSan.
 - **Weekly deep (`deep-validation.yml`):** **Delta-only** — runs **only** surfaces not already owned above: macOS Tier3 heavy (+ `RUN_HEAVY_STRESS`) + Tier3 destructive (`./Scripts/run-tier3.sh`), macOS **Tier1** ThreadSanitizer (nightly already runs Tier0 TSan), Linux **`BlazeDB_Tier2_Extended`** + Tier3 heavy/perf. No full-stack re-run of Tier0–Tier2 on a weekly schedule.
 
@@ -82,6 +82,11 @@ In short: the nightly workflow optimizes for coverage visibility and time-to-sig
 - **Secondary (blocking):** `Linux (Swift 6.2) — core + Tier 0`
 - Runner: `ubuntu-22.04`
 - `actions/cache` on `.build` (same key shape), then `swift build` + CLI targets + `swift test --filter BlazeDB_Tier0`
+
+- **Secondary (blocking):** `Apple platforms — cross-compile BlazeDBCore`
+- Runner: `macos-15`; uses **Xcode’s** `swift` (same constraint as the primary macOS job — OSS Swift breaks Apple SDK cross-compilation).
+- Runs `./Scripts/ci-apple-cross-compile.sh`: compile-only `swift build --target BlazeDBCore` for **iOS** (simulator + device), **watchOS** (simulator + device), and **tvOS** (simulator + device). **visionOS** is attempted but may be non-blocking when SwiftPM does not yet recognize `xros` triples during dependency resolution; set `BLAZEDB_APPLE_REQUIRE_VISIONOS=1` to enforce.
+- Does **not** run XCTest on simulators; macOS-hosted Tier0/Tier1 remain the behavioral gate for core logic.
 
 - **Secondary (blocking):** `Android — BlazeDBCore cross-compile (OSS Swift 6.3)`
 - Runner: `ubuntu-22.04`

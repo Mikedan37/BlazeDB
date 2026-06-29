@@ -528,10 +528,10 @@ The default `BlazeDBClient` uses a binary write-ahead log (`WALMode.legacy`) tha
 | Platform | Status | Notes |
 |----------|--------|-------|
 | macOS 15+ | ✅ Full support | PR gate + release validation |
-| iOS 15+ | ✅ Full support | Xcode builds |
-| watchOS 8+ | ✅ Builds | Declared in Package.swift; limited CI |
-| tvOS 15+ | ✅ Builds | Declared in Package.swift; limited CI |
-| visionOS 1+ | ✅ Builds | Declared in Package.swift; limited CI |
+| iOS 15+ | ✅ Full support | PR cross-compile gate + Xcode builds |
+| watchOS 8+ | ✅ Builds | PR cross-compile gate |
+| tvOS 15+ | ✅ Builds | PR cross-compile gate |
+| visionOS 1+ | ✅ Builds | PR cross-compile (best-effort; SwiftPM xros triple) |
 | Linux | ✅ Core support | PR Tier0; nightly Tier1 + Tier2 core; weekly Tier2 extended + Tier3 heavy/perf |
 | Android (Swift + JNI) | ✅ Cross-compile + CI | `BLAZEDB_LINUX_CORE`; OSS Swift 6.3.2 + NDK r27d; JNI sample in `Examples/android/` |
 | Windows | 🚧 Planned | Not yet supported |
@@ -544,7 +544,7 @@ See [Compatibility Matrix](Docs/COMPATIBILITY.md) for details.
 
 ## Testing And CI
 
-- **PR gate** (macOS): `BlazeDB_Tier0` and `BlazeDB_Tier1`, README quickstart (L1), and README samples (L3) on every push/PR; Linux runs `BlazeDB_Tier0`; Android cross-compiles `BlazeDBCore` + `BlazeDBAndroidBridge` (OSS Swift 6.3.2). See `Docs/Testing/CI_AND_TEST_TIERS.md` for the full matrix.
+- **PR gate** (macOS): `BlazeDB_Tier0` and `BlazeDB_Tier1`, README quickstart (L1), and README samples (L3) on every push/PR; Apple platforms cross-compile `BlazeDBCore` (iOS, watchOS, tvOS; visionOS best-effort); Linux runs `BlazeDB_Tier0`; Android cross-compiles `BlazeDBCore` + `BlazeDBAndroidBridge` (OSS Swift 6.3.2). See `Docs/Testing/CI_AND_TEST_TIERS.md` for the full matrix.
 - **Release validation** (tagged releases): macOS runs Tier0–Tier2 (+ extended companion targets as defined in the release workflow), not the same cadence as the PR gate.
 - **Nightly Confidence (daily)** runs macOS Tier2 strict, clean checkout, README quickstart, Tier0 TSan, and Linux Tier1/Tier2 core lanes (see `Docs/Testing/CI_AND_TEST_TIERS.md`).
 - **Deep Validation (weekly)** is **delta-only**: surfaces not already run by the PR gate and nightly (macOS Tier3 heavy + destructive, Tier1 TSan; Linux Tier2 extended + Tier3 heavy/perf). See `Docs/Testing/CI_AND_TEST_TIERS.md`.

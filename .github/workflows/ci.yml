@@ -109,6 +109,59 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
 
+  apple-cross-compile:
+    name: Apple platforms — cross-compile BlazeDBCore
+    runs-on: macos-15
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Cache SwiftPM build
+        uses: actions/cache@v5
+        with:
+          path: .build
+          key: ${{ runner.os }}-apple-cross-${{ hashFiles('Package.swift', 'Package.resolved') }}
+          restore-keys: |
+            ${{ runner.os }}-apple-cross-
+
+      - name: Xcode Swift toolchain
+        run: |
+          xcodebuild -version
+          swift --version
+          which swift
+
+      - name: Prepare CI log directories
+        run: mkdir -p .logs .artifacts
+
+      - name: Cross-compile BlazeDBCore for Apple platforms
+        run: |
+          set -euo pipefail
+          chmod +x ./Scripts/ci-apple-cross-compile.sh
+          ./Scripts/ci-apple-cross-compile.sh 2>&1 | tee .logs/apple-cross-compile.log
+
+      - name: Dump diagnostics on failure
+        if: failure()
+        run: |
+          mkdir -p .logs
+          swift --version > .logs/swift-version.txt 2>&1 || true
+          xcodebuild -version > .logs/xcode-version.txt 2>&1 || true
+          xcodebuild -showsdks > .logs/xcode-sdks.txt 2>&1 || true
+
+      - name: Upload CI Apple cross-compile logs
+        if: always()
+        uses: actions/upload-artifact@v5
+        with:
+          name: ci-apple-cross-compile-logs
+          path: |
+            .logs/
+            .artifacts/
+          if-no-files-found: ignore
+          retention-days: 7
+
   linux:
     name: Linux (Swift 6.2) — core + Tier 0
     runs-on: ubuntu-22.04

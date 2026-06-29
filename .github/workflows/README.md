@@ -9,6 +9,7 @@ Checkouts use **`fetch-depth: 0`**.
 | Job | Blocking |
 |-----|----------|
 | `macOS 15 — build, CLI, tests` | yes |
+| `Apple platforms — cross-compile BlazeDBCore` | yes (iOS, watchOS, tvOS; visionOS best-effort) |
 | `Linux (Swift 6.2) — core + Tier 0` | yes |
 | `Android — BlazeDBCore cross-compile (OSS Swift 6.3)` | yes |
 

@@ -22,11 +22,12 @@ public protocol KeyUnlockProvider {
     func isAvailable() -> Bool
 }
 
-#if canImport(LocalAuthentication)
+#if canImport(LocalAuthentication) && (os(iOS) || os(macOS) || os(visionOS))
 import LocalAuthentication
 
 /// Apple platform implementation using LocalAuthentication
-/// Provides biometric authentication (Face ID, Touch ID) on iOS/macOS
+/// Provides biometric authentication (Face ID, Touch ID) on iOS/macOS/visionOS.
+/// watchOS and tvOS use `HeadlessKeyUnlockProvider` — LocalAuthentication policies differ there.
 public final class AppleKeyUnlockProvider: KeyUnlockProvider {
     private let context: LAContext
     
