@@ -85,8 +85,8 @@ In short: the nightly workflow optimizes for coverage visibility and time-to-sig
 
 - **Secondary (blocking):** `Apple platforms — cross-compile BlazeDBCore`
 - Runner: `macos-15`; uses **Xcode’s** `swift` (same constraint as the primary macOS job — OSS Swift breaks Apple SDK cross-compilation).
-- Runs `./Scripts/ci-apple-cross-compile.sh`: compile-only `swift build --target BlazeDBCore` for **iOS** (simulator + device), **watchOS** (simulator + device), and **tvOS** (simulator + device). **visionOS** is attempted but may be non-blocking when SwiftPM does not yet recognize `xros` triples during dependency resolution; set `BLAZEDB_APPLE_REQUIRE_VISIONOS=1` to enforce.
-- Does **not** run XCTest on simulators; macOS-hosted Tier0/Tier1 remain the behavioral gate for core logic.
+- Runs `./Scripts/ci-apple-cross-compile.sh`: compile-only `swift build --target BlazeDBCore` for **iOS** (simulator + device), **watchOS** (simulator + device), and **tvOS** (simulator + device). **visionOS** is attempted but may be non-blocking when SwiftPM does not yet recognize `xros` triples during dependency resolution (`⚠️ visionOS skipped (SwiftPM/toolchain)` in the job summary); unexpected visionOS **compile** failures still fail CI. Set `BLAZEDB_APPLE_REQUIRE_VISIONOS=1` to require visionOS success once toolchains catch up. The script asserts `Package.swift` `platforms:` are covered — add targets there when Apple ships another OS.
+- **Compile-only:** no XCTest or simulator runtime in this job. macOS-hosted Tier0/Tier1 remain the behavioral gate; optional Phase 2 is nightly iOS Simulator Tier0 after this lane is stable.
 
 - **Secondary (blocking):** `Android — BlazeDBCore cross-compile (OSS Swift 6.3)`
 - Runner: `ubuntu-22.04`
