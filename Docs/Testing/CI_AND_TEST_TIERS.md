@@ -306,7 +306,7 @@ Use precise language so status and dashboards do not blur the PR gate with deepe
 | **PR3 transitional companions** | `BlazeDB_Tier2_Extended`, `BlazeDB_Tier3_Heavy_Perf`; temporary bridge targets slated for PR4 filesystem/target normalization. |
 | **Nightly Confidence (daily)** | `nightly.yml`: macOS Tier2 strict, clean checkout, README quickstart, Tier0 TSan; **Linux** `linux-tier1` + `linux-tier2-core` only (no Linux Tier0 nightly — covered in PR `ci.yml`). |
 | **Deep Validation (weekly)** | `deep-validation.yml` (weekly, Sun 03:00 UTC + manual), **delta-only**: **`deep-macos-tier3-heavy-destructive`**, **`deep-macos-tsan-tier1`**, **`deep-linux-tier2-extended-tier3`** — does not re-run PR/nightly tiers. |
-| **KMM PR gate (iOS runtime)** | macOS job: `build-kmm-ios-bridge.sh` + `:shared:iosSimulatorArm64Test`. Android job: `:shared:compileDebugKotlinAndroid` only. |
+| **KMM PR gate** | iOS: `iosSimulatorArm64Test`. Android compile (Linux). Android runtime + packaging (macOS `kmm-android-runtime` job). |
 | **Canonical Tier1** | `BlazeDB_Tier1` (single canonical Tier1 target). |
 
 Inventory/bootstrap code may still bucket all three SwiftPM modules under a single **`T1`** label for file-level manifests; that is a storage convenience. **Human-facing** summaries (CI names, release notes, team chat) should use the table above, not a vague “T1 passed.”

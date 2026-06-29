@@ -11,9 +11,11 @@ Minimal **Kotlin Multiplatform** module with the same `commonMain` API on Androi
 | iOS `actual` → cinterop → Swift static lib | Done |
 | iOS `BlazeDBKMM.framework` links | Done (macOS + Xcode) |
 | iOS simulator `put` + `query` runtime | Done (`iosSimulatorArm64Test`) |
-| Android emulator `put` + `query` runtime | Local + PR CI (`connectedDebugAndroidTest`) |
-| AAR + XCFramework packaging | `./Scripts/package-kmm-artifacts.sh` (CI + local) |
-| README “Kotlin Multiplatform supported” | **Not yet** — no Maven/CocoaPods publish |
+| Android emulator `put` + `query` runtime | PR CI + local (`connectedDebugAndroidTest`) |
+| Typed `Todo` + `observeOpenTodos()` Flow | `commonMain` — sample Repository/ViewModel in app |
+| AAR + XCFramework + local Maven | `./Scripts/package-kmm-artifacts.sh` |
+| Full guide | [KMM_GETTING_STARTED.md](../../Docs/GettingStarted/KMM_GETTING_STARTED.md) |
+| README “Kotlin Multiplatform supported” | **Not yet** — no Maven Central / CocoaPods trunk |
 
 ```kotlin
 val db = BlazeDB.open(path, password)

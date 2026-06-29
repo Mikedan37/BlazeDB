@@ -176,6 +176,7 @@ Canonical paths, telemetry defaults, and migration notes: **[DEFAULT_STORAGE_PAT
 | Guide                                                | What You'll Learn                                  |
 | ---------------------------------------------------- | -------------------------------------------------- |
 | [SWIFTUI_DATABASE_PATTERNS.md](SWIFTUI_DATABASE_PATTERNS.md) | How to pass and use `BlazeDBClient` cleanly in SwiftUI |
+| [KMM_GETTING_STARTED.md](KMM_GETTING_STARTED.md) | Kotlin Multiplatform + Compose (Android/iOS shared Kotlin) |
 | [SWIFTUI_FACADE_MIGRATION.md](SWIFTUI_FACADE_MIGRATION.md) | Renaming `@BlazeQuery` / `@BlazeQueryTyped` after the typed-default facade update |
 | [HOW_TO_USE_BLAZEDB.md](HOW_TO_USE_BLAZEDB.md)       | Complete guide: migrations, backups, health checks |
 | [Examples](../../Examples/)                          | Working code for common patterns                   |

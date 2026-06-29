@@ -53,9 +53,10 @@ if [[ "$VERIFY_ONLY" == "0" ]]; then
     -framework "$IOS_SIM_FW" \
     -output "$DIST/ios/BlazeDBKMM.xcframework"
 
-  echo "=== Android release AAR + native libs ==="
+  echo "=== Android release AAR + native libs + Maven local repo ==="
   ./gradlew \
     :shared:assembleRelease \
+    :shared:publishReleasePublicationToBlazeDBLocalRepository \
     :app:assembleRelease \
     "-PBLAZEDB_SWIFT_BUILD=$SWIFT_BUILD"
 
@@ -77,8 +78,12 @@ Files:
   jni/arm64-v8a/*.so         — JNI shim + Swift bridge + Swift runtime (arm64-v8a)
 
 Requires minSdk 28. Link the AAR in Gradle and copy jni/arm64-v8a into your app's jniLibs.
-See Examples/android/ and Docs/android-status.md.
+See Examples/android/ and Docs/GettingStarted/KMM_GETTING_STARTED.md.
 EOF
+
+  cp "$ANDROID_DIR/shared/BlazeDBKMM.podspec" "$DIST/ios/BlazeDBKMM.podspec"
+
+  echo ">>> Maven local repo: $ROOT/dist/maven/com/blazedb/blazedb-kmm/0.1.0/"
 
   echo ">>> Packaged KMM artifacts under $DIST"
 fi

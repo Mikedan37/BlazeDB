@@ -87,7 +87,7 @@ Do **not** rush KMM. “Supports KMM” is a buzzword; wrapping an unproven runt
 Forum questions often mix two layers:
 
 1. **Architecture (portable, proven on host):** One `BlazeDBClient` per app, Repository, ViewModel, observation-driven query refresh, explicit `close()`. Demonstrated in `MVVMPattern` and ``BlazeLiveQuery`` tests.
-2. **Implementation (KMM integration, in progress):** Cross-compile ✅, bridge ✅, iOS runtime in CI ✅, Android runtime local ✅, Android runtime CI ❌, packaging ❌.
+2. **Implementation (KMM integration):** Cross-compile ✅, bridge ✅, iOS/Android runtime in CI ✅, packaging ✅, typed sample + Flow ✅, registry publish ❌.
 
 You can adopt the architecture pattern before BlazeDB ships verified Android integration; you cannot depend on KMM-native BlazeDB without building and proving the bridge yourself.
 
@@ -206,9 +206,8 @@ Confirm UI shows `KMM RUNTIME OK` and `kmm-commonMain` in the query JSON.
 
 > BlazeDB’s storage and observation model **maps cleanly** onto Android Repository + ViewModel — that’s architecture, not shipped Android support.
 >
-> **Proven in CI:** `BlazeDBCore` / `BlazeDBAndroidBridge` cross-compile for Android; KMM **iOS simulator** runtime (`BlazeDB.open` / `put` / `query`); KMM **Android Kotlin compile**.
-> **Proven locally:** KMM **Android emulator** runtime (same API).
-> **Not yet proven in CI:** Android KMM runtime on emulator; consumer packaging (AAR/XCFramework).
+> **Proven in CI:** cross-compile; KMM iOS + Android runtime; AAR/XCFramework packaging; typed `Todo` + live Flow sample.
+> **Not yet:** Maven Central / CocoaPods trunk; full SwiftUI-parity API surface.
 >
 > SwiftUI’s `@BlazeStorableQuery` is a convenience adapter over ``BlazeLiveQuery`` in core. On Android the same primitive would sit behind JNI and Kotlin `Flow` — sample code exists, runtime verification is the next milestone.
 

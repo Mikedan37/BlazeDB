@@ -3,6 +3,9 @@ package com.blazedb.example
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.blazedb.kmm.BlazeDB
+import com.blazedb.kmm.Todo
+import com.blazedb.kmm.putTodo
+import com.blazedb.kmm.queryTodos
 import java.io.File
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -26,6 +29,23 @@ class BlazeDBRuntimeSmokeTest {
                 "expected query JSON to contain kmm-commonMain, got: $todosJson",
                 todosJson.contains("kmm-commonMain"),
             )
+        } finally {
+            db.close()
+        }
+    }
+
+    @Test
+    fun typedPutAndQueryTodos() {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val dbFile = File(context.filesDir, "blazedb/kmm-typed.blazedb")
+        dbFile.parentFile?.mkdirs()
+        dbFile.delete()
+
+        val db = BlazeDB.open(dbFile.absolutePath, MainActivity.DEMO_PASSWORD)
+        try {
+            assertEquals(0, db.putTodo(Todo(title = "typed-kmm")))
+            val todos = db.queryTodos()
+            assertTrue(todos.any { it.title == "typed-kmm" })
         } finally {
             db.close()
         }

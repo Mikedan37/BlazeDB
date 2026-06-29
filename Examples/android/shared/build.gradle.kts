@@ -1,6 +1,8 @@
 plugins {
     kotlin("multiplatform")
+    kotlin("plugin.serialization")
     id("com.android.library")
+    id("maven-publish")
 }
 
 val repoRoot = rootProject.projectDir.parentFile.parentFile
@@ -69,7 +71,17 @@ kotlin {
     }
 
     sourceSets {
-        val commonMain by getting
+        val commonMain by getting {
+            dependencies {
+                implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.1")
+            }
+        }
+        val commonTest by getting {
+            dependencies {
+                implementation(kotlin("test"))
+            }
+        }
         val androidMain by getting
         val iosMain by creating {
             dependsOn(commonMain)
@@ -99,6 +111,12 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
+
+    publishing {
+        singleVariant("release") {
+            withSourcesJar()
+        }
+    }
 }
 
 val swiftConcurrencySimulatorDylib = File(
@@ -126,4 +144,32 @@ tasks.register("embedSwiftConcurrencyIosSimulatorArm64Test") {
 
 tasks.named("iosSimulatorArm64Test") {
     dependsOn("embedSwiftConcurrencyIosSimulatorArm64Test")
+}
+
+
+afterEvaluate {
+    publishing {
+        publications {
+            create<MavenPublication>("release") {
+                groupId = "com.blazedb"
+                artifactId = "blazedb-kmm"
+                version = "0.1.0"
+                from(components["release"])
+                pom {
+                    name.set("BlazeDB KMM")
+                    description.set(
+                        "Kotlin Multiplatform bindings for BlazeDB (integration scaffolding). " +
+                            "Requires native Swift bridge libraries — see Docs/GettingStarted/KMM_GETTING_STARTED.md",
+                    )
+                    url.set("https://github.com/Mikedan37/BlazeDB")
+                }
+            }
+        }
+        repositories {
+            maven {
+                name = "BlazeDBLocal"
+                url = uri(repoRoot.resolve("dist/maven"))
+            }
+        }
+    }
 }

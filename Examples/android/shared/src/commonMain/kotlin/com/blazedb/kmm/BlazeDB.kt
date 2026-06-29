@@ -9,6 +9,10 @@ package com.blazedb.kmm
  * Records cross the boundary as JSON strings; parse in app code or add typed helpers later.
  */
 expect class BlazeDB {
+    /** Absolute path to the encrypted `.blazedb` file. */
+    val dbPath: String
+    internal val password: String
+
     fun close()
     /** Insert fields JSON under [kind] namespace. Returns 0 on success. */
     fun put(kind: String, json: String): Int

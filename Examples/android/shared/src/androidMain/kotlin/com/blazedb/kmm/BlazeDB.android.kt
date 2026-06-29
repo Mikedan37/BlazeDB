@@ -2,7 +2,11 @@ package com.blazedb.kmm
 
 import com.blazedb.shared.bridge.BlazeDBBridge
 
-actual class BlazeDB private constructor(private val handle: Long) {
+actual class BlazeDB private constructor(
+    private val handle: Long,
+    actual val dbPath: String,
+    internal actual val password: String,
+) {
     actual fun close() = BlazeDBBridge.nativeClose(handle)
 
     actual fun put(kind: String, json: String): Int =
@@ -18,7 +22,7 @@ actual class BlazeDB private constructor(private val handle: Long) {
         actual fun open(path: String, password: String): BlazeDB {
             val handle = BlazeDBBridge.nativeOpen(path, password)
             require(handle > 0) { "BlazeDB.open failed ($handle)" }
-            return BlazeDB(handle)
+            return BlazeDB(handle, path, password)
         }
     }
 }

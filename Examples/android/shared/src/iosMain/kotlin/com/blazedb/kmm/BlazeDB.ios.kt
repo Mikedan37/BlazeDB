@@ -10,7 +10,11 @@ import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.toKString
 
 @OptIn(ExperimentalForeignApi::class)
-actual class BlazeDB private constructor(private val handle: Long) {
+actual class BlazeDB private constructor(
+    private val handle: Long,
+    actual val dbPath: String,
+    internal actual val password: String,
+) {
     actual fun close() {
         blazedb_bridge_close(handle)
     }
@@ -41,7 +45,7 @@ actual class BlazeDB private constructor(private val handle: Long) {
         actual fun open(path: String, password: String): BlazeDB {
             val handle = blazedb_bridge_open(path, password)
             require(handle > 0) { "BlazeDB.open failed ($handle)" }
-            return BlazeDB(handle)
+            return BlazeDB(handle, path, password)
         }
     }
 }
