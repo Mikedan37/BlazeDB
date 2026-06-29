@@ -17,9 +17,9 @@ What has been **proven** versus **assumed**:
 |------------|--------|
 | 🟢 **Compiler** | `BlazeDBCore` + `BlazeDBAndroidBridge` cross-compile for Android in PR gate CI (`./Scripts/ci-android-cross-compile.sh`) |
 | 🟢 **Linker** | JNI bridge target and sample Gradle/CMake wiring **build** (Swift static libs linked into `libblazedb_android_bridge.so` locally) |
-| 🟡 **Runtime** | Local device/emulator verification **pending** — `BlazeDBBridge.nativeSmoke()` not yet confirmed on hardware |
+| 🟡 **Runtime** | Verified locally on arm64 emulator via `prove-android-runtime.sh` — not yet in CI |
 | 🔴 **Production** | No automated emulator/device CI yet |
-| ⚪ **Ecosystem** | KMM wrapper not started — intentionally deferred until runtime path is battle-tested |
+| ⚪ **Ecosystem** | KMM `:shared` — Android + **iOS framework links in CI**; runtime proof on both still pending before “KMM supported” |
 
 **Important distinction:** CI proves cross-compilation and that the bridge **compiles**. It does **not** prove the JNI → Swift → database path works at runtime on Android.
 
@@ -34,10 +34,10 @@ Prove each layer before adding the next. Wrapping an unverified stack in KMM onl
 | 1 | Swift library (`BlazeDBCore`) | 🟢 | OSS Swift 6.3.2 + NDK r27d; NDK clang/libc++ header path fixes in CI |
 | 2 | C ABI (`BlazeDBAndroidBridge`) | 🟢 | `blazedb_bridge_*` exports cross-compile in CI |
 | 3 | JNI (C shim → Kotlin `external`) | 🟢 compile / 🟡 runtime | `blazedb_jni_shim.c` + `BlazeDBBridge.kt` — builds, not yet smoke-tested on device |
-| 4 | Kotlin API (`Flow` adapter, Repository) | 🟡 | Sample code in `Examples/android/` — not runtime-verified |
-| 5 | Emulator / device | 🟡 | Manual `./gradlew :app:installDebug` path documented; not automated |
-| 6 | CI (Gradle + emulator smoke) | 🔴 | Planned after local runtime proof |
-| 7 | KMM `shared` module | ⚪ | **After 1–6** — wraps the same JNI bridge via `expect`/`actual`; not “Kotlin-native BlazeDB” |
+| 4 | Kotlin API (`Flow` adapter, Repository) | 🟡 | `Examples/android/shared` — smoke + live query + add/mark done; local emulator verified |
+| 5 | Emulator / device | 🟡 | `./Scripts/prove-android-runtime.sh` — manual; not automated in CI |
+| 6 | CI (Gradle + emulator smoke) | 🔴 | PR gate cross-compiles bridge only |
+| 7 | KMM `shared` module | 🟡 | `expect class BlazeDB`; Android JNI; **iOS cinterop + framework link**; device/simulator runtime proof pending |
 
 The toolchain work (OSS Swift against Android NDK, libc++ include paths, cross-compilation reliability) is the substantive systems engineering here. KMM is a later ergonomics layer, not the proof.
 
@@ -65,9 +65,9 @@ For the full design of ``BlazeLiveQuery`` (lifecycle, threading, adapters, evide
 | Swift-on-Android cross-compile | 🟢 | hello-world + `BlazeDBCore` + `BlazeDBAndroidBridge` in PR gate |
 | Requires **OSS Swift** (not Xcode `swift`) | 🟢 | Apple Swift fails with Foundation module mismatch |
 | C ABI + JNI + Kotlin sample **source** | 🟢 compile | `Examples/BlazeDBAndroidBridge`, `Examples/android/` |
-| JNI smoke on device/emulator | 🟡 | Code present (`nativeSmoke`); runtime proof pending |
+| JNI smoke on device/emulator | 🟡 | `nativeSmoke` + live query + add/mark done verified locally; not in CI |
 | Gradle APK in CI | 🔴 | Not wired |
-| KMM | ⚪ | Not started — do not claim “supports KMM” |
+| KMM | 🟡 | `:shared` scaffold — **do not claim full KMM support** until iOS links and runs |
 | Default Android database directory | — | Not defined; use `BlazeDB.open(at:password:)` with app-scoped path |
 
 ---

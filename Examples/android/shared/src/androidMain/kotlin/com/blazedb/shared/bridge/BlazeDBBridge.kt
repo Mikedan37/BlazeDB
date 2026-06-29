@@ -9,6 +9,12 @@ internal object BlazeDBBridge {
         System.loadLibrary("blazedb_android_bridge")
     }
 
+    external fun nativeOpen(dbPath: String, password: String): Long
+    external fun nativeClose(handle: Long)
+    external fun nativePutJson(handle: Long, kind: String, json: String): Int
+    external fun nativeGetJson(handle: Long, key: String): String?
+    external fun nativeQueryJson(handle: Long, kind: String): String
+
     external fun nativeSmoke(dbPath: String, password: String): Int
 
     external fun nativeLiveQueryStart(

@@ -24,6 +24,83 @@ JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM *vm, void *reserved) {
     return JNI_VERSION_1_6;
 }
 
+JNIEXPORT jlong JNICALL
+Java_com_blazedb_shared_bridge_BlazeDBBridge_nativeOpen(
+    JNIEnv *env,
+    jclass clazz,
+    jstring dbPath,
+    jstring password) {
+    (void)clazz;
+    const char *path = (*env)->GetStringUTFChars(env, dbPath, NULL);
+    const char *pass = (*env)->GetStringUTFChars(env, password, NULL);
+    int64_t handle = blazedb_bridge_open(path, pass);
+    (*env)->ReleaseStringUTFChars(env, dbPath, path);
+    (*env)->ReleaseStringUTFChars(env, password, pass);
+    return (jlong)handle;
+}
+
+JNIEXPORT void JNICALL
+Java_com_blazedb_shared_bridge_BlazeDBBridge_nativeClose(
+    JNIEnv *env,
+    jclass clazz,
+    jlong handle) {
+    (void)env;
+    (void)clazz;
+    blazedb_bridge_close((int64_t)handle);
+}
+
+JNIEXPORT jint JNICALL
+Java_com_blazedb_shared_bridge_BlazeDBBridge_nativePutJson(
+    JNIEnv *env,
+    jclass clazz,
+    jlong handle,
+    jstring kind,
+    jstring json) {
+    (void)clazz;
+    const char *kind_c = (*env)->GetStringUTFChars(env, kind, NULL);
+    const char *json_c = (*env)->GetStringUTFChars(env, json, NULL);
+    int32_t result = blazedb_bridge_put_json((int64_t)handle, kind_c, json_c);
+    (*env)->ReleaseStringUTFChars(env, kind, kind_c);
+    (*env)->ReleaseStringUTFChars(env, json, json_c);
+    return (jint)result;
+}
+
+JNIEXPORT jstring JNICALL
+Java_com_blazedb_shared_bridge_BlazeDBBridge_nativeGetJson(
+    JNIEnv *env,
+    jclass clazz,
+    jlong handle,
+    jstring key) {
+    (void)clazz;
+    const char *key_c = (*env)->GetStringUTFChars(env, key, NULL);
+    char *json = blazedb_bridge_get_json((int64_t)handle, key_c);
+    (*env)->ReleaseStringUTFChars(env, key, key_c);
+    if (json == NULL) {
+        return NULL;
+    }
+    jstring result = (*env)->NewStringUTF(env, json);
+    blazedb_bridge_free_string(json);
+    return result;
+}
+
+JNIEXPORT jstring JNICALL
+Java_com_blazedb_shared_bridge_BlazeDBBridge_nativeQueryJson(
+    JNIEnv *env,
+    jclass clazz,
+    jlong handle,
+    jstring kind) {
+    (void)clazz;
+    const char *kind_c = (*env)->GetStringUTFChars(env, kind, NULL);
+    char *json = blazedb_bridge_query_json((int64_t)handle, kind_c);
+    (*env)->ReleaseStringUTFChars(env, kind, kind_c);
+    if (json == NULL) {
+        return NULL;
+    }
+    jstring result = (*env)->NewStringUTF(env, json);
+    blazedb_bridge_free_string(json);
+    return result;
+}
+
 static live_query_ctx_t *find_ctx(int64_t handle) {
     for (int i = 0; i < g_live_query_count; i++) {
         if (g_live_queries[i].handle == handle) {

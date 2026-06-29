@@ -23,6 +23,31 @@ int64_t blazedb_bridge_live_query_start(
 /// Stop a live query started with blazedb_bridge_live_query_start.
 void blazedb_bridge_live_query_stop(int64_t handle);
 
+/// Insert an open todo. Returns 1 on success, negative errno-style code on failure.
+int32_t blazedb_bridge_add_todo(const char *db_path, const char *password, const char *title);
+
+/// Mark a todo done by UUID string. Returns 0 on success, negative on failure.
+int32_t blazedb_bridge_mark_todo_done(const char *db_path, const char *password, const char *todo_id);
+
+// ─── KMM session API (Android JNI + iOS cinterop) ───────────────────────────
+
+/// Open database. Returns handle (>0) or negative error code.
+int64_t blazedb_bridge_open(const char *db_path, const char *password);
+
+/// Close session opened with blazedb_bridge_open.
+void blazedb_bridge_close(int64_t handle);
+
+/// Insert/update record JSON fields under kind namespace. Returns 0 on success.
+int32_t blazedb_bridge_put_json(int64_t handle, const char *kind, const char *json);
+
+/// Fetch record JSON by storage key (`kind:uuid`). Caller must free with blazedb_bridge_free_string.
+char *blazedb_bridge_get_json(int64_t handle, const char *key);
+
+/// Query all records of kind as JSON array. Caller must free with blazedb_bridge_free_string.
+char *blazedb_bridge_query_json(int64_t handle, const char *kind);
+
+void blazedb_bridge_free_string(char *ptr);
+
 #ifdef __cplusplus
 }
 #endif

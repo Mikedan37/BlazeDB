@@ -1,0 +1,7 @@
+language = C
+headers = blazedb_android_bridge.h
+headerFilter = blazedb_android_bridge.h
+
+---
+typedef long long int64_t;
+typedef int int32_t;

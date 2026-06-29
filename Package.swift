@@ -151,7 +151,7 @@ var blazeTargets: [Target] = [
             path: "Examples/BlazeDBAndroidBridge",
             exclude: ["README.md", "include"],
             swiftSettings: [
-                .define("BLAZEDB_LINUX_CORE")
+                .define("BLAZEDB_LINUX_CORE", .when(platforms: [.linux, .android]))
             ]
         ),
         .executableTarget(
@@ -311,6 +311,10 @@ let package = Package(
         .library(
             name: "BlazeDBAndroidBridge",
             type: .dynamic,
+            targets: ["BlazeDBAndroidBridge"]),
+        .library(
+            name: "BlazeDBKMMBridgeStatic",
+            type: .static,
             targets: ["BlazeDBAndroidBridge"]),
         .executable(
             name: "blazedb",

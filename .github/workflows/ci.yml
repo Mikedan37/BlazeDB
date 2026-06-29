@@ -89,6 +89,16 @@ jobs:
           set -euo pipefail
           ./Scripts/verify-readme-samples.sh 2>&1 | tee .logs/verify-readme-samples.log
 
+      - name: KMM shared — build iOS bridge and link framework
+        run: |
+          set -euo pipefail
+          chmod +x ./Scripts/build-kmm-ios-bridge.sh
+          ./Scripts/build-kmm-ios-bridge.sh
+          cd Examples/android
+          chmod +x gradlew
+          ./gradlew :shared:compileKotlinIosSimulatorArm64 :shared:compileKotlinIosArm64 \
+            :shared:linkDebugFrameworkIosSimulatorArm64 :shared:linkDebugFrameworkIosArm64
+
       - name: Dump diagnostics on failure
         if: failure()
         run: |
@@ -299,6 +309,22 @@ jobs:
           test -f "$SO"
           file "$SO"
           ls -lh "$SO"
+
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: KMM shared — compile Android Kotlin
+        run: |
+          set -euo pipefail
+          chmod +x ./Scripts/setup-android-gradle-sdk-linux.sh
+          ./Scripts/setup-android-gradle-sdk-linux.sh
+          export ANDROID_HOME="${ANDROID_HOME:-$PWD/.artifacts/android-gradle-sdk-linux}"
+          cd Examples/android
+          chmod +x gradlew
+          ./gradlew :shared:compileDebugKotlinAndroid
 
       - name: Prepare CI log directories
         if: always()

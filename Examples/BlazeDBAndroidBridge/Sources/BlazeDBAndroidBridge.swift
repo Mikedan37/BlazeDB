@@ -147,6 +147,14 @@ private func encodeTodos(_ todos: [Todo]) -> String {
     return json
 }
 
+private func databaseURL(from path: String) -> URL {
+#if os(Android) || os(Linux)
+    return URL(filePath: path, directoryHint: .notDirectory)
+#else
+    return URL(fileURLWithPath: path, isDirectory: false)
+#endif
+}
+
 @_cdecl("blazedb_bridge_smoke")
 public func blazedb_bridge_smoke(
     _ dbPath: UnsafePointer<CChar>?,
@@ -155,7 +163,7 @@ public func blazedb_bridge_smoke(
     do {
         let path = try cString(dbPath)
         let pass = try cString(password)
-        let url = URL(filePath: path, directoryHint: .notDirectory)
+        let url = databaseURL(from: path)
 
         let db = try BlazeDBClient.open(at: url, password: pass)
         defer { try? db.close() }
@@ -215,7 +223,7 @@ public func blazedb_bridge_live_query_start(
     do {
         let path = try cString(dbPath)
         let pass = try cString(password)
-        let url = URL(filePath: path, directoryHint: .notDirectory)
+        let url = databaseURL(from: path)
         let db = try BlazeDBClient.open(at: url, password: pass)
 
 #if os(Android)
@@ -257,4 +265,276 @@ public func blazedb_bridge_live_query_start(
 public func blazedb_bridge_live_query_stop(_ handle: Int64) {
     guard handle > 0 else { return }
     liveQueryRegistry.remove(handle)
+}
+
+@_cdecl("blazedb_bridge_add_todo")
+public func blazedb_bridge_add_todo(
+    _ dbPath: UnsafePointer<CChar>?,
+    _ password: UnsafePointer<CChar>?,
+    _ title: UnsafePointer<CChar>?
+) -> Int32 {
+    do {
+        let path = try cString(dbPath)
+        let pass = try cString(password)
+        let titleText = try cString(title)
+        let url = databaseURL(from: path)
+        let db = try BlazeDBClient.open(at: url, password: pass)
+        defer { try? db.close() }
+        try db.put(Todo(title: titleText))
+        return 1
+    } catch {
+        return -1
+    }
+}
+
+@_cdecl("blazedb_bridge_mark_todo_done")
+public func blazedb_bridge_mark_todo_done(
+    _ dbPath: UnsafePointer<CChar>?,
+    _ password: UnsafePointer<CChar>?,
+    _ todoID: UnsafePointer<CChar>?
+) -> Int32 {
+    do {
+        let path = try cString(dbPath)
+        let pass = try cString(password)
+        let idText = try cString(todoID)
+        guard let uuid = UUID(uuidString: idText) else { return -2 }
+        let url = databaseURL(from: path)
+        let db = try BlazeDBClient.open(at: url, password: pass)
+        defer { try? db.close() }
+        guard var todo: Todo = try db.get("todo:\(uuid.uuidString)") else { return -3 }
+        todo.isDone = true
+        try db.put(todo)
+        return 0
+    } catch {
+        return -1
+    }
+}
+
+// MARK: - KMM session API
+
+private final class DBSession: @unchecked Sendable {
+    let db: BlazeDBClient
+
+    init(db: BlazeDBClient) {
+        self.db = db
+    }
+}
+
+private final class SessionRegistry: @unchecked Sendable {
+    private let lock = NSLock()
+    private var nextID: Int64 = 1
+    private var sessions: [Int64: DBSession] = [:]
+
+    func insert(_ session: DBSession) -> Int64 {
+        lock.lock()
+        defer { lock.unlock() }
+        let id = nextID
+        nextID += 1
+        sessions[id] = session
+        return id
+    }
+
+    func get(_ id: Int64) -> DBSession? {
+        lock.lock()
+        defer { lock.unlock() }
+        return sessions[id]
+    }
+
+    func remove(_ id: Int64) {
+        lock.lock()
+        defer { lock.unlock() }
+        if let session = sessions[id] {
+            try? session.db.close()
+        }
+        sessions.removeValue(forKey: id)
+    }
+}
+
+private let sessionRegistry = SessionRegistry()
+
+private func jsonField(from value: Any) -> BlazeDocumentField? {
+    switch value {
+    case let s as String:
+        if let uuid = UUID(uuidString: s) { return .uuid(uuid) }
+        return .string(s)
+    case let b as Bool:
+        return .bool(b)
+    case let i as Int:
+        return .int(i)
+    case let d as Double:
+        return .double(d)
+    case let n as NSNumber:
+        if CFGetTypeID(n) == CFBooleanGetTypeID() {
+            return .bool(n.boolValue)
+        }
+        if floor(n.doubleValue) == n.doubleValue {
+            return .int(n.intValue)
+        }
+        return .double(n.doubleValue)
+    default:
+        return nil
+    }
+}
+
+private func jsonValue(from field: BlazeDocumentField) -> Any {
+    switch field {
+    case .string(let v): return v
+    case .int(let v): return v
+    case .double(let v): return v
+    case .bool(let v): return v
+    case .uuid(let v): return v.uuidString
+    case .date(let v): return v.timeIntervalSinceReferenceDate
+    case .data(let v): return v.base64EncodedString()
+    case .array(let v): return v.map { jsonValue(from: $0) }
+    case .dictionary(let v):
+        var dict: [String: Any] = [:]
+        for (k, f) in v { dict[k] = jsonValue(from: f) }
+        return dict
+    case .vector, .null:
+        return NSNull()
+    }
+}
+
+private func recordToJSON(_ record: BlazeDataRecord) -> String {
+    var dict: [String: Any] = [:]
+    for (key, field) in record.storage {
+        dict[key] = jsonValue(from: field)
+    }
+    guard JSONSerialization.isValidJSONObject(dict),
+          let data = try? JSONSerialization.data(withJSONObject: dict),
+          let json = String(data: data, encoding: .utf8)
+    else {
+        return "{}"
+    }
+    return json
+}
+
+private func recordsToJSONArray(_ records: [BlazeDataRecord]) -> String {
+    let payload = records.map { record -> [String: Any] in
+        var dict: [String: Any] = [:]
+        for (key, field) in record.storage {
+            dict[key] = jsonValue(from: field)
+        }
+        return dict
+    }
+    guard JSONSerialization.isValidJSONObject(payload),
+          let data = try? JSONSerialization.data(withJSONObject: payload),
+          let json = String(data: data, encoding: .utf8)
+    else {
+        return "[]"
+    }
+    return json
+}
+
+private func duplicateCString(_ string: String) -> UnsafeMutablePointer<CChar>? {
+    string.withCString { cstr in
+        guard let copy = strdup(cstr) else { return nil }
+        return copy
+    }
+}
+
+@_cdecl("blazedb_bridge_open")
+public func blazedb_bridge_open(
+    _ dbPath: UnsafePointer<CChar>?,
+    _ password: UnsafePointer<CChar>?
+) -> Int64 {
+    do {
+        let path = try cString(dbPath)
+        let pass = try cString(password)
+        let url = databaseURL(from: path)
+        let db = try BlazeDBClient.open(at: url, password: pass)
+        return sessionRegistry.insert(DBSession(db: db))
+    } catch {
+        return -1
+    }
+}
+
+@_cdecl("blazedb_bridge_close")
+public func blazedb_bridge_close(_ handle: Int64) {
+    guard handle > 0 else { return }
+    sessionRegistry.remove(handle)
+}
+
+@_cdecl("blazedb_bridge_put_json")
+public func blazedb_bridge_put_json(
+    _ handle: Int64,
+    _ kind: UnsafePointer<CChar>?,
+    _ json: UnsafePointer<CChar>?
+) -> Int32 {
+    guard let session = sessionRegistry.get(handle) else { return -1 }
+    do {
+        let kindText = try cString(kind).lowercased()
+        let jsonText = try cString(json)
+        guard let data = jsonText.data(using: .utf8),
+              let object = try JSONSerialization.jsonObject(with: data) as? [String: Any]
+        else { return -2 }
+
+        var storage: [String: BlazeDocumentField] = [:]
+        for (key, value) in object {
+            guard let field = jsonField(from: value) else { return -3 }
+            storage[key] = field
+        }
+        storage[BlazeRecordKind.storageKey] = .string(kindText)
+        _ = try session.db.insert(BlazeDataRecord(storage))
+        return 0
+    } catch {
+        return -1
+    }
+}
+
+private func parseStorageKey(_ key: String) throws -> (namespace: String?, id: UUID) {
+    if let colon = key.firstIndex(of: ":") {
+        let namespace = String(key[..<colon])
+        let idPart = String(key[key.index(after: colon)...])
+        guard let id = UUID(uuidString: idPart) else { throw BridgeError.invalidPath }
+        return (namespace, id)
+    }
+    guard let id = UUID(uuidString: key) else { throw BridgeError.invalidPath }
+    return (nil, id)
+}
+
+@_cdecl("blazedb_bridge_get_json")
+public func blazedb_bridge_get_json(
+    _ handle: Int64,
+    _ key: UnsafePointer<CChar>?
+) -> UnsafeMutablePointer<CChar>? {
+    guard let session = sessionRegistry.get(handle) else { return nil }
+    do {
+        let keyText = try cString(key)
+        let (namespace, id) = try parseStorageKey(keyText)
+        guard let record = try session.db.fetch(id: id) else { return nil }
+        if let namespace {
+            let want = namespace.lowercased()
+            if let have = record.storage[BlazeRecordKind.storageKey]?.stringValue?.lowercased(), have != want {
+                return nil
+            }
+        }
+        return duplicateCString(recordToJSON(record))
+    } catch {
+        return nil
+    }
+}
+
+@_cdecl("blazedb_bridge_query_json")
+public func blazedb_bridge_query_json(
+    _ handle: Int64,
+    _ kind: UnsafePointer<CChar>?
+) -> UnsafeMutablePointer<CChar>? {
+    guard let session = sessionRegistry.get(handle) else { return nil }
+    do {
+        let kindText = try cString(kind)
+        let norm = kindText.lowercased()
+        let records = try session.db.fetchAll().filter {
+            BlazeRecordKind.recordMatchesNamespace($0, normalizedNamespace: norm)
+        }
+        return duplicateCString(recordsToJSONArray(records))
+    } catch {
+        return duplicateCString("[]")
+    }
+}
+
+@_cdecl("blazedb_bridge_free_string")
+public func blazedb_bridge_free_string(_ ptr: UnsafeMutablePointer<CChar>?) {
+    guard let ptr else { return }
+    free(ptr)
 }
