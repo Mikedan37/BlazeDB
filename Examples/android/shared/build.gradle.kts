@@ -46,21 +46,25 @@ kotlin {
         iosArm64(),
         iosSimulatorArm64(),
     ).forEach { target ->
-        target.compilations.getByName("main") {
+        target.compilations.configureEach {
             compilerOptions.configure {
                 freeCompilerArgs.add("-Xexpect-actual-classes")
                 freeCompilerArgs.add("-Xoverride-konan-properties=minVersion.ios=$iosMinVersion")
             }
-            cinterops {
-                val blazedb by creating {
-                    defFile = project.file("src/nativeInterop/cinterop/blazedb.def")
-                    includeDirs.headerFilterOnly(bridgeInclude)
+            if (name == "main" || name == "test") {
+                cinterops {
+                    val blazedb by creating {
+                        defFile = project.file("src/nativeInterop/cinterop/blazedb.def")
+                        includeDirs.headerFilterOnly(bridgeInclude)
+                    }
                 }
             }
         }
+        target.binaries.all {
+            linkerOpts(swiftLinkerOpts(target.name))
+        }
         target.binaries.framework {
             baseName = "BlazeDBKMM"
-            linkerOpts(swiftLinkerOpts(target.name))
         }
     }
 
@@ -72,6 +76,14 @@ kotlin {
         }
         val iosArm64Main by getting { dependsOn(iosMain) }
         val iosSimulatorArm64Main by getting { dependsOn(iosMain) }
+        val iosTest by creating {
+            dependsOn(iosMain)
+            dependencies {
+                implementation(kotlin("test"))
+            }
+        }
+        val iosArm64Test by getting { dependsOn(iosTest) }
+        val iosSimulatorArm64Test by getting { dependsOn(iosTest) }
     }
 }
 
@@ -87,4 +99,31 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
+}
+
+val swiftConcurrencySimulatorDylib = File(
+    "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain" +
+        "/usr/lib/swift-5.5/iphonesimulator/libswift_Concurrency.dylib",
+)
+
+tasks.register("embedSwiftConcurrencyIosSimulatorArm64Test") {
+    dependsOn("linkDebugTestIosSimulatorArm64")
+    doLast {
+        if (!swiftConcurrencySimulatorDylib.isFile) {
+            throw GradleException("Missing ${swiftConcurrencySimulatorDylib.absolutePath}")
+        }
+        val frameworksDir = layout.buildDirectory
+            .dir("bin/iosSimulatorArm64/debugTest/Frameworks")
+            .get()
+            .asFile
+        frameworksDir.mkdirs()
+        swiftConcurrencySimulatorDylib.copyTo(
+            frameworksDir.resolve("libswift_Concurrency.dylib"),
+            overwrite = true,
+        )
+    }
+}
+
+tasks.named("iosSimulatorArm64Test") {
+    dependsOn("embedSwiftConcurrencyIosSimulatorArm64Test")
 }

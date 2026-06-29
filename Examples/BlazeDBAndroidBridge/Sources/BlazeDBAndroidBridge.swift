@@ -364,7 +364,8 @@ private func jsonField(from value: Any) -> BlazeDocumentField? {
     case let d as Double:
         return .double(d)
     case let n as NSNumber:
-        if CFGetTypeID(n) == CFBooleanGetTypeID() {
+        let objType = String(cString: n.objCType)
+        if objType == "c" || objType == "B" {
             return .bool(n.boolValue)
         }
         if floor(n.doubleValue) == n.doubleValue {

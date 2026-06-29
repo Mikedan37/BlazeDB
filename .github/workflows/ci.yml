@@ -97,7 +97,8 @@ jobs:
           cd Examples/android
           chmod +x gradlew
           ./gradlew :shared:compileKotlinIosSimulatorArm64 :shared:compileKotlinIosArm64 \
-            :shared:linkDebugFrameworkIosSimulatorArm64 :shared:linkDebugFrameworkIosArm64
+            :shared:linkDebugFrameworkIosSimulatorArm64 :shared:linkDebugFrameworkIosArm64 \
+            :shared:iosSimulatorArm64Test
 
       - name: Dump diagnostics on failure
         if: failure()

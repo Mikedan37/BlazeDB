@@ -10,7 +10,9 @@ Minimal **Kotlin Multiplatform** module with the same `commonMain` API on Androi
 | Android `actual` → JNI → Swift | Done |
 | iOS `actual` → cinterop → Swift static lib | Done |
 | iOS `BlazeDBKMM.framework` links | Done (macOS + Xcode) |
-| README “Kotlin Multiplatform supported” | **Not yet** — need runtime proof on both platforms |
+| iOS simulator `put` + `query` runtime | Done (`iosSimulatorArm64Test`) |
+| Android emulator `put` + `query` runtime | Local (`prove-kmm-android-runtime.sh`) |
+| README “Kotlin Multiplatform supported” | **Not yet** — Android runtime not in CI |
 
 ```kotlin
 val db = BlazeDB.open(path, password)

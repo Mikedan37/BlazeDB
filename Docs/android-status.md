@@ -19,7 +19,7 @@ What has been **proven** versus **assumed**:
 | 🟢 **Linker** | JNI bridge target and sample Gradle/CMake wiring **build** (Swift static libs linked into `libblazedb_android_bridge.so` locally) |
 | 🟡 **Runtime** | Verified locally on arm64 emulator via `prove-android-runtime.sh` — not yet in CI |
 | 🔴 **Production** | No automated emulator/device CI yet |
-| ⚪ **Ecosystem** | KMM `:shared` — Android + **iOS framework links in CI**; runtime proof on both still pending before “KMM supported” |
+| ⚪ **Ecosystem** | KMM `:shared` — **iOS runtime test in CI**; Android runtime via local emulator script |
 
 **Important distinction:** CI proves cross-compilation and that the bridge **compiles**. It does **not** prove the JNI → Swift → database path works at runtime on Android.
 

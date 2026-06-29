@@ -21,9 +21,12 @@ class MainActivity : ComponentActivity() {
         dbFile.parentFile?.mkdirs()
 
         val db = BlazeDB.open(dbFile.absolutePath, DEMO_PASSWORD)
-        db.put("todo", """{"title":"kmm-commonMain"}""")
+        val putResult = db.put("todo", """{"title":"kmm-commonMain"}""")
         val todosJson = db.query("todo")
         db.close()
+
+        val kmmOk = putResult == 0 && todosJson.contains("kmm-commonMain")
+        val status = if (kmmOk) "KMM RUNTIME OK" else "KMM RUNTIME FAILED put=$putResult"
 
         setContent {
             MaterialTheme {
@@ -33,6 +36,7 @@ class MainActivity : ComponentActivity() {
                         .padding(16.dp),
                 ) {
                     Text("BlazeDB KMM sample")
+                    Text(status)
                     Text("query(todo): $todosJson")
                 }
             }
@@ -40,6 +44,6 @@ class MainActivity : ComponentActivity() {
     }
 
     companion object {
-        private const val DEMO_PASSWORD = "DemoPass123!"
+        const val DEMO_PASSWORD = "DemoPass123!"
     }
 }

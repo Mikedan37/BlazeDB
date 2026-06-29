@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# End-to-end proof: Docker cross-compile → Gradle APK → emulator JNI smoke (macOS/Linux host).
+# Android emulator runtime proof for KMM BlazeDB (MainActivity put + query via commonMain API).
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -10,15 +10,17 @@ export JAVA_HOME
 
 chmod +x "$ROOT"/Scripts/*.sh "$ANDROID_DIR"/scripts/*.sh 2>/dev/null || true
 
-echo "=== 1/4 Docker OSS Swift cross-compile ==="
-"$ROOT/Scripts/prove-android-runtime-docker-crosscompile.sh"
+if [[ ! -f "$SWIFT_BUILD/aarch64-unknown-linux-android28/debug/libBlazeDBAndroidBridge.so" ]]; then
+  echo "=== Swift Android cross-compile (Docker) ==="
+  "$ROOT/Scripts/prove-android-runtime-docker-crosscompile.sh"
+fi
 
-echo "=== 2/4 Android Gradle SDK (host) ==="
+echo "=== Android Gradle SDK ==="
 "$ROOT/Scripts/setup-android-gradle-sdk.sh"
 export ANDROID_HOME="${ANDROID_HOME:-$ROOT/.artifacts/android-gradle-sdk}"
 export PATH="$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools:$ANDROID_HOME/emulator:$PATH"
 
-echo "=== 3/4 Gradle assembleDebug ==="
+echo "=== Gradle assembleDebug + installDebug ==="
 cd "$ANDROID_DIR"
 if [[ ! -x ./gradlew ]]; then
   if [[ ! -x /tmp/gradle-8.7/bin/gradle ]]; then
@@ -27,9 +29,7 @@ if [[ ! -x ./gradlew ]]; then
   fi
   /tmp/gradle-8.7/bin/gradle wrapper --gradle-version 8.7
 fi
-./gradlew :app:assembleDebug "-PBLAZEDB_SWIFT_BUILD=$SWIFT_BUILD" --stacktrace
 
-echo "=== 4/4 Emulator runtime smoke ==="
 AVD_NAME="blazedb_arm64_api34"
 if ! avdmanager list avd 2>/dev/null | grep -q "$AVD_NAME"; then
   echo "no" | avdmanager create avd -n "$AVD_NAME" -k "system-images;android-34;google_apis;arm64-v8a" -d pixel_6 || true
@@ -49,38 +49,22 @@ if ! adb devices | awk 'NR>1 && $2=="device" { found=1 } END { exit !found }'; t
   done
 fi
 
-./gradlew :app:installDebug "-PBLAZEDB_SWIFT_BUILD=$SWIFT_BUILD"
+./gradlew :app:assembleDebug :app:installDebug "-PBLAZEDB_SWIFT_BUILD=$SWIFT_BUILD"
 adb shell am force-stop com.blazedb.example || true
 adb shell am start -n com.blazedb.example/.MainActivity
 sleep 10
 
 adb shell uiautomator dump /sdcard/window_dump.xml >/dev/null 2>&1 || true
-adb pull /sdcard/window_dump.xml /tmp/blazedb-window.xml >/dev/null 2>&1 || true
+adb pull /sdcard/window_dump.xml /tmp/blazedb-kmm-window.xml >/dev/null 2>&1 || true
 
-if grep -q 'KMM RUNTIME OK' /tmp/blazedb-window.xml 2>/dev/null \
-   && grep -q 'kmm-commonMain' /tmp/blazedb-window.xml 2>/dev/null; then
-  echo ">>> RUNTIME SMOKE PASSED (KMM put + query via commonMain API)"
-  grep -o 'KMM RUNTIME OK' /tmp/blazedb-window.xml || true
-  grep -o 'kmm-commonMain' /tmp/blazedb-window.xml | head -1 || true
+if grep -q 'KMM RUNTIME OK' /tmp/blazedb-kmm-window.xml 2>/dev/null \
+   && grep -q 'kmm-commonMain' /tmp/blazedb-kmm-window.xml 2>/dev/null; then
+  echo ">>> KMM Android RUNTIME OK"
+  grep -o 'KMM RUNTIME OK' /tmp/blazedb-kmm-window.xml | head -1 || true
   exit 0
 fi
 
-if grep -qE 'JNI smoke result: [1-9][0-9]*' /tmp/blazedb-window.xml 2>/dev/null \
-   && grep -q 'android-bridge-smoke' /tmp/blazedb-window.xml 2>/dev/null; then
-  echo ">>> RUNTIME SMOKE PASSED (legacy JNI CRUD + live query UI)"
-  grep -oE 'JNI smoke result: [^<]+' /tmp/blazedb-window.xml || true
-  grep -oE 'Open todos \([^)]+\)' /tmp/blazedb-window.xml || true
-  grep -o 'android-bridge-smoke' /tmp/blazedb-window.xml | head -1 || true
-  exit 0
-fi
-
-if grep -qE 'JNI smoke result: [1-9][0-9]*' /tmp/blazedb-window.xml 2>/dev/null; then
-  echo ">>> PARTIAL: JNI smoke OK but live-query UI missing (expected android-bridge-smoke in list)"
-  grep -i smoke /tmp/blazedb-window.xml 2>/dev/null || true
-  exit 1
-fi
-
-echo ">>> RUNTIME SMOKE FAILED — logcat + UI dump:"
-grep -i smoke /tmp/blazedb-window.xml 2>/dev/null || true
+echo ">>> KMM Android RUNTIME FAILED — UI dump:"
+grep -E 'KMM RUNTIME|kmm-commonMain|query\(todo\)' /tmp/blazedb-kmm-window.xml 2>/dev/null || true
 adb logcat -d | grep -E "BlazeDB|blazedb|AndroidRuntime|FATAL|JNI" | tail -50 || true
 exit 1
