@@ -32,7 +32,7 @@ Use this table for day-to-day expectations.
 
 ### Cadence: PR gate vs nightly vs weekly deep
 
-- **PR (`ci.yml`):** Fast gate on every push/PR — macOS Tier0 + Tier1, Apple platform cross-compile (iOS/watchOS/tvOS/visionOS), Linux Tier0, Android `BlazeDBCore` cross-compile (see workflow file for CLI/build steps).
+- **PR (`ci.yml`):** Fast gate on every push/PR — macOS Tier0 + Tier1, README L1/L3, **KMM iOS bridge build + framework link + `iosSimulatorArm64Test`**, Apple platform cross-compile (iOS/watchOS/tvOS/visionOS), Linux Tier0, Android `BlazeDBAndroidBridge` cross-compile + **`:shared:compileDebugKotlinAndroid`** (see workflow file for CLI/build steps).
 - **Nightly (`nightly.yml`):** **Bounded** daily confidence — macOS Tier2 strict, clean checkout, README quickstart, Tier0 TSan, Linux Tier1 + Tier2 **core** only. It does **not** own Linux Tier2 extended, Linux Tier3 heavy/perf, macOS Tier3, or Tier1 TSan.
 - **Weekly deep (`deep-validation.yml`):** **Delta-only** — runs **only** surfaces not already owned above: macOS Tier3 heavy (+ `RUN_HEAVY_STRESS`) + Tier3 destructive (`./Scripts/run-tier3.sh`), macOS **Tier1** ThreadSanitizer (nightly already runs Tier0 TSan), Linux **`BlazeDB_Tier2_Extended`** + Tier3 heavy/perf. No full-stack re-run of Tier0–Tier2 on a weekly schedule.
 
@@ -78,6 +78,7 @@ In short: the nightly workflow optimizes for coverage visibility and time-to-sig
 - `swift build --target BlazeDBCore`, CLI targets (`BlazeDoctor`, `BlazeDump`, `BlazeInfo`)
 - `BLAZEDB_TEST_SCOPE=tier0 swift test --filter BlazeDB_Tier0`, then `swift test --skip-build --filter BlazeDB_Tier1` (macOS PR). **Nightly** adds **Linux** canonical Tier1 plus Tier2 **core** — see `nightly.yml`.
 - `./Scripts/verify-readme-quickstart.sh` and `./Scripts/verify-readme-samples.sh` (README `HelloBlazeDB` + all documented Swift samples via `ReadmeSamples`)
+- **KMM shared module (`Examples/android/shared`):** `./Scripts/build-kmm-ios-bridge.sh`, then Gradle `:shared:linkDebugFrameworkIosSimulatorArm64` + `:shared:iosSimulatorArm64Test` (runtime `BlazeDB.open` / `put` / `query` on iOS simulator). See [KMM CI (Android + iOS)](#kmm-ci-android--ios).
 - `verify-clean-checkout.sh` runs in nightly only. **`verify-readme-quickstart.sh`** and **`verify-readme-samples.sh`** run in the **PR gate** (macOS) and nightly README verification jobs.
 - **Secondary (blocking):** `Linux (Swift 6.2) — core + Tier 0`
 - Runner: `ubuntu-22.04`
@@ -88,12 +89,14 @@ In short: the nightly workflow optimizes for coverage visibility and time-to-sig
 - Runs `./Scripts/ci-apple-cross-compile.sh`: compile-only `swift build --target BlazeDBCore` for **iOS** (simulator + device), **watchOS** (simulator + device), and **tvOS** (simulator + device). **visionOS** is attempted but may be non-blocking when SwiftPM does not yet recognize `xros` triples during dependency resolution (`⚠️ visionOS skipped (SwiftPM/toolchain)` in the job summary); unexpected visionOS **compile** failures still fail CI. Set `BLAZEDB_APPLE_REQUIRE_VISIONOS=1` to require visionOS success once toolchains catch up. The script asserts `Package.swift` `platforms:` are covered — add targets there when Apple ships another OS.
 - **Compile-only:** no XCTest or simulator runtime in this job. macOS-hosted Tier0/Tier1 remain the behavioral gate; optional Phase 2 is nightly iOS Simulator Tier0 after this lane is stable.
 
-- **Secondary (blocking):** `Android — BlazeDBCore cross-compile (OSS Swift 6.3)`
+- **Secondary (blocking):** `Android — cross-compile BlazeDBAndroidBridge`
 - Runner: `ubuntu-22.04`
 - OSS Swift **6.3.2** via `./Scripts/install-android-swift.sh` (must match Android SDK bundle in `Scripts/android-swift-config.sh` — **not** Xcode Swift)
 - Caches `.build`, `~/.swiftpm/swift-sdks`, and NDK under the SDK bundle
-- Runs `./Scripts/ci-android-cross-compile.sh` (`swift build --target BlazeDBCore --swift-sdk aarch64-unknown-linux-android28 --static-swift-stdlib`)
-- Does **not** run on device; compile-only gate. See `Docs/android-status.md`.
+- Runs `./Scripts/ci-android-cross-compile.sh` (`swift build --product BlazeDBAndroidBridge --swift-sdk aarch64-unknown-linux-android28` → `libBlazeDBAndroidBridge.so`)
+- Verifies `.build/aarch64-unknown-linux-android28/debug/libBlazeDBAndroidBridge.so`
+- **KMM Android compile-only:** Java 17 + `./Scripts/setup-android-gradle-sdk-linux.sh`, then `./gradlew :shared:compileDebugKotlinAndroid` (JNI `actual`; no emulator). See [KMM CI (Android + iOS)](#kmm-ci-android--ios).
+- Does **not** run on device; compile-only gate. Local runtime: `./Scripts/prove-kmm-android-runtime.sh`. See `Docs/android-status.md`.
 
 - `.github/workflows/tag-probe.yml`
 - Trigger: **manual** (`workflow_dispatch`) only
@@ -157,6 +160,33 @@ Treat CI as a **constrained environment that must produce trustworthy signal**, 
 - Generate release notes
 - Publish GitHub release
 - Blocking: release-only
+
+## KMM CI (Android + iOS)
+
+Kotlin Multiplatform integration lives in `Examples/android/shared` (`expect class BlazeDB` in `commonMain`). **Do not** describe this as full product “KMM supported” in release notes until packaging and Android runtime are in CI — see `Docs/android-status.md`.
+
+### What PR gate (`ci.yml`) proves
+
+| Job | Platform | CI step | Runtime? |
+| --- | --- | --- | --- |
+| `macOS 15 — build, CLI, tests` | iOS (simulator) | `./Scripts/build-kmm-ios-bridge.sh` → `:shared:linkDebugFrameworkIosSimulatorArm64` + `:shared:iosSimulatorArm64Test` | **Yes** — `BlazeDBRuntimeSmokeTest` (`open` / `put` / `query`) |
+| `Android — cross-compile BlazeDBAndroidBridge` | Android (JVM/Kotlin) | `:shared:compileDebugKotlinAndroid` after OSS Swift cross-compile | **No** — compile-only; JNI not exercised on CI runners |
+
+### What CI does **not** prove (local scripts)
+
+| Surface | Script | Notes |
+| --- | --- | --- |
+| Android emulator KMM runtime | `./Scripts/prove-kmm-android-runtime.sh` | Docker cross-compile (if needed) + APK + UI check for `KMM RUNTIME OK` |
+| iOS only | `./Scripts/prove-kmm-ios-runtime.sh` | Same as macOS CI KMM steps |
+| Both | `./Scripts/prove-kmm-runtime.sh` | Runs iOS test + Android emulator smoke |
+
+Legacy `./Scripts/prove-android-runtime.sh` still accepts older JNI UI markers; prefer `prove-kmm-*` for the shared `BlazeDB` API.
+
+### Maintainer notes
+
+- iOS tests embed `libswift_Concurrency.dylib` next to `test.kexe` (`embedSwiftConcurrencyIosSimulatorArm64Test` in `shared/build.gradle.kts`) because some simulator runtimes do not resolve `@rpath/libswift_Concurrency.dylib` for Kotlin/Native test binaries.
+- Android cross-compile on macOS hosts requires **OSS Swift** or Docker (`prove-android-runtime-docker-crosscompile.sh`); Xcode Swift fails for `--swift-sdk …-android…`.
+- KMM Gradle uses `RepositoriesMode.PREFER_PROJECT` in `Examples/android/settings.gradle.kts` so Kotlin/Native can add Ivy repos.
 
 ## Tier Purposes
 
@@ -274,6 +304,7 @@ Use precise language so status and dashboards do not blur the PR gate with deepe
 | **PR3 transitional companions** | `BlazeDB_Tier2_Extended`, `BlazeDB_Tier3_Heavy_Perf`; temporary bridge targets slated for PR4 filesystem/target normalization. |
 | **Nightly Confidence (daily)** | `nightly.yml`: macOS Tier2 strict, clean checkout, README quickstart, Tier0 TSan; **Linux** `linux-tier1` + `linux-tier2-core` only (no Linux Tier0 nightly — covered in PR `ci.yml`). |
 | **Deep Validation (weekly)** | `deep-validation.yml` (weekly, Sun 03:00 UTC + manual), **delta-only**: **`deep-macos-tier3-heavy-destructive`**, **`deep-macos-tsan-tier1`**, **`deep-linux-tier2-extended-tier3`** — does not re-run PR/nightly tiers. |
+| **KMM PR gate (iOS runtime)** | macOS job: `build-kmm-ios-bridge.sh` + `:shared:iosSimulatorArm64Test`. Android job: `:shared:compileDebugKotlinAndroid` only. |
 | **Canonical Tier1** | `BlazeDB_Tier1` (single canonical Tier1 target). |
 
 Inventory/bootstrap code may still bucket all three SwiftPM modules under a single **`T1`** label for file-level manifests; that is a storage convenience. **Human-facing** summaries (CI names, release notes, team chat) should use the table above, not a vague “T1 passed.”
@@ -331,6 +362,12 @@ All other `Tier1Core` directories and files (Aggregation, API, Query, Integratio
 - `./Scripts/run-tier2-tier3-companions.sh` — local runner for `BlazeDB_Tier2` + `BlazeDB_Tier2_Extended` + `BlazeDB_Tier3_Heavy` + `BlazeDB_Tier3_Heavy_Perf` (weekly CI runs only the **delta** subset: extended + Tier3; use this script for a full local companion sweep)
 - `./Scripts/run-tier2.sh`
 - `./Scripts/run-tier3.sh`
+
+- KMM runtime proof (local; iOS also in PR gate):
+- `./Scripts/build-kmm-ios-bridge.sh` — static Swift bridge for iOS device + simulator
+- `./Scripts/prove-kmm-ios-runtime.sh` — iOS simulator `iosSimulatorArm64Test`
+- `./Scripts/prove-kmm-android-runtime.sh` — Android emulator via sample app (`KMM RUNTIME OK`)
+- `./Scripts/prove-kmm-runtime.sh` — both platforms
 
 ## Interpreting CI failures (first artifact, not last passer)
 

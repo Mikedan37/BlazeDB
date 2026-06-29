@@ -114,17 +114,20 @@ All samples below use the same demo password: **`DemoPass123!`** (meets the reco
 swift run HelloBlazeDB
 ```
 
-**Install the `blazedb` CLI globally (one command):**
+**Install the `blazedb` CLI globally (from a clone):**
 
 ```bash
-./install-blazedb.sh
+swift build -c release --product blazedb
+install -m 755 .build/release/blazedb /usr/local/bin/blazedb   # or ~/.local/bin
 ```
 
-After that, from any directory:
+Or run without installing:
 
 ```bash
-blazedb start
+swift run blazedb
 ```
+
+After installing to PATH, start the picker + REPL from any directory with `blazedb start`.
 
 ### Homebrew install (blazerepl tap)
 
@@ -240,7 +243,7 @@ targets: [
 
 Or in Xcode: **File → Add Package Dependencies** → paste `https://github.com/Mikedan37/BlazeDB.git`.
 
-**Requirements:** Swift 6.0+, macOS 15+ / iOS 15+ / watchOS 8+ / tvOS 15+ / visionOS 1+ / Linux / Android
+**Requirements:** Swift 6.0+ · **Production:** macOS 15+ / iOS 15+ / watchOS 8+ / tvOS 15+ / visionOS 1+ · **Core path:** Linux · **Experimental:** Android (cross-compile + sample in `Examples/android/` — not official app or KMM support; see [android-status.md](Docs/android-status.md))
 
 ---
 
@@ -533,7 +536,7 @@ The default `BlazeDBClient` uses a binary write-ahead log (`WALMode.legacy`) tha
 | tvOS 15+ | ✅ Builds | PR cross-compile gate |
 | visionOS 1+ | ✅ Builds | PR cross-compile (best-effort; SwiftPM xros triple) |
 | Linux | ✅ Core support | PR Tier0; nightly Tier1 + Tier2 core; weekly Tier2 extended + Tier3 heavy/perf |
-| Android (Swift + JNI) | ✅ Cross-compile + CI | `BLAZEDB_LINUX_CORE`; OSS Swift 6.3.2 + NDK r27d; JNI sample in `Examples/android/` |
+| Android | ⚠️ Partial | Core + JNI bridge cross-compile in CI; KMM sample in `Examples/android/` (iOS simulator runtime in CI; Android app integration **not** officially supported) — [android-status.md](Docs/android-status.md) |
 | Windows | 🚧 Planned | Not yet supported |
 
 SwiftUI query wrappers (`@BlazeStorableQuery`, `@BlazeQuery`, `@BlazeDataQuery`) are only available on Apple platforms. On Linux and Android, the `swift-crypto` package is used in place of Apple CryptoKit.
@@ -544,7 +547,8 @@ See [Compatibility Matrix](Docs/COMPATIBILITY.md) for details.
 
 ## Testing And CI
 
-- **PR gate** (macOS): `BlazeDB_Tier0` and `BlazeDB_Tier1`, README quickstart (L1), and README samples (L3) on every push/PR; Apple platforms cross-compile `BlazeDBCore` (iOS, watchOS, tvOS; visionOS best-effort); Linux runs `BlazeDB_Tier0`; Android cross-compiles `BlazeDBCore` + `BlazeDBAndroidBridge` (OSS Swift 6.3.2). See `Docs/Testing/CI_AND_TEST_TIERS.md` for the full matrix.
+- **PR gate** (macOS): `BlazeDB_Tier0` and `BlazeDB_Tier1`, README quickstart (L1), README samples (L3), **KMM iOS bridge build + `iosSimulatorArm64Test`**, and Apple platforms cross-compile (`BlazeDBCore` for iOS, watchOS, tvOS; visionOS best-effort).
+- **PR gate** (Linux): `BlazeDB_Tier0`, Android cross-compile (`BlazeDBAndroidBridge`, OSS Swift 6.3.2), and **KMM Android Kotlin compile** (`:shared:compileDebugKotlinAndroid` — compile-only, no emulator).
 - **Release validation** (tagged releases): macOS runs Tier0–Tier2 (+ extended companion targets as defined in the release workflow), not the same cadence as the PR gate.
 - **Nightly Confidence (daily)** runs macOS Tier2 strict, clean checkout, README quickstart, Tier0 TSan, and Linux Tier1/Tier2 core lanes (see `Docs/Testing/CI_AND_TEST_TIERS.md`).
 - **Deep Validation (weekly)** is **delta-only**: surfaces not already run by the PR gate and nightly (macOS Tier3 heavy + destructive, Tier1 TSan; Linux Tier2 extended + Tier3 heavy/perf). See `Docs/Testing/CI_AND_TEST_TIERS.md`.
@@ -575,7 +579,7 @@ Run with `swift run <ToolName>` (for the published CLI database tool, use `swift
 - **Nested Codable types are not individually queryable.** Nested structs/classes are stored as `BlazeDocumentField.dictionary` values. Round-tripping works, but nested fields cannot be filtered via KeyPath queries. Flatten nested fields into top-level properties if you need to query them.
 - **Password policy at open time.** Production open uses the recommended policy: at least 12 characters with uppercase, lowercase, and a number, plus estimated strength **Good** or better (see `PasswordStrengthValidator.recommended`). Weaker passwords are rejected before the database opens.
 - **`@BlazeQuery` / `@BlazeQueryTyped` require `BlazeDocument`.** For `BlazeStorable`-only models, use **`@BlazeStorableQuery`** instead, or add `BlazeDocument` (manual `toStorage()`/`init(from:)`), or use `@BlazeDataQuery` for raw rows.
-- **Android device APK not in CI yet.** PR gate cross-compiles the core + JNI bridge; emulator smoke and Gradle CI are planned next (see [android-status.md](Docs/android-status.md)).
+- **Android / KMM not officially supported.** PR CI cross-compiles the Swift core and JNI bridge, runs KMM iOS simulator tests, and compiles the KMM Android Kotlin target; Android emulator runtime is verified locally only (no AAR/XCFramework packaging yet). See [android-status.md](Docs/android-status.md).
 
 ---
 
@@ -610,6 +614,7 @@ Run with `swift run <ToolName>` (for the published CLI database tool, use `swift
 | [Developer Guide](Docs/DEVELOPER_GUIDE.md) | Contributing and development setup |
 | [Architecture](Docs/Architecture/) | Storage engine and internal design |
 | [Compatibility Matrix](Docs/COMPATIBILITY.md) | Platform and version support details |
+| [Android / KMM status](Docs/android-status.md) | Cross-compile, KMM sample, and integration roadmap (not full platform docs) |
 | [Durability Modes](Docs/Status/DURABILITY_MODE_SUPPORT.md) | WAL modes and recovery guarantees |
 | [System Map](Docs/SYSTEM_MAP.md) | Feature inventory, status, and code locations |
 | [Design Overview (Medium)](https://medium.com/@DanylchukStudiosLLC/blazedb-a-swift-native-embedded-application-database-c0c762dee311) | Narrative architecture overview (March 2026) |

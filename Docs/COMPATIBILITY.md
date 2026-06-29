@@ -68,7 +68,7 @@
 
 ### Android
 - **Status:** Core path only — **not yet officially supported** for app integration
-- **Notes:** Same compile-time mode as Linux (`BLAZEDB_LINUX_CORE`). Cross-compilation requires **OSS Swift 6.3.2+** (matching the Android SDK bundle), the [Swift SDK for Android](https://swift.org/documentation/articles/swift-sdk-for-android-getting-started.html), and NDK r27d+. PR CI cross-compiles `BlazeDBCore` on Linux with OSS Swift.
+- **Notes:** Same compile-time mode as Linux (`BLAZEDB_LINUX_CORE`). Cross-compilation requires **OSS Swift 6.3.2+** (matching the Android SDK bundle), the [Swift SDK for Android](https://swift.org/documentation/articles/swift-sdk-for-android-getting-started.html), and NDK r27d+. PR CI cross-compiles `BlazeDBAndroidBridge` on Linux and compiles the KMM `:shared` Android target (`:shared:compileDebugKotlinAndroid`).
 - **Detail:** [android-status.md](android-status.md)
 
 #### OSS Swift vs Xcode Swift (Android cross-compile)
@@ -89,7 +89,7 @@ compiled module was created by an older version of the compiler; rebuild 'Founda
 
 That is a toolchain mismatch, not a BlazeDB bug. Install OSS Swift 6.3.2+ (for example via [swiftly](https://www.swift.org/install/)) and ensure `swift --version` does **not** report `Apple Swift`. Use `./Scripts/ci-android-cross-compile.sh` on CI or locally.
 
-**KMM:** BlazeDB does **not** support Kotlin Multiplatform today. Swift-on-Android (native library + JNI) is the realistic integration path; see [android-status.md](android-status.md).
+**KMM:** Kotlin Multiplatform integration is **in progress** — `expect class BlazeDB` in `Examples/android/shared` with iOS simulator runtime in PR CI and Android emulator runtime verified locally. BlazeDB does **not** claim full “Kotlin Multiplatform supported” until Android runtime is in CI and consumer packaging (AAR/XCFramework) exists. See [android-status.md](android-status.md).
 
 ---
 

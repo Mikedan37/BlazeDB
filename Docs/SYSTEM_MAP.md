@@ -212,7 +212,7 @@ Additional example files in `Examples/` (`.swift` files) are standalone referenc
 | tvOS 15+ | Stable | Declared in Package.swift | Limited CI |
 | visionOS 1+ | Stable | Declared in Package.swift | Limited CI |
 | Linux (Swift 6.0+) | Stable | Blocking lane (core + Tier0) | `BLAZEDB_LINUX_CORE` gates **69 files** across spatial, vector, async APIs, trigger persistence, FTS internals, query planner branches — effectively a second operating mode, not just SwiftUI exclusion |
-| Android | Partial | Blocking cross-compile lane (`ci.yml`, OSS Swift 6.3.2) | Same `BLAZEDB_LINUX_CORE` path as Linux; app/KMM integration not yet supported — see `Docs/android-status.md` |
+| Android | Partial | Blocking cross-compile + KMM Android compile (`ci.yml`, OSS Swift 6.3.2); KMM iOS runtime on macOS PR gate | Same `BLAZEDB_LINUX_CORE` path as Linux; KMM integration in progress — see `Docs/android-status.md` |
 
 ### Testing and CI
 

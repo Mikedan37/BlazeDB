@@ -32,7 +32,7 @@ Forks, billing limits, and hosted CI availability can prevent Actions from runni
 
 ## Android cross-compilation (contributors)
 
-BlazeDBCore can be cross-compiled for Android from a Linux or macOS host. This is **not** the same as shipping a Kotlin or KMM SDK.
+BlazeDBCore and `BlazeDBAndroidBridge` can be cross-compiled for Android from a Linux or macOS host. This is **not** the same as shipping a Kotlin or KMM SDK.
 
 **Requirements:**
 
@@ -49,13 +49,30 @@ BlazeDBCore can be cross-compiled for Android from a Linux or macOS host. This i
 
 If you see `compiled module was created by an older version of the compiler` for `Foundation.swiftmodule`, you are almost certainly on Apple Swift. Switch to OSS Swift and retry.
 
+### KMM integration (Android + iOS)
+
+The `:shared` module in `Examples/android/shared` exposes `expect class BlazeDB` in `commonMain`. PR CI runs:
+
+- **macOS:** `./Scripts/build-kmm-ios-bridge.sh` + `:shared:iosSimulatorArm64Test` (runtime `open` / `put` / `query` on iOS simulator)
+- **Linux:** `:shared:compileDebugKotlinAndroid` after Android bridge cross-compile (compile-only; no emulator)
+
+**Local runtime proof** (same API on both platforms):
+
+```bash
+./Scripts/prove-kmm-ios-runtime.sh      # iOS simulator (matches macOS CI)
+./Scripts/prove-kmm-android-runtime.sh  # Android emulator (not in CI)
+./Scripts/prove-kmm-runtime.sh          # both
+```
+
+Do **not** describe this as full product “KMM supported” until Android runtime is in CI and consumer packaging exists. Details: [Docs/android-status.md](Docs/android-status.md), [CI and test tiers — KMM CI](Docs/Testing/CI_AND_TEST_TIERS.md#kmm-ci-android--ios).
+
 **Status and roadmap:** [Docs/android-status.md](Docs/android-status.md)
 
 ---
 
 ## CI at a glance
 
-The PR workflow is [`.github/workflows/ci.yml`](.github/workflows/ci.yml). Scheduled and weekly workflows add coverage on top; they are documented in [CI and test tiers](Docs/Testing/CI_AND_TEST_TIERS.md). The macOS PR gate runs Tier0, Tier1, **`verify-readme-quickstart.sh` (L1)**, and **`verify-readme-samples.sh` (L3)**. **`verify-clean-checkout.sh`** runs in nightly only. **`v*`** tag buildability uses the manual [tag-probe workflow](.github/workflows/tag-probe.yml).
+The PR workflow is [`.github/workflows/ci.yml`](.github/workflows/ci.yml). Scheduled and weekly workflows add coverage on top; they are documented in [CI and test tiers](Docs/Testing/CI_AND_TEST_TIERS.md). The macOS PR gate runs Tier0, Tier1, **KMM iOS bridge + `iosSimulatorArm64Test`**, README L1/L3, and Apple platform cross-compile. The Linux PR gate runs Tier0, Android bridge cross-compile, and **KMM Android Kotlin compile**. **`verify-clean-checkout.sh`** runs in nightly only. **`v*`** tag buildability uses the manual [tag-probe workflow](.github/workflows/tag-probe.yml).
 
 ### Documentation verification (maintainers)
 

@@ -219,7 +219,7 @@ BlazeDB core
 
 That is the same shape as ``MVVMPattern``, with different UI binding. See [android-status.md](../android-status.md) for the engineering roadmap and what is verified vs future work.
 
-BlazeDB **does not support KMM** today. Swift-on-Android (cross-compiled Swift + JNI) is the realistic near-term path; KMM-native bindings would require additional FFI work.
+KMM integration (`expect class BlazeDB` in `Examples/android/shared`) is **in progress**: iOS simulator runtime is in PR CI; Android emulator runtime is verified locally via `./Scripts/prove-kmm-android-runtime.sh`. BlazeDB does **not** claim full “Kotlin Multiplatform supported” until Android runtime is in CI and packaging exists.
 
 ---
 

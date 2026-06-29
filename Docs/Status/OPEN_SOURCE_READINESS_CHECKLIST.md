@@ -25,7 +25,8 @@ BlazeDB includes GitHub Actions workflows under `.github/workflows/` for CI vali
 - If hosted Actions cannot run (billing, forks, or org policy), treat **local** runs of the same commands as the merge gate evidence until CI is restored.
 - [x] Next public release tag candidate build passes from a fresh clone.
 - Verified locally via `Scripts/verify-clean-checkout.sh`, `Scripts/verify-readme-quickstart.sh` (L1), and `Scripts/verify-readme-samples.sh` (L3).
-- OSS verification runs on **macOS** in `.github/workflows/ci.yml` (Tier0/Tier1, README quickstart L1, README samples L3 on every push/PR).
+- OSS verification runs on **macOS** in `.github/workflows/ci.yml` (Tier0/Tier1, KMM iOS bridge + `iosSimulatorArm64Test`, README quickstart L1, README samples L3 on every push/PR).
+- Linux PR gate: Tier0, Android bridge cross-compile, KMM `:shared:compileDebugKotlinAndroid` (see `Docs/Testing/CI_AND_TEST_TIERS.md`).
 - Legacy **`v*` tag buildability** (optional): manual workflow `.github/workflows/tag-probe.yml` and helper `Scripts/check-release-tag-builds.sh` (not run on every push/PR; see `Docs/Testing/CI_AND_TEST_TIERS.md`).
 - Tooling in place: `Scripts/verify-clean-checkout.sh` (release build + clean-worktree validation path).
 - Tag build probe: `Scripts/check-release-tag-builds.sh`.
