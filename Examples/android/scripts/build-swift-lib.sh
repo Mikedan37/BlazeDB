@@ -14,5 +14,8 @@ echo "Swift Android artifacts (if build succeeded):"
 echo "  $SWIFT_BUILD/aarch64-unknown-linux-android28/debug"
 echo
 echo "Build the sample app with:"
-echo "  cd examples/android"
+echo "  cd Examples/android"
 echo "  ./gradlew :app:assembleDebug -PBLAZEDB_SWIFT_BUILD=$SWIFT_BUILD"
+echo
+echo "Runtime smoke (device/emulator with adb):"
+echo "  ./Scripts/run-android-runtime-smoke.sh -PBLAZEDB_SWIFT_BUILD=$SWIFT_BUILD"

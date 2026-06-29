@@ -308,6 +308,10 @@ let package = Package(
         .library(
             name: "BlazeDBCore",
             targets: ["BlazeDBCore"]),
+        .library(
+            name: "BlazeDBAndroidBridge",
+            type: .dynamic,
+            targets: ["BlazeDBAndroidBridge"]),
         .executable(
             name: "blazedb",
             targets: ["BlazedbCLI"]),

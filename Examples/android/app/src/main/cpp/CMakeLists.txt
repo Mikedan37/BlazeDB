@@ -19,18 +19,28 @@ target_include_directories(
 if(BLAZEDB_SWIFT_BUILD)
     set(SWIFT_TRIPLE "aarch64-unknown-linux-android28")
     set(SWIFT_BUILD_ROOT "${BLAZEDB_SWIFT_BUILD}/${SWIFT_TRIPLE}/debug")
+    set(SWIFT_BRIDGE_LIB "${SWIFT_BUILD_ROOT}/libBlazeDBAndroidBridge.so")
 
-    find_library(BLAZEDB_BRIDGE_LIB BlazeDBAndroidBridge PATHS "${SWIFT_BUILD_ROOT}" NO_DEFAULT_PATH REQUIRED)
-    find_library(BLAZEDB_CORE_LIB BlazeDBCore PATHS "${SWIFT_BUILD_ROOT}" NO_DEFAULT_PATH REQUIRED)
+    if(NOT EXISTS "${SWIFT_BRIDGE_LIB}")
+        message(FATAL_ERROR "Missing Swift bridge shared library: ${SWIFT_BRIDGE_LIB}")
+    endif()
+
+    message(STATUS "Linking JNI shim against ${SWIFT_BRIDGE_LIB}")
 
     target_link_libraries(
         blazedb_android_bridge
         PRIVATE
-        ${BLAZEDB_BRIDGE_LIB}
-        ${BLAZEDB_CORE_LIB}
+        "${SWIFT_BRIDGE_LIB}"
+    )
+
+    set_target_properties(
+        blazedb_android_bridge
+        PROPERTIES
+        BUILD_RPATH "$ORIGIN"
+        INSTALL_RPATH "$ORIGIN"
     )
 else()
-    message(WARNING "BLAZEDB_SWIFT_BUILD not set — JNI shim will fail at runtime until Swift static libs are linked")
+    message(WARNING "BLAZEDB_SWIFT_BUILD not set — JNI shim will fail at runtime until libBlazeDBAndroidBridge.so is linked")
 endif()
 
 target_link_libraries(

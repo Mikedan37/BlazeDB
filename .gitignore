@@ -30,6 +30,11 @@ DerivedData/
 Docs/superpowers/
 Docs/Benchmarks/logs/
 
+# Android Gradle sample (Examples/android)
+Examples/android/.gradle/
+Examples/android/**/build/
+Examples/android/app/.cxx/
+
 # Secrets and certificates
 *.pem
 *.key

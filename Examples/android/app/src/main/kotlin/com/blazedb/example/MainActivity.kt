@@ -13,14 +13,14 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.blazedb.example.data.TodoRepository
 import com.blazedb.example.ui.TodoViewModel
+import com.blazedb.shared.BlazeDBRepository
 import java.io.File
 
 class MainActivity : ComponentActivity() {
     private val repository by lazy {
         val dbFile = File(filesDir, "blazedb/todos.blazedb")
-        TodoRepository(dbFile, TodoViewModel.DEMO_PASSWORD).also { it.ensureParentDir() }
+        BlazeDBRepository(dbFile.absolutePath, TodoViewModel.DEMO_PASSWORD).also { it.ensureParentDir() }
     }
 
     private val viewModel: TodoViewModel by viewModels {
@@ -40,7 +40,7 @@ class MainActivity : ComponentActivity() {
                         .fillMaxSize()
                         .padding(16.dp),
                 ) {
-                    Text("BlazeDB Android sample")
+                    Text("BlazeDB Android sample (KMM shared)")
                     Text("JNI smoke result: $smoke")
                     Text("Open todos (${todos.size}):")
                     todos.forEach { todo ->
@@ -53,7 +53,7 @@ class MainActivity : ComponentActivity() {
 }
 
 class TodoViewModelFactory(
-    private val repository: TodoRepository,
+    private val repository: BlazeDBRepository,
 ) : androidx.lifecycle.ViewModelProvider.Factory {
     @Suppress("UNCHECKED_CAST")
     override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {

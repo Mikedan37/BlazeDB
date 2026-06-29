@@ -2,28 +2,32 @@
 
 Minimal **Repository + ViewModel + Compose** sample wired to Swift `BlazeDBCore` through a C ABI and JNI shim.
 
-**Demonstrated in this tree**
+**KMM:** `:shared` is a Kotlin Multiplatform module (`commonMain` + `androidMain`). The Android `actual` uses JNI; iOS/other targets can be added later without changing the app shell.
 
-| Layer | Location |
-|-------|----------|
-| Swift C ABI (`blazedb_bridge_*`) | `Examples/BlazeDBAndroidBridge/` |
-| JNI shim | `app/src/main/cpp/blazedb_jni_shim.c` |
-| Kotlin bridge | `bridge/BlazeDBBridge.kt` |
-| `Flow` adapter over `BlazeLiveQuery` | `bridge/BlazeLiveQueryFlow.kt` |
-| Repository + ViewModel | `data/`, `ui/` |
+**Present in this tree (compile-time wiring — not runtime-verified in CI)**
 
-**Not yet verified on device in CI** — requires linking Swift static libraries into the `.so` (see below).
+| Layer | Location | Confidence |
+|-------|----------|------------|
+| KMM `expect` repository | `shared/src/commonMain/` | 🟡 android actual only |
+| Swift C ABI (`blazedb_bridge_*`) | `Examples/BlazeDBAndroidBridge/` | 🟢 cross-compiles in CI |
+| JNI shim | `app/src/main/cpp/blazedb_jni_shim.c` | 🟢 links locally |
+| Kotlin bridge + Flow | `shared/src/androidMain/.../bridge/` | 🟡 runtime pending |
+| Compose app shell | `app/` | 🟡 runtime pending |
+
+CI proves cross-compilation; it does **not** exercise `nativeSmoke()` on a device. See [Docs/android-status.md](../../Docs/android-status.md) for the full confidence ladder.
 
 ## Architecture
 
 ```text
-Compose UI  →  TodoViewModel (StateFlow)
-                  ↓ BlazeLiveQueryFlow (Kotlin Flow)
-               BlazeDBBridge (JNI)
-                  ↓ blazedb_jni_shim.c
-               BlazeDBAndroidBridge (Swift, C exports)
-                  ↓ BlazeLiveQuery + BlazeDBClient
-               BlazeDBCore
+Compose UI (:app)  →  TodoViewModel
+                          ↓
+                    BlazeDBRepository (:shared commonMain expect / androidMain actual)
+                          ↓ BlazeLiveQueryFlow (Kotlin Flow)
+                       BlazeDBBridge (JNI, shared/androidMain)
+                          ↓ blazedb_jni_shim.c (:app CMake → .so)
+                       BlazeDBAndroidBridge (Swift C exports)
+                          ↓ BlazeLiveQuery + BlazeDBClient
+                       BlazeDBCore
 ```
 
 Same shape as `Examples/MVVMPattern` and `@BlazeStorableQuery` on Apple platforms.
@@ -43,22 +47,19 @@ This runs hello-world toolchain smoke, then builds `BlazeDBCore` and `BlazeDBAnd
 ### 2. Build the Android app
 
 ```bash
-cd examples/android
-chmod +x scripts/build-swift-lib.sh   # optional helper
-./scripts/build-swift-lib.sh          # runs step 1 + prints Gradle hint
+cd Examples/android
+./scripts/build-swift-lib.sh          # cross-compile Swift from repo root
 
-./gradlew :app:assembleDebug \
-  -PBLAZEDB_SWIFT_BUILD=/absolute/path/to/BlazeDB/.build
-```
+# Requires JDK 17+, Android SDK, Gradle wrapper (Android Studio import or `gradle wrapper`)
+./gradlew :app:assembleDebug -PBLAZEDB_SWIFT_BUILD=/absolute/path/to/BlazeDB/.build
+./gradlew :app:installDebug -PBLAZEDB_SWIFT_BUILD=...
 
-Install on arm64 device/emulator (API 28+):
-
-```bash
-./gradlew :app:installDebug
+# Or from repo root (adb + emulator required):
+./Scripts/run-android-runtime-smoke.sh
 ```
 
 ## KMM status
 
-This sample is **Swift-on-Android + Kotlin**, not KMM-native BlazeDB. A future KMM `shared` module could wrap the same JNI bridge via `expect`/`actual` on Android.
+This sample is **Swift-on-Android + Kotlin**, not KMM-native BlazeDB. A KMM `shared` module is intentionally **deferred** until device/emulator runtime and CI smoke pass — only then wrap this JNI bridge via `expect`/`actual`.
 
 See [Docs/android-status.md](../../Docs/android-status.md).

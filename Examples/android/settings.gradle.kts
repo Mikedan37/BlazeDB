@@ -16,3 +16,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "BlazeDBAndroidSample"
 include(":app")
+include(":shared")

@@ -76,7 +76,7 @@ static int register_live_query(int64_t handle, live_query_ctx_t *ctx) {
 }
 
 JNIEXPORT jint JNICALL
-Java_com_blazedb_example_bridge_BlazeDBBridge_nativeSmoke(
+Java_com_blazedb_shared_bridge_BlazeDBBridge_nativeSmoke(
     JNIEnv *env,
     jclass clazz,
     jstring dbPath,
@@ -91,7 +91,7 @@ Java_com_blazedb_example_bridge_BlazeDBBridge_nativeSmoke(
 }
 
 JNIEXPORT jlong JNICALL
-Java_com_blazedb_example_bridge_BlazeDBBridge_nativeLiveQueryStart(
+Java_com_blazedb_shared_bridge_BlazeDBBridge_nativeLiveQueryStart(
     JNIEnv *env,
     jclass clazz,
     jstring dbPath,
@@ -127,7 +127,7 @@ Java_com_blazedb_example_bridge_BlazeDBBridge_nativeLiveQueryStart(
 }
 
 JNIEXPORT void JNICALL
-Java_com_blazedb_example_bridge_BlazeDBBridge_nativeLiveQueryStop(
+Java_com_blazedb_shared_bridge_BlazeDBBridge_nativeLiveQueryStop(
     JNIEnv *env,
     jclass clazz,
     jlong handle) {

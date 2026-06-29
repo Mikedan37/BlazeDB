@@ -1,18 +1,13 @@
-package com.blazedb.example.bridge
+package com.blazedb.shared.bridge
 
-import com.blazedb.example.data.Todo
-import java.util.UUID
+import com.blazedb.shared.Todo
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import org.json.JSONArray
 
-/**
- * Kotlin adapter over Swift [BlazeLiveQuery] (JNI → C ABI → BlazeDBAndroidBridge).
- *
- * Same role as `@BlazeStorableQuery` / MVVMPattern ViewModel on Apple platforms.
- */
-object BlazeLiveQueryFlow {
+/** Kotlin Flow adapter over Swift BlazeLiveQuery (JNI → C ABI). */
+internal object BlazeLiveQueryFlow {
     fun observeOpenTodos(dbPath: String, password: String): Flow<List<Todo>> = callbackFlow {
         val callback = object : LiveQueryCallback {
             override fun onResults(jsonPayload: String) {
@@ -41,10 +36,10 @@ object BlazeLiveQueryFlow {
                 val obj = array.getJSONObject(i)
                 add(
                     Todo(
-                        id = UUID.fromString(obj.getString("id")),
+                        id = obj.getString("id"),
                         title = obj.getString("title"),
                         isDone = obj.optBoolean("isDone", false),
-                    )
+                    ),
                 )
             }
         }

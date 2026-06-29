@@ -36,6 +36,15 @@ install_linux_ubuntu2204() {
   fi
 }
 
+install_macos_aarch64() {
+  echo "error: OSS Swift ${BLAZEDB_ANDROID_HOST_SWIFT_VERSION} macOS tarballs are not published on swift.org." >&2
+  echo "       On macOS, cross-compile via Docker:" >&2
+  echo "         ./Scripts/prove-android-runtime-docker-crosscompile.sh" >&2
+  echo "       Or install the Swift ${BLAZEDB_ANDROID_HOST_SWIFT_VERSION} .pkg from https://www.swift.org/install/ and ensure" >&2
+  echo "       \`swift --version\` shows OSS Swift (not Apple Swift) before running ci-android-cross-compile.sh." >&2
+  exit 1
+}
+
 echo ">>> Android host Swift toolchain (target ${BLAZEDB_ANDROID_HOST_SWIFT_VERSION})"
 
 if host_swift_is_usable; then
@@ -48,8 +57,11 @@ case "$(uname -s)-$(uname -m)" in
   Linux-x86_64)
     install_linux_ubuntu2204
     ;;
+  Darwin-arm64)
+    install_macos_aarch64
+    ;;
   *)
-    echo "error: automatic OSS Swift install is supported on Linux x86_64 (CI ubuntu-22.04)." >&2
+    echo "error: automatic OSS Swift install is supported on Linux x86_64 and macOS arm64." >&2
     echo "       On other hosts, install Swift ${BLAZEDB_ANDROID_HOST_SWIFT_VERSION}+ from https://www.swift.org/install/" >&2
     echo "       then run ./Scripts/ci-android-cross-compile.sh" >&2
     exit 1

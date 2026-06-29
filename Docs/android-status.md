@@ -5,6 +5,42 @@ For platform matrices and API stability, see [COMPATIBILITY.md](COMPATIBILITY.md
 
 **Not yet officially supported:** Android app integration and KMM are engineering targets, not supported product surfaces.
 
+Having source in the tree (C ABI, JNI shim, Kotlin `Flow` adapter, Gradle sample) is **not** the same as Android support. Those layers **compile**; they have **not** been exercised end-to-end on a device in an automated way.
+
+---
+
+## Confidence levels
+
+What has been **proven** versus **assumed**:
+
+| Confidence | Status |
+|------------|--------|
+| 🟢 **Compiler** | `BlazeDBCore` + `BlazeDBAndroidBridge` cross-compile for Android in PR gate CI (`./Scripts/ci-android-cross-compile.sh`) |
+| 🟢 **Linker** | JNI bridge target and sample Gradle/CMake wiring **build** (Swift static libs linked into `libblazedb_android_bridge.so` locally) |
+| 🟡 **Runtime** | Local device/emulator verification **pending** — `BlazeDBBridge.nativeSmoke()` not yet confirmed on hardware |
+| 🔴 **Production** | No automated emulator/device CI yet |
+| ⚪ **Ecosystem** | KMM wrapper not started — intentionally deferred until runtime path is battle-tested |
+
+**Important distinction:** CI proves cross-compilation and that the bridge **compiles**. It does **not** prove the JNI → Swift → database path works at runtime on Android.
+
+---
+
+## Proof order (do not skip layers)
+
+Prove each layer before adding the next. Wrapping an unverified stack in KMM only adds abstraction — and bugs distribute across every layer you invent.
+
+| # | Layer | Confidence | Notes |
+|---|-------|------------|-------|
+| 1 | Swift library (`BlazeDBCore`) | 🟢 | OSS Swift 6.3.2 + NDK r27d; NDK clang/libc++ header path fixes in CI |
+| 2 | C ABI (`BlazeDBAndroidBridge`) | 🟢 | `blazedb_bridge_*` exports cross-compile in CI |
+| 3 | JNI (C shim → Kotlin `external`) | 🟢 compile / 🟡 runtime | `blazedb_jni_shim.c` + `BlazeDBBridge.kt` — builds, not yet smoke-tested on device |
+| 4 | Kotlin API (`Flow` adapter, Repository) | 🟡 | Sample code in `Examples/android/` — not runtime-verified |
+| 5 | Emulator / device | 🟡 | Manual `./gradlew :app:installDebug` path documented; not automated |
+| 6 | CI (Gradle + emulator smoke) | 🔴 | Planned after local runtime proof |
+| 7 | KMM `shared` module | ⚪ | **After 1–6** — wraps the same JNI bridge via `expect`/`actual`; not “Kotlin-native BlazeDB” |
+
+The toolchain work (OSS Swift against Android NDK, libc++ include paths, cross-compilation reliability) is the substantive systems engineering here. KMM is a later ergonomics layer, not the proof.
+
 ---
 
 ## The core insight
@@ -19,21 +55,20 @@ For the full design of ``BlazeLiveQuery`` (lifecycle, threading, adapters, evide
 
 ---
 
-## Current status
+## Current status (detail)
 
-| Item | Status |
-|------|--------|
-| Core compiles with `BLAZEDB_LINUX_CORE` (same path as Linux core) | Verified in CI (Linux host cross-compile) and locally via `CorePathSmoke` |
-| Portable database APIs (`open`, `put`, `get`, `query`, `observe`, RLS, stats, health, export) | Verified on the core path; advanced APIs gated off |
-| ``BlazeLiveQuery`` (observe → refresh → decode in core) | Verified via `BlazeLiveQueryTests` (Tier 1 PR gate), `MVVMPattern`, and SwiftUI wrappers |
-| Swift-on-Android cross-compile | CI: hello-world smoke + `BlazeDBCore` + `BlazeDBAndroidBridge` (`./Scripts/ci-android-cross-compile.sh`) |
-| Requires **OSS Swift** toolchain (not Xcode `swift`) | Verified — Apple Swift fails with Foundation module mismatch |
-| Android CI | Present in PR gate (`ci.yml`) |
-| C ABI + JNI sample | `Examples/BlazeDBAndroidBridge` + `examples/android/` (Gradle, Flow adapter) |
-| Runnable example on device/emulator | Scaffold present; link Swift libs with `-PBLAZEDB_SWIFT_BUILD` |
-| Kotlin bindings / JNI wrapper | Not yet |
-| KMM sample or Gradle integration | Not yet |
-| Default database directory on Android | Not defined — use `BlazeDB.open(at:password:)` with an app-scoped path |
+| Item | Confidence | Notes |
+|------|------------|-------|
+| Core with `BLAZEDB_LINUX_CORE` (same path as Linux) | 🟢 | Host CI + `CorePathSmoke` |
+| Portable database APIs (`open`, `put`, `get`, `query`, `observe`, …) | 🟢 | Core path; advanced APIs gated off |
+| ``BlazeLiveQuery`` | 🟢 | Tier 1 tests, `MVVMPattern`, SwiftUI wrappers |
+| Swift-on-Android cross-compile | 🟢 | hello-world + `BlazeDBCore` + `BlazeDBAndroidBridge` in PR gate |
+| Requires **OSS Swift** (not Xcode `swift`) | 🟢 | Apple Swift fails with Foundation module mismatch |
+| C ABI + JNI + Kotlin sample **source** | 🟢 compile | `Examples/BlazeDBAndroidBridge`, `Examples/android/` |
+| JNI smoke on device/emulator | 🟡 | Code present (`nativeSmoke`); runtime proof pending |
+| Gradle APK in CI | 🔴 | Not wired |
+| KMM | ⚪ | Not started — do not claim “supports KMM” |
+| Default Android database directory | — | Not defined; use `BlazeDB.open(at:password:)` with app-scoped path |
 
 ---
 
@@ -41,10 +76,10 @@ For the full design of ``BlazeLiveQuery`` (lifecycle, threading, adapters, evide
 
 These are **not** the same thing.
 
-- **Swift-on-Android:** BlazeDB is Swift source cross-compiled to a native Android library. Kotlin/Java call into it via JNI (for example [swift-java](https://github.com/swiftlang/swift-java)). This is the realistic near-term path.
-- **KMM (Kotlin Multiplatform):** Shared Kotlin business logic calling BlazeDB directly. That requires Kotlin bindings or a stable C/FFI surface BlazeDB does not ship today.
+- **Swift-on-Android:** BlazeDB Swift source cross-compiled to native Android libraries. Kotlin/Java call in via JNI. This is the realistic near-term path — and the path the sample follows.
+- **KMM (Kotlin Multiplatform):** Shared Kotlin business logic calling BlazeDB directly. Requires a stable, **runtime-verified** bridge on Android first. BlazeDB does **not** support KMM today.
 
-BlazeDB **does not support KMM** today. It **may** support Swift-on-Android once cross-compile CI stays green and a minimal sample app exists.
+Do **not** rush KMM. “Supports KMM” is a buzzword; wrapping an unproven runtime path makes debugging miserable because you cannot tell which layer is lying.
 
 ---
 
@@ -52,15 +87,15 @@ BlazeDB **does not support KMM** today. It **may** support Swift-on-Android once
 
 Forum questions often mix two layers:
 
-1. **Architecture (portable):** One `BlazeDBClient` per app, Repository wrapping the client, ViewModel exposing query state refreshed via observation, explicit `close()` on shutdown. BlazeDB’s storage and observation model maps cleanly onto Repository + ViewModel — not Compose, DI, or other Android ecosystem pieces. SwiftUI integrations are Apple-only **ergonomics**.
-2. **Implementation (not built yet):** Gradle module, `.aar`/`.so` packaging, JNI entrypoints, Kotlin-facing API, device smoke test, documentation claiming full Android support.
+1. **Architecture (portable, proven on host):** One `BlazeDBClient` per app, Repository, ViewModel, observation-driven query refresh, explicit `close()`. Demonstrated in `MVVMPattern` and ``BlazeLiveQuery`` tests.
+2. **Implementation (Android runtime, partially built):** Cross-compile ✅, bridge source ✅, device smoke ⏳, CI smoke ❌, KMM ❌.
 
-You can adopt the architecture pattern before BlazeDB ships Kotlin integration; you cannot depend on KMM-native BlazeDB without building the bridge yourself.
+You can adopt the architecture pattern before BlazeDB ships verified Android integration; you cannot depend on KMM-native BlazeDB without building and proving the bridge yourself.
 
 ### Same architecture, different UI glue
 
 ```text
-SwiftUI (Apple)                         Android (manual wiring today)
+SwiftUI (Apple)                         Android (target wiring)
 
 App                                     Application
  └── BlazeDBClient (once)               └── BlazeDBClient (once, explicit path)
@@ -68,49 +103,28 @@ App                                     Application
        ├── @BlazeStorableQuery                  └── Repository
        │     (wraps BlazeLiveQuery)                  │   writes + explicit reads
        ├── @Environment(\.blazeDBClient)            └── ViewModel
-       └── SwiftUI View                                  │   BlazeLiveQuery / manual observe
-             (reads property wrapper)                     │   StateFlow / LiveData
+       └── SwiftUI View                                  │   BlazeLiveQuery / Flow
+             (reads property wrapper)                     │   StateFlow
                                                          └── Compose UI
-                                                               (collectAsState)
 ```
-
-Android does **not** lose database features. It loses property wrappers, environment injection, and automatic observation wiring — those are ergonomics, not storage functionality.
 
 ### Same engine, different adapter (execution flow)
 
-Both platforms run the same pipeline after a write:
-
 ```text
-SwiftUI path                          Android path (today)
-
-put()                                 put()
-  ↓                                     ↓
-PageStore / collection                PageStore / collection
-  ↓                                     ↓
-notifyObservers()                     notifyObservers()
-  ↓                                     ↓
-ObserverToken                         ObserverToken
-  ↓                                     ↓
-BlazeLiveQuery.refresh()              BlazeLiveQuery.refresh()   (or manual equivalent)
-  ↓                                     ↓
-query() + decode                      query() + decode
-  ↓                                     ↓
-@Published → SwiftUI redraw           StateFlow → Compose recomposes
+put() → PageStore → notifyObservers() → ObserverToken
+  → BlazeLiveQuery.refresh() → query() + decode
+  → SwiftUI @Published  |  Android StateFlow (via JNI, when runtime-verified)
 ```
-
-``@BlazeStorableQuery`` is a SwiftUI adapter over ``BlazeLiveQuery``. A future Kotlin adapter would wrap the same core primitive as `Flow`.
 
 ---
 
 ## What the examples demonstrate
 
-| Example | What it verifies | What it does **not** verify |
-|---------|------------------|------------------------------|
-| `CorePathSmoke` | CRUD, `observe`, portable core path | Android runtime, JNI, Compose |
-| `MVVMPattern` | Repository + ViewModel + ``BlazeLiveQuery`` using public APIs | Android runtime, JNI, Kotlin interop |
-| `examples/android/` | JNI shim + Kotlin `Flow` adapter + Compose UI scaffold | End-to-end device smoke in CI |
-
-The Repository + ViewModel pattern is **demonstrated** in `MVVMPattern` using only BlazeDB’s public APIs. Android-specific integration (JNI, Kotlin, Compose) follows the same architecture but is **not yet implemented**.
+| Example | Proves | Does **not** prove |
+|---------|--------|---------------------|
+| `CorePathSmoke` | CRUD, `observe`, portable core on **host** | Android runtime, JNI |
+| `MVVMPattern` | Repository + ViewModel + ``BlazeLiveQuery`` on **host** | Android runtime, JNI |
+| `Examples/android/` | Bridge **compiles**; wiring shape for JNI → Flow → Compose | End-to-end runtime on device; CI smoke |
 
 ```bash
 swift run CorePathSmoke
@@ -121,64 +135,71 @@ swift run MVVMPattern
 
 ## Local verification
 
-### Portable core path (host smoke test)
+### Portable core path (host)
 
-Runs the `BLAZEDB_LINUX_CORE` code path on macOS/Linux — **not** an Android binary:
+Runs `BLAZEDB_LINUX_CORE` on macOS/Linux — **not** an Android binary:
 
 ```bash
 swift run CorePathSmoke
 ```
 
-See [Examples/CorePathSmoke/README.md](../Examples/CorePathSmoke/README.md).
-
 ### Android cross-compile (contributors)
 
-Use **OSS Swift 6.3.2+**, the [Swift SDK for Android](https://swift.org/documentation/articles/swift-sdk-for-android-getting-started.html), and NDK r27d+. `./Scripts/ci-android-cross-compile.sh` runs hello-world smoke, then cross-compiles `BlazeDBCore` and `BlazeDBAndroidBridge` using NDK clang + libc++ headers (required for `swift-crypto`).
+OSS Swift 6.3.2+, [Swift SDK for Android](https://swift.org/documentation/articles/swift-sdk-for-android-getting-started.html), NDK r27d+:
 
 ```bash
 ./Scripts/ci-android-cross-compile.sh
 ```
 
-**Do not use Xcode’s `swift`** for `--swift-sdk …-android…` builds. You will see errors like “compiled module was created by an older version of the compiler” for `Foundation.swiftmodule`.
+**Do not use Xcode’s `swift`** for `--swift-sdk …-android…` builds.
+
+### Android runtime (next milestone)
+
+After cross-compile succeeds, build and install the sample (manual, not in CI yet):
+
+```bash
+cd Examples/android
+./scripts/build-swift-lib.sh
+./gradlew :app:assembleDebug -PBLAZEDB_SWIFT_BUILD=/absolute/path/to/BlazeDB/.build
+./gradlew :app:installDebug
+```
+
+Confirm `nativeSmoke()` returns a positive row count on arm64 emulator/device (API 28+).
 
 ---
 
 ## Observation helpers (core vs platform)
 
-| Layer | Role |
-|-------|------|
-| ``BlazeDBClient/observe(_:)`` | Change notifications (batched, main-queue delivery) |
-| ``BlazeLiveQuery`` | observe → refresh → typed decode (core, platform-agnostic) |
-| ``@BlazeStorableQuery`` | SwiftUI adapter over ``BlazeLiveQuery`` |
-| Future Kotlin adapter | ``BlazeLiveQuery`` → `Flow` via JNI (not shipped) |
+| Layer | Role | Confidence |
+|-------|------|------------|
+| ``BlazeDBClient/observe(_:)`` | Change notifications | 🟢 core |
+| ``BlazeLiveQuery`` | observe → refresh → decode | 🟢 core |
+| ``@BlazeStorableQuery`` | SwiftUI adapter | 🟢 Apple |
+| Kotlin `Flow` adapter | ``BlazeLiveQuery`` over JNI | 🟡 source only |
 
 ---
 
-## What it would take to support KMM well (engineering roadmap)
+## Engineering roadmap (remaining work)
 
 | # | Work | Why |
 |---|------|-----|
-| 1 | Keep Android cross-compile CI green | Prevents “works on my Mac” drift |
-| 2 | Define Android storage paths (or document required `open(at:)`) | `PathResolver` currently falls back to temp on unknown OS |
-| 3 | Minimal Swift library target packaged for Android (`*.so` per ABI) | `BlazeDBAndroidBridge` cross-compiles in CI; Gradle sample links static Swift libs locally |
-| 4 | JNI bridge ([swift-java](https://github.com/swiftlang/swift-java) or hand-rolled) | Hand-rolled C shim in `examples/android/app/src/main/cpp/` |
-| 5 | Thin Kotlin API (`observeQuery<T>().asFlow()`) over ``BlazeLiveQuery`` | `BlazeLiveQueryFlow.kt` over JNI |
-| 6 | Gradle/AAR publishing story | Sample Gradle project under `examples/android/` |
-| 7 | JNI smoke test (`open` / `put` / `query` / `close` from Kotlin) | `BlazeDBBridge.nativeSmoke()` + `MainActivity` |
-| 8 | Device/emulator smoke test | Build with `-PBLAZEDB_SWIFT_BUILD`; not yet automated in CI |
-| 9 | `examples/android/` sample (Swift-on-Android first) | **Scaffold added** — verify on device |
-| 10 | Compose sample (optional, after JNI) | Ergonomic Android developer experience |
-| 11 | Only then update README / claim “Android supported” | Avoid soufflé documentation |
-
-**KMM-specific addition (after 1–7):** `shared` module depending on the published Android artifact via expect/actual — still not “Kotlin calls BlazeDB natively.”
+| 1 | Keep cross-compile CI green | Prevents toolchain drift |
+| 2 | Document Android storage paths (`open(at:)`) | `PathResolver` falls back to temp on unknown OS |
+| 3 | Local device/emulator smoke (`nativeSmoke`) | First 🟡 → 🟢 runtime proof |
+| 4 | Gradle + emulator smoke in CI | 🔴 → production confidence |
+| 5 | AAR / `.so` packaging story | Repeatable consumer integration |
+| 6 | Only then: KMM `shared` wrapper | ⚪ — same JNI bridge, not a rewrite |
 
 ---
 
 ## Forum-ready answer
 
-> BlazeDB’s **storage and observation model** maps cleanly onto Android’s Repository + ViewModel architecture — not the full Android ecosystem (Compose navigation, DI, WorkManager, etc.). SwiftUI’s `@BlazeStorableQuery` is a convenience adapter over ``BlazeLiveQuery`` in core (observe → refresh → decode). On Android you’d wire the same layers explicitly, or through a future Kotlin `Flow` adapter over JNI. We don’t have a Kotlin SDK or KMM integration yet.
+> BlazeDB’s storage and observation model **maps cleanly** onto Android Repository + ViewModel — that’s architecture, not shipped Android support.
 >
-> **Demonstrated today:** portable core APIs (`CorePathSmoke`), Repository + ViewModel pattern (`MVVMPattern`), ``BlazeLiveQuery`` unit tests, Linux core CI, Android cross-compile CI. **Not yet shipped:** JNI smoke test, Kotlin facade, device sample.
+> **Proven in CI:** `BlazeDBCore` cross-compiles for Android; the JNI bridge **compiles**.
+> **Not yet proven:** end-to-end runtime on device/emulator in CI; KMM.
+>
+> SwiftUI’s `@BlazeStorableQuery` is a convenience adapter over ``BlazeLiveQuery`` in core. On Android the same primitive would sit behind JNI and Kotlin `Flow` — sample code exists, runtime verification is the next milestone.
 
 ---
 
@@ -186,4 +207,5 @@ Use **OSS Swift 6.3.2+**, the [Swift SDK for Android](https://swift.org/document
 
 - [COMPATIBILITY.md](COMPATIBILITY.md) — platform matrix and OSS vs Xcode Swift
 - [CONTRIBUTING.md](../CONTRIBUTING.md) — Android cross-compile notes for contributors
+- [Examples/android/README.md](../Examples/android/README.md) — sample build steps
 - [SYSTEM_MAP.md](SYSTEM_MAP.md) — feature inventory and CI ownership

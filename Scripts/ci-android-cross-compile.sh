@@ -72,11 +72,6 @@ install_android_sdk() {
   swift_android="$(android_sdk_swift_android_dir)"
   mkdir -p "$cache_dir"
 
-  if [[ -f "$swift_android/scripts/setup-android-sdk.sh" ]]; then
-    echo ">>> Android Swift SDK bundle already present at $swift_android"
-    return 0
-  fi
-
   if [[ -f "$tarball_path" ]] && verify_android_sdk_artifact "$tarball_path"; then
     echo ">>> Reusing cached Android Swift SDK artifact at $tarball_path"
   else
@@ -84,18 +79,22 @@ install_android_sdk() {
     download_android_sdk_artifact "$tarball_path"
   fi
 
-  echo ">>> Extracting Android Swift SDK bundle"
-  tar -xzf "$tarball_path" -C "$cache_dir"
-
-  if ! swift sdk list 2>/dev/null | grep -qx "$BLAZEDB_ANDROID_SDK_NAME"; then
-    echo ">>> Registering Android Swift SDK with SwiftPM"
-    swift sdk install "$tarball_path" --checksum "$BLAZEDB_ANDROID_SDK_CHECKSUM"
+  if [[ ! -f "$swift_android/scripts/setup-android-sdk.sh" ]]; then
+    echo ">>> Extracting Android Swift SDK bundle"
+    tar -xzf "$tarball_path" -C "$cache_dir"
+  else
+    echo ">>> Android Swift SDK bundle already present at $swift_android"
   fi
 
   if [[ ! -f "$swift_android/scripts/setup-android-sdk.sh" ]]; then
     echo "error: Android Swift SDK bundle missing at $swift_android/scripts/setup-android-sdk.sh after extract" >&2
     ls -la "$cache_dir" >&2 || true
     exit 1
+  fi
+
+  if ! swift sdk list 2>/dev/null | grep -qx "$BLAZEDB_ANDROID_SDK_NAME"; then
+    echo ">>> Registering Android Swift SDK with SwiftPM"
+    swift sdk install "$tarball_path" --checksum "$BLAZEDB_ANDROID_SDK_CHECKSUM"
   fi
 }
 
@@ -191,7 +190,7 @@ resolve_ndk_clang_binary() {
   local suffix="$1"
   local bin_dir="$NDK_HOME/toolchains/llvm/prebuilt/$(resolve_ndk_host_tag)/bin"
   local short_triple="${BLAZEDB_ANDROID_SWIFT_TRIPLE/-unknown-linux-/-linux-}"
-  local candidate name
+  local candidate name pattern
   for name in "${short_triple}-${suffix}" "${BLAZEDB_ANDROID_SWIFT_TRIPLE}-${suffix}"; do
     candidate="$bin_dir/$name"
     if [[ -x "$candidate" ]]; then
@@ -199,7 +198,18 @@ resolve_ndk_clang_binary() {
       return 0
     fi
   done
-  echo "error: no NDK ${suffix} wrapper in $bin_dir (tried ${short_triple}-${suffix})" >&2
+  # NDK r27+ ships short triple names (aarch64-linux-android28-clang), not Swift triples.
+  if [[ "$suffix" == "clang" ]]; then
+    pattern='aarch64-*-android*-clang'
+  else
+    pattern='aarch64-*-android*-clang++'
+  fi
+  candidate="$(find "$bin_dir" -maxdepth 1 -type f -name "$pattern" 2>/dev/null | sort | head -1)"
+  if [[ -n "$candidate" && -x "$candidate" ]]; then
+    echo "$candidate"
+    return 0
+  fi
+  echo "error: no NDK ${suffix} wrapper in $bin_dir (tried ${short_triple}-${suffix}, then ${pattern})" >&2
   ls "$bin_dir" 2>/dev/null | grep -E 'android.*clang' | head -10 >&2 || true
   return 1
 }
@@ -232,19 +242,16 @@ cross_compile_blazedb_targets() {
   echo ">>> Clean SwiftPM build directory for Android cross-compile"
   rm -rf .build
 
-  for target in BlazeDBCore BlazeDBAndroidBridge; do
-    echo ">>> Cross-compile $target for $BLAZEDB_ANDROID_SWIFT_TRIPLE"
-    swift build \
-      --target "$target" \
-      --swift-sdk "$BLAZEDB_ANDROID_SWIFT_TRIPLE" \
-      --static-swift-stdlib
-  done
+  echo ">>> Cross-compile BlazeDBAndroidBridge (dynamic) for $BLAZEDB_ANDROID_SWIFT_TRIPLE"
+  swift build \
+    --product BlazeDBAndroidBridge \
+    --swift-sdk "$BLAZEDB_ANDROID_SWIFT_TRIPLE"
 }
 
 echo ">>> Android toolchain smoke (hello world for $BLAZEDB_ANDROID_SWIFT_TRIPLE)"
 run_android_toolchain_smoke
 
-echo ">>> Cross-compile BlazeDBCore + BlazeDBAndroidBridge"
+echo ">>> Cross-compile BlazeDBAndroidBridge (dynamic .so)"
 cross_compile_blazedb_targets
 
 echo ">>> Android cross-compile: ok"

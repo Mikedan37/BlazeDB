@@ -2,27 +2,24 @@ package com.blazedb.example.ui
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.blazedb.example.bridge.BlazeLiveQueryFlow
-import com.blazedb.example.data.Todo
-import com.blazedb.example.data.TodoRepository
+import com.blazedb.shared.BlazeDBRepository
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 
 /**
- * ViewModel mirroring [Examples/MVVMPattern/main.swift] — Repository + BlazeLiveQuery → UI state.
+ * ViewModel mirroring Examples/MVVMPattern — KMM shared Repository + BlazeLiveQuery → UI state.
  */
 class TodoViewModel(
-    repository: TodoRepository,
+    repository: BlazeDBRepository,
 ) : ViewModel() {
-    val todos: StateFlow<List<Todo>> =
-        BlazeLiveQueryFlow
-            .observeOpenTodos(repository.dbFilePath(), DEMO_PASSWORD)
-            .stateIn(
-                scope = viewModelScope,
-                started = SharingStarted.WhileSubscribed(5_000),
-                initialValue = emptyList(),
-            )
+    val todos = repository
+        .observeOpenTodos()
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5_000),
+            initialValue = emptyList(),
+        )
 
     companion object {
         const val DEMO_PASSWORD = "DemoPass123!"

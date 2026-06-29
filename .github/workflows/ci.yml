@@ -179,7 +179,7 @@ jobs:
           retention-days: 7
 
   android-cross-compile:
-    name: Android — toolchain smoke + BlazeDBCore cross-compile
+    name: Android — cross-compile BlazeDBAndroidBridge
     runs-on: ubuntu-22.04
     timeout-minutes: 60
 
@@ -233,11 +233,19 @@ jobs:
       - name: Swift version
         run: swift --version
 
-      - name: Cross-compile BlazeDBCore for Android
+      - name: Cross-compile BlazeDBAndroidBridge for Android
         run: |
           set -euo pipefail
           mkdir -p .logs .artifacts
           ./Scripts/ci-android-cross-compile.sh 2>&1 | tee .logs/android-cross-compile.log
+
+      - name: Verify libBlazeDBAndroidBridge.so
+        run: |
+          set -euo pipefail
+          SO=".build/aarch64-unknown-linux-android28/debug/libBlazeDBAndroidBridge.so"
+          test -f "$SO"
+          file "$SO"
+          ls -lh "$SO"
 
       - name: Prepare CI log directories
         if: always()
