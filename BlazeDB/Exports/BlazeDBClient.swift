@@ -1528,19 +1528,38 @@ public final class BlazeDBClient: @unchecked Sendable {
         let leftRecords = try fetchAll()
         let rightRecords = try other.fetchAll()
 
-        var rightIndex: [BlazeDocumentField: [BlazeDataRecord]] = [:]
+        var rightIndexByField: [BlazeDocumentField: [BlazeDataRecord]] = [:]
+        var rightIndexByUUID: [UUID: [BlazeDataRecord]] = [:]
         for right in rightRecords {
             guard let key = right.storage[primaryKey] else { continue }
-            rightIndex[key, default: []].append(right)
+            rightIndexByField[key, default: []].append(right)
+            if let uuid = key.uuidValue {
+                rightIndexByUUID[uuid, default: []].append(right)
+            }
         }
 
         var joined: [JoinedRecord] = []
         var matchedRightIDs = Set<UUID>()
 
         for left in leftRecords {
-            guard let key = left.storage[foreignKey],
-                  let matches = rightIndex[key],
-                  !matches.isEmpty else {
+            guard let key = left.storage[foreignKey] else {
+                if type == .left || type == .full {
+                    joined.append(JoinedRecord(left: left, right: nil))
+                }
+                continue
+            }
+
+            let matches: [BlazeDataRecord] = {
+                if let uuid = key.uuidValue, let byUUID = rightIndexByUUID[uuid], !byUUID.isEmpty {
+                    return byUUID
+                }
+                if let byField = rightIndexByField[key], !byField.isEmpty {
+                    return byField
+                }
+                return []
+            }()
+
+            guard !matches.isEmpty else {
                 if type == .left || type == .full {
                     joined.append(JoinedRecord(left: left, right: nil))
                 }

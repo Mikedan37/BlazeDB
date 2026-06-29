@@ -993,6 +993,12 @@ internal func fieldsEqual(_ lhs: BlazeDocumentField, _ rhs: BlazeDocumentField) 
     // String and Data are distinct types; no implicit conversion
     case (.string, .data), (.data, .string):
         return false
+
+    // UUID stored as string or native UUID
+    case (.string(let s), .uuid(let u)):
+        return UUID(uuidString: s) == u
+    case (.uuid(let u), .string(let s)):
+        return u == UUID(uuidString: s)
     
     // Int/Double equality
     case (.int(let l), .double(let r)):
