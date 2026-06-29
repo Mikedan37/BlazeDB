@@ -327,6 +327,23 @@ jobs:
           chmod +x gradlew
           ./gradlew :shared:compileDebugKotlinAndroid
 
+      - name: Stage KMM Android native libs for emulator job
+        run: |
+          set -euo pipefail
+          source ./Scripts/android-swift-config.sh
+          STAGE=".artifacts/kmm-android-native"
+          mkdir -p "$STAGE/lib" "$STAGE/swift-runtime"
+          cp .build/aarch64-unknown-linux-android28/debug/libBlazeDBAndroidBridge.so "$STAGE/lib/"
+          RUNTIME=".artifacts/android-sdk/${BLAZEDB_ANDROID_SDK_ARTIFACT%.tar.gz}/swift-android/swift-resources/usr/lib/swift-aarch64/android"
+          cp "$RUNTIME"/*.so "$STAGE/swift-runtime/"
+
+      - name: Upload KMM Android native artifact
+        uses: actions/upload-artifact@v5
+        with:
+          name: kmm-android-native
+          path: .artifacts/kmm-android-native/
+          retention-days: 7
+
       - name: Prepare CI log directories
         if: always()
         run: mkdir -p .logs .artifacts
@@ -346,5 +363,91 @@ jobs:
           path: |
             .logs/
             .artifacts/
+          if-no-files-found: ignore
+          retention-days: 7
+
+  kmm-android-runtime:
+    name: KMM Android — emulator runtime + packaging
+    runs-on: macos-15
+    needs: android-cross-compile
+    timeout-minutes: 90
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Download Android native bridge from Linux job
+        uses: actions/download-artifact@v5
+        with:
+          name: kmm-android-native
+          path: .artifacts/kmm-android-native
+
+      - name: Stage Swift Android libs for Gradle
+        run: |
+          set -euo pipefail
+          chmod +x ./Scripts/stage-kmm-android-native-for-gradle.sh
+          ./Scripts/stage-kmm-android-native-for-gradle.sh .artifacts/kmm-android-native
+
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Android Gradle SDK (emulator)
+        run: |
+          set -euo pipefail
+          chmod +x ./Scripts/setup-android-gradle-sdk.sh
+          ./Scripts/setup-android-gradle-sdk.sh
+
+      - name: KMM Android emulator runtime smoke
+        uses: reactivecircus/android-emulator-runner@v2
+        env:
+          BLAZEDB_SWIFT_BUILD: ${{ github.workspace }}/.build
+          ANDROID_HOME: ${{ github.workspace }}/.artifacts/android-gradle-sdk
+          CI_EMULATOR_MANAGED: "1"
+        with:
+          api-level: 34
+          target: google_apis
+          arch: arm64-v8a
+          disable-spellchecker: true
+          script: |
+            set -euo pipefail
+            export PATH="$ANDROID_HOME/platform-tools:$ANDROID_HOME/emulator:$PATH"
+            chmod +x ./Scripts/ci-kmm-android-emulator-smoke.sh
+            ./Scripts/ci-kmm-android-emulator-smoke.sh
+
+      - name: Package and verify KMM artifacts
+        run: |
+          set -euo pipefail
+          mkdir -p .logs
+          chmod +x ./Scripts/package-kmm-artifacts.sh ./Scripts/verify-kmm-packaging.sh
+          export BLAZEDB_SWIFT_BUILD="$PWD/.build"
+          ./Scripts/package-kmm-artifacts.sh 2>&1 | tee .logs/kmm-packaging.log
+
+      - name: Upload KMM packaging artifacts
+        if: always()
+        uses: actions/upload-artifact@v5
+        with:
+          name: kmm-packaging-dist
+          path: dist/kmm/
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Dump diagnostics on failure
+        if: failure()
+        run: |
+          mkdir -p .logs
+          adb devices -l > .logs/adb-devices.txt 2>&1 || true
+          adb logcat -d > .logs/adb-logcat.txt 2>&1 || true
+
+      - name: Upload KMM Android runtime logs
+        if: always()
+        uses: actions/upload-artifact@v5
+        with:
+          name: ci-kmm-android-runtime-logs
+          path: .logs/
           if-no-files-found: ignore
           retention-days: 7

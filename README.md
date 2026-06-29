@@ -579,7 +579,7 @@ Run with `swift run <ToolName>` (for the published CLI database tool, use `swift
 - **Nested Codable types are not individually queryable.** Nested structs/classes are stored as `BlazeDocumentField.dictionary` values. Round-tripping works, but nested fields cannot be filtered via KeyPath queries. Flatten nested fields into top-level properties if you need to query them.
 - **Password policy at open time.** Production open uses the recommended policy: at least 12 characters with uppercase, lowercase, and a number, plus estimated strength **Good** or better (see `PasswordStrengthValidator.recommended`). Weaker passwords are rejected before the database opens.
 - **`@BlazeQuery` / `@BlazeQueryTyped` require `BlazeDocument`.** For `BlazeStorable`-only models, use **`@BlazeStorableQuery`** instead, or add `BlazeDocument` (manual `toStorage()`/`init(from:)`), or use `@BlazeDataQuery` for raw rows.
-- **Android / KMM not officially supported.** PR CI cross-compiles the Swift core and JNI bridge, runs KMM iOS simulator tests, and compiles the KMM Android Kotlin target; Android emulator runtime is verified locally only (no AAR/XCFramework packaging yet). See [android-status.md](Docs/android-status.md).
+- **Android / KMM integration scaffolding.** PR CI runs iOS simulator tests, Android cross-compile + Kotlin compile (Linux), Android instrumentation on emulator + AAR/XCFramework packaging (macOS). Not yet published to Maven/CocoaPods — see [android-status.md](Docs/android-status.md).
 
 ---
 

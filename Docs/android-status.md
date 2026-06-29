@@ -18,9 +18,9 @@ What has been **proven** versus **assumed**:
 | 🟢 **Compiler** | `BlazeDBCore` + `BlazeDBAndroidBridge` cross-compile for Android in PR gate CI (`./Scripts/ci-android-cross-compile.sh`) |
 | 🟢 **Linker** | JNI bridge target and sample Gradle/CMake wiring **build** (Swift static libs linked into `libblazedb_android_bridge.so` locally) |
 | 🟢 **Runtime (iOS)** | `BlazeDB.open` / `put` / `query` on iOS simulator — PR CI (`iosSimulatorArm64Test`) + `./Scripts/prove-kmm-ios-runtime.sh` |
-| 🟡 **Runtime (Android)** | Same API verified locally on arm64 emulator (`KMM RUNTIME OK` in sample app); **not in CI** |
-| 🔴 **Production** | No Android emulator CI; no AAR/XCFramework packaging |
-| 🟡 **Ecosystem** | KMM `:shared` — **do not claim full KMM support** in README until Android runtime is in CI and packaging exists |
+| 🟢 **Runtime (Android)** | Same API verified on arm64 emulator — PR CI (`connectedDebugAndroidTest`) + `./Scripts/prove-kmm-android-runtime.sh` |
+| 🟡 **Production** | Consumer packaging in CI (`package-kmm-artifacts.sh`); not Maven/CocoaPods publish yet |
+| 🟡 **Ecosystem** | KMM `:shared` — runtime + packaging verified in CI; README “KMM supported” still pending publish story |
 
 ---
 
@@ -35,9 +35,9 @@ Prove each layer before adding the next. Wrapping an unverified stack in KMM onl
 | 3 | JNI (C shim → Kotlin `external`) | 🟢 compile / 🟡 runtime | Android `actual` — compile in CI; runtime verified locally |
 | 4 | KMM `commonMain` API | 🟡 | `expect class BlazeDB` — `open` / `put` / `get` / `query` / `close` |
 | 5 | iOS simulator runtime | 🟢 | `BlazeDBRuntimeSmokeTest` in PR CI |
-| 6 | Android emulator runtime | 🟡 | `./Scripts/prove-kmm-android-runtime.sh` — local only |
-| 7 | CI (Gradle + emulator smoke) | 🟡 | iOS runtime in macOS PR job; Android compile-only on Linux |
-| 8 | Packaging (AAR / XCFramework) | 🔴 | Not started |
+| 6 | Android emulator runtime | 🟢 | `ci-kmm-android-emulator-smoke.sh` in macOS PR job + local prove script |
+| 7 | CI (Gradle + emulator smoke) | 🟢 | iOS runtime + Android instrumentation in PR gate; Linux cross-compile + Kotlin compile |
+| 8 | Packaging (AAR / XCFramework) | 🟡 | `package-kmm-artifacts.sh` in macOS PR job; not published to registries yet |
 
 The toolchain work (OSS Swift against Android NDK, libc++ include paths, cross-compilation reliability) is the substantive systems engineering here. KMM is a later ergonomics layer, not the proof.
 

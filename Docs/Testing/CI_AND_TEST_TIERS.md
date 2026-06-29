@@ -95,8 +95,8 @@ In short: the nightly workflow optimizes for coverage visibility and time-to-sig
 - Caches `.build`, `~/.swiftpm/swift-sdks`, and NDK under the SDK bundle
 - Runs `./Scripts/ci-android-cross-compile.sh` (`swift build --product BlazeDBAndroidBridge --swift-sdk aarch64-unknown-linux-android28` → `libBlazeDBAndroidBridge.so`)
 - Verifies `.build/aarch64-unknown-linux-android28/debug/libBlazeDBAndroidBridge.so`
-- **KMM Android compile-only:** Java 17 + `./Scripts/setup-android-gradle-sdk-linux.sh`, then `./gradlew :shared:compileDebugKotlinAndroid` (JNI `actual`; no emulator). See [KMM CI (Android + iOS)](#kmm-ci-android--ios).
-- Does **not** run on device; compile-only gate. Local runtime: `./Scripts/prove-kmm-android-runtime.sh`. See `Docs/android-status.md`.
+- **KMM Android compile-only (Linux):** Java 17 + `./Scripts/setup-android-gradle-sdk-linux.sh`, then `./gradlew :shared:compileDebugKotlinAndroid`. Uploads native libs for the macOS emulator job.
+- **KMM Android runtime + packaging (macOS):** Job `kmm-android-runtime` — `reactivecircus/android-emulator-runner` + `./Scripts/ci-kmm-android-emulator-smoke.sh` (`connectedDebugAndroidTest`), then `./Scripts/package-kmm-artifacts.sh`. See [KMM CI (Android + iOS)](#kmm-ci-android--ios).
 
 - `.github/workflows/tag-probe.yml`
 - Trigger: **manual** (`workflow_dispatch`) only
@@ -170,13 +170,15 @@ Kotlin Multiplatform integration lives in `Examples/android/shared` (`expect cla
 | Job | Platform | CI step | Runtime? |
 | --- | --- | --- | --- |
 | `macOS 15 — build, CLI, tests` | iOS (simulator) | `./Scripts/build-kmm-ios-bridge.sh` → `:shared:linkDebugFrameworkIosSimulatorArm64` + `:shared:iosSimulatorArm64Test` | **Yes** — `BlazeDBRuntimeSmokeTest` (`open` / `put` / `query`) |
-| `Android — cross-compile BlazeDBAndroidBridge` | Android (JVM/Kotlin) | `:shared:compileDebugKotlinAndroid` after OSS Swift cross-compile | **No** — compile-only; JNI not exercised on CI runners |
+| `Android — cross-compile BlazeDBAndroidBridge` | Android (JVM/Kotlin) | `:shared:compileDebugKotlinAndroid` after OSS Swift cross-compile | Compile-only on Linux |
+| `KMM Android — emulator runtime + packaging` | Android (arm64 emulator) | `ci-kmm-android-emulator-smoke.sh` + `package-kmm-artifacts.sh` | **Yes** — instrumentation test (`open` / `put` / `query`) |
 
 ### What CI does **not** prove (local scripts)
 
 | Surface | Script | Notes |
 | --- | --- | --- |
-| Android emulator KMM runtime | `./Scripts/prove-kmm-android-runtime.sh` | Docker cross-compile (if needed) + APK + UI check for `KMM RUNTIME OK` |
+| Android emulator KMM runtime | `./Scripts/prove-kmm-android-runtime.sh` or `./Scripts/ci-kmm-android-emulator-smoke.sh` | Instrumentation test on arm64 emulator |
+| KMM packaging | `./Scripts/package-kmm-artifacts.sh` | AAR + native `.so` bundle + `BlazeDBKMM.xcframework` |
 | iOS only | `./Scripts/prove-kmm-ios-runtime.sh` | Same as macOS CI KMM steps |
 | Both | `./Scripts/prove-kmm-runtime.sh` | Runs iOS test + Android emulator smoke |
 
