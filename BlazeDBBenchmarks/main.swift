@@ -118,6 +118,119 @@ func chunked<T>(_ array: [T], by size: Int) -> [[T]] {
     return chunks
 }
 
+#if canImport(SQLite3)
+private let benchSQLiteInsertDDL =
+    "CREATE TABLE IF NOT EXISTS records (id TEXT PRIMARY KEY, index_val INTEGER, data TEXT)"
+
+func sqliteConfigureForBench(_ db: OpaquePointer?) {
+    guard let db else { return }
+    sqlite3_exec(db, "PRAGMA journal_mode=WAL", nil, nil, nil)
+    sqlite3_exec(db, "PRAGMA synchronous=FULL", nil, nil, nil)
+}
+
+func sqliteSeedRecords(db: OpaquePointer?, count: Int) {
+    guard let db else { return }
+    sqlite3_exec(db, benchSQLiteInsertDDL, nil, nil, nil)
+    let insertStmt = "INSERT INTO records (id, index_val, data) VALUES (?, ?, ?)"
+    var statement: OpaquePointer?
+    guard sqlite3_prepare_v2(db, insertStmt, -1, &statement, nil) == SQLITE_OK else { return }
+    defer { sqlite3_finalize(statement) }
+    sqlite3_exec(db, "BEGIN", nil, nil, nil)
+    for i in 0..<count {
+        let id = UUID().uuidString
+        sqlite3_bind_text(statement, 1, id, -1, nil)
+        sqlite3_bind_int(statement, 2, Int32(i))
+        sqlite3_bind_text(statement, 3, "Record \(i)", -1, nil)
+        sqlite3_step(statement)
+        sqlite3_reset(statement)
+    }
+    sqlite3_exec(db, "COMMIT", nil, nil, nil)
+}
+
+func sqliteTouchDatabase(at url: URL) throws {
+    var db: OpaquePointer?
+    guard sqlite3_open(url.path, &db) == SQLITE_OK, let db else {
+        throw NSError(domain: "BlazeDBBenchmarks", code: 1, userInfo: [NSLocalizedDescriptionKey: "sqlite3_open failed"])
+    }
+    defer { sqlite3_close(db) }
+    sqliteConfigureForBench(db)
+    var statement: OpaquePointer?
+    guard sqlite3_prepare_v2(db, "SELECT COUNT(*) FROM records", -1, &statement, nil) == SQLITE_OK else { return }
+    defer { sqlite3_finalize(statement) }
+    _ = sqlite3_step(statement)
+}
+
+func benchmarkSQLiteColdOpen(recordCount: Int = 1000, iterations: Int = 10) -> (opsPerSec: Double, stats: StatsSummary?) {
+    let tempDir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+    try? FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
+    defer { try? FileManager.default.removeItem(at: tempDir) }
+
+    let sqliteURL = tempDir.appendingPathComponent("sqlite_cold_open.db")
+    var db: OpaquePointer?
+    guard sqlite3_open(sqliteURL.path, &db) == SQLITE_OK, let db else {
+        return (0, nil)
+    }
+    sqliteConfigureForBench(db)
+    sqliteSeedRecords(db: db, count: recordCount)
+    sqlite3_close(db)
+
+    var openTimesMs: [Double] = []
+    openTimesMs.reserveCapacity(iterations)
+    for _ in 0..<iterations {
+        let start = Date()
+        do {
+            try sqliteTouchDatabase(at: sqliteURL)
+        } catch {
+            return (0, nil)
+        }
+        openTimesMs.append(Date().timeIntervalSince(start) * 1000.0)
+    }
+    let avgSec = (openTimesMs.reduce(0, +) / Double(openTimesMs.count)) / 1000.0
+    return (avgSec > 0 ? 1.0 / avgSec : 0, summarizeMs(openTimesMs))
+}
+#endif
+
+func benchmarkBlazeDBOpenCycles(
+    recordCount: Int = 1000,
+    iterations: Int = 10,
+    clearSessionEachOpen: Bool
+) -> (opsPerSec: Double, stats: StatsSummary?) {
+    let tempDir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+    try? FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
+    defer { try? FileManager.default.removeItem(at: tempDir) }
+
+    let dbURL = tempDir.appendingPathComponent("open_cycles.db")
+    do {
+        let seed = try openBenchDB(name: "open-seed", fileURL: dbURL)
+        for i in 0..<recordCount {
+            _ = try seed.insert(BlazeDataRecord(["index": .int(i), "data": .string("Record \(i)")]))
+        }
+        try seed.persist()
+        try seed.close()
+
+        if clearSessionEachOpen {
+            BlazeDBClient.clearSessionKeys(for: dbURL.path)
+        }
+
+        var openTimesMs: [Double] = []
+        openTimesMs.reserveCapacity(iterations)
+        for _ in 0..<iterations {
+            if clearSessionEachOpen {
+                BlazeDBClient.clearSessionKeys(for: dbURL.path)
+            }
+            let start = Date()
+            let db = try openBenchDB(name: "open-bench", fileURL: dbURL)
+            openTimesMs.append(Date().timeIntervalSince(start) * 1000.0)
+            try db.close()
+        }
+        let avgSec = (openTimesMs.reduce(0, +) / Double(openTimesMs.count)) / 1000.0
+        return (avgSec > 0 ? 1.0 / avgSec : 0, summarizeMs(openTimesMs))
+    } catch {
+        print("BlazeDB open-cycle benchmark failed: \(error)")
+        return (0, nil)
+    }
+}
+
 struct BenchmarkSuite {
     var results: [BenchmarkResult] = []
     
@@ -160,6 +273,7 @@ struct BenchmarkSuite {
         var md = "# BlazeDB Benchmarks\n\n"
         md += "**Date:** \(Date().formatted(date: .abbreviated, time: .shortened))\n\n"
         md += "**Condition:** `\(benchmarkCondition.id)` (`mvcc=\(benchmarkCondition.mvccEffective ? "on" : "off")`, `wal=\(benchmarkCondition.walEffective ? "on" : "off")`, `encryption=\(benchmarkCondition.encryptionEffective ? "on" : "off")`)\n\n"
+        md += "> **Reading SQLite columns:** Plain SQLite (no encryption). `journal_mode=WAL`, `synchronous=FULL` on the SQLite side. BlazeDB `baseline` includes AES-256-GCM + PBKDF2 (600k) on cold open. Use condition `encryption_off_requested` (compile flag) for engine-only overhead.\n\n"
         md += "| Condition | Support | Benchmark | BlazeDB (ops/sec) | BlazeDB avg ms | BlazeDB p50 ms | BlazeDB p95 ms | BlazeDB p99 ms | SQLite (ops/sec) | SQLite avg ms | SQLite p50 ms | SQLite p95 ms | SQLite p99 ms | Dataset Size | Notes |\n"
         md += "|-----------|---------|-----------|-------------------|----------------|----------------|----------------|----------------|------------------|---------------|---------------|---------------|---------------|--------------|-------|\n"
         
@@ -234,7 +348,8 @@ func benchmarkInsertThroughput(datasetSize: Int) -> (blazedbOpsPerSec: Double, b
         var sqliteDB: OpaquePointer?
         
         if sqlite3_open(sqliteURL.path, &sqliteDB) == SQLITE_OK {
-            sqlite3_exec(sqliteDB, "CREATE TABLE IF NOT EXISTS records (id TEXT PRIMARY KEY, index_val INTEGER, data TEXT)", nil, nil, nil)
+            sqliteConfigureForBench(sqliteDB)
+            sqlite3_exec(sqliteDB, benchSQLiteInsertDDL, nil, nil, nil)
             
             let sqliteStart = Date()
             let insertStmt = "INSERT INTO records (id, index_val, data) VALUES (?, ?, ?)"
@@ -322,17 +437,62 @@ func benchmarkReadThroughput(datasetSize: Int) -> (blazedbOpsPerSec: Double, bla
         
         try reopenedDB.close()
         
-        // SQLite read benchmark (if available)
-        let sqliteOpsPerSec: Double? = nil
-        
+        // SQLite read benchmark (WAL + FULL synchronous, same 1K rows)
+        var sqliteOpsPerSec: Double? = nil
+        var sqliteDurationsMs: [Double] = []
+        sqliteDurationsMs.reserveCapacity(datasetSize)
+
         #if canImport(SQLite3)
-        // SQLite setup would go here
-        // For now, skip SQLite read benchmark
+        let sqliteURL = tempDir.appendingPathComponent("sqlite_read.db")
+        var sqliteDB: OpaquePointer?
+        if sqlite3_open(sqliteURL.path, &sqliteDB) == SQLITE_OK {
+            sqliteConfigureForBench(sqliteDB)
+            sqlite3_exec(sqliteDB, benchSQLiteInsertDDL, nil, nil, nil)
+            var sqliteIDs: [String] = []
+            let insertStmt = "INSERT INTO records (id, index_val, data) VALUES (?, ?, ?)"
+            var insertStatement: OpaquePointer?
+            if sqlite3_prepare_v2(sqliteDB, insertStmt, -1, &insertStatement, nil) == SQLITE_OK {
+                sqlite3_exec(sqliteDB, "BEGIN", nil, nil, nil)
+                for i in 0..<datasetSize {
+                    let id = UUID().uuidString
+                    sqliteIDs.append(id)
+                    sqlite3_bind_text(insertStatement, 1, id, -1, nil)
+                    sqlite3_bind_int(insertStatement, 2, Int32(i))
+                    sqlite3_bind_text(insertStatement, 3, "Record \(i)", -1, nil)
+                    sqlite3_step(insertStatement)
+                    sqlite3_reset(insertStatement)
+                }
+                sqlite3_exec(sqliteDB, "COMMIT", nil, nil, nil)
+            }
+            sqlite3_finalize(insertStatement)
+
+            let selectStmt = "SELECT index_val, data FROM records WHERE id = ?"
+            var selectStatement: OpaquePointer?
+            if sqlite3_prepare_v2(sqliteDB, selectStmt, -1, &selectStatement, nil) == SQLITE_OK {
+                let sqliteStart = Date()
+                for id in sqliteIDs {
+                    let opStart = Date()
+                    sqlite3_bind_text(selectStatement, 1, id, -1, nil)
+                    _ = sqlite3_step(selectStatement)
+                    sqlite3_reset(selectStatement)
+                    sqliteDurationsMs.append(Date().timeIntervalSince(opStart) * 1000.0)
+                }
+                let sqliteDuration = Date().timeIntervalSince(sqliteStart)
+                sqliteOpsPerSec = Double(datasetSize) / sqliteDuration
+            }
+            sqlite3_finalize(selectStatement)
+            sqlite3_close(sqliteDB)
+        }
         #endif
         
         try? FileManager.default.removeItem(at: tempDir)
         
-        return (blazedbOpsPerSec: blazedbOpsPerSec, blazedbStats: blazedbStats, sqliteOpsPerSec: sqliteOpsPerSec, sqliteStats: nil)
+        return (
+            blazedbOpsPerSec: blazedbOpsPerSec,
+            blazedbStats: blazedbStats,
+            sqliteOpsPerSec: sqliteOpsPerSec,
+            sqliteStats: summarizeMs(sqliteDurationsMs)
+        )
     } catch {
         print("Read benchmark failed: \(error)")
         try? FileManager.default.removeItem(at: tempDir)
@@ -341,48 +501,18 @@ func benchmarkReadThroughput(datasetSize: Int) -> (blazedbOpsPerSec: Double, bla
 }
 
 func benchmarkColdOpen() -> (blazedbOpsPerSec: Double, blazedbStats: StatsSummary?, sqliteOpsPerSec: Double?, sqliteStats: StatsSummary?) {
-    let tempDir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
-    try? FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
-    
-    // Setup: Create database with data
-    let blazedbURL = tempDir.appendingPathComponent("cold_open.db")
-    
-    do {
-        let db = try openBenchDB(name: "cold-open", fileURL: blazedbURL)
-        
-        // Insert some data
-        for i in 0..<1000 {
-            let record = BlazeDataRecord(["index": .int(i), "data": .string("Record \(i)")])
-            _ = try db.insert(record)
-        }
-        
-        try db.persist()
-        try db.close()
-        
-        // BlazeDB cold open benchmark
-        var openTimes: [TimeInterval] = []
-        
-        for _ in 0..<10 {
-            let start = Date()
-            let db = try openBenchDB(name: "cold-open", fileURL: blazedbURL)
-            let duration = Date().timeIntervalSince(start)
-            openTimes.append(duration)
-            try db.close()
-        }
-        
-        let avgOpenTime = openTimes.reduce(0, +) / Double(openTimes.count)
-        let opensPerSec = 1.0 / avgOpenTime
-        let openTimesMs = openTimes.map { $0 * 1000.0 }
-        let blazedbStats = summarizeMs(openTimesMs)
-        
-        try? FileManager.default.removeItem(at: tempDir)
-        
-        return (blazedbOpsPerSec: opensPerSec, blazedbStats: blazedbStats, sqliteOpsPerSec: nil, sqliteStats: nil)
-    } catch {
-        print("Cold open benchmark failed: \(error)")
-        try? FileManager.default.removeItem(at: tempDir)
-        return (blazedbOpsPerSec: 0, blazedbStats: nil, sqliteOpsPerSec: nil, sqliteStats: nil)
-    }
+    let cold = benchmarkBlazeDBOpenCycles(recordCount: 1000, iterations: 10, clearSessionEachOpen: true)
+    #if canImport(SQLite3)
+    let sqlite = benchmarkSQLiteColdOpen(recordCount: 1000, iterations: 10)
+    return (cold.opsPerSec, cold.stats, sqlite.opsPerSec, sqlite.stats)
+    #else
+    return (cold.opsPerSec, cold.stats, nil, nil)
+    #endif
+}
+
+func benchmarkWarmReopen() -> (blazedbOpsPerSec: Double, blazedbStats: StatsSummary?, sqliteOpsPerSec: Double?, sqliteStats: StatsSummary?) {
+    let warm = benchmarkBlazeDBOpenCycles(recordCount: 1000, iterations: 10, clearSessionEachOpen: false)
+    return (warm.opsPerSec, warm.stats, nil, nil)
 }
 
 func benchmarkInsertManyThroughput(datasetSize: Int, batchSize: Int = 100) -> (blazedbOpsPerSec: Double, blazedbStats: StatsSummary?, sqliteOpsPerSec: Double?, sqliteStats: StatsSummary?) {
@@ -425,7 +555,8 @@ func benchmarkInsertManyThroughput(datasetSize: Int, batchSize: Int = 100) -> (b
         let sqliteURL = tempDir.appendingPathComponent("sqlite_insertmany.db")
         var sqliteDB: OpaquePointer?
         if sqlite3_open(sqliteURL.path, &sqliteDB) == SQLITE_OK {
-            sqlite3_exec(sqliteDB, "CREATE TABLE IF NOT EXISTS records (id TEXT PRIMARY KEY, index_val INTEGER, data TEXT)", nil, nil, nil)
+            sqliteConfigureForBench(sqliteDB)
+            sqlite3_exec(sqliteDB, benchSQLiteInsertDDL, nil, nil, nil)
             let insertStmt = "INSERT INTO records (id, index_val, data) VALUES (?, ?, ?)"
             var statement: OpaquePointer?
             if sqlite3_prepare_v2(sqliteDB, insertStmt, -1, &statement, nil) == SQLITE_OK {
@@ -515,7 +646,8 @@ func benchmarkInsertManyProfile(
         let sqliteURL = tempDir.appendingPathComponent("sqlite_insertmany_profile.db")
         var sqliteDB: OpaquePointer?
         if sqlite3_open(sqliteURL.path, &sqliteDB) == SQLITE_OK {
-            sqlite3_exec(sqliteDB, "CREATE TABLE IF NOT EXISTS records (id TEXT PRIMARY KEY, index_val INTEGER, data TEXT)", nil, nil, nil)
+            sqliteConfigureForBench(sqliteDB)
+            sqlite3_exec(sqliteDB, benchSQLiteInsertDDL, nil, nil, nil)
             let insertStmt = "INSERT INTO records (id, index_val, data) VALUES (?, ?, ?)"
             var statement: OpaquePointer?
             if sqlite3_prepare_v2(sqliteDB, insertStmt, -1, &statement, nil) == SQLITE_OK {
@@ -596,7 +728,8 @@ func benchmarkDeleteManyThroughput(datasetSize: Int, batchSize: Int = 100) -> (b
         let sqliteURL = tempDir.appendingPathComponent("sqlite_deletemany.db")
         var sqliteDB: OpaquePointer?
         if sqlite3_open(sqliteURL.path, &sqliteDB) == SQLITE_OK {
-            sqlite3_exec(sqliteDB, "CREATE TABLE IF NOT EXISTS records (id TEXT PRIMARY KEY, index_val INTEGER, data TEXT)", nil, nil, nil)
+            sqliteConfigureForBench(sqliteDB)
+            sqlite3_exec(sqliteDB, benchSQLiteInsertDDL, nil, nil, nil)
             let insertStmt = "INSERT INTO records (id, index_val, data) VALUES (?, ?, ?)"
             var insertStatement: OpaquePointer?
             var sqliteIDs: [String] = []
@@ -700,7 +833,8 @@ func benchmarkDeleteManyProfile(
         let sqliteURL = tempDir.appendingPathComponent("sqlite_deletemany_profile.db")
         var sqliteDB: OpaquePointer?
         if sqlite3_open(sqliteURL.path, &sqliteDB) == SQLITE_OK {
-            sqlite3_exec(sqliteDB, "CREATE TABLE IF NOT EXISTS records (id TEXT PRIMARY KEY, index_val INTEGER, data TEXT)", nil, nil, nil)
+            sqliteConfigureForBench(sqliteDB)
+            sqlite3_exec(sqliteDB, benchSQLiteInsertDDL, nil, nil, nil)
             let insertStmt = "INSERT INTO records (id, index_val, data) VALUES (?, ?, ?)"
             var insertStatement: OpaquePointer?
             var sqliteIDs: [String] = []
@@ -908,17 +1042,30 @@ suite.run(
     notes: "Single persist at end; larger batches for peak throughput; latency is per deleteMany(batch)"
 )
 
-// Benchmark 10: Cold open
-print("10. Cold open time...")
+// Benchmark 10: Cold open (PBKDF2 every time)
+print("10. Cold open (session cleared each reopen)...")
 let coldOpen = benchmarkColdOpen()
 suite.run(
-    name: "Cold open",
+    name: "Cold open (PBKDF2 each reopen)",
     datasetSize: 1000,
     blazedbOpsPerSec: coldOpen.blazedbOpsPerSec,
     blazedbStats: coldOpen.blazedbStats,
     sqliteOpsPerSec: coldOpen.sqliteOpsPerSec,
     sqliteStats: coldOpen.sqliteStats,
-    notes: "Average of 10 close/reopen cycles; PBKDF2 (600k) runs every open because close() clears key cache"
+    notes: "10 cycles; BlazeDB clears session before each open (600k PBKDF2). SQLite: open+COUNT (WAL, no encryption)"
+)
+
+// Benchmark 11: Warm reopen (process session cache)
+print("11. Warm reopen (session cache)...")
+let warmOpen = benchmarkWarmReopen()
+suite.run(
+    name: "Warm reopen (session cache)",
+    datasetSize: 1000,
+    blazedbOpsPerSec: warmOpen.blazedbOpsPerSec,
+    blazedbStats: warmOpen.blazedbStats,
+    sqliteOpsPerSec: warmOpen.sqliteOpsPerSec,
+    sqliteStats: warmOpen.sqliteStats,
+            notes: "10 close/reopen cycles without clearSessionKeys(); BlazeDB skips PBKDF2 when session valid. SQLite N/A (no session concept)"
 )
 
 print("\n=== Benchmark Results ===\n")

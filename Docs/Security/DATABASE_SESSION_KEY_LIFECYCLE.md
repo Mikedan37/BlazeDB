@@ -1,7 +1,7 @@
 # Database Session and Key Lifecycle Policy
 
-**Status:** Draft policy (implementation pending)  
-**Last updated:** 2026-06-29
+**Status:** Implemented (Jun 2026)  
+**Last updated:** 2026-06-30
 
 This document defines when BlazeDB derives encryption keys, how long derived keys live in memory, and what `close()` means for secrets. It exists so performance work on startup latency does not accidentally weaken security—or burn CPU on policy nobody wrote down.
 

@@ -2,191 +2,168 @@
 
 **Benchmarks, methodology, and performance invariants.**
 
----
-
-## Benchmarks
-
-### Test Setup
-
-- **Device**: Apple M4 Pro
-- **Records**: 1,000 complex records (5 fields each)
-- **Method**: 100 iterations, averaged
-- **Environment**: Single-threaded baseline, multi-core scaling
-
-### Core Operations
-
-| Operation | Latency | Throughput | Notes |
-|-----------|---------|------------|-------|
-| Insert (single) | 0.4-0.8ms | 1,200-2,500 ops/sec | With WAL fsync |
-| Insert (batch 100) | 15-30ms | 3,300-6,600 ops/sec | Amortized fsync |
-| Fetch (by ID) | 0.2-0.4ms | 2,500-5,000 ops/sec | Index lookup |
-| Query (indexed) | 2-5ms | 200-500 queries/sec | With index selection |
-| Query (full scan) | 5-20ms | Variable | Depends on dataset size |
-| Update | 0.5-1.0ms | 1,000-2,000 ops/sec | With index updates |
-| Delete | 0.3-0.6ms | 1,600-3,300 ops/sec | With index cleanup |
-
-### Multi-Core Performance
-
-BlazeDB scales linearly with core count:
-
-- **2 cores**: ~2x throughput
-- **4 cores**: ~3.5x throughput
-- **8 cores**: ~6x throughput
-- **16 cores**: ~10x throughput (diminishing returns due to I/O)
-
-### Query Performance
-
-**Indexed Queries**: 0.1-1ms (excellent)
-- Automatic index selection
-- Hash-based lookups
-- Compound index support
-
-**Full Scans**: 5-20ms per 1k records
-- Linear with dataset size
-- Memory-mapped I/O
-- Parallel processing
-
-**Cached Queries**: 0.001ms (833x faster)
-- TTL-based expiration (60s)
-- Smart invalidation
-- Memory-efficient
+> **Canonical numbers:** [`Docs/Benchmarks/RESULTS.md`](../Benchmarks/RESULTS.md) and [`Docs/Benchmarks/COMPARISON.md`](../Benchmarks/COMPARISON.md) (refreshed June 2026, release build, 600k PBKDF2). Figures elsewhere in this repo may be design targets or pre-hardening measurements — verify against the benchmark harness before citing.
 
 ---
 
-## Performance Invariants
+## Measured performance (release, encrypted baseline)
 
-### Guaranteed Characteristics
+From `./Scripts/run_comparison_benchmarks.sh --release` on Apple Silicon (June 2026):
 
-1. **Sub-millisecond indexed lookups**: Hash-based indexes provide O(1) lookups
-2. **Linear scaling with cores**: Concurrent operations scale with CPU cores
-3. **Predictable latency**: No unpredictable spikes under normal load
-4. **Memory efficiency**: Bounded memory usage regardless of dataset size
+| Operation | BlazeDB (secure) | SQLite (reference) | Notes |
+|-----------|-----------------:|-------------------:|-------|
+| Insert 1K (sequential) | **2.5 ms** (~276 ops/s) | **0.0007 ms** | SQLite is unencrypted; BlazeDB pays AES-GCM per page |
+| Read 1K (indexed UUID) | **0.009 ms** (~110k ops/s) | **0.001 ms** | ~7× slower than SQLite; still sub-10µs per read |
+| Cold open | **~1.12 s** | **~0.6 ms** | 600k PBKDF2 dominates (~97% of cold wall time) |
+| Warm reopen (session cache) | **~26 ms** | N/A | Same process; skips PBKDF2 after first verified open |
+| InsertMany 10K (max profile, batch 1000) | **~334 ms** | **~0.6 ms** | Single persist at end |
 
-### Performance Regressions
+**Takeaway:** BlazeDB engine work (layout, PageStore, migration) is ~**28 ms** on warm open. The ~1.1 s cold-open cost is intentional KDF work, not a storage regression. See [DATABASE_SESSION_KEY_LIFECYCLE.md](../Security/DATABASE_SESSION_KEY_LIFECYCLE.md).
 
-Automated regression testing ensures:
-- No operation degrades >10% between versions
-- Query latency remains within bounds
-- Throughput maintains minimum thresholds
+---
+
+## Design targets (not current harness measurements)
+
+The table below describes **engineering goals** for future optimization. They are **not** reproduced by the current encrypted benchmark harness.
+
+| Operation | Target latency | Target throughput | Notes |
+|-----------|---------------|-------------------|-------|
+| Insert (single) | 0.4–0.8 ms | 1,200–2,500 ops/sec | With WAL fsync |
+| Insert (batch 100) | 15–30 ms | 3,300–6,600 ops/sec | Amortized fsync |
+| Fetch (by ID) | 0.2–0.4 ms | 2,500–5,000 ops/sec | Index lookup |
+| Query (indexed) | 2–5 ms | 200–500 queries/sec | With index selection |
+| Update / delete | 0.3–1.0 ms | 1,000–3,300 ops/sec | With index maintenance |
+
+---
+
+## Multi-core scaling (design goal)
+
+BlazeDB is designed to scale with core count under concurrent workloads:
+
+- **2 cores**: ~2× throughput (target)
+- **4 cores**: ~3.5× throughput (target)
+- **8 cores**: ~6× throughput (target)
+
+The comparison harness is single-threaded; validate multi-core claims with workload-specific benchmarks.
+
+---
+
+## Query performance characteristics
+
+**Indexed reads:** Measured at ~0.009 ms (see RESULTS.md). Hash-based indexes provide O(1) lookups.
+
+**Full scans:** Linear with dataset size; memory-mapped I/O.
+
+**Cached queries:** TTL-based expiration (60s) with smart invalidation for repeated query patterns.
+
+---
+
+## Performance invariants
+
+### Guaranteed characteristics
+
+1. **Sub-millisecond indexed lookups** at read benchmark scale (warm path, post-KDF)
+2. **Predictable latency** under normal single-threaded load
+3. **Bounded memory** — session keys and caches scoped per process
+
+### Regression testing
+
+- No operation degrades >10% between versions (where benchmarks exist)
+- Open-profile spans documented for KDF policy decisions
+- Benchmark docs aligned with `KeyManager` iteration count
 
 ---
 
 ## Methodology
 
-### Benchmark Process
+Run benchmarks with:
 
-1. **Warmup**: 1,000 operations to warm caches
-2. **Measurement**: 100 iterations, discard outliers
-3. **Averaging**: Median and mean reported
-4. **Environment**: Clean state, no background processes
+```bash
+./Scripts/run_comparison_benchmarks.sh --release
+python3 Scripts/publish_benchmark_results.py
+```
 
-### Test Scenarios
-
-- **Single-threaded**: Baseline performance
-- **Multi-threaded**: Concurrency scaling
-- **Mixed workload**: Read/write ratio 80/20
-- **Stress test**: 10,000 concurrent operations
-- **Long-running**: 1 hour sustained load
+See [`Docs/Benchmarks/README.md`](../Benchmarks/README.md) for the full matrix, SQLite comparison rules, and historical notes.
 
 ---
 
-## Optimization Techniques
+## Comparison with other databases (honest harness)
 
-### Query Caching
+### Insert 1K (sequential, June 2026)
 
-- Automatic caching of query results
+| Database | Avg latency | Notes |
+|----------|------------:|-------|
+| BlazeDB (encrypted) | 2.5 ms | AES-256-GCM + WAL |
+| SQLite | 0.0007 ms | WAL, no encryption |
+
+SQLite wins raw insert throughput. BlazeDB trades speed for encryption-by-default.
+
+### Read 1K (indexed UUID)
+
+| Database | Avg latency | Notes |
+|----------|------------:|-------|
+| BlazeDB (encrypted) | 0.009 ms | Decrypt + index lookup |
+| SQLite | 0.001 ms | Plain B-tree |
+
+Both are fast at this scale; BlazeDB is ~7× slower, still sub-10µs per read.
+
+### Deprecated comparison block (pre-harness, do not cite)
+
+The following appeared in earlier doc drafts and mixed frameworks without a common harness:
+
+```
+BlazeDB: 142ms total for 1K inserts  ← NOT from BlazeDBBenchmarks
+SQLite: 156ms                          ← NOT comparable (different stack, no encryption)
+```
+
+Use [`COMPARISON.md`](../Benchmarks/COMPARISON.md) instead.
+
+---
+
+## Optimization techniques
+
+### Query caching
+
 - TTL: 60 seconds
 - Smart invalidation on writes
-- 833x faster for repeated queries
 
-### Batch Operations
+### Batch operations
 
 - Amortize WAL fsync costs
-- Single transaction for multiple operations
-- 2-5x faster per record
+- `insertMany` / `deleteMany` with batch profiles (see RESULTS.md durable vs max)
 
-### Memory-Mapped I/O
+### Memory-mapped I/O
 
-- OS-level page caching
-- 2-3x faster reads
-- Reduced memory copies
-
-### Parallel Encoding/Decoding
-
-- Concurrent BlazeBinary encoding
-- Multi-core utilization
-- 5-6x faster for large datasets
+- OS-level page caching for reads
 
 ---
 
-## Comparison with Other Databases
+## Bottlenecks and limitations
 
-### Insert Performance (1,000 records)
+### Current bottlenecks
 
-```
-BlazeDB: 142ms
-SQLite: 156ms
-GRDB: 168ms
-Realm: 189ms
-Core Data: 234ms
-```
+1. **PBKDF2 on cold open** — ~1.1 s at 600k iterations (by design)
+2. **Per-page encryption** — insert/read overhead vs plain SQLite
+3. **WAL fsync** — durability guarantee adds latency per write
 
-**BlazeDB: 10% faster than SQLite**
+### Future optimizations
 
-### Query Performance (indexed WHERE)
-
-```
-BlazeDB: 0.8ms
-SQLite: 1.2ms
-GRDB: 1.4ms
-```
-
-**BlazeDB: 33% faster than SQLite**
-
----
-
-## Bottlenecks & Limitations
-
-### Current Bottlenecks
-
-1. **File I/O**: Synchronous I/O limits throughput (~10,000 ops/sec)
-2. **WAL fsync**: Durability guarantee adds latency (0.4-0.8ms per write)
-3. **Index updates**: Secondary index maintenance adds overhead
-
-### Future Optimizations
-
+- OS keychain wrapping to avoid repeated PBKDF2 across app restarts (policy TBD)
 - Async I/O with completion handlers
 - Batch fsync for better throughput
-- Disk-based B-tree indexes for large datasets
-- Cost-based query optimizer
 
 ---
 
-## Performance Tuning
+## Performance tuning
 
-### Configuration Options
+### Best practices
 
-```swift
-// Batch size for operations
-db.batchSize = 100 // Default: 50
-
-// Query cache TTL
-db.queryCacheTTL = 60 // Default: 60 seconds
-
-// WAL checkpoint threshold
-db.walCheckpointThreshold = 100 // Default: 100 operations
-```
-
-### Best Practices
-
-1. **Use batch operations**: Insert/update in batches
-2. **Create indexes**: Index frequently queried fields
-3. **Use pagination**: Avoid fetching large datasets
-4. **Enable query cache**: For repeated queries
-5. **Monitor telemetry**: Use built-in performance tracking
+1. **Use batch operations** — `insertMany` with max profile for peak throughput
+2. **Create indexes** on frequently queried fields
+3. **Reuse process session** — avoid `clearSessionKeys()` between handle reopens in the same app session
+4. **Call `clearSessionKeys()`** when the user locks the app or switches accounts
 
 ---
 
 For architecture details, see [ARCHITECTURE.md](ARCHITECTURE.md).
 For transaction performance, see [TRANSACTIONS.md](TRANSACTIONS.md).
-

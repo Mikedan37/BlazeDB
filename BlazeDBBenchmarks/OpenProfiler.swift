@@ -109,7 +109,7 @@ enum OpenProfiler {
         ))
         try coldDB.close()
 
-        // Warm open: path cache may hit, but close() clears KeyManager cache so PBKDF2 still runs.
+        // Warm open: in-process session cache should skip PBKDF2 (see DATABASE_SESSION_KEY_LIFECYCLE.md).
         OpenProfileCollector.reset()
         let warmStart = BlazeDBDiagnostics.monotonicSeconds()
         let warmDB = try BlazeDBClient(name: "profile", fileURL: dbURL, password: defaultPassword)
@@ -150,7 +150,7 @@ enum OpenProfiler {
             "**PBKDF2 iterations (this process):** \(BlazeDBDiagnostics.pbkdf2IterationCount)",
             "**Under XCTest (100k iter override):** \(BlazeDBDiagnostics.isRunningUnderXCTest ? "yes" : "no")",
             "",
-            "> Compare cold vs warm wall time. If `open.pbkdf2` dominates, startup cost is KDF — not layout/index I/O. Warm ≈ cold when `close()` clears the in-process key cache (current default).",
+            "> Compare cold vs warm wall time. If `open.pbkdf2` dominates, startup cost is KDF — not layout/index I/O. Warm reopen skips PBKDF2 when the process session is still valid (see DATABASE_SESSION_KEY_LIFECYCLE.md).",
             "",
         ]
 
@@ -184,13 +184,16 @@ enum OpenProfiler {
            let pbkdf2 = runs.first(where: { $0.label == "pbkdf2_only_cold" }) {
             let spanPBKDF2 = cold.spans.first(where: { $0.name == "open.pbkdf2" })?.milliseconds ?? 0
             let pctOfCold = cold.wallMilliseconds > 0 ? (spanPBKDF2 / cold.wallMilliseconds) * 100.0 : 0
+            let warmMs = runs.first(where: { $0.label == "warm_open" })?.wallMilliseconds
             lines.append("## Interpretation hints")
             lines.append("")
             lines.append("- Isolated PBKDF2: **\(String(format: "%.2f", pbkdf2.wallMilliseconds)) ms**")
             lines.append("- PBKDF2 inside cold open span: **\(String(format: "%.2f", spanPBKDF2)) ms** (\(String(format: "%.1f", pctOfCold))% of cold wall)")
             lines.append("- Engine work (layout + PageStore + migration, excl. PBKDF2): **~\(String(format: "%.0f", cold.wallMilliseconds - spanPBKDF2)) ms**")
-            lines.append("- March 2026 baseline (~55 ms) measured handle reopen with legacy path-cache behavior, not true cold open at 600k PBKDF2.")
-            lines.append("- Do **not** ship Keychain session keys until profiling proves PBKDF2 >50% of cold open in **release** with **600k** iterations (confirmed here).")
+            lines.append("- March 2026 baseline (~55 ms) used 10k PBKDF2 and warm-ish reopen averaging — not comparable to release cold open at 600k.")
+            if let warmMs {
+                lines.append("- In-process session keys (Jun 2026) restore ~\(String(format: "%.0f", warmMs)) ms warm reopen without weakening offline guessing resistance on cold open.")
+            }
             lines.append("")
         }
 

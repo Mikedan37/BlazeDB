@@ -39,7 +39,13 @@ BlazeDB's design choices reduce CPU burn in typical embedded scenarios:
 ## Running Benchmarks
 
 ```bash
+# Side-by-side secure vs engine-only vs SQLite (recommended; publishes RESULTS.md)
+chmod +x ./Scripts/run_comparison_benchmarks.sh
+./Scripts/run_comparison_benchmarks.sh --release
+
+# Full condition matrix (baseline + mvcc_off + encryption_off) — long run (~45 min)
 python3 Scripts/run_core_benchmark_matrix.py
+
 python3 Scripts/generate_latency_report.py
 ```
 
@@ -60,8 +66,9 @@ python3 Scripts/refresh_benchmark_suite.py --skip-gc --skip-power
 ```
 
 Results are saved to:
-- `Docs/Benchmarks/RESULTS.md` (human-readable)
-- `Docs/Benchmarks/results.json` (machine-readable)
+- `Docs/Benchmarks/RESULTS.md` (human-readable; published by comparison script)
+- `Docs/Benchmarks/COMPARISON.md` (BlazeDB vs SQLite headline table)
+- `Docs/Benchmarks/results.json` (machine-readable baseline rows)
 - `Docs/Benchmarks/results_matrix.json` (condition run metadata + sanitized per-condition excerpts)
 - `Docs/Benchmarks/BENCHMARK_ENVIRONMENT.md` (device fingerprint + supported toggle matrix)
 - `Docs/Benchmarks/benchmark_environment.json` (machine-readable benchmark environment metadata)
@@ -81,6 +88,22 @@ To include optional percentile test captures:
 ```bash
 python3 Scripts/generate_latency_report.py --run-query-percentiles --run-telemetry-percentiles
 ```
+
+---
+
+## What changed since March 2026
+
+Historical benchmark numbers dropped sharply after security hardening — not because the storage engine regressed.
+
+| Date | Change | Effect on metrics |
+|------|--------|-------------------|
+| Mar 14 AM | Last pre-600k `RESULTS.md` refresh (`18f0ceb5`) | Cold open ~55 ms (10k PBKDF2, warm-ish averaging) |
+| Mar 14 PM | Per-DB salt + 600k PBKDF2 (`7b198dea`) | Cold open ~1.1 s; inserts/reads largely unchanged |
+| Jun 29 | In-process session keys (`5dd4da82`) | Warm reopen ~26 ms; cold open still ~1.1 s |
+
+**KDF policy (current):** Release builds use **600,000** PBKDF2-HMAC-SHA256 iterations. Cold open always pays full KDF. Warm reopen in the same process reuses the verified session key. This matches OWASP guidance for password-based key derivation while keeping steady-state opens fast. Lowering iterations requires an explicit threat-model decision — see [`DATABASE_SESSION_KEY_LIFECYCLE.md`](../Security/DATABASE_SESSION_KEY_LIFECYCLE.md).
+
+**Do not cite** pre-June-2026 cold-open numbers or `PERFORMANCE.md` design targets as current production performance.
 
 ---
 

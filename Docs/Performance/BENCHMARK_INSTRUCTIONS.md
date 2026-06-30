@@ -155,15 +155,31 @@ Prints `OPEN_PROFILE_SPAN|…` lines to the test log. Not a CI gate — iteratio
 
 ### Interpreting the March 2026 baseline (~55 ms cold open)
 
-That number is **not** comparable to current release opens (~1.1 s on this host):
+That number is **not** comparable to current release cold open (~1.1 s on this host):
 
 | Factor | March baseline | Current release |
 |--------|----------------|-----------------|
-| Path key cache across `close()` | Reused (no PBKDF2 on reopen) | Cleared on every `close()` |
-| Password verification | Skipped when cache hit | PBKDF2 every open |
+| Path key cache across `close()` | Reused (no PBKDF2 on reopen) | Session store reuses key; `clearSessionKeys()` forces cold |
+| Password verification | Skipped when cache hit | HMAC verifier on warm path; PBKDF2 on cold |
 | KDF | Legacy static salt path | Per-DB salt, 600k iterations |
 
-The open profiler on this machine shows **~97% of wall time is PBKDF2**; engine init (layout, MVCC, indexes) is ~30 ms total. Policy for when KDF runs vs session reuse: [DATABASE_SESSION_KEY_LIFECYCLE.md](../Security/DATABASE_SESSION_KEY_LIFECYCLE.md).
+The open profiler shows **~97% of cold wall time is PBKDF2**; engine init is ~28 ms. Policy: [DATABASE_SESSION_KEY_LIFECYCLE.md](../Security/DATABASE_SESSION_KEY_LIFECYCLE.md).
+
+### BlazeDB vs SQLite (apples-to-apples + secure baseline)
+
+Run both production-secure and engine-only (no encryption) conditions, with SQLite cold-open and read columns:
+
+```bash
+chmod +x ./Scripts/run_comparison_benchmarks.sh
+./Scripts/run_comparison_benchmarks.sh --release
+```
+
+Outputs:
+- `benchmark_results/comparison/baseline.json` — encryption on (production path)
+- `benchmark_results/comparison/engine_only.json` — `BLAZEDB_BENCHMARK_NO_ENCRYPTION` compile flag
+- `benchmark_results/comparison/COMPARISON.md` — side-by-side headline table
+
+SQLite uses `journal_mode=WAL` and `synchronous=FULL` in the harness (still no encryption).
 
 ### Priority order (agreed)
 
