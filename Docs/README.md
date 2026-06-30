@@ -93,6 +93,7 @@ Internal analysis material lives under [`Docs/Internal/`](Internal/README.md) an
 - [Testing Guide](TESTING_GUIDE.md)
 - [Release Rollback Procedure](Status/RELEASE_ROLLBACK.md)
 - [Open-Source Readiness Checklist](Status/OPEN_SOURCE_READINESS_CHECKLIST.md) (hosted CI expectations and local validation paths)
+- [Work Remaining Tracker](Status/WORK_REMAINING.md) (prioritized sprints, checkbox backlog, issue template)
 - [External Security Review Plan](Status/EXTERNAL_SECURITY_REVIEW_PLAN.md)
 - [Master Documentation Index](MASTER_DOCUMENTATION_INDEX.md)
 - [Agents Guide](AGENTS_GUIDE.md)

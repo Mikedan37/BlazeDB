@@ -2,6 +2,8 @@
 
 > This document is an internal OSS release/process checklist. Most users should start with `README.md`
 > and `Docs/GettingStarted/`.
+>
+> **Open work tracker:** [`WORK_REMAINING.md`](WORK_REMAINING.md) (prioritized sprints and issue IDs).
 
 Use this checklist to decide if the current branch is ready for a public OSS release.
 

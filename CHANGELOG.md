@@ -5,6 +5,43 @@ All notable changes to BlazeDB are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **`BlazeLiveQuery`** in core — reusable observe → refresh → decode pipeline for MVVM, CLI, and future Android adapters ([#231](https://github.com/Mikedan37/BlazeDB/pull/231)).
+- **KMM sample** (`Examples/android/shared`): `expect class BlazeDB`, typed `Todo` API, Compose ViewModel, live `Flow` helpers; iOS simulator + Android emulator runtime proof in PR CI.
+- **JNI bridge** (`BlazeDBAndroidBridge`) and Android cross-compile CI lane (OSS Swift 6.3.2 + NDK r27d).
+- **CLI/REPL:** new REPL UX, master keyring workflows, row-level security support restored ([#230](https://github.com/Mikedan37/BlazeDB/pull/230)).
+- README sample **L1/L2/L3 verification** in CI; issue filing tracker [`Docs/Status/WORK_REMAINING.md`](Docs/Status/WORK_REMAINING.md).
+
+### Fixed
+
+- **Security:** fail-closed on invalid key material; no caching of unverified keys; soft-deleted records hidden from public APIs; field preservation on soft delete.
+- **CLI:** master keyring password precedence and policy; concurrent keyring update loss; dotted database-name normalization ([#203](https://github.com/Mikedan37/BlazeDB/pull/203)).
+- **Core:** VACUUM backups restored before PageStore init; strict `.blazedb` naming; legacy DB preservation on Linux default open; join matches string UUID FKs to native UUID PKs.
+- **Storage:** compressed page headers counted valid in storage stats.
+- **CI:** Apple platform cross-compile on every PR; nightly/deep-validation flake stabilization; visionOS skip distinguished from failure.
+
+### Changed
+
+- **Documentation:** Android/KMM status, live query architecture, default storage paths; README current release **2.7.7**.
+
+---
+
+## [2.7.7] - 2026-04-24
+
+### Fixed
+
+- **`BlazeDBCore` consumers:** removed `unsafeFlags` from the core target so downstream packages can depend on `BlazeDBCore` without SwiftPM unsafe-flag restrictions.
+
+### Changed
+
+- **CI:** stabilized nightly and deep validation test lanes ([#185](https://github.com/Mikedan37/BlazeDB/pull/185)).
+- **Dependencies:** `swift-crypto` 4.4.0 → 4.5.0 ([#184](https://github.com/Mikedan37/BlazeDB/pull/184)).
+
+---
+
 ## [2.7.6] - 2026-04-23
 
 ### CI

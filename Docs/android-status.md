@@ -195,10 +195,12 @@ Confirm UI shows `KMM RUNTIME OK` and `kmm-commonMain` in the query JSON.
 | # | Work | Why |
 |---|------|-----|
 | 1 | Keep cross-compile + KMM CI green | Prevents toolchain drift |
-| 2 | Android KMM runtime in CI (emulator job) | Match iOS PR gate confidence |
-| 3 | AAR / XCFramework packaging | Repeatable consumer integration |
+| 2 | ~~Android KMM runtime in CI (emulator job)~~ | Done — `kmm-android-runtime` in PR gate |
+| 3 | AAR / XCFramework publish (Maven Central / CocoaPods trunk) | Repeatable consumer integration |
 | 4 | Document Android storage paths (`open(at:)`) | `PathResolver` falls back to temp on unknown OS |
-| 5 | Live query / observation on Android KMM | Optional; core CRUD path proven |
+| 5 | Live query / observation on Android KMM | Optional; core CRUD + Flow sample exist |
+
+Full prioritized tracker: [`Docs/Status/WORK_REMAINING.md`](Status/WORK_REMAINING.md) (Sprint 2: A-05–A-09).
 
 ---
 
@@ -206,8 +208,8 @@ Confirm UI shows `KMM RUNTIME OK` and `kmm-commonMain` in the query JSON.
 
 > BlazeDB’s storage and observation model **maps cleanly** onto Android Repository + ViewModel — that’s architecture, not shipped Android support.
 >
-> **Proven in CI:** cross-compile; KMM iOS + Android runtime; AAR/XCFramework packaging; typed `Todo` + live Flow sample.
-> **Not yet:** Maven Central / CocoaPods trunk; full SwiftUI-parity API surface.
+> **Proven in CI:** cross-compile; KMM iOS + Android emulator runtime; local AAR/XCFramework packaging scripts; typed `Todo` + live Flow sample.
+> **Not yet:** Maven Central / CocoaPods trunk; full SwiftUI-parity API surface; official Android product support.
 >
 > SwiftUI’s `@BlazeStorableQuery` is a convenience adapter over ``BlazeLiveQuery`` in core. On Android the same primitive would sit behind JNI and Kotlin `Flow` — sample code exists, runtime verification is the next milestone.
 

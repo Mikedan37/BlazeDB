@@ -1,7 +1,9 @@
 # What's Next for BlazeDB
 
-**Date:** 2025-01-23
-**Status:** Production Readiness Complete
+**Date:** 2026-06-30  
+**Status:** Production-ready core; adoption and platform work ongoing
+
+> **Prioritized task list:** [`WORK_REMAINING.md`](WORK_REMAINING.md) — sprints, checkboxes, and issue filing template.
 
 ---
 
@@ -71,10 +73,10 @@ BlazeDB is good because it says no.
 
 ## Known Issues to Address
 
-**Signature verification in export/verify:**
-- See `KNOWN_ISSUES.md`
-- Fix cleanly or document limitation loudly
-- Don't ignore it
+**Dump signature / legacy hash on restore:**
+- Cross-version restore may require explicit `allowLegacyHashMismatch` for older dumps.
+- CLI surfaces signature failures when the wrong password is used vs true tampering.
+- Track remediation in [`WORK_REMAINING.md`](WORK_REMAINING.md) (R-07) — fix cleanly or document as permanent policy in `KNOWN_ISSUES.md`.
 
 ---
 

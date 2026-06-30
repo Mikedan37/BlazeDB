@@ -2,7 +2,7 @@
 
 **Embedded, encrypted, single-process.** A document database for Swift with ACID transactions, WAL-backed crash recovery, and AES-256-GCM at rest. One encrypted file per database name; no standalone server and no required network calls.
 
-*MIT · Swift 6+ · current release **2.7.5** · [Add BlazeDB to your app](#add-blazedb-to-your-app)*
+*MIT · Swift 6+ · current release **2.7.7** · [Add BlazeDB to your app](#add-blazedb-to-your-app)*
 
 [![Swift](https://img.shields.io/badge/Swift-6.0+-orange.svg)](https://swift.org)
 [![Platforms](https://img.shields.io/badge/Platforms-macOS%20%7C%20iOS%20%7C%20watchOS%20%7C%20tvOS%20%7C%20visionOS%20%7C%20Linux%20%7C%20Android-lightgrey.svg)](Docs/COMPATIBILITY.md)
@@ -234,7 +234,7 @@ Add to your `Package.swift`:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/Mikedan37/BlazeDB.git", from: "2.7.5")
+    .package(url: "https://github.com/Mikedan37/BlazeDB.git", from: "2.7.7")
 ],
 targets: [
     .target(name: "YourApp", dependencies: ["BlazeDB"])
@@ -617,6 +617,7 @@ Run with `swift run <ToolName>` (for the published CLI database tool, use `swift
 | [Android / KMM status](Docs/android-status.md) | Cross-compile, KMM sample, and integration roadmap |
 | [KMM getting started](Docs/GettingStarted/KMM_GETTING_STARTED.md) | Kotlin Multiplatform + Compose (Android/iOS) — proof scripts and ViewModel pattern |
 | [Durability Modes](Docs/Status/DURABILITY_MODE_SUPPORT.md) | WAL modes and recovery guarantees |
+| [Work remaining tracker](Docs/Status/WORK_REMAINING.md) | Prioritized sprints, open work IDs, issue filing template |
 | [System Map](Docs/SYSTEM_MAP.md) | Feature inventory, status, and code locations |
 | [Design Overview (Medium)](https://medium.com/@DanylchukStudiosLLC/blazedb-a-swift-native-embedded-application-database-c0c762dee311) | Narrative architecture overview (March 2026) |
 

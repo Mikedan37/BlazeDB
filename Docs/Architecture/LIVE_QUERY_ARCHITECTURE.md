@@ -219,7 +219,7 @@ BlazeDB core
 
 That is the same shape as ``MVVMPattern``, with different UI binding. See [android-status.md](../android-status.md) for the engineering roadmap and what is verified vs future work.
 
-KMM integration (`expect class BlazeDB` in `Examples/android/shared`) is **in progress**: iOS simulator runtime is in PR CI; Android emulator runtime is verified locally via `./Scripts/prove-kmm-android-runtime.sh`. BlazeDB does **not** claim full “Kotlin Multiplatform supported” until Android runtime is in CI and packaging exists.
+KMM integration (`expect class BlazeDB` in `Examples/android/shared`) is **integration scaffolding**: iOS and Android emulator runtime are in PR CI; packaging scripts exist but Maven/CocoaPods publish does not. BlazeDB does **not** claim full “Kotlin Multiplatform supported” until consumer registry publish and official Android support — see [android-status.md](../android-status.md) and [WORK_REMAINING.md](../Status/WORK_REMAINING.md) (Sprint 2).
 
 ---
 
