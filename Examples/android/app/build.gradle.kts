@@ -6,10 +6,23 @@ plugins {
 val repoRoot = rootProject.projectDir.parentFile.parentFile
 val swiftBuildPath = (project.findProperty("BLAZEDB_SWIFT_BUILD") as String?)
     ?: repoRoot.resolve(".build").absolutePath
-val swiftBridgeOutDir = file("$swiftBuildPath/aarch64-unknown-linux-android28/debug")
-val swiftRuntimeDir = repoRoot.resolve(
-    ".artifacts/android-sdk/swift-6.3.2-RELEASE_android.artifactbundle/swift-android/swift-resources/usr/lib/swift-aarch64/android",
-)
+val androidAbis = (project.findProperty("BLAZEDB_ANDROID_ABIS") as String?)
+    ?.split(",")
+    ?.map { it.trim() }
+    ?.filter { it.isNotEmpty() }
+    ?: listOf("arm64-v8a")
+
+fun swiftTripleForAbi(abi: String): String = when (abi) {
+    "arm64-v8a" -> "aarch64-unknown-linux-android28"
+    "x86_64" -> "x86_64-unknown-linux-android28"
+    else -> error("unsupported BLAZEDB_ANDROID_ABIS entry: $abi")
+}
+
+fun swiftRuntimeSubdirForAbi(abi: String): String = when (abi) {
+    "arm64-v8a" -> "swift-aarch64"
+    "x86_64" -> "swift-x86_64"
+    else -> error("unsupported BLAZEDB_ANDROID_ABIS entry: $abi")
+}
 
 android {
     namespace = "com.blazedb.example"
@@ -34,7 +47,7 @@ android {
         }
 
         ndk {
-            abiFilters += listOf("arm64-v8a")
+            abiFilters += androidAbis
         }
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -70,10 +83,21 @@ android {
     }
 }
 
-val copySwiftJniLibs = tasks.register<Copy>("copySwiftJniLibs") {
-    from(swiftRuntimeDir) { include("*.so") }
-    from(swiftBridgeOutDir) { include("libBlazeDBAndroidBridge.so") }
-    into(layout.buildDirectory.dir("swift-jni-libs/arm64-v8a"))
+val copySwiftJniLibs = tasks.register("copySwiftJniLibs") {
+    androidAbis.forEach { abi ->
+        val triple = swiftTripleForAbi(abi)
+        val bridgeOutDir = file("$swiftBuildPath/$triple/debug")
+        val runtimeDir = repoRoot.resolve(
+            ".artifacts/android-sdk/swift-6.3.2-RELEASE_android.artifactbundle/swift-android/swift-resources/usr/lib/${swiftRuntimeSubdirForAbi(abi)}/android",
+        )
+        dependsOn(
+            tasks.register<Copy>("copySwiftJniLibs_$abi") {
+                from(runtimeDir) { include("*.so") }
+                from(bridgeOutDir) { include("libBlazeDBAndroidBridge.so") }
+                into(layout.buildDirectory.dir("swift-jni-libs/$abi"))
+            },
+        )
+    }
 }
 
 tasks.named("preBuild").configure { dependsOn(copySwiftJniLibs) }

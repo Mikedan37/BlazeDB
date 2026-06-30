@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Cross-compile BlazeDBCore for Android (aarch64).
+# Cross-compile BlazeDBCore for Android (aarch64 + x86_64 for CI emulator).
 # Requires OSS Swift matching android-swift-config.sh — not Xcode's swift.
 # See Docs/android-status.md and Docs/COMPATIBILITY.md.
 set -euo pipefail
@@ -188,36 +188,49 @@ resolve_ndk_cxx_include() {
 
 resolve_ndk_clang_binary() {
   local suffix="$1"
+  local triple="${2:-$BLAZEDB_ANDROID_SWIFT_TRIPLE}"
   local bin_dir="$NDK_HOME/toolchains/llvm/prebuilt/$(resolve_ndk_host_tag)/bin"
-  local short_triple="${BLAZEDB_ANDROID_SWIFT_TRIPLE/-unknown-linux-/-linux-}"
-  local candidate name pattern
-  for name in "${short_triple}-${suffix}" "${BLAZEDB_ANDROID_SWIFT_TRIPLE}-${suffix}"; do
+  local short_triple="${triple/-unknown-linux-/-linux-}"
+  local candidate name pattern arch_glob
+  case "$triple" in
+    x86_64-*)
+      arch_glob="x86_64"
+      ;;
+    aarch64-*)
+      arch_glob="aarch64"
+      ;;
+    *)
+      echo "error: unsupported Android Swift triple: $triple" >&2
+      return 1
+      ;;
+  esac
+  for name in "${short_triple}-${suffix}" "${triple}-${suffix}"; do
     candidate="$bin_dir/$name"
     if [[ -x "$candidate" ]]; then
       echo "$candidate"
       return 0
     fi
   done
-  # NDK r27+ ships short triple names (aarch64-linux-android28-clang), not Swift triples.
   if [[ "$suffix" == "clang" ]]; then
-    pattern='aarch64-*-android*-clang'
+    pattern="${arch_glob}-*-android*-clang"
   else
-    pattern='aarch64-*-android*-clang++'
+    pattern="${arch_glob}-*-android*-clang++"
   fi
   candidate="$(find "$bin_dir" -maxdepth 1 -type f -name "$pattern" 2>/dev/null | sort | head -1)"
   if [[ -n "$candidate" && -x "$candidate" ]]; then
     echo "$candidate"
     return 0
   fi
-  echo "error: no NDK ${suffix} wrapper in $bin_dir (tried ${short_triple}-${suffix}, then ${pattern})" >&2
+  echo "error: no NDK ${suffix} wrapper in $bin_dir for $triple (tried ${short_triple}-${suffix}, then ${pattern})" >&2
   ls "$bin_dir" 2>/dev/null | grep -E 'android.*clang' | head -10 >&2 || true
   return 1
 }
 
-cross_compile_blazedb_targets() {
+cross_compile_blazedb_for_triple() {
+  local triple="$1"
   local ndk_clang ndk_clangxx
-  ndk_clang="$(resolve_ndk_clang_binary clang)"
-  ndk_clangxx="$(resolve_ndk_clang_binary clang++)"
+  ndk_clang="$(resolve_ndk_clang_binary clang "$triple")"
+  ndk_clangxx="$(resolve_ndk_clang_binary clang++ "$triple")"
 
   if [[ ! -d "$SDK_ROOT/ndk-sysroot" ]]; then
     echo "error: missing Android C sysroot at $SDK_ROOT/ndk-sysroot" >&2
@@ -228,30 +241,29 @@ cross_compile_blazedb_targets() {
     exit 1
   fi
 
-  # NDK clang wrappers embed sysroot + libc++ search paths. Manual -Xcc -isystem for
-  # the Android usr/include tree breaks libc++ wrapped C headers (<cstddef> errors).
   export CC="$ndk_clang"
   export CXX="$ndk_clangxx"
 
   echo ">>> NDK CC=$CC"
   echo ">>> NDK CXX=$CXX"
 
-  echo ">>> Reset Swift SDK configuration (clear stale CI cache state)"
-  swift sdk configure --reset "$BLAZEDB_ANDROID_SDK_NAME" "$BLAZEDB_ANDROID_SWIFT_TRIPLE" 2>/dev/null || true
+  echo ">>> Reset Swift SDK configuration for $triple"
+  swift sdk configure --reset "$BLAZEDB_ANDROID_SDK_NAME" "$triple" 2>/dev/null || true
 
-  echo ">>> Clean SwiftPM build directory for Android cross-compile"
-  rm -rf .build
-
-  echo ">>> Cross-compile BlazeDBAndroidBridge (dynamic) for $BLAZEDB_ANDROID_SWIFT_TRIPLE"
+  echo ">>> Cross-compile BlazeDBAndroidBridge (dynamic) for $triple"
   swift build \
     --product BlazeDBAndroidBridge \
-    --swift-sdk "$BLAZEDB_ANDROID_SWIFT_TRIPLE"
+    --swift-sdk "$triple"
 }
 
 echo ">>> Android toolchain smoke (hello world for $BLAZEDB_ANDROID_SWIFT_TRIPLE)"
 run_android_toolchain_smoke
 
-echo ">>> Cross-compile BlazeDBAndroidBridge (dynamic .so)"
-cross_compile_blazedb_targets
+echo ">>> Clean SwiftPM build directory for Android cross-compile"
+rm -rf .build
+
+echo ">>> Cross-compile BlazeDBAndroidBridge for arm64 + x86_64 (CI emulator uses x86_64 on Linux KVM)"
+cross_compile_blazedb_for_triple "$BLAZEDB_ANDROID_SWIFT_TRIPLE"
+cross_compile_blazedb_for_triple "$BLAZEDB_ANDROID_SWIFT_TRIPLE_X86_64"
 
 echo ">>> Android cross-compile: ok"

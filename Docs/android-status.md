@@ -21,7 +21,7 @@ What has been **proven** versus **assumed**:
 | 🟢 **Compiler** | `BlazeDBCore` + `BlazeDBAndroidBridge` cross-compile for Android in PR gate CI (`./Scripts/ci-android-cross-compile.sh`) |
 | 🟢 **Linker** | JNI bridge target and sample Gradle/CMake wiring **build** (Swift static libs linked into `libblazedb_android_bridge.so` locally) |
 | 🟢 **Runtime (iOS)** | `BlazeDB.open` / `put` / `query` on iOS simulator — PR CI (`iosSimulatorArm64Test`) + `./Scripts/prove-kmm-ios-runtime.sh` |
-| 🟢 **Runtime (Android)** | Same API verified on arm64 emulator — PR CI (`connectedDebugAndroidTest`) + `./Scripts/prove-kmm-android-runtime.sh` |
+| 🟢 **Runtime (Android)** | Same API verified on emulator — PR CI (`connectedDebugAndroidTest` on Linux x86_64 KVM) + `./Scripts/prove-kmm-android-runtime.sh` (local arm64) |
 | 🟡 **Production** | Local packaging (`package-kmm-artifacts.sh`); **no registry publish until demand** |
 | ⚪ **Ecosystem** | **Frozen** — do not expand KMM scope without user pull; see roadmap below |
 

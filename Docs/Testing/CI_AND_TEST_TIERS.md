@@ -93,10 +93,11 @@ In short: the nightly workflow optimizes for coverage visibility and time-to-sig
 - Runner: `ubuntu-22.04`
 - OSS Swift **6.3.2** via `./Scripts/install-android-swift.sh` (must match Android SDK bundle in `Scripts/android-swift-config.sh` — **not** Xcode Swift)
 - Caches `.build`, `~/.swiftpm/swift-sdks`, and NDK under the SDK bundle
-- Runs `./Scripts/ci-android-cross-compile.sh` (`swift build --product BlazeDBAndroidBridge --swift-sdk aarch64-unknown-linux-android28` → `libBlazeDBAndroidBridge.so`)
-- Verifies `.build/aarch64-unknown-linux-android28/debug/libBlazeDBAndroidBridge.so`
-- **KMM Android compile-only (Linux):** Java 17 + `./Scripts/setup-android-gradle-sdk-linux.sh`, then `./gradlew :shared:compileDebugKotlinAndroid`. Uploads native libs for the macOS emulator job.
-- **KMM Android runtime + packaging (macOS):** Job `kmm-android-runtime` — `reactivecircus/android-emulator-runner` + `./Scripts/ci-kmm-android-emulator-smoke.sh` (`connectedDebugAndroidTest`), then `./Scripts/package-kmm-artifacts.sh`. See [KMM CI (Android + iOS)](#kmm-ci-android--ios).
+- Runs `./Scripts/ci-android-cross-compile.sh` (arm64 + x86_64 `libBlazeDBAndroidBridge.so`)
+- Verifies both `.build/aarch64-unknown-linux-android28/debug/` and `.build/x86_64-unknown-linux-android28/debug/` bridge libs
+- **KMM Android compile-only (Linux):** Java 17 + `./Scripts/setup-android-gradle-sdk-linux.sh`, then `./gradlew :shared:compileDebugKotlinAndroid`. Uploads native libs for downstream KMM jobs.
+- **KMM Android emulator (Linux KVM):** Job `kmm-android-emulator` — `ubuntu-latest` + `reactivecircus/android-emulator-runner` (`arch: x86_64`) + `./Scripts/ci-kmm-android-emulator-smoke.sh` (`connectedDebugAndroidTest` with `-PBLAZEDB_ANDROID_ABIS=x86_64`).
+- **KMM Android packaging (macOS):** Job `kmm-android-packaging` — stages arm64 native libs + `./Scripts/package-kmm-artifacts.sh`. See [KMM CI (Android + iOS)](#kmm-ci-android--ios).
 
 - `.github/workflows/tag-probe.yml`
 - Trigger: **manual** (`workflow_dispatch`) only
@@ -306,7 +307,7 @@ Use precise language so status and dashboards do not blur the PR gate with deepe
 | **PR3 transitional companions** | `BlazeDB_Tier2_Extended`, `BlazeDB_Tier3_Heavy_Perf`; temporary bridge targets slated for PR4 filesystem/target normalization. |
 | **Nightly Confidence (daily)** | `nightly.yml`: macOS Tier2 strict, clean checkout, README quickstart, Tier0 TSan; **Linux** `linux-tier1` + `linux-tier2-core` only (no Linux Tier0 nightly — covered in PR `ci.yml`). |
 | **Deep Validation (weekly)** | `deep-validation.yml` (weekly, Sun 03:00 UTC + manual), **delta-only**: **`deep-macos-tier3-heavy-destructive`**, **`deep-macos-tsan-tier1`**, **`deep-linux-tier2-extended-tier3`** — does not re-run PR/nightly tiers. |
-| **KMM PR gate** | iOS: `iosSimulatorArm64Test`. Android compile (Linux). Android runtime + packaging (macOS `kmm-android-runtime` job). |
+| **KMM PR gate** | iOS: `iosSimulatorArm64Test`. Android compile (Linux). Android emulator runtime (Linux KVM `kmm-android-emulator`). Android packaging (macOS `kmm-android-packaging`). |
 | **Canonical Tier1** | `BlazeDB_Tier1` (single canonical Tier1 target). |
 
 Inventory/bootstrap code may still bucket all three SwiftPM modules under a single **`T1`** label for file-level manifests; that is a storage convenience. **Human-facing** summaries (CI names, release notes, team chat) should use the table above, not a vague “T1 passed.”

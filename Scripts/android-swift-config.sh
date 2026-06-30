@@ -13,7 +13,28 @@ readonly BLAZEDB_ANDROID_SDK_MIRROR_URL="https://github.com/Mikedan37/BlazeDB/re
 readonly BLAZEDB_ANDROID_SDK_CHECKSUM="939e933549d12d28f2e0bf71019d734d309859e9773c572657ce565a81f85d68"
 readonly BLAZEDB_ANDROID_SDK_MIN_BYTES=300000000
 readonly BLAZEDB_ANDROID_SWIFT_TRIPLE="aarch64-unknown-linux-android28"
+readonly BLAZEDB_ANDROID_SWIFT_TRIPLE_X86_64="x86_64-unknown-linux-android28"
 readonly BLAZEDB_ANDROID_NDK_VERSION="r27d"
+
+android_swift_runtime_dir_for_triple() {
+  local triple="${1:-$BLAZEDB_ANDROID_SWIFT_TRIPLE}"
+  local subdir
+  case "$triple" in
+    x86_64-*) subdir="swift-x86_64" ;;
+    aarch64-*) subdir="swift-aarch64" ;;
+    *) echo "error: unknown Android Swift triple: $triple" >&2; return 1 ;;
+  esac
+  local cache_dir="${BLAZEDB_ANDROID_SDK_CACHE_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/.artifacts/android-sdk}"
+  echo "$cache_dir/${BLAZEDB_ANDROID_SDK_ARTIFACT%.tar.gz}/swift-android/swift-resources/usr/lib/${subdir}/android"
+}
+
+android_abi_for_triple() {
+  case "${1:-}" in
+    x86_64-*) echo "x86_64" ;;
+    aarch64-*) echo "arm64-v8a" ;;
+    *) echo "error: unknown triple: $1" >&2; return 1 ;;
+  esac
+}
 
 verify_android_sdk_artifact() {
   local tarball_path="$1"

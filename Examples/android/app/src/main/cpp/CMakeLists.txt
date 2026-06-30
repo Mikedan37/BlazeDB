@@ -17,7 +17,14 @@ target_include_directories(
 )
 
 if(BLAZEDB_SWIFT_BUILD)
-    set(SWIFT_TRIPLE "aarch64-unknown-linux-android28")
+    if(ANDROID_ABI STREQUAL "x86_64")
+        set(SWIFT_TRIPLE "x86_64-unknown-linux-android28")
+    elseif(ANDROID_ABI STREQUAL "arm64-v8a")
+        set(SWIFT_TRIPLE "aarch64-unknown-linux-android28")
+    else()
+        message(FATAL_ERROR "Unsupported ANDROID_ABI for BlazeDB Swift bridge: ${ANDROID_ABI}")
+    endif()
+
     set(SWIFT_BUILD_ROOT "${BLAZEDB_SWIFT_BUILD}/${SWIFT_TRIPLE}/debug")
     set(SWIFT_BRIDGE_LIB "${SWIFT_BUILD_ROOT}/libBlazeDBAndroidBridge.so")
 

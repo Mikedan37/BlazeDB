@@ -27,9 +27,18 @@ export ANDROID_HOME
 export PATH="$CMDLINE/bin:$PATH"
 
 yes | "$SDKMANAGER" --licenses >/dev/null 2>&1 || true
-"$SDKMANAGER" \
-  "platform-tools" \
-  "platforms;android-34" \
+
+PACKAGES=(
+  "platform-tools"
+  "platforms;android-34"
   "build-tools;34.0.0"
+)
+if [[ "${BLAZEDB_ANDROID_SDK_INSTALL_EMULATOR:-0}" == "1" ]]; then
+  PACKAGES+=(
+    "emulator"
+    "system-images;android-34;google_apis;x86_64"
+  )
+fi
+"$SDKMANAGER" "${PACKAGES[@]}"
 
 echo ">>> Android Gradle SDK (Linux) ready at $ANDROID_HOME"
