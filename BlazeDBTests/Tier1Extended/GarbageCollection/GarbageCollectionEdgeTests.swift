@@ -120,6 +120,37 @@ final class GarbageCollectionEdgeTests: XCTestCase {
         print("  ✅ Insert after full VACUUM works correctly")
     }
     
+    func testGC_AsyncVacuumClearsReusablePagesBeforeFutureInserts() async throws {
+        print("♻️ Testing async VACUUM clears reusable page metadata")
+        
+        let ids = try await requireFixture(db).insertMany((0..<6).map { i in
+            BlazeDataRecord(["value": .int(i)])
+        })
+        
+        try await requireFixture(db).delete(id: ids[0])
+        try await requireFixture(db).delete(id: ids[1])
+        try await requireFixture(db).persist()
+        
+        let gcStatsBefore = try requireFixture(db).collection.getGCStats()
+        XCTAssertGreaterThanOrEqual(gcStatsBefore.reuseablePages, 2)
+        
+        _ = try await requireFixture(db).vacuum()
+        
+        let gcStatsAfter = try requireFixture(db).collection.getGCStats()
+        XCTAssertEqual(gcStatsAfter.reuseablePages, 0, "VACUUM must not leave stale deleted pages pointing into compacted live data")
+        
+        _ = try await requireFixture(db).insert(BlazeDataRecord(["value": .int(99)]))
+        
+        for (offset, id) in ids.dropFirst(2).enumerated() {
+            let record = try await requireFixture(db).fetch(id: id)
+            XCTAssertEqual(record?.storage["value"]?.intValue, offset + 2, "Insert after async VACUUM must not overwrite compacted records")
+        }
+        
+        XCTAssertEqual(try await requireFixture(db).count(), 5)
+        
+        print("  ✅ Async VACUUM leaves future inserts safe")
+    }
+    
     // MARK: - Edge Case 4: VACUUM During Active Use
     
     func testGC_VacuumDuringActiveUse() async throws {
