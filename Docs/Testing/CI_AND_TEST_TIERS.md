@@ -163,7 +163,7 @@ Treat CI as a **constrained environment that must produce trustworthy signal**, 
 
 ## KMM CI (Android + iOS)
 
-Kotlin Multiplatform integration lives in `Examples/android/shared` (`expect class BlazeDB` in `commonMain`). **Do not** describe this as full product “KMM supported” in release notes until packaging and Android runtime are in CI — see `Docs/android-status.md`.
+Kotlin Multiplatform integration lives in `Examples/android/shared` (`expect class BlazeDB` in `commonMain`). **Experimental — validation complete, frozen.** Do not describe as a shipped KMM SDK or expand scope until users ask for registry publish — see `Docs/android-status.md`.
 
 ### What PR gate (`ci.yml`) proves
 

@@ -52,8 +52,18 @@ if [[ ! -x ./gradlew ]]; then
   exit 1
 fi
 
-adb kill-server 2>/dev/null || true
-adb start-server
+if [[ "${CI_EMULATOR_MANAGED:-0}" != "1" ]]; then
+  adb kill-server 2>/dev/null || true
+  adb start-server
+else
+  adb wait-for-device
+  for _ in $(seq 1 90); do
+    boot="$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')"
+    [[ "$boot" == "1" ]] && break
+    sleep 2
+  done
+  adb devices -l
+fi
 
 if [[ "${CI_EMULATOR_MANAGED:-0}" != "1" ]]; then
   AVD_NAME="${BLAZEDB_AVD_NAME:-blazedb_arm64_api34}"

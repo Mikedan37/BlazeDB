@@ -1,11 +1,14 @@
 # Android and Kotlin Multiplatform — support status
 
-This document describes **what is verified today**, not what we plan to ship eventually.
+**KMM support: experimental (validation complete, frozen).**  
+The question “can BlazeDB be consumed from Kotlin Multiplatform?” is **answered yes** (Android + iOS runtime, CI, docs, sample). **No further KMM polish** until real users ask for packaging (Maven Central / CocoaPods). Core BlazeDB work takes priority.
+
+This document describes **what is verified today**, not a shipped product surface.  
 For platform matrices and API stability, see [COMPATIBILITY.md](COMPATIBILITY.md).
 
-**Not yet officially supported:** Android app integration and KMM are engineering targets, not supported product surfaces.
+**Not officially supported:** Android app integration and KMM remain **experimental** engineering targets — not production SDK claims.
 
-The `:shared` KMM module (`expect class BlazeDB`) is **runtime-verified locally on Android emulator and iOS simulator**, and **partially gated in PR CI** (iOS simulator test + Android Kotlin compile). That is integration scaffolding — not a shipped KMM SDK or “Kotlin Multiplatform supported” product claim.
+The `:shared` module (`expect class BlazeDB`) is **runtime-verified in CI** (iOS simulator + Android instrumentation) with local packaging scripts. That is **validation scaffolding** in `Examples/android/` — not “Kotlin Multiplatform supported” product wording.
 
 ---
 
@@ -19,8 +22,8 @@ What has been **proven** versus **assumed**:
 | 🟢 **Linker** | JNI bridge target and sample Gradle/CMake wiring **build** (Swift static libs linked into `libblazedb_android_bridge.so` locally) |
 | 🟢 **Runtime (iOS)** | `BlazeDB.open` / `put` / `query` on iOS simulator — PR CI (`iosSimulatorArm64Test`) + `./Scripts/prove-kmm-ios-runtime.sh` |
 | 🟢 **Runtime (Android)** | Same API verified on arm64 emulator — PR CI (`connectedDebugAndroidTest`) + `./Scripts/prove-kmm-android-runtime.sh` |
-| 🟡 **Production** | Consumer packaging in CI (`package-kmm-artifacts.sh`); not Maven/CocoaPods publish yet |
-| 🟡 **Ecosystem** | KMM `:shared` — runtime + packaging verified in CI; README “KMM supported” still pending publish story |
+| 🟡 **Production** | Local packaging (`package-kmm-artifacts.sh`); **no registry publish until demand** |
+| ⚪ **Ecosystem** | **Frozen** — do not expand KMM scope without user pull; see roadmap below |
 
 ---
 
@@ -186,19 +189,23 @@ Confirm UI shows `KMM RUNTIME OK` and `kmm-commonMain` in the query JSON.
 | ``BlazeDBClient/observe(_:)`` | Change notifications | 🟢 core |
 | ``BlazeLiveQuery`` | observe → refresh → decode | 🟢 core |
 | ``@BlazeStorableQuery`` | SwiftUI adapter | 🟢 Apple |
-| Kotlin KMM `BlazeDB` | `commonMain` API over JNI / cinterop | 🟡 iOS CI + local Android |
+| Kotlin KMM `BlazeDB` | `commonMain` API over JNI / cinterop | 🟢 experimental (CI runtime) |
 
 ---
 
-## Engineering roadmap (remaining work)
+## Engineering roadmap
 
-| # | Work | Why |
-|---|------|-----|
-| 1 | Keep cross-compile + KMM CI green | Prevents toolchain drift |
-| 2 | Android KMM runtime in CI (emulator job) | Match iOS PR gate confidence |
-| 3 | AAR / XCFramework packaging | Repeatable consumer integration |
-| 4 | Document Android storage paths (`open(at:)`) | `PathResolver` falls back to temp on unknown OS |
-| 5 | Live query / observation on Android KMM | Optional; core CRUD path proven |
+**Current policy (Lane C):** KMM validation is **done**. Keep CI green; do not spend another week on KMM unless someone repeatedly asks how to add BlazeDB to a KMM project.
+
+| # | Work | When |
+|---|------|------|
+| 1 | Keep cross-compile + KMM CI green | Always (regression guard) |
+| 2 | `./Scripts/prove-kmm-runtime.sh` after KMM-touching changes | Maintainers, local |
+| 3 | Maven Central / CocoaPods publish | **When users ask** — not before |
+| 4 | Generic typed models / non-JSON bridge | **When users ask** |
+| 5 | Default Android/iOS storage paths in KMM API | **When users ask** |
+
+**Do not do proactively:** Maven Central setup, CocoaPods trunk, generic KMM SDK polish, or README “KMM fully supported” claims.
 
 ---
 
@@ -206,10 +213,10 @@ Confirm UI shows `KMM RUNTIME OK` and `kmm-commonMain` in the query JSON.
 
 > BlazeDB’s storage and observation model **maps cleanly** onto Android Repository + ViewModel — that’s architecture, not shipped Android support.
 >
-> **Proven in CI:** cross-compile; KMM iOS + Android runtime; AAR/XCFramework packaging; typed `Todo` + live Flow sample.
-> **Not yet:** Maven Central / CocoaPods trunk; full SwiftUI-parity API surface.
+> **Proven (experimental):** cross-compile; KMM iOS + Android runtime in CI; local AAR/XCFramework packaging; sample `Todo` + Flow.
+> **Frozen until demand:** Maven Central / CocoaPods; full SwiftUI-parity API; further KMM polish.
 >
-> SwiftUI’s `@BlazeStorableQuery` is a convenience adapter over ``BlazeLiveQuery`` in core. On Android the same primitive would sit behind JNI and Kotlin `Flow` — sample code exists, runtime verification is the next milestone.
+> SwiftUI’s `@BlazeStorableQuery` is a convenience adapter over ``BlazeLiveQuery`` in core. On Android the same primitive sits behind JNI and Kotlin `Flow` in the experimental KMM sample — **validation complete; no further KMM work until users ask for packaging.**
 
 ---
 

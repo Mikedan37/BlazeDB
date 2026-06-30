@@ -1,6 +1,6 @@
 # BlazeDB KMM sample (`Examples/android/shared`)
 
-Minimal **Kotlin Multiplatform** module with the same `commonMain` API on Android and iOS.
+**Experimental — validation complete, frozen.** See [KMM getting started](../../Docs/GettingStarted/KMM_GETTING_STARTED.md) and [android-status.md](../../Docs/android-status.md). Do not expand this sample unless users pull for KMM packaging.
 
 ## Status (conservative)
 

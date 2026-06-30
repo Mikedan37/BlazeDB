@@ -1,10 +1,11 @@
 # BlazeDB with Kotlin Multiplatform (KMM)
 
+**Status: experimental (validation complete, frozen).**  
+BlazeDB **can** be consumed from shared Kotlin on Android and iOS — proved in CI and via `./Scripts/prove-kmm-runtime.sh`. This is **not** a supported product SDK; there is **no** Maven Central or CocoaPods release. **Do not expand KMM scope** until real users pull for packaging.
+
 Use BlazeDB from **shared Kotlin** (`commonMain`) on **Android and iOS**. This is the KMM counterpart to the SwiftUI onboarding path — same architecture (Repository + live query + UI), different UI glue (Compose / SwiftUI).
 
-**Status:** Integration scaffolding with CI runtime proof and local Maven/XCFramework packaging. Not yet a one-line Maven Central / CocoaPods release — see [Honest product scope](#honest-product-scope).
-
-For Swift-only apps, start at [SWIFTUI_DATABASE_PATTERNS.md](SWIFTUI_DATABASE_PATTERNS.md). For engineering status, see [android-status.md](../android-status.md).
+For Swift-only apps, start at [SWIFTUI_DATABASE_PATTERNS.md](SWIFTUI_DATABASE_PATTERNS.md). For policy and CI status, see [android-status.md](../android-status.md).
 
 ---
 
@@ -196,19 +197,23 @@ Use the same demo password as Swift samples: **`DemoPass123!`** (12+ chars, mixe
 
 ## Honest product scope
 
-**Proven in CI**
+**Experimental validation — complete.**  
+**Product SDK — not shipped.**  
+**Further work — frozen until users ask.**
+
+**Proven in CI / locally**
 
 - Same `commonMain` CRUD + typed `Todo` helpers on iOS simulator and Android emulator
-- AAR + XCFramework packaging layout verified
+- `./Scripts/package-kmm-artifacts.sh` for local AAR + XCFramework (maintainer use)
 
-**Not yet**
+**Explicitly not planned until demand**
 
-- Maven Central / CocoaPods trunk publish
-- Generic typed models beyond the sample `Todo`
-- Full parity with `@BlazeStorableQuery` (KeyPath queries, all record kinds)
-- Default Android/iOS app storage paths (pass explicit `open(path, …)`)
+- Maven Central / CocoaPods trunk
+- README “Kotlin Multiplatform fully supported”
+- Generic typed models beyond sample `Todo`
+- Replacing JSON strings at the KMM bridge boundary
 
-Do **not** claim “Kotlin Multiplatform fully supported” in release notes until registry publish and consumer docs are stable — but you **can** integrate today using `Examples/android/` and the proof scripts above.
+Integrate today only if you accept cloning `Examples/android/` and running the proof scripts — see [android-status.md](../android-status.md).
 
 ---
 

@@ -441,7 +441,7 @@ jobs:
         run: |
           mkdir -p .logs
           adb devices -l > .logs/adb-devices.txt 2>&1 || true
-          adb logcat -d > .logs/adb-logcat.txt 2>&1 || true
+          timeout 60 adb logcat -d > .logs/adb-logcat.txt 2>&1 || true
 
       - name: Upload KMM Android runtime logs
         if: always()

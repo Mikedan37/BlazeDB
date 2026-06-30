@@ -579,7 +579,7 @@ Run with `swift run <ToolName>` (for the published CLI database tool, use `swift
 - **Nested Codable types are not individually queryable.** Nested structs/classes are stored as `BlazeDocumentField.dictionary` values. Round-tripping works, but nested fields cannot be filtered via KeyPath queries. Flatten nested fields into top-level properties if you need to query them.
 - **Password policy at open time.** Production open uses the recommended policy: at least 12 characters with uppercase, lowercase, and a number, plus estimated strength **Good** or better (see `PasswordStrengthValidator.recommended`). Weaker passwords are rejected before the database opens.
 - **`@BlazeQuery` / `@BlazeQueryTyped` require `BlazeDocument`.** For `BlazeStorable`-only models, use **`@BlazeStorableQuery`** instead, or add `BlazeDocument` (manual `toStorage()`/`init(from:)`), or use `@BlazeDataQuery` for raw rows.
-- **Android / KMM integration scaffolding.** PR CI runs iOS/Android runtime tests and packaging; see [KMM getting started](Docs/GettingStarted/KMM_GETTING_STARTED.md). Not yet on Maven Central / CocoaPods trunk.
+- **KMM (experimental, frozen).** Validation complete: Android + iOS runtime, CI, sample, and [KMM getting started](Docs/GettingStarted/KMM_GETTING_STARTED.md). **No registry publish or further KMM polish** until users ask. Core BlazeDB work takes priority.
 
 ---
 
@@ -614,8 +614,8 @@ Run with `swift run <ToolName>` (for the published CLI database tool, use `swift
 | [Developer Guide](Docs/DEVELOPER_GUIDE.md) | Contributing and development setup |
 | [Architecture](Docs/Architecture/) | Storage engine and internal design |
 | [Compatibility Matrix](Docs/COMPATIBILITY.md) | Platform and version support details |
-| [Android / KMM status](Docs/android-status.md) | Cross-compile, KMM sample, and integration roadmap |
-| [KMM getting started](Docs/GettingStarted/KMM_GETTING_STARTED.md) | Kotlin Multiplatform + Compose (Android/iOS) — proof scripts and ViewModel pattern |
+| [Android / KMM status](Docs/android-status.md) | Experimental KMM validation (CI runtime + local packaging); frozen until demand |
+| [KMM getting started](Docs/GettingStarted/KMM_GETTING_STARTED.md) | Experimental Kotlin Multiplatform sample — proof scripts and ViewModel pattern |
 | [Durability Modes](Docs/Status/DURABILITY_MODE_SUPPORT.md) | WAL modes and recovery guarantees |
 | [System Map](Docs/SYSTEM_MAP.md) | Feature inventory, status, and code locations |
 | [Design Overview (Medium)](https://medium.com/@DanylchukStudiosLLC/blazedb-a-swift-native-embedded-application-database-c0c762dee311) | Narrative architecture overview (March 2026) |
