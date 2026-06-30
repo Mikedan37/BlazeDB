@@ -83,24 +83,22 @@ android {
     }
 }
 
-val copySwiftJniLibs = tasks.register("copySwiftJniLibs") {
-    androidAbis.forEach { abi ->
-        val triple = swiftTripleForAbi(abi)
-        val bridgeOutDir = file("$swiftBuildPath/$triple/debug")
-        val runtimeDir = repoRoot.resolve(
-            ".artifacts/android-sdk/swift-6.3.2-RELEASE_android.artifactbundle/swift-android/swift-resources/usr/lib/${swiftRuntimeSubdirForAbi(abi)}/android",
-        )
-        dependsOn(
-            tasks.register<Copy>("copySwiftJniLibs_$abi") {
-                from(runtimeDir) { include("*.so") }
-                from(bridgeOutDir) { include("libBlazeDBAndroidBridge.so") }
-                into(layout.buildDirectory.dir("swift-jni-libs/$abi"))
-            },
-        )
+val copySwiftJniLibTasks = androidAbis.map { abi ->
+    val triple = swiftTripleForAbi(abi)
+    val bridgeOutDir = file("$swiftBuildPath/$triple/debug")
+    val runtimeDir = repoRoot.resolve(
+        ".artifacts/android-sdk/swift-6.3.2-RELEASE_android.artifactbundle/swift-android/swift-resources/usr/lib/${swiftRuntimeSubdirForAbi(abi)}/android",
+    )
+    tasks.register<Copy>("copySwiftJniLibs_$abi") {
+        from(runtimeDir) { include("*.so") }
+        from(bridgeOutDir) { include("libBlazeDBAndroidBridge.so") }
+        into(layout.buildDirectory.dir("swift-jni-libs/$abi"))
     }
 }
 
-tasks.named("preBuild").configure { dependsOn(copySwiftJniLibs) }
+tasks.named("preBuild").configure {
+    copySwiftJniLibTasks.forEach { dependsOn(it) }
+}
 
 dependencies {
     implementation(project(":shared"))

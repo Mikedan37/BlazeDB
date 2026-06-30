@@ -31,9 +31,9 @@ final class OpenProfileBenchmarks: XCTestCase {
         BlazeDBClient.clearCachedKey(for: dbURL.path)
         OpenProfileCollector.reset()
 
-        let start = CFAbsoluteTimeGetCurrent()
+        let start = BlazeDBDiagnostics.monotonicSeconds()
         let db = try BlazeDBClient(name: "open", fileURL: dbURL, password: password)
-        let wallMs = (CFAbsoluteTimeGetCurrent() - start) * 1000.0
+        let wallMs = (BlazeDBDiagnostics.monotonicSeconds() - start) * 1000.0
         try db.close()
 
         print("OPEN_PROFILE_WALL_MS=\(String(format: "%.3f", wallMs))")

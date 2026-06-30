@@ -30,7 +30,7 @@ public enum OpenProfileCollector {
     }
 
     private static func monotonicSeconds() -> Double {
-        ProcessInfo.processInfo.systemUptime
+        BlazeDBDiagnostics.monotonicSeconds()
     }
 
     @discardableResult

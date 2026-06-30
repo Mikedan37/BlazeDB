@@ -96,9 +96,9 @@ enum OpenProfiler {
         KeyManager.clearKeyCache()
         BlazeDBClient.clearSessionKeys(for: dbURL.path)
         OpenProfileCollector.reset()
-        let coldStart = CFAbsoluteTimeGetCurrent()
+        let coldStart = BlazeDBDiagnostics.monotonicSeconds()
         let coldDB = try BlazeDBClient(name: "profile", fileURL: dbURL, password: defaultPassword)
-        let coldWall = (CFAbsoluteTimeGetCurrent() - coldStart) * 1000.0
+        let coldWall = (BlazeDBDiagnostics.monotonicSeconds() - coldStart) * 1000.0
         let coldMem = MemorySampler.sample("after_cold_open")
         runs.append(OpenProfilerRun(
             label: "cold_open",
@@ -111,9 +111,9 @@ enum OpenProfiler {
 
         // Warm open: path cache may hit, but close() clears KeyManager cache so PBKDF2 still runs.
         OpenProfileCollector.reset()
-        let warmStart = CFAbsoluteTimeGetCurrent()
+        let warmStart = BlazeDBDiagnostics.monotonicSeconds()
         let warmDB = try BlazeDBClient(name: "profile", fileURL: dbURL, password: defaultPassword)
-        let warmWall = (CFAbsoluteTimeGetCurrent() - warmStart) * 1000.0
+        let warmWall = (BlazeDBDiagnostics.monotonicSeconds() - warmStart) * 1000.0
         let warmMem = MemorySampler.sample("after_warm_open")
         runs.append(OpenProfilerRun(
             label: "warm_open",
@@ -128,9 +128,9 @@ enum OpenProfiler {
         KeyManager.clearKeyCache()
         let saltURL = dbURL.deletingPathExtension().appendingPathExtension("salt")
         let salt = try Data(contentsOf: saltURL)
-        let pbkdf2Start = CFAbsoluteTimeGetCurrent()
+        let pbkdf2Start = BlazeDBDiagnostics.monotonicSeconds()
         _ = try KeyManager.getKey(from: defaultPassword, salt: salt)
-        let pbkdf2OnlyMs = (CFAbsoluteTimeGetCurrent() - pbkdf2Start) * 1000.0
+        let pbkdf2OnlyMs = (BlazeDBDiagnostics.monotonicSeconds() - pbkdf2Start) * 1000.0
         runs.append(OpenProfilerRun(
             label: "pbkdf2_only_cold",
             wallMilliseconds: pbkdf2OnlyMs,

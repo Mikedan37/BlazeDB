@@ -428,10 +428,9 @@ jobs:
           disable-linux-hw-accel: false
           emulator-boot-timeout: 600
           script: |
-            set -euo pipefail
             export PATH="$ANDROID_HOME/platform-tools:$ANDROID_HOME/emulator:$PATH"
             chmod +x ./Scripts/ci-kmm-android-emulator-smoke.sh
-            ./Scripts/ci-kmm-android-emulator-smoke.sh
+            bash ./Scripts/ci-kmm-android-emulator-smoke.sh
 
       - name: Dump diagnostics on failure
         if: failure()

@@ -19,4 +19,9 @@ public enum BlazeDBDiagnostics {
     public static var openProfilingEnabled: Bool {
         OpenProfileCollector.isEnabled
     }
+
+    /// Monotonic uptime in seconds (cross-platform; safe on Linux/Android CI).
+    public static func monotonicSeconds() -> Double {
+        ProcessInfo.processInfo.systemUptime
+    }
 }

@@ -780,7 +780,7 @@ if benchMode == "open_profile" {
         print("  - \(mdPath.path)")
         print("  - \(jsonPath.path)")
     } catch {
-        fputs("Open profile failed: \(error)\n", stderr)
+        print("Open profile failed: \(error)")
         exit(1)
     }
     exit(0)
