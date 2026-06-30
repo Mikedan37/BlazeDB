@@ -315,6 +315,17 @@ extension BlazeDBClient {
                 // Clean up temp files
                 BlazeAuthoritativeFileOps.removeItemIfExists(at: tempURL, context: "VACUUM(rollback temp)")
                 BlazeAuthoritativeFileOps.removeItemIfExists(at: tempMetaURL, context: "VACUUM(rollback temp meta)")
+
+                // store.close() ran above; reopen restored files so callers can keep using the DB.
+                let reloadedStore = try PageStore(fileURL: originalDataURL, key: originalKey)
+                self.collection = try DynamicCollection(
+                    store: reloadedStore,
+                    metaURL: originalMetaURL,
+                    project: originalProject,
+                    encryptionKey: originalKey,
+                    password: originalPassword,
+                    kdfSalt: originalSalt
+                )
                 
                 throw BlazeDBError.transactionFailed(
                     "VACUUM rollback: \(error.localizedDescription)",

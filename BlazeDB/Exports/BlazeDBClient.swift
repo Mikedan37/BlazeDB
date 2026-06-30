@@ -1668,8 +1668,10 @@ public final class BlazeDBClient: @unchecked Sendable {
             return
         }
 
-        // For non-transactional writes: snapshot indexMap for rollback on error
-        let indexMapBackup = collection.indexMap
+        // Snapshot indexMap on the collection queue so rollback does not race with fetch().
+        let indexMapBackup = try collection.queue.sync(flags: .barrier) {
+            collection.indexMap
+        }
 
         do {
             try block()
@@ -1677,10 +1679,11 @@ public final class BlazeDBClient: @unchecked Sendable {
             QueryCache.shared.notifyWrite()
         } catch {
             BlazeLogger.error("Rolling back write due to error: \(error)")
-            // Restore indexMap to pre-write state
-            collection.indexMap = indexMapBackup
-            collection.store.pageCache.clear()
-            collection.recordCache.clear()
+            try collection.queue.sync(flags: .barrier) {
+                collection.indexMap = indexMapBackup
+                collection.store.pageCache.clear()
+                collection.recordCache.clear()
+            }
             QueryCache.shared.clearAll()
             throw error
         }

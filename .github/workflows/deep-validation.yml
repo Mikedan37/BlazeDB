@@ -6,7 +6,8 @@
 # - `deep-macos-tier3-heavy-destructive`: macOS Tier3 heavy (+ RUN_HEAVY_STRESS) + `./Scripts/run-tier3.sh` (destructive).
 # - `deep-macos-tsan-tier1`: Tier1 ThreadSanitizer only (nightly already runs Tier0 TSan).
 # - `deep-linux-tier2-extended`: Linux `BlazeDB_Tier2_Extended` only (parallel with Tier3 job).
-# - `deep-linux-tier3-heavy-perf`: Linux Tier3 heavy/perf (dedicated timeout; nightly runs Tier1 + Tier2 core only).
+# - `deep-linux-tier3-heavy`: Linux Tier3 heavy stress/fuzz (dedicated 6h job; GitHub-hosted cap).
+# - `deep-linux-tier3-heavy-perf`: Linux Tier3 heavy/perf companion (parallel 6h job).
 #
 # Schedule: Sundays 03:00 UTC. Complements `ci.yml` and `nightly.yml` without duplicating their tiers.
 
@@ -218,10 +219,10 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
 
-  deep-linux-tier3-heavy-perf:
-    name: Linux (Swift 6.2) — Tier3 heavy/perf (weekly delta)
+  deep-linux-tier3-heavy:
+    name: Linux (Swift 6.2) — Tier3 heavy (weekly delta)
     runs-on: ubuntu-22.04
-    timeout-minutes: 480
+    timeout-minutes: 360
 
     steps:
       - name: Checkout
@@ -253,7 +254,7 @@ jobs:
       - name: Prepare CI log directories
         run: mkdir -p .logs .artifacts
 
-      - name: Test Tier 3 heavy (+ transitional perf companion)
+      - name: Test Tier 3 heavy stress/fuzz
         env:
           XCTEST_MEASURE_MAX_STDDEV: "100"
         run: |
@@ -268,7 +269,75 @@ jobs:
           trap 'kill "$_hb" 2>/dev/null || true' EXIT
           stdbuf -oL -eL swift test --disable-swift-testing --filter 'BlazeDB_Tier3_Heavy\.' 2>&1 \
             | stdbuf -oL -eL tee .logs/tier3-heavy.log
-          stdbuf -oL -eL swift test --skip-build --disable-swift-testing --filter BlazeDB_Tier3_Heavy_Perf 2>&1 \
+
+      - name: Dump diagnostics on failure
+        if: failure()
+        run: |
+          mkdir -p .logs
+          ps aux > .logs/ps.txt || true
+          df -h > .logs/disk.txt || true
+          swift --version > .logs/swift-version.txt 2>&1 || true
+
+      - name: Upload deep Linux Tier3 heavy logs
+        if: always()
+        uses: actions/upload-artifact@v5
+        with:
+          name: deep-linux-tier3-heavy-logs
+          path: |
+            .logs/
+            .artifacts/
+          if-no-files-found: ignore
+          retention-days: 7
+
+  deep-linux-tier3-heavy-perf:
+    name: Linux (Swift 6.2) — Tier3 heavy/perf (weekly delta)
+    runs-on: ubuntu-22.04
+    timeout-minutes: 360
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Cache SwiftPM build
+        uses: actions/cache@v5
+        with:
+          path: .build
+          key: deep-${{ runner.os }}-spm-${{ hashFiles('Package.swift', 'Package.resolved') }}
+          restore-keys: |
+            deep-${{ runner.os }}-spm-
+            nightly-${{ runner.os }}-spm-
+            ${{ runner.os }}-spm-
+
+      - name: Setup Swift 6.2
+        uses: swift-actions/setup-swift@v2
+        with:
+          swift-version: "6.2"
+
+      - name: Swift version
+        run: swift --version
+
+      - name: Build core
+        run: swift build --target BlazeDBCore
+
+      - name: Prepare CI log directories
+        run: mkdir -p .logs .artifacts
+
+      - name: Test Tier 3 heavy perf companion
+        env:
+          XCTEST_MEASURE_MAX_STDDEV: "100"
+        run: |
+          set -euo pipefail
+          mkdir -p .logs
+          (
+            while sleep 60; do
+              echo "[tier3-heavy-perf-heartbeat] $(date -u '+%Y-%m-%dT%H:%M:%SZ') swift-test still running"
+            done
+          ) &
+          _hb=$!
+          trap 'kill "$_hb" 2>/dev/null || true' EXIT
+          stdbuf -oL -eL swift test --disable-swift-testing --filter BlazeDB_Tier3_Heavy_Perf 2>&1 \
             | stdbuf -oL -eL tee .logs/tier3-heavy-perf.log
 
       - name: Dump diagnostics on failure
@@ -279,7 +348,7 @@ jobs:
           df -h > .logs/disk.txt || true
           swift --version > .logs/swift-version.txt 2>&1 || true
 
-      - name: Upload deep Linux Tier3 logs
+      - name: Upload deep Linux Tier3 perf logs
         if: always()
         uses: actions/upload-artifact@v5
         with:
