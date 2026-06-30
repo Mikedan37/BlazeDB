@@ -270,12 +270,14 @@ public final class DynamicCollection {
                 // SECURITY: Load layout with HMAC signature verification
                 // If password is provided, try alternative KDF methods if signature verification fails
                 BlazeLogger.debug("Attempting to load secure layout with signature verification...")
-                let layout = try StorageLayout.loadSecure(
-                    from: metaURL,
-                    signingKey: encryptionKey,
-                    password: password,
-                    salt: self.kdfSalt
-                )
+                let layout = try OpenProfileCollector.measure("collection.layout_load_secure") {
+                    try StorageLayout.loadSecure(
+                        from: metaURL,
+                        signingKey: encryptionKey,
+                        password: password,
+                        salt: self.kdfSalt
+                    )
+                }
                 BlazeLogger.debug("Layout loaded and verified successfully")
                 layoutSignatureVerified = true
                 applyLayoutFromStorage(layout)
@@ -295,7 +297,9 @@ public final class DynamicCollection {
                 // ✅ FIXED: Auto-migration now stores format in JSON field, not as binary prefix
                 do {
                     BlazeLogger.debug("🔄 [INIT] Running auto-migration check...")
-                    try self.performAutoMigrationIfNeeded()
+                    try OpenProfileCollector.measure("collection.auto_migration") {
+                        try self.performAutoMigrationIfNeeded()
+                    }
                     BlazeLogger.debug("🔄 [INIT] ✅ Auto-migration completed")
                 } catch {
                     BlazeLogger.error("🔄 [INIT] ❌ AutoMigration error: \(error)")
@@ -304,6 +308,7 @@ public final class DynamicCollection {
                 }
                 
                 // --- Begin: Ensure persisted secondary index data is restored correctly ---
+                OpenProfileCollector.measure("collection.secondary_indexes_restore") {
                 // Load full secondary index data from .indexes file if present
                 let indexFile = metaURL.appendingPathExtension("indexes")
                 if let data = try? Data(contentsOf: indexFile),
@@ -350,8 +355,10 @@ public final class DynamicCollection {
                         BlazeLogger.trace("No secondary indexes defined (this is normal for new databases).")
                     }
                 }
+                }
                 // --- End: Ensure persisted secondary index data is restored correctly ---
                 // --- Begin: Conditionally rebuild missing/empty secondary indexes ---
+                try OpenProfileCollector.measure("collection.index_rebuild_if_needed") {
                 var didRebuildAny = false
                 
                 // Only rebuild if we have records and definitions
@@ -423,6 +430,7 @@ public final class DynamicCollection {
                         try saveLayout()
                         BlazeLogger.warn("⚠️ saveLayout() completed in init")
                     }
+                }
                 }
                 // --- End: Conditional rebuild ---
             } catch {

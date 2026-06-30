@@ -24,6 +24,8 @@ public final class KeyManager {
     nonisolated(unsafe) private static var passwordKeyCache = [String: SymmetricKey]()
     private static let passwordKeyCacheLock = NSLock()
     private static let pbkdf2OverrideLock = NSLock()
+    private static let pbkdf2DerivationCountLock = NSLock()
+    nonisolated(unsafe) private static var pbkdf2DerivationCount = 0
     nonisolated(unsafe) private static var pbkdf2IterationsOverride: Int?
     internal static var pbkdf2Iterations: Int {
         pbkdf2OverrideLock.lock()
@@ -68,7 +70,7 @@ public final class KeyManager {
     }
 
     public static func getKey(from password: String, salt: Data) throws -> SymmetricKey {
-        let cacheKey = cacheKeyDigest(password: password, salt: salt)
+        let cacheKey = passwordSaltCacheKey(password: password, salt: salt)
         if let cached = cachedKey(for: cacheKey) {
             return cached
         }
@@ -80,6 +82,10 @@ public final class KeyManager {
         } catch let failure as PasswordStrengthValidator.PolicyFailure {
             throw KeyManagerError.passwordTooWeak(failure)
         }
+
+        pbkdf2DerivationCountLock.lock()
+        pbkdf2DerivationCount += 1
+        pbkdf2DerivationCountLock.unlock()
 
         // Use CryptoKit's native PBKDF2 (SHA256)
         let passwordData = Data(password.utf8)
@@ -172,6 +178,28 @@ public final class KeyManager {
         passwordKeyCacheLock.lock()
         defer { passwordKeyCacheLock.unlock() }
         passwordKeyCache.removeAll()
+    }
+
+    public static func clearKeyCache(for cacheKey: String) {
+        passwordKeyCacheLock.lock()
+        defer { passwordKeyCacheLock.unlock() }
+        passwordKeyCache.removeValue(forKey: cacheKey)
+    }
+
+    internal static func passwordSaltCacheKey(password: String, salt: Data) -> String {
+        cacheKeyDigest(password: password, salt: salt)
+    }
+
+    internal static var pbkdf2DerivationCountForTesting: Int {
+        pbkdf2DerivationCountLock.lock()
+        defer { pbkdf2DerivationCountLock.unlock() }
+        return pbkdf2DerivationCount
+    }
+
+    internal static func resetPBKDF2DerivationCountForTesting() {
+        pbkdf2DerivationCountLock.lock()
+        defer { pbkdf2DerivationCountLock.unlock() }
+        pbkdf2DerivationCount = 0
     }
 
     private static func cachedKey(for cacheKey: String) -> SymmetricKey? {

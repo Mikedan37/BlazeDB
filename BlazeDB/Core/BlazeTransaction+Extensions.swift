@@ -286,6 +286,8 @@ extension BlazeDBError {
             return "Data corrupted at \(location): \(reason)"
         case .passwordTooWeak(let failure):
             return failure.userMessage
+        case .passwordMismatch:
+            return "Password does not match the verified session for this database."
         case .invalidData(let reason):
             return "Invalid data: \(reason)"
         case .invalidInput(let reason):

@@ -62,6 +62,7 @@ public enum BlazeDBError: Error, LocalizedError, CustomStringConvertible {
     case concurrentProcessAccessNotSupported(operation: String, path: URL? = nil)
     case corruptedData(location: String, reason: String)
     case passwordTooWeak(PasswordStrengthValidator.PolicyFailure)
+    case passwordMismatch
     case invalidData(reason: String)
     case invalidInput(reason: String)
     
@@ -159,6 +160,9 @@ public enum BlazeDBError: Error, LocalizedError, CustomStringConvertible {
             
         case .passwordTooWeak(let failure):
             return failure.userMessage
+
+        case .passwordMismatch:
+            return "Password does not match the verified session for this database. Use the correct password or call clearSessionKeys() to force re-authentication."
             
         case .invalidData(let reason):
             return "Invalid data: \(reason). Check input data format and types."
@@ -185,49 +189,85 @@ public final class BlazeDBClient: @unchecked Sendable {
     internal var collection: DynamicCollection
     public let name: String
     
-    // Thread-safe per-database cached key storage (populated only after verified open).
-    nonisolated(unsafe) private static var _cachedKeys: [String: SymmetricKey] = [:]
-    private static let cachedKeyLock = NSLock()
-    
-    private static func getCachedKey(for path: String) -> SymmetricKey? {
-        cachedKeyLock.lock()
-        defer { cachedKeyLock.unlock() }
-        return _cachedKeys[path]
-    }
-    
-    private static func setCachedKey(_ key: SymmetricKey, for path: String) {
-        cachedKeyLock.lock()
-        defer { cachedKeyLock.unlock() }
-        _cachedKeys[path] = key
+    // MARK: - Process session key storage (see DATABASE_SESSION_KEY_LIFECYCLE.md)
+
+    /// Clears all verified database sessions and KDF caches for this process.
+    /// Use on logout, explicit security reset, or in test teardown.
+    public static func clearSessionKeys() {
+        DatabaseSessionStore.removeAllSessions()
+        KeyManager.clearKeyCache()
     }
 
-    private static func keysEqual(_ lhs: SymmetricKey, _ rhs: SymmetricKey) -> Bool {
-        lhs.withUnsafeBytes { lhsBytes in
-            rhs.withUnsafeBytes { rhsBytes in
-                Data(lhsBytes) == Data(rhsBytes)
-            }
+    /// Clears the verified session for one database path and its KDF cache entry only.
+    public static func clearSessionKeys(for path: String) {
+        if let kdfCacheKey = DatabaseSessionStore.removeSession(for: path) {
+            KeyManager.clearKeyCache(for: kdfCacheKey)
         }
     }
-    
+
+    /// Clears all verified database sessions and KDF caches for this process.
+    public static func clearCachedKey() {
+        clearSessionKeys()
+    }
+
+    /// Clears the verified session for one database path and its KDF cache entry only.
+    public static func clearCachedKey(for path: String) {
+        clearSessionKeys(for: path)
+    }
+
+    private static func resolveEncryptionKey(
+        dbPath: String,
+        password: String,
+        kdfSalt: Data
+    ) throws -> (key: SymmetricKey, pendingSessionInstall: Bool) {
+        if let session = DatabaseSessionStore.session(for: dbPath),
+           session.salt == kdfSalt {
+            guard DatabaseSessionStore.verifyPassword(password, session: session) else {
+                throw BlazeDBError.passwordMismatch
+            }
+            BlazeLogger.debug("Using verified process-session encryption key (warm reopen)")
+            return (session.derivedKey, false)
+        }
+
+        let derivedKey: SymmetricKey
+        do {
+            derivedKey = try OpenProfileCollector.measure("open.pbkdf2") {
+                try KeyManager.getKey(from: password, salt: kdfSalt)
+            }
+            BlazeLogger.debug("✅ Encryption key derived from password (cold open)")
+        } catch KeyManagerError.passwordTooWeak(let failure) {
+            BlazeLogger.error(failure.logMessage)
+            throw BlazeDBError.passwordTooWeak(failure)
+        } catch {
+            let errorMsg = "❌ Failed to derive encryption key: \(error.localizedDescription)"
+            BlazeLogger.error(errorMsg)
+            throw BlazeDBError.transactionFailed(errorMsg)
+        }
+
+        return (derivedKey, true)
+    }
+
+    private static func commitSessionIfNeeded(
+        dbPath: String,
+        key: SymmetricKey,
+        password: String,
+        kdfSalt: Data,
+        pendingSessionInstall: Bool
+    ) {
+        guard pendingSessionInstall else { return }
+        let kdfCacheKey = KeyManager.passwordSaltCacheKey(password: password, salt: kdfSalt)
+        DatabaseSessionStore.installSession(
+            path: dbPath,
+            derivedKey: key,
+            password: password,
+            salt: kdfSalt,
+            kdfCacheKey: kdfCacheKey
+        )
+        BlazeLogger.debug("✅ Verified database session installed for process lifetime")
+    }
+
     private let writeLock = NSRecursiveLock()
     private let transactionLogLock = NSLock()  // 🔒 Dedicated lock for WAL writes
-    
-    /// Clear all cached encryption keys (useful for testing)
-    /// Also clears KeyManager's password key cache to ensure fresh key derivation.
-    public static func clearCachedKey() {
-        cachedKeyLock.lock()
-        defer { cachedKeyLock.unlock() }
-        _cachedKeys.removeAll()
-        KeyManager.clearKeyCache()
-    }
-    
-    /// Clear cached key for a specific database path.
-    public static func clearCachedKey(for path: String) {
-        cachedKeyLock.lock()
-        defer { cachedKeyLock.unlock() }
-        _cachedKeys.removeValue(forKey: path)
-        KeyManager.clearKeyCache()
-    }
 
     private static func stablePathDigestHex(_ value: String) -> String {
         let digest = SHA256.hash(data: Data(value.utf8))
@@ -378,10 +418,15 @@ public final class BlazeDBClient: @unchecked Sendable {
         
         self.name = name
         self.fileURL = fileURL
-        self.metaURL = fileURL.deletingPathExtension().appendingPathExtension("meta")
-        self.project = UserDefaults.standard.string(forKey: "activeProject") ?? project
+        let metaURL = fileURL.deletingPathExtension().appendingPathExtension("meta")
+        self.metaURL = metaURL
+        let resolvedProject = UserDefaults.standard.string(forKey: "activeProject") ?? project
+        self.project = resolvedProject
         self.password = password
-        self.kdfSalt = try Self.loadOrCreateKDFSalt(for: fileURL)
+        let kdfSalt = try OpenProfileCollector.measure("open.load_kdf_salt") {
+            try Self.loadOrCreateKDFSalt(for: fileURL)
+        }
+        self.kdfSalt = kdfSalt
 
         // Crash-safe transaction recovery must happen before PageStore opens the files.
         let startupBase = fileURL.deletingPathExtension().lastPathComponent
@@ -392,51 +437,35 @@ public final class BlazeDBClient: @unchecked Sendable {
             let legacy = "\(startupBase)-\(String(abs(legacyHasher.finalize()), radix: 16))"
             return stable == legacy ? [stable] : [stable, legacy]
         }()
-        for startupPrefix in startupPrefixes {
-            let startupBackupURL = fileURL.deletingLastPathComponent().appendingPathComponent("txn_in_progress-\(startupPrefix).blazedb")
-            let startupMetaBackupURL = fileURL.deletingLastPathComponent().appendingPathComponent("txn_in_progress-\(startupPrefix).meta")
-            let startupStateURL = fileURL.deletingLastPathComponent().appendingPathComponent("txn_in_progress-\(startupPrefix).state")
-            try Self.restoreDurableTransactionBackupIfPresent(
-                fileURL: fileURL,
-                metaURL: self.metaURL,
-                backupURL: startupBackupURL,
-                metaBackupURL: startupMetaBackupURL,
-                stateURL: startupStateURL
-            )
+        try OpenProfileCollector.measure("open.txn_recovery") {
+            for startupPrefix in startupPrefixes {
+                let startupBackupURL = fileURL.deletingLastPathComponent().appendingPathComponent("txn_in_progress-\(startupPrefix).blazedb")
+                let startupMetaBackupURL = fileURL.deletingLastPathComponent().appendingPathComponent("txn_in_progress-\(startupPrefix).meta")
+                let startupStateURL = fileURL.deletingLastPathComponent().appendingPathComponent("txn_in_progress-\(startupPrefix).state")
+                try Self.restoreDurableTransactionBackupIfPresent(
+                    fileURL: fileURL,
+                    metaURL: metaURL,
+                    backupURL: startupBackupURL,
+                    metaBackupURL: startupMetaBackupURL,
+                    stateURL: startupStateURL
+                )
+            }
         }
 
         // Restore VACUUM backups before PageStore opens files (avoids stale handles).
-        try Self.recoverFromVacuumCrashIfNeeded(fileURL: fileURL, metaURL: self.metaURL)
+        try OpenProfileCollector.measure("open.vacuum_pre_recovery") {
+            try Self.recoverFromVacuumCrashIfNeeded(fileURL: fileURL, metaURL: metaURL)
+        }
 
-        // 🔑 Derive key from the supplied password. A cached path key is only reused
-        // after it is proven to match this password-derived key.
-        // Use a path-independent password key so backups/restores remain portable
-        // across file locations on the same machine.
+        // 🔑 Resolve encryption key: cold open runs PBKDF2; warm reopen reuses process session.
         let dbPath = fileURL.path
-        let key: SymmetricKey
-        let shouldCacheKey: Bool
-        let derivedKey: SymmetricKey
-        do {
-            derivedKey = try KeyManager.getKey(from: password, salt: kdfSalt)
-            BlazeLogger.debug("✅ Encryption key derived from password")
-        } catch KeyManagerError.passwordTooWeak(let failure) {
-            BlazeLogger.error(failure.logMessage)
-            throw BlazeDBError.passwordTooWeak(failure)
-        } catch {
-            let errorMsg = "❌ Failed to derive encryption key: \(error.localizedDescription)"
-            BlazeLogger.error(errorMsg)
-            throw BlazeDBError.transactionFailed(errorMsg)
-        }
-
-        if let cached = BlazeDBClient.getCachedKey(for: dbPath),
-           BlazeDBClient.keysEqual(cached, derivedKey) {
-            key = cached
-            shouldCacheKey = false
-            BlazeLogger.debug("Using verified cached encryption key for \(name)")
-        } else {
-            key = derivedKey
-            shouldCacheKey = true
-        }
+        let keyResolution = try Self.resolveEncryptionKey(
+            dbPath: dbPath,
+            password: password,
+            kdfSalt: kdfSalt
+        )
+        let key = keyResolution.key
+        let pendingSessionInstall = keyResolution.pendingSessionInstall
         self.encryptionKey = key
 
         // CRASH SAFETY: Recover from incomplete VACUUM AFTER initializing collection
@@ -454,7 +483,9 @@ public final class BlazeDBClient: @unchecked Sendable {
             // Test cleanup helpers handle aggressive cleanup in test scenarios
             
             BlazeLogger.debug("Creating PageStore...")
-            let store = try PageStore(fileURL: fileURL, key: key)
+            let store = try OpenProfileCollector.measure("open.page_store_init") {
+                try PageStore(fileURL: fileURL, key: key)
+            }
             BlazeLogger.debug("PageStore created")
             
             // Check again after PageStore init
@@ -462,20 +493,24 @@ public final class BlazeDBClient: @unchecked Sendable {
             BlazeLogger.debug("After PageStore init: meta=\(metaExistsAfter)")
             
             BlazeLogger.debug("Creating DynamicCollection...")
-            self.collection = try DynamicCollection(store: store,
-                                                    metaURL: metaURL,
-                                                    project: self.project,
-                                                    encryptionKey: key,
-                                                    password: password,
-                                                    kdfSalt: kdfSalt)  // Pass password for KDF auto-detection
+            let collection = try OpenProfileCollector.measure("open.dynamic_collection_init") {
+                try DynamicCollection(store: store,
+                                      metaURL: metaURL,
+                                      project: resolvedProject,
+                                      encryptionKey: key,
+                                      password: password,
+                                      kdfSalt: kdfSalt)
+            }
+            self.collection = collection
             BlazeLogger.debug("✅ DynamicCollection created")
             
             // Validate format version after collection is initialized
-            if FileManager.default.fileExists(atPath: metaURL.path) {
-                try validateFormatVersion()
-            } else {
-                // New database - store current format version
-                try storeFormatVersion()
+            try OpenProfileCollector.measure("open.format_version") {
+                if FileManager.default.fileExists(atPath: metaURL.path) {
+                    try validateFormatVersion()
+                } else {
+                    try storeFormatVersion()
+                }
             }
         } catch {
             let errorMsg = "❌ Failed to initialize storage: \(error.localizedDescription)"
@@ -494,7 +529,9 @@ public final class BlazeDBClient: @unchecked Sendable {
 
         // Migration and recovery
         do {
-            try performMigrationIfNeeded()
+            try OpenProfileCollector.measure("open.migration") {
+                try performMigrationIfNeeded()
+            }
             BlazeLogger.debug("✅ Migration check complete")
         } catch {
             let errorMsg = "❌ Migration failed: \(error.localizedDescription)"
@@ -504,20 +541,22 @@ public final class BlazeDBClient: @unchecked Sendable {
         }
         
         do {
-            // CRASH SAFETY: Recover from incomplete VACUUM first
-            try recoverFromVacuumCrashIfNeeded()
-            
-            // Update metrics: recovery started
-            metrics.setRecoveryState(.inProgress)
-            
-            try removeLegacyNDJSONTransactionLogFilesIfPresent()
-            BlazeLogger.debug("✅ Legacy NDJSON transaction log cleanup complete (binary WAL replay is in PageStore init)")
-            
-            // Update metrics: recovery completed
-            metrics.setRecoveryState(.completed)
-            
-            // Log lifecycle event (structured)
-            BlazeLogger.info("📊 [LIFECYCLE] recovery_completed")
+            try OpenProfileCollector.measure("open.post_init_recovery") {
+                // CRASH SAFETY: Recover from incomplete VACUUM first
+                try recoverFromVacuumCrashIfNeeded()
+                
+                // Update metrics: recovery started
+                metrics.setRecoveryState(.inProgress)
+                
+                try removeLegacyNDJSONTransactionLogFilesIfPresent()
+                BlazeLogger.debug("✅ Legacy NDJSON transaction log cleanup complete (binary WAL replay is in PageStore init)")
+                
+                // Update metrics: recovery completed
+                metrics.setRecoveryState(.completed)
+                
+                // Log lifecycle event (structured)
+                BlazeLogger.info("📊 [LIFECYCLE] recovery_completed")
+            }
         } catch {
             let errorMsg = "❌ Recovery failed: \(error.localizedDescription)"
             BlazeLogger.error(errorMsg)
@@ -531,10 +570,13 @@ public final class BlazeDBClient: @unchecked Sendable {
             throw BlazeDBError.transactionFailed(errorMsg)
         }
 
-        if shouldCacheKey {
-            BlazeDBClient.setCachedKey(key, for: dbPath)
-            BlazeLogger.debug("✅ Encryption key cached after successful initialization")
-        }
+        Self.commitSessionIfNeeded(
+            dbPath: dbPath,
+            key: key,
+            password: password,
+            kdfSalt: kdfSalt,
+            pendingSessionInstall: pendingSessionInstall
+        )
 
         BlazeLogger.info("✅ BlazeDB '\(name)' initialized successfully")
         

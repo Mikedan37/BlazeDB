@@ -757,6 +757,35 @@ func benchmarkDeleteManyProfile(
 
 // MARK: - Main
 
+let benchMode = ProcessInfo.processInfo.environment["BLAZEDB_BENCH_MODE"] ?? "throughput"
+
+if benchMode == "open_profile" {
+    print("=== BlazeDB Open Profiler ===\n")
+    do {
+        let recordCount = Int(ProcessInfo.processInfo.environment["BLAZEDB_OPEN_PROFILE_RECORDS"] ?? "") ?? OpenProfiler.defaultRecordCount
+        let runs = try OpenProfiler.run(recordCount: recordCount)
+        OpenProfiler.printSummary(runs)
+
+        let outDir = ProcessInfo.processInfo.environment["BLAZEDB_OPEN_PROFILE_OUT"]
+            ?? "benchmark_results/open_profile"
+        let outURL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath).appendingPathComponent(outDir)
+        try FileManager.default.createDirectory(at: outURL, withIntermediateDirectories: true)
+        let mdPath = outURL.appendingPathComponent("open_profile.md")
+        let jsonPath = outURL.appendingPathComponent("open_profile.json")
+        try OpenProfiler.markdownReport(runs).write(to: mdPath, atomically: true, encoding: .utf8)
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+        try encoder.encode(runs).write(to: jsonPath)
+        print("\nSaved:")
+        print("  - \(mdPath.path)")
+        print("  - \(jsonPath.path)")
+    } catch {
+        fputs("Open profile failed: \(error)\n", stderr)
+        exit(1)
+    }
+    exit(0)
+}
+
 print("=== BlazeDB Benchmarks ===\n")
 print("Running benchmarks...\n")
 
@@ -889,7 +918,7 @@ suite.run(
     blazedbStats: coldOpen.blazedbStats,
     sqliteOpsPerSec: coldOpen.sqliteOpsPerSec,
     sqliteStats: coldOpen.sqliteStats,
-    notes: "Average of 10 opens (opens/sec)"
+    notes: "Average of 10 close/reopen cycles; PBKDF2 (600k) runs every open because close() clears key cache"
 )
 
 print("\n=== Benchmark Results ===\n")

@@ -34,3 +34,4 @@ This flag must never be enabled for production data.
 2. Use fallback modes only during one-time migration windows.
 3. Validate and re-save metadata in current secure format after migration.
 4. Track KDF/crypto policy changes in `CHANGELOG.md`.
+5. Before changing open latency or key caching, read [DATABASE_SESSION_KEY_LIFECYCLE.md](../Security/DATABASE_SESSION_KEY_LIFECYCLE.md).

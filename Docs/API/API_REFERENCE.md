@@ -125,7 +125,10 @@ public convenience init?(
 
 ```swift
 public let name: String // Database name
-public static func clearCachedKey() // Clear encryption key cache
+public static func clearSessionKeys() // Clear all verified database sessions for this process
+public static func clearSessionKeys(for path: String) // Clear session for one database path only
+public static func clearCachedKey() // Alias for clearSessionKeys()
+public static func clearCachedKey(for path: String) // Alias for clearSessionKeys(for:)
 ```
 
 ---

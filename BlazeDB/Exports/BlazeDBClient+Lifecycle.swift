@@ -18,6 +18,9 @@ extension BlazeDBClient {
     /// - Releases file handles
     /// - Cleans up internal resources
     ///
+    /// **What this does not do:**
+    /// - Clear verified encryption sessions for this process (use `clearSessionKeys()`)
+    ///
     /// **After calling close():**
     /// - The database instance should not be used for further operations
     /// - Any subsequent operations will throw `BlazeDBError.invalidInput`
@@ -62,9 +65,7 @@ extension BlazeDBClient {
             BlazeLogger.warn("Skipping persist during close for '\(name)' because transaction rollback failed")
         }
 
-        // Remove path-level key cache before releasing the file lock so an
-        // immediate reopen cannot authenticate with a stale cached key.
-        BlazeDBClient.clearCachedKey(for: fileURL.path)
+        // Process-session keys intentionally survive handle close(); see DATABASE_SESSION_KEY_LIFECYCLE.md.
 
         // Deterministically release underlying storage resources (locks/file handles).
         do {

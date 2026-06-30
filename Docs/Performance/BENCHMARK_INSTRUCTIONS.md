@@ -124,4 +124,53 @@ If tests fail:
 - Ensure all dependencies are resolved: `swift package resolve`
 - Try building first: `swift build`
 
+## Open Profiler (Cold-Start Breakdown)
+
+Use this **before** optimizing startup latency. It answers: "where did every millisecond go?"
+
+```bash
+./Scripts/run_open_profile.sh
+```
+
+Outputs:
+- `benchmark_results/open_profile/open_profile.md` — phase table (PBKDF2, layout, indexes, PageStore, …)
+- `benchmark_results/open_profile/open_profile.json` — machine-readable spans + RSS
+
+Enable spans in your own code with `BLAZEDB_PROFILE_OPEN=1` (zero overhead when unset).
+
+### Scale / memory
+
+```bash
+# RSS after open with a larger on-disk dataset
+BLAZEDB_OPEN_PROFILE_RECORDS=100000 ./Scripts/run_open_profile.sh
+```
+
+### XCTest diagnostic (100k PBKDF2 iterations)
+
+```bash
+swift test --filter OpenProfileBenchmarks/testPrintColdOpenBreakdown
+```
+
+Prints `OPEN_PROFILE_SPAN|…` lines to the test log. Not a CI gate — iteration count differs from release.
+
+### Interpreting the March 2026 baseline (~55 ms cold open)
+
+That number is **not** comparable to current release opens (~1.1 s on this host):
+
+| Factor | March baseline | Current release |
+|--------|----------------|-----------------|
+| Path key cache across `close()` | Reused (no PBKDF2 on reopen) | Cleared on every `close()` |
+| Password verification | Skipped when cache hit | PBKDF2 every open |
+| KDF | Legacy static salt path | Per-DB salt, 600k iterations |
+
+The open profiler on this machine shows **~97% of wall time is PBKDF2**; engine init (layout, MVCC, indexes) is ~30 ms total. Policy for when KDF runs vs session reuse: [DATABASE_SESSION_KEY_LIFECYCLE.md](../Security/DATABASE_SESSION_KEY_LIFECYCLE.md).
+
+### Priority order (agreed)
+
+1. Approve session key lifecycle policy — [DATABASE_SESSION_KEY_LIFECYCLE.md](../Security/DATABASE_SESSION_KEY_LIFECYCLE.md)
+2. Implement session cache per policy; re-run open profiler (cold ~1s, warm ~30ms)
+3. Single-write path overhead
+4. Persist defaults (batch-friendly API)
+5. Leave reads/queries alone
+
 

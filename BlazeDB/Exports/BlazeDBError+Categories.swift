@@ -32,7 +32,7 @@ extension BlazeDBError {
             return .schemaMismatch
         case .indexNotFound:
             return .missingIndex
-        case .passwordTooWeak, .permissionDenied:
+        case .passwordTooWeak, .passwordMismatch, .permissionDenied:
             return .encryptionKey
         case .diskFull, .databaseLocked:
             return .ioFailure
@@ -75,6 +75,8 @@ extension BlazeDBError {
             return "Create the missing index for better performance, or use a different query."
         case .passwordTooWeak:
             return "Use a stronger password (8+ chars, letters, numbers, special characters)."
+        case .passwordMismatch:
+            return "Provide the correct password, or call BlazeDBClient.clearSessionKeys() to force full re-authentication."
         case .permissionDenied:
             return "Check file permissions and app sandbox entitlements. On Linux, ensure directory is writable (chmod 755)."
         case .databaseLocked:
