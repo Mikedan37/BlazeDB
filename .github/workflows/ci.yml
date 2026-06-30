@@ -325,6 +325,7 @@ jobs:
           chmod +x ./Scripts/setup-android-gradle-sdk-linux.sh
           ./Scripts/setup-android-gradle-sdk-linux.sh
           export ANDROID_HOME="${ANDROID_HOME:-$PWD/.artifacts/android-gradle-sdk-linux}"
+          export ANDROID_SDK_ROOT="$ANDROID_HOME"
           cd Examples/android
           chmod +x gradlew
           ./gradlew :shared:compileDebugKotlinAndroid
@@ -418,6 +419,7 @@ jobs:
         env:
           BLAZEDB_SWIFT_BUILD: ${{ github.workspace }}/.build
           ANDROID_HOME: ${{ github.workspace }}/.artifacts/android-gradle-sdk-linux
+          ANDROID_SDK_ROOT: ${{ github.workspace }}/.artifacts/android-gradle-sdk-linux
           BLAZEDB_ANDROID_ABIS: x86_64
           CI_EMULATOR_MANAGED: "1"
         with:

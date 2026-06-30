@@ -24,6 +24,7 @@ if [[ ! -x "$SDKMANAGER" ]]; then
 fi
 
 export ANDROID_HOME
+export ANDROID_SDK_ROOT="$ANDROID_HOME"
 export PATH="$CMDLINE/bin:$PATH"
 
 yes | "$SDKMANAGER" --licenses >/dev/null 2>&1 || true
