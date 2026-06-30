@@ -413,6 +413,12 @@ jobs:
           target: google_apis
           arch: arm64-v8a
           disable-spellchecker: true
+          # GitHub macOS runners may not expose HVF (Apple Hypervisor Framework).
+          # Without -accel off, QEMU exits immediately with HV_UNSUPPORTED and the
+          # job times out waiting for a device that never booted. Software emulation
+          # is slower but deterministic for CI.
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -accel off
+          emulator-boot-timeout: 900
           script: |
             set -euo pipefail
             export PATH="$ANDROID_HOME/platform-tools:$ANDROID_HOME/emulator:$PATH"

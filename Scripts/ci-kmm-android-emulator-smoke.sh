@@ -72,7 +72,7 @@ if [[ "${CI_EMULATOR_MANAGED:-0}" != "1" ]]; then
   fi
   if ! adb devices | awk 'NR>1 && $2=="device" { found=1 } END { exit !found }'; then
     echo ">>> Starting emulator ($AVD_NAME)"
-    nohup emulator -avd "$AVD_NAME" -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect >/tmp/blazedb-emulator.log 2>&1 &
+    nohup emulator -avd "$AVD_NAME" -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect -accel off >/tmp/blazedb-emulator.log 2>&1 &
     adb wait-for-device
     for _ in $(seq 1 90); do
       boot="$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')"
