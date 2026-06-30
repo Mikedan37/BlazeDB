@@ -29,12 +29,16 @@ public enum OpenProfileCollector {
         spans.append((name: name, milliseconds: milliseconds))
     }
 
+    private static func monotonicSeconds() -> Double {
+        ProcessInfo.processInfo.systemUptime
+    }
+
     @discardableResult
     public static func measure<T>(_ name: String, _ block: () throws -> T) rethrows -> T {
         guard isEnabled else { return try block() }
-        let start = CFAbsoluteTimeGetCurrent()
+        let start = monotonicSeconds()
         defer {
-            let ms = (CFAbsoluteTimeGetCurrent() - start) * 1000.0
+            let ms = (monotonicSeconds() - start) * 1000.0
             record(name, milliseconds: ms)
         }
         return try block()
@@ -42,9 +46,9 @@ public enum OpenProfileCollector {
 
     public static func measure(_ name: String, _ block: () throws -> Void) rethrows {
         guard isEnabled else { try block(); return }
-        let start = CFAbsoluteTimeGetCurrent()
+        let start = monotonicSeconds()
         defer {
-            let ms = (CFAbsoluteTimeGetCurrent() - start) * 1000.0
+            let ms = (monotonicSeconds() - start) * 1000.0
             record(name, milliseconds: ms)
         }
         try block()
