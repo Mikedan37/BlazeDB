@@ -33,7 +33,7 @@ final class SecurityEncryptionTests: XCTestCase {
             super.tearDown()
             return
         }
-        let extensions = ["", "meta", "indexes", "wal", "backup"]
+        let extensions = ["", "meta", "indexes", "wal", "backup", "salt"]
         for ext in extensions {
             let url = ext.isEmpty ? dbURL : dbURL.deletingPathExtension().appendingPathExtension(ext)
             try? FileManager.default.removeItem(at: url)
@@ -169,10 +169,14 @@ final class SecurityEncryptionTests: XCTestCase {
         try await db!.persist()
         db = nil
         
-        // Phase 3: Delete old database
+        // Phase 3: Delete old database (all sidecars + process session for this path)
         print("  🗑️  Phase 3: Delete database with old key")
-        try? FileManager.default.removeItem(at: dbURL)
-        try? FileManager.default.removeItem(at: dbURL.deletingPathExtension().appendingPathExtension("meta"))
+        let rotationURL = dbURL!
+        BlazeDBClient.clearSessionKeys(for: rotationURL.path)
+        for ext in ["", "meta", "indexes", "wal", "backup", "salt"] {
+            let url = ext.isEmpty ? rotationURL : rotationURL.deletingPathExtension().appendingPathExtension(ext)
+            try? FileManager.default.removeItem(at: url)
+        }
         
         // Phase 4: Create new database with new key
         print("  🔐 Phase 4: Create database with key v2")
