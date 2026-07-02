@@ -1,19 +1,15 @@
 package com.blazedb.kmm
 
-import com.blazedb.shared.bridge.BlazeDBBridge
-import com.blazedb.shared.bridge.LiveQueryCallback
-import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.isActive
+import kotlin.time.Duration.Companion.milliseconds
 
-internal actual fun platformObserveOpenTodos(path: String, password: String): Flow<List<Todo>> =
-    callbackFlow {
-        val callback = object : LiveQueryCallback {
-            override fun onResults(jsonPayload: String) {
-                trySend(parseTodos(jsonPayload))
-            }
-        }
-        val handle = BlazeDBBridge.nativeLiveQueryStart(path, password, callback)
-        check(handle > 0) { "BlazeDB live query failed ($handle)" }
-        awaitClose { BlazeDBBridge.nativeLiveQueryStop(handle) }
+internal actual fun platformObserveOpenTodos(db: BlazeDB): Flow<List<Todo>> = flow {
+    while (currentCoroutineContext().isActive) {
+        emit(parseTodos(db.query("todo")))
+        delay(250.milliseconds)
     }
+}
