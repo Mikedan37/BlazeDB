@@ -543,6 +543,64 @@ final class CriticalBlockerTests: XCTestCase {
         
         print("   ✅ VACUUM recovery restores readable data before PageStore use!")
     }
+
+    /// Regression: crash after data backup is created but before metadata backup must not
+    /// delete the still-authoritative primary metadata file.
+    func testBlocker3_VACUUMRecovery_PreservesPrimaryMetaWhenMetaBackupMissing() throws {
+        print("\n🔴 BLOCKER #3: VACUUM recovery preserves primary metadata on partial backup")
+
+        for i in 0..<50 {
+            _ = try requireFixture(db).insert(BlazeDataRecord([
+                "i": .int(i),
+                "marker": .string("partial-vacuum-backup"),
+            ]))
+        }
+        try requireFixture(db).persist()
+
+        let baseURL = try XCTUnwrap(tempURL)
+        let metaURL = baseURL.deletingPathExtension().appendingPathExtension("meta")
+        let backupDataURL = baseURL
+            .deletingPathExtension()
+            .appendingPathExtension("vacuum_backup.blazedb")
+        let backupMetaURL = baseURL
+            .deletingPathExtension()
+            .appendingPathExtension("vacuum_backup.meta")
+
+        db = nil
+        Thread.sleep(forTimeInterval: 0.1)
+
+        // Simulate a crash between moving original data and moving original metadata.
+        try FileManager.default.moveItem(at: baseURL, to: backupDataURL)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: metaURL.path))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: backupMetaURL.path))
+
+        let vacuumLogURL = baseURL
+            .deletingPathExtension()
+            .appendingPathExtension("vacuum_in_progress")
+        try Data().write(to: vacuumLogURL, options: .atomic)
+
+        BlazeDBClient.clearCachedKey()
+        let reopened = try BlazeDBClient(
+            name: "blocker_test",
+            fileURL: baseURL,
+            password: "SecureTestDB-456!"
+        )
+        db = reopened
+
+        let readable = try reopened.fetchAll()
+        XCTAssertEqual(readable.count, 50, "Recovery must keep metadata when only the data backup exists")
+        XCTAssertEqual(reopened.collection.count(), readable.count)
+        XCTAssertTrue(
+            readable.allSatisfy { $0.storage["marker"]?.stringValue == "partial-vacuum-backup" },
+            "Recovered records must still be indexed by the original primary metadata"
+        )
+        XCTAssertTrue(FileManager.default.fileExists(atPath: metaURL.path))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: backupDataURL.path))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: backupMetaURL.path))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: vacuumLogURL.path))
+
+        print("   ✅ VACUUM recovery preserves primary metadata for partial backups!")
+    }
     
     /// BLOCKER #3: Atomic file replacement
     func testBlocker3_VACUUMAtomicReplacement() throws {

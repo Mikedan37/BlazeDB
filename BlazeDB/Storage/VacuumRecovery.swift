@@ -30,8 +30,9 @@ extension BlazeDBClient {
         
         let dataBackupURL = baseURL.appendingPathExtension("vacuum_backup.blazedb")
         let metaBackupURL = baseURL.appendingPathExtension("vacuum_backup.meta")
-        
-        let hasBackup = FileManager.default.fileExists(atPath: dataBackupURL.path)
+
+        let hasDataBackup = FileManager.default.fileExists(atPath: dataBackupURL.path)
+        let hasMetaBackup = FileManager.default.fileExists(atPath: metaBackupURL.path)
         let successMarkerURL = baseURL.appendingPathExtension("vacuum_success")
         let hasSuccess = FileManager.default.fileExists(atPath: successMarkerURL.path)
         
@@ -43,19 +44,18 @@ extension BlazeDBClient {
             BlazeAuthoritativeFileOps.removeItemIfExists(at: vacuumLogURL, context: "VacuumRecovery(success cleanup intent)")
             BlazeAuthoritativeFileOps.removeItemIfExists(at: successMarkerURL, context: "VacuumRecovery(success marker)")
             
-        } else if hasBackup {
+        } else if hasDataBackup || hasMetaBackup {
             BlazeLogger.warn("VACUUM was interrupted, restoring from backup...")
-            
-            BlazeAuthoritativeFileOps.removeItemIfExists(at: fileURL, context: "VacuumRecovery(interrupted remove partial data)")
-            BlazeAuthoritativeFileOps.removeItemIfExists(at: metaURL, context: "VacuumRecovery(interrupted remove partial meta)")
-            
-            if FileManager.default.fileExists(atPath: dataBackupURL.path) {
+
+            if hasDataBackup {
+                BlazeAuthoritativeFileOps.removeItemIfExists(at: fileURL, context: "VacuumRecovery(interrupted remove partial data)")
                 try FileManager.default.moveItem(at: dataBackupURL, to: fileURL)
             }
-            if FileManager.default.fileExists(atPath: metaBackupURL.path) {
+            if hasMetaBackup {
+                BlazeAuthoritativeFileOps.removeItemIfExists(at: metaURL, context: "VacuumRecovery(interrupted remove partial meta)")
                 try FileManager.default.moveItem(at: metaBackupURL, to: metaURL)
             }
-            
+
             BlazeAuthoritativeFileOps.removeItemIfExists(at: vacuumLogURL, context: "VacuumRecovery(post-restore intent)")
             
             BlazeLogger.info("Restored from VACUUM backup successfully")
