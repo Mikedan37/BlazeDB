@@ -3,7 +3,7 @@ package com.blazedb.kmm
 import com.blazedb.shared.bridge.BlazeDBBridge
 
 actual class BlazeDB private constructor(
-    private val handle: Long,
+    internal val handle: Long,
     actual val dbPath: String,
     internal actual val password: String,
 ) {

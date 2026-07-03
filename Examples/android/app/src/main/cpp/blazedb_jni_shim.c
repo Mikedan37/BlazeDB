@@ -171,8 +171,7 @@ JNIEXPORT jlong JNICALL
 Java_com_blazedb_shared_bridge_BlazeDBBridge_nativeLiveQueryStart(
     JNIEnv *env,
     jclass clazz,
-    jstring dbPath,
-    jstring password,
+    jlong dbHandle,
     jobject callback) {
     (void)clazz;
     live_query_ctx_t *ctx = (live_query_ctx_t *)calloc(1, sizeof(live_query_ctx_t));
@@ -181,11 +180,10 @@ Java_com_blazedb_shared_bridge_BlazeDBBridge_nativeLiveQueryStart(
     }
     ctx->callback_global = (*env)->NewGlobalRef(env, callback);
 
-    const char *path = (*env)->GetStringUTFChars(env, dbPath, NULL);
-    const char *pass = (*env)->GetStringUTFChars(env, password, NULL);
-    int64_t handle = blazedb_bridge_live_query_start(path, pass, live_query_trampoline, ctx);
-    (*env)->ReleaseStringUTFChars(env, dbPath, path);
-    (*env)->ReleaseStringUTFChars(env, password, pass);
+    int64_t handle = blazedb_bridge_live_query_start_for_handle(
+        (int64_t)dbHandle,
+        live_query_trampoline,
+        ctx);
 
     if (handle <= 0) {
         (*env)->DeleteGlobalRef(env, ctx->callback_global);

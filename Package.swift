@@ -197,6 +197,11 @@ if !tier0OnlyTestScope {
                 .define("BLAZEDB_LINUX_CORE", .when(platforms: [.linux, .android]))
             ]
         ),
+        .testTarget(
+            name: "BlazeDB_BridgeTests",
+            dependencies: ["BlazeDBAndroidBridge"],
+            path: "BlazeDBTests/Bridge"
+        ),
         // Tier 2: integration/recovery and deeper deterministic validation.
         .testTarget(
             name: "BlazeDB_Tier2",

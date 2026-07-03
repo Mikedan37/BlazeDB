@@ -18,8 +18,7 @@ internal object BlazeDBBridge {
     external fun nativeSmoke(dbPath: String, password: String): Int
 
     external fun nativeLiveQueryStart(
-        dbPath: String,
-        password: String,
+        dbHandle: Long,
         callback: LiveQueryCallback,
     ): Long
 

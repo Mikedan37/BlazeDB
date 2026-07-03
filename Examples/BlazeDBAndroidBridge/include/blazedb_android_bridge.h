@@ -20,6 +20,14 @@ int64_t blazedb_bridge_live_query_start(
     void *user_data
 );
 
+/// Start a BlazeLiveQuery for open todos using an existing blazedb_bridge_open handle.
+/// The query borrows the database handle; stopping it does not close the database.
+int64_t blazedb_bridge_live_query_start_for_handle(
+    int64_t db_handle,
+    blazedb_bridge_live_query_cb callback,
+    void *user_data
+);
+
 /// Stop a live query started with blazedb_bridge_live_query_start.
 void blazedb_bridge_live_query_stop(int64_t handle);
 
