@@ -23,6 +23,8 @@ internal object BlazeDBBridge {
         callback: LiveQueryCallback,
     ): Long
 
+    external fun nativeLiveQueryStartForHandle(handle: Long, callback: LiveQueryCallback): Long
+
     external fun nativeLiveQueryStop(handle: Long)
 }
 
