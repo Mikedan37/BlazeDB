@@ -702,8 +702,7 @@ extension DynamicCollection {
                 recordCache.remove(id: id)
             }
             #if !BLAZEDB_LINUX_CORE
-// clearFetchAllCache() is defined in DynamicCollection+Optimized (gated)
-// Cache will be cleared on next fetchAll call
+            clearFetchAllCache()
 #endif
             
             let duration = Date().timeIntervalSince(startTime)

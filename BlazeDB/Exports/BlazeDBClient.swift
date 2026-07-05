@@ -1031,7 +1031,15 @@ public final class BlazeDBClient: @unchecked Sendable {
             var deletedCount = 0
             try performSafeWrite {
                 #if !BLAZEDB_LINUX_CORE
-                deletedCount = try collection.deleteBatch(allowedIDs)
+                if collection.mvccEnabled {
+                    for id in allowedIDs {
+                        guard let record = try collection.fetch(id: id) else { continue }
+                        try collection.delete(id: id, record: record)
+                        deletedCount += 1
+                    }
+                } else {
+                    deletedCount = try collection.deleteBatch(allowedIDs)
+                }
                 #else
                 for id in allowedIDs {
                     if try collection.fetch(id: id) != nil {

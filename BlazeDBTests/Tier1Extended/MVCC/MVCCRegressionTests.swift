@@ -227,6 +227,21 @@ final class MVCCRegressionTests: XCTestCase {
         XCTAssertEqual(ids.count, 1000)
         XCTAssertEqual(try requireFixture(db).count(), 1000)
     }
+
+    func testRegression_DeleteManyByIDsMarksMVCCVersionsDeleted() throws {
+        let ids = try requireFixture(db).insertMany((0..<5).map { index in
+            BlazeDataRecord(["index": .int(index)])
+        })
+
+        XCTAssertEqual(try requireFixture(db).fetchAll().count, 5)
+
+        let deleted = try requireFixture(db).deleteMany(ids: Array(ids.prefix(2)))
+
+        XCTAssertEqual(deleted, 2)
+        XCTAssertNil(try requireFixture(db).fetch(id: ids[0]))
+        XCTAssertNil(try requireFixture(db).fetch(id: ids[1]))
+        XCTAssertEqual(try requireFixture(db).fetchAll().count, 3)
+    }
     
     // MARK: - Concurrency Regression
     

@@ -304,6 +304,20 @@ final class BatchOperationTests: XCTestCase {
         try requireFixture(db).persist()  // Flush metadata before count
         XCTAssertEqual(try requireFixture(db).count(), 0)
     }
+
+    func testDeleteManyByIDsInvalidatesFetchAllCache() throws {
+        let ids = try requireFixture(db).insertMany((0..<5).map { index in
+            BlazeDataRecord(["index": .int(index)])
+        })
+
+        XCTAssertEqual(try requireFixture(db).fetchAll().count, 5)
+
+        let deleted = try requireFixture(db).deleteMany(ids: Array(ids.prefix(2)))
+
+        XCTAssertEqual(deleted, 2)
+        XCTAssertEqual(try requireFixture(db).fetchAll().count, 3)
+        XCTAssertEqual(try requireFixture(db).count(), 3)
+    }
     
     // MARK: - upsert Tests
     
