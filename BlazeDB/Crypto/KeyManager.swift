@@ -27,6 +27,9 @@ public final class KeyManager {
     private static let pbkdf2DerivationCountLock = NSLock()
     nonisolated(unsafe) private static var pbkdf2DerivationCount = 0
     nonisolated(unsafe) private static var pbkdf2IterationsOverride: Int?
+    internal static var legacyPasswordSalt: Data {
+        Data("AshPileSalt".utf8)
+    }
     internal static var pbkdf2Iterations: Int {
         pbkdf2OverrideLock.lock()
         let override = pbkdf2IterationsOverride
@@ -64,8 +67,7 @@ public final class KeyManager {
         case .password(let pass):
             // DEPRECATED: Legacy fallback using static salt. Only used by tests.
             // Production code must use getKey(from:salt:) with a per-database salt.
-            let legacySalt = Data("AshPileSalt".utf8)
-            return try getKey(from: pass, salt: legacySalt)
+            return try getKey(from: pass, salt: legacyPasswordSalt)
         }
     }
 

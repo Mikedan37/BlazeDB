@@ -194,11 +194,12 @@ public final class BlazeDBManager {
             }
         }
 
-        guard !existingDatabaseArtifactsPresent(for: fileURL) else {
-            throw BlazeDBError.corruptedData(
-                location: saltURL.path,
-                reason: "Missing or empty KDF salt sidecar for an existing encrypted database. Restore the original .salt file from backup."
-            )
+        if existingDatabaseArtifactsPresent(for: fileURL) {
+            // Pre-sidecar databases used the legacy static salt. Returning it preserves
+            // upgrade compatibility while newer databases with a lost random salt still
+            // fail metadata verification without writing replacement salt material.
+            BlazeLogger.warn("Missing or empty KDF salt sidecar for existing database; trying legacy static salt compatibility path")
+            return KeyManager.legacyPasswordSalt
         }
 
         let salt = try SecureRandom.bytesStrict(count: 16)

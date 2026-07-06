@@ -490,6 +490,49 @@ final class CoreCorrectnessTests: XCTestCase {
         )
     }
 
+    /// Databases created before per-database salt sidecars used the legacy static salt and
+    /// must remain readable after upgrading to sidecar-aware opens.
+    func testKeyDerivation_LegacyDatabaseWithoutSaltSidecarStillOpens() throws {
+        let legacyURL = tempDir.appendingPathComponent("legacy-static-salt.blazedb")
+        let metaURL = legacyURL.deletingPathExtension().appendingPathExtension("meta")
+        let saltURL = legacyURL.deletingPathExtension().appendingPathExtension("salt")
+        let password = "LegacyPassword-123!"
+        let legacySalt = KeyManager.legacyPasswordSalt
+        let legacyKey = try KeyManager.getKey(from: password, salt: legacySalt)
+        let id: UUID
+
+        do {
+            let store = try PageStore(fileURL: legacyURL, key: legacyKey)
+            let collection = try DynamicCollection(
+                store: store,
+                metaURL: metaURL,
+                project: "legacy-static-salt",
+                encryptionKey: legacyKey,
+                password: password,
+                kdfSalt: legacySalt
+            )
+            id = try collection.insert(makeRecord(["data": .string("legacy sidecarless record")]))
+            try collection.persist()
+            try collection.close()
+        }
+
+        XCTAssertTrue(FileManager.default.fileExists(atPath: legacyURL.path))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: metaURL.path))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: saltURL.path))
+
+        BlazeDBClient.clearCachedKey()
+
+        let reopened = try BlazeDBClient(name: "legacy-static-salt", fileURL: legacyURL, password: password)
+        defer { try? reopened.close() }
+
+        let record = try XCTUnwrap(reopened.fetch(id: id))
+        XCTAssertEqual(try record.string("data"), "legacy sidecarless record")
+        XCTAssertFalse(
+            FileManager.default.fileExists(atPath: saltURL.path),
+            "Legacy fallback must not create salt material before the database key has been verified."
+        )
+    }
+
     // MARK: - Test 7: Torn Write / Corruption Detection
 
     /// If a page on disk is corrupted (bit flip), reading it must fail — not silently
