@@ -11,7 +11,7 @@ import kotlinx.cinterop.toKString
 
 @OptIn(ExperimentalForeignApi::class)
 actual class BlazeDB private constructor(
-    private val handle: Long,
+    internal actual val handle: Long,
     actual val dbPath: String,
     internal actual val password: String,
 ) {

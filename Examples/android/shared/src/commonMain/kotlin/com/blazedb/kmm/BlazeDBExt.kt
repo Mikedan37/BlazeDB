@@ -12,8 +12,8 @@ fun BlazeDB.queryTodos(): List<Todo> = parseTodos(query("todo"))
 
 /** Live-updating open todos (`isDone == false`). Platform uses JNI callback on Android, polling on iOS. */
 fun BlazeDB.observeOpenTodos(): Flow<List<Todo>> =
-    platformObserveOpenTodos(dbPath, password)
+    platformObserveOpenTodos(this)
         .map { todos -> todos.filter { !it.isDone } }
         .distinctUntilChanged()
 
-internal expect fun platformObserveOpenTodos(path: String, password: String): Flow<List<Todo>>
+internal expect fun platformObserveOpenTodos(db: BlazeDB): Flow<List<Todo>>
