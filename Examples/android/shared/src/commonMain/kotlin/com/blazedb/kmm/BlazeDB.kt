@@ -11,6 +11,7 @@ package com.blazedb.kmm
 expect class BlazeDB {
     /** Absolute path to the encrypted `.blazedb` file. */
     val dbPath: String
+    internal val handle: Long
     internal val password: String
 
     fun close()
