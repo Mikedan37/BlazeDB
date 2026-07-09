@@ -40,6 +40,23 @@ final class DatabaseSessionKeyLifecycleTests: XCTestCase {
         return id
     }
 
+    private func seedLegacySidecarlessDatabase(at url: URL) throws -> UUID {
+        let key = try KeyManager.getKey(from: password, salt: KeyManager.legacyPasswordSalt)
+        let store = try PageStore(fileURL: url, key: key)
+        let collection = try DynamicCollection(
+            store: store,
+            metaURL: url.deletingPathExtension().appendingPathExtension("meta"),
+            project: "legacy",
+            encryptionKey: key,
+            password: password,
+            kdfSalt: KeyManager.legacyPasswordSalt
+        )
+        let id = try collection.insert(BlazeDataRecord(["marker": .string("legacy")]))
+        try collection.persist()
+        try collection.close()
+        return id
+    }
+
     func testColdOpenRunsPBKDF2() throws {
         let dbURL = makeDBURL("cold")
         defer { cleanupBlazeDBFiles(at: dbURL) }
@@ -170,5 +187,51 @@ final class DatabaseSessionKeyLifecycleTests: XCTestCase {
         db = try BlazeDBClient(name: "clear-all", fileURL: dbURL, password: password)
         XCTAssertEqual(KeyManager.pbkdf2DerivationCountForTesting, 1)
         try db.close()
+    }
+
+    func testLegacySidecarlessEncryptedDatabaseStillOpens() throws {
+        let dbURL = makeDBURL("legacy-sidecarless")
+        let saltURL = dbURL.deletingPathExtension().appendingPathExtension("salt")
+        defer {
+            cleanupBlazeDBFiles(at: dbURL)
+            try? FileManager.default.removeItem(at: saltURL)
+        }
+
+        let id = try seedLegacySidecarlessDatabase(at: dbURL)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: saltURL.path))
+
+        BlazeDBClient.clearSessionKeys()
+        let db = try BlazeDBClient(name: "legacy", fileURL: dbURL, password: password)
+        defer { try? db.close() }
+
+        let record = try XCTUnwrap(db.fetch(id: id))
+        XCTAssertEqual(record["marker"], .string("legacy"))
+        XCTAssertFalse(
+            FileManager.default.fileExists(atPath: saltURL.path),
+            "Opening a legacy sidecarless database must not invent a replacement salt."
+        )
+    }
+
+    func testLegacySidecarlessEncryptedDatabaseMountsThroughManager() throws {
+        let dbURL = makeDBURL("legacy-manager")
+        let saltURL = dbURL.deletingPathExtension().appendingPathExtension("salt")
+        defer {
+            BlazeDBManager.shared.unmountAllDatabases()
+            cleanupBlazeDBFiles(at: dbURL)
+            try? FileManager.default.removeItem(at: saltURL)
+        }
+
+        let id = try seedLegacySidecarlessDatabase(at: dbURL)
+
+        BlazeDBClient.clearSessionKeys()
+        let collection = try BlazeDBManager.shared.mountDatabase(
+            named: "legacy-manager",
+            fileURL: dbURL,
+            password: password
+        )
+
+        let record = try XCTUnwrap(collection.fetch(id: id))
+        XCTAssertEqual(record["marker"], .string("legacy"))
+        try collection.close()
     }
 }

@@ -14,8 +14,7 @@ import Crypto
 private extension DynamicCollection {
     /// Default salt for key derivation (ASCII string, UTF-8 encoding guaranteed)
     static var defaultSalt: Data {
-        // "AshPileSalt" is ASCII, so UTF-8 encoding cannot fail
-        return Data("AshPileSalt".utf8)
+        KeyManager.legacyPasswordSalt
     }
 
     static var writeForensicsEnabled: Bool {
