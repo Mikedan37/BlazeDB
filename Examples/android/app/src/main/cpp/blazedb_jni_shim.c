@@ -203,6 +203,41 @@ Java_com_blazedb_shared_bridge_BlazeDBBridge_nativeLiveQueryStart(
     return (jlong)handle;
 }
 
+JNIEXPORT jlong JNICALL
+Java_com_blazedb_shared_bridge_BlazeDBBridge_nativeLiveQueryStartForHandle(
+    JNIEnv *env,
+    jclass clazz,
+    jlong dbHandle,
+    jobject callback) {
+    (void)clazz;
+    live_query_ctx_t *ctx = (live_query_ctx_t *)calloc(1, sizeof(live_query_ctx_t));
+    if (ctx == NULL) {
+        return -1;
+    }
+    ctx->callback_global = (*env)->NewGlobalRef(env, callback);
+
+    int64_t handle = blazedb_bridge_live_query_start_for_handle(
+        (int64_t)dbHandle,
+        live_query_trampoline,
+        ctx
+    );
+
+    if (handle <= 0) {
+        (*env)->DeleteGlobalRef(env, ctx->callback_global);
+        free(ctx);
+        return handle;
+    }
+
+    if (!register_live_query(handle, ctx)) {
+        blazedb_bridge_live_query_stop(handle);
+        (*env)->DeleteGlobalRef(env, ctx->callback_global);
+        free(ctx);
+        return -2;
+    }
+
+    return (jlong)handle;
+}
+
 JNIEXPORT void JNICALL
 Java_com_blazedb_shared_bridge_BlazeDBBridge_nativeLiveQueryStop(
     JNIEnv *env,
