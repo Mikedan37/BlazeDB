@@ -1029,17 +1029,27 @@ public final class BlazeDBClient: @unchecked Sendable {
                 }
             }
             var deletedCount = 0
+            let mvccEnabled = isMVCCEnabled()
             try performSafeWrite {
-                #if !BLAZEDB_LINUX_CORE
-                deletedCount = try collection.deleteBatch(allowedIDs)
-                #else
-                for id in allowedIDs {
-                    if try collection.fetch(id: id) != nil {
-                        try collection.delete(id: id)
-                        deletedCount += 1
+                if mvccEnabled {
+                    for id in allowedIDs {
+                        if let record = try collection.fetch(id: id) {
+                            try collection.delete(id: id, record: record)
+                            deletedCount += 1
+                        }
                     }
+                } else {
+                    #if !BLAZEDB_LINUX_CORE
+                    deletedCount = try collection.deleteBatch(allowedIDs)
+                    #else
+                    for id in allowedIDs {
+                        if try collection.fetch(id: id) != nil {
+                            try collection.delete(id: id)
+                            deletedCount += 1
+                        }
+                    }
+                    #endif
                 }
-                #endif
                 
                 // Log to transaction log
                 for id in allowedIDs {

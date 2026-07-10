@@ -165,26 +165,28 @@ public class VersionManager {
             throw BlazeDBError.recordNotFound(id: recordID)
         }
         
-        // Find the visible version at this snapshot
-        guard let index = recordVersions.firstIndex(where: {
-            $0.isVisibleTo(snapshotVersion: snapshotVersion)
-        }) else {
+        // Tombstone every version visible to this snapshot. Marking only the
+        // newest version would let an older active version resurface for future
+        // snapshots after deleting an updated record.
+        let visibleIndices = recordVersions.indices.filter {
+            recordVersions[$0].isVisibleTo(snapshotVersion: snapshotVersion)
+        }
+        guard !visibleIndices.isEmpty else {
             throw BlazeDBError.recordNotFound(id: recordID)
         }
-        
-        // Mark as deleted
-        var version = recordVersions[index]
-        version = RecordVersion(
-            recordID: version.recordID,
-            version: version.version,
-            pageNumber: version.pageNumber,
-            createdAt: version.createdAt,
-            deletedAt: Date(),
-            createdByTransaction: version.createdByTransaction,
-            deletedByTransaction: transactionID
-        )
-        
-        recordVersions[index] = version
+
+        for index in visibleIndices {
+            let version = recordVersions[index]
+            recordVersions[index] = RecordVersion(
+                recordID: version.recordID,
+                version: version.version,
+                pageNumber: version.pageNumber,
+                createdAt: version.createdAt,
+                deletedAt: Date(),
+                createdByTransaction: version.createdByTransaction,
+                deletedByTransaction: transactionID
+            )
+        }
         versions[recordID] = recordVersions
     }
     
@@ -305,9 +307,19 @@ public class VersionManager {
         var freedPages: [Int] = []
         
         for (recordID, recordVersions) in versions {
-            // Keep only the newest version of each record
+            // Keep only the newest live version of each record. If the newest
+            // version is a tombstone and no snapshots are active, no future read
+            // can observe it, so every page for this record is safe to recycle.
             if let newest = recordVersions.max(by: { $0.version < $1.version }) {
-                // Free pages from old versions
+                if newest.deletedByTransaction != 0 {
+                    for version in recordVersions {
+                        freedPages.append(version.pageNumber)
+                    }
+                    removedCount += recordVersions.count
+                    versions.removeValue(forKey: recordID)
+                    continue
+                }
+
                 let oldVersions = recordVersions.filter { $0.version != newest.version }
                 for version in oldVersions {
                     freedPages.append(version.pageNumber)

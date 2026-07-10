@@ -1817,15 +1817,10 @@ public final class DynamicCollection {
                         BlazeLogger.warn("⚠️ [DELETE] MVCC: Tried to remove indexMap[\(id.uuidString.prefix(8))] but it wasn't in indexMap!")
                     }
                     
-                    // Track deleted pages for reuse
+                    // Persist index removal without immediately recycling the physical pages.
+                    // Version GC owns MVCC page reclamation because active snapshots may still
+                    // read the deleted version's page until their snapshot ends.
                     if let pageIndices = pageIndices, !pageIndices.isEmpty {
-                        // MVCC: Add pages to pageGC.freePages directly (not layout.deletedPages)
-                        // This prevents double-counting since version GC might also add pages
-                        for pageIdx in pageIndices {
-                            versionManager.pageGC.markPageObsolete(pageIdx)
-                        }
-                        BlazeLogger.debug("🗑️ [DELETE] MVCC: Added \(pageIndices.count) pages to pageGC.freePages for reuse")
-                        
                         // Load existing layout to update nextPageIndex (but don't add to deletedPages in MVCC mode)
                         // Try secure load first, fallback to regular if needed
                         var layout = try loadLayoutForMutation()
