@@ -23,6 +23,13 @@ int64_t blazedb_bridge_live_query_start(
 /// Stop a live query started with blazedb_bridge_live_query_start.
 void blazedb_bridge_live_query_stop(int64_t handle);
 
+/// Start an open-todos live query by borrowing an existing KMM session handle.
+int64_t blazedb_bridge_live_query_start_for_handle(
+    int64_t db_handle,
+    blazedb_bridge_live_query_cb callback,
+    void *user_data
+);
+
 /// Insert an open todo. Returns 1 on success, negative errno-style code on failure.
 int32_t blazedb_bridge_add_todo(const char *db_path, const char *password, const char *title);
 
