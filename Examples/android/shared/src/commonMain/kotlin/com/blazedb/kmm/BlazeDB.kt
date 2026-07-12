@@ -12,6 +12,7 @@ expect class BlazeDB {
     /** Absolute path to the encrypted `.blazedb` file. */
     val dbPath: String
     internal val password: String
+    internal val nativeHandle: Long
 
     fun close()
     /** Insert fields JSON under [kind] namespace. Returns 0 on success. */

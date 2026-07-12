@@ -4,9 +4,13 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.blazedb.kmm.BlazeDB
 import com.blazedb.kmm.Todo
+import com.blazedb.kmm.observeOpenTodos
 import com.blazedb.kmm.putTodo
 import com.blazedb.kmm.queryTodos
 import java.io.File
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeout
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -14,12 +18,18 @@ import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 class BlazeDBRuntimeSmokeTest {
+    private fun resetDatabaseFile(dbFile: File) {
+        dbFile.delete()
+        File(dbFile.parentFile, dbFile.nameWithoutExtension + ".meta").delete()
+        File(dbFile.parentFile, dbFile.nameWithoutExtension + ".salt").delete()
+    }
+
     @Test
     fun openPutQueryRoundTripViaCommonMainApi() {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         val dbFile = File(context.filesDir, "blazedb/kmm-instrumentation.blazedb")
         dbFile.parentFile?.mkdirs()
-        dbFile.delete()
+        resetDatabaseFile(dbFile)
 
         val db = BlazeDB.open(dbFile.absolutePath, MainActivity.DEMO_PASSWORD)
         try {
@@ -39,13 +49,37 @@ class BlazeDBRuntimeSmokeTest {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         val dbFile = File(context.filesDir, "blazedb/kmm-typed.blazedb")
         dbFile.parentFile?.mkdirs()
-        dbFile.delete()
+        resetDatabaseFile(dbFile)
 
         val db = BlazeDB.open(dbFile.absolutePath, MainActivity.DEMO_PASSWORD)
         try {
             assertEquals(0, db.putTodo(Todo(title = "typed-kmm")))
             val todos = db.queryTodos()
             assertTrue(todos.any { it.title == "typed-kmm" })
+        } finally {
+            db.close()
+        }
+    }
+
+    @Test
+    fun observeOpenTodosReusesExistingDatabaseHandle() = runBlocking {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val dbFile = File(context.filesDir, "blazedb/kmm-live-query.blazedb")
+        dbFile.parentFile?.mkdirs()
+        resetDatabaseFile(dbFile)
+
+        val db = BlazeDB.open(dbFile.absolutePath, MainActivity.DEMO_PASSWORD)
+        try {
+            val title = "live-query-existing-handle"
+            assertEquals(0, db.putTodo(Todo(title = title)))
+
+            val observed = withTimeout(5_000) {
+                db.observeOpenTodos().first { todos ->
+                    todos.any { it.title == title && !it.isDone }
+                }
+            }
+
+            assertTrue(observed.any { it.title == title && !it.isDone })
         } finally {
             db.close()
         }

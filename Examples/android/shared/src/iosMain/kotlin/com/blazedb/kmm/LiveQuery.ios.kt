@@ -7,14 +7,9 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.isActive
 import kotlin.time.Duration.Companion.milliseconds
 
-internal actual fun platformObserveOpenTodos(path: String, password: String): Flow<List<Todo>> = flow {
-    val db = BlazeDB.open(path, password)
-    try {
-        while (currentCoroutineContext().isActive) {
-            emit(parseTodos(db.query("todo")))
-            delay(250.milliseconds)
-        }
-    } finally {
-        db.close()
+internal actual fun platformObserveOpenTodos(db: BlazeDB): Flow<List<Todo>> = flow {
+    while (currentCoroutineContext().isActive) {
+        emit(parseTodos(db.query("todo")))
+        delay(250.milliseconds)
     }
 }

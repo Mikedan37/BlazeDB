@@ -20,6 +20,13 @@ int64_t blazedb_bridge_live_query_start(
     void *user_data
 );
 
+/// Start a live query using an existing session handle. The query does not own or close the session.
+int64_t blazedb_bridge_live_query_start_for_handle(
+    int64_t db_handle,
+    blazedb_bridge_live_query_cb callback,
+    void *user_data
+);
+
 /// Stop a live query started with blazedb_bridge_live_query_start.
 void blazedb_bridge_live_query_stop(int64_t handle);
 
