@@ -265,6 +265,14 @@ jobs:
           restore-keys: |
             android-swift-sdk-artifact-6.3.2-
 
+      - name: Cache OSS Swift host toolchain
+        uses: actions/cache@v5
+        with:
+          path: .swift-host
+          key: android-host-swift-6.3.2-${{ hashFiles('Scripts/android-swift-config.sh') }}
+          restore-keys: |
+            android-host-swift-6.3.2-
+
       - name: Cache SwiftPM build
         uses: actions/cache@v5
         with:

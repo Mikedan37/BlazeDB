@@ -14,18 +14,78 @@ host_swift_is_usable() {
     && ! swift --version 2>&1 | grep -q "Apple Swift"
 }
 
+verify_host_swift_tarball() {
+  local tarball_path="$1"
+  if [[ ! -f "$tarball_path" ]]; then
+    return 1
+  fi
+
+  local size
+  size="$(wc -c < "$tarball_path" | tr -d ' ')"
+  if [[ "$size" -lt "$BLAZEDB_ANDROID_HOST_SWIFT_MIN_BYTES" ]]; then
+    echo "error: host Swift tarball too small (${size} bytes) — likely a CDN 404 page" >&2
+    return 1
+  fi
+
+  local actual
+  actual="$(shasum -a 256 "$tarball_path" | awk '{print $1}')"
+  if [[ "$actual" != "$BLAZEDB_ANDROID_HOST_SWIFT_CHECKSUM" ]]; then
+    echo "error: host Swift tarball checksum mismatch" >&2
+    echo "       expected: $BLAZEDB_ANDROID_HOST_SWIFT_CHECKSUM" >&2
+    echo "       actual:   $actual" >&2
+    return 1
+  fi
+
+  return 0
+}
+
+download_host_swift_tarball() {
+  local tarball_path="$1"
+  local attempt url urls=()
+
+  # Same CDN flake as the Android SDK: prefer GitHub mirror on Actions.
+  if [[ -n "${GITHUB_ACTIONS:-}" ]]; then
+    urls=("$BLAZEDB_ANDROID_HOST_SWIFT_MIRROR_URL" "$BLAZEDB_ANDROID_HOST_SWIFT_URL")
+  else
+    urls=("$BLAZEDB_ANDROID_HOST_SWIFT_URL" "$BLAZEDB_ANDROID_HOST_SWIFT_MIRROR_URL")
+  fi
+
+  for attempt in 1 2 3 4 5; do
+    for url in "${urls[@]}"; do
+      echo ">>> Downloading OSS Swift ${BLAZEDB_ANDROID_HOST_SWIFT_VERSION} for ubuntu22.04 (attempt ${attempt}/5)"
+      echo ">>> URL: $url"
+      rm -f "$tarball_path"
+      if curl -fSL \
+        --retry 3 \
+        --retry-all-errors \
+        --retry-delay 5 \
+        --connect-timeout 30 \
+        --max-time 1800 \
+        "$url" \
+        -o "$tarball_path"; then
+        if verify_host_swift_tarball "$tarball_path"; then
+          return 0
+        fi
+      fi
+      rm -f "$tarball_path"
+    done
+    sleep $((attempt * 5))
+  done
+
+  echo "error: failed to download a valid OSS Swift host toolchain from GitHub mirror or swift.org" >&2
+  return 1
+}
+
 install_linux_ubuntu2204() {
   local install_dir="${BLAZEDB_ANDROID_SWIFT_INSTALL_DIR:-$ROOT/.swift-host}"
   local bundle="swift-${BLAZEDB_ANDROID_SWIFT_RELEASE_TAG}-ubuntu22.04"
-  local tarball="${bundle}.tar.gz"
-  local url="https://download.swift.org/swift-${BLAZEDB_ANDROID_HOST_SWIFT_VERSION}-release/ubuntu2204/${BLAZEDB_ANDROID_SWIFT_RELEASE_TAG}/${tarball}"
+  local tarball="${BLAZEDB_ANDROID_HOST_SWIFT_TARBALL}"
 
   mkdir -p "$install_dir"
   if [[ -x "$install_dir/$bundle/usr/bin/swift" ]]; then
     echo ">>> Reusing cached OSS Swift at $install_dir/$bundle"
   else
-    echo ">>> Downloading OSS Swift ${BLAZEDB_ANDROID_HOST_SWIFT_VERSION} for ubuntu22.04"
-    curl -fSL "$url" -o "$install_dir/$tarball"
+    download_host_swift_tarball "$install_dir/$tarball"
     tar -xzf "$install_dir/$tarball" -C "$install_dir"
     rm -f "$install_dir/$tarball"
   fi
