@@ -57,6 +57,13 @@ final class SearchPerformanceBenchmarks: XCTestCase {
     
     override func setUpWithError() throws {
         try super.setUpWithError()
+
+        #if BLAZEDB_LINUX_CORE
+        // Inverted-index search stats are a Darwin path; Linux core uses scan fallback and
+        // getSearchStats() always returns nil (force-unwraps crash the weekly Tier3 perf lane).
+        throw XCTSkip("Search index benchmarks target Darwin; BLAZEDB_LINUX_CORE has no inverted-index stats path.")
+        #endif
+
         tempURL = FileManager.default.temporaryDirectory
             .appendingPathComponent("Benchmark-\(UUID().uuidString).blazedb")
         db = try BlazeDBClient(name: "BenchmarkTest", fileURL: try requireFixture(tempURL), password: "SecureTestDB-456!")

@@ -449,30 +449,17 @@ final class FailureRecoveryScenarios: XCTestCase {
         print("  ⚙️  Performing 20 open/close cycles...")
         
         for cycle in 0..<20 {
-            #if os(Linux)
+            // Explicit close() is required: flock is exclusive (single-process), and relying
+            // on deinit alone races the next open on Linux CI (no autoreleasepool drain).
             do {
                 let db = try BlazeDBClient(name: "CycleTest", fileURL: dbURL, password: self.testPassword)
-                // In async tests, async overloads are preferred; use await on Linux.
+                defer { try? db.close() }
                 _ = try await db.insert(BlazeDataRecord(["cycle": .int(cycle)]))
                 try await db.persist()
+                try db.close()
             } catch {
                 XCTFail("Cycle \(cycle) failed: \(error)")
             }
-            #else
-            autoreleasepool {
-                do {
-                    let db = try BlazeDBClient(name: "CycleTest", fileURL: dbURL, password: self.testPassword)
-                    
-                    // Insert record
-                    _ = try db.insert(BlazeDataRecord(["cycle": .int(cycle)]))
-                    
-                    // Immediately close
-                    try db.persist()
-                } catch {
-                    XCTFail("Cycle \(cycle) failed: \(error)")
-                }
-            }
-            #endif
             
             if cycle % 5 == 0 {
                 print("    ✓ Completed \(cycle) cycles...")
@@ -483,6 +470,7 @@ final class FailureRecoveryScenarios: XCTestCase {
         
         // Verify all records persisted
         let db = try BlazeDBClient(name: "CycleTest", fileURL: dbURL, password: testPassword)
+        defer { try? db.close() }
         let count = try await db.count()
         
         XCTAssertGreaterThanOrEqual(count, 20, "Should have at least 20 records")

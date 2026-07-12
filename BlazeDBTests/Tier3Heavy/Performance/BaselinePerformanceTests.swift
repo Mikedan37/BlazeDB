@@ -50,11 +50,19 @@ final class BaselinePerformanceTests: XCTestCase {
     }
 
     /// Smaller fixtures on GitHub-hosted runners so baselines finish without excessive wall time.
+    /// Linux CI is substantially slower than macOS for these workloads — use tighter caps there.
     private var isGitHubActions: Bool { ProcessInfo.processInfo.environment["GITHUB_ACTIONS"] == "true" }
+    #if os(Linux)
+    private var baselineN10k: Int { isGitHubActions ? 1_500 : 10_000 }
+    private var baselineN100k: Int { isGitHubActions ? 8_000 : 100_000 }
+    private var baselineN5k: Int { isGitHubActions ? 1_000 : 5_000 }
+    private var baselineConcurrentThreads: Int { isGitHubActions ? 25 : 100 }
+    #else
     private var baselineN10k: Int { isGitHubActions ? 4_000 : 10_000 }
     private var baselineN100k: Int { isGitHubActions ? 25_000 : 100_000 }
     private var baselineN5k: Int { isGitHubActions ? 2_500 : 5_000 }
     private var baselineConcurrentThreads: Int { isGitHubActions ? 50 : 100 }
+    #endif
     
     override func setUp() {
         super.setUp()

@@ -34,4 +34,4 @@ This split keeps nightly rerunnable by concern and avoids bundling Tier2/verify/
 
 ## `deep-validation.yml`
 
-Weekly (`schedule`) + manual (`workflow_dispatch`). **Delta-only:** does not re-run Tier0/1/2 surfaces already owned by `ci.yml` and `nightly.yml`. Jobs: macOS Tier3 heavy + destructive, macOS Tier1 TSan (nightly already runs Tier0 TSan), Linux Tier2 extended + Tier3 heavy/perf. See `Docs/Testing/CI_AND_TEST_TIERS.md`.
+Weekly (`schedule`) + manual (`workflow_dispatch`). **Delta-only:** does not re-run Tier0/1/2 surfaces already owned by `ci.yml` and `nightly.yml`. Jobs: macOS Tier3 heavy + destructive, macOS Tier1 TSan (nightly already runs Tier0 TSan), Linux Tier2 extended, Linux Tier3 heavy (stress/fuzz), Linux Tier3 heavy baseline/profile, Linux Tier3 heavy/perf. See `Docs/Testing/CI_AND_TEST_TIERS.md`.

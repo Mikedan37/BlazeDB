@@ -111,7 +111,7 @@ In short: the nightly workflow optimizes for coverage visibility and time-to-sig
   - `macOS 15 — README quickstart verification`: `./Scripts/verify-readme-quickstart.sh` and `./Scripts/verify-readme-samples.sh`
   - `macOS 15 — Tier0 (ThreadSanitizer)`: `swift test --sanitize thread --filter BlazeDB_Tier0`
   - `Linux (Swift 6.2) — Tier1`: canonical `BlazeDB_Tier1` via filter `'BlazeDB_Tier1\.'` (`linux-tier1`)
-  - `Linux (Swift 6.2) — Tier2 (core)`: `BlazeDB_Tier2` via `'BlazeDB_Tier2\.'` only (`linux-tier2-core`). Linux Tier2 extended and Tier3 heavy/perf are **not** nightly; they run in weekly **`deep-validation.yml`** (`deep-linux-tier2-extended-tier3`).
+  - `Linux (Swift 6.2) — Tier2 (core)`: `BlazeDB_Tier2` via `'BlazeDB_Tier2\.'` only (`linux-tier2-core`). Linux Tier2 extended and Tier3 heavy/perf are **not** nightly; they run in weekly **`deep-validation.yml`** (`deep-linux-tier2-extended`, `deep-linux-tier3-heavy`, `deep-linux-tier3-heavy-profile`, `deep-linux-tier3-heavy-perf`).
 - Jobs in `nightly.yml` are root-owned and do not depend on `BlazeDBExtraTests`.
 - **Operational policy:** nightly failures are triaged within 24–48 hours.
 
@@ -123,11 +123,11 @@ Treat CI as a **constrained environment that must produce trustworthy signal**, 
 
 **Do not “fix” CI by increasing iterations or re-enabling full metrics for “rigor.”** That sentence is wrong here: rigor for profiling belongs on **local or manual runs**, where **`GITHUB_ACTIONS` is unset** and Tier3 sources keep **full `measure` iteration counts and full metric sets** (including memory where appropriate). If you change CI back toward heavier profiling, you must treat it as a **deliberate policy change**: re-measure runner memory and job duration, update this section with evidence, and expect red Tier3 CI lanes again in **weekly** `deep-validation.yml` (Linux Tier3 runs only in that weekly delta job, not nightly).
 
-**What `GITHUB_ACTIONS=1` does in Tier3 perf sources (summary):** one `measure` iteration on CI, omit or replace `XCTMemoryMetric` where it amplified peaks, smaller fixtures on the heaviest baselines, clock-only where memory measurement was hostile—**local stays full-fat.**
+**What `GITHUB_ACTIONS=1` does in Tier3 perf sources (summary):** one `measure` iteration on CI, omit or replace `XCTMemoryMetric` where it amplified peaks, smaller fixtures on the heaviest baselines (tighter still on Linux CI), clock-only where memory measurement was hostile—**local stays full-fat.** Linux weekly Tier3 heavy is also **split** across stress/fuzz vs baseline/profile jobs so the suite fits the 6h GitHub-hosted cap.
 
 ### Tier3 placement (nightly vs weekly/deep)
 
-- **Nightly** does **not** run Linux Tier2 extended, Linux Tier3 heavy/perf, macOS Tier3 stacks, or **Tier1** ThreadSanitizer. Those run only in **weekly** **`deep-validation.yml`** (delta jobs: **`deep-linux-tier2-extended-tier3`**, **`deep-macos-tier3-heavy-destructive`**, **`deep-macos-tsan-tier1`**).
+- **Nightly** does **not** run Linux Tier2 extended, Linux Tier3 heavy/perf, macOS Tier3 stacks, or **Tier1** ThreadSanitizer. Those run only in **weekly** **`deep-validation.yml`** (delta jobs: **`deep-linux-tier2-extended`**, **`deep-linux-tier3-heavy`**, **`deep-linux-tier3-heavy-profile`**, **`deep-linux-tier3-heavy-perf`**, **`deep-macos-tier3-heavy-destructive`**, **`deep-macos-tsan-tier1`**).
 - Any change to nightly Tier3 placement should update **this file** and **`nightly.yml`** together.
 
 ### Nightly stability trade-offs (documented)
@@ -151,7 +151,10 @@ Treat CI as a **constrained environment that must produce trustworthy signal**, 
 - **Delta-only weekly validation** — does **not** repeat Tier0/Tier1/macOS Tier2 strict or Linux Tier0/Tier1/Tier2 core (those are **`ci.yml`** and **`nightly.yml`**). Jobs:
   - **`deep-macos-tier3-heavy-destructive`:** `swift test` **`BlazeDB_Tier3_Heavy`** (+ `RUN_HEAVY_STRESS`) + **`BlazeDB_Tier3_Heavy_Perf`**, then **`./Scripts/run-tier3.sh`** (destructive / fault-injection). No Tier0–Tier2 steps.
   - **`deep-macos-tsan-tier1`:** ThreadSanitizer on **`BlazeDB_Tier1` only** (nightly **`nightly-macos-tsan-tier0`** already covers Tier0 TSan).
-  - **`deep-linux-tier2-extended-tier3`:** **`BlazeDB_Tier2_Extended`**, then **`BlazeDB_Tier3_Heavy`** + **`BlazeDB_Tier3_Heavy_Perf`**. No Linux Tier0/Tier1/Tier2 core (PR + nightly own those).
+  - **`deep-linux-tier2-extended`:** **`BlazeDB_Tier2_Extended`** only.
+  - **`deep-linux-tier3-heavy`:** **`BlazeDB_Tier3_Heavy`** stress/fuzz, skipping `BaselinePerformanceTests` + `PerformanceProfilingTests` (those run in the profile job so the suite fits the 6h GitHub-hosted cap).
+  - **`deep-linux-tier3-heavy-profile`:** `BaselinePerformanceTests` + `PerformanceProfilingTests` (parallel with stress/fuzz).
+  - **`deep-linux-tier3-heavy-perf`:** **`BlazeDB_Tier3_Heavy_Perf`**. No Linux Tier0/Tier1/Tier2 core (PR + nightly own those).
 
 - `.github/workflows/release.yml`
 - Trigger: tag push `v*`
@@ -306,7 +309,7 @@ Use precise language so status and dashboards do not blur the PR gate with deepe
 | **Canonical tiers** | `BlazeDB_Tier0`, `BlazeDB_Tier1`, `BlazeDB_Tier2`, `BlazeDB_Tier3_Heavy`, `BlazeDB_Tier3_Destructive` (end-state model). |
 | **PR3 transitional companions** | `BlazeDB_Tier2_Extended`, `BlazeDB_Tier3_Heavy_Perf`; temporary bridge targets slated for PR4 filesystem/target normalization. |
 | **Nightly Confidence (daily)** | `nightly.yml`: macOS Tier2 strict, clean checkout, README quickstart, Tier0 TSan; **Linux** `linux-tier1` + `linux-tier2-core` only (no Linux Tier0 nightly — covered in PR `ci.yml`). |
-| **Deep Validation (weekly)** | `deep-validation.yml` (weekly, Sun 03:00 UTC + manual), **delta-only**: **`deep-macos-tier3-heavy-destructive`**, **`deep-macos-tsan-tier1`**, **`deep-linux-tier2-extended-tier3`** — does not re-run PR/nightly tiers. |
+| **Deep Validation (weekly)** | `deep-validation.yml` (weekly, Sun 03:00 UTC + manual), **delta-only**: **`deep-macos-tier3-heavy-destructive`**, **`deep-macos-tsan-tier1`**, **`deep-linux-tier2-extended`**, **`deep-linux-tier3-heavy`**, **`deep-linux-tier3-heavy-profile`**, **`deep-linux-tier3-heavy-perf`** — does not re-run PR/nightly tiers. |
 | **KMM PR gate** | iOS: `iosSimulatorArm64Test`. Android compile (Linux). Android emulator runtime (Linux KVM `kmm-android-emulator`). Android packaging (macOS `kmm-android-packaging`). |
 | **Canonical Tier1** | `BlazeDB_Tier1` (single canonical Tier1 target). |
 
@@ -314,7 +317,7 @@ Inventory/bootstrap code may still bucket all three SwiftPM modules under a sing
 
 ### Suites relocated off canonical Tier1 (inventory)
 
-These used to inflate Linux Tier1 wall-clock; they now live in **`BlazeDB_Tier2`** or **`BlazeDB_Tier3_Heavy`**. On **Linux**, `BlazeDB_Tier2` **core** runs nightly (`linux-tier2-core`); `BlazeDB_Tier2_Extended` and Tier3 heavy/perf run in weekly **`deep-validation.yml`** (`deep-linux-tier2-extended-tier3`), not nightly. macOS nightly keeps `BlazeDB_Tier2` + `BlazeDB_Tier2_Extended` via `./Scripts/run-tier2.sh --strict` plus operational scripts; release tag validation covers Tier0–Tier2(+extended) per `release.yml`.
+These used to inflate Linux Tier1 wall-clock; they now live in **`BlazeDB_Tier2`** or **`BlazeDB_Tier3_Heavy`**. On **Linux**, `BlazeDB_Tier2` **core** runs nightly (`linux-tier2-core`); `BlazeDB_Tier2_Extended` and Tier3 heavy/perf run in weekly **`deep-validation.yml`** (`deep-linux-tier2-extended`, `deep-linux-tier3-heavy`, `deep-linux-tier3-heavy-profile`, `deep-linux-tier3-heavy-perf`), not nightly. macOS nightly keeps `BlazeDB_Tier2` + `BlazeDB_Tier2_Extended` via `./Scripts/run-tier2.sh --strict` plus operational scripts; release tag validation covers Tier0–Tier2(+extended) per `release.yml`.
 
 | Logical area | File under `BlazeDBTests/…` | SPM module | Linux nightly |
 | ------------ | --------------------------- | ---------- | ------------- |
@@ -326,11 +329,11 @@ These used to inflate Linux Tier1 wall-clock; they now live in **`BlazeDB_Tier2`
 | Subqueries | `…/SQL/SubqueryTests.swift` | `BlazeDB_Tier2` | `linux-tier2-core` (extended in weekly/deep) |
 | Filesystem errors | `…/Core/BlazeFileSystemErrorTests.swift` | `BlazeDB_Tier2` | `linux-tier2-core` (extended in weekly/deep) |
 | Key-path query | `…/Features/KeyPathQueryTests.swift` | `BlazeDB_Tier2` | `linux-tier2-core` (extended in weekly/deep) |
-| Query EXPLAIN (scale-heavy) | `Tier3Heavy/Query/QueryExplainTests.swift` | `BlazeDB_Tier3_Heavy` | `deep-linux-tier2-extended-tier3` / `deep-macos-tier3-heavy-destructive` (not nightly) |
+| Query EXPLAIN (scale-heavy) | `Tier3Heavy/Query/QueryExplainTests.swift` | `BlazeDB_Tier3_Heavy` | `deep-linux-tier3-heavy` / `deep-macos-tier3-heavy-destructive` (not nightly) |
 
 `Tier1Core/DXQueryExplainTests.swift` remains in **`BlazeDB_Tier1`** (different, lighter DX coverage)—do not confuse with `QueryExplainTests` in Tier3.
 
-**Linux nightly (scheduled) coverage:** `linux-tier1` (canonical Tier1) and `linux-tier2-core` (Tier2 **core** only). **`BlazeDB_Tier2_Extended`** and **Tier3** heavy/perf are **not** nightly; they run in weekly **`deep-validation.yml`** (`deep-linux-tier2-extended-tier3`).
+**Linux nightly (scheduled) coverage:** `linux-tier1` (canonical Tier1) and `linux-tier2-core` (Tier2 **core** only). **`BlazeDB_Tier2_Extended`** and **Tier3** heavy/perf are **not** nightly; they run in weekly **`deep-validation.yml`** (`deep-linux-tier2-extended`, `deep-linux-tier3-heavy`, `deep-linux-tier3-heavy-profile`, `deep-linux-tier3-heavy-perf`).
 
 ### Shared helpers (symlinks)
 

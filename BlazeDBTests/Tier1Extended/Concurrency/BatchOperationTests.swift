@@ -15,13 +15,14 @@ final class BatchOperationTests: XCTestCase {
     private var tempURL: URL?
     private var db: BlazeDBClient?
 
-    /// Timing and XCTest `measure()` gates assume non-virtualized dev hardware; Linux CI is too noisy.
+    /// Timing and XCTest `measure()` gates assume non-virtualized / lightly loaded hardware.
+    /// Shared CI runners (macOS and Linux) are too noisy for hard speedup ratios.
     private func skipTimingSensitiveBatchTestsOnLinuxCI() throws {
-        #if os(Linux)
-        if ProcessInfo.processInfo.environment["CI"] != nil {
-            throw XCTSkip("Batch perf tests are skipped on Linux CI (noisy shared runners); correctness tests still run on Linux.")
+        if ProcessInfo.processInfo.environment["CI"] != nil
+            || ProcessInfo.processInfo.environment["GITHUB_ACTIONS"] == "true"
+        {
+            throw XCTSkip("Batch perf tests are skipped on CI (noisy shared runners); correctness tests still run.")
         }
-        #endif
     }
     
     override func setUpWithError() throws {

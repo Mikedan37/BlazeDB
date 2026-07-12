@@ -118,17 +118,23 @@ final class PerformanceProfilingTests: XCTestCase {
         }
     }
     
-    /// PROFILE: Fetch all (10,000 records)
+    /// PROFILE: Fetch all (10,000 records; smaller on Linux CI — hosted runners are ~10–20× slower)
     func testProfile_FetchAll10000() throws {
+        let runningOnCI = ProcessInfo.processInfo.environment["GITHUB_ACTIONS"] == "true"
+        #if os(Linux)
+        let count = runningOnCI ? 2_500 : 10_000
+        #else
+        let count = 10_000
+        #endif
         // Setup
-        let records = (0..<10_000).map { i in
+        let records = (0..<count).map { i in
             BlazeDataRecord(["index": .int(i)])
         }
         _ = try! db.insertMany(records)
         
-        try profileWithMetrics(name: "Fetch All 10000") {
+        try profileWithMetrics(name: "Fetch All \(count)") {
             let all = try db.fetchAll()
-            XCTAssertEqual(all.count, 10_000)
+            XCTAssertEqual(all.count, count)
         }
     }
     
@@ -154,8 +160,14 @@ final class PerformanceProfilingTests: XCTestCase {
     
     /// PROFILE: Complex query with multiple filters
     func testProfile_ComplexQuery() throws {
+        let runningOnCI = ProcessInfo.processInfo.environment["GITHUB_ACTIONS"] == "true"
+        #if os(Linux)
+        let setupCount = runningOnCI ? 1_500 : 5_000
+        #else
+        let setupCount = 5_000
+        #endif
         // Setup
-        for i in 0..<5000 {
+        for i in 0..<setupCount {
             try! db.insert(BlazeDataRecord([
                 "status": .string(i % 3 == 0 ? "active" : "inactive"),
                 "priority": .int(i % 5),
@@ -164,11 +176,12 @@ final class PerformanceProfilingTests: XCTestCase {
             ]))
         }
         
+        let valueCap = (setupCount * 4) / 5
         try profileWithMetrics(name: "Complex Query") {
             let results = try db.query()
                 .where("status", equals: .string("active"))
                 .where("priority", greaterThan: .int(2))
-                .where("value", lessThan: .int(4000))
+                .where("value", lessThan: .int(valueCap))
                 .execute()
             XCTAssertGreaterThan(results.count, 0)
         }
@@ -195,8 +208,14 @@ final class PerformanceProfilingTests: XCTestCase {
     
     /// PROFILE: Grouped aggregation
     func testProfile_GroupedAggregation() throws {
+        let runningOnCI = ProcessInfo.processInfo.environment["GITHUB_ACTIONS"] == "true"
+        #if os(Linux)
+        let count = runningOnCI ? 2_500 : 10_000
+        #else
+        let count = 10_000
+        #endif
         // Setup
-        for i in 0..<10_000 {
+        for i in 0..<count {
             try! db.insert(BlazeDataRecord([
                 "category": .string(i % 5 == 0 ? "A" : "B"),
                 "value": .int(i)
@@ -372,7 +391,12 @@ final class PerformanceProfilingTests: XCTestCase {
     /// PROFILE: Memory usage during large batch insert
     func testProfile_MemoryUsage() throws {
         let runningOnCI = ProcessInfo.processInfo.environment["GITHUB_ACTIONS"] == "true"
+        #if os(Linux)
+        // Linux CI: keep this under ~10–15 min so the weekly Tier3 heavy job fits the 6h cap.
+        let count = runningOnCI ? 2_500 : 50_000
+        #else
         let count = runningOnCI ? 10_000 : 50_000
+        #endif
         try profileWithMetrics(name: "Memory Usage Large Batch") {
             let records = (0..<count).map { i in
                 BlazeDataRecord([
