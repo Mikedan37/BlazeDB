@@ -71,8 +71,11 @@ final class SearchPerformanceBenchmarks: XCTestCase {
     
     override func tearDown() {
         db = nil
-        try? FileManager.default.removeItem(at: try requireFixture(tempURL))
-        try? FileManager.default.removeItem(at: try requireFixture(tempURL).deletingPathExtension().appendingPathExtension("meta"))
+        if let url = tempURL {
+            try? FileManager.default.removeItem(at: url)
+            try? FileManager.default.removeItem(at: url.deletingPathExtension().appendingPathExtension("meta"))
+        }
+        tempURL = nil
         super.tearDown()
     }
     
