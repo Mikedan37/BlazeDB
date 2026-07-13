@@ -19,6 +19,7 @@ private enum BridgeError: Error {
 
 private final class LiveQuerySlot: @unchecked Sendable {
     let db: BlazeDBClient
+    private let closeDatabaseOnStop: Bool
     private let lock = NSLock()
     private var cancelled = false
 
@@ -27,13 +28,16 @@ private final class LiveQuerySlot: @unchecked Sendable {
     // is not pumped from JNI on Android. Poll on a background queue instead (bridge-only).
     private let callback: blazedb_bridge_live_query_cb
     private let userData: UnsafeMutableRawPointer?
+    private let pollingGroup = DispatchGroup()
 
     init(
         db: BlazeDBClient,
+        closeDatabaseOnStop: Bool,
         callback: blazedb_bridge_live_query_cb,
         userData: UnsafeMutableRawPointer?
     ) {
         self.db = db
+        self.closeDatabaseOnStop = closeDatabaseOnStop
         self.callback = callback
         self.userData = userData
         emitCurrent()
@@ -62,7 +66,10 @@ private final class LiveQuerySlot: @unchecked Sendable {
     }
 
     private func startPolling() {
-        DispatchQueue.global(qos: .utility).async { [weak self] in
+        pollingGroup.enter()
+        let group = pollingGroup
+        DispatchQueue.global(qos: .utility).async { [weak self, group] in
+            defer { group.leave() }
             while let self {
                 self.lock.lock()
                 let stop = self.cancelled
@@ -82,19 +89,25 @@ private final class LiveQuerySlot: @unchecked Sendable {
         lock.lock()
         cancelled = true
         lock.unlock()
-        try? db.close()
+        pollingGroup.wait()
+        if closeDatabaseOnStop {
+            try? db.close()
+        }
     }
 #else
     let query: BlazeLiveQuery<Todo>
 
-    init(db: BlazeDBClient, query: BlazeLiveQuery<Todo>) {
+    init(db: BlazeDBClient, closeDatabaseOnStop: Bool, query: BlazeLiveQuery<Todo>) {
         self.db = db
+        self.closeDatabaseOnStop = closeDatabaseOnStop
         self.query = query
     }
 
     func stop() {
         query.stop()
-        try? db.close()
+        if closeDatabaseOnStop {
+            try? db.close()
+        }
     }
 #endif
 }
@@ -225,41 +238,86 @@ public func blazedb_bridge_live_query_start(
         let pass = try cString(password)
         let url = databaseURL(from: path)
         let db = try BlazeDBClient.open(at: url, password: pass)
-
-#if os(Android)
-        let slot = LiveQuerySlot(db: db, callback: callback, userData: userData)
-        return liveQueryRegistry.insert(slot)
-#else
-        let live = BlazeLiveQuery<Todo>(
+        return startLiveQuery(
             db: db,
-            where: "isDone",
-            equals: .bool(false),
-            sortBy: "title",
-            descending: false
+            closeDatabaseOnStop: true,
+            callback: callback,
+            userData: userData
         )
-        live.onResults = { result in
-            switch result {
-            case .success(let rows):
-                let json = encodeTodos(rows)
-                json.withCString { cstr in
-                    callback(cstr, userData)
-                }
-            case .failure(let error):
-                let message = "{\"error\":\"\(error.localizedDescription)\"}"
-                message.withCString { cstr in
-                    callback(cstr, userData)
-                }
-            }
-        }
-        live.start()
-
-        let slot = LiveQuerySlot(db: db, query: live)
-        return liveQueryRegistry.insert(slot)
-#endif
     } catch {
         return -1
     }
 }
+
+@_cdecl("blazedb_bridge_live_query_start_for_handle")
+public func blazedb_bridge_live_query_start_for_handle(
+    _ dbHandle: Int64,
+    _ callback: blazedb_bridge_live_query_cb?,
+    _ userData: UnsafeMutableRawPointer?
+) -> Int64 {
+    guard let callback else { return -1 }
+    guard let session = sessionRegistry.get(dbHandle) else { return -2 }
+    return startLiveQuery(
+        db: session.db,
+        closeDatabaseOnStop: false,
+        callback: callback,
+        userData: userData
+    )
+}
+
+#if os(Android)
+private func startLiveQuery(
+    db: BlazeDBClient,
+    closeDatabaseOnStop: Bool,
+    callback: blazedb_bridge_live_query_cb,
+    userData: UnsafeMutableRawPointer?
+) -> Int64 {
+    let slot = LiveQuerySlot(
+        db: db,
+        closeDatabaseOnStop: closeDatabaseOnStop,
+        callback: callback,
+        userData: userData
+    )
+    return liveQueryRegistry.insert(slot)
+}
+#else
+private func startLiveQuery(
+    db: BlazeDBClient,
+    closeDatabaseOnStop: Bool,
+    callback: blazedb_bridge_live_query_cb,
+    userData: UnsafeMutableRawPointer?
+) -> Int64 {
+    let live = BlazeLiveQuery<Todo>(
+        db: db,
+        where: "isDone",
+        equals: .bool(false),
+        sortBy: "title",
+        descending: false
+    )
+    live.onResults = { result in
+        switch result {
+        case .success(let rows):
+            let json = encodeTodos(rows)
+            json.withCString { cstr in
+                callback(cstr, userData)
+            }
+        case .failure(let error):
+            let message = "{\"error\":\"\(error.localizedDescription)\"}"
+            message.withCString { cstr in
+                callback(cstr, userData)
+            }
+        }
+    }
+    live.start()
+
+    let slot = LiveQuerySlot(
+        db: db,
+        closeDatabaseOnStop: closeDatabaseOnStop,
+        query: live
+    )
+    return liveQueryRegistry.insert(slot)
+}
+#endif
 
 @_cdecl("blazedb_bridge_live_query_stop")
 public func blazedb_bridge_live_query_stop(_ handle: Int64) {
