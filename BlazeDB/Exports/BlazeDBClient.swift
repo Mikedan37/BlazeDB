@@ -1811,6 +1811,9 @@ public final class BlazeDBClient: @unchecked Sendable {
     /// - Transactions provide ACID guarantees and crash-safe rollback semantics.
     public func beginTransaction() throws {
         try ensureNotClosed()
+        writeLock.lock()
+        defer { writeLock.unlock() }
+
         guard transactionIndexMapSnapshot == nil else {
             throw BlazeDBError.transactionFailed("Transaction already in progress")
         }
@@ -1824,22 +1827,26 @@ public final class BlazeDBClient: @unchecked Sendable {
         try createDurableTransactionBackups()
         try writeDurableTransactionState(phase: "open")
 
-        // Snapshot the indexMap (value-type copy — O(1) COW)
-        transactionIndexMapSnapshot = collection.indexMap
-        transactionSecondaryIndexesSnapshot = collection.secondaryIndexes
-        transactionRangeIndexFieldsSnapshot = collection.btreeIndexManager.indexNames
-        // Snapshot baseline records so rollback can restore updated/deleted rows.
-        var baselineRecords: [UUID: BlazeDataRecord] = [:]
-        for id in collection.indexMap.keys {
-            if let record = try collection.fetch(id: id) {
-                baselineRecords[id] = record
+        // Snapshot collection state under its barrier so the rollback baseline cannot
+        // race concurrent reads or collection mutations.
+        let snapshot = try collection.queue.sync(flags: .barrier) {
+            let indexMap = collection.indexMap
+            var baselineRecords: [UUID: BlazeDataRecord] = [:]
+            for id in indexMap.keys {
+                if let record = try collection._fetchNoSync(id: id) {
+                    baselineRecords[id] = record
+                }
             }
+            return (indexMap, collection.secondaryIndexes, baselineRecords)
         }
-        transactionRecordSnapshot = baselineRecords
+        transactionIndexMapSnapshot = snapshot.0
+        transactionSecondaryIndexesSnapshot = snapshot.1
+        transactionRecordSnapshot = snapshot.2
+        transactionRangeIndexFieldsSnapshot = collection.btreeIndexManager.indexNames
         transactionPagesWritten = []
 
         metrics.incrementTransactionsStarted()
-        BlazeLogger.debug("Transaction started (indexMap snapshot: \(collection.indexMap.count) records)")
+        BlazeLogger.debug("Transaction started (indexMap snapshot: \(snapshot.0.count) records)")
     }
 
     /// Commits the current transaction, making all changes permanent.
@@ -1858,6 +1865,9 @@ public final class BlazeDBClient: @unchecked Sendable {
     /// ```
     public func commitTransaction() throws {
         try ensureNotClosed()
+        writeLock.lock()
+        defer { writeLock.unlock() }
+
         guard transactionIndexMapSnapshot != nil else {
             throw BlazeDBError.transactionFailed("No transaction in progress")
         }
@@ -1905,52 +1915,57 @@ public final class BlazeDBClient: @unchecked Sendable {
     /// ```
     public func rollbackTransaction() throws {
         try ensureNotClosed()
+        writeLock.lock()
+        defer { writeLock.unlock() }
+
         guard let snapshot = transactionIndexMapSnapshot else {
             throw BlazeDBError.transactionFailed("No transaction to roll back")
         }
         let baselineRecords = transactionRecordSnapshot ?? [:]
 
-        // Restore indexMap to pre-transaction state
-        collection.indexMap = snapshot
-        if let secondarySnapshot = transactionSecondaryIndexesSnapshot {
-            collection.secondaryIndexes = secondarySnapshot
-        }
-
-        // Restore pre-transaction payloads for records that still exist.
-        // Without this, in-place updates can survive rollback even if indexMap is restored.
-        for (id, pages) in snapshot {
-            guard let pageIndex = pages.first, let baseline = baselineRecords[id] else { continue }
-            let encoded = try BlazeBinaryEncoder.encodeOptimized(baseline)
-            try collection.store.writePage(index: pageIndex, data: encoded)
-        }
-
-        // Zero out pages that were allocated during this transaction
-        // (they contain data that should not be visible after rollback)
-        for pageIndex in transactionPagesWritten {
-            do {
-                try collection.store.deletePage(index: pageIndex)
-            } catch {
-                BlazeLogger.warn("rollbackTransaction: could not delete staged page \(pageIndex): \(error.localizedDescription)")
+        try collection.queue.sync(flags: .barrier) {
+            // Restore indexMap to pre-transaction state
+            collection.indexMap = snapshot
+            if let secondarySnapshot = transactionSecondaryIndexesSnapshot {
+                collection.secondaryIndexes = secondarySnapshot
             }
-        }
 
-        // Clear caches so reads reflect rolled-back state
-        collection.store.pageCache.clear()
-        collection.recordCache.clear()
-        collection.btreeIndexManager.clearAll()
-        for field in transactionRangeIndexFieldsSnapshot {
-            _ = collection.btreeIndexManager.getOrCreateIndex(for: field)
-        }
-        for (id, record) in baselineRecords {
-            collection.btreeIndexManager.indexRecord(id: id, fields: record.storage)
-        }
-        #if !BLAZEDB_LINUX_CORE
-        collection.clearFetchAllCache()
-        #endif
+            // Restore pre-transaction payloads for records that still exist.
+            // Without this, in-place updates can survive rollback even if indexMap is restored.
+            for (id, pages) in snapshot {
+                guard let pageIndex = pages.first, let baseline = baselineRecords[id] else { continue }
+                let encoded = try BlazeBinaryEncoder.encodeOptimized(baseline)
+                try collection.store.writePage(index: pageIndex, data: encoded)
+            }
 
-        // Persist the rolled-back layout
-        try collection.saveLayout()
-        try collection.store.synchronize()
+            // Zero out pages that were allocated during this transaction
+            // (they contain data that should not be visible after rollback)
+            for pageIndex in transactionPagesWritten {
+                do {
+                    try collection.store.deletePage(index: pageIndex)
+                } catch {
+                    BlazeLogger.warn("rollbackTransaction: could not delete staged page \(pageIndex): \(error.localizedDescription)")
+                }
+            }
+
+            // Clear caches so reads reflect rolled-back state
+            collection.store.pageCache.clear()
+            collection.recordCache.clear()
+            collection.btreeIndexManager.clearAll()
+            for field in transactionRangeIndexFieldsSnapshot {
+                _ = collection.btreeIndexManager.getOrCreateIndex(for: field)
+            }
+            for (id, record) in baselineRecords {
+                collection.btreeIndexManager.indexRecord(id: id, fields: record.storage)
+            }
+            #if !BLAZEDB_LINUX_CORE
+            collection.clearFetchAllCache()
+            #endif
+
+            // Persist the rolled-back layout before readers can observe restored state.
+            try collection.saveLayout()
+            try collection.store.synchronize()
+        }
 
         // Discard transaction state
         transactionIndexMapSnapshot = nil

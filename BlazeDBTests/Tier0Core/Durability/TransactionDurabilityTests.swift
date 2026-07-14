@@ -333,6 +333,69 @@ final class TransactionDurabilityTests: XCTestCase {
         }
     }
 
+    func testRollbackIsSafeWithConcurrentReaders() throws {
+        let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".blz")
+        let db = try BlazeDBClient(name: "ConcurrentRollback", fileURL: tempURL, password: "TestPassword-123!")
+        let baselineID = try db.insert(BlazeDataRecord(["value": .string("baseline")]))
+        try db.persist()
+
+        defer {
+            try? db.close()
+            let sidecarBase = tempURL.deletingPathExtension()
+            for ext in ["meta", "wal", "salt"] {
+                try? FileManager.default.removeItem(at: sidecarBase.appendingPathExtension(ext))
+            }
+            try? FileManager.default.removeItem(at: tempURL)
+        }
+
+        let start = DispatchSemaphore(value: 0)
+        let readersFinished = expectation(description: "concurrent readers finished")
+        readersFinished.expectedFulfillmentCount = 4
+        let writerFinished = expectation(description: "transaction writer finished")
+
+        for _ in 0..<4 {
+            DispatchQueue.global().async {
+                start.wait()
+                for _ in 0..<100 {
+                    do {
+                        XCTAssertNotNil(try db.fetch(id: baselineID))
+                        _ = try db.fetchAll()
+                    } catch {
+                        XCTFail("Concurrent read failed during rollback: \(error)")
+                        break
+                    }
+                }
+                readersFinished.fulfill()
+            }
+        }
+
+        DispatchQueue.global().async {
+            start.wait()
+            do {
+                for iteration in 0..<10 {
+                    try db.beginTransaction()
+                    try db.update(
+                        id: baselineID,
+                        with: BlazeDataRecord(["value": .string("temporary-\(iteration)")])
+                    )
+                    try db.rollbackTransaction()
+                }
+            } catch {
+                XCTFail("Concurrent rollback failed: \(error)")
+            }
+            writerFinished.fulfill()
+        }
+
+        for _ in 0..<5 {
+            start.signal()
+        }
+        wait(for: [readersFinished, writerFinished], timeout: 30)
+
+        let restored = try XCTUnwrap(db.fetch(id: baselineID))
+        XCTAssertEqual(restored.storage["value"]?.stringValue, "baseline")
+        XCTAssertEqual(try db.count(), 1)
+    }
+
     func testStartupRestoresInterruptedTransactionBackup() throws {
         let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".blz")
         let metaURL = tempURL.deletingPathExtension().appendingPathExtension("meta")
