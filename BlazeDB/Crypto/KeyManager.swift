@@ -21,6 +21,7 @@ enum KeyManagerError: Error {
 }
 
 public final class KeyManager {
+    internal static let legacyPasswordSalt = Data("AshPileSalt".utf8)
     nonisolated(unsafe) private static var passwordKeyCache = [String: SymmetricKey]()
     private static let passwordKeyCacheLock = NSLock()
     private static let pbkdf2OverrideLock = NSLock()
@@ -64,8 +65,7 @@ public final class KeyManager {
         case .password(let pass):
             // DEPRECATED: Legacy fallback using static salt. Only used by tests.
             // Production code must use getKey(from:salt:) with a per-database salt.
-            let legacySalt = Data("AshPileSalt".utf8)
-            return try getKey(from: pass, salt: legacySalt)
+            return try getKey(from: pass, salt: legacyPasswordSalt)
         }
     }
 
