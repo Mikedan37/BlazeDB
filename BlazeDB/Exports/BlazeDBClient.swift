@@ -300,14 +300,20 @@ public final class BlazeDBClient: @unchecked Sendable {
         let saltURL = kdfSaltURL(for: fileURL)
         let fm = FileManager.default
 
-        if fm.fileExists(atPath: saltURL.path) {
+        let saltFileExists = fm.fileExists(atPath: saltURL.path)
+        if saltFileExists {
             let existing = try Data(contentsOf: saltURL)
             if !existing.isEmpty {
                 return existing
             }
         }
 
-        guard !existingDatabaseArtifactsPresent(for: fileURL) else {
+        let hasExistingArtifacts = existingDatabaseArtifactsPresent(for: fileURL)
+        if !saltFileExists && hasExistingArtifacts {
+            return KeyManager.legacyPasswordSalt
+        }
+
+        guard !hasExistingArtifacts else {
             throw BlazeDBError.corruptedData(
                 location: saltURL.path,
                 reason: "Missing or empty KDF salt sidecar for an existing encrypted database. Restore the original .salt file from backup."
