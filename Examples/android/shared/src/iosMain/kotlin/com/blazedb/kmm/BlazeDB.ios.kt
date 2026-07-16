@@ -11,19 +11,19 @@ import kotlinx.cinterop.toKString
 
 @OptIn(ExperimentalForeignApi::class)
 actual class BlazeDB private constructor(
-    private val handle: Long,
+    internal actual val nativeHandle: Long,
     actual val dbPath: String,
     internal actual val password: String,
 ) {
     actual fun close() {
-        blazedb_bridge_close(handle)
+        blazedb_bridge_close(nativeHandle)
     }
 
     actual fun put(kind: String, json: String): Int =
-        blazedb_bridge_put_json(handle, kind, json)
+        blazedb_bridge_put_json(nativeHandle, kind, json)
 
     actual fun get(key: String): String? {
-        val ptr = blazedb_bridge_get_json(handle, key) ?: return null
+        val ptr = blazedb_bridge_get_json(nativeHandle, key) ?: return null
         return try {
             ptr.toKString()
         } finally {
@@ -32,7 +32,7 @@ actual class BlazeDB private constructor(
     }
 
     actual fun query(kind: String): String {
-        val ptr = blazedb_bridge_query_json(handle, kind)
+        val ptr = blazedb_bridge_query_json(nativeHandle, kind)
             ?: return "[]"
         return try {
             ptr.toKString()
