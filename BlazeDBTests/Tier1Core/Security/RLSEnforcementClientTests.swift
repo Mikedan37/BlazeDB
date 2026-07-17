@@ -217,26 +217,55 @@ final class RLSEnforcementClientTests: XCTestCase {
         }
     }
 
-    func testUpdateManyThrowsPermissionDeniedWhenRLSBlocks() throws {
+    func testUpdateManyPredicateCannotObserveRowsDeniedBySelectRLS() throws {
         let db = try makeClient()
         let owner = UUID()
         let outsider = UUID()
 
-        _ = try db.insert(BlazeDataRecord(["id": .uuid(UUID()), "userId": .uuid(owner), "title": .string("t1")]))
-        _ = try db.insert(BlazeDataRecord(["id": .uuid(UUID()), "userId": .uuid(owner), "title": .string("t2")]))
+        _ = try db.insert(BlazeDataRecord(["id": .uuid(UUID()), "userId": .uuid(owner), "title": .string("hidden")]))
+        _ = try db.insert(BlazeDataRecord(["id": .uuid(UUID()), "userId": .uuid(outsider), "title": .string("visible")]))
 
         db.enableRLS()
         db.configureRLSAdminAndOwnerPolicies(userIDField: "userId")
         db.setRLSContext(userID: outsider, roles: ["member"])
 
-        XCTAssertThrowsError(
-            try db.updateMany(where: { _ in true }, set: ["title": .string("hacked")])
-        ) { error in
+        var observedTitles: [String] = []
+        let updated = try db.updateMany(where: { record in
+            observedTitles.append(record.storage["title"]?.stringValue ?? "")
+            return true
+        }, set: ["title": .string("updated")])
+
+        XCTAssertEqual(updated, 1)
+        XCTAssertEqual(observedTitles, ["visible"])
+
+        db.disableRLS()
+        let records = try db.fetchAll()
+        XCTAssertTrue(records.contains { $0.storage["title"]?.stringValue == "hidden" })
+        XCTAssertTrue(records.contains { $0.storage["title"]?.stringValue == "updated" })
+    }
+
+    func testPurgeFailsBeforeDeletingRowsDeniedByRLS() throws {
+        let db = try makeClient()
+        let teamA = UUID()
+        let teamB = UUID()
+        let idA = try db.insert(BlazeDataRecord(["teamId": .uuid(teamA), "title": .string("A")]))
+        let idB = try db.insert(BlazeDataRecord(["teamId": .uuid(teamB), "title": .string("B")]))
+        try db.softDelete(id: idA)
+        try db.softDelete(id: idB)
+
+        db.enableRLS()
+        db.configureRLSAdminAndTeamPolicies(teamIDField: "teamId")
+        db.setRLSContext(userID: UUID(), teamIDs: [teamA], roles: ["member"])
+
+        XCTAssertThrowsError(try db.purge()) { error in
             guard case BlazeDBError.permissionDenied(let operation, _) = error else {
                 return XCTFail("Expected permissionDenied, got \(error)")
             }
-            XCTAssertTrue(operation.contains("RLS denied UPDATE"))
+            XCTAssertTrue(operation.contains("RLS denied DELETE"))
         }
+
+        XCTAssertNotNil(try db.collection.fetch(id: idA))
+        XCTAssertNotNil(try db.collection.fetch(id: idB))
     }
 
     func testDeleteManyIDsThrowsPermissionDeniedWhenRLSBlocks() throws {
@@ -258,23 +287,30 @@ final class RLSEnforcementClientTests: XCTestCase {
         }
     }
 
-    func testDeleteManyWhereThrowsPermissionDeniedWhenRLSBlocks() throws {
+    func testDeleteManyPredicateCannotObserveRowsDeniedBySelectRLS() throws {
         let db = try makeClient()
         let owner = UUID()
         let outsider = UUID()
 
-        _ = try db.insert(BlazeDataRecord(["id": .uuid(UUID()), "userId": .uuid(owner), "title": .string("t1")]))
+        let hiddenID = try db.insert(BlazeDataRecord(["id": .uuid(UUID()), "userId": .uuid(owner), "title": .string("hidden")]))
+        let visibleID = try db.insert(BlazeDataRecord(["id": .uuid(UUID()), "userId": .uuid(outsider), "title": .string("visible")]))
 
         db.enableRLS()
         db.configureRLSAdminAndOwnerPolicies(userIDField: "userId")
         db.setRLSContext(userID: outsider, roles: ["member"])
 
-        XCTAssertThrowsError(try db.deleteMany(where: { _ in true })) { error in
-            guard case BlazeDBError.permissionDenied(let operation, _) = error else {
-                return XCTFail("Expected permissionDenied, got \(error)")
-            }
-            XCTAssertTrue(operation.contains("RLS denied DELETE"))
+        var observedTitles: [String] = []
+        let deleted = try db.deleteMany(where: { record in
+            observedTitles.append(record.storage["title"]?.stringValue ?? "")
+            return true
         }
+
+        XCTAssertEqual(deleted, 1)
+        XCTAssertEqual(observedTitles, ["visible"])
+
+        db.disableRLS()
+        XCTAssertNotNil(try db.fetch(id: hiddenID))
+        XCTAssertNil(try db.fetch(id: visibleID))
     }
 
     func testCountDistinctFetchPageFetchBatchApplyRLS() throws {
