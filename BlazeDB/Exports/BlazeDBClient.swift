@@ -980,6 +980,12 @@ public final class BlazeDBClient: @unchecked Sendable {
                     BlazeLogger.warn("updateMany: could not fetch \(id): \(error.localizedDescription)")
                     continue
                 }
+
+                // Predicates are caller-provided code and must never receive records
+                // that the active context is not allowed to read.
+                if shouldEnforceRLS && !rls.isAllowed(operation: .select, record: record) {
+                    continue
+                }
                 
                 // Check if record matches predicate
                 guard predicate(record) else { continue }
@@ -1085,6 +1091,12 @@ public final class BlazeDBClient: @unchecked Sendable {
                     record = r
                 } catch {
                     BlazeLogger.warn("deleteMany(where): could not fetch \(id): \(error.localizedDescription)")
+                    continue
+                }
+
+                // Predicates are caller-provided code and must never receive records
+                // that the active context is not allowed to read.
+                if shouldEnforceRLS && !rls.isAllowed(operation: .select, record: record) {
                     continue
                 }
                 
@@ -1503,7 +1515,9 @@ public final class BlazeDBClient: @unchecked Sendable {
     public func purge() throws {
         try ensureNotClosed()
         try performSafeWrite {
-            try collection.purge()
+            try collection.purge { [self] record in
+                try enforceRLS(.delete, record: record)
+            }
         }
     }
 
