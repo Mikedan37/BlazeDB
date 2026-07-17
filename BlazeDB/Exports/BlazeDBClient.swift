@@ -1515,9 +1515,12 @@ public final class BlazeDBClient: @unchecked Sendable {
     public func purge() throws {
         try ensureNotClosed()
         try performSafeWrite {
-            try collection.purge { [self] record in
+            // Authorize the complete purge set before deleting anything. The
+            // client write lock keeps this snapshot stable until purge finishes.
+            for record in try collection.softDeletedRecords() {
                 try enforceRLS(.delete, record: record)
             }
+            try collection.purge()
         }
     }
 
