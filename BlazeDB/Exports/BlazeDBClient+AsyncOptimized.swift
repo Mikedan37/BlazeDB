@@ -50,8 +50,9 @@ extension BlazeDBClient {
             // Validate against schema
             try validateAgainstSchema(record)
             
-            // Use true async insert
-            let insertedId = try await collection.insertAsync(record)
+            // Route through the canonical client API so schema, RLS, write
+            // rollback, notifications, and cache invalidation stay consistent.
+            let insertedId = try await insert(record)
             
             // Legacy NDJSON hook (no-op; durability is PageStore WAL)
             legacyTransactionLogNoOp("insert", payload: record.storage)
@@ -78,8 +79,9 @@ extension BlazeDBClient {
         let startTime = Date()
         
         do {
-            // Use true async batch insert
-            let ids = try await collection.insertBatchAsync(records)
+            // Route through the canonical client API so RLS and write safety
+            // cannot be bypassed through this deprecated entry point.
+            let ids = try await insertMany(records)
             
             // Legacy NDJSON hook (no-op; durability is PageStore WAL)
             for (index, _) in ids.enumerated() {
@@ -107,7 +109,7 @@ extension BlazeDBClient {
         let startTime = Date()
         
         do {
-            let record = try await collection.fetchAsync(id: id)
+            let record = try await fetch(id: id)
             
             let duration = Date().timeIntervalSince(startTime) * 1000
             telemetry.record(operation: "fetchAsync", duration: duration, success: true, recordCount: record == nil ? 0 : 1)
@@ -126,7 +128,7 @@ extension BlazeDBClient {
         let startTime = Date()
         
         do {
-            let records = try await collection.fetchAllAsync()
+            let records = try await fetchAll()
             
             let duration = Date().timeIntervalSince(startTime) * 1000
             telemetry.record(operation: "fetchAllAsync", duration: duration, success: true, recordCount: records.count)
@@ -145,7 +147,7 @@ extension BlazeDBClient {
         let startTime = Date()
         
         do {
-            let records = try await collection.fetchPageAsync(offset: offset, limit: limit)
+            let records = try fetchPage(offset: offset, limit: limit)
             
             let duration = Date().timeIntervalSince(startTime) * 1000
             telemetry.record(operation: "fetchPageAsync", duration: duration, success: true, recordCount: records.count)
@@ -167,8 +169,9 @@ extension BlazeDBClient {
             // Validate against schema
             try validateAgainstSchema(data)
             
-            // Use true async update
-            try await collection.updateAsync(id: id, with: data)
+            // Route through the canonical client API so RLS and write safety
+            // cannot be bypassed through this deprecated entry point.
+            try await update(id: id, data: data)
             
             // Legacy NDJSON hook (no-op; durability is PageStore WAL)
             legacyTransactionLogNoOp("update", payload: data.storage)
@@ -188,8 +191,9 @@ extension BlazeDBClient {
         let startTime = Date()
         
         do {
-            // Use true async delete
-            try await collection.deleteAsync(id: id)
+            // Route through the canonical client API so RLS and write safety
+            // cannot be bypassed through this deprecated entry point.
+            try await delete(id: id)
             
             // Legacy NDJSON hook (no-op; durability is PageStore WAL)
             legacyTransactionLogNoOp("delete", payload: ["id": .string(id.uuidString)])
