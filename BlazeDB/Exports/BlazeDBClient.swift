@@ -1515,12 +1515,19 @@ public final class BlazeDBClient: @unchecked Sendable {
     public func purge() throws {
         try ensureNotClosed()
         try performSafeWrite {
-            // Authorize the complete purge set before deleting anything. The
-            // client write lock keeps this snapshot stable until purge finishes.
-            for record in try collection.softDeletedRecords() {
-                try enforceRLS(.delete, record: record)
+            guard shouldEnforceRLS else {
+                try collection.purge()
+                return
             }
-            try collection.purge()
+
+            // Authorize the complete purge set before deleting anything. The
+            // collection then purges only those IDs, so concurrent additions
+            // cannot enter the operation after authorization.
+            let candidates = try collection.softDeletedRecords()
+            for candidate in candidates {
+                try enforceRLS(.delete, record: candidate.record)
+            }
+            try collection.purge(ids: Set(candidates.map(\.id)))
         }
     }
 

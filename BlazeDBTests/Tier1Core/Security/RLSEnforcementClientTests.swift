@@ -144,6 +144,66 @@ final class RLSEnforcementClientTests: XCTestCase {
         XCTAssertEqual(records.first?.storage["teamId"]?.uuidValue, teamA)
     }
 
+    #if !BLAZEDB_LINUX_CORE
+    func testDeprecatedAsyncCRUDCannotBypassRLS() async throws {
+        let db = try makeClient()
+        let owner = UUID()
+        let outsider = UUID()
+        let hiddenID = try db.insert(
+            BlazeDataRecord(["userId": .uuid(owner), "title": .string("hidden")])
+        )
+        _ = try db.insert(
+            BlazeDataRecord(["userId": .uuid(outsider), "title": .string("visible")])
+        )
+
+        db.enableRLS()
+        db.configureRLSAdminAndOwnerPolicies(userIDField: "userId")
+        db.setRLSContext(userID: outsider, roles: ["member"])
+
+        let hidden = try await db.fetchAsync(id: hiddenID)
+        let all = try await db.fetchAllAsync()
+        let page = try await db.fetchPageAsync(offset: 0, limit: 10)
+        XCTAssertNil(hidden)
+        XCTAssertEqual(all.count, 1)
+        XCTAssertEqual(page.count, 1)
+
+        do {
+            _ = try await db.insertAsync(
+                BlazeDataRecord(["userId": .uuid(owner), "title": .string("blocked")])
+            )
+            XCTFail("Expected insertAsync to enforce RLS")
+        } catch BlazeDBError.permissionDenied(_, _) {
+            // Expected.
+        }
+
+        do {
+            _ = try await db.insertManyAsync([
+                BlazeDataRecord(["userId": .uuid(owner), "title": .string("blocked")])
+            ])
+            XCTFail("Expected insertManyAsync to enforce RLS")
+        } catch BlazeDBError.permissionDenied(_, _) {
+            // Expected.
+        }
+
+        do {
+            try await db.updateAsync(
+                id: hiddenID,
+                with: BlazeDataRecord(["userId": .uuid(owner), "title": .string("blocked")])
+            )
+            XCTFail("Expected updateAsync to enforce RLS")
+        } catch BlazeDBError.permissionDenied(_, _) {
+            // Expected.
+        }
+
+        do {
+            try await db.deleteAsync(id: hiddenID)
+            XCTFail("Expected deleteAsync to enforce RLS")
+        } catch BlazeDBError.permissionDenied(_, _) {
+            // Expected.
+        }
+    }
+    #endif
+
     func testRLSEnabledWithoutPoliciesDoesNotBlock() throws {
         let db = try makeClient()
         db.enableRLS()
