@@ -2183,33 +2183,28 @@ public final class DynamicCollection {
                 try _updateNoSync(id: id, with: BlazeDataRecord(storage))
             }
         }
+
+        /// Returns a consistent snapshot of records eligible for purge.
+        internal func softDeletedRecords() throws -> [BlazeDataRecord] {
+            try queue.sync {
+                try indexMap.keys.compactMap { id in
+                    guard let record = try _fetchNoSync(id: id),
+                          record.storage["isDeleted"]?.boolValue == true else {
+                        return nil
+                    }
+                    return record
+                }
+            }
+        }
         
         /// Permanently removes all soft-deleted records from disk.
         public func purge() throws {
-            try purge(authorizing: nil)
-        }
-
-        /// Permanently removes all soft-deleted records after authorizing the
-        /// complete purge set. Authorization runs before any record is removed
-        /// so a denied purge cannot partially delete data.
-        internal func purge(
-            authorizing authorize: ((BlazeDataRecord) throws -> Void)?
-        ) throws {
             try queue.sync(flags: .barrier) {
                 // Use snapshot to avoid concurrent modification issues
                 // Note: We're in a barrier block, but still use snapshot for safety
                 let indexMapSnapshot = indexMap
                 let allIDs = Array(indexMapSnapshot.keys)
                 var purgeErrors: [Error] = []
-
-                if let authorize {
-                    for id in allIDs {
-                        if let record = try _fetchNoSync(id: id),
-                           record.storage["isDeleted"]?.boolValue == true {
-                            try authorize(record)
-                        }
-                    }
-                }
                 
                 for id in allIDs {
                     do {
