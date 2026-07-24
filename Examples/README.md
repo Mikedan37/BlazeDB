@@ -4,6 +4,17 @@ Runnable examples from basic to advanced.
 
 ---
 
+## Embeddable C ABI (v0.1.0)
+
+| Example | What You'll Learn |
+|---------|-------------------|
+| [C/hello_blazedb.c](C/hello_blazedb.c) | Stable C ABI: open → put → get → free → delete → close |
+| [Go/README.md](Go/README.md) | Preview of the upcoming `blazedb-go` wrapper API |
+
+See [C/README.md](C/README.md) for link flags after `swift build -c release --product BlazeDBC`.
+
+---
+
 ## Start Here (Recommended Order)
 
 | Order | Example | What You'll Learn | Run Command |

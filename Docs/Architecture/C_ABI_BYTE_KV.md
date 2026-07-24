@@ -1,7 +1,8 @@
 # Stable C ABI + Byte KV Design
 
-**Status:** Approved for implementation (2026-07-24)  
-**Audience:** Engine maintainers and language-binding authors
+**Status:** Implemented (v0.1.0) — commit `ac689c1d`  
+**Audience:** Engine maintainers and language-binding authors  
+**Header:** [`BlazeDBC/include/blazedb.h`](../../BlazeDBC/include/blazedb.h)
 
 ## Goal
 
@@ -10,16 +11,18 @@ Make BlazeDB embeddable from any language that can call C, without exposing Swif
 ## Layering
 
 ```text
-Typed Models (BlazeStorable)     ← convenience (Swift)
-         │
-    Byte KV API (Data)           ← language-neutral core
-         │
-   Storage Engine
-         │
-       C ABI (blazedb.h)         ← forever contract
+   Go     Rust     Python     Swift (typed)
+     \      |        |         /
+          BlazeDBC  (stable C ABI)
+              │
+        Swift Byte KV API
+              │
+        BlazeDB Engine
+              │
+             Disk
 ```
 
-There is one storage implementation. Typed APIs serialize to bytes (or, in v1, share the same page engine via a reserved KV namespace). The C ABI only speaks bytes.
+There is one storage implementation. The C ABI only speaks bytes. Typed Swift APIs remain available as a convenience on the same engine.
 
 ## Compatibility rule (day one)
 
@@ -34,57 +37,63 @@ New capabilities only via:
 
 Never by changing what an existing argument means.
 
-## Frozen C API (v1)
+## Frozen C API (v0.1.0)
 
 Opaque handles (implementation stays in Swift):
 
 ```c
 typedef struct BlazeDB BlazeDB;
-typedef struct BlazeDBIterator BlazeDBIterator; /* reserved; no functions in v1 */
+typedef struct BlazeDBIterator BlazeDBIterator; /* reserved; no functions in v0.1.0 */
 ```
 
 ```c
 typedef enum {
     BLAZEDB_OK = 0,
-    BLAZEDB_NOT_FOUND,
-    BLAZEDB_IO_ERROR,
-    BLAZEDB_CORRUPT,
-    BLAZEDB_INVALID_ARGUMENT,
-    BLAZEDB_AUTH_FAILED,
-    BLAZEDB_INTERNAL_ERROR
+    BLAZEDB_NOT_FOUND = 1,
+    BLAZEDB_IO_ERROR = 2,
+    BLAZEDB_CORRUPT = 3,
+    BLAZEDB_INVALID_ARGUMENT = 4,
+    BLAZEDB_AUTH_FAILED = 5,
+    BLAZEDB_INTERNAL_ERROR = 6
 } BlazeDBResult;
 
-BlazeDB* blazedb_open(const char* path, const char* password);
-void blazedb_close(BlazeDB* db);
+BlazeDB *blazedb_open(const char *path, const char *password);
+void blazedb_close(BlazeDB *db);
 
 BlazeDBResult blazedb_put(
-    BlazeDB* db,
-    const char* key,
-    const void* data,
+    BlazeDB *db,
+    const char *key,
+    const void *data,
     size_t length);
 
 BlazeDBResult blazedb_get(
-    BlazeDB* db,
-    const char* key,
-    void** data,
-    size_t* length);
+    BlazeDB *db,
+    const char *key,
+    void **data,
+    size_t *length);
 
-BlazeDBResult blazedb_delete(BlazeDB* db, const char* key);
+BlazeDBResult blazedb_delete(BlazeDB *db, const char *key);
 
-void blazedb_free(void* ptr);
+void blazedb_free(void *ptr);
 ```
 
 ### Open / password
 
-- `password == NULL` → open fails (`NULL` return); caller violated contract (`INVALID_ARGUMENT` semantics).
-- `password == ""` → same.
-- Do **not** overload `NULL` later to mean plaintext. Future plaintext/readonly/create flags go through `blazedb_open_ex` + `BlazeDBOpenOptions` (not in v1).
+- `password == NULL` → open returns `NULL`.
+- `password == ""` → open returns `NULL`.
+- Password must also satisfy the engine’s open-time strength policy (same as Swift `BlazeDB.open`).
+- Do **not** overload `NULL` later to mean plaintext. Future plaintext/readonly/create flags go through `blazedb_open_ex` + `BlazeDBOpenOptions` (not in v0.1.0).
 
 ### Memory ownership
 
 - `blazedb_get` allocates; caller must `blazedb_free` the buffer on `BLAZEDB_OK`.
-- On non-OK, `*data` is set to `NULL` and `*length` to `0` when the out-params are non-NULL.
+- On non-OK, when `data`/`length` are non-NULL, sets `*data = NULL` and `*length = 0`.
 - `blazedb_free(NULL)` is a no-op.
+- Empty values (`length == 0`) are valid: `get` still returns `BLAZEDB_OK` with a non-NULL buffer that must be freed.
+
+### Delete
+
+- `blazedb_delete` returns `BLAZEDB_OK` if the key was absent (idempotent).
 
 ### Result meanings
 
@@ -98,12 +107,12 @@ void blazedb_free(void* ptr);
 | `AUTH_FAILED` | Password incorrect / auth failure |
 | `INTERNAL_ERROR` | Unexpected engine failure |
 
-`blazedb_last_error` string detail is deferred to v1.1.
+`blazedb_last_error` string detail is deferred (not in v0.1.0).
 
 ## Byte semantics
 
-- Keys are UTF-8 strings (C: NUL-terminated `const char*`).
-- After UTF-8 encoding, keys are opaque bytes for hashing/identity.
+- Keys are UTF-8 strings (C: NUL-terminated `const char*`). Empty keys are invalid.
+- After UTF-8 encoding, keys are opaque bytes for identity (SHA-256 → record id; original key stored for collision checks).
 - Values are arbitrary binary blobs.
 - `get` returns **exactly** the bytes `put` stored.
 - The library **never** interprets value bytes (no JSON, Protobuf, Codable knowledge in the ABI).
@@ -118,12 +127,15 @@ try db.delete(key: "job:42")
 
 Product: `BlazeDBC` (static library + `blazedb.h`), separate from the Android JSON demo bridge (`blazedb_bridge_*`).
 
-## Explicitly out of v1
+Build artifact: `.build/release/libBlazeDBC.a` (includes engine objects for the C entry points).
 
-- Go / Rust / Python wrappers (build after ABI is real)
-- `blazedb_open_ex`, plaintext mode, iterators
+## Explicitly out of v0.1.0
+
+- Go / Rust / Python wrappers (planned: Go in 0.2.0)
+- `blazedb_open_ex`, plaintext mode, iterators, prefix scans
 - JSON / model C APIs
 - Renaming or freezing `blazedb_bridge_*` as the long-term ABI
+- Dynamic `.so` / `.dylib` product packaging
 
 ## Success smoke
 

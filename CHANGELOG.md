@@ -5,6 +5,30 @@ All notable changes to BlazeDB are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+Embeddable **C ABI** versions use the **0.x / 1.x** track (`v0.1.0`, …).
+Swift package / app releases continue on the **2.x** track.
+
+## [0.1.0] - 2026-07-24
+
+First embeddable release. See [RELEASE.md](RELEASE.md).
+
+### Added
+
+- **Stable byte-oriented C ABI** (`BlazeDBC/include/blazedb.h`): `blazedb_open`, `blazedb_close`, `blazedb_put`, `blazedb_get`, `blazedb_delete`, `blazedb_free`
+- **`BlazeDBResult`** enum and opaque `BlazeDB*` (reserved `BlazeDBIterator`)
+- **Swift byte KV API**: `BlazeDBClient.put(key:value:)`, `get(key:)`, `delete(key:)`
+- **SwiftPM product** `BlazeDBC` (static `libBlazeDBC.a`)
+- **Design documentation**: [Docs/Architecture/C_ABI_BYTE_KV.md](Docs/Architecture/C_ABI_BYTE_KV.md)
+- **Smoke tests**: `ByteKVAPITests`, `BlazeDBCSmokeTests` (ownership + delete → NOT_FOUND)
+- **Examples**: [Examples/C](Examples/C), Go wrapper preview [Examples/Go](Examples/Go)
+
+### Guarantees
+
+- Published C signatures and behavior will not change; evolve via new APIs only
+- `NULL` / empty password remains invalid (plaintext later via `blazedb_open_ex`, not by redefining `NULL`)
+
+---
+
 ## [2.7.6] - 2026-04-23
 
 ### CI
