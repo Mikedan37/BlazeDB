@@ -1,8 +1,6 @@
-# Go wrapper preview (not shipped in v2.8.0)
+# Go wrapper preview (official package in v2.9.0)
 
-Official package target: **`blazedb-go`** in **v2.9.0**.
-
-Until then, call [`blazedb.h`](../../BlazeDBC/include/blazedb.h) via cgo against `libBlazeDBC.a`, or wait for the wrapper.
+Until then, call [`blazedb.h`](../../BlazeDBC/include/blazedb.h) via cgo against the **shared** library from v2.8.1+.
 
 ## Intended API
 
@@ -40,8 +38,6 @@ func main() {
 
 ## Manager pattern
 
-Keep BlazeDB behind an interface so tests can swap in memory storage:
-
 ```go
 type Storage interface {
     Put(key string, value []byte) error
@@ -50,18 +46,15 @@ type Storage interface {
 }
 ```
 
-The Go wrapper’s only job is Open / Put / Get / Delete / Close over the C ABI. No manager logic belongs there.
+## cgo sketch (v2.8.1+)
 
-## Layout (planned)
-
-```text
-blazedb-go/
-  cgo.go      # only file that imports "C"
-  db.go
-  errors.go
+```go
+/*
+#cgo CFLAGS: -I/path/to/BlazeDB/BlazeDBC/include
+#cgo LDFLAGS: -L/path/to/BlazeDB/.build/release -lBlazeDBC -Wl,-rpath,/path/to/BlazeDB/.build/release
+#include "blazedb.h"
+*/
+import "C"
 ```
 
-```c
-/* #cgo LDFLAGS: -L/usr/local/lib -lBlazeDBC …Swift runtime… */
-/* #include <blazedb.h> */
-```
+Do **not** link `libBlazeDBC.a` from Go unless you are prepared to pull in the entire Swift runtime by hand.

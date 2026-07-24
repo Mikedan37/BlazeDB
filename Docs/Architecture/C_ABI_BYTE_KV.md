@@ -125,17 +125,20 @@ let data = try db.get(key: "job:42") // Data?
 try db.delete(key: "job:42")
 ```
 
-Product: `BlazeDBC` (static library + `blazedb.h`), separate from the Android JSON demo bridge (`blazedb_bridge_*`).
+Product: `BlazeDBC` (dynamic shared library + `blazedb.h`; optional `BlazeDBCStatic`), separate from the Android JSON demo bridge (`blazedb_bridge_*`).
 
-Build artifact: `.build/release/libBlazeDBC.a` (includes engine objects for the C entry points).
+Build artifacts:
 
-## Explicitly out of v2.8.0
+- Preferred: `.build/release/libBlazeDBC.dylib` / `libBlazeDBC.so`
+- Optional: `.build/release/libBlazeDBC.a` via `--product BlazeDBCStatic`
 
+## Explicitly out of v2.8.x
+
+- Dynamic `.so` / `.dylib` product packaging ✅ (v2.8.1)
 - Go / Rust / Python wrappers (planned: Go in 2.9.0)
 - `blazedb_open_ex`, plaintext mode, iterators, prefix scans
 - JSON / model C APIs
 - Renaming or freezing `blazedb_bridge_*` as the long-term ABI
-- Dynamic `.so` / `.dylib` product packaging
 
 ## Success smoke
 

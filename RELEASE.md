@@ -1,64 +1,62 @@
-# BlazeDB v2.8.0 — Embeddable C ABI
+# BlazeDB v2.8.1 — Dynamic BlazeDBC
 
-**Tag:** `v2.8.0`  
-**Date:** 2026-07-24  
-**Foundation commits:** `ac689c1d` (ABI), `b55e742c` (docs)
+**Tag:** `v2.8.1`  
+**Date:** 2026-07-24
 
-BlazeDB can now be embedded from multiple native languages through a stable C ABI. This release introduces **BlazeDBC**, a byte-oriented API designed for long-term compatibility and language bindings such as Go, Rust, and Python.
+BlazeDBC is now built as a **shared library** so Go/cgo (and other FFI hosts) link `-lBlazeDBC` and pick up the Swift runtime through the dynamic loader—instead of unresolved `swift_retain` / `swift_release` from a static archive.
 
 ## Summary
 
-One version stream. One engine. A frozen contract (`blazedb.h`) so wrappers never need to know Swift exists.
+v2.8.0 introduced the stable C ABI. v2.8.1 fixes how that ABI is packaged for embedding.
 
 ## Highlights
 
-- **Stable C ABI** — `blazedb_open` / `put` / `get` / `delete` / `close` / `free`
-- **Swift byte KV** — `put(key:value:)` / `get(key:)` / `delete(key:)` on `BlazeDBClient`
-- **`BlazeDBC` product** — static `libBlazeDBC.a` via SwiftPM
-- **Opaque handles** — `BlazeDB*`; reserved `BlazeDBIterator` (unimplemented)
-- **`BlazeDBResult`** — typed error codes
-- **Design doc** — [Docs/Architecture/C_ABI_BYTE_KV.md](Docs/Architecture/C_ABI_BYTE_KV.md)
-- **Smoke tests** — ownership sequence: put → get → free → get → free → delete → NOT_FOUND
-- **Docs** — README, C/Go examples, ABI guarantees
+- **`BlazeDBC` product is `.dynamic`**
+  - Linux: `libBlazeDBC.so`
+  - macOS: `libBlazeDBC.dylib`
+- Optional **`BlazeDBCStatic`** product remains for consumers that still want `libBlazeDBC.a`
+- **ABI unchanged** — same `blazedb.h`, same symbols
 
 ## Breaking changes
 
-None. Existing Swift APIs are unchanged.
+None for the C API. Link line changes from static archive + manual Swift libs to:
 
-## Known limitations
-
-- **Password required** — `NULL` / empty password rejected; no plaintext mode yet
-- **Static library only** — no shipped `.so` / `.dylib` product in 2.8.0
-- **No official Go/Rust/Python packages yet** — call C directly or wait for 2.9.0
-- **No iterators / prefix scan** — reserved type only
-- **No `blazedb_last_error`** — result codes only
-- **Linking needs Swift runtime** — C/Go hosts must link the toolchain that built `libBlazeDBC.a`
-- **Sidecar files** — encryption may create `.salt` / `.meta` / WAL next to the DB path
-
-## Future roadmap
-
-| Version | Focus |
-|---------|--------|
-| **2.9.0** | Official Go wrapper (`blazedb-go`) |
-| **2.10.0** | Iterators, prefix scans, additional C APIs |
-| **later** | `blazedb_open_ex` (readonly, create, optional plaintext) |
-| **3.0.0** | Intentional breaking API or on-disk format change |
+```text
+-L.build/release -lBlazeDBC -Wl,-rpath,.build/release
+```
 
 ## Install / try
 
 ```bash
 git clone https://github.com/Mikedan37/BlazeDB.git
 cd BlazeDB
-git checkout v2.8.0
+git checkout v2.8.1
 swift build -c release --product BlazeDBC
-# Header: BlazeDBC/include/blazedb.h
-# Library: .build/release/libBlazeDBC.a
+# Header:  BlazeDBC/include/blazedb.h
+# Shared:  .build/release/libBlazeDBC.dylib   (macOS)
+#          .build/release/libBlazeDBC.so      (Linux)
 ```
+
+### Go / cgo sketch
+
+```c
+/*
+#cgo CFLAGS: -I${SRCDIR}/../../BlazeDBC/include
+#cgo LDFLAGS: -L${SRCDIR}/../../.build/release -lBlazeDBC -Wl,-rpath,${SRCDIR}/../../.build/release
+#include "blazedb.h"
+*/
+import "C"
+```
+
+Adjust paths for your install prefix (`/usr/local/lib`, etc.).
 
 SwiftPM:
 
 ```swift
-.package(url: "https://github.com/Mikedan37/BlazeDB.git", from: "2.8.0")
+.package(url: "https://github.com/Mikedan37/BlazeDB.git", from: "2.8.1")
 ```
 
-C sample: [Examples/C](Examples/C) · README: [README.md](README.md)
+## Known limitations
+
+- Host still needs a compatible Swift runtime available at load time (system or toolchain `rpath`)
+- Official `blazedb-go` wrapper still planned for **v2.9.0**

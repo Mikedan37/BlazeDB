@@ -159,6 +159,7 @@ var blazeTargets: [Target] = [
             name: "BlazeDBC",
             dependencies: ["BlazeDBCore"],
             path: "BlazeDBC",
+            exclude: ["README.md"],
             publicHeadersPath: "include",
             swiftSettings: [
                 .define("BLAZEDB_LINUX_CORE", .when(platforms: [.linux, .android]))
@@ -327,8 +328,14 @@ let package = Package(
             type: .static,
             targets: ["BlazeDBAndroidBridge"]),
         // Stable C ABI for language bindings (Go/cgo, Rust, Python, …).
+        // Dynamic so consumers link -lBlazeDBC and pull Swift runtime via DT_NEEDED /
+        // LC_LOAD_DYLIB instead of unresolved swift_retain from a static archive.
         .library(
             name: "BlazeDBC",
+            type: .dynamic,
+            targets: ["BlazeDBC"]),
+        .library(
+            name: "BlazeDBCStatic",
             type: .static,
             targets: ["BlazeDBC"]),
         .executable(

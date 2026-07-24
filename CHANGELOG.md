@@ -7,6 +7,17 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 Embeddable **C ABI** ships in the same **2.x** version stream as the Swift package (starting with **2.8.0**).
 
+## [2.8.1] - 2026-07-24
+
+### Fixed
+
+- **`BlazeDBC` is now a dynamic library** (`.dylib` / `.so`) so FFI hosts (Go/cgo, etc.) link `-lBlazeDBC` and resolve Swift runtime symbols via the dynamic loader instead of undefined `swift_retain` / `swift_release` from a static archive.
+- Added optional **`BlazeDBCStatic`** product for consumers that still want `libBlazeDBC.a`.
+
+ABI (`blazedb.h`) is unchanged. See [RELEASE.md](RELEASE.md).
+
+---
+
 ## [2.8.0] - 2026-07-24
 
 First embeddable C ABI release. See [RELEASE.md](RELEASE.md).

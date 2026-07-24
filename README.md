@@ -3,11 +3,11 @@
 BlazeDB is an encrypted embedded key-value database written in Swift with a stable C ABI, making it embeddable from Swift, Go, Rust, Python, and other native languages. One process, one library, no server.
 
 [![Swift](https://img.shields.io/badge/Swift-6.0+-orange.svg)](https://swift.org)
-[![Release](https://img.shields.io/badge/release-v2.8.0-green.svg)](RELEASE.md)
+[![Release](https://img.shields.io/badge/release-v2.8.1-green.svg)](RELEASE.md)
 [![Platforms](https://img.shields.io/badge/Platforms-macOS%20%7C%20iOS%20%7C%20Linux%20%7C%20Android-lightgrey.svg)](Docs/COMPATIBILITY.md)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-**Current release:** [v2.8.0](RELEASE.md) (stable C ABI + BlazeDBC) · [Getting started (Swift apps)](Docs/GettingStarted/README.md)
+**Current release:** [v2.8.1](RELEASE.md) (stable C ABI + dynamic BlazeDBC) · [Getting started (Swift apps)](Docs/GettingStarted/README.md)
 
 ---
 
@@ -105,35 +105,34 @@ swift build -c release --product BlazeDBC
 
 | Artifact | Location |
 |----------|----------|
-| Static library | `.build/release/libBlazeDBC.a` |
+| Shared library (preferred) | `.build/release/libBlazeDBC.dylib` (macOS) / `libBlazeDBC.so` (Linux) |
+| Static library (optional) | `.build/release/libBlazeDBC.a` via `--product BlazeDBCStatic` |
 | Public header | `BlazeDBC/include/blazedb.h` (source tree; copy this) |
 
-`libBlazeDBC.a` is a **static** archive that includes the BlazeDB engine objects needed by the C ABI. Linking a C or Go program also requires the **Swift runtime** / Foundation that your toolchain provides (same Swift used to build the archive).
+`libBlazeDBC.dylib` / `.so` links the Swift runtime as a dynamic dependency. Go/cgo and other FFI hosts should link **`-lBlazeDBC`** and set an **rpath** (or install into a system lib dir)—not pull Swift object files out of a `.a`.
 
 ### Install on a machine (e.g. Raspberry Pi)
 
 ```bash
 sudo mkdir -p /usr/local/include /usr/local/lib
 sudo cp BlazeDBC/include/blazedb.h /usr/local/include/
-sudo cp .build/release/libBlazeDBC.a /usr/local/lib/
-# On Linux, also ensure the Swift runtime libraries from your toolchain are on the link/rpath.
+sudo cp .build/release/libBlazeDBC.so /usr/local/lib/   # or .dylib on macOS
+sudo ldconfig   # Linux
 ```
-
-There is no separate `.so` in v2.8.0 — the published `BlazeDBC` product is static. Dynamic packaging can follow later without changing the ABI.
 
 ### Swift Package Manager (Swift apps)
 
 ```swift
-.package(url: "https://github.com/Mikedan37/BlazeDB.git", from: "2.8.0")
+.package(url: "https://github.com/Mikedan37/BlazeDB.git", from: "2.8.1")
 ```
 
-Then depend on `BlazeDB` (typed apps) or `BlazeDBC` (C ABI).
+Then depend on `BlazeDB` (typed apps) or `BlazeDBC` (C ABI shared library).
 
 ---
 
 ## Go example (wrapper coming next)
 
-The official Go package is **not shipped in v2.8.0**. Target API for `blazedb-go`:
+The official Go package is **not shipped in v2.8.1**. Target API for `blazedb-go`:
 
 ```go
 db, err := blazedb.Open("manager.blaze", "DemoPass123!")
@@ -157,7 +156,7 @@ type Storage interface {
 }
 ```
 
-Roadmap: **v2.9.0** ships `blazedb-go` as a thin cgo wrapper over `blazedb.h`. Until then, you can call the C API directly via cgo against `libBlazeDBC.a`.
+Roadmap: **v2.9.0** ships `blazedb-go` as a thin cgo wrapper over `blazedb.h`. Until then, you can call the C API directly via cgo against `libBlazeDBC.so` / `.dylib`.
 
 Preview sketch: [Examples/Go/README.md](Examples/Go/README.md)
 
@@ -212,7 +211,7 @@ More: [Docs/GettingStarted/README.md](Docs/GettingStarted/README.md) · `swift r
 
 | Doc | Purpose |
 |-----|---------|
-| [RELEASE.md](RELEASE.md) | v2.8.0 release notes |
+| [RELEASE.md](RELEASE.md) | v2.8.1 release notes |
 | [CHANGELOG.md](CHANGELOG.md) | Version history |
 | [C_ABI_BYTE_KV.md](Docs/Architecture/C_ABI_BYTE_KV.md) | ABI + byte KV contract |
 | [COMPATIBILITY.md](Docs/COMPATIBILITY.md) | Platform matrix |
@@ -227,6 +226,7 @@ One stream for the whole project:
 | Version | Focus |
 |---------|--------|
 | **2.8.0** | Stable C ABI, BlazeDBC, byte KV, embeddable foundation |
+| **2.8.1** | BlazeDBC as shared library (`.so` / `.dylib`) for FFI |
 | **2.9.0** | Official `blazedb-go` wrapper |
 | **2.10.0** | Iterators, scans, additional C APIs |
 | **3.0.0** | Intentional breaking API or on-disk format change |
