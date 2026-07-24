@@ -154,6 +154,16 @@ var blazeTargets: [Target] = [
                 .define("BLAZEDB_LINUX_CORE", .when(platforms: [.linux, .android]))
             ]
         ),
+        // Stable C ABI (byte KV). Language wrappers should link this, not BlazeDBAndroidBridge.
+        .target(
+            name: "BlazeDBC",
+            dependencies: ["BlazeDBCore"],
+            path: "BlazeDBC",
+            publicHeadersPath: "include",
+            swiftSettings: [
+                .define("BLAZEDB_LINUX_CORE", .when(platforms: [.linux, .android]))
+            ]
+        ),
         .executableTarget(
             name: "ReferenceConsumer",
             dependencies: ["BlazeDB"],
@@ -186,7 +196,7 @@ if !tier0OnlyTestScope {
         // Linux nightly splits Tier1 vs Tier2/Tier3 in workflows (see CI_AND_TEST_TIERS.md); slow suites live under Tier2/Tier3 targets.
         .testTarget(
             name: "BlazeDB_Tier1",
-            dependencies: ["BlazeDBCore"],
+            dependencies: ["BlazeDBCore", "BlazeDBC"],
             path: "BlazeDBTests/Tier1Core",
             exclude: [
                 // Requires Network framework + SecureConnection types not in BlazeDBCore
@@ -316,6 +326,11 @@ let package = Package(
             name: "BlazeDBKMMBridgeStatic",
             type: .static,
             targets: ["BlazeDBAndroidBridge"]),
+        // Stable C ABI for language bindings (Go/cgo, Rust, Python, …).
+        .library(
+            name: "BlazeDBC",
+            type: .static,
+            targets: ["BlazeDBC"]),
         .executable(
             name: "blazedb",
             targets: ["BlazedbCLI"]),

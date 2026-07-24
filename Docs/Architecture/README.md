@@ -11,6 +11,7 @@ This directory contains architecture documentation for BlazeDB.
 - **BLAZEDB_ARCHITECTURE_AND_LIMITS.md** - Architecture and limitations
 - **BLAZEDB_SYSTEM_DESIGN_DIAGRAM.md** - System design diagrams
 - **STORAGE_ENGINE_NOTES.md** - WAL/encryption/page interaction and recovery design
+- **C_ABI_BYTE_KV.md** - Stable C ABI (`blazedb.h`) + byte KV semantics (approved contract)
 
 ## Related Documentation
 
