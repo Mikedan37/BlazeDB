@@ -1,6 +1,6 @@
-# Go wrapper preview (not shipped in v0.1.0)
+# Go wrapper preview (not shipped in v2.8.0)
 
-Official package target: **`blazedb-go`** in **v0.2.0**.
+Official package target: **`blazedb-go`** in **v2.9.0**.
 
 Until then, call [`blazedb.h`](../../BlazeDBC/include/blazedb.h) via cgo against `libBlazeDBC.a`, or wait for the wrapper.
 

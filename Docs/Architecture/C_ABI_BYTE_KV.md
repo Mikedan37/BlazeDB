@@ -1,6 +1,6 @@
 # Stable C ABI + Byte KV Design
 
-**Status:** Implemented (v0.1.0) — commit `ac689c1d`  
+**Status:** Implemented (v2.8.0) — commit `ac689c1d`  
 **Audience:** Engine maintainers and language-binding authors  
 **Header:** [`BlazeDBC/include/blazedb.h`](../../BlazeDBC/include/blazedb.h)
 
@@ -37,13 +37,13 @@ New capabilities only via:
 
 Never by changing what an existing argument means.
 
-## Frozen C API (v0.1.0)
+## Frozen C API (v2.8.0)
 
 Opaque handles (implementation stays in Swift):
 
 ```c
 typedef struct BlazeDB BlazeDB;
-typedef struct BlazeDBIterator BlazeDBIterator; /* reserved; no functions in v0.1.0 */
+typedef struct BlazeDBIterator BlazeDBIterator; /* reserved; no functions in v2.8.0 */
 ```
 
 ```c
@@ -82,7 +82,7 @@ void blazedb_free(void *ptr);
 - `password == NULL` → open returns `NULL`.
 - `password == ""` → open returns `NULL`.
 - Password must also satisfy the engine’s open-time strength policy (same as Swift `BlazeDB.open`).
-- Do **not** overload `NULL` later to mean plaintext. Future plaintext/readonly/create flags go through `blazedb_open_ex` + `BlazeDBOpenOptions` (not in v0.1.0).
+- Do **not** overload `NULL` later to mean plaintext. Future plaintext/readonly/create flags go through `blazedb_open_ex` + `BlazeDBOpenOptions` (not in v2.8.0).
 
 ### Memory ownership
 
@@ -107,7 +107,7 @@ void blazedb_free(void *ptr);
 | `AUTH_FAILED` | Password incorrect / auth failure |
 | `INTERNAL_ERROR` | Unexpected engine failure |
 
-`blazedb_last_error` string detail is deferred (not in v0.1.0).
+`blazedb_last_error` string detail is deferred (not in v2.8.0).
 
 ## Byte semantics
 
@@ -129,9 +129,9 @@ Product: `BlazeDBC` (static library + `blazedb.h`), separate from the Android JS
 
 Build artifact: `.build/release/libBlazeDBC.a` (includes engine objects for the C entry points).
 
-## Explicitly out of v0.1.0
+## Explicitly out of v2.8.0
 
-- Go / Rust / Python wrappers (planned: Go in 0.2.0)
+- Go / Rust / Python wrappers (planned: Go in 2.9.0)
 - `blazedb_open_ex`, plaintext mode, iterators, prefix scans
 - JSON / model C APIs
 - Renaming or freezing `blazedb_bridge_*` as the long-term ABI

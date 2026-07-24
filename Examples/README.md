@@ -4,7 +4,7 @@ Runnable examples from basic to advanced.
 
 ---
 
-## Embeddable C ABI (v0.1.0)
+## Embeddable C ABI (v2.8.0)
 
 | Example | What You'll Learn |
 |---------|-------------------|

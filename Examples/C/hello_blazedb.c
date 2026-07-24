@@ -1,5 +1,5 @@
 /*
- * hello_blazedb.c — minimal BlazeDBC example (v0.1.0)
+ * hello_blazedb.c — minimal BlazeDBC example (v2.8.0)
  *
  * Build (after: swift build -c release --product BlazeDBC):
  *

@@ -1,4 +1,4 @@
-# C embedding example (BlazeDBC v0.1.0)
+# C embedding example (BlazeDBC v2.8.0)
 
 Complete sample: [`hello_blazedb.c`](hello_blazedb.c)
 

@@ -5,12 +5,11 @@ All notable changes to BlazeDB are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-Embeddable **C ABI** versions use the **0.x / 1.x** track (`v0.1.0`, …).
-Swift package / app releases continue on the **2.x** track.
+Embeddable **C ABI** ships in the same **2.x** version stream as the Swift package (starting with **2.8.0**).
 
-## [0.1.0] - 2026-07-24
+## [2.8.0] - 2026-07-24
 
-First embeddable release. See [RELEASE.md](RELEASE.md).
+First embeddable C ABI release. See [RELEASE.md](RELEASE.md).
 
 ### Added
 
