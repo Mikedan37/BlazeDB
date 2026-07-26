@@ -16,7 +16,6 @@ struct Item: BlazeStorable {
     var title: String
 }
 
-@main
 enum CorePathSmoke {
     static func main() throws {
         let dir = FileManager.default.temporaryDirectory
