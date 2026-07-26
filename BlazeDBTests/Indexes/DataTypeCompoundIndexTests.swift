@@ -285,7 +285,7 @@ final class DataTypeCompoundIndexTests: XCTestCase {
         // Reopen same database file with same name
         db = try! BlazeDBClient(name: dbName, fileURL: tempURL, password: "test-pass-123")
         
-        print("  Reopened database, total records: \(db.count())")
+        print("  Reopened database, total records: \(try db.count())")
         
         // Debug: Fetch ALL records to see what's there
         let allRecords = try db.fetchAll()
