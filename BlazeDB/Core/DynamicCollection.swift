@@ -14,8 +14,7 @@ import Crypto
 private extension DynamicCollection {
     /// Default salt for key derivation (ASCII string, UTF-8 encoding guaranteed)
     static var defaultSalt: Data {
-        // "AshPileSalt" is ASCII, so UTF-8 encoding cannot fail
-        return Data("AshPileSalt".utf8)
+        KeyManager.legacyPasswordSalt
     }
 
     static var writeForensicsEnabled: Bool {
@@ -2183,14 +2182,33 @@ public final class DynamicCollection {
                 try _updateNoSync(id: id, with: BlazeDataRecord(storage))
             }
         }
+
+        /// Returns a consistent snapshot of records eligible for purge.
+        internal func softDeletedRecords() throws -> [(id: UUID, record: BlazeDataRecord)] {
+            try queue.sync {
+                try indexMap.keys.compactMap { id in
+                    guard let record = try _fetchNoSync(id: id),
+                          record.storage["isDeleted"]?.boolValue == true else {
+                        return nil
+                    }
+                    return (id, record)
+                }
+            }
+        }
         
         /// Permanently removes all soft-deleted records from disk.
         public func purge() throws {
+            try purge(ids: nil)
+        }
+
+        /// Permanently removes the specified soft-deleted records. Passing nil
+        /// preserves the public API's "purge all" behavior.
+        internal func purge(ids: Set<UUID>?) throws {
             try queue.sync(flags: .barrier) {
                 // Use snapshot to avoid concurrent modification issues
                 // Note: We're in a barrier block, but still use snapshot for safety
                 let indexMapSnapshot = indexMap
-                let allIDs = Array(indexMapSnapshot.keys)
+                let allIDs = ids.map(Array.init) ?? Array(indexMapSnapshot.keys)
                 var purgeErrors: [Error] = []
                 
                 for id in allIDs {
