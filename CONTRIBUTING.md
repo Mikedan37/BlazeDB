@@ -4,6 +4,19 @@
 
 This guide explains how to add tests, what will be accepted, and what will be rejected.
 
+## Local developer commands
+
+From a package checkout:
+
+```bash
+./dev help
+./dev tests [search]
+./dev test <filter>
+./dev tier0
+```
+
+`./dev` owns repeatable test/tier/experiment workflows. Xcode schemes stay lean for interactive Run / Profile / Analyze / Archive — see [Docs/Build/XCODE_SCHEMES.md](Docs/Build/XCODE_SCHEMES.md).
+
 ## PR expectations
 
 Keep PRs **narrow** and **self-contained**.

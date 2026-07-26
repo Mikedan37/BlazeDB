@@ -3,7 +3,16 @@
 .build*
 .build-codex*
 .build-codex-*
-.swiftpm/
+.swiftpm/*
+!.swiftpm/xcode
+.swiftpm/xcode/*
+!.swiftpm/xcode/xcshareddata
+.swiftpm/xcode/xcshareddata/*
+!.swiftpm/xcode/xcshareddata/xcschemes
+.swiftpm/xcode/xcshareddata/xcschemes/*
+!.swiftpm/xcode/xcshareddata/xcschemes/BlazeDBBenchmarks.xcscheme
+!.swiftpm/xcode/xcshareddata/xcschemes/blazedb.xcscheme
+!.swiftpm/xcode/xcshareddata/xcschemes/BlazeDBCore.xcscheme
 Package.resolved
 
 # Xcode junk
