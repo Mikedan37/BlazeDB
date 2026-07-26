@@ -225,11 +225,23 @@ Not run this session: full `./dev tier0`, `swift build -c release --product Blaz
 
 ---
 
-## Suggested commit message
+## Follow-up pass (promise tightening)
 
-```text
-Audit and rewrite public onboarding docs against implementation
+Date: 2026-07-26 (same day as primary audit)
 
-Align README and Docs index with shipped-default boundaries, restore
-verified Swift teaching from prior READMEs, and front-door ./dev workflows.
-```
+Applied reviewer corrections without inventing new product claims:
+
+| Issue | Change |
+|-------|--------|
+| "verify against" heading | Renamed to **Support state** with Package.swift/tests/CI as source of truth |
+| Migration/schema contradiction | Advanced table now links `Docs/MIGRATION.md` + API Reference; states schema guides are under consolidation; Status/SQLite migrator write-ups treated as historical unless linked |
+| "Frozen" C ABI wording | Index uses **Documented C interoperability surface**; notes published-symbol rule lives in the ABI doc |
+| Durability "contract" in index | Described as **WAL, durability modes, and recovery behavior** (doc still defines default-path guarantees) |
+| Encryption wording | README: password required + encrypted at rest (matches EasyOpen) |
+| health/stats prominence | Folded into **inspection APIs** in support table |
+| Master Documentation Index | Retitled/described as **Maintainer documentation inventory** |
+| Audit vs Historical | Split **Internal and project records** (includes current `README_AUDIT.md`) from **Historical** |
+| Examples labeling | Explicit Default / Advanced / Conditional / Deferred / Experimental |
+| Security naming | Distinguished architecture (`Docs/Security/`) vs policy (`SECURITY.md`) |
+
+Remaining follow-ups unchanged: full link crawl, Apple platform badge vs CI, storage-change checklist.

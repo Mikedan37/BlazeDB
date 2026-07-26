@@ -15,17 +15,17 @@ You can use it from Swift applications, from the `blazedb` CLI, and from other l
 
 ## What ships by default
 
+`Package.swift`, tests, and CI are the source of truth when documentation and source layout disagree.
+
 | Area | Status |
 |------|--------|
-| Embedded encrypted engine, typed and raw Swift APIs, transactions, WAL-backed recovery, import/export, health/stats, CLI | **Default shipped core** |
-| Migrations, schema validation, indexing and search tuning, manual mapping | **Advanced but supported** |
+| Embedded storage, typed and raw APIs, transactions and durability, import/export, inspection APIs, and CLI tooling | **Default shipped core** |
+| Migrations, schema validation, indexing and search tuning, manual mapping | **Advanced but supported** (APIs exist; some guides are still under consolidation: see [Docs/README.md](Docs/README.md)) |
 | Distributed sync, server/discovery, full telemetry packaging | **Conditional or deferred** (source may exist; not the default OSS story) |
-
-Source present in the tree does not always mean default runtime support. Trust `Package.swift`, CI, and the [documentation index](Docs/README.md) over folder names.
 
 ### Guarantees and boundaries
 
-BlazeDB encrypts at rest (AES-256-GCM) and requires a password. Durability is WAL-backed for the core write path; see [Durability Mode Support](Docs/Status/DURABILITY_MODE_SUPPORT.md) for the exact contract. The engine is single-process oriented. Multi-writer and network filesystem behavior are not the primary design target.
+BlazeDB is an encrypted embedded database: public open APIs require a password, and data is encrypted at rest (AES-256-GCM). Durability for the default client path is WAL-backed; see [Durability Mode Support](Docs/Status/DURABILITY_MODE_SUPPORT.md) for modes, fsync behavior, and recovery details. The engine is single-process oriented. Multi-writer and network filesystem behavior are not the primary design target.
 
 ---
 
@@ -173,20 +173,19 @@ blazedb_put(db, "job:42", "hello", 5);
 /* get / free / delete / close: Examples/C/hello_blazedb.c */
 ```
 
-Contract and ownership rules: [Docs/Architecture/C_ABI_BYTE_KV.md](Docs/Architecture/C_ABI_BYTE_KV.md) · [Examples/C](Examples/C/) · [Examples/Go](Examples/Go/).
+Interoperability rules and ownership: [Docs/Architecture/C_ABI_BYTE_KV.md](Docs/Architecture/C_ABI_BYTE_KV.md) · [Examples/C](Examples/C/) · [Examples/Go](Examples/Go/).
 
 ---
 
 ## Advanced but supported
 
-These belong in the engine and are documented, but they are not day-one onboarding:
+These belong in the engine and are public, but they are not day-one onboarding. Prefer the [documentation index Advanced table](Docs/README.md#advanced-but-supported) for current entry points:
 
-- Migrations and schema evolution
-- Schema validation
-- Indexing and search tuning
-- Manual `BlazeDocument` mapping
+- API migration notes: [Docs/MIGRATION.md](Docs/MIGRATION.md)
+- Schema validation and indexing: [API Reference](Docs/API/API_REFERENCE.md) and [Developer Guide](Docs/DEVELOPER_GUIDE.md) (dedicated schema guides are still under consolidation)
+- Manual `BlazeDocument` mapping: Developer Guide and API Reference
 
-Start from the [Developer Guide](Docs/DEVELOPER_GUIDE.md) and [API Reference](Docs/API/API_REFERENCE.md) after the Getting Started path works.
+After Getting Started works, deepen from those links rather than older Status snapshots.
 
 ---
 
@@ -263,7 +262,7 @@ The [documentation index](Docs/README.md) is the authority map for what is canon
 | [HOW_TO_USE](Docs/GettingStarted/HOW_TO_USE_BLAZEDB.md) | Longer usage guide |
 | [Docs/README.md](Docs/README.md) | Full navigation and support-state framing |
 | [Architecture](Docs/Architecture/README.md) | Internals |
-| [C ABI + byte KV](Docs/Architecture/C_ABI_BYTE_KV.md) | Embedder contract |
+| [C ABI + byte KV](Docs/Architecture/C_ABI_BYTE_KV.md) | Documented C interoperability surface |
 | [Compatibility](Docs/COMPATIBILITY.md) | Platforms |
 | [Security](SECURITY.md) | Vulnerability reporting |
 | [CHANGELOG](CHANGELOG.md) / [RELEASE](RELEASE.md) | History and current release |

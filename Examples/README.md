@@ -30,7 +30,17 @@ See [C/README.md](C/README.md) for link flags after `swift build -c release --pr
 
 ## All examples by support state
 
-### Core embedded examples (default shipped path)
+Labels used below:
+
+| Label | Meaning |
+|-------|---------|
+| **Default** | Safe for normal OSS onboarding |
+| **Advanced** | Core-supported, not first-day reading |
+| **Conditional** | Build- or platform-gated |
+| **Deferred** | Design or non-default packaging (sync / discovery style) |
+| **Experimental** | Under development; confirm against current release notes |
+
+### Default (shipped path)
 | File | Description |
 |------|-------------|
 | `HelloBlazeDB/main.swift` | Minimal default API path (`BlazeDB.open`, `put`, `get`, `query`) |
@@ -40,10 +50,10 @@ See [C/README.md](C/README.md) for link flags after `swift build -c release --pr
 | `BasicUsageExample.swift` | Common embedded usage patterns |
 | `KeyPathQueriesExample.swift` | Type-safe queries with key paths |
 | `QueryBuilderExample.swift` | Raw/fluent query usage |
-| `MonitorDatabases.swift` | Health/stats oriented operations |
+| `MonitorDatabases.swift` | Inspection / health-oriented operations |
 | `ReferenceConsumer/main.swift` | Production lifecycle example |
 
-### Advanced but core-supported examples
+### Advanced (core-supported)
 | File | Description |
 |------|-------------|
 | `MigrationExamples.swift` | Schema migration workflow |
@@ -56,18 +66,22 @@ See [C/README.md](C/README.md) for link flags after `swift build -c release --pr
 | `DataSeedingExample.swift` | Test/seed data generation |
 | `PrettyPrintExample.swift` | Debug formatting and inspection |
 
-### Conditional / deferred / platform-gated examples
+### Conditional (build- or platform-gated)
+| File | Description |
+|------|-------------|
+| `TelemetryBasicExample.swift` | Telemetry API walkthrough; full telemetry packaging is not default OSS |
+| `VectorIndexExample.swift` | Advanced indexing with platform/build caveats |
+| `SwiftUIExample.swift` | SwiftUI integration with `@BlazeQuery` / `@BlazeQueryTyped` |
+| `VaporServer/main.swift` | Optional server integration sample |
+
+### Deferred (not default product path)
 | File | Description |
 |------|-------------|
 | `SyncExample_*.swift` | Sync/distributed examples; deferred from default OSS runtime packaging |
-| `TelemetryBasicExample.swift` | Telemetry API walkthrough; full telemetry behavior is build-configuration dependent |
-| `VectorIndexExample.swift` | Advanced indexing with platform/build caveats |
-| `SwiftUIExample.swift` | SwiftUI integration with `@BlazeQuery` / `@BlazeQueryTyped` |
-| `VaporServer/main.swift` | Server integration example; optional deployment model |
 
 See `SYNC_EXAMPLES_INDEX.md` for sync design docs and caveats.
 
-### Experimental / under-development examples
+### Experimental
 | File | Description |
 |------|-------------|
 | `RLSExample.swift` | Row-level security samples; confirm availability against current release notes |
