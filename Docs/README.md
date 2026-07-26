@@ -98,7 +98,7 @@ May exist in the repo or docs without being the default OSS story:
 - [CI and Test Tiers](Testing/CI_AND_TEST_TIERS.md)
 - [Testing Guide](TESTING_GUIDE.md)
 - [Build docs](Build/README.md)
-- [Product audit](Product/PRODUCT_AUDIT.md) · [Roadmap backlog](Product/ROADMAP_BACKLOG.md)
+- [Product audit](Product/PRODUCT_AUDIT.md) · [Outside-observer audit](Product/OUTSIDE_OBSERVER_AUDIT.md) · [Roadmap backlog](Product/ROADMAP_BACKLOG.md)
 - [Storage-change checklist](Contributing/STORAGE_CHANGE_CHECKLIST.md)
 - [Release Rollback](Status/RELEASE_ROLLBACK.md)
 - [Open-Source Readiness Checklist](Status/OPEN_SOURCE_READINESS_CHECKLIST.md)

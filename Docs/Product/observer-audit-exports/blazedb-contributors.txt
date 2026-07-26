@@ -1,0 +1,11 @@
+   588	Michael Danylchuk <mn_danylchuk@yahoo.com>
+   229	Michael Danylchuk <mn_danylchuk@me.com>
+    20	Cursor Agent <cursoragent@cursor.com>
+    14	cursor[bot] <206951365+cursor[bot]@users.noreply.github.com>
+     5	Mikedan37 <mikedan37@users.noreply.github.com>
+     5	dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>
+     3	Mikedan37 <mikeld37@users.noreply.github.com>
+     3	mikeld37 <mikeld37@users.noreply.github.com>
+     2	Mikedan37 <Mikedan37@users.noreply.github.com>
+     1	cursor-agent <cursor@agent>
+     1	finagolfin <finagolfin@tuta.io>

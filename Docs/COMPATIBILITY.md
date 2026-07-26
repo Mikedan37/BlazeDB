@@ -196,13 +196,12 @@ See `CONTRIBUTING.md` for bug report templates and guidelines.
 
 ## Summary
 
-**Core:** Swift 6 compliant, stable, production-ready on macOS/iOS; core-path supported on Linux (CI); Android cross-compile verified in CI — app integration not yet officially supported (see [android-status.md](android-status.md))
-**Distributed:** Not yet compliant, excluded from core
-**Storage:** Stable format, migration support
-**APIs:** Core APIs stable, experimental APIs clearly marked
+**Core:** Swift 6 compliant. **macOS** and **Linux** have runtime CI for the embedded core; **iOS / watchOS / tvOS / visionOS** are declared and compile-tested (not BlazeDBCore XCTest runtime on device/simulator in the PR gate). Android / KMM remain experimental — see [android-status.md](android-status.md).
+**Distributed:** Deferred / excluded from default OSS packaging
+**Storage:** Format intended to be stable; prior-release open fixtures exist under `Tests/CompatibilityFixtures/` but are not yet a CI release gate (see [ROADMAP.md](../ROADMAP.md))
+**APIs:** Core APIs stable within the documented surface; experimental APIs must stay clearly marked
 
 For detailed status, see:
-- `android-status.md` - Android / Swift-on-Android / KMM status (not full platform docs)
-- `CONCURRENCY_COMPLIANCE.md` - Concurrency details
-- `BUILD_STATUS.md` - Current build state
-- `PRE_USER_HARDENING.md` - Trust features
+- [android-status.md](android-status.md) — Android / Swift-on-Android / KMM status
+- [Compliance/CONCURRENCY_COMPLIANCE.md](Compliance/CONCURRENCY_COMPLIANCE.md) — Concurrency details
+- [Status/BUILD_STATUS.md](Status/BUILD_STATUS.md) — Current build state (may be historical; prefer CI workflows)

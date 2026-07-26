@@ -1,0 +1,21 @@
+2025-08-04	0.1.0	Replace old repo with BlazeDB Swift Package structure
+2025-10-04	0.1.1	WIP local changes before rebase
+2025-10-04	0.1.2	Fix SwiftCBOR to use tagged version 0.5.0
+2025-10-14	1.0.0	v1.0.0 - Production Ready Release
+2025-12-13	v2.5.0-alpha-hardening	Priority-1 Hardening Milestone
+2025-12-25	v2.6.0	Version 2.6.0: Swift 6 Concurrency Support
+2026-01-23	v0.1.0	BlazeDB v0.1.0 - First stable release
+2026-01-23	v0.1.1	BlazeDB v0.1.1 - Dependency stability fix
+2026-01-23	v0.1.2	BlazeDB v0.1.2 - SwiftPM dependency resolution fix
+2026-01-23	v0.1.3	BlazeDB v0.1.3 - SwiftUI APIs now available
+2026-01-31	v2.7.0	Restore BlazeDB umbrella product for downstream compatibility
+2026-04-01	v2.7.1	OSS-ready: MVCC fix, Tier1 harness cleanup, docs/sidecars aligned
+2026-04-02	v2.7.2	BlazeDB v2.7.2
+2026-04-03	v2.7.3	feat: add TypedStore ergonomic API and tests
+2026-04-08	v2.7.4	BlazeDB v2.7.4 — Android core path, Linux CI parity, compression/WAL, query & CI hardening
+2026-04-10	v2.7.5	BlazeDB v2.7.5
+2026-04-23	v2.7.6	Release 2.7.6
+2026-05-02	v2.7.7	v2.7.7 — remove consumer-blocking unsafeFlags from BlazeDBCore
+2026-06-25	ci-android-sdk-6.3.2	chore: block Cursor bot PRs and disable Dependabot PR spam
+2026-07-24	v2.8.0	BlazeDB v2.8.0 — stable C ABI + BlazeDBC
+2026-07-24	v2.8.1	BlazeDB v2.8.1 — dynamic BlazeDBC for FFI
