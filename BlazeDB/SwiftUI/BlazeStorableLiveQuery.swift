@@ -69,6 +69,31 @@ public struct BlazeStorableQuery<T: BlazeStorable>: DynamicProperty {
             limitCount: limit
         ))
     }
+
+    /// Creates a live query for all stored models, sorted by the specified field.
+    ///
+    /// - Parameters:
+    ///   - db: Pass `nil` to resolve the client from ``EnvironmentValues/blazeDBClient``.
+    ///   - kind: The stored model type.
+    ///   - field: The persisted field name used for sorting.
+    ///   - descending: Whether to return results in descending order.
+    ///   - limit: The maximum number of results to return.
+    public init(
+        db: BlazeDBClient? = nil,
+        kind: T.Type,
+        sortBy field: String,
+        descending: Bool = false,
+        limit: Int? = nil
+    ) {
+        self.explicitDB = db
+        _observer = StateObject(wrappedValue: BlazeStorableQueryObserver(
+            db: db,
+            filters: [],
+            sortField: field,
+            sortDescending: descending,
+            limitCount: limit
+        ))
+    }
 }
 
 /// Alias for ``BlazeStorableQuery`` when you want a name that signals environment-driven resolution.
