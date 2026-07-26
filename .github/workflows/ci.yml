@@ -89,14 +89,22 @@ jobs:
           set -euo pipefail
           ./Scripts/verify-readme-samples.sh 2>&1 | tee .logs/verify-readme-samples.log
 
+      - name: Setup Java 17 (KMM Gradle)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
       - name: KMM shared — build iOS bridge and link framework
         run: |
           set -euo pipefail
-          chmod +x ./Scripts/build-kmm-ios-bridge.sh
+          chmod +x ./Scripts/build-kmm-ios-bridge.sh ./Scripts/ci-gradle-with-retry.sh
           ./Scripts/build-kmm-ios-bridge.sh
-          cd Examples/android
-          chmod +x gradlew
-          ./gradlew :shared:compileKotlinIosSimulatorArm64 :shared:compileKotlinIosArm64 \
+          ./Scripts/ci-gradle-with-retry.sh --no-daemon \
+            :shared:compileKotlinIosSimulatorArm64 :shared:compileKotlinIosArm64 \
             :shared:linkDebugFrameworkIosSimulatorArm64 :shared:linkDebugFrameworkIosArm64 \
             :shared:iosSimulatorArm64Test
 
@@ -327,16 +335,17 @@ jobs:
           distribution: temurin
           java-version: "17"
 
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
       - name: KMM shared — compile Android Kotlin
         run: |
           set -euo pipefail
-          chmod +x ./Scripts/setup-android-gradle-sdk-linux.sh
+          chmod +x ./Scripts/setup-android-gradle-sdk-linux.sh ./Scripts/ci-gradle-with-retry.sh
           ./Scripts/setup-android-gradle-sdk-linux.sh
           export ANDROID_HOME="${ANDROID_HOME:-$PWD/.artifacts/android-gradle-sdk-linux}"
           export ANDROID_SDK_ROOT="$ANDROID_HOME"
-          cd Examples/android
-          chmod +x gradlew
-          ./gradlew :shared:compileDebugKotlinAndroid
+          ./Scripts/ci-gradle-with-retry.sh --no-daemon :shared:compileDebugKotlinAndroid
 
       - name: Stage KMM Android native libs for emulator job
         run: |
