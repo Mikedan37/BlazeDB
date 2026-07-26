@@ -39,7 +39,8 @@ private let walEntryHeaderSize = 16
 /// Synchronous, crash-safe Write-Ahead Log.
 ///
 /// Design:
-///  - Every `append()` writes a framed entry and calls `fsync` before returning.
+///  - `append()` writes a framed entry and fsyncs (immediate durability).
+///  - `appendDeferred()` + `sync()` batch multiple entries with one fsync (caller must sync before commit returns).
 ///  - On open, `replay()` reads all valid entries and returns them for the caller
 ///    to apply to the PageStore.
 ///  - After the caller confirms all entries are applied (and the main file is fsynced),
@@ -49,6 +50,7 @@ internal final class WriteAheadLog: @unchecked Sendable {
     let logURL: URL
     private var fd: Int32 = -1
     private var currentOffset: off_t = 0  // tracks append position
+    private var needsFsync = false
 
     /// Open (or create) the WAL file.
     init(logURL: URL) throws {
@@ -83,12 +85,37 @@ internal final class WriteAheadLog: @unchecked Sendable {
 
     // MARK: - Append
 
+    /// Append a page write to the WAL without fsync. Call `sync()` before treating the write as durable.
+    func appendDeferred(pageIndex: Int, data: Data) throws {
+        try appendEntry(pageIndex: pageIndex, data: data)
+        needsFsync = true
+    }
+
+    /// Fsync pending WAL appends from `appendDeferred`.
+    func sync() throws {
+        guard fd >= 0, needsFsync else { return }
+        if fsync(fd) != 0 {
+            let err = errno
+            IOTraceSink.record(operation: "wal_fsync", path: logURL.path, fd: fd, resultCode: -1, errnoValue: err)
+            throw NSError(domain: "WriteAheadLog", code: Int(err), userInfo: [
+                NSLocalizedDescriptionKey: "WAL fsync failed: \(String(cString: strerror(err)))"
+            ])
+        }
+        IOTraceSink.record(operation: "wal_fsync", path: logURL.path, fd: fd, resultCode: 0)
+        needsFsync = false
+    }
+
     /// Append a page write to the WAL. Fsyncs before returning.
     ///
     /// - Parameters:
     ///   - pageIndex: The page index being written
     ///   - data: The encrypted page data (already encrypted by PageStore)
     func append(pageIndex: Int, data: Data) throws {
+        try appendDeferred(pageIndex: pageIndex, data: data)
+        try sync()
+    }
+
+    private func appendEntry(pageIndex: Int, data: Data) throws {
         guard fd >= 0 else {
             throw NSError(domain: "WriteAheadLog", code: -1, userInfo: [
                 NSLocalizedDescriptionKey: "WAL file not open"
@@ -166,16 +193,6 @@ internal final class WriteAheadLog: @unchecked Sendable {
         }
 
         currentOffset += off_t(combined.count)
-
-        // fsync — the whole point of a WAL
-        if fsync(fd) != 0 {
-            let err = errno
-            IOTraceSink.record(operation: "wal_fsync", path: logURL.path, fd: fd, resultCode: -1, errnoValue: err)
-            throw NSError(domain: "WriteAheadLog", code: Int(err), userInfo: [
-                NSLocalizedDescriptionKey: "WAL fsync failed: \(String(cString: strerror(err)))"
-            ])
-        }
-        IOTraceSink.record(operation: "wal_fsync", path: logURL.path, fd: fd, resultCode: 0)
     }
 
     // MARK: - Replay
@@ -296,6 +313,7 @@ internal final class WriteAheadLog: @unchecked Sendable {
         }
         IOTraceSink.record(operation: "wal_fsync", path: logURL.path, fd: fd, resultCode: 0, context: ["phase": "clear"])
         currentOffset = 0
+        needsFsync = false
     }
 
     // MARK: - Stats

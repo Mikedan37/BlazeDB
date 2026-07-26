@@ -1048,7 +1048,11 @@ public final class DynamicCollection {
                 // Lazy decoding not available on Linux
                 #endif
                 let tEncode = forensicsEnabled ? Self.monotonicNowMs() : 0
+                #if !BLAZEDB_LINUX_CORE
+                let encoded = try BlazeBinaryEncoder.encodeOptimized(BlazeDataRecord(document))
+                #else
                 let encoded = try BlazeBinaryEncoder.encode(BlazeDataRecord(document))
+                #endif
                 if forensicsEnabled {
                     encodeMs += Self.monotonicNowMs() - tEncode
                 }
@@ -1077,9 +1081,9 @@ public final class DynamicCollection {
                         indexMap.removeValue(forKey: conflictingID)
                     }
                 }
-                // Use overflow pages for large records - writePageWithOverflow handles splitting across pages
+                // Publish-last commit: buffer pages, one sync, then catalog + metadata.
                 let tPageWrite = forensicsEnabled ? Self.monotonicNowMs() : 0
-                let pageIndices = try store.writePageWithOverflow(
+                let pageIndices = try store.writePageWithOverflowUnsynchronized(
                     index: mainPageIndex,
                     plaintext: encoded,
                     allocatePage: { [weak self] in
@@ -1100,12 +1104,18 @@ public final class DynamicCollection {
                 if forensicsEnabled {
                     fileAppendMs += Self.monotonicNowMs() - tPageWrite
                 }
-                
+
+                let tFsync = forensicsEnabled ? Self.monotonicNowMs() : 0
+                try store.synchronize()
+                if forensicsEnabled {
+                    fsyncMs += Self.monotonicNowMs() - tFsync
+                }
+
                 // Update nextPageIndex from layout (in case it was incremented by allocatePage)
                 nextPageIndex = layout.nextPageIndex
-                
+
                 let tMetadata = forensicsEnabled ? Self.monotonicNowMs() : 0
-                // Store all page indices (main page + overflow pages)
+                // Catalog publish only after durable page writes.
                 indexMap[id] = pageIndices
                 let value = document["value"]?.intValue ?? -1
                 BlazeLogger.trace("📝 [INSERT] Legacy: Set indexMap[\(id.uuidString.prefix(8))] = \(pageIndices) (value: \(value))")
@@ -1147,12 +1157,8 @@ public final class DynamicCollection {
                 // Save layout with updated deletedPages and nextPageIndex
                 layout.indexMap = indexMap
                 layout.secondaryIndexes = StorageLayout.fromRuntimeIndexes(secondaryIndexes)
-                if forensicsEnabled {
-                    indexUpdateMs += Self.monotonicNowMs() - tMetadata
-                }
 
                 // Persist per-insert metadata update to preserve crash-prefix durability.
-                let tFsync = forensicsEnabled ? Self.monotonicNowMs() : 0
                 if password != nil {
                     try layout.saveSecure(to: metaURL, signingKey: encryptionKey)
                 } else {
@@ -1160,9 +1166,9 @@ public final class DynamicCollection {
                 }
                 cachedDeletedPages = layout.deletedPages
                 if forensicsEnabled {
-                    fsyncMs += Self.monotonicNowMs() - tFsync
+                    indexUpdateMs += Self.monotonicNowMs() - tMetadata
                 }
-                
+
                 unsavedChanges += 1
                 
                 // Clear fetchAll cache after write
@@ -1170,7 +1176,7 @@ public final class DynamicCollection {
                 clearFetchAllCache()
                 #endif
                 
-                // Batch metadata writes for performance (save every N operations)
+                // Batch layout compaction (metadata already saved per insert above)
                 if unsavedChanges >= metadataFlushThreshold {
                     let tBatchSave = forensicsEnabled ? Self.monotonicNowMs() : 0
                     try saveLayout()
@@ -2020,6 +2026,7 @@ public final class DynamicCollection {
                 guard !closed else { return }
 
                 if unsavedChanges > 0, layoutSignatureVerified {
+                    try store.synchronize()
                     try saveLayout()
                     unsavedChanges = 0
                 }

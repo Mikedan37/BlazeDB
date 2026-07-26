@@ -284,7 +284,11 @@ extension PageStore {
         
         // Single-page payload: no overflow trailer needed.
         if plaintext.count <= maxDataPerPage {
-            try _writePageLocked(index: index, plaintext: plaintext)
+            if skipSync {
+                try _writePageLockedUnsynchronized(index: index, plaintext: plaintext)
+            } else {
+                try _writePageLocked(index: index, plaintext: plaintext)
+            }
             return pageIndices
         }
         
@@ -366,10 +370,14 @@ extension PageStore {
         Self.triggerOverflowCrashIfNeeded(.afterOverflowMetadataUpdate)
         
         // Write main page with overflow pointer embedded
-        try _writePageLocked(index: index, plaintext: mainPageDataWithPointer)
+        if skipSync {
+            try _writePageLockedUnsynchronized(index: index, plaintext: mainPageDataWithPointer)
+        } else {
+            try _writePageLocked(index: index, plaintext: mainPageDataWithPointer)
+        }
         Self.triggerOverflowCrashIfNeeded(.afterBasePageWrite)
         
-        // Final fsync (skip for batch operations - will sync once at end)
+        // Final fsync (skip for batch/deferred operations — caller calls synchronize())
         if !skipSync {
             try fileHandle.compatSynchronize()
         }
@@ -390,13 +398,32 @@ extension PageStore {
         plaintext: Data,
         allocatePage: () throws -> Int
     ) throws -> [Int] {
+        try writePageWithOverflow(index: index, plaintext: plaintext, allocatePage: allocatePage, skipSync: false)
+    }
+
+    /// Deferred durability: WAL/buffer only; call `synchronize()` + layout save via `persist()`.
+    public func writePageWithOverflowUnsynchronized(
+        index: Int,
+        plaintext: Data,
+        allocatePage: () throws -> Int
+    ) throws -> [Int] {
+        try writePageWithOverflow(index: index, plaintext: plaintext, allocatePage: allocatePage, skipSync: true)
+    }
+
+    private func writePageWithOverflow(
+        index: Int,
+        plaintext: Data,
+        allocatePage: () throws -> Int,
+        skipSync: Bool
+    ) throws -> [Int] {
         #if os(Linux)
         // Linux doesn't support flags parameter for sync
         return try queue.sync {
             try _writePageWithOverflowLocked(
                 index: index,
                 plaintext: plaintext,
-                allocatePage: allocatePage
+                allocatePage: allocatePage,
+                skipSync: skipSync
             )
         }
         #else
@@ -404,7 +431,8 @@ extension PageStore {
             try _writePageWithOverflowLocked(
                 index: index,
                 plaintext: plaintext,
-                allocatePage: allocatePage
+                allocatePage: allocatePage,
+                skipSync: skipSync
             )
         }
         #endif

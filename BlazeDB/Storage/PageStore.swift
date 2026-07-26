@@ -772,8 +772,8 @@ public final class PageStore: @unchecked Sendable {
         try _flushPendingUnifiedBufferedWritesLocked()
 
         if let wal = wal {
-            // Legacy mode: append WAL entry first, then apply to main file.
-            try wal.append(pageIndex: index, data: buffer)
+            try wal.appendDeferred(pageIndex: index, data: buffer)
+            try wal.sync()
         } else if let dm = durabilityManager {
             // Unified mode: durable WAL commit before writing main file.
             let txID = UUID()
@@ -812,9 +812,9 @@ public final class PageStore: @unchecked Sendable {
 
         let buffer = try _encryptPageBuffer(plaintext: plaintext)
 
-        // 📜 WAL: Append to Write-Ahead Log BEFORE writing to main file
+        // 📜 WAL: Append to Write-Ahead Log BEFORE writing to main file (fsync deferred to synchronize())
         if let wal = wal {
-            try wal.append(pageIndex: index, data: buffer)
+            try wal.appendDeferred(pageIndex: index, data: buffer)
         } else if let dm = durabilityManager {
             // Unified mode: group unsynchronized writes in a single auto-transaction.
             // IMPORTANT: We stage main-file writes in memory and flush only after
@@ -871,6 +871,7 @@ public final class PageStore: @unchecked Sendable {
         try queue.sync(flags: .barrier) {
             try _commitPendingUnifiedAutoTransactionIfNeededLocked()
             try _flushPendingUnifiedBufferedWritesLocked()
+            try wal?.sync()
             try fileHandle.compatSynchronize()
         }
     }
