@@ -41,7 +41,7 @@ It is not a client/server database in the default OSS product. Distributed sync/
 | Embedded encrypted engine | `BlazeDBCore` target; EasyOpen requires password; AES-256-GCM documented | Supported |
 | Typed APIs (`BlazeStorable`, `BlazeDB.open`) | `PublicFacadeAPI.swift`, HelloBlazeDB, ReadmeSamples | Supported |
 | Raw / byte APIs | `BlazeDBClient+ByteKV.swift`, C ABI wrapping byte KV | Supported |
-| Durability / WAL | Durability status doc; Tier0 durability lane scripts | Supported (see exact contract doc) |
+| Durability / WAL | Durability status doc; Tier0 durability lane scripts | Supported (see WAL/recovery behavior doc) |
 | Import/export | `BlazeDBClient+Export.swift`, importer types | Supported |
 | Health / stats | `BlazeDBClient+Health.swift`, `stats()` usage in guides | Supported |
 | CLI | `blazedb` product → `BlazedbCLI` | Supported |
