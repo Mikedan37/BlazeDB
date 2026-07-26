@@ -26,8 +26,8 @@ Internal analysis material lives under [`Docs/Internal/`](Internal/README.md) an
 *Map of the folders: what to trust for “how does it work today.”* BlazeDB documentation is organized into:
 
 - **Canonical docs (current, maintained):** Use these first for behavior and APIs:
-  - [Repository README](../README.md) (embeddable C ABI + Swift overview)
-  - [RELEASE.md](../RELEASE.md) (v2.8.0 embeddable release notes)
+  - [Repository README](../README.md) (Swift apps, CLI, C ABI, contributing)
+  - [RELEASE.md](../RELEASE.md) (current release notes)
   - [C ABI + Byte KV](Architecture/C_ABI_BYTE_KV.md) (frozen contract for language bindings)
   - [Getting Started](GettingStarted/) (first run, HOW_TO_USE, Linux notes)
   - [Testing / CI](Testing/) (tiers, test layout, execution model)

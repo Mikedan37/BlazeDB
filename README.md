@@ -1,186 +1,43 @@
 # BlazeDB
 
-BlazeDB is an encrypted embedded key-value database written in Swift with a stable C ABI, making it embeddable from Swift, Go, Rust, Python, and other native languages. One process, one library, no server.
+BlazeDB is an **encrypted embedded database written in Swift**. One process, one library, no server.
+
+Use it:
+
+- directly from **Swift applications**
+- through the **`blazedb` CLI**
+- from other languages through the **stable C ABI**
 
 [![Swift](https://img.shields.io/badge/Swift-6.0+-orange.svg)](https://swift.org)
 [![Release](https://img.shields.io/badge/release-v2.8.1-green.svg)](RELEASE.md)
 [![Platforms](https://img.shields.io/badge/Platforms-macOS%20%7C%20iOS%20%7C%20Linux%20%7C%20Android-lightgrey.svg)](Docs/COMPATIBILITY.md)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-**Current release:** [v2.8.1](RELEASE.md) (stable C ABI + dynamic BlazeDBC) · [Getting started (Swift apps)](Docs/GettingStarted/README.md)
+**Current release:** [v2.8.1](RELEASE.md) · [Getting started](Docs/GettingStarted/README.md) · [Contributing](CONTRIBUTING.md)
 
 ---
 
-## Features
+## Why BlazeDB
 
-- **Encrypted** — AES-256-GCM at rest; password required in v2.8.0
-- **Embedded** — runs in your process; no external database server
-- **Byte-oriented KV** — UTF-8 keys, opaque value bytes
-- **Swift-native engine** — one implementation, not a port per language
-- **Stable C ABI** — `blazedb.h` is the contract for every wrapper
-- **Cross-language** — Go, Rust, Python, Zig, C#… anything that can call C
-- **No server** — open a file path and go
-- **Durable** — WAL-backed crash recovery; ACID transactions on the Swift API
-- **Raspberry Pi ready** — build once with Swift for Linux (aarch64), link from Go/C
+- **Encrypted local persistence** — AES-256-GCM at rest; password required
+- **Typed Swift models** — `BlazeStorable` with put / get / query
+- **Transactions + WAL** — crash-safe recovery; ACID on the Swift API
+- **CLI tools** — inspect and maintain databases without writing an app
+- **Cross-language C ABI** — same engine from Go, Rust, Python, C, and more
 
 ---
 
-## Architecture
+<a id="start-here-new-users"></a>
 
-Every language talks to BlazeDB through the same C ABI. The manager never needs to know Swift exists; the engine never needs to know Go exists.
+## Start Here (new users)
 
-```text
-   Go     Rust     Python     Swift
-     \      |        |         /
-      \     |        |        /
-       ▼    ▼        ▼       ▼
-          BlazeDBC
-       (stable C ABI)
-              │
-              ▼
-        Swift Byte KV
-              │
-              ▼
-        BlazeDB Engine
-              │
-              ▼
-             Disk
-```
-
-Typed Swift models (`BlazeStorable`) are a convenience layer on top of the same engine. The embeddable path is bytes only.
-
-Design contract: [Docs/Architecture/C_ABI_BYTE_KV.md](Docs/Architecture/C_ABI_BYTE_KV.md)
-
----
-
-## Five-minute start (C)
-
-```c
-#include <stdio.h>
-#include <string.h>
-#include <blazedb.h>
-
-int main(void) {
-    BlazeDB *db = blazedb_open("jobs.blaze", "DemoPass123!");
-    if (!db) { fprintf(stderr, "open failed\n"); return 1; }
-
-    const char *payload = "hello";
-    if (blazedb_put(db, "job:42", payload, strlen(payload)) != BLAZEDB_OK) {
-        fprintf(stderr, "put failed\n");
-        blazedb_close(db);
-        return 1;
-    }
-
-    void *data = NULL;
-    size_t len = 0;
-    if (blazedb_get(db, "job:42", &data, &len) == BLAZEDB_OK) {
-        fwrite(data, 1, len, stdout);
-        putchar('\n');
-        blazedb_free(data);
-    }
-
-    blazedb_delete(db, "job:42");
-    blazedb_close(db);
-    return 0;
-}
-```
-
-Full compileable sample: [Examples/C/hello_blazedb.c](Examples/C/hello_blazedb.c)
-
----
-
-## Installation / build
-
-Requires a Swift 6+ toolchain ([swift.org](https://www.swift.org/install/) on Linux/macOS, or Xcode on Apple platforms).
-
-### Build the C library
-
-```bash
-git clone https://github.com/Mikedan37/BlazeDB.git
-cd BlazeDB
-swift build -c release --product BlazeDBC
-```
-
-### Artifacts
-
-| Artifact | Location |
-|----------|----------|
-| Shared library (preferred) | `.build/release/libBlazeDBC.dylib` (macOS) / `libBlazeDBC.so` (Linux) |
-| Static library (optional) | `.build/release/libBlazeDBC.a` via `--product BlazeDBCStatic` |
-| Public header | `BlazeDBC/include/blazedb.h` (source tree; copy this) |
-
-`libBlazeDBC.dylib` / `.so` links the Swift runtime as a dynamic dependency. Go/cgo and other FFI hosts should link **`-lBlazeDBC`** and set an **rpath** (or install into a system lib dir)—not pull Swift object files out of a `.a`.
-
-### Install on a machine (e.g. Raspberry Pi)
-
-```bash
-sudo mkdir -p /usr/local/include /usr/local/lib
-sudo cp BlazeDBC/include/blazedb.h /usr/local/include/
-sudo cp .build/release/libBlazeDBC.so /usr/local/lib/   # or .dylib on macOS
-sudo ldconfig   # Linux
-```
-
-### Swift Package Manager (Swift apps)
+Add the package:
 
 ```swift
 .package(url: "https://github.com/Mikedan37/BlazeDB.git", from: "2.8.1")
 ```
 
-Then depend on `BlazeDB` (typed apps) or `BlazeDBC` (C ABI shared library).
-
----
-
-## Go example (wrapper coming next)
-
-The official Go package is **not shipped in v2.8.1**. Target API for `blazedb-go`:
-
-```go
-db, err := blazedb.Open("manager.blaze", "DemoPass123!")
-if err != nil {
-    log.Fatal(err)
-}
-defer db.Close()
-
-err = db.Put("job:42", []byte(`{"status":"queued"}`))
-job, err := db.Get("job:42")
-err = db.Delete("job:42")
-```
-
-Your manager should depend on a small `Storage` interface, not on BlazeDB types:
-
-```go
-type Storage interface {
-    Put(key string, value []byte) error
-    Get(key string) ([]byte, error)
-    Delete(key string) error
-}
-```
-
-Roadmap: **v2.9.0** ships `blazedb-go` as a thin cgo wrapper over `blazedb.h`. Until then, you can call the C API directly via cgo against `libBlazeDBC.so` / `.dylib`.
-
-Preview sketch: [Examples/Go/README.md](Examples/Go/README.md)
-
----
-
-## ABI guarantees
-
-Frozen in [`BlazeDBC/include/blazedb.h`](BlazeDBC/include/blazedb.h):
-
-| Rule | Detail |
-|------|--------|
-| Opaque handle | `typedef struct BlazeDB BlazeDB;` — never inspect fields |
-| Ownership | Buffers from `blazedb_get` must be released with `blazedb_free` |
-| Password | `NULL` or `""` is invalid; open returns `NULL` |
-| Stability | Published function signatures and behavior **never change** |
-| Evolution | New capability only via new functions, enum values, flags, or versioned option structs (`blazedb_open_ex`, …) |
-
-Byte semantics: keys are UTF-8; values are opaque; `get` returns exactly what `put` stored.
-
----
-
-## Swift apps (typed API)
-
-If you are writing a Swift app, you can stay on the typed facade:
+Depend on `"BlazeDB"`, then:
 
 ```swift
 import BlazeDB
@@ -193,43 +50,169 @@ struct Bug: BlazeStorable {
 
 let db = try BlazeDB.open(name: "demo", password: "DemoPass123!")
 try db.put(Bug(title: "Crash on launch", status: "open"))
+let openBugs: [Bug] = try db.query("bug")
+    .where("status", equals: "open")
+    .all()
 ```
 
-Or use the same byte KV surface the C ABI wraps:
+From this repo:
 
-```swift
-try db.put(key: "job:42", value: Data("hello".utf8))
-let data = try db.get(key: "job:42")
-try db.delete(key: "job:42")
+```bash
+git clone https://github.com/Mikedan37/BlazeDB.git
+cd BlazeDB
+swift run HelloBlazeDB
 ```
 
-More: [Docs/GettingStarted/README.md](Docs/GettingStarted/README.md) · `swift run HelloBlazeDB`
+More: [Docs/GettingStarted/README.md](Docs/GettingStarted/README.md)
+
+**Also:** [CLI usage](#cli) · [C embedding](#cross-language-embedding-c-abi) · [Contributing](#contributing-in-five-minutes)
 
 ---
 
-## Documentation
+## CLI
+
+Build and run the interactive CLI:
+
+```bash
+swift build --product blazedb
+.build/debug/blazedb help
+.build/debug/blazedb start          # pick a database → REPL
+```
+
+Or from a checkout after the first build: `swift run blazedb`.
+
+Contributors use the repo wrapper (rebuilds the CLI only when needed):
+
+```bash
+./dev help
+```
+
+---
+
+## Installation
+
+Requires Swift 6+ ([swift.org](https://www.swift.org/install/) or Xcode on Apple platforms).
+
+### Swift apps (SPM)
+
+```swift
+.package(url: "https://github.com/Mikedan37/BlazeDB.git", from: "2.8.1")
+```
+
+Then depend on `BlazeDB` (typed apps) or `BlazeDBC` (C ABI shared library).
+
+### Embeddable C library
+
+```bash
+swift build -c release --product BlazeDBC
+```
+
+| Artifact | Location |
+|----------|----------|
+| Shared library | `.build/release/libBlazeDBC.dylib` (macOS) / `libBlazeDBC.so` (Linux) |
+| Header | `BlazeDBC/include/blazedb.h` |
+
+Link with `-lBlazeDBC` and an appropriate rpath. Details: [BlazeDBC/README.md](BlazeDBC/README.md) · [RELEASE.md](RELEASE.md)
+
+---
+
+## Cross-language embedding (C ABI)
+
+Every non-Swift language talks to the same engine through [`blazedb.h`](BlazeDBC/include/blazedb.h):
+
+```text
+   Go     Rust     Python     Swift apps
+     \      |        |         /
+      \     |        |        /
+       ▼    ▼        ▼       ▼
+          BlazeDBC  (stable C ABI)
+              │
+        Swift engine → disk
+```
+
+### C (five minutes)
+
+```c
+#include <blazedb.h>
+
+BlazeDB *db = blazedb_open("jobs.blaze", "DemoPass123!");
+blazedb_put(db, "job:42", "hello", 5);
+/* get / delete / blazedb_close — see Examples/C/hello_blazedb.c */
+```
+
+Full sample: [Examples/C/hello_blazedb.c](Examples/C/hello_blazedb.c)
+
+### Go
+
+Official `blazedb-go` is **not** in v2.8.1 yet (planned for **v2.9.0**). Until then, call the C API via cgo against `libBlazeDBC`. Preview: [Examples/Go/README.md](Examples/Go/README.md)
+
+### ABI rules (short)
+
+Opaque `BlazeDB *` handle · buffers from `blazedb_get` freed with `blazedb_free` · passwords required · published signatures do not change — evolve only via new symbols. Full contract: [Docs/Architecture/C_ABI_BYTE_KV.md](Docs/Architecture/C_ABI_BYTE_KV.md)
+
+---
+
+## Tools and applications
+
+| Tool | Role |
+|------|------|
+| `blazedb` | Interactive picker + REPL |
+| [BlazeStudio](BlazeStudio/) | macOS app for browsing databases |
+| [BlazeDBVisualizer](BlazeDBVisualizer/) | Visualization / inspection |
+| `BlazeDoctor` / `BlazeDump` / `BlazeInfo` | Maintenance utilities |
+| `BlazeDBBenchmarks` | Performance workloads (Profile in Xcode) |
+| `./dev` | Contributor test / tier / experiment interface |
+
+Docs: [Docs/Tools/README.md](Docs/Tools/README.md) · [Docs/Build/XCODE_SCHEMES.md](Docs/Build/XCODE_SCHEMES.md)
+
+---
+
+## Contributing in five minutes
+
+```bash
+git clone https://github.com/Mikedan37/BlazeDB.git
+cd BlazeDB
+./dev help
+./dev test BPlusTreeNodeTests.createsSimpleTree
+./dev tier0
+```
+
+| Next | Link |
+|------|------|
+| Full contributor guide | [CONTRIBUTING.md](CONTRIBUTING.md) |
+| Test tiers / CI | [Docs/Testing/CI_AND_TEST_TIERS.md](Docs/Testing/CI_AND_TEST_TIERS.md) |
+| Lean Xcode schemes | [Docs/Build/XCODE_SCHEMES.md](Docs/Build/XCODE_SCHEMES.md) |
+| Architecture | [Docs/Architecture/README.md](Docs/Architecture/README.md) |
+| Experiments | [Experiments/README.md](Experiments/README.md) |
+| Benchmarks | [Docs/Benchmarks/README.md](Docs/Benchmarks/README.md) |
+
+Keep PRs narrow. Prefer `./dev` for focused tests and tiers; use Xcode schemes for interactive Run / Profile / Analyze / Archive.
+
+---
+
+## Documentation map
 
 | Doc | Purpose |
 |-----|---------|
-| [RELEASE.md](RELEASE.md) | v2.8.1 release notes |
-| [CHANGELOG.md](CHANGELOG.md) | Version history |
-| [C_ABI_BYTE_KV.md](Docs/Architecture/C_ABI_BYTE_KV.md) | ABI + byte KV contract |
+| [Getting Started](Docs/GettingStarted/README.md) | First Swift app |
+| [Docs/README.md](Docs/README.md) | Full documentation index |
+| [C ABI + byte KV](Docs/Architecture/C_ABI_BYTE_KV.md) | Embedder contract |
 | [COMPATIBILITY.md](Docs/COMPATIBILITY.md) | Platform matrix |
-| [Getting Started](Docs/GettingStarted/README.md) | Swift onboarding |
+| [CHANGELOG.md](CHANGELOG.md) | Version history |
+| [RELEASE.md](RELEASE.md) | Current release notes |
 
 ---
 
-## Versioning
-
-One stream for the whole project:
+## Project status / roadmap
 
 | Version | Focus |
 |---------|--------|
-| **2.8.0** | Stable C ABI, BlazeDBC, byte KV, embeddable foundation |
-| **2.8.1** | BlazeDBC as shared library (`.so` / `.dylib`) for FFI |
+| **2.8.x** | Encrypted embedded core · Swift apps · CLI · stable C ABI (`BlazeDBC` shared library) |
 | **2.9.0** | Official `blazedb-go` wrapper |
-| **2.10.0** | Iterators, scans, additional C APIs |
+| **2.10.0** | Additional C APIs (iterators / scans) |
 | **3.0.0** | Intentional breaking API or on-disk format change |
+
+Default OSS product: embedded encrypted engine, typed/raw Swift APIs, durability, CLI. Distributed sync / full telemetry are conditional or deferred — see [Docs/README.md](Docs/README.md).
 
 ---
 
