@@ -42,7 +42,7 @@ Use these first for current behavior:
 | [API Reference](API/API_REFERENCE.md) | Lookup tables and signatures |
 | [Examples](../Examples/README.md) | Runnable samples labeled by support state |
 | [Architecture](Architecture/) | Core embedded runtime (storage, queries, durability) |
-| [C ABI + Byte KV](Architecture/C_ABI_BYTE_KV.md) | Documented C interoperability surface (published symbols: signature and behavior do not change; see that doc for scope) |
+| [C ABI + Byte KV](Architecture/C_ABI_BYTE_KV.md) | Documented C interoperability surface (scope of signature/behavior stability is defined in that doc) |
 | [Compatibility](COMPATIBILITY.md) | Platforms and expectations |
 | [Security architecture](Security/README.md) | Encryption, keys, and threat-model docs |
 | [Security policy](../SECURITY.md) | Vulnerability reporting and disclosure |

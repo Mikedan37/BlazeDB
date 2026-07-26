@@ -6,10 +6,20 @@ You can use it from Swift applications, from the `blazedb` CLI, and from other l
 
 [![Swift](https://img.shields.io/badge/Swift-6.0+-orange.svg)](https://swift.org)
 [![Release](https://img.shields.io/badge/release-v2.8.1-green.svg)](RELEASE.md)
-[![Platforms](https://img.shields.io/badge/Platforms-macOS%20%7C%20iOS%20%7C%20Linux%20%7C%20Android-lightgrey.svg)](Docs/COMPATIBILITY.md)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-**Current release:** [v2.8.1](RELEASE.md) · [Getting started](Docs/GettingStarted/README.md) · [Documentation index](Docs/README.md) · [Contributing](CONTRIBUTING.md)
+**Current release:** [v2.8.1](RELEASE.md) · [Getting started](Docs/GettingStarted/README.md) · [Documentation index](Docs/README.md) · [Contributing](CONTRIBUTING.md) · [Compatibility](Docs/COMPATIBILITY.md)
+
+### Platforms (honest split)
+
+| Level | Meaning | Platforms |
+|-------|---------|-----------|
+| **Declared** | Listed in `Package.swift` | macOS, iOS, watchOS, tvOS, visionOS |
+| **CI-tested (runtime)** | Automated tests on every PR | macOS (primary gate), Linux (core path) |
+| **CI-tested (compile)** | Cross-compile in CI, not full runtime suites | iOS / watchOS / tvOS / visionOS (`BlazeDBCore`) |
+| **Experimental** | Verified engineering paths, not a production SDK claim | Android cross-compile, KMM sample (`Examples/android`), portable MVVM pattern (`Examples/MVVMPattern`) |
+
+Details and caveats: [Docs/COMPATIBILITY.md](Docs/COMPATIBILITY.md) · [Docs/android-status.md](Docs/android-status.md).
 
 ---
 
@@ -25,7 +35,7 @@ You can use it from Swift applications, from the `blazedb` CLI, and from other l
 
 ### Guarantees and boundaries
 
-BlazeDB is an encrypted embedded database: public open APIs require a password, and data is encrypted at rest (AES-256-GCM). Durability for the default client path is WAL-backed; see [Durability Mode Support](Docs/Status/DURABILITY_MODE_SUPPORT.md) for modes, fsync behavior, and recovery details. The engine is single-process oriented. Multi-writer and network filesystem behavior are not the primary design target.
+BlazeDB is an encrypted embedded database: public open APIs require a password, and data is encrypted at rest with AES-GCM. Durability for the default client path is WAL-backed; see [Durability Mode Support](Docs/Status/DURABILITY_MODE_SUPPORT.md) for modes, fsync behavior, and recovery details. The engine is single-process oriented. Multi-writer and network filesystem behavior are not the primary design target.
 
 ---
 

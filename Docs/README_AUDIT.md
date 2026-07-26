@@ -244,4 +244,6 @@ Applied reviewer corrections without inventing new product claims:
 | Examples labeling | Explicit Default / Advanced / Conditional / Deferred / Experimental |
 | Security naming | Distinguished architecture (`Docs/Security/`) vs policy (`SECURITY.md`) |
 
-Remaining follow-ups unchanged: full link crawl, Apple platform badge vs CI, storage-change checklist.
+Remaining follow-ups: full Docs link crawl (README+Docs/README already checked: 115 links, 0 missing), storage-change checklist.
+
+Platform presentation and AES-GCM wording were fixed after the honesty review (Declared / CI-tested / Experimental split; Android and KMM labeled experimental).

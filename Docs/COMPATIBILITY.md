@@ -49,7 +49,18 @@
 
 ---
 
-## Platform Support
+## Platform support levels
+
+Use these words consistently:
+
+| Term | Meaning |
+|------|---------|
+| **Declared** | Appears in `Package.swift` `platforms:` |
+| **CI-tested (runtime)** | Automated tests run on that OS in CI |
+| **CI-tested (compile)** | Cross-compile succeeds in CI without claiming full runtime coverage |
+| **Experimental** | Engineering validation exists; not a production SDK claim (Android / KMM paths) |
+
+The root README summarizes this table. This document remains the detailed matrix.
 
 ### macOS
 - **Minimum:** macOS 15.0
