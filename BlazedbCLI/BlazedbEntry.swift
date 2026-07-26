@@ -5,8 +5,8 @@ import Foundation
 import BlazeDBCore
 import BlazeCLICore
 
-private func printHelp() {
-    CLIHelp.printGlobal()
+private func printHelp(includesDeveloperCommands: Bool = false) {
+    CLIHelp.printGlobal(includesDeveloperCommands: includesDeveloperCommands)
 }
 
 /// Write a line to stderr without touching the C `stderr` global, which Swift 6
@@ -667,6 +667,25 @@ private func handleMasterCommand(_ args: [String]) {
 enum BlazedbEntry {
     static func main() {
         let argv = Array(CommandLine.arguments.dropFirst())
+        let repositoryRoot = DeveloperCommands.findRepositoryRoot()
+
+        if argv.first == "help" || argv.first == "--help" || argv.first == "-h" {
+            CLIHelp.printGlobal(includesDeveloperCommands: repositoryRoot != nil)
+            return
+        }
+
+        if argv.first == "dev" {
+            do {
+                let code = try DeveloperCommands.run(
+                    arguments: Array(argv.dropFirst()),
+                    repositoryRoot: repositoryRoot
+                )
+                exit(code)
+            } catch {
+                writeStderrLine("💥 \(error.localizedDescription)")
+                exit(1)
+            }
+        }
 
         if argv.isEmpty || argv == ["start"] || argv == ["--scan-home"] {
             runStartFlow()
@@ -679,11 +698,6 @@ enum BlazedbEntry {
                 showStartupSplash: true,
                 masterMode: argv.contains("--master")
             )
-            return
-        }
-
-        if argv.first == "--help" || argv.first == "-h" {
-            printHelp()
             return
         }
 
@@ -776,7 +790,7 @@ enum BlazedbEntry {
         }
 
         guard let dbPath = filtered.first else {
-            printHelp()
+            printHelp(includesDeveloperCommands: repositoryRoot != nil)
             exit(1)
         }
 

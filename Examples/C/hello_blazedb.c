@@ -1,19 +1,13 @@
 /*
- * hello_blazedb.c — minimal BlazeDBC example (v2.8.0)
+ * hello_blazedb.c — minimal BlazeDBC example (v2.8.1+)
  *
- * Build (after: swift build -c release --product BlazeDBC):
+ * Prefer the shared library (see Examples/C/README.md):
  *
- *   # macOS (adjust Swift toolchain lib path as needed)
+ *   swift build -c release --product BlazeDBC
  *   cc -o hello_blazedb hello_blazedb.c \
  *     -I../../BlazeDBC/include \
- *     ../../.build/release/libBlazeDBC.a \
- *     $(swift -print-target-info 2>/dev/null | head -1 >/dev/null; \
- *       echo "-L$(dirname $(xcrun --find swift))/../lib/swift/macosx" 2>/dev/null) \
- *     -lswiftCore -lswiftFoundation -lc++ -framework Foundation -framework Security \
- *     || true
- *
- * Prefer linking via the same Swift toolchain that built libBlazeDBC.a.
- * See Examples/C/README.md for platform notes.
+ *     -L../../.build/release -lBlazeDBC \
+ *     -Wl,-rpath,../../.build/release
  */
 
 #include <stdio.h>

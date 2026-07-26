@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+set -euo pipefail
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$REPO_ROOT"
+BINARY="$REPO_ROOT/.build/debug/blazedb"
+needs_build=false
+if [[ ! -x "$BINARY" ]]; then
+    needs_build=true
+elif find \
+    "$REPO_ROOT/BlazeShell" \
+    "$REPO_ROOT/BlazedbCLI" \
+    "$REPO_ROOT/Package.swift" \
+    -type f -newer "$BINARY" 2>/dev/null | grep -q .; then
+    needs_build=true
+fi
+if [[ "$needs_build" == true ]]; then
+    swift build --product blazedb
+fi
+exec "$BINARY" dev "$@"

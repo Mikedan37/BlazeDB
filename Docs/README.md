@@ -1,119 +1,128 @@
 # BlazeDB Documentation
 
-This index separates the main public documentation path from maintainer-only or historical material. *Skim the headings to see where you are; you don’t have to read this file top to bottom.*
+This index is the navigation and authority map for BlazeDB docs. The [root README](../README.md) is the product homepage. This file tells you which guides are current, which are advanced, which are deferred, and which are internal or historical.
 
-## Support-State Framing
+Skim the headings. You do not need to read every linked page.
 
-*Quick mental model so you don’t assume sync/telemetry are in the default box.* Use this quick framing before diving into detailed docs:
+## Support state
 
-- **Default shipped core:** embedded encrypted engine, typed/raw APIs, durability, import/export, health/stats, CLI tooling.
-- **Advanced but supported:** migrations, schema validation, indexing/search tuning, manual mapping.
-- **Conditional/deferred:** distributed sync/server/discovery and full telemetry path outside default OSS runtime packaging.
-- **Historical/internal:** archive and project-management docs are non-authoritative for first-time adopters.
+`Package.swift`, tests, and CI are the source of truth when documentation and source layout disagree.
 
-## Audience Segmentation
+| Label | Meaning |
+|-------|---------|
+| **Default shipped core** | Built for normal open-source use: embedded storage, typed and raw APIs, transactions and durability, import/export, inspection APIs, and CLI tooling |
+| **Advanced but supported** | Public and usable, but not required for first use. Some topics still have documentation under consolidation (see below) |
+| **Conditional or deferred** | Source or design material that is not part of the default product, including distributed sync, server/discovery, and full telemetry packaging |
+| **Internal** | Maintainer analysis, audits, project records, and operational material; not a public behavior contract |
+| **Historical** | Superseded designs, milestones, and archived releases retained for context |
 
-*Each pile targets a different reader so you can ignore the wrong shelf.*
+## Audiences
 
-- **Public product docs:** what BlazeDB is, how to use it, what is supported now.
-- **Public maintainer docs:** release/testing/CI operations for contributors.
-- **Internal analysis docs:** branch/capability/positioning analysis artifacts for maintainers.
+| Audience | Start here |
+|----------|------------|
+| New Swift app developer | [Getting Started](GettingStarted/README.md) → [HOW_TO_USE](GettingStarted/HOW_TO_USE_BLAZEDB.md) |
+| Contributor | [CONTRIBUTING.md](../CONTRIBUTING.md) → `./dev help` → [CI and Test Tiers](Testing/CI_AND_TEST_TIERS.md) |
+| Maintainer / release | [Maintainer docs](#maintainer-docs) |
+| Embedder (C / FFI) | [C ABI + Byte KV](Architecture/C_ABI_BYTE_KV.md) |
+| Historian | [Historical material](#historical-material-non-authoritative) |
 
-Internal analysis material lives under [`Docs/Internal/`](Internal/README.md) and should not be treated as onboarding guidance.
+Internal analysis lives under [`Docs/Internal/`](Internal/README.md). It can contain useful reasoning, but it is not onboarding and not the behavior contract.
 
-## Documentation guide
+## Canonical public product docs
 
-*Map of the folders: what to trust for “how does it work today.”* BlazeDB documentation is organized into:
+Use these first for current behavior:
 
-- **Canonical docs (current, maintained):** Use these first for behavior and APIs:
-  - [Repository README](../README.md) (embeddable C ABI + Swift overview)
-  - [RELEASE.md](../RELEASE.md) (v2.8.0 embeddable release notes)
-  - [C ABI + Byte KV](Architecture/C_ABI_BYTE_KV.md) (frozen contract for language bindings)
-  - [Getting Started](GettingStarted/) (first run, HOW_TO_USE, Linux notes)
-  - [Testing / CI](Testing/) (tiers, test layout, execution model)
-  - [Release](Release/) (release-facing checklists and notes)
-  - [Architecture](Architecture/): **core embedded runtime** (storage, queries, durability); prefer these over informal design notes for “what ships” in OSS.
+| Doc | Subject |
+|-----|---------|
+| [Repository README](../README.md) | Product homepage and path chooser |
+| [RELEASE.md](../RELEASE.md) | Current release notes |
+| [Getting Started](GettingStarted/) | First run, Linux notes, storage paths |
+| [HOW_TO_USE_BLAZEDB.md](GettingStarted/HOW_TO_USE_BLAZEDB.md) | Longer usage guide |
+| [Developer Guide](DEVELOPER_GUIDE.md) | Public API walkthrough |
+| [API Reference](API/API_REFERENCE.md) | Lookup tables and signatures |
+| [Examples](../Examples/README.md) | Runnable samples labeled by support state |
+| [Architecture](Architecture/) | Core embedded runtime (storage, queries, durability) |
+| [C ABI + Byte KV](Architecture/C_ABI_BYTE_KV.md) | Documented C interoperability surface (scope of signature/behavior stability is defined in that doc) |
+| [Compatibility](COMPATIBILITY.md) | Platforms and expectations |
+| [Security architecture](Security/README.md) | Encryption, keys, and threat-model docs |
+| [Security policy](../SECURITY.md) | Vulnerability reporting and disclosure |
+| [Durability Mode Support](Status/DURABILITY_MODE_SUPPORT.md) | WAL, durability modes, and recovery behavior (includes default-path guarantees) |
+| [Key Management](Status/KEY_MANAGEMENT_AND_COMPATIBILITY.md) | Password and key behavior |
+| [Performance](Performance/README.md) | Tuning and performance concepts |
+| [Benchmarks](Benchmarks/README.md) | Executable workloads, methodology, and results |
+| [Tools](Tools/README.md) | CLI and companion tools |
 
-- **Design / forward-looking docs:** Distributed transport, sync topology, and related material may describe **non-default** or **deferred** surfaces. Always cross-check [Distributed transport deferred](Status/DISTRIBUTED_TRANSPORT_DEFERRED.md) and the root `README.md` for what the default SwiftPM product includes.
+## Start here (happy path)
 
-- **Archived / historical docs:** [`Archive/`](Archive/) holds snapshots, old milestones, and superseded write-ups. **Not authoritative** for current OSS behavior unless explicitly cross-linked from a maintained doc.
+1. [Getting Started](GettingStarted/README.md): install, run `HelloBlazeDB`, paste the starter snippet.
+2. [Default storage paths](GettingStarted/DEFAULT_STORAGE_PATHS.md): where files land on each platform.
+3. [Developer Guide](DEVELOPER_GUIDE.md): fuller API prose after something has run once.
+4. [API Reference](API/API_REFERENCE.md): when you already know the call you need.
+5. [Examples](../Examples/README.md): concrete files to copy or run (labeled Default / Advanced / Conditional / Experimental).
 
-## Start Here
+## Advanced but supported
 
-*If you’re new, hit these in roughly this order. You’ll stay on the happy path.*
+Still public and usable; not the first day of reading:
 
-- [Getting Started](GettingStarted/README.md): install the package, run `HelloBlazeDB`, paste the tiny starter snippet; the “I just want it working” path.
-- [Default storage paths](GettingStarted/DEFAULT_STORAGE_PATHS.md): macOS / iOS / Linux default DB and telemetry locations (canonical reference when paths matter).
-- [Developer Guide](DEVELOPER_GUIDE.md): longer walkthrough of the public API in prose (CRUD, queries, patterns); read after you’ve run something once.
-- [API Reference](API/API_REFERENCE.md): lookup tables and signatures when you already know what you’re trying to call.
-- [Examples](../Examples/): copy-paste runnable projects and patterns when docs need a concrete file to stare at.
+| Topic | Product status | Where to start | Documentation |
+|-------|----------------|----------------|---------------|
+| Migrations | Advanced and supported | [Docs/MIGRATION.md](MIGRATION.md) · [Developer Guide](DEVELOPER_GUIDE.md) | Maintained entry points |
+| Schema validation APIs | Advanced and supported | [API Reference](API/API_REFERENCE.md) · `SchemaValidation` in source | Dedicated guide under consolidation |
+| Indexing and search tuning | Advanced and supported | [Developer Guide](DEVELOPER_GUIDE.md) · [Performance](Performance/README.md) | Maintained entry points |
+| Manual mapping (`BlazeDocument`) | Advanced and supported | [Developer Guide](DEVELOPER_GUIDE.md) · [API Reference](API/API_REFERENCE.md) | Maintained entry points |
 
-## Core Product Docs
+SQLite/Core Data migrator write-ups and older Status migration notes may still exist. Treat them as historical or incomplete unless a maintained doc above links to them. Do not treat folder presence as a promise of a finished migration product experience.
 
-*Stuff you’ll want when something “should work on my OS” or “what happens on crash / upgrade.”*
+## Conditional / deferred
 
-- [Compatibility](COMPATIBILITY.md) for supported platforms and release expectations.
-- [Security](../SECURITY.md) for vulnerability reporting and disclosure expectations.
-- [Durability Mode Support](Status/DURABILITY_MODE_SUPPORT.md) for WAL and recovery guarantees.
-- [Key Management and Compatibility](Status/KEY_MANAGEMENT_AND_COMPATIBILITY.md) for password and key-handling behavior.
-- [Legacy Layout Migration Guidance](Status/LEGACY_LAYOUT_MIGRATION_GUIDANCE.md) for migration-sensitive upgrades.
-- [Architecture](Architecture/README.md) for system design and internals.
-- [Performance](Performance/README.md) for benchmark and performance guidance.
+May exist in the repo or docs without being the default OSS story:
 
-## Advanced Features (Supported)
+- [Distributed Transport Deferred](Status/DISTRIBUTED_TRANSPORT_DEFERRED.md)
+- [Sync Docs](Sync/README.md): design context; not default onboarding
+- Staging targets such as `BlazeDBSyncStaging` / `BlazeDBTelemetryStaging` in `Package.swift`: non-default packaging
+- Examples labeled Conditional, Deferred, or Experimental in [Examples/README.md](../Examples/README.md)
 
-*Still supported, just not the first day’s reading.*
+## Contributing and project policies
 
-- [Developer Guide](DEVELOPER_GUIDE.md) (advanced API sections)
-- [API Reference](API/API_REFERENCE.md) (full reference; includes advanced and conditional surfaces)
-- [Performance](Performance/README.md) (benchmark and tuning guidance)
-
-## Conditional / Deferred Features
-
-*May exist in the repo or docs but isn’t the default OSS story. Read so you don’t cargo-cult sync/transport.*
-
-- [Distributed Transport Deferred Status](Status/DISTRIBUTED_TRANSPORT_DEFERRED.md)
-- [Sync Docs](Sync/README.md) - design and deferred transport context; not default OSS onboarding
-- Telemetry and staging-related surfaces in source are conditional and should be treated as non-default runtime behavior
-
-## Contributing And Project Policies
-
-*Legal/social/process: how to contribute, behave, report issues, and what stability means.*
-
-- [Contributing Guide](../CONTRIBUTING.md)
+- [Contributing Guide](../CONTRIBUTING.md) (includes `./dev` workflows)
+- [Xcode schemes](Build/XCODE_SCHEMES.md) (lean shared schemes vs `./dev`)
 - [Code of Conduct](../CODE_OF_CONDUCT.md)
-- [Security Policy](../SECURITY.md)
+- [Security policy](../SECURITY.md) (reporting and disclosure)
 - [Support Policy](SUPPORT_POLICY.md)
 - [API Stability](API_STABILITY.md)
 - [Third-Party Notices](../THIRD_PARTY_NOTICES.md)
+- [Experiments](../Experiments/README.md)
 
-## Maintainer Docs
-
-*CI lanes, releases, checklists for people merging PRs or cutting releases.*
+## Maintainer docs
 
 - [CI and Test Tiers](Testing/CI_AND_TEST_TIERS.md)
 - [Testing Guide](TESTING_GUIDE.md)
-- [Release Rollback Procedure](Status/RELEASE_ROLLBACK.md)
-- [Open-Source Readiness Checklist](Status/OPEN_SOURCE_READINESS_CHECKLIST.md) (hosted CI expectations and local validation paths)
+- [Build docs](Build/README.md)
+- [Product audit](Product/PRODUCT_AUDIT.md) · [Roadmap backlog](Product/ROADMAP_BACKLOG.md)
+- [Storage-change checklist](Contributing/STORAGE_CHANGE_CHECKLIST.md)
+- [Release Rollback](Status/RELEASE_ROLLBACK.md)
+- [Open-Source Readiness Checklist](Status/OPEN_SOURCE_READINESS_CHECKLIST.md)
 - [External Security Review Plan](Status/EXTERNAL_SECURITY_REVIEW_PLAN.md)
-- [Master Documentation Index](MASTER_DOCUMENTATION_INDEX.md)
+- [Maintainer documentation inventory](MASTER_DOCUMENTATION_INDEX.md) (complete file inventory; **not** the curated public authority map; this Docs/README.md is)
 - [Agents Guide](AGENTS_GUIDE.md)
 
-## Internal Analysis Docs
+## Internal and project records
 
-*Deep dives and positioning notes; interesting for maintainers, not required reading for app devs.*
+These may include current maintainer work. They are not public behavior contracts.
 
 - [Internal Docs Index](Internal/README.md)
-- Analysis-style status artifacts are maintainer-facing and intentionally separated from user onboarding flow.
+- [Meta](Meta/README.md)
+- [Audit](Audit/README.md)
+- [Project](Project/README.md)
+- [README onboarding audit](README_AUDIT.md) (current; documents how the public homepage and index were verified)
 
-## Historical And Internal Material
+## Historical material (non-authoritative)
 
-*Old milestones, superseded designs, audits: useful for archaeology, not “current truth” unless linked from a maintained doc.*
+Old milestones and superseded designs can explain intent. They are not current truth unless a maintained doc explicitly points at them.
 
-- [Archive](Archive/) for historical release and design records (see [Archive README](Archive/README.md)).
-- [Meta](Meta/README.md) for internal project-management documentation.
-- [Audit](Audit/README.md) for audit snapshots and internal review artifacts.
-- [Project](Project/README.md) for project status and assessment notes.
-- [Tools](Tools/README.md) for tool-specific documentation.
+- [Archive](Archive/) and [Archive README](Archive/README.md)
+- Superseded Status snapshots and legacy migration notes not linked from the Advanced table above
 
-Use the sections above as the default path. Archive and internal folders are useful for maintainers, but they are not the recommended starting point for new adopters.
+## Documentation audit
+
+The latest onboarding and authority audit (with history findings and validation commands) is [README_AUDIT.md](README_AUDIT.md).

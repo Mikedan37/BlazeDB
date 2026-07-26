@@ -125,7 +125,8 @@ var blazeTargets: [Target] = [
         .executableTarget(
             name: "ReadmeSamples",
             dependencies: ["BlazeDB"],
-            path: "Examples/ReadmeSamples"
+            path: "Examples/ReadmeSamples",
+            exclude: ["README.md"]
         ),
         .executableTarget(
             name: "CorePathSmoke",

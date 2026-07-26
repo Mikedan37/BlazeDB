@@ -19,7 +19,7 @@ Add to your `Package.swift`:
 
 ```swift
 dependencies: [
- .package(url: "https://github.com/Mikedan37/BlazeDB.git", from: "2.7.5")
+ .package(url: "https://github.com/Mikedan37/BlazeDB.git", from: "2.8.1")
 ],
 targets: [
  .target(name: "YourApp", dependencies: ["BlazeDB"])
@@ -44,7 +44,7 @@ If you see "Success!", BlazeDB is working.
 
 ## Step 3: Starter Code
 
-Copy into your project. Same flow as [README Start Here](../../README.md#start-here-new-users): one file, structs, save → load → query.
+Copy into your project. Same flow as [README Start Here](../../README.md#start-here-new-users): open → put → query.
 
 ```swift
 import BlazeDB

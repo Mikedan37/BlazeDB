@@ -1,6 +1,6 @@
 # Stable C ABI + Byte KV Design
 
-**Status:** Implemented (v2.8.0) — commit `ac689c1d`  
+**Status:** Implemented (v2.8.0), commit `ac689c1d`  
 **Audience:** Engine maintainers and language-binding authors  
 **Header:** [`BlazeDBC/include/blazedb.h`](../../BlazeDBC/include/blazedb.h)
 
@@ -26,18 +26,35 @@ There is one storage implementation. The C ABI only speaks bytes. Typed Swift AP
 
 ## Compatibility rule (day one)
 
-Once a C function is published, its **signature and behavior never change**.
-
-New capabilities only via:
+Once a C function is published in `blazedb.h` for a given major line, its **caller-visible signature and documented behavior do not change** within that line. New capabilities appear only via:
 
 - new functions
 - new enum values
 - new flags
-- versioned option structs (`blazedb_open_ex`, etc.)
+- versioned option structs (for example `blazedb_open_ex`)
 
 Never by changing what an existing argument means.
 
-## Frozen C API (v2.8.0)
+### What this stability promise covers
+
+| Covered | Meaning |
+|---------|---------|
+| Exported symbol names | Published `blazedb_*` names remain available |
+| Function signatures | Parameter types, counts, and return types for published functions stay the same |
+| Documented behavior | Semantics described for those functions stay the same (same success/error meaning for the same inputs) |
+| Opaque handles | `BlazeDB *` stays opaque; callers must not depend on layout |
+
+| Not covered / not promised by this document | Meaning |
+|---------------------------------------------|---------|
+| Opaque struct memory layout | Callers must not inspect or serialize internal fields |
+| Binary drop-in across OS/ABI/toolchain | Rebuild and relink against the matching `libBlazeDBC` for your platform |
+| Swift typed APIs | `BlazeStorable` / `BlazeDB` Swift surface evolves under normal SwiftPM versioning |
+| Android `blazedb_bridge_*` demo exports | Separate from the long-term `blazedb.h` surface (see out-of-scope below) |
+| Major-version breaks | A future 3.x may intentionally change the C surface; that requires a new major and a migration note |
+
+If a change would break an existing published signature or its documented meaning, it does not ship as a silent patch: it waits for a new symbol, a new option struct, or an intentional major version.
+
+## Published C API (v2.8.0)
 
 Opaque handles (implementation stays in Swift):
 

@@ -25,4 +25,5 @@ List **exact** commands you ran (copy-paste from your terminal):
 - [ ] `git status` / `git diff` reviewed for containment
 - [ ] Docs updated in this PR if behavior or public usage changed
 - [ ] `Docs/SYSTEM_MAP.md` / `Docs/Testing/CI_AND_TEST_TIERS.md` updated **only if** this PR changes material surface, architecture, or CI/tier semantics (see PR expectations)
+- [ ] Storage/WAL/encryption/recovery changes: followed [Docs/Contributing/STORAGE_CHANGE_CHECKLIST.md](Docs/Contributing/STORAGE_CHANGE_CHECKLIST.md)
 - [ ] CI checks pass

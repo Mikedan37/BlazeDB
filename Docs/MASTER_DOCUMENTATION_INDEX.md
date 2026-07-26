@@ -1,6 +1,8 @@
-# BlazeDB - Master Documentation Index
+# BlazeDB documentation inventory (maintainer)
 
-**Complete guide to all BlazeDB documentation.**
+**This is a complete file inventory for maintainers.** It is not the curated public authority map.
+
+For public navigation and support-state labels, use [`Docs/README.md`](README.md).
 
 ---
 

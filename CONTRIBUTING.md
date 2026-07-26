@@ -4,6 +4,21 @@
 
 This guide explains how to add tests, what will be accepted, and what will be rejected.
 
+## Local developer commands
+
+From a package checkout:
+
+```bash
+./dev help
+./dev tests [search]
+./dev test <filter>
+./dev tier0
+```
+
+`./dev` owns repeatable test/tier/experiment workflows. It reuses `.build/debug/blazedb` when possible and rebuilds when `BlazeShell`, `BlazedbCLI`, or `Package.swift` are newer than that binary. Xcode schemes stay lean for interactive Run / Profile / Analyze / Archive — see [Docs/Build/XCODE_SCHEMES.md](Docs/Build/XCODE_SCHEMES.md).
+
+Storage-format, WAL, encryption, and recovery changes: follow [Docs/Contributing/STORAGE_CHANGE_CHECKLIST.md](Docs/Contributing/STORAGE_CHANGE_CHECKLIST.md).
+
 ## PR expectations
 
 Keep PRs **narrow** and **self-contained**.
@@ -220,7 +235,7 @@ Place test files under the correct `BlazeDBTests/...` paths; target names remain
 
 ### Code Changes
 
-- Changes to frozen core files (PageStore, WAL, encoding)
+- Changes to frozen core files (PageStore, WAL, encoding) **without** following the [storage-change checklist](Docs/Contributing/STORAGE_CHANGE_CHECKLIST.md) and documenting compatibility impact
 - Breaking API changes without migration path
 - Changes that weaken safety guarantees
 - Changes that add `fatalError` to production code
