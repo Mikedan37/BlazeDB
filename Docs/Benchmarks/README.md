@@ -40,8 +40,11 @@ BlazeDB's design choices reduce CPU burn in typical embedded scenarios:
 
 ```bash
 # Side-by-side secure vs engine-only vs SQLite (recommended; publishes RESULTS.md)
-chmod +x ./Scripts/run_comparison_benchmarks.sh
+chmod +x ./Scripts/run_comparison_benchmarks.sh ./Scripts/run_concurrent_mvcc_comparison.sh
 ./Scripts/run_comparison_benchmarks.sh --release
+
+# MVCC on vs off under concurrent load (8 readers + 1 writer, ~2 min)
+./Scripts/run_concurrent_mvcc_comparison.sh --release
 
 # Full condition matrix (baseline + mvcc_off + encryption_off) — long run (~45 min)
 python3 Scripts/run_core_benchmark_matrix.py
@@ -105,6 +108,12 @@ Historical benchmark numbers dropped sharply after security hardening — not be
 
 **Do not cite** pre-June-2026 cold-open numbers or `PERFORMANCE.md` design targets as current production performance.
 
+### MVCC and concurrent reads
+
+MVCC is **off by default** in production. The old `setMVCCEnabled` doc claimed "10–100× faster" concurrent reads — that was unverified. Benchmark **#12** (`./Scripts/run_concurrent_mvcc_comparison.sh --release`) measures **8 concurrent readers + 1 writer** for 5 seconds.
+
+See `benchmark_results/concurrent/CONCURRENT_MVCC.md` after running the script. Single-threaded benchmarks are not representative of MVCC; use #12 for MVCC claims.
+
 ---
 
 ## Benchmark Methodology
@@ -114,6 +123,9 @@ Historical benchmark numbers dropped sharply after security hardening — not be
 - **Same language** - Swift for both (SQLite via C API)
 - **Cold caches** - Each benchmark starts fresh (unless noted)
 - **Condition matrix** - Core benchmarks are run under requested permutations (MVCC/WAL/encryption requests) with support status attached per row.
+- **Fair SQLite pairing**
+  - **Per-row insert:** BlazeDB `insert()` vs SQLite `BEGIN IMMEDIATE` + `INSERT` + `COMMIT` per row (`synchronous=FULL`, WAL).
+  - **Batch insert:** BlazeDB `insertMany(batch)` vs SQLite `BEGIN` + N× `INSERT` + `COMMIT` per batch (same batch size).
 
 ### Condition Coverage
 

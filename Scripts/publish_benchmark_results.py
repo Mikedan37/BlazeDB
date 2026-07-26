@@ -27,6 +27,7 @@ METHODOLOGY_PREAMBLE = """\
 - **Cold open:** session cleared before each of 10 open cycles (true KDF cost)
 - **Warm reopen:** 10 close/reopen cycles **without** `clearSessionKeys()` (in-process session cache)
 - **SQLite reference:** WAL + `synchronous=FULL`, no encryption (not apples-to-apples with secure BlazeDB)
+- **Insert pairing (fair):** per-row rows compare BlazeDB `insert()` to SQLite `BEGIN IMMEDIATE` + `INSERT` + `COMMIT` per row; batch rows compare BlazeDB `insertMany(batch)` to SQLite one transaction per batch
 - **Full matrix** (`mvcc_off`, `encryption_off_requested`, …): run `python3 Scripts/run_core_benchmark_matrix.py` separately
 
 ### What changed since March 2026
