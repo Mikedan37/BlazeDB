@@ -1,13 +1,26 @@
 # BlazeDB Examples
 
-Runnable examples from basic to advanced.
+Runnable examples from basic to advanced. Prefer the curated order below for onboarding. Support-state labels match the [documentation index](../Docs/README.md).
 
 ---
 
-## Embeddable C ABI (v2.8.0)
+## Start Here (recommended order)
 
-| Example | What You'll Learn |
-|---------|-------------------|
+| Order | Example | What you learn | Run command |
+|-------|---------|----------------|-------------|
+| 1 | [HelloBlazeDB](HelloBlazeDB/) | Canonical `open → put → get → query` | `swift run HelloBlazeDB` |
+| 2 | [CorePathSmoke](CorePathSmoke/) | Portable core path (`BLAZEDB_LINUX_CORE`) | `swift run CorePathSmoke` |
+| 3 | [MVVMPattern](MVVMPattern/) | Repository + ViewModel without SwiftUI | `swift run MVVMPattern` |
+| 4 | [BasicExample](BasicExample/) | CRUD operations | `swift run BasicExample` |
+| 5 | [ReferenceConsumer](ReferenceConsumer/) | Lifecycle example | `swift run ReferenceConsumer` |
+| 6 | [ReadmeSamples](ReadmeSamples/) | CI-verified README snippets | `swift run ReadmeSamples` |
+
+---
+
+## Embeddable C ABI
+
+| Example | What you learn |
+|---------|----------------|
 | [C/hello_blazedb.c](C/hello_blazedb.c) | Stable C ABI: open → put → get → free → delete → close |
 | [Go/README.md](Go/README.md) | Preview of the upcoming `blazedb-go` wrapper API |
 
@@ -15,22 +28,9 @@ See [C/README.md](C/README.md) for link flags after `swift build -c release --pr
 
 ---
 
-## Start Here (Recommended Order)
+## All examples by support state
 
-| Order | Example | What You'll Learn | Run Command |
-|-------|---------|-------------------|-------------|
-| 1 | HelloBlazeDB | Canonical `open → put → get → query` flow | `swift run HelloBlazeDB` |
-| 2 | CorePathSmoke | Portable core path (`BLAZEDB_LINUX_CORE`): open, put, get, query, observe | `swift run CorePathSmoke` |
-| 3 | MVVMPattern | Repository + ViewModel without SwiftUI (Android-shaped architecture) | `swift run MVVMPattern` |
-| 4 | BasicExample | CRUD operations | `swift run BasicExample` |
-| 3 | QueryBuilderExample | Fluent query filters | See file |
-| 4 | ReferenceConsumer | Lifecycle example | `swift run ReferenceConsumer` |
-
----
-
-## All Examples by Support State
-
-### Core Embedded Examples (Default Shipped Path)
+### Core embedded examples (default shipped path)
 | File | Description |
 |------|-------------|
 | `HelloBlazeDB/main.swift` | Minimal default API path (`BlazeDB.open`, `put`, `get`, `query`) |
@@ -43,7 +43,7 @@ See [C/README.md](C/README.md) for link flags after `swift build -c release --pr
 | `MonitorDatabases.swift` | Health/stats oriented operations |
 | `ReferenceConsumer/main.swift` | Production lifecycle example |
 
-### Advanced but Core-Supported Examples
+### Advanced but core-supported examples
 | File | Description |
 |------|-------------|
 | `MigrationExamples.swift` | Schema migration workflow |
@@ -56,23 +56,23 @@ See [C/README.md](C/README.md) for link flags after `swift build -c release --pr
 | `DataSeedingExample.swift` | Test/seed data generation |
 | `PrettyPrintExample.swift` | Debug formatting and inspection |
 
-### Conditional / Deferred / Platform-Gated Examples
+### Conditional / deferred / platform-gated examples
 | File | Description |
 |------|-------------|
 | `SyncExample_*.swift` | Sync/distributed examples; deferred from default OSS runtime packaging |
 | `TelemetryBasicExample.swift` | Telemetry API walkthrough; full telemetry behavior is build-configuration dependent |
 | `VectorIndexExample.swift` | Advanced indexing with platform/build caveats |
-| `SwiftUIExample.swift` | SwiftUI integration with `@BlazeQuery` / `@BlazeQueryTyped` and DB-change-driven query refresh |
+| `SwiftUIExample.swift` | SwiftUI integration with `@BlazeQuery` / `@BlazeQueryTyped` |
 | `VaporServer/main.swift` | Server integration example; optional deployment model |
 
-See `SYNC_EXAMPLES_INDEX.md` for full sync design docs and caveats.
+See `SYNC_EXAMPLES_INDEX.md` for sync design docs and caveats.
 
-### Experimental / Under-Development Examples
+### Experimental / under-development examples
 | File | Description |
 |------|-------------|
-| `RLSExample.swift` | Row-level security (under development; not available in this release) |
-| `AshPileWithRLS.swift` | RLS app pattern sample (under development; not available in this release) |
-| `AshPileExample.swift`, `AshPileDebugMenu.swift` | Companion app/experimental workflows |
+| `RLSExample.swift` | Row-level security samples; confirm availability against current release notes |
+| `AshPileWithRLS.swift` | RLS app pattern sample |
+| `AshPileExample.swift`, `AshPileDebugMenu.swift` | Companion app / experimental workflows |
 
 ---
 
