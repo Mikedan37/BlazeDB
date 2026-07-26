@@ -69,8 +69,8 @@ The root README summarizes this table. This document remains the detailed matrix
 
 ### iOS
 - **Minimum:** iOS 15.0
-- **Status:** Fully supported
-- **Notes:** All features available
+- **Status:** Declared and CI-tested (compile)
+- **Notes:** `Package.swift` declares iOS 15+. PR CI cross-compiles `BlazeDBCore` for iOS; full XCTest runtime on iOS Simulator is not a PR gate. Prefer README wording: runtime CI is macOS/Linux; Apple mobile platforms are compile-tested unless a runtime job is explicitly listed.
 
 ### Linux
 - **Platform:** aarch64 (tested on Orange Pi 5 Ultra)

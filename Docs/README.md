@@ -64,12 +64,12 @@ Use these first for current behavior:
 
 Still public and usable; not the first day of reading:
 
-| Topic | Where to start | Doc status |
-|-------|----------------|------------|
-| API / password migration notes | [Docs/MIGRATION.md](MIGRATION.md) | Maintained for public API churn |
-| Schema validation APIs | [API Reference](API/API_REFERENCE.md) · `SchemaValidation` in source | Implemented; dedicated guide under consolidation |
-| Indexing and search tuning | [Developer Guide](DEVELOPER_GUIDE.md) · [Performance](Performance/README.md) | Supported; prefer these over older Status notes |
-| Manual mapping (`BlazeDocument`) | [Developer Guide](DEVELOPER_GUIDE.md) · [API Reference](API/API_REFERENCE.md) | Supported |
+| Topic | Product status | Where to start | Documentation |
+|-------|----------------|----------------|---------------|
+| Migrations | Advanced and supported | [Docs/MIGRATION.md](MIGRATION.md) · [Developer Guide](DEVELOPER_GUIDE.md) | Maintained entry points |
+| Schema validation APIs | Advanced and supported | [API Reference](API/API_REFERENCE.md) · `SchemaValidation` in source | Dedicated guide under consolidation |
+| Indexing and search tuning | Advanced and supported | [Developer Guide](DEVELOPER_GUIDE.md) · [Performance](Performance/README.md) | Maintained entry points |
+| Manual mapping (`BlazeDocument`) | Advanced and supported | [Developer Guide](DEVELOPER_GUIDE.md) · [API Reference](API/API_REFERENCE.md) | Maintained entry points |
 
 SQLite/Core Data migrator write-ups and older Status migration notes may still exist. Treat them as historical or incomplete unless a maintained doc above links to them. Do not treat folder presence as a promise of a finished migration product experience.
 
@@ -98,6 +98,8 @@ May exist in the repo or docs without being the default OSS story:
 - [CI and Test Tiers](Testing/CI_AND_TEST_TIERS.md)
 - [Testing Guide](TESTING_GUIDE.md)
 - [Build docs](Build/README.md)
+- [Product audit](Product/PRODUCT_AUDIT.md) · [Roadmap backlog](Product/ROADMAP_BACKLOG.md)
+- [Storage-change checklist](Contributing/STORAGE_CHANGE_CHECKLIST.md)
 - [Release Rollback](Status/RELEASE_ROLLBACK.md)
 - [Open-Source Readiness Checklist](Status/OPEN_SOURCE_READINESS_CHECKLIST.md)
 - [External Security Review Plan](Status/EXTERNAL_SECURITY_REVIEW_PLAN.md)

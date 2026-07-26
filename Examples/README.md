@@ -22,7 +22,7 @@ Runnable examples from basic to advanced. Prefer the curated order below for onb
 | Example | What you learn |
 |---------|----------------|
 | [C/hello_blazedb.c](C/hello_blazedb.c) | Stable C ABI: open → put → get → free → delete → close |
-| [Go/README.md](Go/README.md) | Preview of the upcoming `blazedb-go` wrapper API |
+| [Go/README.md](Go/README.md) | Documented cgo recipe against `BlazeDBC` (no checked-in Go module yet) |
 
 See [C/README.md](C/README.md) for link flags after `swift build -c release --product BlazeDBC`.
 
