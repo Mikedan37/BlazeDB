@@ -214,6 +214,17 @@ struct DoneItemsView: View {
 }
 ```
 
+Need **every** row sorted, with no `where`? Use the sort-only form (`sortBy` is the persisted field name string, not a `KeyPath`):
+
+```swift
+@BlazeStorableQuery(
+    kind: Item.self,
+    sortBy: "title",
+    descending: true
+)
+private var itemsByTitle: [Item]
+```
+
 Use **`MainTabView()`** in the **`WindowGroup`** instead of **`ContentView()`** when you adopt this shape — the injection line is unchanged:
 
 ```swift

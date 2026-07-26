@@ -166,6 +166,19 @@ Filtered list:
 private var openTasks: [Task]
 ```
 
+All rows, sorted (no filter) — use the sort-only initializer:
+
+```swift
+@BlazeStorableQuery(
+    kind: Task.self,
+    sortBy: "priority",
+    descending: true
+)
+private var tasksByPriority: [Task]
+```
+
+`sortBy` takes the **persisted field name** (`String`), the same encoding name you would use in filters — not a `KeyPath`. For KeyPath-based ordering outside SwiftUI, use `db.query(T.self).orderBy(\.field, ...)`.
+
 Readable alias (same type as **`@BlazeStorableQuery`**):
 
 ```swift
