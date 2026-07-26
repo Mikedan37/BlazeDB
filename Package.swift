@@ -55,7 +55,7 @@ var blazeTargets: [Target] = [
                 // crash on Swift 6.0.x, they can add the same flag to their own target.
             ]
         ),
-        
+
         // MARK: - Umbrella Target (backward compatibility)
         // Provides "BlazeDB" product for downstream consumers
         // Re-exports BlazeDBCore only; distributed modules excluded until Swift 6 compliant
@@ -79,7 +79,7 @@ var blazeTargets: [Target] = [
             dependencies: [],
             path: "BlazeDB/TelemetryStaging"
         ),
-        
+
         // MARK: - CLI (blazedb)
         .target(
             name: "BlazeCLICore",
@@ -171,7 +171,7 @@ var blazeTargets: [Target] = [
             path: "Examples/ReferenceConsumer",
             exclude: ["README.md"]
         ),
-        
+
         // MARK: - Test Targets
 
         // Tier 0: deterministic correctness and gate-level durability checks.
@@ -208,6 +208,18 @@ if !tier0OnlyTestScope {
                 .define("BLAZEDB_LINUX_CORE", .when(platforms: [.linux, .android]))
             ]
         ),
+        // Apple-platform SwiftUI wrapper tests.
+
+            .testTarget(
+
+                name: "BlazeDB_SwiftUITests",
+
+                dependencies: ["BlazeDB"],
+
+                path: "BlazeDBTests/SwiftUI"
+
+            ),
+
         // Tier 2: integration/recovery and deeper deterministic validation.
         .testTarget(
             name: "BlazeDB_Tier2",
