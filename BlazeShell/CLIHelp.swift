@@ -6,7 +6,7 @@
 import Foundation
 
 public enum CLIHelp {
-  public static func printGlobal() {
+  public static func printGlobal(includesDeveloperCommands: Bool = false) {
     print(CLIBranding.heroLines().joined(separator: "\n"))
     print(
       """
@@ -28,6 +28,54 @@ public enum CLIHelp {
       \(CLIColors.muted("Master tip: BLAZEDB_MASTER_PASSWORD is for automation only; avoid in shell history."))
       """
     )
+    if includesDeveloperCommands {
+      print(
+        """
+
+        \(CLIColors.bold("Developer"))
+          dev help                 Show repository developer commands
+          dev tiers                List test tiers and runners
+          dev tests [search]       Find tests by name
+          dev test <filter>        Run one focused test
+          dev experiments          List repository experiments
+          dev experiment <name>    Run a discovered experiment
+        """
+      )
+    }
+  }
+
+  public static func printDeveloper(experiments: [DeveloperExperiment] = []) {
+    print(
+      """
+      \(CLIColors.bold("blazedb dev")) — repository developer commands
+
+      \(CLIColors.bold("Commands"))
+        \(CLIColors.ice("dev help"))                 Show this help
+        \(CLIColors.ice("dev tiers"))                List test tiers and runners
+        \(CLIColors.ice("dev tier0")) … \(CLIColors.ice("tier3"))         Run Scripts/run-tierN.sh
+        \(CLIColors.ice("dev tests [search]"))       Find tests by name
+        \(CLIColors.ice("dev test <filter>"))        Run one focused Tier 0 test
+        \(CLIColors.ice("dev experiments"))          List repository experiments
+        \(CLIColors.ice("dev experiment <name>"))    Run a discovered experiment
+
+      \(CLIColors.bold("Examples"))
+        blazedb dev tiers
+        blazedb dev tests BPlusTree
+        blazedb dev test BPlusTreeNodeTests.createsSimpleTree
+        blazedb dev tier0
+        blazedb dev experiments
+        blazedb dev experiment btree-search -- --records 10000
+      """
+    )
+    print("")
+    print(CLIColors.bold("Experiments"))
+    if experiments.isEmpty {
+      print("  See Experiments/README.md for how to add repository experiments.")
+    } else {
+      for experiment in experiments {
+        print("  \(experiment.name)    \(experiment.summary)")
+      }
+    }
   }
 
   public static func printPicker() {
