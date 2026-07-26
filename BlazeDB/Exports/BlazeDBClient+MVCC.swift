@@ -16,17 +16,18 @@ extension BlazeDBClient {
     /// Enable MVCC for concurrent access (EXPERIMENTAL)
     ///
     /// When enabled, BlazeDB uses Multi-Version Concurrency Control for:
-    /// - Concurrent reads (10-100x faster!)
-    /// - Snapshot isolation (consistent views)
+    /// - Snapshot isolation (consistent views while a writer commits)
     /// - Optimistic locking (conflict detection)
-    /// - Automatic garbage collection
+    /// - Non-blocking reads while writes are in flight (see concurrent benchmark #12)
     ///
-    /// Performance impact:
-    /// - Concurrent reads: 10-100x faster
-    /// - Single-threaded: ~5-10% overhead
-    /// - Memory: +50-100% (managed by GC)
+    /// **Performance:** MVCC is not a single-threaded throughput boost. The honest harness
+    /// (`BlazeDBBenchmarks` #12: N concurrent readers + 1 writer) is the workload that
+    /// validates MVCC vs legacy serial mode. Single-threaded sequential reads are typically
+    /// **faster with MVCC off** (production default).
     ///
-    /// - Parameter enabled: true to enable MVCC, false for legacy mode
+    /// Run: `BLAZEDB_BENCH_ONLY=concurrent ./Scripts/run_concurrent_mvcc_comparison.sh --release`
+    ///
+    /// - Parameter enabled: true to enable MVCC, false for legacy mode (default)
     public func setMVCCEnabled(_ enabled: Bool) {
         collection.queue.sync(flags: .barrier) {
             let previous = collection.mvccEnabled
