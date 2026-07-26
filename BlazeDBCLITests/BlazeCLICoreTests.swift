@@ -859,6 +859,17 @@ final class BlazedbRLSIntegrationSurfaceTests: XCTestCase {
         XCTAssertTrue(source.contains("blazedb rls <command>"))
     }
 
+    func testGlobalHelpIncludesConditionalDeveloperBlockSource() throws {
+        let helpURL = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .appendingPathComponent("BlazeShell/CLIHelp.swift")
+        let source = try String(contentsOf: helpURL, encoding: .utf8)
+        XCTAssertTrue(source.contains("includesDeveloperCommands"))
+        XCTAssertTrue(source.contains("dev help"))
+        XCTAssertTrue(source.contains("dev experiments"))
+    }
+
     func testRunShellAppliesRLSConfigAndFetchAllJSONUpdatesContextSourceGuard() throws {
         let fileURL = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()
