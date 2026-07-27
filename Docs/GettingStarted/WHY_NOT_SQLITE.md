@@ -1,245 +1,111 @@
 # Why Not SQLite?
 
-**Comparisons and tradeoffs with SQLite and other embedded databases.**
+Honest comparison for choosing between BlazeDB and SQLite as an embedded store.
 
-> **OSS core positioning:** The **default open-source `BlazeDB` package** is an **embedded engine** (ACID, encryption, queries, export/restore). **Distributed sync is not part of that default runtime** today; it is planned / deferred—see `README.md` and `Docs/Status/DISTRIBUTED_TRANSPORT_DEFERRED.md`. Where this page compares “sync,” read it as **product direction and optional layers**, not something every SwiftPM consumer gets out of the box.
-
----
-
-## Quick Comparison
-
-| Feature | BlazeDB | SQLite | Realm | Core Data |
-|---------|---------|--------|-------|-----------|
-| **Encryption** | AES-256-GCM (default) | Optional extension | Optional | No |
-| **Schema** | Dynamic, no migrations | Static, requires migrations | Static, migrations | Static, complex migrations |
-| **Concurrency** | MVCC snapshot isolation | File-level locking | MVCC | Context-based |
-| **Performance** | Predictable, optimized for Apple Silicon | Variable under load | Fast, but licensing | Variable, object graph overhead |
-| **Query Language** | Fluent Swift API | SQL | Fluent API | NSPredicate |
-| **Platform** | macOS/iOS/Linux (Swift) | Universal (C) | Cross-platform | macOS/iOS only |
-| **Dependencies** | No external *services*; SwiftPM includes crypto primitives (e.g. `swift-crypto` on Linux—see `THIRD_PARTY_NOTICES.md`) | Zero | Large SDK | Built-in |
-| **Sync** | Planned distributed layer (not default in current OSS core) | None | Proprietary cloud | CloudKit (Apple only) |
+This page is about **product fit**, not stopwatch marketing. Measured latency and throughput belong in the benchmark docs linked below.
 
 ---
 
-## When to Use BlazeDB
+## Short answer
 
-### Use BlazeDB when:
+**Choose BlazeDB** when you want an encrypted, Swift-native embedded engine with typed records, live queries, local inspection tooling, and native embedding through the C ABI.
 
-- **Encryption by default**: Need encryption at rest without configuration
-- **Schema flexibility**: Dynamic schemas without migration complexity
-- **Swift-native**: Building Swift applications with idiomatic APIs
-- **Predictable performance**: Consistent latency under varying workloads
-- **Multi-device sync (roadmap)**: If you want a Swift-native path toward distributed sync when that layer is supported—not a guarantee of the current default OSS build
-- **Apple Silicon optimization**: Targeting macOS/iOS with best performance
+**Choose SQLite** when SQL compatibility, ecosystem maturity, third-party tooling, broad language support, or lower insert and cold-open latency matter more.
 
-### Performance Advantages
-
-- **10% faster inserts** than SQLite (optimized page writes)
-- **33% faster queries** than SQLite (indexed lookups)
-- **Sub-millisecond latency** for common operations
-- **Linear scaling** with CPU cores
+**Do not choose BlazeDB** because of deferred sync, a standalone server story, or unsupported speed claims.
 
 ---
 
-## When to Use SQLite
+## Shipped vs deferred
 
-### Use SQLite when:
-
-- **SQL compatibility**: Need SQL queries and complex joins
-- **Universal compatibility**: C API works everywhere
-- **Battle-tested**: 20+ years of production use
-- **Maximum compatibility**: Widest platform support
-- **SQL expertise**: Team familiar with SQL
-
-### SQLite Advantages
-
-- **Mature**: 20+ years, billions of deployments
-- **SQL standard**: Full SQL compatibility
-- **Extensive tooling**: SQLite CLI, GUI tools, libraries
-- **Documentation**: Comprehensive, well-documented
-- **Community**: Large community, Stack Overflow answers
+| Capability | BlazeDB today | Notes |
+|------------|---------------|-------|
+| Encrypted embedded storage (AES-GCM, password on public open APIs) | **Shipped** | Default path for public open APIs |
+| Typed Swift records (`BlazeStorable`) and raw / byte key-value APIs | **Shipped** | |
+| Fluent Swift queries (no SQL string engine) | **Shipped** | |
+| Transactional write APIs and WAL-backed recovery | **Shipped** | See durability docs for modes and caveats |
+| Live queries and SwiftUI integration (Apple platforms) | **Shipped** | |
+| Local inspection (`blazedb` CLI/REPL, maintenance tools) | **Shipped** | |
+| Documented C ABI (`BlazeDBC`) | **Shipped** | Go via cgo is a recipe, not an official Go module |
+| Optional schema validation and migrations | **Shipped (advanced)** | Flexible by default; migrations exist when you opt in |
+| Optional Secure Enclave-assisted key storage | **Platform optional** | Not required for default password-derived encryption |
+| Multi-device sync / discovery / network server | **Deferred** | Not part of the default OSS package |
+| SQL string dialect | **Not shipped** | Use SQLite if you need SQL |
 
 ---
 
-## Detailed Tradeoffs
+## When BlazeDB is a good fit
+
+- You are building Swift applications or in-process Swift services (including Vapor embedding).
+- You want encryption at rest without bolting on a separate cipher extension.
+- You prefer typed documents and fluent Swift queries over SQL strings.
+- You want in-process live queries and Apple-platform SwiftUI observation.
+- You need a local CLI/REPL and related inspection tools against the same engine.
+- You may embed the engine from C (or languages that call C) through `BlazeDBC`.
+
+---
+
+## When SQLite is the better choice
+
+- You need SQL compatibility, complex joins, or existing SQL tooling and expertise.
+- You need the broadest language and platform ecosystem (C API everywhere).
+- You care most about raw insert throughput or cold-open latency on an unencrypted store.
+- You want decades of production battle history and a large third-party tooling surface.
+- You do not need encryption by default (or you already standardize on SQLCipher / similar).
+
+---
+
+## Tradeoffs (without invented percentages)
 
 ### Encryption
 
-**BlazeDB:**
-- Encryption by default (AES-256-GCM)
-- Per-page encryption with unique nonces
-- Secure Enclave integration (iOS/macOS)
-- Zero configuration required
+BlazeDB public open APIs require a password; stored pages use AES-GCM. SQLite encryption is optional and typically comes from an extension (for example SQLCipher). Prefer BlazeDB when encryption-by-default is a primary requirement.
 
-**SQLite:**
-- Encryption via SQLCipher extension
-- File-level encryption
-- Requires separate library
-- Additional configuration
+### Query model
 
-**Verdict**: BlazeDB wins for encryption-by-default use cases.
+BlazeDB uses fluent Swift APIs. SQLite uses SQL. Prefer SQLite for SQL-heavy workloads and existing SQL ecosystems; prefer BlazeDB for Swift-native typed access.
 
----
+### Schema
 
-### Schema Management
+BlazeDB models are often flexible day-to-day, with **optional** schema validation and a real migration surface when you need it. SQLite uses explicit SQL schemas and migrations. Neither product is “migration-free” for every evolution story.
 
-**BlazeDB:**
-- Dynamic schemas, no migrations
-- Add fields without schema changes
-- Type inference from data
-- Zero downtime schema evolution
+### Concurrency and process model
 
-**SQLite:**
-- Static schemas, ALTER TABLE required
-- Migrations needed for changes
-- Schema versioning required
-- Potential downtime for migrations
-
-**Verdict**: BlazeDB wins for rapid iteration and schema flexibility.
-
----
-
-### Concurrency
-
-**BlazeDB:**
-- MVCC snapshot isolation
-- No read-write blocking
-- Concurrent readers and writers
-- Predictable performance
-
-**SQLite:**
-- File-level locking
-- WAL mode improves concurrency
-- Still has write contention
-- Variable performance under load
-
-**Verdict**: BlazeDB wins for high-concurrency workloads.
-
----
-
-### Query Language
-
-**BlazeDB:**
-- Fluent Swift API
-- Type-safe query builder
-- Automatic index selection
-- Swift-idiomatic
-
-**SQLite:**
-- SQL standard
-- Powerful and expressive
-- Complex queries possible
-- Requires SQL knowledge
-
-**Verdict**: SQLite wins for complex SQL queries. BlazeDB wins for Swift-native APIs.
-
----
+BlazeDB is designed as a **single-process** embedded engine. Multi-process writers are not supported; network filesystems are not recommended. SQLite has a long history of multi-connection patterns (with its own locking and WAL rules). Do not treat BlazeDB as a drop-in multi-writer file server.
 
 ### Performance
 
-**BlazeDB:**
-- Predictable latency
-- Optimized for Apple Silicon
-- Sub-millisecond queries
-- Linear scaling
+Do **not** trust free-floating “X% faster than SQLite” slogans on this page or elsewhere in the repo without measured methodology.
 
-**SQLite:**
-- Variable performance
-- Optimized for general use
-- Fast for simple queries
-- Can degrade under load
+Authoritative measured comparisons:
 
-**Verdict**: BlazeDB wins for predictable performance. SQLite wins for maximum raw speed in some cases.
+- [Docs/Benchmarks/README.md](../Benchmarks/README.md) (how to run and how to read results)
+- [Docs/Benchmarks/COMPARISON.md](../Benchmarks/COMPARISON.md) (headline BlazeDB vs SQLite table)
+- [Docs/Benchmarks/RESULTS.md](../Benchmarks/RESULTS.md) and [LATENCY.md](../Benchmarks/LATENCY.md)
 
----
+In current measured comparison runs, SQLite typically wins raw insert throughput and cold-open latency on the unencrypted reference path. BlazeDB’s secure default path includes encryption and different durability costs. Some concurrent-read harness numbers favor BlazeDB; treat those as workload-specific, not a general “faster than SQLite” claim.
 
-### Platform Support
+### Sync and servers
 
-**BlazeDB:**
-- macOS/iOS/Linux (Swift)
-- Best on Apple Silicon
-- Swift runtime required
-
-**SQLite:**
-- Universal (C)
-- Works everywhere
-- No runtime dependencies
-
-**Verdict**: SQLite wins for maximum compatibility. BlazeDB wins for Swift-native integration.
-
----
-
-## Migration Path
-
-### From SQLite to BlazeDB
-
-1. Export SQLite data to JSON
-2. Import into BlazeDB
-3. Update queries to Fluent API
-4. Test thoroughly
-
-### From BlazeDB to SQLite
-
-1. Export BlazeDB data to JSON
-2. Create SQLite schema
-3. Import data
-4. Update queries to SQL
-
----
-
-## Honest Assessment
-
-### BlazeDB Strengths
-
-- Encryption by default
-- Schema flexibility
-- Swift-native API
-- Predictable performance
-- Roadmap toward distributed sync (not the default OSS core surface today)
-
-### BlazeDB Weaknesses
-
-- Newer (less battle-tested)
-- Smaller community
-- No SQL compatibility
-- Swift-only
-
-### SQLite Strengths
-
-- Mature and stable
-- SQL compatibility
-- Universal platform support
-- Large community
-
-### SQLite Weaknesses
-
-- No encryption by default
-- Schema migrations required
-- Variable performance
-- No built-in sync
+Distributed sync, discovery, and a networked BlazeDB server are **not** reasons to choose BlazeDB today. They are deferred from the default open-source package. See [DISTRIBUTED_TRANSPORT_DEFERRED.md](../Status/DISTRIBUTED_TRANSPORT_DEFERRED.md).
 
 ---
 
 ## Recommendation
 
-**Choose BlazeDB if:**
-- Building Swift applications
-- Need encryption by default
-- Want schema flexibility
-- Prioritize predictable performance
-- Want a Swift-native embedded engine today and can adopt sync when it is supported for your deployment
+Choose **BlazeDB** for encrypted Swift-native embedded storage, typed records, live queries, local inspection tooling, and native embedding through the C ABI.
 
-**Choose SQLite if:**
-- Need SQL compatibility
-- Require maximum compatibility
-- Want battle-tested stability
-- Have SQL expertise
-- Don't need encryption
+Choose **SQLite** when SQL compatibility, ecosystem maturity, third-party tooling, broad language support, or lower insert and cold-open latency matter more.
 
-**Both are excellent choices** for different use cases. The decision depends on your specific requirements.
+Both are strong embedded databases for different jobs. Pick the product whose shipped shape matches your constraints.
 
 ---
 
-For architecture details, see [ARCHITECTURE.md](ARCHITECTURE.md).
-For performance benchmarks, see [PERFORMANCE.md](PERFORMANCE.md).
+## Related docs
 
+- [Getting Started](README.md)
+- [Architecture](../Architecture/README.md)
+- [Key management](../Status/KEY_MANAGEMENT_AND_COMPATIBILITY.md)
+- [Durability Mode Support](../Status/DURABILITY_MODE_SUPPORT.md)
+- [Benchmarks](../Benchmarks/README.md)
+- [Distributed transport deferred](../Status/DISTRIBUTED_TRANSPORT_DEFERRED.md)

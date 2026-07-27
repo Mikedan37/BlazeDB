@@ -2,20 +2,22 @@
 
 **Enable AI tools (Cursor, ChatGPT, Claude, etc.) to safely interact with BlazeDB databases through a standardized protocol.**
 
+> **Packaging status:** BlazeMCP source may exist under `BlazeMCP/`, but it is **not** currently a SwiftPM product or target in `Package.swift`. There is no supported `swift build --product BlazeMCP` install path in the default open-source package. Treat this document as **design / protocol material**, not as a claim that MCP ships as a packaged product today.
+
 ---
 
 ## What is BlazeMCP?
 
-BlazeMCP is a **Model Context Protocol (MCP) server** that exposes BlazeDB databases to AI assistants and development tools. It provides a secure, standardized interface for AI tools to read and write data while maintaining all of BlazeDB's security features.
+BlazeMCP is a **Model Context Protocol (MCP) server** design that exposes BlazeDB databases to AI assistants and development tools. It describes a standardized interface for AI tools to read and write data while using BlazeDB security features where implemented.
 
 ### Key Benefits
 
 **AI-Native Database Access** - Let AI tools query, analyze, and modify your BlazeDB data safely
-**Zero Breaking Changes** - MCP is a separate executable; BlazeDB core remains untouched
-**Full Security** - All operations enforce RLS, metadata signatures, and transactional safety
+**Zero Breaking Changes** - MCP is intended as a separate executable; BlazeDB core remains untouched
+**Full Security** - Design aims to enforce RLS, metadata signatures, and transactional safety (see core docs for current RLS status)
 **Standard Protocol** - Uses JSON-RPC 2.0 over stdin/stdout (MCP standard)
 **Type-Safe** - Proper error handling and validation for all operations
-**Production-Ready** - Comprehensive test coverage and error handling
+**Implementation status** - Design and in-tree sources exist; **not packaged** as a SwiftPM product in the default OSS package
 
 ---
 
@@ -23,34 +25,31 @@ BlazeMCP is a **Model Context Protocol (MCP) server** that exposes BlazeDB datab
 
 ### Installation
 
-BlazeMCP is included in the BlazeDB Swift package:
+BlazeMCP is **not** included as a SwiftPM product today. Adding BlazeDB as a package dependency does **not** install an MCP executable:
 
 ```swift
-// Package.swift
+// Package.swift — BlazeDB core library only; no BlazeMCP product
 dependencies: [
-.package(url: "https://github.com/yourorg/BlazeDB.git", from: "1.0.0")
+.package(url: "https://github.com/Mikedan37/BlazeDB.git", from: "2.8.1")
 ]
 ```
 
-Build the executable:
+Do **not** expect this to work against the default package:
 
 ```bash
-swift build -c release --product BlazeMCP
+# Not a current Package.swift product:
+# swift build -c release --product BlazeMCP
 ```
 
-The executable will be at: `.build/release/BlazeMCP`
+When/if MCP is packaged, build and binary paths will be documented here and in `Package.swift`. Until then, use this page for protocol and tool-shape reference only.
 
 ### Basic Usage
 
 ```bash
-# Start MCP server with database path
-./blazemcp --db /path/to/database.blazedb --password "your-password"
-
-# Or use database name (default location)
-./blazemcp --name mydb --password "your-password"
-
-# Show help
-./blazemcp --help
+# Intended CLI shape once packaged (not a current SwiftPM product):
+# ./blazemcp --db /path/to/database.blazedb --password "your-password"
+# ./blazemcp --name mydb --password "your-password"
+# ./blazemcp --help
 ```
 
 ### Integration with Cursor
