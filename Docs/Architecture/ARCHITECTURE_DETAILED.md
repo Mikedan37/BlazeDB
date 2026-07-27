@@ -28,7 +28,7 @@ The initial motivation came from needing predictable, encrypted, local-first sto
 
 A custom storage engine made sense because the constraints were specific: sub-millisecond query latency, deterministic encoding for content-addressable storage, per-page encryption without compromising performance, and schema flexibility without migration complexity. These requirements didn't align well with existing systems.
 
-The custom binary format (BlazeBinary) emerged from benchmarking JSON, CBOR, and MessagePack. Swift's type system enabled optimizations that generic formats couldn't provide—common field compression, inline string encoding, and deterministic key sorting. The result is approximately 53% smaller than JSON and roughly 48% faster to encode/decode.
+The custom binary format (BlazeBinary) emerged from benchmarking JSON, CBOR, and MessagePack. Swift's type system enabled optimizations that generic formats couldn't provide: common field compression, inline string encoding, and deterministic key sorting. The result is approximately 53% smaller than JSON and roughly 48% faster to encode/decode.
 
 Key constraints that shaped the architecture: latency requirements demanded careful attention to hot paths, encryption needed to be per-page to enable efficient garbage collection, concurrency required MVCC to avoid read-write contention, and determinism was necessary for reproducible builds and content-addressable storage. These constraints led to a layered architecture with clear separation of concerns, making the system easier to debug and optimize.
 
@@ -139,9 +139,9 @@ BlazeDB makes explicit tradeoffs to optimize for its target use cases:
 
 **Query Planner:** Uses rule-based heuristics rather than a cost-based optimizer. This works well for common patterns but may not choose optimal plans for complex queries. A cost-based optimizer is planned but not yet implemented.
 
-**Distributed Consensus:** No distributed consensus, automatic sharding, or multi-master replication. BlazeDB is a single primary database with optional sync capabilities. This is intentional—distributed consensus is a different problem space.
+**Distributed Consensus:** No distributed consensus, automatic sharding, or multi-master replication. BlazeDB is a single primary database with optional sync capabilities. This is intentional: distributed consensus is a different problem space.
 
-**Platform Optimization:** Primarily optimized for Apple Silicon. Linux support exists but performance characteristics may differ. Best performance requires Apple Silicon hardware.
+**Platform support:** macOS and Linux are runtime-tested in CI; other Apple platforms are compile-tested; Android/KMM is experimental. Do not treat “optimized for Apple Silicon” as a measured claim. See [Benchmarks](../Benchmarks/README.md) and [COMPATIBILITY](../COMPATIBILITY.md).
 
 **MVCC Storage Overhead:** Multi-version concurrency control can increase storage requirements, especially with long-running read transactions that delay garbage collection. In practice, this hasn't been an issue for typical workloads, but it's a tradeoff to be aware of.
 
@@ -296,28 +296,30 @@ BlazeDB draws inspiration from several well-established systems while making dif
 
 ## Why Not SQLite / Core Data / Realm / LMDB?
 
+> **Authority:** Prefer [`Docs/GettingStarted/WHY_NOT_SQLITE.md`](../GettingStarted/WHY_NOT_SQLITE.md) and [`Docs/COMPATIBILITY.md`](../COMPATIBILITY.md) over this summary. The table below is a short orientation only, not a stopwatch or licensing brief.
+
 | Feature | BlazeDB | SQLite | Core Data | Realm | LMDB |
 |---------|---------|--------|----------|-------|------|
-| **Encryption** | AES-256-GCM per page (default) | Optional extension | No | Optional | No |
-| **Schema** | Dynamic, no migrations | Static, requires migrations | Static, complex migrations | Static, migrations | Schema-less |
-| **Concurrency** | MVCC snapshot isolation | File-level locking | Context-based | MVCC | MVCC |
-| **Performance** | Predictable, optimized for Apple Silicon | Variable under load | Variable, object graph overhead | Fast, but licensing | Very fast, memory-mapped |
-| **Query Language** | Fluent Swift API | SQL | NSPredicate | Fluent API | Key-value only |
-| **Platform** | macOS/iOS/Linux (Swift) | Universal (C) | macOS/iOS only | Cross-platform | Universal (C) |
-| **Dependencies** | Zero | Zero | Foundation | Realm runtime | Zero |
-| **License** | MIT | Public Domain | Apple | Commercial/MIT | OpenLDAP |
-| **Best For** | Encrypted local storage, AI agents | General-purpose embedded DB | Apple ecosystem apps | Mobile apps | High-performance key-value |
-| **Limitations** | Rule-based planner, no distributed consensus | File-level locking, no encryption by default | Complex migrations, Apple-only | Licensing, object model overhead | Key-value only, no query language |
+| **Encryption** | AES-256-GCM per page at rest (password on public open APIs) | Optional extension | No built-in at-rest cipher | Optional / product-dependent | No |
+| **Schema** | Flexible by default; optional validation + migration APIs | Static SQL schemas + migrations | Model versions + migrations | Object schema + migrations | Schema-less KV |
+| **Concurrency** | Single-process embedded; transactions; MVCC exists but is not the default claim | Multi-connection locking / WAL rules | Context-based | Product-specific | MVCC (mmap) |
+| **Performance** | See measured [Benchmarks](../Benchmarks/README.md): no “Apple Silicon optimized” slogan here | Mature; workload-dependent | Object-graph overhead varies | Workload-dependent | Very fast mmap KV |
+| **Query Language** | Fluent Swift API (no SQL string engine) | SQL | NSPredicate / SwiftUI fetch patterns | Object query API | Key-value only |
+| **Platform** | macOS/Linux runtime-tested; Apple platforms compile-tested; Android/KMM experimental | Universal (C) | Apple platforms | Cross-platform SDKs (verify current) | Universal (C) |
+| **Dependencies** | Swift package + Crypto where required | Zero (amalgamation) | Foundation / Cocoa | Realm runtime | Zero |
+| **License** | MIT | Public domain dedication | Apple frameworks | **Verify current upstream** (DB/sync terms have changed over time) | OpenLDAP |
+| **Best For** | Encrypted Swift-native embedded storage + C ABI | General-purpose embedded SQL | Deep Apple-framework apps | Teams already on Realm | High-performance KV |
+| **Limitations** | Not a SQL engine; sync/server deferred from default OSS | No encryption by default | Apple-centric; migration complexity | Sync/licensing history is not a one-cell story | No rich query language |
 
-**When to choose BlazeDB:** You need encryption by default, schema flexibility without migrations, predictable performance on Apple platforms, and a Swift-native API.
+**When to choose BlazeDB:** Encryption by default, Swift-native typed access, local tooling, and C ABI embedding, on a support tier you accept ([COMPATIBILITY](../COMPATIBILITY.md)).
 
-**When to choose SQLite:** You need universal portability, SQL queries, or don't need encryption.
+**When to choose SQLite:** Universal portability, SQL, or you do not need encryption-by-default.
 
-**When to choose Core Data:** You're building Apple-only apps and need deep integration with Cocoa frameworks.
+**When to choose Core Data:** Apple-only apps that want deep Cocoa / framework integration.
 
-**When to choose Realm:** You're building mobile apps and can accept the licensing model.
+**When to choose Realm:** You specifically want the Realm ecosystem; check current license and sync product status yourself.
 
-**When to choose LMDB:** You need maximum performance for key-value workloads and don't need encryption or query language.
+**When to choose LMDB:** Maximum performance for key-value workloads without encryption or a query language.
 
 ---
 
@@ -522,7 +524,7 @@ graph TB
 Each transaction sees a consistent snapshot of the database at transaction start. Reads never block writes. Writes create new versions; old versions remain accessible to concurrent readers until garbage collection. Conflict detection prevents lost updates.
 
 **Performance Characteristics:**
-Observed 20–100× improvements over naive locking under read-heavy synthetic workloads. Concurrent reads scale linearly with available cores. Write performance depends on conflict rate and garbage collection frequency—in low-conflict scenarios, performance is strong.
+Observed 20–100× improvements over naive locking under read-heavy synthetic workloads. Concurrent reads scale linearly with available cores. Write performance depends on conflict rate and garbage collection frequency. In low-conflict scenarios, performance is strong.
 
 **Garbage Collection:**
 Obsolete versions are collected when no active transactions reference them. Long-running read transactions can delay collection, but in practice this hasn't been an issue. Automatic collection runs periodically; manual triggers available.
@@ -602,10 +604,10 @@ graph TB
 ```
 
 **Key Derivation:**
-User password hashed using Argon2id (memory-hard function) to prevent fast brute force attacks. HKDF expands derived key material to 256-bit encryption key. Key material never stored on disk—if password is lost, data is unrecoverable. This is by design.
+User password hashed using Argon2id (memory-hard function) to prevent fast brute force attacks. HKDF expands derived key material to 256-bit encryption key. Key material never stored on disk. If password is lost, data is unrecoverable. This is by design.
 
 **Encryption:**
-AES-256-GCM provides authenticated encryption. Each page uses a unique nonce to ensure cryptographic safety. Authentication tags detect tampering—modified encrypted pages fail decryption. Replay prevention enforced by rejecting stale or duplicated ciphertexts at record or page level.
+AES-256-GCM provides authenticated encryption. Each page uses a unique nonce to ensure cryptographic safety. Authentication tags detect tampering: modified encrypted pages fail decryption. Replay prevention enforced by rejecting stale or duplicated ciphertexts at record or page level.
 
 GCM mode chosen for speed and single-pass authentication. Per-page nonces ensure identical plaintext produces different ciphertext.
 
@@ -738,7 +740,7 @@ graph TB
 
 ## Cryptographic Architecture
 
-BlazeDB implements two parallel cryptographic pipelines with distinct key lifecycles and threat models. The first pipeline protects data at rest—local database files encrypted on disk using page-level AES-256-GCM. The second pipeline protects data in transit—network sync operations encrypted over secure channels established via ephemeral ECDH key exchange. Both pipelines use well-established primitives: Argon2id for password-based key derivation, HKDF for key expansion and separation, AES-256-GCM for authenticated encryption, and ECDH P-256 for shared secret establishment. On Apple platforms, Secure Enclave provides hardware-backed protection for long-lived storage keys, but not for ephemeral session secrets.
+BlazeDB implements two parallel cryptographic pipelines with distinct key lifecycles and threat models. The first pipeline protects data at rest: local database files encrypted on disk using page-level AES-256-GCM. The second pipeline protects data in transit: network sync operations encrypted over secure channels established via ephemeral ECDH key exchange. Both pipelines use well-established primitives: Argon2id for password-based key derivation, HKDF for key expansion and separation, AES-256-GCM for authenticated encryption, and ECDH P-256 for shared secret establishment. On Apple platforms, Secure Enclave provides hardware-backed protection for long-lived storage keys, but not for ephemeral session secrets.
 
 This separation follows standard secure storage and secure channel patterns. Data at rest keys are derived from user passwords and persist across sessions; data in transit keys are ephemeral, generated per-session, and provide perfect forward secrecy. The design ensures that compromise of one pipeline does not automatically compromise the other, and that different threat surfaces (physical access vs. network interception) are addressed with appropriate cryptographic controls.
 
@@ -750,7 +752,7 @@ Local database encryption protects stored data from physical access, device thef
 
 1. **User Input:** User password or application-provided secret serves as the initial entropy source. This secret is never stored on disk in any form.
 
-2. **Per-Database Salt:** Each database instance uses a unique salt generated at creation time. The salt is stored in the database metadata file (`.meta`) in plaintext—this is safe because salts are public values that prevent rainbow table attacks but do not weaken encryption if exposed.
+2. **Per-Database Salt:** Each database instance uses a unique salt generated at creation time. The salt is stored in the database metadata file (`.meta`) in plaintext. This is safe because salts are public values that prevent rainbow table attacks but do not weaken encryption if exposed.
 
 3. **Argon2id KDF:** The password and salt are fed into Argon2id, a memory-hard key derivation function. Argon2id parameters are tuned to balance security (resistance to GPU/ASIC attacks) with acceptable unlock latency. The output is a strong key material stream, typically 256 bits or more.
 
@@ -779,7 +781,7 @@ Local database encryption protects stored data from physical access, device thef
 
 3. **GCM Decryption:** AES-256-GCM decryption is performed using `db_enc_key`, nonce, ciphertext, and tag.
 
-4. **Tag Verification:** GCM automatically verifies the authentication tag during decryption. If the tag does not match (indicating corruption or tampering), decryption fails immediately with a clear error. This provides integrity protection—modified pages cannot be decrypted.
+4. **Tag Verification:** GCM automatically verifies the authentication tag during decryption. If the tag does not match (indicating corruption or tampering), decryption fails immediately with a clear error. This provides integrity protection: modified pages cannot be decrypted.
 
 5. **Failure Behavior:** Tag mismatches trigger automatic corruption detection. The system attempts metadata rebuild from data pages if possible, or fails with a clear error message if corruption is unrecoverable.
 
@@ -863,7 +865,7 @@ Network sync encryption protects data during transmission between BlazeDB nodes.
 - HKDF-Expand: Derives `sess_enc_key` and `sess_auth_key` using different info parameters
 - These session keys are 256 bits each and are used only for the current session
 
-5. **Key Lifecycle:** Session keys are ephemeral—they exist only in memory for the duration of the connection. They are never written to disk and are cleared from memory when the session ends. This provides perfect forward secrecy: compromise of long-term storage keys does not reveal past session traffic.
+5. **Key Lifecycle:** Session keys are ephemeral: they exist only in memory for the duration of the connection. They are never written to disk and are cleared from memory when the session ends. This provides perfect forward secrecy: compromise of long-term storage keys does not reveal past session traffic.
 
 **Frame Encryption:**
 
@@ -982,7 +984,7 @@ This dual-pipeline architecture provides defense in depth: even if one pipeline 
 
 ## Transaction Model
 
-ACID transaction guarantees with write-ahead logging. Durability was non-negotiable—data integrity must survive process crashes.
+ACID transaction guarantees with write-ahead logging. Durability was non-negotiable: data integrity must survive process crashes.
 
 ### Write-Ahead Logging
 
@@ -1017,7 +1019,7 @@ sequenceDiagram
 ```
 
 **WAL Behavior:**
-All writes go through write-ahead log before page store. WAL entries are fsync'd before commit acknowledgment—this is the durability guarantee. After commits, WAL is truncated or checkpointed when safe, according to configured durability thresholds. WAL replay recovers all committed transactions after crashes.
+All writes go through write-ahead log before page store. WAL entries are fsync'd before commit acknowledgment. This is the durability guarantee. After commits, WAL is truncated or checkpointed when safe, according to configured durability thresholds. WAL replay recovers all committed transactions after crashes.
 
 Checkpoint/truncate logic balances durability and performance. Too aggressive loses durability; too conservative hurts performance.
 
@@ -1029,7 +1031,7 @@ Checkpoint/truncate logic balances durability and performance. Too aggressive lo
 
 **Isolation:** Snapshot isolation via MVCC ensures each transaction sees a consistent snapshot. Concurrent transactions don't interfere. Tested with 50 concurrent readers and 10 writers.
 
-**Durability:** Committed data is fsync'd before acknowledgment. WAL replay recovers all committed transactions after crashes. Tested with crash simulation—power loss, WAL corruption, etc.
+**Durability:** Committed data is fsync'd before acknowledgment. WAL replay recovers all committed transactions after crashes. Tested with crash simulation: power loss, WAL corruption, etc.
 
 **Test Coverage:** 907 unit tests validate ACID compliance, crash recovery, and transaction durability across 223 test files.
 
