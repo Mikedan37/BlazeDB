@@ -11,9 +11,12 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: ci-${{ github.workflow }}-${{ github.ref }}
-  # Cancel superseded PR runs only. Cancelling main pushes paints the workflow
-  # badge "failing" even when nothing failed (GitHub treats cancelled ≈ failed).
+  # PRs: one group per PR ref; cancel superseded PR runs.
+  # main/develop pushes: unique group per run so a newer push does not cancel a
+  # still-pending earlier push (GitHub cancels pending peers in a shared group
+  # even when cancel-in-progress is false). That pending-cancel was painting the
+  # workflow badge "failing" after rapid merges.
+  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
