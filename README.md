@@ -2,7 +2,7 @@
 
 BlazeDB is an encrypted embedded database with a stable native interface, broad platform support, active correctness work, and several carefully scoped ways to contribute.
 
-It is Swift-native for local applications: typed models, transactions, WAL recovery, CLI tooling, and a documented C ABI — single-process by design. It runs inside your process, stores data on-device, and does not require a separate database server or network connection. “Local” means in-process persistence, not multiplayer sync or distributed replicas.
+It is Swift-native for local applications: typed models, transactions, WAL recovery, CLI tooling, and a documented C ABI: single-process by design. It runs inside your process, stores data on-device, and does not require a separate database server or network connection. “Local” means in-process persistence, not multiplayer sync or distributed replicas.
 
 You can use BlazeDB from Swift, from the `blazedb` CLI, or through its C ABI. The primary open-source product is the embedded Swift engine; the C ABI reaches that same engine and is not a separate product story.
 

@@ -28,7 +28,7 @@ Release-oriented focus is summarized in [`ROADMAP.md`](../../ROADMAP.md) (**Main
 |----------|---------|
 | [`good first issue`](https://github.com/Mikedan37/BlazeDB/labels/good%20first%20issue) | Safe, bounded, usually docs/tooling. No storage-format, ABI, crypto behavior, auth semantics, or concurrency redesign. |
 | [`help wanted`](https://github.com/Mikedan37/BlazeDB/labels/help%20wanted) | Maintainer wants help; may still need review on approach. |
-| [`durability`](https://github.com/Mikedan37/BlazeDB/labels/durability) / [`concurrency`](https://github.com/Mikedan37/BlazeDB/labels/concurrency) / [`needs design`](https://github.com/Mikedan37/BlazeDB/labels/needs%20design) | Correctness-sensitive work — usually **not** beginner. Prefer these over a generic priority museum label. |
+| [`durability`](https://github.com/Mikedan37/BlazeDB/labels/durability) / [`concurrency`](https://github.com/Mikedan37/BlazeDB/labels/concurrency) / [`needs design`](https://github.com/Mikedan37/BlazeDB/labels/needs%20design) | Correctness-sensitive work: usually **not** beginner. Prefer these over a generic priority museum label. |
 | Roadmap Now items | Linked from [`ROADMAP.md`](../../ROADMAP.md) (fixtures, Go smoke, BlazeDBC, schema guide, CLI honesty). |
 
 **Start here (safe docs/tooling):** issues labeled `good first issue` + `documentation`.  
@@ -40,7 +40,7 @@ Release-oriented focus is summarized in [`ROADMAP.md`](../../ROADMAP.md) (**Main
 - **Subsystem:** `storage-engine`, `reliability`, `concurrency`, `api-correctness`, `typed-store`, `linux`, `Portability`
 - **Contributor:** `good first issue`, `help wanted`
 
-Security vulnerabilities: **do not** open a public issue — follow [`SECURITY.md`](../../SECURITY.md).
+Security vulnerabilities: **do not** open a public issue: follow [`SECURITY.md`](../../SECURITY.md).
 
 ## How to claim an issue
 

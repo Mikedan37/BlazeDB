@@ -15,7 +15,7 @@ From a package checkout:
 ./dev tier0
 ```
 
-`./dev` owns repeatable test/tier/experiment workflows. It reuses `.build/debug/blazedb` when possible and rebuilds when `BlazeShell`, `BlazedbCLI`, or `Package.swift` are newer than that binary. Xcode schemes stay lean for interactive Run / Profile / Analyze / Archive — see [Docs/Build/XCODE_SCHEMES.md](Docs/Build/XCODE_SCHEMES.md).
+`./dev` owns repeatable test/tier/experiment workflows. It reuses `.build/debug/blazedb` when possible and rebuilds when `BlazeShell`, `BlazedbCLI`, or `Package.swift` are newer than that binary. Xcode schemes stay lean for interactive Run / Profile / Analyze / Archive. See [Docs/Build/XCODE_SCHEMES.md](Docs/Build/XCODE_SCHEMES.md).
 
 Storage-format, WAL, encryption, and recovery changes: follow [Docs/Contributing/STORAGE_CHANGE_CHECKLIST.md](Docs/Contributing/STORAGE_CHANGE_CHECKLIST.md).
 
@@ -33,20 +33,20 @@ Bridge: **codebase → learning path → issue → tests → PR**. Do not open s
 
 ## Finding work
 
-Do **not** rely on a hard-coded issue number list in docs — issue shelves rot as soon as tickets close or grow. Prefer **label-driven** filters (they stay current with the tracker).
+Do **not** rely on a hard-coded issue number list in docs. Issue shelves rot as soon as tickets close or grow. Prefer **label-driven** filters (they stay current with the tracker).
 
 Pick issues that match the **supported** product (Swift engine, CLI, dynamic BlazeDBC). See [Docs/Contributing/ISSUE_GUIDE.md](Docs/Contributing/ISSUE_GUIDE.md) for claim etiquette and what requires maintainer review. Comment on an issue before starting substantial work.
 
 | Filter | Use for |
 |--------|---------|
-| [Good first issues](https://github.com/Mikedan37/BlazeDB/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22) | Docs, help text, safe tooling — no WAL/crypto/ABI/auth redesign |
+| [Good first issues](https://github.com/Mikedan37/BlazeDB/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22) | Docs, help text, safe tooling: no WAL/crypto/ABI/auth redesign |
 | [Help wanted](https://github.com/Mikedan37/BlazeDB/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22) | Maintainer-backed outside contributions |
 | [ROADMAP.md](ROADMAP.md) Now | Compatibility fixtures, Go smoke, BlazeDBC release, schema guide, CLI honesty |
-| `durability` / `concurrency` / `reliability` / `needs design` | Correctness and durability — usually not beginner; see [ISSUE_CODE_INDEX](Docs/Contributing/ISSUE_CODE_INDEX.md) |
+| `durability` / `concurrency` / `reliability` / `needs design` | Correctness and durability: usually not beginner; see [ISSUE_CODE_INDEX](Docs/Contributing/ISSUE_CODE_INDEX.md) |
 
 **Focused tests:** `./dev tests [search]` then `./dev test <filter>`. On Apple Silicon, prefer `arch -arm64 ./dev …` if you hit arch loader mismatches ([#289](https://github.com/Mikedan37/BlazeDB/issues/289)).
 
-**Security reports:** do not file a public issue — follow [SECURITY.md](SECURITY.md).
+**Security reports:** do not file a public issue. Follow [SECURITY.md](SECURITY.md).
 
 ## PR expectations
 
@@ -68,7 +68,7 @@ For **most** PRs:
 | [`Docs/Testing/CI_AND_TEST_TIERS.md`](Docs/Testing/CI_AND_TEST_TIERS.md) | Changes to **test lanes**, **tier** meaning, or **CI** job behavior |
 | [`Examples/ReadmeSamples/README.md`](Examples/ReadmeSamples/README.md) | New/changed **executable README samples** or L3 verification scope |
 
-**If two docs disagree about CI** (blocking jobs, tier scope, workflows), treat **[`Docs/Testing/CI_AND_TEST_TIERS.md`](Docs/Testing/CI_AND_TEST_TIERS.md)** plus **`.github/workflows/*.yml`** as the detailed source of truth—not this paragraph alone.
+**If two docs disagree about CI** (blocking jobs, tier scope, workflows), treat **[`Docs/Testing/CI_AND_TEST_TIERS.md`](Docs/Testing/CI_AND_TEST_TIERS.md)** plus **`.github/workflows/*.yml`** as the detailed source of truth, not this paragraph alone.
 
 Forks, billing limits, and hosted CI availability can prevent Actions from running; use the same commands locally if needed ([Hosted CI status](Docs/Status/OPEN_SOURCE_READINESS_CHECKLIST.md#hosted-ci-status)).
 
@@ -80,7 +80,7 @@ BlazeDBCore and `BlazeDBAndroidBridge` can be cross-compiled for Android from a 
 
 **Requirements:**
 
-- **OSS Swift 6.3.2+** — do **not** use Xcode’s `swift` on macOS
+- **OSS Swift 6.3.2+**: do **not** use Xcode’s `swift` on macOS
 - Swift SDK for Android (`swift sdk install …`) matching the host Swift version
 - Android NDK r27d+
 
@@ -108,7 +108,7 @@ The `:shared` module in `Examples/android/shared` exposes `expect class BlazeDB`
 ./Scripts/prove-kmm-runtime.sh          # both
 ```
 
-Do **not** describe this as full product “KMM supported” until Android runtime is in CI and consumer packaging exists. Details: [Docs/android-status.md](Docs/android-status.md), [CI and test tiers — KMM CI](Docs/Testing/CI_AND_TEST_TIERS.md#kmm-ci-android--ios).
+Do **not** describe this as full product “KMM supported” until Android runtime is in CI and consumer packaging exists. Details: [Docs/android-status.md](Docs/android-status.md), [CI and test tiers: KMM CI](Docs/Testing/CI_AND_TEST_TIERS.md#kmm-ci-android--ios).
 
 **Status and roadmap:** [Docs/android-status.md](Docs/android-status.md)
 
@@ -122,9 +122,9 @@ The PR workflow is [`.github/workflows/ci.yml`](.github/workflows/ci.yml). Sched
 
 | Level | What | Script / target |
 |-------|------|-----------------|
-| **L1 — Quickstart** | `swift run HelloBlazeDB` from clean worktree | `./Scripts/verify-readme-quickstart.sh` |
-| **L2 — Public API** | Core exported APIs | `BlazeDB_Tier0` → `PublicAPIVerificationTests` |
-| **L3 — README samples** | Runnable README Swift patterns | `./Scripts/verify-readme-samples.sh` → `ReadmeSamples` |
+| **L1: Quickstart** | `swift run HelloBlazeDB` from clean worktree | `./Scripts/verify-readme-quickstart.sh` |
+| **L2: Public API** | Core exported APIs | `BlazeDB_Tier0` → `PublicAPIVerificationTests` |
+| **L3: README samples** | Runnable README Swift patterns | `./Scripts/verify-readme-samples.sh` → `ReadmeSamples` |
 
 Coverage mapping and contributor rules: [`Examples/ReadmeSamples/README.md`](Examples/ReadmeSamples/README.md).  
 If you change executable README samples, update the harness **and** the coverage table, or document the section as **Manual** / **Out of scope** there.
@@ -158,7 +158,7 @@ swift test --filter BlazeDB_Tier0
 
 ### Tier 1: Canonical confidence target (`BlazeDB_Tier1`)
 
-**Canonical Tier1 gate — `BlazeDB_Tier1`:** `BlazeDBTests/Tier1Core/` — deterministic correctness; no `measure()`, no timing-dependent sleeps, no benchmark-shaped workloads.
+**Canonical Tier1 gate: `BlazeDB_Tier1`:** `BlazeDBTests/Tier1Core/`: deterministic correctness; no `measure()`, no timing-dependent sleeps, no benchmark-shaped workloads.
 
 `BlazeDB_Tier1Extended` and `BlazeDB_Tier1Perf` target names were retired; their suites now run under Tier2/Tier3 ownership via **transitional companion targets** (`BlazeDB_Tier2_Extended`, `BlazeDB_Tier3_Heavy_Perf`) pending PR4 normalization.
 
