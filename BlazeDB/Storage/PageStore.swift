@@ -115,6 +115,9 @@ public final class PageStore: @unchecked Sendable {
     private var pendingUnifiedBufferedWrites: [(index: Int, buffer: Data)] = []
     
     // MARK: - Concurrency Invariants
+    // Process ownership (cross-process): exclusive flock on the main DB file descriptor.
+    // In-process serialization: this concurrent queue + barrier for mutations.
+    // These are different layers — the queue does not replace file ownership.
     // Invariants:
     // - All reads use pread() — no shared file offset, safe for concurrent readers
     // - All writes use pwrite() under barrier — no shared file offset
@@ -259,7 +262,8 @@ public final class PageStore: @unchecked Sendable {
         self.fd = fileHandle.fileDescriptor
         IOTraceSink.record(operation: "open_handle", path: fileURL.path, fd: self.fd, resultCode: 0)
 
-        // Initialize WAL based on mode
+        // WAL sidecars may be opened here, but exclusive ownership of the main DB file
+        // is acquired below before any recovery that mutates main-file pages.
         let walURL = fileURL.deletingPathExtension().appendingPathExtension("wal")
 
         switch walMode {
@@ -284,7 +288,9 @@ public final class PageStore: @unchecked Sendable {
             }
         }
 
-        // CRITICAL: Acquire exclusive file lock to prevent multi-process corruption
+        // Single-owner process model: take exclusive ownership before WAL replay
+        // writes into the main file. A second writer must fail rather than continue
+        // with independent caches or a second recovery path.
         try acquireExclusiveLock()
 
         // Replay WAL entries if any exist (crash recovery).
@@ -482,14 +488,18 @@ public final class PageStore: @unchecked Sendable {
     
     // MARK: - File Locking
     
-    /// Acquire exclusive file lock using POSIX flock()
-    /// This prevents multiple processes from writing to the same database file simultaneously.
-    /// Lock is automatically released when the file descriptor is closed (process exit or deinit).
-    /// 
-    /// - Throws: BlazeDBError.concurrentProcessAccessNotSupported if lock cannot be acquired (single-process only)
-    /// - Throws: BlazeDBError.permissionDenied if system error occurs (not a lock conflict)
-    /// - Precondition: fileHandle must be initialized before calling this method
-    /// - Postcondition: If this method returns, isLocked is true and lock is held
+    /// Acquire exclusive ownership of the database file via POSIX `flock`.
+    ///
+    /// Uses `LOCK_EX | LOCK_NB`: exclusive and non-blocking. A contended open fails
+    /// immediately with `concurrentProcessAccessNotSupported` instead of waiting.
+    /// On Darwin/Glibc the lock is held on this process's main-file descriptor and is
+    /// released by `releaseLock()`, by closing that descriptor, or automatically by the
+    /// kernel if the process dies — no manual lock-file cleanup.
+    ///
+    /// - Throws: BlazeDBError.concurrentProcessAccessNotSupported on lock conflict
+    /// - Throws: BlazeDBError.permissionDenied on non-conflict system errors
+    /// - Precondition: `fileHandle` must already be open
+    /// - Postcondition: on success, `isLocked` is true (Darwin/Glibc)
     private func acquireExclusiveLock() throws {
         #if canImport(Darwin) || canImport(Glibc)
         let fd = fileHandle.fileDescriptor
@@ -502,7 +512,6 @@ public final class PageStore: @unchecked Sendable {
         let result = flock(fd, LOCK_EX | LOCK_NB)
         
         if result != 0 {
-            // Lock acquisition failed
             let errnoValue = errno
             IOTraceSink.record(
                 operation: "lock_attempt",
@@ -512,13 +521,11 @@ public final class PageStore: @unchecked Sendable {
                 errnoValue: errnoValue,
                 context: ["type": "LOCK_EX|LOCK_NB", "nonBlocking": "true"]
             )
-            // Verify this is actually a lock conflict (EWOULDBLOCK/EAGAIN), not a system error
-            // EWOULDBLOCK and EAGAIN are the same value on most systems, but we check both for portability
+            // Distinguish lock conflict from other errno values; only conflict maps to
+            // concurrentProcessAccessNotSupported (portable: EWOULDBLOCK and EAGAIN).
             let isLockConflict = (errnoValue == EWOULDBLOCK) || (errnoValue == EAGAIN)
             
             guard isLockConflict else {
-                // System error (not a lock conflict) - close handle and throw
-                // Log the system error for debugging
                 let _ = String(cString: strerror(errnoValue))  // Capture errno before close
                 fileHandle.compatClose()
                 throw BlazeDBError.permissionDenied(
@@ -527,8 +534,7 @@ public final class PageStore: @unchecked Sendable {
                 )
             }
             
-            // Lock conflict - another process or handle holds the lock (single-process only)
-            // Close the file handle since we failed to acquire lock
+            // Do not leave an unlocked writer handle open after ownership failure.
             fileHandle.compatClose()
             
             throw BlazeDBError.concurrentProcessAccessNotSupported(
@@ -541,16 +547,14 @@ public final class PageStore: @unchecked Sendable {
         IOTraceSink.record(operation: "lock_acquired", path: fileURL.path, fd: fd, resultCode: result)
         BlazeLogger.debug("🔒 Acquired exclusive file lock on \(fileURL.lastPathComponent)")
         #else
-        // Platform doesn't support flock() - log warning but continue
-        // This should not happen on supported platforms (macOS, iOS, Linux)
+        // Unsupported platform path: no flock. Ownership is not enforced here.
         BlazeLogger.warn("⚠️ File locking not available on this platform - multi-process safety not guaranteed")
         isLocked = false
         #endif
     }
     
-    /// Release file lock (called automatically on deinit, but can be called explicitly)
-    /// Lock is automatically released by OS when file descriptor is closed, but we
-    /// explicitly release it here for clarity and immediate release.
+    /// Explicit unlock for clean close. Kernel also drops the flock when the fd closes
+    /// (including abrupt process death), which is what allows a later open to succeed.
     private func releaseLock() {
         guard isLocked else { return }
         
@@ -774,11 +778,12 @@ public final class PageStore: @unchecked Sendable {
         try atomicWrite(offset: offset, data: buffer)
     }
 
-    /// Append durable WAL entries, write encrypted buffer to main file, then fsync.
+    /// Durability boundary: WAL (or unified commit) must be durable before the main-file
+    /// page write. Crash between those steps recovers from WAL; the reverse order loses data.
     /// Must be called under barrier on `queue`.
     internal func _writeEncryptedBufferDurablyLocked(index: Int, buffer: Data) throws {
-        // Ensure previously staged unified unsynchronized writes are durably committed
-        // and applied before issuing an immediate synchronized write.
+        // Flush any staged unified batch before an immediate synchronized write so
+        // commit ordering stays one writer timeline.
         try _commitPendingUnifiedAutoTransactionIfNeededLocked()
         try _flushPendingUnifiedBufferedWritesLocked()
 
@@ -1165,11 +1170,11 @@ public final class PageStore: @unchecked Sendable {
                 }
             }
 
-            // Flush while lock is still held to avoid races with immediate reopen.
+            // Keep ownership until final fsync so a racing reopen cannot observe a
+            // half-closed writer; then release flock and close the descriptor.
             try? fileHandle.compatSynchronize()
             IOTraceSink.record(operation: "fsync_main", path: fileURL.path, fd: fd, resultCode: 0, context: ["phase": "close_final"])
 
-            // Release lock and close descriptor deterministically.
             releaseLock()
             fileHandle.compatClose()
             IOTraceSink.record(operation: "close_handle", path: fileURL.path, fd: fd, resultCode: 0)

@@ -123,7 +123,8 @@ final class LifecycleTests: XCTestCase {
         try db2.close()
     }
 
-    /// Single-process only: second open of same path must fail with concurrentProcessAccessNotSupported.
+    /// In-process double-open of the same path must fail with concurrentProcessAccessNotSupported.
+    /// This does not prove two OS processes (see #411); it still locks the documented error contract.
     func testSecondOpenSamePath_ThrowsConcurrentProcessAccessNotSupported() throws {
         let db1 = try BlazeDBClient(name: "test", fileURL: dbURL, password: "TestPassword-123!")
         defer { try? db1.close() }

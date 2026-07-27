@@ -58,7 +58,8 @@ public enum BlazeDBError: Error, LocalizedError, CustomStringConvertible {
     case diskFull(availableSpace: Int64? = nil)
     case permissionDenied(operation: String, path: String? = nil)
     case databaseLocked(operation: String, timeout: TimeInterval? = nil, path: URL? = nil)
-    /// Single-process only: another process (or a second handle in the same process) already holds the DB lock.
+    /// Documented single-owner contract: a second open of the same DB file must fail with this
+    /// error (lock conflict), not proceed as another writer. See WHY_SINGLE_WRITER.md.
     case concurrentProcessAccessNotSupported(operation: String, path: URL? = nil)
     case corruptedData(location: String, reason: String)
     case passwordTooWeak(PasswordStrengthValidator.PolicyFailure)
@@ -266,6 +267,9 @@ public final class BlazeDBClient: @unchecked Sendable {
         BlazeLogger.debug("✅ Verified database session installed for process lifetime")
     }
 
+    /// Serializes client mutations and transaction begin/commit/rollback/close.
+    /// This is in-process write serialization on top of PageStore's exclusive file ownership —
+    /// not a substitute for the cross-process flock.
     internal let writeLock = NSRecursiveLock()
     private let transactionLogLock = NSLock()  // 🔒 Dedicated lock for WAL writes
 
@@ -326,8 +330,10 @@ public final class BlazeDBClient: @unchecked Sendable {
     }
 
     // MARK: - Transaction Snapshot (V1.5: replaces file-copy transactions)
-    // On beginTransaction, we snapshot the indexMap. On rollback, we restore it.
-    // Pages written during the transaction become garbage (zeroed or overwritten later).
+    // On beginTransaction, snapshot indexMap, secondaryIndexes, and baseline records.
+    // On rollback, restore those structures under the collection barrier so readers cannot
+    // observe a half-rolled-back index/layout. Pages allocated in the txn are zeroed.
+    // Commit discards the snapshot only after persist + WAL checkpoint succeed.
     var transactionIndexMapSnapshot: [UUID: [Int]]?
     var transactionRecordSnapshot: [UUID: BlazeDataRecord]?
     var transactionSecondaryIndexesSnapshot: [String: [CompoundIndexKey: Set<UUID>]]?

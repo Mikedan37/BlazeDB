@@ -99,6 +99,8 @@ public final class DynamicCollection {
     internal var cachedDeletedPages: [Int] = []
     internal var secondaryIndexes: [String: [CompoundIndexKey: Set<UUID>]] = [:]
     internal let project: String
+    /// In-process serialization for indexMap / secondaryIndexes / layout mutations (barrier writers).
+    /// Cross-process ownership remains PageStore's flock, not this queue.
     internal let queue = DispatchQueue(label: "com.yourorg.blazedb.dynamiccollection", attributes: .concurrent)
     internal let encryptionKey: SymmetricKey
     internal var password: String?  // Cleared on close to reduce plaintext lifetime

@@ -35,6 +35,8 @@ final class LockingTests: XCTestCase {
         super.tearDown()
     }
     
+    /// In-process second handle fails; after close, reopen succeeds.
+    /// Cross-process ownership (separate OS processes / kill) is covered by #411, not this test.
     func testDoubleOpen_FailsWithLockError() throws {
         let fileURL = try requireFixture(dbURL)
         // Open first instance

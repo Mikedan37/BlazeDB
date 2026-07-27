@@ -44,8 +44,9 @@ private let walEntryHeaderSize = 16
 ///  - On open, `replay()` reads all valid entries and returns them for the caller
 ///    to apply to the PageStore.
 ///  - After the caller confirms all entries are applied (and the main file is fsynced),
-///    call `clear()` to truncate the WAL.
+///    call `clear()` to truncate the WAL. Clearing earlier can hide recoverable commits.
 ///  - NOT an actor: all callers must serialize externally (PageStore's barrier queue).
+///  - This type does not take the DB file flock; PageStore owns process exclusivity.
 internal final class WriteAheadLog: @unchecked Sendable {
     let logURL: URL
     private var fd: Int32 = -1
