@@ -197,9 +197,10 @@ This document exists to calm fear and set expectations.
 
 ### Multi-Process Access
 
-**BlazeDB is single-writer:**
+**BlazeDB is single-writer.** That is the current product boundary. Short FAQ: [WHY_SINGLE_WRITER.md](WHY_SINGLE_WRITER.md).
+
 - Only one process can write at a time
-- Multiple readers are safe
+- Multiple readers are safe **in-process**
 - Multiple writers will corrupt data
 
 **Do NOT:**

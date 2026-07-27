@@ -164,7 +164,7 @@ It is not a standalone network database server and not a multi-device sync produ
 - Embedded and in-process. A Swift service may embed BlazeDB; BlazeDB is not a networked database server product.
 - No SQL string engine (fluent Swift queries only).
 - Distributed sync, discovery, server, and full telemetry packaging are deferred from the default OSS product ([Distributed Transport Deferred](Docs/Status/DISTRIBUTED_TRANSPORT_DEFERRED.md)).
-- Multi-process writers are not supported.
+- Multi-process writers are not supported ([why single-writer](Docs/Guarantees/WHY_SINGLE_WRITER.md)).
 - Network filesystems are not recommended.
 - Android and KMM are **experimental** (PR-gate CI exists; not a published SDK; not Linux host Tier0).
 - The C ABI enables native embeds; there are no official Go, Rust, or Python SDKs.
