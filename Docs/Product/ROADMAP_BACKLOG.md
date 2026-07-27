@@ -8,7 +8,7 @@ Detailed candidates that support [`ROADMAP.md`](../../ROADMAP.md) without turnin
 | **This file** | Verified gaps worth retaining |
 | [`PRODUCT_AUDIT.md`](PRODUCT_AUDIT.md) | Full evidence and inventory |
 
-Source audit: [`PRODUCT_AUDIT.md`](PRODUCT_AUDIT.md). Hygiene pass: 2026-07-26.
+Source audit: [`PRODUCT_AUDIT.md`](PRODUCT_AUDIT.md). Defect inventory: [`POST_AUDIT_FINDINGS_2026_07.md`](../Audit/POST_AUDIT_FINDINGS_2026_07.md). Hygiene pass: 2026-07-27.
 
 ## Correctness and compatibility
 
@@ -16,7 +16,7 @@ Source audit: [`PRODUCT_AUDIT.md`](PRODUCT_AUDIT.md). Hygiene pass: 2026-07-26.
 |----|-----------|----------------------|
 | C1 | Prior-release DB fixtures (v2.7.x → current) | CI opens tagged fixtures; read + one write path (**Now**) |
 | C2 | WAL fixture compatibility | Replay fixtures from supported WAL generations |
-| C3 | Overflow orphan reclaim verification | Test asserts orphans are invisible and reclaimable |
+| C3 | Overflow orphan reclaim verification | **Promoted** — [#331](https://github.com/Mikedan37/BlazeDB/issues/331) |
 | C4 | Fail-loud typed bulk decode option | API or flag returns errors instead of silent drops |
 
 ## Contributor safety
@@ -24,8 +24,8 @@ Source audit: [`PRODUCT_AUDIT.md`](PRODUCT_AUDIT.md). Hygiene pass: 2026-07-26.
 | ID | Candidate | Exit criteria sketch |
 |----|-----------|----------------------|
 | S1 | Storage-change checklist | **Done** — [STORAGE_CHANGE_CHECKLIST.md](../Contributing/STORAGE_CHANGE_CHECKLIST.md) |
-| S2 | Benchmark-change checklist | Require methodology + env capture for result doc edits |
-| S3 | Security-sensitive / crypto-change checklist | Crypto/KDF/session/password paths; required validation commands |
+| S2 | Benchmark-change checklist | **Promoted** — [#333](https://github.com/Mikedan37/BlazeDB/issues/333) |
+| S3 | Security-sensitive / crypto-change checklist | **Promoted** — [#330](https://github.com/Mikedan37/BlazeDB/issues/330) |
 | S4 | Issue template storage/WAL fields | Optional fields on bug form |
 | S5 | GitHub `config.yml` security contact_links | Points to SECURITY.md email / reporting path |
 
