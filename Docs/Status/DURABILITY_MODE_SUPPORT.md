@@ -14,7 +14,7 @@ For the default `BlazeDBClient` path, durability is provided by the **legacy bin
 
 - **Write ordering**
 - For each page write, the encrypted page image is appended to the binary WAL **before** the main data file is updated.
-- The WAL entry is fsync’d to disk before the page write is considered committed.
+- WAL entries may be appended with deferred durability and made durable at a later explicit sync boundary; a page write is considered committed only after its WAL data reaches that durability boundary.
 - The main file is then written and fsync’d.
 - **Crash recovery**
 - On open, `PageStore` replays any remaining WAL entries and reapplies the corresponding page images to the main file.
