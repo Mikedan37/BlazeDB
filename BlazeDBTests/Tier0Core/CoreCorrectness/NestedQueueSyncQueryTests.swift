@@ -2,6 +2,11 @@
 //  NestedQueueSyncQueryTests.swift
 //  BlazeDBTests — #279: runQuery* must not nest queue.sync via fetchAll
 //
+//  Linux Swift 6.2 treats DispatchQueue.global().async closures as @Sendable.
+//  Capture BlazeDBClient (already @unchecked Sendable) and resolve
+//  collection / query *inside* the closure so DynamicCollection and
+//  BlazeQueryLegacy never cross the concurrency boundary (#302).
+//
 
 import XCTest
 #if canImport(BlazeDBCore)
@@ -47,13 +52,12 @@ final class NestedQueueSyncQueryTests: XCTestCase {
             ]))
         }
 
-        let collection = db.collection
-        let query = BlazeQueryLegacy<[String: BlazeDocumentField]>()
-
+        let client = db!
         let exp = expectation(description: "runQuery completes")
         DispatchQueue.global().async {
             do {
-                let results = try collection.runQuery(query)
+                let query = BlazeQueryLegacy<[String: BlazeDocumentField]>()
+                let results = try client.collection.runQuery(query)
                 XCTAssertEqual(results.count, 20)
                 exp.fulfill()
             } catch {
@@ -71,11 +75,11 @@ final class NestedQueueSyncQueryTests: XCTestCase {
                 "name": .string(String(format: "%02d", i))
             ]))
         }
-        let collection = db.collection
+        let client = db!
         let exp = expectation(description: "fetchAllSorted completes")
         DispatchQueue.global().async {
             do {
-                let sorted = try collection.fetchAllSorted(by: "name")
+                let sorted = try client.collection.fetchAllSorted(by: "name")
                 XCTAssertEqual(sorted.count, 15)
                 exp.fulfill()
             } catch {
@@ -93,11 +97,11 @@ final class NestedQueueSyncQueryTests: XCTestCase {
                 "keep": .bool(i % 2 == 0)
             ]))
         }
-        let collection = db.collection
+        let client = db!
         let exp = expectation(description: "filter completes")
         DispatchQueue.global().async {
             do {
-                let kept = try collection.filter { $0.storage["keep"]?.boolValue == true }
+                let kept = try client.collection.filter { $0.storage["keep"]?.boolValue == true }
                 XCTAssertEqual(kept.count, 8)
                 exp.fulfill()
             } catch {
