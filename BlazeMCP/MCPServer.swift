@@ -177,7 +177,8 @@ public final class MCPServer {
         }
         
         print(jsonString)
-        fflush(stdout)
+        // fflush(nil) avoids referencing Glibc's non-Sendable `stdout` under Swift 6.2.
+        fflush(nil)
     }
     
     private func sendError(id: Any?, code: Int, message: String, data: Any?) {
@@ -197,7 +198,7 @@ public final class MCPServer {
         }
         
         print(jsonString)
-        fflush(stdout)
+        fflush(nil)
     }
 }
 

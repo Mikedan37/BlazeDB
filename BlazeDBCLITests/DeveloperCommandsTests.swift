@@ -375,19 +375,20 @@ final class DeveloperCommandsTests: XCTestCase {
         let pipe = Pipe()
         let original = dup(STDOUT_FILENO)
         XCTAssertGreaterThanOrEqual(original, 0)
-        fflush(stdout)
+        // fflush(nil) avoids referencing Glibc's non-Sendable `stdout` under Swift 6.2.
+        fflush(nil)
         XCTAssertEqual(dup2(pipe.fileHandleForWriting.fileDescriptor, STDOUT_FILENO), STDOUT_FILENO)
         let code: Int32
         do {
             code = try body()
         } catch {
-            fflush(stdout)
+            fflush(nil)
             _ = dup2(original, STDOUT_FILENO)
             close(original)
             try? pipe.fileHandleForWriting.close()
             throw error
         }
-        fflush(stdout)
+        fflush(nil)
         try? pipe.fileHandleForWriting.close()
         _ = dup2(original, STDOUT_FILENO)
         close(original)
