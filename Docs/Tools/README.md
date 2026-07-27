@@ -1,12 +1,44 @@
 # Tools
 
-Canonical tools docs:
-- BLAZEDOCTOR_DOCUMENTATION.md
-- BLAZEDUMP_DOCUMENTATION.md
-- BLAZEINFO_DOCUMENTATION.md
-- BLAZESHELL_DOCUMENTATION.md
-- MCP_SERVER.md
-- BLAZESTUDIO_DOCUMENTATION.md
-- BLAZEDBVISUALIZER_DOCUMENTATION.md
-- USING_BLAZELOGGER_IN_VISUALIZER.md
+Use these **exact** status words everywhere (README, this map, issues). Do not invent synonyms like "available," "supported," or "companion" as status.
 
+| Status | Meaning |
+|--------|---------|
+| **shipped** | In the default OSS package / documented product path; safe to tell users to run it |
+| **beta** | Real code you can open; useful, incomplete; not a production support claim |
+| **experimental** | CI-validated or engineering path; not a published consumer SDK |
+| **in-tree, not packaged** | Sources or design docs exist in the repo; not a SwiftPM product / install path |
+| **deferred** | Explicitly not part of the default OSS product right now |
+
+## Tools map
+
+| Tool | How to run | Role | Status |
+|------|------------|------|--------|
+| `blazedb` | `swift build --product blazedb` then `.build/debug/blazedb` | Interactive picker / REPL | **shipped** |
+| `BlazeDoctor` | `swift run BlazeDoctor` | Health checks (separate executable, not a `blazedb` subcommand) | **shipped** |
+| `BlazeDump` | `swift run BlazeDump` | Export / restore (separate executable) | **shipped** |
+| `BlazeInfo` | `swift run BlazeInfo` | Quick snapshot (separate executable) | **shipped** |
+| `./dev` | `./dev help` | Contributor tests, tiers, experiments | **shipped** |
+| `BlazeDBBenchmarks` | `swift run BlazeDBBenchmarks` | Methodology workloads (not README vanity numbers) | **shipped** |
+| [BlazeStudio](../../BlazeStudio/) | Open `BlazeStudio/BlazeStudio.xcodeproj` | macOS visual / browser aid | **beta** |
+| [BlazeDBVisualizer](../../BlazeDBVisualizer/) | Open `BlazeDBVisualizer/BlazeDBVisualizer.xcodeproj` | macOS storage inspection UI | **beta** |
+| BlazeMCP | Sources under `BlazeMCP/`; see [MCP_SERVER.md](MCP_SERVER.md) | MCP protocol design / in-tree sources | **in-tree, not packaged** |
+| Distributed sync / server / discovery tooling | See [DISTRIBUTED_TRANSPORT_DEFERRED.md](../Status/DISTRIBUTED_TRANSPORT_DEFERRED.md) | Networked sync product surfaces | **deferred** |
+| Android / KMM sample paths | See [android-status.md](../android-status.md) | Cross-compile + KMM sample | **experimental** |
+
+### Naming note
+
+`BlazeShell/` holds implementation sources for the **`blazedb`** product (`BlazeCLICore` / `BlazedbCLI`). There is no separate "BlazeShell" executable to ship.
+
+Doctor, Dump, and Info are **shipped** SwiftPM executables. They are not `blazedb` subcommands today (see issues #259, #300).
+
+## Canonical tool docs
+
+- [BLAZEDOCTOR_DOCUMENTATION.md](BLAZEDOCTOR_DOCUMENTATION.md)
+- [BLAZEDUMP_DOCUMENTATION.md](BLAZEDUMP_DOCUMENTATION.md)
+- [BLAZEINFO_DOCUMENTATION.md](BLAZEINFO_DOCUMENTATION.md)
+- [BLAZESHELL_DOCUMENTATION.md](BLAZESHELL_DOCUMENTATION.md) (`blazedb` CLI)
+- [MCP_SERVER.md](MCP_SERVER.md) (**in-tree, not packaged**)
+- [BLAZESTUDIO_DOCUMENTATION.md](BLAZESTUDIO_DOCUMENTATION.md) (**beta**)
+- [BLAZEDBVISUALIZER_DOCUMENTATION.md](BLAZEDBVISUALIZER_DOCUMENTATION.md) (**beta**)
+- [USING_BLAZELOGGER_IN_VISUALIZER.md](USING_BLAZELOGGER_IN_VISUALIZER.md)

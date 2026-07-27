@@ -17,9 +17,9 @@ It runs inside your process. No separate database server is required.
 |------|-----------|
 | **Runtime CI** (host engine tests) | macOS, Linux |
 | **Declared and compile-tested** | iOS, watchOS, tvOS, visionOS |
-| **CI-validated (experimental packaging)** | Android cross-compile + KMM sample runtime in the PR gate |
+| **experimental** | Android cross-compile + KMM sample runtime in the PR gate (not a published SDK) |
 
-Android is **not unsupported**: the PR gate cross-compiles the bridge and runs a KMM emulator smoke. It is also **not the same tier as Linux** (no host `BlazeDB_Tier0` on Android; not in `Package.swift` `platforms:`; no published consumer SDK). Details: [Compatibility](Docs/COMPATIBILITY.md) · [android-status.md](Docs/android-status.md).
+Android is **experimental**: the PR gate cross-compiles the bridge and runs a KMM emulator smoke. It is not **shipped** as a consumer SDK (no `Package.swift` platform entry; no published registry artifacts) and not equivalent to Linux host Tier0. Details: [Compatibility](Docs/COMPATIBILITY.md) · [android-status.md](Docs/android-status.md).
 
 ---
 
@@ -70,7 +70,7 @@ CI also verifies the README snippets: `swift run ReadmeSamples`.
 - **Inspection tooling:** Explore databases with the shipped `blazedb` CLI/REPL; companion macOS apps and maintenance executables are listed below.
 - **Linux runtime:** Core engine is exercised in Linux CI alongside macOS. [Linux getting started](Docs/GettingStarted/LINUX_GETTING_STARTED.md).
 - **Native embeds:** The same engine is reachable through `BlazeDBC` (`blazedb.h`). [C ABI contract](Docs/Architecture/C_ABI_BYTE_KV.md).
-- **Android / KMM (CI-validated, experimental packaging):** PR-gate cross-compile + KMM emulator smoke exist; not a published mobile SDK and not Linux-equivalent host Tier0. [android-status.md](Docs/android-status.md).
+- **Android / KMM (experimental):** PR-gate cross-compile + KMM emulator smoke exist; not a published mobile SDK and not Linux-equivalent host Tier0. [android-status.md](Docs/android-status.md).
 
 ---
 
@@ -87,7 +87,7 @@ CI also verifies the README snippets: `swift run ReadmeSamples`.
 | Encryption and vulnerability reporting | [Key management](Docs/Status/KEY_MANAGEMENT_AND_COMPATIBILITY.md) · [SECURITY.md](SECURITY.md) |
 | Live queries / SwiftUI | [Live query architecture](Docs/Architecture/LIVE_QUERY_ARCHITECTURE.md) · [SwiftUI patterns](Docs/GettingStarted/SWIFTUI_DATABASE_PATTERNS.md) |
 | Linux setup | [LINUX_GETTING_STARTED.md](Docs/GettingStarted/LINUX_GETTING_STARTED.md) |
-| Android / KMM (CI-validated; experimental packaging) | [android-status.md](Docs/android-status.md) |
+| Android / KMM (**experimental**) | [android-status.md](Docs/android-status.md) |
 | Platform support tiers | [Compatibility](Docs/COMPATIBILITY.md) |
 | Benchmarks and methodology | [Docs/Benchmarks](Docs/Benchmarks/README.md) |
 | Contribute | [Contributing](#contributing) · [CONTRIBUTING.md](CONTRIBUTING.md) |
@@ -166,7 +166,7 @@ It is not a standalone network database server and not a multi-device sync produ
 - Distributed sync, discovery, server, and full telemetry packaging are deferred from the default OSS product ([Distributed Transport Deferred](Docs/Status/DISTRIBUTED_TRANSPORT_DEFERRED.md)).
 - Multi-process writers are not supported.
 - Network filesystems are not recommended.
-- Android and KMM are CI-validated in the PR gate but remain experimental packaging (not a published SDK; not Linux host Tier0).
+- Android and KMM are **experimental** (PR-gate CI exists; not a published SDK; not Linux host Tier0).
 - The C ABI enables native embeds; there are no official Go, Rust, or Python SDKs.
 
 Direction (not release guarantees): [ROADMAP.md](ROADMAP.md).
@@ -175,14 +175,17 @@ Direction (not release guarantees): [ROADMAP.md](ROADMAP.md).
 
 ## CLI and inspection tools
 
+Status words (use exactly): **shipped**, **beta**, **experimental**, **in-tree, not packaged**, **deferred**. Full map: [Docs/Tools/README.md](Docs/Tools/README.md).
+
 | Tool | Role | Status |
 |------|------|--------|
-| `blazedb` | Interactive picker, inspection, REPL (`swift build --product blazedb`) | **Shipped** product |
-| `BlazeDoctor` / `BlazeDump` / `BlazeInfo` | Maintenance utilities (`swift run BlazeDoctor`, etc.) | **Developer tools** (separate executables, not `blazedb` subcommands) |
-| [BlazeStudio](BlazeStudio/) | macOS database browser | **Companion** app |
-| [BlazeDBVisualizer](BlazeDBVisualizer/) | Storage inspection UI | **Developer tool** / beta |
-| `BlazeDBBenchmarks` | Release performance workloads | **Developer tool** |
-| `./dev` | Contributor test / tier helper | **Contributor** tooling |
+| `blazedb` | Interactive picker, inspection, REPL (`swift build --product blazedb`) | **shipped** |
+| `BlazeDoctor` / `BlazeDump` / `BlazeInfo` | Maintenance utilities (`swift run BlazeDoctor`, etc.; not `blazedb` subcommands) | **shipped** |
+| [BlazeStudio](BlazeStudio/) | macOS visual / browser aid (`BlazeStudio.xcodeproj`) | **beta** |
+| [BlazeDBVisualizer](BlazeDBVisualizer/) | macOS storage inspection UI | **beta** |
+| `BlazeDBBenchmarks` | Methodology workloads (not README vanity numbers) | **shipped** |
+| `./dev` | Contributor test / tier helper | **shipped** |
+| BlazeMCP | MCP design / sources under `BlazeMCP/` | **in-tree, not packaged** |
 
 ```bash
 swift build --product blazedb
@@ -250,26 +253,16 @@ C / FFI hosts ──► BlazeDBC ──► same engine
 
 Full catalog with support-state labels: [Examples/README.md](Examples/README.md).
 
-### Default / maintained
+### Examples by status
 
-| Example | Purpose | Command |
-|---------|---------|---------|
-| [HelloBlazeDB](Examples/HelloBlazeDB/) | Canonical open → put → get → query | `swift run HelloBlazeDB` |
-| [ReadmeSamples](Examples/ReadmeSamples/) | CI-verified README snippets | `swift run ReadmeSamples` |
-| [CorePathSmoke](Examples/CorePathSmoke/) | Portable core path | `swift run CorePathSmoke` |
-| [MVVMPattern](Examples/MVVMPattern/) | Repository + ViewModel without SwiftUI | `swift run MVVMPattern` |
-| [C/hello_blazedb.c](Examples/C/hello_blazedb.c) | C ABI sample | see [Examples/C/README.md](Examples/C/README.md) |
-
-### Conditional / preview / experimental
-
-| Example | Label | Notes |
-|---------|-------|-------|
-| [VaporServer](Examples/VaporServer/) | Conditional | Embed sample; not a Package product |
-| [Go preview](Examples/Go/README.md) | Preview | cgo recipe; no checked-in `.go` module |
-| [SwiftUIExample.swift](Examples/SwiftUIExample.swift) | Sample file | Advanced raw-row patterns; default SwiftUI path is [SWIFTUI_DATABASE_PATTERNS](Docs/GettingStarted/SWIFTUI_DATABASE_PATTERNS.md) |
-| Android / KMM samples | CI-validated; experimental packaging | [android-status.md](Docs/android-status.md) |
-
-Sync and telemetry samples are deferred or conditional. They are not default onboarding.
+| Example | Status | Notes |
+|---------|--------|-------|
+| [HelloBlazeDB](Examples/HelloBlazeDB/), [ReadmeSamples](Examples/ReadmeSamples/), [CorePathSmoke](Examples/CorePathSmoke/), [MVVMPattern](Examples/MVVMPattern/), [C/hello_blazedb.c](Examples/C/hello_blazedb.c) | **shipped** (sample paths) | Default onboarding |
+| [VaporServer](Examples/VaporServer/) | **in-tree, not packaged** | Embed sample; not a Package product |
+| [Go preview](Examples/Go/README.md) | **in-tree, not packaged** | cgo recipe; no checked-in `.go` module |
+| [SwiftUIExample.swift](Examples/SwiftUIExample.swift) | **beta** sample file | Default SwiftUI path: [SWIFTUI_DATABASE_PATTERNS](Docs/GettingStarted/SWIFTUI_DATABASE_PATTERNS.md) |
+| Android / KMM samples | **experimental** | [android-status.md](Docs/android-status.md) |
+| Sync / telemetry samples | **deferred** | [DISTRIBUTED_TRANSPORT_DEFERRED.md](Docs/Status/DISTRIBUTED_TRANSPORT_DEFERRED.md) |
 
 ---
 
