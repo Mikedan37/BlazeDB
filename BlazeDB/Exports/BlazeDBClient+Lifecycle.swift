@@ -30,6 +30,11 @@ extension BlazeDBClient {
     ///
     /// - Throws: `BlazeDBError` if flush fails (database may be partially closed)
     public func close() throws {
+        // Serialize with writers for the full teardown (#296). Recursive lock
+        // allows rollbackTransaction/persist which also take writeLock.
+        writeLock.lock()
+        defer { writeLock.unlock() }
+
         // Idempotency: if already closed, do nothing
         guard !isClosed else {
             BlazeLogger.debug("Database '\(name)' already closed (idempotent call)")

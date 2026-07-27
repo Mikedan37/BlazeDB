@@ -114,7 +114,13 @@ extension BlazeDBClient {
     /// - Returns: Bytes reclaimed
     @discardableResult
     public func vacuum() throws -> Int {
-        // BLOCKER #2 FIX: Prevent concurrent operations during VACUUM
+        try ensureNotClosed()
+
+        // Exclude writers / txn commit paths for the whole storage swap (#295).
+        // `writeLock` is recursive so nested client helpers remain safe.
+        writeLock.lock()
+        defer { writeLock.unlock() }
+
         vacuumLock.lock()
         guard !isVacuuming else {
             vacuumLock.unlock()
@@ -130,6 +136,12 @@ extension BlazeDBClient {
             vacuumLock.lock()
             isVacuuming = false
             vacuumLock.unlock()
+        }
+
+        guard transactionIndexMapSnapshot == nil else {
+            throw BlazeDBError.transactionFailed(
+                "Cannot VACUUM while a transaction is open; commit or rollback first"
+            )
         }
 
         let activeCollection = collection

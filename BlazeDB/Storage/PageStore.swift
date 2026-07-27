@@ -130,6 +130,15 @@ public final class PageStore: @unchecked Sendable {
     internal let legacyOverflowPointerHeuristicCompatibilityMode: Bool
     private var isLocked: Bool = false  // Track lock state for cleanup
     private var closed: Bool = false
+
+    /// Throws if this store has been closed (vacuum swap / client close).
+    private func ensureOpenLocked() throws {
+        guard !closed else {
+            throw BlazeDBError.invalidInput(
+                reason: "PageStore is closed; refusing I/O after close/vacuum storage replacement"
+            )
+        }
+    }
     // Compression is configured per PageStore instance.
     // Internal visibility is required for the same-module compression extension.
     internal let compressionStateLock = NSLock()
@@ -651,6 +660,7 @@ public final class PageStore: @unchecked Sendable {
         dispatchPrecondition(condition: .notOnQueue(queue))
         #endif
         try queue.sync(flags: .barrier) {
+            try ensureOpenLocked()
             // Invalidate cache on delete
             pageCache.remove(index)
             
@@ -683,6 +693,7 @@ public final class PageStore: @unchecked Sendable {
         dispatchPrecondition(condition: .notOnQueue(queue))
         #endif
         return try queue.sync(flags: .barrier) {
+            try ensureOpenLocked()
             // Determine next page index from current file size.
             let currentSize = try self.fileSize()
             let nextIndex = max(0, currentSize / pageSize)
@@ -852,6 +863,7 @@ public final class PageStore: @unchecked Sendable {
         dispatchPrecondition(condition: .notOnQueue(queue))
         #endif
         try queue.sync(flags: .barrier) {
+            try ensureOpenLocked()
             try _writePageLocked(index: index, plaintext: plaintext)
         }
     }
@@ -863,6 +875,7 @@ public final class PageStore: @unchecked Sendable {
         dispatchPrecondition(condition: .notOnQueue(queue))
         #endif
         try queue.sync(flags: .barrier) {
+            try ensureOpenLocked()
             try _writePageLockedUnsynchronized(index: index, plaintext: plaintext)
         }
     }
@@ -873,6 +886,7 @@ public final class PageStore: @unchecked Sendable {
         dispatchPrecondition(condition: .notOnQueue(queue))
         #endif
         try queue.sync(flags: .barrier) {
+            try ensureOpenLocked()
             try _commitPendingUnifiedAutoTransactionIfNeededLocked()
             try _flushPendingUnifiedBufferedWritesLocked()
             try wal?.sync()
@@ -894,6 +908,7 @@ public final class PageStore: @unchecked Sendable {
         dispatchPrecondition(condition: .notOnQueue(queue))
         #endif
         return try queue.sync { () throws -> Data? in
+            try ensureOpenLocked()
             // Check cache first (MASSIVE speedup for repeated reads!)
             // Note: Cache stores decrypted data for maximum performance
             if let cached = pageCache.get(index) {

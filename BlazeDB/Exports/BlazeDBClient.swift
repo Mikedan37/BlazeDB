@@ -266,7 +266,7 @@ public final class BlazeDBClient: @unchecked Sendable {
         BlazeLogger.debug("✅ Verified database session installed for process lifetime")
     }
 
-    private let writeLock = NSRecursiveLock()
+    internal let writeLock = NSRecursiveLock()
     private let transactionLogLock = NSLock()  // 🔒 Dedicated lock for WAL writes
 
     private static func stablePathDigestHex(_ value: String) -> String {
@@ -975,8 +975,11 @@ public final class BlazeDBClient: @unchecked Sendable {
     public func updateMany(where predicate: @escaping (BlazeDataRecord) -> Bool, set fields: [String: BlazeDocumentField]) throws -> Int {
         var updateCount = 0
         try performSafeWrite {
-            // Fetch all records WITH their IDs
-            let allIDs = collection.indexMap.keys
+            // Snapshot IDs under the collection queue. Do not iterate live
+            // `indexMap.keys` while update mutates the dictionary (#278).
+            let allIDs: [UUID] = collection.queue.sync {
+                Array(collection.indexMap.keys)
+            }
             for id in allIDs {
                 let record: BlazeDataRecord
                 do {
@@ -1088,8 +1091,11 @@ public final class BlazeDBClient: @unchecked Sendable {
     public func deleteMany(where predicate: @escaping (BlazeDataRecord) -> Bool) throws -> Int {
         var deleteCount = 0
         try performSafeWrite {
-            // Fetch all records WITH their IDs
-            let allIDs = collection.indexMap.keys
+            // Snapshot IDs under the collection queue. Do not iterate live
+            // `indexMap.keys` while delete mutates the dictionary (#278).
+            let allIDs: [UUID] = collection.queue.sync {
+                Array(collection.indexMap.keys)
+            }
             for id in allIDs {
                 let record: BlazeDataRecord
                 do {

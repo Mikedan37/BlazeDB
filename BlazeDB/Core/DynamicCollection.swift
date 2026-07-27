@@ -1630,9 +1630,10 @@ public final class DynamicCollection {
             #if !BLAZEDB_LINUX_CORE
             return try filterOptimized(isMatch)
             #else
-            // On Linux, use basic filter
+            // On Linux, use basic filter — must not call fetchAllBasic() here
+            // (it takes queue.sync again and deadlocks; #279).
             return try queue.sync {
-                let all = try fetchAllBasic()
+                let all = try _fetchAllNoSync()
                 return all.filter(isMatch)
             }
             #endif
@@ -1641,7 +1642,8 @@ public final class DynamicCollection {
         /// Runs a BlazeQueryLegacy over all records, returning those for which the query applies.
         public func runQuery(_ query: BlazeQueryLegacy<[String: BlazeDocumentField]>) throws -> [BlazeDataRecord] {
             return try queue.sync {
-                let records = try fetchAll()
+                // Already on `queue` — use unsync fetch (#279 nested sync deadlock).
+                let records = try _fetchAllNoSync()
                 return query.apply(to: records.map { $0.storage }).compactMap { dict in
                     BlazeDataRecord(dict)
                 }
@@ -1650,7 +1652,7 @@ public final class DynamicCollection {
         
         public func runQueryChained(_ query: BlazeQueryLegacy<[String: BlazeDocumentField]>) throws -> [BlazeDataRecord] {
             return try queue.sync {
-                let records = try fetchAll()
+                let records = try _fetchAllNoSync()
                 return query.apply(to: records.map { $0.storage }).compactMap { dict in
                     BlazeDataRecord(dict)
                 }
@@ -1659,7 +1661,7 @@ public final class DynamicCollection {
         
         public func runQuerySorted(_ query: BlazeQueryLegacy<[String: BlazeDocumentField]>) throws -> [BlazeDataRecord] {
             return try queue.sync {
-                let records = try fetchAll()
+                let records = try _fetchAllNoSync()
                 return query.apply(to: records.map { $0.storage }).compactMap { dict in
                     BlazeDataRecord(dict)
                 }
@@ -1668,7 +1670,7 @@ public final class DynamicCollection {
         
         public func runQueryRanged(_ query: BlazeQueryLegacy<[String: BlazeDocumentField]>) throws -> [BlazeDataRecord] {
             return try queue.sync {
-                let records = try fetchAll()
+                let records = try _fetchAllNoSync()
                 return query.apply(to: records.map { $0.storage }).compactMap { dict in
                     BlazeDataRecord(dict)
                 }
@@ -1677,7 +1679,7 @@ public final class DynamicCollection {
         
         public func fetchAllSorted(by key: String, ascending: Bool = true) throws -> [BlazeDataRecord] {
             return try queue.sync {
-                let records = try fetchAll()
+                let records = try _fetchAllNoSync()
                 return records.sorted {
                     guard let lhs = $0.storage[key], let rhs = $1.storage[key] else { return false }
                     if ascending {
@@ -2812,7 +2814,8 @@ public final class DynamicCollection {
         /// Internal helper: Fetch all records without synchronization (already in queue.sync)
         internal func _fetchAllNoSync() throws -> [BlazeDataRecord] {
             var records: [BlazeDataRecord] = []
-            for id in indexMap.keys {
+            let ids = Array(indexMap.keys)
+            for id in ids {
                 if let record = try? _fetchNoSync(id: id) {
                     records.append(record)
                 }
