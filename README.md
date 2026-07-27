@@ -1,86 +1,32 @@
 # BlazeDB
 
-BlazeDB is an encrypted embedded database with a stable native interface, broad platform support, active correctness work, and several carefully scoped ways to contribute.
+BlazeDB is an encrypted, in-process database engine written in Swift for applications and in-process services. It provides typed document APIs, raw key-value access, transactional write APIs, WAL-backed recovery, live queries, SwiftUI integration on Apple platforms, local inspection tools, Linux runtime support, a documented C ABI for native embeds, and experimental Android/KMM paths. Go and other languages can call the C ABI through cgo or FFI; no official language SDKs are published.
 
-It is Swift-native for local applications: typed models, transactions, WAL recovery, CLI tooling, and a documented C ABI: single-process by design. It runs inside your process, stores data on-device, and does not require a separate database server or network connection. “Local” means in-process persistence, not multiplayer sync or distributed replicas.
-
-You can use BlazeDB from Swift, from the `blazedb` CLI, or through its C ABI. The primary open-source product is the embedded Swift engine; the C ABI reaches that same engine and is not a separate product story.
+It runs inside your process. No separate database server is required.
 
 [![CI](https://github.com/Mikedan37/BlazeDB/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Mikedan37/BlazeDB/actions/workflows/ci.yml)
 [![Release](https://img.shields.io/badge/release-v2.8.1-green.svg)](RELEASE.md)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Swift](https://img.shields.io/badge/Swift-6.0+-orange.svg)](https://swift.org)
 
-**Current release:** [v2.8.1](RELEASE.md) · [Getting started](Docs/GettingStarted/README.md) · [Documentation index](Docs/README.md) · [Contributing](CONTRIBUTING.md) · [Compatibility](Docs/COMPATIBILITY.md) · [Roadmap](ROADMAP.md)
+**Current release:** [v2.8.1](RELEASE.md) · [Changelog](CHANGELOG.md) · [Docs index](Docs/README.md) · [Compatibility](Docs/COMPATIBILITY.md)
 
 ### Platforms
 
-- **Runtime CI:** macOS, Linux
-- **Declared and compile-tested:** iOS, watchOS, tvOS, visionOS
-- **Experimental:** Android cross-compilation, KMM sample, portable MVVM pattern
+| Tier | Platforms |
+|------|-----------|
+| **Runtime CI** | macOS, Linux |
+| **Declared and compile-tested** | iOS, watchOS, tvOS, visionOS |
+| **Experimental** | Android cross-compilation, KMM sample |
 
-See [Compatibility](Docs/COMPATIBILITY.md) for minimum versions and support details. Android and KMM notes: [android-status.md](Docs/android-status.md).
-
----
-
-## What ships by default
-
-`Package.swift`, tests, and CI are the source of truth when documentation and source layout disagree.
-
-| Area | Product status | Documentation |
-|------|----------------|---------------|
-| Embedded storage, typed and raw APIs, transactions, durability, import/export, inspection APIs, CLI | **Default shipped core** | Maintained |
-| Migrations, indexing, search tuning, and manual mapping | **Advanced and supported** | Maintained entry points |
-| Schema validation | **Advanced and supported** | Dedicated guide under consolidation |
-| Distributed sync, server/discovery, full telemetry packaging | **Conditional or deferred** | Not default onboarding |
-
-### Guarantees and boundaries
-
-BlazeDB’s public database-opening APIs require a password, and persisted data is encrypted at rest with AES-GCM. Durability for the default client path is WAL-backed; see [Durability Mode Support](Docs/Status/DURABILITY_MODE_SUPPORT.md) for modes, fsync behavior, and recovery details. The engine is single-process oriented. Multi-writer and network filesystem behavior are not the primary design target.
-
-### Current engineering focus
-
-Near-term work is packaging and documentation honesty for contributors, with maintainer attention ordered as: security correctness (RLS) → continuous verification → durability invariants → performance (after measurement). See [ROADMAP.md](ROADMAP.md).
-
-The [issue tracker](https://github.com/Mikedan37/BlazeDB/issues) mixes verified defects, contributor tasks, documentation work, and deferred platform improvements. **Not every open issue is a release blocker**, and the full catalog is not the onboarding path. Prefer the contributor entry below (label filters), then [CONTRIBUTING.md](CONTRIBUTING.md).
-
-### Want to contribute? Start here
-
-BlazeDB welcomes focused contributions across documentation, developer tooling,
-tests, platform support, and core correctness.
-
-Start with:
-
-- [Good first issues](https://github.com/Mikedan37/BlazeDB/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22)
-- [Help wanted](https://github.com/Mikedan37/BlazeDB/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22)
-- [Contribution guide](CONTRIBUTING.md)
-- [Issue guide](Docs/Contributing/ISSUE_GUIDE.md)
-- [Learning paths](Docs/Contributing/LEARNING_PATHS.md)
-- [Roadmap](ROADMAP.md)
-
-Comment on an issue before starting substantial work so scope and ownership are clear.
+Details: [Compatibility](Docs/COMPATIBILITY.md) · [android-status.md](Docs/android-status.md).
 
 ---
 
-## Choose your path
-
-| If you want to… | Start here |
-|-----------------|------------|
-| Build a Swift app | [Start Here](#start-here-new-users) · [Getting Started](Docs/GettingStarted/README.md) |
-| Try the library from this clone | `swift run HelloBlazeDB` |
-| Inspect a database in a terminal | [CLI](#cli) |
-| Contribute tests or storage changes | [Contributing](#contributing) · [CONTRIBUTING.md](CONTRIBUTING.md) |
-| Embed from C or call C from another language | [C ABI](#cross-language-c-abi) · [C_ABI_BYTE_KV](Docs/Architecture/C_ABI_BYTE_KV.md) |
-| Call from Go via cgo | [Go integration preview](#go-integration-preview) · [Examples/Go](Examples/Go/README.md) |
-
----
+## Try it
 
 <a id="start-here-new-users"></a>
-
-## Start Here (new users)
-
-No separate database server is involved. BlazeDB stores each named database locally using an encrypted database file and its required durability metadata. You describe records with ordinary Swift structs. `put` saves a value, `get` loads one record when you know its namespaced record ID, and `query` returns a filtered list.
-
-Read the sample top to bottom: `open` → `put` → `get` → `query`.
+<a id="try-blazedb-from-this-repo"></a>
 
 ```swift
 import BlazeDB
@@ -95,22 +41,14 @@ let db = try BlazeDB.open(name: "demo", password: "DemoPass123!")
 let bug = Bug(title: "Crash on launch", status: "open")
 try db.put(bug)
 
+// Typed records use namespaced IDs internally (namespace:UUID).
 let loaded: Bug? = try db.get("bug:\(bug.id.uuidString)")
 let openBugs: [Bug] = try db.query("bug")
     .where("status", equals: "open")
     .all()
 ```
 
-The `"bug"` in `query("bug")` is a namespace label for that kind of record. It is not a separate SQL table. Namespaced record IDs look like `"bug:<uuid>"` (namespace + the model’s `id`).
-
-| Step | What it does |
-|------|----------------|
-| `open` | Opens or creates your local encrypted database |
-| `put` | Saves a struct |
-| `get("bug:…")` | Loads one bug by namespaced record ID |
-| `query("bug")…` | Lists or filters bugs |
-
-### Try it from this repo
+`"bug"` in `query("bug")` is a namespace label, not a SQL table.
 
 ```bash
 git clone https://github.com/Mikedan37/BlazeDB.git
@@ -118,210 +56,291 @@ cd BlazeDB
 swift run HelloBlazeDB
 ```
 
-### Add the package to your app
-
-```swift
-.package(url: "https://github.com/Mikedan37/BlazeDB.git", from: "2.8.1")
-```
-
-Depend on the `BlazeDB` product. For a longer walkthrough, see [HOW_TO_USE_BLAZEDB.md](Docs/GettingStarted/HOW_TO_USE_BLAZEDB.md). For SwiftUI wiring, see [Docs/GettingStarted](Docs/GettingStarted/README.md) and [Examples/SwiftUIExample.swift](Examples/SwiftUIExample.swift).
+CI also verifies the README snippets: `swift run ReadmeSamples`.
 
 ---
 
-## CLI
+## Why BlazeDB
 
-The `blazedb` executable provides interactive database access, inspection commands, and a REPL.
+- **Encryption by default:** Public database-opening APIs require a password; stored pages use AES-256-GCM. See [Key management](Docs/Status/KEY_MANAGEMENT_AND_COMPATIBILITY.md) and [Security architecture](Docs/Security/README.md).
+- **Typed Swift records:** Store ordinary structs with `BlazeStorable`, or use raw and byte APIs when you need them. [Getting Started](Docs/GettingStarted/README.md) · [API Reference](Docs/API/API_REFERENCE.md).
+- **WAL-backed recovery:** The default storage path uses a write-ahead log. Documented durability behavior and overflow caveats: [Durability Mode Support](Docs/Status/DURABILITY_MODE_SUPPORT.md).
+- **Transactional write APIs:** Public write paths support transactional work. See [Transactions](Docs/DEVELOPER_GUIDE.md#transactions) in the Developer Guide.
+- **Live queries and SwiftUI:** Observe result sets in-process with `BlazeLiveQuery` and SwiftUI-facing wrappers on supported Apple platforms. [Live query architecture](Docs/Architecture/LIVE_QUERY_ARCHITECTURE.md) · [SwiftUI patterns](Docs/GettingStarted/SWIFTUI_DATABASE_PATTERNS.md).
+- **Inspection tooling:** Explore databases with the shipped `blazedb` CLI/REPL; companion macOS apps and maintenance executables are listed below.
+- **Linux runtime:** Core engine is exercised in Linux CI alongside macOS. [Linux getting started](Docs/GettingStarted/LINUX_GETTING_STARTED.md).
+- **Native embeds:** The same engine is reachable through `BlazeDBC` (`blazedb.h`). [C ABI contract](Docs/Architecture/C_ABI_BYTE_KV.md).
+- **Experimental Android/KMM:** Cross-compile and sample paths exist; not a production mobile SDK. [android-status.md](Docs/android-status.md).
 
-```bash
-swift build --product blazedb
-.build/debug/blazedb help
-.build/debug/blazedb start
-```
+---
 
-From a package checkout, contributors can use `./dev` for repository workflows (tests, tiers, experiments). The wrapper reuses the existing developer build when possible:
+## Choose your path
 
-```bash
-./dev help
-./dev tiers
-./dev tests bplus
-./dev test BPlusTreeNodeTests.createsSimpleTree
-./dev tier0
-```
-
-Full process: [CONTRIBUTING.md](CONTRIBUTING.md). Tool notes: [Docs/Tools/README.md](Docs/Tools/README.md).
+| If you want to… | Start here |
+|-----------------|------------|
+| Build a Swift app | [Try it](#try-it) · [Getting Started](Docs/GettingStarted/README.md) |
+| Embed in Vapor or server-side Swift | [HOW_TO_USE: Vapor embedding](Docs/GettingStarted/HOW_TO_USE_BLAZEDB.md#8-using-blazedb-in-a-server-vapor-example) |
+| Use the CLI / REPL | [CLI and tools](#cli-and-inspection-tools) · [Tools docs](Docs/Tools/README.md) |
+| Call from C | [Native interoperability](#native-interoperability) · [Examples/C](Examples/C/) |
+| Call from Go via cgo | [Examples/Go](Examples/Go/README.md) (recipe; no official Go module) |
+| Understand durability and recovery | [Durability Mode Support](Docs/Status/DURABILITY_MODE_SUPPORT.md) |
+| Encryption and vulnerability reporting | [Key management](Docs/Status/KEY_MANAGEMENT_AND_COMPATIBILITY.md) · [SECURITY.md](SECURITY.md) |
+| Live queries / SwiftUI | [Live query architecture](Docs/Architecture/LIVE_QUERY_ARCHITECTURE.md) · [SwiftUI patterns](Docs/GettingStarted/SWIFTUI_DATABASE_PATTERNS.md) |
+| Linux setup | [LINUX_GETTING_STARTED.md](Docs/GettingStarted/LINUX_GETTING_STARTED.md) |
+| Android / KMM (experimental) | [android-status.md](Docs/android-status.md) |
+| Platform support tiers | [Compatibility](Docs/COMPATIBILITY.md) |
+| Benchmarks and methodology | [Docs/Benchmarks](Docs/Benchmarks/README.md) |
+| Contribute | [Contributing](#contributing) · [CONTRIBUTING.md](CONTRIBUTING.md) |
 
 ---
 
 ## Installation
 
-Requires Swift 6.0+ ([swift.org](https://www.swift.org/install/) or Xcode on Apple platforms). Matches `swift-tools-version:6.0` in `Package.swift` and the minimum in [Compatibility](Docs/COMPATIBILITY.md).
+Requires Swift 6.0+ ([swift.org](https://www.swift.org/install/) or Xcode). Matches `swift-tools-version:6.0` in `Package.swift`.
 
-**Swift apps:** add the SPM dependency above and import `BlazeDB`.
+```swift
+.package(url: "https://github.com/Mikedan37/BlazeDB.git", from: "2.8.1")
+```
 
-**C library (FFI hosts):**
+Depend on the **`BlazeDB`** product and `import BlazeDB`.
+
+From a clone:
 
 ```bash
+swift run HelloBlazeDB
+swift run ReadmeSamples
+swift build --product blazedb
 swift build -c release --product BlazeDBC
 ```
 
-| Artifact | Location |
-|----------|----------|
-| Shared library | `.build/release/libBlazeDBC.dylib` (macOS) or `libBlazeDBC.so` (Linux) |
-| Header | `BlazeDBC/include/blazedb.h` |
-
-Link with `-lBlazeDBC` and an rpath appropriate for your host. Details: [BlazeDBC/README.md](BlazeDBC/README.md) · [RELEASE.md](RELEASE.md).
+Release notes for this pin: [RELEASE.md](RELEASE.md) (v2.8.1). Longer walkthrough: [HOW_TO_USE_BLAZEDB.md](Docs/GettingStarted/HOW_TO_USE_BLAZEDB.md).
 
 ---
 
-## Architecture summary
+## Core API overview
 
-Swift apps talk to `BlazeDB` / `BlazeDBCore` directly. Languages that can call C can use the same engine through `BlazeDBC` (`blazedb.h`). Distributed sync and telemetry live outside the default core packaging path.
+| Task | Entry | Deeper docs |
+|------|-------|-------------|
+| Open | `BlazeDB.open(name:password:)` or `open(at:password:)` | [Getting Started](Docs/GettingStarted/README.md) |
+| Typed put / get / query | `BlazeStorable` + namespace queries | [API Reference](Docs/API/API_REFERENCE.md) |
+| Transactional writes | `beginTransaction` / `commitTransaction` / rollback | [Transactions](Docs/DEVELOPER_GUIDE.md#transactions) |
+| Live queries | `BlazeLiveQuery` / SwiftUI property wrappers | [LIVE_QUERY_ARCHITECTURE](Docs/Architecture/LIVE_QUERY_ARCHITECTURE.md) |
+| Raw / byte KV | Client byte APIs; C ABI mirrors this surface | [C_ABI_BYTE_KV](Docs/Architecture/C_ABI_BYTE_KV.md) |
+| Indexing and queries | Query builder, indexes, search tuning | [Developer Guide](Docs/DEVELOPER_GUIDE.md) · [Performance](Docs/Performance/README.md) |
+| Schema and migrations | Schema validation and migration APIs | [MIGRATION.md](Docs/MIGRATION.md) · [Advanced topics](Docs/README.md#advanced-but-supported) |
+| Backup, export, restore | Export/import and verification APIs | [HOW_TO_USE: Backups](Docs/GettingStarted/HOW_TO_USE_BLAZEDB.md#9-backups-restore-and-trust) |
+
+See the [documentation index](Docs/README.md) for support status and deeper guides.
+
+---
+
+## Deployment model
+
+BlazeDB is embedded and runs inside the host process on a local database file.
+
+Common hosts include:
+
+- SwiftUI and other Apple-platform applications
+- macOS and Linux command-line tools
+- Vapor and other server-side Swift processes ([embedding guide](Docs/GettingStarted/HOW_TO_USE_BLAZEDB.md#8-using-blazedb-in-a-server-vapor-example))
+- Native applications linking `BlazeDBC`
+
+It is not a standalone network database server and not a multi-device sync product in the default package. Platform tiers (runtime, compile-tested, experimental): [Compatibility](Docs/COMPATIBILITY.md).
+
+---
+
+## Guarantees and boundaries
+
+**Core guarantees:**
+
+- Public database-opening APIs require a password; stored pages use AES-256-GCM
+- Default storage path uses WAL-backed recovery ([documented durability behavior](Docs/Status/DURABILITY_MODE_SUPPORT.md))
+- Typed document APIs and raw key-value access
+- Transactional write APIs and in-process live queries
+- Single-process file ownership model
+
+**Boundaries (stated once):**
+
+- Embedded and in-process. A Swift service may embed BlazeDB; BlazeDB is not a networked database server product.
+- No SQL string engine (fluent Swift queries only).
+- Distributed sync, discovery, server, and full telemetry packaging are deferred from the default OSS product ([Distributed Transport Deferred](Docs/Status/DISTRIBUTED_TRANSPORT_DEFERRED.md)).
+- Multi-process writers are not supported.
+- Network filesystems are not recommended.
+- Android and KMM remain experimental.
+- The C ABI enables native embeds; there are no official Go, Rust, or Python SDKs.
+
+Direction (not release guarantees): [ROADMAP.md](ROADMAP.md).
+
+---
+
+## CLI and inspection tools
+
+| Tool | Role | Status |
+|------|------|--------|
+| `blazedb` | Interactive picker, inspection, REPL (`swift build --product blazedb`) | **Shipped** product |
+| `BlazeDoctor` / `BlazeDump` / `BlazeInfo` | Maintenance utilities (`swift run BlazeDoctor`, etc.) | **Developer tools** (separate executables, not `blazedb` subcommands) |
+| [BlazeStudio](BlazeStudio/) | macOS database browser | **Companion** app |
+| [BlazeDBVisualizer](BlazeDBVisualizer/) | Storage inspection UI | **Developer tool** / beta |
+| `BlazeDBBenchmarks` | Release performance workloads | **Developer tool** |
+| `./dev` | Contributor test / tier helper | **Contributor** tooling |
+
+```bash
+swift build --product blazedb
+.build/debug/blazedb --help
+.build/debug/blazedb          # interactive picker / REPL (not a network server)
+```
+
+More: [Docs/Tools/README.md](Docs/Tools/README.md) · schemes: [XCODE_SCHEMES.md](Docs/Build/XCODE_SCHEMES.md).
+
+---
+
+## Native interoperability
+
+`BlazeDBC` exposes a documented **byte-oriented** C ABI (`BlazeDBC/include/blazedb.h`). Published symbols and behavior follow [C_ABI_BYTE_KV.md](Docs/Architecture/C_ABI_BYTE_KV.md) (stability-governed signatures, not a forever-frozen binary drop-in).
+
+Excerpt from [Examples/C/hello_blazedb.c](Examples/C/hello_blazedb.c):
+
+```c
+BlazeDB *db = blazedb_open("hello.blaze", "DemoPass123!");
+const char *payload = "queued";
+BlazeDBResult rc = blazedb_put(db, "job:42", payload, strlen(payload));
+/* get, blazedb_free, delete, close: see hello_blazedb.c */
+```
+
+```bash
+swift build -c release --product BlazeDBC
+# .build/release/libBlazeDBC.dylib (macOS) or libBlazeDBC.so (Linux)
+```
+
+Languages that can call C (including Go via cgo, Rust, and Python) can use this surface. That is interoperability capability, not an official SDK for each language.
+
+**Go:** Go can call the C ABI through cgo; no official Go module is currently published. Recipe and limits: [Examples/Go/README.md](Examples/Go/README.md). Dynamic packaging notes: [RELEASE.md](RELEASE.md).
+
+---
+
+## Architecture map
+
+| Topic | Canonical doc |
+|-------|----------------|
+| Overview | [Docs/Architecture/README.md](Docs/Architecture/README.md) |
+| Encryption / keys | [Key management](Docs/Status/KEY_MANAGEMENT_AND_COMPATIBILITY.md) · [Security architecture](Docs/Security/README.md) |
+| WAL / recovery | [Durability Mode Support](Docs/Status/DURABILITY_MODE_SUPPORT.md) |
+| Codebase map | [CODEBASE_MAP](Docs/Architecture/CODEBASE_MAP.md) |
+| Live queries | [LIVE_QUERY_ARCHITECTURE](Docs/Architecture/LIVE_QUERY_ARCHITECTURE.md) |
+| C ABI | [C_ABI_BYTE_KV](Docs/Architecture/C_ABI_BYTE_KV.md) |
+| Indexing / queries | [Developer Guide](Docs/DEVELOPER_GUIDE.md) |
+| Schema / migrations | [MIGRATION.md](Docs/MIGRATION.md) |
 
 ```text
 Swift apps / blazedb CLI
         │
         ▼
    BlazeDB / BlazeDBCore
-        │
         ├── typed and raw APIs
-        ├── queries and indexes
-        ├── transactions + WAL recovery
+        ├── queries, indexes, live queries
+        ├── transactional writes + WAL recovery
         └── encrypted pages → disk
 
-C / FFI hosts ──► BlazeDBC (documented C ABI) ──► same engine
+C / FFI hosts ──► BlazeDBC ──► same engine
 ```
-
-Deeper design: [Docs/Architecture/README.md](Docs/Architecture/README.md).
-
----
-
-## Cross-language C ABI
-
-The C ABI can be used by C and by languages capable of calling C libraries, including Go, Rust, and Python. That is interoperability capability, not a claim that every host language has an official maintained wrapper. Published symbols are stability-governed; new functions may be added later. See [C_ABI_BYTE_KV.md](Docs/Architecture/C_ABI_BYTE_KV.md) for what that promise covers (stable symbols and signatures, documented behavior, opaque handles; not struct layout, universal binary drop-in, or major-version forever compatibility).
-
-```c
-#include <blazedb.h>
-
-BlazeDB *db = blazedb_open("jobs.blaze", "DemoPass123!");
-blazedb_put(db, "job:42", "hello", 5);
-/* get / free / delete / close: Examples/C/hello_blazedb.c */
-```
-
-Interoperability rules and ownership: [Docs/Architecture/C_ABI_BYTE_KV.md](Docs/Architecture/C_ABI_BYTE_KV.md) · [Examples/C](Examples/C/).
-
----
-
-## Go integration preview
-
-The documented C ABI path works end to end through `BlazeDBC` (see the C sample and `BlazeDBCSmokeTests`). Go hosts can call the same surface via cgo. This repository documents that recipe; it does not yet include checked-in `.go` sources or a separately versioned Go module.
-See [Examples/Go/README.md](Examples/Go/README.md) for setup and current limitations.
-
----
-
-## Advanced but supported
-
-These belong in the engine and are public, but they are not day-one onboarding. Prefer the [documentation index Advanced table](Docs/README.md#advanced-but-supported) for current entry points:
-
-- Migrations, indexing, search tuning, manual mapping: [Developer Guide](Docs/DEVELOPER_GUIDE.md) · [API Reference](Docs/API/API_REFERENCE.md) · [Docs/MIGRATION.md](Docs/MIGRATION.md)
-- Schema validation: supported APIs in the API Reference; dedicated guides are still under consolidation
-
-After Getting Started works, deepen from those links rather than older Status snapshots.
-
----
-
-## Tools and applications
-
-| Tool | Role | Status |
-|------|------|--------|
-| `blazedb` | Interactive access, inspection, and REPL | Default shipped |
-| [BlazeStudio](BlazeStudio/) | macOS database browser | Companion app |
-| [BlazeDBVisualizer](BlazeDBVisualizer/) | Storage inspection UI | Developer tool |
-| `BlazeDoctor` / `BlazeDump` / `BlazeInfo` | Maintenance utilities | Developer tools |
-| `BlazeDBBenchmarks` | Release performance workloads | Developer tool |
-| `./dev` | Contributor test, tier, and experiment commands | Contributor tooling |
-
-Interactive IDE schemes and Archive notes: [Docs/Build/XCODE_SCHEMES.md](Docs/Build/XCODE_SCHEMES.md).
 
 ---
 
 ## Examples
 
-Curated entry points (full catalog: [Examples/README.md](Examples/README.md)):
+Full catalog with support-state labels: [Examples/README.md](Examples/README.md).
+
+### Default / maintained
 
 | Example | Purpose | Command |
 |---------|---------|---------|
 | [HelloBlazeDB](Examples/HelloBlazeDB/) | Canonical open → put → get → query | `swift run HelloBlazeDB` |
-| [CorePathSmoke](Examples/CorePathSmoke/) | Portable core path smoke | `swift run CorePathSmoke` |
-| [MVVMPattern](Examples/MVVMPattern/) | Repository + ViewModel without SwiftUI | `swift run MVVMPattern` |
 | [ReadmeSamples](Examples/ReadmeSamples/) | CI-verified README snippets | `swift run ReadmeSamples` |
+| [CorePathSmoke](Examples/CorePathSmoke/) | Portable core path | `swift run CorePathSmoke` |
+| [MVVMPattern](Examples/MVVMPattern/) | Repository + ViewModel without SwiftUI | `swift run MVVMPattern` |
 | [C/hello_blazedb.c](Examples/C/hello_blazedb.c) | C ABI sample | see [Examples/C/README.md](Examples/C/README.md) |
-| [Go preview](Examples/Go/README.md) | Documented cgo recipe (no checked-in Go module yet) | see that README |
 
-Sync, telemetry, and some server samples are conditional or deferred. Treat them as design or gated code unless the docs say otherwise.
+### Conditional / preview / experimental
 
----
+| Example | Label | Notes |
+|---------|-------|-------|
+| [VaporServer](Examples/VaporServer/) | Conditional | Embed sample; not a Package product |
+| [Go preview](Examples/Go/README.md) | Preview | cgo recipe; no checked-in `.go` module |
+| [SwiftUIExample.swift](Examples/SwiftUIExample.swift) | Sample file | Advanced raw-row patterns; default SwiftUI path is [SWIFTUI_DATABASE_PATTERNS](Docs/GettingStarted/SWIFTUI_DATABASE_PATTERNS.md) |
+| Android / KMM samples | Experimental | [android-status.md](Docs/android-status.md) |
 
-## Benchmarks and profiling
-
-Repeatable measurements come from the `BlazeDBBenchmarks` target in **Release**. Use Xcode **Product → Profile** on the shared `BlazeDBBenchmarks` scheme (Time Profiler, Allocations, File Activity, System Trace) when you need to explain CPU, allocations, or I/O.
-
-Do not Profile the `blazedb` scheme with `dev test …` arguments. That mostly measures dispatcher and `swift test` overhead, not storage work.
-
-Methodology and caveats: [Docs/Benchmarks/README.md](Docs/Benchmarks/README.md). This README does not publish raw throughput numbers; those need environment and methodology context.
-
----
-
-## Contributing
-
-Choose a [learning path](Docs/Contributing/LEARNING_PATHS.md), find work in the [issue→code index](Docs/Contributing/ISSUE_CODE_INDEX.md), then follow [CONTRIBUTING.md](CONTRIBUTING.md). Comment before large changes; run focused tests with `./dev test …`. Deeper architecture and recovery tours live under [Docs/Architecture/](Docs/Architecture/CODEBASE_MAP.md).
+Sync and telemetry samples are deferred or conditional. They are not default onboarding.
 
 ---
 
 ## Documentation map
 
-The [documentation index](Docs/README.md) is the authority map for what is canonical, advanced, conditional, maintainer-only, internal, or historical. Use this table only as a short front door:
+See the [documentation index](Docs/README.md) for canonical, advanced, conditional, and historical material.
 
-| Doc | Purpose |
-|-----|---------|
-| [Getting Started](Docs/GettingStarted/README.md) | First Swift path |
-| [HOW_TO_USE](Docs/GettingStarted/HOW_TO_USE_BLAZEDB.md) | Longer usage guide |
-| [Docs/README.md](Docs/README.md) | Full navigation and support-state framing |
-| [Architecture](Docs/Architecture/README.md) | Internals |
-| [C ABI + byte KV](Docs/Architecture/C_ABI_BYTE_KV.md) | Documented C interoperability surface |
-| [Compatibility](Docs/COMPATIBILITY.md) | Platforms |
-| [Security](SECURITY.md) | Vulnerability reporting |
-| [CHANGELOG](CHANGELOG.md) / [RELEASE](RELEASE.md) | History and current release |
-| [ROADMAP](ROADMAP.md) | Directional priorities (not release guarantees) |
-| [Product audit](Docs/Product/PRODUCT_AUDIT.md) | Evidence-based product/repo audit behind the roadmap |
+### Get started
 
----
+- [Getting Started](Docs/GettingStarted/README.md)
+- [HOW_TO_USE_BLAZEDB.md](Docs/GettingStarted/HOW_TO_USE_BLAZEDB.md) (includes Vapor embedding)
+- [LINUX_GETTING_STARTED.md](Docs/GettingStarted/LINUX_GETTING_STARTED.md)
+- [Examples/README.md](Examples/README.md)
 
-## Conditional and deferred features
+### Understand the engine
 
-Distributed sync, discovery, server paths, and full telemetry packaging are outside the default OSS product. See [Distributed Transport Deferred](Docs/Status/DISTRIBUTED_TRANSPORT_DEFERRED.md) and the Conditional section in [Docs/README.md](Docs/README.md). Do not treat sync example files as the default onboarding path.
+- [Architecture](Docs/Architecture/README.md)
+- [Encryption and key management](Docs/Status/KEY_MANAGEMENT_AND_COMPATIBILITY.md)
+- [Durability and recovery](Docs/Status/DURABILITY_MODE_SUPPORT.md)
+- [Transactional writes](Docs/DEVELOPER_GUIDE.md#transactions)
+- [Developer Guide](Docs/DEVELOPER_GUIDE.md)
+- [API Reference](Docs/API/API_REFERENCE.md)
+- [Indexing and performance](Docs/Performance/README.md)
+- [Schema and migrations](Docs/MIGRATION.md)
+- [Backup, export, and restore](Docs/GettingStarted/HOW_TO_USE_BLAZEDB.md#9-backups-restore-and-trust)
 
----
+### Tools and integrations
 
-## Roadmap
+- [Tools](Docs/Tools/README.md)
+- [C ABI](Docs/Architecture/C_ABI_BYTE_KV.md)
+- [Go preview](Examples/Go/README.md)
+- [Benchmarks](Docs/Benchmarks/README.md) (methodology only; no raw vanity numbers here)
+- [Why not SQLite?](Docs/GettingStarted/WHY_NOT_SQLITE.md) (fit comparison; measured numbers live under Benchmarks)
 
-See [ROADMAP.md](ROADMAP.md) for Now / Next priorities and maintainer priority order. Planned items are directional and are not release guarantees. For how open issues relate to release risk, see [Current engineering focus](#current-engineering-focus) above. Evidence lockers: [Docs/Product/](Docs/Product/), [Docs/Audit/](Docs/Audit/).
+### Project information
 
----
-
-## Project status and limitations
-
-**v2.8.x** is the current embedded core release: Swift apps, CLI, and the documented `BlazeDBC` interoperability surface. See [CHANGELOG.md](CHANGELOG.md) / [RELEASE.md](RELEASE.md) for shipped notes.
-
-Known boundaries: single-process embedded model; password required; distributed modules are deferred from default packaging; some Status docs under `Docs/Status/` are historical and are not the contribution entry path.
-
----
-
-## Security
-
-Report vulnerabilities according to [SECURITY.md](SECURITY.md). Do not open public issues for sensitive reports.
+- [Compatibility](Docs/COMPATIBILITY.md)
+- [SECURITY.md](SECURITY.md) (reporting)
+- [RELEASE.md](RELEASE.md) · [CHANGELOG.md](CHANGELOG.md)
+- [ROADMAP.md](ROADMAP.md)
+- [CONTRIBUTING.md](CONTRIBUTING.md)
 
 ---
 
-## License
+## Contributing
 
-MIT. See [LICENSE](LICENSE).
+BlazeDB welcomes focused contributions across documentation, developer tooling, tests, platform support, and core correctness.
+
+Start with:
+
+- [Good first issues](https://github.com/Mikedan37/BlazeDB/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22)
+- [Help wanted](https://github.com/Mikedan37/BlazeDB/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22)
+- [Contribution guide](CONTRIBUTING.md)
+- [Issue guide](Docs/Contributing/ISSUE_GUIDE.md)
+- [Learning paths](Docs/Contributing/LEARNING_PATHS.md)
+- [Roadmap](ROADMAP.md)
+
+Comment on an issue before starting substantial work so scope and ownership are clear.
+
+Setup, `./dev`, and PR expectations: [CONTRIBUTING.md](CONTRIBUTING.md). Codebase orientation: [CODEBASE_MAP](Docs/Architecture/CODEBASE_MAP.md).
+
+---
+
+## Project status
+
+| | |
+|--|--|
+| Release | [v2.8.1](RELEASE.md) · [CHANGELOG](CHANGELOG.md) |
+| Platforms | [COMPATIBILITY.md](Docs/COMPATIBILITY.md) |
+| Roadmap | [ROADMAP.md](ROADMAP.md) (directional) |
+| Security | [SECURITY.md](SECURITY.md) |
+| License | MIT ([LICENSE](LICENSE)) |
+
+Deferred packaging (sync / server / telemetry): [DISTRIBUTED_TRANSPORT_DEFERRED.md](Docs/Status/DISTRIBUTED_TRANSPORT_DEFERRED.md).
