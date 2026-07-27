@@ -9,6 +9,8 @@ This directory contains design documents and specifications.
 
 ## Feature Design
 
+- **CLI_DOCTOR_REPORT.md** - Top-level `blazedb doctor`, sanitized local `--report` / `--json` (approved; not yet implemented)
+- **CLI_DOCTOR_REPORT_PLAN.md** - Implementation plan for #300
 - **COMPRESSION_DESIGN.md** - Compression algorithm design
 - **SNAPSHOT_SYNC_DESIGN.md** - Snapshot synchronization design
 
