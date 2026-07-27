@@ -56,9 +56,9 @@ Use these words consistently:
 | Term | Meaning |
 |------|---------|
 | **Declared** | Appears in `Package.swift` `platforms:` |
-| **CI-tested (runtime)** | Automated tests run on that OS in CI |
-| **CI-tested (compile)** | Cross-compile succeeds in CI without claiming full runtime coverage |
-| **Experimental** | Engineering validation exists; not a production SDK claim (Android / KMM paths) |
+| **CI-tested (runtime)** | Automated engine tests run on that OS in CI (host Tier0 / Tier1) |
+| **CI-tested (compile)** | Cross-compile succeeds in CI without claiming full engine XCTest coverage |
+| **CI-validated (experimental)** | PR-gate jobs prove a path works; not a published production SDK |
 
 The root README summarizes this table. This document remains the detailed matrix.
 
@@ -78,8 +78,14 @@ The root README summarizes this table. This document remains the detailed matrix
 - **Notes:** Some advanced features disabled (`BLAZEDB_LINUX_CORE`). CI baseline lane targets Swift 6.0 for core + Tier 0 stability checks.
 
 ### Android
-- **Status:** Core path only — **not yet officially supported** for app integration
-- **Notes:** Same compile-time mode as Linux (`BLAZEDB_LINUX_CORE`). Cross-compilation requires **OSS Swift 6.3.2+** (matching the Android SDK bundle), the [Swift SDK for Android](https://swift.org/documentation/articles/swift-sdk-for-android-getting-started.html), and NDK r27d+. PR CI cross-compiles `BlazeDBAndroidBridge` on Linux and compiles the KMM `:shared` Android target (`:shared:compileDebugKotlinAndroid`).
+- **Status:** **CI-validated (experimental packaging)**: not “unsupported,” and not the same product tier as macOS/Linux
+- **What PR CI proves today:**
+  - Cross-compile `BlazeDBCore` / `BlazeDBAndroidBridge` for Android ABIs (`Android — Cross-Compile`)
+  - KMM `:shared:compileDebugKotlinAndroid`
+  - KMM x86_64 emulator instrumentation smoke (`KMM Android — x86_64 Emulator Runtime`: `open` / `put` / `query`)
+  - Local packaging scripts / PR packaging job (AAR / native libs; **not** published to Maven Central)
+- **What it is not:** Linux-style host `BlazeDB_Tier0` / `BlazeDB_Tier1` on an Android device; not a `Package.swift` `platforms:` entry; not a shipped consumer SDK
+- **Notes:** Same compile-time core mode as Linux (`BLAZEDB_LINUX_CORE`). Cross-compilation requires **OSS Swift 6.3.2+** (matching the Android SDK bundle), the [Swift SDK for Android](https://swift.org/documentation/articles/swift-sdk-for-android-getting-started.html), and NDK r27d+.
 - **Detail:** [android-status.md](android-status.md)
 
 #### OSS Swift vs Xcode Swift (Android cross-compile)
@@ -100,7 +106,7 @@ compiled module was created by an older version of the compiler; rebuild 'Founda
 
 That is a toolchain mismatch, not a BlazeDB bug. Install OSS Swift 6.3.2+ (for example via [swiftly](https://www.swift.org/install/)) and ensure `swift --version` does **not** report `Apple Swift`. Use `./Scripts/ci-android-cross-compile.sh` on CI or locally.
 
-**KMM:** Kotlin Multiplatform integration is **in progress** — `expect class BlazeDB` in `Examples/android/shared` with iOS simulator runtime in PR CI and Android emulator runtime verified locally. BlazeDB does **not** claim full “Kotlin Multiplatform supported” until Android runtime is in CI and consumer packaging (AAR/XCFramework) exists. See [android-status.md](android-status.md).
+**KMM:** Kotlin Multiplatform sample (`expect class BlazeDB` in `Examples/android/shared`) has **iOS simulator and Android emulator runtime in the PR gate**, plus local packaging scripts. That is **CI-validated experimental** integration: not a published KMM SDK (no Maven Central / CocoaPods trunk). See [android-status.md](android-status.md).
 
 ---
 
@@ -196,7 +202,7 @@ See `CONTRIBUTING.md` for bug report templates and guidelines.
 
 ## Summary
 
-**Core:** Swift 6 compliant. **macOS** and **Linux** have runtime CI for the embedded core; **iOS / watchOS / tvOS / visionOS** are declared and compile-tested (not BlazeDBCore XCTest runtime on device/simulator in the PR gate). Android / KMM remain experimental — see [android-status.md](android-status.md).
+**Core:** Swift 6 compliant. **macOS** and **Linux** have host runtime CI for the embedded core (Tier0 / Tier1). **iOS / watchOS / tvOS / visionOS** are declared and compile-tested (not BlazeDBCore XCTest runtime on device/simulator in the PR gate). **Android / KMM** are **CI-validated (experimental packaging)**: PR-gate cross-compile + KMM emulator smoke, not a published SDK and not Linux-equivalent host Tier0. See [android-status.md](android-status.md).
 **Distributed:** Deferred / excluded from default OSS packaging
 **Storage:** Format intended to be stable; prior-release open fixtures exist under `Tests/CompatibilityFixtures/` but are not yet a CI release gate (see [ROADMAP.md](../ROADMAP.md))
 **APIs:** Core APIs stable within the documented surface; experimental APIs must stay clearly marked

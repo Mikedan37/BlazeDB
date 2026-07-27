@@ -1,6 +1,6 @@
 # BlazeDB
 
-BlazeDB is an encrypted, in-process database engine written in Swift for applications and in-process services. It provides typed document APIs, raw key-value access, transactional write APIs, WAL-backed recovery, live queries, SwiftUI integration on Apple platforms, local inspection tools, Linux runtime support, a documented C ABI for native embeds, and experimental Android/KMM paths. Go and other languages can call the C ABI through cgo or FFI; no official language SDKs are published.
+BlazeDB is an encrypted, in-process database engine written in Swift for applications and in-process services. It provides typed document APIs, raw key-value access, transactional write APIs, WAL-backed recovery, live queries, SwiftUI integration on Apple platforms, local inspection tools, Linux runtime support, a documented C ABI for native embeds, and CI-validated Android/KMM paths (experimental packaging). Go and other languages can call the C ABI through cgo or FFI; no official language SDKs are published.
 
 It runs inside your process. No separate database server is required.
 
@@ -15,11 +15,11 @@ It runs inside your process. No separate database server is required.
 
 | Tier | Platforms |
 |------|-----------|
-| **Runtime CI** | macOS, Linux |
+| **Runtime CI** (host engine tests) | macOS, Linux |
 | **Declared and compile-tested** | iOS, watchOS, tvOS, visionOS |
-| **Experimental** | Android cross-compilation, KMM sample |
+| **CI-validated (experimental packaging)** | Android cross-compile + KMM sample runtime in the PR gate |
 
-Details: [Compatibility](Docs/COMPATIBILITY.md) · [android-status.md](Docs/android-status.md).
+Android is **not unsupported**: the PR gate cross-compiles the bridge and runs a KMM emulator smoke. It is also **not the same tier as Linux** (no host `BlazeDB_Tier0` on Android; not in `Package.swift` `platforms:`; no published consumer SDK). Details: [Compatibility](Docs/COMPATIBILITY.md) · [android-status.md](Docs/android-status.md).
 
 ---
 
@@ -70,7 +70,7 @@ CI also verifies the README snippets: `swift run ReadmeSamples`.
 - **Inspection tooling:** Explore databases with the shipped `blazedb` CLI/REPL; companion macOS apps and maintenance executables are listed below.
 - **Linux runtime:** Core engine is exercised in Linux CI alongside macOS. [Linux getting started](Docs/GettingStarted/LINUX_GETTING_STARTED.md).
 - **Native embeds:** The same engine is reachable through `BlazeDBC` (`blazedb.h`). [C ABI contract](Docs/Architecture/C_ABI_BYTE_KV.md).
-- **Experimental Android/KMM:** Cross-compile and sample paths exist; not a production mobile SDK. [android-status.md](Docs/android-status.md).
+- **Android / KMM (CI-validated, experimental packaging):** PR-gate cross-compile + KMM emulator smoke exist; not a published mobile SDK and not Linux-equivalent host Tier0. [android-status.md](Docs/android-status.md).
 
 ---
 
@@ -87,7 +87,7 @@ CI also verifies the README snippets: `swift run ReadmeSamples`.
 | Encryption and vulnerability reporting | [Key management](Docs/Status/KEY_MANAGEMENT_AND_COMPATIBILITY.md) · [SECURITY.md](SECURITY.md) |
 | Live queries / SwiftUI | [Live query architecture](Docs/Architecture/LIVE_QUERY_ARCHITECTURE.md) · [SwiftUI patterns](Docs/GettingStarted/SWIFTUI_DATABASE_PATTERNS.md) |
 | Linux setup | [LINUX_GETTING_STARTED.md](Docs/GettingStarted/LINUX_GETTING_STARTED.md) |
-| Android / KMM (experimental) | [android-status.md](Docs/android-status.md) |
+| Android / KMM (CI-validated; experimental packaging) | [android-status.md](Docs/android-status.md) |
 | Platform support tiers | [Compatibility](Docs/COMPATIBILITY.md) |
 | Benchmarks and methodology | [Docs/Benchmarks](Docs/Benchmarks/README.md) |
 | Contribute | [Contributing](#contributing) · [CONTRIBUTING.md](CONTRIBUTING.md) |
@@ -166,7 +166,7 @@ It is not a standalone network database server and not a multi-device sync produ
 - Distributed sync, discovery, server, and full telemetry packaging are deferred from the default OSS product ([Distributed Transport Deferred](Docs/Status/DISTRIBUTED_TRANSPORT_DEFERRED.md)).
 - Multi-process writers are not supported.
 - Network filesystems are not recommended.
-- Android and KMM remain experimental.
+- Android and KMM are CI-validated in the PR gate but remain experimental packaging (not a published SDK; not Linux host Tier0).
 - The C ABI enables native embeds; there are no official Go, Rust, or Python SDKs.
 
 Direction (not release guarantees): [ROADMAP.md](ROADMAP.md).
@@ -267,7 +267,7 @@ Full catalog with support-state labels: [Examples/README.md](Examples/README.md)
 | [VaporServer](Examples/VaporServer/) | Conditional | Embed sample; not a Package product |
 | [Go preview](Examples/Go/README.md) | Preview | cgo recipe; no checked-in `.go` module |
 | [SwiftUIExample.swift](Examples/SwiftUIExample.swift) | Sample file | Advanced raw-row patterns; default SwiftUI path is [SWIFTUI_DATABASE_PATTERNS](Docs/GettingStarted/SWIFTUI_DATABASE_PATTERNS.md) |
-| Android / KMM samples | Experimental | [android-status.md](Docs/android-status.md) |
+| Android / KMM samples | CI-validated; experimental packaging | [android-status.md](Docs/android-status.md) |
 
 Sync and telemetry samples are deferred or conditional. They are not default onboarding.
 

@@ -370,10 +370,10 @@ All other `Tier1Core` directories and files (Aggregation, API, Query, Integratio
 - `./Scripts/run-tier2.sh`
 - `./Scripts/run-tier3.sh`
 
-- KMM runtime proof (local; iOS also in PR gate):
+- KMM runtime proof (PR gate + local):
 - `./Scripts/build-kmm-ios-bridge.sh` — static Swift bridge for iOS device + simulator
-- `./Scripts/prove-kmm-ios-runtime.sh` — iOS simulator `iosSimulatorArm64Test`
-- `./Scripts/prove-kmm-android-runtime.sh` — Android emulator via sample app (`KMM RUNTIME OK`)
+- `./Scripts/prove-kmm-ios-runtime.sh` — iOS simulator `iosSimulatorArm64Test` (also in macOS PR job)
+- `./Scripts/prove-kmm-android-runtime.sh` — Android emulator via sample app (`KMM RUNTIME OK`; CI uses `ci-kmm-android-emulator-smoke.sh` on Linux x86_64)
 - `./Scripts/prove-kmm-runtime.sh` — both platforms
 
 ## Interpreting CI failures (first artifact, not last passer)
