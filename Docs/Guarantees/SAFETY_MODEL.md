@@ -30,7 +30,7 @@ This document exists to calm fear and set expectations.
 
 - **In-flight writes may be lost** if crash occurs before `persist()` or `close()`
 - **Metadata updates** may be lost if crash occurs mid-update (recovered via rebuild)
-- **Concurrent writers** will corrupt the database (single-writer only)
+- **Concurrent process writers** are not supported; a second writer must fail with a clear lock error rather than proceed
 
 ---
 
@@ -201,7 +201,7 @@ This document exists to calm fear and set expectations.
 
 - Only one process can write at a time
 - Multiple readers are safe **in-process**
-- Multiple writers will corrupt data
+- A second process writer must fail with a clear lock error rather than proceed
 
 **Do NOT:**
 - Share database files across processes
