@@ -363,7 +363,7 @@ final class RLSEnforcementClientTests: XCTestCase {
         let deleted = try db.deleteMany(where: { record in
             observedTitles.append(record.storage["title"]?.stringValue ?? "")
             return true
-        }
+        })
 
         XCTAssertEqual(deleted, 1)
         XCTAssertEqual(observedTitles, ["visible"])
