@@ -1,6 +1,6 @@
 # Learning paths
 
-Pick a path that matches your background. Each path ends at **existing** open issues — this guide does not create tickets.
+Pick a path that matches your background. Each path ends at **existing** open issues: this guide does not create tickets.
 
 Hub: [CODEBASE_MAP](../Architecture/CODEBASE_MAP.md) · [ISSUE_CODE_INDEX](ISSUE_CODE_INDEX.md) · [ISSUE_GUIDE](ISSUE_GUIDE.md) · [Tours](../Architecture/TOURS/)
 
@@ -13,8 +13,8 @@ Hub: [CODEBASE_MAP](../Architecture/CODEBASE_MAP.md) · [ISSUE_CODE_INDEX](ISSUE
 
 ### Read
 
-1. [README.md](../../README.md) — supported product
-2. [Docs/README.md](../README.md) — doc authority map
+1. [README.md](../../README.md): supported product
+2. [Docs/README.md](../README.md): doc authority map
 3. [ISSUE_GUIDE.md](ISSUE_GUIDE.md)
 4. Tour: none required; optionally [01_OPEN_AND_RECOVERY](../Architecture/TOURS/01_OPEN_AND_RECOVERY.md) for vocabulary
 
@@ -53,7 +53,7 @@ Product boundaries, which docs are canonical vs historical, how to ground claims
 
 ### Read
 
-1. `BlazedbCLI/BlazedbEntry.swift` — `@main` routing
+1. `BlazedbCLI/BlazedbEntry.swift`: `@main` routing
 2. `BlazeShell/CLIHelp.swift`, `BlazeShell/DeveloperCommands.swift`
 3. `BlazeDoctor/main.swift`, `BlazeDump/main.swift`, `BlazeInfo/main.swift` (separate tools)
 4. Tour: [06_CLI](../Architecture/TOURS/06_CLI.md)
@@ -94,22 +94,22 @@ Destructive restore/repair, password-on-argv handling, anything that mutates DB 
 
 ### Read
 
-1. `BlazeDB/Query/QueryBuilder.swift` — `execute` / `_executeStandard`
+1. `BlazeDB/Query/QueryBuilder.swift`: `execute` / `_executeStandard`
 2. `BlazeDB/Query/QueryExplain.swift`
-3. `BlazeDB/Core/DynamicCollection.swift` — `fetchAll`, `runQuery*`
-4. `BlazeDB/Core/DynamicCollection+Optimized.swift` — fetchAll cache
+3. `BlazeDB/Core/DynamicCollection.swift`: `fetchAll`, `runQuery*`
+4. `BlazeDB/Core/DynamicCollection+Optimized.swift`: fetchAll cache
 5. Tour: [03_QUERY_PATH](../Architecture/TOURS/03_QUERY_PATH.md)
 
 ### Related issues
 
 | Issue | Kind |
 |-------|------|
-| #261, #292 | **Docs** — O(log n) honesty |
-| #274 | **Enhancement / design** — wire indexes or honest explain |
-| #280 | **Correctness** — stale fetchAll cache |
-| #279 | **Correctness** — nested `queue.sync` deadlock (not beginner) |
+| #261, #292 | **Docs**: O(log n) honesty |
+| #274 | **Enhancement / design**: wire indexes or honest explain |
+| #280 | **Correctness**: stale fetchAll cache |
+| #279 | **Correctness**: nested `queue.sync` deadlock (not beginner) |
 
-Default public execution is **`fetchAll` + in-memory filter** — do not assume indexed execution.
+Default public execution is **`fetchAll` + in-memory filter**: do not assume indexed execution.
 
 ### Validation
 
@@ -175,7 +175,7 @@ BLAZEDB_BENCH_MODE=write_profile BLAZEDB_WRITE_PROFILE_RECORDS=10 \
 1. `BlazeDBC/include/blazedb.h`
 2. `BlazeDBC/BlazeDBC.swift`
 3. [C_ABI_BYTE_KV](../Architecture/C_ABI_BYTE_KV.md)
-4. `Examples/C/hello_blazedb.c`, `Examples/Go/README.md` (Go sources not checked in yet — #264)
+4. `Examples/C/hello_blazedb.c`, `Examples/Go/README.md` (Go sources not checked in yet: #264)
 5. Tour: [05_BLAZEDBC](../Architecture/TOURS/05_BLAZEDBC.md)
 6. `BlazeDBTests/Tier1Core/API/BlazeDBCSmokeTests.swift`
 
@@ -221,7 +221,7 @@ swift build -c release --product BlazeDBC
 | Issue | Notes |
 |-------|-------|
 | #270 | Platform PBKDF2 (keep 600k iterations) |
-| #271 | `engine_only` cold open still pays KDF — attribution |
+| #271 | `engine_only` cold open still pays KDF: attribution |
 | #275 | LiveQuery refresh cost |
 | #291 | Widen write-profile + external fsync validation |
 | #276 | Optimize only after #291 |

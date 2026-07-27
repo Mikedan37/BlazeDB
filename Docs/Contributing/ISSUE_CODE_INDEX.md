@@ -8,7 +8,7 @@ Evidence: `Proven` | `Strongly supported` | `Investigation`
 
 Hub: [LEARNING_PATHS](LEARNING_PATHS.md) · [CODEBASE_MAP](../Architecture/CODEBASE_MAP.md) · [ISSUE_GUIDE](ISSUE_GUIDE.md)
 
-Label filters used: `good first issue`, `durability`, `performance`, `concurrency`, `needs design`, plus roadmap-sized Now items and correctness defects. There is **no** `roadmap` GitHub label today — roadmap Now work is listed explicitly. **`help wanted`:** none currently open with that label. Prefer specific risk labels over a generic priority tag.
+Label filters used: `good first issue`, `durability`, `performance`, `concurrency`, `needs design`, plus roadmap-sized Now items and correctness defects. There is **no** `roadmap` GitHub label today: roadmap Now work is listed explicitly. **`help wanted`:** none currently open with that label. Prefer specific risk labels over a generic priority tag.
 
 ---
 
@@ -26,7 +26,7 @@ Label filters used: `good first issue`, `durability`, `performance`, `concurrenc
 | #273 | starter | Proven | `SECURITY.md`; `KeyManager` PBKDF2 iterations | `KeyManagerTests` | n/a | `rg -n "PBKDF2|600|10000|Argon2" SECURITY.md BlazeDB/Crypto/KeyManager.swift` | no (docs) |
 | #286 | starter | Proven | migration/API docs vs `BlazeDBClient` RLS | `RLSEnforcementClientTests` | n/a | `./dev test RLSEnforcementClientTests` (behavior unchanged) | no |
 | #287 | starter | Proven | `MIGRATION_GUIDE` vs `Package.swift` excludes | n/a | n/a | `rg -n "SQLiteMigrator|CoreDataMigrator" Package.swift` | no |
-| #288 | starter | Proven | `BlazeDB/Exports/BlazeDBClient+RLS.swift` (`enableRLS`); `BlazeDB/Exports/BlazeDBClient.swift` (`shouldEnforceRLS`) | `testRLSEnabledWithoutPoliciesDoesNotBlock` | n/a | `./dev test RLSEnforcementClientTests.testRLSEnabledWithoutPoliciesDoesNotBlock` | **docs only** — no auth changes |
+| #288 | starter | Proven | `BlazeDB/Exports/BlazeDBClient+RLS.swift` (`enableRLS`); `BlazeDB/Exports/BlazeDBClient.swift` (`shouldEnforceRLS`) | `testRLSEnabledWithoutPoliciesDoesNotBlock` | n/a | `./dev test RLSEnforcementClientTests.testRLSEnabledWithoutPoliciesDoesNotBlock` | **docs only**: no auth changes |
 | #289 | starter | Strongly supported | `dev`; `BlazeShell/DeveloperCommands.swift` | `DeveloperCommandsTests` | arch mismatch case | `./dev help` | low |
 | #290 | starter | Strongly supported | `BlazeDump/main.swift`, `BlazeInfo/main.swift` | none focused | JSON golden | `swift run BlazeInfo …` | low |
 | #292 | starter | Proven | `Docs/Features/QUERY_PLANNER.md` | n/a | n/a | `rg -n "O\\(log" Docs/Features/QUERY_PLANNER.md` | no |
@@ -42,7 +42,7 @@ Label filters used: `good first issue`, `durability`, `performance`, `concurrenc
 | #276 | advanced | Proven | `BlazeDBClient.performSafeWrite`, `beginTransaction`; `DynamicCollection.insert`; `PageStore.synchronize`; `WriteAheadLog` | `WriteProfileCollectorTests`; `TransactionDurabilityTests` | commit-boundary fsync count after amortize | write_profile bench + durability tests | **yes**; optimize blocked on #291 |
 | #277 | maintainer-sensitive | Proven | `createDurableTransactionBackups`, `commitTransaction`, `restoreDurableTransactionBackupIfPresent` | `testStartupRestoresInterruptedTransactionBackup`; crash survival suites | crash **after** commit persist / **before** backup clear | Tier0 durability + new regression | **yes** |
 | #281 | advanced | Proven | `DynamicCollection+Batch.insertBatch` (secondary indexes vs `synchronize`) | batch/persistence suites (partial) | sync-failure index desync | focused batch + fault injection | **yes** |
-| #283 | advanced | Proven | `BlazeDB/Storage/PageStore+Overflow.swift` overflow write helpers (`_writeOverflowPage` / Linux queue.sync vs `.barrier` — confirm on current Linux path) | overflow / persistence tests | Linux-specific race | Linux + barrier review | **yes** |
+| #283 | advanced | Proven | `BlazeDB/Storage/PageStore+Overflow.swift` overflow write helpers (`_writeOverflowPage` / Linux queue.sync vs `.barrier`: confirm on current Linux path) | overflow / persistence tests | Linux-specific race | Linux + barrier review | **yes** |
 
 ---
 
@@ -85,12 +85,12 @@ Label filters used: `good first issue`, `durability`, `performance`, `concurrenc
 
 | Issue | Reason |
 |-------|--------|
-| #30 | Broad alignment audit; residual sites need fresh Linux repro — map after locating remaining `load(fromByteOffset:)` call sites |
-| #43 | Compression portability enhancement; backend choice needs design — files span `PageStore` compression paths; treat as design-first |
-| #51 | Linux Tier1 CI contract — workflow/docs heavy; exact failing suites change over time |
-| #73 | Move `SecureConnectionTests` — file excluded from Tier1; target destination is distributed/transport (deferred product) |
-| #268 | `stats()`/`profile` cacheHit fields — need exact dead property sites confirmed in current Metrics types before coding |
-| #285 | `transactionPagesWritten` dead metric — confirm all write sites still empty before remove-vs-fix |
+| #30 | Broad alignment audit; residual sites need fresh Linux repro: map after locating remaining `load(fromByteOffset:)` call sites |
+| #43 | Compression portability enhancement; backend choice needs design: files span `PageStore` compression paths; treat as design-first |
+| #51 | Linux Tier1 CI contract: workflow/docs heavy; exact failing suites change over time |
+| #73 | Move `SecureConnectionTests`: file excluded from Tier1; target destination is distributed/transport (deferred product) |
+| #268 | `stats()`/`profile` cacheHit fields: need exact dead property sites confirmed in current Metrics types before coding |
+| #285 | `transactionPagesWritten` dead metric: confirm all write sites still empty before remove-vs-fix |
 
 If you ground one of these, update this table in the same PR as the investigation notes.
 
