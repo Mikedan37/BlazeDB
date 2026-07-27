@@ -251,7 +251,7 @@ jobs:
           retention-days: 7
 
   android-cross-compile:
-    name: Android — cross-compile BlazeDBAndroidBridge
+    name: Android — Cross-Compile
     runs-on: ubuntu-22.04
     timeout-minutes: 60
 
@@ -390,7 +390,7 @@ jobs:
           retention-days: 7
 
   kmm-android-emulator:
-    name: KMM Android — emulator runtime (Linux KVM)
+    name: KMM Android — x86_64 Emulator Runtime
     runs-on: ubuntu-latest
     needs: android-cross-compile
     timeout-minutes: 60
@@ -468,7 +468,7 @@ jobs:
           retention-days: 7
 
   kmm-android-packaging:
-    name: KMM Android — packaging (macOS)
+    name: KMM Android — arm64 Artifact Packaging
     runs-on: macos-15
     needs: android-cross-compile
     timeout-minutes: 45
