@@ -20,9 +20,9 @@ This page is about **product fit**, not stopwatch marketing. Measured latency an
 
 | | BlazeDB |
 |--|---------|
-| **Platform support** | macOS and Linux **runtime-tested**; Apple platforms (iOS / watchOS / tvOS) **compile-tested**; Android / KMM **experimental** |
+| **Platform support** | macOS and Linux **runtime-tested** (host engine tests); Apple platforms (iOS / watchOS / tvOS) **compile-tested**; Android / KMM **CI-validated** (cross-compile + emulator smoke) with **experimental packaging** |
 
-Do not treat Android or KMM as the same maturity as macOS/Linux. Details: [COMPATIBILITY.md](../COMPATIBILITY.md), [android-status.md](../android-status.md).
+Do not treat Android or KMM as the same maturity as macOS/Linux host Tier0, and do not call them unsupported: the PR gate cross-compiles the bridge and runs a KMM emulator smoke. Details: [COMPATIBILITY.md](../COMPATIBILITY.md), [android-status.md](../android-status.md).
 
 SQLite’s C API remains the broader “runs everywhere” option when you need one binary story across many languages and hosts.
 
@@ -44,7 +44,7 @@ These rows describe the **default open-source package**, not roadmap aspirations
 | Optional schema validation and migrations | **Shipped (opt-in)** | Flexible by default; **migrations exist** when you opt in, not “schema-less / no migrations” |
 | Concurrency model | **Shipped (qualified)** | Single-process embedded engine. Transactions provide consistency. **MVCC / snapshot isolation exists in the codebase but is not the default path**. Do not market “MVCC snapshot isolation” as the everyday guarantee. |
 | Optional Secure Enclave-assisted key storage | **Platform optional** | Not required for default password-derived encryption |
-| Android / KMM consumption | **Experimental** | Engineering validation; not a production SDK claim |
+| Android / KMM consumption | **CI-validated (experimental packaging)** | PR-gate cross-compile + emulator smoke; not a published SDK; not Linux host Tier0 |
 | Multi-device sync / discovery / network server | **Deferred** | Not part of the default OSS package. See [DISTRIBUTED_TRANSPORT_DEFERRED.md](../Status/DISTRIBUTED_TRANSPORT_DEFERRED.md) |
 | SQL string dialect | **Not shipped** | Use SQLite if you need SQL |
 
@@ -81,7 +81,7 @@ Older comparison tables in the repo sometimes claimed mythology. Prefer this pag
 | **Concurrency** | Single-process embedded design; multi-process writers unsupported; network filesystems not recommended. Do not claim absolute “MVCC snapshot isolation” as the default product behavior. |
 | **Performance** | Cite [Benchmarks](../Benchmarks/README.md) only. Do **not** use “predictable, optimized for Apple Silicon” or free-floating “% faster than SQLite” slogans. |
 | **Encryption** | At-rest pages: **AES-256-GCM** with password-derived keys on public open APIs. SQLite encryption remains optional/extension-based (e.g. SQLCipher). |
-| **Platforms** | macOS/Linux runtime-tested; other Apple platforms compile-tested; Android/KMM experimental. |
+| **Platforms** | macOS/Linux runtime-tested (host engine tests); other Apple platforms compile-tested; Android/KMM CI-validated with experimental packaging. |
 | **Sync** | Deferred from the default OSS package, not a selection reason today. |
 
 ### Brief notes on Core Data and Realm

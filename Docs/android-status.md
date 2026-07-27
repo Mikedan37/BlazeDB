@@ -6,7 +6,7 @@ The question “can BlazeDB be consumed from Kotlin Multiplatform?” is **answe
 This document describes **what is verified today**, not a shipped product surface.  
 For platform matrices and API stability, see [COMPATIBILITY.md](COMPATIBILITY.md).
 
-**Not officially supported:** Android app integration and KMM remain **experimental** engineering targets — not production SDK claims.
+**Not a published SDK:** Android app integration and KMM remain **CI-validated experimental packaging**. PR-gate jobs prove the path; Maven Central / CocoaPods trunk are not product claims.
 
 The `:shared` module (`expect class BlazeDB`) is **runtime-verified in CI** (iOS simulator + Android instrumentation) with local packaging scripts. That is **validation scaffolding** in `Examples/android/` — not “Kotlin Multiplatform supported” product wording.
 
@@ -35,7 +35,7 @@ Prove each layer before adding the next. Wrapping an unverified stack in KMM onl
 |---|-------|------------|-------|
 | 1 | Swift library (`BlazeDBCore`) | 🟢 | OSS Swift 6.3.2 + NDK r27d; NDK clang/libc++ header path fixes in CI |
 | 2 | C ABI (`BlazeDBAndroidBridge`) | 🟢 | `blazedb_bridge_*` exports cross-compile in CI |
-| 3 | JNI (C shim → Kotlin `external`) | 🟢 compile / 🟡 runtime | Android `actual` — compile in CI; runtime verified locally |
+| 3 | JNI (C shim → Kotlin `external`) | 🟢 compile / 🟢 runtime (sample) | Android `actual` — compile + emulator instrumentation in PR gate |
 | 4 | KMM `commonMain` API | 🟡 | `expect class BlazeDB` — `open` / `put` / `get` / `query` / `close` |
 | 5 | iOS simulator runtime | 🟢 | `BlazeDBRuntimeSmokeTest` in PR CI |
 | 6 | Android emulator runtime | 🟢 | `ci-kmm-android-emulator-smoke.sh` in macOS PR job + local prove script |
@@ -68,7 +68,7 @@ For the full design of ``BlazeLiveQuery`` (lifecycle, threading, adapters, evide
 | Swift-on-Android cross-compile | 🟢 | hello-world + `BlazeDBCore` + `BlazeDBAndroidBridge` in PR gate |
 | Requires **OSS Swift** (not Xcode `swift`) | 🟢 | Apple Swift fails with Foundation module mismatch |
 | C ABI + JNI + Kotlin sample **source** | 🟢 compile | `Examples/BlazeDBAndroidBridge`, `Examples/android/` |
-| JNI + KMM sample | 🟢 compile / 🟡 runtime | `Examples/android/` — Android runtime local; iOS runtime in CI |
+| JNI + KMM sample | 🟢 compile / 🟢 runtime | `Examples/android/` — Android + iOS runtime in PR gate |
 | KMM integration | 🟡 | Same `commonMain` API on both platforms — **not** “KMM supported” product wording yet |
 | Default Android database directory | — | Not defined; use `BlazeDB.open(at:password:)` with app-scoped path |
 
@@ -79,7 +79,7 @@ For the full design of ``BlazeLiveQuery`` (lifecycle, threading, adapters, evide
 These are **not** the same thing.
 
 - **Swift-on-Android:** BlazeDB Swift source cross-compiled to native Android libraries. Kotlin/Java call in via JNI. This is the realistic near-term path — and the path the sample follows.
-- **KMM (Kotlin Multiplatform):** Shared Kotlin (`Examples/android/shared`) calling BlazeDB through platform `actual` implementations — Android via JNI, iOS via cinterop → same Swift C ABI. **Runtime verified** on iOS simulator (CI) and Android emulator (local). BlazeDB does **not** claim full “Kotlin Multiplatform supported” until Android runtime is in CI and consumer packaging exists.
+- **KMM (Kotlin Multiplatform):** Shared Kotlin (`Examples/android/shared`) calling BlazeDB through platform `actual` implementations — Android via JNI, iOS via cinterop → same Swift C ABI. **Runtime verified** on iOS simulator and Android emulator **in the PR gate**. Packaging scripts exist locally; registry publish is not a product claim.
 
 Do **not** rush KMM. “Supports KMM” is a buzzword; wrapping an unproven runtime path makes debugging miserable because you cannot tell which layer is lying.
 

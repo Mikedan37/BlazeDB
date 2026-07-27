@@ -12,7 +12,9 @@ on:
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  # Cancel superseded PR runs only. Cancelling main pushes paints the workflow
+  # badge "failing" even when nothing failed (GitHub treats cancelled ≈ failed).
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read
