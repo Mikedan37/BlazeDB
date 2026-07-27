@@ -7,6 +7,21 @@ This guide helps outside contributors pick work that matches BlazeDB’s support
 
 For product priorities see [`ROADMAP.md`](../../ROADMAP.md). For tracker health see [`Docs/Product/ISSUE_TRACKER_AUDIT.md`](../Product/ISSUE_TRACKER_AUDIT.md).
 
+## How to read the open issue count
+
+Dozens of open issues does **not** mean every ticket is a release blocker. The tracker deliberately keeps verified defects visible rather than hiding them for cosmetics. Rough buckets:
+
+| Bucket | Typical labels | Who owns it |
+|--------|----------------|-------------|
+| Good first issues | `good first issue`, often `documentation` | New contributors |
+| Help wanted | `help wanted` | Outside contributors with maintainer backup |
+| Maintainer-owned correctness | `bug` + `durability` / `concurrency` / `High Priority` | Maintainers / experienced systems contributors |
+| Needs design | `needs design` | Decision before code |
+| Measurement / packaging | `performance`, `ci`, `linux`, `Portability` | After evidence or platform gates |
+| Experimental / later | Android, KMM, deferred sync | Not the default product path |
+
+Release-oriented focus is summarized in [`ROADMAP.md`](../../ROADMAP.md) (**Current engineering focus**) and the README.
+
 ## Finding work
 
 | Filter | Meaning |

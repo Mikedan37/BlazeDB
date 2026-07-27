@@ -11,6 +11,20 @@ Use milestones or GitHub issues for concrete release commitments. Use this docum
 | [`ROADMAP_BACKLOG.md`](Docs/Product/ROADMAP_BACKLOG.md) | Verified gaps worth retaining (not a public Now list) |
 | [`PRODUCT_AUDIT.md`](Docs/Product/PRODUCT_AUDIT.md) | Full evidence and inventory |
 
+## Current engineering focus
+
+Correctness and packaging ahead of feature expansion:
+
+- Crash-recovery correctness ([#277](https://github.com/Mikedan37/BlazeDB/issues/277))
+- Lifecycle / concurrency hardening (recent: #278/#279/#295/#296 closed)
+- Cache / isolation across databases ([#306](https://github.com/Mikedan37/BlazeDB/issues/306), [#280](https://github.com/Mikedan37/BlazeDB/issues/280), [#307](https://github.com/Mikedan37/BlazeDB/issues/307))
+- API contract decisions ([#297](https://github.com/Mikedan37/BlazeDB/issues/297), [#309](https://github.com/Mikedan37/BlazeDB/issues/309)) and CLI secret handling ([#310](https://github.com/Mikedan37/BlazeDB/issues/310))
+- Linux and C ABI packaging ([#51](https://github.com/Mikedan37/BlazeDB/issues/51), [#265](https://github.com/Mikedan37/BlazeDB/issues/265), [#312](https://github.com/Mikedan37/BlazeDB/issues/312))
+
+The tracker mixes verified defects, contributor tasks, documentation work, and deferred platform improvements. **Not every open issue is a release blocker.** See [ISSUE_GUIDE](Docs/Contributing/ISSUE_GUIDE.md) for label navigation (`good first issue`, `help wanted`, `needs design`, durability/concurrency).
+
+Suggested engineering sequence: **#277 → #306 (isolation) → #297/#309 contracts → #310 → measurement (#291) → amortize (#276)**.
+
 ## Now
 
 Work that should happen next because it reduces breakage, overclaim, or contributor risk.
