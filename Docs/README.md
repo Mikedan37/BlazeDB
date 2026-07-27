@@ -21,7 +21,7 @@ Skim the headings. You do not need to read every linked page.
 | Audience | Start here |
 |----------|------------|
 | New Swift app developer | [Getting Started](GettingStarted/README.md) → [HOW_TO_USE](GettingStarted/HOW_TO_USE_BLAZEDB.md) |
-| Contributor | [CONTRIBUTING.md](../CONTRIBUTING.md) → `./dev help` → [CI and Test Tiers](Testing/CI_AND_TEST_TIERS.md) |
+| Contributor | [CONTRIBUTING.md](../CONTRIBUTING.md) → [CODEBASE_MAP](Architecture/CODEBASE_MAP.md) → [LEARNING_PATHS](Contributing/LEARNING_PATHS.md) → `./dev help` |
 | Maintainer / release | [Maintainer docs](#maintainer-docs) |
 | Embedder (C / FFI) | [C ABI + Byte KV](Architecture/C_ABI_BYTE_KV.md) |
 | Historian | [Historical material](#historical-material-non-authoritative) |
@@ -82,16 +82,23 @@ May exist in the repo or docs without being the default OSS story:
 - Staging targets such as `BlazeDBSyncStaging` / `BlazeDBTelemetryStaging` in `Package.swift`: non-default packaging
 - Examples labeled Conditional, Deferred, or Experimental in [Examples/README.md](../Examples/README.md)
 
-## Contributing and project policies
+## Contributing and architecture
 
-- [Contributing Guide](../CONTRIBUTING.md) (includes `./dev` workflows)
-- [Xcode schemes](Build/XCODE_SCHEMES.md) (lean shared schemes vs `./dev`)
-- [Code of Conduct](../CODE_OF_CONDUCT.md)
-- [Security policy](../SECURITY.md) (reporting and disclosure)
-- [Support Policy](SUPPORT_POLICY.md)
-- [API Stability](API_STABILITY.md)
-- [Third-Party Notices](../THIRD_PARTY_NOTICES.md)
-- [Experiments](../Experiments/README.md)
+| Doc | Purpose |
+|-----|---------|
+| [Contributing Guide](../CONTRIBUTING.md) | PR expectations, `./dev`, storage checklist |
+| [CODEBASE_MAP](Architecture/CODEBASE_MAP.md) | Targets, directories, execution paths |
+| [LEARNING_PATHS](Contributing/LEARNING_PATHS.md) | Guided contribution paths |
+| [ISSUE_CODE_INDEX](Contributing/ISSUE_CODE_INDEX.md) | Open issues → code/tests |
+| [Architecture tours](Architecture/TOURS/) | Short symbol walks |
+| [ISSUE_GUIDE](Contributing/ISSUE_GUIDE.md) | Choosing safe issues |
+| [Xcode schemes](Build/XCODE_SCHEMES.md) | Lean shared schemes vs `./dev` |
+| [Code of Conduct](../CODE_OF_CONDUCT.md) | Conduct |
+| [Security policy](../SECURITY.md) | Reporting and disclosure |
+| [Support Policy](SUPPORT_POLICY.md) | Support boundaries |
+| [API Stability](API_STABILITY.md) | Stability expectations |
+| [Third-Party Notices](../THIRD_PARTY_NOTICES.md) | Notices |
+| [Experiments](../Experiments/README.md) | Experiment harness |
 
 ## Maintainer docs
 

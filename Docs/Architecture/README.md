@@ -1,6 +1,10 @@
 # Architecture Documentation
 
-This directory contains architecture documentation for BlazeDB.
+## Contributor entry (start here)
+
+- **[CODEBASE_MAP.md](CODEBASE_MAP.md)** — product boundaries, targets, directories, execution paths
+- **[TOURS/](TOURS/)** — short code-first walks (open, write, query, transactions, C ABI, CLI, tests)
+- Learning paths + issue→code index: [LEARNING_PATHS](../Contributing/LEARNING_PATHS.md), [ISSUE_CODE_INDEX](../Contributing/ISSUE_CODE_INDEX.md)
 
 ## Core Architecture
 
@@ -15,6 +19,6 @@ This directory contains architecture documentation for BlazeDB.
 
 ## Related Documentation
 
-- See `../Architecture/` for protocol-specific architecture
-- See `../Design/` for design documents
-- See `../Sync/` for distributed architecture
+- See [Design](../Design/) for design documents
+- See [Sync](../Sync/) for distributed architecture (deferred product)
+- Historical or comparison docs in this folder may lag implementation — prefer CODEBASE_MAP + tours for contribution work

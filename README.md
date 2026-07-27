@@ -251,23 +251,7 @@ Methodology and caveats: [Docs/Benchmarks/README.md](Docs/Benchmarks/README.md).
 
 ## Contributing
 
-```bash
-git clone https://github.com/Mikedan37/BlazeDB.git
-cd BlazeDB
-./dev help
-./dev test BPlusTreeNodeTests.createsSimpleTree
-./dev tier0
-```
-
-| Topic | Doc |
-|-------|-----|
-| Full contribution process | [CONTRIBUTING.md](CONTRIBUTING.md) |
-| Test tiers and CI | [Docs/Testing/CI_AND_TEST_TIERS.md](Docs/Testing/CI_AND_TEST_TIERS.md) |
-| Xcode schemes | [Docs/Build/XCODE_SCHEMES.md](Docs/Build/XCODE_SCHEMES.md) |
-| Experiments | [Experiments/README.md](Experiments/README.md) |
-| Architecture | [Docs/Architecture/README.md](Docs/Architecture/README.md) |
-
-Keep PRs narrow. Prefer `./dev` for focused tests and tiers. Use Xcode schemes for interactive Run, Profile, Analyze, and Archive. Storage-format, WAL, encryption, and recovery changes are high risk. Read the architecture and durability documentation, follow the [storage-change checklist](Docs/Contributing/STORAGE_CHANGE_CHECKLIST.md), and include the exact validation commands run in the PR description.
+Choose a [learning path](Docs/Contributing/LEARNING_PATHS.md), find work in the [issue→code index](Docs/Contributing/ISSUE_CODE_INDEX.md), then follow [CONTRIBUTING.md](CONTRIBUTING.md). Comment before large changes; run focused tests with `./dev test …`. Deeper architecture and recovery tours live under [Docs/Architecture/](Docs/Architecture/CODEBASE_MAP.md).
 
 ---
 

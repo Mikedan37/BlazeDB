@@ -19,6 +19,18 @@ From a package checkout:
 
 Storage-format, WAL, encryption, and recovery changes: follow [Docs/Contributing/STORAGE_CHANGE_CHECKLIST.md](Docs/Contributing/STORAGE_CHANGE_CHECKLIST.md).
 
+## Learn the codebase
+
+| Doc | Use when |
+|-----|----------|
+| [CODEBASE_MAP](Docs/Architecture/CODEBASE_MAP.md) | Where code lives, package targets, open/write/query/txn/FFI flows |
+| [LEARNING_PATHS](Docs/Contributing/LEARNING_PATHS.md) | Background-based path (docs, CLI, query, durability, C ABI, perf) |
+| [ISSUE_CODE_INDEX](Docs/Contributing/ISSUE_CODE_INDEX.md) | Open issue → files → tests → validation |
+| [Architecture tours](Docs/Architecture/TOURS/) | 10–20 minute symbol walks |
+| [ISSUE_GUIDE](Docs/Contributing/ISSUE_GUIDE.md) | Labels, claim etiquette, GFI rules |
+
+Bridge: **codebase → learning path → issue → tests → PR**. Do not open speculative issues to “have more work.”
+
 ## Finding work
 
 Pick issues that match the **supported** product (Swift engine, CLI, dynamic BlazeDBC). See [Docs/Contributing/ISSUE_GUIDE.md](Docs/Contributing/ISSUE_GUIDE.md) for labels, claim etiquette, and what requires maintainer review.
@@ -28,7 +40,7 @@ Pick issues that match the **supported** product (Swift engine, CLI, dynamic Bla
 | [good first issue](https://github.com/Mikedan37/BlazeDB/labels/good%20first%20issue) | Docs, help text, safe tooling — no WAL/crypto/ABI/auth redesign |
 | [help wanted](https://github.com/Mikedan37/BlazeDB/labels/help%20wanted) | Maintainer-backed contributions |
 | [ROADMAP.md](ROADMAP.md) Now | Compatibility fixtures, Go smoke, BlazeDBC release, schema guide, CLI honesty |
-| High Priority / reliability / concurrency | Correctness and durability — usually not beginner |
+| `durability` / `concurrency` / `reliability` / `needs design` | Correctness and durability — usually not beginner; see [ISSUE_CODE_INDEX](Docs/Contributing/ISSUE_CODE_INDEX.md) |
 
 **Focused tests:** `./dev tests [search]` then `./dev test <filter>`. On Apple Silicon, prefer `arch -arm64 ./dev …` if you hit arch loader mismatches ([#289](https://github.com/Mikedan37/BlazeDB/issues/289)).
 
