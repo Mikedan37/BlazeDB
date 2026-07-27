@@ -109,6 +109,8 @@ No *if* a stranger lands on Archive `DISTRIBUTED_COMPLETE` or Status `PRODUCTION
 
 ## 3. Commit-quality audit
 
+Deeper period-by-period answers (oversized rate, mixed concerns, fix chains, July discipline): [`COMMIT_HISTORY_AUDIT.md`](COMMIT_HISTORY_AUDIT.md).
+
 ### Scale (from live git, 2026-07-26)
 
 | Metric | Value |
