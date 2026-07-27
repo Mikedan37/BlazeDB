@@ -51,3 +51,11 @@ Examples/android/app/.cxx/
 *.cer
 .env
 .env.*
+
+# Local agent / host toolchain caches (not product sources)
+.blaze/
+.swift-host/
+
+# Runtime DB files from local example / tool runs (not checked-in fixtures;
+# fixtures use other names under Tests/ — do not broaden to *.db / *.json)
+*.blaze
