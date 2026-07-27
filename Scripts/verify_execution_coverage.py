@@ -12,6 +12,7 @@ import argparse
 import os
 import json
 import re
+import shutil
 import subprocess
 import sys
 import xml.etree.ElementTree as ET
@@ -151,7 +152,11 @@ def main() -> int:
         "runExitCode": run_proc.returncode,
         "environment": {
             "swiftVersion": run(["swift", "--version"], root).stdout.strip(),
-            "xcodeVersion": run(["xcodebuild", "-version"], root).stdout.strip(),
+            "xcodeVersion": (
+                run(["xcodebuild", "-version"], root).stdout.strip()
+                if shutil.which("xcodebuild")
+                else "unavailable"
+            ),
             "arch": run(["uname", "-m"], root).stdout.strip(),
             "numWorkers": args.num_workers,
             "tmpdir": os.environ.get("TMPDIR", ""),
