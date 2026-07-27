@@ -1,5 +1,8 @@
 # Production Readiness Roadmap
 
+> **Historical planning document (archived).**
+> Current roadmap: [`ROADMAP.md`](../../../ROADMAP.md)
+
 **What BlazeDB needs to go from "impressive project" to "trusted product"**
 
 ---

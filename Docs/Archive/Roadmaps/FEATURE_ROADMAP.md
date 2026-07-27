@@ -1,5 +1,8 @@
 # Feature Roadmap
 
+> **Historical planning document (archived).**
+> Current roadmap: [`ROADMAP.md`](../../../ROADMAP.md)
+
 **Status:** Phase 1 frozen. Shipping features that don't touch concurrency core.
 
 ## This Week's Deliverables
