@@ -254,6 +254,6 @@ let largeData = lazyRecord?["largeData"] // Decoded on-demand
 ## See Also
 
 - [Query Builder API](API/QUERY_BUILDER_API.md)
-- [Performance Metrics](Project/PERFORMANCE_METRICS.md)
+- [Performance Metrics](../Project/PERFORMANCE_METRICS.md)
 - [Optimization Roadmap](../Archive/Roadmaps/OPTIMIZATION_ROADMAP.md) (historical; current priorities in [ROADMAP.md](../../ROADMAP.md))
 

@@ -4,6 +4,8 @@
 
 For public navigation and support-state labels, use [`Docs/README.md`](README.md).
 
+**Deferred surfaces:** Distributed sync / transport is **not** default OSS product. See [`Status/DISTRIBUTED_TRANSPORT_DEFERRED.md`](Status/DISTRIBUTED_TRANSPORT_DEFERRED.md) before treating Sync guides below as onboarding.
+
 ---
 
 ## **Start Here**
@@ -17,9 +19,10 @@ For public navigation and support-state labels, use [`Docs/README.md`](README.md
 1. **`API_REFERENCE.md`** - Complete API documentation
 2. **`COMPLETE_PROJECT_DOCUMENTATION.md`** - Project overview
 
-### **Working with Sync?**
-1. **`SYNC_TRANSPORT_GUIDE.md`** - All 3 transport layers
-2. **`SYNC_EXAMPLES.md`** - Sync examples (copy-paste)
+### **Working with Sync? (deferred)**
+1. **`Status/DISTRIBUTED_TRANSPORT_DEFERRED.md`** - Current product posture
+2. **`Sync/README.md`** - Sync doc index (design/context only)
+3. Historical transport writeups may still appear under `Sync/` and `Archive/` — not default onboarding
 
 ---
 

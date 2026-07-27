@@ -397,5 +397,5 @@ let engagement = try db.graph()
 
 - [QueryBuilder API](QUERY_BUILDER_API.md)
 - [Aggregation API](AGGREGATION_API.md)
-- [SwiftUI Integration](SWIFTUI_INTEGRATION.md)
+- [SwiftUI Integration](../Guides/SWIFTUI_INTEGRATION.md)
 

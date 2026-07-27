@@ -112,6 +112,7 @@ May exist in the repo or docs without being the default OSS story:
 - [Open-Source Readiness Checklist](Status/OPEN_SOURCE_READINESS_CHECKLIST.md)
 - [External Security Review Plan](Status/EXTERNAL_SECURITY_REVIEW_PLAN.md)
 - [Maintainer documentation inventory](MASTER_DOCUMENTATION_INDEX.md) (complete file inventory; **not** the curated public authority map; this Docs/README.md is)
+- [Repository metrics](Meta/REPOSITORY_METRICS.md) (generated; `./Scripts/repo-metrics.sh`)
 - [Agents Guide](AGENTS_GUIDE.md)
 
 ## Internal and project records

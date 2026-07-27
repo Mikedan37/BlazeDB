@@ -175,6 +175,6 @@ Software-based key storage:
 
 ---
 
-For architecture details, see [ARCHITECTURE.md](ARCHITECTURE.md).
-For protocol security, see [PROTOCOL.md](PROTOCOL.md).
+For architecture details, see [ARCHITECTURE.md](../Architecture/ARCHITECTURE.md).
+For protocol security, see [PROTOCOL.md](../Design/PROTOCOL.md).
 

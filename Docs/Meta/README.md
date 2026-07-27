@@ -2,6 +2,10 @@
 
 This directory contains internal documentation about the project itself, reorganization efforts, and deprecations.
 
+## Metrics
+
+- **[REPOSITORY_METRICS.md](REPOSITORY_METRICS.md)** — generated repository scale snapshot (`./Scripts/repo-metrics.sh`). Compact public summary lives under [README Project status](../../README.md#repository-scale).
+
 ## Reorganization
 
 - **REORGANIZATION_COMPLETE.md** - Reorganization completion status

@@ -10,5 +10,5 @@ Canonical security architecture docs (encryption, keys, threat model):
 - SECURITY_AND_APP_STORE_COMPLIANCE.md
 - P2P_ENCRYPTION.md
 
-Vulnerability reporting and disclosure live in the repository root [SECURITY.md](../SECURITY.md) (security policy).
+Vulnerability reporting and disclosure live in the repository root [SECURITY.md](../../SECURITY.md) (security policy).
 

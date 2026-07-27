@@ -311,6 +311,7 @@ See the [documentation index](Docs/README.md) for canonical, advanced, condition
 - [RELEASE.md](RELEASE.md) · [CHANGELOG.md](CHANGELOG.md)
 - [ROADMAP.md](ROADMAP.md)
 - [CONTRIBUTING.md](CONTRIBUTING.md)
+- [Repository metrics](Docs/Meta/REPOSITORY_METRICS.md) (maintainer scale + health snapshot)
 
 ---
 
@@ -342,5 +343,17 @@ Setup, `./dev`, and PR expectations: [CONTRIBUTING.md](CONTRIBUTING.md). Codebas
 | Roadmap | [ROADMAP.md](ROADMAP.md) (directional) |
 | Security | [SECURITY.md](SECURITY.md) |
 | License | MIT ([LICENSE](LICENSE)) |
+
+### Repository scale
+
+Approximate tracked size:
+
+- ~101k source lines · ~229k test lines · ~200k documentation lines
+- ~2.3× test-to-source line ratio · ~7,200 `test*` methods · ~1,100 Swift files
+- ~66k lines in the `BlazeDB/` engine tree
+- 28 SwiftPM targets across seven major subsystems: engine core, storage/WAL, query, crypto, transactions, C ABI, and CLI (plus experimental Android/KMM packaging)
+- CI coverage on macOS, Linux, and Android/KMM paths
+
+Full counts, CI-lane coverage, and review candidates: [Docs/Meta/REPOSITORY_METRICS.md](Docs/Meta/REPOSITORY_METRICS.md) (`./Scripts/repo-metrics.sh`).
 
 Deferred packaging (sync / server / telemetry): [DISTRIBUTED_TRANSPORT_DEFERRED.md](Docs/Status/DISTRIBUTED_TRANSPORT_DEFERRED.md).

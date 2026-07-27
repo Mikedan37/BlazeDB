@@ -912,6 +912,6 @@ BlazeDB provides strong cryptographic guarantees on Linux using platform-agnosti
 - **No Hardware Key Storage**: Keys in process memory only; use HSM if required
 - **No Certificate Validation**: Use external TLS termination with certificate validation
 
-For architecture details, see [ARCHITECTURE.md](Docs/ARCHITECTURE.md).
-For general security documentation, see [SECURITY.md](Docs/SECURITY.md).
+For architecture details, see [ARCHITECTURE.md](../Architecture/ARCHITECTURE.md).
+For general security documentation, see [SECURITY.md](../Security/SECURITY.md).
 

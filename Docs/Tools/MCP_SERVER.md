@@ -1117,7 +1117,7 @@ echo '{"jsonrpc":"2.0","id":1,"method":"tools/list"}' |./blazemcp --db /path/to/
 
 - [MCP Protocol Specification](https://modelcontextprotocol.io)
 - [BlazeDB API Reference](../API/API_REFERENCE.md)
-- [Row-Level Security Guide](../ROW_LEVEL_SECURITY.md)
+- [Row-Level Security Guide](../Features/ROW_LEVEL_SECURITY.md)
 - [Graph Query API](../API/GRAPH_QUERY_API.md)
 
 ---

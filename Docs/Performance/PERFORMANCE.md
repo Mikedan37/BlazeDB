@@ -165,5 +165,5 @@ Use [`COMPARISON.md`](../Benchmarks/COMPARISON.md) instead.
 
 ---
 
-For architecture details, see [ARCHITECTURE.md](ARCHITECTURE.md).
-For transaction performance, see [TRANSACTIONS.md](TRANSACTIONS.md).
+For architecture details, see [ARCHITECTURE.md](../Architecture/ARCHITECTURE.md).
+For transaction performance, see [TRANSACTIONS.md](../Features/TRANSACTIONS.md).

@@ -599,6 +599,6 @@ Before going live:
 
 - Read [Migration Guide](./MIGRATION_GUIDE.md) for migrating existing databases
 - Check [API Reference](../API/API_REFERENCE.md) for API details
-- Review [Performance Guide](../Performance/PERFORMANCE_GUIDE.md) for optimization
-- Explore [Sync Guide](../Sync/SYNC_GUIDE.md) for distributed sync
+- Review [Performance Guide](../Performance/PERFORMANCE.md) for optimization
+- Explore [Sync docs](../Sync/README.md) (deferred; see also [Distributed Transport Deferred](../Status/DISTRIBUTED_TRANSPORT_DEFERRED.md))
 

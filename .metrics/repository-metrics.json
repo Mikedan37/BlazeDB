@@ -1,0 +1,2255 @@
+{
+  "bucket_definitions": {
+    "archive": "Files under Docs/Archive/",
+    "curated_subsystems": {
+      "note": "Used for human-facing scale narrative only; not counted by scanning directories",
+      "precision": "curated \u2014 maintained classification, not filesystem-derived",
+      "subsystems": [
+        "engine core",
+        "storage/WAL",
+        "query",
+        "crypto",
+        "transactions",
+        "C ABI",
+        "CLI"
+      ]
+    },
+    "docs_bucket": "All files under Docs/ plus every tracked *.md/*.markdown anywhere (explains Docs > Markdown)",
+    "markdown": "Every tracked *.md / *.markdown regardless of directory",
+    "noise": ".build/, DerivedData/, Vendor/, vendor/, Carthage/, node_modules/",
+    "source": "Text files outside test trees, Docs/, *.md, Examples/, Scripts/, and noise prefixes",
+    "tests": "Text files under Tests/, BlazeDBTests/, BlazeDBIntegrationTests/, BlazeDBCLITests/, BlazeDBVisualizerTests/, BlazeDBExtraTests/, BlazeDBTests_SPM/",
+    "text_files": "Tracked paths that exist on disk and are not binary (extension denylist + NUL check)"
+  },
+  "changes_since_previous_snapshot": {
+    "available": false,
+    "note": "No previous committed snapshot"
+  },
+  "ci_lane_coverage": {
+    "android": "PR gate: cross-compile + KMM emulator smoke \u2014 no SPM XCTest tier execution",
+    "linux": "PR Tier0+CLITests; nightly Tier1+Tier2; weekly Extended+Heavy(+Perf)",
+    "macos": "PR Tier0+Tier1; nightly Tier2; weekly Tier3/Heavy/Perf/Destructive",
+    "precision": "exact for static mapping; not a live Actions query",
+    "targets": [
+      {
+        "exercised_by_normal_lane": true,
+        "lane_count": 4,
+        "lanes": [
+          "pr_macos",
+          "pr_linux",
+          "nightly_macos_tsan",
+          "release_macos"
+        ],
+        "note": null,
+        "path": "BlazeDBTests/Tier0Core",
+        "target": "BlazeDB_Tier0"
+      },
+      {
+        "exercised_by_normal_lane": true,
+        "lane_count": 3,
+        "lanes": [
+          "pr_macos",
+          "pr_linux",
+          "release_macos"
+        ],
+        "note": null,
+        "path": "BlazeDBCLITests",
+        "target": "BlazeDB_CLITests"
+      },
+      {
+        "exercised_by_normal_lane": true,
+        "lane_count": 3,
+        "lanes": [
+          "pr_macos",
+          "nightly_linux",
+          "release_macos"
+        ],
+        "note": null,
+        "path": "BlazeDBTests/Tier1Core",
+        "target": "BlazeDB_Tier1"
+      },
+      {
+        "exercised_by_normal_lane": false,
+        "lane_count": 0,
+        "lanes": [],
+        "note": "Declared in Package.swift; not filtered in ci/nightly/deep/release",
+        "path": "BlazeDBTests/SwiftUI",
+        "target": "BlazeDB_SwiftUITests"
+      },
+      {
+        "exercised_by_normal_lane": true,
+        "lane_count": 3,
+        "lanes": [
+          "nightly_macos",
+          "nightly_linux",
+          "release_macos"
+        ],
+        "note": null,
+        "path": "BlazeDBTests/Tier2Integration/BlazeDBIntegrationTests",
+        "target": "BlazeDB_Tier2"
+      },
+      {
+        "exercised_by_normal_lane": true,
+        "lane_count": 2,
+        "lanes": [
+          "weekly_linux",
+          "release_macos"
+        ],
+        "note": null,
+        "path": "BlazeDBTests/Tier1Extended",
+        "target": "BlazeDB_Tier2_Extended"
+      },
+      {
+        "exercised_by_normal_lane": true,
+        "lane_count": 3,
+        "lanes": [
+          "weekly_macos",
+          "weekly_linux",
+          "release_macos"
+        ],
+        "note": null,
+        "path": "BlazeDBTests/Tier3Heavy",
+        "target": "BlazeDB_Tier3_Heavy"
+      },
+      {
+        "exercised_by_normal_lane": true,
+        "lane_count": 3,
+        "lanes": [
+          "weekly_macos",
+          "weekly_linux",
+          "release_macos"
+        ],
+        "note": null,
+        "path": "BlazeDBTests/Tier1Perf",
+        "target": "BlazeDB_Tier3_Heavy_Perf"
+      },
+      {
+        "exercised_by_normal_lane": true,
+        "lane_count": 1,
+        "lanes": [
+          "weekly_macos"
+        ],
+        "note": "Weekly deep only; not in release.yml; not Linux CI",
+        "path": "BlazeDBTests/Tier3Destructive",
+        "target": "BlazeDB_Tier3_Destructive"
+      },
+      {
+        "exercised_by_normal_lane": false,
+        "lane_count": 0,
+        "lanes": [],
+        "note": "Declared; listed by swift test list; not in CI filters",
+        "path": "BlazeDBTests/Staging",
+        "target": "BlazeDB_Staging"
+      }
+    ]
+  },
+  "docs": {
+    "active_canonical_count": 69,
+    "active_reference_count": 188,
+    "archive_recommendation_count": 251,
+    "broken_anchor_sample": [
+      {
+        "anchor": "kmm-ci-android--ios",
+        "href": "Docs/Testing/CI_AND_TEST_TIERS.md#kmm-ci-android--ios",
+        "src": "CONTRIBUTING.md",
+        "target": "Docs/Testing/CI_AND_TEST_TIERS.md"
+      },
+      {
+        "anchor": "project-overview",
+        "href": "#project-overview",
+        "src": "Docs/API/COMPLETE_PROJECT_DOCUMENTATION.md",
+        "target": "Docs/API/COMPLETE_PROJECT_DOCUMENTATION.md"
+      },
+      {
+        "anchor": "blazedb-core-api",
+        "href": "#blazedb-core-api",
+        "src": "Docs/API/COMPLETE_PROJECT_DOCUMENTATION.md",
+        "target": "Docs/API/COMPLETE_PROJECT_DOCUMENTATION.md"
+      },
+      {
+        "anchor": "blazeshell-cli",
+        "href": "#blazeshell-cli",
+        "src": "Docs/API/COMPLETE_PROJECT_DOCUMENTATION.md",
+        "target": "Docs/API/COMPLETE_PROJECT_DOCUMENTATION.md"
+      },
+      {
+        "anchor": "blazestudio-visual-editor",
+        "href": "#blazestudio-visual-editor",
+        "src": "Docs/API/COMPLETE_PROJECT_DOCUMENTATION.md",
+        "target": "Docs/API/COMPLETE_PROJECT_DOCUMENTATION.md"
+      },
+      {
+        "anchor": "blazedbvisualizer-monitoring-tool",
+        "href": "#blazedbvisualizer-monitoring-tool",
+        "src": "Docs/API/COMPLETE_PROJECT_DOCUMENTATION.md",
+        "target": "Docs/API/COMPLETE_PROJECT_DOCUMENTATION.md"
+      },
+      {
+        "anchor": "test-coverage",
+        "href": "#test-coverage",
+        "src": "Docs/API/COMPLETE_PROJECT_DOCUMENTATION.md",
+        "target": "Docs/API/COMPLETE_PROJECT_DOCUMENTATION.md"
+      },
+      {
+        "anchor": "developer-guide",
+        "href": "#developer-guide",
+        "src": "Docs/API/COMPLETE_PROJECT_DOCUMENTATION.md",
+        "target": "Docs/API/COMPLETE_PROJECT_DOCUMENTATION.md"
+      },
+      {
+        "anchor": "why-this-exists-origins--motivation",
+        "href": "#why-this-exists-origins--motivation",
+        "src": "Docs/Architecture/ARCHITECTURE_DETAILED.md",
+        "target": "Docs/Architecture/ARCHITECTURE_DETAILED.md"
+      },
+      {
+        "anchor": "limitations--tradeoffs",
+        "href": "#limitations--tradeoffs",
+        "src": "Docs/Architecture/ARCHITECTURE_DETAILED.md",
+        "target": "Docs/Architecture/ARCHITECTURE_DETAILED.md"
+      },
+      {
+        "anchor": "stability--maturity",
+        "href": "#stability--maturity",
+        "src": "Docs/Architecture/ARCHITECTURE_DETAILED.md",
+        "target": "Docs/Architecture/ARCHITECTURE_DETAILED.md"
+      },
+      {
+        "anchor": "prior-art--influences",
+        "href": "#prior-art--influences",
+        "src": "Docs/Architecture/ARCHITECTURE_DETAILED.md",
+        "target": "Docs/Architecture/ARCHITECTURE_DETAILED.md"
+      },
+      {
+        "anchor": "why-not-sqlite--core-data--realm--lmdb",
+        "href": "#why-not-sqlite--core-data--realm--lmdb",
+        "src": "Docs/Architecture/ARCHITECTURE_DETAILED.md",
+        "target": "Docs/Architecture/ARCHITECTURE_DETAILED.md"
+      },
+      {
+        "anchor": "threat-actors--attack-surfaces",
+        "href": "#threat-actors--attack-surfaces",
+        "src": "Docs/Architecture/ARCHITECTURE_DETAILED.md",
+        "target": "Docs/Architecture/ARCHITECTURE_DETAILED.md"
+      },
+      {
+        "anchor": "data-in-transit-sync--protocol-encryption",
+        "href": "#data-in-transit-sync--protocol-encryption",
+        "src": "Docs/Architecture/ARCHITECTURE_DETAILED.md",
+        "target": "Docs/Architecture/ARCHITECTURE_DETAILED.md"
+      },
+      {
+        "anchor": "multi-core-performance",
+        "href": "#multi-core-performance",
+        "src": "Docs/Architecture/ARCHITECTURE_DETAILED.md",
+        "target": "Docs/Architecture/ARCHITECTURE_DETAILED.md"
+      },
+      {
+        "anchor": "testing--validation",
+        "href": "#testing--validation",
+        "src": "Docs/Architecture/ARCHITECTURE_DETAILED.md",
+        "target": "Docs/Architecture/ARCHITECTURE_DETAILED.md"
+      },
+      {
+        "anchor": "fault-injection--crash-testing",
+        "href": "#fault-injection--crash-testing",
+        "src": "Docs/Architecture/ARCHITECTURE_DETAILED.md",
+        "target": "Docs/Architecture/ARCHITECTURE_DETAILED.md"
+      },
+      {
+        "anchor": "api--integration",
+        "href": "#api--integration",
+        "src": "Docs/Architecture/ARCHITECTURE_DETAILED.md",
+        "target": "Docs/Architecture/ARCHITECTURE_DETAILED.md"
+      },
+      {
+        "anchor": "versioning--stability",
+        "href": "#versioning--stability",
+        "src": "Docs/Architecture/ARCHITECTURE_DETAILED.md",
+        "target": "Docs/Architecture/ARCHITECTURE_DETAILED.md"
+      }
+    ],
+    "broken_anchors": 62,
+    "broken_file_sample": [
+      {
+        "href": "QUERY_BUILDER_API.md",
+        "resolved": "Docs/API/QUERY_BUILDER_API.md",
+        "src": "Docs/API/GRAPH_QUERY_API.md"
+      },
+      {
+        "href": "AGGREGATION_API.md",
+        "resolved": "Docs/API/AGGREGATION_API.md",
+        "src": "Docs/API/GRAPH_QUERY_API.md"
+      },
+      {
+        "href": "../BlazeDB/Storage/PageReuseGC.swift",
+        "resolved": "Docs/BlazeDB/Storage/PageReuseGC.swift",
+        "src": "Docs/Archive/6_GARBAGE_COLLECTION_GUIDE.md"
+      },
+      {
+        "href": "Docs/GARBAGE_COLLECTION_COMPLETE_FINAL.md",
+        "resolved": "Docs/Archive/Docs/GARBAGE_COLLECTION_COMPLETE_FINAL.md",
+        "src": "Docs/Archive/6_GARBAGE_COLLECTION_GUIDE.md"
+      },
+      {
+        "href": "4_SCHEMA_VALIDATION.md",
+        "resolved": "Docs/Archive/4_SCHEMA_VALIDATION.md",
+        "src": "Docs/Archive/7_FOREIGN_KEYS_GUIDE.md"
+      },
+      {
+        "href": "../Examples/TypeSafeUsageExample.swift",
+        "resolved": "Docs/Examples/TypeSafeUsageExample.swift",
+        "src": "Docs/Archive/9_SWIFTUI_TYPE_SAFETY.md"
+      },
+      {
+        "href": "../Examples/SwiftUIExample.swift",
+        "resolved": "Docs/Examples/SwiftUIExample.swift",
+        "src": "Docs/Archive/9_SWIFTUI_TYPE_SAFETY.md"
+      },
+      {
+        "href": "../Examples/CodableExample.swift",
+        "resolved": "Docs/Examples/CodableExample.swift",
+        "src": "Docs/Archive/9_SWIFTUI_TYPE_SAFETY.md"
+      },
+      {
+        "href": "1_GETTING_STARTED.md",
+        "resolved": "Docs/Archive/1_GETTING_STARTED.md",
+        "src": "Docs/Archive/BLAZEDB_V3_FINAL_COMPLETE.md"
+      },
+      {
+        "href": "2_CORE_FEATURES.md",
+        "resolved": "Docs/Archive/2_CORE_FEATURES.md",
+        "src": "Docs/Archive/BLAZEDB_V3_FINAL_COMPLETE.md"
+      },
+      {
+        "href": "3_QUERY_GUIDE.md",
+        "resolved": "Docs/Archive/3_QUERY_GUIDE.md",
+        "src": "Docs/Archive/BLAZEDB_V3_FINAL_COMPLETE.md"
+      },
+      {
+        "href": "10_API_REFERENCE.md",
+        "resolved": "Docs/Archive/10_API_REFERENCE.md",
+        "src": "Docs/Archive/BLAZEDB_V3_FINAL_COMPLETE.md"
+      },
+      {
+        "href": "1_GETTING_STARTED.md",
+        "resolved": "Docs/Archive/1_GETTING_STARTED.md",
+        "src": "Docs/Archive/BLAZEDB_V3_FINAL_COMPLETE.md"
+      },
+      {
+        "href": "2_CORE_FEATURES.md",
+        "resolved": "Docs/Archive/2_CORE_FEATURES.md",
+        "src": "Docs/Archive/BLAZEDB_V3_FINAL_COMPLETE.md"
+      },
+      {
+        "href": "3_QUERY_GUIDE.md",
+        "resolved": "Docs/Archive/3_QUERY_GUIDE.md",
+        "src": "Docs/Archive/BLAZEDB_V3_FINAL_COMPLETE.md"
+      },
+      {
+        "href": "4_SCHEMA_VALIDATION.md",
+        "resolved": "Docs/Archive/4_SCHEMA_VALIDATION.md",
+        "src": "Docs/Archive/BLAZEDB_V3_FINAL_COMPLETE.md"
+      },
+      {
+        "href": "5_TELEMETRY_GUIDE.md",
+        "resolved": "Docs/Archive/5_TELEMETRY_GUIDE.md",
+        "src": "Docs/Archive/BLAZEDB_V3_FINAL_COMPLETE.md"
+      },
+      {
+        "href": "10_API_REFERENCE.md",
+        "resolved": "Docs/Archive/10_API_REFERENCE.md",
+        "src": "Docs/Archive/BLAZEDB_V3_FINAL_COMPLETE.md"
+      },
+      {
+        "href": "BLAZEBINARY_MASTERCLASS.md",
+        "resolved": "Docs/Archive/BLAZEBINARY_MASTERCLASS.md",
+        "src": "Docs/Archive/BLAZEDB_V3_FINAL_COMPLETE.md"
+      },
+      {
+        "href": "BLAZEBINARY_EXPERT_GUIDE.md",
+        "resolved": "Docs/Archive/BLAZEBINARY_EXPERT_GUIDE.md",
+        "src": "Docs/Archive/BLAZEDB_V3_FINAL_COMPLETE.md"
+      },
+      {
+        "href": "1_GETTING_STARTED.md",
+        "resolved": "Docs/Archive/1_GETTING_STARTED.md",
+        "src": "Docs/Archive/START_HERE.md"
+      },
+      {
+        "href": "2_CORE_FEATURES.md",
+        "resolved": "Docs/Archive/2_CORE_FEATURES.md",
+        "src": "Docs/Archive/START_HERE.md"
+      },
+      {
+        "href": "3_QUERY_GUIDE.md",
+        "resolved": "Docs/Archive/3_QUERY_GUIDE.md",
+        "src": "Docs/Archive/START_HERE.md"
+      },
+      {
+        "href": "5_TELEMETRY_GUIDE.md",
+        "resolved": "Docs/Archive/5_TELEMETRY_GUIDE.md",
+        "src": "Docs/Archive/START_HERE.md"
+      },
+      {
+        "href": "MASTER_DOCUMENTATION_V3.md",
+        "resolved": "Docs/Archive/MASTER_DOCUMENTATION_V3.md",
+        "src": "Docs/Archive/START_HERE.md"
+      },
+      {
+        "href": "../Examples/README.md",
+        "resolved": "Docs/Examples/README.md",
+        "src": "Docs/Archive/START_HERE.md"
+      },
+      {
+        "href": "../Examples/BasicUsageExample.swift",
+        "resolved": "Docs/Examples/BasicUsageExample.swift",
+        "src": "Docs/Archive/START_HERE.md"
+      },
+      {
+        "href": "../Examples/QueryBuilderExample.swift",
+        "resolved": "Docs/Examples/QueryBuilderExample.swift",
+        "src": "Docs/Archive/START_HERE.md"
+      },
+      {
+        "href": "../Examples/TelemetryBasicExample.swift",
+        "resolved": "Docs/Examples/TelemetryBasicExample.swift",
+        "src": "Docs/Archive/START_HERE.md"
+      },
+      {
+        "href": "../Examples/AshPileDebugMenu.swift",
+        "resolved": "Docs/Examples/AshPileDebugMenu.swift",
+        "src": "Docs/Archive/START_HERE.md"
+      }
+    ],
+    "broken_local_file_links": 41,
+    "byte_identical_markdown_groups": [
+      {
+        "paths": [
+          "Docs/Meta/COMPLETE_REORGANIZATION.md",
+          "Docs/Tests/COMPLETE_REORGANIZATION.md"
+        ],
+        "sha256": "a0d30de8575e03bd"
+      },
+      {
+        "paths": [
+          "Docs/Meta/FINAL_MIGRATION_INSTRUCTIONS.md",
+          "Docs/Tests/FINAL_MIGRATION_INSTRUCTIONS.md"
+        ],
+        "sha256": "d41685a42f8f06fa"
+      },
+      {
+        "paths": [
+          "Docs/Meta/FINAL_MOVES_COMPLETE.md",
+          "Docs/Tests/FINAL_MOVES_COMPLETE.md"
+        ],
+        "sha256": "6d70ee5466648204"
+      },
+      {
+        "paths": [
+          "Docs/Meta/FINAL_REORGANIZATION_INSTRUCTIONS.md",
+          "Docs/Tests/FINAL_REORGANIZATION_INSTRUCTIONS.md"
+        ],
+        "sha256": "ef32dd5344bb4de7"
+      },
+      {
+        "paths": [
+          "Docs/Meta/MIGRATION_SCRIPT.md",
+          "Docs/Tests/MIGRATION_SCRIPT.md"
+        ],
+        "sha256": "2d984f9c1d362432"
+      },
+      {
+        "paths": [
+          "Docs/Meta/REORGANIZATION_COMPLETE.md",
+          "Docs/Tests/REORGANIZATION_COMPLETE.md"
+        ],
+        "sha256": "1d7d9d125774f8ce"
+      },
+      {
+        "paths": [
+          "Docs/Meta/REORGANIZATION_PLAN.md",
+          "Docs/Tests/REORGANIZATION_PLAN.md"
+        ],
+        "sha256": "9019877d13c317ac"
+      },
+      {
+        "paths": [
+          "Docs/Meta/REORGANIZATION_STATUS.md",
+          "Docs/Tests/REORGANIZATION_STATUS.md"
+        ],
+        "sha256": "544cba8532e2dd1c"
+      },
+      {
+        "paths": [
+          "Docs/Meta/REORGANIZATION_SUMMARY.md",
+          "Docs/Tests/REORGANIZATION_SUMMARY.md"
+        ],
+        "sha256": "5f50076d4a0ed555"
+      },
+      {
+        "paths": [
+          "Docs/Testing/TEST_SUITES_SUMMARY.md",
+          "Docs/Tests/TEST_SUITES_SUMMARY.md"
+        ],
+        "sha256": "a43e05ff4b3e889b"
+      }
+    ],
+    "code_fence_blocks_non_archive": 4802,
+    "delete_candidate_count": 6,
+    "docs_archive_directory_markdown_files": 141,
+    "documentation_examples": {
+      "harness_present": true,
+      "note": "Executable README samples verified via Examples/ReadmeSamples + Scripts/verify-readme-samples.sh; not a full fence audit of Docs/",
+      "precision": "partial"
+    },
+    "files_with_code_fences_non_archive": 266,
+    "generated_doc_candidates": [
+      "Docs/Benchmarks/results_baseline.md",
+      "Docs/Benchmarks/results_encryption_off_requested.md",
+      "Docs/Benchmarks/results_mvcc_off.md",
+      "Docs/Benchmarks/results_wal_off_requested.md"
+    ],
+    "inventory_tracked": false,
+    "inventory_used": true,
+    "markdown_files_tracked": 546,
+    "merge_recommendation_count": 31,
+    "precision_notes": {
+      "broken_links": "exact for local file targets; anchors approximate (heading/HTML id)",
+      "code_fences": "approximate fence count; not equal to untested samples",
+      "inventory_classifications": "from Docs/Audit/DOCUMENTATION_INVENTORY_2026_07.md (on disk; not git-tracked yet)",
+      "reachability": "exact for markdown link BFS from primary entry points"
+    },
+    "reachable_active_docs": 92,
+    "reachable_from_primary_entry_points": 100,
+    "recommendation_counts": {
+      "ARCHIVE": 251,
+      "DELETE_CANDIDATE": 6,
+      "KEEP_CANONICAL": 69,
+      "KEEP_REFERENCE": 188,
+      "MERGE": 31,
+      "REVIEW_REQUIRED": 2
+    },
+    "review_candidates": [
+      {
+        "confidence": "medium",
+        "evidence": "Classified active (or non-archive) but not reachable from primary entry-point BFS",
+        "kind": "unreachable_active_doc",
+        "path": ".github/ISSUE_TEMPLATE/bug_report.md",
+        "why_manual_review": "May be intentionally internal; or needs index link"
+      },
+      {
+        "confidence": "medium",
+        "evidence": "Classified active (or non-archive) but not reachable from primary entry-point BFS",
+        "kind": "unreachable_active_doc",
+        "path": ".github/ISSUE_TEMPLATE/feature_request.md",
+        "why_manual_review": "May be intentionally internal; or needs index link"
+      },
+      {
+        "confidence": "medium",
+        "evidence": "Classified active (or non-archive) but not reachable from primary entry-point BFS",
+        "kind": "unreachable_active_doc",
+        "path": ".github/ISSUE_TEMPLATE/security_review_tracking.md",
+        "why_manual_review": "May be intentionally internal; or needs index link"
+      },
+      {
+        "confidence": "medium",
+        "evidence": "Classified active (or non-archive) but not reachable from primary entry-point BFS",
+        "kind": "unreachable_active_doc",
+        "path": ".github/REPOSITORY_AUTOMATION.md",
+        "why_manual_review": "May be intentionally internal; or needs index link"
+      },
+      {
+        "confidence": "medium",
+        "evidence": "Classified active (or non-archive) but not reachable from primary entry-point BFS",
+        "kind": "unreachable_active_doc",
+        "path": ".github/pull_request_template.md",
+        "why_manual_review": "May be intentionally internal; or needs index link"
+      },
+      {
+        "confidence": "medium",
+        "evidence": "Classified active (or non-archive) but not reachable from primary entry-point BFS",
+        "kind": "unreachable_active_doc",
+        "path": ".github/workflows/README.md",
+        "why_manual_review": "May be intentionally internal; or needs index link"
+      },
+      {
+        "confidence": "medium",
+        "evidence": "Classified active (or non-archive) but not reachable from primary entry-point BFS",
+        "kind": "unreachable_active_doc",
+        "path": "BlazeDB/BlazeDB.docc/BlazeDB.md",
+        "why_manual_review": "May be intentionally internal; or needs index link"
+      },
+      {
+        "confidence": "medium",
+        "evidence": "Classified active (or non-archive) but not reachable from primary entry-point BFS",
+        "kind": "unreachable_active_doc",
+        "path": "BlazeDB/Distributed/README.md",
+        "why_manual_review": "May be intentionally internal; or needs index link"
+      },
+      {
+        "confidence": "medium",
+        "evidence": "Classified active (or non-archive) but not reachable from primary entry-point BFS",
+        "kind": "unreachable_active_doc",
+        "path": "BlazeDBC/README.md",
+        "why_manual_review": "May be intentionally internal; or needs index link"
+      },
+      {
+        "confidence": "medium",
+        "evidence": "Classified active (or non-archive) but not reachable from primary entry-point BFS",
+        "kind": "unreachable_active_doc",
+        "path": "BlazeDBExtraTests/README.md",
+        "why_manual_review": "May be intentionally internal; or needs index link"
+      },
+      {
+        "confidence": "medium",
+        "evidence": "Classified active (or non-archive) but not reachable from primary entry-point BFS",
+        "kind": "unreachable_active_doc",
+        "path": "BlazeDBVisualizer/README.md",
+        "why_manual_review": "May be intentionally internal; or needs index link"
+      },
+      {
+        "confidence": "medium",
+        "evidence": "Classified active (or non-archive) but not reachable from primary entry-point BFS",
+        "kind": "unreachable_active_doc",
+        "path": "Docs/API/GRAPH_QUERY_API.md",
+        "why_manual_review": "May be intentionally internal; or needs index link"
+      },
+      {
+        "confidence": "medium",
+        "evidence": "Classified active (or non-archive) but not reachable from primary entry-point BFS",
+        "kind": "unreachable_active_doc",
+        "path": "Docs/API/README.md",
+        "why_manual_review": "May be intentionally internal; or needs index link"
+      },
+      {
+        "confidence": "medium",
+        "evidence": "Classified active (or non-archive) but not reachable from primary entry-point BFS",
+        "kind": "unreachable_active_doc",
+        "path": "Docs/ARCHIVE_INDEX.md",
+        "why_manual_review": "May be intentionally internal; or needs index link"
+      },
+      {
+        "confidence": "medium",
+        "evidence": "Classified active (or non-archive) but not reachable from primary entry-point BFS",
+        "kind": "unreachable_active_doc",
+        "path": "Docs/Architecture/ARCHITECTURE.md",
+        "why_manual_review": "May be intentionally internal; or needs index link"
+      },
+      {
+        "confidence": "medium",
+        "evidence": "Classified active (or non-archive) but not reachable from primary entry-point BFS",
+        "kind": "unreachable_active_doc",
+        "path": "Docs/Architecture/BLAZEBINARY_PROTOCOL.md",
+        "why_manual_review": "May be intentionally internal; or needs index link"
+      },
+      {
+        "confidence": "medium",
+        "evidence": "Classified active (or non-archive) but not reachable from primary entry-point BFS",
+        "kind": "unreachable_active_doc",
+        "path": "Docs/Architecture/BLAZEDB_RELAY.md",
+        "why_manual_review": "May be intentionally internal; or needs index link"
+      },
+      {
+        "confidence": "medium",
+        "evidence": "Classified active (or non-archive) but not reachable from primary entry-point BFS",
+        "kind": "unreachable_active_doc",
+        "path": "Docs/Architecture/DISTRIBUTED_ARCHITECTURE.md",
+        "why_manual_review": "May be intentionally internal; or needs index link"
+      },
+      {
+        "confidence": "medium",
+        "evidence": "Classified active (or non-archive) but not reachable from primary entry-point BFS",
+        "kind": "unreachable_active_doc",
+        "path": "Docs/Architecture/EXTENSION_POINTS.md",
+        "why_manual_review": "May be intentionally internal; or needs index link"
+      },
+      {
+        "confidence": "medium",
+        "evidence": "Classified active (or non-archive) but not reachable from primary entry-point BFS",
+        "kind": "unreachable_active_doc",
+        "path": "Docs/Architecture/SERVER_CLIENT_ARCHITECTURE.md",
+        "why_manual_review": "May be intentionally internal; or needs index link"
+      },
+      {
+        "confidence": "medium",
+        "evidence": "Classified active (or non-archive) but not reachable from primary entry-point BFS",
+        "kind": "unreachable_active_doc",
+        "path": "Docs/Architecture/STORAGE_ENGINE_NOTES.md",
+        "why_manual_review": "May be intentionally internal; or needs index link"
+      },
+      {
+        "confidence": "medium",
+        "evidence": "Classified active (or non-archive) but not reachable from primary entry-point BFS",
+        "kind": "unreachable_active_doc",
+        "path": "Docs/Architecture/TOURS/README.md",
+        "why_manual_review": "May be intentionally internal; or needs index link"
+      },
+      {
+        "confidence": "medium",
+        "evidence": "Classified active (or non-archive) but not reachable from primary entry-point BFS",
+        "kind": "unreachable_active_doc",
+        "path": "Docs/Benchmarks/BENCHMARK_ENVIRONMENT.md",
+        "why_manual_review": "May be intentionally internal; or needs index link"
+      },
+      {
+        "confidence": "medium",
+        "evidence": "Classified active (or non-archive) but not reachable from primary entry-point BFS",
+        "kind": "unreachable_active_doc",
+        "path": "Docs/Benchmarks/CONCURRENT_MVCC.md",
+        "why_manual_review": "May be intentionally internal; or needs index link"
+      },
+      {
+        "confidence": "medium",
+        "evidence": "Classified active (or non-archive) but not reachable from primary entry-point BFS",
+        "kind": "unreachable_active_doc",
+        "path": "Docs/Benchmarks/ENERGY.md",
+        "why_manual_review": "May be intentionally internal; or needs index link"
+      },
+      {
+        "confidence": "medium",
+        "evidence": "Filename has space+\"2\"; longer sibling of REORGANIZATION_COMPLETE.md \u2014 pick one canonical Meta copy then delete other",
+        "kind": "inventory_delete_candidate",
+        "path": "Docs/Meta/REORGANIZATION_COMPLETE 2.md",
+        "why_manual_review": "Inventory recommendation only \u2014 not a deletion warrant"
+      },
+      {
+        "confidence": "medium",
+        "evidence": "SHA256-identical to Docs/Testing/CREATE_TEST_PLANS_IN_XCODE.md",
+        "kind": "inventory_delete_candidate",
+        "path": "Tests/BlazeDBTests/CREATE_TEST_PLANS_IN_XCODE.md",
+        "why_manual_review": "Inventory recommendation only \u2014 not a deletion warrant"
+      },
+      {
+        "confidence": "medium",
+        "evidence": "Near-duplicate of Docs/Tests copy; completed instructions",
+        "kind": "inventory_delete_candidate",
+        "path": "Tests/BlazeDBTests/FINAL_REORGANIZATION_INSTRUCTIONS.md",
+        "why_manual_review": "Inventory recommendation only \u2014 not a deletion warrant"
+      },
+      {
+        "confidence": "medium",
+        "evidence": "Near-duplicate of Docs/Tests copy (67 lines; byte diff trivial); completed reorg plan",
+        "kind": "inventory_delete_candidate",
+        "path": "Tests/BlazeDBTests/REORGANIZATION_PLAN.md",
+        "why_manual_review": "Inventory recommendation only \u2014 not a deletion warrant"
+      },
+      {
+        "confidence": "medium",
+        "evidence": "SHA256-identical to Docs/Tests/REORGANIZATION_STATUS.md; zero unique content",
+        "kind": "inventory_delete_candidate",
+        "path": "Tests/BlazeDBTests/REORGANIZATION_STATUS.md",
+        "why_manual_review": "Inventory recommendation only \u2014 not a deletion warrant"
+      },
+      {
+        "confidence": "medium",
+        "evidence": "Near-duplicate of Docs/Testing/TEST_PLAN.md (499 lines; trivial byte diff)",
+        "kind": "inventory_delete_candidate",
+        "path": "Tests/BlazeDBTests/TEST_PLAN.md",
+        "why_manual_review": "Inventory recommendation only \u2014 not a deletion warrant"
+      },
+      {
+        "confidence": "high",
+        "evidence": "Byte-identical group: Docs/Meta/COMPLETE_REORGANIZATION.md, Docs/Tests/COMPLETE_REORGANIZATION.md",
+        "kind": "duplicate_markdown",
+        "path": "Docs/Meta/COMPLETE_REORGANIZATION.md",
+        "why_manual_review": "Confirm canonical path before removing copies"
+      },
+      {
+        "confidence": "high",
+        "evidence": "Byte-identical group: Docs/Meta/FINAL_MIGRATION_INSTRUCTIONS.md, Docs/Tests/FINAL_MIGRATION_INSTRUCTIONS.md",
+        "kind": "duplicate_markdown",
+        "path": "Docs/Meta/FINAL_MIGRATION_INSTRUCTIONS.md",
+        "why_manual_review": "Confirm canonical path before removing copies"
+      },
+      {
+        "confidence": "high",
+        "evidence": "Byte-identical group: Docs/Meta/FINAL_MOVES_COMPLETE.md, Docs/Tests/FINAL_MOVES_COMPLETE.md",
+        "kind": "duplicate_markdown",
+        "path": "Docs/Meta/FINAL_MOVES_COMPLETE.md",
+        "why_manual_review": "Confirm canonical path before removing copies"
+      },
+      {
+        "confidence": "high",
+        "evidence": "Byte-identical group: Docs/Meta/FINAL_REORGANIZATION_INSTRUCTIONS.md, Docs/Tests/FINAL_REORGANIZATION_INSTRUCTIONS.md",
+        "kind": "duplicate_markdown",
+        "path": "Docs/Meta/FINAL_REORGANIZATION_INSTRUCTIONS.md",
+        "why_manual_review": "Confirm canonical path before removing copies"
+      },
+      {
+        "confidence": "high",
+        "evidence": "Byte-identical group: Docs/Meta/MIGRATION_SCRIPT.md, Docs/Tests/MIGRATION_SCRIPT.md",
+        "kind": "duplicate_markdown",
+        "path": "Docs/Meta/MIGRATION_SCRIPT.md",
+        "why_manual_review": "Confirm canonical path before removing copies"
+      },
+      {
+        "confidence": "high",
+        "evidence": "Byte-identical group: Docs/Meta/REORGANIZATION_COMPLETE.md, Docs/Tests/REORGANIZATION_COMPLETE.md",
+        "kind": "duplicate_markdown",
+        "path": "Docs/Meta/REORGANIZATION_COMPLETE.md",
+        "why_manual_review": "Confirm canonical path before removing copies"
+      },
+      {
+        "confidence": "high",
+        "evidence": "Byte-identical group: Docs/Meta/REORGANIZATION_PLAN.md, Docs/Tests/REORGANIZATION_PLAN.md",
+        "kind": "duplicate_markdown",
+        "path": "Docs/Meta/REORGANIZATION_PLAN.md",
+        "why_manual_review": "Confirm canonical path before removing copies"
+      },
+      {
+        "confidence": "high",
+        "evidence": "Byte-identical group: Docs/Meta/REORGANIZATION_STATUS.md, Docs/Tests/REORGANIZATION_STATUS.md",
+        "kind": "duplicate_markdown",
+        "path": "Docs/Meta/REORGANIZATION_STATUS.md",
+        "why_manual_review": "Confirm canonical path before removing copies"
+      },
+      {
+        "confidence": "high",
+        "evidence": "Byte-identical group: Docs/Meta/REORGANIZATION_SUMMARY.md, Docs/Tests/REORGANIZATION_SUMMARY.md",
+        "kind": "duplicate_markdown",
+        "path": "Docs/Meta/REORGANIZATION_SUMMARY.md",
+        "why_manual_review": "Confirm canonical path before removing copies"
+      },
+      {
+        "confidence": "high",
+        "evidence": "Byte-identical group: Docs/Testing/TEST_SUITES_SUMMARY.md, Docs/Tests/TEST_SUITES_SUMMARY.md",
+        "kind": "duplicate_markdown",
+        "path": "Docs/Testing/TEST_SUITES_SUMMARY.md",
+        "why_manual_review": "Confirm canonical path before removing copies"
+      },
+      {
+        "confidence": "low",
+        "evidence": "Matched version/platform token: 'v0.1.'",
+        "kind": "version_platform_token",
+        "path": "CHANGELOG.md",
+        "why_manual_review": "Token may be historical context or still accurate; not auto-stale"
+      },
+      {
+        "confidence": "low",
+        "evidence": "Matched version/platform token: 'iOS 13'",
+        "kind": "version_platform_token",
+        "path": "Docs/Audit/FORENSIC_FEATURE_EXTRACTION.md",
+        "why_manual_review": "Token may be historical context or still accurate; not auto-stale"
+      },
+      {
+        "confidence": "low",
+        "evidence": "Matched version/platform token: 'v0.1.'",
+        "kind": "version_platform_token",
+        "path": "Docs/INTERVIEW_MASTER_LIST.md",
+        "why_manual_review": "Token may be historical context or still accurate; not auto-stale"
+      },
+      {
+        "confidence": "low",
+        "evidence": "Matched version/platform token: 'v0.1.'",
+        "kind": "version_platform_token",
+        "path": "Docs/Product/OUTSIDE_OBSERVER_AUDIT.md",
+        "why_manual_review": "Token may be historical context or still accurate; not auto-stale"
+      },
+      {
+        "confidence": "low",
+        "evidence": "Matched version/platform token: 'v0.1.'",
+        "kind": "version_platform_token",
+        "path": "Docs/Product/PRODUCT_AUDIT.md",
+        "why_manual_review": "Token may be historical context or still accurate; not auto-stale"
+      },
+      {
+        "confidence": "low",
+        "evidence": "Matched version/platform token: 'v0.1.'",
+        "kind": "version_platform_token",
+        "path": "Docs/Release/RELEASE_NOTES_v0.1.0.md",
+        "why_manual_review": "Token may be historical context or still accurate; not auto-stale"
+      },
+      {
+        "confidence": "low",
+        "evidence": "Matched version/platform token: 'v0.1.'",
+        "kind": "version_platform_token",
+        "path": "Docs/Release/RELEASE_NOTES_v0.1.1.md",
+        "why_manual_review": "Token may be historical context or still accurate; not auto-stale"
+      },
+      {
+        "confidence": "low",
+        "evidence": "Matched version/platform token: 'v0.1.'",
+        "kind": "version_platform_token",
+        "path": "Docs/Release/RELEASE_NOTES_v0.1.2.md",
+        "why_manual_review": "Token may be historical context or still accurate; not auto-stale"
+      },
+      {
+        "confidence": "low",
+        "evidence": "Matched version/platform token: 'v0.1.'",
+        "kind": "version_platform_token",
+        "path": "Docs/Release/RELEASE_NOTES_v0.1.3.md",
+        "why_manual_review": "Token may be historical context or still accurate; not auto-stale"
+      },
+      {
+        "confidence": "low",
+        "evidence": "Matched version/platform token: 'v0.1.'",
+        "kind": "version_platform_token",
+        "path": "Docs/Status/ADOPTION_READINESS.md",
+        "why_manual_review": "Token may be historical context or still accurate; not auto-stale"
+      },
+      {
+        "confidence": "low",
+        "evidence": "Matched version/platform token: 'v0.1.'",
+        "kind": "version_platform_token",
+        "path": "Docs/Status/COMPATIBILITY_HARNESS.md",
+        "why_manual_review": "Token may be historical context or still accurate; not auto-stale"
+      },
+      {
+        "confidence": "low",
+        "evidence": "Matched version/platform token: 'v0.1.'",
+        "kind": "version_platform_token",
+        "path": "Docs/Status/OPEN_SOURCE_READINESS_CHECKLIST.md",
+        "why_manual_review": "Token may be historical context or still accurate; not auto-stale"
+      },
+      {
+        "confidence": "low",
+        "evidence": "Matched version/platform token: 'v0.1.'",
+        "kind": "version_platform_token",
+        "path": "Docs/Status/RELEASE_V0.1.0.md",
+        "why_manual_review": "Token may be historical context or still accurate; not auto-stale"
+      }
+    ],
+    "review_required_count": 2,
+    "superseded_with_explicit_destination": [
+      {
+        "canonical_destination": "Docs/Benchmarks/README.md",
+        "path": "BlazeDBTests/Performance/LEGACY_BENCHMARKS.md",
+        "recommendation": "ARCHIVE"
+      },
+      {
+        "canonical_destination": "Docs/API/API_REFERENCE.md + Docs/DEVELOPER_GUIDE.md",
+        "path": "Docs/API/COMPLETE_PROJECT_DOCUMENTATION.md",
+        "recommendation": "MERGE"
+      },
+      {
+        "canonical_destination": "Docs/Architecture/ARCHITECTURE.md + Docs/SYSTEM_MAP.md",
+        "path": "Docs/Architecture/ARCHITECTURE_COMPARISON.md",
+        "recommendation": "MERGE"
+      },
+      {
+        "canonical_destination": "Docs/Architecture/ARCHITECTURE.md + Docs/SYSTEM_MAP.md",
+        "path": "Docs/Architecture/ARCHITECTURE_DETAILED.md",
+        "recommendation": "MERGE"
+      },
+      {
+        "canonical_destination": "Docs/Architecture/ARCHITECTURE.md + Docs/SYSTEM_MAP.md",
+        "path": "Docs/Architecture/BLAZEDB_ARCHITECTURE_AND_LIMITS.md",
+        "recommendation": "MERGE"
+      },
+      {
+        "canonical_destination": "Docs/Architecture/ARCHITECTURE.md + Docs/SYSTEM_MAP.md",
+        "path": "Docs/Architecture/BLAZEDB_SYSTEM_DESIGN_DIAGRAM.md",
+        "recommendation": "MERGE"
+      },
+      {
+        "canonical_destination": "Docs/Archive/",
+        "path": "Docs/Archive/6_GARBAGE_COLLECTION_GUIDE.md",
+        "recommendation": "ARCHIVE"
+      },
+      {
+        "canonical_destination": "Docs/Archive/",
+        "path": "Docs/Archive/7_FOREIGN_KEYS_GUIDE.md",
+        "recommendation": "ARCHIVE"
+      },
+      {
+        "canonical_destination": "Docs/Archive/",
+        "path": "Docs/Archive/8_PRODUCTION_GUIDE.md",
+        "recommendation": "ARCHIVE"
+      },
+      {
+        "canonical_destination": "Docs/Archive/",
+        "path": "Docs/Archive/9_SWIFTUI_TYPE_SAFETY.md",
+        "recommendation": "ARCHIVE"
+      },
+      {
+        "canonical_destination": "Docs/Archive/",
+        "path": "Docs/Archive/ADVANCED_COMPRESSION.md",
+        "recommendation": "ARCHIVE"
+      },
+      {
+        "canonical_destination": "Docs/Archive/",
+        "path": "Docs/Archive/ADVANCED_FEATURES_COMPLETE.md",
+        "recommendation": "ARCHIVE"
+      },
+      {
+        "canonical_destination": "Docs/Archive/",
+        "path": "Docs/Archive/ADVANCED_TESTING_EXPLAINED.md",
+        "recommendation": "ARCHIVE"
+      },
+      {
+        "canonical_destination": "Docs/Archive/",
+        "path": "Docs/Archive/AGGRESSIVE_OPTIMIZATIONS.md",
+        "recommendation": "ARCHIVE"
+      },
+      {
+        "canonical_destination": "Docs/Archive/",
+        "path": "Docs/Archive/ALL_OPTIMIZATIONS_SUMMARY.md",
+        "recommendation": "ARCHIVE"
+      },
+      {
+        "canonical_destination": "Docs/Archive/",
+        "path": "Docs/Archive/ANIMATIONS_ADDED.md",
+        "recommendation": "ARCHIVE"
+      },
+      {
+        "canonical_destination": "Docs/Archive/",
+        "path": "Docs/Archive/ARCHITECTURE_CRITIQUE.md",
+        "recommendation": "ARCHIVE"
+      },
+      {
+        "canonical_destination": "Docs/Archive/",
+        "path": "Docs/Archive/ASYNC_IMPLEMENTATION.md",
+        "recommendation": "ARCHIVE"
+      },
+      {
+        "canonical_destination": "Docs/Archive/",
+        "path": "Docs/Archive/BATTERY_AND_POWER_ANALYSIS.md",
+        "recommendation": "ARCHIVE"
+      },
+      {
+        "canonical_destination": "Docs/Archive/",
+        "path": "Docs/Archive/BATTERY_LIFE_AND_PROTOCOL_COMPARISON.md",
+        "recommendation": "ARCHIVE"
+      },
+      {
+        "canonical_destination": "Docs/Archive/",
+        "path": "Docs/Archive/BATTERY_OPTIMIZATION_SUMMARY.md",
+        "recommendation": "ARCHIVE"
+      },
+      {
+        "canonical_destination": "Docs/Archive/",
+        "path": "Docs/Archive/BLAZEBINARY_OPTIMIZATIONS.md",
+        "recommendation": "ARCHIVE"
+      },
+      {
+        "canonical_destination": "Docs/Archive/",
+        "path": "Docs/Archive/BLAZEBINARY_SPECIFICATION.md",
+        "recommendation": "ARCHIVE"
+      },
+      {
+        "canonical_destination": "Docs/Archive/",
+        "path": "Docs/Archive/BLAZEBINARY_ULTIMATE_VERIFICATION_COMPLETE.md",
+        "recommendation": "ARCHIVE"
+      },
+      {
+        "canonical_destination": "Docs/Archive/",
+        "path": "Docs/Archive/BLAZEBINARY_WEBSOCKET_PROTOCOL.md",
+        "recommendation": "ARCHIVE"
+      },
+      {
+        "canonical_destination": "Docs/Archive/",
+        "path": "Docs/Archive/BLAZEDB_CRAZY_METRICS.md",
+        "recommendation": "ARCHIVE"
+      },
+      {
+        "canonical_destination": "Docs/Archive/",
+        "path": "Docs/Archive/BLAZEDB_FINAL_STATUS.md",
+        "recommendation": "ARCHIVE"
+      },
+      {
+        "canonical_destination": "Docs/Archive/",
+        "path": "Docs/Archive/BLAZEDB_GRPC.md",
+        "recommendation": "ARCHIVE"
+      },
+      {
+        "canonical_destination": "Docs/Archive/",
+        "path": "Docs/Archive/BLAZEDB_MANAGER_ARCHITECTURE.md",
+        "recommendation": "ARCHIVE"
+      },
+      {
+        "canonical_destination": "Docs/Archive/",
+        "path": "Docs/Archive/blazedb_medium_article.md",
+        "recommendation": "ARCHIVE"
+      },
+      {
+        "canonical_destination": "Docs/Archive/",
+        "path": "Docs/Archive/BLAZEDB_PLATFORM.md",
+        "recommendation": "ARCHIVE"
+      },
+      {
+        "canonical_destination": "Docs/Archive/",
+        "path": "Docs/Archive/BLAZEDB_V3_FINAL_COMPLETE.md",
+        "recommendation": "ARCHIVE"
+      },
+      {
+        "canonical_destination": "Docs/Archive/",
+        "path": "Docs/Archive/BLAZEDB_VISUALIZER_FINAL.md",
+        "recommendation": "ARCHIVE"
+      },
+      {
+        "canonical_destination": "Docs/Archive/",
+        "path": "Docs/Archive/BlazeServerPrototype/README.md",
+        "recommendation": "ARCHIVE"
+      },
+      {
+        "canonical_destination": "Docs/Archive/",
+        "path": "Docs/Archive/BOTTLENECKS_AND_OPTIMIZATIONS.md",
+        "recommendation": "ARCHIVE"
+      },
+      {
+        "canonical_destination": "Docs/Archive/",
+        "path": "Docs/Archive/BRUTALLY_HONEST_VALUE.md",
+        "recommendation": "ARCHIVE"
+      },
+      {
+        "canonical_destination": "Docs/Archive/",
+        "path": "Docs/Archive/BULLETPROOF_TESTING_SUITE.md",
+        "recommendation": "ARCHIVE"
+      },
+      {
+        "canonical_destination": "Docs/Archive/",
+        "path": "Docs/Archive/CLEANUP_SUMMARY.md",
+        "recommendation": "ARCHIVE"
+      },
+      {
+        "canonical_destination": "Docs/Archive/",
+        "path": "Docs/Archive/CLIENT_READY.md",
+        "recommendation": "ARCHIVE"
+      },
+      {
+        "canonical_destination": "Docs/Archive/",
+        "path": "Docs/Archive/CLIENT_SIDE_COMPLETE.md",
+        "recommendation": "ARCHIVE"
+      }
+    ],
+    "unreachable_active_docs": 165,
+    "unreachable_active_sample": [
+      ".github/ISSUE_TEMPLATE/bug_report.md",
+      ".github/ISSUE_TEMPLATE/feature_request.md",
+      ".github/ISSUE_TEMPLATE/security_review_tracking.md",
+      ".github/REPOSITORY_AUTOMATION.md",
+      ".github/pull_request_template.md",
+      ".github/workflows/README.md",
+      "BlazeDB/BlazeDB.docc/BlazeDB.md",
+      "BlazeDB/Distributed/README.md",
+      "BlazeDBC/README.md",
+      "BlazeDBExtraTests/README.md",
+      "BlazeDBVisualizer/README.md",
+      "Docs/API/GRAPH_QUERY_API.md",
+      "Docs/API/README.md",
+      "Docs/ARCHIVE_INDEX.md",
+      "Docs/Architecture/ARCHITECTURE.md",
+      "Docs/Architecture/BLAZEBINARY_PROTOCOL.md",
+      "Docs/Architecture/BLAZEDB_RELAY.md",
+      "Docs/Architecture/DISTRIBUTED_ARCHITECTURE.md",
+      "Docs/Architecture/EXTENSION_POINTS.md",
+      "Docs/Architecture/SERVER_CLIENT_ARCHITECTURE.md",
+      "Docs/Architecture/STORAGE_ENGINE_NOTES.md",
+      "Docs/Architecture/TOURS/README.md",
+      "Docs/Benchmarks/BENCHMARK_ENVIRONMENT.md",
+      "Docs/Benchmarks/CONCURRENT_MVCC.md",
+      "Docs/Benchmarks/ENERGY.md",
+      "Docs/Benchmarks/FULL_BENCHMARK_SUMMARY.md",
+      "Docs/Benchmarks/GC_BENCHMARKS.md",
+      "Docs/Benchmarks/LIMITS.md",
+      "Docs/Benchmarks/OBSERVABILITY_BENCHMARKS.md",
+      "Docs/Benchmarks/POWER_BENCHMARKS.md",
+      "Docs/Benchmarks/RUN_STATUS.md",
+      "Docs/Benchmarks/SQLITE_LIMITS_COMPARISON.md",
+      "Docs/Benchmarks/results_baseline.md",
+      "Docs/Benchmarks/results_encryption_off_requested.md",
+      "Docs/Benchmarks/results_mvcc_off.md",
+      "Docs/Benchmarks/results_wal_off_requested.md",
+      "Docs/Build/TEST_BUILD_GRAPH.md",
+      "Docs/Compliance/PHASE_1_FREEZE.md",
+      "Docs/Compliance/PHASE_2_PARALLELISM.md",
+      "Docs/Compliance/PRE_USER_HARDENING.md"
+    ],
+    "version_platform_stale_candidates": [
+      {
+        "confidence": "low",
+        "evidence": "Matched version/platform token: 'v0.1.'",
+        "path": "CHANGELOG.md",
+        "why_manual_review": "Token may be historical context or still accurate; not auto-stale"
+      },
+      {
+        "confidence": "low",
+        "evidence": "Matched version/platform token: 'iOS 13'",
+        "path": "Docs/Audit/FORENSIC_FEATURE_EXTRACTION.md",
+        "why_manual_review": "Token may be historical context or still accurate; not auto-stale"
+      },
+      {
+        "confidence": "low",
+        "evidence": "Matched version/platform token: 'v0.1.'",
+        "path": "Docs/INTERVIEW_MASTER_LIST.md",
+        "why_manual_review": "Token may be historical context or still accurate; not auto-stale"
+      },
+      {
+        "confidence": "low",
+        "evidence": "Matched version/platform token: 'v0.1.'",
+        "path": "Docs/Product/OUTSIDE_OBSERVER_AUDIT.md",
+        "why_manual_review": "Token may be historical context or still accurate; not auto-stale"
+      },
+      {
+        "confidence": "low",
+        "evidence": "Matched version/platform token: 'v0.1.'",
+        "path": "Docs/Product/PRODUCT_AUDIT.md",
+        "why_manual_review": "Token may be historical context or still accurate; not auto-stale"
+      },
+      {
+        "confidence": "low",
+        "evidence": "Matched version/platform token: 'v0.1.'",
+        "path": "Docs/Release/RELEASE_NOTES_v0.1.0.md",
+        "why_manual_review": "Token may be historical context or still accurate; not auto-stale"
+      },
+      {
+        "confidence": "low",
+        "evidence": "Matched version/platform token: 'v0.1.'",
+        "path": "Docs/Release/RELEASE_NOTES_v0.1.1.md",
+        "why_manual_review": "Token may be historical context or still accurate; not auto-stale"
+      },
+      {
+        "confidence": "low",
+        "evidence": "Matched version/platform token: 'v0.1.'",
+        "path": "Docs/Release/RELEASE_NOTES_v0.1.2.md",
+        "why_manual_review": "Token may be historical context or still accurate; not auto-stale"
+      },
+      {
+        "confidence": "low",
+        "evidence": "Matched version/platform token: 'v0.1.'",
+        "path": "Docs/Release/RELEASE_NOTES_v0.1.3.md",
+        "why_manual_review": "Token may be historical context or still accurate; not auto-stale"
+      },
+      {
+        "confidence": "low",
+        "evidence": "Matched version/platform token: 'v0.1.'",
+        "path": "Docs/Status/ADOPTION_READINESS.md",
+        "why_manual_review": "Token may be historical context or still accurate; not auto-stale"
+      },
+      {
+        "confidence": "low",
+        "evidence": "Matched version/platform token: 'v0.1.'",
+        "path": "Docs/Status/COMPATIBILITY_HARNESS.md",
+        "why_manual_review": "Token may be historical context or still accurate; not auto-stale"
+      },
+      {
+        "confidence": "low",
+        "evidence": "Matched version/platform token: 'v0.1.'",
+        "path": "Docs/Status/OPEN_SOURCE_READINESS_CHECKLIST.md",
+        "why_manual_review": "Token may be historical context or still accurate; not auto-stale"
+      },
+      {
+        "confidence": "low",
+        "evidence": "Matched version/platform token: 'v0.1.'",
+        "path": "Docs/Status/RELEASE_V0.1.0.md",
+        "why_manual_review": "Token may be historical context or still accurate; not auto-stale"
+      }
+    ],
+    "why_docs_bucket_exceeds_markdown": "Docs bucket = all files under Docs/ (any extension) plus every tracked *.md anywhere. Markdown count is *.md only. Non-Markdown under Docs/ (txt, json, scripts, exports) and double-counting rules explain the gap."
+  },
+  "meta": {
+    "commit": "f9b05b2987ea023a365ed0701774f017b4ab3694",
+    "commit_date": "2026-07-27T14:20:38-07:00",
+    "generated_at_utc": "2026-07-27T21:36:54Z",
+    "generator": "Scripts/generate_repository_metrics.py",
+    "inventory_source": "git ls-files only"
+  },
+  "methodology_limitations": [
+    "Named XCTest methods \u2260 executed cases (parameterization, skips, filters).",
+    "swift test list may undercount when BLAZEDB_TEST_SCOPE=tier0 or .build is cold/stale.",
+    "Documentation inventory classifications are used when the inventory file is present; they are human/agent judgments, not proofs of obsolescence.",
+    "Old regression/compatibility tests are never auto-labeled obsolete.",
+    "Curated subsystem list is architectural narrative, not a derived metric.",
+    "Unreferenced-fixture detection is basename heuristic only."
+  ],
+  "size": {
+    "archive_docs_files": 143,
+    "archive_docs_lines": 64509,
+    "blazedb_engine_files": 282,
+    "blazedb_engine_lines": 66441,
+    "by_extension": [
+      {
+        "extension": "swift",
+        "files": 1119,
+        "lines": 333090
+      },
+      {
+        "extension": "md",
+        "files": 546,
+        "lines": 167482
+      },
+      {
+        "extension": "sh",
+        "files": 61,
+        "lines": 4474
+      },
+      {
+        "extension": "py",
+        "files": 19,
+        "lines": 4390
+      },
+      {
+        "extension": "json",
+        "files": 17,
+        "lines": 1870
+      },
+      {
+        "extension": "kt",
+        "files": 14,
+        "lines": 549
+      },
+      {
+        "extension": "yml",
+        "files": 11,
+        "lines": 1804
+      },
+      {
+        "extension": "xctestplan",
+        "files": 9,
+        "lines": 425
+      },
+      {
+        "extension": "(none)",
+        "files": 7,
+        "lines": 325
+      },
+      {
+        "extension": "txt",
+        "files": 6,
+        "lines": 29670
+      },
+      {
+        "extension": "kts",
+        "files": 4,
+        "lines": 317
+      },
+      {
+        "extension": "xcscheme",
+        "files": 4,
+        "lines": 434
+      },
+      {
+        "extension": "pbxproj",
+        "files": 3,
+        "lines": 1625
+      },
+      {
+        "extension": "resolved",
+        "files": 3,
+        "lines": 90
+      },
+      {
+        "extension": "svg",
+        "files": 3,
+        "lines": 384
+      },
+      {
+        "extension": "xcworkspacedata",
+        "files": 3,
+        "lines": 21
+      },
+      {
+        "extension": "blazedump",
+        "files": 2,
+        "lines": 2
+      },
+      {
+        "extension": "c",
+        "files": 2,
+        "lines": 333
+      },
+      {
+        "extension": "entitlements",
+        "files": 2,
+        "lines": 50
+      },
+      {
+        "extension": "h",
+        "files": 2,
+        "lines": 143
+      },
+      {
+        "extension": "properties",
+        "files": 2,
+        "lines": 10
+      },
+      {
+        "extension": "bat",
+        "files": 1,
+        "lines": 92
+      },
+      {
+        "extension": "def",
+        "files": 1,
+        "lines": 7
+      },
+      {
+        "extension": "gitignore",
+        "files": 1,
+        "lines": 61
+      },
+      {
+        "extension": "html",
+        "files": 1,
+        "lines": 272
+      },
+      {
+        "extension": "mdc",
+        "files": 1,
+        "lines": 23
+      },
+      {
+        "extension": "podspec",
+        "files": 1,
+        "lines": 22
+      },
+      {
+        "extension": "rb",
+        "files": 1,
+        "lines": 19
+      },
+      {
+        "extension": "xml",
+        "files": 1,
+        "lines": 17
+      },
+      {
+        "extension": "zsh",
+        "files": 1,
+        "lines": 81
+      }
+    ],
+    "docs_bucket_files": 568,
+    "docs_bucket_lines": 199654,
+    "docs_prefix_files": 529,
+    "docs_prefix_lines": 195860,
+    "markdown_files": 546,
+    "markdown_lines": 167482,
+    "package_products": 7,
+    "package_targets": 28,
+    "precision": "exact",
+    "source_files": 459,
+    "source_lines": 100928,
+    "swift_files": 1119,
+    "swift_lines": 333090,
+    "test_files": 681,
+    "test_lines": 229325,
+    "test_to_source_line_ratio": 2.27,
+    "tests_prefix_files": 241,
+    "tests_prefix_lines": 86498,
+    "top_dirs_by_files": [
+      {
+        "directory": "Tests/BlazeDBTests",
+        "files": 200,
+        "lines": 72452
+      },
+      {
+        "directory": "Docs/Archive",
+        "files": 143,
+        "lines": 64509
+      },
+      {
+        "directory": "BlazeDBTests/Tier1Core",
+        "files": 93,
+        "lines": 21276
+      },
+      {
+        "directory": "BlazeDB/Core",
+        "files": 57,
+        "lines": 14218
+      },
+      {
+        "directory": "BlazeDB/Exports",
+        "files": 46,
+        "lines": 10507
+      },
+      {
+        "directory": "BlazeDBVisualizer/BlazeDBVisualizer",
+        "files": 45,
+        "lines": 13371
+      },
+      {
+        "directory": "BlazeDB/Query",
+        "files": 42,
+        "lines": 10247
+      },
+      {
+        "directory": "BlazeDBTests/Tier1Extended",
+        "files": 42,
+        "lines": 18848
+      },
+      {
+        "directory": "Docs/Status",
+        "files": 42,
+        "lines": 5827
+      },
+      {
+        "directory": "BlazeDBTests/Tier2Integration",
+        "files": 37,
+        "lines": 15082
+      },
+      {
+        "directory": "BlazeDB/Storage",
+        "files": 32,
+        "lines": 11411
+      },
+      {
+        "directory": "BlazeDBTests/Tier0Core",
+        "files": 30,
+        "lines": 6255
+      },
+      {
+        "directory": "BlazeDB/Distributed",
+        "files": 29,
+        "lines": 6611
+      },
+      {
+        "directory": "Docs/Audit",
+        "files": 29,
+        "lines": 12167
+      },
+      {
+        "directory": "Docs/Benchmarks",
+        "files": 29,
+        "lines": 2577
+      },
+      {
+        "directory": "Examples/android",
+        "files": 29,
+        "lines": 1645
+      },
+      {
+        "directory": "Tests/BlazeDBIntegrationTests",
+        "files": 29,
+        "lines": 12222
+      },
+      {
+        "directory": "BlazeStudio/BlazeStudio",
+        "files": 28,
+        "lines": 1221
+      },
+      {
+        "directory": "Docs/Testing",
+        "files": 25,
+        "lines": 8189
+      },
+      {
+        "directory": "BlazeDBTests/Core",
+        "files": 24,
+        "lines": 5274
+      }
+    ],
+    "top_dirs_by_lines": [
+      {
+        "directory": "Tests/BlazeDBTests",
+        "files": 200,
+        "lines": 72452
+      },
+      {
+        "directory": "Docs/Archive",
+        "files": 143,
+        "lines": 64509
+      },
+      {
+        "directory": "Docs/Product",
+        "files": 11,
+        "lines": 31036
+      },
+      {
+        "directory": "BlazeDBTests/Tier1Core",
+        "files": 93,
+        "lines": 21276
+      },
+      {
+        "directory": "BlazeDBTests/Tier1Extended",
+        "files": 42,
+        "lines": 18848
+      },
+      {
+        "directory": "BlazeDBTests/Tier2Integration",
+        "files": 37,
+        "lines": 15082
+      },
+      {
+        "directory": "BlazeDB/Core",
+        "files": 57,
+        "lines": 14218
+      },
+      {
+        "directory": "BlazeDBVisualizer/BlazeDBVisualizer",
+        "files": 45,
+        "lines": 13371
+      },
+      {
+        "directory": "Tests/BlazeDBIntegrationTests",
+        "files": 29,
+        "lines": 12222
+      },
+      {
+        "directory": "Docs/Audit",
+        "files": 29,
+        "lines": 12167
+      },
+      {
+        "directory": "BlazeDB/Storage",
+        "files": 32,
+        "lines": 11411
+      },
+      {
+        "directory": "BlazeDB/Exports",
+        "files": 46,
+        "lines": 10507
+      },
+      {
+        "directory": "BlazeDB/Query",
+        "files": 42,
+        "lines": 10247
+      },
+      {
+        "directory": "Docs/Architecture",
+        "files": 24,
+        "lines": 8344
+      },
+      {
+        "directory": "Docs/Testing",
+        "files": 25,
+        "lines": 8189
+      },
+      {
+        "directory": "BlazeDBTests/Tier1Perf",
+        "files": 18,
+        "lines": 7979
+      },
+      {
+        "directory": "Docs/Security",
+        "files": 16,
+        "lines": 7950
+      },
+      {
+        "directory": "Docs/Performance",
+        "files": 20,
+        "lines": 6705
+      },
+      {
+        "directory": "BlazeDB/Distributed",
+        "files": 29,
+        "lines": 6611
+      },
+      {
+        "directory": "BlazeDBTests/Tier0Core",
+        "files": 30,
+        "lines": 6255
+      }
+    ],
+    "tracked_paths": 1858,
+    "tracked_text_files": 1848,
+    "tracked_text_lines": 548082
+  },
+  "swift_declarations": {
+    "class": 894,
+    "enum": 221,
+    "note": "Line-anchored regex over tracked *.swift; nested/extension forms may skew counts.",
+    "precision": "approximate",
+    "protocol": 17,
+    "struct": 605
+  },
+  "tests": {
+    "byte_identical_duplicate_groups": [
+      {
+        "paths": [
+          "BlazeDBIntegrationTests/ChaosEngineeringTests.swift",
+          "BlazeDBTests/Tier2Integration/BlazeDBIntegrationTests/ChaosEngineeringTests.swift"
+        ],
+        "sha256": "fc1792c005cbc2ec51b57486c89c2975b4972aa9e8aa9a2b38ef30ecfba76885"
+      },
+      {
+        "paths": [
+          "BlazeDBTests/Core/ImportExportTests.swift",
+          "BlazeDBTests/Gate/ImportExportTests.swift"
+        ],
+        "sha256": "e92efaa31f78320fdb766edb913c56978289925a7cc1c4c5142f45fa27cf449a"
+      },
+      {
+        "paths": [
+          "BlazeDBTests/Core/LifecycleTests.swift",
+          "BlazeDBTests/Gate/LifecycleTests.swift"
+        ],
+        "sha256": "599a4183c1f6a8411b0f406691d4d4d931e3ddfa46aaee9fe3f8bae053a885dc"
+      },
+      {
+        "paths": [
+          "BlazeDBTests/Core/OperationalConfidenceTests.swift",
+          "BlazeDBTests/Gate/OperationalConfidenceTests.swift"
+        ],
+        "sha256": "4065acd0d75f6fafde1b8ea33cbe794e90eb1241eba52d5d92705753543a3971"
+      },
+      {
+        "paths": [
+          "BlazeDBTests/Core/SchemaMigrationTests.swift",
+          "BlazeDBTests/Gate/SchemaMigrationTests.swift"
+        ],
+        "sha256": "cd25c0269e05ccb1558889554a9dd0195183919432a1ee68d3a923e848aa7b76"
+      },
+      {
+        "paths": [
+          "BlazeDBTests/Gate/CLISmokeTests.swift",
+          "BlazeDBTests/Integration/CLISmokeTests.swift"
+        ],
+        "sha256": "29c657328d2801418e07a766cb283a41ebaf642ce25783b5688a193ea08c87de"
+      },
+      {
+        "paths": [
+          "BlazeDBTests/Helpers/TestCleanupHelpers.swift",
+          "BlazeDBTests/Tier3Destructive/Helpers/TestCleanupHelpers.swift",
+          "BlazeDBTests/Tier3Heavy/Helpers/TestCleanupHelpers.swift"
+        ],
+        "sha256": "c694c9625be8bc926469cfdd50f4e7edaec4bd999167f60f0604d688abcec5db"
+      },
+      {
+        "paths": [
+          "BlazeDBTests/Legacy/PageStoreTests.swift",
+          "BlazeDBTests/Tier3Heavy/Legacy/PageStoreTests.swift"
+        ],
+        "sha256": "d6096466b535654ebfd1d93d89ac1c0322cfb8de417bac84da0e23301708353d"
+      },
+      {
+        "paths": [
+          "BlazeDBTests/Tier1Core/Helpers/TypeSafetyTestBug.swift",
+          "BlazeDBTests/Tier2Integration/BlazeDBIntegrationTests/Tier1CoreHelpers/TypeSafetyTestBug.swift"
+        ],
+        "sha256": "ae234b28428d4c804c6441d1d47a41041357061f42838a74abca94e2d9b382a6"
+      },
+      {
+        "paths": [
+          "BlazeDBTests/Tier1Core/Helpers/XCTestCase+FixtureRequire.swift",
+          "BlazeDBTests/Tier2Integration/BlazeDBIntegrationTests/Tier1CoreHelpers/XCTestCase+FixtureRequire.swift",
+          "BlazeDBTests/Tier3Heavy/XCTestCase+FixtureRequire.swift"
+        ],
+        "sha256": "132a152378f06d48cdec0a007655d9688adab3fee0b2b3a27944665b2c7c073f"
+      },
+      {
+        "paths": [
+          "BlazeDBVisualizerTests/AdvancedFeaturesIntegrationTests.swift",
+          "Tests/BlazeDBVisualizerTests/AdvancedFeaturesIntegrationTests.swift"
+        ],
+        "sha256": "cb0b7079d35553d0b47e21f2c5e5d75cd6853b91185b532104ba3da700a338e8"
+      },
+      {
+        "paths": [
+          "BlazeDBVisualizerTests/FullTextSearchTests.swift",
+          "Tests/BlazeDBVisualizerTests/FullTextSearchTests.swift"
+        ],
+        "sha256": "43be17f15eca25f7e517d96855649b9a68a76cee3912dae29197dfea76235321"
+      },
+      {
+        "paths": [
+          "BlazeDBVisualizerTests/PermissionTesterTests.swift",
+          "Tests/BlazeDBVisualizerTests/PermissionTesterTests.swift"
+        ],
+        "sha256": "b6c5c7f1daed70c5ef334bce7c1fd2a7c0b409fc8cf92147b0edb7caa7a78d8d"
+      },
+      {
+        "paths": [
+          "BlazeDBVisualizerTests/QueryPerformanceTests.swift",
+          "Tests/BlazeDBVisualizerTests/QueryPerformanceTests.swift"
+        ],
+        "sha256": "feadf0beaa7ec2b0b8181fb335db2bdcf72e745693e148a9332bdccb3d2482c9"
+      },
+      {
+        "paths": [
+          "BlazeDBVisualizerTests/RelationshipVisualizerTests.swift",
+          "Tests/BlazeDBVisualizerTests/RelationshipVisualizerTests.swift"
+        ],
+        "sha256": "a14cbae6b36c61d89cba681c99abca5f6d70ffbee8c0d1b6ede7b5a9b4a73e27"
+      },
+      {
+        "paths": [
+          "BlazeDBVisualizerTests/TelemetryDashboardTests.swift",
+          "Tests/BlazeDBVisualizerTests/TelemetryDashboardTests.swift"
+        ],
+        "sha256": "3759bafde954d8530bc66c3d32b6d0f90f847756e3b32d952f3768f2ab614f9d"
+      }
+    ],
+    "files_with_at_least_one_test_declaration": 643,
+    "files_with_os_conditional": [
+      "BlazeDBCLITests/BlazeCLICoreTests.swift",
+      "BlazeDBIntegrationTests/TelemetryIntegrationTests.swift",
+      "BlazeDBTests/Tier0Core/CoreCorrectness/PathResolverDefaultLocationTests.swift",
+      "BlazeDBTests/Tier0Core/LinuxXCTestMetricShim.swift",
+      "BlazeDBTests/Tier1Core/Core/BlazeDBMemoryTests.swift",
+      "BlazeDBTests/Tier1Core/Helpers/LinuxTier1NonCryptoKDFHarness.swift",
+      "BlazeDBTests/Tier1Core/Indexes/BlazeIndexStressTests.swift",
+      "BlazeDBTests/Tier1Core/Integration/ConvenienceAPITests.swift",
+      "BlazeDBTests/Tier1Core/Persistence/OverflowChainCrashAtomicityTests.swift",
+      "BlazeDBTests/Tier1Core/Query/DXBugDiagnosticTests.swift",
+      "BlazeDBTests/Tier1Core/Query/QueryBuilderEdgeCaseTests.swift",
+      "BlazeDBTests/Tier1Extended/DataTypes/TypeSafetyTests.swift",
+      "BlazeDBTests/Tier1Perf/LinuxXCTestMetricShim.swift",
+      "BlazeDBTests/Tier1Perf/Utilities/TelemetryUnitTests.swift",
+      "BlazeDBTests/Tier2Integration/BlazeDBIntegrationTests/DataSeedingTests.swift",
+      "BlazeDBTests/Tier2Integration/BlazeDBIntegrationTests/FailureRecoveryScenarios.swift",
+      "BlazeDBTests/Tier2Integration/BlazeDBIntegrationTests/Integration/CodableIntegrationTests.swift",
+      "BlazeDBTests/Tier2Integration/BlazeDBIntegrationTests/MultiDatabasePatterns.swift",
+      "BlazeDBTests/Tier2Integration/BlazeDBIntegrationTests/TelemetryIntegrationTests.swift",
+      "BlazeDBTests/Tier2Integration/BlazeDBIntegrationTests/UserWorkflowScenarios.swift",
+      "BlazeDBTests/Tier3Heavy/Performance/BaselinePerformanceTests.swift",
+      "BlazeDBTests/Tier3Heavy/Performance/BlazeDBPerformanceTests.swift",
+      "BlazeDBTests/Tier3Heavy/Performance/PerformanceInvariantTests.swift",
+      "BlazeDBTests/Tier3Heavy/Performance/PerformanceOptimizationTests.swift",
+      "BlazeDBTests/Tier3Heavy/Performance/PerformanceProfilingTests.swift",
+      "BlazeDBTests/Utilities/TelemetryUnitTests.swift",
+      "Tests/BlazeDBIntegrationTests/TelemetryIntegrationTests.swift",
+      "Tests/BlazeDBTests/Utilities/TelemetryUnitTests.swift"
+    ],
+    "files_with_xctskip": [
+      "BlazeDBCLITests/BlazeCLICoreTests.swift",
+      "BlazeDBTests/Tier0Core/CoreCorrectness/CoreCorrectnessTests.swift",
+      "BlazeDBTests/Tier0Core/CoreCorrectness/PathResolverDefaultLocationTests.swift",
+      "BlazeDBTests/Tier0Core/Durability/BlazeDBRecoveryTests.swift",
+      "BlazeDBTests/Tier0Core/Durability/PageStoreUnifiedWALTests.swift",
+      "BlazeDBTests/Tier0Core/Durability/TransactionDurabilityTests.swift",
+      "BlazeDBTests/Tier0Core/Gate/CLISmokeTests.swift",
+      "BlazeDBTests/Tier1Core/API/TriggerPersistenceAPITests.swift",
+      "BlazeDBTests/Tier1Core/Integration/CLISmokeTests.swift",
+      "BlazeDBTests/Tier1Core/Integration/ConvenienceAPITests.swift",
+      "BlazeDBTests/Tier1Extended/Concurrency/BatchOperationTests.swift",
+      "BlazeDBTests/Tier1Extended/Indexes/FullTextSearchTests.swift",
+      "BlazeDBTests/Tier1Extended/Indexes/OptimizedSearchTests.swift",
+      "BlazeDBTests/Tier1Perf/Indexes/SearchPerformanceBenchmarks.swift",
+      "BlazeDBTests/Tier2Integration/BlazeDBIntegrationTests/CrossVersionExportRestoreHarnessTests.swift",
+      "BlazeDBTests/Tier3Heavy/Performance/PerformanceInvariantTests.swift",
+      "BlazeDBTests/Tier3Heavy/Performance/PerformanceOptimizationTests.swift",
+      "BlazeDBTests/Transactions/TransactionDurabilityTests.swift",
+      "BlazeDBTests_SPM/DistributedSecurity/DistributedSecurityTests.swift",
+      "Tests/BlazeDBTests/Concurrency/ConcurrencyStressTests.swift",
+      "Tests/BlazeDBTests/Performance/PerformanceBenchmarks.swift",
+      "Tests/BlazeDBTests/Stress/StressTests.swift",
+      "Tests/BlazeDBTests/Transactions/TransactionDurabilityTests.swift"
+    ],
+    "helper_or_fixture_swift_files_without_test_decl": 25,
+    "helper_sample": [
+      "BlazeDBExtraTests/Package.swift",
+      "BlazeDBIntegrationTests/TestHelpers.swift",
+      "BlazeDBTests/Helpers/TestCleanupHelpers.swift",
+      "BlazeDBTests/Helpers/TestHelpers.swift",
+      "BlazeDBTests/Tier0Core/LinuxXCTestMetricShim.swift",
+      "BlazeDBTests/Tier1Core/Helpers/LinuxTier1NonCryptoKDFHarness.swift",
+      "BlazeDBTests/Tier1Core/Helpers/TestCleanupHelpers.swift",
+      "BlazeDBTests/Tier1Core/Helpers/TestHelpers.swift",
+      "BlazeDBTests/Tier1Core/Helpers/TypeSafetyTestBug.swift",
+      "BlazeDBTests/Tier1Core/Helpers/XCTestCase+FixtureRequire.swift",
+      "BlazeDBTests/Tier1Perf/LinuxXCTestMetricShim.swift",
+      "BlazeDBTests/Tier2Integration/BlazeDBIntegrationTests/TestHelpers.swift",
+      "BlazeDBTests/Tier2Integration/BlazeDBIntegrationTests/Tier1CoreHelpers/TypeSafetyTestBug.swift",
+      "BlazeDBTests/Tier2Integration/BlazeDBIntegrationTests/Tier1CoreHelpers/XCTestCase+FixtureRequire.swift",
+      "BlazeDBTests/Tier3Destructive/Helpers/TestCleanupHelpers.swift",
+      "BlazeDBTests/Tier3Heavy/Helpers/TestCleanupHelpers.swift",
+      "BlazeDBTests/Tier3Heavy/XCTestCase+FixtureRequire.swift",
+      "Tests/BlazeDBIntegrationTests/TestHelpers.swift",
+      "Tests/BlazeDBTests/Fixtures/FixtureLoader.swift",
+      "Tests/BlazeDBTests/Helpers/CodecValidation.swift",
+      "Tests/BlazeDBTests/Helpers/TestCleanupHelpers.swift",
+      "Tests/BlazeDBTests/Helpers/TestHelpers.swift",
+      "Tests/BlazeDBTests/Overflow/OverflowPageDestructiveTests+Helpers.swift",
+      "Tests/CrashRecoveryHarness/CrashHarness.swift",
+      "Tests/CrashRecoveryHarness/Package.swift"
+    ],
+    "orphan_on_disk_sample": [
+      "BlazeDBExtraTests/Package.swift",
+      "BlazeDBIntegrationTests/AdvancedConcurrencyScenarios.swift",
+      "BlazeDBIntegrationTests/AshPileRealWorldTests.swift",
+      "BlazeDBIntegrationTests/BlazeBinaryIntegrationTests.swift",
+      "BlazeDBIntegrationTests/BugTrackerCompleteWorkflow.swift",
+      "BlazeDBIntegrationTests/ChaosEngineeringTests.swift",
+      "BlazeDBIntegrationTests/ContractAPIStabilityTests.swift",
+      "BlazeDBIntegrationTests/DataConsistencyACIDTests.swift",
+      "BlazeDBIntegrationTests/DistributedGCIntegrationTests.swift",
+      "BlazeDBIntegrationTests/DistributedGCRobustnessTests.swift",
+      "BlazeDBIntegrationTests/DistributedGCStressTests.swift",
+      "BlazeDBIntegrationTests/ExtremeIntegrationTests.swift",
+      "BlazeDBIntegrationTests/FailureRecoveryScenarios.swift",
+      "BlazeDBIntegrationTests/FeatureCombinationTests.swift",
+      "BlazeDBIntegrationTests/GarbageCollectionIntegrationTests.swift",
+      "BlazeDBIntegrationTests/MigrationVersioningTests.swift",
+      "BlazeDBIntegrationTests/MixedVersionSyncTests.swift",
+      "BlazeDBIntegrationTests/MultiDatabasePatterns.swift",
+      "BlazeDBIntegrationTests/RLSEncryptionGCIntegrationTests.swift",
+      "BlazeDBIntegrationTests/RLSIntegrationTests.swift",
+      "BlazeDBIntegrationTests/RLSNegativeTests.swift",
+      "BlazeDBIntegrationTests/SchemaForeignKeyIntegrationTests.swift",
+      "BlazeDBIntegrationTests/SecurityEncryptionTests.swift",
+      "BlazeDBIntegrationTests/SoakStressTests.swift",
+      "BlazeDBIntegrationTests/TelemetryIntegrationTests.swift",
+      "BlazeDBIntegrationTests/TestHelpers.swift",
+      "BlazeDBIntegrationTests/UserWorkflowScenarios.swift",
+      "BlazeDBTests/Aggregation/AggregationTests.swift",
+      "BlazeDBTests/Aggregation/DistinctEdgeCaseTests.swift",
+      "BlazeDBTests/Backup/BlazeDBBackupTests.swift"
+    ],
+    "orphan_on_disk_test_swift_files": 421,
+    "precision_notes": {
+      "lane_mapping": "exact \u2014 curated from CI docs/workflows; update when CI changes",
+      "runner_discovered_tests": "approximate",
+      "swift_testing_at_test": "approximate \u2014 declaration count",
+      "xctest_func_test_declarations": "approximate \u2014 source pattern; not equal to executed cases"
+    },
+    "quarantine_or_flaky_mention_files": 3,
+    "review_candidates": [
+      {
+        "confidence": "high",
+        "evidence": "Package.swift test target BlazeDB_SwiftUITests has empty lane list in static CI mapping",
+        "kind": "orphan_test_target",
+        "path": "BlazeDBTests/SwiftUI",
+        "why_manual_review": "May be intentional local-only surface; confirm before removing"
+      },
+      {
+        "confidence": "high",
+        "evidence": "Package.swift test target BlazeDB_Staging has empty lane list in static CI mapping",
+        "kind": "orphan_test_target",
+        "path": "BlazeDBTests/Staging",
+        "why_manual_review": "May be intentional local-only surface; confirm before removing"
+      },
+      {
+        "confidence": "high",
+        "evidence": "SHA256-identical to 2 paths: BlazeDBIntegrationTests/ChaosEngineeringTests.swift, BlazeDBTests/Tier2Integration/BlazeDBIntegrationTests/ChaosEngineeringTests.swift",
+        "kind": "duplicate_test_file",
+        "path": "BlazeDBIntegrationTests/ChaosEngineeringTests.swift",
+        "why_manual_review": "Confirm which copy is canonical before deleting"
+      },
+      {
+        "confidence": "high",
+        "evidence": "SHA256-identical to 2 paths: BlazeDBTests/Core/ImportExportTests.swift, BlazeDBTests/Gate/ImportExportTests.swift",
+        "kind": "duplicate_test_file",
+        "path": "BlazeDBTests/Core/ImportExportTests.swift",
+        "why_manual_review": "Confirm which copy is canonical before deleting"
+      },
+      {
+        "confidence": "high",
+        "evidence": "SHA256-identical to 2 paths: BlazeDBTests/Core/LifecycleTests.swift, BlazeDBTests/Gate/LifecycleTests.swift",
+        "kind": "duplicate_test_file",
+        "path": "BlazeDBTests/Core/LifecycleTests.swift",
+        "why_manual_review": "Confirm which copy is canonical before deleting"
+      },
+      {
+        "confidence": "high",
+        "evidence": "SHA256-identical to 2 paths: BlazeDBTests/Core/OperationalConfidenceTests.swift, BlazeDBTests/Gate/OperationalConfidenceTests.swift",
+        "kind": "duplicate_test_file",
+        "path": "BlazeDBTests/Core/OperationalConfidenceTests.swift",
+        "why_manual_review": "Confirm which copy is canonical before deleting"
+      },
+      {
+        "confidence": "high",
+        "evidence": "SHA256-identical to 2 paths: BlazeDBTests/Core/SchemaMigrationTests.swift, BlazeDBTests/Gate/SchemaMigrationTests.swift",
+        "kind": "duplicate_test_file",
+        "path": "BlazeDBTests/Core/SchemaMigrationTests.swift",
+        "why_manual_review": "Confirm which copy is canonical before deleting"
+      },
+      {
+        "confidence": "high",
+        "evidence": "SHA256-identical to 2 paths: BlazeDBTests/Gate/CLISmokeTests.swift, BlazeDBTests/Integration/CLISmokeTests.swift",
+        "kind": "duplicate_test_file",
+        "path": "BlazeDBTests/Gate/CLISmokeTests.swift",
+        "why_manual_review": "Confirm which copy is canonical before deleting"
+      },
+      {
+        "confidence": "high",
+        "evidence": "SHA256-identical to 3 paths: BlazeDBTests/Helpers/TestCleanupHelpers.swift, BlazeDBTests/Tier3Destructive/Helpers/TestCleanupHelpers.swift, BlazeDBTests/Tier3Heavy/Helpers/TestCleanupHelpers.swift",
+        "kind": "duplicate_test_file",
+        "path": "BlazeDBTests/Helpers/TestCleanupHelpers.swift",
+        "why_manual_review": "Confirm which copy is canonical before deleting"
+      },
+      {
+        "confidence": "high",
+        "evidence": "SHA256-identical to 2 paths: BlazeDBTests/Legacy/PageStoreTests.swift, BlazeDBTests/Tier3Heavy/Legacy/PageStoreTests.swift",
+        "kind": "duplicate_test_file",
+        "path": "BlazeDBTests/Legacy/PageStoreTests.swift",
+        "why_manual_review": "Confirm which copy is canonical before deleting"
+      },
+      {
+        "confidence": "high",
+        "evidence": "SHA256-identical to 2 paths: BlazeDBTests/Tier1Core/Helpers/TypeSafetyTestBug.swift, BlazeDBTests/Tier2Integration/BlazeDBIntegrationTests/Tier1CoreHelpers/TypeSafetyTestBug.swift",
+        "kind": "duplicate_test_file",
+        "path": "BlazeDBTests/Tier1Core/Helpers/TypeSafetyTestBug.swift",
+        "why_manual_review": "Confirm which copy is canonical before deleting"
+      },
+      {
+        "confidence": "high",
+        "evidence": "SHA256-identical to 3 paths: BlazeDBTests/Tier1Core/Helpers/XCTestCase+FixtureRequire.swift, BlazeDBTests/Tier2Integration/BlazeDBIntegrationTests/Tier1CoreHelpers/XCTestCase+FixtureRequire.swift, BlazeDBTests/Tier3Heavy/XCTestCase+FixtureRequire.swift",
+        "kind": "duplicate_test_file",
+        "path": "BlazeDBTests/Tier1Core/Helpers/XCTestCase+FixtureRequire.swift",
+        "why_manual_review": "Confirm which copy is canonical before deleting"
+      },
+      {
+        "confidence": "high",
+        "evidence": "SHA256-identical to 2 paths: BlazeDBVisualizerTests/AdvancedFeaturesIntegrationTests.swift, Tests/BlazeDBVisualizerTests/AdvancedFeaturesIntegrationTests.swift",
+        "kind": "duplicate_test_file",
+        "path": "BlazeDBVisualizerTests/AdvancedFeaturesIntegrationTests.swift",
+        "why_manual_review": "Confirm which copy is canonical before deleting"
+      },
+      {
+        "confidence": "high",
+        "evidence": "SHA256-identical to 2 paths: BlazeDBVisualizerTests/FullTextSearchTests.swift, Tests/BlazeDBVisualizerTests/FullTextSearchTests.swift",
+        "kind": "duplicate_test_file",
+        "path": "BlazeDBVisualizerTests/FullTextSearchTests.swift",
+        "why_manual_review": "Confirm which copy is canonical before deleting"
+      },
+      {
+        "confidence": "high",
+        "evidence": "SHA256-identical to 2 paths: BlazeDBVisualizerTests/PermissionTesterTests.swift, Tests/BlazeDBVisualizerTests/PermissionTesterTests.swift",
+        "kind": "duplicate_test_file",
+        "path": "BlazeDBVisualizerTests/PermissionTesterTests.swift",
+        "why_manual_review": "Confirm which copy is canonical before deleting"
+      },
+      {
+        "confidence": "high",
+        "evidence": "SHA256-identical to 2 paths: BlazeDBVisualizerTests/QueryPerformanceTests.swift, Tests/BlazeDBVisualizerTests/QueryPerformanceTests.swift",
+        "kind": "duplicate_test_file",
+        "path": "BlazeDBVisualizerTests/QueryPerformanceTests.swift",
+        "why_manual_review": "Confirm which copy is canonical before deleting"
+      },
+      {
+        "confidence": "high",
+        "evidence": "SHA256-identical to 2 paths: BlazeDBVisualizerTests/RelationshipVisualizerTests.swift, Tests/BlazeDBVisualizerTests/RelationshipVisualizerTests.swift",
+        "kind": "duplicate_test_file",
+        "path": "BlazeDBVisualizerTests/RelationshipVisualizerTests.swift",
+        "why_manual_review": "Confirm which copy is canonical before deleting"
+      },
+      {
+        "confidence": "high",
+        "evidence": "SHA256-identical to 2 paths: BlazeDBVisualizerTests/TelemetryDashboardTests.swift, Tests/BlazeDBVisualizerTests/TelemetryDashboardTests.swift",
+        "kind": "duplicate_test_file",
+        "path": "BlazeDBVisualizerTests/TelemetryDashboardTests.swift",
+        "why_manual_review": "Confirm which copy is canonical before deleting"
+      },
+      {
+        "confidence": "medium",
+        "evidence": "File contains XCTSkip / throw XCTSkip",
+        "kind": "contains_XCTSkip",
+        "path": "BlazeDBCLITests/BlazeCLICoreTests.swift",
+        "why_manual_review": "Skipped paths may be platform-conditional or permanently disabled"
+      },
+      {
+        "confidence": "medium",
+        "evidence": "File contains XCTSkip / throw XCTSkip",
+        "kind": "contains_XCTSkip",
+        "path": "BlazeDBTests/Tier0Core/CoreCorrectness/CoreCorrectnessTests.swift",
+        "why_manual_review": "Skipped paths may be platform-conditional or permanently disabled"
+      },
+      {
+        "confidence": "medium",
+        "evidence": "File contains XCTSkip / throw XCTSkip",
+        "kind": "contains_XCTSkip",
+        "path": "BlazeDBTests/Tier0Core/CoreCorrectness/PathResolverDefaultLocationTests.swift",
+        "why_manual_review": "Skipped paths may be platform-conditional or permanently disabled"
+      },
+      {
+        "confidence": "medium",
+        "evidence": "File contains XCTSkip / throw XCTSkip",
+        "kind": "contains_XCTSkip",
+        "path": "BlazeDBTests/Tier0Core/Durability/BlazeDBRecoveryTests.swift",
+        "why_manual_review": "Skipped paths may be platform-conditional or permanently disabled"
+      },
+      {
+        "confidence": "medium",
+        "evidence": "File contains XCTSkip / throw XCTSkip",
+        "kind": "contains_XCTSkip",
+        "path": "BlazeDBTests/Tier0Core/Durability/PageStoreUnifiedWALTests.swift",
+        "why_manual_review": "Skipped paths may be platform-conditional or permanently disabled"
+      },
+      {
+        "confidence": "medium",
+        "evidence": "File contains XCTSkip / throw XCTSkip",
+        "kind": "contains_XCTSkip",
+        "path": "BlazeDBTests/Tier0Core/Durability/TransactionDurabilityTests.swift",
+        "why_manual_review": "Skipped paths may be platform-conditional or permanently disabled"
+      },
+      {
+        "confidence": "medium",
+        "evidence": "File contains XCTSkip / throw XCTSkip",
+        "kind": "contains_XCTSkip",
+        "path": "BlazeDBTests/Tier0Core/Gate/CLISmokeTests.swift",
+        "why_manual_review": "Skipped paths may be platform-conditional or permanently disabled"
+      },
+      {
+        "confidence": "medium",
+        "evidence": "File contains XCTSkip / throw XCTSkip",
+        "kind": "contains_XCTSkip",
+        "path": "BlazeDBTests/Tier1Core/API/TriggerPersistenceAPITests.swift",
+        "why_manual_review": "Skipped paths may be platform-conditional or permanently disabled"
+      },
+      {
+        "confidence": "medium",
+        "evidence": "File contains XCTSkip / throw XCTSkip",
+        "kind": "contains_XCTSkip",
+        "path": "BlazeDBTests/Tier1Core/Integration/CLISmokeTests.swift",
+        "why_manual_review": "Skipped paths may be platform-conditional or permanently disabled"
+      },
+      {
+        "confidence": "medium",
+        "evidence": "File contains XCTSkip / throw XCTSkip",
+        "kind": "contains_XCTSkip",
+        "path": "BlazeDBTests/Tier1Core/Integration/ConvenienceAPITests.swift",
+        "why_manual_review": "Skipped paths may be platform-conditional or permanently disabled"
+      },
+      {
+        "confidence": "medium",
+        "evidence": "File contains XCTSkip / throw XCTSkip",
+        "kind": "contains_XCTSkip",
+        "path": "BlazeDBTests/Tier1Extended/Concurrency/BatchOperationTests.swift",
+        "why_manual_review": "Skipped paths may be platform-conditional or permanently disabled"
+      },
+      {
+        "confidence": "medium",
+        "evidence": "File contains XCTSkip / throw XCTSkip",
+        "kind": "contains_XCTSkip",
+        "path": "BlazeDBTests/Tier1Extended/Indexes/FullTextSearchTests.swift",
+        "why_manual_review": "Skipped paths may be platform-conditional or permanently disabled"
+      },
+      {
+        "confidence": "medium",
+        "evidence": "File contains XCTSkip / throw XCTSkip",
+        "kind": "contains_XCTSkip",
+        "path": "BlazeDBTests/Tier1Extended/Indexes/OptimizedSearchTests.swift",
+        "why_manual_review": "Skipped paths may be platform-conditional or permanently disabled"
+      },
+      {
+        "confidence": "medium",
+        "evidence": "File contains XCTSkip / throw XCTSkip",
+        "kind": "contains_XCTSkip",
+        "path": "BlazeDBTests/Tier1Perf/Indexes/SearchPerformanceBenchmarks.swift",
+        "why_manual_review": "Skipped paths may be platform-conditional or permanently disabled"
+      },
+      {
+        "confidence": "medium",
+        "evidence": "File contains XCTSkip / throw XCTSkip",
+        "kind": "contains_XCTSkip",
+        "path": "BlazeDBTests/Tier2Integration/BlazeDBIntegrationTests/CrossVersionExportRestoreHarnessTests.swift",
+        "why_manual_review": "Skipped paths may be platform-conditional or permanently disabled"
+      }
+    ],
+    "runner_discovery": {
+      "by_target": {
+        "BlazeDB_CLITests": 65,
+        "BlazeDB_Staging": 2,
+        "BlazeDB_Tier0": 217
+      },
+      "discovered_count": 284,
+      "note": "swift test list --skip-build; may undercount if package was last evaluated with BLAZEDB_TEST_SCOPE=tier0 or stale build graph",
+      "precision": "approximate",
+      "status": "ok"
+    },
+    "spm_targets": [
+      {
+        "exercised_by_normal_lane": true,
+        "lane_count": 4,
+        "lanes": [
+          "pr_macos",
+          "pr_linux",
+          "nightly_macos_tsan",
+          "release_macos"
+        ],
+        "note": null,
+        "path": "BlazeDBTests/Tier0Core",
+        "target": "BlazeDB_Tier0"
+      },
+      {
+        "exercised_by_normal_lane": true,
+        "lane_count": 3,
+        "lanes": [
+          "pr_macos",
+          "pr_linux",
+          "release_macos"
+        ],
+        "note": null,
+        "path": "BlazeDBCLITests",
+        "target": "BlazeDB_CLITests"
+      },
+      {
+        "exercised_by_normal_lane": true,
+        "lane_count": 3,
+        "lanes": [
+          "pr_macos",
+          "nightly_linux",
+          "release_macos"
+        ],
+        "note": null,
+        "path": "BlazeDBTests/Tier1Core",
+        "target": "BlazeDB_Tier1"
+      },
+      {
+        "exercised_by_normal_lane": false,
+        "lane_count": 0,
+        "lanes": [],
+        "note": "Declared in Package.swift; not filtered in ci/nightly/deep/release",
+        "path": "BlazeDBTests/SwiftUI",
+        "target": "BlazeDB_SwiftUITests"
+      },
+      {
+        "exercised_by_normal_lane": true,
+        "lane_count": 3,
+        "lanes": [
+          "nightly_macos",
+          "nightly_linux",
+          "release_macos"
+        ],
+        "note": null,
+        "path": "BlazeDBTests/Tier2Integration/BlazeDBIntegrationTests",
+        "target": "BlazeDB_Tier2"
+      },
+      {
+        "exercised_by_normal_lane": true,
+        "lane_count": 2,
+        "lanes": [
+          "weekly_linux",
+          "release_macos"
+        ],
+        "note": null,
+        "path": "BlazeDBTests/Tier1Extended",
+        "target": "BlazeDB_Tier2_Extended"
+      },
+      {
+        "exercised_by_normal_lane": true,
+        "lane_count": 3,
+        "lanes": [
+          "weekly_macos",
+          "weekly_linux",
+          "release_macos"
+        ],
+        "note": null,
+        "path": "BlazeDBTests/Tier3Heavy",
+        "target": "BlazeDB_Tier3_Heavy"
+      },
+      {
+        "exercised_by_normal_lane": true,
+        "lane_count": 3,
+        "lanes": [
+          "weekly_macos",
+          "weekly_linux",
+          "release_macos"
+        ],
+        "note": null,
+        "path": "BlazeDBTests/Tier1Perf",
+        "target": "BlazeDB_Tier3_Heavy_Perf"
+      },
+      {
+        "exercised_by_normal_lane": true,
+        "lane_count": 1,
+        "lanes": [
+          "weekly_macos"
+        ],
+        "note": "Weekly deep only; not in release.yml; not Linux CI",
+        "path": "BlazeDBTests/Tier3Destructive",
+        "target": "BlazeDB_Tier3_Destructive"
+      },
+      {
+        "exercised_by_normal_lane": false,
+        "lane_count": 0,
+        "lanes": [],
+        "note": "Declared; listed by swift test list; not in CI filters",
+        "path": "BlazeDBTests/Staging",
+        "target": "BlazeDB_Staging"
+      }
+    ],
+    "swift_testing_at_test_declarations": 1,
+    "targets_not_in_any_normal_lane": [
+      "BlazeDB_SwiftUITests",
+      "BlazeDB_Staging"
+    ],
+    "test_tree_swift_files": 668,
+    "unreferenced_fixture_candidates": [],
+    "wired_spm_test_swift_files": 247,
+    "xctest_func_test_declarations": 7165,
+    "xctskip_occurrence_count": 33
+  }
+}

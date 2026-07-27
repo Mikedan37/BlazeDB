@@ -349,7 +349,7 @@ let points = try db.graph(for: userContext) {
 
 ## See Also
 
-- [Graph Query API](API/GRAPH_QUERY_API.md)
-- [Security Documentation](Security/)
+- [Graph Query API](../API/GRAPH_QUERY_API.md)
+- [Security Documentation](../Security/README.md)
 - [Query Builder API](API/QUERY_BUILDER_API.md)
 

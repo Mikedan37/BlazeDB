@@ -235,7 +235,7 @@ The MVCC implementation provides true concurrent access:
 
 ---
 
-For detailed protocol specifications, see [PROTOCOL.md](PROTOCOL.md).
-For transaction details, see [TRANSACTIONS.md](TRANSACTIONS.md).
-For security architecture, see [SECURITY.md](SECURITY.md).
+For detailed protocol specifications, see [PROTOCOL.md](../Design/PROTOCOL.md).
+For transaction details, see [TRANSACTIONS.md](../Features/TRANSACTIONS.md).
+For security architecture, see [SECURITY.md](../Security/SECURITY.md).
 

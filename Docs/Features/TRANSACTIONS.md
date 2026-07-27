@@ -165,6 +165,6 @@ try db.commitTransaction() // record1 committed
 
 ---
 
-For architecture details, see [ARCHITECTURE.md](ARCHITECTURE.md).
-For performance characteristics, see [PERFORMANCE.md](PERFORMANCE.md).
+For architecture details, see [ARCHITECTURE.md](../Architecture/ARCHITECTURE.md).
+For performance characteristics, see [PERFORMANCE.md](../Performance/PERFORMANCE.md).
 

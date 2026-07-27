@@ -221,6 +221,6 @@ Format migrations are automatic:
 
 ---
 
-For architecture details, see [ARCHITECTURE.md](ARCHITECTURE.md).
-For network sync, see [ARCHITECTURE.md](ARCHITECTURE.md#network-layer).
+For architecture details, see [ARCHITECTURE.md](../Architecture/ARCHITECTURE.md).
+For network sync status, see [Distributed Transport Deferred](../Status/DISTRIBUTED_TRANSPORT_DEFERRED.md).
 

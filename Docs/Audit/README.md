@@ -1,6 +1,13 @@
 # Audit Reports
 
-This directory contains all audit reports, code reviews, and safety assessments for BlazeDB.
+This directory contains audit reports, code reviews, and safety assessments for BlazeDB.
+
+**Current (start here):**
+
+- **[POST_AUDIT_FINDINGS_2026_07.md](POST_AUDIT_FINDINGS_2026_07.md)** — latest post-audit engineering findings
+- **[DOCUMENTATION_INVENTORY_2026_07.md](DOCUMENTATION_INVENTORY_2026_07.md)** — documentation inventory and cleanup classification (2026-07)
+
+Older files below are **historical**. They record past hardening work and investigations. They are not current product truth unless a maintained doc explicitly points at them.
 
 ## Safety & Code Audits
 
@@ -47,4 +54,4 @@ This directory contains all audit reports, code reviews, and safety assessments 
 
 ---
 
-**Note:** These audits document the evolution of BlazeDB's safety, security, and code quality. They serve as historical records and references for future improvements.
+**Note:** These audits document the evolution of BlazeDB's safety, security, and code quality. Prefer the **Current** links at the top for ongoing work.

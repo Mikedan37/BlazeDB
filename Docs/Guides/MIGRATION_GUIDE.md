@@ -572,6 +572,6 @@ After migration:
 
 1. Read the [API Reference](../API/API_REFERENCE.md) to learn BlazeDB APIs
 2. Check out [Query Examples](../Examples/QUERY_EXAMPLES.md) for query patterns
-3. Review [Performance Guide](../Performance/PERFORMANCE_GUIDE.md) for optimization tips
-4. Explore [Sync Guide](../Sync/SYNC_GUIDE.md) for distributed sync setup
+3. Review [Performance Guide](../Performance/PERFORMANCE.md) for optimization tips
+4. Explore [Sync docs](../Sync/README.md) (deferred; see also [Distributed Transport Deferred](../Status/DISTRIBUTED_TRANSPORT_DEFERRED.md))
 

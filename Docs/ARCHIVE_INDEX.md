@@ -1,6 +1,8 @@
 # BlazeDB Documentation Archive Index
 
-This index groups older or auxiliary documents that remain in `Docs/` for reference. For the **`Docs/Archive/`** tree specifically, see [Archive README](Archive/README.md). The canonical, up‑to‑date docs are linked from `Docs/README.md` and `MASTER_DOCUMENTATION_INDEX.md`. Start there; use this archive only when you need deeper background or historical rationale.
+This index groups older or auxiliary documents that remain in `Docs/` for reference. For the **`Docs/Archive/`** tree specifically, see [Archive README](Archive/README.md). The canonical, up‑to‑date docs are linked from [`Docs/README.md`](README.md). `MASTER_DOCUMENTATION_INDEX.md` is a maintainer inventory, not the public authority map.
+
+**Many entries below are basenames** that historically lived at the Docs root and now live under `Docs/Archive/` or another folder. Prefer opening via [Archive README](Archive/README.md) or a path search. Basename-only rows are historical pointers, not a guarantee the file still exists at that name.
 
 ## Sync (legacy/status/alternates)
 - HONEST_SYNC_AUDIT.md

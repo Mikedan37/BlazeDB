@@ -6,7 +6,7 @@ This folder currently documents the **cgo linking recipe** and a **target wrappe
 
 Productization (checked-in smoke sources, CI gate, then an official module) is directional work; see [ROADMAP.md](../../ROADMAP.md) and [PRODUCT_AUDIT.md](../../Docs/Product/PRODUCT_AUDIT.md).
 
-Homepage: [Go integration preview](../../README.md#go-integration-preview).
+Homepage: [Native interoperability (Go via cgo)](../../README.md#native-interoperability).
 
 ## Build BlazeDBC first
 

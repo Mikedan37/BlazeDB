@@ -266,7 +266,7 @@ public func filter(for user: BlazeUserContext) -> (BlazeDataRecord) -> Bool {
 
 ## See Also
 
-- [Row-Level Security Documentation](../ROW_LEVEL_SECURITY.md)
-- [Performance Metrics](PERFORMANCE_METRICS.md)
+- [Row-Level Security Documentation](../Features/ROW_LEVEL_SECURITY.md)
+- [Performance Metrics](../Project/PERFORMANCE_METRICS.md)
 - [Query Optimizations](QUERY_OPTIMIZATIONS.md)
 
