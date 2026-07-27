@@ -5,20 +5,18 @@
 
 Use milestones or GitHub issues for concrete release commitments. Use this document for direction.
 
-Evidence basis: [Docs/Product/PRODUCT_AUDIT.md](Docs/Product/PRODUCT_AUDIT.md).  
-Detailed candidates: [Docs/Product/ROADMAP_BACKLOG.md](Docs/Product/ROADMAP_BACKLOG.md).
+| Doc | Role |
+|-----|------|
+| **This file** | Committed product priorities for the supported OSS product |
+| [`ROADMAP_BACKLOG.md`](Docs/Product/ROADMAP_BACKLOG.md) | Verified gaps worth retaining (not a public Now list) |
+| [`PRODUCT_AUDIT.md`](Docs/Product/PRODUCT_AUDIT.md) | Full evidence and inventory |
 
 ## Now
 
 Work that should happen next because it reduces breakage, overclaim, or contributor risk.
 
-- Add storage-change contributor checklist
-  - Why: PageStore/WAL/encryption edits are high blast radius; CONTRIBUTING previously rejected “frozen” files without an affirmative allowed-change path.
-  - Exit criteria: Checklist linked from CONTRIBUTING (and PR guidance) with required validation commands. **Done:** [Docs/Contributing/STORAGE_CHANGE_CHECKLIST.md](Docs/Contributing/STORAGE_CHANGE_CHECKLIST.md) — keep using and tightening it as fixtures land.
-  - Evidence: [PRODUCT_AUDIT.md](Docs/Product/PRODUCT_AUDIT.md) contributor/release findings.
-
 - **Add on-disk compatibility fixtures from supported prior releases**
-  - Why: Prevent silent format/WAL breaks across tags.
+  - Why: Prevent silent format/WAL breaks across tags. Fixtures may exist on disk without being a CI gate.
   - Exit criteria: CI opens fixtures from at least one prior supported release and verifies read (and a bounded write) behavior.
   - Dependency: Maintainer decision on which tags remain supported.
 
@@ -32,15 +30,6 @@ Work that should happen next because it reduces breakage, overclaim, or contribu
   - Exit criteria: Either wire subcommands or make every public doc/`--help` path say `swift run BlazeDoctor|BlazeDump|BlazeInfo`.
   - Evidence: `BlazedbEntry` vs tool help strings.
 
-- **Align platform support wording with CI reality**
-  - Why: `Docs/COMPATIBILITY.md` still says iOS is “Fully supported” while Apple PR jobs are compile-only for BlazeDBCore.
-  - Exit criteria: COMPATIBILITY glossary matches README (runtime vs compile-tested vs experimental).
-
-- **Quarantine experimental B+ stub and document the real index path**
-  - Why: `ExperimentalBPlusTree` is print-only; production indexes are hash secondary + `BTreeIndex`, and many queries still scan.
-  - Exit criteria: Stub clearly marked non-product; docs state what `createIndex` / range indexes actually accelerate; any true B+ work has separate design exit criteria.
-  - Dependency: Maintainer choice—invest in B+ later, or keep hash/`BTreeIndex` as the supported story.
-
 - **Curate BlazeDBC release artifacts and CI-link the C example**
   - Why: Tag releases currently tar the whole `.build/release` tree; C hello is not linked in CI despite being the FFI packaging proof.
   - Exit criteria: Release attaches shared library + `blazedb.h` (+ checksum); CI or release job compiles `Examples/C/hello_blazedb.c`.
@@ -48,6 +37,16 @@ Work that should happen next because it reduces breakage, overclaim, or contribu
 - **Consolidate migration and schema documentation**
   - Why: APIs and tests exist; dedicated guides remain under consolidation and confuse schemaless-default vs opt-in schema.
   - Exit criteria: One canonical advanced entry for migrations and one for schema validation, linked from Docs/README Advanced table.
+
+- **Remove remaining docs that imply production B+ readiness**
+  - Why: `ExperimentalBPlusTree` is already marked non-product (print-only stub). Production indexes are hash secondary + `BTreeIndex`; many queries still scan. Residual docs may still imply a finished B+ product path.
+  - Exit criteria: Public docs state what `createIndex` / range indexes actually accelerate; no guide treats the experimental stub as shipped indexing; any true B+ work has separate design exit criteria.
+  - Dependency: Maintainer choice—invest in B+ later, or keep hash/`BTreeIndex` as the supported story.
+
+### Recently completed (keep using)
+
+- **Storage-change contributor checklist** — [Docs/Contributing/STORAGE_CHANGE_CHECKLIST.md](Docs/Contributing/STORAGE_CHANGE_CHECKLIST.md); linked from CONTRIBUTING and PR guidance. Tighten as compatibility fixtures land.
+- **COMPATIBILITY iOS wording** — iOS / other Apple mobile platforms are declared and compile-tested; runtime CI remains macOS/Linux unless a runtime job is listed. Matches README.
 
 ## Next
 
@@ -70,7 +69,7 @@ Likely priorities after current work, not guaranteed for a specific version.
   - Exit criteria: Named failure modes covered by smallest possible tests; durability doc updated if semantics change.
 
 - **Apple runtime validation where it matters** (for example iOS Simulator Tier0)
-  - Why: Declared platforms are compile-tested; “fully supported” mobile claims need runtime proof or softer wording.
+  - Why: Declared platforms are compile-tested; mobile runtime claims need proof or stay compile-tested.
   - Exit criteria: One runtime job that runs a bounded core suite, or wording stays compile-tested.
 
 - **Index execution honesty / planner wiring**
@@ -115,4 +114,4 @@ A good roadmap helps contributors understand:
 - which ideas need design discussion
 - what should not be mistaken for shipped functionality
 
-It should not contain long lists of speculative features or assign version numbers unless those releases are genuinely scoped and actively managed.
+It should not contain long lists of speculative features or assign version numbers unless those releases are genuinely scoped and actively managed. Orphaned but verified gaps live in the backlog, not here.
