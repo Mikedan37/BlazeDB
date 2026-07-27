@@ -145,14 +145,19 @@ public final class QueryBuilder: @unchecked Sendable {
         return self
     }
     
-    /// Filter records where field does not equal value
+    /// Filter records where field does not equal value.
+    ///
+    /// A missing field is treated as matching `notEquals` — i.e. a record
+    /// with no `field` at all counts as "not equal to `value`", consistent
+    /// with `whereNil` semantics. This is the deliberate asymmetry with
+    /// `where(_:equals:)`, which treats a missing field as a non-match.
     @discardableResult
     public func `where`(_ field: String, notEquals value: BlazeDocumentField) -> QueryBuilder {
         BlazeLogger.debug("Query: WHERE \(field) != \(value)")
         filterFields.insert(field)
         filterDescriptors.append(FilterDescriptor(field: field, operation: "ne", value: value))
         filters.append { record in
-            guard let fieldValue = record.storage[field] else { return false }
+            guard let fieldValue = record.storage[field] else { return true }
             return !fieldsEqual(fieldValue, value)
         }
         return self
