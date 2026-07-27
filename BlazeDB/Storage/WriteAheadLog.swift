@@ -87,22 +87,30 @@ internal final class WriteAheadLog: @unchecked Sendable {
 
     /// Append a page write to the WAL without fsync. Call `sync()` before treating the write as durable.
     func appendDeferred(pageIndex: Int, data: Data) throws {
-        try appendEntry(pageIndex: pageIndex, data: data)
+        try WriteProfileCollector.measure("wal.append") {
+            try appendEntry(pageIndex: pageIndex, data: data)
+            // Header (16) + payload — approximate bytes leaving the process.
+            WriteProfileCollector.addBytes(walEntryHeaderSize + data.count)
+            WriteProfileCollector.addSyscall(kind: .write)
+        }
         needsFsync = true
     }
 
     /// Fsync pending WAL appends from `appendDeferred`.
     func sync() throws {
         guard fd >= 0, needsFsync else { return }
-        if fsync(fd) != 0 {
-            let err = errno
-            IOTraceSink.record(operation: "wal_fsync", path: logURL.path, fd: fd, resultCode: -1, errnoValue: err)
-            throw NSError(domain: "WriteAheadLog", code: Int(err), userInfo: [
-                NSLocalizedDescriptionKey: "WAL fsync failed: \(String(cString: strerror(err)))"
-            ])
+        try WriteProfileCollector.measure("wal.fsync") {
+            if fsync(fd) != 0 {
+                let err = errno
+                IOTraceSink.record(operation: "wal_fsync", path: logURL.path, fd: fd, resultCode: -1, errnoValue: err)
+                throw NSError(domain: "WriteAheadLog", code: Int(err), userInfo: [
+                    NSLocalizedDescriptionKey: "WAL fsync failed: \(String(cString: strerror(err)))"
+                ])
+            }
+            IOTraceSink.record(operation: "wal_fsync", path: logURL.path, fd: fd, resultCode: 0)
+            WriteProfileCollector.addSyscall(kind: .fsync)
+            needsFsync = false
         }
-        IOTraceSink.record(operation: "wal_fsync", path: logURL.path, fd: fd, resultCode: 0)
-        needsFsync = false
     }
 
     /// Append a page write to the WAL. Fsyncs before returning.

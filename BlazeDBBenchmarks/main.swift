@@ -1295,6 +1295,28 @@ if benchMode == "open_profile" {
     exit(0)
 }
 
+if benchMode == "write_profile" {
+    print("=== BlazeDB Write Path Profiler (#269) ===\n")
+    do {
+        let recordCount = Int(ProcessInfo.processInfo.environment["BLAZEDB_WRITE_PROFILE_RECORDS"] ?? "") ?? WriteProfiler.defaultRecordCount
+        let runs = try WriteProfiler.run(recordCount: recordCount)
+        WriteProfiler.printSummary(runs)
+
+        let outDir = ProcessInfo.processInfo.environment["BLAZEDB_WRITE_PROFILE_OUT"]
+            ?? "benchmark_results/write_profile"
+        let outURL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath).appendingPathComponent(outDir)
+        try FileManager.default.createDirectory(at: outURL, withIntermediateDirectories: true)
+        let mdPath = outURL.appendingPathComponent("write_profile.md")
+        try WriteProfiler.markdownReport(runs).write(to: mdPath, atomically: true, encoding: .utf8)
+        print("\nSaved:")
+        print("  - \(mdPath.path)")
+    } catch {
+        print("Write profile failed: \(error)")
+        exit(1)
+    }
+    exit(0)
+}
+
 print("=== BlazeDB Benchmarks ===\n")
 print("Condition: `\(benchmarkCondition.id)` mvcc=\(benchmarkCondition.mvccEffective ? "on" : "off") encryption=\(benchmarkCondition.encryptionEffective ? "on" : "off")")
 print("Enabled benchmarks: \(enabledBenchmarks.sorted())\n")

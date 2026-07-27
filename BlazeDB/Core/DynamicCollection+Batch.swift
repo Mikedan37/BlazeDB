@@ -41,14 +41,27 @@ extension DynamicCollection {
         return try queue.sync(flags: .barrier) {
             BlazeLogger.info("Batch insert: \(records.count) records")
             let startTime = Date()
+            let writeProfile = WriteProfileCollector.isEnabled
+            if writeProfile {
+                WriteProfileCollector.beginOperation(
+                    WriteProfileOperation(
+                        path: .insertMany,
+                        batchSize: records.count,
+                        durabilityMode: "legacy_wal_publish_last_batch",
+                        recordBytes: 0,
+                        steadyState: unsavedChanges > 0
+                    )
+                )
+            }
             
             var insertedIDs: [UUID] = []
             var insertedRecords: [BlazeDataRecord] = []
             var seenIDs = Set<UUID>()
             
             // Load layout at start to access deletedPages for page reuse
-            var layout = try loadLayoutForMutation()
-            
+            var layout = try WriteProfileCollector.measure("transaction.setup") {
+                try loadLayoutForMutation()
+            }
             // MVCC Path: Transfer deleted pages from layout to pageGC for reuse
             // This ensures pages deleted in legacy mode or persisted to disk are available for MVCC reuse
             if mvccEnabled && !layout.deletedPages.isEmpty {
@@ -109,8 +122,9 @@ extension DynamicCollection {
                 document["project"] = .string(project)
                 
                 // OPTIMIZED: Use optimized encoding (1.2-1.5x faster!)
-                let encoded = try BlazeBinaryEncoder.encodeOptimized(BlazeDataRecord(document))
-                
+                let encoded = try WriteProfileCollector.measure("encode") {
+                    try BlazeBinaryEncoder.encodeOptimized(BlazeDataRecord(document))
+                }
                 // CRITICAL: Validate encoded record size to prevent memory exhaustion attacks
                 // Large records could exhaust memory or cause excessive disk I/O
                 // Max record size: 100MB (practical limit for most use cases)
@@ -345,6 +359,7 @@ extension DynamicCollection {
                 // However, we need to clean up any pages that were written but not synchronized
                 BlazeLogger.error("❌ [INSERT] Batch: synchronize() failed - indexMap was never updated, so no rollback needed: \(error)")
                 // Note: pendingIndexMapUpdates will be discarded, so indexMap remains unchanged
+                if writeProfile { WriteProfileCollector.endOperation() }
                 throw error
             }
             
@@ -548,6 +563,10 @@ extension DynamicCollection {
             
             let duration = Date().timeIntervalSince(startTime)
             BlazeLogger.info("Batch insert complete: \(insertedIDs.count) records in \(String(format: "%.2f", duration * 1000))ms")
+            if writeProfile {
+                WriteProfileCollector.record("insertMany.total", milliseconds: duration * 1000.0)
+                WriteProfileCollector.endOperation()
+            }
             
             return insertedIDs
         }

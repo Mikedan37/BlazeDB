@@ -840,7 +840,11 @@ public final class PageStore: @unchecked Sendable {
 
         let offset = off_t(index * pageSize)
         BlazeLogger.trace("Writing page at byte offset \(offset)")
-        try atomicWrite(offset: offset, data: buffer)
+        try WriteProfileCollector.measure("page.write") {
+            try atomicWrite(offset: offset, data: buffer)
+            WriteProfileCollector.addBytes(buffer.count)
+            WriteProfileCollector.addSyscall(kind: .write)
+        }
     }
 
     public func writePage(index: Int, plaintext: Data) throws {
@@ -872,7 +876,10 @@ public final class PageStore: @unchecked Sendable {
             try _commitPendingUnifiedAutoTransactionIfNeededLocked()
             try _flushPendingUnifiedBufferedWritesLocked()
             try wal?.sync()
-            try fileHandle.compatSynchronize()
+            try WriteProfileCollector.measure("page.fsync") {
+                try fileHandle.compatSynchronize()
+                WriteProfileCollector.addSyscall(kind: .fsync)
+            }
         }
     }
 

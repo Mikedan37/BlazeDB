@@ -1008,6 +1008,7 @@ public final class DynamicCollection {
             
             // Legacy Path: Original single-version implementation
             let lockRequestMs = Self.writeForensicsEnabled ? Self.monotonicNowMs() : 0.0
+            let writeProfile = WriteProfileCollector.isEnabled
             return try queue.sync(flags: .barrier) {
                 let forensicsEnabled = Self.writeForensicsEnabled
                 let totalStartMs = Self.monotonicNowMs()
@@ -1039,6 +1040,24 @@ public final class DynamicCollection {
                         suggestion: "Use upsert() to insert-or-update or update() for existing records."
                     )
                 }
+
+                let writeProfileOwnsOp: Bool = {
+                    guard writeProfile else { return false }
+                    let alreadyOpen = WriteProfileCollector.hasOpenOperation
+                    if !alreadyOpen {
+                        WriteProfileCollector.beginOperation(
+                            WriteProfileOperation(
+                                path: .singleInsert,
+                                batchSize: 1,
+                                durabilityMode: "legacy_wal_publish_last",
+                                recordBytes: 0,
+                                steadyState: unsavedChanges > 0
+                            )
+                        )
+                    }
+                    return !alreadyOpen
+                }()
+
                 // Use BlazeBinaryEncoder for encoding (matches decoder!)
                 // If lazy decoding is enabled, use v3 format with field table
                 #if !BLAZEDB_LINUX_CORE
@@ -1048,28 +1067,30 @@ public final class DynamicCollection {
                 // Lazy decoding not available on Linux
                 #endif
                 let tEncode = forensicsEnabled ? Self.monotonicNowMs() : 0
-                #if !BLAZEDB_LINUX_CORE
-                let encoded = try BlazeBinaryEncoder.encodeOptimized(BlazeDataRecord(document))
-                #else
-                let encoded = try BlazeBinaryEncoder.encode(BlazeDataRecord(document))
-                #endif
+                let encoded: Data = try WriteProfileCollector.measure("encode") {
+                    #if !BLAZEDB_LINUX_CORE
+                    return try BlazeBinaryEncoder.encodeOptimized(BlazeDataRecord(document))
+                    #else
+                    return try BlazeBinaryEncoder.encode(BlazeDataRecord(document))
+                    #endif
+                }
                 if forensicsEnabled {
                     encodeMs += Self.monotonicNowMs() - tEncode
                 }
 
                 // Build a lightweight mutable layout snapshot from in-memory state.
                 // This avoids reloading the signed meta file on every insert.
-                var layout = StorageLayout(
+                var layout: StorageLayout = StorageLayout(
                     indexMap: indexMap,
                     nextPageIndex: nextPageIndex,
                     secondaryIndexes: [:],
                     searchIndex: nil,
                     searchIndexedFields: []
                 )
-                layout.deletedPages = cachedDeletedPages
-                
-                // Allocate main page (reuses deleted pages if available)
-                let mainPageIndex = allocatePage(layout: &layout)
+                let mainPageIndex: Int = try WriteProfileCollector.measure("transaction.setup") {
+                    layout.deletedPages = cachedDeletedPages
+                    return allocatePage(layout: &layout)
+                }
                 
                 // CRITICAL: Check if this page is already in use BEFORE writing
                 let conflictingIDs = indexMap.filter { $0.value.contains(mainPageIndex) && $0.key != id }.keys
@@ -1115,56 +1136,58 @@ public final class DynamicCollection {
                 nextPageIndex = layout.nextPageIndex
 
                 let tMetadata = forensicsEnabled ? Self.monotonicNowMs() : 0
-                // Catalog publish only after durable page writes.
-                indexMap[id] = pageIndices
-                let value = document["value"]?.intValue ?? -1
-                BlazeLogger.trace("📝 [INSERT] Legacy: Set indexMap[\(id.uuidString.prefix(8))] = \(pageIndices) (value: \(value))")
-                BlazeLogger.debug("📝 [INSERT] Legacy: Set indexMap[\(id.uuidString.prefix(8))] = \(pageIndices) (mainPage: \(mainPageIndex), value: \(value))")
-                
-                // Update all configured secondary indexes in memory immediately
-                for (compound, _) in secondaryIndexes {
-                    let fields = compound.components(separatedBy: "+")
-                    guard fields.allSatisfy({ document[$0] != nil }) else {
-                        BlazeLogger.warn("Skipping index \(compound) for id \(id) — missing one or more fields.")
-                        continue
-                    }
-                    let rawKey = CompoundIndexKey.fromFields(document, fields: fields)
-                    let normalizedComponents = rawKey.components.map { component -> AnyBlazeCodable in
-                        switch component {
-                        case .string(let s): return AnyBlazeCodable(s)
-                        case .int(let i): return AnyBlazeCodable(i)
-                        case .double(let d): return AnyBlazeCodable(d)
-                        case .bool(let b): return AnyBlazeCodable(b)
-                        case .date(let d): return AnyBlazeCodable(d)
-                        case .uuid(let u): return AnyBlazeCodable(u)
-                        case .data(let data): return AnyBlazeCodable(data)
+                try WriteProfileCollector.measure("metadata.publish") {
+                    // Catalog publish only after durable page writes.
+                    indexMap[id] = pageIndices
+                    let value = document["value"]?.intValue ?? -1
+                    BlazeLogger.trace("📝 [INSERT] Legacy: Set indexMap[\(id.uuidString.prefix(8))] = \(pageIndices) (value: \(value))")
+                    BlazeLogger.debug("📝 [INSERT] Legacy: Set indexMap[\(id.uuidString.prefix(8))] = \(pageIndices) (mainPage: \(mainPageIndex), value: \(value))")
+                    
+                    // Update all configured secondary indexes in memory immediately
+                    for (compound, _) in secondaryIndexes {
+                        let fields = compound.components(separatedBy: "+")
+                        guard fields.allSatisfy({ document[$0] != nil }) else {
+                            BlazeLogger.warn("Skipping index \(compound) for id \(id) — missing one or more fields.")
+                            continue
+                        }
+                        let rawKey = CompoundIndexKey.fromFields(document, fields: fields)
+                        let normalizedComponents = rawKey.components.map { component -> AnyBlazeCodable in
+                            switch component {
+                            case .string(let s): return AnyBlazeCodable(s)
+                            case .int(let i): return AnyBlazeCodable(i)
+                            case .double(let d): return AnyBlazeCodable(d)
+                            case .bool(let b): return AnyBlazeCodable(b)
+                            case .date(let d): return AnyBlazeCodable(d)
+                            case .uuid(let u): return AnyBlazeCodable(u)
+                            case .data(let data): return AnyBlazeCodable(data)
                                             case .vector(let v): return AnyBlazeCodable(v)
                                             case .null: return AnyBlazeCodable("")
                                             case .array, .dictionary: return AnyBlazeCodable("")  // Arrays/dicts not supported in compound indexes
                                         }
+                        }
+                        let indexKey = CompoundIndexKey(normalizedComponents)
+                        var inner = secondaryIndexes[compound] ?? [:]
+                        var set = inner[indexKey] ?? Set<UUID>()
+                        set.insert(id)
+                        inner[indexKey] = set
+                        secondaryIndexes[compound] = inner
                     }
-                    let indexKey = CompoundIndexKey(normalizedComponents)
-                    var inner = secondaryIndexes[compound] ?? [:]
-                    var set = inner[indexKey] ?? Set<UUID>()
-                    set.insert(id)
-                    inner[indexKey] = set
-                    secondaryIndexes[compound] = inner
-                }
-                
-                // Update B-tree indexes for range query support
-                btreeIndexManager.indexRecord(id: id, fields: document)
-                
-                // Save layout with updated deletedPages and nextPageIndex
-                layout.indexMap = indexMap
-                layout.secondaryIndexes = StorageLayout.fromRuntimeIndexes(secondaryIndexes)
+                    
+                    // Update B-tree indexes for range query support
+                    btreeIndexManager.indexRecord(id: id, fields: document)
+                    
+                    // Save layout with updated deletedPages and nextPageIndex
+                    layout.indexMap = indexMap
+                    layout.secondaryIndexes = StorageLayout.fromRuntimeIndexes(secondaryIndexes)
 
-                // Persist per-insert metadata update to preserve crash-prefix durability.
-                if password != nil {
-                    try layout.saveSecure(to: metaURL, signingKey: encryptionKey)
-                } else {
-                    try layout.save(to: metaURL)
+                    // Persist per-insert metadata update to preserve crash-prefix durability.
+                    if password != nil {
+                        try layout.saveSecure(to: metaURL, signingKey: encryptionKey)
+                    } else {
+                        try layout.save(to: metaURL)
+                    }
+                    cachedDeletedPages = layout.deletedPages
                 }
-                cachedDeletedPages = layout.deletedPages
                 if forensicsEnabled {
                     indexUpdateMs += Self.monotonicNowMs() - tMetadata
                 }
@@ -1210,6 +1233,10 @@ public final class DynamicCollection {
                             totalMs: Self.monotonicNowMs() - totalStartMs
                         )
                     )
+                }
+                if writeProfileOwnsOp {
+                    WriteProfileCollector.record("insert.total", milliseconds: Self.monotonicNowMs() - totalStartMs)
+                    WriteProfileCollector.endOperation()
                 }
                 
                 return id
