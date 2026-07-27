@@ -1,16 +1,16 @@
 # BlazeDB
 
-BlazeDB is a Swift-native, encrypted embedded document database for local applications: typed models, transactions, WAL recovery, CLI tooling, and a stable C ABI, single-process by design.
+BlazeDB is an encrypted embedded database with a stable native interface, broad platform support, active correctness work, and several carefully scoped ways to contribute.
 
-It runs inside your process, stores data locally, and does not require a separate database server or network connection. It is intended for apps that need private local persistence and inspection tooling without operating a database service. “Local” here means on-device / in-process storage — not a multiplayer sync or distributed-replica product.
+It is Swift-native for local applications: typed models, transactions, WAL recovery, CLI tooling, and a documented C ABI — single-process by design. It runs inside your process, stores data on-device, and does not require a separate database server or network connection. “Local” means in-process persistence, not multiplayer sync or distributed replicas.
 
-You can use BlazeDB from Swift applications, from the `blazedb` CLI, or through its documented C ABI. Published C symbols and signatures follow the compatibility rules defined in the ABI documentation. The primary open-source product is the embedded Swift engine. The C ABI is one way to reach that same engine, not a replacement for the Swift product story.
+You can use BlazeDB from Swift, from the `blazedb` CLI, or through its C ABI. The primary open-source product is the embedded Swift engine; the C ABI reaches that same engine and is not a separate product story.
 
-[![Swift](https://img.shields.io/badge/Swift-6.0+-orange.svg)](https://swift.org)
+[![CI](https://github.com/Mikedan37/BlazeDB/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Mikedan37/BlazeDB/actions/workflows/ci.yml)
 [![Release](https://img.shields.io/badge/release-v2.8.1-green.svg)](RELEASE.md)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-**Current release:** [v2.8.1](RELEASE.md) · [Getting started](Docs/GettingStarted/README.md) · [Documentation index](Docs/README.md) · [Contributing](CONTRIBUTING.md) · [Compatibility](Docs/COMPATIBILITY.md)
+**Current release:** [v2.8.1](RELEASE.md) · [Getting started](Docs/GettingStarted/README.md) · [Documentation index](Docs/README.md) · [Contributing](CONTRIBUTING.md) · [Compatibility](Docs/COMPATIBILITY.md) · [Roadmap](ROADMAP.md)
 
 ### Platforms
 
@@ -41,17 +41,32 @@ BlazeDB’s public database-opening APIs require a password, and persisted data 
 
 Near-term work is packaging and documentation honesty for contributors, with maintainer attention ordered as: security correctness (RLS) → continuous verification → durability invariants → performance (after measurement). See [ROADMAP.md](ROADMAP.md).
 
-The [issue tracker](https://github.com/Mikedan37/BlazeDB/issues) includes verified defects, contributor tasks, documentation work, and deferred platform improvements. **Not every open issue is a release blocker.** Use labels to navigate:
+The [issue tracker](https://github.com/Mikedan37/BlazeDB/issues) mixes verified defects, contributor tasks, documentation work, and deferred platform improvements. **Not every open issue is a release blocker**, and the full catalog is not the onboarding path. Prefer the shelf below, then labels:
 
 | Label / filter | Meaning |
 |----------------|---------|
-| [`good first issue`](https://github.com/Mikedan37/BlazeDB/labels/good%20first%20issue) | Bounded docs/tooling for new contributors |
-| [`help wanted`](https://github.com/Mikedan37/BlazeDB/labels/help%20wanted) | Maintainer-backed outside contributions |
+| [`good first issue`](https://github.com/Mikedan37/BlazeDB/labels/good%20first%20issue) | Bounded docs/tooling/tests for new contributors |
+| [`help wanted`](https://github.com/Mikedan37/BlazeDB/labels/help%20wanted) | Maintainer-backed outside contributions (curated shelf below) |
 | [`durability`](https://github.com/Mikedan37/BlazeDB/labels/durability) / [`concurrency`](https://github.com/Mikedan37/BlazeDB/labels/concurrency) / [`High Priority`](https://github.com/Mikedan37/BlazeDB/labels/High%20Priority) | Maintainer-owned correctness |
 | [`needs design`](https://github.com/Mikedan37/BlazeDB/labels/needs%20design) | Contract decision before coding |
 | Experimental / later | Android, KMM, deferred sync — see [Compatibility](Docs/COMPATIBILITY.md) and [ROADMAP](ROADMAP.md) |
 
-Details: [ISSUE_GUIDE](Docs/Contributing/ISSUE_GUIDE.md) · [ROADMAP](ROADMAP.md). Forensic audits live under [Docs/Product/](Docs/Product/) for serious contributors; they are not the first-time product path.
+### Want to contribute? Start here
+
+A small shelf of scoped issues — not the full tracker. Claim one, comment on the issue, follow [CONTRIBUTING.md](CONTRIBUTING.md).
+
+| Theme | Issue | Scope |
+|-------|-------|-------|
+| Documentation | [#329](https://github.com/Mikedan37/BlazeDB/issues/329) | Document that `close()` rolls back an open transaction |
+| Documentation | [#332](https://github.com/Mikedan37/BlazeDB/issues/332) | Remove or qualify unsupported distributed architecture claims |
+| Developer experience | [#259](https://github.com/Mikedan37/BlazeDB/issues/259) | Stop advertising `blazedb doctor` as a top-level CLI subcommand |
+| Tooling | [#330](https://github.com/Mikedan37/BlazeDB/issues/330) | Crypto/security-change checklist (+ PR checkbox). Sibling: [#333](https://github.com/Mikedan37/BlazeDB/issues/333) (benchmark checklist) |
+| Small correctness | [#320](https://github.com/Mikedan37/BlazeDB/issues/320) | `deleteBatch` should clear fetch-all cache. Sibling: [#321](https://github.com/Mikedan37/BlazeDB/issues/321) (insertMany RLS order) |
+| Small correctness | [#327](https://github.com/Mikedan37/BlazeDB/issues/327) | `where(notEquals:)` vs missing fields |
+| Tests / compatibility | [#326](https://github.com/Mikedan37/BlazeDB/issues/326) | Assert rollback restores secondary indexes |
+| CLI polish | [#258](https://github.com/Mikedan37/BlazeDB/issues/258) | `blazedb --version` prints release SemVer |
+
+More filters and claim etiquette: [ISSUE_GUIDE](Docs/Contributing/ISSUE_GUIDE.md). Roadmap and audits: [ROADMAP.md](ROADMAP.md) · [Docs/Product/](Docs/Product/) · [Docs/Audit/](Docs/Audit/).
 
 ---
 
