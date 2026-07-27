@@ -2,6 +2,56 @@
 
 You can put BlazeDB behind a single owning daemon. That is useful. It measures a **different system boundary**.
 
+## Decision rule
+
+**No product promotion without both measured benefit and demonstrated demand.**
+
+| Question | Status |
+|----------|--------|
+| Can BlazeDB run inside a service? | Already yes (Swift app, Vapor, Docker, C ABI / Go, etc.) |
+| Can one owner coordinate many clients efficiently? | Worth measuring |
+| Should that become a supported product? | Not without evidence |
+
+Strong batching numbers without a real multi-process ownership need produce a clever artifact nobody needs. A use case without strong gains may already be served by embedding in Vapor, Go via the C ABI, or a normal server database.
+
+Until both gates pass, the architecture stays:
+
+```text
+one process owns the database file
+other code embeds BlazeDB or talks to that owner
+```
+
+That is a coherent boundary, not a limitation begging for another branded subsystem.
+
+## Research harness (allowed)
+
+Bounded experiment only: [Experiments/DaemonBatching/](../../Experiments/DaemonBatching/).
+
+- one daemon process owning one database
+- Unix domain socket locally
+- fixed request format
+- put / get / batch only
+- configurable batch window and client count
+- **no** public SDK, support promise, auth product, tools-table entry, or new Blaze* brand
+
+Measure under the **same durability mode**:
+
+- direct in-process writes
+- daemon unbatched writes
+- daemon batched writes
+- p50 / p95 / p99 latency, throughput, queue depth, fsync count, batch size
+- crash and restart behavior
+
+Question to answer:
+
+> How much throughput can coordinated batching recover while preserving single-writer ownership?
+
+Not:
+
+> Should BlazeDB become a server database?
+
+A negative result is still useful: it avoids months of protocol, packaging, and support work.
+
 ## Two different measurements
 
 **In-process (engine) path**
@@ -53,6 +103,4 @@ A socket in front of BlazeDB does not turn it into a parallel-write engine.
 
 **Daemon benchmarks** (many clients, one owner): requests/sec, end-to-end latency (p50/p95/p99), queue depth, batch size, group-commit interval, client count, read/write mix, overload/backpressure, daemon crash/restart recovery.
 
-Stress limits measured in-process are real for that path. They are not necessarily the best achievable **system** throughput. A coordinated daemon may extract more from the same engine through batching, group commit, queueing, and cache reuse. That experiment fits BlazeDB’s design better than letting multiple processes fight over one encrypted WAL file.
-
-See also: [WHY_SINGLE_WRITER.md](WHY_SINGLE_WRITER.md) · [Benchmarks README](../Benchmarks/README.md)
+See also: [WHY_SINGLE_WRITER.md](WHY_SINGLE_WRITER.md) · [Benchmarks README](../Benchmarks/README.md) · [Experiments/DaemonBatching](../../Experiments/DaemonBatching/)
