@@ -2,6 +2,7 @@
 
 ## Contributor entry (start here)
 
+- **[CHANGE_MAP.md](CHANGE_MAP.md)** — mechanical blast radius per path (start here before changing code)
 - **[CODEBASE_MAP.md](CODEBASE_MAP.md)** — product boundaries, targets, directories, execution paths
 - **[TOURS/](TOURS/)** — short code-first walks (open, write, query, transactions, C ABI, CLI, tests)
 - Learning paths + issue→code index: [LEARNING_PATHS](../Contributing/LEARNING_PATHS.md), [ISSUE_CODE_INDEX](../Contributing/ISSUE_CODE_INDEX.md)

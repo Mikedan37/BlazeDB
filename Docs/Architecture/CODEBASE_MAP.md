@@ -127,12 +127,13 @@ crash with txn artifacts
 ```
 db.query()…execute()
   → QueryBuilder.execute → _executeStandard
+  → QueryBuilder.standardQueryExecutor (LegacyQueryExecutor)
   → collection.fetchAll()          ← public path is scan-based today
   → in-memory filters / sort / offset / limit
   → QueryResult
 ```
 
-Indexes may be **maintained** (`createIndex`) but are **not** used by default `_executeStandard` (`QueryBuilder.swift` ~498–508). Explain stubs: `Query/QueryExplain.swift`. Docs honesty: #261, #274, #292.
+Seam map: [CHANGE_MAP.md](CHANGE_MAP.md). Indexes may be **maintained** (`createIndex`) but are **not** used by default standard path (`QueryExecuting.swift` / `QueryBuilder.swift`). Explain stubs: `Query/QueryExplain.swift`. Docs honesty: #261, #274, #292.
 
 ### Recovery
 

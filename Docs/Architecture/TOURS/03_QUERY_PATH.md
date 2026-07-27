@@ -13,9 +13,9 @@
 
 ## Follow this symbol
 
-`db.query().where(…).execute()` → `QueryBuilder.execute` → `_executeStandard` → `collection.fetchAll()` → apply `filters` / sort / limit → `QueryResult`.
+`db.query().where(…).execute()` → `QueryBuilder.execute` → `_executeStandard` → `QueryBuilder.standardQueryExecutor` (`LegacyQueryExecutor`) → `collection.fetchAll()` → filter / sort / offset / limit → `QueryResult`.
 
-Index creation may update secondary structures; **default `_executeStandard` does not probe them**.
+See [CHANGE_MAP.md](../CHANGE_MAP.md) for blast radius. Index creation may update secondary structures; **default standard path does not probe them**.
 
 ## Invariants
 

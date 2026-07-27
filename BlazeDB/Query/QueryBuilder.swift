@@ -499,77 +499,29 @@ public final class QueryBuilder: @unchecked Sendable {
         return try _executeStandard()
     }
     
-    /// Internal: Execute standard query (non-deprecated)
+    /// Internal: Execute standard query (non-deprecated).
+    /// Routes through `QueryBuilder.standardQueryExecutor` (LegacyQueryExecutor by default).
     private func _executeStandard() throws -> [BlazeDataRecord] {
-        guard let collection = collection else {
+        guard collection != nil else {
             BlazeLogger.error("Query execution failed: Collection has been deallocated")
             throw BlazeDBError.invalidData(reason: "Query builder's collection has been deallocated. Recreate the query from a live database.")
         }
-        
-        let startTime = Date()
-        BlazeLogger.info("Executing query with \(filters.count) filters, \(sortOperations.count) sorts, limit: \(limitValue.map { String($0) } ?? "none"), offset: \(offsetValue)")
-        
-        // Step 1: Fetch all visible records
-        var records = visibleRecords(try collection.fetchAll())
-        BlazeLogger.debug("Loaded \(records.count) records from storage")
-        
-        // Step 2: Apply filters using lazy evaluation (single allocation at end)
-        let preFilterCount = records.count
-        
-        if !filters.isEmpty {
-            // Combine all filters into single predicate for efficiency
-            let combinedFilter: (BlazeDataRecord) -> Bool = { record in
-                for filter in self.filters {
-                    if !filter(record) { return false }
+
+        let request = QueryRequest(
+            loadRecords: { [weak self] in
+                guard let self, let collection = self.collection else {
+                    BlazeLogger.error("Query execution failed: Collection has been deallocated")
+                    throw BlazeDBError.invalidData(reason: "Query builder's collection has been deallocated. Recreate the query from a live database.")
                 }
-                return true
-            }
-            
-            // Single pass through data (much faster!)
-            records = records.filter(combinedFilter)
-            
-            // Log individual filter stats if trace enabled
-            if BlazeLogger.level >= .trace {
-                var tempRecords = records
-                for (index, filter) in filters.enumerated() {
-                    let beforeCount = tempRecords.count
-                    tempRecords = tempRecords.filter(filter)
-                    let filtered = beforeCount - tempRecords.count
-                    BlazeLogger.trace("Filter \(index + 1): removed \(filtered) records (\(tempRecords.count) remaining)")
-                }
-            }
-            
-            if preFilterCount > records.count {
-                BlazeLogger.debug("Filters reduced \(preFilterCount) → \(records.count) records (\(String(format: "%.1f", Double(records.count) / Double(preFilterCount) * 100))% retained)")
-            }
-        }
-        
-        // Step 3: Apply sorts
-        if !sortOperations.isEmpty {
-            BlazeLogger.debug("Sorting by \(sortOperations.count) field(s)")
-            records = applySorts(to: records)
-        }
-        
-        // Step 4: Apply offset
-        if offsetValue > 0 {
-            let beforeOffset = records.count
-            records = Array(records.dropFirst(Swift.min(offsetValue, records.count)))
-            BlazeLogger.debug("Offset: skipped \(beforeOffset - records.count) records (\(records.count) remaining)")
-        }
-        
-        // Step 5: Apply limit
-        if let limit = limitValue {
-            let beforeLimit = records.count
-            records = Array(records.prefix(Swift.max(0, limit)))
-            if beforeLimit > records.count {
-                BlazeLogger.debug("Limit: reduced \(beforeLimit) → \(records.count) records")
-            }
-        }
-        
-        let duration = Date().timeIntervalSince(startTime)
-        BlazeLogger.info("Query complete: \(records.count) results in \(String(format: "%.2f", duration * 1000))ms")
-        
-        return records
+                return self.visibleRecords(try collection.fetchAll())
+            },
+            filters: filters,
+            sortOperations: sortOperations,
+            offset: offsetValue,
+            limit: limitValue
+        )
+
+        return try Self.standardQueryExecutor.execute(request).records
     }
     
     /// Execute query and return joined records
