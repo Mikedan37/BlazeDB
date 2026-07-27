@@ -492,16 +492,21 @@ public final class PageStore: @unchecked Sendable {
     ///
     /// Uses `LOCK_EX | LOCK_NB`: exclusive and non-blocking. A contended open fails
     /// immediately with `concurrentProcessAccessNotSupported` instead of waiting.
-    /// On Darwin/Glibc the lock is held on this process's main-file descriptor and is
-    /// released by `releaseLock()`, by closing that descriptor, or automatically by the
-    /// kernel if the process dies — no manual lock-file cleanup.
+    /// On Darwin / Glibc / Android (Bionic via `import Android`) the lock is held on
+    /// this process's main-file descriptor and is released by `releaseLock()`, by
+    /// closing that descriptor, or automatically by the kernel if the process dies —
+    /// no manual lock-file cleanup.
     ///
-    /// - Throws: BlazeDBError.concurrentProcessAccessNotSupported on lock conflict
+    /// Platforms without flock support fail closed: open throws rather than proceeding
+    /// as an unlocked writer.
+    ///
+    /// - Throws: BlazeDBError.concurrentProcessAccessNotSupported on lock conflict or
+    ///   when exclusive locking is unavailable on this platform
     /// - Throws: BlazeDBError.permissionDenied on non-conflict system errors
     /// - Precondition: `fileHandle` must already be open
-    /// - Postcondition: on success, `isLocked` is true (Darwin/Glibc)
+    /// - Postcondition: on success, `isLocked` is true
     private func acquireExclusiveLock() throws {
-        #if canImport(Darwin) || canImport(Glibc)
+        #if canImport(Darwin) || canImport(Glibc) || canImport(Android)
         let fd = fileHandle.fileDescriptor
         IOTraceSink.record(
             operation: "lock_attempt",
@@ -547,9 +552,12 @@ public final class PageStore: @unchecked Sendable {
         IOTraceSink.record(operation: "lock_acquired", path: fileURL.path, fd: fd, resultCode: result)
         BlazeLogger.debug("🔒 Acquired exclusive file lock on \(fileURL.lastPathComponent)")
         #else
-        // Unsupported platform path: no flock. Ownership is not enforced here.
-        BlazeLogger.warn("⚠️ File locking not available on this platform - multi-process safety not guaranteed")
-        isLocked = false
+        // Fail closed: never open as a writer without exclusive ownership enforcement.
+        fileHandle.compatClose()
+        throw BlazeDBError.concurrentProcessAccessNotSupported(
+            operation: "open database: exclusive file lock unavailable on this platform",
+            path: fileURL
+        )
         #endif
     }
     
@@ -558,7 +566,7 @@ public final class PageStore: @unchecked Sendable {
     private func releaseLock() {
         guard isLocked else { return }
         
-        #if canImport(Darwin) || canImport(Glibc)
+        #if canImport(Darwin) || canImport(Glibc) || canImport(Android)
         let fd = fileHandle.fileDescriptor
         let result = flock(fd, LOCK_UN)
         IOTraceSink.record(
@@ -575,6 +583,10 @@ public final class PageStore: @unchecked Sendable {
         }
         isLocked = false
         BlazeLogger.debug("🔓 Released file lock on \(fileURL.lastPathComponent)")
+        #else
+        // acquireExclusiveLock fails closed on platforms without flock, so isLocked
+        // should never be true here. Keep the flag consistent if that invariant breaks.
+        isLocked = false
         #endif
     }
     

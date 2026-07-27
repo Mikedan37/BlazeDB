@@ -25,6 +25,10 @@ What has been **proven** versus **assumed**:
 | 🟡 **Production** | Local packaging (`package-kmm-artifacts.sh`); **no registry publish until demand** |
 | ⚪ **Ecosystem** | **Frozen** — do not expand KMM scope without user pull; see roadmap below |
 
+### File ownership (single-writer)
+
+`PageStore` acquires exclusive `flock(LOCK_EX | LOCK_NB)` on Darwin, Glibc Linux, and Android (Bionic via `import Android`, which re-exports `sys/file.h`). A second open must fail with `BlazeDBError.concurrentProcessAccessNotSupported`. Platforms without flock fail closed on open rather than proceeding unlocked. Same-process coverage exists on host CI; end-to-end two-OS-process proof is [#411](https://github.com/Mikedan37/BlazeDB/issues/411). Android-specific enforcement fix: [#412](https://github.com/Mikedan37/BlazeDB/issues/412).
+
 ---
 
 ## Proof order (do not skip layers)
