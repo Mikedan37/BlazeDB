@@ -20,7 +20,7 @@ Dozens of open issues does **not** mean every ticket is a release blocker. The t
 | Measurement / packaging | `performance`, `ci`, `linux`, `Portability` | After evidence or platform gates |
 | Experimental / later | Android, KMM, deferred sync | Not the default product path |
 
-Release-oriented focus is summarized in [`ROADMAP.md`](../../ROADMAP.md) (**Current engineering focus**) and the README.
+Release-oriented focus is summarized in [`ROADMAP.md`](../../ROADMAP.md) (**Maintainer priorities** / **Now**) and the README.
 
 ## Finding work
 

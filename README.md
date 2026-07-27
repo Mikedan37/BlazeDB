@@ -39,13 +39,7 @@ BlazeDB’s public database-opening APIs require a password, and persisted data 
 
 ### Current engineering focus
 
-Near-term correctness and packaging work (not a feature laundry list):
-
-- Crash-recovery correctness
-- Lifecycle and concurrency hardening
-- Cache / isolation correctness across open databases
-- CLI consistency and diagnostics
-- Linux and C ABI packaging
+Near-term work is packaging and documentation honesty for contributors, with maintainer attention ordered as: security correctness (RLS) → continuous verification → durability invariants → performance (after measurement). See [ROADMAP.md](ROADMAP.md).
 
 The [issue tracker](https://github.com/Mikedan37/BlazeDB/issues) includes verified defects, contributor tasks, documentation work, and deferred platform improvements. **Not every open issue is a release blocker.** Use labels to navigate:
 
@@ -304,7 +298,7 @@ Distributed sync, discovery, server paths, and full telemetry packaging are outs
 
 ## Roadmap
 
-See [ROADMAP.md](ROADMAP.md) for Now / Next priorities. Planned items are directional and are not release guarantees. For how open issues relate to release risk, see [Current engineering focus](#current-engineering-focus) above. Maintainer evidence and audits: [Docs/Product/](Docs/Product/).
+See [ROADMAP.md](ROADMAP.md) for Now / Next priorities and maintainer priority order. Planned items are directional and are not release guarantees. For how open issues relate to release risk, see [Current engineering focus](#current-engineering-focus) above. Evidence lockers: [Docs/Product/](Docs/Product/), [Docs/Audit/](Docs/Audit/).
 
 ---
 
