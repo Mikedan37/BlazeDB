@@ -2,6 +2,8 @@
 
 **Purpose:** Honest, reproducible performance comparisons between BlazeDB and SQLite.
 
+Engine (in-process) numbers and daemon-mediated numbers measure different boundaries. Do not mix them: [ENGINE_VS_DAEMON_BENCHMARKS.md](../Guarantees/ENGINE_VS_DAEMON_BENCHMARKS.md).
+
 ---
 
 ## What BlazeDB Is Optimized For
