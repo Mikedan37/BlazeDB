@@ -4,12 +4,25 @@
 
 Do not list this in README tools. Do not ship an SDK. Do not invent a BlazeServer brand here.
 
+## What this is not proving
+
+The architecture pattern already works. Owning services such as BlazeAgent show:
+
+```text
+clients → daemon / agent service → one BlazeDB owner
+```
+
+That is a real application that owns BlazeDB through a daemon. It is not this harness, and it is not a BlazeDB daemon product.
+
 ## Purpose
 
-Answer one question:
+Answer one narrower question:
 
-> How much throughput can coordinated batching recover while preserving single-writer ownership?
+> How much performance do batching, group commit, and queue coordination add compared with direct embedding and unbatched daemon access?
 
+Prefer realistic request patterns (replay from an owning service when available) over synthetic banana traffic.
+
+Not: “Can one owner mediate many clients?” (already proven)  
 Not: “Should BlazeDB become a server database?”
 
 ## Intended scope (when implemented)
@@ -27,7 +40,7 @@ Not: “Should BlazeDB become a server database?”
 Promote nothing from this folder unless **both** are true:
 
 1. Measured benefit is material under a stated durability mode
-2. A real multi-process ownership need exists that embedding (Vapor, C ABI, one owning service) does not already cover
+2. A real generalized multi-process product need exists that application-owned services (BlazeAgent, Vapor, C ABI embed) do not already cover
 
 See: [ENGINE_VS_DAEMON_BENCHMARKS.md](../../Docs/Guarantees/ENGINE_VS_DAEMON_BENCHMARKS.md)
 

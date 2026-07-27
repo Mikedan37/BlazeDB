@@ -2,30 +2,65 @@
 
 You can put BlazeDB behind a single owning daemon. That is useful. It measures a **different system boundary**.
 
+## The pattern is already proven
+
+BlazeAgent (and similar owning services) already demonstrate:
+
+```text
+agent clients → daemon / agent service → one BlazeDB owner
+```
+
+That is evidence, not speculation:
+
+- BlazeDB can sit behind a long-lived service
+- multiple callers can interact indirectly with one database owner
+- the database file remains single-writer
+- the daemon can manage lifecycle, queues, and persistence
+- the pattern works in a real project, not only on a whiteboard
+
+So “other processes talk to one owner” is not merely a FAQ workaround. It is an architecture BlazeDB already supports through embedding and application-owned services.
+
+Keep the three roles distinct:
+
+| Role | What it is |
+|------|------------|
+| BlazeAgent (or any owning service) | A real application that owns BlazeDB through a daemon |
+| `Experiments/DaemonBatching` | Measures ownership and batching strategies |
+| BlazeDB daemon product | Does not exist and is not currently justified |
+
 ## Decision rule
 
 **No product promotion without both measured benefit and demonstrated demand.**
 
 | Question | Status |
 |----------|--------|
-| Can BlazeDB run inside a service? | Already yes (Swift app, Vapor, Docker, C ABI / Go, etc.) |
-| Can one owner coordinate many clients efficiently? | Worth measuring |
-| Should that become a supported product? | Not without evidence |
+| Can BlazeDB run inside a service? | Already yes (apps, Vapor, Docker, C ABI / Go, BlazeAgent-style owners) |
+| Can one owner coordinate many clients? | Already proven as an architecture |
+| How much do batching / group commit / queue coordination add vs direct embed and unbatched daemon access? | Worth measuring |
+| Should that become a supported BlazeDB daemon product? | Not without evidence |
 
-Strong batching numbers without a real multi-process ownership need produce a clever artifact nobody needs. A use case without strong gains may already be served by embedding in Vapor, Go via the C ABI, or a normal server database.
+Strong batching numbers without a generalized multi-process product need produce a clever artifact nobody needs. An application-specific owner (BlazeAgent, a Vapor service, Go via the C ABI) may already be the right shape.
 
-Until both gates pass, the architecture stays:
+Until both product gates pass, the architecture stays:
 
 ```text
 one process owns the database file
 other code embeds BlazeDB or talks to that owner
 ```
 
-That is a coherent boundary, not a limitation begging for another branded subsystem.
-
 ## Research harness (allowed)
 
 Bounded experiment only: [Experiments/DaemonBatching/](../../Experiments/DaemonBatching/).
+
+The harness is **not** asking “Can this architecture work?” That is already answered.
+
+It asks:
+
+> How much performance do batching, group commit, and queue coordination add compared with direct embedding and unbatched daemon access?
+
+Prefer realistic traffic when possible (for example, extract or replay request patterns from an owning service such as BlazeAgent) over synthetic “N clients store the word banana” loads.
+
+Scope:
 
 - one daemon process owning one database
 - Unix domain socket locally
@@ -42,15 +77,11 @@ Measure under the **same durability mode**:
 - p50 / p95 / p99 latency, throughput, queue depth, fsync count, batch size
 - crash and restart behavior
 
-Question to answer:
-
-> How much throughput can coordinated batching recover while preserving single-writer ownership?
-
 Not:
 
 > Should BlazeDB become a server database?
 
-A negative result is still useful: it avoids months of protocol, packaging, and support work.
+A negative result is still useful: it avoids months of protocol, packaging, and support work for a generalized product nobody needs.
 
 ## Two different measurements
 

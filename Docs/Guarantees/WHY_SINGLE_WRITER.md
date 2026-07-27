@@ -15,6 +15,6 @@ Within one process, BlazeDB still supports:
 
 Do not share one `.blazedb` file across applications or place it on a network filesystem. If multiple processes need to write the same data today, use a server database or a daemon/process that mediates access to the DB.
 
-A daemon can raise system throughput through batching and queueing. It does not make BlazeDB multi-writer. Details and product gates: [ENGINE_VS_DAEMON_BENCHMARKS.md](ENGINE_VS_DAEMON_BENCHMARKS.md).
+That ownership pattern is already proven in real projects (for example BlazeAgent: clients → agent service → one BlazeDB owner). A daemon can also raise system throughput through batching and queueing. It does not make BlazeDB multi-writer, and it does not invent a BlazeDB daemon product. Details and product gates: [ENGINE_VS_DAEMON_BENCHMARKS.md](ENGINE_VS_DAEMON_BENCHMARKS.md).
 
 More detail on safety: [SAFETY_MODEL.md](SAFETY_MODEL.md)
