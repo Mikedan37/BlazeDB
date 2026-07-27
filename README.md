@@ -1,8 +1,8 @@
 # BlazeDB
 
-BlazeDB is an encrypted embedded document database written in Swift. It runs inside your process, stores data locally, and does not require a separate database server or network connection.
+BlazeDB is a Swift-native, encrypted embedded document database for local applications: typed models, transactions, WAL recovery, CLI tooling, and a stable C ABI, single-process by design.
 
-It is intended for applications that need private local persistence, typed Swift models, transactions, and inspection tooling without operating a separate database service.
+It runs inside your process, stores data locally, and does not require a separate database server or network connection. It is intended for apps that need private local persistence and inspection tooling without operating a database service. “Local” here means on-device / in-process storage — not a multiplayer sync or distributed-replica product.
 
 You can use BlazeDB from Swift applications, from the `blazedb` CLI, or through its documented C ABI. Published C symbols and signatures follow the compatibility rules defined in the ABI documentation. The primary open-source product is the embedded Swift engine. The C ABI is one way to reach that same engine, not a replacement for the Swift product story.
 
@@ -36,6 +36,28 @@ See [Compatibility](Docs/COMPATIBILITY.md) for minimum versions and support deta
 ### Guarantees and boundaries
 
 BlazeDB’s public database-opening APIs require a password, and persisted data is encrypted at rest with AES-GCM. Durability for the default client path is WAL-backed; see [Durability Mode Support](Docs/Status/DURABILITY_MODE_SUPPORT.md) for modes, fsync behavior, and recovery details. The engine is single-process oriented. Multi-writer and network filesystem behavior are not the primary design target.
+
+### Current engineering focus
+
+Near-term correctness and packaging work (not a feature laundry list):
+
+- Crash-recovery correctness
+- Lifecycle and concurrency hardening
+- Cache / isolation correctness across open databases
+- CLI consistency and diagnostics
+- Linux and C ABI packaging
+
+The [issue tracker](https://github.com/Mikedan37/BlazeDB/issues) includes verified defects, contributor tasks, documentation work, and deferred platform improvements. **Not every open issue is a release blocker.** Use labels to navigate:
+
+| Label / filter | Meaning |
+|----------------|---------|
+| [`good first issue`](https://github.com/Mikedan37/BlazeDB/labels/good%20first%20issue) | Bounded docs/tooling for new contributors |
+| [`help wanted`](https://github.com/Mikedan37/BlazeDB/labels/help%20wanted) | Maintainer-backed outside contributions |
+| [`durability`](https://github.com/Mikedan37/BlazeDB/labels/durability) / [`concurrency`](https://github.com/Mikedan37/BlazeDB/labels/concurrency) / [`High Priority`](https://github.com/Mikedan37/BlazeDB/labels/High%20Priority) | Maintainer-owned correctness |
+| [`needs design`](https://github.com/Mikedan37/BlazeDB/labels/needs%20design) | Contract decision before coding |
+| Experimental / later | Android, KMM, deferred sync — see [Compatibility](Docs/COMPATIBILITY.md) and [ROADMAP](ROADMAP.md) |
+
+Details: [ISSUE_GUIDE](Docs/Contributing/ISSUE_GUIDE.md) · [ROADMAP](ROADMAP.md). Forensic audits live under [Docs/Product/](Docs/Product/) for serious contributors; they are not the first-time product path.
 
 ---
 
@@ -282,10 +304,7 @@ Distributed sync, discovery, server paths, and full telemetry packaging are outs
 
 ## Roadmap
 
-See [ROADMAP.md](ROADMAP.md) for current priorities and exploratory work.
-Planned items are directional and are not release guarantees.
-
-Near-term direction includes contributor safety for storage changes, on-disk compatibility fixtures, truthful Go packaging (sources + CI, then a versioned module), and additive C ABI evolution such as iterators. Evidence: [Docs/Product/PRODUCT_AUDIT.md](Docs/Product/PRODUCT_AUDIT.md).
+See [ROADMAP.md](ROADMAP.md) for Now / Next priorities. Planned items are directional and are not release guarantees. For how open issues relate to release risk, see [Current engineering focus](#current-engineering-focus) above. Maintainer evidence and audits: [Docs/Product/](Docs/Product/).
 
 ---
 

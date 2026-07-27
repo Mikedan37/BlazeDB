@@ -3,9 +3,10 @@
 **Date:** 2026-07-26  
 **Base commit:** `1760fb8d`  
 **Method:** Seven parallel investigation agents + code verification.  
-**Rules:** No new GitHub issues. No product code changes. No label mass-edits.
+**Rules (original pass):** No speculative issue flood; evidence-first.  
+**Rules (filing update 2026-07-26):** Cap removed. File every proven, supported, independently actionable defect. Hypotheses / experimental / duplicates stay here.
 
-Known tracked work (#258–#294, especially #276–#283, #291) is treated as **already owned**. This document adds only non-duplicative planning signal.
+Known tracked work (#258–#299, especially #276–#283, #291, #295–#299) is treated as **already owned** where applicable.
 
 Related: [ISSUE_TRACKER_AUDIT](ISSUE_TRACKER_AUDIT.md) · [ISSUE_CODE_INDEX](../Contributing/ISSUE_CODE_INDEX.md) · [CODEBASE_MAP](../Architecture/CODEBASE_MAP.md) · [ROADMAP](../../ROADMAP.md)
 
@@ -21,7 +22,7 @@ BlazeDB’s hottest write/open/query defects are already ticketed. The audit’s
 4. **Coverage holes** that leave #277 and concurrent close/vacuum untested in PR gates.
 5. **Feature asks** that stay in audit/backlog until designed (FFI handle generation, CLI argv secrets, Linux `.so`).
 
-**Do not open 30 tickets.** Prefer fixing or extending existing issues, then at most ~10–12 strong new candidates after approval.
+**Discipline is evidence quality, not issue-count cosmetics.** Speculative umbrellas and unsupported surfaces stay in this audit / roadmap.
 
 ---
 
@@ -197,31 +198,35 @@ Speculative durability-boundary mega-refactor as separate epic; distributed; “
 
 ---
 
-## Proposed GitHub actions (approval required)
+## GitHub filing status (cap removed)
 
-| Candidate | Type | Evidence | Duplicate search | Existing | Proposed action |
-|-----------|------|----------|------------------|----------|-----------------|
-| Vacuum closes live store under barrier / no txn guard | bug | Proven | vacuum concurrent close store | none | **new issue candidate** (C-NEW-1) |
-| close() vs concurrent writers TOCTOU | bug | Proven | close writeLock concurrent | LifecycleTests only | **new issue candidate** (C-NEW-2) |
-| softDelete docs vs hidden fetch | documentation / API | Proven | softDelete fetch isDeleted | none | **new issue candidate** (docs-first) |
-| count() vs getRecordCount() semantics | API | Proven | count getRecordCount soft-delete | none | **new issue candidate** (or fold into soft-delete) |
-| BlazeDBC handle UAF / double-close | security/ffi | Proven | use-after-close BlazeDBC | N7 audit only | **new issue candidate** (with #267) |
-| beginTxn O(N) snapshot + full backup cost | investigation | Proven | beginTransaction snapshot backup | near #276/#291 | **update #291** + note on #276 |
-| deletePage per-page fsync / deleteBatch | performance | Proven | deletePage synchronize batch | not #284 | **new issue candidate** or extend #291 |
-| Linux insertMany fallback | performance / platform | Proven | BLAZEDB_LINUX_CORE insertMany | near #51 | **update #51** or small new issue |
-| QueryCache / RecordCache lifecycle | investigation | Strong | QueryCache unbounded | near #280 | **keep in audit** until #280 lands |
-| rawDump unsynchronized | bug | Proven | rawDump queue | none | **new issue candidate** (lower priority) |
-| put([T]) non-atomic | API design | Strong | put array transaction | none | **keep in audit** / Discussion |
-| CLI password argv | security | Proven | password argv Doctor | N6 | **keep in audit** until design |
-| Soft-delete upsert resurrection | bug | Strongly supported | softDelete upsert | none | **new issue candidate** after soft-delete decision |
-| PageStore static OID caches | investigation | Strong | writeBatches memoryMappedFiles | none | **keep in audit** |
-| Overflow orphan reclaim test | testing | Strong | C3 backlog | ROADMAP_BACKLOG | **keep in backlog** |
-| #277 missing crash-after-commit test | testing | Proven | — | #277 | **add test requirement** to #277 |
-| #291 matrix widen | investigation | — | — | #291 | **update existing issue** |
+| Candidate | Disposition |
+|-----------|-------------|
+| Vacuum closed-store resume (C-NEW-1) | **#295** (closed; fixed) |
+| close/write TOCTOU (C-NEW-2) | **#296** (closed; fixed) |
+| softDelete docs + count/getRecordCount (A-NEW-1/2) | **#297** (`needs design`) |
+| BlazeDBC handle UAF / double-close (C-NEW-5) | **#298** |
+| rawDump unsynchronized (C-NEW-6) | **#299** |
+| Soft-delete upsert resurrection (A-NEW-3) | **#304** |
+| Meta fsync undercount (P-NEW-4) | **#305** |
+| QueryCache cross-DB keys (M-NEW-1 observable) | **#306** |
+| RecordCache close/registry (M-NEW-2) | **#307** |
+| PageStore static OID maps (C-NEW-7) | **#308** |
+| put([T]) non-atomic (A-NEW-4) | **#309** |
+| CLI password argv (A-NEW-6 / N6) | **#310** |
+| deletePage per-page fsync (P-NEW-2) | **#311** |
+| Linux insertMany silent fallback (P-NEW-3) | **#312** (+ comment on #51) |
+| beginTxn O(N) snapshot/backup (P-NEW-1 / M-NEW-4) | **update #291** / near #276 — not a separate bug |
+| #277 crash-after-commit test | owned by **#277** |
+| BlazeDBC put throughput (P-NEW-6) | **withheld** — needs measurement (#291); not filed |
+| Android SessionRegistry race | **withheld** — experimental surface |
+| Linux `.so` packaging | **withheld** — unimplemented distribution goal |
+| Overflow orphan reclaim test | **ROADMAP_BACKLOG** |
+| close() rolls back open txn (A-NEW-5) | **intentional contract** — document only |
+| CLI vs engine password policy split (A-NEW-7) | **intentional / design** — not filed as defect |
+| “Unbounded cache cleanup” umbrella | **rejected** — filed observable defects only |
 
-**Reject / do not file:** duplicate latency of #276; LiveQuery (#275); fetchAll (#280); index-before-sync (#281); nested sync (#279); RLS fail-open behavior change.
-
-**Limit:** file at most the strongest **8–10** after approval (prefer C-NEW-1/2, soft-delete/count, BlazeDBC UAF, delete fsync, Linux insertMany, rawDump, soft-delete resurrection).
+**Reject / do not file:** duplicate latency of #276; LiveQuery (#275); fetchAll (#280); index-before-sync (#281); nested sync (#279 closed); RLS fail-open behavior change; BlazeDBC “could be faster” without measurement.
 
 ---
 
@@ -244,10 +249,10 @@ Unverified: deterministic vacuum+insert crash; BlazeDBC double-close crash on th
 
 **Validation explicitly not run this audit:** full Tier0, `BLAZEDB_BENCH_MODE=write_profile`, Thread Sanitizer, Instruments / `fs_usage` / `strace`.
 
-### Linux `insertMany` note (withheld from new-issue flood)
+### Linux `insertMany` note
 
-`BlazeDBClient.insertMany` / `deleteMany(ids:)` use `#if !BLAZEDB_LINUX_CORE` → `insertBatch` / batch delete on Apple, else a loop of individual ops. Public API comments still describe optimized batching. `Docs/GettingStarted/LINUX_PLATFORM_MODEL.md` tells migrators to replace `insertBatch` with insert loops — so collection-level batch gaps are partly documented, but **client `insertMany` silently loses batch durability amortization on Linux**. Keep measurement under #291; surface as a comment on #51 rather than a sixth issue in the filing pass.
+Filed as **#312**; measurement remains under #291; Tier1/CI contract remains #51.
 
-### Filing pass (post-approval)
+### Filing pass (complete)
 
-Planned new issues (≤5): vacuum closed-store resume; close/write race; soft-delete/count contract; BlazeDBC handle lifecycle; rawDump unsynchronized (proven: `indexMap` iteration + `readPageWithOverflow` off `collection.queue`).
+First wave: #295–#299. Cap-removed wave: #304–#312. See table above.

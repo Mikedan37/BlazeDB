@@ -1,8 +1,8 @@
 # BlazeDB Issue Tracker Audit
 
-**Date:** 2026-07-26  
-**Repo tip at audit:** `c2ad82cf`  
-**Open issues counted:** 41  
+**Date:** 2026-07-26 (inventory refresh 2026-07-26 evening)  
+**Repo tip at audit:** `c2ad82cf` (refresh observed tip `cd4a6e1d`)  
+**Open issues counted:** 41 (refresh: 55 open at tip)  
 **Method:** Live GitHub inventory + code/docs evidence + agent cross-checks. Mutations that close/relabel many issues are **proposed only** until maintainer approval (Phase 12).
 
 Document roles (unchanged):
@@ -27,7 +27,7 @@ The tracker is **already strong**: most #258–#291 issues are evidence-backed, 
 
 | Priority | Issues | Why |
 |----------|--------|-----|
-| P0 correctness | #277, #278, #279 | Data loss window; UB iteration; deadlock |
+| P0 correctness | #277 | Data loss window (#278 live-keys mutation and #279 nested-sync deadlock **closed**) |
 | P0 durability semantics | #276 (fix gated on #291), #281, #283 | Txn I/O, index/durability order, Linux barrier |
 | P1 caches / API honesty | #280, #282, #274/#261 | Stale reads; silent drops; scan vs index claims |
 | P1 product hardening (Now) | #263–#266, #259 | Fixtures, Go, BlazeDBC, schema docs, CLI honesty |
@@ -68,8 +68,8 @@ Evidence quality: **proven** / **strong** / **weak** / **stale**.
 | 275 | LiveQuery coalesce | strong | no | keep |
 | 276 | txn fsync amortize | proven | no | rewritten; optimize **blocked on #291**; `durability` |
 | 277 | crash lose commit | proven | no | keep; `durability` + release-blocking |
-| 278 | live keys mutation | proven | no | keep |
-| 279 | nested sync deadlock | proven | no | keep |
+| 278 | live keys mutation | **closed** | — | fixed (lifecycle / batch-predicate races) |
+| 279 | nested sync deadlock | **closed** | — | fixed (lifecycle / nested sync) |
 | 280 | fetchAll cache | proven | no | keep; optional split A/B |
 | 281 | insertBatch index before sync | proven | no | keep |
 | 282 | typed bulk silent drop | proven | no | keep |
@@ -82,6 +82,9 @@ Evidence quality: **proven** / **strong** / **weak** / **stale**.
 | 289 | ./dev arch mismatch | strong | yes | keep |
 | 290 | Dump/Info JSON | strong | yes | keep |
 | 291 | widen write-profile | strong | no | keep; **blocks #276 optimize** |
+| 301 | Linux `fflush(stdout)` Swift 6.2 | **closed** | — | fixed in `1f6dee88`; rationale issue |
+| 302 | Linux Tier0 NestedQueue Sendable | proven | no | keep (Linux PR Gate) |
+| 314 | Tier1 RLS test missing `)` | proven | yes (syntax-only) | **filed**; `bug`+`tests`+`rls` |
 
 ### Duplicate / linkage map
 
@@ -91,13 +94,14 @@ Evidence quality: **proven** / **strong** / **weak** / **stale**.
 #276 ──related──► #277 (commit restore) / #281 / #284
 #286 ──related──► #288 (fail-open docs)
 #270 ──related──► #273 (doc iterations)
+#314 (Tier1 RLS syntax) ──distinct from──► #302 (Linux Tier0 Sendable)
 ```
 
 ---
 
 ## Label inventory
 
-**Present and useful:** `bug`, `documentation`, `enhancement`, `good first issue`, `help wanted`, `ci`, `tests`, `security`, `storage-engine`, `reliability`, `concurrency`, `api-correctness`, `linux`, `Portability`, `High Priority`, `tech-debt`, `cleanup`, `typed-store`, …
+**Present and useful:** `bug`, `documentation`, `enhancement`, `good first issue`, `help wanted`, `ci`, `tests`, `rls`, `security`, `storage-engine`, `reliability`, `concurrency`, `api-correctness`, `linux`, `Portability`, `High Priority`, `tech-debt`, `cleanup`, `typed-store`, …
 
 **Gaps (optional, do not explode taxonomy):**
 
@@ -160,7 +164,8 @@ Evidence quality: **proven** / **strong** / **weak** / **stale**.
 | Issue | Recommendation |
 |-------|----------------|
 | #277 | Add `durability` + treat as **release-blocking** until fixed or explicitly risk-accepted |
-| #278/#279 | Keep High Priority; ensure reproduction snippets in body (already code-proven) |
+| #278/#279 | **Closed** — leave closed; do not re-open for sequencing theater |
+| #314 | Syntax-only Tier1 compile break; fix independently of #302 |
 | #288 | Docs-only Non-goals; remove implication of auth redesign |
 | #276 | State: **optimize blocked on #291**; measurement already sufficient for “defect exists” |
 | #291 | Investigation only — no optimization acceptance criteria |
@@ -189,6 +194,14 @@ Evidence quality: **proven** / **strong** / **weak** / **stale**.
 | [#292](https://github.com/Mikedan37/BlazeDB/issues/292) | Docs: Correct QUERY_PLANNER O(log n) claims |
 | [#293](https://github.com/Mikedan37/BlazeDB/issues/293) | Docs: Fix DURABILITY_MODE_SUPPORT WAL fsync wording |
 | [#294](https://github.com/Mikedan37/BlazeDB/issues/294) | Docs: SAFETY_MODEL buffered txn I/O honesty |
+
+### C. CI/workstream filing pass (no sequencing)
+
+| # | Title | Labels | Status |
+|---|-------|--------|--------|
+| [#301](https://github.com/Mikedan37/BlazeDB/issues/301) | Linux Swift 6.2: `fflush(stdout)` concurrency | bug, linux, ci, tests, swift-6, concurrency | **closed** (fixed `1f6dee88`) |
+| [#302](https://github.com/Mikedan37/BlazeDB/issues/302) | Linux Tier 0: NestedQueueSyncQueryTests Sendable | bug, linux, ci, tests, swift-6, concurrency | open |
+| [#314](https://github.com/Mikedan37/BlazeDB/issues/314) | Fix missing closing parenthesis in RLSEnforcementClientTests | bug, tests, rls | open (filed this pass) |
 
 ### Still proposed only (do not file yet)
 
