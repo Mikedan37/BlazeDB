@@ -89,15 +89,15 @@ In short: the nightly workflow optimizes for coverage visibility and time-to-sig
 - Runs `./Scripts/ci-apple-cross-compile.sh`: compile-only `swift build --target BlazeDBCore` for **iOS** (simulator + device), **watchOS** (simulator + device), and **tvOS** (simulator + device). **visionOS** is attempted but may be non-blocking when SwiftPM does not yet recognize `xros` triples during dependency resolution (`⚠️ visionOS skipped (SwiftPM/toolchain)` in the job summary); unexpected visionOS **compile** failures still fail CI. Set `BLAZEDB_APPLE_REQUIRE_VISIONOS=1` to require visionOS success once toolchains catch up. The script asserts `Package.swift` `platforms:` are covered — add targets there when Apple ships another OS.
 - **Compile-only:** no XCTest or simulator runtime in this job. macOS-hosted Tier0/Tier1 remain the behavioral gate; optional Phase 2 is nightly iOS Simulator Tier0 after this lane is stable.
 
-- **Secondary (blocking):** `Android — cross-compile BlazeDBAndroidBridge`
+- **Secondary (blocking):** `Android — Cross-Compile`
 - Runner: `ubuntu-22.04`
 - OSS Swift **6.3.2** via `./Scripts/install-android-swift.sh` (must match Android SDK bundle in `Scripts/android-swift-config.sh` — **not** Xcode Swift)
 - Caches `.build`, `~/.swiftpm/swift-sdks`, and NDK under the SDK bundle
 - Runs `./Scripts/ci-android-cross-compile.sh` (arm64 + x86_64 `libBlazeDBAndroidBridge.so`)
 - Verifies both `.build/aarch64-unknown-linux-android28/debug/` and `.build/x86_64-unknown-linux-android28/debug/` bridge libs
 - **KMM Android compile-only (Linux):** Java 17 + `./Scripts/setup-android-gradle-sdk-linux.sh`, then `./gradlew :shared:compileDebugKotlinAndroid`. Uploads native libs for downstream KMM jobs.
-- **KMM Android emulator (Linux KVM):** Job `kmm-android-emulator` — `ubuntu-latest` + `reactivecircus/android-emulator-runner` (`arch: x86_64`) + `./Scripts/ci-kmm-android-emulator-smoke.sh` (`connectedDebugAndroidTest` with `-PBLAZEDB_ANDROID_ABIS=x86_64`).
-- **KMM Android packaging (macOS):** Job `kmm-android-packaging` — stages arm64 native libs + `./Scripts/package-kmm-artifacts.sh`. See [KMM CI (Android + iOS)](#kmm-ci-android--ios).
+- **`KMM Android — x86_64 Emulator Runtime`:** Job `kmm-android-emulator` — `ubuntu-latest` + Linux KVM + `reactivecircus/android-emulator-runner` (`arch: x86_64`) + `./Scripts/ci-kmm-android-emulator-smoke.sh` (`connectedDebugAndroidTest` with `-PBLAZEDB_ANDROID_ABIS=x86_64`).
+- **`KMM Android — arm64 Artifact Packaging`:** Job `kmm-android-packaging` — macOS stages arm64 native libs + `./Scripts/package-kmm-artifacts.sh`. See [KMM CI (Android + iOS)](#kmm-ci-android--ios).
 
 - `.github/workflows/tag-probe.yml`
 - Trigger: **manual** (`workflow_dispatch`) only
@@ -174,8 +174,9 @@ Kotlin Multiplatform integration lives in `Examples/android/shared` (`expect cla
 | Job | Platform | CI step | Runtime? |
 | --- | --- | --- | --- |
 | `macOS 15 — build, CLI, tests` | iOS (simulator) | `./Scripts/build-kmm-ios-bridge.sh` → `:shared:linkDebugFrameworkIosSimulatorArm64` + `:shared:iosSimulatorArm64Test` | **Yes** — `BlazeDBRuntimeSmokeTest` (`open` / `put` / `query`) |
-| `Android — cross-compile BlazeDBAndroidBridge` | Android (JVM/Kotlin) | `:shared:compileDebugKotlinAndroid` after OSS Swift cross-compile | Compile-only on Linux |
-| `KMM Android — emulator runtime + packaging` | Android (arm64 emulator) | `ci-kmm-android-emulator-smoke.sh` + `package-kmm-artifacts.sh` | **Yes** — instrumentation test (`open` / `put` / `query`) |
+| `Android — Cross-Compile` | Android (native + JVM/Kotlin) | OSS Swift cross-compile + `:shared:compileDebugKotlinAndroid` | Compile-only on Linux |
+| `KMM Android — x86_64 Emulator Runtime` | Android (x86_64 emulator, Linux KVM) | `ci-kmm-android-emulator-smoke.sh` | **Yes** — instrumentation test (`open` / `put` / `query`) |
+| `KMM Android — arm64 Artifact Packaging` | Android (arm64 packaging, macOS) | `package-kmm-artifacts.sh` | No — AAR / native `.so` / packaging verify |
 
 ### What CI does **not** prove (local scripts)
 
@@ -310,7 +311,7 @@ Use precise language so status and dashboards do not blur the PR gate with deepe
 | **PR3 transitional companions** | `BlazeDB_Tier2_Extended`, `BlazeDB_Tier3_Heavy_Perf`; temporary bridge targets slated for PR4 filesystem/target normalization. |
 | **Nightly Confidence (daily)** | `nightly.yml`: macOS Tier2 strict, clean checkout, README quickstart, Tier0 TSan; **Linux** `linux-tier1` + `linux-tier2-core` only (no Linux Tier0 nightly — covered in PR `ci.yml`). |
 | **Deep Validation (weekly)** | `deep-validation.yml` (weekly, Sun 03:00 UTC + manual), **delta-only**: **`deep-macos-tier3-heavy-destructive`**, **`deep-macos-tsan-tier1`**, **`deep-linux-tier2-extended`**, **`deep-linux-tier3-heavy`**, **`deep-linux-tier3-heavy-profile`**, **`deep-linux-tier3-heavy-perf`** — does not re-run PR/nightly tiers. |
-| **KMM PR gate** | iOS: `iosSimulatorArm64Test`. Android compile (Linux). Android emulator runtime (Linux KVM `kmm-android-emulator`). Android packaging (macOS `kmm-android-packaging`). |
+| **KMM PR gate** | iOS: `iosSimulatorArm64Test`. Progression: `Android — Cross-Compile` → `KMM Android — x86_64 Emulator Runtime` (`kmm-android-emulator`) → `KMM Android — arm64 Artifact Packaging` (`kmm-android-packaging`). |
 | **Canonical Tier1** | `BlazeDB_Tier1` (single canonical Tier1 target). |
 
 Inventory/bootstrap code may still bucket all three SwiftPM modules under a single **`T1`** label for file-level manifests; that is a storage convenience. **Human-facing** summaries (CI names, release notes, team chat) should use the table above, not a vague “T1 passed.”
