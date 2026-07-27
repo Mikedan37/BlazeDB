@@ -1,5 +1,9 @@
 # BlazeDB Optimization Roadmap
 
+> **Historical planning document (archived).**
+> Current roadmap: [`ROADMAP.md`](../../../ROADMAP.md)
+> Performance work is maintainer priority #4 there (measurement before optimize).
+
 **Comprehensive analysis of optimization opportunities to improve performance, memory efficiency, and speed.**
 
 ---
@@ -555,4 +559,3 @@ These three optimizations will provide **2-3x overall performance improvement** 
 
 **Last Updated**: 2025-01-XX
 **Priority**: High (Phase 1), Medium (Phase 2), Low (Phase 3)
-
