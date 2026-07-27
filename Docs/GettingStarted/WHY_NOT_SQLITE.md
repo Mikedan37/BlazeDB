@@ -41,11 +41,11 @@ These rows describe the **default open-source package**, not roadmap aspirations
 | Live queries and SwiftUI integration | **Shipped (Apple platforms)** | Observation helpers are Apple-oriented; portable observe APIs exist in core |
 | Local inspection (`blazedb` CLI/REPL, maintenance tools) | **Shipped** | |
 | Documented C ABI (`BlazeDBC`) | **Shipped** | Go via cgo is a recipe, not an official Go module |
-| Optional schema validation and migrations | **Shipped (opt-in)** | Flexible by default; **migrations exist** when you opt in — not “schema-less / no migrations” |
-| Concurrency model | **Shipped (qualified)** | Single-process embedded engine. Transactions provide consistency. **MVCC / snapshot isolation exists in the codebase but is not the default path** — do not market “MVCC snapshot isolation” as the everyday guarantee. |
+| Optional schema validation and migrations | **Shipped (opt-in)** | Flexible by default; **migrations exist** when you opt in, not “schema-less / no migrations” |
+| Concurrency model | **Shipped (qualified)** | Single-process embedded engine. Transactions provide consistency. **MVCC / snapshot isolation exists in the codebase but is not the default path**. Do not market “MVCC snapshot isolation” as the everyday guarantee. |
 | Optional Secure Enclave-assisted key storage | **Platform optional** | Not required for default password-derived encryption |
 | Android / KMM consumption | **Experimental** | Engineering validation; not a production SDK claim |
-| Multi-device sync / discovery / network server | **Deferred** | Not part of the default OSS package — see [DISTRIBUTED_TRANSPORT_DEFERRED.md](../Status/DISTRIBUTED_TRANSPORT_DEFERRED.md) |
+| Multi-device sync / discovery / network server | **Deferred** | Not part of the default OSS package. See [DISTRIBUTED_TRANSPORT_DEFERRED.md](../Status/DISTRIBUTED_TRANSPORT_DEFERRED.md) |
 | SQL string dialect | **Not shipped** | Use SQLite if you need SQL |
 
 ---
@@ -82,12 +82,12 @@ Older comparison tables in the repo sometimes claimed mythology. Prefer this pag
 | **Performance** | Cite [Benchmarks](../Benchmarks/README.md) only. Do **not** use “predictable, optimized for Apple Silicon” or free-floating “% faster than SQLite” slogans. |
 | **Encryption** | At-rest pages: **AES-256-GCM** with password-derived keys on public open APIs. SQLite encryption remains optional/extension-based (e.g. SQLCipher). |
 | **Platforms** | macOS/Linux runtime-tested; other Apple platforms compile-tested; Android/KMM experimental. |
-| **Sync** | Deferred from the default OSS package — not a selection reason today. |
+| **Sync** | Deferred from the default OSS package, not a selection reason today. |
 
 ### Brief notes on Core Data and Realm
 
-- **Core Data** — Apple-framework ORM/persistence with deep Cocoa integration and its own migration story. Prefer it when you want framework integration over a standalone encrypted document engine.
-- **Realm** — Mobile-oriented object database with a long commercial/sync history; **licensing and sync product status have changed over time** — verify current upstream terms rather than citing a one-word “Commercial/MIT” cell. Prefer Realm when you specifically want that ecosystem; prefer BlazeDB when you want MIT-licensed, encryption-default, Swift-native embedded storage without a sync product claim.
+- **Core Data**: Apple-framework ORM/persistence with deep Cocoa integration and its own migration story. Prefer it when you want framework integration over a standalone encrypted document engine.
+- **Realm**: Mobile-oriented object database with a long commercial/sync history; **licensing and sync product status have changed over time**. Verify current upstream terms rather than citing a one-word “Commercial/MIT” cell. Prefer Realm when you specifically want that ecosystem; prefer BlazeDB when you want MIT-licensed, encryption-default, Swift-native embedded storage without a sync product claim.
 
 This page does **not** maintain a full BlazeDB vs Core Data vs Realm feature matrix. Those one-liners go stale quickly.
 
@@ -131,7 +131,7 @@ Distributed sync, discovery, and a networked BlazeDB server are **not** reasons 
 
 ## Recommendation
 
-Choose **BlazeDB** for encrypted Swift-native embedded storage, typed records, live queries, local inspection tooling, and native embedding through the C ABI — on platforms whose support tier matches your risk tolerance.
+Choose **BlazeDB** for encrypted Swift-native embedded storage, typed records, live queries, local inspection tooling, and native embedding through the C ABI, on platforms whose support tier matches your risk tolerance.
 
 Choose **SQLite** when SQL compatibility, ecosystem maturity, third-party tooling, broad language support, or lower insert and cold-open latency matter more.
 
