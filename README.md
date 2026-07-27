@@ -41,32 +41,23 @@ BlazeDB’s public database-opening APIs require a password, and persisted data 
 
 Near-term work is packaging and documentation honesty for contributors, with maintainer attention ordered as: security correctness (RLS) → continuous verification → durability invariants → performance (after measurement). See [ROADMAP.md](ROADMAP.md).
 
-The [issue tracker](https://github.com/Mikedan37/BlazeDB/issues) mixes verified defects, contributor tasks, documentation work, and deferred platform improvements. **Not every open issue is a release blocker**, and the full catalog is not the onboarding path. Prefer the shelf below, then labels:
-
-| Label / filter | Meaning |
-|----------------|---------|
-| [`good first issue`](https://github.com/Mikedan37/BlazeDB/labels/good%20first%20issue) | Bounded docs/tooling/tests for new contributors |
-| [`help wanted`](https://github.com/Mikedan37/BlazeDB/labels/help%20wanted) | Maintainer-backed outside contributions (curated shelf below) |
-| [`durability`](https://github.com/Mikedan37/BlazeDB/labels/durability) / [`concurrency`](https://github.com/Mikedan37/BlazeDB/labels/concurrency) / [`High Priority`](https://github.com/Mikedan37/BlazeDB/labels/High%20Priority) | Maintainer-owned correctness |
-| [`needs design`](https://github.com/Mikedan37/BlazeDB/labels/needs%20design) | Contract decision before coding |
-| Experimental / later | Android, KMM, deferred sync — see [Compatibility](Docs/COMPATIBILITY.md) and [ROADMAP](ROADMAP.md) |
+The [issue tracker](https://github.com/Mikedan37/BlazeDB/issues) mixes verified defects, contributor tasks, documentation work, and deferred platform improvements. **Not every open issue is a release blocker**, and the full catalog is not the onboarding path. Prefer the contributor entry below (label filters), then [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ### Want to contribute? Start here
 
-A small shelf of scoped issues — not the full tracker. Claim one, comment on the issue, follow [CONTRIBUTING.md](CONTRIBUTING.md).
+BlazeDB welcomes focused contributions across documentation, developer tooling,
+tests, platform support, and core correctness.
 
-| Theme | Issue | Scope |
-|-------|-------|-------|
-| Documentation | [#329](https://github.com/Mikedan37/BlazeDB/issues/329) | Document that `close()` rolls back an open transaction |
-| Documentation | [#332](https://github.com/Mikedan37/BlazeDB/issues/332) | Remove or qualify unsupported distributed architecture claims |
-| Developer experience | [#259](https://github.com/Mikedan37/BlazeDB/issues/259) | Stop advertising `blazedb doctor` as a top-level CLI subcommand |
-| Tooling | [#330](https://github.com/Mikedan37/BlazeDB/issues/330) | Crypto/security-change checklist (+ PR checkbox). Sibling: [#333](https://github.com/Mikedan37/BlazeDB/issues/333) (benchmark checklist) |
-| Small correctness | [#320](https://github.com/Mikedan37/BlazeDB/issues/320) | `deleteBatch` should clear fetch-all cache. Sibling: [#321](https://github.com/Mikedan37/BlazeDB/issues/321) (insertMany RLS order) |
-| Small correctness | [#327](https://github.com/Mikedan37/BlazeDB/issues/327) | `where(notEquals:)` vs missing fields |
-| Tests / compatibility | [#326](https://github.com/Mikedan37/BlazeDB/issues/326) | Assert rollback restores secondary indexes |
-| CLI polish | [#258](https://github.com/Mikedan37/BlazeDB/issues/258) | `blazedb --version` prints release SemVer |
+Start with:
 
-More filters and claim etiquette: [ISSUE_GUIDE](Docs/Contributing/ISSUE_GUIDE.md). Roadmap and audits: [ROADMAP.md](ROADMAP.md) · [Docs/Product/](Docs/Product/) · [Docs/Audit/](Docs/Audit/).
+- [Good first issues](https://github.com/Mikedan37/BlazeDB/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22)
+- [Help wanted](https://github.com/Mikedan37/BlazeDB/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22)
+- [Contribution guide](CONTRIBUTING.md)
+- [Issue guide](Docs/Contributing/ISSUE_GUIDE.md)
+- [Learning paths](Docs/Contributing/LEARNING_PATHS.md)
+- [Roadmap](ROADMAP.md)
+
+Comment on an issue before starting substantial work so scope and ownership are clear.
 
 ---
 

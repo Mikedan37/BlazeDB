@@ -33,12 +33,14 @@ Bridge: **codebase → learning path → issue → tests → PR**. Do not open s
 
 ## Finding work
 
-Start with the curated shelf in the root [README.md](README.md) (**Want to contribute? Start here**), then broaden with labels. Pick issues that match the **supported** product (Swift engine, CLI, dynamic BlazeDBC). See [Docs/Contributing/ISSUE_GUIDE.md](Docs/Contributing/ISSUE_GUIDE.md) for claim etiquette and what requires maintainer review.
+Do **not** rely on a hard-coded issue number list in docs — issue shelves rot as soon as tickets close or grow. Prefer **label-driven** filters (they stay current with the tracker).
+
+Pick issues that match the **supported** product (Swift engine, CLI, dynamic BlazeDBC). See [Docs/Contributing/ISSUE_GUIDE.md](Docs/Contributing/ISSUE_GUIDE.md) for claim etiquette and what requires maintainer review. Comment on an issue before starting substantial work.
 
 | Filter | Use for |
 |--------|---------|
-| [good first issue](https://github.com/Mikedan37/BlazeDB/labels/good%20first%20issue) | Docs, help text, safe tooling — no WAL/crypto/ABI/auth redesign |
-| [help wanted](https://github.com/Mikedan37/BlazeDB/labels/help%20wanted) | Maintainer-backed contributions (includes the README shelf) |
+| [Good first issues](https://github.com/Mikedan37/BlazeDB/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22) | Docs, help text, safe tooling — no WAL/crypto/ABI/auth redesign |
+| [Help wanted](https://github.com/Mikedan37/BlazeDB/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22) | Maintainer-backed outside contributions |
 | [ROADMAP.md](ROADMAP.md) Now | Compatibility fixtures, Go smoke, BlazeDBC release, schema guide, CLI honesty |
 | `durability` / `concurrency` / `reliability` / `needs design` | Correctness and durability — usually not beginner; see [ISSUE_CODE_INDEX](Docs/Contributing/ISSUE_CODE_INDEX.md) |
 
