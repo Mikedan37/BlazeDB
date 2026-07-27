@@ -2,7 +2,7 @@
 
 **Date:** 2026-07-26  
 **Measured repository state:** `main` @ `3ae19461` (metrics collected after stash-recovery cherry-picks)  
-**Document last updated:** `main` @ `e6322eac`  
+**Document last updated:** tip of this file on `main` (tighten pass after `618ae179`; `git log -1 -- Docs/Product/COMMIT_HISTORY_AUDIT.md`)  
 **Companion:** social first-impression reading lives in [`OUTSIDE_OBSERVER_AUDIT.md`](OUTSIDE_OBSERVER_AUDIT.md). This document answers a narrower question: **does the Git history look like deliberate evolution, rapid expansion plus cleanup, or both?**
 
 Method: live `git log` on `main` (non-merge unless noted). Heuristics are imperfect (especially “mixed concerns” and “fix-ish” subjects) but stable enough to compare periods.
