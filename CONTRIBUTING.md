@@ -19,6 +19,21 @@ From a package checkout:
 
 Storage-format, WAL, encryption, and recovery changes: follow [Docs/Contributing/STORAGE_CHANGE_CHECKLIST.md](Docs/Contributing/STORAGE_CHANGE_CHECKLIST.md).
 
+## Finding work
+
+Pick issues that match the **supported** product (Swift engine, CLI, dynamic BlazeDBC). See [Docs/Contributing/ISSUE_GUIDE.md](Docs/Contributing/ISSUE_GUIDE.md) for labels, claim etiquette, and what requires maintainer review.
+
+| Filter | Use for |
+|--------|---------|
+| [good first issue](https://github.com/Mikedan37/BlazeDB/labels/good%20first%20issue) | Docs, help text, safe tooling — no WAL/crypto/ABI/auth redesign |
+| [help wanted](https://github.com/Mikedan37/BlazeDB/labels/help%20wanted) | Maintainer-backed contributions |
+| [ROADMAP.md](ROADMAP.md) Now | Compatibility fixtures, Go smoke, BlazeDBC release, schema guide, CLI honesty |
+| High Priority / reliability / concurrency | Correctness and durability — usually not beginner |
+
+**Focused tests:** `./dev tests [search]` then `./dev test <filter>`. On Apple Silicon, prefer `arch -arm64 ./dev …` if you hit arch loader mismatches ([#289](https://github.com/Mikedan37/BlazeDB/issues/289)).
+
+**Security reports:** do not file a public issue — follow [SECURITY.md](SECURITY.md).
+
 ## PR expectations
 
 Keep PRs **narrow** and **self-contained**.

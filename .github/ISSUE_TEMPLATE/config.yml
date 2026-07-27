@@ -1,0 +1,11 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Security vulnerability
+    url: https://github.com/Mikedan37/BlazeDB/blob/main/SECURITY.md
+    about: Do not open a public issue for security vulnerabilities. Follow SECURITY.md (email founder@danylchukstudios.dev).
+  - name: Contributing & finding work
+    url: https://github.com/Mikedan37/BlazeDB/blob/main/Docs/Contributing/ISSUE_GUIDE.md
+    about: How to pick good-first vs high-risk issues, claim work, and validate PRs.
+  - name: Product roadmap
+    url: https://github.com/Mikedan37/BlazeDB/blob/main/ROADMAP.md
+    about: Supported-product priorities (engine, CLI, BlazeDBC). Distributed sync and Android/KMM are not default OSS product goals.
