@@ -141,7 +141,7 @@ BlazeDB makes explicit tradeoffs to optimize for its target use cases:
 
 **Distributed Consensus:** No distributed consensus, automatic sharding, or multi-master replication. BlazeDB is a single primary database with optional sync capabilities. This is intentional—distributed consensus is a different problem space.
 
-**Platform Optimization:** Primarily optimized for Apple Silicon. Linux support exists but performance characteristics may differ. Best performance requires Apple Silicon hardware.
+**Platform support:** macOS and Linux are runtime-tested in CI; other Apple platforms are compile-tested; Android/KMM is experimental. Do not treat “optimized for Apple Silicon” as a measured claim — see [Benchmarks](../Benchmarks/README.md) and [COMPATIBILITY](../COMPATIBILITY.md).
 
 **MVCC Storage Overhead:** Multi-version concurrency control can increase storage requirements, especially with long-running read transactions that delay garbage collection. In practice, this hasn't been an issue for typical workloads, but it's a tradeoff to be aware of.
 
@@ -296,28 +296,30 @@ BlazeDB draws inspiration from several well-established systems while making dif
 
 ## Why Not SQLite / Core Data / Realm / LMDB?
 
+> **Authority:** Prefer [`Docs/GettingStarted/WHY_NOT_SQLITE.md`](../GettingStarted/WHY_NOT_SQLITE.md) and [`Docs/COMPATIBILITY.md`](../COMPATIBILITY.md) over this summary. The table below is a short orientation only — not a stopwatch or licensing brief.
+
 | Feature | BlazeDB | SQLite | Core Data | Realm | LMDB |
 |---------|---------|--------|----------|-------|------|
-| **Encryption** | AES-256-GCM per page (default) | Optional extension | No | Optional | No |
-| **Schema** | Dynamic, no migrations | Static, requires migrations | Static, complex migrations | Static, migrations | Schema-less |
-| **Concurrency** | MVCC snapshot isolation | File-level locking | Context-based | MVCC | MVCC |
-| **Performance** | Predictable, optimized for Apple Silicon | Variable under load | Variable, object graph overhead | Fast, but licensing | Very fast, memory-mapped |
-| **Query Language** | Fluent Swift API | SQL | NSPredicate | Fluent API | Key-value only |
-| **Platform** | macOS/iOS/Linux (Swift) | Universal (C) | macOS/iOS only | Cross-platform | Universal (C) |
-| **Dependencies** | Zero | Zero | Foundation | Realm runtime | Zero |
-| **License** | MIT | Public Domain | Apple | Commercial/MIT | OpenLDAP |
-| **Best For** | Encrypted local storage, AI agents | General-purpose embedded DB | Apple ecosystem apps | Mobile apps | High-performance key-value |
-| **Limitations** | Rule-based planner, no distributed consensus | File-level locking, no encryption by default | Complex migrations, Apple-only | Licensing, object model overhead | Key-value only, no query language |
+| **Encryption** | AES-256-GCM per page at rest (password on public open APIs) | Optional extension | No built-in at-rest cipher | Optional / product-dependent | No |
+| **Schema** | Flexible by default; optional validation + migration APIs | Static SQL schemas + migrations | Model versions + migrations | Object schema + migrations | Schema-less KV |
+| **Concurrency** | Single-process embedded; transactions; MVCC exists but is not the default claim | Multi-connection locking / WAL rules | Context-based | Product-specific | MVCC (mmap) |
+| **Performance** | See measured [Benchmarks](../Benchmarks/README.md) — no “Apple Silicon optimized” slogan here | Mature; workload-dependent | Object-graph overhead varies | Workload-dependent | Very fast mmap KV |
+| **Query Language** | Fluent Swift API (no SQL string engine) | SQL | NSPredicate / SwiftUI fetch patterns | Object query API | Key-value only |
+| **Platform** | macOS/Linux runtime-tested; Apple platforms compile-tested; Android/KMM experimental | Universal (C) | Apple platforms | Cross-platform SDKs (verify current) | Universal (C) |
+| **Dependencies** | Swift package + Crypto where required | Zero (amalgamation) | Foundation / Cocoa | Realm runtime | Zero |
+| **License** | MIT | Public domain dedication | Apple frameworks | **Verify current upstream** (DB/sync terms have changed over time) | OpenLDAP |
+| **Best For** | Encrypted Swift-native embedded storage + C ABI | General-purpose embedded SQL | Deep Apple-framework apps | Teams already on Realm | High-performance KV |
+| **Limitations** | Not a SQL engine; sync/server deferred from default OSS | No encryption by default | Apple-centric; migration complexity | Sync/licensing history is not a one-cell story | No rich query language |
 
-**When to choose BlazeDB:** You need encryption by default, schema flexibility without migrations, predictable performance on Apple platforms, and a Swift-native API.
+**When to choose BlazeDB:** Encryption by default, Swift-native typed access, local tooling, and C ABI embedding — on a support tier you accept ([COMPATIBILITY](../COMPATIBILITY.md)).
 
-**When to choose SQLite:** You need universal portability, SQL queries, or don't need encryption.
+**When to choose SQLite:** Universal portability, SQL, or you do not need encryption-by-default.
 
-**When to choose Core Data:** You're building Apple-only apps and need deep integration with Cocoa frameworks.
+**When to choose Core Data:** Apple-only apps that want deep Cocoa / framework integration.
 
-**When to choose Realm:** You're building mobile apps and can accept the licensing model.
+**When to choose Realm:** You specifically want the Realm ecosystem; check current license and sync product status yourself.
 
-**When to choose LMDB:** You need maximum performance for key-value workloads and don't need encryption or query language.
+**When to choose LMDB:** Maximum performance for key-value workloads without encryption or a query language.
 
 ---
 
