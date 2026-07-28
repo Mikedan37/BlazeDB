@@ -1,6 +1,6 @@
 //
 //  AsyncNotEqualsMissingFieldTests.swift
-//  BlazeDBTests — #344: async where(notEquals:) treats missing field as non-match
+//  BlazeDBTests — #344: async where(notEquals:) treats missing field as a match
 //
 //  The async query path (QueryBuilder+Async.swift) inlines a copy of the
 //  sync predicate. It must match the sync semantics fixed in #343: a
