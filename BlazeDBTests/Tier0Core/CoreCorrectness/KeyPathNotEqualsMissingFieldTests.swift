@@ -1,6 +1,6 @@
 //
 //  KeyPathNotEqualsMissingFieldTests.swift
-//  BlazeDBTests — #345: KeyPath where(notEquals:) treats missing field as non-match
+//  BlazeDBTests — #345: KeyPath where(notEquals:) treats missing field as a match
 //
 //  The KeyPath query builder must match the sync string semantics fixed in
 //  #343: a missing field counts as "not equal" to any given value, while
