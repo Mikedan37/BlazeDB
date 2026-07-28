@@ -82,13 +82,19 @@ public class TypeSafeQueryBuilder<T: BlazeStorable> {
         return self
     }
     
-    /// Filter by KeyPath (not equals)
+    /// Filter by KeyPath (not equals).
+    ///
+    /// A missing field is treated as matching `notEquals` — i.e. a record
+    /// with no value for the key path's field at all counts as "not equal
+    /// to `value`", matching the string-based `where(_:notEquals:)`
+    /// semantics. This is the deliberate asymmetry with KeyPath
+    /// `where(_:equals:)`, which treats a missing field as a non-match.
     @discardableResult
     public func `where`<V: Equatable>(_ keyPath: KeyPath<T, V>, notEquals value: V) -> Self {
         let fieldName = extractFieldName(from: keyPath)
         filters.append { record in
-            // Match string-based semantics: missing field returns false (not "not equal")
-            guard let fieldValue = record.storage[fieldName] else { return false }
+            // Match string-based semantics: a missing field counts as "not equal"
+            guard let fieldValue = record.storage[fieldName] else { return true }
 
             if let v = value as? String, let recordValue = fieldValue.stringValue {
                 return recordValue != v
