@@ -102,6 +102,35 @@ final class InsertManyOverflowParityTests: XCTestCase {
                 fetched.storage["payload"]?.stringValue?.count,
                 records[i].storage["payload"]?.stringValue?.count
             )
+            XCTAssertEqual(
+                fetched.storage["payload"]?.stringValue?.first,
+                records[i].storage["payload"]?.stringValue?.first
+            )
+        }
+        try db.close()
+    }
+
+    func testInsertMany_multipleOverflowRecords_roundTripAfterReopen() throws {
+        // Regression: one batch with several overflow-sized values (not a single oversized row).
+        let specs: [(Int, Int, Character)] = [
+            (0, 5_000, "A"),
+            (1, 12_000, "B"),
+            (2, 40_000, "C"),
+            (3, 8_192, "D"),
+        ]
+        var db = try openDB()
+        let records = specs.map { record(index: $0.0, payloadBytes: $0.1, filler: $0.2) }
+        let ids = try db.insertMany(records)
+        XCTAssertEqual(ids.count, specs.count)
+        try db.persist()
+        try db.close()
+
+        db = try openDB()
+        for (i, id) in ids.enumerated() {
+            let fetched = try XCTUnwrap(db.fetch(id: id), "missing overflow record \(i) after reopen")
+            XCTAssertEqual(fetched.storage["index"]?.intValue, specs[i].0)
+            XCTAssertEqual(fetched.storage["payload"]?.stringValue?.count, specs[i].1)
+            XCTAssertEqual(fetched.storage["payload"]?.stringValue?.first, specs[i].2)
         }
         try db.close()
     }
@@ -163,5 +192,33 @@ final class InsertManyOverflowParityTests: XCTestCase {
         db = try openDB()
         XCTAssertNil(try db.fetch(id: shared), "failed batch must not leave a visible overflow record")
         try db.close()
+    }
+
+    func testInsertMany_synchronizeFailure_doesNotPublishOverflowChainsIntoIndexMap() throws {
+        // Crash-ordering: pages may be staged, but indexMap must stay unpublished if synchronize() fails.
+        #if DEBUG
+        var db = try openDB()
+        let records = [
+            record(index: 0, payloadBytes: 6_000, filler: "p"),
+            record(index: 1, payloadBytes: 9_000, filler: "q"),
+        ]
+
+        PageStore._setSynchronizeFailureForTests(true)
+        defer { PageStore._setSynchronizeFailureForTests(false) }
+
+        XCTAssertThrowsError(try db.insertMany(records))
+        try? db.persist()
+        try db.close()
+
+        db = try openDB()
+        let surviving = try db.fetchAll()
+        XCTAssertTrue(
+            surviving.isEmpty,
+            "failed synchronize must not publish overflow page chains into indexMap; found \(surviving.count)"
+        )
+        try db.close()
+        #else
+        throw XCTSkip("synchronize fault injection is DEBUG-only")
+        #endif
     }
 }
