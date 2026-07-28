@@ -203,6 +203,7 @@ public final class PageStore: @unchecked Sendable {
     private static let replayFaultLock = NSLock()
     nonisolated(unsafe) private static var replayFailAtEntryIndex: Int? = nil
     nonisolated(unsafe) private static var replayForceFsyncFailure: Bool = false
+    nonisolated(unsafe) private static var synchronizeForceFailure: Bool = false
     
     internal static func _setReplayFailureForTests(entryIndex: Int?) {
         replayFaultLock.lock()
@@ -213,6 +214,13 @@ public final class PageStore: @unchecked Sendable {
     internal static func _setReplayFsyncFailureForTests(_ enabled: Bool) {
         replayFaultLock.lock()
         replayForceFsyncFailure = enabled
+        replayFaultLock.unlock()
+    }
+
+    /// Test-only: force `synchronize()` to throw so batch paths can prove indexMap stays unpublished.
+    internal static func _setSynchronizeFailureForTests(_ enabled: Bool) {
+        replayFaultLock.lock()
+        synchronizeForceFailure = enabled
         replayFaultLock.unlock()
     }
     
@@ -226,6 +234,12 @@ public final class PageStore: @unchecked Sendable {
         replayFaultLock.lock()
         defer { replayFaultLock.unlock() }
         return replayForceFsyncFailure
+    }
+
+    private static func synchronizeFailureEnabledForTests() -> Bool {
+        replayFaultLock.lock()
+        defer { replayFaultLock.unlock() }
+        return synchronizeForceFailure
     }
     #endif
 
@@ -901,6 +915,13 @@ public final class PageStore: @unchecked Sendable {
     public func synchronize() throws {
         #if DEBUG
         dispatchPrecondition(condition: .notOnQueue(queue))
+        if Self.synchronizeFailureEnabledForTests() {
+            throw NSError(
+                domain: "PageStore.TestFault",
+                code: 1,
+                userInfo: [NSLocalizedDescriptionKey: "Forced synchronize() failure for tests"]
+            )
+        }
         #endif
         try queue.sync(flags: .barrier) {
             try ensureOpenLocked()

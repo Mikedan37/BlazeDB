@@ -300,16 +300,48 @@ extension DynamicCollection {
                     }
                 }
                 
-                // Write page (WITHOUT fsync for batch performance!)
-                // Will be flushed in single fsync at end of batch
+                // Write page chain WITHOUT fsync (batch durability: one synchronize at end).
+                // Must use overflow-aware path so insertMany accepts the same sizes as insert().
                 let value = document["value"]?.intValue ?? -1
                 BlazeLogger.debug("💾 [INSERT] Batch: Writing record \(id.uuidString.prefix(8)) (value: \(value)) to page \(currentPageIndex)")
-                try store.writePageUnsynchronized(index: currentPageIndex, plaintext: encoded)
-                // CRITICAL: Track indexMap updates but DON'T apply until synchronize() succeeds
-                // This prevents indexMap from being out of sync if synchronize() fails
-                // Store in pendingIndexMapUpdates instead of updating indexMap directly
-                pendingIndexMapUpdates[id] = [currentPageIndex]  // Support overflow chains
-                BlazeLogger.debug("📝 [INSERT] Batch: Tracked indexMap[\(id.uuidString.prefix(8))] = [\(currentPageIndex)] (value: \(value)) - will apply after synchronize()")
+                let pageIndices = try store.writePageWithOverflowUnsynchronized(
+                    index: currentPageIndex,
+                    plaintext: encoded,
+                    allocatePage: { [weak self] in
+                        guard let self = self else {
+                            throw NSError(
+                                domain: "DynamicCollection",
+                                code: 1,
+                                userInfo: [NSLocalizedDescriptionKey: "Collection deallocated"]
+                            )
+                        }
+                        let overflowPage = self.allocatePage(layout: &layout)
+                        let overflowConflicts = self.indexMap
+                            .filter { $0.value.contains(overflowPage) }
+                            .keys
+                        if !overflowConflicts.isEmpty {
+                            BlazeLogger.error("Overflow page \(overflowPage) conflict - removing stale entries")
+                            for conflictID in overflowConflicts {
+                                self.indexMap.removeValue(forKey: conflictID)
+                            }
+                        }
+                        // Pending batch pages are not in indexMap yet — still avoid reuse within this batch.
+                        if batchAllocatedPages.contains(overflowPage) {
+                            BlazeLogger.error("❌ [INSERT] Batch: Overflow page \(overflowPage) already allocated in this batch — allocating another")
+                            let replacement = self.allocatePage(layout: &layout)
+                            batchAllocatedPages.insert(replacement)
+                            return replacement
+                        }
+                        batchAllocatedPages.insert(overflowPage)
+                        return overflowPage
+                    }
+                )
+                for page in pageIndices {
+                    batchAllocatedPages.insert(page)
+                }
+                // CRITICAL: Track full overflow chain; apply only after synchronize() succeeds.
+                pendingIndexMapUpdates[id] = pageIndices
+                BlazeLogger.debug("📝 [INSERT] Batch: Tracked indexMap[\(id.uuidString.prefix(8))] = \(pageIndices) (value: \(value)) - will apply after synchronize()")
                 
                 // Update secondary indexes (in-memory)
                 for (compound, _) in secondaryIndexes {
