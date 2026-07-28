@@ -37,6 +37,30 @@ enum PayloadSizeSweep {
         }
     }
 
+    private static func failedRow(
+        size: Int,
+        encoded: Int,
+        n: Int,
+        path: String,
+        error: Error
+    ) -> Row {
+        let msg = String(describing: error)
+        let short = msg.count > 160 ? String(msg.prefix(157)) + "..." : msg
+        print("    SKIP/FAIL payload=\(size) B path=\(path): \(short)")
+        return Row(
+            requestedPayloadBytes: size,
+            encodedPayloadBytes: encoded,
+            inserts: n,
+            blazedbAvgMs: 0,
+            blazedbP50Ms: 0,
+            blazedbP95Ms: 0,
+            blazedbP99Ms: 0,
+            blazedbOpsPerSec: 0,
+            path: path,
+            notes: "FAILED: \(short)"
+        )
+    }
+
     static func run(
         payloadSizes: [Int] = defaultPayloadBytes,
         path: String = "durable_insert"
@@ -52,92 +76,93 @@ enum PayloadSizeSweep {
             try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
             defer { try? FileManager.default.removeItem(at: tempDir) }
 
-            let dbURL = tempDir.appendingPathComponent("sweep.blazedb")
-            let db = try openBenchDB(name: "payload-sweep", fileURL: dbURL)
-            var durationsMs: [Double] = []
-            durationsMs.reserveCapacity(n)
+            do {
+                let dbURL = tempDir.appendingPathComponent("sweep.blazedb")
+                let db = try openBenchDB(name: "payload-sweep", fileURL: dbURL)
+                var durationsMs: [Double] = []
+                durationsMs.reserveCapacity(n)
 
-            let wallStart = Date()
-            switch path {
-            case "insertMany_batch":
-                // Large records use overflow pages; packing many into one insertMany
-                // can fail page-size checks. Keep batches small as payload grows.
-                let batchSize: Int
-                switch size {
-                case ..<1_024: batchSize = min(50, n)
-                case ..<4_096: batchSize = min(20, n)
-                case ..<16_384: batchSize = min(5, n)
-                default: batchSize = 1
-                }
-                var batch: [BlazeDataRecord] = []
-                batch.reserveCapacity(batchSize)
-                for i in 0..<n {
-                    batch.append(BenchPayload.sizedRecord(index: i, payloadBytes: size))
-                    if batch.count == batchSize || i == n - 1 {
-                        let opStart = benchMonotonicNowMs()
-                        _ = try db.insertMany(batch)
-                        durationsMs.append(benchMonotonicNowMs() - opStart)
-                        batch.removeAll(keepingCapacity: true)
+                let wallStart = Date()
+                switch path {
+                case "insertMany_batch":
+                    // Near/over page size, insertMany historically fails even for N=1
+                    // (overflow path differs from insert). Catch and record the cliff.
+                    let batchSize: Int
+                    switch size {
+                    case ..<1_024: batchSize = min(50, n)
+                    case ..<2_048: batchSize = min(10, n)
+                    default: batchSize = 1
                     }
+                    var batch: [BlazeDataRecord] = []
+                    batch.reserveCapacity(batchSize)
+                    for i in 0..<n {
+                        batch.append(BenchPayload.sizedRecord(index: i, payloadBytes: size))
+                        if batch.count == batchSize || i == n - 1 {
+                            let opStart = benchMonotonicNowMs()
+                            _ = try db.insertMany(batch)
+                            durationsMs.append(benchMonotonicNowMs() - opStart)
+                            batch.removeAll(keepingCapacity: true)
+                        }
+                    }
+                    try db.persist()
+                case "transaction_puts":
+                    try db.beginTransaction()
+                    for i in 0..<n {
+                        let record = BenchPayload.sizedRecord(index: i, payloadBytes: size)
+                        let opStart = benchMonotonicNowMs()
+                        _ = try db.insert(record)
+                        durationsMs.append(benchMonotonicNowMs() - opStart)
+                    }
+                    try db.commitTransaction()
+                case "update":
+                    var ids: [UUID] = []
+                    ids.reserveCapacity(n)
+                    for i in 0..<n {
+                        let id = try db.insert(BenchPayload.sizedRecord(index: i, payloadBytes: size))
+                        ids.append(id)
+                    }
+                    try db.persist()
+                    for (i, id) in ids.enumerated() {
+                        let body = String(repeating: i % 2 == 0 ? "y" : "z", count: max(0, size))
+                        let updated = BlazeDataRecord([
+                            "id": .uuid(id),
+                            "index": .int(i),
+                            BenchPayload.sweepPayloadField: .string(body),
+                        ])
+                        let opStart = benchMonotonicNowMs()
+                        try db.update(id: id, with: updated)
+                        durationsMs.append(benchMonotonicNowMs() - opStart)
+                    }
+                    try db.persist()
+                default: // durable_insert — per-row insert + final persist (matches core harness)
+                    for i in 0..<n {
+                        let record = BenchPayload.sizedRecord(index: i, payloadBytes: size)
+                        let opStart = benchMonotonicNowMs()
+                        _ = try db.insert(record)
+                        durationsMs.append(benchMonotonicNowMs() - opStart)
+                    }
+                    try db.persist()
                 }
-                try db.persist()
-            case "transaction_puts":
-                try db.beginTransaction()
-                for i in 0..<n {
-                    let record = BenchPayload.sizedRecord(index: i, payloadBytes: size)
-                    let opStart = benchMonotonicNowMs()
-                    _ = try db.insert(record)
-                    durationsMs.append(benchMonotonicNowMs() - opStart)
-                }
-                try db.commitTransaction()
-            case "update":
-                // Seed full-size rows, then rewrite the payload field (same encoded size).
-                var ids: [UUID] = []
-                ids.reserveCapacity(n)
-                for i in 0..<n {
-                    let id = try db.insert(BenchPayload.sizedRecord(index: i, payloadBytes: size))
-                    ids.append(id)
-                }
-                try db.persist()
-                for (i, id) in ids.enumerated() {
-                    // Flip filler so the update is not a no-op encode of identical bytes.
-                    let body = String(repeating: i % 2 == 0 ? "y" : "z", count: max(0, size))
-                    let updated = BlazeDataRecord([
-                        "id": .uuid(id),
-                        "index": .int(i),
-                        BenchPayload.sweepPayloadField: .string(body),
-                    ])
-                    let opStart = benchMonotonicNowMs()
-                    try db.update(id: id, with: updated)
-                    durationsMs.append(benchMonotonicNowMs() - opStart)
-                }
-                try db.persist()
-            default: // durable_insert — per-row insert + final persist (matches core harness)
-                for i in 0..<n {
-                    let record = BenchPayload.sizedRecord(index: i, payloadBytes: size)
-                    let opStart = benchMonotonicNowMs()
-                    _ = try db.insert(record)
-                    durationsMs.append(benchMonotonicNowMs() - opStart)
-                }
-                try db.persist()
-            }
-            try db.close()
-            let wallSec = Date().timeIntervalSince(wallStart)
-            let stats = summarizeMs(durationsMs)
-            rows.append(
-                Row(
-                    requestedPayloadBytes: size,
-                    encodedPayloadBytes: encoded,
-                    inserts: n,
-                    blazedbAvgMs: stats?.avgMs ?? 0,
-                    blazedbP50Ms: stats?.p50Ms ?? 0,
-                    blazedbP95Ms: stats?.p95Ms ?? 0,
-                    blazedbP99Ms: stats?.p99Ms ?? 0,
-                    blazedbOpsPerSec: wallSec > 0 ? Double(n) / wallSec : 0,
-                    path: path,
-                    notes: "ASCII payload field; encoded includes BlazeBinary overhead + id/index"
+                try db.close()
+                let wallSec = Date().timeIntervalSince(wallStart)
+                let stats = summarizeMs(durationsMs)
+                rows.append(
+                    Row(
+                        requestedPayloadBytes: size,
+                        encodedPayloadBytes: encoded,
+                        inserts: n,
+                        blazedbAvgMs: stats?.avgMs ?? 0,
+                        blazedbP50Ms: stats?.p50Ms ?? 0,
+                        blazedbP95Ms: stats?.p95Ms ?? 0,
+                        blazedbP99Ms: stats?.p99Ms ?? 0,
+                        blazedbOpsPerSec: wallSec > 0 ? Double(n) / wallSec : 0,
+                        path: path,
+                        notes: "ASCII payload field; encoded includes BlazeBinary overhead + id/index"
+                    )
                 )
-            )
+            } catch {
+                rows.append(failedRow(size: size, encoded: encoded, n: n, path: path, error: error))
+            }
         }
         return rows
     }
@@ -153,6 +178,8 @@ enum PayloadSizeSweep {
         linearly (a 1 MB write is not ~1000× a 1 KB write).
 
         Page size is **4096** bytes. See `Docs/Benchmarks/PAYLOAD_SIZE.md`.
+        Rows with ops/s `0` failed for that path (see Notes in JSON) — e.g. `insertMany` may reject
+        overflow-sized records that `insert()` accepts.
 
         | Requested payload B | Encoded B | Path | N | ops/s | avg ms | p50 | p95 | p99 |
         |---:|---:|---|---:|---:|---:|---:|---:|---:|
