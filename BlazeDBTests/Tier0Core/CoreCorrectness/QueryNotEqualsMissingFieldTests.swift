@@ -1,6 +1,6 @@
 //
 //  QueryNotEqualsMissingFieldTests.swift
-//  BlazeDBTests — #327: where(notEquals:) treats missing field as non-match
+//  BlazeDBTests — #327/#343: where(notEquals:) treats missing field as a match
 //
 //  A missing field must match `notEquals`, consistent with `whereNil`
 //  semantics: absent is "not equal" to any given value. This mirrors

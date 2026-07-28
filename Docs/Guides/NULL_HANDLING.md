@@ -74,6 +74,39 @@ let records = try db.query()
 .execute()
 ```
 
+### `notEquals` and missing fields (intentional)
+
+`where(_:notEquals:)` means: return every record **except** those whose field equals the given value. A record where the field is **absent** also matches. The same rule applies to the string sync API, the Apple async API, and KeyPath queries.
+
+| Record | `where("status", notEquals: .string("archived"))` |
+|--------|---------------------------------------------------|
+| `{}` (no `status`) | match |
+| `{ status: "active" }` | match |
+| `{ status: "archived" }` | no match |
+
+This is deliberately asymmetric with `equals`, which treats a missing field as a non-match.
+
+```swift
+// Includes records with no status, and status != "archived"
+try db.query()
+    .where("status", notEquals: .string("archived"))
+    .execute()
+
+// Still only matches records that have status == "archived"
+try db.query()
+    .where("status", equals: .string("archived"))
+    .execute()
+```
+
+For “must have the field **and** not equal this value,” compose with existence:
+
+```swift
+try db.query()
+    .whereNotNil("status")
+    .where("status", notEquals: .string("archived"))
+    .execute()
+```
+
 ## Migration Behavior
 
 ### SQLite Migration
@@ -195,6 +228,7 @@ for user in allUsers {
 - **BlazeDB doesn't store null** - Missing fields represent null
 - **Access returns nil** - `record.storage["field"]` returns `nil` if missing
 - **Queries support null checks** - Use `whereNil()` and `whereNotNil()`
+- **`notEquals` includes missing fields** - Absent field matches `notEquals`; `equals` does not. Same rule for string, async, and KeyPath APIs.
 - **Migration skips null** - NULL values from SQLite/Core Data are not stored
 - **Use optionals** - Always use optional access when reading fields
 
