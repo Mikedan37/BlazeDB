@@ -22,13 +22,17 @@ def iso_now() -> str:
 METHODOLOGY_PREAMBLE = """\
 ## Methodology (June 2026 refresh)
 
+- **Honest label:** BlazeDB is **read-optimized** with an **expensive durability path**. Single durable inserts are a weakness (~2.5 ms / ~274 ops/s on 1K; ~24 ms/op on 10K). Prefer p50/p95/p99. Do not claim broadly fast writes until [#425](https://github.com/ProjectBlaze/BlazeDB/issues/425). See [HONEST_PERFORMANCE.md](HONEST_PERFORMANCE.md).
 - **Harness:** `BlazeDBBenchmarks` via `./Scripts/run_comparison_benchmarks.sh --release`
 - **Encryption:** AES-256-GCM + PBKDF2-HMAC-SHA256 at **600,000** iterations (release)
 - **Cold open:** session cleared before each of 10 open cycles (true KDF cost)
 - **Warm reopen:** 10 close/reopen cycles **without** `clearSessionKeys()` (in-process session cache)
-- **SQLite reference:** WAL + `synchronous=FULL`, no encryption (not apples-to-apples with secure BlazeDB)
-- **Insert pairing (fair):** per-row rows compare BlazeDB `insert()` to SQLite `BEGIN IMMEDIATE` + `INSERT` + `COMMIT` per row; batch rows compare BlazeDB `insertMany(batch)` to SQLite one transaction per batch
+- **SQLite reference:** WAL + `synchronous=FULL`, **no encryption** (not apples-to-apples with secure BlazeDB; encrypted SQLite / SQLCipher peer is still a **gap**)
+- **Insert pairing (fair durability boundaries):** per-row rows compare BlazeDB `insert()` to SQLite `BEGIN IMMEDIATE` + `INSERT` + `COMMIT` per row; batch rows compare BlazeDB `insertMany(batch)` to SQLite one transaction per batch
+- **Record size:** core insert/read/delete rows use the **standard** harness shape (`id` + `index` + short `data` string), typically **~53 B** encoded. JSON includes `encodedPayloadBytes` and `recordShape`. Do **not** assume those rows are 1 MB. See [PAYLOAD_SIZE.md](PAYLOAD_SIZE.md).
+- **Sweeps:** payload size `./Scripts/run_payload_size_sweep.sh --release`; DB size `./Scripts/run_db_size_sweep.sh --release`; write stages `BLAZEDB_BENCH_MODE=write_profile`
 - **Full matrix** (`mvcc_off`, `encryption_off_requested`, …): run `python3 Scripts/run_core_benchmark_matrix.py` separately
+- **Honesty lint:** `python3 Scripts/check_benchmark_honesty.py`
 
 ### What changed since March 2026
 
@@ -40,7 +44,7 @@ METHODOLOGY_PREAMBLE = """\
 
 Older docs (`Docs/Performance/PERFORMANCE.md` pre-refresh) listed design targets (1,200+ ops/sec inserts, “10% faster than SQLite”) that were **not** from this harness.
 
-See also: `Docs/Benchmarks/COMPARISON.md`, `Docs/Security/DATABASE_SESSION_KEY_LIFECYCLE.md`
+See also: `Docs/Benchmarks/COMPARISON.md`, `Docs/Benchmarks/HONEST_PERFORMANCE.md`, `Docs/Security/DATABASE_SESSION_KEY_LIFECYCLE.md`
 
 ---
 """

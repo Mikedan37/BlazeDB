@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+# Repo-root front door for BlazeDB benchmark tooling.
+exec "$(cd "$(dirname "$0")" && pwd)/Scripts/bench.sh" "$@"

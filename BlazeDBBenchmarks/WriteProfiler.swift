@@ -77,12 +77,8 @@ enum WriteProfiler {
     }
 
     private static func makeRecord(_ i: Int) -> BlazeDataRecord {
-        BlazeDataRecord([
-            "id": .uuid(UUID()),
-            "name": .string("write-profile-\(i)"),
-            "payload": .string(String(repeating: "x", count: 64)),
-            "n": .int(i),
-        ])
+        // Keep write-profile rows small and explicit; report encoded size in markdown.
+        BenchPayload.standardRecord(index: i, dataPrefix: "write-profile")
     }
 
     private static func openClient(at dir: URL, password: String) throws -> BlazeDBClient {
@@ -183,11 +179,16 @@ enum WriteProfiler {
     }
 
     static func markdownReport(_ runs: [Run]) -> String {
+        let sample = BenchPayload.standardRecord(index: 0, dataPrefix: "write-profile")
+        let encoded = BenchPayload.encodedByteCount(sample)
         var lines = [
             "# Write path profile",
             "",
             "Opt-in (`BLAZEDB_WRITE_PROFILE=1`). Compares single insert, InsertMany, and transaction puts.",
             "No optimization conclusions — stage attribution only.",
+            "",
+            "Record shape: `\(BenchPayload.standardShapeDescription)` · median encoded ≈ **\(encoded) B** (see Docs/Benchmarks/PAYLOAD_SIZE.md).",
+            "Payload size changes latency, but not always linearly — fixed commit/fsync often dominates small rows.",
             "",
         ]
         for run in runs {

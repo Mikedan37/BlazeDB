@@ -44,6 +44,10 @@ struct BenchmarkResult: Codable {
     let sqliteP95Ms: Double?
     let sqliteP99Ms: Double?
     let datasetSize: Int
+    /// Median BlazeBinary-encoded bytes for the row shape used by this benchmark (nil if N/A).
+    let encodedPayloadBytes: Int?
+    /// Human-readable description of fields / payload shape.
+    let recordShape: String?
     let notes: String
 }
 
@@ -380,6 +384,8 @@ struct BenchmarkSuite {
         blazedbStats: StatsSummary?,
         sqliteOpsPerSec: Double? = nil,
         sqliteStats: StatsSummary? = nil,
+        encodedPayloadBytes: Int? = nil,
+        recordShape: String? = nil,
         notes: String = ""
     ) {
         var mergedNotes = notes
@@ -404,6 +410,8 @@ struct BenchmarkSuite {
             sqliteP95Ms: sqliteStats?.p95Ms,
             sqliteP99Ms: sqliteStats?.p99Ms,
             datasetSize: datasetSize,
+            encodedPayloadBytes: encodedPayloadBytes,
+            recordShape: recordShape,
             notes: mergedNotes
         ))
     }
@@ -412,9 +420,11 @@ struct BenchmarkSuite {
         var md = "# BlazeDB Benchmarks\n\n"
         md += "**Date:** \(Date().formatted(date: .abbreviated, time: .shortened))\n\n"
         md += "**Condition:** `\(benchmarkCondition.id)` (`mvcc=\(benchmarkCondition.mvccEffective ? "on" : "off")`, `wal=\(benchmarkCondition.walEffective ? "on" : "off")`, `encryption=\(benchmarkCondition.encryptionEffective ? "on" : "off")`)\n\n"
-        md += "> **Reading SQLite columns:** Plain SQLite (no encryption). `journal_mode=WAL`, `synchronous=FULL`. Per-row insert rows: BlazeDB `insert()` vs SQLite `BEGIN IMMEDIATE` + `INSERT` + `COMMIT` per row (one fsync boundary each). Batch rows: BlazeDB `insertMany(batch)` vs SQLite `BEGIN` + N× `INSERT` + `COMMIT` per batch. BlazeDB `baseline` includes AES-256-GCM + PBKDF2 (600k) on cold open. Use condition `encryption_off_requested` (compile flag) for engine-only overhead.\n\n"
-        md += "| Condition | Support | Benchmark | BlazeDB (ops/sec) | BlazeDB avg ms | BlazeDB p50 ms | BlazeDB p95 ms | BlazeDB p99 ms | SQLite (ops/sec) | SQLite avg ms | SQLite p50 ms | SQLite p95 ms | SQLite p99 ms | Dataset Size | Notes |\n"
-        md += "|-----------|---------|-----------|-------------------|----------------|----------------|----------------|----------------|------------------|---------------|---------------|---------------|---------------|--------------|-------|\n"
+        md += "> **Honest label:** BlazeDB is **read-optimized** with an **expensive durability path**. Single durable inserts (~2.5 ms / ~274 ops/s on 1K) are a weakness vs plaintext SQLite; point/concurrent reads are the strength. Do not claim broadly fast writes until issue #425 attributes the path. See `Docs/Benchmarks/HONEST_PERFORMANCE.md`.\n\n"
+        md += "> **Reading SQLite columns:** Plain SQLite (no encryption). `journal_mode=WAL`, `synchronous=FULL`. Per-row insert rows: BlazeDB `insert()` vs SQLite `BEGIN IMMEDIATE` + `INSERT` + `COMMIT` per row (one fsync boundary each). Batch rows: BlazeDB `insertMany(batch)` vs SQLite `BEGIN` + N× `INSERT` + `COMMIT` per batch. BlazeDB `baseline` includes AES-256-GCM + PBKDF2 (600k) on cold open. Use condition `encryption_off_requested` (compile flag) for engine-only overhead. **Not crypto-fair** vs SQLCipher / encrypted SQLite.\n\n"
+        md += "> **Record size:** `Encoded B` is the median BlazeBinary-encoded byte length of the harness row shape (not logical field-only size). Core insert/read/delete rows use the **standard** shape (`id`+`index`+short `data` string) — typically tens of bytes (~53 B), not 1 MB. Prefer p50/p95/p99; watch 1K→10K durable degradation. See `Docs/Benchmarks/PAYLOAD_SIZE.md`.\n\n"
+        md += "| Condition | Support | Benchmark | BlazeDB (ops/sec) | BlazeDB avg ms | BlazeDB p50 ms | BlazeDB p95 ms | BlazeDB p99 ms | SQLite (ops/sec) | SQLite avg ms | SQLite p50 ms | SQLite p95 ms | SQLite p99 ms | Dataset Size | Encoded B | Record shape | Notes |\n"
+        md += "|-----------|---------|-----------|-------------------|----------------|----------------|----------------|----------------|------------------|---------------|---------------|---------------|---------------|--------------|----------|--------------|-------|\n"
         
         for result in results {
             let sqliteOpsStr = result.sqliteOpsPerSec.map { String(format: "%.0f", $0) } ?? "N/A"
@@ -426,7 +436,9 @@ struct BenchmarkSuite {
             let sqliteP50 = result.sqliteP50Ms.map { String(format: "%.3f", $0) } ?? "N/A"
             let sqliteP95 = result.sqliteP95Ms.map { String(format: "%.3f", $0) } ?? "N/A"
             let sqliteP99 = result.sqliteP99Ms.map { String(format: "%.3f", $0) } ?? "N/A"
-            md += "| \(result.condition) | \(result.supportStatus) | \(result.name) | \(String(format: "%.0f", result.blazedbOpsPerSec)) | \(blazeAvg) | \(blazeP50) | \(blazeP95) | \(blazeP99) | \(sqliteOpsStr) | \(sqliteAvg) | \(sqliteP50) | \(sqliteP95) | \(sqliteP99) | \(result.datasetSize) | \(result.notes) |\n"
+            let encoded = result.encodedPayloadBytes.map { String($0) } ?? "N/A"
+            let shape = result.recordShape ?? "N/A"
+            md += "| \(result.condition) | \(result.supportStatus) | \(result.name) | \(String(format: "%.0f", result.blazedbOpsPerSec)) | \(blazeAvg) | \(blazeP50) | \(blazeP95) | \(blazeP99) | \(sqliteOpsStr) | \(sqliteAvg) | \(sqliteP50) | \(sqliteP95) | \(sqliteP99) | \(result.datasetSize) | \(encoded) | \(shape) | \(result.notes) |\n"
         }
         
         return md
@@ -461,11 +473,7 @@ func benchmarkPerRowDurableInsert(datasetSize: Int) -> (blazedbOpsPerSec: Double
         let db = try openBenchDB(name: "bench", fileURL: blazedbURL)
         
         for i in 0..<datasetSize {
-            let record = BlazeDataRecord([
-                "id": .uuid(UUID()),
-                "index": .int(i),
-                "data": .string("Record \(i)")
-            ])
+            let record = BenchPayload.standardRecord(index: i)
             let opStart = benchMonotonicNowMs()
             _ = try db.insert(record)
             blazedbDurationsMs.append(benchMonotonicNowMs() - opStart)
@@ -546,11 +554,7 @@ func benchmarkReadThroughput(datasetSize: Int) -> (blazedbOpsPerSec: Double, bla
         let db = try openBenchDB(name: "read-bench", fileURL: blazedbURL)
         
         for i in 0..<datasetSize {
-            let record = BlazeDataRecord([
-                "id": .uuid(UUID()),
-                "index": .int(i),
-                "data": .string("Record \(i)")
-            ])
+            let record = BenchPayload.standardRecord(index: i)
             let id = try db.insert(record)
             insertedIDs.append(id)
         }
@@ -662,11 +666,7 @@ func benchmarkConcurrentReadWhileWrite(config: ConcurrentBenchmarkConfig) -> (
         let seedDB = try openBenchDB(name: "concurrent-seed", fileURL: blazedbURL)
         seededIDs.reserveCapacity(config.seedRecords)
         for i in 0..<config.seedRecords {
-            let record = BlazeDataRecord([
-                "id": .uuid(UUID()),
-                "index": .int(i),
-                "data": .string("Record \(i)")
-            ])
+            let record = BenchPayload.standardRecord(index: i)
             seededIDs.append(try seedDB.insert(record))
         }
         try seedDB.persist()
@@ -699,11 +699,7 @@ func benchmarkConcurrentReadWhileWrite(config: ConcurrentBenchmarkConfig) -> (
             var writeIndex = config.seedRecords
             while !stop.isStopped {
                 do {
-                    let record = BlazeDataRecord([
-                        "id": .uuid(UUID()),
-                        "index": .int(writeIndex),
-                        "data": .string("Concurrent write \(writeIndex)")
-                    ])
+                    let record = BenchPayload.standardRecord(index: writeIndex, dataPrefix: "Concurrent write")
                     _ = try db.insert(record)
                     writeIndex += 1
                     if writeIndex % 25 == 0 {
@@ -895,11 +891,7 @@ func benchmarkInsertManyThroughput(datasetSize: Int, batchSize: Int = 100) -> (b
     try? FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
 
     let records = (0..<datasetSize).map { i in
-        BlazeDataRecord([
-            "id": .uuid(UUID()),
-            "index": .int(i),
-            "data": .string("Batch Record \(i)")
-        ])
+        BenchPayload.standardRecord(index: i, dataPrefix: "Batch Record")
     }
     let recordBatches = chunked(records, by: batchSize)
     var blazedbBatchDurationsMs: [Double] = []
@@ -981,11 +973,7 @@ func benchmarkInsertManyProfile(
     try? FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
 
     let records = (0..<datasetSize).map { i in
-        BlazeDataRecord([
-            "id": .uuid(UUID()),
-            "index": .int(i),
-            "data": .string("Batch Record \(i)")
-        ])
+        BenchPayload.standardRecord(index: i, dataPrefix: "Batch Record")
     }
     let recordBatches = chunked(records, by: batchSize)
     var blazedbBatchDurationsMs: [Double] = []
@@ -1071,11 +1059,7 @@ func benchmarkDeleteManyThroughput(datasetSize: Int, batchSize: Int = 100) -> (b
         let blazedbURL = tempDir.appendingPathComponent("blazedb_deletemany.db")
         let db = try openBenchDB(name: "deletemany-bench", fileURL: blazedbURL)
         let records = (0..<datasetSize).map { i in
-            BlazeDataRecord([
-                "id": .uuid(UUID()),
-                "index": .int(i),
-                "data": .string("Delete Record \(i)")
-            ])
+            BenchPayload.standardRecord(index: i, dataPrefix: "Delete Record")
         }
         let ids = try db.insertMany(records)
         try db.persist()
@@ -1171,11 +1155,7 @@ func benchmarkDeleteManyProfile(
         let blazedbURL = tempDir.appendingPathComponent("blazedb_deletemany_profile.db")
         let db = try openBenchDB(name: "deletemany-profile-bench", fileURL: blazedbURL)
         let records = (0..<datasetSize).map { i in
-            BlazeDataRecord([
-                "id": .uuid(UUID()),
-                "index": .int(i),
-                "data": .string("Delete Record \(i)")
-            ])
+            BenchPayload.standardRecord(index: i, dataPrefix: "Delete Record")
         }
         let ids = try db.insertMany(records)
         try db.persist()
@@ -1317,9 +1297,98 @@ if benchMode == "write_profile" {
     exit(0)
 }
 
+if benchMode == "payload_size_sweep" {
+    print("=== BlazeDB Payload Size Sweep ===\n")
+    do {
+        let path = ProcessInfo.processInfo.environment["BLAZEDB_PAYLOAD_SWEEP_PATH"] ?? "durable_insert"
+        let sizesEnv = ProcessInfo.processInfo.environment["BLAZEDB_PAYLOAD_SWEEP_SIZES"]
+        let sizes: [Int]
+        if let raw = sizesEnv, !raw.isEmpty {
+            sizes = raw.split(separator: ",").compactMap { Int($0.trimmingCharacters(in: .whitespaces)) }
+        } else {
+            sizes = PayloadSizeSweep.defaultPayloadBytes
+        }
+        let rows = try PayloadSizeSweep.run(payloadSizes: sizes.isEmpty ? PayloadSizeSweep.defaultPayloadBytes : sizes, path: path)
+        let md = PayloadSizeSweep.markdownReport(rows)
+        print(md)
+
+        let outDir = ProcessInfo.processInfo.environment["BLAZEDB_PAYLOAD_SWEEP_OUT"]
+            ?? "benchmark_results/payload_size"
+        let outURL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath).appendingPathComponent(outDir)
+        try FileManager.default.createDirectory(at: outURL, withIntermediateDirectories: true)
+        let mdPath = outURL.appendingPathComponent("payload_size_sweep.md")
+        let jsonPath = outURL.appendingPathComponent("payload_size_sweep.json")
+        try md.write(to: mdPath, atomically: true, encoding: .utf8)
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+        try encoder.encode(rows).write(to: jsonPath)
+        // Also publish under Docs/Benchmarks when requested.
+        if ProcessInfo.processInfo.environment["BLAZEDB_PAYLOAD_SWEEP_PUBLISH"] == "1" {
+            let docs = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+                .appendingPathComponent("Docs/Benchmarks")
+            try FileManager.default.createDirectory(at: docs, withIntermediateDirectories: true)
+            try md.write(to: docs.appendingPathComponent("payload_size_sweep.md"), atomically: true, encoding: .utf8)
+            try encoder.encode(rows).write(to: docs.appendingPathComponent("payload_size_sweep.json"))
+        }
+        print("Saved:")
+        print("  - \(mdPath.path)")
+        print("  - \(jsonPath.path)")
+    } catch {
+        print("Payload size sweep failed: \(error)")
+        exit(1)
+    }
+    exit(0)
+}
+
+if benchMode == "db_size_sweep" {
+    print("=== BlazeDB Write Latency vs DB Size ===\n")
+    print("Honest label: read-optimized; expensive durable write path. See Docs/Benchmarks/HONEST_PERFORMANCE.md\n")
+    do {
+        let seedsEnv = ProcessInfo.processInfo.environment["BLAZEDB_DB_SIZE_SWEEP_SEEDS"]
+        let seeds: [Int]
+        if let raw = seedsEnv, !raw.isEmpty {
+            seeds = raw.split(separator: ",").compactMap { Int($0.trimmingCharacters(in: .whitespaces)) }
+        } else {
+            seeds = DbSizeSweep.defaultSeedCounts
+        }
+        let rows = try DbSizeSweep.run(seedCounts: seeds.isEmpty ? DbSizeSweep.defaultSeedCounts : seeds)
+        let md = DbSizeSweep.markdownReport(rows)
+        print(md)
+
+        let outDir = ProcessInfo.processInfo.environment["BLAZEDB_DB_SIZE_SWEEP_OUT"]
+            ?? "benchmark_results/db_size"
+        let outURL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath).appendingPathComponent(outDir)
+        try FileManager.default.createDirectory(at: outURL, withIntermediateDirectories: true)
+        let mdPath = outURL.appendingPathComponent("db_size_sweep.md")
+        let jsonPath = outURL.appendingPathComponent("db_size_sweep.json")
+        try md.write(to: mdPath, atomically: true, encoding: .utf8)
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+        try encoder.encode(rows).write(to: jsonPath)
+        if ProcessInfo.processInfo.environment["BLAZEDB_DB_SIZE_SWEEP_PUBLISH"] == "1" {
+            let docs = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+                .appendingPathComponent("Docs/Benchmarks")
+            try FileManager.default.createDirectory(at: docs, withIntermediateDirectories: true)
+            try md.write(to: docs.appendingPathComponent("db_size_sweep.md"), atomically: true, encoding: .utf8)
+            try encoder.encode(rows).write(to: docs.appendingPathComponent("db_size_sweep.json"))
+        }
+        print("Saved:")
+        print("  - \(mdPath.path)")
+        print("  - \(jsonPath.path)")
+    } catch {
+        print("DB size sweep failed: \(error)")
+        exit(1)
+    }
+    exit(0)
+}
+
 print("=== BlazeDB Benchmarks ===\n")
 print("Condition: `\(benchmarkCondition.id)` mvcc=\(benchmarkCondition.mvccEffective ? "on" : "off") encryption=\(benchmarkCondition.encryptionEffective ? "on" : "off")")
 print("Enabled benchmarks: \(enabledBenchmarks.sorted())\n")
+
+let standardEncodedBytes = BenchPayload.sampleStandardEncodedBytes()
+let batchEncodedBytes = BenchPayload.sampleStandardEncodedBytes(dataPrefix: "Batch Record")
+print("Standard row encoded size (median): \(standardEncodedBytes) B — \(BenchPayload.standardShapeDescription)\n")
 
 var suite = BenchmarkSuite()
 
@@ -1334,7 +1403,9 @@ suite.run(
     blazedbStats: insert1k.blazedbStats,
     sqliteOpsPerSec: insert1k.sqliteOpsPerSec,
     sqliteStats: insert1k.sqliteStats,
-    notes: "BlazeDB insert() vs SQLite BEGIN IMMEDIATE+INSERT+COMMIT per row; WAL+FULL"
+    encodedPayloadBytes: standardEncodedBytes,
+    recordShape: BenchPayload.standardShapeDescription,
+    notes: "BlazeDB insert() vs SQLite BEGIN IMMEDIATE+INSERT+COMMIT per row; WAL+FULL; encoded B = median BlazeBinary size"
 )
 }
 
@@ -1348,7 +1419,9 @@ suite.run(
     blazedbStats: insert10k.blazedbStats,
     sqliteOpsPerSec: insert10k.sqliteOpsPerSec,
     sqliteStats: insert10k.sqliteStats,
-    notes: "BlazeDB insert() vs SQLite BEGIN IMMEDIATE+INSERT+COMMIT per row; WAL+FULL"
+    encodedPayloadBytes: standardEncodedBytes,
+    recordShape: BenchPayload.standardShapeDescription,
+    notes: "BlazeDB insert() vs SQLite BEGIN IMMEDIATE+INSERT+COMMIT per row; WAL+FULL; encoded B = median BlazeBinary size"
 )
 }
 
@@ -1363,7 +1436,9 @@ suite.run(
     blazedbStats: read1k.blazedbStats,
     sqliteOpsPerSec: read1k.sqliteOpsPerSec,
     sqliteStats: read1k.sqliteStats,
-    notes: "Indexed reads by UUID"
+    encodedPayloadBytes: standardEncodedBytes,
+    recordShape: BenchPayload.standardShapeDescription,
+    notes: "Indexed reads by UUID; seed rows use standard harness shape"
 )
 }
 
@@ -1378,6 +1453,8 @@ suite.run(
     blazedbStats: insertMany10k.blazedbStats,
     sqliteOpsPerSec: insertMany10k.sqliteOpsPerSec,
     sqliteStats: insertMany10k.sqliteStats,
+    encodedPayloadBytes: batchEncodedBytes,
+    recordShape: BenchPayload.standardShapeDescription,
     notes: "BlazeDB insertMany(batch) vs SQLite BEGIN+N×INSERT+COMMIT per batch; latency per batch"
 )
 }
@@ -1393,6 +1470,8 @@ suite.run(
     blazedbStats: deleteMany10k.blazedbStats,
     sqliteOpsPerSec: deleteMany10k.sqliteOpsPerSec,
     sqliteStats: deleteMany10k.sqliteStats,
+    encodedPayloadBytes: batchEncodedBytes,
+    recordShape: BenchPayload.standardShapeDescription,
     notes: "Throughput in records/sec; latency stats are per deleteMany(batch)"
 )
 }
@@ -1408,6 +1487,8 @@ suite.run(
     blazedbStats: insertManyDurable.blazedbStats,
     sqliteOpsPerSec: insertManyDurable.sqliteOpsPerSec,
     sqliteStats: insertManyDurable.sqliteStats,
+    encodedPayloadBytes: batchEncodedBytes,
+    recordShape: BenchPayload.standardShapeDescription,
     notes: "Persist after every batch; throughput in records/sec; latency is per insertMany(batch)+persist"
 )
 }
@@ -1423,6 +1504,8 @@ suite.run(
     blazedbStats: insertManyMax.blazedbStats,
     sqliteOpsPerSec: insertManyMax.sqliteOpsPerSec,
     sqliteStats: insertManyMax.sqliteStats,
+    encodedPayloadBytes: batchEncodedBytes,
+    recordShape: BenchPayload.standardShapeDescription,
     notes: "Single persist at end; larger batches for peak throughput; latency is per insertMany(batch)"
 )
 }
@@ -1438,6 +1521,8 @@ suite.run(
     blazedbStats: deleteManyDurable.blazedbStats,
     sqliteOpsPerSec: deleteManyDurable.sqliteOpsPerSec,
     sqliteStats: deleteManyDurable.sqliteStats,
+    encodedPayloadBytes: batchEncodedBytes,
+    recordShape: BenchPayload.standardShapeDescription,
     notes: "Persist after every batch; throughput in records/sec; latency is per deleteMany(batch)+persist"
 )
 }
@@ -1453,6 +1538,8 @@ suite.run(
     blazedbStats: deleteManyMax.blazedbStats,
     sqliteOpsPerSec: deleteManyMax.sqliteOpsPerSec,
     sqliteStats: deleteManyMax.sqliteStats,
+    encodedPayloadBytes: batchEncodedBytes,
+    recordShape: BenchPayload.standardShapeDescription,
     notes: "Single persist at end; larger batches for peak throughput; latency is per deleteMany(batch)"
 )
 }
@@ -1468,6 +1555,8 @@ suite.run(
     blazedbStats: coldOpen.blazedbStats,
     sqliteOpsPerSec: coldOpen.sqliteOpsPerSec,
     sqliteStats: coldOpen.sqliteStats,
+    encodedPayloadBytes: nil,
+    recordShape: nil,
     notes: "10 cycles; BlazeDB clears session before each open (600k PBKDF2). SQLite: open+COUNT (WAL, no encryption)"
 )
 }
@@ -1483,6 +1572,8 @@ suite.run(
     blazedbStats: warmOpen.blazedbStats,
     sqliteOpsPerSec: warmOpen.sqliteOpsPerSec,
     sqliteStats: warmOpen.sqliteStats,
+    encodedPayloadBytes: nil,
+    recordShape: nil,
     notes: "10 close/reopen cycles without clearSessionKeys(); BlazeDB skips PBKDF2 when session valid. SQLite N/A (no session concept)"
 )
 }
@@ -1500,6 +1591,8 @@ suite.run(
     blazedbStats: concurrent.blazedb.readStats,
     sqliteOpsPerSec: concurrent.sqliteReadOpsPerSec,
     sqliteStats: concurrent.sqliteReadStats,
+    encodedPayloadBytes: standardEncodedBytes,
+    recordShape: BenchPayload.standardShapeDescription,
     notes: blazeNotes
 )
 }
@@ -1507,7 +1600,12 @@ suite.run(
 print("\n=== Benchmark Results ===\n")
 print(suite.toMarkdown())
 
-// Save results
+// Save results (skip empty suites so `BLAZEDB_BENCH_ONLY=…` smokes do not wipe published docs)
+guard !suite.results.isEmpty else {
+    print("\nNo benchmark rows collected — not writing RESULTS.md/results.json.")
+    exit(0)
+}
+
 let markdownOut = ProcessInfo.processInfo.environment["BLAZEDB_BENCH_RESULTS_MD"] ?? "Docs/Benchmarks/RESULTS.md"
 let jsonOut = ProcessInfo.processInfo.environment["BLAZEDB_BENCH_RESULTS_JSON"] ?? "Docs/Benchmarks/results.json"
 let markdownFile = URL(fileURLWithPath: FileManager.default.currentDirectoryPath).appendingPathComponent(markdownOut)

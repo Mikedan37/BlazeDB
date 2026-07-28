@@ -1,6 +1,8 @@
-# Write path profile (issue #269)
+# Write path profile (issues #269 / #425)
 
 Opt-in stage instrumentation for durable writes. **Not product telemetry.**
+
+**Context:** BlazeDB is [read-optimized with an expensive durability path](HONEST_PERFORMANCE.md). Secure ≈ engine-only in prior profiles (AES is not the whole SQLite gap). [#425](https://github.com/ProjectBlaze/BlazeDB/issues/425) tracks publishing a checked-in stage-% table from a release run before optimizing.
 
 ## Enable
 
@@ -40,7 +42,7 @@ Use fsync/write counts and stage % to see whether InsertMany batches durability 
 
 ## Rule
 
-**No optimization PR until one or two stages explain most of the observed latency.**
+**No optimization PR until one or two stages explain most of the observed latency** (see [#425](https://github.com/ProjectBlaze/BlazeDB/issues/425)).
 
 Hypotheses (not conclusions): repeated fsync, per-record metadata publish, serialization copies, transaction setup inside a loop.
 
