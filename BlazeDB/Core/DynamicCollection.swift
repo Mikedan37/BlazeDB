@@ -1109,17 +1109,16 @@ public final class DynamicCollection {
                 let pageIndices = try store.writePageWithOverflowUnsynchronized(
                     index: mainPageIndex,
                     plaintext: encoded,
-                    allocatePage: { [weak self] in
-                        guard let self = self else { throw NSError(domain: "DynamicCollection", code: 1, userInfo: [NSLocalizedDescriptionKey: "Collection deallocated"]) }
-                        // Reuse deleted pages for overflow pages too
+                    allocatePage: {
+                        // insert() owns `self` for this synchronous barrier call.
                         let overflowPage = self.allocatePage(layout: &layout)
-                        // Check for conflicts on overflow pages too
-                        let overflowConflicts = self.indexMap.filter { $0.value.contains(overflowPage) }.keys
-                        if !overflowConflicts.isEmpty {
-                            BlazeLogger.error("Overflow page \(overflowPage) conflict - removing stale entries")
-                            for conflictID in overflowConflicts {
-                                self.indexMap.removeValue(forKey: conflictID)
-                            }
+                        // Never delete committed indexMap entries to "clear" an allocator collision.
+                        let committedConflict = self.indexMap.values.contains { $0.contains(overflowPage) }
+                        guard !committedConflict else {
+                            BlazeLogger.error(
+                                "❌ [INSERT] Overflow page \(overflowPage) already referenced by a committed indexMap entry — failing closed"
+                            )
+                            throw BlazeDBError.pageAllocationConflict(page: overflowPage)
                         }
                         return overflowPage
                     }
