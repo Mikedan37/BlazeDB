@@ -29,13 +29,19 @@ extension QueryBuilder {
         return self
     }
     
-    /// Filter records where field does not equal value (async)
+    /// Filter records where field does not equal value (async).
+    ///
+    /// A missing field is treated as matching `notEquals` — i.e. a record
+    /// with no `field` at all counts as "not equal to `value`", consistent
+    /// with the synchronous `where(_:notEquals:)` semantics. This is the
+    /// deliberate asymmetry with `where(_:equals:)`, which treats a missing
+    /// field as a non-match.
     @discardableResult
     public func `where`(_ field: String, notEquals value: BlazeDocumentField) async -> QueryBuilder {
         // Inline sync version logic to avoid recursion with async method
         BlazeLogger.debug("Query: WHERE \(field) != \(value)")
         filters.append { record in
-            guard let fieldValue = record.storage[field] else { return false }
+            guard let fieldValue = record.storage[field] else { return true }
             return !fieldsEqual(fieldValue, value)
         }
         return self
