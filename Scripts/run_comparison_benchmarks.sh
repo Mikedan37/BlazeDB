@@ -58,3 +58,8 @@ python3 "$ROOT/Scripts/publish_benchmark_results.py" \
 echo ""
 echo ">>> Comparison report: $OUT_DIR/COMPARISON.md"
 echo ">>> Published docs:   Docs/Benchmarks/RESULTS.md, COMPARISON.md, results.json"
+echo ">>> Honest label:     read-optimized; expensive durable writes — Docs/Benchmarks/HONEST_PERFORMANCE.md"
+echo ">>> Record size:      see Docs/Benchmarks/PAYLOAD_SIZE.md (encodedPayloadBytes in JSON)"
+echo ">>> Payload sweep:    ./Scripts/run_payload_size_sweep.sh --release"
+echo ">>> DB-size sweep:    ./Scripts/run_db_size_sweep.sh --release"
+echo ">>> Honesty lint:     python3 Scripts/check_benchmark_honesty.py"

@@ -430,11 +430,39 @@ public enum DeveloperCommands {
                 forwardedArgs: parsed.forwarded,
                 repositoryRoot: repositoryRoot
             )
+        case "bench":
+            return try runBench(
+                arguments: Array(arguments.dropFirst()),
+                repositoryRoot: repositoryRoot
+            )
         default:
             FileHandle.standardError.write(Data(
                 "Unknown developer command: \(sub)\nTry `blazedb dev help`.\n".utf8
             ))
             return 1
         }
+    }
+
+    /// Forwards to the repo-root `./bench` / `Scripts/bench.sh` front door.
+    static func runBench(arguments: [String], repositoryRoot: URL) throws -> Int32 {
+        let bench = repositoryRoot.appendingPathComponent("bench")
+        let script = repositoryRoot.appendingPathComponent("Scripts/bench.sh")
+        let executable: String
+        if FileManager.default.isExecutableFile(atPath: bench.path) {
+            executable = bench.path
+        } else if FileManager.default.isExecutableFile(atPath: script.path) {
+            executable = script.path
+        } else {
+            FileHandle.standardError.write(Data(
+                "Benchmark front door missing (expected ./bench or Scripts/bench.sh).\nSee Docs/Benchmarks/README.md.\n".utf8
+            ))
+            return 1
+        }
+        return try runInheritedProcess(
+            executable: executable,
+            arguments: arguments,
+            currentDirectory: repositoryRoot,
+            environment: ProcessInfo.processInfo.environment
+        )
     }
 }

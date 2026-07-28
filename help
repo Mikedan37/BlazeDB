@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+# Repo-root help pointer (contributor + benchmark commands).
+exec "$(cd "$(dirname "$0")" && pwd)/dev" help "$@"

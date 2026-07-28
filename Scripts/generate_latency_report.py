@@ -91,15 +91,17 @@ def parse_telemetry_percentiles(output: str) -> dict[str, float] | None:
 
 def format_md_table(results: list[dict[str, Any]]) -> str:
     lines = [
-        "| Condition | Support | Benchmark | BlazeDB ops/sec | avg ms | p50 ms | p95 ms | p99 ms | SQLite ops/sec | SQLite avg ms | SQLite p50 ms | SQLite p95 ms | SQLite p99 ms |",
-        "|---|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|",
+        "| Condition | Support | Benchmark | Encoded B | BlazeDB ops/sec | avg ms | p50 ms | p95 ms | p99 ms | SQLite ops/sec | SQLite avg ms |",
+        "|---|---|---|---:|---:|---:|---:|---:|---:|---:|---:|",
     ]
     for row in results:
+        encoded = "N/A" if row.get("encodedPayloadBytes") is None else str(int(row["encodedPayloadBytes"]))
         lines.append(
-            "| {condition} | {support} | {name} | {bops} | {bavg} | {bp50} | {bp95} | {bp99} | {sops} | {savg} | {sp50} | {sp95} | {sp99} |".format(
+            "| {condition} | {support} | {name} | {encoded} | {bops} | {bavg} | {bp50} | {bp95} | {bp99} | {sops} | {savg} |".format(
                 condition=row.get("condition", "baseline"),
                 support=row.get("supportStatus", "unknown"),
                 name=row["name"],
+                encoded=encoded,
                 bops=f"{row.get('blazedbOpsPerSec', 0):.0f}",
                 bavg=("N/A" if row.get("blazedbAvgMs") is None else f"{row['blazedbAvgMs']:.3f}"),
                 bp50=("N/A" if row.get("blazedbP50Ms") is None else f"{row['blazedbP50Ms']:.3f}"),
@@ -107,9 +109,6 @@ def format_md_table(results: list[dict[str, Any]]) -> str:
                 bp99=("N/A" if row.get("blazedbP99Ms") is None else f"{row['blazedbP99Ms']:.3f}"),
                 sops=("N/A" if row.get("sqliteOpsPerSec") is None else f"{row['sqliteOpsPerSec']:.0f}"),
                 savg=("N/A" if row.get("sqliteAvgMs") is None else f"{row['sqliteAvgMs']:.3f}"),
-                sp50=("N/A" if row.get("sqliteP50Ms") is None else f"{row['sqliteP50Ms']:.3f}"),
-                sp95=("N/A" if row.get("sqliteP95Ms") is None else f"{row['sqliteP95Ms']:.3f}"),
-                sp99=("N/A" if row.get("sqliteP99Ms") is None else f"{row['sqliteP99Ms']:.3f}"),
             )
         )
     return "\n".join(lines)

@@ -39,6 +39,8 @@ public enum CLIHelp {
           dev test <filter>        Run one focused test
           dev experiments          List repository experiments
           dev experiment <name>    Run a discovered experiment
+          dev bench [cmd]          Benchmark front door (honesty / smoke / payload / …)
+          ./bench [cmd]            Same front door without rebuilding blazedb
         """
       )
     }
@@ -57,6 +59,15 @@ public enum CLIHelp {
         \(CLIColors.ice("dev test <filter>"))        Run one focused Tier 0 test
         \(CLIColors.ice("dev experiments"))          List repository experiments
         \(CLIColors.ice("dev experiment <name>"))    Run a discovered experiment
+        \(CLIColors.ice("dev bench [cmd]"))          Benchmark tooling (`./bench` front door)
+
+      \(CLIColors.bold("Benchmarks")) \(CLIColors.muted("(not XCTest CI; see Docs/Benchmarks/)"))
+        \(CLIColors.ice("./bench honesty"))          Docs + result-shape lint (fast)
+        \(CLIColors.ice("./bench smoke"))            Short local sweeps → benchmark_results/
+        \(CLIColors.ice("./bench payload"))          Payload-size sweep (release recommended)
+        \(CLIColors.ice("./bench db-size"))          Write latency vs DB size
+        \(CLIColors.ice("./bench publish"))          Maintainer: publish Docs/Benchmarks tables
+        Same via \(CLIColors.ice("dev bench …")) or \(CLIColors.ice("./Scripts/bench.sh …"))
 
       \(CLIColors.bold("Examples"))
         blazedb dev tiers
@@ -65,6 +76,8 @@ public enum CLIHelp {
         blazedb dev tier0
         blazedb dev experiments
         blazedb dev experiment btree-search -- --records 10000
+        blazedb dev bench honesty
+        ./bench smoke
       """
     )
     print("")
