@@ -149,10 +149,10 @@ final class RLSEnforcementClientTests: XCTestCase {
         let db = try makeClient()
         let owner = UUID()
         let outsider = UUID()
-        let hiddenID = try db.insert(
+        let hiddenID = try await db.insert(
             BlazeDataRecord(["userId": .uuid(owner), "title": .string("hidden")])
         )
-        _ = try db.insert(
+        _ = try await db.insert(
             BlazeDataRecord(["userId": .uuid(outsider), "title": .string("visible")])
         )
 
