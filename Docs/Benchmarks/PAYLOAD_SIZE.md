@@ -126,7 +126,7 @@ See [HONEST_PERFORMANCE.md](HONEST_PERFORMANCE.md): durable single-row writes ar
 - `BlazeDBBenchmarks/BenchPayload.swift` — canonical shapes + encode measurement
 - `BlazeDBBenchmarks/PayloadSizeSweep.swift` — sweep mode
 - `BlazeDBBenchmarks/DbSizeSweep.swift` — write latency vs DB size
-- [WRITE_PATH_PROFILE.md](WRITE_PATH_PROFILE.md) — stage attribution (#425)
+- [WRITE_PATH_PROFILE.md](WRITE_PATH_PROFILE.md) — stage attribution ([`performance`](https://github.com/Mikedan37/BlazeDB/issues?q=is%3Aissue+is%3Aopen+label%3Aperformance))
 - [LIMITS.md](LIMITS.md) — max round-trip and growth profile
 - [RESULTS.md](RESULTS.md) / [LATENCY.md](LATENCY.md) — published tables
 - `Scripts/check_benchmark_honesty.py` — docs + result-shape lint

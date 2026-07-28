@@ -15,9 +15,9 @@ Engine (in-process) numbers and daemon-mediated numbers measure different bounda
 | Point reads | Durable `insert()` latency rises sharply with DB size (~0.7 ms empty → ~483 ms @100K small rows) |
 | Concurrent reads (MVCC on) | Cold open (600k PBKDF2 ~1 s) |
 | Encrypted-at-rest by default | Write path vs **plaintext** SQLite (no SQLCipher peer yet) |
-| Crash-safe / deterministic exports | `insertMany` rejects overflow-sized records that `insert()` accepts ([#434](https://github.com/Mikedan37/BlazeDB/issues/434)) |
+| Crash-safe / deterministic exports | `insertMany` overflow / size parity gaps — see [`batch-operations`](https://github.com/Mikedan37/BlazeDB/issues?q=is%3Aissue+is%3Aopen+label%3Abatch-operations) |
 
-Do **not** claim broadly fast durable writes until size-scaling work under [#435](https://github.com/Mikedan37/BlazeDB/issues/435) / [#425](https://github.com/Mikedan37/BlazeDB/issues/425) explains the slope and the path improves. Published curves: [db_size_sweep.md](db_size_sweep.md), [payload_size_sweep.md](payload_size_sweep.md).
+Do **not** claim broadly fast durable writes until size-scaling work under [`performance`](https://github.com/Mikedan37/BlazeDB/issues?q=is%3Aissue+is%3Aopen+label%3Aperformance) / [`storage-engine`](https://github.com/Mikedan37/BlazeDB/issues?q=is%3Aissue+is%3Aopen+label%3Astorage-engine) explains the slope and the path improves. Published curves: [db_size_sweep.md](db_size_sweep.md), [payload_size_sweep.md](payload_size_sweep.md).
 
 Also optimized for:
 
@@ -181,7 +181,7 @@ See `benchmark_results/concurrent/CONCURRENT_MVCC.md` after running the script. 
 
 - **Canonical published numbers** live in `Docs/Benchmarks/` files produced by an explicit comparison / `./bench publish` path (for example [RESULTS.md](RESULTS.md), [COMPARISON.md](COMPARISON.md)). Timestamp and harness notes in those files matter.
 - **Smoke / local sweeps** (`./bench smoke`, default `./Scripts/run_*_sweep.sh` without publish) write under `benchmark_results/` only. One host and one quick sweep can motivate a concern; they do **not** establish a full scaling curve or replace published baselines.
-- For **durable write stage attribution**, use [WRITE_PATH_PROFILE.md](WRITE_PATH_PROFILE.md) (`BLAZEDB_BENCH_MODE=write_profile`) — investigation only, not product telemetry. Publish stage % is [#425](https://github.com/ProjectBlaze/BlazeDB/issues/425).
+- For **durable write stage attribution**, use [WRITE_PATH_PROFILE.md](WRITE_PATH_PROFILE.md) (`BLAZEDB_BENCH_MODE=write_profile`) — investigation only, not product telemetry. Publish stage % under open [`performance`](https://github.com/Mikedan37/BlazeDB/issues?q=is%3Aissue+is%3Aopen+label%3Aperformance) issues.
 - For **payload size vs latency**, use [PAYLOAD_SIZE.md](PAYLOAD_SIZE.md) (`BLAZEDB_BENCH_MODE=payload_size_sweep`) — do not infer core-row size from the 1 MB growth limit. Tables report **encoded** bytes alongside requested payload field bytes.
 - For **write latency vs DB size**, use `./Scripts/run_db_size_sweep.sh` (`BLAZEDB_BENCH_MODE=db_size_sweep`) — each seed point uses a fresh temporary database.
 - Prefer [COMPARISON.md](COMPARISON.md) and [HONEST_PERFORMANCE.md](HONEST_PERFORMANCE.md) over March-era `LATENCY.md` for cold-open / insert headlines (see issue #272).

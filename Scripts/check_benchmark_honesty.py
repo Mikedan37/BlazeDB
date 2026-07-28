@@ -32,8 +32,8 @@ def main() -> int:
     for needle in (
         label,
         "encodedPayloadBytes",
-        "#425",
-        "#434",
+        "batch-operations",
+        "performance",
         "encrypted",
         "payload-size",
         "p50",
@@ -44,6 +44,11 @@ def main() -> int:
 
     if label not in honest:
         fail("HONEST_PERFORMANCE.md missing canonical size-scaling label")
+    if "/issues/" in honest and "label%3A" not in honest and "label=" not in honest:
+        # Prefer label-filter links over hard-coded issue numbers in long-lived docs.
+        import re
+        if re.search(r"issues/\d+", honest):
+            fail("HONEST_PERFORMANCE.md hard-codes issue numbers; use label filter links instead")
 
     root_readme = require_file(ROOT / "README.md")
     if "./bench" not in root_readme:

@@ -16,7 +16,7 @@ That is more useful than “BlazeDB is fast” or “BlazeDB is slow.”
 |------|------------------------------------------|
 | Point reads | Very fast (~105k ops/s indexed UUID read) |
 | Concurrent reads | Promising (~3.3k reads/s with a writer; ~34× vs plaintext SQLite under the same harness) |
-| Batch writes | Usable for small rows; `insertMany` rejects overflow-sized records ([#434](https://github.com/Mikedan37/BlazeDB/issues/434)) |
+| Batch writes | Usable for small rows; `insertMany` has historically rejected overflow-sized records that `insert()` accepts (see issues labeled `batch-operations`) |
 | Single durable writes (empty / small DB) | Slow vs plaintext SQLite (~2.5 ms/op on core 1K RESULTS row) |
 | Single durable writes vs **DB size** | Catastrophic slope: ~0.7 ms → ~5 ms @1K → ~47 ms @10K → **~483 ms @100K** ([db_size_sweep.md](db_size_sweep.md)) |
 | Cold open | Very slow (~1.0 s) because of 600k PBKDF2 |
@@ -51,11 +51,11 @@ The payload curve is nonlinear but not alarming by itself. The **database-size**
 
 Roughly **~10× latency for each ~10× row count** after 1K. That strongly suggests near-linear work over existing contents (index rebuild/rewrite, metadata serialization, scan, pathological page lookup, etc.) — **not** fixed fsync.
 
-[#425](https://github.com/Mikedan37/BlazeDB/issues/425) / follow-up size-scaling work should profile **work versus database size**, not only stages of one write on an empty DB. Useful per seed size: encode, encrypt, lookup/index mutation, page allocation, WAL append, main-store mutation, metadata serialization, fsync, bytes written, pages read/written.
+Track work under issues labeled [`performance`](https://github.com/Mikedan37/BlazeDB/issues?q=is%3Aissue+is%3Aopen+label%3Aperformance) and [`storage-engine`](https://github.com/Mikedan37/BlazeDB/issues?q=is%3Aissue+is%3Aopen+label%3Astorage-engine). Profile **work versus database size**, not only stages of one write on an empty DB. Useful per seed size: encode, encrypt, lookup/index mutation, page allocation, WAL append, main-store mutation, metadata serialization, fsync, bytes written, pages read/written.
 
 ## insertMany overflow (separate correctness bug)
 
-`insertMany([record])` fails at ≥ ~4 KB (`Page too large`) while `insert(record)` accepts up to ~4 MB. That is API parity breakage — tracked in [#434](https://github.com/Mikedan37/BlazeDB/issues/434). Benchmark FAILED rows (ops/s `0` + note) are intentional; do not mistake them for legitimate zero throughput.
+`insertMany([record])` has failed at ≥ ~4 KB (`Page too large`) while `insert(record)` accepts up to ~4 MB. That is API parity breakage — track under [`batch-operations`](https://github.com/Mikedan37/BlazeDB/issues?q=is%3Aissue+is%3Aopen+label%3Abatch-operations). Benchmark FAILED rows (ops/s `0` + note) are intentional when a path is unsupported; do not mistake them for legitimate zero throughput.
 
 ## Before claiming “high performance”
 
@@ -64,7 +64,7 @@ Roughly **~10× latency for each ~10× row count** after 1K. That strongly sugge
 | Payload-size sweeps | `./bench payload` / `./bench publish` → [payload_size_sweep.md](payload_size_sweep.md) |
 | Write latency vs DB size | `./bench db-size` → [db_size_sweep.md](db_size_sweep.md) |
 | p50 / p95 / p99 (not only averages) | Core harness + `Scripts/generate_latency_report.py` |
-| Stage profile **vs DB size** | Extend write profile under [#435](https://github.com/Mikedan37/BlazeDB/issues/435) / [#425](https://github.com/Mikedan37/BlazeDB/issues/425) |
+| Stage profile **vs DB size** | Extend write profile; see [`performance`](https://github.com/Mikedan37/BlazeDB/issues?q=is%3Aissue+is%3Aopen+label%3Aperformance) issues |
 | Comparison vs **encrypted** SQLite | **Gap** — current COMPARISON is plaintext SQLite + `engine_only` |
 | Front door | `./bench` or `./dev bench` (see README / `./dev help`) |
 
@@ -77,8 +77,7 @@ Roughly **~10× latency for each ~10× row count** after 1K. That strongly sugge
 
 ## Related
 
-- [#435](https://github.com/Mikedan37/BlazeDB/issues/435) — durable insert scales poorly with DB size (primary)
-- [#425](https://github.com/Mikedan37/BlazeDB/issues/425) — stage attribution (extend to vs-DB-size)
-- [#434](https://github.com/Mikedan37/BlazeDB/issues/434) — insertMany rejects overflow-sized records
-- [#424](https://github.com/Mikedan37/BlazeDB/issues/424) / [#276](https://github.com/Mikedan37/BlazeDB/issues/276) — insertMany amortization
+- Issues labeled [`performance`](https://github.com/Mikedan37/BlazeDB/issues?q=is%3Aissue+is%3Aopen+label%3Aperformance) — size-scaling / stage attribution
+- Issues labeled [`batch-operations`](https://github.com/Mikedan37/BlazeDB/issues?q=is%3Aissue+is%3Aopen+label%3Abatch-operations) — insertMany parity / amortization
+- Issues labeled [`storage-engine`](https://github.com/Mikedan37/BlazeDB/issues?q=is%3Aissue+is%3Aopen+label%3Astorage-engine) — page / WAL / overflow path
 - [WRITE_PATH_PROFILE.md](WRITE_PATH_PROFILE.md), [PAYLOAD_SIZE.md](PAYLOAD_SIZE.md), [LIMITS.md](LIMITS.md)
