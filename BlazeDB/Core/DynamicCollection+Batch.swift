@@ -304,35 +304,34 @@ extension DynamicCollection {
                 // Must use overflow-aware path so insertMany accepts the same sizes as insert().
                 let value = document["value"]?.intValue ?? -1
                 BlazeLogger.debug("💾 [INSERT] Batch: Writing record \(id.uuidString.prefix(8)) (value: \(value)) to page \(currentPageIndex)")
+
+                // Overflow pages: never delete committed indexMap entries on collision.
+                // Batch-local collisions may retry; committed conflicts fail closed immediately.
+                func allocateUnreservedOverflowPage() throws -> Int {
+                    while true {
+                        let page = self.allocatePage(layout: &layout)
+                        let committedConflict = self.indexMap.values.contains { $0.contains(page) }
+                        guard !committedConflict else {
+                            BlazeLogger.error(
+                                "❌ [INSERT] Batch: Overflow page \(page) already referenced by a committed indexMap entry — failing closed"
+                            )
+                            throw BlazeDBError.pageAllocationConflict(page: page)
+                        }
+                        guard !batchAllocatedPages.contains(page) else {
+                            BlazeLogger.error("❌ [INSERT] Batch: Overflow page \(page) already allocated in this batch — allocating another")
+                            continue
+                        }
+                        batchAllocatedPages.insert(page)
+                        return page
+                    }
+                }
+
                 let pageIndices = try store.writePageWithOverflowUnsynchronized(
                     index: currentPageIndex,
                     plaintext: encoded,
                     allocatePage: {
                         // insertBatch already owns `self` for this synchronous barrier call.
-                        var candidate = self.allocatePage(layout: &layout)
-                        // Pending batch pages are not in indexMap yet — keep allocating until free.
-                        var batchCollisionAttempts = 0
-                        while batchAllocatedPages.contains(candidate) {
-                            batchCollisionAttempts += 1
-                            guard batchCollisionAttempts <= 10_000 else {
-                                BlazeLogger.error("❌ [INSERT] Batch: Exhausted attempts resolving batch-local overflow page collisions")
-                                throw BlazeDBError.pageAllocationConflict(page: candidate)
-                            }
-                            BlazeLogger.error("❌ [INSERT] Batch: Overflow page \(candidate) already allocated in this batch — allocating another")
-                            candidate = self.allocatePage(layout: &layout)
-                        }
-                        // Committed pages in indexMap must never be "repaired" by deleting entries.
-                        let overflowConflicts = self.indexMap
-                            .filter { $0.value.contains(candidate) }
-                            .map(\.key)
-                        guard overflowConflicts.isEmpty else {
-                            BlazeLogger.error(
-                                "❌ [INSERT] Batch: Overflow page \(candidate) already in use by committed record(s): \(overflowConflicts.map { String($0.uuidString.prefix(8)) }.joined(separator: ", ")) — failing closed"
-                            )
-                            throw BlazeDBError.pageAllocationConflict(page: candidate)
-                        }
-                        batchAllocatedPages.insert(candidate)
-                        return candidate
+                        try allocateUnreservedOverflowPage()
                     }
                 )
                 for page in pageIndices {

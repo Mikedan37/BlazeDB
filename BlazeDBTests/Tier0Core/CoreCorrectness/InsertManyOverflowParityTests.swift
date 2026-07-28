@@ -227,30 +227,62 @@ final class InsertManyOverflowParityTests: XCTestCase {
         // not silently remove the existing record's index entry.
         #if DEBUG
         var db = try openDB()
-        let existingID = try db.insert(record(index: 0, payloadBytes: 64, filler: "z"))
+        let existingPayload = String(repeating: "z", count: 64)
+        let existingID = try db.insert(
+            BlazeDataRecord([
+                "index": .int(0),
+                "payload": .string(existingPayload),
+                "marker": .string("seed-committed"),
+            ])
+        )
         try db.persist()
 
         let committedPages = try XCTUnwrap(db.collection.indexMap[existingID])
         let victimPage = try XCTUnwrap(committedPages.first)
+        let rejectedPayload = String(repeating: "x", count: 6_000)
 
         // Skip the head-page allocatePage for the batch record; force the overflow allocate to the victim.
         DynamicCollection._forceAllocatedPageAfterSkippingForTests(skips: 1, page: victimPage)
         defer { DynamicCollection._clearForcedAllocatedPageForTests() }
 
-        XCTAssertThrowsError(try db.insertMany([record(index: 1, payloadBytes: 6_000, filler: "x")])) { error in
+        XCTAssertThrowsError(
+            try db.insertMany([
+                BlazeDataRecord([
+                    "index": .int(1),
+                    "payload": .string(rejectedPayload),
+                    "marker": .string("should-not-commit"),
+                ])
+            ])
+        ) { error in
             guard case BlazeDBError.corruptedData(let location, let reason) = error else {
                 return XCTFail("expected pageAllocationConflict (corruptedData), got \(error)")
             }
             XCTAssertEqual(location, "page \(victimPage)")
             XCTAssertTrue(reason.contains("refusing to delete"), reason)
         }
+
+        // Before reopen: committed seed remains fetchable; rejected overflow batch is absent.
+        let beforeReopen = try XCTUnwrap(db.fetch(id: existingID), "committed record must remain fetchable before reopen")
+        XCTAssertEqual(beforeReopen.storage["payload"]?.stringValue, existingPayload)
+        XCTAssertEqual(beforeReopen.storage["marker"]?.stringValue, "seed-committed")
+        XCTAssertEqual(try db.fetchAll().count, 1)
+        XCTAssertTrue(
+            try db.fetchAll().allSatisfy { $0.storage["marker"]?.stringValue != "should-not-commit" },
+            "rejected batch overflow record must be absent before reopen"
+        )
+
         try? db.persist()
         try db.close()
 
         db = try openDB()
-        let surviving = try XCTUnwrap(db.fetch(id: existingID), "committed record must survive allocator conflict")
-        XCTAssertEqual(surviving.storage["payload"]?.stringValue?.first, "z")
+        let afterReopen = try XCTUnwrap(db.fetch(id: existingID), "committed record must survive reopen")
+        XCTAssertEqual(afterReopen.storage["payload"]?.stringValue, existingPayload)
+        XCTAssertEqual(afterReopen.storage["marker"]?.stringValue, "seed-committed")
         XCTAssertEqual(try db.fetchAll().count, 1)
+        XCTAssertNil(
+            try db.fetchAll().first(where: { $0.storage["marker"]?.stringValue == "should-not-commit" }),
+            "rejected batch overflow record must remain absent after reopen"
+        )
         try db.close()
         #else
         throw XCTSkip("allocatePage fault injection is DEBUG-only")
