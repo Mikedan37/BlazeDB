@@ -307,9 +307,16 @@ extension DynamicCollection {
 
                 // Overflow pages: never delete committed indexMap entries on collision.
                 // Batch-local collisions may retry; committed conflicts fail closed immediately.
+                // allocatePage normally progresses (pops free/deleted or bumps nextPageIndex), but
+                // keep an explicit bound so a pathological free-list cannot spin forever.
                 func allocateUnreservedOverflowPage() throws -> Int {
-                    while true {
+                    let maxAttempts = max(batchAllocatedPages.count + layout.deletedPages.count + 64, 128)
+                    var attempts = 0
+                    var lastPage: Int?
+                    while attempts < maxAttempts {
+                        attempts += 1
                         let page = self.allocatePage(layout: &layout)
+                        lastPage = page
                         let committedConflict = self.indexMap.values.contains { $0.contains(page) }
                         guard !committedConflict else {
                             BlazeLogger.error(
@@ -324,6 +331,9 @@ extension DynamicCollection {
                         batchAllocatedPages.insert(page)
                         return page
                     }
+                    let exhausted = lastPage ?? -1
+                    BlazeLogger.error("❌ [INSERT] Batch: Exhausted \(maxAttempts) overflow page allocation attempts without an unreserved page (last=\(exhausted))")
+                    throw BlazeDBError.pageAllocationConflict(page: exhausted)
                 }
 
                 let pageIndices = try store.writePageWithOverflowUnsynchronized(
