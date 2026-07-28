@@ -314,14 +314,25 @@ final class EncryptionRoundTripVerificationTests: XCTestCase {
         
         try fileHandle.seek(toOffset: 25)  // Middle of tag
         let originalTagByte = try fileHandle.read(upToCount: 1) ?? Data([0x00])
-        let mutatedTagByte = Data([originalTagByte.first! ^ 0xFF])
+        let original = try XCTUnwrap(originalTagByte.first, "tag byte must exist at offset 25")
+        let mutated = original ^ 0xFF
+        XCTAssertNotEqual(mutated, original, "XOR 0xFF must always change the selected tag byte")
         try fileHandle.seek(toOffset: 25)
-        try fileHandle.write(contentsOf: mutatedTagByte)
+        try fileHandle.write(contentsOf: Data([mutated]))
         try fileHandle.synchronize()
-        
-        // Should fail authentication
+
+        // Should fail authentication (AES-GCM tag), not succeed with silent ignore
         let newStore = try PageStore(fileURL: try requireFixture(tempURL), key: key)
-        XCTAssertThrowsError(try newStore.readPage(index: 0), "Tampered tag should be detected")
+        XCTAssertThrowsError(try newStore.readPage(index: 0), "Tampered tag should be detected") { error in
+            let description = String(describing: error)
+            XCTAssertTrue(
+                error.localizedDescription.contains("authentication") ||
+                error.localizedDescription.contains("corrupt") ||
+                description.contains("authenticationFailure") ||
+                description.contains("underlyingCoreCryptoError"),
+                "Should fail authentication for tag tamper, got: \(error)"
+            )
+        }
     }
     
     // MARK: - Concurrent Access Tests
