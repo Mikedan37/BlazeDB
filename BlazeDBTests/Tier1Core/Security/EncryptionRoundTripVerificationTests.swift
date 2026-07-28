@@ -313,7 +313,10 @@ final class EncryptionRoundTripVerificationTests: XCTestCase {
         defer { try? fileHandle.close() }
         
         try fileHandle.seek(toOffset: 25)  // Middle of tag
-        try fileHandle.write(contentsOf: Data([0x00]))
+        let originalTagByte = try fileHandle.read(upToCount: 1) ?? Data([0x00])
+        let mutatedTagByte = Data([originalTagByte.first! ^ 0xFF])
+        try fileHandle.seek(toOffset: 25)
+        try fileHandle.write(contentsOf: mutatedTagByte)
         try fileHandle.synchronize()
         
         // Should fail authentication
