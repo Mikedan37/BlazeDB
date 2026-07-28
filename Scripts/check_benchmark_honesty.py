@@ -28,34 +28,42 @@ def require_file(path: Path) -> str:
 
 def main() -> int:
     honest = require_file(DOCS / "HONEST_PERFORMANCE.md")
+    label = "durable writes are expensive and currently scale poorly with database size"
     for needle in (
-        "read-optimized and currently has an expensive durability path",
+        label,
         "encodedPayloadBytes",
         "#425",
+        "#434",
         "encrypted",
         "payload-size",
         "p50",
+        "483",
     ):
-        if needle.lower() not in honest.lower() and needle not in honest:
-            # allow case variants for some; enforce literal for the label
-            if needle.startswith("#") or needle == "encodedPayloadBytes":
-                if needle not in honest:
-                    fail(f"HONEST_PERFORMANCE.md missing `{needle}`")
-            elif needle.lower() not in honest.lower():
-                fail(f"HONEST_PERFORMANCE.md missing `{needle}`")
+        if needle not in honest and needle.lower() not in honest.lower():
+            fail(f"HONEST_PERFORMANCE.md missing `{needle}`")
 
-    if "read-optimized and currently has an expensive durability path" not in honest:
-        fail("HONEST_PERFORMANCE.md missing canonical label sentence")
+    if label not in honest:
+        fail("HONEST_PERFORMANCE.md missing canonical size-scaling label")
+
+    root_readme = require_file(ROOT / "README.md")
+    if "./bench" not in root_readme:
+        fail("README.md must mention ./bench front door")
+    if "dev bench" not in root_readme and "./dev bench" not in root_readme:
+        fail("README.md must mention ./dev bench")
 
     readme = require_file(DOCS / "README.md")
     if "HONEST_PERFORMANCE.md" not in readme:
         fail("Docs/Benchmarks/README.md must link HONEST_PERFORMANCE.md")
+    if "scale poorly" not in readme.lower() and "scale poorly" not in honest:
+        fail("Docs/Benchmarks/README.md should reflect size-scaling framing")
 
     payload = require_file(DOCS / "PAYLOAD_SIZE.md")
-    if "HONEST_PERFORMANCE" not in payload and "expensive durability" not in payload.lower():
-        # soft: at least link or shared framing
-        if "encodedPayloadBytes" not in payload:
-            fail("PAYLOAD_SIZE.md missing encodedPayloadBytes")
+    if "encodedPayloadBytes" not in payload:
+        fail("PAYLOAD_SIZE.md missing encodedPayloadBytes")
+
+    tools = require_file(ROOT / "Docs" / "Tools" / "README.md")
+    if "./bench" not in tools:
+        fail("Docs/Tools/README.md must mention ./bench")
 
     results_path = DOCS / "results.json"
     if results_path.is_file():
@@ -84,6 +92,7 @@ def main() -> int:
     # Scripts must exist
     for rel in (
         "bench",
+        "help",
         "Scripts/bench.sh",
         "Scripts/run_payload_size_sweep.sh",
         "Scripts/run_db_size_sweep.sh",

@@ -12,6 +12,7 @@
 #   ./Scripts/bench.sh publish
 #
 # Prefer the repo-root wrapper: ./bench <command>
+# Also available as: ./dev bench <command>   (see `./dev help`)
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"

@@ -13,9 +13,11 @@ From a package checkout:
 ./dev tests [search]
 ./dev test <filter>
 ./dev tier0
+./dev bench honesty          # or ./bench honesty
+./bench smoke                # short local sweeps (not canonical publish)
 ```
 
-`./dev` owns repeatable test/tier/experiment workflows. It reuses `.build/debug/blazedb` when possible and rebuilds when `BlazeShell`, `BlazedbCLI`, or `Package.swift` are newer than that binary. Xcode schemes stay lean for interactive Run / Profile / Analyze / Archive. See [Docs/Build/XCODE_SCHEMES.md](Docs/Build/XCODE_SCHEMES.md).
+`./dev` owns repeatable test/tier/experiment workflows. Benchmarks use `./bench` (also `./dev bench …`). It reuses `.build/debug/blazedb` when possible and rebuilds when `BlazeShell`, `BlazedbCLI`, or `Package.swift` are newer than that binary. Xcode schemes stay lean for interactive Run / Profile / Analyze / Archive. See [Docs/Build/XCODE_SCHEMES.md](Docs/Build/XCODE_SCHEMES.md). Benchmark methodology: [Docs/Benchmarks/README.md](Docs/Benchmarks/README.md).
 
 Storage-format, WAL, encryption, and recovery changes: follow [Docs/Contributing/STORAGE_CHANGE_CHECKLIST.md](Docs/Contributing/STORAGE_CHANGE_CHECKLIST.md).
 

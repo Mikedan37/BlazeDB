@@ -8,16 +8,16 @@ Engine (in-process) numbers and daemon-mediated numbers measure different bounda
 
 ## What BlazeDB Is Optimized For
 
-**Honest label:** [read-optimized with an expensive durability path](HONEST_PERFORMANCE.md) — not “generally fast.”
+**Honest label:** [point reads are fast; durable writes are expensive and currently scale poorly with database size](HONEST_PERFORMANCE.md) — not “generally fast,” and not merely a fixed durability tax.
 
 | Strength | Weakness / cost |
 |----------|-----------------|
-| Point reads | Single durable `insert()` (~2.5 ms / ~274 ops/s on 1K) |
+| Point reads | Durable `insert()` latency rises sharply with DB size (~0.7 ms empty → ~483 ms @100K small rows) |
 | Concurrent reads (MVCC on) | Cold open (600k PBKDF2 ~1 s) |
-| Encrypted-at-rest by default | Write path vs **plaintext** SQLite (and no SQLCipher peer yet) |
-| Crash-safe / deterministic exports | 10K durable insert can degrade (~24 ms/op) — investigate size scaling |
+| Encrypted-at-rest by default | Write path vs **plaintext** SQLite (no SQLCipher peer yet) |
+| Crash-safe / deterministic exports | `insertMany` rejects overflow-sized records that `insert()` accepts ([#434](https://github.com/Mikedan37/BlazeDB/issues/434)) |
 
-Do **not** claim broadly fast durable writes until [#425](https://github.com/ProjectBlaze/BlazeDB/issues/425) attributes stage % and the path improves.
+Do **not** claim broadly fast durable writes until size-scaling work under [#425](https://github.com/Mikedan37/BlazeDB/issues/425) explains the slope and the path improves. Published curves: [db_size_sweep.md](db_size_sweep.md), [payload_size_sweep.md](payload_size_sweep.md).
 
 Also optimized for:
 

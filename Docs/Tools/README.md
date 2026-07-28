@@ -18,8 +18,9 @@ Use these **exact** status words everywhere (README, this map, issues). Do not i
 | `BlazeDoctor` | `swift run BlazeDoctor` | Health checks (separate executable, not a `blazedb` subcommand) | **shipped** |
 | `BlazeDump` | `swift run BlazeDump` | Export / restore (separate executable) | **shipped** |
 | `BlazeInfo` | `swift run BlazeInfo` | Quick snapshot (separate executable) | **shipped** |
-| `./dev` | `./dev help` | Contributor tests, tiers, experiments | **shipped** |
-| `BlazeDBBenchmarks` | `swift run BlazeDBBenchmarks` | Methodology workloads (not README vanity numbers) | **shipped** |
+| `./dev` | `./dev help` | Contributor tests, tiers, experiments, **benchmarks** (`dev bench`) | **shipped** |
+| `./bench` | `./bench` / `./bench honesty` | Benchmark front door (payload / DB-size sweeps, publish) | **shipped** |
+| `BlazeDBBenchmarks` | `swift run BlazeDBBenchmarks` or via `./bench` | Methodology workloads (not README vanity numbers) | **shipped** |
 | [BlazeStudio](../../BlazeStudio/) | Open `BlazeStudio/BlazeStudio.xcodeproj` | macOS visual / browser aid | **beta** |
 | [BlazeDBVisualizer](../../BlazeDBVisualizer/) | Open `BlazeDBVisualizer/BlazeDBVisualizer.xcodeproj` | macOS storage inspection UI | **beta** |
 | BlazeMCP | Sources under `BlazeMCP/`; see [MCP_SERVER.md](MCP_SERVER.md) | MCP protocol design / in-tree sources | **in-tree, not packaged** |
@@ -31,6 +32,21 @@ Use these **exact** status words everywhere (README, this map, issues). Do not i
 `BlazeShell/` holds implementation sources for the **`blazedb`** product (`BlazeCLICore` / `BlazedbCLI`). There is no separate "BlazeShell" executable to ship.
 
 Doctor, Dump, and Info are **shipped** SwiftPM executables. They are not `blazedb` subcommands today (see issues #259, #300).
+
+### Benchmarks
+
+From a checkout:
+
+```bash
+./dev help                 # lists bench commands
+./bench honesty            # or: ./dev bench honesty
+./bench smoke              # short local sweeps → benchmark_results/
+./bench payload --release  # size vs latency
+./bench db-size --release  # insert latency vs DB size
+./bench publish            # maintainers: Docs/Benchmarks/*.md tables
+```
+
+Canonical docs: [../Benchmarks/README.md](../Benchmarks/README.md) · [../Benchmarks/HONEST_PERFORMANCE.md](../Benchmarks/HONEST_PERFORMANCE.md). Not part of normal unit-test CI.
 
 ## Canonical tool docs
 

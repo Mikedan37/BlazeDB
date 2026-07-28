@@ -183,15 +183,23 @@ Status words (use exactly): **shipped**, **beta**, **experimental**, **in-tree, 
 | `BlazeDoctor` / `BlazeDump` / `BlazeInfo` | Maintenance utilities (`swift run BlazeDoctor`, etc.; not `blazedb` subcommands) | **shipped** |
 | [BlazeStudio](BlazeStudio/) | macOS visual / browser aid (`BlazeStudio.xcodeproj`) | **beta** |
 | [BlazeDBVisualizer](BlazeDBVisualizer/) | macOS storage inspection UI | **beta** |
+| `./bench` / `./dev bench` | Benchmark front door (honesty lint, payload / DB-size sweeps, publish) | **shipped** |
 | `BlazeDBBenchmarks` | Methodology workloads (not README vanity numbers) | **shipped** |
-| `./dev` | Contributor test / tier helper | **shipped** |
+| `./dev` | Contributor test / tier helper (`./dev help`) | **shipped** |
 | BlazeMCP | MCP design / sources under `BlazeMCP/` | **in-tree, not packaged** |
 
 ```bash
 swift build --product blazedb
 .build/debug/blazedb --help
 .build/debug/blazedb          # interactive picker / REPL (not a network server)
+
+./dev help                    # contributor + benchmark commands
+./bench honesty               # or: ./dev bench honesty
+./bench smoke                 # short local sweeps → benchmark_results/
+# ./bench publish             # long release sweeps → Docs/Benchmarks/ (maintainers)
 ```
+
+Benchmarks are **not** normal XCTest CI. Methodology and honest framing: [Docs/Benchmarks/README.md](Docs/Benchmarks/README.md) · [HONEST_PERFORMANCE.md](Docs/Benchmarks/HONEST_PERFORMANCE.md).
 
 More: [Docs/Tools/README.md](Docs/Tools/README.md) · schemes: [XCODE_SCHEMES.md](Docs/Build/XCODE_SCHEMES.md).
 

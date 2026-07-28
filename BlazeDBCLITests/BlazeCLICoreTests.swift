@@ -868,6 +868,8 @@ final class BlazedbRLSIntegrationSurfaceTests: XCTestCase {
         XCTAssertTrue(source.contains("includesDeveloperCommands"))
         XCTAssertTrue(source.contains("dev help"))
         XCTAssertTrue(source.contains("dev experiments"))
+        XCTAssertTrue(source.contains("dev bench"))
+        XCTAssertTrue(source.contains("./bench"))
     }
 
     func testRunShellAppliesRLSConfigAndFetchAllJSONUpdatesContextSourceGuard() throws {
