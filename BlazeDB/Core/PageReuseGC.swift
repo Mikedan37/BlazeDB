@@ -16,6 +16,29 @@ extension DynamicCollection {
     private func loadPageReuseLayout() throws -> StorageLayout {
         try loadLayoutForMutation()
     }
+
+    #if DEBUG
+    private static let allocatePageFaultLock = NSLock()
+    /// One-shot fault: after skipping `skips` normal allocations, return `page` once.
+    nonisolated(unsafe) private static var forceAllocateAfterSkips: Int? = nil
+    nonisolated(unsafe) private static var forceAllocatePage: Int? = nil
+
+    /// Test-only: force `allocatePage` to return `page` after `skips` normal allocations.
+    /// Used to prove committed-page conflicts fail closed instead of deleting indexMap entries.
+    internal static func _forceAllocatedPageAfterSkippingForTests(skips: Int, page: Int) {
+        allocatePageFaultLock.lock()
+        forceAllocateAfterSkips = skips
+        forceAllocatePage = page
+        allocatePageFaultLock.unlock()
+    }
+
+    internal static func _clearForcedAllocatedPageForTests() {
+        allocatePageFaultLock.lock()
+        forceAllocateAfterSkips = nil
+        forceAllocatePage = nil
+        allocatePageFaultLock.unlock()
+    }
+    #endif
     
     // MARK: - Page Allocation with Reuse
     
@@ -31,6 +54,24 @@ extension DynamicCollection {
     /// - Automatic (no maintenance)
     /// - Handles 95% of cases
     internal func allocatePage(layout: inout StorageLayout) -> Int {
+        #if DEBUG
+        Self.allocatePageFaultLock.lock()
+        if var skips = Self.forceAllocateAfterSkips, let forced = Self.forceAllocatePage {
+            if skips > 0 {
+                Self.forceAllocateAfterSkips = skips - 1
+                Self.allocatePageFaultLock.unlock()
+            } else {
+                Self.forceAllocateAfterSkips = nil
+                Self.forceAllocatePage = nil
+                Self.allocatePageFaultLock.unlock()
+                BlazeLogger.error("🧪 [TEST] Forced allocatePage → \(forced)")
+                return forced
+            }
+        } else {
+            Self.allocatePageFaultLock.unlock()
+        }
+        #endif
+
         if mvccEnabled, let reusablePage = versionManager.pageGC.getFreePage() {
             BlazeLogger.trace("♻️  Reusing MVCC free page \(reusablePage)")
             return reusablePage
@@ -203,6 +244,19 @@ extension DynamicCollection {
         try layout.saveSecure(to: metaURL, signingKey: encryptionKey)
         
         unsavedChanges += 1
+    }
+}
+
+// MARK: - Page allocation errors
+
+extension BlazeDBError {
+    /// Allocator returned a page still referenced by a committed `indexMap` entry.
+    /// Callers must abort rather than deleting the existing record to "make room."
+    public static func pageAllocationConflict(page: Int) -> BlazeDBError {
+        .corruptedData(
+            location: "page \(page)",
+            reason: "allocatePage returned a page already referenced by a committed indexMap entry; refusing to delete the existing record"
+        )
     }
 }
 

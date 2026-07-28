@@ -221,4 +221,39 @@ final class InsertManyOverflowParityTests: XCTestCase {
         throw XCTSkip("synchronize fault injection is DEBUG-only")
         #endif
     }
+
+    func testInsertMany_overflowCommittedPageConflict_failsWithoutDeletingExisting() throws {
+        // Allocator invariant: colliding with a committed indexMap page must fail the batch,
+        // not silently remove the existing record's index entry.
+        #if DEBUG
+        var db = try openDB()
+        let existingID = try db.insert(record(index: 0, payloadBytes: 64, filler: "z"))
+        try db.persist()
+
+        let committedPages = try XCTUnwrap(db.collection.indexMap[existingID])
+        let victimPage = try XCTUnwrap(committedPages.first)
+
+        // Skip the head-page allocatePage for the batch record; force the overflow allocate to the victim.
+        DynamicCollection._forceAllocatedPageAfterSkippingForTests(skips: 1, page: victimPage)
+        defer { DynamicCollection._clearForcedAllocatedPageForTests() }
+
+        XCTAssertThrowsError(try db.insertMany([record(index: 1, payloadBytes: 6_000, filler: "x")])) { error in
+            guard case BlazeDBError.corruptedData(let location, let reason) = error else {
+                return XCTFail("expected pageAllocationConflict (corruptedData), got \(error)")
+            }
+            XCTAssertEqual(location, "page \(victimPage)")
+            XCTAssertTrue(reason.contains("refusing to delete"), reason)
+        }
+        try? db.persist()
+        try db.close()
+
+        db = try openDB()
+        let surviving = try XCTUnwrap(db.fetch(id: existingID), "committed record must survive allocator conflict")
+        XCTAssertEqual(surviving.storage["payload"]?.stringValue?.first, "z")
+        XCTAssertEqual(try db.fetchAll().count, 1)
+        try db.close()
+        #else
+        throw XCTSkip("allocatePage fault injection is DEBUG-only")
+        #endif
+    }
 }
