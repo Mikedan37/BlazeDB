@@ -17,7 +17,7 @@ Engine (in-process) numbers and daemon-mediated numbers measure different bounda
 | Encrypted-at-rest by default | Write path vs **plaintext** SQLite (no SQLCipher peer yet) |
 | Crash-safe / deterministic exports | `insertMany` rejects overflow-sized records that `insert()` accepts ([#434](https://github.com/Mikedan37/BlazeDB/issues/434)) |
 
-Do **not** claim broadly fast durable writes until size-scaling work under [#425](https://github.com/Mikedan37/BlazeDB/issues/425) explains the slope and the path improves. Published curves: [db_size_sweep.md](db_size_sweep.md), [payload_size_sweep.md](payload_size_sweep.md).
+Do **not** claim broadly fast durable writes until size-scaling work under [#435](https://github.com/Mikedan37/BlazeDB/issues/435) / [#425](https://github.com/Mikedan37/BlazeDB/issues/425) explains the slope and the path improves. Published curves: [db_size_sweep.md](db_size_sweep.md), [payload_size_sweep.md](payload_size_sweep.md).
 
 Also optimized for:
 
