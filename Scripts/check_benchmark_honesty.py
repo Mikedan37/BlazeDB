@@ -92,6 +92,15 @@ def main() -> int:
         if not (ROOT / rel).is_file():
             fail(f"missing {rel}")
 
+    # Regression: empty BLAZEDB_BENCH_ONLY / empty suite must not wipe published RESULTS.
+    main_swift = require_file(ROOT / "BlazeDBBenchmarks" / "main.swift")
+    if "guard !suite.results.isEmpty else" not in main_swift:
+        fail("BlazeDBBenchmarks/main.swift missing empty-suite RESULTS write guard")
+    if "BLAZEDB_BENCH_ONLY" not in main_swift:
+        fail("BlazeDBBenchmarks/main.swift missing BLAZEDB_BENCH_ONLY handling")
+    if "not writing RESULTS.md/results.json" not in main_swift:
+        fail("BlazeDBBenchmarks/main.swift missing empty-suite skip message")
+
     print("OK: benchmark honesty checks passed")
     return 0
 

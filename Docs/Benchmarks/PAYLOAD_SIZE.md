@@ -26,13 +26,16 @@ benchmark_results/payload_size/…  (+ Docs on publish)
 
 | Piece | Job |
 |-------|-----|
-| `BlazeDBBenchmarks/BenchPayload.swift` | Standard (~53 B) and sized records; measure **encoded** bytes |
+| `BlazeDBBenchmarks/BenchPayload.swift` | Standard (~53 B) and sized records; measure **encoded** bytes (not requested field bytes alone) |
 | `BlazeDBBenchmarks/PayloadSizeSweep.swift` | Size × path stopwatch mode |
 | `Scripts/run_payload_size_sweep.sh` / `./bench payload` | Release runner + env |
 | `Docs/Benchmarks/PAYLOAD_SIZE.md` | Methodology |
-| `Docs/Benchmarks/payload_size_sweep.md` | Published numbers (after `./bench publish`) |
+| `benchmark_results/payload_size/` | **Smoke / local** sweep outputs (default) |
+| `Docs/Benchmarks/payload_size_sweep.md` | **Published** numbers only after explicit `./bench publish` |
 
 Not part of normal unit-test CI by default — full sweeps through 4 MB are performance tooling.
+
+**Smoke vs published:** `./bench smoke` and default sweep scripts write under `benchmark_results/`. Those runs support investigation (for example a single-host empty→seeded latency concern) but are **not** canonical product numbers until a controlled release publish lands them under `Docs/Benchmarks/`.
 
 ## What the core harness writes
 

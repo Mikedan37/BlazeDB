@@ -38,6 +38,8 @@ Do **not** publish a “~20,000× bytes vs ~2.4× latency” product claim from 
 
 The 10K-row durable insert result degrades toward **~24 ms/op**. That suggests scaling or persistence overhead beyond a simple fixed fsync cost. Treat averages alone as insufficient; prefer **p50 / p95 / p99**, and measure write latency **versus database size**.
 
+Quick `./bench smoke` / short `db_size_sweep` runs on a single laptop (for example empty DB vs after a 1K seed) are useful **smoke evidence** that the concern is real. They are **not** a published scaling curve until a controlled release publish lands under `Docs/Benchmarks/` (and even then, prefer p50/p95/p99 across hosts — one machine loves sounding authoritative).
+
 ## Before claiming “high performance”
 
 | Need | Tooling status |
