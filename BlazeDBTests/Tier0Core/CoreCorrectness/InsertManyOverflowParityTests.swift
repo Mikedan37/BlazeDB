@@ -223,8 +223,9 @@ final class InsertManyOverflowParityTests: XCTestCase {
     }
 
     func testInsertMany_overflowCommittedPageConflict_failsWithoutDeletingExisting() throws {
-        // Allocator invariant: colliding with a committed indexMap page must fail the batch,
+        // Allocator invariant: colliding with a committed indexMap page must fail closed,
         // not silently remove the existing record's index entry.
+        // Linux insertMany falls back to per-record insert(); both paths must honor this.
         #if DEBUG
         var db = try openDB()
         let existingPayload = String(repeating: "z", count: 64)
@@ -241,7 +242,7 @@ final class InsertManyOverflowParityTests: XCTestCase {
         let victimPage = try XCTUnwrap(committedPages.first)
         let rejectedPayload = String(repeating: "x", count: 6_000)
 
-        // Skip the head-page allocatePage for the batch record; force the overflow allocate to the victim.
+        // Skip the head-page allocatePage; force the overflow allocate to the victim.
         DynamicCollection._forceAllocatedPageAfterSkippingForTests(skips: 1, page: victimPage)
         defer { DynamicCollection._clearForcedAllocatedPageForTests() }
 
