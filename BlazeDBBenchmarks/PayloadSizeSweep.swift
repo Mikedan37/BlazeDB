@@ -60,7 +60,15 @@ enum PayloadSizeSweep {
             let wallStart = Date()
             switch path {
             case "insertMany_batch":
-                let batchSize = min(50, n)
+                // Large records use overflow pages; packing many into one insertMany
+                // can fail page-size checks. Keep batches small as payload grows.
+                let batchSize: Int
+                switch size {
+                case ..<1_024: batchSize = min(50, n)
+                case ..<4_096: batchSize = min(20, n)
+                case ..<16_384: batchSize = min(5, n)
+                default: batchSize = 1
+                }
                 var batch: [BlazeDataRecord] = []
                 batch.reserveCapacity(batchSize)
                 for i in 0..<n {
