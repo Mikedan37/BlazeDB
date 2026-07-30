@@ -4,7 +4,7 @@ This directory contains internal documentation about the project itself, reorgan
 
 ## Metrics
 
-- **[REPOSITORY_METRICS.md](REPOSITORY_METRICS.md)** — generated repository scale snapshot (`./Scripts/repo-metrics.sh`). Compact public summary lives under [README Project status](../../README.md#repository-scale).
+- **[REPOSITORY_METRICS.md](REPOSITORY_METRICS.md)** - generated repository scale snapshot (`./Scripts/repo-metrics.sh`). This is the canonical home for scale numbers; the root [README](../../README.md) links here from Project status rather than restating counts.
 
 ## Reorganization
 
