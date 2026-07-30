@@ -15,9 +15,9 @@ Use these **exact** status words everywhere (README, this map, issues). Do not i
 | Tool | How to run | Role | Status |
 |------|------------|------|--------|
 | `blazedb` | `swift build --product blazedb` then `.build/debug/blazedb` | Interactive picker / REPL | **shipped** |
-| `BlazeDoctor` | `swift run BlazeDoctor` | Health checks (separate executable, not a `blazedb` subcommand) | **shipped** |
-| `BlazeDump` | `swift run BlazeDump` | Export / restore (separate executable) | **shipped** |
-| `BlazeInfo` | `swift run BlazeInfo` | Quick snapshot (separate executable) | **shipped** |
+| `BlazeDoctor` | `swift run BlazeDoctor <db-path> <password>` | Health checks (separate executable, not a `blazedb` subcommand) | **shipped** |
+| `BlazeDump` | `swift run BlazeDump <command> <args>` | Export / restore (separate executable) | **shipped** |
+| `BlazeInfo` | `swift run BlazeInfo <db-path> <password>` | Quick snapshot (separate executable) | **shipped** |
 | `./dev` | `./dev help` | Contributor tests, tiers, experiments, **benchmarks** (`dev bench`) | **shipped** |
 | `./bench` | `./bench` / `./bench honesty` | Benchmark front door (payload / DB-size sweeps, publish) | **shipped** |
 | `BlazeDBBenchmarks` | `swift run BlazeDBBenchmarks` or via `./bench` | Methodology workloads (not README vanity numbers) | **shipped** |
@@ -32,6 +32,8 @@ Use these **exact** status words everywhere (README, this map, issues). Do not i
 `BlazeShell/` holds implementation sources for the **`blazedb`** product (`BlazeCLICore` / `BlazedbCLI`). There is no separate "BlazeShell" executable to ship.
 
 Doctor, Dump, and Info are **shipped** SwiftPM executables. They are not `blazedb` subcommands today (see issues #259, #300).
+
+All three require arguments and exit 1 with a usage message when run bare, so `swift run BlazeDoctor` on its own is not a working invocation. Pass `--help` to see the full argument list, or read the per-tool docs linked below. This also means their Xcode Run schemes need arguments set to do anything useful.
 
 ### Benchmarks
 

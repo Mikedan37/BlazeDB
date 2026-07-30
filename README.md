@@ -86,6 +86,61 @@ Longer walkthrough: [HOW_TO_USE_BLAZEDB.md](Docs/GettingStarted/HOW_TO_USE_BLAZE
 
 ---
 
+## Run it from a clone
+
+```bash
+swift run HelloBlazeDB          # smallest working example
+swift run ReadmeSamples         # every snippet in this README, verified
+
+swift build --product blazedb   # the CLI
+.build/debug/blazedb --help
+.build/debug/blazedb            # interactive picker and REPL, not a network server
+```
+
+The interactive REPL needs a real terminal. Run it from a shell, not from an IDE console.
+
+## Navigate the repo
+
+`./dev help` is the front door for every contributor command, so you do not have to read the tree to find things.
+
+```bash
+./dev help                # all contributor and benchmark commands
+./dev tiers               # test tiers and which script runs each
+./dev tests BPlusTree     # find tests by name
+./dev experiments         # list repository experiments
+```
+
+## Run the tests
+
+Locally, by tier. Tier 0 is the fast loop; Tier 1 is the PR gate.
+
+```bash
+./dev tier0               # fast local correctness
+./dev tier1               # PR correctness gate
+./dev tier2               # integration and recovery
+./dev tier3               # stress and destructive
+./dev test BPlusTreeNodeTests.createsSimpleTree   # one focused test
+```
+
+To reproduce CI exactly, these are the commands the `PR Gate` workflow runs in its macOS job, in order:
+
+```bash
+swift build --target BlazeDBCore
+./Scripts/check-sendable-observation.sh
+swift build --product blazedb
+BLAZEDB_TEST_SCOPE=tier0 swift test --filter BlazeDB_Tier0
+swift test --skip-build --filter BlazeDB_Tier1
+swift test --skip-build --filter BlazeDB_CLITests
+./Scripts/verify-readme-quickstart.sh
+./Scripts/verify-readme-samples.sh
+```
+
+The Linux job builds `BlazeDBCore` and the CLI tools, then runs the same Tier 0 filter. Apple platforms beyond macOS are cross-compiled only.
+
+Tier definitions, what belongs in each, and the full lane map: [TESTING_GUIDE.md](Docs/TESTING_GUIDE.md) · [XCODE_SCHEMES.md](Docs/Build/XCODE_SCHEMES.md)
+
+---
+
 ## Guarantees
 
 - Public database-opening APIs require a password; stored pages use AES-256-GCM ([key management](Docs/Status/KEY_MANAGEMENT_AND_COMPATIBILITY.md))
@@ -116,13 +171,7 @@ Authority for tiers: [Compatibility](Docs/COMPATIBILITY.md) · [android-status.m
 
 ## Tools and native embedding
 
-The `blazedb` CLI and REPL ship with the package for local inspection:
-
-```bash
-swift build --product blazedb
-.build/debug/blazedb --help
-.build/debug/blazedb          # interactive picker / REPL (not a network server)
-```
+The `blazedb` CLI and REPL ship with the package for local inspection. See [Run it from a clone](#run-it-from-a-clone) above for how to build and start it.
 
 `BlazeDBC` exposes a documented byte-oriented C ABI (`BlazeDBC/include/blazedb.h`), so any language that can call C is able to embed the same engine. That is interoperability capability, not an official SDK per language. No Go, Rust, or Python SDKs are published.
 
