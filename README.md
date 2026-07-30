@@ -198,7 +198,23 @@ Direction, not release guarantees: [ROADMAP.md](ROADMAP.md)
 | **Declared and compile-tested** | iOS, watchOS, tvOS, visionOS |
 | **experimental** | Android cross-compile + KMM sample runtime in the PR gate (not a published SDK) |
 
-Android is **experimental**: the PR gate cross-compiles the bridge and runs a KMM emulator smoke. It is not **shipped** as a consumer SDK (no `Package.swift` platform entry, no published registry artifacts) and not equivalent to Linux host Tier0.
+### Android and KMM (experimental)
+
+Android is reached through a Swift bridge plus a Kotlin Multiplatform module, not a published SDK.
+
+- **`BlazeDBAndroidBridge`** wraps `BlazeDBCore` and builds as `libBlazeDBAndroidBridge.so`. Two products expose it: `BlazeDBAndroidBridge` (dynamic) and `BlazeDBKMMBridgeStatic` (static). Sources in [Examples/BlazeDBAndroidBridge](Examples/BlazeDBAndroidBridge/).
+- **The KMM module** in [Examples/android](Examples/android/) links that bridge. `shared/src/androidMain` calls into Swift over JNI through a C shim (`System.loadLibrary("blazedb_android_bridge")`); `iosMain` uses cinterop instead.
+- Cross-compiled for `aarch64-unknown-linux-android28` and `x86_64-unknown-linux-android28`.
+
+Three jobs in the `PR Gate` workflow cover it (names shortened here; the workflow separates the prefix with a dash):
+
+| Job | What it proves |
+|-----|----------------|
+| Android Cross-Compile | builds the bridge, then asserts `libBlazeDBAndroidBridge.so` exists for both triples |
+| KMM Android x86_64 Emulator Runtime | boots an API 34 x86_64 emulator with KVM and runs `:app:connectedDebugAndroidTest`, a real on-device instrumentation test |
+| KMM Android arm64 Artifact Packaging | stages `arm64-v8a` native libs and packages the artifact |
+
+It stays **experimental** because there is no `Package.swift` platform entry and no published registry artifacts, so it is not a consumer SDK and not equivalent to Linux host Tier0.
 
 Authority for tiers: [Compatibility](Docs/COMPATIBILITY.md) · [android-status.md](Docs/android-status.md)
 
