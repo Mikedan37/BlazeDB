@@ -91,13 +91,48 @@ Longer walkthrough: [HOW_TO_USE_BLAZEDB.md](Docs/GettingStarted/HOW_TO_USE_BLAZE
 ```bash
 swift run HelloBlazeDB          # smallest working example
 swift run ReadmeSamples         # every snippet in this README, verified
-
-swift build --product blazedb   # the CLI
-.build/debug/blazedb --help
-.build/debug/blazedb            # interactive picker and REPL, not a network server
 ```
 
-The interactive REPL needs a real terminal. Run it from a shell, not from an IDE console.
+### Open your own database in the REPL
+
+`blazedb` is how you read and edit an existing `.blazedb` file without writing any code. Point it at a database and you get a prompt against the live engine.
+
+```bash
+swift build --product blazedb
+.build/debug/blazedb --help
+
+.build/debug/blazedb                      # scan for databases, pick one, open a REPL
+.build/debug/blazedb ./mydb.blazedb        # or open one directly
+.build/debug/blazedb ./mydb.blazedb <pass> # same, skipping the password prompt
+```
+
+From the prompt you can inspect, query, and modify records directly:
+
+```text
+> inspect                        # db info plus a table preview
+> schema                         # inferred fields and types, indexes
+> fetchAll                       # every record as a table
+> fetchAll --json                # or --ndjson / --raw to export
+> query age > 60                 # ops: = != > < >= <= contains
+> query age > 60 sort age desc limit 10
+> explain query age > 60         # execution plan and estimate
+> fetch <uuid>                   # inspector view for one record
+> insert {"title": "Hello"}      # also update <uuid>, delete, softDelete
+> begin / commit / rollback      # transactions
+> doctor                         # operator health checks
+> status                         # runtime health and performance
+> help                           # full command list
+```
+
+Manager mode (`blazedb --manager`) mounts several databases at once and switches between them with `list`, `mount`, `use`, and `current`. Full reference: [blazedb CLI docs](Docs/Tools/BLAZESHELL_DOCUMENTATION.md)
+
+The REPL is a local client against a file on disk, not a network server.
+
+The interactive picker (`blazedb` with no arguments) enters raw terminal mode, so it needs a real TTY and will fail in an IDE console with `tcgetattr failed`. Opening a path directly does not, which means you can also script it:
+
+```bash
+printf 'query age > 60 --json\nexit\n' | .build/debug/blazedb ./mydb.blazedb <pass>
+```
 
 ## Navigate the repo
 
@@ -171,7 +206,9 @@ Authority for tiers: [Compatibility](Docs/COMPATIBILITY.md) · [android-status.m
 
 ## Tools and native embedding
 
-The `blazedb` CLI and REPL ship with the package for local inspection. See [Run it from a clone](#run-it-from-a-clone) above for how to build and start it.
+The `blazedb` CLI and REPL ship with the package. They read and edit real databases against the same engine your app uses, so they are the fastest way to see what is actually in a file. See [Open your own database in the REPL](#open-your-own-database-in-the-repl) above.
+
+`BlazeDoctor`, `BlazeDump`, and `BlazeInfo` are separate shipped executables for health checks, export and restore, and a quick snapshot. Each requires arguments; pass `--help` for the shape.
 
 `BlazeDBC` exposes a documented byte-oriented C ABI (`BlazeDBC/include/blazedb.h`), so any language that can call C is able to embed the same engine. That is interoperability capability, not an official SDK per language. No Go, Rust, or Python SDKs are published.
 
