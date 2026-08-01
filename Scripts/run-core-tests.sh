@@ -2,7 +2,7 @@
 # Run core tests only (excludes distributed modules)
 # This script filters tests to avoid distributed module build failures
 
-set -eu
+set -e
 
 echo "Checking frozen core..."
 ./Scripts/check-freeze.sh HEAD^ || {
