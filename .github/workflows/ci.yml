@@ -66,6 +66,12 @@ jobs:
           swift build --target BlazeDump
           swift build --target BlazeInfo
 
+      - name: Prebuild README verification executables
+        run: |
+          # Warm SwiftPM artifacts before Tier0/tests so README worktree steps reuse
+          # ROOT_DIR/.build instead of cold-compiling under memory pressure (OOM).
+          swift build --product HelloBlazeDB --product ReadmeSamples
+
       - name: Prepare CI log directories
         run: mkdir -p .logs .artifacts
 

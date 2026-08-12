@@ -2,6 +2,8 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# shellcheck source=lib/readme-verify-common.sh
+source "$ROOT_DIR/Scripts/lib/readme-verify-common.sh"
 TMP_DIR="$(mktemp -d "${TMPDIR:-/tmp}/blazedb-quickstart-XXXXXX")"
 MAX_SECONDS=300
 
@@ -36,10 +38,7 @@ done < <(
 
 echo "Running HelloBlazeDB quickstart from clean snapshot"
 START_TS="$(date +%s)"
-if (
-  cd "$TMP_DIR"
-  env -i PATH="$PATH" HOME="$HOME" TERM="${TERM:-dumb}" swift run HelloBlazeDB
-); then
+if readme_verify_run_product HelloBlazeDB "$TMP_DIR"; then
   END_TS="$(date +%s)"
   ELAPSED="$((END_TS - START_TS))"
   echo "Quickstart runtime: ${ELAPSED}s"

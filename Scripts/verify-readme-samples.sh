@@ -2,6 +2,8 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# shellcheck source=lib/readme-verify-common.sh
+source "$ROOT_DIR/Scripts/lib/readme-verify-common.sh"
 TMP_DIR="$(mktemp -d "${TMPDIR:-/tmp}/blazedb-readme-samples-XXXXXX")"
 MAX_SECONDS=300
 
@@ -40,10 +42,7 @@ done < <(
 
 echo "Running ReadmeSamples (README code patterns)"
 START_TS="$(date +%s)"
-if (
-  cd "$TMP_DIR"
-  env -i PATH="$PATH" HOME="$HOME" TERM="${TERM:-dumb}" swift run ReadmeSamples
-); then
+if readme_verify_run_product ReadmeSamples "$TMP_DIR"; then
   END_TS="$(date +%s)"
   ELAPSED="$((END_TS - START_TS))"
   echo "Sample verification runtime: ${ELAPSED}s"

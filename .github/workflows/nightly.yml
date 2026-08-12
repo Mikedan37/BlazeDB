@@ -146,6 +146,9 @@ jobs:
       - name: Prepare CI log directories
         run: mkdir -p .logs .artifacts
 
+      - name: Prebuild README verification executables
+        run: swift build --product HelloBlazeDB --product ReadmeSamples
+
       - name: Verify README quickstart
         run: |
           set -euo pipefail

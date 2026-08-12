@@ -113,6 +113,18 @@ if results.count >= 3 {
 
 ---
 
+### 8. **README sample verification — worktree cold-compile OOM (PR Gate)**
+
+**Problem:** `verify-readme-samples.sh` used `swift run ReadmeSamples` inside a detached worktree with no `.build`. After Tier0/Tier1/CLI tests in the same macOS job, the runner cold-compiled BlazeDB again and the process was **`Killed: 9`** (OOM). Intermittent — passed when memory was available, failed under pressure.
+
+**Fix:** Shared `Scripts/lib/readme-verify-common.sh` builds via `--build-path "$ROOT_DIR/.build"` and runs the binary; PR Gate prebuilds `HelloBlazeDB` + `ReadmeSamples` before tests.
+
+**Files:** `Scripts/verify-readme-samples.sh`, `Scripts/verify-readme-quickstart.sh`, `Scripts/lib/readme-verify-common.sh`, `.github/workflows/ci.yml`
+
+**Added:** 2026-08-12
+
+---
+
 ## Test Execution Improvements
 
 ### Before Fixes:
