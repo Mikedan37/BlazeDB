@@ -40,21 +40,18 @@ final class QueryCacheTests: XCTestCase {
         }
         
         // First query: cache miss
-        let start1 = Date()
         let results1 = try requireFixture(db).query()
             .where("index", greaterThan: .int(50))
             .execute(withCache: 60)
-        let duration1 = Date().timeIntervalSince(start1)
+        XCTAssertEqual(QueryCache.shared.stats().entries, 1, "First cached query should populate the cache")
         
-        // Second query: cache hit
-        let start2 = Date()
+        // Second query: cache hit (same results, entry retained — no wall-clock ratio; too flaky on CI)
         let results2 = try requireFixture(db).query()
             .where("index", greaterThan: .int(50))
             .execute(withCache: 60)
-        let duration2 = Date().timeIntervalSince(start2)
         
         XCTAssertEqual(results1.count, results2.count)
-        XCTAssertLessThan(duration2, duration1 / 10, "Cached query should be at least 10x faster")
+        XCTAssertEqual(QueryCache.shared.stats().entries, 1)
     }
     
     func testCacheTTL() throws {
@@ -62,22 +59,28 @@ final class QueryCacheTests: XCTestCase {
         
         // Cache with 100ms TTL (optimized for tests)
         let testTTL: TimeInterval = 0.1
-        _ = try requireFixture(db).query().execute(withCache: testTTL)
+        let first = try requireFixture(db).query().execute(withCache: testTTL)
+        XCTAssertEqual(first.count, 1)
+        XCTAssertEqual(QueryCache.shared.stats().entries, 1)
         
-        // Should hit cache immediately
-        let start1 = Date()
-        _ = try requireFixture(db).query().execute(withCache: testTTL)
-        let cachedDuration = Date().timeIntervalSince(start1)
+        // Should hit cache immediately (entry still valid)
+        let cached = try requireFixture(db).query().execute(withCache: testTTL)
+        XCTAssertEqual(cached.count, 1)
+        XCTAssertEqual(QueryCache.shared.stats().entries, 1)
         
         // Wait for TTL to expire (optimized: 150ms instead of 1.1s)
         Thread.sleep(forTimeInterval: testTTL + 0.05)
         
-        // Should miss cache (expired)
-        let start2 = Date()
-        _ = try requireFixture(db).query().execute(withCache: testTTL)
-        let expiredDuration = Date().timeIntervalSince(start2)
+        let statsBeforeRefresh = QueryCache.shared.stats()
+        XCTAssertEqual(statsBeforeRefresh.entries, 1, "Expired entry remains until next access")
+        XCTAssertEqual(statsBeforeRefresh.expired, 1, "Entry should be past TTL before refresh")
         
-        XCTAssertLessThan(cachedDuration, expiredDuration, "Expired cache should be slower")
+        // Should miss cache (expired) and store a fresh entry
+        let afterExpiry = try requireFixture(db).query().execute(withCache: testTTL)
+        XCTAssertEqual(afterExpiry.count, 1)
+        let statsAfterRefresh = QueryCache.shared.stats()
+        XCTAssertEqual(statsAfterRefresh.entries, 1)
+        XCTAssertEqual(statsAfterRefresh.expired, 0, "Refresh should replace expired entry")
     }
     
     func testCacheDisabled() throws {

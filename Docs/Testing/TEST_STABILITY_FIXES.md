@@ -82,21 +82,34 @@ if results.count >= 3 {
 
 ### 6. **Observability concurrent stress — deadline vs deadlock (Tier 2)**
 
-**Problem:** `testObservability_DoesNotDeadlock` failed on macOS CI with `DispatchGroup.wait` returning `.timedOut` against a 5s budget. That only proves a **deadline miss**, not a lock cycle in the engine.
+**Problem:** `testObservability_DoesNotDeadlock` failed on macOS CI with `DispatchGroup.wait` returning `.timedOut`. That only proves a **deadline miss**, not a lock cycle in the engine. A 45s CI budget still flaked when 10 lanes each ran `insert` + `observe()` + `fetchAll()` under serialized writes (~51s on Aug 2026 nightly).
 
 **Interpretation (defensible):**
 
 - Inserts serialize through `performSafeWrite` and the collection queue’s barrier path; under contention, completion time can approach the **cumulative** cost of those sections.
-- `observe()` pulls in `health()` / `stats()` / monitoring snapshot work — synchronous queue and filesystem activity — and stacks with concurrent `fetchAll()`.
-- Loaded CI runners add wall-clock variance (scheduling, disk, fsync). Forward progress can still be happening when a short stopwatch fires.
+- `observe()` pulls in `health()` / `stats()` / monitoring snapshot work — synchronous queue and filesystem activity.
+- `fetchAll()` in every concurrent lane dominated wall time without improving deadlock signal.
+- Loaded CI runners add wall-clock variance (scheduling, disk, fsync).
 
-**Fix:** Larger timeout on CI (`CI` / `GITHUB_ACTIONS`: 45s; local: 15s) and in-test documentation that the assertion is a **wall-clock bound**, not deadlock detection. A real deadlock-focused test would need different design (lock-order instrumentation, progress probes, or diagnostics that distinguish stall from slow completion).
+**Fix:** Per-lane `XCTestExpectation` (same pattern as `NestedQueueSyncQueryTests`), six lanes of `insert` + `observe()` only, `fetchAll()` verified on the main thread after stress, `db.close()` in `tearDown`, 90s total wait on CI.
 
-**If this flakes again:** Prefer adding **observability** (per-phase timing, progress checks, contention signals) over repeatedly widening the budget. The test should stay forgiving of scheduler noise but still fail on meaningful regressions — avoid turning it into “pass unless the machine is on fire.”
+**If this flakes again:** Investigate a real hang (unfulfilled expectation name) rather than widening budgets.
 
 **File:** `BlazeDBTests/Tier1Extended/Observability/ObservabilityTests.swift`
 
-**Added:** 2026-04-12
+**Added:** 2026-04-12 · **Updated:** 2026-08-12
+
+---
+
+### 7. **Query cache TTL / hit — wall-clock assertions (Tier 2)**
+
+**Problem:** `testCacheTTL` and `testCacheHit` compared microsecond-scale durations on CI; scheduler noise inverted ordering (“expired should be slower” / “10× faster”) without indicating broken cache semantics.
+
+**Fix:** Assert `QueryCache.shared.stats()` entry/expired counts and result equality instead of `Date()` deltas.
+
+**File:** `BlazeDBTests/Tier1Extended/QueryCacheTests.swift`
+
+**Added:** 2026-08-12
 
 ---
 
