@@ -309,9 +309,10 @@ final class GraphQueryTests: XCTestCase {
             ]))
         }
         
-        // NOTE: Moving average requires sorted data, but graph query results
-        // are not sorted by X before applying the window function
-        // This is a known limitation - test validates the API works
+        // NOTE: Moving average requires sorted data, and graph query results are now
+        // sorted by X before the window function runs (#377)
+        // This test only validates the API works; exact window values are asserted in
+        // BlazeDBTests/Tier0Core/CoreCorrectness/GraphQueryMovingWindowOrderTests.swift
         
         let points = try db.graph()
             .x("day")
@@ -334,9 +335,10 @@ final class GraphQueryTests: XCTestCase {
             ]))
         }
         
-        // NOTE: Moving sum requires sorted data, but graph query results
-        // are not sorted by X before applying the window function
-        // This is a known limitation - test validates the API works
+        // NOTE: Moving sum requires sorted data, and graph query results are now
+        // sorted by X before the window function runs (#377)
+        // This test only validates the API works; exact window values are asserted in
+        // BlazeDBTests/Tier0Core/CoreCorrectness/GraphQueryMovingWindowOrderTests.swift
         
         let points = try db.graph()
             .x("day")
