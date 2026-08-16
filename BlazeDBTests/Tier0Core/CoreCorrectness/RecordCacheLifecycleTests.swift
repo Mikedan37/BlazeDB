@@ -210,4 +210,21 @@ final class RecordCacheLifecycleTests: XCTestCase {
         XCTAssertTrue(client.isClosed, "client close must still mark the database closed")
         assertNoRegisteredDecode(recordID, at: registryPath, "a closed client must not strand an entry")
     }
+
+    /// #307: for any path P, an acquisition of P must never observe a decode written by an
+    /// earlier acquisition of P — whether or not that predecessor ever released. Transferring
+    /// ownership is not enough on its own: the successor is handed the very same cache object.
+    func testAcquireNeverInheritsAPreviousAcquisitionsDecodes() {
+        let registryPath = tempDir.appendingPathComponent("registry-property.blazedb").path
+        let recordID = UUID()
+        let predecessor = RecordCache.acquire(forDatabase: registryPath)
+        predecessor.cache.set(id: recordID, record: BlazeDataRecord(["payload": .string("previous-session")]))
+        // The predecessor deliberately never releases: a still-open handle, or an initializer
+        // that threw after acquiring, leaves its entry in place and the property must still hold.
+        let successor = RecordCache.acquire(forDatabase: registryPath)
+        XCTAssertNil(successor.cache.get(id: recordID),
+                     "a new acquisition must never inherit a previous owner's decodes")
+        RecordCache.release(forDatabase: registryPath, token: predecessor.token)
+        RecordCache.release(forDatabase: registryPath, token: successor.token)
+    }
 }
