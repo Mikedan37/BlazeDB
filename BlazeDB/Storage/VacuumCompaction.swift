@@ -260,8 +260,7 @@ extension BlazeDBClient {
 
             // Release the live file handles before swapping files in place.
             collection.store.close()
-            RecordCache.removeForDatabase(collection.store.fileURL.path)
-            collection.markClosedAfterDirectStoreClose()
+            collection.releaseAfterDirectStoreClose()
             
             // ATOMIC: Rename old → backup (if crash here, old file still exists)
             try FileManager.default.moveItem(at: originalDataURL, to: dataBackupURL)
