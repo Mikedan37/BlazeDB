@@ -47,7 +47,7 @@ Use these first for current behavior:
 | [Security architecture](Security/README.md) | Encryption, keys, and threat-model docs |
 | [Security policy](../SECURITY.md) | Vulnerability reporting and disclosure |
 | [Durability Mode Support](Status/DURABILITY_MODE_SUPPORT.md) | WAL, durability modes, and recovery behavior (includes default-path guarantees) |
-| [Key Management](Status/KEY_MANAGEMENT_AND_COMPATIBILITY.md) | Password and key behavior |
+| [Key Management](Status/KEY_MANAGEMENT_AND_COMPATIBILITY.md) | Password vs salt vs PBKDF2 vs AES; Argon2 naming caveat |
 | [Performance](Performance/README.md) | Tuning and performance concepts |
 | [Benchmarks](Benchmarks/README.md) | Executable workloads, methodology, and results |
 | [Tools](Tools/README.md) | CLI and companion tools |

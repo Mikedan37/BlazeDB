@@ -178,7 +178,7 @@ Tier definitions, what belongs in each, and the full lane map: [TESTING_GUIDE.md
 
 ## Guarantees
 
-- Public database-opening APIs require a password; stored pages use AES-256-GCM ([key management](Docs/Status/KEY_MANAGEMENT_AND_COMPATIBILITY.md))
+- Public database-opening APIs require a password; keys are derived with PBKDF2-HMAC-SHA256 and pages use AES-256-GCM ([key management](Docs/Status/KEY_MANAGEMENT_AND_COMPATIBILITY.md) — not Argon2id)
 - Default storage path uses WAL-backed recovery ([documented durability behavior and overflow caveats](Docs/Status/DURABILITY_MODE_SUPPORT.md))
 - Typed document APIs and raw key-value access ([API reference](Docs/API/API_REFERENCE.md))
 - Transactional write APIs ([transactions](Docs/DEVELOPER_GUIDE.md#transactions)) and in-process live queries ([architecture](Docs/Architecture/LIVE_QUERY_ARCHITECTURE.md))
