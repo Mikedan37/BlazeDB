@@ -533,13 +533,21 @@ public final class GraphQuery<T> {
             points = try applyDateTruncation(points: points, field: fieldName, bin: dateBin)
         }
         
-        // Apply moving window if specified
+        // Always sort points after grouping (sort operations apply to pre-grouped records, not grouped points).
+        // Order ascending by X first: the grouped points arrive in Dictionary iteration order, and a moving
+        // window must aggregate X-ordered neighbours regardless of that order.
+        points = sortPointsByX(points, ascending: true)
+
+        // Apply moving window if specified (over the X-ascending series)
         if let windowSize = movingWindowSize, let windowType = movingWindowType {
             points = applyMovingWindow(points: points, size: windowSize, type: windowType)
         }
-        
-        // Always sort points after grouping (sort operations apply to pre-grouped records, not grouped points)
-        points = sortPointsByX(points)
+
+        // Finally present the points in the direction the caller asked for; this only reorders
+        // finished points, it never changes which neighbours a window aggregated.
+        if !sortAscending {
+            points = sortPointsByX(points, ascending: false)
+        }
         
         BlazeLogger.info("Graph query complete: \(points.count) points")
         return points
@@ -664,7 +672,13 @@ public final class GraphQuery<T> {
         return result
     }
     
-    private func sortPointsByX(_ points: [BlazeGraphPoint<any Sendable, any Sendable>]) -> [BlazeGraphPoint<any Sendable, any Sendable>] {
+    /// Sort points by X in the given direction. The direction is explicit rather than read from
+    /// `sortAscending` so the window pass can order by X ascending independently of how the
+    /// caller asked for the finished points to be presented.
+    private func sortPointsByX(
+        _ points: [BlazeGraphPoint<any Sendable, any Sendable>],
+        ascending: Bool
+    ) -> [BlazeGraphPoint<any Sendable, any Sendable>] {
         return points.sorted { p1, p2 in
             let comparison: Bool
             // Compare X values
@@ -685,7 +699,7 @@ public final class GraphQuery<T> {
                 return false
             }
             // Apply sort order
-            return sortAscending ? comparison : !comparison
+            return ascending ? comparison : !comparison
         }
     }
 }
