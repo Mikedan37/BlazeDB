@@ -2062,9 +2062,16 @@ public final class DynamicCollection {
                 }
 
                 store.close()
+                RecordCache.removeForDatabase(store.fileURL.path)
                 password = nil
                 closed = true
             }
+        }
+
+        // Synchronous vacuum closes the store while it already owns this queue.
+        // Mark the collection closed so deinit cannot evict a replacement cache.
+        internal func markClosedAfterDirectStoreClose() {
+            closed = true
         }
         
         internal func saveLayout() throws {
