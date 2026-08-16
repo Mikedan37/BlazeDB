@@ -8,5 +8,6 @@ Start with the default shipped core story first:
 Canonical API references:
 
 - [API_REFERENCE.md](API_REFERENCE.md) - primary API reference (includes advanced and conditional surfaces)
+- [GRAPH_QUERY_API.md](GRAPH_QUERY_API.md) - advanced charting helper (`db.graph()…toPoints()`); not required for core CRUD
 - [COMPLETE_PROJECT_DOCUMENTATION.md](COMPLETE_PROJECT_DOCUMENTATION.md) - broad catalog; not all sections represent default OSS runtime behavior
 
