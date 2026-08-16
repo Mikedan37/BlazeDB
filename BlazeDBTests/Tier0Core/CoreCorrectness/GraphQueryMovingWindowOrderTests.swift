@@ -67,6 +67,36 @@ final class GraphQueryMovingWindowOrderTests: XCTestCase {
         }
     }
 
+    /// One midday instant per day, in ascending chronological order. Built through
+    /// `Calendar.current` — the calendar `BlazeDateBin.truncate` uses — so the day
+    /// bins are the calendar's own days, and at midday so a daylight-saving shift
+    /// cannot move a record into a neighbouring bin.
+    private func seriesDates() throws -> [Date] {
+        let calendar = Calendar.current
+        var start = DateComponents()
+        start.year = 2026
+        start.month = 3
+        start.day = 1
+        start.hour = 12
+        let first = try XCTUnwrap(calendar.date(from: start))
+        return try (0..<seriesValues.count).map { offset in
+            try XCTUnwrap(calendar.date(byAdding: .day, value: offset, to: first))
+        }
+    }
+
+    /// Insert exactly one record per day bin, in an order that is not chronological.
+    /// Returns the day bins in ascending chronological order.
+    private func seedDayBins() throws -> [Date] {
+        let dates = try seriesDates()
+        for index in insertionOrder {
+            _ = try db.insert(BlazeDataRecord([
+                "createdAt": .date(dates[index]),
+                "value": .double(seriesValues[index])
+            ]))
+        }
+        return dates.map { BlazeDateBin.day.truncate($0) }
+    }
+
     /// Insert exactly one record per group, in an order that is not X order.
     private func seedGroups(prefix: String) throws {
         let names = labels(prefix: prefix)
@@ -129,6 +159,51 @@ final class GraphQueryMovingWindowOrderTests: XCTestCase {
     }
 
     // MARK: - Tests
+
+    /// #377 acceptance criterion 1: "Date-binned series + `movingAverage(3)` matches
+    /// SMA on X-sorted values." The date-binned path builds its own group dictionary
+    /// keyed by an ISO8601 string and turns those keys back into `Date` X values, so
+    /// it orders points through the `Date` arm of the comparator rather than the
+    /// `String` arm the category tests exercise. Records are inserted out of
+    /// chronological order, and both the chronological presentation of X and the
+    /// exact trailing SMA — including the partial windows at the leading edge — are
+    /// asserted.
+    func testMovingAverage_DateBinnedSeriesMatchesSMAOfXSortedValues() throws {
+        let expectedDays = try seedDayBins()
+        XCTAssertEqual(
+            Set(expectedDays).count,
+            seriesValues.count,
+            "fixture must produce one distinct day bin per record"
+        )
+
+        let points = try db.graph()
+            .x("createdAt", .day)
+            .y(.sum("value"))
+            .movingAverage(windowSize)
+            .toPoints()
+
+        XCTAssertEqual(points.count, seriesValues.count, "point count")
+        guard points.count == seriesValues.count else { return }
+
+        XCTAssertEqual(
+            points.map { $0.x as? Date },
+            expectedDays as [Date?],
+            "date-binned X must be presented in chronological order"
+        )
+
+        for (index, expected) in expectedMovingAverages().enumerated() {
+            guard let actual = points[index].y as? Double else {
+                XCTFail("date bin \(index) has no Double Y value")
+                continue
+            }
+            XCTAssertEqual(
+                actual,
+                expected,
+                accuracy: 1e-9,
+                "movingAverage(\(windowSize)) at day bin \(index) must be the SMA of the X-sorted values"
+            )
+        }
+    }
 
     /// #377: the moving average must be the simple moving average of the X-sorted
     /// Y series, even though the groups were inserted out of X order.
