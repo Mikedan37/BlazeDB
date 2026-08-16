@@ -70,6 +70,7 @@ Still public and usable; not the first day of reading:
 | Schema validation APIs | Advanced and supported | [API Reference](API/API_REFERENCE.md) · `SchemaValidation` in source | Dedicated guide under consolidation |
 | Indexing and search tuning | Advanced and supported | [Developer Guide](DEVELOPER_GUIDE.md) · [Performance](Performance/README.md) | Maintained entry points |
 | Manual mapping (`BlazeDocument`) | Advanced and supported | [Developer Guide](DEVELOPER_GUIDE.md) · [API Reference](API/API_REFERENCE.md) | Maintained entry points |
+| Graph / chart datapoints | Advanced and supported | [Graph Query API](API/GRAPH_QUERY_API.md) · `db.graph()` | Chart-ready XY points; optional for CRUD apps |
 
 SQLite/Core Data migrator write-ups and older Status migration notes may still exist. Treat them as historical or incomplete unless a maintained doc above links to them. Do not treat folder presence as a promise of a finished migration product experience.
 

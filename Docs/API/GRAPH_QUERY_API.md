@@ -85,7 +85,11 @@ let monthlyRevenue = try db.graph()
 
 ## Moving Windows
 
-Moving windows are useful for smoothing data and calculating trends:
+Moving windows are useful for smoothing data and calculating trends.
+
+`movingAverage` / `movingSum` run over points ordered by **ascending X** (category order or chronological date bins). That neighbour set is fixed before any presentation sort: `.sorted(ascending: false)` only reverses the finished points; it does not change which values each window aggregates ([#377](https://github.com/Mikedan37/BlazeDB/issues/377), [#445](https://github.com/Mikedan37/BlazeDB/pull/445)).
+
+Leading-edge windows are partial (fewer than `windowSize` samples) until enough X-ordered points exist.
 
 ### Moving Average
 
@@ -133,15 +137,17 @@ let points = try db.graph()
 
 ## Sorting
 
-Graph queries are automatically sorted by X-axis in ascending order. You can customize this:
+Returned points are presented in ascending X order by default. You can reverse presentation with `.sorted(ascending: false)`:
 
 ```swift
 let points = try db.graph()
 .x("category")
 .y(.count)
-.sorted(ascending: false) // Descending order
+.sorted(ascending: false) // Descending presentation
 .toPoints()
 ```
+
+When a moving window is also requested, BlazeDB still computes the window on the ascending-X series first, then applies this presentation order.
 
 ## Type-Safe Access
 

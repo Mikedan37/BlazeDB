@@ -245,7 +245,7 @@ Start with the [documentation index](Docs/README.md), which carries support stat
 | Area | Entry point |
 |------|-------------|
 | Get started | [Getting Started](Docs/GettingStarted/README.md) · [HOW_TO_USE_BLAZEDB.md](Docs/GettingStarted/HOW_TO_USE_BLAZEDB.md) · [Linux](Docs/GettingStarted/LINUX_GETTING_STARTED.md) |
-| API and queries | [API Reference](Docs/API/API_REFERENCE.md) · [Developer Guide](Docs/DEVELOPER_GUIDE.md) |
+| API and queries | [API Reference](Docs/API/API_REFERENCE.md) · [Developer Guide](Docs/DEVELOPER_GUIDE.md) · [Graph Query](Docs/API/GRAPH_QUERY_API.md) (advanced charting) |
 | Engine internals | [Architecture](Docs/Architecture/README.md) · [Codebase map](Docs/Architecture/CODEBASE_MAP.md) |
 | Encryption and keys | [Key management](Docs/Status/KEY_MANAGEMENT_AND_COMPATIBILITY.md) · [Security architecture](Docs/Security/README.md) |
 | Durability and recovery | [Durability Mode Support](Docs/Status/DURABILITY_MODE_SUPPORT.md) |
