@@ -260,6 +260,7 @@ extension BlazeDBClient {
 
             // Release the live file handles before swapping files in place.
             collection.store.close()
+            collection.releaseAfterDirectStoreClose()
             
             // ATOMIC: Rename old → backup (if crash here, old file still exists)
             try FileManager.default.moveItem(at: originalDataURL, to: dataBackupURL)
@@ -376,4 +377,3 @@ extension BlazeDBClient {
         }
     }
 }
-

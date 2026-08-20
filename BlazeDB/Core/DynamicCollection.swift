@@ -108,6 +108,7 @@ public final class DynamicCollection {
     
     /// Per-database record cache (isolates rollback effects between databases)
     public let recordCache: RecordCache
+    private let cacheOwnerToken: RecordCache.OwnerToken  // registry ownership for recordCache
     
     /// B-tree indexes for range queries (greaterThan, lessThan, between)
     public let btreeIndexManager: BTreeIndexManager
@@ -248,7 +249,9 @@ public final class DynamicCollection {
         self.versionManager = VersionManager()  // Initialize MVCC
         
         // Per-database record cache (isolated from other databases)
-        self.recordCache = RecordCache.forDatabase(store.fileURL.path)
+        let acquiredCache = RecordCache.acquire(forDatabase: store.fileURL.path)
+        self.recordCache = acquiredCache.cache
+        self.cacheOwnerToken = acquiredCache.token
         
         // B-tree index manager for range queries
         self.btreeIndexManager = BTreeIndexManager()
@@ -623,7 +626,9 @@ public final class DynamicCollection {
             self.versionManager = VersionManager()  // Initialize MVCC
             
             // Per-database record cache (isolated from other databases)
-            self.recordCache = RecordCache.forDatabase(store.fileURL.path)
+            let acquiredCache = RecordCache.acquire(forDatabase: store.fileURL.path)
+            self.recordCache = acquiredCache.cache
+            self.cacheOwnerToken = acquiredCache.token
             
             // B-tree index manager for range queries
             self.btreeIndexManager = BTreeIndexManager()
@@ -2055,16 +2060,28 @@ public final class DynamicCollection {
             try queue.sync(flags: .barrier) {
                 guard !closed else { return }
 
+                var flushError: Error?
                 if unsavedChanges > 0, layoutSignatureVerified {
-                    try store.synchronize()
-                    try saveLayout()
-                    unsavedChanges = 0
+                    do {
+                        try store.synchronize()
+                        try saveLayout()
+                        unsavedChanges = 0
+                    } catch { flushError = error }  // release first, surface after
                 }
 
                 store.close()
+                RecordCache.release(forDatabase: store.fileURL.path, token: cacheOwnerToken)
                 password = nil
                 closed = true
+                if let flushError { throw flushError }
             }
+        }
+
+        // Synchronous vacuum closes the store while it already owns this queue. Release the
+        // entry we own and mark closed, so no later deinit can evict a replacement's entry.
+        internal func releaseAfterDirectStoreClose() {
+            RecordCache.release(forDatabase: store.fileURL.path, token: cacheOwnerToken)
+            closed = true
         }
         
         internal func saveLayout() throws {

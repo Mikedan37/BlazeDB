@@ -29,10 +29,40 @@ public final class RecordCache: @unchecked Sendable {
     /// - Note: Prefer per-database caches via BlazeDBClient.recordCache
     public static let shared = RecordCache(name: "shared")
     
+    /// Opaque proof that one acquisition owns a path's registry entry.
+    internal struct OwnerToken: Equatable, Sendable {
+        fileprivate let value: UInt64
+    }
+    private struct Entry {
+        let cache: RecordCache
+        var owner = OwnerToken(value: 0)  // 0 is never minted: an unobserved entry is unowned
+    }
     /// Per-database cache registry (keyed by database path)
-    nonisolated(unsafe) private static var perDatabaseCaches: [String: RecordCache] = [:]
+    nonisolated(unsafe) private static var perDatabaseCaches: [String: Entry] = [:]
+    nonisolated(unsafe) private static var nextOwnerValue: UInt64 = 0  // guarded by registryLock
     private static let registryLock = NSLock()
     
+    /// Acquire `databasePath`'s cache and become its owner; ownership moves to the newest acquirer.
+    internal static func acquire(forDatabase databasePath: String) -> (cache: RecordCache, token: OwnerToken) {
+        registryLock.lock()
+        defer { registryLock.unlock() }
+        nextOwnerValue &+= 1
+        let token = OwnerToken(value: nextOwnerValue)
+        let cache = perDatabaseCaches[databasePath]?.cache ?? RecordCache(name: databasePath)
+        cache.clear()  // defence in depth: no session may inherit a previous owner's decodes
+        perDatabaseCaches[databasePath] = Entry(cache: cache, owner: token)
+        return (cache, token)
+    }
+
+    /// Release `databasePath`'s cache only while `token` owns it; a stale owner is a no-op.
+    internal static func release(forDatabase databasePath: String, token: OwnerToken) {
+        registryLock.lock()
+        defer { registryLock.unlock() }
+        guard let entry = perDatabaseCaches[databasePath], entry.owner == token else { return }
+        perDatabaseCaches.removeValue(forKey: databasePath)
+        entry.cache.clear()
+    }
+
     /// Get or create a per-database cache
     /// - Parameter databasePath: The database file path
     /// - Returns: A RecordCache instance specific to this database
@@ -41,11 +71,11 @@ public final class RecordCache: @unchecked Sendable {
         defer { registryLock.unlock() }
         
         if let existing = perDatabaseCaches[databasePath] {
-            return existing
+            return existing.cache
         }
         
         let cache = RecordCache(name: databasePath)
-        perDatabaseCaches[databasePath] = cache
+        perDatabaseCaches[databasePath] = Entry(cache: cache)
         return cache
     }
     
@@ -54,7 +84,7 @@ public final class RecordCache: @unchecked Sendable {
         registryLock.lock()
         defer { registryLock.unlock() }
         
-        if let cache = perDatabaseCaches.removeValue(forKey: databasePath) {
+        if let cache = perDatabaseCaches.removeValue(forKey: databasePath)?.cache {
             cache.clear()
         }
     }
