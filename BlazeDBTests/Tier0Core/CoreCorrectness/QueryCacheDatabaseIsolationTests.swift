@@ -66,6 +66,43 @@ final class QueryCacheDatabaseIsolationTests: XCTestCase {
         XCTAssertEqual(try cachedTotal(databaseB), 202.0, accuracy: 0.001)
     }
 
+    func testExecuteWithCacheConsumesPlantedHitFromMatchingInstanceOnly() throws {
+        let (databaseA, databaseB) = try openDatabases()
+        defer { close(databaseA, databaseB) }
+        try seed(databaseA, owner: "storage-a", value: 101)
+        try seed(databaseB, owner: "storage-b", value: 202)
+
+        let queryA = databaseA.query().where("kind", equals: .string("shared"))
+        let queryB = databaseB.query().where("kind", equals: .string("shared"))
+        let keyA = queryA.generateCacheKey()
+        let keyB = queryB.generateCacheKey()
+
+        XCTAssertNotEqual(keyA, keyB, "Live instances must not share a cache key")
+        XCTAssertTrue(keyA.contains(databaseA.collection.instanceID.uuidString))
+        XCTAssertTrue(keyB.contains(databaseB.collection.instanceID.uuidString))
+
+        QueryCache.shared.set(
+            key: keyA,
+            value: QueryResult.records([BlazeDataRecord([
+                "kind": .string("shared"), "owner": .string("planted-a")
+            ])]),
+            ttl: 60
+        )
+        QueryCache.shared.set(
+            key: keyB,
+            value: QueryResult.records([BlazeDataRecord([
+                "kind": .string("shared"), "owner": .string("planted-b")
+            ])]),
+            ttl: 60
+        )
+
+        XCTAssertEqual(try cachedOwners(databaseA), ["planted-a"],
+                       "Lookup must consume the planted entry for A, not storage-a")
+        XCTAssertEqual(try cachedOwners(databaseB), ["planted-b"],
+                       "Lookup must consume the planted entry for B, not storage-b or planted-a")
+        XCTAssertEqual(QueryCache.shared.stats().entries, 2)
+    }
+
     func testCloseAndReopenDoesNotReuseEarlierCacheEntry() throws {
         let (databaseA, donor) = try openDatabases()
         defer { close(databaseA, donor) }
