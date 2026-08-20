@@ -74,6 +74,36 @@ final class JoinQueryCacheIsolationTests: XCTestCase {
                       "JOIN cache key must still encode the left collection instanceID")
     }
 
+    /// Distinct join tuples must remain distinct even when their field names
+    /// contain characters used by the cache-key encoding.
+    func testJoinCacheKeyIsUnambiguousForDelimiterBearingJoinTuples() throws {
+        let (left, right, donor) = try openDatabases()
+        defer { close(left, right, donor) }
+
+        let tuples: [(foreignKey: String, primaryKey: String, type: JoinType)] = [
+            ("a", "b=c", .inner),
+            ("a=b", "c", .inner),
+            ("a|b", "c", .inner),
+            ("a", "b|c", .inner),
+            ("a:b", "c", .inner),
+            ("a", "b:c", .inner),
+            ("a", "b", .left)
+        ]
+
+        let keys = tuples.map { tuple in
+            left.query()
+                .where("kind", equals: .string("joinable"))
+                .join(right.collection,
+                      on: tuple.foreignKey,
+                      equals: tuple.primaryKey,
+                      type: tuple.type)
+                .generateCacheKey()
+        }
+
+        XCTAssertEqual(Set(keys).count, tuples.count,
+                       "Distinct join tuples must always produce distinct cache keys")
+    }
+
     /// Planted-cache regression: a JOIN lookup must consume the entry planted under
     /// its own key and never the entry belonging to another right-hand collection.
     func testJoinCacheConsumesPlantedHitFromMatchingRightHandCollectionOnly() throws {
