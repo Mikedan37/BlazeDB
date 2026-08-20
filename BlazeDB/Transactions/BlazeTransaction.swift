@@ -148,6 +148,7 @@ public final class BlazeTransaction {
 
         // Phase 1: Encrypt all pages and append to WAL
         var encryptedBuffers: [(index: Int, buffer: Data)] = []
+        var deletedPageIDs: [Int] = []
         for (pageID, plaintext) in stagedPages {
             guard pageID >= 0 && pageID <= Int(UInt32.max) else {
                 throw NSError(
@@ -160,6 +161,7 @@ public final class BlazeTransaction {
             if plaintext.isEmpty {
                 // Delete operation — skip encryption, just record in WAL
                 try dm.appendDelete(transactionID: txID, pageIndex: pageIndex)
+                deletedPageIDs.append(pageID)
                 continue
             }
             let buffer = try store._encryptPageBuffer(plaintext: plaintext)
@@ -171,6 +173,9 @@ public final class BlazeTransaction {
         try dm.appendCommit(transactionID: txID)
 
         // Phase 3: Apply pages to the main file (WAL is now durable)
+        for pageID in deletedPageIDs {
+            try store._zeroMainFilePage(index: pageID)
+        }
         for (pageID, buffer) in encryptedBuffers {
             try store._writeEncryptedBuffer(index: pageID, buffer: buffer)
         }
