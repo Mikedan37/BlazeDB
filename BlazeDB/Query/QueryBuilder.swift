@@ -739,6 +739,11 @@ public final class QueryBuilder: @unchecked Sendable {
     internal func generateCacheKey() -> String {
         var key = "q"
 
+        // QueryCache.shared is process-global, so isolate results by collection instance.
+        if let collection {
+            key += "_c\(collection.instanceID.uuidString)"
+        }
+
         // Include filters with their full descriptors (field, operation, value hash)
         if !filterDescriptors.isEmpty {
             var hasher = Hasher()
@@ -1223,4 +1228,3 @@ extension QueryBuilder {
         return try result.records
     }
 }
-
