@@ -804,6 +804,14 @@ public final class PageStore: @unchecked Sendable {
         try atomicWrite(offset: offset, data: buffer)
     }
 
+    /// Zeros a page slot in the main file during unified commit (mirrors WAL recovery delete replay).
+    internal func _zeroMainFilePage(index: Int) throws {
+        pageCache.remove(index)
+        let offset = off_t(index * pageSize)
+        let zeroed = Data(repeating: 0, count: pageSize)
+        try atomicWrite(offset: offset, data: zeroed)
+    }
+
     /// Durability boundary: WAL (or unified commit) must be durable before the main-file
     /// page write. Crash between those steps recovers from WAL; the reverse order loses data.
     /// Must be called under barrier on `queue`.
