@@ -753,9 +753,22 @@ public final class QueryBuilder: @unchecked Sendable {
             key += "_f\(hasher.finalize())"
         }
 
-        // Include joins
+        // Include joins. The join count alone lets two queries with the same left
+        // instance and filter shape share an entry while joining different right-hand
+        // collections, so encode each join's right-hand instance, keys and type.
+        // Length-prefix each component so user-provided separators cannot be ambiguous.
         if !joinOperations.isEmpty {
-            key += "_j\(joinOperations.count)"
+            let joinDescriptors = joinOperations.map { operation in
+                [
+                    operation.collection.instanceID.uuidString,
+                    operation.foreignKey,
+                    operation.primaryKey,
+                    String(describing: operation.type)
+                ]
+                .map { "\($0.count):\($0)" }
+                .joined()
+            }
+            key += "_j\(joinOperations.count)[\(joinDescriptors.joined(separator: "|"))]"
         }
 
         // Include sorts
