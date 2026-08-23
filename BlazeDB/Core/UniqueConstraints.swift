@@ -121,6 +121,60 @@ public class UniqueConstraintManager {
             }
         }
     }
+
+    /// Validate uniqueness against not-yet-written siblings in the same batch.
+    /// Durable uniqueness is still checked separately via `validateUnique`.
+    public func validateUniqueAgainstPending(
+        record: BlazeDataRecord,
+        pending: [BlazeDataRecord]
+    ) throws {
+        let fieldsSnapshot: Set<String>
+        let compoundSnapshot: Set<String>
+        lock.lock()
+        fieldsSnapshot = uniqueFields
+        compoundSnapshot = uniqueCompoundFields
+        lock.unlock()
+
+        let recordId = record.storage["id"]?.uuidValue
+
+        for field in fieldsSnapshot {
+            guard let value = record.storage[field] else { continue }
+            let conflict = pending.contains { pendingRecord in
+                guard pendingRecord.storage[field] == value else { return false }
+                guard let pendingId = pendingRecord.storage["id"]?.uuidValue else { return true }
+                return pendingId != recordId
+            }
+            if conflict {
+                throw BlazeDBError.uniqueConstraintViolation(
+                    field: field,
+                    value: value,
+                    message: "Duplicate value '\(value)' for unique field '\(field)' within batch"
+                )
+            }
+        }
+
+        for compoundKey in compoundSnapshot {
+            let fields = compoundKey.components(separatedBy: "+")
+            guard fields.allSatisfy({ record.storage[$0] != nil }) else { continue }
+            let values = fields.compactMap { record.storage[$0] }
+            guard values.count == fields.count else { continue }
+
+            let conflict = pending.contains { pendingRecord in
+                guard fields.allSatisfy({ pendingRecord.storage[$0] == record.storage[$0] }) else {
+                    return false
+                }
+                guard let pendingId = pendingRecord.storage["id"]?.uuidValue else { return true }
+                return pendingId != recordId
+            }
+            if conflict {
+                throw BlazeDBError.uniqueConstraintViolation(
+                    field: compoundKey,
+                    value: nil,
+                    message: "Duplicate values for unique compound fields '\(compoundKey)' within batch"
+                )
+            }
+        }
+    }
 }
 
 // MARK: - BlazeDBClient Unique Constraints Extension
@@ -159,6 +213,14 @@ extension BlazeDBClient {
     /// Validate unique constraints before insert/update
     internal func validateUniqueConstraints(in record: BlazeDataRecord, excludeId: UUID? = nil) throws {
         try uniqueConstraintManager.validateUnique(collection: collection, record: record, excludeId: excludeId)
+    }
+
+    /// Validate unique constraints against other prepared records in the same batch.
+    internal func validateUniqueConstraintsAgainstPending(
+        in record: BlazeDataRecord,
+        pending: [BlazeDataRecord]
+    ) throws {
+        try uniqueConstraintManager.validateUniqueAgainstPending(record: record, pending: pending)
     }
 }
 

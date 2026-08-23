@@ -941,7 +941,11 @@ public final class BlazeDBClient: @unchecked Sendable {
             var preparedRecords: [BlazeDataRecord] = []
             preparedRecords.reserveCapacity(records.count)
             for record in records {
-                preparedRecords.append(try prepareRecordForInsert(record).record)
+                let prepared = try prepareRecordForInsert(record).record
+                // Durable uniqueness is checked in prepare; also reject duplicates among
+                // not-yet-written siblings so insertMany matches sequential insert().
+                try validateUniqueConstraintsAgainstPending(in: prepared, pending: preparedRecords)
+                preparedRecords.append(prepared)
             }
 
             var ids: [UUID] = []

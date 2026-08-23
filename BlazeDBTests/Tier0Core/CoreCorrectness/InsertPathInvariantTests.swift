@@ -33,6 +33,36 @@ final class InsertPathInvariantTests: XCTestCase {
         )
     }
 
+    func testInsertManyHonorsUniqueConstraintAgainstExistingRows() throws {
+        let url = tempDir.appendingPathComponent("insert-many-unique-existing.blazedb")
+        let db = try BlazeDBClient(name: "InsertManyUniqueExisting", fileURL: url, password: password)
+        defer { try? db.close() }
+
+        try db.createUniqueIndex(on: "email")
+        _ = try db.insert(BlazeDataRecord(["email": .string("dup@example.com")]))
+
+        XCTAssertThrowsError(
+            try db.insertMany([BlazeDataRecord(["email": .string("dup@example.com")])]),
+            "insertMany() should reject a unique constraint violation against existing rows"
+        )
+    }
+
+    func testInsertManyHonorsUniqueConstraintWithinSameBatch() throws {
+        let url = tempDir.appendingPathComponent("insert-many-unique-batch.blazedb")
+        let db = try BlazeDBClient(name: "InsertManyUniqueBatch", fileURL: url, password: password)
+        defer { try? db.close() }
+
+        try db.createUniqueIndex(on: "email")
+
+        XCTAssertThrowsError(
+            try db.insertMany([
+                BlazeDataRecord(["email": .string("dup@example.com")]),
+                BlazeDataRecord(["email": .string("dup@example.com")]),
+            ]),
+            "insertMany() should reject duplicate unique values inside the same batch"
+        )
+    }
+
     func testInsertManyHonorsCheckConstraintsLikeInsert() throws {
         let url = tempDir.appendingPathComponent("insert-many-check.blazedb")
         let db = try BlazeDBClient(name: "InsertManyCheck", fileURL: url, password: password)
