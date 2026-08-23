@@ -61,6 +61,11 @@ final class InsertPathInvariantTests: XCTestCase {
             ]),
             "insertMany() should reject duplicate unique values inside the same batch"
         )
+        XCTAssertEqual(
+            try db.count(),
+            0,
+            "A failed same-batch unique check must not leave any rows from that batch"
+        )
     }
 
     func testInsertManyHonorsCheckConstraintsLikeInsert() throws {
