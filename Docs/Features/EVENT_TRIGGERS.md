@@ -13,7 +13,7 @@ Event triggers allow you to run code automatically when records are inserted, up
 - Automatically maintain indexes
 - Metadata automation
 - AI integration hooks
-- Post-commit execution (safe, doesn't roll back on failure)
+- Explicit before/after semantics (`onInsert` runs before the write; after-triggers are post-commit)
 
 ---
 
@@ -97,18 +97,30 @@ db.onInsert { record, modified, ctx in
 
 ## Execution Semantics
 
-### Post-Commit
+### Before vs after
 
-Triggers run **after** the write is committed to disk:
+| API / event | When it runs | Failure behavior |
+|-------------|--------------|------------------|
+| `onInsert` / `beforeInsert` | Before the durable write | Throws and **rejects** the write |
+| `beforeUpdate` / `beforeDelete` | Before the durable write | Throws and **rejects** the write |
+| `afterInsert` / `afterUpdate` / `afterDelete` | After the durable write | Logged; does **not** roll back or fail the public write API |
+| `onUpdate` / `onDelete` | After the durable write | Same as other after-triggers |
+
+`onInsert` is intentionally a **before** hook so handlers can mutate the record that will be stored (timestamps, embeddings, derived fields). Use `createTrigger(..., event: .afterInsert)` when you want true post-commit side effects.
+
+### Post-commit after-triggers
+
+After-triggers run **after** the write is committed:
 - Data is already persisted
-- Trigger failures don't roll back data
-- Failures are logged to telemetry
+- Trigger failures do not roll back data
+- Trigger failures are logged and do not fail `insert` / `update` / `delete` / `insertMany`
+- Prefer BEFORE triggers when a failure should prevent the write
 
 ### Safety
 
 - **No infinite loops:** Triggers can't trigger themselves directly
 - **Cycle detection:** Automatic detection of trigger cycles
-- **Timeout protection:** Triggers have execution time limits
+- **Timeout protection:** Enhanced triggers have execution time limits
 
 ---
 
