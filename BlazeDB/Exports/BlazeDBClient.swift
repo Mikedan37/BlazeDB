@@ -813,6 +813,63 @@ public final class BlazeDBClient: @unchecked Sendable {
 
     // MARK: - CRUD
 
+    /// Shared validation and before-insert transforms for all public insert entry points.
+    private func prepareRecordForInsert(
+        _ data: BlazeDataRecord,
+        explicitID: UUID? = nil
+    ) throws -> (record: BlazeDataRecord, id: UUID) {
+        var record = data
+        let id: UUID
+        if let explicitID {
+            id = explicitID
+            record.storage["id"] = .uuid(id)
+        } else if case let .uuid(existingID)? = record.storage["id"] {
+            id = existingID
+        } else if case let .string(idStr)? = record.storage["id"], let parsed = UUID(uuidString: idStr) {
+            id = parsed
+            record.storage["id"] = .uuid(parsed)
+        } else {
+            id = UUID()
+            record.storage["id"] = .uuid(id)
+        }
+
+        if record.storage["createdAt"] == nil {
+            record.storage["createdAt"] = .date(Date())
+        }
+
+        try validateAgainstSchema(record)
+
+        var modifiedRecord: BlazeDataRecord? = record
+        try triggerManager.executeTriggers(for: .beforeInsert, record: record, modifiedRecord: &modifiedRecord)
+        try executeEnhancedTriggers(
+            for: .beforeInsert,
+            record: record,
+            modifiedRecord: &modifiedRecord,
+            collection: collection,
+            collectionName: name
+        )
+        let recordToInsert = modifiedRecord ?? record
+
+        try enforceRLS(.insert, record: recordToInsert)
+        try validateForeignKeys(for: recordToInsert, operation: "insert")
+        try validateCheckConstraints(in: recordToInsert)
+        try validateUniqueConstraints(in: recordToInsert)
+
+        return (recordToInsert, id)
+    }
+
+    private func runAfterInsertTriggers(for record: BlazeDataRecord) throws {
+        var modifiedRecord: BlazeDataRecord? = record
+        try triggerManager.executeTriggers(for: .afterInsert, record: record, modifiedRecord: &modifiedRecord)
+        try executeEnhancedTriggers(
+            for: .afterInsert,
+            record: record,
+            modifiedRecord: &modifiedRecord,
+            collection: collection,
+            collectionName: name
+        )
+    }
+
     /// Inserts a new record into the database.
     ///
     /// If the record doesn't have an `id` field, a new UUID will be generated automatically.
@@ -834,53 +891,15 @@ public final class BlazeDBClient: @unchecked Sendable {
         let startTime = Date()
         
         do {
-            var record = data
-            let id: UUID
-            if case let .uuid(existingID)? = record.storage["id"] {
-                id = existingID
-            } else if case let .string(idStr)? = record.storage["id"], let parsed = UUID(uuidString: idStr) {
-                id = parsed
-                record.storage["id"] = .uuid(parsed) // normalize to uuid
-            } else {
-                id = UUID()
-                record.storage["id"] = .uuid(id)
-            }
+            let prepared = try prepareRecordForInsert(data)
 
-            if record.storage["createdAt"] == nil {
-                record.storage["createdAt"] = .date(Date())
-            }
+            try performSafeWrite { _ = try collection.insert(prepared.record) }
+            legacyTransactionLogNoOp("insert", payload: prepared.record.storage)
             
-            // Validate against schema (if defined)
-            try validateAgainstSchema(record)
-            
-            // Execute BEFORE INSERT triggers
-            var modifiedRecord: BlazeDataRecord? = record
-            try triggerManager.executeTriggers(for: .beforeInsert, record: record, modifiedRecord: &modifiedRecord)
-            // Execute enhanced triggers
-            try executeEnhancedTriggers(for: .beforeInsert, record: record, modifiedRecord: &modifiedRecord, collection: collection, collectionName: name)
-            let recordToInsert = modifiedRecord ?? record
-
-            try enforceRLS(.insert, record: recordToInsert)
-            
-            // Validate foreign keys
-            try validateForeignKeys(for: recordToInsert, operation: "insert")
-            
-            // Validate check constraints
-            try validateCheckConstraints(in: recordToInsert)
-            
-            // Validate unique constraints
-            try validateUniqueConstraints(in: recordToInsert)
-
-            try performSafeWrite { _ = try collection.insert(recordToInsert) }
-            legacyTransactionLogNoOp("insert", payload: recordToInsert.storage)
-            
-            // Execute AFTER INSERT triggers
-            try triggerManager.executeTriggers(for: .afterInsert, record: recordToInsert, modifiedRecord: &modifiedRecord)
-            // Execute enhanced triggers
-            try executeEnhancedTriggers(for: .afterInsert, record: recordToInsert, modifiedRecord: &modifiedRecord, collection: collection, collectionName: name)
+            try runAfterInsertTriggers(for: prepared.record)
             
             // Notify change observers (for sync)
-            notifyInsert(id: id)
+            notifyInsert(id: prepared.id)
             
             #if !BLAZEDB_LINUX_CORE
             // Track telemetry (if enabled)
@@ -888,7 +907,7 @@ public final class BlazeDBClient: @unchecked Sendable {
             telemetry.record(operation: "insert", duration: insertDuration, success: true, recordCount: 1)
             #endif
             
-            return id
+            return prepared.id
         } catch {
             #if !BLAZEDB_LINUX_CORE
             // Track telemetry for failure
@@ -901,17 +920,11 @@ public final class BlazeDBClient: @unchecked Sendable {
 
     /// Insert a record with a specific UUID (for transaction tests and deterministic inserts)
     public func insert(_ data: BlazeDataRecord, id: UUID) throws {
-        var record = data
-        record.storage["id"] = .uuid(id)
-        if record.storage["createdAt"] == nil {
-            record.storage["createdAt"] = .date(Date())
-        }
-        try enforceRLS(.insert, record: record)
-        try performSafeWrite { _ = try collection.insert(record) }
-        legacyTransactionLogNoOp("insert", payload: record.storage)
-        
-        // Notify change observers (for sync)
-        notifyInsert(id: id)
+        let prepared = try prepareRecordForInsert(data, explicitID: id)
+        try performSafeWrite { _ = try collection.insert(prepared.record) }
+        legacyTransactionLogNoOp("insert", payload: prepared.record.storage)
+        try runAfterInsertTriggers(for: prepared.record)
+        notifyInsert(id: prepared.id)
     }
     
     /// Insert multiple records in a single batch (much faster than individual inserts)
@@ -925,32 +938,39 @@ public final class BlazeDBClient: @unchecked Sendable {
         let startTime = Date()
         
         do {
-            if shouldEnforceRLS {
-                for record in records {
-                    try enforceRLS(.insert, record: record)
-                }
+            var preparedRecords: [BlazeDataRecord] = []
+            preparedRecords.reserveCapacity(records.count)
+            for record in records {
+                let prepared = try prepareRecordForInsert(record).record
+                // Durable uniqueness is checked in prepare; also reject duplicates among
+                // not-yet-written siblings so insertMany matches sequential insert().
+                try validateUniqueConstraintsAgainstPending(in: prepared, pending: preparedRecords)
+                preparedRecords.append(prepared)
             }
+
             var ids: [UUID] = []
             try performSafeWrite {
                 #if !BLAZEDB_LINUX_CORE
                 // Use optimized batch insert (3-5x faster!)
-                ids = try collection.insertBatch(records)
+                ids = try collection.insertBatch(preparedRecords)
                 #else
                 // Linux: Fallback to individual inserts
-                for record in records {
+                for record in preparedRecords {
                     let id = try collection.insert(record)
                     ids.append(id)
                 }
                 #endif
                 
                 // Log to transaction log
-                for (index, _) in ids.enumerated() {
-                    if index < records.count {
-                        legacyTransactionLogNoOp("insert", payload: records[index].storage)
-                    }
+                for (index, record) in preparedRecords.enumerated() where index < ids.count {
+                    legacyTransactionLogNoOp("insert", payload: record.storage)
                 }
             }
             BlazeLogger.info("Inserted \(ids.count) records in optimized batch")
+
+            for (index, record) in preparedRecords.enumerated() where index < ids.count {
+                try runAfterInsertTriggers(for: record)
+            }
             
             // Notify change observers (for sync) - batch notification
             let changes = ids.map { DatabaseChange(type: .insert($0), collectionName: name) }
