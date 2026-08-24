@@ -212,15 +212,16 @@ extension QueryBuilder {
             return 1
         }
         
-        // Count how many records have same order values before this one
-        var rank = 1
+        // SQL RANK(): ties share the minimum 1-based index of the peer group.
+        // Find the first row with the same order key as the current record.
+        var firstSame = recordIndex
         for i in 0..<recordIndex {
-            if !recordsEqual(sortedPartition[i], sortedPartition[recordIndex], by: orderBy) {
-                rank = i + 1
+            if recordsEqual(sortedPartition[i], sortedPartition[recordIndex], by: orderBy) {
+                firstSame = i
+                break
             }
         }
-        
-        return rank
+        return firstSame + 1
     }
     
     private func computeDenseRank(for record: BlazeDataRecord, in allRecords: [BlazeDataRecord], partitionBy: [String]?, orderBy: [String]) -> Int {
