@@ -51,14 +51,16 @@ db.onInsert(collection: "Tasks", name: "autoOrder") { record, modified, ctx in
 ### onUpdate
 
 ```swift
-db.onUpdate(collection: "Workouts") { old, new, ctx in
- // Auto-generate embedding if notes changed
- if old.storage["notes"]!= new.storage["notes"] {
- let embed = AI.embed(new.storage["notes"]?.stringValue?? "")
- new.storage["noteEmbedding"] =.data(embed)
- }
+db.onUpdate("Workouts") { old, new, ctx in
+    // onUpdate runs after the durable write. Mutating `new` here does not
+    // change the stored record; use a follow-up write or index rebuild instead.
+    if old.storage["notes"] != new.storage["notes"] {
+        try ctx.rebuildSpatialIndex()
+    }
 }
 ```
+
+To mutate fields before they are stored, use `onInsert` / `beforeUpdate` and write through `modified`.
 
 ### onDelete
 

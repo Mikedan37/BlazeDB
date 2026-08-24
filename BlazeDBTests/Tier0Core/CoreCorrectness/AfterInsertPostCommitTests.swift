@@ -74,4 +74,21 @@ final class AfterInsertPostCommitTests: XCTestCase {
         XCTAssertThrowsError(try db.insert(BlazeDataRecord(["name": .string("blocked")])))
         XCTAssertEqual(try db.count(), 0)
     }
+
+    /// `onInsert` is enhanced beforeInsert. This PR changed enhanced BEFORE from
+    /// swallow-all to rethrow; lock that intentional behavior change.
+    func testEnhancedOnInsertThrowRejectsWrite() throws {
+        let url = tempDir.appendingPathComponent("enhanced-oninsert-throw.blazedb")
+        let db = try BlazeDBClient(name: "EnhancedOnInsertReject", fileURL: url, password: password)
+        defer { try? db.close() }
+
+        db.onInsert { _, _, _ in
+            throw NSError(domain: "AfterInsertPostCommit", code: 4, userInfo: [
+                NSLocalizedDescriptionKey: "enhanced onInsert reject"
+            ])
+        }
+
+        XCTAssertThrowsError(try db.insert(BlazeDataRecord(["name": .string("blocked")])))
+        XCTAssertEqual(try db.count(), 0)
+    }
 }
