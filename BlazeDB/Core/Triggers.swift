@@ -79,7 +79,19 @@ public class TriggerManager {
     public func executeTriggers(for event: TriggerEvent, record: BlazeDataRecord, modifiedRecord: inout BlazeDataRecord?) throws {
         let eventTriggers = getTriggers(for: event)
         for trigger in eventTriggers {
-            try trigger.handler(record, &modifiedRecord)
+            do {
+                try trigger.handler(record, &modifiedRecord)
+            } catch {
+                BlazeLogger.error("Trigger '\(trigger.name)' failed: \(error)")
+                // BEFORE triggers can veto the write. AFTER triggers are post-commit side
+                // effects: log and continue so a durable write is not reported as failure (#467).
+                switch event {
+                case .beforeInsert, .beforeUpdate, .beforeDelete:
+                    throw error
+                case .afterInsert, .afterUpdate, .afterDelete:
+                    continue
+                }
+            }
         }
     }
 }
@@ -150,10 +162,15 @@ public class EnhancedTriggerManager {
             do {
                 try trigger.handler(record, &modifiedRecord, context)
             } catch {
-                // Triggers execute inside the operation's do block, so errors are logged
-                // but do not roll back the operation. Consider using BEFORE triggers to prevent writes.
+                // BEFORE triggers can veto the write. AFTER triggers are post-commit side
+                // effects: log and continue so a durable write is not reported as failure (#467).
                 BlazeLogger.error("Trigger '\(trigger.name)' failed: \(error)")
-                // Continue with other triggers
+                switch event {
+                case .beforeInsert, .beforeUpdate, .beforeDelete:
+                    throw error
+                case .afterInsert, .afterUpdate, .afterDelete:
+                    continue
+                }
             }
         }
     }
