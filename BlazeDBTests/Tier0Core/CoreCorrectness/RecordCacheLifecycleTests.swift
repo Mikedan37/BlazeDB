@@ -231,10 +231,9 @@ final class RecordCacheLifecycleTests: XCTestCase {
     /// #307: lazy-field fetches must use the owning database's cache, not the
     /// process-global UUID-only cache shared by unrelated databases.
     func testLazyFieldFetchDoesNotReuseSharedCacheAcrossDatabaseInstances() throws {
-        RecordCache.shared.clear()
-        defer { RecordCache.shared.clear() }
-
         let recordID = UUID()
+        defer { RecordCache.shared.remove(id: recordID) }
+
         let firstDatabase = try makeClient(
             "lazy-field-first",
             at: tempDir.appendingPathComponent("lazy-field-first.blazedb")
@@ -250,9 +249,40 @@ final class RecordCacheLifecycleTests: XCTestCase {
             "the first database must return its lazy-field record"
         )
         XCTAssertEqual(firstRecord["payload"]?.stringValue, "database-a")
+        XCTAssertNotNil(
+            firstDatabase.collection.recordCache.get(id: recordID),
+            "the first lazy-field fetch must populate the owning database cache"
+        )
         XCTAssertNil(
             RecordCache.shared.get(id: recordID),
             "lazy-field fetch must not populate the process-global cache"
+        )
+
+        // Change the backing page after the first fetch. A cache miss must see
+        // this replacement, while a cache hit must preserve the original.
+        let firstPageIndex = try XCTUnwrap(
+            firstDatabase.collection.indexMap[recordID]?.first,
+            "the first database must index its inserted record"
+        )
+        let changedBackingRecord = BlazeDataRecord([
+            "id": .uuid(recordID),
+            "payload": .string("database-a-on-disk")
+        ])
+        try firstDatabase.collection.store.writePage(
+            index: firstPageIndex,
+            plaintext: try BlazeBinaryEncoder.encode(changedBackingRecord)
+        )
+        var cachedPayload: String?
+        do {
+            cachedPayload = try firstDatabase.collection
+                .fetchLazyFieldRecord(id: recordID)?["payload"]?.stringValue
+        } catch {
+            cachedPayload = nil
+        }
+        XCTAssertEqual(
+            cachedPayload,
+            "database-a",
+            "the same database must reuse its cached lazy-field record"
         )
 
         let secondDatabase = try makeClient(
@@ -274,6 +304,5 @@ final class RecordCacheLifecycleTests: XCTestCase {
             "the second database must return its own lazy-field record"
         )
         XCTAssertEqual(secondRecord["payload"]?.stringValue, "database-b")
-        RecordCache.shared.remove(id: recordID)
     }
 }
