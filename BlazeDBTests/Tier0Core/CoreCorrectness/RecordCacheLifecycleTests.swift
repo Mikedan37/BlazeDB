@@ -227,4 +227,53 @@ final class RecordCacheLifecycleTests: XCTestCase {
         RecordCache.release(forDatabase: registryPath, token: predecessor.token)
         RecordCache.release(forDatabase: registryPath, token: successor.token)
     }
+
+    /// #307: lazy-field fetches must use the owning database's cache, not the
+    /// process-global UUID-only cache shared by unrelated databases.
+    func testLazyFieldFetchDoesNotReuseSharedCacheAcrossDatabaseInstances() throws {
+        RecordCache.shared.clear()
+        defer { RecordCache.shared.clear() }
+
+        let recordID = UUID()
+        let firstDatabase = try makeClient(
+            "lazy-field-first",
+            at: tempDir.appendingPathComponent("lazy-field-first.blazedb")
+        )
+        defer { try? firstDatabase.close() }
+        try firstDatabase.insert(
+            BlazeDataRecord(["payload": .string("database-a")]),
+            id: recordID
+        )
+
+        let firstRecord = try XCTUnwrap(
+            try firstDatabase.collection.fetchLazyFieldRecord(id: recordID),
+            "the first database must return its lazy-field record"
+        )
+        XCTAssertEqual(firstRecord["payload"]?.stringValue, "database-a")
+        XCTAssertNil(
+            RecordCache.shared.get(id: recordID),
+            "lazy-field fetch must not populate the process-global cache"
+        )
+
+        let secondDatabase = try makeClient(
+            "lazy-field-second",
+            at: tempDir.appendingPathComponent("lazy-field-second.blazedb")
+        )
+        defer { try? secondDatabase.close() }
+        try secondDatabase.insert(
+            BlazeDataRecord(["payload": .string("database-b")]),
+            id: recordID
+        )
+        RecordCache.shared.set(
+            id: recordID,
+            record: BlazeDataRecord(["payload": .string("stale-global")])
+        )
+
+        let secondRecord = try XCTUnwrap(
+            try secondDatabase.collection.fetchLazyFieldRecord(id: recordID),
+            "the second database must return its own lazy-field record"
+        )
+        XCTAssertEqual(secondRecord["payload"]?.stringValue, "database-b")
+        RecordCache.shared.remove(id: recordID)
+    }
 }
