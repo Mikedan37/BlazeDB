@@ -267,9 +267,10 @@ public final class PageStore: @unchecked Sendable {
 
         self.key = key  // ✅ STORE ENCRYPTION KEY
 
-        // Create the file if it doesn't exist
+        // Create the file if it doesn't exist (owner-only on POSIX, #357).
+        // Do not chmod existing databases — deployments may intentionally share them.
         if !FileManager.default.fileExists(atPath: fileURL.path) {
-            FileManager.default.createFile(atPath: fileURL.path, contents: nil)
+            _ = SecureFileAttributes.createOwnerOnlyFile(at: fileURL)
         }
 
         self.fileHandle = try FileHandle(forUpdating: fileURL)
