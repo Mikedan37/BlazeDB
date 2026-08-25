@@ -368,6 +368,30 @@ final class BlazeTransactionUnifiedWALTests: XCTestCase {
         store2.close()
     }
 
+    /// Regression for #364: clean commit + checkpoint + reopen must zero deleted pages on the main file.
+    /// Recovery already zeroes deletes; commit must mirror that before checkpoint clears the WAL.
+    func testUnifiedDeleteCommitCheckpointAndReopenRemovesMainFilePage() throws {
+        let dbURL = tempDir.appendingPathComponent("test-delete-commit.db")
+        let walURL = dbURL.deletingPathExtension().appendingPathExtension("wal")
+
+        let store1 = try PageStore(fileURL: dbURL, key: testKey, walMode: .unified)
+        try store1.writePage(index: 4, plaintext: Data(repeating: 0xAB, count: 100))
+
+        let tx = BlazeTransaction(store: store1)
+        try tx.delete(pageID: 4)
+        try tx.commit()
+
+        try store1.checkpoint()
+        let entriesAfterCheckpoint = try DurabilityManager.scanEntries(from: walURL)
+        XCTAssertEqual(entriesAfterCheckpoint.count, 0, "WAL should be empty after checkpoint")
+        store1.close()
+
+        let store2 = try PageStore(fileURL: dbURL, key: testKey, walMode: .unified)
+        let readBack = try store2.readPage(index: 4)
+        XCTAssertNil(readBack, "Deleted page must not remain readable from main file after commit+checkpoint+reopen")
+        store2.close()
+    }
+
     /// Checkpoint then reopen: data survives, WAL is clean.
     func testCheckpointThenReopenPreservesData() throws {
         let dbURL = tempDir.appendingPathComponent("test.db")
