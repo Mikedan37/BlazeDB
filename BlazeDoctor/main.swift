@@ -331,11 +331,11 @@ let envPassword = ProcessInfo.processInfo.environment["BLAZEDB_PASSWORD"]
 let password: String
 if let envPassword, !envPassword.isEmpty {
     if positional.count >= 2 {
-        fputs("warning: password argument ignored; using BLAZEDB_PASSWORD (#310/#313)\n", stderr)
+        CLIWarning.write("warning: password argument ignored; using BLAZEDB_PASSWORD (#310/#313)")
     }
     password = envPassword
 } else if positional.count >= 2 {
-    fputs("warning: passing the database password on argv exposes it via process listings; prefer BLAZEDB_PASSWORD (#310/#313)\n", stderr)
+    CLIWarning.write("warning: passing the database password on argv exposes it via process listings; prefer BLAZEDB_PASSWORD (#310/#313)")
     password = positional[1]
 } else {
     print("Error: Missing password (set BLAZEDB_PASSWORD or pass <password>)")

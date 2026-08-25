@@ -113,12 +113,12 @@ if args.contains("--help") || args.contains("-h") {
 func resolveCLIPassword(positionalPassword: String?) -> String {
     if let env = ProcessInfo.processInfo.environment["BLAZEDB_PASSWORD"], !env.isEmpty {
         if positionalPassword != nil {
-            fputs("warning: password argument ignored; using BLAZEDB_PASSWORD (#310/#313)\n", stderr)
+            CLIWarning.write("warning: password argument ignored; using BLAZEDB_PASSWORD (#310/#313)")
         }
         return env
     }
     if let positionalPassword, !positionalPassword.isEmpty {
-        fputs("warning: passing the database password on argv exposes it via process listings; prefer BLAZEDB_PASSWORD (#310/#313)\n", stderr)
+        CLIWarning.write("warning: passing the database password on argv exposes it via process listings; prefer BLAZEDB_PASSWORD (#310/#313)")
         return positionalPassword
     }
     print("Error: Missing password (set BLAZEDB_PASSWORD or pass <password>)")
