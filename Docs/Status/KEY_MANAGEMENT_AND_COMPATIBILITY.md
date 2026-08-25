@@ -20,7 +20,7 @@ Cryptography reuses the word “key” for several jobs. In BlazeDB they are dis
 | **Salt** | Random per-database bytes (`.salt` sidecar) | **No** — readable on disk is normal |
 | **KDF output / derived key** | 32 bytes from password + salt via PBKDF2 | Yes |
 | **AES key** | That same material as CryptoKit `SymmetricKey` | Yes — used for page seal/open |
-| **`Argon2KDF` output** | Another 32-byte derivation path | Yes — **proprietary, not Argon2id**; not the default open KDF |
+| **`Argon2KDF` / CLI `blaze-memory-kdf`** | Proprietary memory-hard helper (legacy envelopes may still say `argon2id`) | Yes — **not Argon2id**; not the default DB open KDF |
 | **Secure Enclave key** | Apple hardware/keychain-backed material | Platform-specific — usually **protects or unlocks** secrets; not “the AES page key” by itself |
 
 ### Normal open path

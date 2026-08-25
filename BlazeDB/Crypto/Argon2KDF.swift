@@ -58,10 +58,10 @@ public enum Argon2KDF {
         )
     }
     
-    /// Derive key using Argon2id
-    /// 
-    /// Note: Swift doesn't have native Argon2, so we use a memory-hard PBKDF2 variant
-    /// that approximates Argon2's memory-hard properties using large memory buffers.
+    /// Derive key using the proprietary memory-hard helper (not RFC Argon2id).
+    ///
+    /// Swift has no native Argon2 here; this uses large memory buffers plus HMAC/SHA-256.
+    /// Do not document or label this path as Argon2id.
     ///
     /// - Parameters:
     ///   - password: User password
@@ -187,12 +187,12 @@ public enum Argon2KDF {
     }
 }
 
-/// Extension to KeyManager for Argon2 support
+/// Extension to KeyManager for the proprietary memory-hard helper.
 extension KeyManager {
-    /// Get key using Argon2id (hardened KDF)
-    /// 
-    /// This is the recommended method for new databases.
-    /// For backward compatibility, existing databases can still use PBKDF2.
+    /// Derive a key with `Argon2KDF` (proprietary; **not** RFC Argon2id).
+    ///
+    /// Not used by the production `BlazeDBClient` / `PageStore` open path, which uses
+    /// `getKey(from:salt:)` → PBKDF2-HMAC-SHA256.
     public static func getKeyArgon2(
         from password: String,
         salt: Data,
@@ -205,7 +205,6 @@ extension KeyManager {
             throw KeyManagerError.passwordTooWeak(failure)
         }
         
-        // Use Argon2id for key derivation
         return try Argon2KDF.deriveKey(
             from: password,
             salt: salt,

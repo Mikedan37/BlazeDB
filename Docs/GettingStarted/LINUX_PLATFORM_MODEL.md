@@ -46,7 +46,7 @@ This document explains the feature matrix, design rationale, and explicit limita
 
 ### What Linux Provides
 
-- **Data-at-Rest Encryption**: AES-256-GCM per-page encryption with PBKDF2 (10,000 iterations) or Argon2id key derivation
+- **Data-at-Rest Encryption**: AES-256-GCM per-page encryption; password keys via PBKDF2-HMAC-SHA256 (600,000 iterations in release)
 - **CRC32 Checksums**: Optional corruption detection (IEEE 802.3 polynomial, pure Swift implementation)
 - **File Locking**: POSIX `flock()` exclusive process-level locking
 - **Access Control**: File system permissions (managed by host OS)

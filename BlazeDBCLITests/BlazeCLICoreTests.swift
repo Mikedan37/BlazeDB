@@ -275,7 +275,7 @@ final class CLIMasterKeyringTests: XCTestCase {
         let status = try CLIMasterKeyringStore.initialize(passphrase: "VeryStrongMasterPassphrase_123!")
         XCTAssertTrue(status.exists)
         XCTAssertEqual(status.schemaVersion, 1)
-        XCTAssertEqual(status.kdfAlgorithm, "argon2id")
+    XCTAssertEqual(status.kdfAlgorithm, "blaze-memory-kdf")
 
         let payload = try CLIMasterKeyringStore.loadPayload(passphrase: "VeryStrongMasterPassphrase_123!")
         XCTAssertTrue(payload.databases.isEmpty)

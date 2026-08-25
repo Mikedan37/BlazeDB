@@ -29,7 +29,7 @@
 - `BlazeDB/Utils/BlazeBinaryDecoder.swift` - Decoding with corruption detection
 
 **Crypto:**
-- `BlazeDB/Crypto/KeyManager.swift` - Argon2id + HKDF key derivation
+- `BlazeDB/Crypto/KeyManager.swift` - PBKDF2-HMAC-SHA256 password → key (600k release iterations)
 - `BlazeDB/Storage/PageStore.swift` (lines 264-313) - AES-256-GCM per-page encryption
 
 **Tests (Validation):**
@@ -543,7 +543,7 @@ N+1-4095 Zero padding to 4KB
 **Key Derivation:**
 ```swift
 // BlazeDB/Crypto/KeyManager.swift
-1. Argon2id(password, salt) → derived key
+1. PBKDF2-HMAC-SHA256(password, per-DB salt, 600k iters in release) → derived key
 2. HKDF(derived key, info: "BlazeDB Encryption Key") → encryption key
 3. Key cached in memory (cleared on close)
 ```
@@ -638,7 +638,7 @@ let decrypted = try AES.GCM.open(sealedBox, using: key) // Throws if tag invalid
 - `BlazeDB/Storage/PageStore.swift:269` - Encryption: `try AES.GCM.seal(plaintext, using: key, nonce: nonce)`
 - `BlazeDB/Storage/PageStore.swift:299-301` - Nonce and tag storage in page format
 - `BlazeDB/Storage/PageStore.swift:436-456` - Decryption with tag verification
-- `BlazeDB/Crypto/KeyManager.swift` - Key derivation (Argon2id + HKDF)
+- `BlazeDB/Crypto/KeyManager.swift` - Key derivation (PBKDF2-HMAC-SHA256)
 
 **Invariant:**
 - Each page has unique nonce (prevents replay attacks)
