@@ -73,7 +73,11 @@ if args.contains("--help") || args.contains("-h") {
     BlazeDB Info Tool
     
     Usage:
-      blazedb info <db-path> <password>
+      blazedb info <db-path> [<password>]
+    
+    Password (prefer BLAZEDB_PASSWORD over argv — argv is visible in process listings):
+      1. export BLAZEDB_PASSWORD=... then omit the password argument
+      2. Legacy: pass <password> as the second argument (deprecated)
     
     Prints database information:
       - Path and name
@@ -85,8 +89,8 @@ if args.contains("--help") || args.contains("-h") {
       -h, --help    Show this help message
     
     Examples:
+      BLAZEDB_PASSWORD='...' blazedb info /path/to/db.blazedb
       blazedb info /path/to/db.blazedb mypassword
-      blazedb info ./mydb.blazedb mypassword
     
     Exit codes:
       0    Success
@@ -95,14 +99,28 @@ if args.contains("--help") || args.contains("-h") {
     exit(0)
 }
 
-guard args.count >= 3 else {
+let positional = Array(args.dropFirst())
+guard positional.count >= 1 else {
     print("Error: Missing required arguments")
-    print("Usage: blazedb info <db-path> <password>")
-    print("Use --help for more information")
+    print("Usage: blazedb info <db-path> [<password>]")
+    print("Prefer BLAZEDB_PASSWORD over argv. Use --help for more information")
     exit(1)
 }
 
-let dbPath = args[1]
-let password = args[2]
+let dbPath = positional[0]
+let envPassword = ProcessInfo.processInfo.environment["BLAZEDB_PASSWORD"]
+let password: String
+if let envPassword, !envPassword.isEmpty {
+    if positional.count >= 2 {
+        fputs("warning: password argument ignored; using BLAZEDB_PASSWORD (#310/#313)\n", stderr)
+    }
+    password = envPassword
+} else if positional.count >= 2 {
+    fputs("warning: passing the database password on argv exposes it via process listings; prefer BLAZEDB_PASSWORD (#310/#313)\n", stderr)
+    password = positional[1]
+} else {
+    print("Error: Missing password (set BLAZEDB_PASSWORD or pass <password>)")
+    exit(1)
+}
 
 printDatabaseInfo(dbPath: dbPath, password: password)

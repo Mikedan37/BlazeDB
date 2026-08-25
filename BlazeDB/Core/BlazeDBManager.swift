@@ -58,18 +58,24 @@ public final class BlazeDBManager {
             ?? fileURL.deletingLastPathComponent().appendingPathComponent("txn_log.json")
     }
 
-    /// Legacy NDJSON recovery hook used by manager-style tooling.
-    /// If a `txn_log-*.json` or `txn_log.json` exists next to the database file, this will
-    /// treat it as a plaintext page-level journal and replay it into the encrypted `PageStore`.
-    /// Normal `BlazeDBClient` usage does not generate these logs; they are strictly for
-    /// legacy migration / advanced recovery scenarios and should be treated as sensitive.
-    private static func recoverTransactionLogIfPresent(into store: PageStore, fileURL: URL) throws {
+    /// Legacy NDJSON journals next to a database are unauthenticated plaintext page ops.
+    /// Auto-replaying them into a keyed `PageStore` seals attacker-chosen plaintext under the
+    /// victim key (#365). Match `BlazeDBClient`: remove sidecars; never apply on mount/reload.
+    private static func rejectUnauthenticatedTransactionLogIfPresent(fileURL: URL) throws {
         let fm = FileManager.default
-        let candidates = transactionLogURLs(for: fileURL)
-        let chosen = candidates.first(where: { fm.fileExists(atPath: $0.path) }) ?? preferredTransactionLogURL(for: fileURL)
-        let log = TransactionLog(logFileURL: chosen)
-        try log.recover(into: store, from: chosen)
-        BlazeLogger.info("Recovered journal: \(chosen.lastPathComponent)")
+        for candidate in transactionLogURLs(for: fileURL) where fm.fileExists(atPath: candidate.path) {
+            BlazeLogger.warn(
+                "Removing unauthenticated legacy NDJSON journal \(candidate.lastPathComponent) without replay (#365)"
+            )
+            do {
+                try fm.removeItem(at: candidate)
+            } catch {
+                throw NSError(domain: "BlazeDBManager", code: 3651, userInfo: [
+                    NSLocalizedDescriptionKey:
+                        "Refusing to mount while unauthenticated txn_log sidecar \(candidate.lastPathComponent) cannot be removed: \(error.localizedDescription)"
+                ])
+            }
+        }
     }
 
     /// Mount a DB from the given file path.
@@ -94,7 +100,7 @@ public final class BlazeDBManager {
         let key = try Self.keyFromPassword(password, salt: kdfSalt)
         let metaURL = fileURL.deletingPathExtension().appendingPathExtension("meta")
         let store = try PageStore(fileURL: fileURL, key: key)
-        try Self.recoverTransactionLogIfPresent(into: store, fileURL: fileURL)
+        try Self.rejectUnauthenticatedTransactionLogIfPresent(fileURL: fileURL)
         
         // CRITICAL: Pass password to DynamicCollection so migration can access password-protected layouts
         let collection = try DynamicCollection(
@@ -208,7 +214,7 @@ public final class BlazeDBManager {
         }
 
         let salt = try SecureRandom.bytesStrict(count: 16)
-        try salt.write(to: saltURL, options: .atomic)
+        try SecureFileAttributes.writeOwnerOnly(salt, to: saltURL)
         return salt
     }
 
@@ -257,7 +263,7 @@ public final class BlazeDBManager {
         let kdfSalt = try Self.loadOrCreateKDFSalt(for: fileURL)
         let key = try Self.keyFromPassword(password ?? "", salt: kdfSalt)
         let store = try PageStore(fileURL: fileURL, key: key)
-        try Self.recoverTransactionLogIfPresent(into: store, fileURL: fileURL)
+        try Self.rejectUnauthenticatedTransactionLogIfPresent(fileURL: fileURL)
         
         // CRITICAL: Pass password to DynamicCollection so migration can access password-protected layouts
         let collection = try DynamicCollection(
@@ -289,24 +295,29 @@ public final class BlazeDBManager {
     }
     
     /// Recover all transactions for all mounted databases from any legacy NDJSON journals.
-    /// This walks `txn_log-*.json` / `txn_log.json` sidecars (if present) and replays
-    /// their plaintext page operations into the mounted stores. Default `BlazeDBClient`
-    /// CRUD does not emit these files; this is an advanced migration / operator tool.
+    ///
+    /// **Disabled (#365):** adjacent `txn_log*.json` files are unauthenticated plaintext.
+    /// Replaying them into a keyed `PageStore` would seal attacker-controlled pages under the
+    /// database key. Callers that find these sidecars should delete them and restore from an
+    /// authenticated backup / binary WAL path instead.
     public func recoverAllTransactions() throws {
         stateLock.lock()
         defer { stateLock.unlock() }
-        for (name, collection) in mountedDatabases {
-            guard let fileURL = dbFileURLs[name] else {
-                BlazeLogger.warn("Missing file URL for \(name); skipping recovery")
-                continue
-            }
-            let candidates = Self.transactionLogURLs(for: fileURL)
+        var found: [String] = []
+        for (name, _) in mountedDatabases {
+            guard let fileURL = dbFileURLs[name] else { continue }
             let fm = FileManager.default
-            let chosen = candidates.first(where: { fm.fileExists(atPath: $0.path) }) ?? Self.preferredTransactionLogURL(for: fileURL)
-            let log = TransactionLog(logFileURL: chosen)
-            try log.recover(into: collection.store, from: chosen)
-            BlazeLogger.info("Recovered journal for \(name): \(chosen.lastPathComponent)")
+            for candidate in Self.transactionLogURLs(for: fileURL) where fm.fileExists(atPath: candidate.path) {
+                found.append("\(name):\(candidate.lastPathComponent)")
+            }
         }
+        guard found.isEmpty else {
+            throw NSError(domain: "BlazeDBManager", code: 3650, userInfo: [
+                NSLocalizedDescriptionKey:
+                    "Legacy NDJSON txn_log replay is disabled because journals are unauthenticated plaintext (#365). Sidecars present: \(found.joined(separator: ", ")). Remove them and restore from an authenticated backup."
+            ])
+        }
+        BlazeLogger.info("recoverAllTransactions: no legacy NDJSON journals present")
     }
     
     /// Flush all mounted PageStores to disk.

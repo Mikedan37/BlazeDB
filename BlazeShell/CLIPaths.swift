@@ -21,9 +21,7 @@ public enum CLIPaths {
         }
         let home = FileManager.default.homeDirectoryForCurrentUser
         let dir = home.appendingPathComponent(".blazedb", isDirectory: true)
-        if !FileManager.default.fileExists(atPath: dir.path) {
-            try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
-        }
+        try SecureFileAttributes.ensureOwnerOnlyDirectory(at: dir)
         return dir.appendingPathComponent("keyring.json.enc", isDirectory: false)
     }
 }

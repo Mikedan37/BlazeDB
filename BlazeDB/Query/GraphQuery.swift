@@ -115,9 +115,12 @@ public final class GraphQuery<T> {
         self.userContext = userContext
         self.queryBuilder = QueryBuilder(collection: collection)
         
-        // Inject RLS filter if user context provided and RLS is enabled
+        // Prefer explicit userContext; otherwise honor the client's active RLS context (#334).
         if let userContext = userContext, let client = client {
-            injectRLSFilter(userContext: userContext, client: client)
+            injectRLSFilter(securityContext: userContext.toSecurityContext(), client: client, adminBypass: userContext.isAdmin)
+        } else if let client = client, let securityContext = client.rls.getContext() {
+            let adminBypass = securityContext.hasRole("admin") || securityContext.hasRole("superuser")
+            injectRLSFilter(securityContext: securityContext, client: client, adminBypass: adminBypass)
         }
     }
     
@@ -125,9 +128,9 @@ public final class GraphQuery<T> {
     
     /// Inject RLS filter into query builder (non-invasive, additive only)
     /// Optimized for performance: pre-computes checks, reduces per-record overhead
-    private func injectRLSFilter(userContext: BlazeUserContext, client: BlazeDBClient) {
+    private func injectRLSFilter(securityContext: SecurityContext, client: BlazeDBClient, adminBypass: Bool) {
         // OPTIMIZATION 1: Admin bypass (check once, not per record)
-        guard !userContext.isAdmin else {
+        guard !adminBypass else {
             BlazeLogger.debug("🔐 GraphQuery: Admin user, bypassing RLS")
             return
         }
@@ -139,7 +142,6 @@ public final class GraphQuery<T> {
         }
         
         // OPTIMIZATION 3: Pre-compute SecurityContext (once, not per record)
-        let securityContext = userContext.toSecurityContext()
         let policyEngine = client.rls.policyEngine
         
         // OPTIMIZATION 4: Pre-filter policies and cache enabled state (reduces lock contention)
@@ -155,16 +157,8 @@ public final class GraphQuery<T> {
             return
         }
         
-        // OPTIMIZATION 5: Pre-compute team membership set (O(1) lookup instead of O(n))
-        // Note: teamIDSet and userID available through userContext in the filter closure
-        _ = Set(userContext.teamIDs)  // Pre-computed for potential future optimization
-        
-        // OPTIMIZATION 6: Create optimized filter closure
-        // - Pre-computes checks that don't depend on record
-        // - Uses Set for O(1) team membership checks
-        // - Reduces dictionary lookups where possible
+        // OPTIMIZATION 5: Create optimized filter closure
         let rlsFilter: (BlazeDataRecord) -> Bool = { record in
-            // Fast path: Check policies with pre-filtered list
             return policyEngine.isAllowed(
                 operation: PolicyOperation.select,
                 context: securityContext,
@@ -176,7 +170,7 @@ public final class GraphQuery<T> {
         // This ensures: effectiveFilter = RLSFilter && userProvidedFilter
         queryBuilder.where(rlsFilter)
         
-        BlazeLogger.debug("🔐 GraphQuery: Optimized RLS filter injected for user \(userContext.userID) (role: \(userContext.role), \(applicablePolicies.count) policies)")
+        BlazeLogger.debug("🔐 GraphQuery: Optimized RLS filter injected for user \(securityContext.userID) (\(applicablePolicies.count) policies)")
     }
     
     // MARK: - X-Axis Configuration

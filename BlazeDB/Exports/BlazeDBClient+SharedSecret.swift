@@ -232,7 +232,8 @@ extension BlazeDBClient {
         
         BlazeLogger.info("✅ Server started with shared secret! Database '\(self.name)' is discoverable on port \(port)")
         BlazeLogger.info("   Device: \(deviceName)")
-        BlazeLogger.debug("   Shared secret: \(sharedSecret.prefix(4))...")
+        // Never log secret material (including prefixes). #358
+        BlazeLogger.debug("   Shared-secret auth enabled (length=\(sharedSecret.utf8.count) bytes)")
         
         return server
     }

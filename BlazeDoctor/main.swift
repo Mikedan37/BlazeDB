@@ -294,13 +294,18 @@ if args.contains("--help") || args.contains("-h") {
     BlazeDB Doctor - Health Check Tool
     
     Usage:
-      blazedb doctor <db-path> <password> [--json]
+      blazedb doctor <db-path> [<password>] [--json]
+    
+    Password (prefer not putting secrets on argv — they appear in process listings):
+      1. Interactive / env: export BLAZEDB_PASSWORD then omit the password argument
+      2. Legacy: pass <password> as the second argument (deprecated)
     
     Options:
       --json    Output results as JSON (for scripting)
       -h, --help    Show this help message
     
     Examples:
+      BLAZEDB_PASSWORD='...' blazedb doctor /path/to/db.blazedb
       blazedb doctor /path/to/db.blazedb mypassword
       blazedb doctor /path/to/db.blazedb mypassword --json
     
@@ -312,15 +317,30 @@ if args.contains("--help") || args.contains("-h") {
 }
 
 let jsonOutput = args.contains("--json")
+let positional = args.dropFirst().filter { $0 != "--json" }
 
-guard args.count >= 3 else {
+guard positional.count >= 1 else {
     print("Error: Missing required arguments")
-    print("Usage: blazedb doctor <db-path> <password> [--json]")
-    print("Use --help for more information")
+    print("Usage: blazedb doctor <db-path> [<password>] [--json]")
+    print("Prefer BLAZEDB_PASSWORD over argv. Use --help for more information")
     exit(1)
 }
 
-let dbPath = args[1]
-let password = args[2]
+let dbPath = positional[0]
+let envPassword = ProcessInfo.processInfo.environment["BLAZEDB_PASSWORD"]
+let password: String
+if let envPassword, !envPassword.isEmpty {
+    if positional.count >= 2 {
+        fputs("warning: password argument ignored; using BLAZEDB_PASSWORD (#310/#313)\n", stderr)
+    }
+    password = envPassword
+} else if positional.count >= 2 {
+    fputs("warning: passing the database password on argv exposes it via process listings; prefer BLAZEDB_PASSWORD (#310/#313)\n", stderr)
+    password = positional[1]
+} else {
+    print("Error: Missing password (set BLAZEDB_PASSWORD or pass <password>)")
+    print("Usage: blazedb doctor <db-path> [<password>] [--json]")
+    exit(1)
+}
 
 runDoctor(dbPath: dbPath, password: password, jsonOutput: jsonOutput)

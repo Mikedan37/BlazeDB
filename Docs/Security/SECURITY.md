@@ -2,6 +2,8 @@
 
 **Encryption model, threat model, and cryptographic pipelines.**
 
+Canonical key-management vocabulary: [KEY_MANAGEMENT_AND_COMPATIBILITY.md](../Status/KEY_MANAGEMENT_AND_COMPATIBILITY.md).
+
 ---
 
 ## Design Intent
@@ -17,30 +19,24 @@ BlazeDB encrypts all data at rest by default using AES-256-GCM with per-page gra
 All data is encrypted at rest using AES-256-GCM with unique nonces per page:
 
 - **Algorithm**: AES-256-GCM
-- **Key Derivation**: PBKDF2 (10,000 iterations) by default; Argon2id available as alternative
-- **Key Size**: 256 bits
-- **Authentication**: GCM auth tag (prevents tampering)
-- **Nonce**: Unique per page (prevents replay attacks)
+- **Password KDF (production open path)**: PBKDF2-HMAC-SHA256 with **600,000** iterations (release default; `KeyManager.productionPBKDF2Iterations`). Under XCTest the default is 100,000 unless overridden. Override via `BLAZEDB_PBKDF2_ITERATIONS`.
+- **Salt**: 16-byte per-database `.salt` sidecar (`SecureRandom`); legacy DBs without a sidecar may use a fixed compatibility salt.
+- **Derived key size**: 32 bytes (AES-256 material)
+- **Authentication**: GCM auth tag (detects ciphertext tampering)
+- **Nonce**: Unique per page
+
+There is **no** Argon2id on the production `BlazeDBClient` / `PageStore` open path. A proprietary memory-hard helper (`Argon2KDF`) exists for CLI master-keyring envelopes and layout-signature compatibility fallbacks; it is **not** RFC Argon2id and must not be documented as such.
 
 ### Key Management
 
 ```swift
-// Key derivation from user password (PBKDF2 default)
-let key = try KeyManager.getKey(
- from:.password(password),
- createIfMissing: false
-)
+// Production open path: password + per-DB salt → PBKDF2-HMAC-SHA256 → AES key
+let salt = /* 16-byte .salt sidecar */
+let key = try KeyManager.getKey(from: password, salt: salt)
 
-// Alternative: Argon2id for enhanced security
-let argon2Key = try KeyManager.getKeyArgon2(
- from: password,
- salt: databaseSalt,
- parameters:.default
-)
-
-// Secure Enclave integration (iOS/macOS)
+// Secure Enclave integration (iOS/macOS) — platform key source, not the password KDF
 let secureKey = try KeyManager.getKey(
- from:.secureEnclave(label: "com.app.blazedb"),
+ from: .secureEnclave(label: "com.app.blazedb"),
  createIfMissing: true
 )
 ```
@@ -49,7 +45,7 @@ let secureKey = try KeyManager.getKey(
 
 ### Encryption Pipeline
 
-Records are encoded to BlazeBinary, assembled into 4KB pages, encrypted with AES-256-GCM using a unique nonce per page, then written to disk. Each page is encrypted independently, enabling efficient garbage collection.
+Records are encoded to BlazeBinary, assembled into 4KB pages, encrypted with AES-256-GCM using the database symmetric key and a unique nonce per page, then written to disk. Each page is encrypted independently, enabling efficient garbage collection.
 
 ---
 
@@ -64,17 +60,18 @@ Records are encoded to BlazeBinary, assembled into 4KB pages, encrypted with AES
 - Mitigation: TLS/SSL, ECDH key exchange, end-to-end encryption
 
 3. **Malicious Application**: Compromised app process
-- Mitigation: Row-level security, policy evaluation
+- Mitigation: Row-level security, policy evaluation (client-enforced)
 
 4. **Storage Corruption**: Accidental or malicious data corruption
-- Mitigation: CRC32 checksums, corruption detection, automatic recovery
+- Mitigation: GCM authentication tags, recovery tooling, binary WAL where enabled
 
 ### Attack Surfaces
 
-- **Local Storage**: Encrypted pages prevent plaintext access
+- **Local Storage**: Encrypted pages prevent plaintext access without the key
 - **Network Sync**: TLS + E2E encryption prevent interception
-- **Query Interface**: RLS policies filter unauthorized data
-- **Key Storage**: Secure Enclave prevents key extraction
+- **Query Interface**: RLS policies filter unauthorized data when enabled and configured
+- **Key Storage**: Secure Enclave / keyring files (owner-only where platform supports it)
+- **Legacy NDJSON `txn_log`**: Unauthenticated plaintext journals are **not** auto-applied into keyed stores (see issue #365)
 
 ---
 
@@ -82,7 +79,7 @@ Records are encoded to BlazeBinary, assembled into 4KB pages, encrypted with AES
 
 ### Data at Rest: Local Encryption Pipeline
 
-User passwords are processed through PBKDF2 (10,000 iterations) by default to derive a master key. Argon2id is available as an alternative for enhanced security. HKDF derives per-page keys from the master key. Each 4KB page is encrypted with AES-256-GCM using its derived key and a unique nonce.
+User passwords are processed through **PBKDF2-HMAC-SHA256 (600,000 iterations in release)** with a per-database salt to derive a 256-bit AES key. That key seals each 4KB page with **AES-256-GCM** and a unique nonce.
 
 ### Data in Transit: Sync & Protocol Encryption
 
