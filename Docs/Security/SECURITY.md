@@ -63,7 +63,13 @@ Records are encoded to BlazeBinary, assembled into 4KB pages, encrypted with AES
 - Mitigation: Row-level security, policy evaluation (client-enforced)
 
 4. **Storage Corruption**: Accidental or malicious data corruption
-- Mitigation: GCM authentication tags, recovery tooling, binary WAL where enabled
+- Mitigation: GCM authentication tags, binary WAL where enabled, recovery tooling
+
+### Crash recovery and journals
+
+Production `BlazeDBClient` / `PageStore` crash recovery uses the **binary write-ahead log** (`.wal`).
+
+Legacy adjacent **NDJSON `txn_log*.json` sidecars are unauthenticated plaintext**. `BlazeDBManager` **does not replay them** on mount (#365): sidecars are removed and mount proceeds using the encrypted store only. Operators with a legitimate legacy NDJSON journal must restore from an authenticated backup; there is no silent auto-replay into keyed stores.
 
 ### Attack Surfaces
 
