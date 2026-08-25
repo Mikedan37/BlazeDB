@@ -25,6 +25,38 @@ final class RLSEnforcementGapTests: XCTestCase {
         super.tearDown()
     }
 
+    func testGraphBuilderHonorsClientRLSContext() throws {
+        let url = tempDir.appendingPathComponent("graph-builder-rls.blazedb")
+        let db = try BlazeDBClient(name: "graph-builder-rls", fileURL: url, password: password)
+        defer { try? db.close() }
+
+        let teamA = UUID()
+        let teamB = UUID()
+        let userA = UUID()
+
+        db.enableRLS()
+        db.rls.addPolicy(SecurityPolicy(
+            name: "team_select",
+            operation: .select,
+            type: .restrictive
+        ) { context, record in
+            guard let team = record.storage["team_id"]?.uuidValue else { return false }
+            return context.teamIDs.contains(team)
+        })
+
+        db.setRLSContext(userID: userA, teamIDs: [teamA, teamB], roles: ["admin"])
+        _ = try db.insert(BlazeDataRecord(["team_id": .uuid(teamA), "n": .int(1)]))
+        _ = try db.insert(BlazeDataRecord(["team_id": .uuid(teamA), "n": .int(2)]))
+        _ = try db.insert(BlazeDataRecord(["team_id": .uuid(teamB), "n": .int(3)]))
+
+        db.setRLSContext(userID: userA, teamIDs: [teamA], roles: ["engineer"])
+        let points = try db.graph {
+            $0.x("team_id").y(.count)
+        }.toPoints()
+        XCTAssertEqual(points.count, 1, "graph { } builder must apply client RLS context (#334)")
+        XCTAssertEqual(points.first?.y as? Int, 2)
+    }
+
     func testPublicGraphHonorsClientRLSContext() throws {
         let url = tempDir.appendingPathComponent("graph-rls.blazedb")
         let db = try BlazeDBClient(name: "graph-rls", fileURL: url, password: password)
@@ -93,6 +125,48 @@ final class RLSEnforcementGapTests: XCTestCase {
         var stolen = try XCTUnwrap(try db.fetch(id: id))
         stolen.storage["userId"] = .uuid(other)
         XCTAssertThrowsError(try db.update(id: id, with: stolen), "WITH CHECK must reject ownership transfer (#335)")
+        let still = try XCTUnwrap(try db.fetch(id: id))
+        XCTAssertEqual(still.storage["userId"]?.uuidValue, owner)
+    }
+
+    func testUpdateManyRejectsPostMutationRLSViolation() throws {
+        let url = tempDir.appendingPathComponent("with-check-many.blazedb")
+        let db = try BlazeDBClient(name: "with-check-many", fileURL: url, password: password)
+        defer { try? db.close() }
+
+        let owner = UUID()
+        let other = UUID()
+        db.enableRLS()
+        db.setRLSContext(userID: owner, roles: ["admin"])
+        db.rls.addPolicy(SecurityPolicy(
+            name: "owner_update",
+            operation: .update,
+            type: .restrictive
+        ) { context, record in
+            record.storage["userId"]?.uuidValue == context.userID
+        })
+        db.rls.addPolicy(SecurityPolicy(
+            name: "owner_insert",
+            operation: .insert,
+            type: .restrictive
+        ) { context, record in
+            record.storage["userId"]?.uuidValue == context.userID || context.hasRole("admin")
+        })
+        db.rls.addPolicy(SecurityPolicy(
+            name: "owner_select",
+            operation: .select,
+            type: .restrictive
+        ) { context, record in
+            record.storage["userId"]?.uuidValue == context.userID || context.hasRole("admin")
+        })
+
+        let id = try db.insert(BlazeDataRecord(["userId": .uuid(owner), "note": .string("mine")]))
+        db.setRLSContext(userID: owner, roles: ["member"])
+
+        XCTAssertThrowsError(
+            try db.updateMany(where: { _ in true }, set: ["userId": .uuid(other)]),
+            "updateMany WITH CHECK must reject ownership transfer (#335)"
+        )
         let still = try XCTUnwrap(try db.fetch(id: id))
         XCTAssertEqual(still.storage["userId"]?.uuidValue, owner)
     }

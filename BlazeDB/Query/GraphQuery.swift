@@ -803,7 +803,7 @@ extension BlazeDBClient {
     /// }
     /// ```
     public func graph(@GraphQueryBuilder _ content: (GraphQuery<BlazeDataRecord>) -> GraphQuery<BlazeDataRecord>) -> GraphQuery<BlazeDataRecord> {
-        let base = GraphQuery<BlazeDataRecord>(collection: collection)
+        let base = GraphQuery<BlazeDataRecord>(collection: collection, client: self)
         return content(base)
     }
 }
