@@ -151,7 +151,7 @@ extension DynamicCollection {
     /// - Returns: LazyFieldRecord if found
     public func fetchLazyFieldRecord(id: UUID, fieldSizeThreshold: Int = LazyFieldRecord.defaultFieldSizeThreshold) throws -> LazyFieldRecord? {
         // Check cache first
-        if let cached = RecordCache.shared.get(id: id) {
+        if let cached = recordCache.get(id: id) {
             return LazyFieldRecord(record: cached, fieldSizeThreshold: fieldSizeThreshold)
         }
         
@@ -174,7 +174,7 @@ extension DynamicCollection {
         // Cache the record (cache full decoded version for small records)
         if lazyRecord.lazyFieldOffsets.isEmpty {
             let fullRecord = try lazyRecord.toRecord()
-            RecordCache.shared.set(id: id, record: fullRecord)
+            recordCache.set(id: id, record: fullRecord)
         }
         
         return lazyRecord
