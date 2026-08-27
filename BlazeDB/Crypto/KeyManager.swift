@@ -21,6 +21,12 @@ enum KeyManagerError: Error {
 }
 
 public final class KeyManager {
+    /// Release/production default for password → AES-key derivation.
+    /// Documented publicly; do not change without a migration story.
+    public static let productionPBKDF2Iterations = 600_000
+    /// Faster default under XCTest when no override/env is set.
+    public static let xctestPBKDF2Iterations = 100_000
+
     internal static let legacyPasswordSalt = Data("AshPileSalt".utf8)
     nonisolated(unsafe) private static var passwordKeyCache = [String: SymmetricKey]()
     private static let passwordKeyCacheLock = NSLock()
@@ -40,9 +46,9 @@ public final class KeyManager {
             return parsed
         }
         if ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil {
-            return 100_000
+            return xctestPBKDF2Iterations
         }
-        return 600_000
+        return productionPBKDF2Iterations
     }
 
     /// Test-only hook for bounding PBKDF2 cost in non-crypto-focused suites.
@@ -87,7 +93,7 @@ public final class KeyManager {
         pbkdf2DerivationCount += 1
         pbkdf2DerivationCountLock.unlock()
 
-        // Use CryptoKit's native PBKDF2 (SHA256)
+        // PBKDF2-HMAC-SHA256 (hand-rolled over CryptoKit HMAC; not a platform PBKDF2 API).
         let passwordData = Data(password.utf8)
         let derivedKey = try deriveKeyPBKDF2(
             password: passwordData,
@@ -101,10 +107,8 @@ public final class KeyManager {
         return symmetricKey
     }
     
-    /// Native PBKDF2 implementation using CryptoKit
+    /// PBKDF2-HMAC-SHA256 over CryptoKit `HMAC<SHA256>`.
     internal static func deriveKeyPBKDF2(password: Data, salt: Data, iterations: Int, keyLength: Int) throws -> Data {
-        // CryptoKit's HKDF can be used, but for true PBKDF2 we need to implement it
-        // For now, use a simple but secure key derivation
         var derivedKey = Data()
         
         for blockNum in 1...((keyLength + 31) / 32) {

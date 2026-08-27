@@ -145,7 +145,9 @@ public enum CLIMasterKeyringStore {
 
             let isTest = ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
             let kdf = CLIMasterKDFRecord(
-                algorithm: "argon2id",
+                // Honest label for the proprietary memory-hard helper (#317).
+                // Readers still accept legacy "argon2id" envelopes for compatibility.
+                algorithm: "blaze-memory-kdf",
                 saltBase64: Data((0..<16).map { _ in UInt8.random(in: 0...255) }).base64EncodedString(),
                 memoryCost: isTest ? 16_384 : 65_536,
                 timeCost: isTest ? 2 : 3,
@@ -406,7 +408,8 @@ public enum CLIMasterKeyringStore {
         }
 
         switch kdf.algorithm.lowercased() {
-        case "argon2id":
+        case "blaze-memory-kdf", "argon2id":
+            // "argon2id" is a legacy mislabel for the proprietary Argon2KDF helper (#317).
             let params: Argon2KDF.Parameters
             if (kdf.memoryCost ?? 65_536) >= 131_072 || (kdf.timeCost ?? 3) >= 5 {
                 params = .highSecurity
@@ -417,7 +420,7 @@ public enum CLIMasterKeyringStore {
             }
             return try Argon2KDF.deriveKey(from: passphrase, salt: salt, parameters: params)
         case "pbkdf2":
-            let iters = kdf.pbkdf2Iterations ?? 600_000
+            let iters = kdf.pbkdf2Iterations ?? KeyManager.productionPBKDF2Iterations
             let derived = derivePBKDF2SHA256(password: Data(passphrase.utf8), salt: salt, iterations: iters, keyLength: kdf.keyLength)
             return SymmetricKey(data: derived)
         default:

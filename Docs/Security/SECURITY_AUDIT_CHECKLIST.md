@@ -14,7 +14,8 @@
 
 ### **Security Features**
 - [x] AES-256-GCM encryption implemented
-- [x] Argon2id KDF implemented
+- [ ] Argon2id KDF implemented (tracked separately; production open path is PBKDF2)
+- [x] PBKDF2-HMAC-SHA256 password KDF (600k release iterations)
 - [x] TLS 1.2+ enforced
 - [x] HMAC signatures for metadata
 - [x] Forward secrecy support
