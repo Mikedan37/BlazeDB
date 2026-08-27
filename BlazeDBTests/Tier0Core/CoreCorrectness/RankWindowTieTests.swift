@@ -1,6 +1,6 @@
 //
 //  RankWindowTieTests.swift
-//  BlazeDBTests — #376: SQL RANK() must skip after ties
+//  BlazeDBTests - #376: SQL RANK() must skip after ties
 //
 //  Regression: values [10, 20, 20, 30] must rank as [1, 2, 2, 4].
 //  Window functions are Apple-only (`#if !BLAZEDB_LINUX_CORE`).
