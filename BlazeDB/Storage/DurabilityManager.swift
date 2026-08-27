@@ -40,9 +40,10 @@ public final class DurabilityManager: @unchecked Sendable {
     public init(walURL: URL) throws {
         self.walURL = walURL
 
-        // Create file if it doesn't exist
+        // Create file if it doesn't exist (owner-only on POSIX, #357).
+        // Do not chmod existing WALs — preserve prior deployment modes.
         if !FileManager.default.fileExists(atPath: walURL.path) {
-            FileManager.default.createFile(atPath: walURL.path, contents: nil)
+            _ = SecureFileAttributes.createOwnerOnlyFile(at: walURL)
         }
 
         self.fileHandle = try FileHandle(forUpdating: walURL)

@@ -325,7 +325,7 @@ public final class BlazeDBClient: @unchecked Sendable {
         }
 
         let salt = try SecureRandom.bytesStrict(count: 16)
-        try salt.write(to: saltURL, options: .atomic)
+        try SecureFileAttributes.writeOwnerOnly(salt, to: saltURL)
         return salt
     }
 

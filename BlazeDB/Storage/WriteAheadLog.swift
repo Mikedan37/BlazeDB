@@ -59,8 +59,9 @@ internal final class WriteAheadLog: @unchecked Sendable {
         IOTraceSink.record(operation: "wal_open_begin", path: logURL.path)
 
         // Open with O_CREAT | O_RDWR so we can both replay (read) and append (write).
+        // Owner-only mode on create (#357); existing files keep prior mode.
         let flags: Int32 = O_RDWR | O_CREAT
-        let mode: mode_t = 0o644
+        let mode: mode_t = 0o600
         let opened = logURL.path.withCString { path in
             #if canImport(Darwin)
             Darwin.open(path, flags, mode)
