@@ -189,7 +189,10 @@ private final class FilteredChangeBridge: @unchecked Sendable {
                       predicate(record) {
                 relevantChanges.append(change)
             } else if case .delete = change.type {
-                relevantChanges.append(change)
+                // Fail closed (#337): filtered observers do not receive delete events.
+                // The deleted payload is gone, so predicate/RLS cannot be evaluated;
+                // forwarding would leak identifiers for rows the observer may not see.
+                continue
             }
         }
 

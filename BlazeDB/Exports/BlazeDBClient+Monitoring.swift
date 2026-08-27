@@ -450,8 +450,14 @@ extension BlazeDBClient {
         return total
     }
     
-    /// Get record count (fast, no actual reads!)
+    /// Get record count.
+    ///
+    /// When RLS is enabled with policies, returns the RLS-visible count (same as ``count()``)
+    /// so callers cannot learn the true cardinality via this side channel (#336).
     public func getRecordCount() -> Int {
+        if shouldEnforceRLS {
+            return (try? count()) ?? 0
+        }
         return collection.queue.sync { collection.indexMap.count }
     }
     

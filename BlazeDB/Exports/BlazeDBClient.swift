@@ -372,7 +372,7 @@ public final class BlazeDBClient: @unchecked Sendable {
     internal let encryptionKey: SymmetricKey
 
     @inline(__always)
-    private var shouldEnforceRLS: Bool {
+    internal var shouldEnforceRLS: Bool {
         rls.isEnabled() && rls.hasPolicies()
     }
 
@@ -1032,6 +1032,8 @@ public final class BlazeDBClient: @unchecked Sendable {
                     updated.storage[key] = value
                 }
                 updated.storage["updatedAt"] = .date(Date())
+                // WITH CHECK: resulting row must also pass UPDATE policy (#335)
+                try enforceRLS(.update, record: updated)
                 try collection.update(id: id, with: updated)
                 updateCount += 1
             }
@@ -1366,6 +1368,9 @@ public final class BlazeDBClient: @unchecked Sendable {
         // Execute enhanced triggers
         try executeEnhancedTriggers(for: .beforeUpdate, record: existingRecord, modifiedRecord: &modifiedRecord, collection: collection, collectionName: name)
         let recordToUpdate = modifiedRecord ?? data
+        
+        // WITH CHECK: resulting row must also pass UPDATE policy (#335)
+        try enforceRLS(.update, record: recordToUpdate)
         
         // Validate foreign keys
         try validateForeignKeys(for: recordToUpdate, operation: "update")
