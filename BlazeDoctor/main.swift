@@ -126,6 +126,8 @@ func runDoctor(dbPath: String, password: String, jsonOutput: Bool) {
         }
         
         // Check 4: Read/Write cycle
+        // Probe cleanup must be durable before process exit: insert can hit disk while an
+        // in-memory-only delete would leave a residual row for dump/restore (#310/#313 CI).
         do {
             let testRecord = BlazeDataRecord([
                 "_doctor_test": .bool(true),
@@ -138,8 +140,13 @@ func runDoctor(dbPath: String, password: String, jsonOutput: Bool) {
             // Read back
             if let readRecord = try client.fetch(id: insertedID),
                readRecord.storage["_doctor_test"] == .bool(true) {
-                // Clean up test record
-                try? client.delete(id: insertedID)
+                try client.delete(id: insertedID)
+                try client.persist()
+                if try client.fetch(id: insertedID) != nil {
+                    throw BlazeDBError.invalidData(
+                        reason: "doctor probe delete did not remove _doctor_test record \(insertedID)"
+                    )
+                }
                 
                 checks.append(DoctorReport.CheckResult(
                     name: "Read/Write Cycle",
@@ -274,8 +281,16 @@ func runDoctor(dbPath: String, password: String, jsonOutput: Bool) {
                 print("❌ Database health check failed")
             }
         }
+
+        // exit(_:) skips deinit; flush/close so probe deletes are durable for later dump/restore.
+        do {
+            try client.close()
+        } catch {
+            errors.append("Failed to close database cleanly: \(error.localizedDescription)")
+            healthy = false
+        }
         
-        exit(report.healthy ? 0 : 1)
+        exit(healthy ? 0 : 1)
     }
 }
 
