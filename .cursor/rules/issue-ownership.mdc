@@ -1,0 +1,25 @@
+---
+description: Never close, claim, or work issues owned by other contributors
+alwaysApply: true
+---
+
+# Issue ownership
+
+Contributors claim GitHub issues in comments ("taking this", "left with you", assignee). Cursor agents must not override that.
+
+## Hard rules
+
+- Before closing, reopening, editing, or implementing an issue: read recent comments and assignees.
+- If someone else claimed it, is assigned, or was handed the remaining work — do not close it, do not implement it, do not reassign it.
+- Triage (relabel, milestone, demote priority) is allowed only when it does not close the issue or steal ownership.
+- Partial fixes do not authorize closing. Leave the issue open for the remaining scope, or open a follow-up and link it — never close over another contributor's open work.
+- If triage mistakenly closed an owned issue: reopen immediately, apologize on-thread, and stop.
+
+## Examples
+
+```text
+❌ Close #307 during triage because #449 fixed half of it, while Nitjsefnie still owns LazyField / RecordCache.shared
+✅ Leave #307 open; comment that the remaining P1 stays with the claimed owner; track unrelated leftovers elsewhere
+```
+
+When unsure whether an issue is owned: ask the user. Do not close.
