@@ -34,6 +34,7 @@ private final class LockedDataBuffer: @unchecked Sendable {
 
 final class CLISmokeTests: XCTestCase {
     var tempDir: URL!
+    private let testPassword = "TestPass123!"
     
     override func setUpWithError() throws {
         try super.setUpWithError()
@@ -56,10 +57,16 @@ final class CLISmokeTests: XCTestCase {
     // MARK: - Helper Methods
     
     private func resolveExecutablePath(_ executable: String) -> String? {
-        let projectRoot = URL(fileURLWithPath: #file)
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
+        var dir = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
+        var projectRoot: URL?
+        while dir.path != "/" {
+            if FileManager.default.fileExists(atPath: dir.appendingPathComponent("Package.swift").path) {
+                projectRoot = dir
+                break
+            }
+            dir.deleteLastPathComponent()
+        }
+        guard let projectRoot else { return nil }
         
         let buildRoot = projectRoot.appendingPathComponent(".build")
         let candidateDirs = [
@@ -92,7 +99,24 @@ final class CLISmokeTests: XCTestCase {
         return nil
     }
     
-    private func runCommand(_ executable: String, arguments: [String] = []) -> (exitCode: Int32, output: String, error: String) {
+    private func cliEnvironment(_ overrides: [String: String] = [:]) -> [String: String] {
+        var env = ProcessInfo.processInfo.environment
+        env["BLAZEDB_PASSWORD"] = testPassword
+        for (key, value) in overrides {
+            if value.isEmpty {
+                env.removeValue(forKey: key)
+            } else {
+                env[key] = value
+            }
+        }
+        return env
+    }
+
+    private func runCommand(
+        _ executable: String,
+        arguments: [String] = [],
+        environment: [String: String]? = nil
+    ) -> (exitCode: Int32, output: String, error: String) {
         let process = Process()
         
         guard let finalPath = resolveExecutablePath(executable) else {
@@ -101,6 +125,7 @@ final class CLISmokeTests: XCTestCase {
         
         process.executableURL = URL(fileURLWithPath: finalPath)
         process.arguments = arguments
+        process.environment = environment ?? cliEnvironment()
         return runProcess(process)
     }
     
@@ -163,7 +188,7 @@ final class CLISmokeTests: XCTestCase {
     
     private func createTestDatabase() throws -> URL {
         let dbPath = tempDir.appendingPathComponent("test.blazedb")
-        let db = try BlazeDBClient(name: "TestDB", fileURL: dbPath, password: "TestPass123!")
+        let db = try BlazeDBClient(name: "TestDB", fileURL: dbPath, password: testPassword)
         
         // Insert test data
         for i in 1...10 {
@@ -247,7 +272,7 @@ final class CLISmokeTests: XCTestCase {
         XCTAssertTrue(FileManager.default.fileExists(atPath: restoredPath.path), "Restored database should exist")
         
         // Verify restored database
-        let restoredDB = try BlazeDBClient(name: "Restored", fileURL: restoredPath, password: "TestPass123!")
+        let restoredDB = try BlazeDBClient(name: "Restored", fileURL: restoredPath, password: testPassword)
         let records = try restoredDB.fetchAll()
         XCTAssertEqual(records.count, 10, "Restored database should have 10 records")
         try restoredDB.close()
@@ -275,6 +300,40 @@ final class CLISmokeTests: XCTestCase {
         XCTAssertNotEqual(verifyExitCode, 0, "BlazeDump verify should fail for corrupted dump")
     }
     
+    // MARK: - CLI password source (#310/#313)
+
+    func testBlazeInfo_PrefersBLAZEDBPasswordOverArgv() throws {
+        let dbPath = try createTestDatabase()
+        let wrongArgvPassword = "wrong-argv-password-should-be-ignored"
+
+        let (exitCode, output, error) = runCommand(
+            "BlazeInfo",
+            arguments: [dbPath.path, wrongArgvPassword],
+            environment: cliEnvironment()
+        )
+
+        XCTAssertEqual(exitCode, 0, "BLAZEDB_PASSWORD must unlock the DB. Error: \(error)")
+        XCTAssertTrue(output.contains("Records:"), "Expected successful info output. Output: \(output)")
+        XCTAssertTrue(error.contains("password argument ignored"), "Expected env-over-argv warning. stderr: \(error)")
+        XCTAssertFalse(error.contains(wrongArgvPassword), "stderr must not echo argv password")
+    }
+
+    func testBlazeInfo_WarnsWhenPasswordPassedOnArgv() throws {
+        let dbPath = try createTestDatabase()
+        var env = cliEnvironment()
+        env.removeValue(forKey: "BLAZEDB_PASSWORD")
+
+        let (exitCode, _, error) = runCommand(
+            "BlazeInfo",
+            arguments: [dbPath.path, testPassword],
+            environment: env
+        )
+
+        XCTAssertEqual(exitCode, 0, "argv password should still work for compatibility. stderr: \(error)")
+        XCTAssertTrue(error.contains("BLAZEDB_PASSWORD"), "Expected argv deprecation warning. stderr: \(error)")
+        XCTAssertFalse(error.contains(testPassword), "stderr must not echo the password")
+    }
+
     // MARK: - Integration Test
     
     func testCLI_EndToEnd() throws {
@@ -303,7 +362,7 @@ final class CLISmokeTests: XCTestCase {
         XCTAssertEqual(restoreExitCode, 0, "Restore should succeed")
         
         // Verify restored database works
-        let restoredDB = try BlazeDBClient(name: "E2E", fileURL: restoredPath, password: "TestPass123!")
+        let restoredDB = try BlazeDBClient(name: "E2E", fileURL: restoredPath, password: testPassword)
         let records = try restoredDB.fetchAll()
         XCTAssertEqual(records.count, 10, "Restored database should have correct record count")
         try restoredDB.close()

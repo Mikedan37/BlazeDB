@@ -82,20 +82,23 @@ if args.contains("--help") || args.contains("-h") {
     BlazeDB Dump Tool
     
     Commands:
-      dump <db-path> <dump-path> <password>
+      dump <db-path> <dump-path> [<password>]
         Export database to dump file
         
-      restore <dump-path> <db-path> <password> [--allow-schema-mismatch]
+      restore <dump-path> <db-path> [<password>] [--allow-schema-mismatch]
         Restore database from dump file
         
       verify <dump-path>
         Verify dump file integrity
         
+    Password: prefer BLAZEDB_PASSWORD over argv (argv is visible in process listings).
+    
     Options:
       --allow-schema-mismatch    Allow restore even if schema versions don't match
       -h, --help                 Show this help message
     
     Examples:
+      BLAZEDB_PASSWORD='...' blazedb dump /path/to/db.blazedb /path/to/backup.blazedump
       blazedb dump /path/to/db.blazedb /path/to/backup.blazedump mypassword
       blazedb restore /path/to/backup.blazedump /path/to/newdb.blazedb mypassword
       blazedb verify /path/to/backup.blazedump
@@ -105,6 +108,21 @@ if args.contains("--help") || args.contains("-h") {
       1    Failure
     """)
     exit(0)
+}
+
+func resolveCLIPassword(positionalPassword: String?) -> String {
+    if let env = ProcessInfo.processInfo.environment["BLAZEDB_PASSWORD"], !env.isEmpty {
+        if positionalPassword != nil {
+            CLIWarning.write("warning: password argument ignored; using BLAZEDB_PASSWORD (#310/#313)")
+        }
+        return env
+    }
+    if let positionalPassword, !positionalPassword.isEmpty {
+        CLIWarning.write("warning: passing the database password on argv exposes it via process listings; prefer BLAZEDB_PASSWORD (#310/#313)")
+        return positionalPassword
+    }
+    print("Error: Missing password (set BLAZEDB_PASSWORD or pass <password>)")
+    exit(1)
 }
 
 guard args.count >= 2 else {
@@ -117,21 +135,24 @@ let command = args[1]
 
 switch command {
 case "dump":
-    guard args.count >= 5 else {
+    guard args.count >= 4 else {
         print("Error: Missing arguments for dump command")
-        print("Usage: blazedb dump <db-path> <dump-path> <password>")
+        print("Usage: blazedb dump <db-path> <dump-path> [<password>]")
         exit(1)
     }
-    dumpDatabase(dbPath: args[2], dumpPath: args[3], password: args[4])
+    let password = resolveCLIPassword(positionalPassword: args.count >= 5 ? args[4] : nil)
+    dumpDatabase(dbPath: args[2], dumpPath: args[3], password: password)
     
 case "restore":
-    guard args.count >= 5 else {
+    let filtered = args.filter { $0 != "--allow-schema-mismatch" }
+    guard filtered.count >= 4 else {
         print("Error: Missing arguments for restore command")
-        print("Usage: blazedb restore <dump-path> <db-path> <password> [--allow-schema-mismatch]")
+        print("Usage: blazedb restore <dump-path> <db-path> [<password>] [--allow-schema-mismatch]")
         exit(1)
     }
     let allowMismatch = args.contains("--allow-schema-mismatch")
-    restoreDatabase(dumpPath: args[2], dbPath: args[3], password: args[4], allowSchemaMismatch: allowMismatch)
+    let password = resolveCLIPassword(positionalPassword: filtered.count >= 5 ? filtered[4] : nil)
+    restoreDatabase(dumpPath: filtered[2], dbPath: filtered[3], password: password, allowSchemaMismatch: allowMismatch)
     
 case "verify":
     guard args.count >= 3 else {

@@ -126,6 +126,8 @@ func runDoctor(dbPath: String, password: String, jsonOutput: Bool) {
         }
         
         // Check 4: Read/Write cycle
+        // Probe cleanup must be durable before process exit: insert can hit disk while an
+        // in-memory-only delete would leave a residual row for dump/restore (#310/#313 CI).
         do {
             let testRecord = BlazeDataRecord([
                 "_doctor_test": .bool(true),
@@ -138,8 +140,13 @@ func runDoctor(dbPath: String, password: String, jsonOutput: Bool) {
             // Read back
             if let readRecord = try client.fetch(id: insertedID),
                readRecord.storage["_doctor_test"] == .bool(true) {
-                // Clean up test record
-                try? client.delete(id: insertedID)
+                try client.delete(id: insertedID)
+                try client.persist()
+                if try client.fetch(id: insertedID) != nil {
+                    throw BlazeDBError.invalidData(
+                        reason: "doctor probe delete did not remove _doctor_test record \(insertedID)"
+                    )
+                }
                 
                 checks.append(DoctorReport.CheckResult(
                     name: "Read/Write Cycle",
@@ -274,8 +281,16 @@ func runDoctor(dbPath: String, password: String, jsonOutput: Bool) {
                 print("❌ Database health check failed")
             }
         }
+
+        // exit(_:) skips deinit; flush/close so probe deletes are durable for later dump/restore.
+        do {
+            try client.close()
+        } catch {
+            errors.append("Failed to close database cleanly: \(error.localizedDescription)")
+            healthy = false
+        }
         
-        exit(report.healthy ? 0 : 1)
+        exit(healthy ? 0 : 1)
     }
 }
 
@@ -294,13 +309,18 @@ if args.contains("--help") || args.contains("-h") {
     BlazeDB Doctor - Health Check Tool
     
     Usage:
-      blazedb doctor <db-path> <password> [--json]
+      blazedb doctor <db-path> [<password>] [--json]
+    
+    Password (prefer not putting secrets on argv — they appear in process listings):
+      1. Interactive / env: export BLAZEDB_PASSWORD then omit the password argument
+      2. Legacy: pass <password> as the second argument (deprecated)
     
     Options:
       --json    Output results as JSON (for scripting)
       -h, --help    Show this help message
     
     Examples:
+      BLAZEDB_PASSWORD='...' blazedb doctor /path/to/db.blazedb
       blazedb doctor /path/to/db.blazedb mypassword
       blazedb doctor /path/to/db.blazedb mypassword --json
     
@@ -312,15 +332,30 @@ if args.contains("--help") || args.contains("-h") {
 }
 
 let jsonOutput = args.contains("--json")
+let positional = args.dropFirst().filter { $0 != "--json" }
 
-guard args.count >= 3 else {
+guard positional.count >= 1 else {
     print("Error: Missing required arguments")
-    print("Usage: blazedb doctor <db-path> <password> [--json]")
-    print("Use --help for more information")
+    print("Usage: blazedb doctor <db-path> [<password>] [--json]")
+    print("Prefer BLAZEDB_PASSWORD over argv. Use --help for more information")
     exit(1)
 }
 
-let dbPath = args[1]
-let password = args[2]
+let dbPath = positional[0]
+let envPassword = ProcessInfo.processInfo.environment["BLAZEDB_PASSWORD"]
+let password: String
+if let envPassword, !envPassword.isEmpty {
+    if positional.count >= 2 {
+        CLIWarning.write("warning: password argument ignored; using BLAZEDB_PASSWORD (#310/#313)")
+    }
+    password = envPassword
+} else if positional.count >= 2 {
+    CLIWarning.write("warning: passing the database password on argv exposes it via process listings; prefer BLAZEDB_PASSWORD (#310/#313)")
+    password = positional[1]
+} else {
+    print("Error: Missing password (set BLAZEDB_PASSWORD or pass <password>)")
+    print("Usage: blazedb doctor <db-path> [<password>] [--json]")
+    exit(1)
+}
 
 runDoctor(dbPath: dbPath, password: password, jsonOutput: jsonOutput)
