@@ -140,3 +140,4 @@ Not available on `@BlazeStorableQuery`. Use `enableSpatialIndex` + `db.query().w
 | Related models, nested data | <doc:RelatedData> |
 | Nearby / coordinates | <doc:LocationQueries> |
 | Step-by-step while building | <doc:ImplementationChecklist> |
+| What most apps actually need | <doc:DailyAPI> |
