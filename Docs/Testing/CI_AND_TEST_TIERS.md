@@ -159,7 +159,8 @@ Treat CI as a **constrained environment that must produce trustworthy signal**, 
 - `.github/workflows/release.yml`
 - Trigger: tag push `v*`
 - Behavior:
-- Run `BlazeDB_Tier0`, `BlazeDB_Tier1`, `BlazeDB_Tier2`, `BlazeDB_Tier2_Extended`, `BlazeDB_Tier3_Heavy`, `BlazeDB_Tier3_Heavy_Perf`
+- Run `BlazeDB_Tier0` and `BlazeDB_Tier1` (publish gate). Optional manual `run_deep_validation` adds Tier3 heavy + Tier0 TSan.
+- Does **not** run `BlazeDB_Tier2` or `BlazeDB_Tier2_Extended` (Nightly / Deep Validation own those).
 - Build release artifact
 - Generate release notes
 - Publish GitHub release
@@ -318,7 +319,7 @@ Inventory/bootstrap code may still bucket all three SwiftPM modules under a sing
 
 ### Suites relocated off canonical Tier1 (inventory)
 
-These used to inflate Linux Tier1 wall-clock; they now live in **`BlazeDB_Tier2`** or **`BlazeDB_Tier3_Heavy`**. On **Linux**, `BlazeDB_Tier2` **core** runs nightly (`linux-tier2-core`); `BlazeDB_Tier2_Extended` and Tier3 heavy/perf run in weekly **`deep-validation.yml`** (`deep-linux-tier2-extended`, `deep-linux-tier3-heavy`, `deep-linux-tier3-heavy-profile`, `deep-linux-tier3-heavy-perf`), not nightly. macOS nightly keeps `BlazeDB_Tier2` + `BlazeDB_Tier2_Extended` via `./Scripts/run-tier2.sh --strict` plus operational scripts; release tag validation covers Tier0–Tier2(+extended) per `release.yml`.
+These used to inflate Linux Tier1 wall-clock; they now live in **`BlazeDB_Tier2`** or **`BlazeDB_Tier3_Heavy`**. On **Linux**, `BlazeDB_Tier2` **core** runs nightly (`linux-tier2-core`); `BlazeDB_Tier2_Extended` and Tier3 heavy/perf run in weekly **`deep-validation.yml`** (`deep-linux-tier2-extended`, `deep-linux-tier3-heavy`, `deep-linux-tier3-heavy-profile`, `deep-linux-tier3-heavy-perf`), not nightly. macOS nightly keeps `BlazeDB_Tier2` + `BlazeDB_Tier2_Extended` via `./Scripts/run-tier2.sh --strict` plus operational scripts; release tag validation covers **Tier0 + Tier1** only per `release.yml` (Tier2 stays on Nightly / Deep).
 
 | Logical area | File under `BlazeDBTests/…` | SPM module | Linux nightly |
 | ------------ | --------------------------- | ---------- | ------------- |

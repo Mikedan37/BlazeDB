@@ -29,7 +29,8 @@ jobs:
   validate:
     name: Validate Release
     runs-on: macos-15
-    timeout-minutes: 60
+    # Tier0+Tier1 only. ~55m observed sequentially; small margin vs stacking Tier2.
+    timeout-minutes: 90
 
     steps:
       - name: Checkout code
@@ -61,11 +62,8 @@ jobs:
           set -euo pipefail
           swift test --filter BlazeDB_Tier1 2>&1 | tee .logs/tier1.log
 
-      - name: Test Tier 2 (+ transitional extended companion)
-        run: |
-          set -euo pipefail
-          swift test --filter BlazeDB_Tier2 2>&1 | tee .logs/tier2.log
-          swift test --filter BlazeDB_Tier2_Extended 2>&1 | tee .logs/tier2-extended.log
+      # Tier2 core + Tier2 Extended stay on Nightly / Deep Validation (see CI_AND_TEST_TIERS.md).
+      # Release asks "safe to publish?" via Tier0+Tier1 only; stacking Tier2 here timed out at 60m.
 
       - name: Run stress tests (+ transitional perf companion)
         if: github.event_name == 'workflow_dispatch' && inputs.run_deep_validation == true
@@ -184,6 +182,7 @@ jobs:
           echo "" >> release_notes.md
           echo "- Tier 0 gate tests: passing" >> release_notes.md
           echo "- Tier 1 contract tests: passing" >> release_notes.md
+          echo "- Tier 2 / Extended: owned by Nightly Confidence and Deep Validation (not this lane)" >> release_notes.md
           if [[ "${{ github.event_name }}" == "workflow_dispatch" && "${{ inputs.run_deep_validation }}" == "true" ]]; then
             echo "- Tier 3 heavy tests: passing" >> release_notes.md
           else
