@@ -32,9 +32,7 @@ This file is the release-facing checklist only. Historical strategy notes and sp
 - [ ] Release workflow passes for tag `vX.Y.Z` (`.github/workflows/release.yml`):
 - Tier 0
 - Tier1
-- Tier1Extended
-- Tier1Perf
-- Tier3 heavy
+- (Tier2 / Extended remain Nightly / Deep Validation; not required in the release job)
 
 ## 4) Security And Compatibility Gates
 
