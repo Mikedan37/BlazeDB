@@ -2,6 +2,8 @@
 
 BlazeDB is an encrypted, embedded database for Swift apps. Use it on the command line, in a plain Swift app, or in SwiftUI.
 
+**New here?** Start with <doc:QuickReference>, then <doc:SwiftUIIntegration> for SwiftUI apps.
+
 ## Overview
 
 Most apps follow one of two paths:
@@ -23,6 +25,7 @@ Default file locations:
 
 ### Essentials
 
+- <doc:QuickReference>
 - <doc:GettingStarted>
 - <doc:SwiftUIIntegration>
 
