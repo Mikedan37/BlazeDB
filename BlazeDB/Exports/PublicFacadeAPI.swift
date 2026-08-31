@@ -1,5 +1,11 @@
 import Foundation
 
+/// Entry point for opening an encrypted BlazeDB database in application code.
+///
+/// Call ``open(name:password:)`` to use the platform default directory, or ``open(at:password:)`` for a specific file URL.
+/// The returned ``BlazeDBClient`` is where you call ``BlazeDBClient/put(_:)``, ``BlazeDBClient/get(_:)``, and ``BlazeDBClient/query(_:)``.
+///
+/// For SwiftUI, open once and inject the client with ``View/blazeDBEnvironment(_:)``. See <doc:SwiftUIIntegration> in this module.
 public enum BlazeDB {
     /// Default app entrypoint: open an encrypted database by name in the platform default directory.
     ///

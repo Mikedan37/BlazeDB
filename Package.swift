@@ -13,7 +13,6 @@ var blazeTargets: [Target] = [
             ],
             path: "BlazeDB",
             exclude: [
-                "BlazeDB.docc",
                 // Exclude distributed modules
                 "Distributed",
                 "Telemetry",

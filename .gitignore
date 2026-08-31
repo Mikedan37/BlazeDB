@@ -1,6 +1,8 @@
 # Swift Package Manager
 .build/
 .build*
+**/.docc-build/
+*.doccarchive
 .build-codex*
 .build-codex-*
 .swiftpm/*
