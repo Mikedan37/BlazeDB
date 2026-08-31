@@ -1774,6 +1774,9 @@ public final class BlazeDBClient: @unchecked Sendable {
         if transactionIndexMapSnapshot != nil {
             try block()
             QueryCache.shared.notifyWrite()
+            #if !BLAZEDB_LINUX_CORE
+            collection.invalidateQueryCacheSync()
+            #endif
             return
         }
 
@@ -1786,6 +1789,9 @@ public final class BlazeDBClient: @unchecked Sendable {
             try block()
             // Invalidate query cache after successful write
             QueryCache.shared.notifyWrite()
+            #if !BLAZEDB_LINUX_CORE
+            collection.invalidateQueryCacheSync()
+            #endif
         } catch {
             BlazeLogger.error("Rolling back write due to error: \(error)")
             try collection.queue.sync(flags: .barrier) {
@@ -1794,6 +1800,9 @@ public final class BlazeDBClient: @unchecked Sendable {
                 collection.recordCache.clear()
             }
             QueryCache.shared.clearAll()
+            #if !BLAZEDB_LINUX_CORE
+            collection.invalidateQueryCacheSync()
+            #endif
             throw error
         }
     }

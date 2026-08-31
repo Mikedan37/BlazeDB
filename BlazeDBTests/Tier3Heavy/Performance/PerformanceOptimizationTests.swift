@@ -18,12 +18,10 @@ import Crypto
 
 final class PerformanceOptimizationTests: XCTestCase {
 
-    private func skipTimingSensitiveTestsOnLinuxCI() throws {
-        #if os(Linux)
+    private func skipTimingSensitiveTestsOnCI() throws {
         if ProcessInfo.processInfo.environment["CI"] != nil {
-            throw XCTSkip("Performance optimization timing tests skipped on Linux CI; run locally or on macOS weekly.")
+            throw XCTSkip("Performance optimization timing tests skipped on CI; run locally for perf signal.")
         }
-        #endif
     }
     
     var tempDir: URL!
@@ -89,7 +87,7 @@ final class PerformanceOptimizationTests: XCTestCase {
     // MARK: - Write Batching Tests
     
     func testWriteBatching_FasterThanIndividual() async throws {
-        try skipTimingSensitiveTestsOnLinuxCI()
+        try skipTimingSensitiveTestsOnCI()
         let records = (0..<50).map { i in
             BlazeDataRecord([
                 "id": .uuid(UUID()),
@@ -128,7 +126,7 @@ final class PerformanceOptimizationTests: XCTestCase {
     // MARK: - Parallel Encoding Tests
     
     func testParallelEncoding_FasterThanSequential() async throws {
-        try skipTimingSensitiveTestsOnLinuxCI()
+        try skipTimingSensitiveTestsOnCI()
         let records = (0..<200).map { i in
             BlazeDataRecord([
                 "id": .uuid(UUID()),

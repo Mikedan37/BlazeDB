@@ -193,6 +193,9 @@ final class BlazeDBMemoryTests: XCTestCase {
     
     /// Test memory growth with large inserts
     func testMemoryGrowthDuringBulkInsert() throws {
+        if isThreadSanitizerEnabled() {
+            throw XCTSkip("Memory growth caps are not meaningful under Thread Sanitizer instrumentation.")
+        }
         let db = try BlazeDBClient(
             name: "MemoryGrowthTest",
             fileURL: try memoryTestURL(),

@@ -14,9 +14,10 @@ import Foundation
 
 // MARK: - Query Cache
 
-/// Caches query results for faster repeated queries (actor-based for async safety)
-private actor AsyncQueryCache {
+/// Caches query results for faster repeated queries (lock-based so sync write paths can invalidate).
+private final class AsyncQueryCache: @unchecked Sendable {
     private var cache: [String: (results: [BlazeDataRecord], timestamp: Date)] = [:]
+    private let lock = NSLock()
     private let maxCacheSize: Int
     private let cacheTTL: TimeInterval
     
@@ -26,6 +27,9 @@ private actor AsyncQueryCache {
     }
     
     func get(key: String) -> [BlazeDataRecord]? {
+        lock.lock()
+        defer { lock.unlock() }
+        
         guard let entry = cache[key] else { return nil }
         
         // Check if expired
@@ -38,6 +42,9 @@ private actor AsyncQueryCache {
     }
     
     func set(key: String, results: [BlazeDataRecord]) {
+        lock.lock()
+        defer { lock.unlock() }
+        
         // Evict oldest if cache is full
         if cache.count >= maxCacheSize {
             let oldestKey = cache.min(by: { $0.value.timestamp < $1.value.timestamp })?.key
@@ -50,10 +57,14 @@ private actor AsyncQueryCache {
     }
     
     func invalidate() {
+        lock.lock()
+        defer { lock.unlock() }
         cache.removeAll()
     }
     
     func invalidate(pattern: String) {
+        lock.lock()
+        defer { lock.unlock() }
         cache = cache.filter { !$0.key.contains(pattern) }
     }
 }
@@ -146,6 +157,14 @@ extension DynamicCollection {
         return pool
     }
     
+    /// Synchronous invalidation for write paths that cannot await (mirrors QueryCache.shared.notifyWrite()).
+    internal func invalidateQueryCacheSync() {
+        let id = ObjectIdentifier(self)
+        Self.cacheLock.lock()
+        defer { Self.cacheLock.unlock() }
+        Self.queryCaches[id]?.invalidate()
+    }
+    
     // MARK: - Async Insert
     
     /// Insert a record asynchronously (non-blocking)
@@ -156,8 +175,8 @@ extension DynamicCollection {
         // This causes resource leaks where pool slots are never released
         // Use do-catch pattern to ensure release happens before return
         do {
-            // Call directly - methods are thread-safe via internal DispatchQueue
             let result = try insert(data)
+            invalidateQueryCacheSync()
             // CRITICAL: Release before returning to ensure pool slot is freed immediately
             await operationPool.release()
             return result
@@ -174,9 +193,8 @@ extension DynamicCollection {
         // CRITICAL: Ensure release is called before returning, not in a background Task
         // Use do-catch pattern to ensure release happens before return
         do {
-            // Call directly - methods are thread-safe via internal DispatchQueue
             let result = try insertBatch(records)
-            // CRITICAL: Release before returning to ensure pool slot is freed immediately
+            invalidateQueryCacheSync()
             await operationPool.release()
             return result
         } catch {
@@ -268,12 +286,8 @@ extension DynamicCollection {
         // CRITICAL: Ensure release is called before returning, not in a background Task
         // Use do-catch pattern to ensure release happens before return
         do {
-            // Invalidate entire query cache since we can't know which queries might be affected
-            await queryCache.invalidate()
-            
-            // Call directly - methods are thread-safe via internal DispatchQueue
+            invalidateQueryCacheSync()
             try update(id: id, with: data)
-            // CRITICAL: Release before returning to ensure pool slot is freed immediately
             await operationPool.release()
         } catch {
             // CRITICAL: Release on error to prevent resource leak
@@ -290,12 +304,8 @@ extension DynamicCollection {
         // CRITICAL: Ensure release is called before returning, not in a background Task
         // Use do-catch pattern to ensure release happens before return
         do {
-            // Invalidate entire query cache since we can't know which queries might be affected
-            await queryCache.invalidate()
-            
-            // Call directly - methods are thread-safe via internal DispatchQueue
+            invalidateQueryCacheSync()
             try delete(id: id)
-            // CRITICAL: Release before returning to ensure pool slot is freed immediately
             await operationPool.release()
         } catch {
             // CRITICAL: Release on error to prevent resource leak
@@ -329,8 +339,7 @@ extension DynamicCollection {
             let cacheKey = "query:\(field ?? "all"):\(valueStr):\(orderBy ?? "none"):\(descending):\(limit ?? -1)"
             
             // Check cache
-            if useCache, let cached = await queryCache.get(key: cacheKey) {
-                // CRITICAL: Release before returning cached result
+            if useCache, let cached = queryCache.get(key: cacheKey) {
                 await operationPool.release()
                 return cached
             }
@@ -368,10 +377,9 @@ extension DynamicCollection {
             
             // Cache results
             if useCache {
-                await queryCache.set(key: cacheKey, results: results)
+                queryCache.set(key: cacheKey, results: results)
             }
             
-            // CRITICAL: Release before returning to ensure pool slot is freed immediately
             await operationPool.release()
             return results
         } catch {
@@ -385,7 +393,7 @@ extension DynamicCollection {
     
     /// Invalidate query cache
     public func invalidateQueryCache() async {
-        await queryCache.invalidate()
+        invalidateQueryCacheSync()
     }
     
     /// Get current operation pool load

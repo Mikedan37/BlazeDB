@@ -141,6 +141,11 @@ final class UpsertEdgeCaseTests: XCTestCase {
     
     /// Test upsert performance vs separate insert+update
     func testUpsertPerformanceVsSeparate() throws {
+        #if os(Linux)
+        if ProcessInfo.processInfo.environment["CI"] != nil {
+            throw XCTSkip("Upsert timing gate skipped on Linux CI; run locally for perf signal.")
+        }
+        #endif
         print("🔄 Testing upsert performance...")
         
         let count = 50
