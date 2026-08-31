@@ -26,6 +26,12 @@ Default file locations:
 - <doc:GettingStarted>
 - <doc:SwiftUIIntegration>
 
+### App recipes
+
+- <doc:AppPatterns>
+- <doc:RelatedData>
+- <doc:LocationQueries>
+
 ### Core types
 
 - ``BlazeDB``

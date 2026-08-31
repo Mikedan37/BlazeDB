@@ -192,3 +192,9 @@ Pass the client explicitly when the environment is not set:
 ```
 
 For non-UI code and scripts, use <doc:GettingStarted> instead.
+
+## More recipes
+
+- <doc:AppPatterns> tabs, navigation, grouped lists, stores
+- <doc:RelatedData> parent / child rows and nested models
+- <doc:LocationQueries> latitude, longitude, and nearby search
