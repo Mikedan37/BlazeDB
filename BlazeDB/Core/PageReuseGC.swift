@@ -56,7 +56,7 @@ extension DynamicCollection {
     internal func allocatePage(layout: inout StorageLayout) -> Int {
         #if DEBUG
         Self.allocatePageFaultLock.lock()
-        if var skips = Self.forceAllocateAfterSkips, let forced = Self.forceAllocatePage {
+        if let skips = Self.forceAllocateAfterSkips, let forced = Self.forceAllocatePage {
             if skips > 0 {
                 Self.forceAllocateAfterSkips = skips - 1
                 Self.allocatePageFaultLock.unlock()

@@ -1094,7 +1094,7 @@ public final class DynamicCollection {
                     searchIndex: nil,
                     searchIndexedFields: []
                 )
-                let mainPageIndex: Int = try WriteProfileCollector.measure("transaction.setup") {
+                let mainPageIndex: Int = WriteProfileCollector.measure("transaction.setup") {
                     layout.deletedPages = cachedDeletedPages
                     return allocatePage(layout: &layout)
                 }

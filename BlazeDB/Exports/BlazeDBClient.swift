@@ -1781,7 +1781,7 @@ public final class BlazeDBClient: @unchecked Sendable {
         }
 
         // Snapshot indexMap on the collection queue so rollback does not race with fetch().
-        let indexMapBackup = try collection.queue.sync(flags: .barrier) {
+        let indexMapBackup = collection.queue.sync(flags: .barrier) {
             collection.indexMap
         }
 
@@ -1794,7 +1794,7 @@ public final class BlazeDBClient: @unchecked Sendable {
             #endif
         } catch {
             BlazeLogger.error("Rolling back write due to error: \(error)")
-            try collection.queue.sync(flags: .barrier) {
+            collection.queue.sync(flags: .barrier) {
                 collection.indexMap = indexMapBackup
                 collection.store.pageCache.clear()
                 collection.recordCache.clear()

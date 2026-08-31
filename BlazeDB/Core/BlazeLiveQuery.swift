@@ -9,6 +9,24 @@
 
 import Foundation
 
+/// Non-generic sink so `@Sendable` `observe` closures do not capture `T.Type` metatypes.
+fileprivate protocol BlazeLiveQueryRefreshable: AnyObject {
+    func refresh()
+}
+
+/// Non-generic so `@Sendable` `observe` does not close over `T.Type`.
+private final class BlazeLiveQueryRefreshSink: @unchecked Sendable {
+    private weak var target: (any BlazeLiveQueryRefreshable)?
+
+    func attach(_ query: any BlazeLiveQueryRefreshable) {
+        target = query
+    }
+
+    func notifyChange() {
+        target?.refresh()
+    }
+}
+
 /// Live query for a ``BlazeStorable`` model type.
 ///
 /// Wires ``BlazeDBClient/observe(_:)`` to a typed namespace query and delivers
@@ -89,12 +107,6 @@ import Foundation
 public final class BlazeLiveQuery<T: BlazeStorable>: @unchecked Sendable {
     public typealias ResultsHandler = (Result<[T], Error>) -> Void
 
-    private final class RefreshBridge: @unchecked Sendable {
-        private weak var query: BlazeLiveQuery<T>?
-        func attach(_ query: BlazeLiveQuery<T>) { self.query = query }
-        func notify() { query?.refresh() }
-    }
-
     private let db: BlazeDBClient
     private let filters: [(field: String, comparison: BlazeQueryComparison, value: BlazeDocumentField)]
     private let sortField: String?
@@ -104,7 +116,7 @@ public final class BlazeLiveQuery<T: BlazeStorable>: @unchecked Sendable {
     private var observerToken: ObserverToken?
     private var resultsHandler: ResultsHandler?
     private let handlerLock = NSLock()
-    private let refreshBridge = RefreshBridge()
+    private let refreshSink = BlazeLiveQueryRefreshSink()
 
     /// - Parameters:
     ///   - db: Database client to observe and query.
@@ -130,7 +142,7 @@ public final class BlazeLiveQuery<T: BlazeStorable>: @unchecked Sendable {
         self.sortField = sortBy
         self.sortDescending = descending
         self.limitCount = limit
-        refreshBridge.attach(self)
+        refreshSink.attach(self)
     }
 
     /// Advanced initializer mirroring ``BlazeStorableQueryObserver`` filter tuples.
@@ -146,7 +158,7 @@ public final class BlazeLiveQuery<T: BlazeStorable>: @unchecked Sendable {
         self.sortField = sortBy
         self.sortDescending = descending
         self.limitCount = limit
-        refreshBridge.attach(self)
+        refreshSink.attach(self)
     }
 
     deinit {
@@ -173,8 +185,8 @@ public final class BlazeLiveQuery<T: BlazeStorable>: @unchecked Sendable {
     /// then synchronously calls ``refresh()`` for an initial snapshot.
     public func start() {
         stop()
-        observerToken = db.observe { [refreshBridge] _ in
-            refreshBridge.notify()
+        observerToken = db.observe { [refreshSink] _ in
+            refreshSink.notifyChange()
         }
         refresh()
     }
@@ -263,3 +275,5 @@ public final class BlazeLiveQuery<T: BlazeStorable>: @unchecked Sendable {
         }
     }
 }
+
+extension BlazeLiveQuery: BlazeLiveQueryRefreshable {}
