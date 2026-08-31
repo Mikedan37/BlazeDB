@@ -1,70 +1,53 @@
-# BlazeDB v2.8.1 — Dynamic BlazeDBC
+# BlazeDB v2.8.2
 
-**Tag:** `v2.8.1`  
-**Date:** 2026-07-24
+**Tag:** `v2.8.2`  
+**Date:** 2026-08-31
 
-BlazeDBC is now built as a **shared library** so Go/cgo (and other FFI hosts) link `-lBlazeDBC` and pick up the Swift runtime through the dynamic loader—instead of unresolved `swift_retain` / `swift_release` from a static archive.
+Patch release since 2.8.1. Lots of contributor commits landed: cache isolation, RLS holes closed, safer CLI passwords, docs that match the real KDF story, and CI that is less flaky on GitHub runners.
 
-This release changes the library packaging and link workflow, not the published C ABI.
-
-## Summary
-
-v2.8.0 introduced the documented [C ABI interoperability surface](Docs/Architecture/C_ABI_BYTE_KV.md). v2.8.1 makes that ABI practical to embed dynamically.
+C ABI is unchanged. Same `blazedb.h`, same packaging story as 2.8.1 (dynamic `BlazeDBC` + optional static product).
 
 ## Highlights
 
-- **`BlazeDBC` product is `.dynamic`**
-  - Linux: `libBlazeDBC.so`
-  - macOS: `libBlazeDBC.dylib`
-- Optional **`BlazeDBCStatic`** SwiftPM product remains for consumers that still want `libBlazeDBC.a`
-- **ABI unchanged** — same `blazedb.h`, same symbols; packaging and link workflow changed
+- Async query cache invalidates on writes (no more stale `queryAsync` after update)
+- Doctor probe cleanup is durable before exit
+- LazyField / JOIN / query cache isolation across DB instances
+- RANK() ties fixed
+- RLS gaps closed on graph/update/stats paths
+- CLI prefers `BLAZEDB_PASSWORD` over argv
+- Sensitive file perms + less secret logging
+- Docs tell the truth about PBKDF2
 
-## Compatibility and migration
+## Validation on this tag tip
 
-There are no C API or ABI breaking changes. This release changes the library packaging and link workflow, not the published symbols or header.
+- PR Gate green on `d104cf5f` (macOS, Linux Tier0, Apple/Android/KMM)
+- Nightly Confidence green on the same commit (Tier1 Linux, Tier2, Tier0 TSan, README, clean checkout)
 
-Consumers that previously linked the static archive and manually supplied Swift runtime libraries should instead link the shared library:
+Deep Validation weekly was still red on an older SHA before the CI de-flake. Default release workflow does not require that lane.
 
-```text
--L.build/release -lBlazeDBC -Wl,-rpath,.build/release
-```
-
-The example above is for local checkout testing. Installed applications should use an rpath or library install location appropriate for their deployment environment (for example `@rpath` / `@loader_path` and install names on macOS, or `$ORIGIN`-relative paths on Linux).
-
-## Install / try
-
-```bash
-git clone https://github.com/Mikedan37/BlazeDB.git
-cd BlazeDB
-git checkout v2.8.1
-swift build -c release --product BlazeDBC
-# Header:  BlazeDBC/include/blazedb.h
-# Shared:  .build/release/libBlazeDBC.dylib   (macOS)
-#          .build/release/libBlazeDBC.so      (Linux)
-```
-
-### Go / cgo linking
-
-For local checkout testing:
-
-```c
-/*
-#cgo CFLAGS: -I${SRCDIR}/../../BlazeDBC/include
-#cgo LDFLAGS: -L${SRCDIR}/../../.build/release -lBlazeDBC -Wl,-rpath,${SRCDIR}/../../.build/release
-#include "blazedb.h"
-*/
-import "C"
-```
-
-Installed applications should use a loader path or install prefix appropriate for their deployment environment. See [Examples/Go/README.md](Examples/Go/README.md).
+## Install
 
 SwiftPM:
 
 ```swift
-.package(url: "https://github.com/Mikedan37/BlazeDB.git", from: "2.8.1")
+.package(url: "https://github.com/Mikedan37/BlazeDB.git", from: "2.8.2")
 ```
 
-## Known limitations
+Checkout + build:
 
-- Host still needs a compatible Swift runtime available at load time (system or toolchain `rpath`). The dynamic library reduces manual Swift-runtime link configuration; it does not eliminate the runtime dependency.
-- Official versioned `blazedb-go` packaging is directional work after checked-in Go/cgo smoke sources exist; not a guarantee of a particular release (see [ROADMAP.md](ROADMAP.md) and [Examples/Go/README.md](Examples/Go/README.md))
+```bash
+git clone https://github.com/Mikedan37/BlazeDB.git
+cd BlazeDB
+git checkout v2.8.2
+swift build -c release
+```
+
+## Thanks
+
+Nitjsefnie, Vedant Madane, Peter Z, yu010101, jlonsdalen, and everyone who filed issues and reviewed. Appreciate you.
+
+## Full changelog
+
+See [CHANGELOG.md](CHANGELOG.md) for the detailed list, and compare:
+
+https://github.com/Mikedan37/BlazeDB/compare/v2.8.1...v2.8.2

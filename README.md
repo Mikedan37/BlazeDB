@@ -5,11 +5,11 @@ BlazeDB is an encrypted, embedded database for Swift applications and services, 
 It runs inside your process. No separate database server is required.
 
 [![CI](https://github.com/Mikedan37/BlazeDB/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Mikedan37/BlazeDB/actions/workflows/ci.yml)
-[![Release](https://img.shields.io/badge/release-v2.8.1-green.svg)](RELEASE.md)
+[![Release](https://img.shields.io/badge/release-v2.8.2-green.svg)](RELEASE.md)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Swift](https://img.shields.io/badge/Swift-6.0+-orange.svg)](https://swift.org)
 
-**Current release:** [v2.8.1](RELEASE.md) · [Changelog](CHANGELOG.md) · [Docs index](Docs/README.md) · [Compatibility](Docs/COMPATIBILITY.md)
+**Current release:** [v2.8.2](RELEASE.md) · [Changelog](CHANGELOG.md) · [Docs index](Docs/README.md) · [Compatibility](Docs/COMPATIBILITY.md)
 
 ---
 
@@ -77,7 +77,7 @@ Longer fit comparison, including where SQLite wins on latency: [Why not SQLite?]
 Requires Swift 6.0+ ([swift.org](https://www.swift.org/install/) or Xcode), matching `swift-tools-version:6.0` in `Package.swift`.
 
 ```swift
-.package(url: "https://github.com/Mikedan37/BlazeDB.git", from: "2.8.1")
+.package(url: "https://github.com/Mikedan37/BlazeDB.git", from: "2.8.2")
 ```
 
 Depend on the **`BlazeDB`** product and `import BlazeDB`.
@@ -272,7 +272,7 @@ Comment on an issue before starting substantial work so scope and ownership are 
 
 | | |
 |--|--|
-| Release | [v2.8.1](RELEASE.md) · [CHANGELOG](CHANGELOG.md) |
+| Release | [v2.8.2](RELEASE.md) · [CHANGELOG](CHANGELOG.md) |
 | Platforms | [COMPATIBILITY.md](Docs/COMPATIBILITY.md) |
 | Roadmap | [ROADMAP.md](ROADMAP.md) (directional) |
 | Security | [SECURITY.md](SECURITY.md) (reporting) |

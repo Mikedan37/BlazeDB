@@ -19,7 +19,7 @@ Add to your `Package.swift`:
 
 ```swift
 dependencies: [
- .package(url: "https://github.com/Mikedan37/BlazeDB.git", from: "2.8.1")
+ .package(url: "https://github.com/Mikedan37/BlazeDB.git", from: "2.8.2")
 ],
 targets: [
  .target(name: "YourApp", dependencies: ["BlazeDB"])

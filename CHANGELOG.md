@@ -7,6 +7,46 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 Embeddable **C ABI** ships in the same **2.x** version stream as the Swift package (starting with **2.8.0**).
 
+## [2.8.2] - 2026-08-31
+
+Patch release with a lot of contributor work since 2.8.1: cache isolation, RLS holes closed, CLI password handling, docs that match what the code actually does, and CI that stops flaking on shared runners.
+
+### Fixed
+
+- Async `queryAsync` cache now clears on every client write (insert/update/delete), so stale rows cannot stick around after `updateAsync`.
+- `BlazeDoctor` probe row (`_doctor_test`) is deleted, persisted, and closed before exit so dump/restore counts stay honest when `BLAZEDB_PASSWORD` opens the DB.
+- LazyField / RecordCache isolation across database instances ([#307](https://github.com/Mikedan37/BlazeDB/issues/307), [#473](https://github.com/Mikedan37/BlazeDB/pull/473)).
+- JOIN and query cache keys scoped so one collection cannot steal another’s hits ([#450](https://github.com/Mikedan37/BlazeDB/issues/450), [#452](https://github.com/Mikedan37/BlazeDB/issues/452)).
+- SQL `RANK()` tie handling corrected ([#376](https://github.com/Mikedan37/BlazeDB/issues/376), [#472](https://github.com/Mikedan37/BlazeDB/pull/472)).
+- RLS enforcement gaps closed in graph queries, updates, stats, and observers ([#334](https://github.com/Mikedan37/BlazeDB/issues/334)–[#337](https://github.com/Mikedan37/BlazeDB/issues/337)).
+- Legacy NDJSON `txn_log` recovery fails closed instead of pretending everything is fine ([#365](https://github.com/Mikedan37/BlazeDB/issues/365)).
+- Graph moving windows aggregate X-ordered neighbours ([#377](https://github.com/Mikedan37/BlazeDB/issues/377)).
+- Missing-field `notEquals` semantics aligned across sync, async, and KeyPath paths.
+
+### Security / ops
+
+- Prefer `BLAZEDB_PASSWORD` over argv for CLI tools so passwords are less likely to show up in process listings ([#310](https://github.com/Mikedan37/BlazeDB/issues/310), [#313](https://github.com/Mikedan37/BlazeDB/issues/313)).
+- Harder defaults for sensitive file creation and less secret leakage in logs ([#324](https://github.com/Mikedan37/BlazeDB/issues/324), [#357](https://github.com/Mikedan37/BlazeDB/issues/357), [#358](https://github.com/Mikedan37/BlazeDB/issues/358)).
+
+### Documentation
+
+- KDF naming and security docs match production PBKDF2 behavior (no more Argon2 overclaim) ([#273](https://github.com/Mikedan37/BlazeDB/issues/273), [#317](https://github.com/Mikedan37/BlazeDB/issues/317)).
+- README / getting-started / architecture docs cleaned up so the product story is clearer.
+
+### CI / tests
+
+- Absolute timing gates skipped or relaxed on shared CI hosts so Nightly/Deep Validation stop failing on noisy runners.
+- Memory growth caps skipped under Thread Sanitizer (instrumentation is not a fair memory budget).
+- Tier0 regressions for RANK ties, RLS gaps, secure file perms, and LazyField cache lifecycle.
+
+### Thanks
+
+Huge thanks to **Nitjsefnie**, **Vedant Madane**, **Peter Z**, **yu010101**, and **jlonsdalen** for the fixes, tests, and docs that landed in this window.
+
+ABI (`blazedb.h`) is unchanged. See [RELEASE.md](RELEASE.md).
+
+---
+
 ## [2.8.1] - 2026-07-24
 
 ### Fixed
