@@ -995,8 +995,8 @@ public final class BlazeDBClient: @unchecked Sendable {
     
     /// Update multiple records matching a predicate
     /// - Parameters:
-    ///   - where: Predicate to match records
-    ///   - set: Fields to update
+    ///   - predicate: Records matching this closure are updated
+    ///   - fields: Field values to set on matched records
     /// - Returns: Number of records updated
     public func updateMany(where predicate: @escaping (BlazeDataRecord) -> Bool, set fields: [String: BlazeDocumentField]) throws -> Int {
         var updateCount = 0
@@ -1114,7 +1114,7 @@ public final class BlazeDBClient: @unchecked Sendable {
     }
     
     /// Delete multiple records matching a predicate
-    /// - Parameter where: Predicate to match records
+    /// - Parameter predicate: Records matching this closure are deleted
     /// - Returns: Number of records deleted
     public func deleteMany(where predicate: @escaping (BlazeDataRecord) -> Bool) throws -> Int {
         var deleteCount = 0

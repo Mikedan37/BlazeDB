@@ -59,7 +59,7 @@ public struct MigrationPlanner {
     /// - Parameters:
     ///   - currentVersion: Current database version
     ///   - targetVersion: Target schema version
-    ///   - availableMigrations: All available migrations
+    ///   - migrations: All available migrations
     /// - Returns: Migration plan with validation results
     public static func plan(
         from currentVersion: SchemaVersion,

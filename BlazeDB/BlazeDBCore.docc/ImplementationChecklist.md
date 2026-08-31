@@ -20,16 +20,16 @@ Use this while wiring BlazeDB into your app. Do one phase at a time. Check items
 
 ## Phase 2: Writes and updates
 
-- [ ] Read ``EnvironmentValues/blazeDBClient`` in the screen that writes
+- [ ] Read the `blazeDBClient` environment value in the screen that writes
 - [ ] `guard let db else { return }` before writes
-- [ ] Insert with ``BlazeDBClient/put(_:)``
+- [ ] Insert with `put(_:)`
 - [ ] Update by mutating the model and `put` again (same `id`)
 - [ ] Confirm the list refreshes without manual `@State` for the full array
 
 ## Phase 3: Detail screen
 
 - [ ] `NavigationLink` to a detail view, or pass the row model
-- [ ] Optional: re-fetch with ``BlazeDBClient/get(_:)`` using `"namespace:\(id.uuidString)"`
+- [ ] Optional: re-fetch with `get(_:)` using `"namespace:\(id.uuidString)"`
 - [ ] Add edit + save via `put`
 
 See <doc:AppPatterns>.
@@ -70,12 +70,12 @@ See <doc:LocationQueries>.
 | Task | API |
 |------|-----|
 | Open | ``BlazeDB/open(name:password:)`` |
-| Inject | ``View/blazeDBEnvironment(_:)`` |
+| Inject | `.blazeDBEnvironment(_:)` |
 | Live list | ``BlazeStorableQuery`` |
-| Write | ``EnvironmentValues/blazeDBClient`` + ``put`` |
-| Read one | ``get("namespace:\(uuid)")`` |
-| Delete | ``delete(id:)`` |
-| Nearby | ``query()`` + ``withinRadius`` |
+| Write | the `blazeDBClient` environment value + `put` |
+| Read one | `get("namespace:<uuid>")` |
+| Delete | `delete(id:)` |
+| Nearby | `query()` + `withinRadius` |
 
 ## When you feel overwhelmed
 

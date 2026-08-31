@@ -238,6 +238,7 @@ extension DynamicCollection {
     /// - Parameters:
     ///   - query: Search query string
     ///   - fields: Fields to search in
+    ///   - config: Optional search tuning; uses defaults when nil
     /// - Returns: Array of FullTextSearchResult with relevance scores
     /// - Throws: If search fails
     public func searchOptimized(query: String, in fields: [String], config: SearchConfig? = nil) throws -> [FullTextSearchResult] {

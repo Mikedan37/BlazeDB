@@ -77,7 +77,7 @@ public final class BlazeQueryTypedObserver<T: BlazeDocument>: ObservableObject {
 
     // MARK: - Initialization
 
-    /// - Parameter db: Pass `nil` when the database will be supplied later via ``bindDatabaseIfNeeded(_:)`` (SwiftUI environment).
+    /// - Parameter db: Pass `nil` when the database will be supplied later from the `blazeDBClient` environment value.
     internal init(
         db: BlazeDBClient?,
         filters: [(field: String, comparison: BlazeQueryComparison, value: BlazeDocumentField)],

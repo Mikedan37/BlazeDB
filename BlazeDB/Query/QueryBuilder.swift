@@ -1175,7 +1175,7 @@ extension QueryBuilder {
     /// More memory-efficient than loading all records at once
     ///
     /// - Parameters:
-    ///   - batchSize: Number of records per batch (default: 100)
+    ///   - size: Number of records per batch (default: 100)
     ///   - handler: Closure called for each batch
     /// - Returns: Total number of records processed
     ///
@@ -1208,7 +1208,7 @@ extension QueryBuilder {
     ///
     /// - Parameters:
     ///   - page: Page number (1-indexed)
-    ///   - pageSize: Number of records per page
+    ///   - size: Number of records per page
     /// - Returns: Records for the specified page
     ///
     /// ## Example

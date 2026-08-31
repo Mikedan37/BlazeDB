@@ -33,6 +33,7 @@ public struct BlazeDBImporter {
     ///   - dumpURL: URL of dump file
     ///   - db: Target database client (must be empty or match schema)
     ///   - allowSchemaMismatch: If false, refuses mismatched schemas
+    ///   - allowLegacyHashMismatch: When true, skips strict hash verification for legacy dumps
     /// - Throws: Error if verification fails or restore fails
     ///
     /// ## Example

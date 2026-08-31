@@ -111,7 +111,7 @@ struct Job: BlazeStorable {
 
 ## Deletes and related rows
 
-Delete a row with ``BlazeDBClient/delete(id:)``:
+Delete a row with `delete(id:)`:
 
 ```swift
 try db.delete(id: note.id)
@@ -132,4 +132,4 @@ try db.delete(id: note.id)
 
 - <doc:AppPatterns> for list / detail navigation
 - <doc:GettingStarted> for `put`, `get`, and namespace keys
-- ``BlazeDBClient/query(_:)`` for namespace queries without SwiftUI
+- `query(_:)` for namespace queries without SwiftUI

@@ -50,7 +50,7 @@ struct InterviewJobsView: View {
 
 ## List to detail (master / detail)
 
-Pass the selected row into a detail view, or re-fetch by id with ``BlazeDBClient/get(_:)``.
+Pass the selected row into a detail view, or re-fetch by id with `get(_:)`.
 
 ```swift
 struct JobListView: View {
@@ -131,7 +131,7 @@ BlazeDB does not provide SQL `GROUP BY` for SwiftUI sections. Group in the view 
 
 **Reads:** keep ``BlazeStorableQuery`` on the view.
 
-**Writes:** start with ``EnvironmentValues/blazeDBClient`` + ``BlazeDBClient/put(_:)``. Move validation and multi-step writes into an `@MainActor` store when the screen grows.
+**Writes:** start with the `blazeDBClient` environment value + `put(_:)`. Move validation and multi-step writes into an `@MainActor` store when the screen grows.
 
 ```swift
 @MainActor
@@ -161,7 +161,7 @@ The live query on the parent list refreshes after the store writes.
 
 ## Child screens and environment
 
-Views below ``View/blazeDBEnvironment(_:)`` inherit ``EnvironmentValues/blazeDBClient`` automatically. You do not pass `db` through every initializer unless you use an explicit `db:` on ``BlazeStorableQuery`` (previews, tests, or a second database).
+Views below `.blazeDBEnvironment(_:)` inherit the `blazeDBClient` environment value automatically. You do not pass `db` through every initializer unless you use an explicit `db:` on ``BlazeStorableQuery`` (previews, tests, or a second database).
 
 ## See also
 

@@ -54,7 +54,7 @@ Passwords must meet the library minimum length (8 characters).
 
 ## 4. Create, read, update
 
-**Insert or update** with ``BlazeDBClient/put(_:)``:
+**Insert or update** with `put(_:)`:
 
 ```swift
 var job = Job(title: "iOS Engineer", company: "Acme", status: "applied")
@@ -64,13 +64,13 @@ job.status = "interview"
 try db.put(job)
 ```
 
-**Read one row** with ``BlazeDBClient/get(_:)``. Pass a key as `namespace:UUID`:
+**Read one row** with `get(_:)`. Pass a key as `namespace:UUID`:
 
 ```swift
 let loaded: Job? = try db.get("job:\(job.id.uuidString)")
 ```
 
-**Query many rows** with ``BlazeDBClient/query(_:)``:
+**Query many rows** with `query(_:)`:
 
 ```swift
 let openJobs: [Job] = try db.query("job")
@@ -84,6 +84,6 @@ Hold ``BlazeDBClient`` for the lifetime of your process or app session. When you
 
 ## When to use BlazeDBClient directly
 
-Use ``BlazeDBClient`` when you need APIs beyond ``put`` / ``get`` / ``query``, such as raw ``BlazeDataRecord`` access, transactions, schema tools, or advanced query builders. The open helpers on ``BlazeDBClient`` mirror ``BlazeDB/open(name:password:)`` and ``BlazeDB/open(at:password:)``.
+Use ``BlazeDBClient`` when you need APIs beyond `put` / `get` / `query`, such as raw ``BlazeDataRecord`` access, transactions, schema tools, or advanced query builders. The open helpers on ``BlazeDBClient`` mirror ``BlazeDB/open(name:password:)`` and ``BlazeDB/open(at:password:)``.
 
 For SwiftUI screens, see <doc:SwiftUIIntegration> instead of wiring ``BlazeDBClient`` through every initializer.

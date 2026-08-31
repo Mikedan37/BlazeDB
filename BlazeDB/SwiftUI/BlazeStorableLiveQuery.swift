@@ -38,7 +38,9 @@ public struct BlazeStorableQuery<T: BlazeStorable>: DynamicProperty {
         return observer
     }
 
-    /// - Parameter db: Pass `nil` (default) to resolve the client from ``EnvironmentValues/blazeDBClient``.
+    /// - Parameters:
+    ///   - db: Pass `nil` (default) to resolve the client from the `blazeDBClient` environment value.
+    ///   - kind: The stored model type.
     public init(db: BlazeDBClient? = nil, kind: T.Type) {
         self.explicitDB = db
         _observer = StateObject(wrappedValue: BlazeStorableQueryObserver(
@@ -50,7 +52,14 @@ public struct BlazeStorableQuery<T: BlazeStorable>: DynamicProperty {
         ))
     }
 
-    /// - Parameter db: Pass `nil` (default) to resolve the client from ``EnvironmentValues/blazeDBClient``.
+    /// - Parameters:
+    ///   - db: Pass `nil` (default) to resolve the client from the `blazeDBClient` environment value.
+    ///   - kind: The stored model type.
+    ///   - field: Persisted field name for the filter.
+    ///   - value: Value the field must equal.
+    ///   - sortBy: Optional persisted field name for sorting.
+    ///   - descending: Whether to sort in descending order.
+    ///   - limit: Maximum number of results.
     public init(
         db: BlazeDBClient? = nil,
         kind: T.Type,
@@ -73,9 +82,9 @@ public struct BlazeStorableQuery<T: BlazeStorable>: DynamicProperty {
     /// Creates a live query for all stored models, sorted by the specified field.
     ///
     /// - Parameters:
-    ///   - db: Pass `nil` to resolve the client from ``EnvironmentValues/blazeDBClient``.
+    ///   - db: Pass `nil` to resolve the client from the `blazeDBClient` environment value.
     ///   - kind: The stored model type.
-    ///   - field: The persisted field name used for sorting.
+    ///   - field: The persisted field name used for sorting (passed as `sortBy:` at the call site).
     ///   - descending: Whether to return results in descending order.
     ///   - limit: The maximum number of results to return.
     public init(

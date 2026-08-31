@@ -26,7 +26,7 @@ private enum BlazeQueryValueEncoding {
 /// The default SwiftUI-facing query wrapper for ``BlazeDocument`` models.
 ///
 /// Document type is inferred from the wrapped property (`[Document]`), so you do not pass `type: Document.self`.
-/// Provide a database explicitly with `db:` **or** inject ``EnvironmentValues/blazeDBClient`` from an ancestor view.
+/// Provide a database explicitly with `db:` **or** inject the `blazeDBClient` environment value from an ancestor view.
 ///
 /// ```swift
 /// MyRootView()
@@ -44,13 +44,13 @@ private enum BlazeQueryValueEncoding {
 /// This type is a thin facade over ``BlazeQueryTypedObserver``; it does not change storage, SQL, or engine semantics.
 ///
 /// ### Environment-only database
-/// If you omit `db:` and rely on ``EnvironmentValues/blazeDBClient``, the observer is bound on first access to
+/// If you omit `db:` and rely on the `blazeDBClient` environment value, the observer is bound on first access to
 /// ``wrappedValue`` / ``projectedValue`` after SwiftUI has injected the environment. Until then, ``wrappedValue``
 /// is empty and this is **not** a failed query—there is no client yet. Prefer setting
-/// ``EnvironmentValues/blazeDBClient`` on an ancestor (e.g. root) so the first read already has a database.
+/// `.blazeDBEnvironment(_:)` on an ancestor (e.g. root) so the first read already has a database.
 ///
 /// ### Binding from `wrappedValue`
-/// ``BlazeQueryTypedObserver/bindDatabaseIfNeeded(_:)`` runs when the wrapped value (or projected observer) is read,
+/// The typed observer binds the database on first read of the wrapped value (or projected observer),
 /// avoiding a separate `DynamicProperty.update()` entry point that tripped Swift 6 actor isolation for this wrapper.
 /// Exercise navigation, previews, and environment changes in your app if you customize injection heavily.
 @propertyWrapper
@@ -77,7 +77,11 @@ public struct BlazeQuery<Document: BlazeDocument>: DynamicProperty {
 
     /// Fetches every stored document decoded as `Document`.
     ///
-    /// - Parameter db: Pass `nil` (default) to resolve the client from ``EnvironmentValues/blazeDBClient``.
+    /// - Parameters:
+    ///   - db: Pass `nil` (default) to resolve the client from the `blazeDBClient` environment value.
+    ///   - sortBy: Optional persisted field name for sorting.
+    ///   - descending: Whether to sort in descending order.
+    ///   - limit: Maximum number of results.
     public init(
         db: BlazeDBClient? = nil,
         sortBy: String? = nil,

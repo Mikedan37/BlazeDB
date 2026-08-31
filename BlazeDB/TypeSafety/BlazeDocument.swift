@@ -41,8 +41,8 @@ public protocol BlazeDocument: Codable, Identifiable where ID == UUID {
     ///
     /// The default implementation is retained for compatibility and may return an empty
     /// ``BlazeDataRecord`` if ``toStorage()`` fails (after logging). It should not be used for
-    /// persistence when conversion errors must be handled explicitly — use ``try toStorage()`` or
-    /// ``try resolveStorage()`` instead, or typed database client APIs. The default property
+    /// persistence when conversion errors must be handled explicitly. Use `try toStorage()` or
+    /// `try resolveStorage()` instead, or typed database client APIs. The default property
     /// implementation is deprecated; callers that need correctness must use the throwing APIs.
     var storage: BlazeDataRecord { get set }
     

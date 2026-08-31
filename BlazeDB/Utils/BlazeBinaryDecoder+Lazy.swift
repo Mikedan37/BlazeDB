@@ -13,7 +13,7 @@ extension BlazeBinaryDecoder {
     /// Format:
     /// - v3 (0x03): [BLAZE][0x03][fieldCount][fieldTableSize][fieldTable][fields...][CRC32]
     ///
-    /// - Parameter data: BlazeBinary v3 encoded data
+    /// - Parameter inputData: BlazeBinary v3 encoded data
     /// - Returns: Decoded BlazeDataRecord and optional FieldTable
     /// - Throws: If data is invalid or corrupted
     public static func decodeWithFieldTable(_ inputData: Data) throws -> (record: BlazeDataRecord, fieldTable: FieldTable?) {

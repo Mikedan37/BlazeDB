@@ -341,7 +341,7 @@ extension BlazeDBClient {
     /// Export specific records matching a query
     ///
     /// - Parameters:
-    ///   - where: Predicate to filter records
+    ///   - predicate: Filter closure for records to export
     ///   - format: Export format
     /// - Returns: Encoded data of matching records
     ///
@@ -500,7 +500,7 @@ extension BlazeDBClient {
     ///
     /// - Parameters:
     ///   - url: Destination URL
-    ///   - since: Only export records modified after this date
+    ///   - date: Only export records modified after this date
     /// - Returns: Backup statistics
     ///
     /// ## Example

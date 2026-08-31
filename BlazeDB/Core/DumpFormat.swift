@@ -139,7 +139,9 @@ public struct DatabaseDump: Codable {
     }
     
     /// Decode from JSON and verify integrity
-    /// - Parameter data: JSON data
+    /// - Parameters:
+    ///   - data: JSON data
+    ///   - allowLegacyHashMismatch: When true, accepts dumps exported with legacy hash preimages
     /// - Returns: Verified dump
     /// - Throws: Error if verification fails
     public static func decodeAndVerify(

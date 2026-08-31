@@ -1,6 +1,6 @@
 # Location and coordinate queries
 
-Store **latitude** and **longitude** as `Double` fields on your ``BlazeStorable`` model. Location search uses ``BlazeDBClient/query()`` (``QueryBuilder``), not ``BlazeStorableQuery``.
+Store **latitude** and **longitude** as `Double` fields on your ``BlazeStorable`` model. Location search uses `query()` (``QueryBuilder``), not ``BlazeStorableQuery``.
 
 **Platform note:** Spatial indexing and radius queries are available on **macOS, iOS, watchOS, and tvOS**. They are not part of the Linux core build.
 
@@ -43,7 +43,7 @@ Without the index, radius queries still work but scan all rows (fine for small l
 
 ## 3. Query nearby rows
 
-Use ``BlazeDBClient/query()`` → ``QueryBuilder/withinRadius(latitude:longitude:radiusMeters:)``.
+Use `query()` → `withinRadius(latitude:longitude:radiusMeters:)`.
 
 ```swift
 let centerLat = 37.7749
@@ -63,11 +63,11 @@ let result = try db.query()
 let records = try result.records
 ```
 
-Filter by ``_blazeKind`` when multiple ``BlazeStorable`` types share one database file.
+Filter by `_blazeKind` when multiple ``BlazeStorable`` types share one database file.
 
 ## 4. Decode to `[Job]`
 
-``BlazeStorableQuery`` does not support radius filters. After a spatial ``QueryBuilder`` query, load typed models with ``BlazeDBClient/get(_:)``:
+``BlazeStorableQuery`` does not support radius filters. After a spatial ``QueryBuilder`` query, load typed models with `get(_:)`:
 
 ```swift
 let nearbyJobs: [Job] = try result.records.compactMap { record -> Job? in
@@ -135,21 +135,21 @@ struct NearbyJobsView: View {
 }
 ```
 
-``near(latitude:longitude:radiusMeters:)`` combines radius filter and distance sort.
+`.near(latitude:longitude:radiusMeters:)` combines radius filter and distance sort.
 
 ## Other spatial APIs
 
 | API | Purpose |
 |-----|---------|
-| ``BlazeDBClient/enableSpatialIndex(on:lonField:)`` | Turn on R-tree index |
-| ``QueryBuilder/withinBoundingBox(minLat:maxLat:minLon:maxLon:)`` | Rectangular area |
-| ``QueryBuilder/orderByDistance(latitude:longitude:)`` | Sort by distance to a point |
-| ``QueryBuilder/nearest(to:limit:)`` | k-nearest neighbors (with index) |
+| `enableSpatialIndex(on:lonField:)` | Turn on R-tree index |
+| `withinBoundingBox(minLat:maxLat:minLon:maxLon:)` | Rectangular area |
+| `orderByDistance(latitude:longitude:)` | Sort by distance to a point |
+| `nearest(to:limit:)` | k-nearest neighbors (with index) |
 | ``SpatialPoint`` | Latitude / longitude pair and distance helpers |
 
 ## Type-safe KeyPath queries
 
-``BlazeDBClient/query(_:)`` with a ``BlazeStorable`` type supports KeyPath filters but **does not** chain spatial methods. Use ``BlazeDBClient/query()`` for location, or filter client-side on ``BlazeStorableQuery`` results.
+`query(_:)` with a ``BlazeStorable`` type supports KeyPath filters but **does not** chain spatial methods. Use `query()` for location, or filter client-side on ``BlazeStorableQuery`` results.
 
 ## See also
 

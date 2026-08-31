@@ -5,9 +5,9 @@ SwiftUI integration lives in ``BlazeDBCore`` behind `import BlazeDB`. It is avai
 ## Pattern
 
 1. Open ``BlazeDBClient`` once (usually in an app-owned singleton or `@main` setup).
-2. Inject it at the root with ``View/blazeDBEnvironment(_:)``.
+2. Inject it at the root with `.blazeDBEnvironment(_:)`.
 3. Read with ``BlazeStorableQuery``.
-4. Write with ``EnvironmentValues/blazeDBClient`` and ``BlazeDBClient/put(_:)``.
+4. Write with the `blazeDBClient` environment value and `put(_:)`.
 
 ## 1. Open once at app launch
 
@@ -41,14 +41,14 @@ struct SeekerApp: App {
 }
 ```
 
-``blazeDBEnvironment(_:)`` sets ``EnvironmentValues/blazeDBClient`` for the subtree below it. This is equivalent to:
+`.blazeDBEnvironment(_:)` sets the `blazeDBClient` environment value for the subtree below it. This is equivalent to:
 
 ```swift
 JobListView()
     .environment(\.blazeDBClient, AppDatabase.shared.db)
 ```
 
-``blazeDBClient`` is optional. If no ancestor injects a client, ``BlazeStorableQuery`` stays empty until one is available.
+`blazeDBClient` is optional. If no ancestor injects a client, ``BlazeStorableQuery`` stays empty until one is available.
 
 ## 3. Define a BlazeStorable model
 
@@ -109,7 +109,7 @@ Button("Add sample job") {
 
 ``BlazeStorableQuery`` is a property wrapper around ``BlazeStorableQueryObserver``, which owns a ``BlazeLiveQuery``:
 
-1. On first read, the wrapper resolves ``BlazeDBClient`` from the `db:` parameter or from ``EnvironmentValues/blazeDBClient``.
+1. On first read, the wrapper resolves ``BlazeDBClient`` from the `db:` parameter or from the `blazeDBClient` environment value.
 2. ``BlazeLiveQuery`` registers an observer on that client and runs an initial fetch.
 3. When rows change on **that same client**, BlazeDB batches notifications (about 50ms) and re-runs the query.
 4. SwiftUI receives updated `[Job]` through the observer's `@Published` `results`.
@@ -139,7 +139,7 @@ Each refresh is a **full re-query** of matching rows, not an incremental row pat
 
 Check these in order:
 
-1. An ancestor view called ``View/blazeDBEnvironment(_:)`` (or set ``EnvironmentValues/blazeDBClient``).
+1. An ancestor view called `.blazeDBEnvironment(_:)` (or set the `blazeDBClient` environment value).
 2. The view that writes and the view that reads use the **same** ``BlazeDBClient`` instance.
 3. Your model conforms to ``BlazeStorable`` with a `UUID` id.
 4. Filter field names match persisted JSON keys (for example `"status"`, not a Swift property rename unless you customize encoding).
@@ -170,7 +170,7 @@ NavigationStack {
 
 ## Multiple databases
 
-``EnvironmentValues/blazeDBClient`` is one slot per environment subtree. For two databases, call ``View/blazeDBEnvironment(_:)`` on different branches of your view tree, or pass an explicit `db:` parameter to ``BlazeStorableQuery``.
+the `blazeDBClient` environment value is one slot per environment subtree. For two databases, call `.blazeDBEnvironment(_:)` on different branches of your view tree, or pass an explicit `db:` parameter to ``BlazeStorableQuery``.
 
 ## Limitations
 
@@ -178,7 +178,7 @@ NavigationStack {
 |-------|--------------|
 | **Platforms** | SwiftUI wrappers are for macOS, iOS, watchOS, and tvOS. Linux CLI and server targets use ``BlazeDBClient`` only (see <doc:GettingStarted>). |
 | **Model type** | ``BlazeStorableQuery`` requires ``BlazeStorable`` (Codable + `UUID` id). For manual ``BlazeDataRecord`` mapping, use ``BlazeQuery`` with a ``BlazeDocument`` model instead. |
-| **Filters** | The ``BlazeStorableQuery`` convenience initializer supports **`equals`** filters only. Use ``BlazeDBClient/query(_:)`` or ``BlazeQuery`` for richer comparisons outside the wrapper. |
+| **Filters** | The ``BlazeStorableQuery`` convenience initializer supports **`equals`** filters only. Use `query(_:)` or ``BlazeQuery`` for richer comparisons outside the wrapper. |
 | **Same client** | Live updates observe one ``BlazeDBClient``. Writes through a different instance do not refresh the query. |
 | **Local only** | Queries reflect on-device storage. They do not sync across devices or processes. |
 | **Deletes** | Call delete APIs on ``BlazeDBClient``; the query updates when the observer fires, same as inserts and updates. |
