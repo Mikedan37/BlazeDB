@@ -26,6 +26,7 @@ Default file locations:
 ### Essentials
 
 - <doc:QuickReference>
+- <doc:ImplementationChecklist>
 - <doc:GettingStarted>
 - <doc:SwiftUIIntegration>
 
