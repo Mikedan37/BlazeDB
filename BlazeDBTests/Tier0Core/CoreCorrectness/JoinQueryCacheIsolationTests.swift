@@ -115,8 +115,10 @@ final class JoinQueryCacheIsolationTests: XCTestCase {
 
         let keyOne = joinQuery(left, joining: rightOne).generateCacheKey()
         let keyTwo = joinQuery(left, joining: rightTwo).generateCacheKey()
-        QueryCache.shared.set(key: keyOne, value: plantedJoin(owner: "planted-one"), ttl: 60)
-        QueryCache.shared.set(key: keyTwo, value: plantedJoin(owner: "planted-two"), ttl: 60)
+        // `cachedRightOwners` reads through `execute(withCache:)`, so plant in that
+        // API's result-type namespace (#454) — an unprefixed plant is never looked up.
+        QueryCache.shared.set(key: QueryCacheNamespace.queryResult + keyOne, value: plantedJoin(owner: "planted-one"), ttl: 60)
+        QueryCache.shared.set(key: QueryCacheNamespace.queryResult + keyTwo, value: plantedJoin(owner: "planted-two"), ttl: 60)
 
         XCTAssertEqual(try cachedRightOwners(left, joining: rightOne), ["planted-one"],
                        "Lookup must consume the entry planted for R1, not storage-one")
@@ -145,7 +147,9 @@ final class JoinQueryCacheIsolationTests: XCTestCase {
         let reopened = try BlazeDBClient(name: databaseName, fileURL: databaseURLs[1], password: password)
         defer { close(reopened) }
         // Re-plant so the assertion holds even if closing the database drained the cache.
-        QueryCache.shared.set(key: staleKey, value: plantedJoin(owner: "before-close"), ttl: 60)
+        // Must use the namespace `execute(withCache:)` reads (#454), otherwise the plant
+        // is unreachable and the assertion below would pass vacuously.
+        QueryCache.shared.set(key: QueryCacheNamespace.queryResult + staleKey, value: plantedJoin(owner: "before-close"), ttl: 60)
 
         XCTAssertEqual(try cachedRightOwners(left, joining: reopened), ["after-reopen"],
                        "A reopened right-hand database must not consume the closed instance's JOIN entry")
