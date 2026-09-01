@@ -41,9 +41,7 @@ Patch release with a lot of contributor work since 2.8.1: cache isolation, RLS h
 
 ### Thanks
 
-**This release:** **Nitjsefnie**, **Vedant Madane**, **yu010101**, and **jlonsdalen** for fixes, tests, and docs that landed since 2.8.1.
-
-**Ecosystem (all-time):** standing thanks to **finagolfin** (Android portability, [#21](https://github.com/Mikedan37/BlazeDB/pull/21)) and everyone who reviewed and filed issues. See [Docs/Release/CONTRIBUTORS.md](Docs/Release/CONTRIBUTORS.md).
+**Nitjsefnie**, **Vedant Madane**, **yu010101**, **jlonsdalen**, and **finagolfin** (Android portability, [#21](https://github.com/Mikedan37/BlazeDB/pull/21)) for fixes, tests, docs, and platform work in this window and earlier merged PRs that shipped in 2.8.x. See [Docs/Release/CONTRIBUTORS.md](Docs/Release/CONTRIBUTORS.md) for the roster.
 
 ABI (`blazedb.h`) is unchanged. See [RELEASE.md](RELEASE.md).
 

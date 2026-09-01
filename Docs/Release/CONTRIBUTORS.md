@@ -1,17 +1,8 @@
 # BlazeDB contributors
 
-How we credit people on releases, changelogs, and social posts.
+Roster for release posts and changelogs. **Credit commit authors per release** (auto-generated in CI). Use this file when you want to name someone who has no commits in the latest tag window.
 
-## This release vs all-time
-
-| Scope | What it means | Where it shows up |
-|-------|----------------|-------------------|
-| **This release** | Commit authors between the previous tag and the new tag | GitHub Release **Contributors (this release)** (auto-generated in CI) |
-| **Ecosystem (all-time)** | Humans who landed merged work in the repo, even if their commits shipped in an earlier tag | **Ecosystem contributors** blurb on releases, CHANGELOG **Thanks**, [ECOSYSTEM_THANKS.md](ECOSYSTEM_THANKS.md) |
-
-Do not drop all-time names on a big announcement just because they had no commits in the latest patch window.
-
-## All-time humans (non-bot)
+## Humans (non-bot)
 
 | GitHub | Notable work |
 |--------|----------------|
@@ -22,23 +13,14 @@ Do not drop all-time names on a big announcement just because they had no commit
 | [@yu010101](https://github.com/yu010101) | CI test harness fixes ([#440](https://github.com/Mikedan37/BlazeDB/pull/440)) |
 | [@jlonsdalen](https://github.com/jlonsdalen) | Durability docs ([#319](https://github.com/Mikedan37/BlazeDB/pull/319)) |
 
-`Peter Z` is the same GitHub account as **@Nitjsefnie** (alternate author string on some commits). Credit **@Nitjsefnie** once.
+`Peter Z` is the same account as **@Nitjsefnie**. Credit **@Nitjsefnie** once.
 
 ## Linux vs Android
 
-- **Linux** platform support and CI are mostly maintainer-led (see changelog entries for Linux CI #28/#29 and portability work).
-- **@finagolfin** landed **Android** cross-build fixes, not the Linux port. Still worth naming on ecosystem posts.
+- **Linux** platform support and CI are mostly maintainer-led.
+- **@finagolfin** landed **Android** cross-build fixes ([#21](https://github.com/Mikedan37/BlazeDB/pull/21)), not the Linux port.
 
-## Release workflow
+## Releases
 
-`.github/workflows/release.yml` appends [ECOSYSTEM_THANKS.md](ECOSYSTEM_THANKS.md) after the per-release contributor list. Edit that file when adding a new long-term contributor.
-
-## LinkedIn / social (copy/paste)
-
-**This release (v2.8.2 example):**
-
-> Thanks to everyone who shipped in 2.8.2: @Nitjsefnie @VedantMadane @yu010101 @jlonsdalen — cache isolation, RLS hardening, RANK() ties, safer CLI passwords, and docs that match the real crypto story.
-
-**Add ecosystem line:**
-
-> Standing thanks to earlier contributors including @finagolfin (Android portability) and everyone who reviewed and filed issues.
+- GitHub Releases list **commit authors since the previous tag** only.
+- Name prior contributors **once** on the release or post where you first give them a public shout-out (v2.8.2 includes @finagolfin). Do not repeat the same names on every patch release.

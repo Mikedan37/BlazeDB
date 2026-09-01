@@ -44,9 +44,7 @@ swift build -c release
 
 ## Thanks
 
-**This release:** @Nitjsefnie, @VedantMadane, @yu010101, @jlonsdalen.
-
-**Ecosystem (all-time):** @finagolfin (Android portability, #21) and everyone who reviewed and filed issues. Full list: [Docs/Release/CONTRIBUTORS.md](Docs/Release/CONTRIBUTORS.md).
+@Nitjsefnie, @VedantMadane, @yu010101, @jlonsdalen, and @finagolfin (Android #21). Roster: [Docs/Release/CONTRIBUTORS.md](Docs/Release/CONTRIBUTORS.md).
 
 ## Full changelog
 
