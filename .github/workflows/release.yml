@@ -179,7 +179,7 @@ jobs:
           fi
 
           echo "" >> release_notes.md
-          echo "### Contributors" >> release_notes.md
+          echo "### Contributors (this release)" >> release_notes.md
           echo "" >> release_notes.md
           if [ -n "$LAST_TAG" ]; then
             curl -fsSL \
@@ -188,6 +188,11 @@ jobs:
               "https://api.github.com/repos/${{ github.repository }}/compare/${LAST_TAG}...${{ github.ref_name }}" \
               | jq -r '[.commits[].author.login | select(. != null and . != "github-actions[bot]")] | unique | sort | .[] | "- @" + .' \
               >> release_notes.md || echo "- See the [compare view](https://github.com/${{ github.repository }}/compare/$LAST_TAG...${{ github.ref_name }}) for commit authors." >> release_notes.md
+          fi
+
+          if [ -f Docs/Release/ECOSYSTEM_THANKS.md ]; then
+            echo "" >> release_notes.md
+            cat Docs/Release/ECOSYSTEM_THANKS.md >> release_notes.md
           fi
 
           echo "" >> release_notes.md
