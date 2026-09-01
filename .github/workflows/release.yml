@@ -174,7 +174,20 @@ jobs:
           if [ -z "$LAST_TAG" ]; then
             echo "- Initial release" >> release_notes.md
           else
-            git log $LAST_TAG..HEAD --pretty=format:"- %s" >> release_notes.md
+            git log $LAST_TAG..HEAD --pretty=format:"- %s" \
+              | sed -E 's/@main/`main`/g' >> release_notes.md
+          fi
+
+          echo "" >> release_notes.md
+          echo "### Contributors" >> release_notes.md
+          echo "" >> release_notes.md
+          if [ -n "$LAST_TAG" ]; then
+            curl -fsSL \
+              -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+              -H "Accept: application/vnd.github+json" \
+              "https://api.github.com/repos/${{ github.repository }}/compare/${LAST_TAG}...${{ github.ref_name }}" \
+              | jq -r '[.commits[].author.login | select(. != null and . != "github-actions[bot]")] | unique | sort | .[] | "- @" + .' \
+              >> release_notes.md || echo "- See the [compare view](https://github.com/${{ github.repository }}/compare/$LAST_TAG...${{ github.ref_name }}) for commit authors." >> release_notes.md
           fi
 
           echo "" >> release_notes.md
@@ -209,6 +222,8 @@ jobs:
           else
             echo "**Full Changelog**: https://github.com/${{ github.repository }}/releases/tag/${{ github.ref_name }}" >> release_notes.md
           fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload release notes
         uses: actions/upload-artifact@v5
