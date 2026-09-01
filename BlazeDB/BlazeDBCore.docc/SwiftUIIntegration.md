@@ -4,28 +4,43 @@ SwiftUI integration lives in ``BlazeDBCore`` behind `import BlazeDB`. It is avai
 
 ## Pattern
 
-1. Open ``BlazeDBClient`` once (usually in an app-owned singleton or `@main` setup).
+1. Hold one ``BlazeDBClient`` in an app-owned type (for example `SeekerDatabase.shared`).
 2. Inject it at the root with `.blazeDBEnvironment(_:)`.
 3. Read with ``BlazeStorableQuery``.
 4. Write with the `blazeDBClient` environment value and `put(_:)`.
 
 ## 1. Open once at app launch
 
+Use a **single app database type** with a `shared` singleton and a public `db` property. Prefer ``BlazeDBClient/open(named:password:)`` inside a throwing `init`, and surface launch failures from `shared` with `fatalError` (or your app's crash reporter).
+
 ```swift
-import SwiftUI
 import BlazeDB
 
-final class AppDatabase {
-    static let shared = AppDatabase()
-    let db: BlazeDBClient
+public final class SeekerDatabase {
+    public static let shared: SeekerDatabase = {
+        do {
+            return try SeekerDatabase()
+        } catch {
+            fatalError("Failed to initialize Seeker database: \(error)")
+        }
+    }()
 
-    private init() {
-        db = try! BlazeDB.open(name: "seeker", password: "YourSecurePassword123!")
+    public let db: BlazeDBClient
+
+    public init() throws {
+        let password = loadPasswordFromKeychain() // do not hardcode in source
+
+        self.db = try BlazeDBClient.open(
+            named: "seeker",
+            password: password
+        )
     }
 }
 ```
 
-Store the password in the Keychain in production apps. Do not hardcode secrets in source.
+Store the password in the Keychain in production apps. The `named:` argument is the on-disk database name (`seeker` → `seeker.blazedb` under the default BlazeDB directory).
+
+``BlazeDB/open(name:password:)`` is equivalent if you prefer the facade; keep one client instance either way.
 
 ## 2. Inject at the root
 
@@ -35,7 +50,7 @@ struct SeekerApp: App {
     var body: some Scene {
         WindowGroup {
             JobListView()
-                .blazeDBEnvironment(AppDatabase.shared.db)
+                .blazeDBEnvironment(SeekerDatabase.shared.db)
         }
     }
 }
@@ -45,7 +60,7 @@ struct SeekerApp: App {
 
 ```swift
 JobListView()
-    .environment(\.blazeDBClient, AppDatabase.shared.db)
+    .environment(\.blazeDBClient, SeekerDatabase.shared.db)
 ```
 
 `blazeDBClient` is optional. If no ancestor injects a client, ``BlazeStorableQuery`` stays empty until one is available.

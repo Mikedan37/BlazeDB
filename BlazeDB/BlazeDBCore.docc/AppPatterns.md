@@ -1,6 +1,6 @@
 # Common SwiftUI app patterns
 
-Recipes for tabs, navigation, grouped lists, and layering reads and writes. These use standard SwiftUI with BlazeDB; see <doc:SwiftUIIntegration> for the base setup.
+Recipes for tabs, navigation, grouped lists, and layering reads and writes. These use standard SwiftUI with BlazeDB. Assume `SeekerDatabase.shared.db` is injected at the root (see <doc:SwiftUIIntegration>).
 
 ## Tabs with different live queries
 

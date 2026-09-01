@@ -8,7 +8,7 @@ BlazeDB is an encrypted, embedded database for Swift apps. Use it on the command
 
 Most apps follow one of two paths:
 
-1. **SwiftUI apps** open once, inject with `.blazeDBEnvironment(_:)`, read with ``BlazeStorableQuery``, write with the `blazeDBClient` environment value.
+1. **SwiftUI apps** hold one ``BlazeDBClient`` in an app-owned type (for example `SeekerDatabase.shared`), inject with `.blazeDBEnvironment(_:)`, read with ``BlazeStorableQuery``, write with the `blazeDBClient` environment value.
 2. **Non-UI code** open with ``BlazeDB/open(name:password:)``, then use `put`, `get`, and namespace `query`.
 
 The ``BlazeDB`` package product re-exports this module. In app code you usually write `import BlazeDB`.

@@ -5,8 +5,8 @@ One-page cheat sheet for a typical SwiftUI app (jobs, tasks, notes). For full wa
 ## Mental model
 
 ```
-Open once  →  BlazeDB.open(name:password:)
-Inject     →  .blazeDBEnvironment(db) on the root view
+Open once  →  SeekerDatabase.shared.db  (BlazeDBClient.open(named:password:) inside)
+Inject     →  .blazeDBEnvironment(SeekerDatabase.shared.db) on the root view
 Read       →  @BlazeStorableQuery(kind: Model.self)
 Write      →  @Environment(\.blazeDBClient) + try db.put(model)
 ```
@@ -16,12 +16,24 @@ Write      →  @Environment(\.blazeDBClient) + try db.put(model)
 ```swift
 import BlazeDB
 
-final class AppDatabase {
-    static let shared = AppDatabase()
-    let db: BlazeDBClient
+public final class SeekerDatabase {
+    public static let shared: SeekerDatabase = {
+        do {
+            return try SeekerDatabase()
+        } catch {
+            fatalError("Failed to initialize Seeker database: \(error)")
+        }
+    }()
 
-    private init() {
-        db = try! BlazeDB.open(name: "myapp", password: keychainPassword)
+    public let db: BlazeDBClient
+
+    public init() throws {
+        let password = loadPasswordFromKeychain()
+
+        self.db = try BlazeDBClient.open(
+            named: "seeker",
+            password: password
+        )
     }
 }
 ```
@@ -33,7 +45,7 @@ Store the password in Keychain in production. Do not hardcode secrets.
 ```swift
 WindowGroup {
     ContentView()
-        .blazeDBEnvironment(AppDatabase.shared.db)
+        .blazeDBEnvironment(SeekerDatabase.shared.db)
 }
 ```
 

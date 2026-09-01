@@ -31,26 +31,47 @@ BlazeDB stores each model under a namespace derived from the type name (for exam
 
 ## 3. Open the database
 
-Prefer the ``BlazeDB`` facade for new code:
+**SwiftUI apps:** use one app-owned holder (see <doc:SwiftUIIntegration>). Example:
 
 ```swift
-let db = try BlazeDB.open(name: "seeker", password: "YourSecurePassword123!")
+public final class SeekerDatabase {
+    public static let shared: SeekerDatabase = {
+        do {
+            return try SeekerDatabase()
+        } catch {
+            fatalError("Failed to initialize Seeker database: \(error)")
+        }
+    }()
+
+    public let db: BlazeDBClient
+
+    public init() throws {
+        let password = loadPasswordFromKeychain()
+        self.db = try BlazeDBClient.open(named: "seeker", password: password)
+    }
+}
+```
+
+**CLI, tests, and services** can open inline:
+
+```swift
+let db = try BlazeDBClient.open(named: "seeker", password: "YourSecurePassword123!")
 ```
 
 For a specific file URL:
 
 ```swift
 let url = FileManager.default.temporaryDirectory.appendingPathComponent("demo.blazedb")
-let db = try BlazeDB.open(at: url, password: "YourSecurePassword123!")
+let db = try BlazeDBClient.open(at: url, password: "YourSecurePassword123!")
 ```
 
-The underlying client API is equivalent:
+The ``BlazeDB`` facade mirrors the same calls:
 
 ```swift
-let db = try BlazeDBClient.open(named: "seeker", password: "YourSecurePassword123!")
+let db = try BlazeDB.open(name: "seeker", password: "YourSecurePassword123!")
 ```
 
-Passwords must meet the library minimum length (8 characters).
+Passwords must meet the library minimum length (8 characters). Store production passwords in Keychain, not source.
 
 ## 4. Create, read, update
 

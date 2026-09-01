@@ -188,7 +188,7 @@ public enum BlazeCorruptionError: Error {
 
 /// Encrypted database client for BlazeDB.
 ///
-/// **Most apps only need the <doc:DailyAPI>:** open, `put`, `get`, namespace `query`, and `delete`.
+/// **Most apps only need the <doc:DailyAPI>:** hold one client on `SeekerDatabase.shared`, then `put`, `get`, namespace `query`, and `delete`.
 /// This symbol page groups methods by task; the auto-generated list at the bottom is the full advanced reference.
 public final class BlazeDBClient: @unchecked Sendable {
     internal var collection: DynamicCollection

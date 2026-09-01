@@ -6,14 +6,15 @@ Use this while wiring BlazeDB into your app. Do one phase at a time. Check items
 
 - [ ] Add BlazeDB package (local path or GitHub)
 - [ ] Depend on the **BlazeDB** product
-- [ ] Create `AppDatabase` (or similar) that calls ``BlazeDB/open(name:password:)`` **once**
+- [ ] Create `SeekerDatabase` (or similar) with `BlazeDBClient.open(named:password:)` **once** in `shared`
+- [ ] Use `do` / `catch` in `shared` and `throws` on `init` (avoid `try!` in app code)
 - [ ] Store password in Keychain (not hardcoded in source)
 - [ ] Confirm the app launches without a database error
 
 ## Phase 1: One model, one list
 
 - [ ] Define one ``BlazeStorable`` model (`UUID` id, `Codable` fields)
-- [ ] Add `.blazeDBEnvironment(db)` on the root `WindowGroup`
+- [ ] Add `.blazeDBEnvironment(SeekerDatabase.shared.db)` on the root `WindowGroup`
 - [ ] Add `@BlazeStorableQuery(kind: YourModel.self)` on a list screen
 - [ ] Render `List(items) { ... }`
 - [ ] If the list is empty, verify injection (see <doc:SwiftUIIntegration>)
@@ -69,8 +70,8 @@ See <doc:LocationQueries>.
 
 | Task | API |
 |------|-----|
-| Open | ``BlazeDB/open(name:password:)`` |
-| Inject | `.blazeDBEnvironment(_:)` |
+| Open | `SeekerDatabase.shared` → ``BlazeDBClient/open(named:password:)`` |
+| Inject | `.blazeDBEnvironment(SeekerDatabase.shared.db)` |
 | Live list | ``BlazeStorableQuery`` |
 | Write | the `blazeDBClient` environment value + `put` |
 | Read one | `get("namespace:<uuid>")` |

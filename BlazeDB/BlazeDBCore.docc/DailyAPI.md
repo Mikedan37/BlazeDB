@@ -6,7 +6,7 @@ Most apps only need **five operations**. Everything else on ``BlazeDBClient`` is
 
 | Task | API | Notes |
 |------|-----|-------|
-| Open | ``BlazeDB/open(name:password:)`` | Once per database |
+| Open | ``BlazeDBClient/open(named:password:)`` inside `SeekerDatabase.shared` | Once per database |
 | Save / update | `put(_:)` on ``BlazeDBClient`` | Same call for insert and update |
 | Read one | `get(_:)` | Key: `"namespace:\(uuid)"` |
 | Read many | `query("namespace")` + filters | See <doc:DailyAPI> |
@@ -26,15 +26,34 @@ See <doc:SwiftUIIntegration>.
 
 ## Open
 
+**Apps:** hold one client on a type you own (for example `SeekerDatabase.shared.db`):
+
 ```swift
-let db = try BlazeDB.open(name: "myapp", password: keychainPassword)
+public final class SeekerDatabase {
+    public static let shared: SeekerDatabase = {
+        do {
+            return try SeekerDatabase()
+        } catch {
+            fatalError("Failed to initialize Seeker database: \(error)")
+        }
+    }()
+
+    public let db: BlazeDBClient
+
+    public init() throws {
+        let password = loadPasswordFromKeychain()
+        self.db = try BlazeDBClient.open(named: "seeker", password: password)
+    }
+}
 ```
 
-Equivalent on the client:
+**Scripts and tests** can open inline:
 
 ```swift
 let db = try BlazeDBClient.open(named: "myapp", password: keychainPassword)
 ```
+
+``BlazeDB/open(name:password:)`` is equivalent to ``BlazeDBClient/open(named:password:)``.
 
 ## Model
 
