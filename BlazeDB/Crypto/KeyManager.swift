@@ -27,6 +27,15 @@ public final class KeyManager {
     /// Faster default under XCTest when no override/env is set.
     public static let xctestPBKDF2Iterations = 100_000
 
+    /// Iteration counts another process context may have used to sign an
+    /// existing layout (production vs XCTest-hosted derive differently from
+    /// the same password+salt). Probed when the current context's key fails
+    /// layout signature verification on open.
+    internal static let crossContextPBKDF2IterationCandidates = [
+        productionPBKDF2Iterations,
+        xctestPBKDF2Iterations,
+    ]
+
     internal static let legacyPasswordSalt = Data("AshPileSalt".utf8)
     nonisolated(unsafe) private static var passwordKeyCache = [String: SymmetricKey]()
     private static let passwordKeyCacheLock = NSLock()

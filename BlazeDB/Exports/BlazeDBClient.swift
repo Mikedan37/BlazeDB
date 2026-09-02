@@ -252,6 +252,47 @@ public final class BlazeDBClient: @unchecked Sendable {
         return (derivedKey, true)
     }
 
+    /// If a signed layout exists but the given key does not verify it, probe the
+    /// known cross-context PBKDF2 iteration counts and return the key that does.
+    /// The verified key becomes the client key for both signing and page
+    /// encryption, so a database written in one KDF context opens in the other.
+    /// Falls back to the given key when no meta exists, the meta is not a
+    /// decodable secure layout, or no candidate verifies (existing error paths
+    /// then report the failure).
+    private static func reconcileKeyWithStoredLayout(
+        candidateKey: SymmetricKey,
+        metaURL: URL,
+        password: String,
+        kdfSalt: Data
+    ) -> SymmetricKey {
+        guard FileManager.default.fileExists(atPath: metaURL.path),
+              let data = try? Data(contentsOf: metaURL) else {
+            return candidateKey
+        }
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        guard let secureLayout = try? decoder.decode(StorageLayout.SecureLayout.self, from: data) else {
+            return candidateKey
+        }
+        if secureLayout.verify(using: candidateKey) {
+            return candidateKey
+        }
+        for iterations in KeyManager.crossContextPBKDF2IterationCandidates {
+            guard let derived = try? KeyManager.deriveKeyPBKDF2(
+                password: Data(password.utf8),
+                salt: kdfSalt,
+                iterations: iterations,
+                keyLength: 32
+            ) else { continue }
+            let crossContextKey = SymmetricKey(data: derived)
+            if secureLayout.verify(using: crossContextKey) {
+                BlazeLogger.warn("Layout was signed under a different KDF context; adopting key derived with \(iterations) PBKDF2 iterations")
+                return crossContextKey
+            }
+        }
+        return candidateKey
+    }
+
     private static func commitSessionIfNeeded(
         dbPath: String,
         key: SymmetricKey,
@@ -480,7 +521,15 @@ public final class BlazeDBClient: @unchecked Sendable {
             password: password,
             kdfSalt: kdfSalt
         )
-        let key = keyResolution.key
+        // The PBKDF2 iteration count is context-dependent (production vs XCTest),
+        // so an existing layout may be signed with a key this context cannot
+        // re-derive from password+salt alone. Adopt the key that verifies it.
+        let key = Self.reconcileKeyWithStoredLayout(
+            candidateKey: keyResolution.key,
+            metaURL: metaURL,
+            password: password,
+            kdfSalt: kdfSalt
+        )
         let pendingSessionInstall = keyResolution.pendingSessionInstall
         self.encryptionKey = key
 
