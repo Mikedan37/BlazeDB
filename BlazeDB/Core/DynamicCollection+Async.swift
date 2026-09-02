@@ -286,8 +286,8 @@ extension DynamicCollection {
         // CRITICAL: Ensure release is called before returning, not in a background Task
         // Use do-catch pattern to ensure release happens before return
         do {
-            invalidateQueryCacheSync()
             try update(id: id, with: data)
+            invalidateQueryCacheSync()
             await operationPool.release()
         } catch {
             // CRITICAL: Release on error to prevent resource leak
@@ -304,8 +304,8 @@ extension DynamicCollection {
         // CRITICAL: Ensure release is called before returning, not in a background Task
         // Use do-catch pattern to ensure release happens before return
         do {
-            invalidateQueryCacheSync()
             try delete(id: id)
+            invalidateQueryCacheSync()
             await operationPool.release()
         } catch {
             // CRITICAL: Release on error to prevent resource leak

@@ -34,6 +34,9 @@ private func runMemoryPool(_ body: () throws -> Void) rethrows {
 }
 
 private func isThreadSanitizerEnabled() -> Bool {
+    #if sanitize(Thread)
+    return true
+    #endif
     // CI sets this for TSan lanes because `dlsym(__tsan_init)` is not always visible after linking.
     if ProcessInfo.processInfo.environment["BLAZEDB_THREAD_SANITIZER"] == "1" { return true }
     if ProcessInfo.processInfo.environment["TSAN_OPTIONS"] != nil { return true }
