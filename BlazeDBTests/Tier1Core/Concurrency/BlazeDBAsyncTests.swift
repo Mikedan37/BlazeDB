@@ -21,6 +21,8 @@ final class BlazeDBAsyncTests: XCTestCase {
     private var tempURL: URL?
 
     override func setUpWithError() throws {
+        QueryCache.shared.clearAll()
+        DynamicCollection.clearAllAsyncCaches()
         tempURL = FileManager.default.temporaryDirectory
             .appendingPathComponent("test_async_\(UUID().uuidString).blazedb")
         db = try BlazeDBClient(name: "TestAsync", fileURL: try requireFixture(tempURL), password: "SecureTestDB-456!")
@@ -29,6 +31,8 @@ final class BlazeDBAsyncTests: XCTestCase {
     override func tearDownWithError() throws {
         db = nil
         try? FileManager.default.removeItem(at: try requireFixture(tempURL))
+        QueryCache.shared.clearAll()
+        DynamicCollection.clearAllAsyncCaches()
     }
 
     func testAsyncCRUDFlow() async throws {
