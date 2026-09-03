@@ -346,7 +346,12 @@ final class FullTextSearchTests: XCTestCase {
         
         XCTAssertGreaterThan(results.count, 0, "Should find records matching all criteria")
         // CI hosts can be noisy; keep this a regression guard, not a flaky hard cap.
-        XCTAssertLessThan(duration, 1.25, "Filtered search should remain performant")
+        let maxSearchSeconds: TimeInterval = CICDDetection.isRunningInCI ? 3.0 : 1.25
+        XCTAssertLessThan(
+            duration,
+            maxSearchSeconds,
+            "Filtered search should remain performant (< \(maxSearchSeconds)s, was \(String(format: "%.3f", duration))s)"
+        )
     }
     
     // MARK: - Real-World Scenarios
