@@ -166,6 +166,25 @@ public final class QueryCache {
     }
 }
 
+// MARK: - Cache Key Namespaces
+
+/// Result-type namespaces for query cache keys.
+///
+/// The cached query APIs derive their key from the same `generateCacheKey()` but store
+/// different value types. Without a namespace their entries collide: `QueryCache.get`
+/// fails its `as? T` cast, the query re-executes, and the `set` overwrites the other
+/// API's entry — correct results, but neither caller ever gets a stable hit.
+///
+/// Lookup and insert must use the same prefixed key.
+enum QueryCacheNamespace {
+    /// `QueryBuilder.execute(withCache:)` — stores `QueryResult`.
+    static let queryResult = "query-result:"
+    /// Deprecated `QueryBuilder.executeWithCache(ttl:)` — stores `[BlazeDataRecord]`.
+    static let legacyRecords = "legacy-records:"
+    /// `QueryBuilder.executeGroupedAggregationWithCache(ttl:)` — stores `GroupedAggregationResult`.
+    static let groupedAggregation = "grouped_agg:"
+}
+
 // MARK: - Query Builder Cache Extension
 
 extension QueryBuilder {
@@ -182,7 +201,7 @@ extension QueryBuilder {
     /// - Returns: Cached or fresh results
     @available(*, deprecated, message: "Use execute(withCache:) which returns QueryResult")
     public func executeWithCache(ttl: TimeInterval = 60) throws -> [BlazeDataRecord] {
-        let key = cacheKey
+        let key = QueryCacheNamespace.legacyRecords + cacheKey
         
         // Check cache first
         if let cached: [BlazeDataRecord] = QueryCache.shared.get(key: key) {
@@ -205,7 +224,7 @@ extension QueryBuilder {
     /// - Parameter ttl: Time-to-live in seconds (default: 60)
     /// - Returns: Cached or fresh aggregation results
     public func executeGroupedAggregationWithCache(ttl: TimeInterval = 60) throws -> GroupedAggregationResult {
-        let key = "grouped_agg:" + cacheKey
+        let key = QueryCacheNamespace.groupedAggregation + cacheKey
         
         if let cached: GroupedAggregationResult = QueryCache.shared.get(key: key) {
             BlazeLogger.info("Returning cached aggregation results (\(cached.groups.count) groups)")

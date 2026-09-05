@@ -81,15 +81,17 @@ final class QueryCacheDatabaseIsolationTests: XCTestCase {
         XCTAssertTrue(keyA.contains(databaseA.collection.instanceID.uuidString))
         XCTAssertTrue(keyB.contains(databaseB.collection.instanceID.uuidString))
 
+        // `cachedOwners` reads through `execute(withCache:)`, so plant in that API's
+        // result-type namespace (#454) — an unprefixed plant is never looked up.
         QueryCache.shared.set(
-            key: keyA,
+            key: QueryCacheNamespace.queryResult + keyA,
             value: QueryResult.records([BlazeDataRecord([
                 "kind": .string("shared"), "owner": .string("planted-a")
             ])]),
             ttl: 60
         )
         QueryCache.shared.set(
-            key: keyB,
+            key: QueryCacheNamespace.queryResult + keyB,
             value: QueryResult.records([BlazeDataRecord([
                 "kind": .string("shared"), "owner": .string("planted-b")
             ])]),
