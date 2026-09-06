@@ -201,6 +201,23 @@ final class RLSEnforcementClientTests: XCTestCase {
         } catch BlazeDBError.permissionDenied(_, _) {
             // Expected.
         }
+
+        let queriedAll = try await db.queryAsync(useCache: true)
+        let queriedHidden = try await db.queryAsync(
+            where: "title",
+            equals: .string("hidden"),
+            useCache: true
+        )
+        let queriedVisible = try await db.queryAsync(
+            where: "title",
+            equals: .string("visible"),
+            useCache: true
+        )
+        XCTAssertEqual(queriedAll.count, 1, "queryAsync must apply SELECT RLS to unfiltered reads")
+        XCTAssertEqual(queriedAll.first?["title"], .string("visible"))
+        XCTAssertTrue(queriedHidden.isEmpty, "queryAsync must not return SELECT-denied rows")
+        XCTAssertEqual(queriedVisible.count, 1)
+        XCTAssertEqual(queriedVisible.first?["title"], .string("visible"))
     }
     #endif
 
