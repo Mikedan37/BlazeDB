@@ -2096,6 +2096,14 @@ public final class BlazeDBClient: @unchecked Sendable {
             try collection.store.synchronize()
         }
 
+        // Writes during the transaction invalidate query caches, but a subsequent
+        // cached query can repopulate them with in-transaction results. Clear both
+        // caches after restore so rollback cannot return discarded rows.
+        QueryCache.shared.clearAll()
+        #if !BLAZEDB_LINUX_CORE
+        collection.invalidateQueryCacheSync()
+        #endif
+
         // Discard transaction state
         transactionIndexMapSnapshot = nil
         transactionRecordSnapshot = nil
