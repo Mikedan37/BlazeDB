@@ -234,14 +234,28 @@ extension BlazeDBClient {
         let startTime = Date()
         
         do {
-            let results = try await collection.queryAsync(
-                where: field,
-                equals: value,
-                orderBy: orderBy,
-                descending: descending,
-                limit: limit,
-                useCache: useCache
-            )
+            // RLS-enabled clients must go through query(), which injects the SELECT
+            // policy. collection.queryAsync has no client context and its cache key
+            // also omits RLS, so a cached admin read would otherwise leak across tenants.
+            let results: [BlazeDataRecord]
+            if shouldEnforceRLS {
+                results = try executeRLSAwareQuery(
+                    where: field,
+                    equals: value,
+                    orderBy: orderBy,
+                    descending: descending,
+                    limit: limit
+                )
+            } else {
+                results = try await collection.queryAsync(
+                    where: field,
+                    equals: value,
+                    orderBy: orderBy,
+                    descending: descending,
+                    limit: limit,
+                    useCache: useCache
+                )
+            }
             
             let duration = Date().timeIntervalSince(startTime) * 1000
             telemetry.record(operation: "queryAsync", duration: duration, success: true, recordCount: results.count)
@@ -251,6 +265,38 @@ extension BlazeDBClient {
             let duration = Date().timeIntervalSince(startTime) * 1000
             telemetry.record(operation: "queryAsync", duration: duration, success: false, recordCount: 0, error: error)
             throw error
+        }
+    }
+
+    /// Runs the deprecated queryAsync filters through the canonical client query builder
+    /// so SELECT policies apply before any rows are returned.
+    private func executeRLSAwareQuery(
+        where field: String?,
+        equals value: BlazeDocumentField?,
+        orderBy: String?,
+        descending: Bool,
+        limit: Int?
+    ) throws -> [BlazeDataRecord] {
+        var builder = query()
+        if let field, let value {
+            builder = builder.where(field, equals: value)
+        }
+        if let orderBy {
+            builder = builder.orderBy(orderBy, descending: descending)
+        }
+        if let limit {
+            builder = builder.limit(limit)
+        }
+
+        switch try builder.execute() {
+        case .records(let records):
+            return records
+        case .joined(let joined):
+            return joined.map { $0.left }
+        case .aggregation, .grouped, .search:
+            throw BlazeDBError.invalidQuery(
+                reason: "Aggregation/search queries not supported in queryAsync. Use query().execute() directly."
+            )
         }
     }
     
