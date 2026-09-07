@@ -119,6 +119,11 @@ public final class QueryBuilder: @unchecked Sendable {
     internal var groupByFields: [String] = []
     internal var aggregations: [AggregationType] = []
     internal var havingPredicate: ((AggregationResult) -> Bool)?
+    /// Live RLS/security partition mixed into cache keys. Closure filters are
+    /// recorded as `closure_N`, which does not distinguish tenant context, so
+    /// cached `execute(withCache:)` results would otherwise leak across
+    /// `setRLSContext` switches on the same client.
+    internal var cachePartitionProvider: (() -> String)?
     
     #if !BLAZEDB_LINUX_CORE
     // Advanced query features (spatial, vector, window functions)
@@ -742,6 +747,10 @@ public final class QueryBuilder: @unchecked Sendable {
         // QueryCache.shared is process-global, so isolate results by collection instance.
         if let collection {
             key += "_c\(collection.instanceID.uuidString)"
+        }
+
+        if let partition = cachePartitionProvider?(), !partition.isEmpty {
+            key += "_rls\(partition)"
         }
 
         // Include filters with their full descriptors (field, operation, value hash)
