@@ -1768,6 +1768,10 @@ public final class BlazeDBClient: @unchecked Sendable {
         // We don't check here to allow query builder construction
         let builder: QueryBuilder = collection.query()
         if shouldEnforceRLS {
+            let rls = self.rls
+            builder.cachePartitionProvider = { [weak rls] in
+                rls?.queryCachePartition() ?? "rls-deallocated"
+            }
             _ = builder.where { [rls] record in
                 rls.isAllowed(operation: .select, record: record)
             }
