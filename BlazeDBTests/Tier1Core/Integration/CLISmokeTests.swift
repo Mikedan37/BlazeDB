@@ -118,48 +118,58 @@ final class CLISmokeTests: XCTestCase {
         process.standardError = errorPipe
         process.standardInput = inputPipe
         inputPipe.fileHandleForWriting.closeFile()
-        
-        outputPipe.fileHandleForReading.readabilityHandler = { handle in
-            let chunk = handle.availableData
-            guard !chunk.isEmpty else { return }
-            outputBuffer.append(chunk)
+
+        let completion = DispatchSemaphore(value: 0)
+        process.terminationHandler = { _ in
+            completion.signal()
         }
-        errorPipe.fileHandleForReading.readabilityHandler = { handle in
-            let chunk = handle.availableData
-            guard !chunk.isEmpty else { return }
-            errorBuffer.append(chunk)
-        }
-        
+
         do {
-            let completion = DispatchSemaphore(value: 0)
-            process.terminationHandler = { _ in
-                completion.signal()
-            }
             try process.run()
-            
-            let waitResult = completion.wait(timeout: .now() + .seconds(30))
-            if waitResult == .timedOut {
-                process.terminate()
-                _ = completion.wait(timeout: .now() + .seconds(2))
-            }
-            
-            outputPipe.fileHandleForReading.readabilityHandler = nil
-            errorPipe.fileHandleForReading.readabilityHandler = nil
-            outputBuffer.append(outputPipe.fileHandleForReading.readDataToEndOfFile())
-            errorBuffer.append(errorPipe.fileHandleForReading.readDataToEndOfFile())
-            
-            let outputData = outputBuffer.snapshot()
-            let errorData = errorBuffer.snapshot()
-            let output = String(data: outputData, encoding: .utf8) ?? ""
-            let error = String(data: errorData, encoding: .utf8) ?? ""
-            if waitResult == .timedOut {
-                return (124, output, error + "\nProcess timed out after 30s")
-            }
-            
-            return (process.terminationStatus, output, error)
         } catch {
             return (1, "", "Failed to run process: \(error)")
         }
+
+        // Drain each pipe to EOF on its own thread. `readDataToEndOfFile()` returns
+        // only at EOF, which arrives once the child has exited and Foundation has
+        // closed this process's copy of the write end. Draining concurrently with
+        // the child also keeps a child that writes more than the pipe buffer
+        // (64 KiB) from blocking forever on a full pipe.
+        //
+        // A readability handler must NOT be used here: tearing one down does not
+        // wait for an already-dispatched block, so a chunk read by that block can
+        // land in the buffer after the snapshot below has been taken and be lost.
+        let drained = DispatchGroup()
+        for (handle, buffer) in [
+            (outputPipe.fileHandleForReading, outputBuffer),
+            (errorPipe.fileHandleForReading, errorBuffer)
+        ] {
+            DispatchQueue.global(qos: .userInitiated).async(group: drained) {
+                buffer.append(handle.readDataToEndOfFile())
+            }
+        }
+
+        let waitResult = completion.wait(timeout: .now() + .seconds(30))
+        if waitResult == .timedOut {
+            process.terminate()
+            _ = completion.wait(timeout: .now() + .seconds(2))
+        }
+
+        // The child is gone, so both readers observe EOF and finish. Joining them
+        // before snapshotting is what makes the capture deterministic: every
+        // append happens-before the reads below.
+        let drainResult = drained.wait(timeout: .now() + .seconds(10))
+
+        let output = String(data: outputBuffer.snapshot(), encoding: .utf8) ?? ""
+        var error = String(data: errorBuffer.snapshot(), encoding: .utf8) ?? ""
+        if drainResult == .timedOut {
+            error += "\nPipe drain did not complete within 10s; output may be truncated"
+        }
+        if waitResult == .timedOut {
+            return (124, output, error + "\nProcess timed out after 30s")
+        }
+
+        return (process.terminationStatus, output, error)
     }
     
     // MARK: - Test Database Setup

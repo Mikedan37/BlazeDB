@@ -140,48 +140,58 @@ final class CLISmokeTests: XCTestCase {
         process.standardError = errorPipe
         process.standardInput = inputPipe
         inputPipe.fileHandleForWriting.closeFile()
-        
-        outputPipe.fileHandleForReading.readabilityHandler = { handle in
-            let chunk = handle.availableData
-            guard !chunk.isEmpty else { return }
-            outputBuffer.append(chunk)
+
+        let completion = DispatchSemaphore(value: 0)
+        process.terminationHandler = { _ in
+            completion.signal()
         }
-        errorPipe.fileHandleForReading.readabilityHandler = { handle in
-            let chunk = handle.availableData
-            guard !chunk.isEmpty else { return }
-            errorBuffer.append(chunk)
-        }
-        
+
         do {
-            let completion = DispatchSemaphore(value: 0)
-            process.terminationHandler = { _ in
-                completion.signal()
-            }
             try process.run()
-            
-            let waitResult = completion.wait(timeout: .now() + .seconds(30))
-            if waitResult == .timedOut {
-                process.terminate()
-                _ = completion.wait(timeout: .now() + .seconds(2))
-            }
-            
-            outputPipe.fileHandleForReading.readabilityHandler = nil
-            errorPipe.fileHandleForReading.readabilityHandler = nil
-            outputBuffer.append(outputPipe.fileHandleForReading.readDataToEndOfFile())
-            errorBuffer.append(errorPipe.fileHandleForReading.readDataToEndOfFile())
-            
-            let outputData = outputBuffer.snapshot()
-            let errorData = errorBuffer.snapshot()
-            let output = String(data: outputData, encoding: .utf8) ?? ""
-            let error = String(data: errorData, encoding: .utf8) ?? ""
-            if waitResult == .timedOut {
-                return (124, output, error + "\nProcess timed out after 30s")
-            }
-            
-            return (process.terminationStatus, output, error)
         } catch {
             return (1, "", "Failed to run process: \(error)")
         }
+
+        // Drain each pipe to EOF on its own thread. `readDataToEndOfFile()` returns
+        // only at EOF, which arrives once the child has exited and Foundation has
+        // closed this process's copy of the write end. Draining concurrently with
+        // the child also keeps a child that writes more than the pipe buffer
+        // (64 KiB) from blocking forever on a full pipe.
+        //
+        // A readability handler must NOT be used here: tearing one down does not
+        // wait for an already-dispatched block, so a chunk read by that block can
+        // land in the buffer after the snapshot below has been taken and be lost.
+        let drained = DispatchGroup()
+        for (handle, buffer) in [
+            (outputPipe.fileHandleForReading, outputBuffer),
+            (errorPipe.fileHandleForReading, errorBuffer)
+        ] {
+            DispatchQueue.global(qos: .userInitiated).async(group: drained) {
+                buffer.append(handle.readDataToEndOfFile())
+            }
+        }
+
+        let waitResult = completion.wait(timeout: .now() + .seconds(30))
+        if waitResult == .timedOut {
+            process.terminate()
+            _ = completion.wait(timeout: .now() + .seconds(2))
+        }
+
+        // The child is gone, so both readers observe EOF and finish. Joining them
+        // before snapshotting is what makes the capture deterministic: every
+        // append happens-before the reads below.
+        let drainResult = drained.wait(timeout: .now() + .seconds(10))
+
+        let output = String(data: outputBuffer.snapshot(), encoding: .utf8) ?? ""
+        var error = String(data: errorBuffer.snapshot(), encoding: .utf8) ?? ""
+        if drainResult == .timedOut {
+            error += "\nPipe drain did not complete within 10s; output may be truncated"
+        }
+        if waitResult == .timedOut {
+            return (124, output, error + "\nProcess timed out after 30s")
+        }
+
+        return (process.terminationStatus, output, error)
     }
     
     // MARK: - Test Database Setup
@@ -332,6 +342,55 @@ final class CLISmokeTests: XCTestCase {
         XCTAssertEqual(exitCode, 0, "argv password should still work for compatibility. stderr: \(error)")
         XCTAssertTrue(error.contains("BLAZEDB_PASSWORD"), "Expected argv deprecation warning. stderr: \(error)")
         XCTAssertFalse(error.contains(testPassword), "stderr must not echo the password")
+    }
+
+    // MARK: - Capture harness regression
+
+    /// Regression guard for the `runProcess` capture race.
+    ///
+    /// Every CLI assertion in this file trusts that `runProcess` returns everything
+    /// the child wrote. A child that writes its output and exits immediately —
+    /// which is exactly what `BlazeInfo` does, printing its report and then calling
+    /// `exit(0)` — leaves the last bytes in flight at the moment the process dies.
+    /// If the capture snapshots its buffers before the pipe readers have finished
+    /// draining, that tail is silently dropped and the caller sees empty or
+    /// truncated output alongside a successful exit code.
+    ///
+    /// The payload is deliberately larger than the 64 KiB pipe buffer so a
+    /// capture that only reads once, or that reads without draining concurrently,
+    /// truncates or deadlocks rather than passing by luck.
+    func testRunProcess_CapturesCompleteOutputWhenChildExitsImmediatelyAfterWriting() throws {
+        let payload = String(repeating: "B", count: 256 * 1024)
+        let payloadFile = tempDir.appendingPathComponent("capture_payload.txt")
+        try payload.write(to: payloadFile, atomically: true, encoding: .utf8)
+        let marker = "STDERR-MARKER"
+
+        // The race is by nature probabilistic; iterate so a regression cannot
+        // slip through on a single lucky scheduling outcome.
+        for iteration in 1...200 {
+            let (exitCode, output, error) = runShell(
+                "printf '%s' '\(marker)' >&2; sleep 0.01; cat '\(payloadFile.path)'; exit 0"
+            )
+
+            XCTAssertEqual(exitCode, 0, "iteration \(iteration): child should exit cleanly")
+            XCTAssertEqual(
+                output.count,
+                payload.count,
+                "iteration \(iteration): stdout truncated — captured \(output.count) of \(payload.count) bytes"
+            )
+            XCTAssertEqual(error, marker, "iteration \(iteration): stderr not captured verbatim")
+        }
+    }
+
+    /// Runs a shell script through the same `runProcess` capture path the CLI
+    /// assertions use, so the harness itself can be exercised without depending
+    /// on a built BlazeDB executable.
+    private func runShell(_ script: String) -> (exitCode: Int32, output: String, error: String) {
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/bin/sh")
+        process.arguments = ["-c", script]
+        process.environment = ProcessInfo.processInfo.environment
+        return runProcess(process)
     }
 
     // MARK: - Integration Test
