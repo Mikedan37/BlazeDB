@@ -472,7 +472,7 @@ public final class QueryBuilder: @unchecked Sendable {
     
     /// Execute with caching support (unified)
     public func execute(withCache ttl: TimeInterval) throws -> QueryResult {
-        let cacheKey = generateCacheKey()
+        let cacheKey = QueryCacheNamespace.queryResult + generateCacheKey()
         BlazeLogger.debug("Checking cache with key: \(cacheKey.prefix(8))...")
         
         // Try cache first
