@@ -88,6 +88,45 @@ final class RLSEnforcementGapTests: XCTestCase {
         XCTAssertEqual(points.first?.y as? Int, 2)
     }
 
+    func testGraphFailsClosedWithoutRLSContext() throws {
+        let url = tempDir.appendingPathComponent("graph-rls-no-context.blazedb")
+        let db = try BlazeDBClient(name: "graph-rls-no-context", fileURL: url, password: password)
+        defer { try? db.close() }
+
+        let teamA = UUID()
+        let teamB = UUID()
+        _ = try db.insert(BlazeDataRecord(["team_id": .uuid(teamA), "n": .int(1)]))
+        _ = try db.insert(BlazeDataRecord(["team_id": .uuid(teamA), "n": .int(2)]))
+        _ = try db.insert(BlazeDataRecord(["team_id": .uuid(teamB), "n": .int(3)]))
+
+        db.enableRLS()
+        db.rls.addPolicy(SecurityPolicy(
+            name: "team_select",
+            operation: .select,
+            type: .restrictive
+        ) { context, record in
+            guard let team = record.storage["team_id"]?.uuidValue else { return false }
+            return context.teamIDs.contains(team)
+        })
+
+        XCTAssertTrue(try db.fetchAll().isEmpty, "fetchAll must fail closed without an RLS context")
+
+        let points = try db.graph().x("team_id").y(.count).toPoints()
+        XCTAssertTrue(points.isEmpty, "graph() must not aggregate other tenants when RLS context is missing")
+
+        let builderPoints = try db.graph { $0.x("team_id").y(.count) }.toPoints()
+        XCTAssertTrue(builderPoints.isEmpty, "graph { } builder must fail closed without an RLS context")
+
+        db.setRLSContext(userID: UUID(), teamIDs: [teamA], roles: ["engineer"])
+        let visible = try db.graph().x("team_id").y(.count).toPoints()
+        XCTAssertEqual(visible.count, 1)
+        XCTAssertEqual(visible.first?.y as? Int, 2)
+
+        db.clearRLSContext()
+        let afterLogout = try db.graph().x("team_id").y(.count).toPoints()
+        XCTAssertTrue(afterLogout.isEmpty, "graph() after clearRLSContext must not leak tenant aggregates")
+    }
+
     func testUpdateRejectsPostMutationRLSViolation() throws {
         let url = tempDir.appendingPathComponent("with-check.blazedb")
         let db = try BlazeDBClient(name: "with-check", fileURL: url, password: password)

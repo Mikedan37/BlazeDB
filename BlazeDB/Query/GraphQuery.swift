@@ -121,6 +121,13 @@ public final class GraphQuery<T> {
         } else if let client = client, let securityContext = client.rls.getContext() {
             let adminBypass = securityContext.hasRole("admin") || securityContext.hasRole("superuser")
             injectRLSFilter(securityContext: securityContext, client: client, adminBypass: adminBypass)
+        } else if let client = client, client.shouldEnforceRLS {
+            // Fail closed like `query()` / `fetchAll()`: policies are active but no
+            // security context is set (logout, or graph() before setRLSContext).
+            // Without this, GraphQuery scanned every row and leaked tenant aggregates.
+            _ = queryBuilder.where { [rls = client.rls] record in
+                rls.isAllowed(operation: .select, record: record)
+            }
         }
     }
     
