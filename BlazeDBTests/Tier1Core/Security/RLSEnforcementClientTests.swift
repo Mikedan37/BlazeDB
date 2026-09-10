@@ -144,6 +144,59 @@ final class RLSEnforcementClientTests: XCTestCase {
         XCTAssertEqual(records.first?.storage["teamId"]?.uuidValue, teamA)
     }
 
+    func testCachedQueryDoesNotLeakAcrossRLSContextSwitch() throws {
+        QueryCache.shared.clearAll()
+        QueryCache.shared.isEnabled = true
+        defer { QueryCache.shared.clearAll() }
+
+        let db = try makeClient()
+        let teamA = UUID()
+        let teamB = UUID()
+        _ = try db.insert(BlazeDataRecord(["teamId": .uuid(teamA), "title": .string("A1")]))
+        _ = try db.insert(BlazeDataRecord(["teamId": .uuid(teamB), "title": .string("B1")]))
+
+        db.enableRLS()
+        db.configureRLSAdminAndTeamPolicies(teamIDField: "teamId")
+        db.setRLSContext(userID: UUID(), teamIDs: [teamA], roles: ["member"])
+
+        let teamARows = try db.query().execute(withCache: 60)
+        XCTAssertEqual(try teamARows.records.count, 1)
+        XCTAssertEqual(try teamARows.records.first?.storage["title"]?.stringValue, "A1")
+
+        db.setRLSContext(userID: UUID(), teamIDs: [teamB], roles: ["member"])
+        let teamBRows = try db.query().execute(withCache: 60)
+        XCTAssertEqual(try teamBRows.records.count, 1, "Cached query must not return the previous tenant's rows")
+        XCTAssertEqual(try teamBRows.records.first?.storage["title"]?.stringValue, "B1")
+    }
+
+    func testCachedQueryOnReusedBuilderFollowsCurrentRLSContext() throws {
+        QueryCache.shared.clearAll()
+        QueryCache.shared.isEnabled = true
+        defer { QueryCache.shared.clearAll() }
+
+        let db = try makeClient()
+        let teamA = UUID()
+        let teamB = UUID()
+        _ = try db.insert(BlazeDataRecord(["teamId": .uuid(teamA), "title": .string("A1")]))
+        _ = try db.insert(BlazeDataRecord(["teamId": .uuid(teamB), "title": .string("B1")]))
+
+        db.enableRLS()
+        db.configureRLSAdminAndTeamPolicies(teamIDField: "teamId")
+        db.setRLSContext(userID: UUID(), teamIDs: [teamA], roles: ["member"])
+
+        let builder = db.query()
+        let keyBefore = builder.generateCacheKey()
+        XCTAssertTrue(keyBefore.contains("_rls"), "RLS-enabled cached queries must partition the cache key")
+        XCTAssertEqual(try builder.execute(withCache: 60).records.count, 1)
+        XCTAssertEqual(try builder.execute(withCache: 60).records.first?.storage["title"]?.stringValue, "A1")
+
+        db.setRLSContext(userID: UUID(), teamIDs: [teamB], roles: ["member"])
+        XCTAssertNotEqual(builder.generateCacheKey(), keyBefore, "Cache key must change with the live RLS context")
+        let afterSwitch = try builder.execute(withCache: 60)
+        XCTAssertEqual(try afterSwitch.records.count, 1)
+        XCTAssertEqual(try afterSwitch.records.first?.storage["title"]?.stringValue, "B1")
+    }
+
     #if !BLAZEDB_LINUX_CORE
     func testDeprecatedAsyncCRUDCannotBypassRLS() async throws {
         let db = try makeClient()
@@ -201,6 +254,23 @@ final class RLSEnforcementClientTests: XCTestCase {
         } catch BlazeDBError.permissionDenied(_, _) {
             // Expected.
         }
+
+        let queriedAll = try await db.queryAsync(useCache: true)
+        let queriedHidden = try await db.queryAsync(
+            where: "title",
+            equals: .string("hidden"),
+            useCache: true
+        )
+        let queriedVisible = try await db.queryAsync(
+            where: "title",
+            equals: .string("visible"),
+            useCache: true
+        )
+        XCTAssertEqual(queriedAll.count, 1, "queryAsync must apply SELECT RLS to unfiltered reads")
+        XCTAssertEqual(queriedAll.first?["title"], .string("visible"))
+        XCTAssertTrue(queriedHidden.isEmpty, "queryAsync must not return SELECT-denied rows")
+        XCTAssertEqual(queriedVisible.count, 1)
+        XCTAssertEqual(queriedVisible.first?["title"], .string("visible"))
     }
     #endif
 

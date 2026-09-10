@@ -1768,6 +1768,10 @@ public final class BlazeDBClient: @unchecked Sendable {
         // We don't check here to allow query builder construction
         let builder: QueryBuilder = collection.query()
         if shouldEnforceRLS {
+            let rls = self.rls
+            builder.cachePartitionProvider = { [weak rls] in
+                rls?.queryCachePartition() ?? "rls-deallocated"
+            }
             _ = builder.where { [rls] record in
                 rls.isAllowed(operation: .select, record: record)
             }
@@ -2095,6 +2099,14 @@ public final class BlazeDBClient: @unchecked Sendable {
             try collection.saveLayout()
             try collection.store.synchronize()
         }
+
+        // Writes during the transaction invalidate query caches, but a subsequent
+        // cached query can repopulate them with in-transaction results. Clear both
+        // caches after restore so rollback cannot return discarded rows.
+        QueryCache.shared.clearAll()
+        #if !BLAZEDB_LINUX_CORE
+        collection.invalidateQueryCacheSync()
+        #endif
 
         // Discard transaction state
         transactionIndexMapSnapshot = nil
