@@ -29,12 +29,14 @@ internal final class RLS {
     /// Enable RLS enforcement
     internal func enable() {
         policyEngine.setEnabled(true)
+        invalidateQueryCaches()
         BlazeLogger.info("🔐 RLS enabled for '\(client?.name ?? "unknown")'")
     }
-    
+
     /// Disable RLS enforcement
     internal func disable() {
         policyEngine.setEnabled(false)
+        invalidateQueryCaches()
         BlazeLogger.info("🔐 RLS disabled for '\(client?.name ?? "unknown")'")
     }
     
@@ -48,18 +50,18 @@ internal final class RLS {
     /// Set security context for current operations
     internal func setContext(_ context: SecurityContext) {
         lock.lock()
-        defer { lock.unlock() }
-        
         currentContext = context
+        lock.unlock()
+        invalidateQueryCaches()
         BlazeLogger.debug("🔐 Security context set: \(context.userID)")
     }
-    
+
     /// Clear security context
     internal func clearContext() {
         lock.lock()
-        defer { lock.unlock() }
-        
         currentContext = nil
+        lock.unlock()
+        invalidateQueryCaches()
         BlazeLogger.debug("🔐 Security context cleared")
     }
     
@@ -76,18 +78,21 @@ internal final class RLS {
     /// Add a security policy
     internal func addPolicy(_ policy: SecurityPolicy) {
         policyEngine.addPolicy(policy)
+        invalidateQueryCaches()
     }
-    
+
     /// Remove a policy
     internal func removePolicy(named name: String) {
         policyEngine.removePolicy(named: name)
+        invalidateQueryCaches()
     }
-    
+
     /// Clear all policies
     internal func clearPolicies() {
         policyEngine.clearPolicies()
+        invalidateQueryCaches()
     }
-    
+
     /// Get all policies
     internal func getPolicies() -> [SecurityPolicy] {
         return policyEngine.getPolicies()
@@ -95,6 +100,30 @@ internal final class RLS {
 
     internal func hasPolicies() -> Bool {
         !policyEngine.getPolicies().isEmpty
+    }
+
+    /// Stable cache-key fragment for the current RLS context and policy set.
+    /// Closure-based SELECT filters are indistinguishable in `generateCacheKey()`,
+    /// so this partition is what keeps tenant A from reading tenant B's cached rows.
+    internal func queryCachePartition() -> String {
+        let context = getContext()
+        let policies = getPolicies()
+            .map { "\($0.name):\($0.operation.rawValue):\($0.type.rawValue)" }
+            .sorted()
+            .joined(separator: ",")
+        guard let context else {
+            return "ctx:none|p:\(policies)"
+        }
+        let teams = context.teamIDs.map(\.uuidString).sorted().joined(separator: ",")
+        let roles = context.roles.sorted().joined(separator: ",")
+        let claims = context.customClaims.keys.sorted().map { key in
+            "\(key)=\(context.customClaims[key] ?? "")"
+        }.joined(separator: ",")
+        return "u:\(context.userID.uuidString)|t:\(teams)|r:\(roles)|c:\(claims)|p:\(policies)"
+    }
+
+    private func invalidateQueryCaches() {
+        client?.invalidateQueryCachesForSecurityChange()
     }
     
     // MARK: - User Management
@@ -235,6 +264,15 @@ extension BlazeDBClient {
         Self.rlsLock.lock()
         defer { Self.rlsLock.unlock() }
         Self.rlsManagers.removeValue(forKey: rlsManagerKey)
+    }
+
+    /// Drop cached query results when RLS context or policies change so a later
+    /// `execute(withCache:)` cannot return another tenant's rows.
+    internal func invalidateQueryCachesForSecurityChange() {
+        QueryCache.shared.clearAll()
+        #if !BLAZEDB_LINUX_CORE
+        collection.invalidateQueryCacheSync()
+        #endif
     }
 
     // MARK: - Public RLS Management (safe wrappers)
