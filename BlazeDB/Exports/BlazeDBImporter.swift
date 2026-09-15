@@ -66,8 +66,10 @@ public struct BlazeDBImporter {
             )
         }
         
-        // Verify database is empty (or warn)
-        let existingCount = db.getRecordCount()
+        // Verify the file is physically empty. `getRecordCount()` is RLS-visible
+        // (#336), so a tenant that cannot see existing rows would otherwise pass
+        // this check and merge the dump into live data.
+        let existingCount = db.storedRecordCount()
         if existingCount > 0 {
             throw BlazeDBError.invalidInput(
                 reason: "Cannot restore to non-empty database. Database has \(existingCount) records. Clear database first or use a new database."
@@ -87,8 +89,9 @@ public struct BlazeDBImporter {
             // Restore schema version
             try db.setSchemaVersion(dump.header.schemaVersion)
 
-            // Verify restore succeeded
-            let restoredCount = db.getRecordCount()
+            // Verify every dump row landed in storage, not merely that the
+            // current RLS context can see `manifest.recordCount` rows.
+            let restoredCount = db.storedRecordCount()
             guard restoredCount == dump.manifest.recordCount else {
                 throw BlazeDBError.corruptedData(
                     location: "restore verification",
