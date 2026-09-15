@@ -458,7 +458,16 @@ extension BlazeDBClient {
         if shouldEnforceRLS {
             return (try? count()) ?? 0
         }
-        return collection.queue.sync { collection.indexMap.count }
+        return storedRecordCount()
+    }
+
+    /// Storage-level cardinality from `indexMap`, ignoring RLS visibility.
+    ///
+    /// Administrative paths such as dump restore must use this rather than
+    /// `getRecordCount()`. After #336, a tenant that sees 0 rows would otherwise
+    /// look like an empty database and restore would merge into live data.
+    internal func storedRecordCount() -> Int {
+        collection.queue.sync { collection.indexMap.count }
     }
     
     /// Check if database needs maintenance
