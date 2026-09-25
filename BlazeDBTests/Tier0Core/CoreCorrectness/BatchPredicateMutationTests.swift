@@ -78,4 +78,16 @@ final class BatchPredicateMutationTests: XCTestCase {
         XCTAssertEqual(remaining.count, n)
         XCTAssertTrue(remaining.allSatisfy { $0.storage["tag"]?.stringValue == "touched" })
     }
+
+    /// #320: a successful batch delete must invalidate an already warmed fetchAll cache.
+    func testDeleteManyIDsInvalidatesFetchAllCache() throws {
+        let removed = try db.insert(BlazeDataRecord(["tag": .string("remove")]))
+        _ = try db.insert(BlazeDataRecord(["tag": .string("keep")]))
+        XCTAssertEqual(try db.fetchAll().count, 2)
+
+        XCTAssertEqual(try db.deleteMany(ids: [removed]), 1)
+        let remaining = try db.fetchAll()
+        XCTAssertEqual(remaining.count, 1)
+        XCTAssertEqual(remaining.first?.storage["tag"]?.stringValue, "keep")
+    }
 }
