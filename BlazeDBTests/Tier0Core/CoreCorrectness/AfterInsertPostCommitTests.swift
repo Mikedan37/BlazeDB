@@ -91,4 +91,63 @@ final class AfterInsertPostCommitTests: XCTestCase {
         XCTAssertThrowsError(try db.insert(BlazeDataRecord(["name": .string("blocked")])))
         XCTAssertEqual(try db.count(), 0)
     }
+
+    func testUpdateSucceedsWhenAfterUpdateTriggerThrows() throws {
+        let url = tempDir.appendingPathComponent("update-after-throw.blazedb")
+        let db = try BlazeDBClient(name: "AfterUpdatePostCommit", fileURL: url, password: password)
+        defer { try? db.close() }
+
+        let id = try db.insert(BlazeDataRecord(["name": .string("before")]))
+        db.createTrigger(name: "boom", event: .afterUpdate) { _, _ in
+            throw NSError(domain: "AfterInsertPostCommit", code: 5)
+        }
+
+        try db.update(id: id, with: BlazeDataRecord(["name": .string("after")]))
+        XCTAssertEqual(try db.fetch(id: id)?.storage["name"]?.stringValue, "after")
+    }
+
+    func testDeleteSucceedsWhenAfterDeleteTriggerThrows() throws {
+        let url = tempDir.appendingPathComponent("delete-after-throw.blazedb")
+        let db = try BlazeDBClient(name: "AfterDeletePostCommit", fileURL: url, password: password)
+        defer { try? db.close() }
+
+        let id = try db.insert(BlazeDataRecord(["name": .string("kept")]))
+        db.createTrigger(name: "boom", event: .afterDelete) { _, _ in
+            throw NSError(domain: "AfterInsertPostCommit", code: 6)
+        }
+
+        try db.delete(id: id)
+        XCTAssertNil(try db.fetch(id: id))
+        XCTAssertEqual(try db.count(), 0)
+    }
+
+    func testBeforeUpdateTriggerFailurePreservesRecord() throws {
+        let url = tempDir.appendingPathComponent("before-update-throw.blazedb")
+        let db = try BlazeDBClient(name: "BeforeUpdateReject", fileURL: url, password: password)
+        defer { try? db.close() }
+
+        let id = try db.insert(BlazeDataRecord(["name": .string("original")]))
+        db.createTrigger(name: "reject", event: .beforeUpdate) { _, _ in
+            throw NSError(domain: "AfterInsertPostCommit", code: 7)
+        }
+
+        XCTAssertThrowsError(try db.update(id: id, with: BlazeDataRecord(["name": .string("changed")])))
+        XCTAssertEqual(try db.fetch(id: id)?.storage["name"]?.stringValue, "original")
+        XCTAssertEqual(try db.count(), 1)
+    }
+
+    func testBeforeDeleteTriggerFailurePreservesRecord() throws {
+        let url = tempDir.appendingPathComponent("before-delete-throw.blazedb")
+        let db = try BlazeDBClient(name: "BeforeDeleteReject", fileURL: url, password: password)
+        defer { try? db.close() }
+
+        let id = try db.insert(BlazeDataRecord(["name": .string("original")]))
+        db.createTrigger(name: "reject", event: .beforeDelete) { _, _ in
+            throw NSError(domain: "AfterInsertPostCommit", code: 8)
+        }
+
+        XCTAssertThrowsError(try db.delete(id: id))
+        XCTAssertEqual(try db.fetch(id: id)?.storage["name"]?.stringValue, "original")
+        XCTAssertEqual(try db.count(), 1)
+    }
 }
