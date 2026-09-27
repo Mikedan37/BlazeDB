@@ -98,11 +98,14 @@ final class AfterInsertPostCommitTests: XCTestCase {
         defer { try? db.close() }
 
         let id = try db.insert(BlazeDataRecord(["name": .string("before")]))
+        var triggerRan = false
         db.createTrigger(name: "boom", event: .afterUpdate) { _, _ in
+            triggerRan = true
             throw NSError(domain: "AfterInsertPostCommit", code: 5)
         }
 
         try db.update(id: id, with: BlazeDataRecord(["name": .string("after")]))
+        XCTAssertTrue(triggerRan, "AFTER UPDATE trigger should run before its error is swallowed")
         XCTAssertEqual(try db.fetch(id: id)?.storage["name"]?.stringValue, "after")
     }
 
@@ -112,11 +115,14 @@ final class AfterInsertPostCommitTests: XCTestCase {
         defer { try? db.close() }
 
         let id = try db.insert(BlazeDataRecord(["name": .string("kept")]))
+        var triggerRan = false
         db.createTrigger(name: "boom", event: .afterDelete) { _, _ in
+            triggerRan = true
             throw NSError(domain: "AfterInsertPostCommit", code: 6)
         }
 
         try db.delete(id: id)
+        XCTAssertTrue(triggerRan, "AFTER DELETE trigger should run before its error is swallowed")
         XCTAssertNil(try db.fetch(id: id))
         XCTAssertEqual(try db.count(), 0)
     }
