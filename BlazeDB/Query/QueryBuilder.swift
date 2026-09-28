@@ -477,6 +477,12 @@ public final class QueryBuilder: @unchecked Sendable {
     
     /// Execute with caching support (unified)
     public func execute(withCache ttl: TimeInterval) throws -> QueryResult {
+        // HAVING is a closure, so it cannot be part of a stable cache key.
+        // Caching it would replay another grouped query's groups (#453).
+        if havingPredicate != nil {
+            return try execute()
+        }
+
         let cacheKey = QueryCacheNamespace.queryResult + generateCacheKey()
         BlazeLogger.debug("Checking cache with key: \(cacheKey.prefix(8))...")
         
@@ -793,9 +799,10 @@ public final class QueryBuilder: @unchecked Sendable {
             key += "_o\(offsetValue)"
         }
 
-        // Include aggregations
+        // Include aggregation operation, field, and alias. A count-only suffix
+        // made SUM("amount") and COUNT share one cached result (#453).
         if !aggregations.isEmpty {
-            key += "_a\(aggregations.count)"
+            key += "_a" + aggregations.map(aggregationCacheToken).joined()
         }
 
         // Include groupBy
@@ -804,6 +811,28 @@ public final class QueryBuilder: @unchecked Sendable {
         }
 
         return key
+    }
+
+    /// Length-prefixed identity so field and alias text cannot alias another operation.
+    /// Nil and empty aliases stay distinct: nil becomes the default result name, "" does not.
+    private func aggregationCacheToken(_ aggregation: AggregationType) -> String {
+        func part(_ value: String?) -> String {
+            guard let value else { return "-" }
+            return "\(value.utf8.count):\(value)"
+        }
+
+        switch aggregation {
+        case .count(let alias):
+            return "count\(part(alias))"
+        case .sum(let field, let alias):
+            return "sum\(part(field))\(part(alias))"
+        case .avg(let field, let alias):
+            return "avg\(part(field))\(part(alias))"
+        case .min(let field, let alias):
+            return "min\(part(field))\(part(alias))"
+        case .max(let field, let alias):
+            return "max\(part(field))\(part(alias))"
+        }
     }
 
     internal func visibleRecords(_ records: [BlazeDataRecord]) -> [BlazeDataRecord] {
