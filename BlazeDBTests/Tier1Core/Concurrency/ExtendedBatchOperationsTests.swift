@@ -264,9 +264,16 @@ final class ExtendedBatchOperationsTests: XCTestCase {
         let closedRecords = try closed.records
         XCTAssertEqual(closedRecords.count, 10)
         
+        var preservedValues = Set<Int>()
         for record in closedRecords {
             XCTAssertEqual(record.storage["closed_by"]?.stringValue, "test")
+            let value = try XCTUnwrap(
+                record.storage["value"]?.intValue,
+                "updateMany(ids:set:) must keep fields omitted from set"
+            )
+            preservedValues.insert(value)
         }
+        XCTAssertEqual(preservedValues, Set(0..<10))
         
         print("  ✅ Updated 10 records by ID")
     }

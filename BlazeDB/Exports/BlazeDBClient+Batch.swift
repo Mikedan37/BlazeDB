@@ -255,7 +255,10 @@ extension BlazeDBClient {
     
     // MARK: - Batch Update by IDs
     
-    /// Update multiple specific records
+    /// Update specific fields on multiple records by ID.
+    ///
+    /// Fields omitted from `set` stay as they are, matching `updateMany(where:set:)`.
+    /// Missing IDs are skipped. A permission failure still fails the batch.
     ///
     /// - Parameters:
     ///   - ids: Array of UUIDs to update
@@ -280,7 +283,17 @@ extension BlazeDBClient {
                     try self.performSafeWrite {
                         for id in ids {
                             do {
-                                try self.update(id: id, with: BlazeDataRecord(fields))
+                                // `update(id:with:)` replaces the stored record. Merge first so
+                                // `set` cannot drop fields the caller did not mention.
+                                guard var record = try self.collection.fetch(id: id) else {
+                                    BlazeLogger.trace("Record \(id) not found, skipping")
+                                    continue
+                                }
+                                for (key, value) in fields {
+                                    record.storage[key] = value
+                                }
+                                record.storage["updatedAt"] = .date(Date())
+                                try self.update(id: id, with: record)
                                 count += 1
                             } catch BlazeDBError.recordNotFound {
                                 BlazeLogger.trace("Record \(id) not found, skipping")
