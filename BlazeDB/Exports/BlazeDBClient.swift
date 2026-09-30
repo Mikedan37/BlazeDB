@@ -2065,11 +2065,29 @@ public final class BlazeDBClient: @unchecked Sendable {
 
             // Restore pre-transaction payloads for records that still exist.
             // Without this, in-place updates can survive rollback even if indexMap is restored.
+            // `writePage` rejects payloads larger than one page, so a multi-page record
+            // (notes, attachments, embeddings) made rollback throw and left the in-transaction
+            // bytes in place. Rewrite through the overflow writer and publish the pages it
+            // actually used. New overflow pages come from `nextPageIndex` only — the freelist
+            // may still name pages this restore is about to republish.
+            // Allocate overflow pages from a local counter. The writer invokes this
+            // callback on the page-store queue, so it must not touch collection state.
+            var nextPage = collection.nextPageIndex
             for (id, pages) in snapshot {
                 guard let pageIndex = pages.first, let baseline = baselineRecords[id] else { continue }
                 let encoded = try BlazeBinaryEncoder.encodeOptimized(baseline)
-                try collection.store.writePage(index: pageIndex, data: encoded)
+                let writtenPages = try collection.store.writePageWithOverflow(
+                    index: pageIndex,
+                    plaintext: encoded,
+                    allocatePage: {
+                        let overflowPage = nextPage
+                        nextPage += 1
+                        return overflowPage
+                    }
+                )
+                collection.indexMap[id] = writtenPages
             }
+            collection.nextPageIndex = nextPage
 
             // Zero out pages that were allocated during this transaction
             // (they contain data that should not be visible after rollback)
