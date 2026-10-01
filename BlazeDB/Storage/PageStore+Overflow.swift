@@ -307,11 +307,28 @@ extension PageStore {
         var overflowPages: [(index: Int, data: Data, nextIndex: UInt32)] = []
         var tempCurrentData = remainingData
         
+        // Page index 0 is the on-disk end-of-chain sentinel (nextPageIndex == 0 and
+        // firstOverflowPageIndex == 0). Using it as a real overflow page stores a
+        // null pointer: the insert succeeds, then fetch throws corruptedData.
+        func allocateNonSentinelOverflowPage() throws -> Int {
+            for _ in 0..<64 {
+                let page = try allocatePage()
+                if page != 0 {
+                    return page
+                }
+                BlazeLogger.warn("📝 [writePageWithOverflow] Skipping page 0; it collides with the overflow end-of-chain sentinel")
+            }
+            throw NSError(domain: "PageStore", code: 4016, userInfo: [
+                NSLocalizedDescriptionKey: "Unable to allocate an overflow page other than page 0"
+            ])
+        }
+
         while !tempCurrentData.isEmpty {
-            let overflowPageIndex = try allocatePage()
+            let overflowPageIndex = try allocateNonSentinelOverflowPage()
             pageIndices.append(overflowPageIndex)
             
-            // Store first overflow index
+            // Store first overflow index. Zero means "not yet set" only because
+            // overflow pages are never allocated at index 0.
             if firstOverflowIndex == 0 {
                 firstOverflowIndex = UInt32(overflowPageIndex)
             }
