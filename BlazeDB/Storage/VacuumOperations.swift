@@ -156,6 +156,10 @@ extension BlazeDBClient {
                     var layout = try self.loadVacuumLayout()
                     layout.indexMap = newIndexMap
                     layout.nextPageIndex = newPageIndex
+                    // Compaction rewrites live rows at low page indexes. The previous
+                    // freelist still names those indexes, so the next insert would
+                    // overwrite a record vacuum just kept.
+                    layout.deletedPages = []
                     try layout.saveSecure(to: self.metaURL, signingKey: self.encryptionKey)
                     
                     // Get file sizes
