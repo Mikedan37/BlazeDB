@@ -69,6 +69,7 @@ extension DynamicCollection {
 
         self.indexMap = rebuiltIndexMap
         self.nextPageIndex = rebuiltNextPageIndex
+        raiseNextPageIndexToAllocatedFilePages()
         self.secondaryIndexes = [:]
         self.cachedSearchIndex = nil
         self.cachedSearchIndexedFields = []

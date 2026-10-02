@@ -163,7 +163,22 @@ public final class DynamicCollection {
         self.encodingFormat = layout.encodingFormat.isEmpty ? "blazeBinary" : layout.encodingFormat
         self.secondaryIndexDefinitions = layout.secondaryIndexDefinitions
         BlazeLogger.debug("applyLayoutFromStorage: Loaded indexMap with \(self.indexMap.count) entries")
+        raiseNextPageIndexToAllocatedFilePages()
         rebuildMVCCFromIndexMapIfNeeded()
+    }
+
+    /// Metadata can lag pages that were already fsynced. `writePageWithOverflow` publishes
+    /// the main page (with its overflow pointer) before `nextPageIndex` is saved. A crash in
+    /// that window leaves those overflow pages reachable from the record but still inside the
+    /// allocator's range. The next insert then overwrites them and the record cannot be read.
+    /// The file high-water mark is the last page actually present; never hand that range out again.
+    internal func raiseNextPageIndexToAllocatedFilePages() {
+        guard let allocatedPageCount = try? store.nextAvailablePageIndex() else { return }
+        guard allocatedPageCount > nextPageIndex else { return }
+        BlazeLogger.warn(
+            "Raising nextPageIndex from \(nextPageIndex) to \(allocatedPageCount) so existing data-file pages are not reused"
+        )
+        nextPageIndex = allocatedPageCount
     }
 
     internal func loadLayoutForMutation() throws -> StorageLayout {
@@ -587,6 +602,7 @@ public final class DynamicCollection {
                     BlazeLogger.warn("⚠️ [INIT] Starting with empty layout (data may be lost)")
                     self.indexMap = [:]
                     self.nextPageIndex = 0
+                    raiseNextPageIndexToAllocatedFilePages()
                     self.secondaryIndexes = [:]
                     self.cachedSearchIndex = nil
                     self.cachedSearchIndexedFields = []
@@ -599,6 +615,7 @@ public final class DynamicCollection {
                 BlazeLogger.info("No layout found. Starting fresh.")
                 self.indexMap = [:]
                 self.nextPageIndex = 0
+                raiseNextPageIndexToAllocatedFilePages()
                 self.secondaryIndexes = [:]
                 self.cachedSearchIndex = nil
                 self.cachedSearchIndexedFields = []
@@ -723,6 +740,7 @@ public final class DynamicCollection {
                 let finalVersion = versionManager.getCurrentVersion()
                 BlazeLogger.debug("🔄 [MVCC] ✅ Rebuilt version manager with \(versionManager.getAllVisibleRecordIDs(snapshot: finalVersion).count) visible records (baseVersion=\(baseVersion), finalVersion=\(finalVersion))")
             }
+            raiseNextPageIndexToAllocatedFilePages()
         }
         
         /// Creates a secondary index for a set of fields. Supports compound indexes (multi-field).
@@ -2431,11 +2449,19 @@ public final class DynamicCollection {
                 
                 // Update indexMap with new page indices (now pointing to the freshly written record)
                 indexMap[id] = newPageIndices
-                
-                unsavedChanges += 1
-                if unsavedChanges >= metadataFlushThreshold {
+
+                if allocatedPageCount > 0 {
+                    // The new overflow pages are already durable in the data file. Persist
+                    // nextPageIndex before returning so a crash after this update cannot
+                    // allocate those pages for a later insert.
                     try saveLayout()
                     unsavedChanges = 0
+                } else {
+                    unsavedChanges += 1
+                    if unsavedChanges >= metadataFlushThreshold {
+                        try saveLayout()
+                        unsavedChanges = 0
+                    }
                 }
                 
                 // CRITICAL: Invalidate cache AFTER saveLayout() succeeds
