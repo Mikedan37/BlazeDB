@@ -207,10 +207,12 @@ internal final class WriteAheadLog: @unchecked Sendable {
 
     // MARK: - Replay
 
-    /// Replay all valid WAL entries from the beginning of the file.
+    /// Replay valid WAL entries from the beginning of the file.
     ///
-    /// Stops at the first invalid/corrupt entry (torn write from crash).
-    /// Returns entries in order — caller should apply them to PageStore.
+    /// A torn tail (incomplete final entry, or a bad CRC/magic with nothing after it)
+    /// stops replay and returns the valid prefix. A bad CRC or magic with bytes still
+    /// after that record is mid-log corruption: throw `WALError.midLogCorruption` so
+    /// the caller does not apply the prefix and then `clear()` the unread tail.
     func replay() throws -> [(pageIndex: Int, data: Data)] {
         guard fd >= 0 else { return [] }
 
@@ -244,6 +246,11 @@ internal final class WriteAheadLog: @unchecked Sendable {
                 buf.loadUnaligned(fromByteOffset: 0, as: UInt32.self)
             }
             guard magic == walEntryMagic.littleEndian else {
+                let remaining = fileSize - Int(offset)
+                if remaining > walEntryHeaderSize {
+                    BlazeLogger.error("WAL replay: invalid magic at offset \(offset) with \(remaining) bytes remaining")
+                    throw WALError.midLogCorruption
+                }
                 BlazeLogger.warn("WAL replay: invalid magic at offset \(offset), stopping")
                 break
             }
@@ -286,6 +293,10 @@ internal final class WriteAheadLog: @unchecked Sendable {
             // Validate CRC
             let computedCRC = crc32Checksum(entryData)
             guard computedCRC == storedCRC else {
+                if fileSize > entryEnd {
+                    BlazeLogger.error("WAL replay: CRC mismatch at offset \(offset) with \(fileSize - entryEnd) bytes remaining")
+                    throw WALError.midLogCorruption
+                }
                 BlazeLogger.warn("WAL replay: CRC mismatch at offset \(offset) (stored=\(storedCRC), computed=\(computedCRC)), stopping")
                 break
             }
