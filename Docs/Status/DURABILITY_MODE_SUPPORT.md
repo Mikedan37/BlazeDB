@@ -26,6 +26,7 @@ For the default `BlazeDBClient` path, durability is provided by the **legacy bin
  1. Its page(s) are durably written (via WAL + main fsync), and
  2. The metadata has been updated and saved.
 - If an insert fails (for example, a metadata save error), `BlazeDBClient.performSafeWrite` restores the in-memory index map; the record is not visible via normal APIs, and reopen will not list it unless the metadata actually contains an entry.
+- A successful `delete()` publishes that same catalog before it returns. The id is removed from `indexMap`, its pages are recorded on the freelist, and the layout is saved. Page bytes are zeroed only after that save. The legacy WAL is then checkpointed so replay cannot write the pre-delete page image back over the catalog. A crash before the catalog save leaves the record in place. No format change.
 
 ### Large records and overflow pages (publish-last semantics)
 

@@ -1709,11 +1709,13 @@ public final class DynamicCollection {
             // Use snapshot for backup to avoid accessing indexMap again
             let indexBackup = secondaryIndexes
             let indexMapBackup = indexMapSnapshot  // Use snapshot instead of direct access
+            let deletedPagesBackup = cachedDeletedPages
+            var recordToUse: BlazeDataRecord?
             
             do {
                 // Remove from all indexes (persisting mutations)
                 // OPTIMIZATION: Only fetch record if we have indexes to update
-                let recordToUse = record ?? (try? _fetchNoSync(id: id))
+                recordToUse = record ?? (try? _fetchNoSync(id: id))
                 
                 if !secondaryIndexes.isEmpty, let record = recordToUse {
                     let oldDoc = record.storage
@@ -1739,20 +1741,10 @@ public final class DynamicCollection {
                     btreeIndexManager.deindexRecord(id: id, fields: record.storage)
                 }
                 
-                // OPTIMIZATION: Batch delete all pages in a single sync block to reduce overhead
-                // Delete all pages in overflow chain
-                // Note: We already checked indexMapSnapshot[id] at the start, so we proceed with deletion
-                
-                // Load layout to track deleted pages for reuse
+                // Load layout to track deleted pages for reuse.
+                // Do not zero pages until the catalog no longer names this id.
                 var layout = try loadLayoutForMutation()
-                
-                // OPTIMIZATION: Batch delete all pages in a single sync block (not barrier)
-                // Since we're already in DynamicCollection's queue.sync, we use regular sync
-                // to allow concurrent reads. Barrier would block everything unnecessarily.
-                // Use public deletePage API (works on both Apple and Linux)
-                // Note: try? is used intentionally to suppress errors - deletion continues on failure
                 for pageIndex in pageIndices {
-                    try? store.deletePage(index: pageIndex)
                     markPageForReuse(pageIndex: pageIndex, layout: &layout)
                 }
                 
@@ -1784,21 +1776,31 @@ public final class DynamicCollection {
                 clearFetchAllCache()
                 #endif
                 
-                unsavedChanges += 1
-                // OPTIMIZATION: Only save layout periodically, not on every delete
-                // This significantly improves delete performance for bulk operations
-                if unsavedChanges >= metadataFlushThreshold {
-                    // Save layout with updated deletedPages
-                    if password != nil {
-                        try layout.saveSecure(to: metaURL, signingKey: encryptionKey)
-                    } else {
-                        try layout.save(to: metaURL)
-                    }
-                    unsavedChanges = 0
-                    // Clear fetchAll cache when we save layout (batch operation)
-                    #if !BLAZEDB_LINUX_CORE
-                    clearFetchAllCache()
-                    #endif
+                // Publish the catalog before returning. Insert already does this
+                // on every write. Waiting for metadataFlushThreshold left delete()
+                // successful in memory while the on-disk catalog and legacy WAL
+                // still described the old record, so crash replay resurrected it.
+                if password != nil {
+                    try layout.saveSecure(to: metaURL, signingKey: encryptionKey)
+                } else {
+                    try layout.save(to: metaURL)
+                }
+                cachedDeletedPages = layout.deletedPages
+                unsavedChanges = 0
+                
+                // Zero only after the id is gone from the durable catalog.
+                // try? matches the previous contract: a wipe failure must not
+                // put the id back into a catalog that already dropped it.
+                for pageIndex in pageIndices {
+                    try? store.deletePage(index: pageIndex)
+                }
+                // Drop the pre-delete WAL images. Replay would otherwise write
+                // them back onto the freelist. Failure here does not unpublish
+                // the catalog; the record stays deleted either way.
+                do {
+                    try store.checkpoint()
+                } catch {
+                    BlazeLogger.warn("Delete catalog was published but WAL checkpoint failed: \(error.localizedDescription). Crash replay may restore deleted page bytes onto the freelist.")
                 }
                 
                 // OPTIMIZATION: Defer expensive index updates - they can be batched
@@ -1814,18 +1816,17 @@ public final class DynamicCollection {
                 
                 // Success - changes persisted
             } catch {
-                // 🔒 Restore state on failure, but only if record still exists in indexMap
-                // (If another thread already deleted it, don't restore)
-                if indexMap[id] != nil {
-                    BlazeLogger.warn("Delete failed, restoring index state: \(error)")
-                    secondaryIndexes = indexBackup
-                    indexMap = indexMapBackup
-                    throw error
-                } else {
-                    // Record was already deleted by another thread - this is fine, just return
-                    BlazeLogger.debug("Delete failed but record was already deleted by another thread: \(error)")
-                    return
+                // Every throwing call above happens before the catalog save
+                // returns. Restore the in-memory indexes so a failed delete
+                // does not hide the record or free its page.
+                BlazeLogger.warn("Delete failed, restoring index state: \(error)")
+                secondaryIndexes = indexBackup
+                indexMap = indexMapBackup
+                cachedDeletedPages = deletedPagesBackup
+                if let record = recordToUse {
+                    btreeIndexManager.indexRecord(id: id, fields: record.storage)
                 }
+                throw error
             }
         }
         
