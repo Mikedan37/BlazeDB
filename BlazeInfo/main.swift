@@ -73,7 +73,10 @@ if args.contains("--help") || args.contains("-h") {
     BlazeDB Info Tool
     
     Usage:
-      blazedb info <db-path> [<password>]
+      BlazeInfo <db-path> [<password>]
+    
+    BlazeInfo is its own executable. It is not a `blazedb` subcommand.
+    From a checkout: swift run BlazeInfo <db-path> [<password>]
     
     Password (prefer BLAZEDB_PASSWORD over argv — argv is visible in process listings):
       1. export BLAZEDB_PASSWORD=... then omit the password argument
@@ -89,8 +92,8 @@ if args.contains("--help") || args.contains("-h") {
       -h, --help    Show this help message
     
     Examples:
-      BLAZEDB_PASSWORD='...' blazedb info /path/to/db.blazedb
-      blazedb info /path/to/db.blazedb mypassword
+      BLAZEDB_PASSWORD='...' swift run BlazeInfo /path/to/db.blazedb
+      swift run BlazeInfo /path/to/db.blazedb mypassword
     
     Exit codes:
       0    Success
@@ -102,7 +105,7 @@ if args.contains("--help") || args.contains("-h") {
 let positional = Array(args.dropFirst())
 guard positional.count >= 1 else {
     print("Error: Missing required arguments")
-    print("Usage: blazedb info <db-path> [<password>]")
+    print("Usage: BlazeInfo <db-path> [<password>]")
     print("Prefer BLAZEDB_PASSWORD over argv. Use --help for more information")
     exit(1)
 }

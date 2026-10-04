@@ -40,7 +40,7 @@ extension BlazeDBError {
             if let underlying = underlying {
                 msg += "\n🔍 Underlying error: \(underlying.localizedDescription)"
             }
-            msg += "\n💡 Suggestion: Restore from backup if available. Run 'blazedb doctor' to check database health."
+            msg += "\n💡 Suggestion: Restore from backup if available. Run 'swift run BlazeDoctor' to check database health."
             return msg
             
         case .recordNotFound(let id, let collection, let suggestion):
@@ -109,7 +109,7 @@ extension BlazeDBError {
             
         case .corruptedData(let location, let reason):
             var msg = "Data corruption detected at \(location): \(reason)."
-            msg += "\n💡 Suggestion: Restore from backup if available. Run 'blazedb doctor' to check database health."
+            msg += "\n💡 Suggestion: Restore from backup if available. Run 'swift run BlazeDoctor' to check database health."
             return msg
             
         case .passwordTooWeak(let failure):

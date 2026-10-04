@@ -97,11 +97,15 @@ if args.contains("--help") || args.contains("-h") {
       --allow-schema-mismatch    Allow restore even if schema versions don't match
       -h, --help                 Show this help message
     
+    BlazeDump is its own executable. It is not a `blazedb` subcommand.
+    From a checkout, pass the command after the executable name:
+      swift run BlazeDump dump <db-path> <dump-path> [<password>]
+    
     Examples:
-      BLAZEDB_PASSWORD='...' blazedb dump /path/to/db.blazedb /path/to/backup.blazedump
-      blazedb dump /path/to/db.blazedb /path/to/backup.blazedump mypassword
-      blazedb restore /path/to/backup.blazedump /path/to/newdb.blazedb mypassword
-      blazedb verify /path/to/backup.blazedump
+      BLAZEDB_PASSWORD='...' swift run BlazeDump dump /path/to/db.blazedb /path/to/backup.blazedump
+      swift run BlazeDump dump /path/to/db.blazedb /path/to/backup.blazedump mypassword
+      swift run BlazeDump restore /path/to/backup.blazedump /path/to/newdb.blazedb mypassword
+      swift run BlazeDump verify /path/to/backup.blazedump
     
     Exit codes:
       0    Success
@@ -137,7 +141,7 @@ switch command {
 case "dump":
     guard args.count >= 4 else {
         print("Error: Missing arguments for dump command")
-        print("Usage: blazedb dump <db-path> <dump-path> [<password>]")
+        print("Usage: BlazeDump dump <db-path> <dump-path> [<password>]")
         exit(1)
     }
     let password = resolveCLIPassword(positionalPassword: args.count >= 5 ? args[4] : nil)
@@ -147,7 +151,7 @@ case "restore":
     let filtered = args.filter { $0 != "--allow-schema-mismatch" }
     guard filtered.count >= 4 else {
         print("Error: Missing arguments for restore command")
-        print("Usage: blazedb restore <dump-path> <db-path> [<password>] [--allow-schema-mismatch]")
+        print("Usage: BlazeDump restore <dump-path> <db-path> [<password>] [--allow-schema-mismatch]")
         exit(1)
     }
     let allowMismatch = args.contains("--allow-schema-mismatch")
@@ -157,7 +161,7 @@ case "restore":
 case "verify":
     guard args.count >= 3 else {
         print("Error: Missing dump path")
-        print("Usage: blazedb verify <dump-path>")
+        print("Usage: BlazeDump verify <dump-path>")
         exit(1)
     }
     verifyDump(dumpPath: args[2])

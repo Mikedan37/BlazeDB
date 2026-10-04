@@ -309,7 +309,10 @@ if args.contains("--help") || args.contains("-h") {
     BlazeDB Doctor - Health Check Tool
     
     Usage:
-      blazedb doctor <db-path> [<password>] [--json]
+      BlazeDoctor <db-path> [<password>] [--json]
+    
+    BlazeDoctor is its own executable. It is not a `blazedb` subcommand.
+    From a checkout: swift run BlazeDoctor <db-path> [<password>] [--json]
     
     Password (prefer not putting secrets on argv — they appear in process listings):
       1. Interactive / env: export BLAZEDB_PASSWORD then omit the password argument
@@ -320,9 +323,9 @@ if args.contains("--help") || args.contains("-h") {
       -h, --help    Show this help message
     
     Examples:
-      BLAZEDB_PASSWORD='...' blazedb doctor /path/to/db.blazedb
-      blazedb doctor /path/to/db.blazedb mypassword
-      blazedb doctor /path/to/db.blazedb mypassword --json
+      BLAZEDB_PASSWORD='...' swift run BlazeDoctor /path/to/db.blazedb
+      swift run BlazeDoctor /path/to/db.blazedb mypassword
+      swift run BlazeDoctor /path/to/db.blazedb mypassword --json
     
     Exit codes:
       0    Database is healthy
@@ -336,7 +339,7 @@ let positional = args.dropFirst().filter { $0 != "--json" }
 
 guard positional.count >= 1 else {
     print("Error: Missing required arguments")
-    print("Usage: blazedb doctor <db-path> [<password>] [--json]")
+    print("Usage: BlazeDoctor <db-path> [<password>] [--json]")
     print("Prefer BLAZEDB_PASSWORD over argv. Use --help for more information")
     exit(1)
 }
@@ -354,7 +357,7 @@ if let envPassword, !envPassword.isEmpty {
     password = positional[1]
 } else {
     print("Error: Missing password (set BLAZEDB_PASSWORD or pass <password>)")
-    print("Usage: blazedb doctor <db-path> [<password>] [--json]")
+    print("Usage: BlazeDoctor <db-path> [<password>] [--json]")
     exit(1)
 }
 

@@ -115,7 +115,7 @@ public struct HealthAnalyzer {
         
         // Add general guidance if warnings
         if status == .warn && suggestedActions.isEmpty {
-            suggestedActions.append("Run `blazedb doctor` for detailed diagnostics")
+            suggestedActions.append("Run `swift run BlazeDoctor` for detailed diagnostics")
         }
         
         return HealthReport(status: status, reasons: reasons, suggestedActions: suggestedActions)
