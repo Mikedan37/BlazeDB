@@ -1,6 +1,10 @@
-import CryptoKit
 import Foundation
 import XCTest
+#if canImport(CryptoKit)
+import CryptoKit
+#else
+import Crypto
+#endif
 @testable import BlazeDBCore
 
 /// A complete page record is not a committed transaction. Recovery applies a

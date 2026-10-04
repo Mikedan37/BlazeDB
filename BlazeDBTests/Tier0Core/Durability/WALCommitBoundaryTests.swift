@@ -1,6 +1,10 @@
-import CryptoKit
 import Foundation
 import XCTest
+#if canImport(CryptoKit)
+import CryptoKit
+#else
+import Crypto
+#endif
 @testable import BlazeDBCore
 
 /// Commit is durable when the WAL is synced. The main database file is updated
