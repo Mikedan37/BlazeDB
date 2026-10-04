@@ -37,7 +37,11 @@ extension BlazeDBClient {
     /// 💾 Writes the schema version to the meta section
     private func saveSchemaVersion(_ version: Int) throws {
         #if !BLAZEDB_LINUX_CORE
-        try collection.updateMeta(["schemaVersion": .int(version)])
+        // Merge. updateMeta replaces the whole dictionary, so writing only
+        // schemaVersion deletes app metadata, ordering flags, and formatVersion.
+        var meta = try collection.fetchMeta()
+        meta["schemaVersion"] = .int(version)
+        try collection.updateMeta(meta)
         #else
         // Linux: Schema version not supported, no-op
         #endif

@@ -1085,8 +1085,24 @@ public final class DynamicCollection {
                     encodeMs += Self.monotonicNowMs() - tEncode
                 }
 
-                // Build a lightweight mutable layout snapshot from in-memory state.
-                // This avoids reloading the signed meta file on every insert.
+                // Page allocation stays on the in-memory high-water mark. The signed catalog
+                // is still read so this publish does not replace it with an empty snapshot:
+                // metaData, fieldTypes, and version live only on disk, and a blank save
+                // drops them (schema version, ordering flags, app metadata) as soon as
+                // insert() returns.
+                let preservedCatalog: (metaData: [String: BlazeDocumentField], fieldTypes: [String: String], version: Int)
+                if FileManager.default.fileExists(atPath: metaURL.path) {
+                    let existing = try StorageLayout.loadSecure(
+                        from: metaURL,
+                        signingKey: encryptionKey,
+                        password: password,
+                        salt: kdfSalt,
+                        allowUnsignedLayoutFallback: true
+                    )
+                    preservedCatalog = (existing.metaData, existing.fieldTypes, existing.version)
+                } else {
+                    preservedCatalog = ([:], [:], 1)
+                }
                 var layout: StorageLayout = StorageLayout(
                     indexMap: indexMap,
                     nextPageIndex: nextPageIndex,
@@ -1182,9 +1198,26 @@ public final class DynamicCollection {
                     // Update B-tree indexes for range query support
                     btreeIndexManager.indexRecord(id: id, fields: document)
                     
-                    // Save layout with updated deletedPages and nextPageIndex
+                    // Save layout with updated deletedPages and nextPageIndex.
+                    // Keep catalog fields the lightweight snapshot does not own.
                     layout.indexMap = indexMap
                     layout.secondaryIndexes = StorageLayout.fromRuntimeIndexes(secondaryIndexes)
+                    layout.encodingFormat = encodingFormat
+                    layout.secondaryIndexDefinitions = secondaryIndexDefinitions
+                    layout.metaData = preservedCatalog.metaData
+                    layout.fieldTypes = preservedCatalog.fieldTypes
+                    layout.version = preservedCatalog.version
+                    if layout.metaData["formatVersion"] == nil {
+                        layout.metaData["formatVersion"] = .string(BlazeDBClient.FormatVersion.current.description)
+                    }
+                    #if !BLAZEDB_LINUX_CORE
+                    // Index the new row before encoding the catalog. A stale inverted
+                    // index would hide this record after a crash; a nil index is rebuilt
+                    // by a full scan, but only if we never publish the pre-insert index.
+                    try? updateSearchIndexOnInsert(BlazeDataRecord(document))
+                    layout.searchIndex = cachedSearchIndex
+                    layout.searchIndexedFields = cachedSearchIndexedFields
+                    #endif
 
                     // Persist per-insert metadata update to preserve crash-prefix durability.
                     if password != nil {
@@ -1215,11 +1248,9 @@ public final class DynamicCollection {
                     unsavedChanges = 0
                 }
                 
-                // NEW: Update search index if enabled
                 #if !BLAZEDB_LINUX_CORE
                 let record = BlazeDataRecord(document)
-                try? updateSearchIndexOnInsert(record)
-                
+                // Search index is updated before the catalog save above.
                 // NEW: Update spatial index if enabled
                 updateSpatialIndexOnInsert(record)
                 
