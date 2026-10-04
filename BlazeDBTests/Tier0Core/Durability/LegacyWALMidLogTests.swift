@@ -35,7 +35,9 @@ final class LegacyWALMidLogTests: XCTestCase {
             Data(repeating: 0x33, count: 32)
         ]
         try writeEntries(payloads, to: walURL)
-        try flipByte(at: 16 + 32 + 16, in: walURL)
+        // Each append is a page record plus a commit record. Flip the second page payload.
+        let stride = 16 + 32 + WriteAheadLog.commitRecordSize
+        try flipByte(at: stride + 16, in: walURL)
 
         let wal = try WriteAheadLog(logURL: walURL)
         defer { wal.close() }
@@ -72,11 +74,11 @@ final class LegacyWALMidLogTests: XCTestCase {
             Data(repeating: 0xA2, count: page),
             Data(repeating: 0xA3, count: page)
         ], to: walURL)
-        let entrySize = 16 + page
-        try flipByte(at: entrySize + 16, in: walURL)
+        let stride = 16 + page + WriteAheadLog.commitRecordSize
+        try flipByte(at: stride + 16, in: walURL)
 
         let sizeBefore = try fileSize(walURL)
-        let tailByteBefore = try byte(at: (2 * entrySize) + 16, in: walURL)
+        let tailByteBefore = try byte(at: (2 * stride) + 16, in: walURL)
         XCTAssertEqual(tailByteBefore, 0xA3)
 
         let wal = try WriteAheadLog(logURL: walURL)
@@ -88,7 +90,7 @@ final class LegacyWALMidLogTests: XCTestCase {
         )
 
         XCTAssertEqual(try fileSize(walURL), sizeBefore, "WAL must not be cleared after a mid-log CRC failure")
-        XCTAssertEqual(try byte(at: (2 * entrySize) + 16, in: walURL), 0xA3, "Valid tail entry must still be on disk")
+        XCTAssertEqual(try byte(at: (2 * stride) + 16, in: walURL), 0xA3, "Valid tail entry must still be on disk")
     }
 
     private func writeEntries(_ payloads: [Data], to walURL: URL) throws {

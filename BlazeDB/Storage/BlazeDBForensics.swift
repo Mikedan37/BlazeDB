@@ -208,16 +208,29 @@ enum BlazeDBForensics {
             )
         }
 
-        // WAL entry format (V1.5):
-        // [magic "WALE" 4B] [pageIndex UInt32 LE] [dataLen UInt32 LE] [crc32 UInt32 LE] [data…]
+        // Page record: [magic "WALE" 4B] [pageIndex UInt32 LE] [dataLen UInt32 LE] [crc32 UInt32 LE] [data…]
+        // Commit record: 20 bytes, magic "WALC".
         let headerLen = 16
+        let commitLen = 20
         let walMagic: UInt32 = 0x57414C45
+        let walCommitMagic: UInt32 = 0x57414C43
         var offset = 0
         var firstBreak: (Int, String)?
-        while offset + headerLen <= data.count {
-            // Validate magic
+        while offset + 4 <= data.count {
             let magicBytes = data.subdata(in: offset..<(offset + 4))
             let magic = magicBytes.withUnsafeBytes { $0.loadUnaligned(as: UInt32.self) }
+            if magic == walCommitMagic.littleEndian {
+                guard offset + commitLen <= data.count else {
+                    firstBreak = (offset, "torn commit record")
+                    break
+                }
+                offset += commitLen
+                continue
+            }
+            guard offset + headerLen <= data.count else {
+                firstBreak = (offset, "torn page header")
+                break
+            }
             if magic != walMagic.littleEndian {
                 firstBreak = (offset, "invalid magic (expected WALE)")
                 break

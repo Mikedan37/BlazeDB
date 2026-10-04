@@ -113,6 +113,18 @@ public final class PageStore: @unchecked Sendable {
     /// Encrypted page buffers staged for unified unsynchronized writes.
     /// These are flushed to the main file only after a durable WAL commit.
     private var pendingUnifiedBufferedWrites: [(index: Int, buffer: Data)] = []
+    /// Legacy WAL images not yet copied into the main file. Commit is durable
+    /// once the WAL is synced; checkpoint/close/recovery apply these bytes.
+    private var uncheckpointedPageImages: [Int: Data] = [:]
+    /// Plaintext for those pages so reads succeed before the main file is updated.
+    internal var uncheckpointedPlaintext: [Int: Data] = [:]
+    /// Pages appended to the WAL but not yet covered by a synced commit record.
+    private var stagedPageImages: [Int: Data] = [:]
+    internal var stagedPlaintext: [Int: Data] = [:]
+    /// Next page index, including pages that exist only in the WAL.
+    private var logicalPageCount: Int = 0
+    /// Main-file bytes were written and still need an fsync (overflow / non-WAL).
+    internal var mainFileNeedsSync = false
     
     // MARK: - Concurrency Invariants
     // Process ownership (cross-process): exclusive flock on the main DB file descriptor.
@@ -204,6 +216,7 @@ public final class PageStore: @unchecked Sendable {
     nonisolated(unsafe) private static var replayFailAtEntryIndex: Int? = nil
     nonisolated(unsafe) private static var replayForceFsyncFailure: Bool = false
     nonisolated(unsafe) private static var synchronizeForceFailure: Bool = false
+    nonisolated(unsafe) private static var checkpointForceFsyncFailure: Bool = false
     
     internal static func _setReplayFailureForTests(entryIndex: Int?) {
         replayFaultLock.lock()
@@ -223,6 +236,13 @@ public final class PageStore: @unchecked Sendable {
         synchronizeForceFailure = enabled
         replayFaultLock.unlock()
     }
+
+    /// Test-only: checkpoint applies pages, then fails before discarding the WAL.
+    internal static func _setCheckpointFsyncFailureForTests(_ enabled: Bool) {
+        replayFaultLock.lock()
+        checkpointForceFsyncFailure = enabled
+        replayFaultLock.unlock()
+    }
     
     private static func replayFailureEntryIndexForTests() -> Int? {
         replayFaultLock.lock()
@@ -234,6 +254,12 @@ public final class PageStore: @unchecked Sendable {
         replayFaultLock.lock()
         defer { replayFaultLock.unlock() }
         return replayForceFsyncFailure
+    }
+
+    private static func checkpointFsyncFailureEnabledForTests() -> Bool {
+        replayFaultLock.lock()
+        defer { replayFaultLock.unlock() }
+        return checkpointForceFsyncFailure
     }
 
     private static func synchronizeFailureEnabledForTests() -> Bool {
@@ -332,7 +358,101 @@ public final class PageStore: @unchecked Sendable {
             throw error
         }
 
+        logicalPageCount = max(0, (try? fileSize()) ?? 0) / pageSize
         BlazeLogger.debug("🔐 PageStore initialized with \(bitCount)-bit encryption and exclusive file lock")
+    }
+
+    /// Make a synced commit visible to checkpoint. Unsynced pages stay staged.
+    private func publishStagedWALPagesLocked() {
+        for (index, image) in stagedPageImages {
+            uncheckpointedPageImages[index] = image
+        }
+        for (index, plaintext) in stagedPlaintext {
+            uncheckpointedPlaintext[index] = plaintext
+        }
+        stagedPageImages.removeAll()
+        stagedPlaintext.removeAll()
+    }
+
+    /// Forget page records that were appended but not committed.
+    func abortUncommittedWALGroup() {
+        queue.sync(flags: .barrier) {
+            wal?.abortPendingGroup()
+            for index in stagedPlaintext.keys {
+                if let committed = uncheckpointedPlaintext[index] {
+                    pageCache.set(index, data: committed)
+                } else {
+                    pageCache.remove(index)
+                }
+            }
+            stagedPageImages.removeAll()
+            stagedPlaintext.removeAll()
+        }
+    }
+
+    /// Copy committed legacy WAL pages into the main file. Does not fsync or truncate.
+    private func _applyCommittedLegacyWALLocked() throws -> Int {
+        guard let wal = wal else { return 0 }
+        let entries = try wal.replay()
+        for entry in entries {
+            guard entry.data.count == pageSize else {
+                throw RecoveryError.walReplayInvalidEntrySize(
+                    entryIndex: 0,
+                    pageIndex: entry.pageIndex,
+                    size: entry.data.count,
+                    expected: pageSize
+                )
+            }
+            let offset = off_t(entry.pageIndex * pageSize)
+            try atomicWrite(offset: offset, data: entry.data)
+            logicalPageCount = max(logicalPageCount, entry.pageIndex + 1)
+        }
+        if !entries.isEmpty {
+            mainFileNeedsSync = true
+        }
+        return entries.count
+    }
+
+    /// After the WAL is truncated, page records for an open transaction have to be appended again.
+    private func _reappendStagedWALPagesLocked() throws {
+        guard let wal = wal else { return }
+        let indexes = stagedPageImages.keys.sorted()
+        for index in indexes {
+            guard let image = stagedPageImages[index] else { continue }
+            try wal.appendDeferred(pageIndex: index, data: image)
+        }
+    }
+
+    /// Copy WAL-only pages into the main file. Does not fsync and does not discard the WAL.
+    private func _applyUncheckpointedPagesLocked() throws {
+        for index in uncheckpointedPageImages.keys.sorted() {
+            guard let image = uncheckpointedPageImages[index] else { continue }
+            let offset = off_t(index * pageSize)
+            try atomicWrite(offset: offset, data: image)
+            logicalPageCount = max(logicalPageCount, index + 1)
+        }
+    }
+
+    /// Apply staged pages and fsync the main file. Leaves the WAL in place on failure.
+    private func _makeUncheckpointedPagesDurableLocked() throws {
+        let hadStagedPages = !uncheckpointedPageImages.isEmpty
+        try _applyUncheckpointedPagesLocked()
+        if hadStagedPages || mainFileNeedsSync {
+            #if DEBUG
+            if Self.checkpointFsyncFailureEnabledForTests() {
+                throw NSError(
+                    domain: "PageStore.TestFault",
+                    code: 2,
+                    userInfo: [NSLocalizedDescriptionKey: "Forced checkpoint fsync failure for tests"]
+                )
+            }
+            #endif
+            try fileHandle.compatSynchronize()
+            IOTraceSink.record(operation: "fsync_main", path: fileURL.path, fd: fd, resultCode: 0, context: ["phase": "checkpoint"])
+            mainFileNeedsSync = false
+            uncheckpointedPageImages.removeAll()
+            uncheckpointedPlaintext.removeAll()
+        }
     }
 
     // MARK: - Legacy WAL Recovery
@@ -800,7 +920,13 @@ public final class PageStore: @unchecked Sendable {
     /// pwrite an already-encrypted page buffer to the main file. No WAL, no fsync.
     /// Must be called under barrier on `queue`.
     internal func _writeEncryptedBuffer(index: Int, buffer: Data) throws {
+        // A committed WAL image must not hide this write. Reads check those maps
+        // before the file, and checkpoint would copy the older image back.
         pageCache.remove(index)
+        stagedPageImages.removeValue(forKey: index)
+        stagedPlaintext.removeValue(forKey: index)
+        uncheckpointedPageImages.removeValue(forKey: index)
+        uncheckpointedPlaintext.removeValue(forKey: index)
         let offset = off_t(index * pageSize)
         try atomicWrite(offset: offset, data: buffer)
     }
@@ -824,6 +950,7 @@ public final class PageStore: @unchecked Sendable {
 
         if let wal = wal {
             try wal.appendDeferred(pageIndex: index, data: buffer)
+            try wal.commitPendingGroup()
             try wal.sync()
         } else if let dm = durabilityManager {
             // Unified mode: durable WAL commit before writing main file.
@@ -861,11 +988,19 @@ public final class PageStore: @unchecked Sendable {
         pageCache.remove(index)
         BlazeLogger.trace("Writing encrypted page at index \(index) with size \(plaintext.count)")
 
-        let buffer = try _encryptPageBuffer(plaintext: plaintext)
+        let buffer = try WriteProfileCollector.measure("encrypt") {
+            try _encryptPageBuffer(plaintext: plaintext)
+        }
 
-        // 📜 WAL: Append to Write-Ahead Log BEFORE writing to main file (fsync deferred to synchronize())
+        // 📜 WAL: Append to Write-Ahead Log. The main file is updated at checkpoint,
+        // close, or recovery — not on this commit path.
         if let wal = wal {
             try wal.appendDeferred(pageIndex: index, data: buffer)
+            stagedPageImages[index] = buffer
+            stagedPlaintext[index] = plaintext
+            logicalPageCount = max(logicalPageCount, index + 1)
+            pageCache.set(index, data: plaintext)
+            return
         } else if let dm = durabilityManager {
             // Unified mode: group unsynchronized writes in a single auto-transaction.
             // IMPORTANT: We stage main-file writes in memory and flush only after
@@ -896,6 +1031,8 @@ public final class PageStore: @unchecked Sendable {
             WriteProfileCollector.addBytes(buffer.count)
             WriteProfileCollector.addSyscall(kind: .write)
         }
+        mainFileNeedsSync = true
+        logicalPageCount = max(logicalPageCount, index + 1)
     }
 
     public func writePage(index: Int, plaintext: Data) throws {
@@ -936,10 +1073,16 @@ public final class PageStore: @unchecked Sendable {
             try ensureOpenLocked()
             try _commitPendingUnifiedAutoTransactionIfNeededLocked()
             try _flushPendingUnifiedBufferedWritesLocked()
+            // One flush covers the page records and the commit record.
+            try wal?.commitPendingGroup()
             try wal?.sync()
-            try WriteProfileCollector.measure("page.fsync") {
-                try fileHandle.compatSynchronize()
-                WriteProfileCollector.addSyscall(kind: .fsync)
+            publishStagedWALPagesLocked()
+            if mainFileNeedsSync {
+                try WriteProfileCollector.measure("page.fsync") {
+                    try fileHandle.compatSynchronize()
+                    WriteProfileCollector.addSyscall(kind: .fsync)
+                }
+                mainFileNeedsSync = false
             }
         }
     }
@@ -960,6 +1103,14 @@ public final class PageStore: @unchecked Sendable {
             // Note: Cache stores decrypted data for maximum performance
             if let cached = pageCache.get(index) {
                 return cached
+            }
+            if let staged = stagedPlaintext[index] {
+                pageCache.set(index, data: staged)
+                return staged
+            }
+            if let pending = uncheckpointedPlaintext[index] {
+                pageCache.set(index, data: pending)
+                return pending
             }
 
             let offset = off_t(index * pageSize)
@@ -1120,8 +1271,8 @@ public final class PageStore: @unchecked Sendable {
         dispatchPrecondition(condition: .notOnQueue(queue))
         #endif
         return try queue.sync {
-            let currentSize = try self.fileSize()
-            return currentSize / pageSize
+            let filePages = max(0, (try self.fileSize()) / pageSize)
+            return max(filePages, logicalPageCount)
         }
     }
     
@@ -1133,12 +1284,16 @@ public final class PageStore: @unchecked Sendable {
         try queue.sync(flags: .barrier) {
             try _commitPendingUnifiedAutoTransactionIfNeededLocked()
             try _flushPendingUnifiedBufferedWritesLocked()
-            try fileHandle.compatSynchronize()
+            if walMode == .legacy {
+                _ = try _applyCommittedLegacyWALLocked()
+            }
+            try _makeUncheckpointedPagesDurableLocked()
 
             switch walMode {
             case .legacy:
                 guard let wal = wal else { return }
                 try wal.clear()
+                try _reappendStagedWALPagesLocked()
             case .unified:
                 guard let dm = durabilityManager else { return }
                 try dm.checkpoint()
@@ -1152,6 +1307,19 @@ public final class PageStore: @unchecked Sendable {
         return wal?.getStats()
     }
 
+    #if DEBUG
+    /// Drop the process without checkpointing. The WAL is left for the next open.
+    internal func simulateCrashForTests() {
+        queue.sync(flags: .barrier) {
+            guard !closed else { return }
+            wal?.close()
+            releaseLock()
+            fileHandle.compatClose()
+            closed = true
+        }
+    }
+    #endif
+
     public func close() {
         queue.sync(flags: .barrier) {
             guard !closed else { return }
@@ -1161,6 +1329,8 @@ public final class PageStore: @unchecked Sendable {
                 if let wal = wal {
                     var mainSyncSucceeded = false
                     do {
+                        _ = try _applyCommittedLegacyWALLocked()
+                        try _makeUncheckpointedPagesDurableLocked()
                         try fileHandle.compatSynchronize()
                         IOTraceSink.record(operation: "fsync_main", path: fileURL.path, fd: fd, resultCode: 0, context: ["phase": "close"])
                         mainSyncSucceeded = true

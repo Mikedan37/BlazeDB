@@ -58,25 +58,14 @@ extension DynamicCollection {
             var insertedRecords: [BlazeDataRecord] = []
             var seenIDs = Set<UUID>()
             
-            // Load layout at start to access deletedPages for page reuse
-            var layout = try WriteProfileCollector.measure("transaction.setup") {
-                try loadLayoutForMutation()
+            // Page allocation uses the in-memory free list. Loading the signed
+            // catalog here decodes every record's index entry.
+            var layout = WriteProfileCollector.measure("transaction.setup") {
+                mutationLayoutFromMemory()
             }
-            // MVCC Path: Transfer deleted pages from layout to pageGC for reuse
-            // This ensures pages deleted in legacy mode or persisted to disk are available for MVCC reuse
             if mvccEnabled && !layout.deletedPages.isEmpty {
-                for pageIdx in layout.deletedPages {
-                    versionManager.pageGC.markPageObsolete(pageIdx)
-                }
-                BlazeLogger.debug("♻️ [MVCC INSERT BATCH] Added \(layout.deletedPages.count) deleted pages from layout to pageGC for reuse")
-                // Remove from layout.deletedPages since they're now in pageGC
+                drainCachedDeletedPagesIntoMVCC()
                 layout.deletedPages.removeAll()
-                // Save layout to persist the change
-                if password != nil {
-                    try layout.saveSecure(to: metaURL, signingKey: encryptionKey)
-                } else {
-                    try layout.save(to: metaURL)
-                }
             }
             
             // Phase 1: Write all pages and build indexes (in-memory)

@@ -40,6 +40,8 @@ public class MVCCTransaction {
     
     /// Changes made in this transaction (for rollback)
     private var pendingWrites: [(UUID, RecordVersion)] = []
+    /// This transaction appended page records that a later commit must not cover if we abort.
+    private var appendedWALPages = false
     
     // MARK: - Initialization
     
@@ -132,8 +134,13 @@ public class MVCCTransaction {
     
     // MARK: - Write Operations
     
-    /// Write a new version of a record
-    public func write(recordID: UUID, record: BlazeDataRecord) throws {
+    /// Write a new version of a record.
+    ///
+    /// Returns every page the record occupies, main page first. The write is
+    /// durable only after `commit()`, which flushes once. Flushing here as well
+    /// would fsync the same insert twice.
+    @discardableResult
+    public func write(recordID: UUID, record: BlazeDataRecord) throws -> [Int] {
         guard isActive else {
             throw BlazeDBError.transactionFailed(
                 "Transaction is not active",
@@ -166,12 +173,16 @@ public class MVCCTransaction {
         }
         
         // Serialize record using static method
-        let data = try BlazeBinaryEncoder.encode(record)
+        let data = try WriteProfileCollector.measure("encode") {
+            try BlazeBinaryEncoder.encode(record)
+        }
         
         // MVCC versions store the main page number. Large records may spill into
         // overflow pages, so use the overflow-aware writer here just like the
         // legacy insert path does.
-        var nextNewPage = try pageStore.nextAvailablePageIndex()
+        var nextNewPage = try WriteProfileCollector.measure("page.alloc") {
+            try pageStore.nextAvailablePageIndex()
+        }
         let pageNumber: Int
         if let freePage = versionManager.pageGC.getFreePage() {
             pageNumber = freePage
@@ -180,7 +191,8 @@ public class MVCCTransaction {
             nextNewPage += 1
         }
 
-        _ = try pageStore.writePageWithOverflow(
+        appendedWALPages = true
+        let pageIndices = try pageStore.writePageWithOverflowUnsynchronized(
             index: pageNumber,
             plaintext: data,
             allocatePage: {
@@ -207,6 +219,7 @@ public class MVCCTransaction {
         
         // Track for commit/rollback
         pendingWrites.append((recordID, version))
+        return pageIndices
     }
     
     /// Delete a record (creates a deleted version)
@@ -285,11 +298,14 @@ public class MVCCTransaction {
             return  // Already ended
         }
         
-        // Discard pending writes
-        // (Pages are written but versions aren't added to version manager,
-        //  so they're invisible and will be GC'd)
+        // Discard pending writes. Page bytes may already be in the WAL;
+        // aborting the open group keeps a later commit from covering them.
         pendingWrites.removeAll()
         isActive = false
+        if appendedWALPages {
+            pageStore?.abortUncommittedWALGroup()
+            appendedWALPages = false
+        }
         
         BlazeLogger.debug("⏪ Transaction \(transactionID) rolled back")
     }
