@@ -43,7 +43,7 @@ extension BlazeDBClient {
 
         // Transaction safety: never implicitly commit active transactions on close.
         // If a transaction is open, rollback first so close/deinit stays fail-closed.
-        var flushAllowed = true
+        var flushAllowed = !transactionRecoveryRequired
         if transactionIndexMapSnapshot != nil {
             do {
                 try rollbackTransaction()
@@ -101,6 +101,11 @@ extension BlazeDBClient {
     ///
     /// - Throws: `BlazeDBError.invalidInput` if database is closed
     internal func ensureNotClosed() throws {
+        guard !transactionRecoveryRequired else {
+            throw BlazeDBError.transactionFailed(
+                "Transaction rollback failed; close and reopen the database to recover its durable backup before continuing"
+            )
+        }
         guard !isClosed else {
             throw BlazeDBError.invalidInput(
                 reason: "Database '\(name)' has been closed. Create a new instance to continue operations."

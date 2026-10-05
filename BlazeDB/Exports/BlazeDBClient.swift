@@ -397,6 +397,22 @@ public final class BlazeDBClient: @unchecked Sendable {
     /// Thread-safe close state management
     private var _isClosedValue: Bool = false
     private let closedStateLock = NSLock()
+    private var _transactionRecoveryRequired = false
+
+    /// A failed rollback leaves the durable baseline as the only trustworthy state.
+    /// Reject operations until a new client restores that baseline on open.
+    internal var transactionRecoveryRequired: Bool {
+        get {
+            closedStateLock.lock()
+            defer { closedStateLock.unlock() }
+            return _transactionRecoveryRequired
+        }
+        set {
+            closedStateLock.lock()
+            defer { closedStateLock.unlock() }
+            _transactionRecoveryRequired = newValue
+        }
+    }
     
     /// Internal flag tracking close state (thread-safe)
     internal var _isClosed: Bool {
@@ -1638,6 +1654,8 @@ public final class BlazeDBClient: @unchecked Sendable {
     /// Manually flush pending metadata changes to disk
     /// Useful when you need to ensure data is persisted before critical operations
     public func persist() throws {
+        writeLock.lock()
+        defer { writeLock.unlock() }
         try ensureNotClosed()
         try collection.persist()
         
@@ -1650,7 +1668,7 @@ public final class BlazeDBClient: @unchecked Sendable {
     /// Alias for persist() - flushes pending metadata to disk
     @available(*, deprecated, message: "Use persist() instead. persist() syncs data to disk and finalizes the transaction log. flush() did the same sync but left the transaction log in place, which is rarely the intended behavior.")
     public func flush() throws {
-        try collection.persist()
+        try persist()
     }
     
     // MARK: - JOIN Operations
@@ -1789,6 +1807,9 @@ public final class BlazeDBClient: @unchecked Sendable {
     /// try db.createIndex(on: "status")
     /// ```
     public func createIndex(on field: String) throws {
+        writeLock.lock()
+        defer { writeLock.unlock() }
+        try ensureNotClosed()
         try collection.createIndex(on: field)
     }
 
@@ -1798,6 +1819,9 @@ public final class BlazeDBClient: @unchecked Sendable {
     /// try db.createIndex(on: ["status", "priority"])
     /// ```
     public func createIndex(on fields: [String]) throws {
+        writeLock.lock()
+        defer { writeLock.unlock() }
+        try ensureNotClosed()
         try collection.createIndex(on: fields)
     }
 
@@ -1824,9 +1848,9 @@ public final class BlazeDBClient: @unchecked Sendable {
     /// The non-async, non-escaping closure type gives compile-time protection against
     /// direct `await` usage inside this critical section.
     internal func performSafeWrite(_ block: () throws -> Void) throws {
-        try ensureNotClosed()
         writeLock.lock()
         defer { writeLock.unlock() }
+        try ensureNotClosed()
 
         // When an explicit transaction is active, rollback is handled by
         // the transaction snapshot. Skip per-write overhead.
@@ -1945,9 +1969,9 @@ public final class BlazeDBClient: @unchecked Sendable {
     /// - Always call commit or rollback to clean up transaction state
     /// - Transactions provide ACID guarantees and crash-safe rollback semantics.
     public func beginTransaction() throws {
-        try ensureNotClosed()
         writeLock.lock()
         defer { writeLock.unlock() }
+        try ensureNotClosed()
 
         guard transactionIndexMapSnapshot == nil else {
             throw BlazeDBError.transactionFailed("Transaction already in progress")
@@ -2009,9 +2033,9 @@ public final class BlazeDBClient: @unchecked Sendable {
     /// try db.commitTransaction()  // Both operations persisted atomically
     /// ```
     public func commitTransaction() throws {
-        try ensureNotClosed()
         writeLock.lock()
         defer { writeLock.unlock() }
+        try ensureNotClosed()
 
         guard transactionIndexMapSnapshot != nil else {
             throw BlazeDBError.transactionFailed("No transaction in progress")
@@ -2055,9 +2079,9 @@ public final class BlazeDBClient: @unchecked Sendable {
     /// }
     /// ```
     public func rollbackTransaction() throws {
-        try ensureNotClosed()
         writeLock.lock()
         defer { writeLock.unlock() }
+        try ensureNotClosed()
 
         guard let snapshot = transactionIndexMapSnapshot else {
             throw BlazeDBError.transactionFailed("No transaction to roll back")
@@ -2068,7 +2092,11 @@ public final class BlazeDBClient: @unchecked Sendable {
         // Whatever happens below, this transaction is over: never leave the client wedged
         // on "Transaction already in progress". If the restore throws, the durable backup
         // stays on disk (see beginTransaction) and reopening restores it.
-        defer { clearInMemoryTransactionState() }
+        var rollbackSucceeded = false
+        defer {
+            if !rollbackSucceeded { transactionRecoveryRequired = true }
+            clearInMemoryTransactionState()
+        }
 
         try collection.queue.sync(flags: .barrier) {
             let txnIndexMap = collection.indexMap
@@ -2146,6 +2174,7 @@ public final class BlazeDBClient: @unchecked Sendable {
         #endif
 
         clearDurableTransactionArtifacts()
+        rollbackSucceeded = true
 
         metrics.incrementTransactionsAborted()
         BlazeLogger.info("Transaction rolled back (indexMap restored to \(snapshot.count) records)")

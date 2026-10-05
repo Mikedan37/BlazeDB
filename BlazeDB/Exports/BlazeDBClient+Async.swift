@@ -196,7 +196,7 @@ extension BlazeDBClient {
         return try await withCheckedThrowingContinuation { continuation in
             DispatchQueue.global(qos: .userInitiated).async {
                 do {
-                    try self.collection.createIndex(on: field)  // Correct method name
+                    try self.createIndex(on: field)
                     continuation.resume()
                 } catch {
                     continuation.resume(throwing: error)
@@ -210,7 +210,7 @@ extension BlazeDBClient {
         return try await withCheckedThrowingContinuation { continuation in
             DispatchQueue.global(qos: .userInitiated).async {
                 do {
-                    try self.collection.createIndex(on: fields)  // Correct method name
+                    try self.createIndex(on: fields)
                     continuation.resume()
                 } catch {
                     continuation.resume(throwing: error)
@@ -257,12 +257,9 @@ extension BlazeDBClient {
         return try await withCheckedThrowingContinuation { continuation in
             DispatchQueue.global(qos: .userInitiated).async {
                 do {
-                    try self.beginTransaction()
-                    try closure()
-                    try self.commitTransaction()
+                    try self.transaction(closure)
                     continuation.resume()
                 } catch {
-                    try? self.rollbackTransaction()
                     continuation.resume(throwing: error)
                 }
             }
