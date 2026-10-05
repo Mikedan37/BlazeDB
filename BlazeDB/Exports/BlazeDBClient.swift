@@ -377,13 +377,15 @@ public final class BlazeDBClient: @unchecked Sendable {
     // MARK: - Transaction Snapshot (V1.5: replaces file-copy transactions)
     // On beginTransaction, snapshot indexMap, secondaryIndexes, and baseline records.
     // On rollback, restore those structures under the collection barrier so readers cannot
-    // observe a half-rolled-back index/layout. Pages allocated in the txn are zeroed.
+    // observe a half-rolled-back index/layout. Pages the txn wrote are zeroed and the
+    // free-list is restored, so freed baseline pages cannot be handed out again.
     // Commit discards the snapshot only after persist + WAL checkpoint succeed.
     var transactionIndexMapSnapshot: [UUID: [Int]]?
     var transactionRecordSnapshot: [UUID: BlazeDataRecord]?
     var transactionSecondaryIndexesSnapshot: [String: [CompoundIndexKey: Set<UUID>]]?
     var transactionRangeIndexFieldsSnapshot: [String] = []
-    var transactionPagesWritten: [Int] = []  // pages allocated during this tx
+    var transactionFreePagesSnapshot: [Int] = []
+    var transactionNextPageIndexSnapshot: Int = 0
     
     // BLOCKER #2 FIX: Vacuum state management (internal for extensions)
     internal var isVacuuming: Bool = false
@@ -1950,6 +1952,14 @@ public final class BlazeDBClient: @unchecked Sendable {
         guard transactionIndexMapSnapshot == nil else {
             throw BlazeDBError.transactionFailed("Transaction already in progress")
         }
+        // A rollback that could not finish leaves its durable backup behind. Starting a new
+        // transaction would overwrite that backup with the half-restored file, so fail closed:
+        // reopening the database restores the pre-transaction state from the backup.
+        if FileManager.default.fileExists(atPath: transactionStateURL.path) {
+            throw BlazeDBError.transactionFailed(
+                "A previous transaction rollback did not complete; reopen the database to restore its pre-transaction backup"
+            )
+        }
 
         // Persist all in-memory changes before snapshotting
         try persist()
@@ -1970,13 +1980,15 @@ public final class BlazeDBClient: @unchecked Sendable {
                     baselineRecords[id] = record
                 }
             }
-            return (indexMap, collection.secondaryIndexes, baselineRecords)
+            return (indexMap, collection.secondaryIndexes, baselineRecords,
+                    collection.cachedDeletedPages, collection.nextPageIndex)
         }
         transactionIndexMapSnapshot = snapshot.0
         transactionSecondaryIndexesSnapshot = snapshot.1
         transactionRecordSnapshot = snapshot.2
+        transactionFreePagesSnapshot = snapshot.3
+        transactionNextPageIndexSnapshot = snapshot.4
         transactionRangeIndexFieldsSnapshot = collection.btreeIndexManager.indexNames
-        transactionPagesWritten = []
 
         metrics.incrementTransactionsStarted()
         BlazeLogger.debug("Transaction started (indexMap snapshot: \(snapshot.0.count) records)")
@@ -2018,11 +2030,7 @@ public final class BlazeDBClient: @unchecked Sendable {
         }
 
         // Discard snapshot — changes are now permanent
-        transactionIndexMapSnapshot = nil
-        transactionRecordSnapshot = nil
-        transactionSecondaryIndexesSnapshot = nil
-        transactionRangeIndexFieldsSnapshot = []
-        transactionPagesWritten = []
+        clearInMemoryTransactionState()
         clearDurableTransactionArtifacts()
 
         metrics.incrementTransactionsCommitted()
@@ -2055,31 +2063,60 @@ public final class BlazeDBClient: @unchecked Sendable {
             throw BlazeDBError.transactionFailed("No transaction to roll back")
         }
         let baselineRecords = transactionRecordSnapshot ?? [:]
+        let freePagesSnapshot = transactionFreePagesSnapshot
+        let nextPageIndexSnapshot = transactionNextPageIndexSnapshot
+        // Whatever happens below, this transaction is over: never leave the client wedged
+        // on "Transaction already in progress". If the restore throws, the durable backup
+        // stays on disk (see beginTransaction) and reopening restores it.
+        defer { clearInMemoryTransactionState() }
 
         try collection.queue.sync(flags: .barrier) {
+            let txnIndexMap = collection.indexMap
+            let txnNextPageIndex = collection.nextPageIndex
+
             // Restore indexMap to pre-transaction state
             collection.indexMap = snapshot
             if let secondarySnapshot = transactionSecondaryIndexesSnapshot {
                 collection.secondaryIndexes = secondarySnapshot
             }
 
-            // Restore pre-transaction payloads for records that still exist.
-            // Without this, in-place updates can survive rollback even if indexMap is restored.
+            // Restore pre-transaction payloads for every baseline record, including ones
+            // deleted in the transaction (delete zeroes their pages). Records larger than
+            // one page span an overflow chain, so rewrite the whole chain onto the
+            // record's original pages; a plain writePage cannot hold them and threw here.
             for (id, pages) in snapshot {
                 guard let pageIndex = pages.first, let baseline = baselineRecords[id] else { continue }
                 let encoded = try BlazeBinaryEncoder.encodeOptimized(baseline)
-                try collection.store.writePage(index: pageIndex, data: encoded)
+                var originalChain = pages.dropFirst().makeIterator()
+                collection.indexMap[id] = try collection.store.writePageWithOverflow(
+                    index: pageIndex,
+                    plaintext: encoded,
+                    allocatePage: {
+                        if let page = originalChain.next() { return page }
+                        defer { collection.nextPageIndex += 1 }
+                        return collection.nextPageIndex
+                    }
+                )
             }
+            let restoredPages = Set(collection.indexMap.values.joined())
 
-            // Zero out pages that were allocated during this transaction
-            // (they contain data that should not be visible after rollback)
-            for pageIndex in transactionPagesWritten {
+            // Zero pages that hold discarded in-transaction data (new records, new versions),
+            // so neither reads nor a layout rebuild from pages can resurrect them.
+            let txnPages = Set(txnIndexMap.values.joined())
+                .union(nextPageIndexSnapshot..<txnNextPageIndex)
+                .subtracting(restoredPages)
+            for pageIndex in txnPages.sorted() {
                 do {
                     try collection.store.deletePage(index: pageIndex)
                 } catch {
                     BlazeLogger.warn("rollbackTransaction: could not delete staged page \(pageIndex): \(error.localizedDescription)")
                 }
             }
+
+            // Restore the free-list. Pages freed by in-transaction deletes belong to restored
+            // records again; leaving them free lets the next insert overwrite those records.
+            collection.cachedDeletedPages = freePagesSnapshot.filter { !restoredPages.contains($0) }
+                + (nextPageIndexSnapshot..<txnNextPageIndex).filter { !restoredPages.contains($0) }
 
             // Clear caches so reads reflect rolled-back state
             collection.store.pageCache.clear()
@@ -2108,16 +2145,19 @@ public final class BlazeDBClient: @unchecked Sendable {
         collection.invalidateQueryCacheSync()
         #endif
 
-        // Discard transaction state
-        transactionIndexMapSnapshot = nil
-        transactionRecordSnapshot = nil
-        transactionSecondaryIndexesSnapshot = nil
-        transactionRangeIndexFieldsSnapshot = []
-        transactionPagesWritten = []
         clearDurableTransactionArtifacts()
 
         metrics.incrementTransactionsAborted()
         BlazeLogger.info("Transaction rolled back (indexMap restored to \(snapshot.count) records)")
+    }
+
+    private func clearInMemoryTransactionState() {
+        transactionIndexMapSnapshot = nil
+        transactionRecordSnapshot = nil
+        transactionSecondaryIndexesSnapshot = nil
+        transactionRangeIndexFieldsSnapshot = []
+        transactionFreePagesSnapshot = []
+        transactionNextPageIndexSnapshot = 0
     }
 
     // MARK: - Migration
