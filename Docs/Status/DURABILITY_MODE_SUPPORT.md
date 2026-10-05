@@ -44,6 +44,20 @@ This means:
 
 ## Modes in codebase
 
+### Client transaction rollback
+
+`BlazeDBClient.rollbackTransaction()` restores baseline records across their
+original overflow pages, including records deleted during the transaction. It
+also restores the free-page list so subsequent inserts cannot overwrite those
+restored records. The change uses the existing file format and default legacy
+WAL mode; existing databases do not require migration.
+
+If rollback itself fails, the durable transaction backup remains available.
+The client clears its in-memory transaction state and refuses a new transaction
+until the database is reopened, rather than overwriting the recovery backup.
+Reopening invokes the existing durable transaction recovery path. Callers must
+not treat a failed rollback as a successful save or delete the backup.
+
 - **Legacy durability path (default for `BlazeDBClient`):** `WriteAheadLog` + encrypted page writes. WAL replay runs during `PageStore` init.
 - **Unified durability path (optional):** `DurabilityManager` + `RecoveryManager` — selected by constructing `PageStore` with `walMode: .unified`. Use one mode consistently per database file.
 
