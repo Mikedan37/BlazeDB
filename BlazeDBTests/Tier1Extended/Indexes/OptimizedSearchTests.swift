@@ -368,6 +368,52 @@ final class OptimizedSearchTests: XCTestCase {
     
     // MARK: - Stress Tests
     
+    /// insertMany publishes one catalog. That catalog must already contain the
+    /// batch's search terms. A later persist/close is not required: unsavedChanges
+    /// is reset when the batch returns, so a kill before exit reopens this file.
+    func testInsertManySearchIndexSurvivesCrashBeforeClose() throws {
+        #if BLAZEDB_LINUX_CORE
+        throw XCTSkip("insertMany uses per-record insert on Linux core; the stale batch search publish is in insertBatch.")
+        #else
+        let database = try requireFixture(db)
+        let fileURL = try requireFixture(tempURL)
+        try database.collection.enableSearch(on: ["title"])
+        _ = try database.insertMany([
+            BlazeDataRecord(["title": .string("zephyr lighthouse")]),
+            BlazeDataRecord(["title": .string("zephyr harbor")])
+        ])
+
+        let copyDir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("search-crash-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: copyDir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: copyDir) }
+
+        let base = fileURL.deletingPathExtension().lastPathComponent
+        let siblings = try FileManager.default.contentsOfDirectory(
+            at: fileURL.deletingLastPathComponent(),
+            includingPropertiesForKeys: nil
+        )
+        for sibling in siblings where sibling.lastPathComponent.hasPrefix(base) {
+            try FileManager.default.copyItem(
+                at: sibling,
+                to: copyDir.appendingPathComponent(sibling.lastPathComponent)
+            )
+        }
+
+        let copyURL = copyDir.appendingPathComponent(fileURL.lastPathComponent)
+        let reopened = try BlazeDBClient(
+            name: "OptSearchCrashCopy",
+            fileURL: copyURL,
+            password: "SecureTestDB-456!"
+        )
+        defer { try? reopened.close() }
+
+        XCTAssertEqual(try reopened.count(), 2, "Batch records are in the published catalog")
+        let hits = try reopened.query().search("zephyr", in: ["title"])
+        XCTAssertEqual(hits.count, 2, "Search index must include the batch without a later persist")
+        #endif
+    }
+
     func testSearchWithManyRecords() throws {
         // Insert 1000 records using batch insert (much faster!)
         let records = (1...1000).map { i in

@@ -512,35 +512,20 @@ extension DynamicCollection {
                 OrderingIndexCache.shared.invalidate(fieldName: fieldName)
             }
             
-            // Phase 3: Update search index (batch mode)
+            // Phase 3: Fold this batch into the search index that Phase 4 publishes.
+            // Do not reload the on-disk catalog and save it here. That snapshot does not
+            // include this batch, and the final save used to overwrite the updated index
+            // with the pre-batch copy while leaving unsavedChanges at 0. A crash after
+            // insertBatch returned then reopened with records present and search missing them.
             BlazeLogger.debug("📦 [INSERT] Batch: Phase 3 - Updating search index...")
             let searchStart = Date()
-            // CRITICAL: Use loadSecure to maintain signature consistency
-            // Use inline salt since defaultSalt is fileprivate
-            if let layout = try? StorageLayout.loadSecure(from: metaURL, signingKey: encryptionKey, password: password, salt: kdfSalt),
-               let index = layout.searchIndex,
-               !layout.searchIndexedFields.isEmpty {
-                // Batch index all records at once
-                index.indexRecords(insertedRecords, fields: layout.searchIndexedFields)
-                // Keep runtime cache consistent so search sees batch writes immediately.
+            let searchFields = cachedSearchIndexedFields.isEmpty ? layout.searchIndexedFields : cachedSearchIndexedFields
+            if let index = cachedSearchIndex ?? layout.searchIndex, !searchFields.isEmpty {
+                index.indexRecords(insertedRecords, fields: searchFields)
+                layout.searchIndex = index
+                layout.searchIndexedFields = searchFields
                 cachedSearchIndex = index
-                cachedSearchIndexedFields = layout.searchIndexedFields
-                
-                var updatedLayout = layout
-                updatedLayout.searchIndex = index
-                do {
-                    // CRITICAL: Use saveSecure to maintain HMAC signature protection
-                    // This ensures signature verification succeeds on next database open
-                    if password != nil {
-                        try updatedLayout.saveSecure(to: metaURL, signingKey: encryptionKey)
-                    } else {
-                        // No password = no encryption, use regular save
-                        try updatedLayout.save(to: metaURL)
-                    }
-                } catch {
-                    // Log warning but don't fail batch insert - search index update is non-critical
-                    BlazeLogger.warn("⚠️ Failed to save search index after batch insert: \(error)")
-                }
+                cachedSearchIndexedFields = searchFields
             }
             let searchDuration = Date().timeIntervalSince(searchStart)
             BlazeLogger.debug("📦 [INSERT] Batch: Phase 3 - Search index update complete in \(String(format: "%.2f", searchDuration * 1000))ms")
