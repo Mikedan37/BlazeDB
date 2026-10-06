@@ -57,6 +57,9 @@ The client clears its in-memory transaction state and refuses a new transaction
 until the database is reopened, rather than overwriting the recovery backup.
 Reopening invokes the existing durable transaction recovery path. Callers must
 not treat a failed rollback as a successful save or delete the backup.
+That recovery restores the checkpointed backup and truncates the WAL.
+Replaying post-checkpoint entries would publish the aborted pages on top of
+the restored file. A crash outside an open transaction still replays the WAL.
 
 After a rollback fails, the client rejects guarded reads, transactions, ordinary CRUD writes, index creation and explicit persistence until it is closed and reopened. Closing skips the normal client flush; reopening restores the durable transaction backup before accepting new writes. The sync and async transaction helpers, `performTransaction`, and import restoration report `BlazeTransactionRecoveryError` when both the operation and rollback fail, retaining both underlying errors. A successful rollback preserves the original operation error.
 

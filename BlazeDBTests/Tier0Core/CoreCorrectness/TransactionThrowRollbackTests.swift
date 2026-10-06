@@ -224,4 +224,102 @@ final class TransactionThrowRollbackTests: XCTestCase {
         try assertBaseline(reopened, ids, inserted: nil)
         try reopened.transaction {}
     }
+
+    /// A crash outside a transaction still replays the WAL. Discarding the log is
+    /// only valid when a pre-transaction backup is restored.
+    func testCrashOutsideTransactionStillReplaysWAL() throws {
+        let marker = try crashImage(after: { db in
+            let id = try db.insert(BlazeDataRecord(["marker": .string("kept")]))
+            try db.persist()
+            return id
+        }, requireTransactionState: false)
+        let handle = try FileHandle(forUpdating: marker.url)
+        try handle.truncate(atOffset: 0)
+        try handle.close()
+
+        let reopened = try BlazeDBClient(name: "tx-crash-wal", fileURL: marker.url, password: password)
+        defer { try? reopened.close() }
+        XCTAssertEqual(try reopened.fetch(id: marker.id)?.storage["marker"]?.stringValue, "kept")
+    }
+
+    /// Kill during an open transaction: the pre-transaction backup must win over
+    /// the WAL. Replaying post-begin page images onto the restored file publishes
+    /// the aborted write on the original record's page.
+    func testCrashMidUpdateDoesNotReplayAbortedWrite() throws {
+        let marker = try crashImage(after: { db in
+            let id = try db.insert(BlazeDataRecord(["marker": .string("before")]))
+            try db.persist()
+            try db.beginTransaction()
+            try db.update(id: id, with: BlazeDataRecord(["marker": .string("after")]))
+            try db.persist()
+            return id
+        })
+        let reopened = try BlazeDBClient(name: "tx-crash-wal", fileURL: marker.url, password: password)
+        defer { try? reopened.close() }
+        XCTAssertEqual(try reopened.fetch(id: marker.id)?.storage["marker"]?.stringValue, "before")
+        XCTAssertEqual(try reopened.fetchAll().count, 1)
+    }
+
+    /// The aborted insert reused the deleted row's page. Replaying that WAL image
+    /// after backup restore makes fetch(original) return the intruder.
+    func testCrashMidDeleteAndReuseDoesNotOverwriteRestoredRow() throws {
+        let marker = try crashImage(after: { db in
+            let id = try db.insert(BlazeDataRecord(["marker": .string("original")]))
+            try db.persist()
+            try db.beginTransaction()
+            try db.delete(id: id)
+            _ = try db.insert(BlazeDataRecord(["marker": .string("intruder")]))
+            try db.persist()
+            return id
+        })
+        let reopened = try BlazeDBClient(name: "tx-crash-wal", fileURL: marker.url, password: password)
+        defer { try? reopened.close() }
+        XCTAssertEqual(try reopened.fetch(id: marker.id)?.storage["marker"]?.stringValue, "original")
+        XCTAssertNil(try reopened.fetchAll().first { $0.storage["marker"]?.stringValue == "intruder" })
+        XCTAssertEqual(try reopened.fetchAll().count, 1)
+    }
+
+    private struct CrashMarker {
+        let url: URL
+        let id: UUID
+    }
+
+    /// Runs `body` through an open transaction, copies the on-disk image, then
+    /// closes the live client (which rolls the original back) and puts the
+    /// copied image back. Reopening that image is the crash.
+    private func crashImage(after body: (BlazeDBClient) throws -> UUID, requireTransactionState: Bool = true) throws -> CrashMarker {
+        let fm = FileManager.default
+        let directory = fm.temporaryDirectory.appendingPathComponent("TxCrashWAL-\(UUID().uuidString)")
+        try fm.createDirectory(at: directory, withIntermediateDirectories: true)
+        let url = directory.appendingPathComponent("crash.blazedb")
+        let db = try BlazeDBClient(name: "tx-crash-wal", fileURL: url, password: password)
+        let id = try body(db)
+
+        let walURL = url.deletingPathExtension().appendingPathExtension("wal")
+        let walSize = (try? Data(contentsOf: walURL).count) ?? 0
+        XCTAssertGreaterThan(walSize, 0, "the crash image must include a durable WAL")
+        if requireTransactionState {
+            let stateFiles = try fm.contentsOfDirectory(at: directory, includingPropertiesForKeys: nil)
+                .filter { $0.lastPathComponent.hasPrefix("txn_in_progress-") && $0.pathExtension == "state" }
+            XCTAssertEqual(stateFiles.count, 1)
+        }
+
+        let snapshot = fm.temporaryDirectory.appendingPathComponent("TxCrashWAL-snap-\(UUID().uuidString)")
+        try fm.createDirectory(at: snapshot, withIntermediateDirectories: true)
+        for item in try fm.contentsOfDirectory(at: directory, includingPropertiesForKeys: nil) {
+            try fm.copyItem(at: item, to: snapshot.appendingPathComponent(item.lastPathComponent))
+        }
+
+        try db.close()
+
+        for item in try fm.contentsOfDirectory(at: directory, includingPropertiesForKeys: nil) {
+            try fm.removeItem(at: item)
+        }
+        for item in try fm.contentsOfDirectory(at: snapshot, includingPropertiesForKeys: nil) {
+            try fm.copyItem(at: item, to: directory.appendingPathComponent(item.lastPathComponent))
+        }
+        try? fm.removeItem(at: snapshot)
+        addTeardownBlock { try? fm.removeItem(at: directory) }
+        return CrashMarker(url: url, id: id)
+    }
 }

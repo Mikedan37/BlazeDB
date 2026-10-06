@@ -840,9 +840,31 @@ public final class BlazeDBClient: @unchecked Sendable {
             try fm.copyItem(at: metaBackupURL, to: metaURL)
         }
 
+        // The backup is taken immediately after a WAL checkpoint, so it already
+        // contains every committed page. Entries appended after that checkpoint
+        // are the aborted transaction. PageStore replays the WAL onto the file
+        // it opens; leaving those entries in place writes the aborted pages
+        // over the restored baseline (a crashed update comes back, and an
+        // insert that reused a freed page replaces the restored row).
+        try discardAbortedTransactionWAL(for: fileURL)
+
         BlazeAuthoritativeFileOps.removeItemIfExists(at: backupURL, context: "restoreDurableTransactionBackupIfPresent(backup)")
         BlazeAuthoritativeFileOps.removeItemIfExists(at: metaBackupURL, context: "restoreDurableTransactionBackupIfPresent(metaBackup)")
         BlazeAuthoritativeFileOps.removeItemIfExists(at: stateURL, context: "restoreDurableTransactionBackupIfPresent(state)")
+    }
+
+    /// Drop WAL images written after the pre-transaction checkpoint.
+    ///
+    /// Truncate rather than delete so a crash cannot resurrect a directory entry
+    /// for the old log, and so the next open still finds a WAL sidecar. Failure
+    /// throws before the backup artifacts are removed, so the next open retries.
+    private static func discardAbortedTransactionWAL(for fileURL: URL) throws {
+        let walURL = fileURL.deletingPathExtension().appendingPathExtension("wal")
+        guard FileManager.default.fileExists(atPath: walURL.path) else { return }
+        let handle = try FileHandle(forUpdating: walURL)
+        defer { try? handle.close() }
+        try handle.truncate(atOffset: 0)
+        try handle.synchronize()
     }
 
     internal func legacyTransactionLogNoOp(_ operation: String, payload: [String: BlazeDocumentField]) {
