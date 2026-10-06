@@ -1,5 +1,16 @@
 import Foundation
 
+/// Both failures are retained when the transaction block fails and its rollback
+/// cannot restore the baseline. The client requires reopening before further use.
+public struct BlazeTransactionRecoveryError: Error, LocalizedError {
+    public let operationError: Error
+    public let rollbackError: Error
+
+    public var errorDescription: String? {
+        "Transaction failed: \(operationError.localizedDescription). Rollback also failed: \(rollbackError.localizedDescription). Close and reopen the database to recover its durable backup."
+    }
+}
+
 // MARK: - Transaction DX Improvements
 
 extension BlazeDBClient {
@@ -20,8 +31,13 @@ extension BlazeDBClient {
             try block()
             try self.commitTransaction()
         } catch {
-            try? self.rollbackTransaction()
-            throw error
+            let operationError = error
+            do {
+                try self.rollbackTransaction()
+            } catch {
+                throw BlazeTransactionRecoveryError(operationError: operationError, rollbackError: error)
+            }
+            throw operationError
         }
     }
     
@@ -33,8 +49,13 @@ extension BlazeDBClient {
             try await block()
             try self.commitTransaction()
         } catch {
-            try? self.rollbackTransaction()
-            throw error
+            let operationError = error
+            do {
+                try self.rollbackTransaction()
+            } catch {
+                throw BlazeTransactionRecoveryError(operationError: operationError, rollbackError: error)
+            }
+            throw operationError
         }
     }
 }

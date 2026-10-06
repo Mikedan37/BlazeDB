@@ -76,8 +76,7 @@ public struct BlazeDBImporter {
 
         // Restore in one explicit transaction so large imports avoid per-insert
         // backup snapshots while keeping rollback semantics.
-        try db.beginTransaction()
-        do {
+        try db.transaction {
             // Restore records
             for record in dump.records {
                 // Insert record (ID preserved if present in storage["id"])
@@ -96,10 +95,6 @@ public struct BlazeDBImporter {
                 )
             }
 
-            try db.commitTransaction()
-        } catch {
-            try? db.rollbackTransaction()
-            throw error
         }
     }
     
