@@ -27,9 +27,14 @@ final class BlazeDBPersistAPITests: XCTestCase {
     }
     
     func cleanupTestURL(_ url: URL) {
-        try? FileManager.default.removeItem(at: url)
-        try? FileManager.default.removeItem(at: url.deletingPathExtension().appendingPathExtension("meta"))
-        try? FileManager.default.removeItem(at: url.deletingPathExtension().appendingPathExtension("meta.indexes"))
+        removeBlazeDBTestFiles(at: url)
+    }
+
+    /// Absolute timing gates assume fast local hardware; shared CI runners are too noisy.
+    private func skipTimingSensitiveTestsOnCI() throws {
+        if ProcessInfo.processInfo.environment["CI"] != nil {
+            throw XCTSkip("Persist performance timing skipped on CI; see BlazeDB_Tier3_Heavy PerformanceInvariantTests.")
+        }
     }
     
     // MARK: - persist() Tests
@@ -314,6 +319,7 @@ final class BlazeDBPersistAPITests: XCTestCase {
     // MARK: - Performance Tests
     
     func testPersistPerformance() throws {
+        try skipTimingSensitiveTestsOnCI()
         let tempURL = makeTestURL()
         defer { cleanupTestURL(tempURL) }
         

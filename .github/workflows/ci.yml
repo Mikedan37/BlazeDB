@@ -141,6 +141,9 @@ jobs:
 
   apple-cross-compile:
     name: Apple platforms — cross-compile BlazeDBCore
+    # Run after the main macOS job so we only need one macos-15 runner at a time (reduces
+    # "job was not acquired by Runner" cancellations when the org concurrency limit is 1).
+    needs: macos-15
     runs-on: macos-15
     timeout-minutes: 45
 
@@ -149,6 +152,12 @@ jobs:
         uses: actions/checkout@v7
         with:
           fetch-depth: 0
+
+      - name: Record job start (logs survive early cancel)
+        run: |
+          mkdir -p .logs .artifacts
+          date -u +"%Y-%m-%dT%H:%M:%SZ" | tee .logs/apple-cross-compile-job-start.txt
+          echo "run_id=${{ github.run_id }} attempt=${{ github.run_attempt }}" >> .logs/apple-cross-compile-job-start.txt
 
       - name: Cache SwiftPM build
         uses: actions/cache@v5
@@ -171,7 +180,19 @@ jobs:
         run: |
           set -euo pipefail
           chmod +x ./Scripts/ci-apple-cross-compile.sh
-          ./Scripts/ci-apple-cross-compile.sh 2>&1 | tee .logs/apple-cross-compile.log
+          for attempt in 1 2 3; do
+            echo ">>> Apple cross-compile attempt ${attempt}/3" | tee -a .logs/apple-cross-compile.log
+            set +e
+            ./Scripts/ci-apple-cross-compile.sh 2>&1 | tee -a .logs/apple-cross-compile.log
+            rc=${PIPESTATUS[0]}
+            set -e
+            if [[ "$rc" -eq 0 ]]; then
+              exit 0
+            fi
+            echo "Attempt ${attempt} failed (exit ${rc})" | tee -a .logs/apple-cross-compile.log
+            sleep 30
+          done
+          exit 1
 
       - name: Dump diagnostics on failure
         if: failure()
@@ -181,11 +202,18 @@ jobs:
           xcodebuild -version > .logs/xcode-version.txt 2>&1 || true
           xcodebuild -showsdks > .logs/xcode-sdks.txt 2>&1 || true
 
+      - name: Dump diagnostics on cancel
+        if: cancelled()
+        run: |
+          mkdir -p .logs
+          echo "cancelled_at=$(date -u +"%Y-%m-%dT%H:%M:%SZ")" >> .logs/apple-cross-compile-job-start.txt || true
+          df -h > .logs/disk-on-cancel.txt 2>&1 || true
+
       - name: Upload CI Apple cross-compile logs
         if: always()
         uses: actions/upload-artifact@v5
         with:
-          name: ci-apple-cross-compile-logs
+          name: ci-apple-cross-compile-logs-${{ github.run_attempt }}
           path: |
             .logs/
             .artifacts/
