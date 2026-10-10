@@ -87,8 +87,11 @@ extension BlazeDBClient {
         BlazeLogger.info("Starting backup to \(url.path)")
         let startTime = Date()
         
-        // Ensure all pending changes are persisted before backup
+        // Ensure all pending changes are persisted before backup.
+        // Commit lives in the WAL until checkpoint, and this copy does not include
+        // the WAL, so the main file has to contain those pages first.
         try persist()
+        try collection.store.checkpoint()
         
         // Count records for stats
         let recordCount = try count()

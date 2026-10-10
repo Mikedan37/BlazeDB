@@ -463,6 +463,12 @@ extension PageStore {
             if let cached = pageCache.get(index) {
                 BlazeLogger.debug("📖 [readPageWithOverflow] Page \(index) found in cache: \(cached.count) bytes")
                 mainPageData = cached
+            } else if let staged = stagedPlaintext[index] {
+                pageCache.set(index, data: staged)
+                mainPageData = staged
+            } else if let pending = uncheckpointedPlaintext[index] {
+                pageCache.set(index, data: pending)
+                mainPageData = pending
             } else {
                 BlazeLogger.debug("📖 [readPageWithOverflow] Page \(index) not in cache, reading from file")
                 // Read from file
@@ -990,6 +996,9 @@ extension PageStore {
         // inside a queue.sync(flags: .barrier) block, so we don't need another barrier sync here
         let offset = off_t(index) * off_t(pageSize)
         try atomicWrite(offset: offset, data: buffer)
+        // Overflow pages are stored in the main file. A later synchronize() must
+        // fsync that file before commit returns; single-page writes do not set this.
+        mainFileNeedsSync = true
     }
     
     /// Read an overflow page

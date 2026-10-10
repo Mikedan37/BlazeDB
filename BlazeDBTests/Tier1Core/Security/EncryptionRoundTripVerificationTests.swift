@@ -283,8 +283,12 @@ final class EncryptionRoundTripVerificationTests: XCTestCase {
         
         // Page layout: [magic/version/length][nonce][tag][ciphertext...]
         // For 512-byte plaintext, offset 100 is guaranteed inside ciphertext.
+        // XOR so the write changes the byte even when it is already 0xFF.
         try fileHandle.seek(toOffset: 100)
-        try fileHandle.write(contentsOf: Data([0xFF]))
+        let originalByte = try fileHandle.read(upToCount: 1) ?? Data([0x00])
+        let original = try XCTUnwrap(originalByte.first, "ciphertext byte must exist at offset 100")
+        try fileHandle.seek(toOffset: 100)
+        try fileHandle.write(contentsOf: Data([original ^ 0xFF]))
         try fileHandle.synchronize()
         
         // Try to read with new store - should fail authentication
