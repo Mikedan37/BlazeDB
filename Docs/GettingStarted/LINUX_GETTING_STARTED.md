@@ -81,22 +81,22 @@ All CLI tools work without Xcode:
 
 ### Health Check
 ```bash
-blazedb doctor ~/.local/share/blazedb/mydb.blazedb mypassword
+swift run BlazeDoctor ~/.local/share/blazedb/mydb.blazedb mypassword
 ```
 
 ### Database Info
 ```bash
-blazedb info ~/.local/share/blazedb/mydb.blazedb mypassword
+swift run BlazeInfo ~/.local/share/blazedb/mydb.blazedb mypassword
 ```
 
 ### Backup
 ```bash
-blazedb dump ~/.local/share/blazedb/mydb.blazedb backup.blazedump mypassword
+swift run BlazeDump dump ~/.local/share/blazedb/mydb.blazedb backup.blazedump mypassword
 ```
 
 ### Restore
 ```bash
-blazedb restore backup.blazedump ~/.local/share/blazedb/restored.blazedb mypassword
+swift run BlazeDump restore backup.blazedump ~/.local/share/blazedb/restored.blazedb mypassword
 ```
 
 ---
@@ -216,4 +216,4 @@ let db = try BlazeDBClient.open(named: "mydb", password: "password")
 **Next Steps:**
 - Read `QUERY_PERFORMANCE.md` for query optimization
 - Read `OPERATIONAL_CONFIDENCE.md` for health monitoring
-- Use `blazedb doctor` for health checks
+- Use `swift run BlazeDoctor` for health checks

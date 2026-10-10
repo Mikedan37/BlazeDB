@@ -2,17 +2,19 @@
 
 **Command-line tools for BlazeDB database management.**
 
+`BlazeDoctor`, `BlazeDump`, and `BlazeInfo` are separate executables. They are not `blazedb` subcommands. From a checkout, run them with `swift run`.
+
 ---
 
 ## Commands
 
-### `blazedb doctor`
+### `BlazeDoctor`
 
 Health check tool for databases.
 
 **Usage:**
 ```bash
-blazedb doctor <db-path> <password> [--json]
+swift run BlazeDoctor <db-path> <password> [--json]
 ```
 
 **Options:**
@@ -22,10 +24,10 @@ blazedb doctor <db-path> <password> [--json]
 **Examples:**
 ```bash
 # Human-readable output
-blazedb doctor /path/to/db.blazedb mypassword
+swift run BlazeDoctor /path/to/db.blazedb mypassword
 
 # JSON output (for scripting)
-blazedb doctor /path/to/db.blazedb mypassword --json
+swift run BlazeDoctor /path/to/db.blazedb mypassword --json
 ```
 
 **Exit Codes:**
@@ -89,13 +91,13 @@ Path: /path/to/db.blazedb
 
 ---
 
-### `blazedb dump`
+### `BlazeDump dump`
 
 Export database to dump file.
 
 **Usage:**
 ```bash
-blazedb dump <db-path> <dump-path> <password>
+swift run BlazeDump dump <db-path> <dump-path> <password>
 ```
 
 **Options:**
@@ -103,7 +105,7 @@ blazedb dump <db-path> <dump-path> <password>
 
 **Examples:**
 ```bash
-blazedb dump /path/to/db.blazedb /path/to/backup.blazedump mypassword
+swift run BlazeDump dump /path/to/db.blazedb /path/to/backup.blazedump mypassword
 ```
 
 **Exit Codes:**
@@ -119,13 +121,13 @@ Exporting database to /path/to/backup.blazedump...
 
 ---
 
-### `blazedb restore`
+### `BlazeDump restore`
 
 Restore database from dump file.
 
 **Usage:**
 ```bash
-blazedb restore <dump-path> <db-path> <password> [--allow-schema-mismatch]
+swift run BlazeDump restore <dump-path> <db-path> <password> [--allow-schema-mismatch]
 ```
 
 **Options:**
@@ -135,10 +137,10 @@ blazedb restore <dump-path> <db-path> <password> [--allow-schema-mismatch]
 **Examples:**
 ```bash
 # Normal restore (schema must match)
-blazedb restore /path/to/backup.blazedump /path/to/newdb.blazedb mypassword
+swift run BlazeDump restore /path/to/backup.blazedump /path/to/newdb.blazedb mypassword
 
 # Restore with schema mismatch allowed
-blazedb restore /path/to/backup.blazedump /path/to/newdb.blazedb mypassword --allow-schema-mismatch
+swift run BlazeDump restore /path/to/backup.blazedump /path/to/newdb.blazedb mypassword --allow-schema-mismatch
 ```
 
 **Exit Codes:**
@@ -160,13 +162,13 @@ Restoring database from /path/to/backup.blazedump...
 
 ---
 
-### `blazedb verify`
+### `BlazeDump verify`
 
 Verify dump file integrity.
 
 **Usage:**
 ```bash
-blazedb verify <dump-path>
+swift run BlazeDump verify <dump-path>
 ```
 
 **Options:**
@@ -174,7 +176,7 @@ blazedb verify <dump-path>
 
 **Examples:**
 ```bash
-blazedb verify /path/to/backup.blazedump
+swift run BlazeDump verify /path/to/backup.blazedump
 ```
 
 **Exit Codes:**
@@ -194,13 +196,13 @@ Verifying dump file /path/to/backup.blazedump...
 
 ---
 
-### `blazedb info`
+### `BlazeInfo`
 
 Print database information.
 
 **Usage:**
 ```bash
-blazedb info <db-path> <password>
+swift run BlazeInfo <db-path> <password>
 ```
 
 **Options:**
@@ -208,7 +210,7 @@ blazedb info <db-path> <password>
 
 **Examples:**
 ```bash
-blazedb info /path/to/db.blazedb mypassword
+swift run BlazeInfo /path/to/db.blazedb mypassword
 ```
 
 **Exit Codes:**
@@ -251,7 +253,7 @@ All CLI tools use consistent exit codes:
 ## JSON Output
 
 Tools that support `--json` flag:
-- `blazedb doctor` - Health check report
+- `BlazeDoctor` - Health check report
 
 JSON output is designed for scripting and automation. All JSON output goes to stdout, errors go to stderr.
 
@@ -277,7 +279,7 @@ All CLI tools provide:
 ### Check database health in script
 ```bash
 #!/bin/bash
-if blazedb doctor /path/to/db.blazedb mypassword --json > /dev/null 2>&1; then
+if swift run BlazeDoctor /path/to/db.blazedb mypassword --json > /dev/null 2>&1; then
  echo "Database is healthy"
 else
  echo "Database health check failed"
@@ -288,8 +290,8 @@ fi
 ### Export and verify backup
 ```bash
 #!/bin/bash
-blazedb dump /path/to/db.blazedb /tmp/backup.blazedump mypassword || exit 1
-blazedb verify /tmp/backup.blazedump || exit 1
+swift run BlazeDump dump /path/to/db.blazedb /tmp/backup.blazedump mypassword || exit 1
+swift run BlazeDump verify /tmp/backup.blazedump || exit 1
 echo "Backup created and verified"
 ```
 

@@ -68,7 +68,7 @@ extension BlazeDBError {
     public var guidance: String {
         switch self {
         case .corruptedData:
-            return "Restore from backup if available. Run 'blazedb doctor' to check database health."
+            return "Restore from backup if available. Run 'swift run BlazeDoctor' to check database health."
         case .invalidField:
             return "Check your data model matches the expected schema. Verify field types."
         case .indexNotFound:
