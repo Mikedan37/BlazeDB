@@ -40,6 +40,19 @@ if [[ "${BLAZEDB_ANDROID_SDK_INSTALL_EMULATOR:-0}" == "1" ]]; then
     "system-images;android-34;google_apis;x86_64"
   )
 fi
-"$SDKMANAGER" "${PACKAGES[@]}"
+run_sdkmanager() {
+  local attempt max_attempts=3
+  for attempt in $(seq 1 "$max_attempts"); do
+    echo ">>> sdkmanager attempt ${attempt}/${max_attempts}: $*"
+    if "$SDKMANAGER" "$@"; then
+      return 0
+    fi
+    echo ">>> sdkmanager failed (attempt ${attempt}), retrying in 20s..." >&2
+    sleep 20
+  done
+  return 1
+}
+
+run_sdkmanager "${PACKAGES[@]}"
 
 echo ">>> Android Gradle SDK (Linux) ready at $ANDROID_HOME"

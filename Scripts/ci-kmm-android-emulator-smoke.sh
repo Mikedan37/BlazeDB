@@ -48,7 +48,7 @@ chmod +x "$ROOT"/Scripts/*.sh "$ANDROID_DIR"/scripts/*.sh 2>/dev/null || true
 
 if [[ -z "${ANDROID_HOME:-}" ]]; then
   if [[ "$(uname -s)" == "Darwin" ]]; then
-    "$ROOT/Scripts/setup-android-gradle-sdk.sh"
+    BLAZEDB_ANDROID_SDK_INSTALL_EMULATOR=1 "$ROOT/Scripts/setup-android-gradle-sdk.sh"
     export ANDROID_HOME="${ANDROID_HOME:-$ROOT/.artifacts/android-gradle-sdk}"
   else
     echo "error: ANDROID_HOME must be set on non-macOS hosts" >&2

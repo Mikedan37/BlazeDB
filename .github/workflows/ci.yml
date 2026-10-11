@@ -518,6 +518,9 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Prepare CI log directories
+        run: mkdir -p .logs .artifacts
+
       - name: Download Android native bridge from Linux job
         uses: actions/download-artifact@v5
         with:
@@ -536,16 +539,15 @@ jobs:
           distribution: temurin
           java-version: "17"
 
-      - name: Android Gradle SDK
+      - name: Android Gradle SDK (packaging only — no emulator images)
         run: |
           set -euo pipefail
           chmod +x ./Scripts/setup-android-gradle-sdk.sh
-          ./Scripts/setup-android-gradle-sdk.sh
+          ./Scripts/setup-android-gradle-sdk.sh 2>&1 | tee .logs/android-gradle-sdk-packaging.log
 
       - name: Package and verify KMM artifacts
         run: |
           set -euo pipefail
-          mkdir -p .logs
           chmod +x ./Scripts/package-kmm-artifacts.sh ./Scripts/verify-kmm-packaging.sh
           export BLAZEDB_SWIFT_BUILD="$PWD/.build"
           ./Scripts/package-kmm-artifacts.sh 2>&1 | tee .logs/kmm-packaging.log

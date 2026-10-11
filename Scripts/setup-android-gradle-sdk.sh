@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # Install Android SDK command-line tools for Gradle (platform-tools, platforms, build-tools, NDK).
+# Optional emulator + system image when BLAZEDB_ANDROID_SDK_INSTALL_EMULATOR=1 (local smoke).
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -24,16 +25,38 @@ if [[ ! -x "$SDKMANAGER" ]]; then
 fi
 
 export ANDROID_HOME
+export ANDROID_SDK_ROOT="$ANDROID_HOME"
 export PATH="$CMDLINE/bin:$ANDROID_HOME/platform-tools:$PATH"
 
 yes | "$SDKMANAGER" --licenses >/dev/null 2>&1 || true
-"$SDKMANAGER" \
-  "platform-tools" \
-  "platforms;android-34" \
-  "build-tools;34.0.0" \
-  "ndk;27.0.12077973" \
-  "system-images;android-34;google_apis;arm64-v8a" \
-  "emulator"
+
+PACKAGES=(
+  "platform-tools"
+  "platforms;android-34"
+  "build-tools;34.0.0"
+  "ndk;27.0.12077973"
+)
+if [[ "${BLAZEDB_ANDROID_SDK_INSTALL_EMULATOR:-0}" == "1" ]]; then
+  PACKAGES+=(
+    "emulator"
+    "system-images;android-34;google_apis;arm64-v8a"
+  )
+fi
+
+run_sdkmanager() {
+  local attempt max_attempts=3
+  for attempt in $(seq 1 "$max_attempts"); do
+    echo ">>> sdkmanager attempt ${attempt}/${max_attempts}: $*"
+    if "$SDKMANAGER" "$@"; then
+      return 0
+    fi
+    echo ">>> sdkmanager failed (attempt ${attempt}), retrying in 20s..." >&2
+    sleep 20
+  done
+  return 1
+}
+
+run_sdkmanager "${PACKAGES[@]}"
 
 echo ">>> Android Gradle SDK ready at $ANDROID_HOME"
 echo ">>> adb: $(command -v adb)"

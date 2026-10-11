@@ -30,13 +30,6 @@ final class BlazeDBPersistAPITests: XCTestCase {
         removeBlazeDBTestFiles(at: url)
     }
 
-    /// Absolute timing gates assume fast local hardware; shared CI runners are too noisy.
-    private func skipTimingSensitiveTestsOnCI() throws {
-        if ProcessInfo.processInfo.environment["CI"] != nil {
-            throw XCTSkip("Persist performance timing skipped on CI; see BlazeDB_Tier3_Heavy PerformanceInvariantTests.")
-        }
-    }
-    
     // MARK: - persist() Tests
     
     func testPersistForcesMetadataFlush() throws {
@@ -319,7 +312,6 @@ final class BlazeDBPersistAPITests: XCTestCase {
     // MARK: - Performance Tests
     
     func testPersistPerformance() throws {
-        try skipTimingSensitiveTestsOnCI()
         let tempURL = makeTestURL()
         defer { cleanupTestURL(tempURL) }
         
@@ -330,13 +322,18 @@ final class BlazeDBPersistAPITests: XCTestCase {
             _ = try db.insert(BlazeDataRecord(["index": .int(i)]))
         }
         
-        // Measure persist time
         let start = Date()
         try db.persist()
         let duration = Date().timeIntervalSince(start)
         
-        // Should be fast (< 100ms for 1000 records)
-        XCTAssertLessThan(duration, 0.1, "persist() should be fast")
+        // Local dev: tight bar. CI: regression guard only (shared runners are noisy).
+        let maxPersistSeconds: TimeInterval =
+            ProcessInfo.processInfo.environment["CI"] != nil ? 0.5 : 0.1
+        XCTAssertLessThan(
+            duration,
+            maxPersistSeconds,
+            "persist() should be fast (< \(maxPersistSeconds)s, was \(String(format: "%.3f", duration))s)"
+        )
     }
     
     func testAutomaticFlushAt100Operations() throws {

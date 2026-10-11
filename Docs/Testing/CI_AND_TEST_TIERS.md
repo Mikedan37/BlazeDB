@@ -215,7 +215,7 @@ Legacy `./Scripts/prove-android-runtime.sh` still accepts older JNI UI markers; 
 - `BlazeDB_Tier2_Extended` is a **transitional companion target** containing reclassified legacy Tier1Extended suites under Tier2 ownership.
 - Declared in root `Package.swift`.
 - Non-blocking by default in script form; enforced in nightly via strict mode.
-- Absolute wall-clock gates do not run on CI for Tier2: `BlazeDBPersistAPITests.testPersistPerformance` throws `XCTSkip` when `CI` is set. Local persist timing invariants live in `BlazeDB_Tier3_Heavy` `PerformanceInvariantTests` (same skip-on-CI policy).
+- Tier2 `BlazeDBPersistAPITests.testPersistPerformance` uses a **relaxed CI ceiling** (0.5s) and a **strict local ceiling** (0.1s). Stricter persist timing invariants also live in `BlazeDB_Tier3_Heavy` `PerformanceInvariantTests` (skipped on CI).
 
 - `BlazeDB_Tier3_Heavy` / `BlazeDB_Tier3_Destructive`
 - Stress, fuzz, and destructive/fault-injection lanes.

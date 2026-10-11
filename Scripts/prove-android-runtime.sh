@@ -14,7 +14,7 @@ echo "=== 1/4 Docker OSS Swift cross-compile ==="
 "$ROOT/Scripts/prove-android-runtime-docker-crosscompile.sh"
 
 echo "=== 2/4 Android Gradle SDK (host) ==="
-"$ROOT/Scripts/setup-android-gradle-sdk.sh"
+BLAZEDB_ANDROID_SDK_INSTALL_EMULATOR=1 "$ROOT/Scripts/setup-android-gradle-sdk.sh"
 export ANDROID_HOME="${ANDROID_HOME:-$ROOT/.artifacts/android-gradle-sdk}"
 export PATH="$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools:$ANDROID_HOME/emulator:$PATH"
 
