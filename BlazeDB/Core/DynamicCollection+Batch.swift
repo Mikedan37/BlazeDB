@@ -537,9 +537,9 @@ extension DynamicCollection {
             // Phase 4: Save metadata once (instead of N times)
             BlazeLogger.debug("📦 [INSERT] Batch: Phase 4 - Saving layout metadata...")
             let saveStart = Date()
-            // Update layout with current state before saving
-            layout.indexMap = indexMap  // indexMap is already [UUID: [Int]] format
-            layout.secondaryIndexes = StorageLayout.fromRuntimeIndexes(secondaryIndexes)
+            // `layout` is only the in-memory allocation snapshot. It has no search
+            // index, index definitions, or metadata. Saving it directly replaces
+            // the catalog and drops those fields.
             // CRITICAL: layout.deletedPages was already updated by allocatePage() calls
             // Make sure nextPageIndex is correctly set (it was updated by allocatePage)
             // CRITICAL: nextPageIndex should be max(layout.nextPageIndex, maxUsedPage + 1)
@@ -559,35 +559,31 @@ extension DynamicCollection {
             let calculatedNextPageIndex = maxUsedPage + 1
             // Set nextPageIndex to the maximum of current value and maxUsedPage + 1
             // This preserves nextPageIndex when reusing pages, but updates it when allocating new ones
-            layout.nextPageIndex = max(layout.nextPageIndex, calculatedNextPageIndex)
-            BlazeLogger.debug("📦 [INSERT] Batch: nextPageIndex check - before: \(nextPageIndexBefore), maxUsedPage: \(maxUsedPage), calculated: \(calculatedNextPageIndex), final: \(layout.nextPageIndex), inserted: \(insertedIDs.count) records")
-            if nextPageIndexBefore != layout.nextPageIndex {
-                BlazeLogger.debug("📦 [INSERT] Batch: ⚠️ Updated nextPageIndex from \(nextPageIndexBefore) to \(layout.nextPageIndex) (maxUsedPage=\(maxUsedPage))")
+            let resolvedNextPageIndex = max(layout.nextPageIndex, calculatedNextPageIndex)
+            BlazeLogger.debug("📦 [INSERT] Batch: nextPageIndex check - before: \(nextPageIndexBefore), maxUsedPage: \(maxUsedPage), calculated: \(calculatedNextPageIndex), final: \(resolvedNextPageIndex), inserted: \(insertedIDs.count) records")
+            if nextPageIndexBefore != resolvedNextPageIndex {
+                BlazeLogger.debug("📦 [INSERT] Batch: ⚠️ Updated nextPageIndex from \(nextPageIndexBefore) to \(resolvedNextPageIndex) (maxUsedPage=\(maxUsedPage))")
             } else {
-                BlazeLogger.debug("📦 [INSERT] Batch: ✅ Preserved nextPageIndex at \(layout.nextPageIndex) (maxUsedPage=\(maxUsedPage), likely reusing pages)")
+                BlazeLogger.debug("📦 [INSERT] Batch: ✅ Preserved nextPageIndex at \(resolvedNextPageIndex) (maxUsedPage=\(maxUsedPage), likely reusing pages)")
             }
             // CRITICAL: Filter out any pages from deletedPages that are still in indexMap
             // This prevents deletedPages from containing pages that are actually in use
             let deletedPagesBeforeFilter = layout.deletedPages.count
-            layout.deletedPages = layout.deletedPages.filter { pageIndex in
+            let filteredDeletedPages = layout.deletedPages.filter { pageIndex in
                 !indexMap.values.contains { pageIndices in
                     pageIndices.contains(pageIndex)
                 }
             }
-            let deletedPagesAfterFilter = layout.deletedPages.count
+            let deletedPagesAfterFilter = filteredDeletedPages.count
             if deletedPagesBeforeFilter != deletedPagesAfterFilter {
                 BlazeLogger.debug("📦 [INSERT] Batch: Filtered out \(deletedPagesBeforeFilter - deletedPagesAfterFilter) pages from deletedPages")
             }
-            // Use secure save if password is available
-            if password != nil {
-                try layout.saveSecure(to: metaURL, signingKey: encryptionKey)
-            } else {
-                try layout.save(to: metaURL)
-            }
+            nextPageIndex = resolvedNextPageIndex
+            cachedDeletedPages = filteredDeletedPages
+            // saveLayout copies the search index, index definitions, and on-disk metadata.
+            try saveLayout()
             let saveDuration = Date().timeIntervalSince(saveStart)
             BlazeLogger.debug("📦 [INSERT] Batch: Phase 4 - Layout save complete in \(String(format: "%.2f", saveDuration * 1000))ms")
-            // Update in-memory nextPageIndex to match layout
-            nextPageIndex = layout.nextPageIndex
             unsavedChanges = 0
             
             let duration = Date().timeIntervalSince(startTime)
