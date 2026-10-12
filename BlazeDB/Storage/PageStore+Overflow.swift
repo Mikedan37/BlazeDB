@@ -999,6 +999,9 @@ extension PageStore {
         // Overflow pages are stored in the main file. A later synchronize() must
         // fsync that file before commit returns; single-page writes do not set this.
         mainFileNeedsSync = true
+        // A reused page can still have an older committed WAL image. Close and
+        // crash recovery copy that image back unless this write joins the open group.
+        try _recordDirectMainFileWriteInOpenWALGroup(index: index, buffer: buffer)
     }
     
     /// Read an overflow page

@@ -114,6 +114,34 @@ final class WALCommitBoundaryTests: XCTestCase {
         XCTAssertEqual(try recovered.readPage(index: 0), Data("keep-wal".utf8))
     }
 
+    /// A deleted record's page can be reused as an overflow page. That write
+    /// lands in the main file, while the page's previous image is still a
+    /// committed legacy WAL record. Close and crash recovery must keep the
+    /// overflow bytes, not copy the old record back over them.
+    func testReusedOverflowPageSurvivesClose() throws {
+        let url = tempDir.appendingPathComponent("overflow-close.blazedb")
+        let payload = String(repeating: "o", count: 5_000)
+        let id = try insertLargeRecordOnReusedPages(url: url, payload: payload) { db in
+            try db.close()
+        }
+
+        let reopened = try BlazeDBClient(name: "wal-boundary", fileURL: url, password: password)
+        defer { try? reopened.close() }
+        XCTAssertEqual(try reopened.fetch(id: id)?.storage["blob"]?.stringValue, payload)
+    }
+
+    func testReusedOverflowPageSurvivesCrashReplay() throws {
+        let url = tempDir.appendingPathComponent("overflow-crash.blazedb")
+        let payload = String(repeating: "o", count: 5_000)
+        let id = try insertLargeRecordOnReusedPages(url: url, payload: payload) { db in
+            db.collection.store.simulateCrashForTests()
+        }
+
+        let reopened = try BlazeDBClient(name: "wal-boundary", fileURL: url, password: password)
+        defer { try? reopened.close() }
+        XCTAssertEqual(try reopened.fetch(id: id)?.storage["blob"]?.stringValue, payload)
+    }
+
     func testTornWALTailIsNotRecoveredAsACommittedPage() throws {
         let url = tempDir.appendingPathComponent("torn.blazedb")
         let key = SymmetricKey(size: .bits256)
@@ -131,6 +159,22 @@ final class WALCommitBoundaryTests: XCTestCase {
         defer { recovered.close() }
         XCTAssertEqual(try recovered.readPage(index: 0), Data("complete".utf8))
         XCTAssertNil(try recovered.readPage(index: 1))
+    }
+
+    private func insertLargeRecordOnReusedPages(
+        url: URL,
+        payload: String,
+        finish: (BlazeDBClient) throws -> Void
+    ) throws -> UUID {
+        let db = try BlazeDBClient(name: "wal-boundary", fileURL: url, password: password)
+        let first = try db.insert(BlazeDataRecord(["title": .string("first")]))
+        let second = try db.insert(BlazeDataRecord(["title": .string("second")]))
+        try db.delete(id: first)
+        try db.delete(id: second)
+        let id = try db.insert(BlazeDataRecord(["blob": .string(payload)]))
+        XCTAssertEqual(try db.fetch(id: id)?.storage["blob"]?.stringValue, payload)
+        try finish(db)
+        return id
     }
 
     private func openMVCC(_ url: URL) throws -> BlazeDBClient {

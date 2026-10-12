@@ -31,10 +31,10 @@ For the default `BlazeDBClient` path, durability is provided by the **legacy bin
 
 Large records that do not fit in a single page are stored using an **overflow chain**:
 
-- Overflow pages are allocated and written **before** the main page. These pages are **not** individually appended to the legacy binary WAL.
-- The main page stores a committed overflow pointer and checksum (`OverflowReferenceV2`); this main page **is** WAL-protected and acts as the **publish point** for the chain.
-- On crash **before** the main page is durably written, it is possible to have orphan overflow pages on disk that are not referenced by any catalog entry. These pages are not visible via normal APIs and may be reclaimed by garbage collection or vacuum.
-- On crash **after** the main page and metadata are durably written, recovery treats the record as committed and uses the main page pointer+checksum to reconstruct the overflow chain. Any WAL replay operates on the main page image and does not log overflow pages separately.
+- Overflow pages are allocated and written to the main file **before** the main page. Each overflow page is also appended to the same legacy WAL group as the main page. A freed record page can be reused as an overflow page; replay would otherwise copy that page's older record image back over the chain.
+- The main page stores a committed overflow pointer and checksum (`OverflowReferenceV2`) and is the publish point for the chain. The WAL commit record covers the overflow pages and the main page together.
+- On crash **before** that commit record is durable, replay ignores the open group. Orphan overflow bytes may remain on disk. They are not referenced by the catalog and are not visible via normal APIs.
+- On crash **after** the commit record and the catalog are durable, replay writes every page in the group, including overflow pages. The record reads back through the main-page pointer and checksum.
 
 This means:
 

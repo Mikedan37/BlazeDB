@@ -390,6 +390,20 @@ public final class PageStore: @unchecked Sendable {
         }
     }
 
+    /// A main-file write that bypassed `_writePageLockedUnsynchronized` (overflow
+    /// pages). The previous committed image for this index must not be copied
+    /// back over the new bytes at checkpoint, close, or crash recovery.
+    /// Caller holds the page-store queue.
+    func _recordDirectMainFileWriteInOpenWALGroup(index: Int, buffer: Data) throws {
+        logicalPageCount = max(logicalPageCount, index + 1)
+        guard let wal = wal else { return }
+        try wal.appendDeferred(pageIndex: index, data: buffer)
+        uncheckpointedPageImages.removeValue(forKey: index)
+        uncheckpointedPlaintext.removeValue(forKey: index)
+        stagedPlaintext.removeValue(forKey: index)
+        stagedPageImages[index] = buffer
+    }
+
     /// Copy committed legacy WAL pages into the main file. Does not fsync or truncate.
     private func _applyCommittedLegacyWALLocked() throws -> Int {
         guard let wal = wal else { return 0 }
