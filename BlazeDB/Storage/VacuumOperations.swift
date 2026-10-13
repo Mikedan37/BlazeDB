@@ -112,15 +112,30 @@ extension BlazeDBClient {
                     // Get storage stats before
                     let statsBefore = try self._getStorageStatsSync()
                     
-                    // Flush all pending changes
+                    // Flush all pending changes, then copy the committed WAL into the
+                    // main file. Since legacy commits stay in the WAL until checkpoint,
+                    // a later crash must still find those pages in the live file.
                     try self.persist()
+                    try self.collection.store.checkpoint()
                     
-                    // Create temporary compacted file
-                    let tempURL = self.fileURL.deletingLastPathComponent()
-                        .appendingPathComponent("\(self.fileURL.lastPathComponent).vacuum-\(UUID().uuidString)")
+                    let attrsOld = try FileManager.default.attributesOfItem(atPath: self.fileURL.path)
+                    let sizeOld = attrsOld[.size] as? Int64 ?? 0
+                    
+                    // The temp file's extension has to stay `.blazedb`. Naming it
+                    // `name.blazedb.vacuum-…` makes PageStore strip that suffix and
+                    // open `name.blazedb.wal` — the live log — then clear it on replay.
+                    let tempURL = self.fileURL
+                        .deletingPathExtension()
+                        .appendingPathExtension("vacuum-\(UUID().uuidString).blazedb")
+                    let tempMetaURL = self.metaURL
+                        .deletingPathExtension()
+                        .appendingPathExtension("vacuum-\(UUID().uuidString).meta")
+                    let tempWALURL = tempURL.deletingPathExtension().appendingPathExtension("wal")
                     
                     defer {
                         BlazeAuthoritativeFileOps.removeItemIfExists(at: tempURL, context: "VacuumOperations(defer temp)")
+                        BlazeAuthoritativeFileOps.removeItemIfExists(at: tempMetaURL, context: "VacuumOperations(defer temp meta)")
+                        BlazeAuthoritativeFileOps.removeItemIfExists(at: tempWALURL, context: "VacuumOperations(defer temp wal)")
                     }
                     
                     BlazeLogger.debug("Creating compacted database at \(tempURL.path)")
@@ -152,7 +167,9 @@ extension BlazeDBClient {
                     
                     BlazeLogger.debug("Wrote \(newPageIndex) compacted pages")
                     
-                    // Update metadata with new index map
+                    // Catalog stays on the temp meta until the data file is replaced.
+                    // Publishing it onto the live meta first makes a crash read old
+                    // pages through the compacted index.
                     var layout = try self.loadVacuumLayout()
                     layout.indexMap = newIndexMap
                     layout.nextPageIndex = newPageIndex
@@ -160,36 +177,22 @@ extension BlazeDBClient {
                     // freelist still names those indexes, so the next insert would
                     // overwrite a record vacuum just kept.
                     layout.deletedPages = []
-                    try layout.saveSecure(to: self.metaURL, signingKey: self.encryptionKey)
-                    
-                    // Get file sizes
-                    let attrsOld = try FileManager.default.attributesOfItem(atPath: self.fileURL.path)
-                    let sizeOld = attrsOld[.size] as? Int64 ?? 0
-                    
-                    let attrsNew = try FileManager.default.attributesOfItem(atPath: tempURL.path)
-                    let sizeNew = attrsNew[.size] as? Int64 ?? 0
+                    try layout.saveSecure(to: tempMetaURL, signingKey: self.encryptionKey)
                     
                     // Close temporary compacted store before swapping files.
                     compactedStore.close()
                     
-                    // Release lock/handles on the live store before reopening the file.
-                    // Without this, opening a new PageStore on the same path can fail with
-                    // concurrent-process/handle lock errors in parallel test execution.
-                    try self.collection.close()
+                    let attrsNew = try FileManager.default.attributesOfItem(atPath: tempURL.path)
+                    let sizeNew = attrsNew[.size] as? Int64 ?? 0
                     
-                    // Replace old file with compacted file
-                    BlazeLogger.debug("Replacing old database file...")
-                    try FileManager.default.removeItem(at: self.fileURL)
-                    try FileManager.default.moveItem(at: tempURL, to: self.fileURL)
+                    #if DEBUG
+                    if ProcessInfo.processInfo.environment["BLAZEDB_CRASH_ASYNC_VACUUM_BEFORE_SWAP"] == "1" {
+                        self.collection.store.simulateCrashForTests()
+                        throw BlazeDBError.transactionFailed("Simulated crash before async vacuum file swap")
+                    }
+                    #endif
                     
-                    // Reload collection with compacted data
-                    let newStore = try PageStore(fileURL: self.fileURL, key: self.encryptionKey)
-                    self.collection = try DynamicCollection(
-                        store: newStore,
-                        metaURL: self.metaURL,
-                        project: self.project,
-                        encryptionKey: self.encryptionKey
-                    )
+                    try self.replaceLiveFilesWithCompactedDatabase(tempDataURL: tempURL, tempMetaURL: tempMetaURL)
                     
                     let duration = Date().timeIntervalSince(startTime)
                     
@@ -213,6 +216,80 @@ extension BlazeDBClient {
                     continuation.resume(throwing: error)
                 }
             }
+        }
+    }
+
+    /// Swap in a finished compact database. The live catalog is not replaced
+    /// until the compacted data file is in its place, and `vacuum_in_progress`
+    /// plus the backups let open restore the previous files if the process dies
+    /// between the two renames.
+    private func replaceLiveFilesWithCompactedDatabase(tempDataURL: URL, tempMetaURL: URL) throws {
+        let originalDataURL = fileURL
+        let originalMetaURL = metaURL
+        let baseURL = originalDataURL.deletingPathExtension()
+        let vacuumLogURL = baseURL.appendingPathExtension("vacuum_in_progress")
+        let dataBackupURL = baseURL.appendingPathExtension("vacuum_backup.blazedb")
+        let metaBackupURL = baseURL.appendingPathExtension("vacuum_backup.meta")
+        let successMarkerURL = baseURL.appendingPathExtension("vacuum_success")
+
+        BlazeAuthoritativeFileOps.removeItemIfExists(at: dataBackupURL, context: "VacuumOperations(stale data backup)")
+        BlazeAuthoritativeFileOps.removeItemIfExists(at: metaBackupURL, context: "VacuumOperations(stale meta backup)")
+        try Data().write(to: vacuumLogURL, options: .atomic)
+
+        let preservedProject = self.project
+        let key = encryptionKey
+        let password = collection.password
+        let salt = collection.kdfSalt
+
+        // Release the live flock before renaming the file it holds.
+        try collection.close()
+
+        do {
+            if FileManager.default.fileExists(atPath: originalDataURL.path) {
+                try FileManager.default.moveItem(at: originalDataURL, to: dataBackupURL)
+            }
+            if FileManager.default.fileExists(atPath: originalMetaURL.path) {
+                try FileManager.default.moveItem(at: originalMetaURL, to: metaBackupURL)
+            }
+            try FileManager.default.moveItem(at: tempDataURL, to: originalDataURL)
+            try FileManager.default.moveItem(at: tempMetaURL, to: originalMetaURL)
+
+            let newStore = try PageStore(fileURL: originalDataURL, key: key)
+            collection = try DynamicCollection(
+                store: newStore,
+                metaURL: originalMetaURL,
+                project: preservedProject,
+                encryptionKey: key,
+                password: password,
+                kdfSalt: salt
+            )
+
+            try Data().write(to: successMarkerURL, options: .atomic)
+            BlazeAuthoritativeFileOps.removeItemIfExists(at: dataBackupURL, context: "VacuumOperations(post-success data backup)")
+            BlazeAuthoritativeFileOps.removeItemIfExists(at: metaBackupURL, context: "VacuumOperations(post-success meta backup)")
+            BlazeAuthoritativeFileOps.removeItemIfExists(at: successMarkerURL, context: "VacuumOperations(success marker)")
+            BlazeAuthoritativeFileOps.removeItemIfExists(at: vacuumLogURL, context: "VacuumOperations(intent)")
+        } catch {
+            BlazeLogger.error("Async VACUUM file swap failed, restoring previous files: \(error)")
+            if FileManager.default.fileExists(atPath: dataBackupURL.path) {
+                BlazeAuthoritativeFileOps.removeItemIfExists(at: originalDataURL, context: "VacuumOperations(rollback partial data)")
+                try FileManager.default.moveItem(at: dataBackupURL, to: originalDataURL)
+            }
+            if FileManager.default.fileExists(atPath: metaBackupURL.path) {
+                BlazeAuthoritativeFileOps.removeItemIfExists(at: originalMetaURL, context: "VacuumOperations(rollback partial meta)")
+                try FileManager.default.moveItem(at: metaBackupURL, to: originalMetaURL)
+            }
+            let restored = try PageStore(fileURL: originalDataURL, key: key)
+            collection = try DynamicCollection(
+                store: restored,
+                metaURL: originalMetaURL,
+                project: preservedProject,
+                encryptionKey: key,
+                password: password,
+                kdfSalt: salt
+            )
+            BlazeAuthoritativeFileOps.removeItemIfExists(at: vacuumLogURL, context: "VacuumOperations(rollback intent)")
+            throw error
         }
     }
     
