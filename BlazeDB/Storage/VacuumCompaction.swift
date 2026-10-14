@@ -213,6 +213,16 @@ extension BlazeDBClient {
             )
             
             BlazeLogger.info("   ✅ Created temporary database")
+
+            // Each insert publishes a fresh catalog. Search terms have to be
+            // rebuilt from the rows we keep, not copied from an index that still
+            // names deleted records.
+            #if !BLAZEDB_LINUX_CORE
+            if collection.cachedSearchIndex != nil, !collection.cachedSearchIndexedFields.isEmpty {
+                tempCollection.cachedSearchIndex = InvertedIndex()
+                tempCollection.cachedSearchIndexedFields = collection.cachedSearchIndexedFields
+            }
+            #endif
             
             // Copy all active records (this rewrites them compactly)
             for (index, record) in activeRecords.enumerated() {
@@ -221,6 +231,17 @@ extension BlazeDBClient {
                 if index % 1000 == 0 {
                     BlazeLogger.debug("   📝 Copied \(index)/\(activeRecords.count) records...")
                 }
+            }
+
+            // The temp catalog only knows the copied rows. Record ids are unchanged,
+            // so the live secondary index still names the right rows. Metadata and
+            // index definitions live only in the catalog that this swap replaces.
+            tempCollection.secondaryIndexDefinitions = collection.secondaryIndexDefinitions
+            tempCollection.secondaryIndexes = collection.secondaryIndexes
+            tempCollection.encodingFormat = collection.encodingFormat
+            let sourceMeta = try collection.loadLayoutForMutation().metaData
+            if !sourceMeta.isEmpty {
+                try tempCollection.updateMeta(sourceMeta)
             }
             
             // Persist and FSYNC the new database (CRASH SAFETY!)
