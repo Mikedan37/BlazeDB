@@ -223,6 +223,13 @@ extension BlazeDBClient {
         
         // Persist any pending changes before restore
         try persist()
+
+        // Release the live file before replacing it. Commits since the backup
+        // sit in the WAL until checkpoint, and that log is not part of the
+        // snapshot. Opening the restored file replays whatever log is still
+        // beside it, which puts those later page images back under the
+        // backup catalog's record ids.
+        try collection.close()
         
         // Remove current files
         if FileManager.default.fileExists(atPath: fileURL.path) {
@@ -253,6 +260,10 @@ extension BlazeDBClient {
         if FileManager.default.fileExists(atPath: backupSaltURL.path) {
             try FileManager.default.copyItem(at: backupSaltURL, to: saltURL)
         }
+
+        // close() keeps the WAL when its final sync fails. Drop it after the
+        // snapshot is in place so the open below cannot replay it.
+        discardLiveWALSidecars()
         
         // Reload collection with restored files
         // This will use the same encryption key, so backup must have been created with same key
@@ -261,10 +272,25 @@ extension BlazeDBClient {
             store: newStore,
             metaURL: metaURL,
             project: project,
-            encryptionKey: encryptionKey
+            encryptionKey: encryptionKey,
+            password: password,
+            kdfSalt: kdfSalt
         )
         
         BlazeLogger.info("Database restored from backup")
+    }
+
+    /// The backup snapshot does not include the live write-ahead log.
+    private func discardLiveWALSidecars() {
+        let base = fileURL.deletingPathExtension()
+        BlazeAuthoritativeFileOps.removeItemIfExists(
+            at: base.appendingPathExtension("wal"),
+            context: "restore(discard live wal)"
+        )
+        BlazeAuthoritativeFileOps.removeItemIfExists(
+            at: base.appendingPathExtension("wal-meta"),
+            context: "restore(discard live wal-meta)"
+        )
     }
     
     /// Restore database from a backup (async - convenience wrapper)
