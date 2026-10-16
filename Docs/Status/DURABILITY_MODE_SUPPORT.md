@@ -60,6 +60,8 @@ not treat a failed rollback as a successful save or delete the backup.
 
 After a rollback fails, the client rejects guarded reads, transactions, ordinary CRUD writes, index creation and explicit persistence until it is closed and reopened. Closing skips the normal client flush; reopening restores the durable transaction backup before accepting new writes. The sync and async transaction helpers, `performTransaction`, and import restoration report `BlazeTransactionRecoveryError` when both the operation and rollback fail, retaining both underlying errors. A successful rollback preserves the original operation error.
 
+`savepoint` checkpoints the live store before copying the data file, so the snapshot includes pages that were still only in the legacy WAL. `rollbackToSavepoint` releases that store without replaying its log, copies the snapshot back, and deletes the live `.wal` and `.wal-meta` sidecars before opening the restored file. Leaving the log in place would replay writes made after the savepoint onto pages the snapshot catalog still names. No format change is required.
+
 - **Legacy durability path (default for `BlazeDBClient`):** `WriteAheadLog` + encrypted page writes. WAL replay runs during `PageStore` init.
 - **Unified durability path (optional):** `DurabilityManager` + `RecoveryManager` — selected by constructing `PageStore` with `walMode: .unified`. Use one mode consistently per database file.
 

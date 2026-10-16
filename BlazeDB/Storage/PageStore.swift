@@ -1320,6 +1320,22 @@ public final class PageStore: @unchecked Sendable {
     }
     #endif
 
+    /// Drop the open file and WAL handles without copying the log into the main file.
+    /// Used when the caller is about to replace both files and delete the WAL.
+    /// Applying the log here would put pages from after a savepoint back onto the
+    /// live file, and a failed fsync would keep that log for the next open.
+    internal func closeDiscardingWAL() {
+        queue.sync(flags: .barrier) {
+            guard !closed else { return }
+            wal?.close()
+            try? durabilityManager?.close()
+            releaseLock()
+            fileHandle.compatClose()
+            IOTraceSink.record(operation: "close_handle", path: fileURL.path, fd: fd, resultCode: 0, context: ["phase": "discard"])
+            closed = true
+        }
+    }
+
     public func close() {
         queue.sync(flags: .barrier) {
             guard !closed else { return }

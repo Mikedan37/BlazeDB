@@ -117,11 +117,12 @@ extension BlazeDBClient {
             throw BlazeDBError.transactionFailed("Cannot create savepoint: not in a transaction")
         }
         
-        // Ensure all changes are persisted before creating savepoint
+        // Ensure all changes are persisted before creating savepoint.
+        // Inserts stay in the legacy WAL until checkpoint, so the data file
+        // copied below would otherwise omit pages the catalog already names.
         try persist()
-        
-        // Ensure store is fully synced before creating savepoint
         try collection.store.synchronize()
+        try collection.store.checkpoint()
         
         // CRITICAL: Small delay to ensure all file system operations are complete
         // This is especially important for nested savepoints where multiple operations occur
@@ -207,8 +208,14 @@ extension BlazeDBClient {
         #endif
         oldCollection.recordCache.clear()
         
-        // Reset unsavedChanges on old collection BEFORE restoring files to prevent it from saving on deinit
+        // Reset unsavedChanges on old collection BEFORE restoring files to prevent it from saving on deinit.
+        // Release the live store without copying its WAL onto the data file.
+        // That log holds page images written after the snapshot. The normal
+        // close path would replay them, and a failed fsync would keep the log
+        // for the open below.
         oldCollection.unsavedChanges = 0
+        oldCollection.store.closeDiscardingWAL()
+        oldCollection.releaseAfterDirectStoreClose()
         
         // Restore database state from savepoint
         // Note: We can't set collection to nil (it's non-optional), but reloadFromDisk() will replace it
@@ -239,6 +246,11 @@ extension BlazeDBClient {
             metaHandle.synchronizeFile()
             metaHandle.closeFile()
         }
+
+        // The discarded store leaves the log file on disk. Drop it after the
+        // snapshot is in place so the open below cannot replay page images
+        // written after the savepoint onto ids the snapshot catalog still names.
+        discardLiveWALSidecars()
         
         // Small delay to ensure file system has fully synced
         // NOTE: Thread.sleep is intentional for file system synchronization in synchronous context.
@@ -344,6 +356,19 @@ extension BlazeDBClient {
         
         savepointManager.releaseSavepoint(name: name)
         BlazeLogger.info("Released savepoint '\(name)'")
+    }
+
+    /// Savepoint snapshots do not include the live write-ahead log.
+    private func discardLiveWALSidecars() {
+        let base = fileURL.deletingPathExtension()
+        BlazeAuthoritativeFileOps.removeItemIfExists(
+            at: base.appendingPathExtension("wal"),
+            context: "rollbackToSavepoint(discard live wal)"
+        )
+        BlazeAuthoritativeFileOps.removeItemIfExists(
+            at: base.appendingPathExtension("wal-meta"),
+            context: "rollbackToSavepoint(discard live wal-meta)"
+        )
     }
 }
 
