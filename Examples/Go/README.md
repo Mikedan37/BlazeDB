@@ -94,6 +94,7 @@ func main() {
 ## Current support boundaries
 
 - C ABI byte-KV surface is the supported cross-language contract
-- Go is a documented cgo consumer of that surface; no checked-in Go module yet
+- Go is a **cgo consumer** of that surface; `hello_blazedb.go` is smoke only — not a versioned module
 - Not a claim of full Go API coverage beyond `blazedb.h`
 - Swift runtime must still be available at load time for `BlazeDBC`
+- Production queue workers may use the same ABI with richer logic outside this repo

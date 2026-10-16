@@ -32,7 +32,7 @@ cd BlazeDB
 swift run HelloBlazeDB
 ```
 
-**Expected output (abridged):** lines for `Opened database`, `Inserted sample bugs`, `Open bugs: 2`, and `Success`.
+**Expected output (abridged):** lines for `Opened database`, `Inserted sample bugs`, `Open bugs: 2`, and `Success (persisted across reopen)`.
 
 **Common failures:**
 

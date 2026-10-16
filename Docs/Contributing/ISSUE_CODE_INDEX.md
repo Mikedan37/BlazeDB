@@ -63,7 +63,7 @@ Label filters used: `good first issue`, `durability`, `performance`, `concurrenc
 | Issue | Difficulty | Evidence | Files | Existing tests | Missing tests | Validation | Maintainer review |
 |-------|------------|----------|-------|----------------|---------------|------------|-------------------|
 | #263 | intermediate | Strongly supported | Compatibility fixtures + CI workflows | fixtures may skip today | non-skippable gate | CI workflow change | med |
-| #264 | intermediate | Proven | `Examples/Go/README.md` (no `.go` yet); `BlazeDBC` | `BlazeDBCSmokeTests` | Go/cgo CI | build BlazeDBC + planned go test | med |
+| #264 | intermediate | Proven | `Examples/Go/hello_blazedb.go`; `BlazeDBC` | `BlazeDBCSmokeTests` | Go/cgo CI gate | build BlazeDBC + `go run hello_blazedb.go` in CI | med |
 | #265 | intermediate | Strongly supported | `Examples/C/hello_blazedb.c`; release scripts | C example not always CI-linked | artifact + CI link | `swift build --product BlazeDBC` | med |
 | #266 | starter–intermediate | Strongly supported | schema docs under consolidation | `SchemaValidationTests` | n/a (docs) | schema guide + tests unchanged | low |
 | #267 | intermediate | Proven | `blazedb.h`, `BlazeDBC.swift` | smoke tests | last_error coverage | `BlazeDBCSmokeTests` + new | **ABI review** |
