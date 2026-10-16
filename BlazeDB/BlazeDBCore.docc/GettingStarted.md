@@ -7,7 +7,7 @@ Use this path for command-line tools, services, unit tests, and any Swift code t
 In Xcode: **File → Add Package Dependencies** and use:
 
 ```swift
-.package(url: "https://github.com/Mikedan37/BlazeDB.git", from: "2.8.1")
+.package(url: "https://github.com/Mikedan37/BlazeDB.git", from: "2.8.2")
 ```
 
 Depend on the **BlazeDB** product (it re-exports ``BlazeDBCore``).

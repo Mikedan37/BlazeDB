@@ -1,8 +1,8 @@
 # BlazeDB
 
-BlazeDB is an encrypted, embedded database for Swift applications and services, with typed records, transactional writes, WAL-backed recovery, live queries, and Linux support.
+**Swift-native embedded document database** (not [BlazingSQL / BlazingDB](https://github.com/BlazingDB/BlazingDB), the GPU SQL engine). BlazeDB runs **in your app process** on a **local encrypted file**: typed `Codable` records, transactional writes, WAL-backed crash recovery, in-process live queries, and a `blazedb` CLI against the same engine. **macOS and Linux** are runtime-tested in CI; Apple mobile targets are compile-tested; Android/KMM is experimental.
 
-It runs inside your process. No separate database server is required.
+**Use it when** you want encryption-by-default local persistence with Swift APIs, not SQL. **Use SQLite or GRDB when** you need SQL, the broadest tooling, or the lowest-latency unencrypted insert path ([honest comparison](Docs/GettingStarted/WHY_NOT_SQLITE.md)).
 
 [![CI](https://github.com/Mikedan37/BlazeDB/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Mikedan37/BlazeDB/actions/workflows/ci.yml)
 [![Release](https://img.shields.io/badge/release-v2.8.2-green.svg)](RELEASE.md)
@@ -47,6 +47,8 @@ swift run HelloBlazeDB
 ```
 
 CI verifies the snippets above: `swift run ReadmeSamples`.
+
+If this matches your app, a star on [GitHub](https://github.com/Mikedan37/BlazeDB) helps other Swift developers find it. No account required to try the steps above.
 
 ---
 
@@ -244,6 +246,8 @@ Start with the [documentation index](Docs/README.md), which carries support stat
 
 | Area | Entry point |
 |------|-------------|
+| Support & limits | [Support and limitations matrix](Docs/Support/SUPPORT_AND_LIMITATIONS.md) |
+| Choose a store | [Embedded Swift storage comparison](Docs/GettingStarted/COMPARE_EMBEDDED_SWIFT_STORAGE.md) · [Why not SQLite?](Docs/GettingStarted/WHY_NOT_SQLITE.md) |
 | Get started | [Getting Started](Docs/GettingStarted/README.md) · [HOW_TO_USE_BLAZEDB.md](Docs/GettingStarted/HOW_TO_USE_BLAZEDB.md) · [Linux](Docs/GettingStarted/LINUX_GETTING_STARTED.md) |
 | API and queries | [API Reference](Docs/API/API_REFERENCE.md) · [Developer Guide](Docs/DEVELOPER_GUIDE.md) · [Graph Query](Docs/API/GRAPH_QUERY_API.md) (advanced charting) |
 | Engine internals | [Architecture](Docs/Architecture/README.md) · [Codebase map](Docs/Architecture/CODEBASE_MAP.md) |
@@ -261,7 +265,7 @@ Start with the [documentation index](Docs/README.md), which carries support stat
 
 BlazeDB welcomes focused contributions across documentation, developer tooling, tests, platform support, and core correctness.
 
-- [Good first issues](https://github.com/Mikedan37/BlazeDB/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22) · [Help wanted](https://github.com/Mikedan37/BlazeDB/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22)
+- [Starter tasks (curated)](Docs/Contributing/STARTER_TASKS.md) — documentation and CLI tasks with acceptance criteria (prefer these over the full `good first issue` label list)
 - [Contribution guide](CONTRIBUTING.md) · [Issue guide](Docs/Contributing/ISSUE_GUIDE.md) · [Learning paths](Docs/Contributing/LEARNING_PATHS.md)
 
 Comment on an issue before starting substantial work so scope and ownership are clear. Codebase orientation: [CODEBASE_MAP](Docs/Architecture/CODEBASE_MAP.md)

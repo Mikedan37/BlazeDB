@@ -38,7 +38,7 @@ cd BlazeDB
 swift run HelloBlazeDB
 ```
 
-If you see "Success!", BlazeDB is working.
+If you see `Success (persisted across reopen)`, BlazeDB is working.
 
 ---
 

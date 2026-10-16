@@ -21,7 +21,8 @@ Skim the headings. You do not need to read every linked page.
 | Audience | Start here |
 |----------|------------|
 | New Swift app developer | [Getting Started](GettingStarted/README.md) → [HOW_TO_USE](GettingStarted/HOW_TO_USE_BLAZEDB.md) |
-| Contributor | [CONTRIBUTING.md](../CONTRIBUTING.md) → [CODEBASE_MAP](Architecture/CODEBASE_MAP.md) → [LEARNING_PATHS](Contributing/LEARNING_PATHS.md) → `./dev help` |
+| Evaluating fit | [Support and limitations](Support/SUPPORT_AND_LIMITATIONS.md) → [Compare embedded stores](GettingStarted/COMPARE_EMBEDDED_SWIFT_STORAGE.md) |
+| Contributor | [STARTER_TASKS](Contributing/STARTER_TASKS.md) → [CONTRIBUTING.md](../CONTRIBUTING.md) → [LEARNING_PATHS](Contributing/LEARNING_PATHS.md) → `./dev tier0` |
 | Maintainer / release | [Maintainer docs](#maintainer-docs) |
 | Embedder (C / FFI) | [C ABI + Byte KV](Architecture/C_ABI_BYTE_KV.md) |
 | Historian | [Historical material](#historical-material-non-authoritative) |
@@ -35,6 +36,7 @@ Use these first for current behavior:
 | Doc | Subject |
 |-----|---------|
 | [Repository README](../README.md) | Product homepage and path chooser |
+| [Support and limitations](Support/SUPPORT_AND_LIMITATIONS.md) | Platform matrix, scope, security wording |
 | [RELEASE.md](../RELEASE.md) | Current release notes |
 | [Getting Started](GettingStarted/) | First run, Linux notes, storage paths |
 | [HOW_TO_USE_BLAZEDB.md](GettingStarted/HOW_TO_USE_BLAZEDB.md) | Longer usage guide |

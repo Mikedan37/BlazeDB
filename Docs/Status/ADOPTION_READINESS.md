@@ -1,7 +1,9 @@
 # BlazeDB Adoption Readiness
 
-**Date:** 2025-01-23
-**Status:** Ready for early adopters
+**Date:** 2025-01-23 (narrative); **public summary updated:** 2026-10-16  
+**Status:** Ready for early adopters on the **default embedded core** — see [Support and limitations](../Support/SUPPORT_AND_LIMITATIONS.md) for the current platform matrix and security review status.
+
+> **Navigation:** Prefer [SUPPORT_AND_LIMITATIONS.md](../Support/SUPPORT_AND_LIMITATIONS.md) over this file for evaluator-facing claims. Release level is **v2.8.2**, not v0.1.0-beta.
 
 ---
 

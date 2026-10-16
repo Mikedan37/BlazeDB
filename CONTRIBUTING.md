@@ -4,6 +4,15 @@
 
 This guide explains how to add tests, what will be accepted, and what will be rejected.
 
+## First PR in ~30 minutes (documentation path)
+
+1. Fork and clone; create a branch.
+2. Comment on one issue from [Docs/Contributing/STARTER_TASKS.md](Docs/Contributing/STARTER_TASKS.md).
+3. Make a **small doc-only** change; run `./dev tier0`.
+4. Open a PR using the template; paste the exact commands you ran.
+
+Do not pick a random [`good first issue`](https://github.com/Mikedan37/BlazeDB/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22) label — many are not beginner-safe. Use **STARTER_TASKS** or [ISSUE_GUIDE](Docs/Contributing/ISSUE_GUIDE.md).
+
 ## Local developer commands
 
 From a package checkout:
@@ -12,10 +21,13 @@ From a package checkout:
 ./dev help
 ./dev tests [search]
 ./dev test <filter>
-./dev tier0
+./dev tier0                  # fast correctness loop (preferred while editing)
+./dev tier1                  # closer to macOS PR gate (macOS only for full parity)
 ./dev bench honesty          # or ./bench honesty
 ./bench smoke                # short local sweeps (not canonical publish)
 ```
+
+**Preflight vs tier0:** `./Scripts/preflight.sh` runs a broader build + test path before release-style confidence; use `./dev tier0` for day-to-day doc and small fixes ([CI_AND_TEST_TIERS.md](Docs/Testing/CI_AND_TEST_TIERS.md)).
 
 `./dev` owns repeatable test/tier/experiment workflows. Benchmarks use `./bench` (also `./dev bench …`). It reuses `.build/debug/blazedb` when possible and rebuilds when `BlazeShell`, `BlazedbCLI`, or `Package.swift` are newer than that binary. Xcode schemes stay lean for interactive Run / Profile / Analyze / Archive. See [Docs/Build/XCODE_SCHEMES.md](Docs/Build/XCODE_SCHEMES.md). Benchmark methodology: [Docs/Benchmarks/README.md](Docs/Benchmarks/README.md).
 

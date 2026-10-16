@@ -8,7 +8,7 @@ Evidence: `Proven` | `Strongly supported` | `Investigation`
 
 Hub: [LEARNING_PATHS](LEARNING_PATHS.md) · [CODEBASE_MAP](../Architecture/CODEBASE_MAP.md) · [ISSUE_GUIDE](ISSUE_GUIDE.md)
 
-Label filters used: `good first issue`, `durability`, `performance`, `concurrency`, `needs design`, plus roadmap-sized Now items and correctness defects. There is **no** `roadmap` GitHub label today: roadmap Now work is listed explicitly. **`help wanted`:** none currently open with that label. Prefer specific risk labels over a generic priority tag.
+Label filters used: `good first issue`, `durability`, `performance`, `concurrency`, `needs design`, plus roadmap-sized Now items and correctness defects. There is **no** `roadmap` GitHub label today: roadmap Now work is listed explicitly. **`help wanted`:** verify live with `gh issue list --label "help wanted"`. New contributors should start from [STARTER_TASKS.md](STARTER_TASKS.md), not the full GFI label search. Prefer specific risk labels over a generic priority tag.
 
 ---
 

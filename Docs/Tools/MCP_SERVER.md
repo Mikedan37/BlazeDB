@@ -30,7 +30,7 @@ BlazeMCP is **not** included as a SwiftPM product today. Adding BlazeDB as a pac
 ```swift
 // Package.swift — BlazeDB core library only; no BlazeMCP product
 dependencies: [
-.package(url: "https://github.com/Mikedan37/BlazeDB.git", from: "2.8.1")
+.package(url: "https://github.com/Mikedan37/BlazeDB.git", from: "2.8.2")
 ]
 ```
 

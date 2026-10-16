@@ -44,7 +44,17 @@ do {
         exit(1)
     }
 
-    print("\nSuccess")
+    // 5) Close and reopen to verify persistence on disk
+    try db.close()
+    let dbAgain = try BlazeDB.open(at: dbURL, password: "DemoPass123!")
+    let persisted: [Bug] = try dbAgain.query("bug").where("status", equals: "open").all()
+    guard persisted.count == 2 else {
+        print("Error: expected 2 open bugs after reopen, got \(persisted.count)")
+        exit(1)
+    }
+    try dbAgain.close()
+
+    print("\nSuccess (persisted across reopen)")
     print("Next: Docs/GettingStarted/README.md")
 } catch {
     print("Error: \(error)")

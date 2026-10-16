@@ -1,7 +1,7 @@
 # BlazeDB Developer Guide - Complete Public API Reference
 
-**Version:** 2.7.2+
-**Last Updated:** 2026-01-23
+**Version:** 2.8.2+
+**Last Updated:** 2026-10-16
 **Purpose:** Comprehensive guide to all publicly exposed BlazeDB APIs for developers
 
 ---
@@ -32,7 +32,7 @@ Add to your `Package.swift`:
 
 ```swift
 dependencies: [
- .package(url: "https://github.com/Mikedan37/BlazeDB.git", from: "2.7.2")
+ .package(url: "https://github.com/Mikedan37/BlazeDB.git", from: "2.8.2")
 ]
 ```
 
@@ -40,7 +40,7 @@ dependencies: [
 
 1. **File → Add Package Dependencies**
 2. Enter: `https://github.com/Mikedan37/BlazeDB.git`
-3. Select version: `2.7.2` or later
+3. Select version: `2.8.2` or later
 
 ### Import
 

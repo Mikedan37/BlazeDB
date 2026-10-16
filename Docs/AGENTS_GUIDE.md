@@ -52,7 +52,7 @@ This guide is a reference, not a mandate. When implementing BlazeDB:
 ```swift
 // Package.swift
 dependencies: [
-.package(url: "https://github.com/Mikedan37/BlazeDB.git", from: "2.7.2")
+.package(url: "https://github.com/Mikedan37/BlazeDB.git", from: "2.8.2")
 ]
 ```
 

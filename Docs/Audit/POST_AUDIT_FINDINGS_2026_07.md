@@ -1,5 +1,7 @@
 # Post-Audit Findings (July 2026)
 
+> **2026-10-16 tracker note:** RLS items promoted as [#334](https://github.com/Mikedan37/BlazeDB/issues/334)–[#337](https://github.com/Mikedan37/BlazeDB/issues/337) are **closed** on GitHub. Treat RLS as regression-tested project work, not as proof of an independent security audit ([EXTERNAL_SECURITY_REVIEW_PLAN.md](../Status/EXTERNAL_SECURITY_REVIEW_PLAN.md)).
+
 **Status:** Tracking document — not a substitute for GitHub issues.
 **Purpose:** Preserve verified audit results without instantly doubling the public open-issue count.
 **Audit date:** 2026-07-26 (updated 2026-07-27 with follow-up audits)

@@ -1,219 +1,101 @@
 # Getting Started on Linux
 
-**Platform:** Linux (aarch64 tested on Orange Pi 5 Ultra)
-**Swift:** 6.0+
-**Status:** Core engine runs on Linux; hosted CI for Linux is best-effort compared to macOS. See [Compatibility matrix](../COMPATIBILITY.md) for platform detail.
+**Swift:** 6.0+ (matches `swift-tools-version:6.0` in `Package.swift`)  
+**CI:** Linux **Tier0** runs on every PR; **Tier1** runs on nightly confidence ([CI_AND_TEST_TIERS.md](../Testing/CI_AND_TEST_TIERS.md)).
+
+This guide uses the same public API as the README and [HelloBlazeDB](../../Examples/HelloBlazeDB/main.swift).
 
 ---
 
-## Installation
+## Install (Swift Package Manager)
 
-### Prerequisites
-- Swift 6.0 or later
-- Linux aarch64 (or compatible)
-
-### Install BlazeDB
-
-Add to your `Package.swift`:
+In your app's `Package.swift`:
 
 ```swift
 dependencies: [
- .package(url: "https://github.com/Mikedan37/BlazeDB.git", from: "2.7.2")
+    .package(url: "https://github.com/Mikedan37/BlazeDB.git", from: "2.8.2")
+],
+targets: [
+    .target(name: "YourApp", dependencies: ["BlazeDB"])
 ]
 ```
 
+Pin matches the current release tag `v2.8.2` ([RELEASE.md](../../RELEASE.md)).
+
 ---
 
-## Quick Start (Copy-Paste Ready)
+## Verify from a clone (recommended first run)
 
-### Simplest Example
+```bash
+git clone https://github.com/Mikedan37/BlazeDB.git
+cd BlazeDB
+swift run HelloBlazeDB
+```
+
+**Expected output (abridged):** lines for `Opened database`, `Inserted sample bugs`, `Open bugs: 2`, and `Success`.
+
+**Common failures:**
+
+| Symptom | Action |
+|---------|--------|
+| `swift: command not found` | Install Swift 6 from [swift.org](https://www.swift.org/install/) |
+| Build errors in `swift-crypto` | Ensure Swift 6.0+; on aarch64 use a supported Linux triple |
+| `Error: … password` | Example uses `DemoPass123!`; custom opens must meet password policy |
+
+---
+
+## Minimal app snippet (same as Getting Started)
 
 ```swift
 import BlazeDB
 
-// Open database (zero configuration)
-// Default location: ~/.local/share/blazedb/mydb.blazedb
-let db = try BlazeDBClient.open(named: "mydb", password: "secure-password")
-
-// Insert a record
-let id = try db.insert(BlazeDataRecord([
- "name": .string("Alice"),
- "age": .int(30)
-]))
-
-// Query records
-let results = try db.query()
- .where("age", greaterThan: .int(25))
- .execute()
- .records
-
-for record in results {
- print(record.string("name") ?? "Unknown")
+struct Bug: BlazeStorable {
+    var id: UUID = UUID()
+    var title: String
+    var status: String
 }
+
+let dbURL = URL(fileURLWithPath: "/tmp/demo.blazedb")
+let db = try BlazeDB.open(at: dbURL, password: "DemoPass123!")
+defer { try? db.close() }
+
+try db.put(Bug(title: "First on Linux", status: "open"))
+let open: [Bug] = try db.query("bug").where("status", equals: "open").all()
+print(open.count)
 ```
 
-**That's it!** No configuration needed. Directories are created automatically.
+Typed IDs use `namespace:UUID` keys internally (`bug:<uuid>`).
 
 ---
 
-## Where Data Lives
+## Default storage paths
 
-### Default Location
-- **Path:** `~/.local/share/blazedb/`
-- **Format:** `{name}.blazedb` (main file) + `{name}.meta` (metadata)
-
-### Custom Location
-
-```swift
-// Use custom path
-let db = try BlazeDB.open(
- name: "mydb",
- path: "/var/lib/myapp/data.blazedb",
- password: "secure-password"
-)
-```
+Linux default app data directory: `~/.local/share/blazedb/` when using `BlazeDB.open(name:password:)`. See [DEFAULT_STORAGE_PATHS.md](DEFAULT_STORAGE_PATHS.md).
 
 ---
 
-## CLI Tools (Linux-Friendly)
+## CLI on Linux
 
-All CLI tools work without Xcode:
+Build and run the REPL against a file (no Xcode required):
 
-### Health Check
 ```bash
-swift run BlazeDoctor ~/.local/share/blazedb/mydb.blazedb mypassword
+swift build --product blazedb
+.build/debug/blazedb --help
+.build/debug/blazedb /path/to/db.blazedb
 ```
 
-### Database Info
-```bash
-swift run BlazeInfo ~/.local/share/blazedb/mydb.blazedb mypassword
-```
-
-### Backup
-```bash
-swift run BlazeDump dump ~/.local/share/blazedb/mydb.blazedb backup.blazedump mypassword
-```
-
-### Restore
-```bash
-swift run BlazeDump restore backup.blazedump ~/.local/share/blazedb/restored.blazedb mypassword
-```
+Doctor, dump, and info ship as separate executables (`BlazeDoctor`, `BlazeDump`, `BlazeInfo`). See [Tools README](../Tools/README.md).
 
 ---
 
-## Linux-Specific Notes
+## Linux core subset
 
-### File Permissions
-BlazeDB creates directories with `755` permissions (rwxr-xr-x).
-
-If you encounter permission errors:
-```bash
-chmod 755 ~/.local/share/blazedb
-```
-
-### Path Handling
-- Relative paths are resolved from current working directory
-- Absolute paths work as expected
-- `~` expansion works correctly
-- Path traversal (`..`) is rejected for security
-
-### Directory Creation
-Directories are created automatically with `open(named:password:)`.
-
-If creation fails:
-- Check parent directory permissions
-- Ensure disk space is available
-- Verify user has write access
+Some advanced features are gated when building with `BLAZEDB_LINUX_CORE` (spatial, vector, certain RLS-adjacent tooling). Consumer apps using the **`BlazeDB`** product follow the normal package graph; see [COMPATIBILITY.md](../COMPATIBILITY.md) for the feature matrix.
 
 ---
 
-## Verification
+## Next steps
 
-### Test Installation
-
-```swift
-import BlazeDB
-
-// Test basic operations
-let db = try BlazeDBClient.open(named: "test", password: "test-password")
-
-// Insert
-let id = try db.insert(BlazeDataRecord(["test": .string("value")]))
-
-// Fetch
-let record = try db.fetch(id: id)
-assert(record?.storage["test"] == .string("value"))
-
-// Close and reopen
-let dbPath = db.fileURL
-// ... deallocate db ...
-
-let db2 = try BlazeDBClient.open(named: "test", password: "test-password")
-let record2 = try db2.fetch(id: id)
-assert(record2?.storage["test"] == .string("value"))
-
-print(" BlazeDB works correctly on Linux!")
-```
-
----
-
-## Troubleshooting
-
-### "Permission denied"
-- Check directory permissions: `ls -la ~/.local/share/blazedb`
-- Ensure directory is writable: `chmod 755 ~/.local/share/blazedb`
-- Check disk space: `df -h`
-
-### "Path contains '..'"
-- Use absolute paths or `open(named:password:)`
-- Avoid path traversal in database paths
-
-### "Parent directory does not exist"
-- Use `open(named:password:)` for automatic directory creation
-- Or create parent directory manually: `mkdir -p /path/to/parent`
-
----
-
-## Advanced Usage
-
-### Custom Path with Validation
-
-```swift
-// Resolve and validate path
-let customPath = try PathResolver.resolveDatabasePath("./data/mydb.blazedb")
-try PathResolver.validateDatabasePath(customPath)
-
-let db = try BlazeDBClient.open(at: customPath, password: "password")
-```
-
-### Check Default Directory
-
-```swift
-let defaultDir = try PathResolver.defaultDatabaseDirectory()
-print("Default directory: \(defaultDir.path)")
-```
-
----
-
-## Summary
-
-**Simplest Usage:**
-```swift
-let db = try BlazeDBClient.open(named: "mydb", password: "password")
-```
-
-**What BlazeDB Guarantees:**
-- Directories created automatically
-- Encryption enabled by default
-- Safe defaults for all settings
-- Works identically on Linux and macOS
-
-**What BlazeDB Refuses to Guess:**
-- Database location (use `open(named:password:)` or specify path)
-- Encryption password (you must provide it)
-- Schema version (use migrations for upgrades)
-
-**Next Steps:**
-- Read `QUERY_PERFORMANCE.md` for query optimization
-- Read `OPERATIONAL_CONFIDENCE.md` for health monitoring
-- Use `swift run BlazeDoctor` for health checks
+- [Getting Started README](README.md)
+- [Support and limitations](../Support/SUPPORT_AND_LIMITATIONS.md)
+- [HOW_TO_USE_BLAZEDB.md](HOW_TO_USE_BLAZEDB.md)
