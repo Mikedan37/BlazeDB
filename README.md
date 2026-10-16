@@ -50,6 +50,8 @@ CI verifies the snippets above: `swift run ReadmeSamples`.
 
 If this matches your app, a star on [GitHub](https://github.com/Mikedan37/BlazeDB) helps other Swift developers find it. No account required to try the steps above.
 
+**In production-shaped use today:** [Seeker for iPhone](https://www.seekerscore.com/iphone) (TestFlight beta) stores résumé PDFs, profile, and matches locally in BlazeDB; Go workers can persist job state via the [C ABI / cgo](Examples/Go/hello_blazedb.go). Details and evidence tiers: [Real-world usage](Docs/Adoption/REAL_WORLD_USAGE.md).
+
 ---
 
 ## Is BlazeDB the right choice

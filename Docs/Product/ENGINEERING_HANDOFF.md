@@ -29,6 +29,16 @@
 - Examples catalog: AshPile as application-shaped sample (not “production adoption”)
 - Audit/adoption banners pointing evaluators to support matrix
 
+## Real-world usage (2026-10-17 follow-up)
+
+| Integration | Evidence |
+|-------------|----------|
+| Seeker iOS (TestFlight) | Public page: https://www.seekerscore.com/iphone — encrypted local résumé PDF + profile + matches |
+| Seeker-shaped tests | `TransactionThrowRollbackTests`, `CrossContextKDFIterationTests` (comments) |
+| Go job worker | Maintainer-operated queue program via cgo; minimal smoke: `Examples/Go/hello_blazedb.go` |
+
+Documented in [REAL_WORLD_USAGE.md](../Adoption/REAL_WORLD_USAGE.md).
+
 ## Measurement plan (baseline only)
 
 Use aggregate signals available to maintainers; do not equate stars with active users.

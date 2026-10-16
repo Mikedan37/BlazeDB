@@ -22,6 +22,7 @@ Skim the headings. You do not need to read every linked page.
 |----------|------------|
 | New Swift app developer | [Getting Started](GettingStarted/README.md) → [HOW_TO_USE](GettingStarted/HOW_TO_USE_BLAZEDB.md) |
 | Evaluating fit | [Support and limitations](Support/SUPPORT_AND_LIMITATIONS.md) → [Compare embedded stores](GettingStarted/COMPARE_EMBEDDED_SWIFT_STORAGE.md) |
+| Real integrations | [Real-world usage](Adoption/REAL_WORLD_USAGE.md) (public products + in-repo samples) |
 | Contributor | [STARTER_TASKS](Contributing/STARTER_TASKS.md) → [CONTRIBUTING.md](../CONTRIBUTING.md) → [LEARNING_PATHS](Contributing/LEARNING_PATHS.md) → `./dev tier0` |
 | Maintainer / release | [Maintainer docs](#maintainer-docs) |
 | Embedder (C / FFI) | [C ABI + Byte KV](Architecture/C_ABI_BYTE_KV.md) |

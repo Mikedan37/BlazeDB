@@ -16,6 +16,8 @@ BlazeDB is an MIT-licensed Swift document database that runs in-process on a loc
 
 It is intentionally not SQL and not multi-writer. We publish honest SQLite comparisons and benchmark methodology.
 
+**Real use (verifiable):** [Seeker for iPhone beta](https://www.seekerscore.com/iphone) (local encrypted résumé + matches); job-queue persistence via `BlazeDBC` / Go cgo ([Examples/Go/hello_blazedb.go](../../Examples/Go/hello_blazedb.go)). See [REAL_WORLD_USAGE.md](../Adoption/REAL_WORLD_USAGE.md).
+
 Try: clone → `swift run HelloBlazeDB`  
 Docs: https://github.com/Mikedan37/BlazeDB#try-it  
 Comparison: https://github.com/Mikedan37/BlazeDB/blob/main/Docs/GettingStarted/WHY_NOT_SQLITE.md

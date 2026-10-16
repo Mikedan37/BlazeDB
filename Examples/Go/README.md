@@ -1,10 +1,15 @@
-# Go integration preview
+# Go integration (cgo)
 
-The documented C ABI path works end to end through the `BlazeDBC` shared library (C sample + `BlazeDBCSmokeTests`). Go hosts can call the same surface via cgo.
+The C ABI path works end to end through the `BlazeDBC` shared library (C sample + `BlazeDBCSmokeTests`). Go workers can persist queue/job state the same way via cgo.
 
-This folder currently documents the **cgo linking recipe** and a **target wrapper API shape**. It does **not** yet contain checked-in `.go` sources, and there is **no** separately versioned Go module.
+| File | Purpose |
+|------|---------|
+| [`hello_blazedb.go`](hello_blazedb.go) | Minimal in-tree smoke: `job:42` → `queued` (matches [C hello](../C/hello_blazedb.c)) |
+| This README | Build flags + future module shape |
 
-Productization (checked-in smoke sources, CI gate, then an official module) is directional work; see [ROADMAP.md](../../ROADMAP.md) and [PRODUCT_AUDIT.md](../../Docs/Product/PRODUCT_AUDIT.md).
+There is **no** published Go module yet. A larger production worker/queue program may live outside this repo; see [Real-world usage](../../Docs/Adoption/REAL_WORLD_USAGE.md).
+
+CI gate for `go run hello_blazedb.go` is tracked in [ROADMAP.md](../../ROADMAP.md) ([#264](https://github.com/Mikedan37/BlazeDB/issues/264)).
 
 Homepage: [Native interoperability (Go via cgo)](../../README.md#native-interoperability).
 
@@ -33,6 +38,22 @@ Adjust paths for your install prefix. Do **not** link `libBlazeDBC.a` from Go un
 Call the C functions from [`blazedb.h`](../../BlazeDBC/include/blazedb.h) (`blazedb_open`, `blazedb_put`, `blazedb_get`, `blazedb_free`, `blazedb_delete`, `blazedb_close`) and follow ownership rules in [C_ABI_BYTE_KV.md](../../Docs/Architecture/C_ABI_BYTE_KV.md).
 
 Installed applications should use a loader path or install prefix appropriate for their deployment environment (for example `@rpath` / `@loader_path` on macOS, or `$ORIGIN`-relative paths on Linux).
+
+## Run the checked-in smoke
+
+```bash
+# from repository root
+swift build -c release --product BlazeDBC
+cd Examples/Go
+go run hello_blazedb.go
+```
+
+Expected:
+
+```text
+get: queued
+ok
+```
 
 ## Target wrapper API (not a published module)
 
