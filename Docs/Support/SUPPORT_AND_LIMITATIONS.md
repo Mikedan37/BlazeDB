@@ -22,7 +22,7 @@ Compilation on a platform does **not** imply the same runtime test depth as macO
 | Encrypted embedded storage (AES-256-GCM pages, PBKDF2 key derivation) | **Shipped** | [KEY_MANAGEMENT_AND_COMPATIBILITY.md](../Status/KEY_MANAGEMENT_AND_COMPATIBILITY.md) |
 | WAL-backed crash recovery (default path) | **Shipped** | [DURABILITY_MODE_SUPPORT.md](../Status/DURABILITY_MODE_SUPPORT.md) |
 | Typed document API (`BlazeStorable`, namespace queries) | **Shipped** | [PublicFacadeAPI.swift](../../BlazeDB/Exports/PublicFacadeAPI.swift), `HelloBlazeDB` |
-| Single-process file ownership | **Shipped** (by design) | [WHY_SINGLE_WRITER.md](../Guarantees/WHY_SINGLE_WRITER.md) |
+| Single-owner file (one engine writer per path; daemon/queue OK) | **Shipped** (by design) | [WHY_SINGLE_WRITER.md](../Guarantees/WHY_SINGLE_WRITER.md) |
 | SQL | **Not supported** | Fluent Swift/document APIs only |
 | Multi-device sync / distributed transport | **Deferred** from default package | [DISTRIBUTED_TRANSPORT_DEFERRED.md](../Status/DISTRIBUTED_TRANSPORT_DEFERRED.md) |
 | Row-level security (RLS) | **Implemented**; known issues [#334–#337](https://github.com/Mikedan37/BlazeDB/issues/334) **closed** 2026-08-27 per tracker | [RELEASE.md](../../RELEASE.md) v2.8.2 notes; regression tests in tree — **not** a substitute for independent security review |
@@ -31,8 +31,9 @@ Compilation on a platform does **not** imply the same runtime test depth as macO
 
 ## When not to use BlazeDB
 
-- Multi-process writers or network filesystems for the database file
-- Client/server or networked database access
+- **Two or more processes writing the same file without a single owner** (exclusive lock is intentional). On macOS/Linux, use one daemon/service or worker with a write queue; see [WHY_SINGLE_WRITER.md](../Guarantees/WHY_SINGLE_WRITER.md). iOS apps normally embed BlazeDB in-process only.
+- Network filesystems for the database file
+- A **built-in** networked database product (BlazeDB is embedded; you provide any server/queue layer)
 - SQL reporting or ad hoc analytics
 - Kotlin-first Android without owning the Swift bridge
 - Requirements that need completed external audit reports today

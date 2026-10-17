@@ -11,7 +11,7 @@ Decision guide for **local, in-process** persistence. BlazeDB is one option amon
 | **Data model** | Typed documents + raw records | SQL tables | Apple object graphs | Object models |
 | **Query language** | Swift fluent / namespace APIs | SQL | Framework-specific | Realm APIs |
 | **Encryption at rest** | Required on public open APIs (AES-GCM) | Optional (e.g. SQLCipher via GRDB) | Platform/keychain patterns | Supported in product |
-| **Process model** | Single-process writer; local file | Multi-connection patterns (SQLite rules) | App-scoped | App-scoped; sync product separate |
+| **Process model** | One writer per file; macOS/Linux often use a **daemon + queue**; iOS in-app | Multi-connection patterns (SQLite rules) | App-scoped | App-scoped; sync product separate |
 | **Live UI updates** | In-process observation; SwiftUI on Apple | GRDB observation / manual | First-class on Apple | First-class |
 | **Linux / server Swift** | Runtime CI on Linux | GRDB + SQLite common | Apple-centric | Mobile-focused |
 | **Maturity / history** | Young OSS engine | Decades (SQLite) | Apple stack | Long mobile history |
@@ -23,7 +23,7 @@ BlazeDB detail: [WHY_NOT_SQLITE.md](WHY_NOT_SQLITE.md) · [SUPPORT_AND_LIMITATIO
 
 **Choose BlazeDB when:**
 
-- The app is **single-process** on a **local filesystem**
+- **One owning process** per database file on a **local filesystem** (direct multi-process file access is not supported; daemon-mediated access is fine on macOS/Linux)
 - **Encryption by default** on the database file matters
 - You want **Swift `Codable` / namespace queries**, not SQL
 - **Operator tooling** (`blazedb` REPL/CLI) on real files is valuable

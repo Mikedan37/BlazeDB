@@ -38,10 +38,12 @@
 
 ### Not Suitable For
 
-1. **Multi-process applications**
-- BlazeDB is single-writer
-- Multiple processes will corrupt data
-- Use PostgreSQL, MySQL, or similar instead
+1. **Uncoordinated multi-process file access**
+- One process must own writes to a given `.blazedb` file
+- Multiple processes opening the same file for write without an owner risks lock failure or corruption
+- On macOS/Linux, use a **single daemon/service + queue** (Vapor, CLI owner, C ABI worker) — not separate uncoordinated opens
+- On iOS, embed in the app; a separate cross-app daemon is usually not viable
+- For many independent writers at SQL scale, use PostgreSQL, MySQL, or similar
 
 2. **Network filesystems**
 - NFS, SMB, cloud storage mounts

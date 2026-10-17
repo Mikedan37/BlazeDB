@@ -44,7 +44,7 @@ These are **automated** shapes derived from production debugging, not a copy of 
 | **Pattern** | A **Go** process persists queue/job state through **`BlazeDBC`** (`blazedb.h` byte-KV: `job:*` keys, opaque JSON or bytes). Same contract as the C hello sample (`job:42` / `queued`). |
 | **In this repo** | [Examples/C/hello_blazedb.c](../../Examples/C/hello_blazedb.c) (C), [Examples/Go/hello_blazedb.go](../../Examples/Go/hello_blazedb.go) (cgo smoke) |
 | **Outside this repo** | Full worker / queue program the maintainer runs in production is **not** vendored here yet; [ROADMAP.md](../../ROADMAP.md) tracks checked-in Go sources + CI gate ([#264](https://github.com/Mikedan37/BlazeDB/issues/264)) |
-| **Limits** | Single-process ownership per database file; worker and CLI must not open the same file for write concurrently |
+| **Limits** | One **owner** process per database file; other processes should talk to that owner (queue/RPC), not open the file for write themselves. Same rule for Go worker vs `blazedb` CLI on the same path. |
 
 Build: [Examples/Go/README.md](../../Examples/Go/README.md) · ABI rules: [C_ABI_BYTE_KV.md](../Architecture/C_ABI_BYTE_KV.md).
 

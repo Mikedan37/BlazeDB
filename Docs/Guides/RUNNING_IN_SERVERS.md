@@ -18,14 +18,14 @@
 
 ## What BlazeDB Is NOT
 
-**NOT a multi-tenant database:**
-- Cannot share database files between multiple processes
-- Cannot have multiple writers to the same database
-- Cannot cluster or replicate at the storage level
+**NOT a multi-tenant database server:**
+- Cannot have **two processes each open the same file for write** without coordination (exclusive lock)
+- **Can** serve many clients through **one owning process** (Vapor app, background daemon, Go worker + queue) on macOS/Linux — see [WHY_SINGLE_WRITER.md](../Guarantees/WHY_SINGLE_WRITER.md)
+- Cannot cluster or replicate at the storage level in the default OSS package
 
 **NOT a replacement for PostgreSQL/MySQL:**
 - No SQL compatibility
-- No multi-process concurrent access
+- No built-in networked DB product (you build the owner + queue + API)
 - No built-in replication
 
 ---

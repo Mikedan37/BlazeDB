@@ -61,13 +61,13 @@ If this matches your app, a star on [GitHub](https://github.com/Mikedan37/BlazeD
 | You want typed Swift document APIs | You need SQL |
 | Encryption by default matters | You need ecosystem maturity |
 | Live in-process Swift queries matter | You need broader third-party tooling |
-| You accept single-process file ownership | You need multi-process access |
+| One process owns the file (app or daemon); queued clients OK on macOS/Linux | Many processes must open the same file directly without an owner |
 
 Longer fit comparison, including where SQLite wins on latency: [Why not SQLite?](Docs/GettingStarted/WHY_NOT_SQLITE.md)
 
 ### Do not use BlazeDB when you need
 
-- Multi-process writers ([why single-writer](Docs/Guarantees/WHY_SINGLE_WRITER.md))
+- **Uncoordinated multi-process access** to the same database file (two apps each opening one `.blazedb` for write). Use **one owner + queue** on macOS/Linux instead ([why single-writer](Docs/Guarantees/WHY_SINGLE_WRITER.md), [running in servers](Docs/Guides/RUNNING_IN_SERVERS.md)). On **iOS**, plan on in-process storage, not a separate daemon other apps talk to.
 - Networked or client-server access
 - Multi-device sync ([deferred from the default package](Docs/Status/DISTRIBUTED_TRANSPORT_DEFERRED.md))
 - SQL compatibility (fluent Swift queries only)

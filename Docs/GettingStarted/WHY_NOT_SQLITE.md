@@ -41,7 +41,7 @@ If a number appears anywhere without a link to methodology, it is not a supporte
 | Query model | Fluent Swift APIs, typed documents | SQL, complex joins, decades of SQL expertise |
 | Encryption at rest | Required on public open APIs, AES-256-GCM | Optional, usually via an extension such as SQLCipher |
 | Schema | Flexible by default, optional validation and real migration APIs | Explicit SQL schemas and migrations |
-| Process model | Single-process file ownership; multi-process writers not supported; network filesystems not recommended | Long history of multi-connection patterns with its own locking and WAL rules |
+| Process model | One writer per file; uncoordinated multi-process opens not supported; daemon + queue on macOS/Linux is a supported app pattern; network filesystems not recommended | Long history of multi-connection patterns with its own locking and WAL rules |
 | Live queries | In-process observation, SwiftUI integration on Apple platforms | Not built in |
 | Language reach | Swift natively, plus any language that can call the C ABI | C API essentially everywhere |
 | Insert throughput and cold open | Slower on the encrypted default path | Faster on the unencrypted reference path |
