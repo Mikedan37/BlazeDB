@@ -366,6 +366,7 @@ final class PageGCTests: XCTestCase {
         
         try requireFixture(db).setMVCCEnabled(true)
         try requireFixture(db).runGarbageCollection()
+        try requireFixture(db).persist()
         
         let sizeBefore = try databaseFileSize()
         

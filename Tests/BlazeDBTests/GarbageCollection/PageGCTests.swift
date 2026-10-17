@@ -358,6 +358,7 @@ final class PageGCTests: XCTestCase {
         
         db.setMVCCEnabled(true)
         db.runGarbageCollection()
+        try db.persist()
         
         // Use actual file data size instead of resourceValues (which may be cached/stale)
         let sizeBefore = try Data(contentsOf: tempURL).count

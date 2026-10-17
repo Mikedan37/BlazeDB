@@ -152,11 +152,12 @@ extension BlazeDBClient {
 
             let startTime = Date()
 
-            // Flush in-memory state to disk before measuring / copying.
-            // Without this, the .blazedb file may not exist yet if records
-            // are still only in the WAL or in-memory cache.
+            // Flush WAL commits and checkpoint before measuring / copying.
+            // Commits are durable in the WAL after synchronize(); the main file
+            // stays empty until checkpoint (see WALCommitBoundaryTests).
             // We're already inside queue.sync(.barrier), so call store/layout directly.
             try collection.store.synchronize()
+            try collection.store.checkpoint()
             try collection.saveLayout()
 
             // CRASH SAFETY: Write VACUUM intent log

@@ -420,6 +420,7 @@ final class BlazeFileSystemErrorTests: XCTestCase {
                     "data": .string(String(repeating: "x", count: 200))
                 ]))
             }
+            try requireFixture(db).persist()
             
             let currentSize = try getFileSize()
             let growth = currentSize - initialSize

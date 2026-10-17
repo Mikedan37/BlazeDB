@@ -138,11 +138,13 @@ final class BlazeDBStressTests: XCTestCase {
             _ = try db.insert(record)
             
             if i % 5000 == 0 && i > 0 {
+                try db.persist()
                 let currentSize = try getFileSize(tempURL)
                 print("  After \(i) records: \(formatBytes(currentSize))")
             }
         }
         
+        try db.persist()
         let finalSize = try getFileSize(tempURL)
         print("✅ Final size: \(formatBytes(finalSize))")
         print("   Growth: \(formatBytes(finalSize - startSize))")
