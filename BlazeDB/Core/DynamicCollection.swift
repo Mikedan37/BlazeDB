@@ -2026,8 +2026,9 @@ public final class DynamicCollection {
                     BlazeLogger.error("💾 [PERSIST] \(reason)")
                     throw BlazeDBError.permissionDenied(operation: "persist", path: nil)
                 }
-                // First, ensure all page writes are flushed to disk
+                // Flush WAL commits, then checkpoint so the main .blazedb reflects durable pages.
                 try store.synchronize()
+                try store.checkpoint()
                 
                 // Clear fetchAll cache to ensure fresh reads after persist
                 #if !BLAZEDB_LINUX_CORE
