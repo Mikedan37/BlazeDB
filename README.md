@@ -64,7 +64,9 @@ CI verifies the snippets above: `swift run ReadmeSamples`.
 
 SQLite still wins plenty of benchmarks. We say so on purpose: [Why not SQLite?](Docs/GettingStarted/WHY_NOT_SQLITE.md)
 
-### Hard no’s
+<a id="hard-nos"></a>
+
+### When to pass
 
 - Two writers on the same file with no coordinator. Fix: **one process owns BlazeDB**, everyone else queues (Vapor service, Go worker, your daemon). Works on Mac/Linux; on iOS keep it in the app. [Details](Docs/Guarantees/WHY_SINGLE_WRITER.md)
 - Built-in network DB or multi-device sync ([not in the default OSS package](Docs/Status/DISTRIBUTED_TRANSPORT_DEFERRED.md))
@@ -184,7 +186,7 @@ Tier definitions, what belongs in each, and the full lane map: [TESTING_GUIDE.md
 - Transactional write APIs ([transactions](Docs/DEVELOPER_GUIDE.md#transactions)) and in-process live queries ([architecture](Docs/Architecture/LIVE_QUERY_ARCHITECTURE.md))
 - One engine writer per database file (many clients via an owning daemon on macOS/Linux is fine)
 
-**Runs as:** SwiftUI app, CLI, Vapor service, or anything linking `BlazeDBC` (Go, C, etc.). The engine always lives in **one** process that holds the file open; see [Hard no’s](#hard-nos) for sharing rules.
+**Runs as:** SwiftUI app, CLI, Vapor service, or anything linking `BlazeDBC` (Go, C, etc.). The engine always lives in **one** process that holds the file open; see [When to pass](#hard-nos) for sharing rules.
 
 Direction, not release guarantees: [ROADMAP.md](ROADMAP.md)
 
