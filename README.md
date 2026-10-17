@@ -1,15 +1,17 @@
 # BlazeDB
 
-**Swift-native embedded document database** (not [BlazingSQL / BlazingDB](https://github.com/BlazingDB/BlazingDB), the GPU SQL engine). BlazeDB runs **in your app process** on a **local encrypted file**: typed `Codable` records, transactional writes, WAL-backed crash recovery, in-process live queries, and a `blazedb` CLI against the same engine. **macOS and Linux** are runtime-tested in CI; Apple mobile targets are compile-tested; Android/KMM is experimental.
+Encrypted local storage for Swift. One file, typed records, WAL-backed recovery, and a REPL that opens the same databases your app uses.
 
-**Use it when** you want encryption-by-default local persistence with Swift APIs, not SQL. **Use SQLite or GRDB when** you need SQL, the broadest tooling, or the lowest-latency unencrypted insert path ([honest comparison](Docs/GettingStarted/WHY_NOT_SQLITE.md)).
+BlazeDB is an embedded **document** database (Swift `Codable`, not SQL). Pages are encrypted by default. You get transactions, live queries, and a `blazedb` CLI. macOS and Linux are runtime-tested in CI; iOS and friends are compile-tested; Android/KMM is experimental.
+
+Not the GPU SQL project [BlazingDB](https://github.com/BlazingDB/BlazingDB). This is the Swift engine on disk.
 
 [![CI](https://github.com/Mikedan37/BlazeDB/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Mikedan37/BlazeDB/actions/workflows/ci.yml)
 [![Release](https://img.shields.io/badge/release-v2.8.2-green.svg)](RELEASE.md)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Swift](https://img.shields.io/badge/Swift-6.0+-orange.svg)](https://swift.org)
 
-**Current release:** [v2.8.2](RELEASE.md) · [Changelog](CHANGELOG.md) · [Docs index](Docs/README.md) · [Compatibility](Docs/COMPATIBILITY.md)
+**Release:** [v2.8.2](RELEASE.md) · [Changelog](CHANGELOG.md) · [Docs](Docs/README.md) · [Compatibility](Docs/COMPATIBILITY.md)
 
 ---
 
@@ -48,31 +50,25 @@ swift run HelloBlazeDB
 
 CI verifies the snippets above: `swift run ReadmeSamples`.
 
-If this matches your app, a star on [GitHub](https://github.com/Mikedan37/BlazeDB) helps other Swift developers find it. No account required to try the steps above.
-
-**In production-shaped use today:** [Seeker for iPhone](https://www.seekerscore.com/iphone) (TestFlight beta) stores résumé PDFs, profile, and matches locally in BlazeDB; Go workers can persist job state via the [C ABI / cgo](Examples/Go/hello_blazedb.go). Details and evidence tiers: [Real-world usage](Docs/Adoption/REAL_WORLD_USAGE.md).
+**Shipped with it today:** [Seeker for iPhone](https://www.seekerscore.com/iphone) (TestFlight) keeps résumés and matches on device; job queues can persist through the [C ABI / Go cgo](Examples/Go/hello_blazedb.go). [More examples](Docs/Adoption/REAL_WORLD_USAGE.md).
 
 ---
 
-## Is BlazeDB the right choice
+## Is BlazeDB the right choice?
 
-| Choose BlazeDB when | Choose SQLite or GRDB when |
-|---------------------|----------------------------|
-| You want typed Swift document APIs | You need SQL |
-| Encryption by default matters | You need ecosystem maturity |
-| Live in-process Swift queries matter | You need broader third-party tooling |
-| One process owns the file (app or daemon); queued clients OK on macOS/Linux | Many processes must open the same file directly without an owner |
+| BlazeDB fits | Reach for SQLite or GRDB instead |
+|--------------|----------------------------------|
+| Swift documents, encryption on by default | SQL, ad hoc reporting, huge tooling ecosystem |
+| Live queries in-process | Fastest raw inserts on an unencrypted path |
+| One **owner** of the file: your app, or a daemon/worker with a queue (macOS/Linux) | Every process opening the same file on its own |
 
-Longer fit comparison, including where SQLite wins on latency: [Why not SQLite?](Docs/GettingStarted/WHY_NOT_SQLITE.md)
+SQLite still wins plenty of benchmarks. We say so on purpose: [Why not SQLite?](Docs/GettingStarted/WHY_NOT_SQLITE.md)
 
-### Do not use BlazeDB when you need
+### Hard no’s
 
-- **Uncoordinated multi-process access** to the same database file (two apps each opening one `.blazedb` for write). Use **one owner + queue** on macOS/Linux instead ([why single-writer](Docs/Guarantees/WHY_SINGLE_WRITER.md), [running in servers](Docs/Guides/RUNNING_IN_SERVERS.md)). On **iOS**, plan on in-process storage, not a separate daemon other apps talk to.
-- Networked or client-server access
-- Multi-device sync ([deferred from the default package](Docs/Status/DISTRIBUTED_TRANSPORT_DEFERRED.md))
-- SQL compatibility (fluent Swift queries only)
-- Storage on a network filesystem (not recommended)
-- A published mobile SDK for Android ([experimental only](Docs/android-status.md))
+- Two writers on the same file with no coordinator. Fix: **one process owns BlazeDB**, everyone else queues (Vapor service, Go worker, your daemon). Works on Mac/Linux; on iOS keep it in the app. [Details](Docs/Guarantees/WHY_SINGLE_WRITER.md)
+- Built-in network DB or multi-device sync ([not in the default OSS package](Docs/Status/DISTRIBUTED_TRANSPORT_DEFERRED.md))
+- SQL, NFS/cloud mounts for the file, or a published Kotlin SDK ([Android is experimental](Docs/android-status.md))
 
 ---
 
@@ -186,9 +182,9 @@ Tier definitions, what belongs in each, and the full lane map: [TESTING_GUIDE.md
 - Default storage path uses WAL-backed recovery ([documented durability behavior and overflow caveats](Docs/Status/DURABILITY_MODE_SUPPORT.md))
 - Typed document APIs and raw key-value access ([API reference](Docs/API/API_REFERENCE.md))
 - Transactional write APIs ([transactions](Docs/DEVELOPER_GUIDE.md#transactions)) and in-process live queries ([architecture](Docs/Architecture/LIVE_QUERY_ARCHITECTURE.md))
-- Single-process file ownership model
+- One engine writer per database file (many clients via an owning daemon on macOS/Linux is fine)
 
-**Deployment:** a SwiftUI or Apple-platform app, a macOS or Linux command-line tool, a Vapor or other server-side Swift process, or a native application linking `BlazeDBC`. In every case BlazeDB runs in the host process and owns a local file. Constraints are listed under [Do not use BlazeDB when you need](#do-not-use-blazedb-when-you-need) above.
+**Runs as:** SwiftUI app, CLI, Vapor service, or anything linking `BlazeDBC` (Go, C, etc.). The engine always lives in **one** process that holds the file open; see [Hard no’s](#hard-nos) for sharing rules.
 
 Direction, not release guarantees: [ROADMAP.md](ROADMAP.md)
 
