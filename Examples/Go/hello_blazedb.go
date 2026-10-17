@@ -49,15 +49,15 @@ func main() {
 		os.Exit(1)
 	}
 
-	var data *C.void
+	var data unsafe.Pointer
 	var length C.size_t
-	if rc := C.blazedb_get(db, key, (**C.void)(unsafe.Pointer(&data)), &length); rc != C.BLAZEDB_OK {
+	if rc := C.blazedb_get(db, key, &data, &length); rc != C.BLAZEDB_OK {
 		fmt.Fprintf(os.Stderr, "blazedb_get failed: %d\n", int(rc))
 		os.Exit(1)
 	}
-	defer C.blazedb_free(unsafe.Pointer(data))
+	defer C.blazedb_free(data)
 
-	fmt.Printf("get: %s\n", C.GoBytes(unsafe.Pointer(data), C.int(length)))
+	fmt.Printf("get: %s\n", C.GoBytes(data, C.int(length)))
 
 	if rc := C.blazedb_delete(db, key); rc != C.BLAZEDB_OK {
 		fmt.Fprintf(os.Stderr, "blazedb_delete failed: %d\n", int(rc))
@@ -66,10 +66,10 @@ func main() {
 
 	data = nil
 	length = 0
-	if rc := C.blazedb_get(db, key, (**C.void)(unsafe.Pointer(&data)), &length); rc != C.BLAZEDB_NOT_FOUND {
+	if rc := C.blazedb_get(db, key, &data, &length); rc != C.BLAZEDB_NOT_FOUND {
 		fmt.Fprintf(os.Stderr, "expected NOT_FOUND after delete, got %d\n", int(rc))
 		if data != nil {
-			C.blazedb_free(unsafe.Pointer(data))
+			C.blazedb_free(data)
 		}
 		os.Exit(1)
 	}
