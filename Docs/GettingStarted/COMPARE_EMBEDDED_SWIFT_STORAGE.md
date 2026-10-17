@@ -37,7 +37,7 @@ BlazeDB detail: [WHY_NOT_SQLITE.md](WHY_NOT_SQLITE.md) · [SUPPORT_AND_LIMITATIO
 
 ## Name disambiguation
 
-**BlazeDB** (this repository) is a **Swift embedded document database**. **BlazingDB / BlazingSQL** is a separate GPU-oriented SQL project. Use “Swift embedded” in titles when posting externally.
+**BlazeDB** (this repository) is a **Swift embedded document database**. Use “Swift embedded” in titles when posting externally.
 
 ## Competitor doc pointers (primary sources)
 

@@ -4,8 +4,6 @@ Encrypted local storage for Swift. One file, typed records, WAL-backed recovery,
 
 BlazeDB is an embedded **document** database (Swift `Codable`, not SQL). Pages are encrypted by default. You get transactions, live queries, and a `blazedb` CLI. macOS and Linux are runtime-tested in CI; iOS and friends are compile-tested; Android/KMM is experimental.
 
-Not the GPU SQL project [BlazingDB](https://github.com/BlazingDB/BlazingDB). This is the Swift engine on disk.
-
 [![CI](https://github.com/Mikedan37/BlazeDB/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Mikedan37/BlazeDB/actions/workflows/ci.yml)
 [![Release](https://img.shields.io/badge/release-v2.8.2-green.svg)](RELEASE.md)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)

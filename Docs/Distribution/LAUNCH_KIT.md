@@ -8,7 +8,7 @@ Review-only drafts for maintainer use. **Do not post** until README, [SUPPORT_AN
 
 ## 1. Show HN (draft)
 
-**Title:** Show HN: BlazeDB – encrypted embedded database in Swift (not BlazingSQL)
+**Title:** Show HN: BlazeDB – encrypted embedded database in Swift
 
 **Description:**
 
