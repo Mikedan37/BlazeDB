@@ -964,10 +964,11 @@ print("Issues: \(health.issues.count)")
 ### Persistence
 
 ```swift
-// Manually flush pending changes to disk
+// Manually flush pending changes to disk (WAL sync + main-file checkpoint + metadata)
 try db.persist()
 
-// persist() ensures all pending changes are written to disk
+// Use persist() before backup, size monitoring, or copying the .blazedb file.
+// Commits are WAL-durable earlier; the main file catches up at persist()/close().
 ```
 
 ### Close Database
