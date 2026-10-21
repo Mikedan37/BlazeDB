@@ -44,6 +44,10 @@ This means:
 - The durability story is **publish-last at the main page/catalog level**: overflow data becomes part of the logical record only once the main page and metadata have been persisted.
 - Operators should be aware that crashes can leave **ghost/orphan overflow pages** that are not referenced by the catalog; these affect disk usage, not logical correctness.
 
+### MVCC updates and page reuse
+
+When MVCC is enabled, each `RecordVersion` stores the full **`pageIndices`** chain (main + overflow), not just the main page. Version garbage collection marks **every** page in a retired generation obsolete for reuse, so records that grow or shrink across the single-page limit do not leak overflow pages on repeated updates.
+
 ## Modes in codebase
 
 ### Client transaction rollback

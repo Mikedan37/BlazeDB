@@ -216,6 +216,7 @@ public final class DynamicCollection {
                 recordID: recordID,
                 version: baseVersion,
                 pageNumber: firstPageIndex,
+                pageIndices: pageIndices,
                 createdAt: Date(),
                 deletedAt: nil,
                 createdByTransaction: baseVersion,
@@ -728,6 +729,7 @@ public final class DynamicCollection {
                         recordID: recordID,
                         version: baseVersion,
                         pageNumber: firstPageIndex,
+                        pageIndices: pageIndices,
                         createdAt: Date(), // We don't have the original creation time, use current time
                         deletedAt: nil,
                         createdByTransaction: baseVersion,

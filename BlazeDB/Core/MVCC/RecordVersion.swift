@@ -26,8 +26,11 @@ public struct RecordVersion: Codable, Equatable, Hashable {
     /// Version number (higher = newer)
     public let version: UInt64
     
-    /// Page number where this version's data is stored
+    /// Main page index for this version (start of overflow chain)
     public let pageNumber: Int
+    
+    /// Every disk page this version occupies, main page first. Matches catalog `indexMap` chains.
+    public let pageIndices: [Int]
     
     /// When this version was created
     public let createdAt: Date
@@ -61,10 +64,16 @@ public struct RecordVersion: Codable, Equatable, Hashable {
         return true
     }
     
+    /// All page indices that must be reclaimed when this version is garbage-collected.
+    public var diskPageIndices: [Int] {
+        pageIndices.isEmpty ? [pageNumber] : pageIndices
+    }
+    
     public init(
         recordID: UUID,
         version: UInt64,
         pageNumber: Int,
+        pageIndices: [Int]? = nil,
         createdAt: Date = Date(),
         deletedAt: Date? = nil,
         createdByTransaction: UInt64,
@@ -73,10 +82,46 @@ public struct RecordVersion: Codable, Equatable, Hashable {
         self.recordID = recordID
         self.version = version
         self.pageNumber = pageNumber
+        if let pageIndices, !pageIndices.isEmpty {
+            self.pageIndices = pageIndices
+        } else {
+            self.pageIndices = [pageNumber]
+        }
         self.createdAt = createdAt
         self.deletedAt = deletedAt
         self.createdByTransaction = createdByTransaction
         self.deletedByTransaction = deletedByTransaction
+    }
+    
+    private enum CodingKeys: String, CodingKey {
+        case recordID, version, pageNumber, pageIndices
+        case createdAt, deletedAt, createdByTransaction, deletedByTransaction
+    }
+    
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        recordID = try container.decode(UUID.self, forKey: .recordID)
+        version = try container.decode(UInt64.self, forKey: .version)
+        pageNumber = try container.decode(Int.self, forKey: .pageNumber)
+        pageIndices = try container.decodeIfPresent([Int].self, forKey: .pageIndices) ?? [pageNumber]
+        createdAt = try container.decode(Date.self, forKey: .createdAt)
+        deletedAt = try container.decodeIfPresent(Date.self, forKey: .deletedAt)
+        createdByTransaction = try container.decode(UInt64.self, forKey: .createdByTransaction)
+        deletedByTransaction = try container.decode(UInt64.self, forKey: .deletedByTransaction)
+    }
+    
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(recordID, forKey: .recordID)
+        try container.encode(version, forKey: .version)
+        try container.encode(pageNumber, forKey: .pageNumber)
+        if pageIndices.count > 1 {
+            try container.encode(pageIndices, forKey: .pageIndices)
+        }
+        try container.encode(createdAt, forKey: .createdAt)
+        try container.encodeIfPresent(deletedAt, forKey: .deletedAt)
+        try container.encode(createdByTransaction, forKey: .createdByTransaction)
+        try container.encode(deletedByTransaction, forKey: .deletedByTransaction)
     }
 }
 
@@ -178,6 +223,7 @@ public class VersionManager {
             recordID: version.recordID,
             version: version.version,
             pageNumber: version.pageNumber,
+            pageIndices: version.pageIndices,
             createdAt: version.createdAt,
             deletedAt: Date(),
             createdByTransaction: version.createdByTransaction,
@@ -278,7 +324,7 @@ public class VersionManager {
             // Track pages from removed versions
             let removed = Set(recordVersions).subtracting(kept)
             for version in removed {
-                freedPages.append(version.pageNumber)
+                freedPages.append(contentsOf: version.diskPageIndices)
             }
             
             removedCount += recordVersions.count - kept.count
@@ -293,7 +339,7 @@ public class VersionManager {
         // Free the pages for reuse! 🗑️
         if !freedPages.isEmpty {
             pageGC.markPagesObsolete(freedPages)
-            BlazeLogger.debug("🗑️ Version GC freed \(freedPages.count) disk pages for reuse")
+            BlazeLogger.debug("🗑️ Version GC freed \(freedPages.count) disk page slots for reuse")
         }
         
         return removedCount
@@ -310,7 +356,7 @@ public class VersionManager {
                 // Free pages from old versions
                 let oldVersions = recordVersions.filter { $0.version != newest.version }
                 for version in oldVersions {
-                    freedPages.append(version.pageNumber)
+                    freedPages.append(contentsOf: version.diskPageIndices)
                 }
                 
                 removedCount += recordVersions.count - 1
@@ -321,7 +367,7 @@ public class VersionManager {
         // Free the pages for reuse! 🗑️
         if !freedPages.isEmpty {
             pageGC.markPagesObsolete(freedPages)
-            BlazeLogger.debug("🗑️ Aggressive GC freed \(freedPages.count) disk pages")
+            BlazeLogger.debug("🗑️ Aggressive GC freed \(freedPages.count) disk page slots")
         }
         
         return removedCount

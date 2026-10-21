@@ -208,6 +208,29 @@ final class MVCCFoundationTests: XCTestCase {
         XCTAssertEqual(latest?.version, 5)
     }
     
+    func testGarbageCollectionFreesFullOverflowChain() {
+        let recordID = UUID()
+        
+        for generation in 1...3 {
+            let main = generation * 100
+            let chain = [main, main + 1, main + 2]
+            let v = RecordVersion(
+                recordID: recordID,
+                version: UInt64(generation),
+                pageNumber: main,
+                pageIndices: chain,
+                createdByTransaction: UInt64(generation)
+            )
+            versionManager.addVersion(v)
+        }
+        
+        _ = versionManager.garbageCollect()
+        
+        let stats = versionManager.pageGC.getStats()
+        XCTAssertEqual(stats.totalPagesFreed, 6)
+        XCTAssertEqual(stats.freePagesAvailable, 6)
+    }
+    
     func testGarbageCollectionWithActiveSnapshots() {
         let recordID = UUID()
         

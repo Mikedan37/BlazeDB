@@ -451,6 +451,7 @@ extension DynamicCollection {
                         recordID: id,
                         version: batchVersion,  // All records in batch get same version
                         pageNumber: firstPageIndex,
+                        pageIndices: pageIndices,
                         createdAt: insertedRecords[index].storage["createdAt"]?.dateValue ?? Date(),
                         deletedAt: nil,
                         createdByTransaction: batchVersion,

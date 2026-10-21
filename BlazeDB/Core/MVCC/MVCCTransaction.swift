@@ -211,6 +211,7 @@ public class MVCCTransaction {
             recordID: recordID,
             version: transactionID,  // Use transaction ID as version
             pageNumber: pageNumber,
+            pageIndices: pageIndices,
             createdAt: Date(),
             deletedAt: nil,
             createdByTransaction: transactionID,
