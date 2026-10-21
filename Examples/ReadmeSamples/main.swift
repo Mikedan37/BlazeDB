@@ -42,10 +42,10 @@ private func writeStderr(_ message: String) {
 // MARK: - Start Here (struct names match README → namespace keys match get/query)
 
 private func verifyStartHere() throws {
-    struct Bug: BlazeStorable {
+    struct Note: BlazeStorable {
         var id: UUID = UUID()
         var title: String
-        var status: String
+        var body: String
     }
 
     let (db, dir) = try freshDB("start-here")
@@ -54,19 +54,19 @@ private func verifyStartHere() throws {
         cleanup(dir)
     }
 
-    let bug = Bug(title: "Crash on launch", status: "open")
-    try db.put(bug)
+    let note = Note(title: "Groceries", body: "Milk and eggs")
+    try db.put(note)
 
-    let loaded: Bug? = try db.get("bug:\(bug.id.uuidString)")
-    guard loaded?.title == bug.title else {
+    let loaded: Note? = try db.get("note:\(note.id.uuidString)")
+    guard loaded?.title == note.title else {
         throw sampleError("Start Here get()")
     }
 
-    let openBugs: [Bug] = try db.query("bug")
-        .where("status", equals: "open")
+    let matches: [Note] = try db.query("note")
+        .where("title", equals: "Groceries")
         .all()
-    guard openBugs.count == 1 else {
-        throw sampleError("Start Here query() expected 1 open bug, got \(openBugs.count)")
+    guard matches.count == 1 else {
+        throw sampleError("Start Here query() expected 1 note, got \(matches.count)")
     }
     print("PASS: Start Here (open → put → get → query)")
 }

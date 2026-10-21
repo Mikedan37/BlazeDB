@@ -1,10 +1,10 @@
 import Foundation
 import BlazeDB
 
-struct Bug: BlazeStorable {
+struct Note: BlazeStorable {
     var id: UUID = UUID()
     var title: String
-    var status: String
+    var body: String
 }
 
 print("=== Hello BlazeDB ===\n")
@@ -23,33 +23,32 @@ do {
     print("Opened database")
 
     // 2) Put documents
-    let bug = Bug(title: "Crash on launch", status: "open")
-    try db.put(bug)
-    try db.put(Bug(title: "Settings UI glitch", status: "open"))
-    try db.put(Bug(title: "Old fixed bug", status: "closed"))
-    print("Inserted sample bugs")
+    let groceries = Note(title: "Groceries", body: "Milk and eggs")
+    try db.put(groceries)
+    try db.put(Note(title: "Ideas", body: "Ship notes feature"))
+    print("Inserted sample notes")
 
     // 3) Get one by key
-    let loaded: Bug? = try db.get("bug:\(bug.id.uuidString)")
-    print("Loaded bug: \(loaded?.title ?? "nil")")
+    let loaded: Note? = try db.get("note:\(groceries.id.uuidString)")
+    print("Loaded note: \(loaded?.title ?? "nil")")
 
     // 4) Query by namespace
-    let openBugs: [Bug] = try db.query("bug")
-        .where("status", equals: "open")
+    let matches: [Note] = try db.query("note")
+        .where("title", equals: "Groceries")
         .all()
-    print("Open bugs: \(openBugs.count)")
+    print("Notes titled Groceries: \(matches.count)")
 
-    guard openBugs.count == 2 else {
-        print("Error: expected 2 open bugs on a fresh database, got \(openBugs.count)")
+    guard matches.count == 1 else {
+        print("Error: expected 1 matching note on a fresh database, got \(matches.count)")
         exit(1)
     }
 
     // 5) Close and reopen to verify persistence on disk
     try db.close()
     let dbAgain = try BlazeDB.open(at: dbURL, password: "DemoPass123!")
-    let persisted: [Bug] = try dbAgain.query("bug").where("status", equals: "open").all()
+    let persisted: [Note] = try dbAgain.query("note").all()
     guard persisted.count == 2 else {
-        print("Error: expected 2 open bugs after reopen, got \(persisted.count)")
+        print("Error: expected 2 notes after reopen, got \(persisted.count)")
         exit(1)
     }
     try dbAgain.close()

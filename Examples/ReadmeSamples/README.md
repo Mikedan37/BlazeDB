@@ -39,7 +39,7 @@ Every new example must land in one of those buckets — not an undocumented thir
 |---------------|--------|-------------|-----|
 | [Start Here](../../README.md#start-here-new-users) | Verified | `verifyStartHere()` | L3 |
 | [Which API should I use?](../../README.md#which-api-should-i-use) | Out of scope | Prose/tables only; behavior covered by L3 rows below | — |
-| [Try BlazeDB — minimal Note](../../README.md#try-blazedb-from-this-repo) | Verified | `verifyMinimalNote()` | L3 |
+| [Try it — minimal Swift example](../../README.md#try-blazedb-from-this-repo) | Verified | `verifyStartHere()` + `verifyMinimalNote()` | L3 |
 | [Try BlazeDB — `swift run HelloBlazeDB`](../../README.md#try-blazedb-from-this-repo) | Verified | `HelloBlazeDB` executable | L1 |
 | [Add BlazeDB — Package.swift](../../README.md#add-blazedb-to-your-app) | Manual | SwiftPM manifest snippet; consumer integration | — |
 | [List + List Items](../../README.md#example-lists-and-list-items) | Verified | `verifyListItems()` | L3 |
