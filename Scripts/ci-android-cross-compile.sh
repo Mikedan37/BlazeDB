@@ -92,7 +92,14 @@ install_android_sdk() {
     exit 1
   fi
 
-  if ! swift sdk list 2>/dev/null | grep -qx "$BLAZEDB_ANDROID_SDK_NAME"; then
+  local sdk_list
+  if ! sdk_list="$(swift sdk list 2>&1)"; then
+    echo "error: failed to list installed Swift SDKs" >&2
+    printf '%s\n' "$sdk_list" >&2
+    return 1
+  fi
+
+  if ! grep -Fxq -- "$BLAZEDB_ANDROID_SDK_NAME" <<< "$sdk_list"; then
     local base bundle_dir
     # A partial cache restore can leave an unregistered bundle directory; SwiftPM refuses to install the same name.
     for base in \
