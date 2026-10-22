@@ -96,11 +96,13 @@ final class NonCryptoKDFHarnessTests: XCTestCase {
 
 // This security-style suite deliberately inherits XCTestCase directly.
 final class NonCryptoKDFIsolationTests: XCTestCase {
+    nonisolated(unsafe) private static var entryRawOverride: Int?
     nonisolated(unsafe) private static var entryDefaultIterations = 0
     private var previousIterationsOverride: Int?
 
     override class func setUp() {
         // Capture before super so accidental harness inheritance stays observable.
+        entryRawOverride = KeyManager.currentTestPBKDF2IterationsOverride()
         entryDefaultIterations = KeyManager.pbkdf2Iterations
         super.setUp()
     }
@@ -117,6 +119,7 @@ final class NonCryptoKDFIsolationTests: XCTestCase {
     }
 
     func testDefaultIsUnchangedAfterOrdinarySuite() {
+        XCTAssertNil(Self.entryRawOverride)
         let defaultIterations = KeyManager.pbkdf2Iterations
 
         OrdinaryKDFHarnessContext.setUp()
