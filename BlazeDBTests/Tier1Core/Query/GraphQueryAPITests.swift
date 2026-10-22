@@ -5,7 +5,7 @@ import XCTest
 @testable import BlazeDB
 #endif
 
-final class GraphQueryAPITests: LinuxTier1NonCryptoKDFHarness {
+final class GraphQueryAPITests: NonCryptoKDFHarness {
     private var dbURL: URL?
     private var db: BlazeDBClient?
 

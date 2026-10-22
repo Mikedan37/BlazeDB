@@ -5,15 +5,18 @@ import XCTest
 @testable import BlazeDB
 #endif
 
-private final class OrdinaryKDFHarnessContext: LinuxTier1NonCryptoKDFHarness {}
+private final class OrdinaryKDFHarnessContext: NonCryptoKDFHarness {}
 
 final class NonCryptoKDFHarnessTests: XCTestCase {
+    private var previousIterationsOverride: Int?
+
     override func setUpWithError() throws {
+        previousIterationsOverride = KeyManager.currentTestPBKDF2IterationsOverride()
         KeyManager.setTestPBKDF2IterationsOverride(nil)
     }
 
     override func tearDownWithError() throws {
-        KeyManager.setTestPBKDF2IterationsOverride(nil)
+        KeyManager.setTestPBKDF2IterationsOverride(previousIterationsOverride)
     }
 
     func testRestoresDefaultWhenNoOverrideWasSet() {
@@ -24,6 +27,7 @@ final class NonCryptoKDFHarnessTests: XCTestCase {
         OrdinaryKDFHarnessContext.tearDown()
 
         XCTAssertEqual(KeyManager.pbkdf2Iterations, defaultIterations)
+        XCTAssertNil(KeyManager.currentTestPBKDF2IterationsOverride())
     }
 
     func testRestoresExistingOverride() {
@@ -34,6 +38,7 @@ final class NonCryptoKDFHarnessTests: XCTestCase {
         OrdinaryKDFHarnessContext.tearDown()
 
         XCTAssertEqual(KeyManager.pbkdf2Iterations, 12_345)
+        XCTAssertEqual(KeyManager.currentTestPBKDF2IterationsOverride(), 12_345)
     }
 
     func testAppliesReliefDuringOrdinarySuite() {
@@ -47,12 +52,15 @@ final class NonCryptoKDFHarnessTests: XCTestCase {
 
 // This security-style suite deliberately inherits XCTestCase directly.
 final class NonCryptoKDFIsolationTests: XCTestCase {
+    private var previousIterationsOverride: Int?
+
     override func setUpWithError() throws {
+        previousIterationsOverride = KeyManager.currentTestPBKDF2IterationsOverride()
         KeyManager.setTestPBKDF2IterationsOverride(nil)
     }
 
     override func tearDownWithError() throws {
-        KeyManager.setTestPBKDF2IterationsOverride(nil)
+        KeyManager.setTestPBKDF2IterationsOverride(previousIterationsOverride)
     }
 
     func testDefaultIsUnchangedAfterOrdinarySuite() {
