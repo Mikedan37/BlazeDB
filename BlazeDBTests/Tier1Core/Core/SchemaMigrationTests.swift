@@ -14,7 +14,7 @@ import XCTest
 @testable import BlazeDB
 #endif
 
-final class SchemaMigrationTests: XCTestCase {
+final class SchemaMigrationTests: NonCryptoKDFHarness {
     
     private var tempURL: URL?
     let password = "Test-Password-123!"

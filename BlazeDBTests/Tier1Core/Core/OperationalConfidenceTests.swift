@@ -14,7 +14,7 @@ import XCTest
 @testable import BlazeDB
 #endif
 
-final class OperationalConfidenceTests: XCTestCase {
+final class OperationalConfidenceTests: NonCryptoKDFHarness {
     
     // MARK: - Health Classification Tests
     

@@ -14,7 +14,7 @@ import XCTest
 @testable import BlazeDB
 #endif
 
-final class ImportExportTests: XCTestCase {
+final class ImportExportTests: NonCryptoKDFHarness {
     
     private var tempDBURL: URL?
     private var tempDumpURL: URL?

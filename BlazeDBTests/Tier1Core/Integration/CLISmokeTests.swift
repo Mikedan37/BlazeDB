@@ -32,7 +32,7 @@ private final class LockedDataBuffer: @unchecked Sendable {
     }
 }
 
-final class CLISmokeTests: XCTestCase {
+final class CLISmokeTests: NonCryptoKDFHarness {
     private var tempDir: URL?
     
     override func setUpWithError() throws {
