@@ -93,6 +93,18 @@ install_android_sdk() {
   fi
 
   if ! swift sdk list 2>/dev/null | grep -qx "$BLAZEDB_ANDROID_SDK_NAME"; then
+    local base bundle_dir
+    # A partial cache restore can leave an unregistered bundle directory; SwiftPM refuses to install the same name.
+    for base in \
+      "${HOME}/.config/swiftpm/swift-sdks" \
+      "${HOME}/.swiftpm/swift-sdks" \
+      "${HOME}/Library/org.swift.swiftpm/swift-sdks"; do
+      bundle_dir="$base/${BLAZEDB_ANDROID_SDK_ARTIFACT%.tar.gz}"
+      if [[ -d "$bundle_dir" ]]; then
+        rm -rf "$bundle_dir"
+        echo ">>> Removed unregistered Android Swift SDK bundle at $bundle_dir"
+      fi
+    done
     echo ">>> Registering Android Swift SDK with SwiftPM"
     swift sdk install "$tarball_path" --checksum "$BLAZEDB_ANDROID_SDK_CHECKSUM"
   fi
