@@ -224,6 +224,8 @@ extension QueryBuilder {
     /// - Parameter ttl: Time-to-live in seconds (default: 60)
     /// - Returns: Cached or fresh aggregation results
     public func executeGroupedAggregationWithCache(ttl: TimeInterval = 60) throws -> GroupedAggregationResult {
+        // HAVING closures have no stable identity, so skip both cache lookup and insert.
+        if havingPredicate != nil { return try execute().grouped }
         let key = QueryCacheNamespace.groupedAggregation + cacheKey
         
         if let cached: GroupedAggregationResult = QueryCache.shared.get(key: key) {

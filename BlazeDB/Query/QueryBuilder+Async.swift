@@ -22,6 +22,8 @@ extension QueryBuilder {
     public func `where`(_ field: String, equals value: BlazeDocumentField) async -> QueryBuilder {
         // Inline sync version logic to avoid recursion with async method
         BlazeLogger.debug("Query: WHERE \(field) = \(value)")
+        filterFields.insert(field)
+        filterDescriptors.append(FilterDescriptor(field: field, operation: "eq", value: value))
         filters.append { record in
             guard let fieldValue = record.storage[field] else { return false }
             return fieldsEqual(fieldValue, value)
@@ -40,6 +42,8 @@ extension QueryBuilder {
     public func `where`(_ field: String, notEquals value: BlazeDocumentField) async -> QueryBuilder {
         // Inline sync version logic to avoid recursion with async method
         BlazeLogger.debug("Query: WHERE \(field) != \(value)")
+        filterFields.insert(field)
+        filterDescriptors.append(FilterDescriptor(field: field, operation: "ne", value: value))
         filters.append { record in
             guard let fieldValue = record.storage[field] else { return true }
             return !fieldsEqual(fieldValue, value)
@@ -52,6 +56,8 @@ extension QueryBuilder {
     public func `where`(_ field: String, greaterThan value: BlazeDocumentField) async -> QueryBuilder {
         // Inline sync version logic to avoid recursion with async method
         BlazeLogger.debug("Query: WHERE \(field) > \(value)")
+        filterFields.insert(field)
+        filterDescriptors.append(FilterDescriptor(field: field, operation: "gt", value: value))
         filters.append { (record: BlazeDataRecord) -> Bool in
             guard let fieldValue = record.storage[field] else { return false }
             return compareFields(fieldValue, ComparisonOp.greaterThan, value)
@@ -64,6 +70,8 @@ extension QueryBuilder {
     public func `where`(_ field: String, lessThan value: BlazeDocumentField) async -> QueryBuilder {
         // Inline sync version logic to avoid recursion with async method
         BlazeLogger.debug("Query: WHERE \(field) < \(value)")
+        filterFields.insert(field)
+        filterDescriptors.append(FilterDescriptor(field: field, operation: "lt", value: value))
         filters.append { (record: BlazeDataRecord) -> Bool in
             guard let fieldValue = record.storage[field] else { return false }
             return compareFields(fieldValue, ComparisonOp.lessThan, value)
