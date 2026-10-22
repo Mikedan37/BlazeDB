@@ -37,14 +37,6 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Cache SwiftPM build
-        uses: actions/cache@v5
-        with:
-          path: .build
-          key: ${{ runner.os }}-spm-${{ hashFiles('Package.swift', 'Package.resolved') }}
-          restore-keys: |
-            ${{ runner.os }}-spm-
-
       # Use the runner's Xcode Swift for tests. setup-swift's OSS toolchain breaks XCTest
       # (missing XCTestCore at dlopen — see swiftpm_testing_helper / BlazeDBPackageTests).
       - name: Xcode Swift toolchain
@@ -52,6 +44,23 @@ jobs:
           xcodebuild -version
           swift --version
           which swift
+
+      - name: SwiftPM cache identity
+        id: cache-identity
+        run: |
+          set -euo pipefail
+          workspace="$(printf '%s' "$(git rev-parse --show-toplevel)" | git hash-object --stdin)"
+          toolchain="$(swift --version | sed -n '1p' | git hash-object --stdin)"
+          echo "workspace=${workspace:0:12}" >> "$GITHUB_OUTPUT"
+          echo "toolchain=${toolchain:0:12}" >> "$GITHUB_OUTPUT"
+
+      - name: Cache SwiftPM build
+        uses: actions/cache@v5
+        with:
+          path: .build
+          key: ${{ runner.os }}-spm-${{ steps.cache-identity.outputs.workspace }}-${{ steps.cache-identity.outputs.toolchain }}-${{ hashFiles('Package.swift', 'Package.resolved') }}
+          restore-keys: |
+            ${{ runner.os }}-spm-${{ steps.cache-identity.outputs.workspace }}-${{ steps.cache-identity.outputs.toolchain }}-
 
       - name: Build BlazeDBCore
         run: swift build --target BlazeDBCore
@@ -159,19 +168,28 @@ jobs:
           date -u +"%Y-%m-%dT%H:%M:%SZ" | tee .logs/apple-cross-compile-job-start.txt
           echo "run_id=${{ github.run_id }} attempt=${{ github.run_attempt }}" >> .logs/apple-cross-compile-job-start.txt
 
-      - name: Cache SwiftPM build
-        uses: actions/cache@v5
-        with:
-          path: .build
-          key: ${{ runner.os }}-apple-cross-${{ hashFiles('Package.swift', 'Package.resolved') }}
-          restore-keys: |
-            ${{ runner.os }}-apple-cross-
-
       - name: Xcode Swift toolchain
         run: |
           xcodebuild -version
           swift --version
           which swift
+
+      - name: SwiftPM cache identity
+        id: cache-identity
+        run: |
+          set -euo pipefail
+          workspace="$(printf '%s' "$(git rev-parse --show-toplevel)" | git hash-object --stdin)"
+          toolchain="$(swift --version | sed -n '1p' | git hash-object --stdin)"
+          echo "workspace=${workspace:0:12}" >> "$GITHUB_OUTPUT"
+          echo "toolchain=${toolchain:0:12}" >> "$GITHUB_OUTPUT"
+
+      - name: Cache SwiftPM build
+        uses: actions/cache@v5
+        with:
+          path: .build
+          key: ${{ runner.os }}-apple-cross-${{ steps.cache-identity.outputs.workspace }}-${{ steps.cache-identity.outputs.toolchain }}-${{ hashFiles('Package.swift', 'Package.resolved') }}
+          restore-keys: |
+            ${{ runner.os }}-apple-cross-${{ steps.cache-identity.outputs.workspace }}-${{ steps.cache-identity.outputs.toolchain }}-
 
       - name: Prepare CI log directories
         run: mkdir -p .logs .artifacts
@@ -231,14 +249,6 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Cache SwiftPM build
-        uses: actions/cache@v5
-        with:
-          path: .build
-          key: ${{ runner.os }}-spm-${{ hashFiles('Package.swift', 'Package.resolved') }}
-          restore-keys: |
-            ${{ runner.os }}-spm-
-
       - name: Setup Swift 6.2
         uses: swift-actions/setup-swift@v2
         with:
@@ -246,6 +256,23 @@ jobs:
 
       - name: Swift version
         run: swift --version
+
+      - name: SwiftPM cache identity
+        id: cache-identity
+        run: |
+          set -euo pipefail
+          workspace="$(printf '%s' "$(git rev-parse --show-toplevel)" | git hash-object --stdin)"
+          toolchain="$(swift --version | sed -n '1p' | git hash-object --stdin)"
+          echo "workspace=${workspace:0:12}" >> "$GITHUB_OUTPUT"
+          echo "toolchain=${toolchain:0:12}" >> "$GITHUB_OUTPUT"
+
+      - name: Cache SwiftPM build
+        uses: actions/cache@v5
+        with:
+          path: .build
+          key: ${{ runner.os }}-spm-${{ steps.cache-identity.outputs.workspace }}-${{ steps.cache-identity.outputs.toolchain }}-${{ hashFiles('Package.swift', 'Package.resolved') }}
+          restore-keys: |
+            ${{ runner.os }}-spm-${{ steps.cache-identity.outputs.workspace }}-${{ steps.cache-identity.outputs.toolchain }}-
 
       - name: Build core
         run: swift build --target BlazeDBCore
@@ -304,6 +331,13 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: SwiftPM cache identity
+        id: cache-identity
+        run: |
+          set -euo pipefail
+          workspace="$(printf '%s' "$(git rev-parse --show-toplevel)" | git hash-object --stdin)"
+          echo "workspace=${workspace:0:12}" >> "$GITHUB_OUTPUT"
+
       - name: Cache Android Swift SDK artifact
         uses: actions/cache@v5
         with:
@@ -327,10 +361,9 @@ jobs:
             .build
             ~/.swiftpm/swift-sdks
             ~/.config/swiftpm/swift-sdks
-          key: ${{ runner.os }}-android-sdk-v2-${{ hashFiles('Package.swift', 'Package.resolved', 'Scripts/android-swift-config.sh', 'Scripts/install-android-swift.sh', 'Scripts/ci-android-cross-compile.sh', 'Scripts/fetch-android-sdk-artifact.sh') }}
+          key: ${{ runner.os }}-android-sdk-v2-${{ steps.cache-identity.outputs.workspace }}-${{ hashFiles('Scripts/android-swift-config.sh') }}-${{ hashFiles('Package.swift', 'Package.resolved', 'Scripts/android-swift-config.sh', 'Scripts/install-android-swift.sh', 'Scripts/ci-android-cross-compile.sh', 'Scripts/fetch-android-sdk-artifact.sh') }}
           restore-keys: |
-            ${{ runner.os }}-android-sdk-v2-
-            ${{ runner.os }}-android-sdk-
+            ${{ runner.os }}-android-sdk-v2-${{ steps.cache-identity.outputs.workspace }}-${{ hashFiles('Scripts/android-swift-config.sh') }}-
 
       - name: Cache Android NDK
         uses: actions/cache@v5
