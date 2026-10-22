@@ -134,6 +134,37 @@ final class MVCCRegressionTests: XCTestCase {
         let fetched = try requireFixture(db).fetch(id: id)
         XCTAssertNil(fetched)
     }
+
+    func testRegression_DeleteAfterUpdateDoesNotResurrectOrCorrupt() throws {
+        let id = try requireFixture(db).insert(BlazeDataRecord([
+            "name": .string("Original"),
+            "value": .int(1)
+        ]))
+        try requireFixture(db).update(id: id, with: BlazeDataRecord([
+            "name": .string("Updated"),
+            "value": .int(2),
+            "blob": .string(String(repeating: "B", count: 8_000))
+        ]))
+        XCTAssertEqual(try requireFixture(db).fetch(id: id)?["value"]?.intValue, 2)
+
+        try requireFixture(db).delete(id: id)
+        try requireFixture(db).runGarbageCollection()
+
+        XCTAssertNil(try requireFixture(db).fetch(id: id), "Deleted row must stay deleted after an update")
+        XCTAssertEqual(try requireFixture(db).count(), 0)
+        XCTAssertTrue(try requireFixture(db).fetchAll().isEmpty)
+
+        let other = try requireFixture(db).insert(BlazeDataRecord([
+            "name": .string("Other"),
+            "value": .int(99),
+            "blob": .string(String(repeating: "C", count: 8_000))
+        ]))
+        XCTAssertNil(try requireFixture(db).fetch(id: id))
+        let fetchedOther = try requireFixture(db).fetch(id: other)
+        XCTAssertEqual(fetchedOther?["name"]?.stringValue, "Other")
+        XCTAssertEqual(fetchedOther?["value"]?.intValue, 99)
+        XCTAssertEqual(fetchedOther?["blob"]?.stringValue, String(repeating: "C", count: 8_000))
+    }
     
     func testRegression_FetchAll() throws {
         for i in 0..<100 {

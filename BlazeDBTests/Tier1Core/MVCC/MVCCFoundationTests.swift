@@ -180,6 +180,85 @@ final class MVCCFoundationTests: XCTestCase {
         let s2 = versionManager.getVersion(recordID: recordID, snapshot: 2)
         XCTAssertNil(s2, "Deleted version shouldn't be visible after deletion")
     }
+
+    func testDeleteAfterUpdateHidesEveryVersion() throws {
+        let recordID = UUID()
+        versionManager.addVersion(RecordVersion(
+            recordID: recordID,
+            version: 1,
+            pageNumber: 10,
+            pageIndices: [10, 11],
+            createdByTransaction: 1
+        ))
+        versionManager.addVersion(RecordVersion(
+            recordID: recordID,
+            version: 2,
+            pageNumber: 20,
+            pageIndices: [20, 21, 22],
+            createdByTransaction: 2
+        ))
+
+        XCTAssertEqual(versionManager.getVersion(recordID: recordID, snapshot: 1)?.pageNumber, 10)
+        XCTAssertEqual(versionManager.getVersion(recordID: recordID, snapshot: 2)?.pageNumber, 20)
+
+        try versionManager.deleteVersion(
+            recordID: recordID,
+            atSnapshot: 2,
+            byTransaction: 3
+        )
+
+        XCTAssertEqual(
+            versionManager.getVersion(recordID: recordID, snapshot: 1)?.pageNumber,
+            10,
+            "Snapshot from before the update still reads the original row"
+        )
+        XCTAssertEqual(
+            versionManager.getVersion(recordID: recordID, snapshot: 2)?.pageNumber,
+            20,
+            "Snapshot at the update still reads that update"
+        )
+        XCTAssertNil(
+            versionManager.getVersion(recordID: recordID, snapshot: 3),
+            "Delete must not fall through to the pre-update version"
+        )
+        XCTAssertFalse(
+            versionManager.getAllVisibleRecordIDs(snapshot: 3).contains(recordID)
+        )
+    }
+
+    func testGarbageCollectionKeepsDeleteTombstone() throws {
+        let recordID = UUID()
+        versionManager.addVersion(RecordVersion(
+            recordID: recordID,
+            version: 1,
+            pageNumber: 10,
+            pageIndices: [10, 11],
+            createdByTransaction: 1
+        ))
+        versionManager.addVersion(RecordVersion(
+            recordID: recordID,
+            version: 2,
+            pageNumber: 20,
+            pageIndices: [20, 21, 22],
+            createdByTransaction: 2
+        ))
+        try versionManager.deleteVersion(
+            recordID: recordID,
+            atSnapshot: 2,
+            byTransaction: 3
+        )
+
+        // A snapshot opened after the delete must not pin the superseded chain,
+        // and must not drop the tombstone (that would resurrect version 1).
+        versionManager.registerSnapshot(5)
+        _ = versionManager.garbageCollect()
+
+        XCTAssertNil(versionManager.getVersion(recordID: recordID, snapshot: 5))
+        let stats = versionManager.pageGC.getStats()
+        XCTAssertEqual(stats.freePagesAvailable, 2, "Only the superseded chain is reusable")
+        XCTAssertEqual(stats.totalPagesFreed, 2)
+        versionManager.unregisterSnapshot(5)
+    }
     
     // MARK: - Garbage Collection Tests
     

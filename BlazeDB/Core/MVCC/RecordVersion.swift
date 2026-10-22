@@ -197,7 +197,11 @@ public class VersionManager {
         versions[version.recordID]?.sort { $0.version < $1.version }
     }
     
-    /// Mark a record version as deleted
+    /// Mark the version visible at `snapshotVersion` as deleted.
+    ///
+    /// Versions are stored oldest-first. Tombstoning the first visible row
+    /// leaves a newer update in place, so a later read resurrects the previous
+    /// value and a following insert reuses the live page chain.
     public func deleteVersion(
         recordID: UUID,
         atSnapshot snapshotVersion: UInt64,
@@ -210,10 +214,8 @@ public class VersionManager {
             throw BlazeDBError.recordNotFound(id: recordID)
         }
         
-        // Find the visible version at this snapshot
-        guard let index = recordVersions.firstIndex(where: {
-            $0.isVisibleTo(snapshotVersion: snapshotVersion)
-        }) else {
+        guard let target = visibleVersion(in: recordVersions, snapshot: snapshotVersion),
+              let index = recordVersions.firstIndex(of: target) else {
             throw BlazeDBError.recordNotFound(id: recordID)
         }
         
@@ -246,10 +248,7 @@ public class VersionManager {
             return nil
         }
         
-        // Find the newest version visible to this snapshot
-        return recordVersions
-            .filter { $0.isVisibleTo(snapshotVersion: snapshot) }
-            .max { $0.version < $1.version }
+        return visibleVersion(in: recordVersions, snapshot: snapshot)
     }
     
     /// Get all record IDs that have visible versions at a snapshot
@@ -258,8 +257,36 @@ public class VersionManager {
         defer { lock.unlock() }
         
         return versions.keys.filter { recordID in
-            versions[recordID]?.contains { $0.isVisibleTo(snapshotVersion: snapshot) } ?? false
+            guard let recordVersions = versions[recordID] else { return false }
+            return visibleVersion(in: recordVersions, snapshot: snapshot) != nil
         }
+    }
+    
+    /// The row a snapshot reads.
+    ///
+    /// A newer version hides every earlier one, including when updates never
+    /// tombstone the previous row. A delete on the latest version therefore
+    /// hides the whole record instead of falling through to older data.
+    /// Caller must hold `lock`.
+    private func visibleVersion(
+        in recordVersions: [RecordVersion],
+        snapshot: UInt64
+    ) -> RecordVersion? {
+        var best: RecordVersion?
+        for version in recordVersions {
+            guard version.version <= snapshot else { continue }
+            if version.deletedByTransaction != 0 && version.deletedByTransaction <= snapshot {
+                continue
+            }
+            let superseded = recordVersions.contains { newer in
+                newer.version > version.version && newer.version <= snapshot
+            }
+            if superseded { continue }
+            if best == nil || version.version > best!.version {
+                best = version
+            }
+        }
+        return best
     }
     
     // MARK: - Snapshot Tracking (for GC)
@@ -313,18 +340,25 @@ public class VersionManager {
         var freedPages: [Int] = []
         
         for (recordID, recordVersions) in versions {
-            // Keep only versions that might be visible to active snapshots
+            // Keep the newest row even when it is a delete tombstone. Dropping
+            // that tombstone makes an older update visible again. Also keep the
+            // row the oldest snapshot still reads, and anything newer than it.
+            let newestVersionNumber = recordVersions.map(\.version).max()
+            let visibleAtOldest = visibleVersion(in: recordVersions, snapshot: oldestSnapshot)
             let kept = recordVersions.filter { version in
-                // Keep if visible to oldest snapshot
-                version.isVisibleTo(snapshotVersion: oldestSnapshot) ||
-                // Or if it's the newest version (for future reads)
-                version.version > oldestSnapshot
+                version.version == newestVersionNumber
+                    || version.version == visibleAtOldest?.version
+                    || version.version > oldestSnapshot
             }
             
-            // Track pages from removed versions
+            // Never recycle a page a surviving version still names. Overlapping
+            // chains would otherwise hand a live overflow page to the next insert.
+            let keptPages = Set(kept.flatMap(\.diskPageIndices))
             let removed = Set(recordVersions).subtracting(kept)
             for version in removed {
-                freedPages.append(contentsOf: version.diskPageIndices)
+                for page in version.diskPageIndices where !keptPages.contains(page) {
+                    freedPages.append(page)
+                }
             }
             
             removedCount += recordVersions.count - kept.count
@@ -353,10 +387,13 @@ public class VersionManager {
         for (recordID, recordVersions) in versions {
             // Keep only the newest version of each record
             if let newest = recordVersions.max(by: { $0.version < $1.version }) {
-                // Free pages from old versions
+                // Free pages from old versions, but not pages the surviving row still uses.
+                let newestPages = Set(newest.diskPageIndices)
                 let oldVersions = recordVersions.filter { $0.version != newest.version }
                 for version in oldVersions {
-                    freedPages.append(contentsOf: version.diskPageIndices)
+                    for page in version.diskPageIndices where !newestPages.contains(page) {
+                        freedPages.append(page)
+                    }
                 }
                 
                 removedCount += recordVersions.count - 1
