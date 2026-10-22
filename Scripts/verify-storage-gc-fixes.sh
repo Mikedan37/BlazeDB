@@ -17,7 +17,10 @@ run_step() {
   echo "========================================"
   echo "$title"
   echo "========================================"
-  "$@"
+  if ! "$@"; then
+    echo "FAILED: $title (exit $?)"
+    exit 1
+  fi
   echo "OK: $title"
 }
 
@@ -27,7 +30,7 @@ run_step "Fix 1 — WAL checkpoint / persist visibility (Tier 0)" \
   swift test --skip-build --filter 'WALCommitBoundaryTests'
 
 run_step "Fix 1 — storage growth after persist (Tier 2 integration)" \
-  swift test --skip-build --filter 'BlazeDB_Tier2/testStorageGrowthMonitoring'
+  swift test --skip-build --filter 'BlazeDB_Tier2.BlazeFileSystemErrorTests/testStorageGrowthMonitoring'
 
 run_step "Fix 2 — MVCC version GC frees overflow chains (Tier 1)" \
   swift test --skip-build --filter 'MVCCFoundationTests/testGarbageCollectionFreesFullOverflowChain'

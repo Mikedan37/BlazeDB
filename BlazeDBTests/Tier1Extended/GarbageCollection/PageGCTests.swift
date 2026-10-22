@@ -402,7 +402,10 @@ final class PageGCTests: XCTestCase {
             ids.append(id)
         }
         
+        // Checkpoint WAL so main-file size reflects inserted data (not 0-byte .blazedb).
+        try requireFixture(db).persist()
         let sizeInitial = try databaseFileSize()
+        XCTAssertGreaterThan(sizeInitial, 0, "Baseline file size must be visible on disk before update churn")
         
         // Update each record 10 times (creates 1000 versions!)
         for _ in 0..<10 {
