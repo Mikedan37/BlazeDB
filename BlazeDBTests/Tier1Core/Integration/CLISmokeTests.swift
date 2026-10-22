@@ -32,7 +32,8 @@ private final class LockedDataBuffer: @unchecked Sendable {
     }
 }
 
-final class CLISmokeTests: NonCryptoKDFHarness {
+// CLI subprocesses must not receive reduced-iteration fixtures; the harness override is in-process only.
+final class CLISmokeTests: XCTestCase {
     private var tempDir: URL?
     
     override func setUpWithError() throws {
