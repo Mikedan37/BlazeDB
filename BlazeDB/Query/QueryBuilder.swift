@@ -475,10 +475,17 @@ public final class QueryBuilder: @unchecked Sendable {
         }
     }
     
+    /// Predicates `generateCacheKey()` cannot name must not be stored or replayed.
+    /// HAVING closures have no identity. LIKE, regex, spatial, vector, indexed range,
+    /// and some subquery filters append a closure without a `FilterDescriptor`, so the
+    /// key matches a query that does not apply that predicate and a hit returns the wrong rows.
+    internal func shouldBypassResultCache() -> Bool {
+        havingPredicate != nil || filters.count != filterDescriptors.count
+    }
+
     /// Execute with caching support (unified)
     public func execute(withCache ttl: TimeInterval) throws -> QueryResult {
-        // HAVING closures have no stable identity, so skip both cache lookup and insert.
-        if havingPredicate != nil { return try execute() }
+        if shouldBypassResultCache() { return try execute() }
         let cacheKey = QueryCacheNamespace.queryResult + generateCacheKey()
         BlazeLogger.debug("Checking cache with key: \(cacheKey.prefix(8))...")
         
