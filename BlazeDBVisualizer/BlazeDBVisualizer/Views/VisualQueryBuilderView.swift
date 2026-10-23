@@ -400,7 +400,7 @@ struct QueryFilter: Identifiable {
     }
     
     func matches(record: BlazeDataRecord) -> Bool {
-        guard let fieldValue = record.storage[field] else { return false }
+        guard let fieldValue = record.storage[field] else { return `operator` == .notEquals }
         
         switch `operator` {
         case .equals:
