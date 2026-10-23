@@ -819,7 +819,8 @@ public final class QueryBuilder: @unchecked Sendable {
 
         // Include groupBy
         if !groupByFields.isEmpty {
-            key += "_g\(groupByFields.map { "\($0.count):\($0)" }.joined())"
+            // Byte lengths preserve boundaries when graphemes join with prefix digits.
+            key += "_g\(groupByFields.map { "\($0.utf8.count):\($0)" }.joined())"
         }
 
         return key

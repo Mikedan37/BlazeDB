@@ -87,6 +87,16 @@ final class QueryCacheShapeIdentityTests: XCTestCase {
         try assertGroupingSeparators(groupedAPI: true)
     }
 
+    func testGroupingUnicodePrefixesCannotAliasComponents() throws {
+        let database = try openDatabase()
+        defer { try? database.close() }
+        let first = database.query().groupBy(["\u{0600}", "ab1:c1:d2:ef"]).count()
+        let second = database.query().groupBy(["\u{0600}1", "ab", "c", "d", "ef"]).count()
+        let repeatQuery = database.query().groupBy(["\u{0600}1", "ab", "c", "d", "ef"]).count()
+        XCTAssertNotEqual(first.generateCacheKey(), second.generateCacheKey())
+        XCTAssertEqual(second.generateCacheKey(), repeatQuery.generateCacheKey())
+    }
+
     private func openDatabase() throws -> BlazeDBClient {
         let password = UUID().uuidString + "aA1!"
         let database = try BlazeDBClient(name: "query_cache_shape", fileURL: databaseURL, password: password)
