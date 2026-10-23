@@ -89,7 +89,7 @@ extension QueryBuilder {
         let valueSet = Set(subqueryValues)
         
         filters.append { record in
-            guard let fieldValue = record.storage[field] else { return false }
+            guard let fieldValue = record.storage[field] else { return true }
             return !valueSet.contains(fieldValue)
         }
         
