@@ -10,7 +10,7 @@ import XCTest
 @testable import BlazeDB
 #endif
 
-final class QueryBuilderEdgeCaseTests: LinuxTier1NonCryptoKDFHarness {
+final class QueryBuilderEdgeCaseTests: NonCryptoKDFHarness {
     
     private var tempURL: URL?
     private var db: BlazeDBClient?

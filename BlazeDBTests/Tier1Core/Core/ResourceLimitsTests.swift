@@ -15,7 +15,7 @@ import XCTest
 @testable import BlazeDB
 #endif
 
-final class ResourceLimitsTests: XCTestCase {
+final class ResourceLimitsTests: NonCryptoKDFHarness {
     
     func testResourceLimits_WALSizeWarning() {
         let stats = DatabaseStats(

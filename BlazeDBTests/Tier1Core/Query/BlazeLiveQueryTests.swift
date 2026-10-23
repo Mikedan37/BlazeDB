@@ -8,7 +8,7 @@ import XCTest
 /// Focused validation for ``BlazeLiveQuery`` — observe → refresh → typed decode.
 /// Does not re-test ``BlazeDBClient/observe(_:)`` (see Tier1Perf ``ChangeObservationTests``)
 /// or SwiftUI observers (``BlazeQueryObservationIntegrationTests``).
-final class BlazeLiveQueryTests: LinuxTier1NonCryptoKDFHarness {
+final class BlazeLiveQueryTests: NonCryptoKDFHarness {
 
     struct LiveTask: BlazeStorable, Equatable {
         var id: UUID = UUID()

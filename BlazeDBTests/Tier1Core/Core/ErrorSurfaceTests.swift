@@ -13,7 +13,7 @@ import XCTest
 @testable import BlazeDB
 #endif
 
-final class ErrorSurfaceTests: XCTestCase {
+final class ErrorSurfaceTests: NonCryptoKDFHarness {
     
     func testErrorCategories() {
         XCTAssertEqual(BlazeDBError.corruptedData(location: "page 5", reason: "invalid header").category, .corruption)

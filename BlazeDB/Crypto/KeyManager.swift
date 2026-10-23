@@ -72,6 +72,13 @@ public final class KeyManager {
         }
     }
 
+    /// Returns the raw process-global test override, before environment/default fallback.
+    internal static func currentTestPBKDF2IterationsOverride() -> Int? {
+        pbkdf2OverrideLock.lock()
+        defer { pbkdf2OverrideLock.unlock() }
+        return pbkdf2IterationsOverride
+    }
+
     public static func getKey(from source: KeySource, createIfMissing: Bool = false) throws -> SymmetricKey {
         switch source {
         case .secureEnclave(let label):

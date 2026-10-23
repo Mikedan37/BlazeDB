@@ -13,7 +13,7 @@ import XCTest
 @testable import BlazeDB
 #endif
 
-final class GoldenPathIntegrationTests: XCTestCase {
+final class GoldenPathIntegrationTests: NonCryptoKDFHarness {
     
     private var tempDir: URL?
     private var originalDB: BlazeDBClient?

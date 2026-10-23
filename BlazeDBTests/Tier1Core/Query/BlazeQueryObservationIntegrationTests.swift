@@ -10,7 +10,7 @@ import SwiftUI
 import Combine
 
 @MainActor
-final class BlazeQueryObservationIntegrationTests: LinuxTier1NonCryptoKDFHarness {
+final class BlazeQueryObservationIntegrationTests: NonCryptoKDFHarness {
     private var db: BlazeDBClient?
     private var dbURL: URL?
 

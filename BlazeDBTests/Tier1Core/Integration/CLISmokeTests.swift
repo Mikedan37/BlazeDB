@@ -32,6 +32,7 @@ private final class LockedDataBuffer: @unchecked Sendable {
     }
 }
 
+// CLI subprocesses must not receive reduced-iteration fixtures; the harness override is in-process only.
 final class CLISmokeTests: XCTestCase {
     private var tempDir: URL?
     

@@ -15,7 +15,7 @@ import XCTest
 @testable import BlazeDB
 #endif
 
-final class CompatibilityTests: XCTestCase {
+final class CompatibilityTests: NonCryptoKDFHarness {
     
     private var tempDir: URL?
     private var dbURL: URL?

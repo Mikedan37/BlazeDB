@@ -20,7 +20,7 @@ import Crypto
 @testable import BlazeDB
 #endif
 
-final class CrashRecoveryTests: XCTestCase {
+final class CrashRecoveryTests: NonCryptoKDFHarness {
     
     private var tempURL: URL?
     let password = "TestPassword-123!"
