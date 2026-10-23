@@ -477,6 +477,8 @@ public final class QueryBuilder: @unchecked Sendable {
     
     /// Execute with caching support (unified)
     public func execute(withCache ttl: TimeInterval) throws -> QueryResult {
+        // HAVING closures have no stable identity, so skip both cache lookup and insert.
+        if havingPredicate != nil { return try execute() }
         let cacheKey = QueryCacheNamespace.queryResult + generateCacheKey()
         BlazeLogger.debug("Checking cache with key: \(cacheKey.prefix(8))...")
         
@@ -795,7 +797,24 @@ public final class QueryBuilder: @unchecked Sendable {
 
         // Include aggregations
         if !aggregations.isEmpty {
-            key += "_a\(aggregations.count)"
+            let descriptors = aggregations.map { aggregation -> String in
+                let operation: String
+                let field: String?
+                let alias: String?
+                switch aggregation {
+                case .count(let output): (operation, field, alias) = ("count", nil, output)
+                case .sum(let input, let output): (operation, field, alias) = ("sum", input, output)
+                case .avg(let input, let output): (operation, field, alias) = ("avg", input, output)
+                case .min(let input, let output): (operation, field, alias) = ("min", input, output)
+                case .max(let input, let output): (operation, field, alias) = ("max", input, output)
+                }
+                var components = [operation]
+                if let field { components.append(field) }
+                if let alias { components.append(alias) }
+                // Length prefixes preserve component boundaries even with separators in names.
+                return components.map { "\($0.count):\($0)" }.joined()
+            }
+            key += "_a\(aggregations.count)[\(descriptors.joined(separator: "|"))]"
         }
 
         // Include groupBy
