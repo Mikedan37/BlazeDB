@@ -100,7 +100,8 @@ install_android_sdk() {
   fi
 
   if ! grep -Fxq -- "$BLAZEDB_ANDROID_SDK_NAME" <<< "$sdk_list"; then
-    local base bundle_dir
+    local base bundle_dir sdk_root ndk_name
+    ndk_name="android-ndk-$BLAZEDB_ANDROID_NDK_VERSION"
     # A partial cache restore can leave an unregistered bundle directory; SwiftPM refuses to install the same name.
     for base in \
       "${HOME}/.config/swiftpm/swift-sdks" \
@@ -108,12 +109,24 @@ install_android_sdk() {
       "${HOME}/Library/org.swift.swiftpm/swift-sdks"; do
       bundle_dir="$base/${BLAZEDB_ANDROID_SDK_ARTIFACT%.tar.gz}"
       if [[ -d "$bundle_dir" ]]; then
+        # Keep the restored NDK in the artifact cache while SwiftPM replaces its bundle.
+        if [[ -d "$bundle_dir/swift-android/$ndk_name" && ! -d "$swift_android/$ndk_name" ]]; then
+          mv "$bundle_dir/swift-android/$ndk_name" "$swift_android/"
+          echo ">>> Preserved Android NDK at $swift_android/$ndk_name"
+        fi
         rm -rf "$bundle_dir"
         echo ">>> Removed unregistered Android Swift SDK bundle at $bundle_dir"
       fi
     done
     echo ">>> Registering Android Swift SDK with SwiftPM"
     swift sdk install "$tarball_path" --checksum "$BLAZEDB_ANDROID_SDK_CHECKSUM"
+    if [[ -d "$swift_android/$ndk_name" ]]; then
+      sdk_root="$(resolve_android_sdk_root)"
+      if [[ ! -d "$sdk_root/$ndk_name" ]]; then
+        mv "$swift_android/$ndk_name" "$sdk_root/"
+        echo ">>> Restored Android NDK at $sdk_root/$ndk_name"
+      fi
+    fi
   fi
 }
 
