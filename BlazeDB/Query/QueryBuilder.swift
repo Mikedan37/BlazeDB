@@ -819,7 +819,7 @@ public final class QueryBuilder: @unchecked Sendable {
 
         // Include groupBy
         if !groupByFields.isEmpty {
-            key += "_g\(groupByFields.joined(separator: ","))"
+            key += "_g\(groupByFields.map { "\($0.count):\($0)" }.joined())"
         }
 
         return key
