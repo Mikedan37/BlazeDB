@@ -819,8 +819,16 @@ public final class QueryBuilder: @unchecked Sendable {
 
         // Include groupBy
         if !groupByFields.isEmpty {
-            // Byte lengths preserve boundaries when graphemes join with prefix digits.
-            key += "_g\(groupByFields.map { "\($0.utf8.count):\($0)" }.joined())"
+            // ASCII payloads avoid canonical-equivalence collisions; escape the escape marker too.
+            let descriptors = groupByFields.map { field in
+                let encoded = field.utf8.map { byte in
+                    byte < 0x80 && byte != 0x25
+                        ? String(UnicodeScalar(byte))
+                        : String(format: "%%%02X", byte)
+                }.joined()
+                return "\(encoded.utf8.count):\(encoded)"
+            }
+            key += "_g\(descriptors.joined())"
         }
 
         return key
