@@ -201,6 +201,9 @@ extension QueryBuilder {
     /// - Returns: Cached or fresh results
     @available(*, deprecated, message: "Use execute(withCache:) which returns QueryResult")
     public func executeWithCache(ttl: TimeInterval = 60) throws -> [BlazeDataRecord] {
+        if shouldBypassResultCache() {
+            return try execute().records
+        }
         let key = QueryCacheNamespace.legacyRecords + cacheKey
         
         // Check cache first
@@ -224,8 +227,7 @@ extension QueryBuilder {
     /// - Parameter ttl: Time-to-live in seconds (default: 60)
     /// - Returns: Cached or fresh aggregation results
     public func executeGroupedAggregationWithCache(ttl: TimeInterval = 60) throws -> GroupedAggregationResult {
-        // HAVING closures have no stable identity, so skip both cache lookup and insert.
-        if havingPredicate != nil { return try execute().grouped }
+        if shouldBypassResultCache() { return try execute().grouped }
         let key = QueryCacheNamespace.groupedAggregation + cacheKey
         
         if let cached: GroupedAggregationResult = QueryCache.shared.get(key: key) {

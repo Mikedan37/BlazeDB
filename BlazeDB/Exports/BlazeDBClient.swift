@@ -1792,7 +1792,9 @@ public final class BlazeDBClient: @unchecked Sendable {
             builder.cachePartitionProvider = { [weak rls] in
                 rls?.queryCachePartition() ?? "rls-deallocated"
             }
-            _ = builder.where { [rls] record in
+            // Stable identity so this gate can stay in the result cache. The
+            // partition provider, not the closure body, distinguishes tenants.
+            _ = builder.whereCacheStable(identity: "rls_select") { [rls] record in
                 rls.isAllowed(operation: .select, record: record)
             }
         }

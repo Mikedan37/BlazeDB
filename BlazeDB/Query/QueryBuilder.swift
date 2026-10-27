@@ -13,6 +13,9 @@ internal struct FilterDescriptor: Hashable {
     let valueHash: Int
     let value: BlazeDocumentField?  // Stored for index execution
     let values: [BlazeDocumentField]?  // For IN queries
+    /// False when the descriptor is only a position (`closure_N`) and cannot
+    /// distinguish two different predicates. Those queries must skip the result cache.
+    let cacheIdentityStable: Bool
     
     init(field: String, operation: String, value: BlazeDocumentField) {
         self.field = field
@@ -20,6 +23,7 @@ internal struct FilterDescriptor: Hashable {
         self.valueHash = Self.hashValue(value)
         self.value = value
         self.values = nil
+        self.cacheIdentityStable = true
     }
     
     init(field: String, operation: String, values: [BlazeDocumentField]) {
@@ -32,9 +36,10 @@ internal struct FilterDescriptor: Hashable {
         self.valueHash = hasher.finalize()
         self.value = nil
         self.values = values
+        self.cacheIdentityStable = true
     }
     
-    init(customDescription: String) {
+    init(customDescription: String, cacheIdentityStable: Bool = false) {
         self.field = "_custom"
         self.operation = "closure"
         var hasher = Hasher()
@@ -42,6 +47,7 @@ internal struct FilterDescriptor: Hashable {
         self.valueHash = hasher.finalize()
         self.value = nil
         self.values = nil
+        self.cacheIdentityStable = cacheIdentityStable
     }
     
     private static func hashValue(_ field: BlazeDocumentField) -> Int {
@@ -93,13 +99,15 @@ internal struct FilterDescriptor: Hashable {
     static func == (lhs: FilterDescriptor, rhs: FilterDescriptor) -> Bool {
         return lhs.field == rhs.field &&
                lhs.operation == rhs.operation &&
-               lhs.valueHash == rhs.valueHash
+               lhs.valueHash == rhs.valueHash &&
+               lhs.cacheIdentityStable == rhs.cacheIdentityStable
     }
     
     func hash(into hasher: inout Hasher) {
         hasher.combine(field)
         hasher.combine(operation)
         hasher.combine(valueHash)
+        hasher.combine(cacheIdentityStable)
     }
 }
 
@@ -270,11 +278,31 @@ public final class QueryBuilder: @unchecked Sendable {
         return self
     }
     
-    /// Custom filter with closure (maximum flexibility)
+    /// Custom filter with closure (maximum flexibility).
+    ///
+    /// The predicate body has no stable cache identity. Recording only
+    /// `closure_N` lets two different closures at the same position share one
+    /// `execute(withCache:)` entry, so these queries skip the result cache.
     @discardableResult
     public func `where`(_ predicate: @escaping (BlazeDataRecord) -> Bool) -> QueryBuilder {
         BlazeLogger.debug("Query: WHERE <custom closure>")
         filterDescriptors.append(FilterDescriptor(customDescription: "closure_\(filters.count)"))
+        filters.append(predicate)
+        return self
+    }
+
+    /// Closure whose cache identity is `identity`, not the function body.
+    ///
+    /// The RLS select gate uses this. Tenant and policy identity live in
+    /// `cachePartitionProvider`, and the predicate is always `isAllowed`.
+    @discardableResult
+    internal func whereCacheStable(
+        identity: String,
+        _ predicate: @escaping (BlazeDataRecord) -> Bool
+    ) -> QueryBuilder {
+        filterDescriptors.append(
+            FilterDescriptor(customDescription: identity, cacheIdentityStable: true)
+        )
         filters.append(predicate)
         return self
     }
@@ -475,10 +503,16 @@ public final class QueryBuilder: @unchecked Sendable {
         }
     }
     
+    /// HAVING and custom `where { }` predicates have no stable identity.
+    /// The RLS select gate stays cacheable: it is a stable descriptor partitioned
+    /// by `cachePartitionProvider`.
+    internal func shouldBypassResultCache() -> Bool {
+        havingPredicate != nil || filterDescriptors.contains { !$0.cacheIdentityStable }
+    }
+
     /// Execute with caching support (unified)
     public func execute(withCache ttl: TimeInterval) throws -> QueryResult {
-        // HAVING closures have no stable identity, so skip both cache lookup and insert.
-        if havingPredicate != nil { return try execute() }
+        if shouldBypassResultCache() { return try execute() }
         let cacheKey = QueryCacheNamespace.queryResult + generateCacheKey()
         BlazeLogger.debug("Checking cache with key: \(cacheKey.prefix(8))...")
         
