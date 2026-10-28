@@ -79,12 +79,46 @@ final class QueryCacheShapeIdentityTests: XCTestCase {
         try assertPlantedHit(groupedAPI: true)
     }
 
+    func testUnifiedGroupingSeparatorsCannotAliasComponents() throws {
+        try assertGroupingSeparators(groupedAPI: false)
+    }
+
+    func testGroupedGroupingSeparatorsCannotAliasComponents() throws {
+        try assertGroupingSeparators(groupedAPI: true)
+    }
+
+    func testGroupingUnicodePrefixesCannotAliasComponents() throws {
+        let database = try openDatabase()
+        defer { try? database.close() }
+        let first = database.query().groupBy(["\u{0600}", "ab1:c1:d2:ef"]).count()
+        let second = database.query().groupBy(["\u{0600}1", "ab", "c", "d", "ef"]).count()
+        let repeatQuery = database.query().groupBy(["\u{0600}1", "ab", "c", "d", "ef"]).count()
+        XCTAssertNotEqual(first.generateCacheKey(), second.generateCacheKey())
+        XCTAssertEqual(second.generateCacheKey(), repeatQuery.generateCacheKey())
+    }
+
+    func testGroupingCanonicalEquivalenceCannotAliasComponents() throws {
+        let database = try openDatabase()
+        defer { try? database.close() }
+        let first = database.query().groupBy(["e\u{0301}", "ab1:c1:d2:ef"]).count()
+        let second = database.query().groupBy(["\u{00e9}1", "ab", "c", "d", "ef"]).count()
+        let repeatQuery = database.query().groupBy(["\u{00e9}1", "ab", "c", "d", "ef"]).count()
+        XCTAssertNotEqual(first.generateCacheKey(), second.generateCacheKey())
+        XCTAssertEqual(second.generateCacheKey(), repeatQuery.generateCacheKey())
+        let unicode = database.query().groupBy("\u{00e9}").count()
+        let escapedLiteral = database.query().groupBy("%C3%A9").count()
+        let decomposed = database.query().groupBy("e\u{0301}").count()
+        XCTAssertNotEqual(unicode.generateCacheKey(), escapedLiteral.generateCacheKey())
+        XCTAssertNotEqual(unicode.generateCacheKey(), decomposed.generateCacheKey())
+    }
+
     private func openDatabase() throws -> BlazeDBClient {
         let password = UUID().uuidString + "aA1!"
         let database = try BlazeDBClient(name: "query_cache_shape", fileURL: databaseURL, password: password)
         for (value, other) in [(10, 100), (20, 200)] {
             _ = try database.insert(BlazeDataRecord([
                 "kind": .string("shared"), "value": .int(value), "other": .int(other),
+                "a,b": .string("shared"), "a": .int(value), "b": .string("shared"),
                 "value:part|_a12": .int(other)
             ]))
         }
@@ -146,6 +180,29 @@ final class QueryCacheShapeIdentityTests: XCTestCase {
                        ["total": .double(300)])
         XCTAssertEqual(try cached(second, groupedAPI: groupedAPI).groups["shared"]?.values,
                        ["part|_a12:total": .double(30)])
+    }
+
+    private func assertGroupingSeparators(groupedAPI: Bool) throws {
+        let database = try openDatabase()
+        defer { try? database.close() }
+        let first = database.query().groupBy("a,b").count()
+        let second = database.query().groupBy("a", "b").count()
+        let repeatQuery = database.query().groupBy("a", "b").count()
+        XCTAssertNotEqual(first.generateCacheKey(), second.generateCacheKey())
+        XCTAssertEqual(second.generateCacheKey(), repeatQuery.generateCacheKey())
+        XCTAssertEqual(try cached(first, groupedAPI: groupedAPI).groups["shared"]?.count, 2)
+        XCTAssertEqual(try cached(second, groupedAPI: groupedAPI).groups.count, 2,
+                       "A different grouping list must not reuse the first query's groups")
+        let key = (groupedAPI ? QueryCacheNamespace.groupedAggregation : QueryCacheNamespace.queryResult)
+            + second.generateCacheKey()
+        let sentinel = GroupedAggregationResult(groups: ["planted": AggregationResult(values: ["count": .int(999)])])
+        if groupedAPI {
+            QueryCache.shared.set(key: key, value: sentinel, ttl: 60)
+        } else {
+            QueryCache.shared.set(key: key, value: QueryResult.grouped(sentinel), ttl: 60)
+        }
+        XCTAssertEqual(try cached(repeatQuery, groupedAPI: groupedAPI), sentinel,
+                       "An identical grouping list must consume the planted hit")
     }
 
     private func assertHaving(groupedAPI: Bool) throws {
