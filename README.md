@@ -8,6 +8,7 @@ The library runs **inside your app process**. You open a database with a passwor
 [![Release](https://img.shields.io/badge/release-v2.8.2-green.svg)](RELEASE.md)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Swift](https://img.shields.io/badge/Swift-6.0+-orange.svg)](https://swift.org)
+[![XERJ Corpus Hub contributor](https://hub.xerj.org/contributors/Mikedan37/badge.svg)](https://hub.xerj.org/contributors/Mikedan37)
 
 **Release:** [v2.8.2](RELEASE.md) · [Changelog](CHANGELOG.md) · [License](LICENSE) (MIT)
 
