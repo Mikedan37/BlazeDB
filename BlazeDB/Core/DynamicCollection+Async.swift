@@ -329,14 +329,16 @@ extension DynamicCollection {
         // CRITICAL: Ensure release is called before returning, not in a background Task
         // Use do-catch pattern to ensure release happens before return
         do {
-            // Generate cache key
-            let valueStr: String
-            if let value = value {
-                valueStr = value.serializedString()
-            } else {
-                valueStr = "none"
-            }
-            let cacheKey = "query:\(field ?? "all"):\(valueStr):\(orderBy ?? "none"):\(descending):\(limit ?? -1)"
+            // Type-tagged and length-prefixed. `serializedString()` maps `.int(1)`
+            // and `.string("1")` to `"1"`, and every Data/vector value of the same
+            // size to one placeholder, so those queries shared a cache entry.
+            let cacheKey = queryAsyncCacheKey(
+                field: field,
+                value: value,
+                orderBy: orderBy,
+                descending: descending,
+                limit: limit
+            )
             
             // Check cache
             if useCache, let cached = queryCache.get(key: cacheKey) {
@@ -434,4 +436,67 @@ extension DynamicCollection {
 }
 
 #endif // !BLAZEDB_LINUX_CORE
+
+/// Cache identity for one `queryAsync` invocation.
+///
+/// Each component is length-prefixed, and a missing component is a distinct
+/// token from any caller-supplied string (including empty and `"none"`).
+internal func queryAsyncCacheKey(
+    field: String?,
+    value: BlazeDocumentField?,
+    orderBy: String?,
+    descending: Bool,
+    limit: Int?
+) -> String {
+    [
+        queryAsyncCachePiece(field),
+        queryAsyncCachePiece(value?.queryAsyncCacheToken()),
+        queryAsyncCachePiece(orderBy),
+        queryAsyncCachePiece(descending ? "1" : "0"),
+        queryAsyncCachePiece(limit.map(String.init))
+    ].joined()
+}
+
+/// `"0"` is absent. A present string is `utf8Count+1` then the bytes, so an
+/// empty string (`"1:"`) cannot collide with absent or with another piece.
+private func queryAsyncCachePiece(_ value: String?) -> String {
+    guard let value else { return "0" }
+    return "\(value.utf8.count + 1):\(value)"
+}
+
+extension BlazeDocumentField {
+    /// Lossless cache token. `serializedString()` is for display and collapses
+    /// distinct values (type, Data bytes, vector components) onto one string.
+    fileprivate func queryAsyncCacheToken() -> String {
+        switch self {
+        case .string(let value):
+            return "s" + queryAsyncCachePiece(value)
+        case .int(let value):
+            return "i\(value)"
+        case .double(let value):
+            return "d\(value.bitPattern)"
+        case .bool(let value):
+            return value ? "b1" : "b0"
+        case .date(let value):
+            return "t\(value.timeIntervalSinceReferenceDate.bitPattern)"
+        case .uuid(let value):
+            return "u\(value.uuidString)"
+        case .data(let value):
+            return "D" + queryAsyncCachePiece(value.base64EncodedString())
+        case .array(let values):
+            let body = values.map { queryAsyncCachePiece($0.queryAsyncCacheToken()) }.joined()
+            return "a" + queryAsyncCachePiece(body)
+        case .dictionary(let dict):
+            let body = dict.keys.sorted().map { key in
+                queryAsyncCachePiece(key) + queryAsyncCachePiece(dict[key]?.queryAsyncCacheToken())
+            }.joined()
+            return "m" + queryAsyncCachePiece(body)
+        case .vector(let values):
+            let body = values.map { queryAsyncCachePiece(String($0.bitPattern)) }.joined()
+            return "v" + queryAsyncCachePiece(body)
+        case .null:
+            return "n"
+        }
+    }
+}
 

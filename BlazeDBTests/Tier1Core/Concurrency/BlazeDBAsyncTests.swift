@@ -150,6 +150,48 @@ final class BlazeDBAsyncTests: XCTestCase {
         XCTAssertEqual(warm.count, 15)
     }
 
+    func testQueryAsyncCacheDoesNotAliasDistinctPredicates() async throws {
+        let client = try requireFixture(db)
+        _ = try await client.insertAsync(BlazeDataRecord(["kind": .int(1), "name": .string("int")]))
+        _ = try await client.insertAsync(BlazeDataRecord(["kind": .string("1"), "name": .string("string")]))
+        _ = try await client.insertAsync(BlazeDataRecord(["blob": .data(Data([0x01, 0x02])), "name": .string("data-a")]))
+        _ = try await client.insertAsync(BlazeDataRecord(["blob": .data(Data([0x03, 0x04])), "name": .string("data-b")]))
+        _ = try await client.insertAsync(BlazeDataRecord(["embedding": .vector([1.0, 0.0]), "name": .string("vec-a")]))
+        _ = try await client.insertAsync(BlazeDataRecord(["embedding": .vector([0.0, 1.0]), "name": .string("vec-b")]))
+        _ = try await client.insertAsync(BlazeDataRecord(["a": .string("b:c"), "name": .string("colon-value")]))
+        _ = try await client.insertAsync(BlazeDataRecord(["a:b": .string("c"), "name": .string("colon-field")]))
+
+        let ints = try await client.queryAsync(where: "kind", equals: .int(1), useCache: true)
+        let strings = try await client.queryAsync(where: "kind", equals: .string("1"), useCache: true)
+        XCTAssertEqual(recordNames(ints), ["int"])
+        XCTAssertEqual(recordNames(strings), ["string"])
+
+        let dataA = try await client.queryAsync(where: "blob", equals: .data(Data([0x01, 0x02])), useCache: true)
+        let dataB = try await client.queryAsync(where: "blob", equals: .data(Data([0x03, 0x04])), useCache: true)
+        XCTAssertEqual(recordNames(dataA), ["data-a"])
+        XCTAssertEqual(recordNames(dataB), ["data-b"])
+
+        let vecA = try await client.queryAsync(where: "embedding", equals: .vector([1.0, 0.0]), useCache: true)
+        let vecB = try await client.queryAsync(where: "embedding", equals: .vector([0.0, 1.0]), useCache: true)
+        XCTAssertEqual(recordNames(vecA), ["vec-a"])
+        XCTAssertEqual(recordNames(vecB), ["vec-b"])
+
+        let colonValue = try await client.queryAsync(
+            where: "a",
+            equals: .string("b:c"),
+            orderBy: "name",
+            useCache: true
+        )
+        let colonField = try await client.queryAsync(
+            where: "a:b",
+            equals: .string("c"),
+            orderBy: "name",
+            useCache: true
+        )
+        XCTAssertEqual(recordNames(colonValue), ["colon-value"])
+        XCTAssertEqual(recordNames(colonField), ["colon-field"])
+    }
+
     func testManualQueryCacheInvalidationFlow() async throws {
         _ = try await requireFixture(db).insertAsync(BlazeDataRecord(["status": .string("open")]))
         let before = try await requireFixture(db).queryAsync(where: "status", equals: .string("open"), useCache: true)
@@ -159,6 +201,10 @@ final class BlazeDBAsyncTests: XCTestCase {
         _ = try await requireFixture(db).insertAsync(BlazeDataRecord(["status": .string("open")]))
         let after = try await requireFixture(db).queryAsync(where: "status", equals: .string("open"), useCache: true)
         XCTAssertEqual(after.count, 2)
+    }
+
+    private func recordNames(_ records: [BlazeDataRecord]) -> [String] {
+        records.compactMap { $0.storage["name"]?.stringValue }.sorted()
     }
 }
 
