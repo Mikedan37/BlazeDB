@@ -36,16 +36,9 @@ extension QueryBuilder {
                 return false
             }
             
-            // OPTIMIZATION: Check cache first
-            let cacheKey: String
-            switch correlationValue {
-            case .string(let v): cacheKey = v
-            case .int(let v): cacheKey = String(v)
-            case .double(let v): cacheKey = String(v)
-            case .uuid(let v): cacheKey = v.uuidString
-            case .date(let v): cacheKey = ISO8601DateFormatter().string(from: v)
-            default: cacheKey = String(describing: correlationValue)
-            }
+            // Cache by type-tagged value. Display strings alias .int(1) with
+            // .string("1"), and second-resolution ISO8601 aliases distinct dates.
+            let cacheKey = self.correlationCacheKey(correlationValue)
             if let cachedValue = subqueryCache[cacheKey] {
                 guard let subqueryValue = cachedValue,
                       let fieldValue = outerRecord.storage[field] else {
@@ -92,10 +85,11 @@ extension QueryBuilder {
                 return false
             }
             
-            let correlatedQuery = subquery.subquery
-            correlatedQuery.`where`(subquery.subqueryField, equals: correlationValue)
-            
-            guard let result = try? correlatedQuery.execute().records,
+            // Snapshot first. `subquery.subquery` is a class, and `where` appends
+            // to it. Running that on the shared builder ANDs every outer correlation
+            // value together, so the second distinct key matches nothing.
+            guard let correlatedQuery = self.correlatedSnapshot(of: subquery, correlationValue: correlationValue),
+                  let result = try? correlatedQuery.execute().records,
                   let subqueryValue = result.first?.storage[field] else {
                 return false
             }
@@ -116,10 +110,8 @@ extension QueryBuilder {
                 return false
             }
             
-            let correlatedQuery = subquery.subquery
-            correlatedQuery.`where`(subquery.subqueryField, equals: correlationValue)
-            
-            guard let result = try? correlatedQuery.execute().records,
+            guard let correlatedQuery = self.correlatedSnapshot(of: subquery, correlationValue: correlationValue),
+                  let result = try? correlatedQuery.execute().records,
                   let subqueryValue = result.first?.storage[field] else {
                 return false
             }
@@ -129,6 +121,56 @@ extension QueryBuilder {
             }
             
             return fieldValue == subqueryValue
+        }
+    }
+
+    /// A fresh builder with the subquery's execution state plus one correlation
+    /// predicate. Does not mutate `subquery.subquery`.
+    private func correlatedSnapshot(
+        of subquery: CorrelatedSubquery,
+        correlationValue: BlazeDocumentField
+    ) -> QueryBuilder? {
+        guard let collection = subquery.subquery.collection else { return nil }
+        let snapshot = QueryBuilder(collection: collection)
+        snapshot.filters = subquery.subquery.filters
+        snapshot.joinOperations = subquery.subquery.joinOperations
+        snapshot.sortOperations = subquery.subquery.sortOperations
+        snapshot.limitValue = subquery.subquery.limitValue
+        snapshot.offsetValue = subquery.subquery.offsetValue
+        snapshot.groupByFields = subquery.subquery.groupByFields
+        snapshot.aggregations = subquery.subquery.aggregations
+        snapshot.havingPredicate = subquery.subquery.havingPredicate
+        snapshot.`where`(subquery.subqueryField, equals: correlationValue)
+        return snapshot
+    }
+
+    private func correlationCacheKey(_ value: BlazeDocumentField) -> String {
+        switch value {
+        case .string(let v):
+            return "s\(v.utf8.count):\(v)"
+        case .int(let v):
+            return "i\(v)"
+        case .double(let v):
+            return "d\(v.bitPattern)"
+        case .bool(let v):
+            return v ? "b1" : "b0"
+        case .uuid(let v):
+            return "u\(v.uuidString)"
+        case .date(let v):
+            return "t\(v.timeIntervalSince1970.bitPattern)"
+        case .data(let v):
+            return "D\(v.base64EncodedString())"
+        case .array(let items):
+            return "a\(items.count)[\(items.map { correlationCacheKey($0) }.joined(separator: ","))]"
+        case .dictionary(let dict):
+            let parts = dict.keys.sorted().map { key in
+                "\(key.count):\(key)=\(correlationCacheKey(dict[key] ?? .null))"
+            }
+            return "m\(parts.joined(separator: "|"))"
+        case .vector(let values):
+            return "v\(values.map { String($0.bitPattern) }.joined(separator: ","))"
+        case .null:
+            return "n"
         }
     }
     
