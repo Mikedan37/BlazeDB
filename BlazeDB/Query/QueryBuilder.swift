@@ -886,25 +886,40 @@ public final class QueryBuilder: @unchecked Sendable {
     }
     
     private func performJoin(records: [BlazeDataRecord], operation: JoinOperation) throws -> [JoinedRecord] {
-        // Collect foreign key values from filtered records
-        let foreignKeyValues = Set(records.compactMap { record -> UUID? in
-            guard let field = record.storage[operation.foreignKey] else { return nil }
-            switch field {
-            case .uuid(let uuid): return uuid
-            case .string(let str): return UUID(uuidString: str)
-            default: 
-                BlazeLogger.trace("Foreign key '\(operation.foreignKey)' has incompatible type, skipping record")
-                return nil
+        // RIGHT and FULL joins must include right-hand rows that no left row references.
+        // Fetching only the left side's foreign keys drops those rows, so the query
+        // builder returned an inner join for `.right` and a left join for `.full`.
+        // `DynamicCollection.join` already loads the full right side for these types.
+        let rightRecords: [UUID: BlazeDataRecord]
+        if operation.type == .right || operation.type == .full {
+            var indexed: [UUID: BlazeDataRecord] = [:]
+            for record in try operation.collection.fetchAll() where !Self.isSoftDeleted(record) {
+                guard let id = record.storage["id"]?.uuidValue, indexed[id] == nil else { continue }
+                indexed[id] = record
             }
-        })
-        
-        BlazeLogger.debug("Collected \(foreignKeyValues.count) unique foreign keys for batch fetch")
-        
-        // Batch fetch from right collection
-        BlazeLogger.trace("Batch fetching \(foreignKeyValues.count) records from right collection")
-        let rightRecords = try operation.collection.fetchBatch(ids: Array(foreignKeyValues))
-            .filter { !Self.isSoftDeleted($0.value) }
-        BlazeLogger.debug("Fetched \(rightRecords.count) records from right collection")
+            rightRecords = indexed
+            BlazeLogger.debug("Fetched ALL \(rightRecords.count) right records for \(operation.type) join")
+        } else {
+            // Collect foreign key values from filtered records
+            let foreignKeyValues = Set(records.compactMap { record -> UUID? in
+                guard let field = record.storage[operation.foreignKey] else { return nil }
+                switch field {
+                case .uuid(let uuid): return uuid
+                case .string(let str): return UUID(uuidString: str)
+                default:
+                    BlazeLogger.trace("Foreign key '\(operation.foreignKey)' has incompatible type, skipping record")
+                    return nil
+                }
+            })
+
+            BlazeLogger.debug("Collected \(foreignKeyValues.count) unique foreign keys for batch fetch")
+
+            // Batch fetch from right collection
+            BlazeLogger.trace("Batch fetching \(foreignKeyValues.count) records from right collection")
+            rightRecords = try operation.collection.fetchBatch(ids: Array(foreignKeyValues))
+                .filter { !Self.isSoftDeleted($0.value) }
+            BlazeLogger.debug("Fetched \(rightRecords.count) records from right collection")
+        }
         
         // Build joined results
         var results: [JoinedRecord] = []
