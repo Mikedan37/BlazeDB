@@ -2707,9 +2707,19 @@ public final class DynamicCollection {
         ) throws -> [JoinedRecord] {
             return try queue.sync {
                 BlazeLogger.debug("Performing \(type) join on \(foreignKey) = \(primaryKey)")
-                
+
                 // Step 1: Fetch all records from left (this) collection
                 let leftRecords = try _fetchAllNoSync()
+
+                if primaryKey != "id" {
+                    return joinRecordsOnField(
+                        left: leftRecords,
+                        right: try other._fetchAllNoSync(),
+                        foreignKey: foreignKey,
+                        primaryKey: primaryKey,
+                        type: type
+                    )
+                }
                 
                 // Step 2: Determine what to fetch from right collection
                 let rightRecords: [UUID: BlazeDataRecord]

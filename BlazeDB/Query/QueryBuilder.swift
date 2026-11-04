@@ -886,6 +886,19 @@ public final class QueryBuilder: @unchecked Sendable {
     }
     
     private func performJoin(records: [BlazeDataRecord], operation: JoinOperation) throws -> [JoinedRecord] {
+        // `equals` is the right-hand field. Only the record id can be batch-fetched
+        // by UUID; any other field has to be matched from the right-hand rows.
+        if operation.primaryKey != "id" {
+            let rightRows = try operation.collection.fetchAll().filter { !Self.isSoftDeleted($0) }
+            return joinRecordsOnField(
+                left: records,
+                right: rightRows,
+                foreignKey: operation.foreignKey,
+                primaryKey: operation.primaryKey,
+                type: operation.type
+            )
+        }
+
         // Collect foreign key values from filtered records
         let foreignKeyValues = Set(records.compactMap { record -> UUID? in
             guard let field = record.storage[operation.foreignKey] else { return nil }

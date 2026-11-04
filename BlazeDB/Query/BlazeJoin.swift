@@ -131,3 +131,50 @@ public struct JoinStatistics {
     public let usedBatchFetch: Bool
 }
 
+/// Join on an arbitrary right-hand field.
+///
+/// The record-id path batch-fetches by UUID. This path is for every other
+/// `equals` field: each left value is compared with `fieldsEqual`, and one
+/// output row is emitted per match.
+func joinRecordsOnField(
+    left: [BlazeDataRecord],
+    right: [BlazeDataRecord],
+    foreignKey: String,
+    primaryKey: String,
+    type: JoinType
+) -> [JoinedRecord] {
+    var results: [JoinedRecord] = []
+    var matchedRight = Set<Int>()
+
+    for leftRecord in left {
+        guard let leftKey = leftRecord.storage[foreignKey] else {
+            if type == .left || type == .full {
+                results.append(JoinedRecord(left: leftRecord, right: nil))
+            }
+            continue
+        }
+
+        var found = false
+        for (index, rightRecord) in right.enumerated() {
+            guard let rightKey = rightRecord.storage[primaryKey] else { continue }
+            guard fieldsEqual(leftKey, rightKey) else { continue }
+            results.append(JoinedRecord(left: leftRecord, right: rightRecord))
+            matchedRight.insert(index)
+            found = true
+        }
+
+        if !found && (type == .left || type == .full) {
+            results.append(JoinedRecord(left: leftRecord, right: nil))
+        }
+    }
+
+    if type == .right || type == .full {
+        let emptyLeft = BlazeDataRecord([:])
+        for (index, rightRecord) in right.enumerated() where !matchedRight.contains(index) {
+            results.append(JoinedRecord(left: emptyLeft, right: rightRecord))
+        }
+    }
+
+    return results
+}
+
