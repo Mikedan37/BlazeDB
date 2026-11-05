@@ -2444,12 +2444,21 @@ public final class DynamicCollection {
                 #endif
                 
                 // Clean up old overflow pages ONLY AFTER the new record is safely written.
-                // Skip the first page index because it has already been overwritten with the new record data.
+                // Skip the main page: it was overwritten in place. Pages still referenced
+                // by any record (including this record's new chain) stay allocated.
+                // deletePage alone leaves a hole allocatePage will not reuse, so each
+                // update of a multi-page record otherwise grows the file by the previous
+                // overflow chain. Put retired pages on the in-memory free list; the next
+                // layout save persists them with the updated index map.
                 if oldPageIndices.count > 1 {
-                    let overflowPagesToDelete = Set(oldPageIndices.dropFirst())
-                    for pageIdx in overflowPagesToDelete {
+                    let livePages = Set(indexMap.values.flatMap { $0 })
+                    let overflowPagesToDelete = Set(oldPageIndices.dropFirst()).subtracting(livePages)
+                    for pageIdx in overflowPagesToDelete.sorted() {
                         do {
                             try store.deletePage(index: pageIdx)
+                            if !cachedDeletedPages.contains(pageIdx) {
+                                cachedDeletedPages.append(pageIdx)
+                            }
                         } catch {
                             // Log warning but don't fail the update - overflow pages can be cleaned up later
                             BlazeLogger.warn("⚠️ Failed to delete overflow page \(pageIdx) during update: \(error). Page will be cleaned up by GC.")

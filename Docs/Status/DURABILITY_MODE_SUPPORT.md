@@ -48,6 +48,8 @@ This means:
 
 When MVCC is enabled, each `RecordVersion` stores the full **`pageIndices`** chain (main + overflow), not just the main page. Version garbage collection marks **every** page in a retired generation obsolete for reuse, so records that grow or shrink across the single-page limit do not leak overflow pages on repeated updates.
 
+On the default legacy path, an update keeps the record's main page and rewrites it in place. Overflow pages the new chain no longer references are wiped and appended to the catalog free list (`deletedPages`), which later inserts reuse. The free-list entry is stored with the next layout save, in the same field deletes already use. Existing files open without a migration.
+
 ## Modes in codebase
 
 ### Client transaction rollback
