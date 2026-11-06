@@ -83,6 +83,12 @@ extension BlazeDBClient {
     /// Rewrites the database file, removing deleted pages and compacting data.
     /// This operation can take time for large databases.
     ///
+    /// The rewrite is the crash-safe synchronous compaction: overflow chains stay
+    /// intact, the live catalog is not replaced before the compacted data file,
+    /// and the swap takes the same write lock as `vacuum()`. Soft-deleted rows
+    /// are copied with the rest of the stored records; `purge()` is what removes
+    /// them.
+    ///
     /// - Returns: Statistics about the VACUUM operation
     /// - Throws: BlazeDBError if VACUUM fails
     ///
@@ -102,112 +108,37 @@ extension BlazeDBClient {
     public func vacuum() async throws -> VacuumStats {
         BlazeLogger.info("🧹 Starting VACUUM operation for '\(name)'...")
         let startTime = Date()
-        
+
         return try await withCheckedThrowingContinuation { continuation in
             DispatchQueue.global(qos: .utility).async {
                 do {
-                    // Use queue barrier to ensure exclusive access during vacuum
-                    // (No separate writeLock needed - queue handles synchronization)
-                    
-                    // Get storage stats before
                     let statsBefore = try self._getStorageStatsSync()
-                    
-                    // Flush all pending changes
-                    try self.persist()
-                    
-                    // Create temporary compacted file
-                    let tempURL = self.fileURL.deletingLastPathComponent()
-                        .appendingPathComponent("\(self.fileURL.lastPathComponent).vacuum-\(UUID().uuidString)")
-                    
-                    defer {
-                        BlazeAuthoritativeFileOps.removeItemIfExists(at: tempURL, context: "VacuumOperations(defer temp)")
+                    let sizeBefore = statsBefore.fileSize
+
+                    // Both overloads are named vacuum(). A non-async closure can call
+                    // only the synchronous one, which locks writers, copies every
+                    // stored record through the overflow-aware insert path, and
+                    // swaps the data file and catalog together.
+                    let compactSynchronously: () throws -> Int = {
+                        try self.vacuum()
                     }
-                    
-                    BlazeLogger.debug("Creating compacted database at \(tempURL.path)")
-                    
-                    // Create new PageStore for compacted file
-                    let compactedStore = try PageStore(fileURL: tempURL, key: self.encryptionKey)
-                    
-                    // Fetch all records
-                    let allRecords = try self.fetchAll()
-                    
-                    BlazeLogger.debug("Compacting \(allRecords.count) records...")
-                    
-                    // Write all records to compacted file (sequential, no gaps)
-                    var newIndexMap: [UUID: [Int]] = [:]
-                    var newPageIndex = 0
-                    
-                    for record in allRecords {
-                        guard let id = record.storage["id"]?.uuidValue else { continue }
-                        
-                        // Encode record using canonical BlazeBinary format
-                        let encoded = try BlazeBinaryEncoder.encode(record)
-                        
-                        // Write to new file
-                        try compactedStore.writePage(index: newPageIndex, plaintext: encoded)
-                        
-                        newIndexMap[id] = [newPageIndex]  // Store as [Int] array for consistency
-                        newPageIndex += 1
-                    }
-                    
-                    BlazeLogger.debug("Wrote \(newPageIndex) compacted pages")
-                    
-                    // Update metadata with new index map
-                    var layout = try self.loadVacuumLayout()
-                    layout.indexMap = newIndexMap
-                    layout.nextPageIndex = newPageIndex
-                    // Compaction rewrites live rows at low page indexes. The previous
-                    // freelist still names those indexes, so the next insert would
-                    // overwrite a record vacuum just kept.
-                    layout.deletedPages = []
-                    try layout.saveSecure(to: self.metaURL, signingKey: self.encryptionKey)
-                    
-                    // Get file sizes
-                    let attrsOld = try FileManager.default.attributesOfItem(atPath: self.fileURL.path)
-                    let sizeOld = attrsOld[.size] as? Int64 ?? 0
-                    
-                    let attrsNew = try FileManager.default.attributesOfItem(atPath: tempURL.path)
-                    let sizeNew = attrsNew[.size] as? Int64 ?? 0
-                    
-                    // Close temporary compacted store before swapping files.
-                    compactedStore.close()
-                    
-                    // Release lock/handles on the live store before reopening the file.
-                    // Without this, opening a new PageStore on the same path can fail with
-                    // concurrent-process/handle lock errors in parallel test execution.
-                    try self.collection.close()
-                    
-                    // Replace old file with compacted file
-                    BlazeLogger.debug("Replacing old database file...")
-                    try FileManager.default.removeItem(at: self.fileURL)
-                    try FileManager.default.moveItem(at: tempURL, to: self.fileURL)
-                    
-                    // Reload collection with compacted data
-                    let newStore = try PageStore(fileURL: self.fileURL, key: self.encryptionKey)
-                    self.collection = try DynamicCollection(
-                        store: newStore,
-                        metaURL: self.metaURL,
-                        project: self.project,
-                        encryptionKey: self.encryptionKey
-                    )
-                    
+                    _ = try compactSynchronously()
+
+                    let statsAfter = try self._getStorageStatsSync()
                     let duration = Date().timeIntervalSince(startTime)
-                    
                     let stats = VacuumStats(
                         pagesBefore: statsBefore.totalPages,
-                        pagesAfter: newPageIndex,
-                        pagesReclaimed: statsBefore.totalPages - newPageIndex,
-                        sizeBefore: sizeOld,
-                        sizeAfter: sizeNew,
-                        sizeReclaimed: sizeOld - sizeNew,
+                        pagesAfter: statsAfter.totalPages,
+                        pagesReclaimed: statsBefore.totalPages - statsAfter.totalPages,
+                        sizeBefore: sizeBefore,
+                        sizeAfter: statsAfter.fileSize,
+                        sizeReclaimed: sizeBefore - statsAfter.fileSize,
                         duration: duration,
                         timestamp: Date()
                     )
-                    
+
                     BlazeLogger.info("✅ VACUUM complete: \(stats.description)")
-                    
                     continuation.resume(returning: stats)
-                    
                 } catch {
                     BlazeLogger.error("❌ VACUUM failed: \(error)")
                     continuation.resume(throwing: error)
