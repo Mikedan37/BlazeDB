@@ -35,13 +35,21 @@ extension QueryBuilder {
             return .records([])
         }
         
-        // Apply filters with early exit optimization
+        // Apply filters. A limit can stop the scan only when the kept rows are an
+        // unordered prefix: sorting needs every match, and offset must skip matches
+        // before the page. Stopping after `limit` rows first returns an arbitrary
+        // page and then drops it when offset is also set.
         var filtered: [BlazeDataRecord] = []
-        filtered.reserveCapacity(Swift.min(limitValue ?? allRecords.count, allRecords.count))
+        let earlyStopCount: Int? = {
+            guard sortOperations.isEmpty, let limit = limitValue, limit >= 0 else { return nil }
+            let offset = Swift.max(0, offsetValue)
+            let (sum, overflow) = offset.addingReportingOverflow(limit)
+            return overflow ? nil : sum
+        }()
+        filtered.reserveCapacity(Swift.min(earlyStopCount ?? allRecords.count, allRecords.count))
         
         for record in allRecords {
-            // Early exit if limit reached
-            if let limit = limitValue, filtered.count >= limit {
+            if let earlyStopCount, filtered.count >= earlyStopCount {
                 break
             }
             
