@@ -497,9 +497,26 @@ extension BlazeDBClient {
         }
     }
     
+    /// Modification time used by `incrementalBackup(to:since:)`.
+    ///
+    /// `updatedAt` wins so a later update is not hidden by an older created date.
+    /// A caller-supplied `created_at` wins over the `createdAt` stamp `insert`
+    /// adds, so a backfilled business date stays the backup clock.
+    private static func incrementalBackupModificationDate(_ record: BlazeDataRecord) -> Date? {
+        record.storage["updatedAt"]?.dateValue
+            ?? record.storage["updated_at"]?.dateValue
+            ?? record.storage["created_at"]?.dateValue
+            ?? record.storage["createdAt"]?.dateValue
+    }
+
     // MARK: - Incremental Backup
     
     /// Create incremental backup (only records changed since last backup)
+    ///
+    /// A record is included when its modification time is after `date`.
+    /// The time is the first present value of `updatedAt`, `updated_at`,
+    /// `created_at`, then `createdAt`. `insert` and `update` write the
+    /// camelCase fields.
     ///
     /// - Parameters:
     ///   - url: Destination URL
@@ -519,14 +536,17 @@ extension BlazeDBClient {
         return try await withCheckedThrowingContinuation { continuation in
             DispatchQueue.global(qos: .utility).async {
                 do {
-                    // Fetch all records and filter by modification date
+                    // Fetch all records and filter by modification date.
+                    // Inserts and updates stamp createdAt/updatedAt. Older callers
+                    // stored created_at/updated_at, so those still count. An explicit
+                    // created_at is kept ahead of the automatic createdAt so a
+                    // backfilled business date is not replaced by insert time.
                     let allRecords = try self.fetchAll()
                     let changedRecords = allRecords.filter { record in
-                        // Check if record was modified after the date
-                        if let modDate = record.storage["updated_at"]?.dateValue ?? record.storage["created_at"]?.dateValue {
-                            return modDate > date
+                        guard let modDate = Self.incrementalBackupModificationDate(record) else {
+                            return false
                         }
-                        return false  // No timestamp, skip
+                        return modDate > date
                     }
                     
                     // Export as JSON
