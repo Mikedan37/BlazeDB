@@ -1087,15 +1087,14 @@ public final class DynamicCollection {
                     return allocatePage(layout: &layout)
                 }
                 
-                // CRITICAL: Check if this page is already in use BEFORE writing
+                // CRITICAL: Check if this page is already in use BEFORE writing.
+                // A committed indexMap entry is authoritative. Deleting it to "free" the
+                // page drops a live record and the following write overwrites its bytes.
+                // Overflow allocation already fails closed; the head page must too.
                 let conflictingIDs = indexMap.filter { $0.value.contains(mainPageIndex) && $0.key != id }.keys
                 if !conflictingIDs.isEmpty {
                     BlazeLogger.error("allocatePage returned page \(mainPageIndex) that is already in use by: \(conflictingIDs.map { $0.uuidString.prefix(8) }.joined(separator: ", "))")
-                    // Remove conflicting entries from indexMap (they're stale)
-                    for conflictingID in conflictingIDs {
-                        BlazeLogger.error("Removing stale indexMap entry for \(conflictingID.uuidString.prefix(8))")
-                        indexMap.removeValue(forKey: conflictingID)
-                    }
+                    throw BlazeDBError.pageAllocationConflict(page: mainPageIndex)
                 }
                 // Publish-last commit: buffer pages, one sync, then catalog + metadata.
                 let tPageWrite = forensicsEnabled ? Self.monotonicNowMs() : 0

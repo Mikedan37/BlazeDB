@@ -289,4 +289,64 @@ final class InsertManyOverflowParityTests: XCTestCase {
         throw XCTSkip("allocatePage fault injection is DEBUG-only")
         #endif
     }
+
+    func testInsert_headPageCommittedConflict_failsWithoutDeletingExisting() throws {
+        // insert() used to drop the committed indexMap entry and overwrite its page.
+        // A head-page collision must fail closed, the same as an overflow collision.
+        #if DEBUG
+        var db = try openDB()
+        let existingPayload = String(repeating: "z", count: 64)
+        let existingID = try db.insert(
+            BlazeDataRecord([
+                "index": .int(0),
+                "payload": .string(existingPayload),
+                "marker": .string("seed-committed"),
+            ])
+        )
+        try db.persist()
+
+        let committedPages = try XCTUnwrap(db.collection.indexMap[existingID])
+        let victimPage = try XCTUnwrap(committedPages.first)
+
+        DynamicCollection._forceAllocatedPageAfterSkippingForTests(skips: 0, page: victimPage)
+        defer { DynamicCollection._clearForcedAllocatedPageForTests() }
+
+        XCTAssertThrowsError(
+            try db.insert(
+                BlazeDataRecord([
+                    "index": .int(1),
+                    "payload": .string("small"),
+                    "marker": .string("should-not-commit"),
+                ])
+            )
+        ) { error in
+            guard case BlazeDBError.corruptedData(let location, let reason) = error else {
+                return XCTFail("expected pageAllocationConflict (corruptedData), got \(error)")
+            }
+            XCTAssertEqual(location, "page \(victimPage)")
+            XCTAssertTrue(reason.contains("refusing to delete"), reason)
+        }
+
+        let beforeReopen = try XCTUnwrap(db.fetch(id: existingID), "committed record must remain fetchable before reopen")
+        XCTAssertEqual(beforeReopen.storage["payload"]?.stringValue, existingPayload)
+        XCTAssertEqual(beforeReopen.storage["marker"]?.stringValue, "seed-committed")
+        XCTAssertEqual(try db.fetchAll().count, 1)
+
+        try? db.persist()
+        try db.close()
+
+        db = try openDB()
+        let afterReopen = try XCTUnwrap(db.fetch(id: existingID), "committed record must survive reopen")
+        XCTAssertEqual(afterReopen.storage["payload"]?.stringValue, existingPayload)
+        XCTAssertEqual(afterReopen.storage["marker"]?.stringValue, "seed-committed")
+        XCTAssertEqual(try db.fetchAll().count, 1)
+        XCTAssertNil(
+            try db.fetchAll().first(where: { $0.storage["marker"]?.stringValue == "should-not-commit" }),
+            "rejected insert must remain absent after reopen"
+        )
+        try db.close()
+        #else
+        throw XCTSkip("allocatePage fault injection is DEBUG-only")
+        #endif
+    }
 }
