@@ -164,6 +164,24 @@ public final class DynamicCollection {
         self.secondaryIndexDefinitions = layout.secondaryIndexDefinitions
         BlazeLogger.debug("applyLayoutFromStorage: Loaded indexMap with \(self.indexMap.count) entries")
         rebuildMVCCFromIndexMapIfNeeded()
+        // Catalog high-water mark can lag pages already fsynced by update().
+        raiseNextPageIndexPastDurableFile()
+    }
+
+    /// Overflow pages are written into the data file before `nextPageIndex` is published.
+    /// After a crash, the catalog can still name one of those live pages as the next
+    /// allocation. Never hand that page out.
+    internal func raiseNextPageIndexPastDurableFile() {
+        let durableEnd: Int
+        do {
+            durableEnd = try store.nextAvailablePageIndex()
+        } catch {
+            BlazeLogger.warn("Could not read the data file length while aligning nextPageIndex \(nextPageIndex): \(error)")
+            return
+        }
+        guard durableEnd > nextPageIndex else { return }
+        BlazeLogger.warn("Raising nextPageIndex from \(nextPageIndex) to \(durableEnd) so pages already in the data file are not reused")
+        nextPageIndex = durableEnd
     }
 
     internal func loadLayoutForMutation() throws -> StorageLayout {
@@ -664,6 +682,7 @@ public final class DynamicCollection {
             // StorageLayout.indexMap is already [UUID: [Int]], no conversion needed
         self.indexMap = layout.indexMap
             self.nextPageIndex = layout.nextPageIndex
+            raiseNextPageIndexPastDurableFile()
             // Start with persisted runtime indexes
             self.secondaryIndexes = layout.toRuntimeIndexes()
             

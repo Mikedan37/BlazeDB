@@ -37,6 +37,7 @@ extension DynamicCollection {
             // StorageLayout.indexMap is already [UUID: [Int]], no conversion needed
             self.indexMap = layout.indexMap
             self.nextPageIndex = layout.nextPageIndex
+            raiseNextPageIndexPastDurableFile()
             
             // Reload secondary indexes (always present, may be empty)
             self.secondaryIndexes = layout.secondaryIndexes.mapValues { inner in
