@@ -147,6 +147,10 @@ public final class DynamicCollection {
     // Store secondaryIndexDefinitions in memory so saveLayout() can preserve them
     // This prevents signature verification failures when createIndex saves, then persist() saves again
     internal var secondaryIndexDefinitions: [String: [String]] = [:]
+
+    /// Catalog metadata (unique constraints, format version, ordering). The legacy
+    /// insert path publishes a layout built from memory, so this has to travel with it.
+    internal var cachedMetaData: [String: BlazeDocumentField] = [:]
     
     // Track whether layout signature verification succeeded (`internal` for init recovery helper in extension file)
     internal var layoutSignatureVerified: Bool = true
@@ -162,6 +166,7 @@ public final class DynamicCollection {
         self.cachedSearchIndexedFields = layout.searchIndexedFields
         self.encodingFormat = layout.encodingFormat.isEmpty ? "blazeBinary" : layout.encodingFormat
         self.secondaryIndexDefinitions = layout.secondaryIndexDefinitions
+        self.cachedMetaData = layout.metaData
         BlazeLogger.debug("applyLayoutFromStorage: Loaded indexMap with \(self.indexMap.count) entries")
         rebuildMVCCFromIndexMapIfNeeded()
     }
@@ -189,6 +194,12 @@ public final class DynamicCollection {
             searchIndexedFields: []
         )
         layout.deletedPages = cachedDeletedPages
+        layout.metaData = cachedMetaData
+        layout.secondaryIndexDefinitions = secondaryIndexDefinitions
+        layout.encodingFormat = encodingFormat
+        if layout.metaData["formatVersion"] == nil {
+            layout.metaData["formatVersion"] = .string(BlazeDBClient.FormatVersion.current.description)
+        }
         return layout
     }
 
@@ -1170,9 +1181,18 @@ public final class DynamicCollection {
                     // Update B-tree indexes for range query support
                     btreeIndexManager.indexRecord(id: id, fields: document)
                     
-                    // Save layout with updated deletedPages and nextPageIndex
+                    // Save layout with updated deletedPages and nextPageIndex.
+                    // Carry catalog metadata and index definitions. A fresh StorageLayout
+                    // would replace the meta file and drop unique constraints.
                     layout.indexMap = indexMap
                     layout.secondaryIndexes = StorageLayout.fromRuntimeIndexes(secondaryIndexes)
+                    layout.metaData = cachedMetaData
+                    layout.secondaryIndexDefinitions = secondaryIndexDefinitions
+                    layout.encodingFormat = encodingFormat
+                    if layout.metaData["formatVersion"] == nil {
+                        layout.metaData["formatVersion"] = .string(BlazeDBClient.FormatVersion.current.description)
+                    }
+                    cachedMetaData = layout.metaData
 
                     // Persist per-insert metadata update to preserve crash-prefix durability.
                     if password != nil {
@@ -2147,14 +2167,18 @@ public final class DynamicCollection {
             // page reuse and causes file growth after delete/insert churn.
             layout.deletedPages = cachedDeletedPages
             
-            // CRITICAL: Preserve metaData from existing layout (e.g., ordering settings)
-            // This ensures metadata set via updateMeta() is not lost when saveLayout() is called
+            // Prefer the on-disk catalog when it has metadata. An empty load must not
+            // wipe keys that updateMeta() already published into memory.
+            if existingMetaData.isEmpty && !cachedMetaData.isEmpty {
+                existingMetaData = cachedMetaData
+            }
             layout.metaData = existingMetaData
 
             // Compatibility contract: always persist an explicit on-disk format version.
             if layout.metaData["formatVersion"] == nil {
                 layout.metaData["formatVersion"] = .string(BlazeDBClient.FormatVersion.current.description)
             }
+            cachedMetaData = layout.metaData
             
             // CRITICAL: Ensure nextPageIndex is at least as large as the highest deleted page
             // This ensures nextPageIndex reflects the highest page ever allocated

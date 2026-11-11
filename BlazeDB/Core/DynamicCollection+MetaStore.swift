@@ -79,8 +79,6 @@ extension DynamicCollection: MetaStore {
         
         layout.metaData = newMeta
         try layout.saveSecure(to: metaURLPath, signingKey: encryptionKey)
-        
-        // metaData is stored in StorageLayout, not DynamicCollection
-        // It will be loaded from disk when needed
+        cachedMetaData = newMeta
     }
 }

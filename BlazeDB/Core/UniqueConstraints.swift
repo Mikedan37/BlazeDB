@@ -6,6 +6,11 @@
 //  Optimized with index-based lookups
 //
 import Foundation
+#if canImport(CryptoKit)
+import CryptoKit
+#else
+import Crypto
+#endif
 
 // MARK: - Unique Constraint Manager
 
@@ -54,6 +59,24 @@ public class UniqueConstraintManager {
         defer { lock.unlock() }
         let key = fields.joined(separator: "+")
         return uniqueCompoundFields.contains(key)
+    }
+
+    func snapshotUniqueFields() -> [String] {
+        lock.lock()
+        defer { lock.unlock() }
+        return uniqueFields.sorted()
+    }
+
+    func snapshotUniqueCompoundKeys() -> [String] {
+        lock.lock()
+        defer { lock.unlock() }
+        return uniqueCompoundFields.sorted()
+    }
+
+    func removeUniqueCompoundFields(_ fields: [String]) {
+        lock.lock()
+        defer { lock.unlock() }
+        uniqueCompoundFields.remove(fields.joined(separator: "+"))
     }
     
     /// Validate unique constraint before insert
@@ -188,26 +211,123 @@ extension BlazeDBClient {
         }
     }
     
+    /// Metadata keys for unique constraints. The in-memory manager is per client
+    /// instance, so the catalog has to carry these or the next open accepts duplicates.
+    static let uniqueFieldsMetaKey = "_uniqueFields"
+    static let uniqueCompoundFieldsMetaKey = "_uniqueCompoundFields"
+
     /// Create unique index (enforces uniqueness)
     public func createUniqueIndex(on field: String) throws {
+        writeLock.lock()
+        defer { writeLock.unlock() }
+        try ensureNotClosed()
+
         // Create index first
         try collection.createIndex(on: field)
         
-        // Mark as unique
+        // Mark as unique. A failed catalog write must not drop a constraint that was already durable.
+        let alreadyUnique = uniqueConstraintManager.isUniqueField(field)
         uniqueConstraintManager.addUniqueField(field)
+        do {
+            try persistUniqueConstraints()
+        } catch {
+            if !alreadyUnique {
+                uniqueConstraintManager.removeUniqueField(field)
+            }
+            throw error
+        }
         
         BlazeLogger.info("Created unique index on field '\(field)'")
     }
     
     /// Create unique compound index
     public func createUniqueCompoundIndex(on fields: [String]) throws {
+        writeLock.lock()
+        defer { writeLock.unlock() }
+        try ensureNotClosed()
+
         // Create compound index first
         try collection.createIndex(on: fields)
         
-        // Mark as unique
+        // Mark as unique. A failed catalog write must not drop a constraint that was already durable.
+        let alreadyUnique = uniqueConstraintManager.isUniqueCompoundFields(fields)
         uniqueConstraintManager.addUniqueCompoundFields(fields)
+        do {
+            try persistUniqueConstraints()
+        } catch {
+            if !alreadyUnique {
+                uniqueConstraintManager.removeUniqueCompoundFields(fields)
+            }
+            throw error
+        }
         
         BlazeLogger.info("Created unique compound index on fields '\(fields.joined(separator: ", "))'")
+    }
+
+    /// Reload durable unique constraints after open. Missing keys mean none were declared.
+    func restoreUniqueConstraints() throws {
+        let meta = try collection.fetchMeta()
+        if case .array(let fields)? = meta[Self.uniqueFieldsMetaKey] {
+            for field in fields {
+                if case .string(let name) = field, !name.isEmpty {
+                    uniqueConstraintManager.addUniqueField(name)
+                }
+            }
+        }
+        if case .array(let compounds)? = meta[Self.uniqueCompoundFieldsMetaKey] {
+            for compound in compounds {
+                guard case .string(let key) = compound, !key.isEmpty else { continue }
+                uniqueConstraintManager.addUniqueCompoundFields(key.components(separatedBy: "+"))
+            }
+        }
+    }
+
+    /// Copy durable unique-constraint metadata onto a replacement catalog.
+    /// VACUUM rebuilds the meta file from inserted rows and would otherwise drop these keys.
+    func copyUniqueConstraintMetadata(to metaURL: URL, signingKey: SymmetricKey) throws {
+        let preserved = try preservedUniqueConstraintMetadata()
+        guard !preserved.isEmpty else { return }
+        guard FileManager.default.fileExists(atPath: metaURL.path) else { return }
+
+        var layout = try StorageLayout.loadSecure(
+            from: metaURL,
+            signingKey: signingKey,
+            password: password,
+            salt: kdfSalt,
+            allowUnsignedLayoutFallback: true
+        )
+        for (key, value) in preserved {
+            layout.metaData[key] = value
+        }
+        try layout.saveSecure(to: metaURL, signingKey: signingKey)
+    }
+
+    private func persistUniqueConstraints() throws {
+        var meta = try collection.fetchMeta()
+        let fields = uniqueConstraintManager.snapshotUniqueFields()
+        let compounds = uniqueConstraintManager.snapshotUniqueCompoundKeys()
+        if fields.isEmpty {
+            meta.removeValue(forKey: Self.uniqueFieldsMetaKey)
+        } else {
+            meta[Self.uniqueFieldsMetaKey] = .array(fields.map { .string($0) })
+        }
+        if compounds.isEmpty {
+            meta.removeValue(forKey: Self.uniqueCompoundFieldsMetaKey)
+        } else {
+            meta[Self.uniqueCompoundFieldsMetaKey] = .array(compounds.map { .string($0) })
+        }
+        try collection.updateMeta(meta)
+    }
+
+    private func preservedUniqueConstraintMetadata() throws -> [String: BlazeDocumentField] {
+        let meta = try collection.fetchMeta()
+        var preserved: [String: BlazeDocumentField] = [:]
+        for key in [Self.uniqueFieldsMetaKey, Self.uniqueCompoundFieldsMetaKey] {
+            if let value = meta[key] {
+                preserved[key] = value
+            }
+        }
+        return preserved
     }
     
     /// Validate unique constraints before insert/update

@@ -614,6 +614,7 @@ public final class BlazeDBClient: @unchecked Sendable {
         do {
             try OpenProfileCollector.measure("open.migration") {
                 try performMigrationIfNeeded()
+                try restoreUniqueConstraints()
             }
             BlazeLogger.debug("✅ Migration check complete")
         } catch {

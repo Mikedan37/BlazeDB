@@ -228,6 +228,9 @@ extension BlazeDBClient {
             // Persist and FSYNC the new database (CRASH SAFETY!)
             try tempCollection.persist()
             try tempCollection.close()
+            // The rebuilt catalog is a new meta file. Carry unique-constraint keys
+            // forward or the next open will accept duplicate values.
+            try copyUniqueConstraintMetadata(to: tempMetaURL, signingKey: collection.encryptionKey)
             
             // CRITICAL: Ensure all data is on disk before replacing files
             // This is the "barrier" - if we crash before this, old DB is still intact
