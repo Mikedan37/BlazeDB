@@ -393,7 +393,9 @@ extension StorageLayout {
     private static func canonicalLayout(from layout: StorageLayout) -> CanonicalStorageLayout {
         return CanonicalStorageLayout(
             indexMap: layout.indexMap
-                .map { CanonicalStorageLayout.IndexEntry(id: $0.key.uuidString, pages: $0.value.sorted()) }
+                // Page order is the overflow chain. Sorting it makes the lowest
+                // page number look like the main page after reopen.
+                .map { CanonicalStorageLayout.IndexEntry(id: $0.key.uuidString, pages: $0.value) }
                 .sorted { $0.id < $1.id },
             nextPageIndex: layout.nextPageIndex,
             secondaryIndexes: layout.secondaryIndexes

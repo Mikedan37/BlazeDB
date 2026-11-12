@@ -300,20 +300,43 @@ extension PageStore {
         let firstPageData = plaintext.prefix(mainPageDataSize)
         let remainingData = plaintext.dropFirst(mainPageDataSize)
         
-        // Write overflow chain first to get the first overflow page index
+        // Page index 0 is the on-disk end-of-chain sentinel. It cannot be stored
+        // as a real overflow page: a pointer of 0 both names page 0 and means
+        // "chain ends", and the first-page tracker used to treat 0 as "unset".
         var firstOverflowIndex: UInt32 = 0
+        var capturedFirstOverflow = false
+
+        func allocateEncodableOverflowPage() throws -> Int {
+            var zeroReturns = 0
+            while zeroReturns < 4 {
+                let page = try allocatePage()
+                guard page != 0 else {
+                    zeroReturns += 1
+                    continue
+                }
+                guard UInt32(exactly: page) != nil else {
+                    throw NSError(domain: "PageStore", code: 4016, userInfo: [
+                        NSLocalizedDescriptionKey: "Overflow page index \(page) does not fit in UInt32"
+                    ])
+                }
+                return page
+            }
+            throw NSError(domain: "PageStore", code: 4016, userInfo: [
+                NSLocalizedDescriptionKey: "Overflow allocator kept returning page 0, which collides with the end-of-chain sentinel"
+            ])
+        }
         
         // First pass: allocate all overflow pages and determine the chain structure
         var overflowPages: [(index: Int, data: Data, nextIndex: UInt32)] = []
         var tempCurrentData = remainingData
         
         while !tempCurrentData.isEmpty {
-            let overflowPageIndex = try allocatePage()
+            let overflowPageIndex = try allocateEncodableOverflowPage()
             pageIndices.append(overflowPageIndex)
             
-            // Store first overflow index
-            if firstOverflowIndex == 0 {
+            if !capturedFirstOverflow {
                 firstOverflowIndex = UInt32(overflowPageIndex)
+                capturedFirstOverflow = true
             }
             
             // Determine how much data fits in this overflow page
@@ -332,8 +355,19 @@ extension PageStore {
         // Second pass: write overflow pages with correct next pointers
         BlazeLogger.debug("📝 [writePageWithOverflow] Writing \(overflowPages.count) overflow pages for \(plaintext.count) bytes total")
         for i in 0..<overflowPages.count {
-            let nextIndex: UInt32 = (i + 1 < overflowPages.count) ? UInt32(overflowPages[i + 1].index) : 0
+            let nextIndex: UInt32
             let isLastPage = (i + 1 == overflowPages.count)
+            if isLastPage {
+                nextIndex = 0
+            } else {
+                let nextPage = overflowPages[i + 1].index
+                guard nextPage > 0, let encodedNext = UInt32(exactly: nextPage) else {
+                    throw NSError(domain: "PageStore", code: 4016, userInfo: [
+                        NSLocalizedDescriptionKey: "Overflow page \(nextPage) cannot be encoded; 0 is the end-of-chain sentinel"
+                    ])
+                }
+                nextIndex = encodedNext
+            }
             BlazeLogger.debug("📝 [writePageWithOverflow] Writing overflow page \(i+1)/\(overflowPages.count) at index \(overflowPages[i].index): \(overflowPages[i].data.count) bytes, nextPageIndex: \(nextIndex) \(isLastPage ? "(last page)" : "(points to page \(overflowPages[i + 1].index)")")
             try _writeOverflowPage(
                 index: overflowPages[i].index,
@@ -351,6 +385,11 @@ extension PageStore {
         
         // Append explicit overflow reference trailer to main page payload.
         // Chain is considered published only once this main page write succeeds.
+        guard capturedFirstOverflow else {
+            throw NSError(domain: "PageStore", code: 4016, userInfo: [
+                NSLocalizedDescriptionKey: "Overflow payload was not assigned a chain page"
+            ])
+        }
         let firstPageDataCopy = Data(firstPageData)
         var mainPageDataWithPointer = firstPageDataCopy
         let payloadChecksum = overflowChecksum64(plaintext)
@@ -381,7 +420,7 @@ extension PageStore {
         if !skipSync {
             try fileHandle.compatSynchronize()
         }
-        
+
         BlazeLogger.debug("✅ Wrote large record across \(pageIndices.count) pages")
         return pageIndices
     }
