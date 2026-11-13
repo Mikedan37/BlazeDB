@@ -107,6 +107,16 @@ try db.query()
 
 Do not invent a second “allNotEquals” API — compose `whereNotNil` with `notEquals` for the stricter reading.
 
+### `min` and `max` skip missing fields
+
+`min` and `max` consider only rows where the field is present. A row that does not store the field is ignored. If no row stores it, the aggregate is absent — it is not `0`.
+
+```swift
+// Rows: { score: 100 } and { name: "unscored" }
+let result = try db.query().max("score").execute().aggregation
+result["max_score"]?.intValue  // 100
+```
+
 ## Migration Behavior
 
 ### SQLite Migration

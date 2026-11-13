@@ -138,18 +138,18 @@ internal struct AggregationEngine {
                 
             case .min(let field, let alias):
                 let name = alias ?? "min_\(field)"
-                if let minRecord = records.min(by: { r1, r2 in
-                    compareFields(r1.storage[field], r2.storage[field]) == .orderedAscending
-                }) {
-                    result.values[name] = minRecord.storage[field] ?? .int(0)
+                // Missing fields are not values. A row without the field must not
+                // win, and it must not be reported as 0.
+                let values = records.compactMap { $0.storage[field] }
+                if let minValue = values.min(by: { compareFields($0, $1) == .orderedAscending }) {
+                    result.values[name] = minValue
                 }
                 
             case .max(let field, let alias):
                 let name = alias ?? "max_\(field)"
-                if let maxRecord = records.max(by: { r1, r2 in
-                    compareFields(r1.storage[field], r2.storage[field]) == .orderedAscending
-                }) {
-                    result.values[name] = maxRecord.storage[field] ?? .int(0)
+                let values = records.compactMap { $0.storage[field] }
+                if let maxValue = values.max(by: { compareFields($0, $1) == .orderedAscending }) {
+                    result.values[name] = maxValue
                 }
             }
         }
