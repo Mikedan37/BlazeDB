@@ -731,6 +731,12 @@ extension DynamicCollection {
             for id in idsToDelete {
                 indexMap.removeValue(forKey: id)
             }
+
+            // Single delete records these pages on the free list. Batch delete zeroed
+            // them and then saved a catalog that still omitted them, so the next
+            // insertMany allocated fresh pages and the file grew by every deleted row.
+            let freeListBackup = cachedDeletedPages
+            reclaimReleasedPages(pagesToDelete)
             
             // Save metadata once (instead of N times)
             do {
@@ -741,6 +747,7 @@ extension DynamicCollection {
                 BlazeLogger.error("❌ [DELETE] Batch: saveLayout() failed, rolling back indexMap: \(error)")
                 indexMap = indexMapBackup
                 secondaryIndexes = secondaryIndexesBackup
+                cachedDeletedPages = freeListBackup
                 throw error
             }
             

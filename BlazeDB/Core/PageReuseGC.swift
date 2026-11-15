@@ -101,6 +101,22 @@ extension DynamicCollection {
         cachedDeletedPages = layout.deletedPages
         BlazeLogger.trace("🗑️  Marked page \(pageIndex) for reuse")
     }
+
+    /// Return pages to the legacy free list after their records have left `indexMap`.
+    ///
+    /// Pages still named by a surviving record are left alone. Pages already on the
+    /// free list are not appended again, so a later insert cannot be handed the same
+    /// page twice. MVCC reuse goes through `pageGC` instead of this list.
+    internal func reclaimReleasedPages(_ pages: [Int]) {
+        guard !mvccEnabled else { return }
+        let livePages = Set(indexMap.values.flatMap { $0 })
+        var reclaimed = cachedDeletedPages
+        var seen = Set(reclaimed)
+        for pageIndex in pages where pageIndex >= 0 && !livePages.contains(pageIndex) && seen.insert(pageIndex).inserted {
+            reclaimed.append(pageIndex)
+        }
+        cachedDeletedPages = reclaimed
+    }
     
     /// Get garbage collection statistics
     public func getGCStats() throws -> GCStats {
