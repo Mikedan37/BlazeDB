@@ -36,16 +36,10 @@ extension QueryBuilder {
                 return false
             }
             
-            // OPTIMIZATION: Check cache first
-            let cacheKey: String
-            switch correlationValue {
-            case .string(let v): cacheKey = v
-            case .int(let v): cacheKey = String(v)
-            case .double(let v): cacheKey = String(v)
-            case .uuid(let v): cacheKey = v.uuidString
-            case .date(let v): cacheKey = ISO8601DateFormatter().string(from: v)
-            default: cacheKey = String(describing: correlationValue)
-            }
+            // Cache by type and full value. String(int) collides with the
+            // string "1", and ISO8601 drops subsecond precision, so two
+            // different correlation values were sharing one subquery result.
+            let cacheKey = Self.correlatedSubqueryCacheKey(correlationValue)
             if let cachedValue = subqueryCache[cacheKey] {
                 guard let subqueryValue = cachedValue,
                       let fieldValue = outerRecord.storage[field] else {
@@ -133,6 +127,38 @@ extension QueryBuilder {
     }
     
     // MARK: - Helper
+
+    /// Identity for the per-query correlation cache. Equal values must share a
+    /// key, and values that are not equal must not.
+    fileprivate static func correlatedSubqueryCacheKey(_ value: BlazeDocumentField) -> String {
+        switch value {
+        case .string(let v):
+            return "s:\(v.utf8.count):\(v)"
+        case .int(let v):
+            return "i:\(v)"
+        case .double(let v):
+            return "d:\(v.bitPattern)"
+        case .bool(let v):
+            return "b:\(v ? 1 : 0)"
+        case .uuid(let v):
+            return "u:\(v.uuidString)"
+        case .date(let v):
+            return "t:\(v.timeIntervalSinceReferenceDate.bitPattern)"
+        case .data(let v):
+            return "D:\(v.base64EncodedString())"
+        case .null:
+            return "n"
+        case .vector(let v):
+            return "v:\(v.map { String($0.bitPattern) }.joined(separator: ","))"
+        case .array(let items):
+            return "a:[\(items.map { correlatedSubqueryCacheKey($0) }.joined(separator: "|"))]"
+        case .dictionary(let fields):
+            let parts = fields.keys.sorted().map { key in
+                "\(key.utf8.count):\(key)=\(correlatedSubqueryCacheKey(fields[key] ?? .null))"
+            }
+            return "m:{\(parts.joined(separator: "|"))}"
+        }
+    }
     
     private func compareFields(_ f1: BlazeDocumentField, _ f2: BlazeDocumentField, isGreaterThan: Bool) -> Bool {
         switch (f1, f2) {
