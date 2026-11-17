@@ -23,6 +23,10 @@ extension QueryBuilder {
     /// - Returns: QueryBuilder for chaining
     @discardableResult
     public func whereRange(_ field: String, min: BlazeDocumentField?, max: BlazeDocumentField?) -> QueryBuilder {
+        // No bounds is the full set. An index walk would drop rows that do not store the field.
+        guard min != nil || max != nil else {
+            return self
+        }
         guard let collection = collection else {
             return self
         }
@@ -30,6 +34,16 @@ extension QueryBuilder {
         // Try to use index if available
         let indexKey = field
         if let index = collection.secondaryIndexes[indexKey], !index.isEmpty {
+            // The id snapshot below is not visible to generateCacheKey(). Record the same
+            // bounds the sequential path records, or two ranges share one cached result.
+            if let min {
+                filterFields.insert(field)
+                filterDescriptors.append(FilterDescriptor(field: field, operation: "gte", value: min))
+            }
+            if let max {
+                filterFields.insert(field)
+                filterDescriptors.append(FilterDescriptor(field: field, operation: "lte", value: max))
+            }
             // Index available - use it for range query
             BlazeLogger.debug("🚀 Using index '\(indexKey)' for range query on \(field)")
             

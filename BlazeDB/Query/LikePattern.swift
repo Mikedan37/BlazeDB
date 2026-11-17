@@ -76,6 +76,7 @@ extension QueryBuilder {
     @discardableResult
     public func `where`(_ field: String, like pattern: String) -> QueryBuilder {
         BlazeLogger.debug("Query: WHERE \(field) LIKE '\(pattern)'")
+        recordPatternFilter(field: field, operation: "like", pattern: pattern)
         filters.append { record in
             guard let fieldValue = record.storage[field]?.stringValue else {
                 return false
@@ -97,6 +98,7 @@ extension QueryBuilder {
     @discardableResult
     public func `where`(_ field: String, ilike pattern: String) -> QueryBuilder {
         BlazeLogger.debug("Query: WHERE \(field) ILIKE '\(pattern)'")
+        recordPatternFilter(field: field, operation: "ilike", pattern: pattern)
         filters.append { record in
             guard let fieldValue = record.storage[field]?.stringValue else {
                 return false
@@ -117,7 +119,9 @@ extension QueryBuilder {
     /// WHERE field NOT LIKE pattern (case-sensitive)
     @discardableResult
     public func `where`(_ field: String, notLike pattern: String) -> QueryBuilder {
-        return `where` { record in
+        BlazeLogger.debug("Query: WHERE \(field) NOT LIKE '\(pattern)'")
+        recordPatternFilter(field: field, operation: "notlike", pattern: pattern)
+        filters.append { record in
             guard let fieldValue = record.storage[field]?.stringValue else {
                 return true
             }
@@ -130,12 +134,15 @@ extension QueryBuilder {
                 return true
             }
         }
+        return self
     }
     
     /// WHERE field NOT ILIKE pattern (case-insensitive)
     @discardableResult
     public func `where`(_ field: String, notILike pattern: String) -> QueryBuilder {
-        return `where` { record in
+        BlazeLogger.debug("Query: WHERE \(field) NOT ILIKE '\(pattern)'")
+        recordPatternFilter(field: field, operation: "notilike", pattern: pattern)
+        filters.append { record in
             guard let fieldValue = record.storage[field]?.stringValue else {
                 return true
             }
@@ -148,6 +155,14 @@ extension QueryBuilder {
                 return true
             }
         }
+        return self
+    }
+
+    /// Pattern filters are real predicates. Record them on the cache key; appending
+    /// the closure alone makes `execute(withCache:)` reuse an unfiltered result.
+    private func recordPatternFilter(field: String, operation: String, pattern: String) {
+        filterFields.insert(field)
+        filterDescriptors.append(FilterDescriptor(field: field, operation: operation, value: .string(pattern)))
     }
 }
 

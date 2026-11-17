@@ -33,6 +33,11 @@ extension QueryBuilder {
         BlazeLogger.debug("Query: WITHIN_RADIUS (\(latitude), \(longitude)), radius: \(radiusMeters)m")
         
         let center = SpatialPoint(latitude: latitude, longitude: longitude)
+        filterDescriptors.append(
+            FilterDescriptor(
+                customDescription: "withinRadius:\(latitude.bitPattern):\(longitude.bitPattern):\(radiusMeters.bitPattern)"
+            )
+        )
         _ = BoundingBox.from(center: center, radiusMeters: radiusMeters)
         
         // Try to use spatial index first
@@ -118,6 +123,11 @@ extension QueryBuilder {
         BlazeLogger.debug("Query: WITHIN_BOUNDING_BOX (\(minLat), \(minLon)) to (\(maxLat), \(maxLon))")
         
         let box = BoundingBox(minLat: minLat, maxLat: maxLat, minLon: minLon, maxLon: maxLon)
+        filterDescriptors.append(
+            FilterDescriptor(
+                customDescription: "withinBoundingBox:\(minLat.bitPattern):\(maxLat.bitPattern):\(minLon.bitPattern):\(maxLon.bitPattern)"
+            )
+        )
         
         // Try to use spatial index first
         if let collection = collection,
@@ -209,6 +219,11 @@ extension QueryBuilder {
     @discardableResult
     public func nearest(to point: SpatialPoint, limit: Int) -> QueryBuilder {
         sortByDistanceCenter = point
+        filterDescriptors.append(
+            FilterDescriptor(
+                customDescription: "nearest:\(point.latitude.bitPattern):\(point.longitude.bitPattern):\(limit)"
+            )
+        )
         BlazeLogger.debug("Query: NEAREST to (\(point.latitude), \(point.longitude)), limit: \(limit)")
         
         // Use a large initial radius, then filter and sort

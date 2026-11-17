@@ -27,6 +27,16 @@ extension QueryBuilder {
     @discardableResult
     public func vectorNearest(field: String, to embedding: VectorEmbedding, limit: Int = 10, threshold: Float = 0.0) -> QueryBuilder {
         BlazeLogger.debug("Query: VECTOR_NEAREST on field '\(field)', limit: \(limit), threshold: \(threshold)")
+        var embeddingHasher = Hasher()
+        embeddingHasher.combine(field)
+        embeddingHasher.combine(limit)
+        embeddingHasher.combine(threshold.bitPattern)
+        for component in embedding {
+            embeddingHasher.combine(component.bitPattern)
+        }
+        filterDescriptors.append(
+            FilterDescriptor(customDescription: "vectorNearest:\(embeddingHasher.finalize())")
+        )
         
         // Mark query as having vector search (for planner)
         setVectorQuery(field: field, embedding: embedding, limit: limit, threshold: threshold)

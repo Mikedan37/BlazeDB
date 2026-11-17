@@ -46,6 +46,7 @@ extension QueryBuilder {
     @discardableResult
     public func `where`(_ field: String, matches regexPattern: String, options: NSRegularExpression.Options = []) -> QueryBuilder {
         BlazeLogger.debug("Query: WHERE \(field) ~ '\(regexPattern)'")
+        recordRegexFilter(field: field, operation: "matches", pattern: regexPattern, options: options)
         filters.append { record in
             guard let fieldValue = record.storage[field]?.stringValue else {
                 return false
@@ -66,7 +67,9 @@ extension QueryBuilder {
     /// WHERE field does NOT match regex pattern
     @discardableResult
     public func `where`(_ field: String, notMatches regexPattern: String, options: NSRegularExpression.Options = []) -> QueryBuilder {
-        return `where` { record in
+        BlazeLogger.debug("Query: WHERE \(field) !~ '\(regexPattern)'")
+        recordRegexFilter(field: field, operation: "notmatches", pattern: regexPattern, options: options)
+        filters.append { record in
             guard let fieldValue = record.storage[field]?.stringValue else {
                 return true
             }
@@ -79,6 +82,24 @@ extension QueryBuilder {
                 return true
             }
         }
+        return self
+    }
+
+    /// Regex options change which rows match, so they belong in the cache key.
+    private func recordRegexFilter(
+        field: String,
+        operation: String,
+        pattern: String,
+        options: NSRegularExpression.Options
+    ) {
+        filterFields.insert(field)
+        filterDescriptors.append(
+            FilterDescriptor(
+                field: field,
+                operation: "\(operation):\(options.rawValue)",
+                value: .string(pattern)
+            )
+        )
     }
     
     /// WHERE field matches regex (case-insensitive)
