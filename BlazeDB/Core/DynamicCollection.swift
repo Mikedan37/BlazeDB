@@ -942,6 +942,9 @@ public final class DynamicCollection {
                     gcManager.onTransactionCommit()
                     
                     indexMap[id] = pageIndices
+                    // MVCC writes take fresh pages from the page store, not from nextPageIndex.
+                    // Keep nextPageIndex past them so insertMany cannot allocate a live page.
+                    nextPageIndex = max(nextPageIndex, (pageIndices.max() ?? -1) + 1)
                     BlazeLogger.trace("📝 [INSERT] Single record: id=\(id.uuidString.prefix(8)), pages=\(pageIndices), indexMap now has \(indexMap.count) entries")
                     
                     // Update all configured secondary indexes in memory immediately
@@ -1491,6 +1494,9 @@ public final class DynamicCollection {
                     for (key, value) in data.storage {
                         merged[key] = value
                     }
+                    // The record keeps its identity, as on the legacy path. Otherwise an
+                    // "id" in `data` makes fetch(id:) return a record claiming another id.
+                    merged["id"] = .uuid(id)
                     
                     // Write new version. Publish the pages write() allocated, not a
                     // lookup of indexMap from before this version existed.
@@ -1502,6 +1508,7 @@ public final class DynamicCollection {
                     gcManager.onTransactionCommit()
                     
                     indexMap[id] = pageIndices
+                    nextPageIndex = max(nextPageIndex, (pageIndices.max() ?? -1) + 1)
                     
                     // Update secondary indexes: remove old entry, add new entry
                     // Remove old keys from indexes
@@ -1825,6 +1832,10 @@ public final class DynamicCollection {
                     let tx = MVCCTransaction(versionManager: versionManager, pageStore: store)
                     try tx.delete(recordID: id)
                     try tx.commit()
+                    // From here the delete owns every page of every version of this record
+                    // (freed below). Dropping the versions keeps version GC from freeing them
+                    // again after another record reuses them.
+                    let versionPages = versionManager.removeRecord(id)
                     
                     // Trigger automatic GC (Phase 4)
                     gcManager.onTransactionCommit()
@@ -1845,9 +1856,10 @@ public final class DynamicCollection {
                     
                     // Track deleted pages for reuse
                     if let pageIndices = pageIndices, !pageIndices.isEmpty {
-                        // MVCC: Add pages to pageGC.freePages directly (not layout.deletedPages)
-                        // This prevents double-counting since version GC might also add pages
-                        for pageIdx in pageIndices {
+                        // MVCC: Add pages to pageGC.freePages directly (not layout.deletedPages).
+                        // The record's versions are already gone (removeRecord above), so version
+                        // GC can no longer free these pages a second time.
+                        for pageIdx in Set(pageIndices).union(versionPages) {
                             versionManager.pageGC.markPageObsolete(pageIdx)
                         }
                         BlazeLogger.debug("🗑️ [DELETE] MVCC: Added \(pageIndices.count) pages to pageGC.freePages for reuse")
