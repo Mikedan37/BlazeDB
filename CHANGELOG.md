@@ -7,6 +7,18 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 Embeddable **C ABI** ships in the same **2.x** version stream as the Swift package (starting with **2.8.0**).
 
+## [Unreleased]
+
+### Changed
+
+- With MVCC enabled (experimental), `update(id:with:)` now replaces the record, as it always has with MVCC off: fields not in the new record are dropped, and `updatedAt` is set. It used to merge the new fields into the old record. If you do not send them, `createdAt`, `project` and `isDeleted` are now dropped too, the same as with MVCC off. For a partial update use `updateFields(id:fields:)`: if you enabled MVCC and pass partial records to `update` or `upsert`, switch to it.
+- `updateMany(ids:set:)` now skips ids that `fetch` hides (soft-deleted records and records the RLS select policy hides) and leaves them out of the returned count. It used to update them, and with MVCC off a soft-deleted record came back undeleted.
+
+### Fixed
+
+- `updateMany(ids:set:)` no longer drops every field it does not set; it now goes through `updateFields`.
+- Concurrent `updateFields` calls on the same record no longer lose each other's fields.
+
 ## [2.8.2] - 2026-08-31
 
 Patch release with a lot of contributor work since 2.8.1: cache isolation, RLS holes closed, CLI password handling, docs that match what the code actually does, and CI that stops flaking on shared runners.

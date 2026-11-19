@@ -267,7 +267,10 @@ final class ExtendedBatchOperationsTests: XCTestCase {
         for record in closedRecords {
             XCTAssertEqual(record.storage["closed_by"]?.stringValue, "test")
         }
-        
+        // Fields not in `set` survive.
+        XCTAssertEqual(Set(closedRecords.compactMap { $0.storage["value"]?.intValue }), Set(0..<10),
+                       "updateMany(ids:set:) dropped an unset field")
+
         print("  ✅ Updated 10 records by ID")
     }
     

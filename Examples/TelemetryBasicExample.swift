@@ -44,7 +44,7 @@ func verifyTelemetryWorks() async throws {
     
     // Update a record
     if let firstID = results.first?.storage["id"]?.uuidValue {
-        try await db.update(id: firstID, with: [
+        try db.updateFields(id: firstID, fields: [
             "status": .string("in-progress")
         ])
         print("  • Updated bug status")

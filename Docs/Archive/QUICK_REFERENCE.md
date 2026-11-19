@@ -33,10 +33,10 @@ let id = try db.insert(BlazeDataRecord([
 let record = try db.fetch(id: id)
 print(record?.storage["title"]?.stringValue) // "My Record"
 
-// UPDATE
-try db.update(id: id, with: BlazeDataRecord([
+// UPDATE (only "value"; update(id:with:) would replace the whole record)
+try db.updateFields(id: id, fields: [
  "value":.int(100)
-]))
+])
 
 // DELETE
 try db.delete(id: id)

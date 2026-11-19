@@ -162,12 +162,8 @@ class AshPileDB {
         // ✅ Can only update if bug is in user's team
         // ✅ RLS prevents updating other teams' bugs!
         
-        let updates = BlazeDataRecord([
-            "status": .string(newStatus),
-            "updatedAt": .date(Date())
-        ])
-        
-        try db.update(id: bugID, with: updates)
+        // updateFields keeps the bug's other fields (update would replace the record).
+        try db.updateFields(id: bugID, fields: ["status": .string(newStatus)])
         
         print("✅ Bug \(bugID) updated to '\(newStatus)'")
     }

@@ -1489,18 +1489,12 @@ public final class DynamicCollection {
                         throw BlazeDBError.recordNotFound(id: id)
                     }
                     
-                    // Merge updates with current data
-                    var merged = current.storage
-                    for (key, value) in data.storage {
-                        merged[key] = value
-                    }
-                    // The record keeps its identity, as on the legacy path. Otherwise an
-                    // "id" in `data` makes fetch(id:) return a record claiming another id.
-                    merged["id"] = .uuid(id)
-                    
+                    // Replace, exactly as the legacy path does (fields not in `data` are dropped).
+                    let document = Self.replacementDocument(id: id, data: data)
+
                     // Write new version. Publish the pages write() allocated, not a
                     // lookup of indexMap from before this version existed.
-                    let updatedRecord = BlazeDataRecord(merged)
+                    let updatedRecord = BlazeDataRecord(document)
                     let pageIndices = try tx.write(recordID: id, record: updatedRecord)
                     try tx.commit()
                     
@@ -1552,11 +1546,11 @@ public final class DynamicCollection {
                     // Add new keys to indexes
                     for (compound, _) in secondaryIndexes {
                         let fields = compound.components(separatedBy: "+")
-                        guard fields.allSatisfy({ merged[$0] != nil }) else {
+                        guard fields.allSatisfy({ document[$0] != nil }) else {
                             BlazeLogger.warn("Skipping index \(compound) for id \(id) — missing one or more fields.")
                             continue
                         }
-                        let rawKey = CompoundIndexKey.fromFields(merged, fields: fields)
+                        let rawKey = CompoundIndexKey.fromFields(document, fields: fields)
                         let normalizedComponents = rawKey.components.map { component -> AnyBlazeCodable in
                             switch component {
                             case .string(let s): return AnyBlazeCodable(s)
@@ -1580,7 +1574,7 @@ public final class DynamicCollection {
                     }
                     
                     // Index in B-tree indexes (Phase 4: range query support)
-                    btreeIndexManager.indexRecord(id: id, fields: merged)
+                    btreeIndexManager.indexRecord(id: id, fields: document)
                     
                     // Invalidate cache (record was updated)
                     recordCache.remove(id: id)
@@ -2288,6 +2282,16 @@ public final class DynamicCollection {
             }
         }
         
+        /// The record update(id:with:) stores, on the legacy and MVCC paths alike: `data`
+        /// plus the record's own id and a fresh updatedAt. Fields not in `data` (including
+        /// createdAt and project) are dropped; updateFields is the partial update.
+        private static func replacementDocument(id: UUID, data: BlazeDataRecord) -> [String: BlazeDocumentField] {
+            var document = data.storage
+            document["id"] = .uuid(id)
+            document["updatedAt"] = .date(Date())
+            return document
+        }
+
         internal func _updateNoSync(id: UUID, with data: BlazeDataRecord) throws {
             // Use snapshot to avoid concurrent modification issues
             let indexMapSnapshot = indexMap
@@ -2355,11 +2359,8 @@ public final class DynamicCollection {
                     }
                 }
                 
-                // Apply new data
-                var document = data.storage
-                document["id"] = .uuid(id)
-                document["updatedAt"] = .date(Date())
-                
+                let document = Self.replacementDocument(id: id, data: data)
+
                 // Add to indexes (use same normalization as insert for consistency)
                 for (compound, _) in secondaryIndexes {
                     let fields = compound.components(separatedBy: "+")

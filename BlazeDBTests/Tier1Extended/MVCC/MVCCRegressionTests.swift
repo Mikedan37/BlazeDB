@@ -119,9 +119,12 @@ final class MVCCRegressionTests: XCTestCase {
             "name": .string("Updated")
         ]))
         
+        // update replaces the record on the MVCC path too (updateFields is the partial update).
         let updated = try requireFixture(db).fetch(id: id)
         XCTAssertEqual(updated?["name"]?.stringValue, "Updated")
-        XCTAssertEqual(updated?["value"]?.intValue, 100, "Other fields preserved")
+        XCTAssertNil(updated?["value"], "Fields not in the update are dropped, as on the legacy path")
+        XCTAssertEqual(updated?["id"]?.uuidValue, id)
+        XCTAssertNotNil(updated?["updatedAt"]?.dateValue)
     }
     
     func testRegression_Delete() throws {

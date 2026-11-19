@@ -477,8 +477,9 @@ func applyOperation(_ op: BlazeOperation) async throws {
  try await database.insert(BlazeDataRecord(op.changes), id: op.recordId)
 
  case.update:
- // Update is idempotent (same result if applied twice)
- try await database.update(id: op.recordId, with: op.changes)
+ // Update is idempotent (same result if applied twice).
+ // updateFields changes only these fields; update would replace the whole record.
+ try database.updateFields(id: op.recordId, fields: op.changes)
 
  case.delete:
  // Delete is idempotent (no-op if already deleted)
