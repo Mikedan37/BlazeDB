@@ -1,0 +1,67 @@
+[
+  {
+    "blazedbAvgMs" : 0.8788203954696655,
+    "blazedbOpsPerSec" : 1095.5840895837591,
+    "blazedbP50Ms" : 0.8227500915527344,
+    "blazedbP95Ms" : 1.0954999923706055,
+    "blazedbP99Ms" : 2.85670804977417,
+    "dbBytesAfterSeed" : 0,
+    "encodedPayloadBytes" : 53,
+    "measureInserts" : 200,
+    "notes" : "Standard-shape insert() after seed; investigates 1K→10K latency degradation",
+    "recordShape" : "id(UUID)+index(Int)+data(String \"Record|Batch Record N\"); pageSize=4096",
+    "seedRowCount" : 0
+  },
+  {
+    "blazedbAvgMs" : 3.398036699295044,
+    "blazedbOpsPerSec" : 279.59668734603383,
+    "blazedbP50Ms" : 3.3340415954589844,
+    "blazedbP95Ms" : 3.463083267211914,
+    "blazedbP99Ms" : 3.5512499809265137,
+    "dbBytesAfterSeed" : 4096000,
+    "encodedPayloadBytes" : 53,
+    "measureInserts" : 100,
+    "notes" : "Standard-shape insert() after seed; investigates 1K→10K latency degradation",
+    "recordShape" : "id(UUID)+index(Int)+data(String \"Record|Batch Record N\"); pageSize=4096",
+    "seedRowCount" : 1000
+  },
+  {
+    "blazedbAvgMs" : 26.548004989624022,
+    "blazedbOpsPerSec" : 34.05319691607892,
+    "blazedbP50Ms" : 26.610374927520752,
+    "blazedbP95Ms" : 27.129499912261963,
+    "blazedbP99Ms" : 27.448708534240723,
+    "dbBytesAfterSeed" : 40960000,
+    "encodedPayloadBytes" : 53,
+    "measureInserts" : 50,
+    "notes" : "Standard-shape insert() after seed; investigates 1K→10K latency degradation",
+    "recordShape" : "id(UUID)+index(Int)+data(String \"Record|Batch Record N\"); pageSize=4096",
+    "seedRowCount" : 10000
+  },
+  {
+    "blazedbAvgMs" : 135.61099304358166,
+    "blazedbOpsPerSec" : 6.279304760375578,
+    "blazedbP50Ms" : 135.4154167175293,
+    "blazedbP95Ms" : 140.2572500705719,
+    "blazedbP99Ms" : 141.35312509536743,
+    "dbBytesAfterSeed" : 204800000,
+    "encodedPayloadBytes" : 53,
+    "measureInserts" : 30,
+    "notes" : "Standard-shape insert() after seed; investigates 1K→10K latency degradation",
+    "recordShape" : "id(UUID)+index(Int)+data(String \"Record|Batch Record N\"); pageSize=4096",
+    "seedRowCount" : 50000
+  },
+  {
+    "blazedbAvgMs" : 261.51095831394196,
+    "blazedbOpsPerSec" : 3.2573562552064703,
+    "blazedbP50Ms" : 258.88220858573914,
+    "blazedbP95Ms" : 275.39775013923645,
+    "blazedbP99Ms" : 278.5835416316986,
+    "dbBytesAfterSeed" : 409600000,
+    "encodedPayloadBytes" : 53,
+    "measureInserts" : 30,
+    "notes" : "Standard-shape insert() after seed; investigates 1K→10K latency degradation",
+    "recordShape" : "id(UUID)+index(Int)+data(String \"Record|Batch Record N\"); pageSize=4096",
+    "seedRowCount" : 100000
+  }
+]

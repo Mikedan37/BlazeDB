@@ -22,7 +22,8 @@ def iso_now() -> str:
 METHODOLOGY_PREAMBLE = """\
 ## Methodology (June 2026 refresh)
 
-- **Honest label:** BlazeDB is **read-optimized** with an **expensive durability path**. Single durable inserts are a weakness (~2.5 ms / ~274 ops/s on 1K; ~24 ms/op on 10K). Prefer p50/p95/p99. Do not claim broadly fast writes until [#425](https://github.com/ProjectBlaze/BlazeDB/issues/425). See [HONEST_PERFORMANCE.md](HONEST_PERFORMANCE.md).
+- **Honest label:** BlazeDB is **read-optimized** with an **expensive durability path**. On the default configuration, single durable insert latency grows with row count (see the table and [db_size_sweep.md](db_size_sweep.md)). Prefer p50/p95/p99. See [HONEST_PERFORMANCE.md](HONEST_PERFORMANCE.md).
+- **Configuration:** rows use the library default, **MVCC off**, unless the condition says otherwise. MVCC is opt-in (`setMVCCEnabled(true)`) and is measured in the `mvcc_on` matrix condition. Before November 2026 the harness turned MVCC on by default, so older published rows describe the opt-in path.
 - **Harness:** `BlazeDBBenchmarks` via `./Scripts/run_comparison_benchmarks.sh --release`
 - **Encryption:** AES-256-GCM + PBKDF2-HMAC-SHA256 at **600,000** iterations (release)
 - **Cold open:** session cleared before each of 10 open cycles (true KDF cost)
@@ -31,7 +32,7 @@ METHODOLOGY_PREAMBLE = """\
 - **Insert pairing (fair durability boundaries):** per-row rows compare BlazeDB `insert()` to SQLite `BEGIN IMMEDIATE` + `INSERT` + `COMMIT` per row; batch rows compare BlazeDB `insertMany(batch)` to SQLite one transaction per batch
 - **Record size:** core insert/read/delete rows use the **standard** harness shape (`id` + `index` + short `data` string), typically **~53 B** encoded. JSON includes `encodedPayloadBytes` and `recordShape`. Do **not** assume those rows are 1 MB. See [PAYLOAD_SIZE.md](PAYLOAD_SIZE.md).
 - **Sweeps:** payload size `./Scripts/run_payload_size_sweep.sh --release`; DB size `./Scripts/run_db_size_sweep.sh --release`; write stages `BLAZEDB_BENCH_MODE=write_profile`
-- **Full matrix** (`mvcc_off`, `encryption_off_requested`, …): run `python3 Scripts/run_core_benchmark_matrix.py` separately
+- **Full matrix** (`mvcc_on`, `encryption_off_requested`, …): run `python3 Scripts/run_core_benchmark_matrix.py` separately
 - **Honesty lint:** `python3 Scripts/check_benchmark_honesty.py`
 
 ### What changed since March 2026

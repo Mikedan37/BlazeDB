@@ -12,8 +12,8 @@ Engine (in-process) numbers and daemon-mediated numbers measure different bounda
 
 | Strength | Weakness / cost |
 |----------|-----------------|
-| Point reads | Durable `insert()` latency rises sharply with DB size (~0.7 ms empty → ~483 ms @100K small rows) |
-| Concurrent reads (MVCC on) | Cold open (600k PBKDF2 ~1 s) |
+| Point reads | Durable `insert()` latency rises linearly with DB size on the default configuration (~0.8 ms empty → ~259 ms @100K small rows, Nov 2026; see [db_size_sweep.md](db_size_sweep.md)) |
+| Concurrent reads | Cold open (600k PBKDF2 ~0.8 s) |
 | Encrypted-at-rest by default | Write path vs **plaintext** SQLite (no SQLCipher peer yet) |
 | Crash-safe / deterministic exports | `insertMany` overflow / size parity gaps — see [`batch-operations`](https://github.com/Mikedan37/BlazeDB/issues?q=is%3Aissue+is%3Aopen+label%3Abatch-operations) |
 
@@ -69,7 +69,7 @@ chmod +x ./Scripts/run_comparison_benchmarks.sh ./Scripts/run_concurrent_mvcc_co
 # MVCC on vs off under concurrent load (8 readers + 1 writer, ~2 min)
 ./Scripts/run_concurrent_mvcc_comparison.sh --release
 
-# Full condition matrix (baseline + mvcc_off + encryption_off) — long run (~45 min)
+# Full condition matrix (baseline = library default, MVCC off; + mvcc_on + encryption_off) — long run (~45 min)
 python3 Scripts/run_core_benchmark_matrix.py
 
 python3 Scripts/generate_latency_report.py

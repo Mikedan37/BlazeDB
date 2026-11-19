@@ -144,11 +144,12 @@ def main() -> int:
     docs_dir.mkdir(parents=True, exist_ok=True)
 
     matrix_conditions = [
-        {"id": "baseline", "mvcc": True, "wal": True, "encryption": True, "run_enabled": True},
-        {"id": "mvcc_off", "mvcc": False, "wal": True, "encryption": True, "run_enabled": True},
+        # baseline = library defaults (MVCC off). MVCC is opt-in and measured separately.
+        {"id": "baseline", "mvcc": False, "wal": True, "encryption": True, "run_enabled": True},
+        {"id": "mvcc_on", "mvcc": True, "wal": True, "encryption": True, "run_enabled": True},
         {
             "id": "wal_off_requested",
-            "mvcc": True,
+            "mvcc": False,
             "wal": False,
             "encryption": True,
             "run_enabled": False,
@@ -156,14 +157,14 @@ def main() -> int:
         },
         {
             "id": "encryption_off_requested",
-            "mvcc": True,
+            "mvcc": False,
             "wal": True,
             "encryption": False,
             "run_enabled": True,
             "reason": "Runs in benchmark-only compile-time no-encryption mode.",
         },
         {
-            "id": "mvcc_off_wal_off_enc_off_requested",
+            "id": "wal_off_enc_off_requested",
             "mvcc": False,
             "wal": False,
             "encryption": False,

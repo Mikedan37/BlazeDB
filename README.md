@@ -138,6 +138,7 @@ Alternative APIs (direct `insert`/`fetch`, raw records, manual mapping) remain a
 | Check platforms and CI depth | [Compatibility](Docs/COMPATIBILITY.md) · [Support & limitations](Docs/Support/SUPPORT_AND_LIMITATIONS.md) |
 | Understand storage, encryption, guarantees | [Architecture](Docs/Architecture/README.md) · [Guarantees](Docs/Guarantees/WHY_SINGLE_WRITER.md) |
 | Contribute (start small) | [Starter tasks](Docs/Contributing/STARTER_TASKS.md) · [Contributing](CONTRIBUTING.md) |
+| Check measured performance | [Honest performance](Docs/Benchmarks/HONEST_PERFORMANCE.md) · run `./bench` (or `./dev bench`) |
 
 Documentation index: [Docs/README.md](Docs/README.md). CLI, Android/KMM, C ABI, benchmarks, and contributor CI details live there—not on this page.
 

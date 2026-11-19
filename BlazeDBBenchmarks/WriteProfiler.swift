@@ -83,7 +83,7 @@ enum WriteProfiler {
 
     private static func openClient(at dir: URL, password: String) throws -> BlazeDBClient {
         let url = dir.appendingPathComponent("write-profile.blazedb")
-        return try BlazeDBClient(name: "write_profile", fileURL: url, password: password)
+        return applyBenchCondition(try BlazeDBClient(name: "write_profile", fileURL: url, password: password))
     }
 
     private static func capture(
@@ -188,6 +188,7 @@ enum WriteProfiler {
             "No optimization conclusions — stage attribution only.",
             "",
             "Record shape: `\(BenchPayload.standardShapeDescription)` · median encoded ≈ **\(encoded) B** (see Docs/Benchmarks/PAYLOAD_SIZE.md).",
+            "Configuration: **\(benchConfigurationLabel())**.",
             "Payload size changes latency, but not always linearly — fixed commit/fsync often dominates small rows.",
             "",
         ]

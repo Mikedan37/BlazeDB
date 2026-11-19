@@ -81,7 +81,7 @@ enum OpenProfiler {
 
         // Seed database (not profiled as "open")
         do {
-            let seed = try BlazeDBClient(name: "seed", fileURL: dbURL, password: defaultPassword)
+            let seed = applyBenchCondition(try BlazeDBClient(name: "seed", fileURL: dbURL, password: defaultPassword))
             let records = (0..<recordCount).map { i in
                 BlazeDataRecord(["index": .int(i), "payload": .string("seed-\(i)")])
             }
@@ -97,7 +97,7 @@ enum OpenProfiler {
         BlazeDBClient.clearSessionKeys(for: dbURL.path)
         OpenProfileCollector.reset()
         let coldStart = BlazeDBDiagnostics.monotonicSeconds()
-        let coldDB = try BlazeDBClient(name: "profile", fileURL: dbURL, password: defaultPassword)
+        let coldDB = applyBenchCondition(try BlazeDBClient(name: "profile", fileURL: dbURL, password: defaultPassword))
         let coldWall = (BlazeDBDiagnostics.monotonicSeconds() - coldStart) * 1000.0
         let coldMem = MemorySampler.sample("after_cold_open")
         runs.append(OpenProfilerRun(
@@ -112,7 +112,7 @@ enum OpenProfiler {
         // Warm open: in-process session cache should skip PBKDF2 (see DATABASE_SESSION_KEY_LIFECYCLE.md).
         OpenProfileCollector.reset()
         let warmStart = BlazeDBDiagnostics.monotonicSeconds()
-        let warmDB = try BlazeDBClient(name: "profile", fileURL: dbURL, password: defaultPassword)
+        let warmDB = applyBenchCondition(try BlazeDBClient(name: "profile", fileURL: dbURL, password: defaultPassword))
         let warmWall = (BlazeDBDiagnostics.monotonicSeconds() - warmStart) * 1000.0
         let warmMem = MemorySampler.sample("after_warm_open")
         runs.append(OpenProfilerRun(
@@ -148,6 +148,7 @@ enum OpenProfiler {
             "",
             "**Run:** \(Date().formatted(date: .abbreviated, time: .standard))",
             "**PBKDF2 iterations (this process):** \(BlazeDBDiagnostics.pbkdf2IterationCount)",
+            "**Configuration:** \(benchConfigurationLabel())",
             "**Under XCTest (100k iter override):** \(BlazeDBDiagnostics.isRunningUnderXCTest ? "yes" : "no")",
             "",
             "> Compare cold vs warm wall time. If `open.pbkdf2` dominates, startup cost is KDF — not layout/index I/O. Warm reopen skips PBKDF2 when the process session is still valid (see DATABASE_SESSION_KEY_LIFECYCLE.md).",
