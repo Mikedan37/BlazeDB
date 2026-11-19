@@ -98,7 +98,7 @@ def write_headline_comparison(baseline: Path, engine_only: Path, out: Path) -> N
         "",
         "| Condition | Encryption | Purpose |",
         "|-----------|------------|---------|",
-        "| `baseline` | on (AES-256-GCM + PBKDF2) | Production-secure path (MVCC on in harness) |",
+        "| `baseline` | on (AES-256-GCM + PBKDF2) | Production-secure path, library default configuration (MVCC off) |",
         "| `engine_only` | off (benchmark compile flag) | Engine overhead without crypto |",
         "| SQLite | n/a | Reference embedded store |",
         "",

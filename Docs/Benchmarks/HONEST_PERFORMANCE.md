@@ -10,6 +10,21 @@ Saying only “expensive durability path” sounds like a design trade-off. The 
 
 That is more useful than “BlazeDB is fast” or “BlazeDB is slow.”
 
+## Which configuration the numbers describe
+
+BlazeDB ships with **MVCC off** (`DynamicCollection.mvccEnabled = false`); `setMVCCEnabled(true)` is opt-in. Until November 2026 the benchmark harness turned MVCC **on** by default, so the published insert rows described the opt-in path, not what an application gets. The harness now uses the library default and measures MVCC only in the `mvcc_on` condition.
+
+Same harness, same host (Apple M4 Max, macOS 27.0.1, Swift 6.4.2, release), commit `bc3a8a85`, ~53 B records:
+
+| Benchmark | Default (MVCC off) | Opt-in MVCC on |
+|-----------|-------------------:|---------------:|
+| Durable `insert()` p50, 1K rows | 1.87 ms | 0.26 ms |
+| Durable `insert()` p50, 10K rows | 13.7 ms | 0.29 ms |
+| Indexed read p50, 1K rows | 0.001 ms | 0.007 ms |
+| Concurrent reads (8 readers + 1 writer) | 38.3k/s | 16.6k/s |
+
+The opt-in path is not a drop-in speed-up. At `bc3a8a85` it persists the catalog only every 100 operations, so inserts acknowledged since the last catalog save are lost on a crash, and an update or delete followed by inserts can make `fetch(id:)` return a different record (page reuse; fix in progress). Do not quote MVCC-on insert numbers as BlazeDB's write performance.
+
 ## What the current evidence looks like
 
 | Area | Reading (secure release, July 2026 host) |
@@ -39,6 +54,18 @@ Do not claim “each write was 2 KB” (or any other size) without `encodedPaylo
 Do **not** publish a “~20,000× bytes vs ~2.4× latency” product claim from comparing the core ~53 B durable insert to the separate 1 MB growth profile — those are different harnesses.
 
 ## Scaling with database size (the real fire)
+
+Current default configuration (MVCC off), release, Nov 2026, from [db_size_sweep.md](db_size_sweep.md):
+
+| Seed rows | p50 insert ms |
+|----------:|--------------:|
+| 0 | 0.82 |
+| 1K | 3.33 |
+| 10K | 26.6 |
+| 50K | 135 |
+| 100K | 259 |
+
+About 2.6 µs per existing row: every default `insert()` rewrites and re-signs the whole catalog (`StorageLayout.saveSecure`). The July table below was measured with MVCC on, on older code.
 
 The payload curve is nonlinear but not alarming by itself. The **database-size** curve is:
 

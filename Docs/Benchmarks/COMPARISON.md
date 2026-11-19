@@ -1,12 +1,12 @@
 # BlazeDB vs SQLite — Comparison Report
 
-_Generated 2026-07-28T04:01:21+00:00_
+_Generated 2026-11-18T19:51:38+00:00_
 
 Two BlazeDB conditions vs plain SQLite (WAL + `synchronous=FULL`, no encryption):
 
 | Condition | Encryption | Purpose |
 |-----------|------------|---------|
-| `baseline` | on (AES-256-GCM + PBKDF2) | Production-secure path (MVCC on in harness) |
+| `baseline` | on (AES-256-GCM + PBKDF2) | Production-secure path, library default configuration (MVCC off) |
 | `engine_only` | off (benchmark compile flag) | Engine overhead without crypto |
 | SQLite | n/a | Reference embedded store |
 
@@ -14,16 +14,16 @@ Two BlazeDB conditions vs plain SQLite (WAL + `synchronous=FULL`, no encryption)
 
 | Benchmark | BlazeDB secure avg ms | BlazeDB engine-only avg ms | SQLite avg ms | Secure vs SQLite | Engine vs SQLite |
 |-----------|----------------------:|---------------------------:|--------------:|-----------------:|-----------------:|
-| Insert per-row durable (1K records) | 2.53 | 2.50 | 0.0030 | 830.3× slower | 886.2× slower |
-| InsertMany (10K records, batch 100) | 124.07 | 121.22 | 0.08 | 1515.1× slower | 1828.3× slower |
-| Read (1K records) | 0.0095 | N/A | 0.0012 | 7.7× slower | N/A |
-| Cold open (PBKDF2 each reopen) | 1045.14 | 1060.78 | 0.59 | 1760.4× slower | 3266.0× slower |
-| Warm reopen (session cache) | 24.77 | 24.77 | N/A | N/A | N/A |
-| InsertMany (max profile, batch 1000) | 408.24 | 391.26 | 0.62 | 657.2× slower | 659.5× slower |
+| Insert per-row durable (1K records) | 1.92 | 2.04 | 0.0031 | 620.6× slower | 687.9× slower |
+| InsertMany (10K records, batch 100) | 106.33 | 110.86 | 0.07 | 1574.0× slower | 1543.2× slower |
+| Read (1K records) | 0.0010 | 0.0057 | 0.0013 | 1.2× faster | 4.5× slower |
+| Cold open (PBKDF2 each reopen) | 832.55 | 837.04 | 0.27 | 3139.4× slower | 3011.9× slower |
+| Warm reopen (session cache) | 27.81 | 27.62 | N/A | N/A | N/A |
+| InsertMany (max profile, batch 1000) | 319.50 | 330.71 | 0.62 | 518.8× slower | 535.7× slower |
 
 ## Concurrent read (from full baseline run)
 
-| Concurrent read (8 readers + 1 writer, 5s) | BlazeDB 3,349 reads/s | SQLite 97 reads/s | 34.6× faster |
+| Concurrent read (8 readers + 1 writer, 5s) | BlazeDB 38,333 reads/s | SQLite 103 reads/s | 373.6× faster |
 
 ## How to read this
 

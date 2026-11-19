@@ -39,12 +39,13 @@ run_mvcc() {
     swift run $config BlazeDBBenchmarks 2>&1 | tee "$OUT_DIR/${condition_id}.log"
 }
 
-run_mvcc baseline on
-run_mvcc mvcc_off off
+# baseline = library default (MVCC off); mvcc_on = opt-in MVCC.
+run_mvcc baseline off
+run_mvcc mvcc_on on
 
 python3 "$ROOT/Scripts/generate_comparison_report.py" \
-  --concurrent-mvcc-on "$OUT_DIR/baseline.json" \
-  --concurrent-mvcc-off "$OUT_DIR/mvcc_off.json" \
+  --concurrent-mvcc-on "$OUT_DIR/mvcc_on.json" \
+  --concurrent-mvcc-off "$OUT_DIR/baseline.json" \
   --out "$OUT_DIR/CONCURRENT_MVCC.md"
 
 cp "$OUT_DIR/CONCURRENT_MVCC.md" "$ROOT/Docs/Benchmarks/CONCURRENT_MVCC.md"

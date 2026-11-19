@@ -86,7 +86,8 @@ let benchmarkEncryptionEnabled = true
 #endif
 
 let benchmarkCondition = {
-    let mvccRequested = parseOnOffEnv("BLAZEDB_BENCH_MVCC", defaultValue: true)
+    // Library default: MVCC off (DynamicCollection.mvccEnabled). MVCC is opt-in; measure it with BLAZEDB_BENCH_MVCC=on.
+    let mvccRequested = parseOnOffEnv("BLAZEDB_BENCH_MVCC", defaultValue: false)
     let walRequested = parseOnOffEnv("BLAZEDB_BENCH_WAL", defaultValue: true)
     let encryptionRequested = parseOnOffEnv("BLAZEDB_BENCH_ENCRYPTION", defaultValue: true)
     return BenchCondition(
@@ -94,7 +95,7 @@ let benchmarkCondition = {
         mvccRequested: mvccRequested,
         walRequested: walRequested,
         encryptionRequested: encryptionRequested,
-        mvccEffective: mvccRequested, // TODO: Query actual MVCC state from BlazeDBClient after construction to confirm effective value
+        mvccEffective: mvccRequested, // applyBenchCondition checks the client reports this mode
         walEffective: true,
         encryptionEffective: benchmarkEncryptionEnabled
     )
@@ -102,8 +103,23 @@ let benchmarkCondition = {
 
 func openBenchDB(name: String, fileURL: URL) throws -> BlazeDBClient {
     let db = try BlazeDBClient(name: name, fileURL: fileURL, password: "BenchPassword123!")
+    return applyBenchCondition(db)
+}
+
+/// Every harness mode opens databases in the same configuration, so profiles and
+/// throughput rows describe the same write path.
+@discardableResult
+func applyBenchCondition(_ db: BlazeDBClient) -> BlazeDBClient {
     db.setMVCCEnabled(benchmarkCondition.mvccEffective)
+    precondition(db.isMVCCEnabled() == benchmarkCondition.mvccEffective, "benchmark MVCC mode did not take effect")
     return db
+}
+
+/// One-line configuration label for reports.
+func benchConfigurationLabel() -> String {
+    benchmarkCondition.mvccEffective
+        ? "MVCC on (opt-in, `setMVCCEnabled(true)`)"
+        : "MVCC off (library default)"
 }
 
 func parseIntEnv(_ key: String, defaultValue: Int) -> Int {
