@@ -16,7 +16,8 @@ extension BlazeDBClient {
     
     /// Upsert multiple records (insert or update based on existence)
     ///
-    /// For each record with an ID: updates if exists, inserts if not.
+    /// For each record with an ID: replaces it if it exists (as `update` does, so
+    /// fields not in the new record are dropped), inserts it if not.
     /// For records without IDs: always inserts as new.
     ///
     /// - Parameter records: Array of (id, record) tuples
@@ -280,7 +281,9 @@ extension BlazeDBClient {
                     try self.performSafeWrite {
                         for id in ids {
                             do {
-                                try self.update(id: id, with: BlazeDataRecord(fields))
+                                // updateFields, not update: update replaces the record,
+                                // which would drop every field not in `fields`.
+                                try self.updateFields(id: id, fields: fields)
                                 count += 1
                             } catch BlazeDBError.recordNotFound {
                                 BlazeLogger.trace("Record \(id) not found, skipping")

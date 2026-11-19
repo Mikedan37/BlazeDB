@@ -69,7 +69,7 @@ func triggerIndexMaintenanceExample() throws {
     ]))
     
     // Update location (trigger fires!)
-    try db.update(id: id, with: [
+    try db.updateFields(id: id, fields: [
         "latitude": .double(37.8044),
         "longitude": .double(-122.2711)
     ])

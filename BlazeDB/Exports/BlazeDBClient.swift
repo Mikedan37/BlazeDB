@@ -1498,18 +1498,20 @@ public final class BlazeDBClient: @unchecked Sendable {
     ///   - fields: Dictionary of fields to update
     /// - Throws: BlazeDBError if record not found
     public func updateFields(id: UUID, fields: [String: BlazeDocumentField]) throws {
-        // Fetch current record
+        // Fetch and write under the write lock: update replaces the whole record, so a
+        // concurrent updateFields between our fetch and write would lose its fields.
+        // The plain lock, not performSafeWrite: update's own write already rolls back a
+        // failed store write, and a missing id or a validation error (RLS, constraints,
+        // schema, trigger veto) is not a failed write to roll back.
+        writeLock.lock()
+        defer { writeLock.unlock() }
         guard var record = try fetch(id: id) else {
             throw BlazeDBError.recordNotFound(id: id)
         }
-        
-        // Update specified fields
         for (key, value) in fields {
             record.storage[key] = value
         }
         record.storage["updatedAt"] = .date(Date())
-        
-        // Save
         try update(id: id, with: record)
         BlazeLogger.debug("Partial update: Updated \(fields.count) fields for record \(id)")
     }

@@ -419,16 +419,16 @@ if let bug = try await db.fetch(Bug.self, id: bugID) {
 #### Dynamic API
 
 ```swift
-// Update entire record
+// Update entire record: update replaces the stored record with `record`
+// (fields you leave out are removed, with or without MVCC)
 var record = try db.fetch(id: someUUID)!
 record["status"] =.string("closed")
 try db.update(id: someUUID, with: record)
 
-// Update specific fields
-try db.update(id: someUUID, data: BlazeDataRecord([
- "status":.string("closed"),
- "updatedAt":.date(Date())
-]))
+// Update specific fields: other fields are kept, updatedAt is set
+try db.updateFields(id: someUUID, fields: [
+ "status":.string("closed")
+])
 ```
 
 #### Type-Safe API

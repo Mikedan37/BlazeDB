@@ -58,8 +58,8 @@ if mvccEnabled {
 if mvccEnabled {
  let tx = MVCCTransaction(...)
  let current = try tx.read(recordID: id)
- // Merge updates
- try tx.write(recordID: id, record: merged)
+ // Replace with data + id + updatedAt, as the legacy path does
+ try tx.write(recordID: id, record: replacement)
  try tx.commit()
 }
 // Legacy path...

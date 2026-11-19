@@ -133,9 +133,10 @@ final class CompleteGCValidationTests: XCTestCase {
             
             print("   ✏️  Updating \(updatesPerMonth) records...")
             for id in ids.prefix(updatesPerMonth).shuffled() {
-                try requireFixture(db).update(id: id, with: BlazeDataRecord([
+                // updateFields keeps the 500-byte payload, so each update still rewrites it.
+                try requireFixture(db).updateFields(id: id, fields: [
                     "updated": .bool(true)
-                ]))
+                ])
             }
             
             print("   🗑️ Deleting \(deletesPerMonth) old records...")
@@ -228,9 +229,10 @@ final class CompleteGCValidationTests: XCTestCase {
         for cycle in 0..<10 {
             // Update all
             for id in ids {
-                try requireFixture(db).update(id: id, with: BlazeDataRecord([
+                // updateFields keeps the 2,000-byte payload, so the churn stays large-record.
+                try requireFixture(db).updateFields(id: id, fields: [
                     "cycle": .int(cycle)
-                ]))
+                ])
             }
             
             // Delete half, insert half
@@ -306,9 +308,9 @@ final class CompleteGCValidationTests: XCTestCase {
             // Updates (random existing records)
             for _ in 0..<updatesPerMonth {
                 if let id = ids.randomElement() {
-                    try? requireFixture(db).update(id: id, with: BlazeDataRecord([
+                    try? requireFixture(db).updateFields(id: id, fields: [
                         "lastUpdate": .date(Date())
-                    ]))
+                    ])
                     totalOperations += 1
                 }
             }
