@@ -57,6 +57,7 @@ This document exists to calm fear and set expectations.
 
 **If crash occurs during transaction:**
 - Uncommitted changes are lost (rolled back)
+- Once `commitTransaction()` has checkpointed and recorded the commit, that commit survives a crash while the pre-transaction backup is still being removed
 - Committed changes survive
 
 ---

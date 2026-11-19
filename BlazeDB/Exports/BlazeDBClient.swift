@@ -316,6 +316,31 @@ public final class BlazeDBClient: @unchecked Sendable {
     /// This is in-process write serialization on top of PageStore's exclusive file ownership —
     /// not a substitute for the cross-process flock.
     internal let writeLock = NSRecursiveLock()
+
+    #if DEBUG
+    /// Test-only: the next `commitTransaction()` for this file path stops after the
+    /// durable commit marker and leaves the pre-transaction backup on disk.
+    nonisolated(unsafe) private static let commitCleanupInterruptLock = NSLock()
+    nonisolated(unsafe) private static var commitCleanupInterruptPaths: Set<String> = []
+
+    internal static func interruptNextCommitCleanupForTests(fileURL: URL) {
+        commitCleanupInterruptLock.lock()
+        commitCleanupInterruptPaths.insert(fileURL.path)
+        commitCleanupInterruptLock.unlock()
+    }
+
+    internal static func cancelCommitCleanupInterruptForTests(fileURL: URL) {
+        commitCleanupInterruptLock.lock()
+        commitCleanupInterruptPaths.remove(fileURL.path)
+        commitCleanupInterruptLock.unlock()
+    }
+
+    private func consumeCommitCleanupInterruptForTests() -> Bool {
+        Self.commitCleanupInterruptLock.lock()
+        defer { Self.commitCleanupInterruptLock.unlock() }
+        return Self.commitCleanupInterruptPaths.remove(fileURL.path) != nil
+    }
+    #endif
     private let transactionLogLock = NSLock()  // 🔒 Dedicated lock for WAL writes
 
     private static func stablePathDigestHex(_ value: String) -> String {
@@ -769,11 +794,18 @@ public final class BlazeDBClient: @unchecked Sendable {
         let startedAtISO8601: String
     }
 
-    private func writeDurableTransactionState(phase: String) throws {
+    private func writeDurableTransactionState(phase: String, synchronize: Bool = false) throws {
         let formatter = ISO8601DateFormatter()
         let state = DurableTransactionState(phase: phase, startedAtISO8601: formatter.string(from: Date()))
         let data = try JSONEncoder().encode(state)
         try data.write(to: transactionStateURL, options: .atomic)
+        guard synchronize else { return }
+        // The committed marker must be on disk before artifact cleanup. A crash
+        // after this fsync keeps the checkpointed database; a crash before it
+        // still restores the pre-transaction backup.
+        let handle = try FileHandle(forWritingTo: transactionStateURL)
+        defer { try? handle.close() }
+        try handle.synchronize()
     }
 
     private func createDurableTransactionBackups() throws {
@@ -818,6 +850,18 @@ public final class BlazeDBClient: @unchecked Sendable {
                 return nil
             }
         }()
+
+        // "committed" is written only after persist, synchronize, and checkpoint
+        // have returned. Cleanup of the pre-transaction backup happens after that
+        // marker, so a crash during cleanup must not rewind the commit (#277).
+        // "open" and "committing" are still before that point and restore the backup.
+        if state?.phase == "committed", fm.fileExists(atPath: fileURL.path) {
+            BlazeLogger.warn("Detected committed transaction with leftover artifacts; keeping durable data and clearing transaction backups")
+            BlazeAuthoritativeFileOps.removeItemIfExists(at: backupURL, context: "restoreDurableTransactionBackupIfPresent(committed backup)")
+            BlazeAuthoritativeFileOps.removeItemIfExists(at: metaBackupURL, context: "restoreDurableTransactionBackupIfPresent(committed metaBackup)")
+            BlazeAuthoritativeFileOps.removeItemIfExists(at: stateURL, context: "restoreDurableTransactionBackupIfPresent(committed state)")
+            return
+        }
 
         if let state {
             BlazeLogger.warn("Detected interrupted transaction state '\(state.phase)'; restoring pre-transaction backup")
@@ -2042,16 +2086,29 @@ public final class BlazeDBClient: @unchecked Sendable {
         }
 
         do {
-            // Enter committing phase before durable write; any crash during commit rolls back.
+            // "committing" is before the durable write. A crash here still restores
+            // the pre-transaction backup. "committed" is recorded only after checkpoint.
             try writeDurableTransactionState(phase: "committing")
 
             // Persist committed state to disk and checkpoint WAL.
             try persist()
             try collection.store.synchronize()
             try collection.store.checkpoint()
+            try writeDurableTransactionState(phase: "committed", synchronize: true)
         } catch {
             throw BlazeDBError.transactionFailed("Commit failed before transaction could be finalized", underlyingError: error)
         }
+
+        #if DEBUG
+        if consumeCommitCleanupInterruptForTests() {
+            // The commit marker is durable. Leave the pre-transaction backup in place
+            // and drop the in-memory snapshot so close/deinit does not roll it back.
+            clearInMemoryTransactionState()
+            throw BlazeDBError.transactionFailed(
+                "Injected interruption after durable commit, before artifact cleanup"
+            )
+        }
+        #endif
 
         // Discard snapshot — changes are now permanent
         clearInMemoryTransactionState()

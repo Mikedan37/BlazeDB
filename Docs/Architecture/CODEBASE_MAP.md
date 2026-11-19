@@ -115,11 +115,12 @@ mutations
   → performSafeWrite skips per-write indexMap backup only
   → inserts remain write-through (page/WAL sync per insert)  ← current behavior (#276)
 commitTransaction
-  → state "committing" → persist + synchronize + checkpoint → clear backups
+  → state "committing" → persist + synchronize + checkpoint → state "committed" → clear backups
 rollbackTransaction
   → restore snapshots / layout; clear caches
 crash with txn artifacts
-  → restoreDurableTransactionBackupIfPresent on next open (#277 risk window)
+  → phase "committed": keep the checkpointed files and delete leftovers
+  → phase "open" or "committing": restoreDurableTransactionBackupIfPresent
 ```
 
 ### Query

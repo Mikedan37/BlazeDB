@@ -14,13 +14,14 @@
 
 `beginTransaction` → persist/sync/checkpoint → durable backups + state `open` → snapshot maps  
 → mutations via `performSafeWrite` (skips indexMap snapshot backup only; **inserts still sync**)  
-→ `commitTransaction` state `committing` → persist/sync/checkpoint → clear snapshots/backups  
+→ `commitTransaction` state `committing` → persist/sync/checkpoint → state `committed` → clear snapshots/backups  
 → or `rollbackTransaction` restore snapshots.
 
 ## Invariants
 
 - Rollback restores pre-begin visible state.
-- Crash during `committing` must not leave callers believing commit succeeded if backups rewind (#277).
+- A crash in `open` or `committing` (before the post-checkpoint marker) restores the pre-transaction backup.
+- A crash after the `committed` marker, while those backups are being removed, keeps the checkpointed database.
 - Amortizing fsyncs to commit is desirable but **blocked on measurement #291** before design (#276).
 - Never remove durability to make txn benches look like `insertMany`.
 

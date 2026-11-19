@@ -446,4 +446,152 @@ final class TransactionDurabilityTests: XCTestCase {
         XCTAssertEqual(recoveredRows[0].storage["value"]?.stringValue, "baseline")
         try dbRecovered.close()
     }
+
+    func testStartupRestoresInterruptedCommittingPhase() throws {
+        let urls = makeTransactionArtifactURLs()
+        defer { urls.cleanup() }
+
+        do {
+            let db = try BlazeDBClient(name: "TxnCommittingBaseline", fileURL: urls.database, password: "TestPassword-123!")
+            _ = try db.insert(BlazeDataRecord(["value": .string("baseline")]))
+            try db.persist()
+            try db.close()
+        }
+
+        try FileManager.default.copyItem(at: urls.database, to: urls.backup)
+        if FileManager.default.fileExists(atPath: urls.meta.path) {
+            try FileManager.default.copyItem(at: urls.meta, to: urls.metaBackup)
+        }
+        let stateBytes = #"{"phase":"committing","startedAtISO8601":"2026-01-01T00:00:00Z"}"#.data(using: .utf8)!
+        try stateBytes.write(to: urls.state, options: .atomic)
+
+        let fh = try FileHandle(forUpdating: urls.database)
+        try fh.seek(toOffset: 0)
+        try fh.write(contentsOf: Data(repeating: 0x00, count: 4096))
+        try fh.synchronize()
+        try fh.close()
+
+        let dbRecovered = try BlazeDBClient(name: "TxnCommittingRecovered", fileURL: urls.database, password: "TestPassword-123!")
+        let recoveredRows = try dbRecovered.fetchAll()
+        XCTAssertEqual(recoveredRows.count, 1)
+        XCTAssertEqual(recoveredRows[0].storage["value"]?.stringValue, "baseline")
+        try dbRecovered.close()
+    }
+
+    func testStartupKeepsDurableDataWhenCommittedCleanupIsInterrupted() throws {
+        let urls = makeTransactionArtifactURLs()
+        defer { urls.cleanup() }
+        let baselineDatabase = urls.database.appendingPathExtension("baseline")
+        let baselineMeta = urls.meta.appendingPathExtension("baseline")
+        defer {
+            try? FileManager.default.removeItem(at: baselineDatabase)
+            try? FileManager.default.removeItem(at: baselineMeta)
+        }
+
+        do {
+            let db = try BlazeDBClient(name: "TxnCommittedBaseline", fileURL: urls.database, password: "TestPassword-123!")
+            _ = try db.insert(BlazeDataRecord(["value": .string("baseline")]))
+            try db.persist()
+            try db.close()
+        }
+
+        // Snapshot the pre-commit files outside the txn artifact names. Opening the
+        // database while those artifact names already exist would treat them as a crash.
+        try FileManager.default.copyItem(at: urls.database, to: baselineDatabase)
+        if FileManager.default.fileExists(atPath: urls.meta.path) {
+            try FileManager.default.copyItem(at: urls.meta, to: baselineMeta)
+        }
+
+        do {
+            let db = try BlazeDBClient(name: "TxnCommittedLive", fileURL: urls.database, password: "TestPassword-123!")
+            _ = try db.insert(BlazeDataRecord(["value": .string("committed")]))
+            try db.persist()
+            try db.close()
+        }
+
+        try FileManager.default.copyItem(at: baselineDatabase, to: urls.backup)
+        if FileManager.default.fileExists(atPath: baselineMeta.path) {
+            try FileManager.default.copyItem(at: baselineMeta, to: urls.metaBackup)
+        }
+        let stateBytes = #"{"phase":"committed","startedAtISO8601":"2026-01-01T00:00:00Z"}"#.data(using: .utf8)!
+        try stateBytes.write(to: urls.state, options: .atomic)
+
+        let dbRecovered = try BlazeDBClient(name: "TxnCommittedRecovered", fileURL: urls.database, password: "TestPassword-123!")
+        let values = try dbRecovered.fetchAll().compactMap { $0.storage["value"]?.stringValue }.sorted()
+        XCTAssertEqual(values, ["baseline", "committed"])
+        try dbRecovered.close()
+        XCTAssertFalse(FileManager.default.fileExists(atPath: urls.backup.path))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: urls.state.path))
+    }
+
+    func testCommitCleanupInterruptKeepsDurableInsert() throws {
+        let dir = tmpDir("commit-cleanup-interrupt")
+        let url = dbURL(in: dir)
+        defer {
+            BlazeDBClient.cancelCommitCleanupInterruptForTests(fileURL: url)
+            try? FileManager.default.removeItem(at: dir)
+        }
+
+        do {
+            let db = try BlazeDBClient(name: "CommitCleanup", fileURL: url, password: "TestPassword-123!")
+            _ = try db.insert(BlazeDataRecord(["value": .string("baseline")]))
+            try db.persist()
+            try db.beginTransaction()
+            _ = try db.insert(BlazeDataRecord(["value": .string("committed")]))
+            BlazeDBClient.interruptNextCommitCleanupForTests(fileURL: url)
+            XCTAssertThrowsError(try db.commitTransaction()) { error in
+                XCTAssertTrue(String(describing: error).contains("Injected interruption after durable commit"))
+            }
+            try db.close()
+        }
+
+        let reopened = try BlazeDBClient(name: "CommitCleanupReopen", fileURL: url, password: "TestPassword-123!")
+        let values = try reopened.fetchAll().compactMap { $0.storage["value"]?.stringValue }.sorted()
+        XCTAssertEqual(values, ["baseline", "committed"])
+        try reopened.close()
+
+        let leftovers = try FileManager.default.contentsOfDirectory(at: dir, includingPropertiesForKeys: nil)
+            .filter { $0.lastPathComponent.contains("txn_in_progress") }
+        XCTAssertTrue(leftovers.isEmpty, "Committed recovery should remove leftover transaction artifacts, found \(leftovers)")
+    }
+
+    private struct TransactionArtifactURLs {
+        let database: URL
+        let meta: URL
+        let backup: URL
+        let metaBackup: URL
+        let state: URL
+
+        func cleanup() {
+            try? FileManager.default.removeItem(at: database)
+            try? FileManager.default.removeItem(at: meta)
+            try? FileManager.default.removeItem(at: backup)
+            try? FileManager.default.removeItem(at: metaBackup)
+            try? FileManager.default.removeItem(at: state)
+            let salt = database.deletingPathExtension().appendingPathExtension("salt")
+            try? FileManager.default.removeItem(at: salt)
+            let wal = database.deletingPathExtension().appendingPathExtension("wal")
+            try? FileManager.default.removeItem(at: wal)
+        }
+    }
+
+    /// Uses the legacy hasher prefix that open still checks, so the test does not
+    /// need the private stable digest helper.
+    private func makeTransactionArtifactURLs() -> TransactionArtifactURLs {
+        let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".blz")
+        let metaURL = tempURL.deletingPathExtension().appendingPathExtension("meta")
+        var hasher = Hasher()
+        hasher.combine(tempURL.path)
+        let digest = String(abs(hasher.finalize()), radix: 16)
+        let base = tempURL.deletingPathExtension().lastPathComponent
+        let prefix = "\(base)-\(digest)"
+        let directory = tempURL.deletingLastPathComponent()
+        return TransactionArtifactURLs(
+            database: tempURL,
+            meta: metaURL,
+            backup: directory.appendingPathComponent("txn_in_progress-\(prefix).blazedb"),
+            metaBackup: directory.appendingPathComponent("txn_in_progress-\(prefix).meta"),
+            state: directory.appendingPathComponent("txn_in_progress-\(prefix).state")
+        )
+    }
 }
