@@ -165,7 +165,9 @@ final class CriticalBlockerTests: XCTestCase {
         // Delete
         try requireFixture(db).delete(id: id)
         let deleted = try requireFixture(db).fetch(id: id)
-        XCTAssertNotNil(deleted, "MVCC path keeps tombstoned records visible to direct fetch")
+        // delete is permanent (softDelete is the recoverable form). The old MVCC path
+        // left an updated record readable here from pages it had already freed.
+        XCTAssertNil(deleted, "deleted record must not be readable on the MVCC path")
         print("   ✅ Delete works")
         
         print("   ✅ All CRUD operations work with MVCC enabled!")

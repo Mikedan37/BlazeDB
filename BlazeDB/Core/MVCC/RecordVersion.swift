@@ -210,8 +210,9 @@ public class VersionManager {
             throw BlazeDBError.recordNotFound(id: recordID)
         }
         
-        // Find the visible version at this snapshot
-        guard let index = recordVersions.firstIndex(where: {
+        // Find the newest visible version at this snapshot (what getVersion returns).
+        // Marking an older one left the current version readable after delete.
+        guard let index = recordVersions.lastIndex(where: {
             $0.isVisibleTo(snapshotVersion: snapshotVersion)
         }) else {
             throw BlazeDBError.recordNotFound(id: recordID)
@@ -234,6 +235,17 @@ public class VersionManager {
         versions[recordID] = recordVersions
     }
     
+    /// MVCC delete frees the record's pages itself, so it takes every version of
+    /// the record out of the version store at the same time and gets their pages
+    /// back. Version GC then never frees those pages a second time, after another
+    /// record may already have reused them.
+    public func removeRecord(_ recordID: UUID) -> [Int] {
+        lock.lock()
+        defer { lock.unlock() }
+        guard let recordVersions = versions.removeValue(forKey: recordID) else { return [] }
+        return recordVersions.flatMap { $0.diskPageIndices }
+    }
+
     /// Get the visible version of a record for a given snapshot
     public func getVersion(
         recordID: UUID,
@@ -336,12 +348,7 @@ public class VersionManager {
             }
         }
         
-        // Free the pages for reuse! 🗑️
-        if !freedPages.isEmpty {
-            pageGC.markPagesObsolete(freedPages)
-            BlazeLogger.debug("🗑️ Version GC freed \(freedPages.count) disk page slots for reuse")
-        }
-        
+        releasePages(freedPages)
         return removedCount
     }
     
@@ -364,13 +371,28 @@ public class VersionManager {
             }
         }
         
-        // Free the pages for reuse! 🗑️
-        if !freedPages.isEmpty {
-            pageGC.markPagesObsolete(freedPages)
-            BlazeLogger.debug("🗑️ Aggressive GC freed \(freedPages.count) disk page slots")
-        }
-        
+        releasePages(freedPages)
         return removedCount
+    }
+
+    /// Hands pages of removed versions back to the page GC, except pages a kept
+    /// version still points at. MVCC delete already frees a record's pages, and an
+    /// insert may have reused one before GC drops the deleted version. Freeing it
+    /// again would let the next write overwrite that live record. Caller holds `lock`.
+    private func releasePages(_ freedPages: [Int]) {
+        guard !freedPages.isEmpty else { return }
+        var live = Set<Int>()
+        for recordVersions in versions.values {
+            for version in recordVersions { live.formUnion(version.diskPageIndices) }
+        }
+        let releasable = freedPages.filter { !live.contains($0) }
+        if !releasable.isEmpty {
+            pageGC.markPagesObsolete(releasable)
+        }
+        if releasable.count < freedPages.count {
+            // Two versions claimed one page: some path freed a page it no longer owned.
+            BlazeLogger.warn("⚠️ Version GC kept \(freedPages.count - releasable.count) page(s) still owned by a live version")
+        }
     }
     
     // MARK: - Statistics
