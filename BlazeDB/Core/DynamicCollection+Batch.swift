@@ -681,11 +681,13 @@ extension DynamicCollection {
                 }
             }
             
-            // CRITICAL: Backup state for rollback
+            // Backup the catalog so a failed metadata save can undo the unpublish.
+            // Page bytes stay intact until that save succeeds. Zeroing first and then
+            // putting these ids back makes a failed delete durable data loss: reopen
+            // loads the old catalog and reads empty pages.
             let indexMapBackup = indexMap
             let secondaryIndexesBackup = secondaryIndexes
             
-            // Remove from secondary indexes BEFORE deleting pages
             for id in idsToDelete {
                 if let record = recordsForIndexUpdate[id] {
                     let oldDoc = record.storage
@@ -706,47 +708,34 @@ extension DynamicCollection {
                     }
                 }
             }
-            
-            // OPTIMIZATION: Batch delete all pages in a single sync block
-            do {
-                if !pagesToDelete.isEmpty {
-                    // Use public deletePage API instead of accessing private properties
-                    for pageIndex in pagesToDelete {
-                        try? PageStore.deletePage(store)(index: pageIndex)
-                    }
-                }
-                
-                // CRITICAL: Synchronize before updating indexMap to ensure deletion is persisted
-                // This prevents indexMap from being out of sync if synchronize() fails
-                try store.synchronize()
-            } catch {
-                // CRITICAL: Rollback secondaryIndexes if page deletion or synchronize() fails
-                BlazeLogger.error("❌ [DELETE] Batch: Page deletion or synchronize() failed, rolling back secondaryIndexes: \(error)")
-                secondaryIndexes = secondaryIndexesBackup
-                throw error
-            }
-            
-            // CRITICAL: Only remove from indexMap AFTER synchronize() succeeds
-            // This ensures indexMap is never out of sync with actual disk state
             for id in idsToDelete {
                 indexMap.removeValue(forKey: id)
             }
             
-            // Save metadata once (instead of N times)
             do {
                 try saveLayout()
                 unsavedChanges = 0
             } catch {
-                // CRITICAL: Rollback indexMap if saveLayout() fails
-                BlazeLogger.error("❌ [DELETE] Batch: saveLayout() failed, rolling back indexMap: \(error)")
+                BlazeLogger.error("❌ [DELETE] Batch: saveLayout() failed, restoring catalog without zeroing pages: \(error)")
                 indexMap = indexMapBackup
                 secondaryIndexes = secondaryIndexesBackup
                 throw error
             }
             
-            // CRITICAL: Clear caches AFTER saveLayout() succeeds
-            // This ensures caches are only cleared if the operation is fully persisted
-            // If saveLayout() fails, caches remain valid and operation will rollback
+            // The catalog no longer names these records. Zeroing is cleanup.
+            // A failure here must not restore indexMap: performSafeWrite would
+            // republish the ids onto pages that are already empty.
+            if !pagesToDelete.isEmpty {
+                for pageIndex in pagesToDelete {
+                    try? PageStore.deletePage(store)(index: pageIndex)
+                }
+                do {
+                    try store.synchronize()
+                } catch {
+                    BlazeLogger.error("❌ [DELETE] Batch: catalog committed but page sync failed: \(error.localizedDescription)")
+                }
+            }
+            
             for id in idsToDelete {
                 recordCache.remove(id: id)
             }
