@@ -1684,135 +1684,76 @@ public final class DynamicCollection {
         }
         
         internal func _deleteNoSync(id: UUID, record: BlazeDataRecord? = nil) throws {
-            // Capture a snapshot of indexMap to avoid concurrent modification issues
-            // This prevents crashes when indexMap is being modified by other threads
-            let indexMapSnapshot = indexMap
-            
             // Check if record exists - if not, delete is idempotent
-            guard let pageIndices = indexMapSnapshot[id] else { return }
-            
-            // 🔒 Atomic delete: backup state before modifications
-            // Use snapshot for backup to avoid accessing indexMap again
+            guard let pageIndices = indexMap[id] else { return }
+
+            // Pages stay intact until the catalog that unpublishes this id is durable.
+            // Zeroing first makes a crash, or a failed metadata save, destroy a record
+            // the on-disk catalog still publishes. Reopen then cannot read it, and the
+            // leftover id rejects a later insert of the same key.
             let indexBackup = secondaryIndexes
-            let indexMapBackup = indexMapSnapshot  // Use snapshot instead of direct access
-            
-            do {
-                // Remove from all indexes (persisting mutations)
-                // OPTIMIZATION: Only fetch record if we have indexes to update
-                let recordToUse = record ?? (try? _fetchNoSync(id: id))
-                
-                if !secondaryIndexes.isEmpty, let record = recordToUse {
-                    let oldDoc = record.storage
-                    for (compound, _) in secondaryIndexes {
-                        let fields = compound.components(separatedBy: "+")
-                        let oldKey = CompoundIndexKey.fromFields(oldDoc, fields: fields)
-                        if var inner = secondaryIndexes[compound] {
-                            if var set = inner[oldKey] {
-                                set.remove(id)
-                                if set.isEmpty {
-                                    inner.removeValue(forKey: oldKey)
-                                } else {
-                                    inner[oldKey] = set
-                                }
-                                secondaryIndexes[compound] = inner
+            let indexMapBackup = indexMap
+            let recordToUse = record ?? (try? _fetchNoSync(id: id))
+
+            if !secondaryIndexes.isEmpty, let record = recordToUse {
+                let oldDoc = record.storage
+                for (compound, _) in secondaryIndexes {
+                    let fields = compound.components(separatedBy: "+")
+                    let oldKey = CompoundIndexKey.fromFields(oldDoc, fields: fields)
+                    if var inner = secondaryIndexes[compound] {
+                        if var set = inner[oldKey] {
+                            set.remove(id)
+                            if set.isEmpty {
+                                inner.removeValue(forKey: oldKey)
+                            } else {
+                                inner[oldKey] = set
                             }
+                            secondaryIndexes[compound] = inner
                         }
                     }
                 }
-                
-                // Deindex from B-tree indexes
-                if let record = recordToUse {
-                    btreeIndexManager.deindexRecord(id: id, fields: record.storage)
-                }
-                
-                // OPTIMIZATION: Batch delete all pages in a single sync block to reduce overhead
-                // Delete all pages in overflow chain
-                // Note: We already checked indexMapSnapshot[id] at the start, so we proceed with deletion
-                
-                // Load layout to track deleted pages for reuse
-                var layout = try loadLayoutForMutation()
-                
-                // OPTIMIZATION: Batch delete all pages in a single sync block (not barrier)
-                // Since we're already in DynamicCollection's queue.sync, we use regular sync
-                // to allow concurrent reads. Barrier would block everything unnecessarily.
-                // Use public deletePage API (works on both Apple and Linux)
-                // Note: try? is used intentionally to suppress errors - deletion continues on failure
-                for pageIndex in pageIndices {
-                    try? store.deletePage(index: pageIndex)
-                    markPageForReuse(pageIndex: pageIndex, layout: &layout)
-                }
-                
-                // Remove from indexMap (use removeValue for consistency with MVCC path)
-                // We already verified the record exists at the start using indexMapSnapshot
-                // Since we're in a sync block, we can safely modify indexMap here
-                // Use a safe modification pattern to avoid crashes from concurrent indexMap replacement
-                // Create a mutable copy, modify it, then assign back atomically
-                // This pattern prevents crashes if indexMap is being replaced concurrently
-                var mutableIndexMap = indexMap
-                let removedPages = mutableIndexMap.removeValue(forKey: id)
-                // Atomic assignment - safe within sync block
-                indexMap = mutableIndexMap
-                if let pages = removedPages {
-                    BlazeLogger.debug("🗑️ [DELETE] Legacy: Removed indexMap[\(id.uuidString.prefix(8))] = \(pages), marking pages for reuse")
-                } else {
-                    BlazeLogger.warn("⚠️ [DELETE] Legacy: Tried to remove indexMap[\(id.uuidString.prefix(8))] but it wasn't in indexMap!")
-                }
-                
-                // Update layout with deleted pages and indexMap
-                layout.indexMap = indexMap
-                layout.secondaryIndexes = StorageLayout.fromRuntimeIndexes(secondaryIndexes)
-                
-                // Invalidate cache (record was deleted)
-                recordCache.remove(id: id)
-                
-                // Clear fetchAll cache to ensure consistency
-                #if !BLAZEDB_LINUX_CORE
-                clearFetchAllCache()
-                #endif
-                
-                unsavedChanges += 1
-                // OPTIMIZATION: Only save layout periodically, not on every delete
-                // This significantly improves delete performance for bulk operations
-                if unsavedChanges >= metadataFlushThreshold {
-                    // Save layout with updated deletedPages
-                    if password != nil {
-                        try layout.saveSecure(to: metaURL, signingKey: encryptionKey)
-                    } else {
-                        try layout.save(to: metaURL)
-                    }
-                    unsavedChanges = 0
-                    // Clear fetchAll cache when we save layout (batch operation)
-                    #if !BLAZEDB_LINUX_CORE
-                    clearFetchAllCache()
-                    #endif
-                }
-                
-                // OPTIMIZATION: Defer expensive index updates - they can be batched
-                // These are optional and can be done lazily or in batch
-                // NEW: Update search index if enabled
-                // try? updateSearchIndexOnDelete(id)  // Deferred for performance
-                
-                // NEW: Update spatial index if enabled
-                // updateSpatialIndexOnDelete(id)  // Deferred for performance
-                
-                // NEW: Update vector index if enabled
-                // updateVectorIndexOnDelete(id)  // Deferred for performance
-                
-                // Success - changes persisted
+            }
+
+            if let record = recordToUse {
+                btreeIndexManager.deindexRecord(id: id, fields: record.storage)
+            }
+
+            let removedPages = indexMap.removeValue(forKey: id)
+            if let pages = removedPages {
+                BlazeLogger.debug("🗑️ [DELETE] Legacy: Removed indexMap[\(id.uuidString.prefix(8))] = \(pages)")
+            }
+
+            do {
+                try saveLayout()
+                unsavedChanges = 0
             } catch {
-                // 🔒 Restore state on failure, but only if record still exists in indexMap
-                // (If another thread already deleted it, don't restore)
-                if indexMap[id] != nil {
-                    BlazeLogger.warn("Delete failed, restoring index state: \(error)")
-                    secondaryIndexes = indexBackup
-                    indexMap = indexMapBackup
-                    throw error
-                } else {
-                    // Record was already deleted by another thread - this is fine, just return
-                    BlazeLogger.debug("Delete failed but record was already deleted by another thread: \(error)")
-                    return
+                BlazeLogger.warn("Delete failed before discarding pages, restoring catalog: \(error)")
+                secondaryIndexes = indexBackup
+                indexMap = indexMapBackup
+                if let record = recordToUse {
+                    btreeIndexManager.indexRecord(id: id, fields: record.storage)
+                }
+                throw error
+            }
+
+            // The id is no longer in the durable catalog. Zeroing is cleanup.
+            // A failure here must not restore indexMap: performSafeWrite would
+            // republish the id onto pages that are already empty.
+            var layout = mutationLayoutFromMemory()
+            for pageIndex in pageIndices {
+                do {
+                    try store.deletePage(index: pageIndex)
+                    markPageForReuse(pageIndex: pageIndex, layout: &layout)
+                } catch {
+                    BlazeLogger.warn("🗑️ [DELETE] Catalog committed but failed to discard page \(pageIndex): \(error.localizedDescription)")
                 }
             }
+            unsavedChanges += 1
+
+            recordCache.remove(id: id)
+            #if !BLAZEDB_LINUX_CORE
+            clearFetchAllCache()
+            #endif
         }
         
         public func delete(id: UUID, record: BlazeDataRecord? = nil) throws {

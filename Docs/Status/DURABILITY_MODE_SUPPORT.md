@@ -28,6 +28,7 @@ For the default `BlazeDBClient` path, durability is provided by the **legacy bin
  1. Its page(s) are durably committed in the WAL (and, after `persist()` / checkpoint / close, copied to the main file), and
  2. The metadata has been updated and saved.
 - If an insert fails (for example, a metadata save error), `BlazeDBClient.performSafeWrite` restores the in-memory index map; the record is not visible via normal APIs, and reopen will not list it unless the metadata actually contains an entry.
+- Legacy `delete(id:)` writes the catalog that drops the id before it zeroes that record's pages. A failed catalog save restores the in-memory catalog and leaves the pages intact. A crash after the catalog save, before the pages are zeroed, leaves the record unpublished.
 
 ### Large records and overflow pages (publish-last semantics)
 
