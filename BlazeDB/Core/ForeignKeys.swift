@@ -159,14 +159,12 @@ extension BlazeDBClient {
             // across collections requires application-level validation or future multi-collection support.
             if let referencedID = fieldValue.uuidValue {
                 // Verify it's a valid UUID format (full validation requires multi-collection support)
-                BlazeLogger.trace("🔗 Foreign key '\(fk.name)': \(fk.field) = \(referencedID)")
+                BlazeLogger.trace("🔗 Foreign key '\(fk.name)': \(fk.field) = \(referencedID) operation=\(operation)")
             }
-            
-            if operation == "delete" && fk.onDelete != .noAction {
-                throw BlazeDBError.invalidData(
-                    reason: "Foreign key action '\(fk.onDelete)' for '\(fk.name)' is not implemented for delete validation. Use application-level relationship handling."
-                )
-            }
+
+            // onDelete describes what happens to this row when the referenced
+            // parent is removed. It must not reject deletion of this row.
+            // Deleting the referencing record removes the relationship.
         }
     }
     
@@ -226,31 +224,47 @@ public struct RelationshipManager {
         return record != nil
     }
     
-    /// Handle cascade delete across databases
+    /// Handle cascade delete across databases.
+    ///
+    /// `collection` is the parent that was deleted. Each foreign key is declared on
+    /// the child (`field` points at `referencedCollection`). Delete matching rows
+    /// from those child databases. Do not delete from `referencedCollection`:
+    /// that is the parent, and rows there that happen to store `field` would be
+    /// destroyed while the actual children remain.
     public func cascadeDelete(
         from collection: String,
         id: UUID,
         foreignKeys: [ForeignKey]
     ) throws {
         for fk in foreignKeys where fk.onDelete == .cascade {
-            guard let referencedDB = databases[fk.referencedCollection] else {
-                BlazeLogger.warn("Cannot cascade - collection '\(fk.referencedCollection)' not registered")
-                continue
-            }
-            
-            // Find all records with this foreign key value
-            let related = try referencedDB.fetchAll().filter { record in
-                record.storage[fk.field]?.uuidValue == id
-            }
-            
-            // Delete them
-            for relatedRecord in related {
-                if let relatedID = relatedRecord.storage["id"]?.uuidValue {
-                    try referencedDB.delete(id: relatedID)
+            let childDatabases = databases.filter { name, db in
+                guard name != collection else { return false }
+                return db.getForeignKeys().contains { existing in
+                    existing.name == fk.name
+                        && existing.field == fk.field
+                        && existing.referencedCollection == collection
+                        && existing.onDelete == .cascade
                 }
             }
-            
-            BlazeLogger.info("🔗 Cascade deleted \(related.count) records from '\(fk.referencedCollection)'")
+
+            guard !childDatabases.isEmpty else {
+                BlazeLogger.warn("Cannot cascade '\(fk.name)' — no registered child collection references '\(collection)' on '\(fk.field)'")
+                continue
+            }
+
+            for (childName, childDB) in childDatabases {
+                let related = try childDB.fetchAll().filter { record in
+                    record.storage[fk.field]?.uuidValue == id
+                }
+
+                for relatedRecord in related {
+                    if let relatedID = relatedRecord.storage["id"]?.uuidValue {
+                        try childDB.delete(id: relatedID)
+                    }
+                }
+
+                BlazeLogger.info("🔗 Cascade deleted \(related.count) records from '\(childName)' for FK '\(fk.name)'")
+            }
         }
     }
 }

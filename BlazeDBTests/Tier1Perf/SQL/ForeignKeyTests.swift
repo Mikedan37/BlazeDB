@@ -162,20 +162,22 @@ final class ForeignKeyTests: XCTestCase {
         relationships.register(try requireFixture(usersDB), as: "users")
         relationships.register(try requireFixture(bugsDB), as: "bugs")
         
-        let fk = ForeignKey(
+        try requireFixture(bugsDB).addForeignKey(ForeignKey(
             name: "bug_user_fk",
             field: "userId",
-            referencedCollection: "bugs",  // Bugs reference users
+            referencedCollection: "users",
             onDelete: .cascade
-        )
+        ))
+        let fk = try requireFixture(bugsDB).getForeignKeys()[0]
         
-        // Delete user → should cascade delete bugs
+        // Delete user → should cascade delete bugs, not the user row.
         try relationships.cascadeDelete(from: "users", id: userId, foreignKeys: [fk])
         
         // Verify bugs were deleted
         let remainingBugs = try requireFixture(bugsDB).fetchAll()
         
         XCTAssertEqual(remainingBugs.count, 0, "Cascade should delete all related bugs")
+        XCTAssertNotNil(try requireFixture(usersDB).fetch(id: userId), "Cascade must not delete the referenced user")
         print("  ✅ CASCADE DELETE: Deleted 2 related bugs")
     }
     
