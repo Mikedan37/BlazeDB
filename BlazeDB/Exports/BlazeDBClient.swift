@@ -7,6 +7,13 @@ import CryptoKit
 #else
 import Crypto
 #endif
+#if canImport(Darwin)
+import Darwin
+#elseif canImport(Glibc)
+import Glibc
+#elseif canImport(Android)
+import Android
+#endif
 
 // MARK: - BlazeDocumentField serialization
 
@@ -840,9 +847,74 @@ public final class BlazeDBClient: @unchecked Sendable {
             try fm.copyItem(at: metaBackupURL, to: metaURL)
         }
 
+        // beginTransaction checkpoints before copying this backup, so the WAL was
+        // empty at the snapshot. Later page writes are committed to that WAL and
+        // PageStore replays them after this restore. An in-place update would
+        // then reappear even though the catalog was rolled back. Drop the log
+        // and fsync the directory before forgetting the backup.
+        try discardWALWrittenAfterTransactionBackup(databaseURL: fileURL)
+
         BlazeAuthoritativeFileOps.removeItemIfExists(at: backupURL, context: "restoreDurableTransactionBackupIfPresent(backup)")
         BlazeAuthoritativeFileOps.removeItemIfExists(at: metaBackupURL, context: "restoreDurableTransactionBackupIfPresent(metaBackup)")
         BlazeAuthoritativeFileOps.removeItemIfExists(at: stateURL, context: "restoreDurableTransactionBackupIfPresent(state)")
+    }
+
+    /// Remove the WAL produced after the pre-transaction snapshot.
+    /// The directory fsync makes that unlink durable before the caller deletes the backup.
+    private static func discardWALWrittenAfterTransactionBackup(databaseURL: URL) throws {
+        let fm = FileManager.default
+        let walURL = databaseURL.deletingPathExtension().appendingPathExtension("wal")
+        let walMetaURL = walURL.deletingPathExtension().appendingPathExtension("wal-meta")
+        if fm.fileExists(atPath: walURL.path) {
+            try fm.removeItem(at: walURL)
+        }
+        if fm.fileExists(atPath: walMetaURL.path) {
+            try fm.removeItem(at: walMetaURL)
+        }
+        try fsyncDirectory(databaseURL.deletingLastPathComponent())
+    }
+
+    private static func fsyncDirectory(_ url: URL) throws {
+        #if canImport(Darwin)
+        let fd = Darwin.open(url.path, O_RDONLY)
+        #elseif canImport(Glibc)
+        let fd = Glibc.open(url.path, O_RDONLY)
+        #elseif canImport(Android)
+        let fd = Android.open(url.path, O_RDONLY)
+        #else
+        let fd = open(url.path, O_RDONLY)
+        #endif
+        guard fd >= 0 else {
+            throw BlazeDBError.transactionFailed(
+                "Could not open directory to make transaction recovery durable: \(url.path)"
+            )
+        }
+        defer {
+            #if canImport(Darwin)
+            _ = Darwin.close(fd)
+            #elseif canImport(Glibc)
+            _ = Glibc.close(fd)
+            #elseif canImport(Android)
+            _ = Android.close(fd)
+            #else
+            _ = close(fd)
+            #endif
+        }
+        let syncResult: Int32
+        #if canImport(Darwin)
+        syncResult = Darwin.fsync(fd)
+        #elseif canImport(Glibc)
+        syncResult = Glibc.fsync(fd)
+        #elseif canImport(Android)
+        syncResult = Android.fsync(fd)
+        #else
+        syncResult = fsync(fd)
+        #endif
+        if syncResult != 0 {
+            throw BlazeDBError.transactionFailed(
+                "Could not fsync directory after discarding the transaction WAL: \(url.path)"
+            )
+        }
     }
 
     internal func legacyTransactionLogNoOp(_ operation: String, payload: [String: BlazeDocumentField]) {

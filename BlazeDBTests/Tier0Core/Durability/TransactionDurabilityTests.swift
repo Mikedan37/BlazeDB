@@ -446,4 +446,28 @@ final class TransactionDurabilityTests: XCTestCase {
         XCTAssertEqual(recoveredRows[0].storage["value"]?.stringValue, "baseline")
         try dbRecovered.close()
     }
+
+    func testCrashDuringOpenTransactionDoesNotReplayUncommittedUpdate() throws {
+        let dir = tmpDir("txn-wal-rollback")
+        let tempURL = dir.appendingPathComponent("test.blazedb")
+        let walURL = tempURL.deletingPathExtension().appendingPathExtension("wal")
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        let id: UUID
+        do {
+            let db = try BlazeDBClient(name: "TxnWALRollback", fileURL: tempURL, password: "TestPassword-123!")
+            id = try db.insert(BlazeDataRecord(["value": .string("baseline")]))
+            try db.persist()
+            try db.beginTransaction()
+            try db.update(id: id, with: BlazeDataRecord(["value": .string("uncommitted")]))
+            let walSize = (try? Data(contentsOf: walURL).count) ?? 0
+            XCTAssertGreaterThan(walSize, 0, "Update must leave a committed WAL record before the crash")
+            db.collection.store.simulateCrashForTests()
+        }
+
+        let recovered = try BlazeDBClient(name: "TxnWALRollback", fileURL: tempURL, password: "TestPassword-123!")
+        defer { try? recovered.close() }
+        let row = try XCTUnwrap(recovered.fetch(id: id))
+        XCTAssertEqual(row.storage["value"]?.stringValue, "baseline")
+    }
 }

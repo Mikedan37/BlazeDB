@@ -63,6 +63,10 @@ The client clears its in-memory transaction state and refuses a new transaction
 until the database is reopened, rather than overwriting the recovery backup.
 Reopening invokes the existing durable transaction recovery path. Callers must
 not treat a failed rollback as a successful save or delete the backup.
+That recovery restores the pre-transaction database and metadata, then deletes
+the WAL written after the snapshot. `PageStore` would otherwise replay those
+page images onto the restored file and keep an uncommitted in-place update.
+Existing databases do not need a format change.
 
 After a rollback fails, the client rejects guarded reads, transactions, ordinary CRUD writes, index creation and explicit persistence until it is closed and reopened. Closing skips the normal client flush; reopening restores the durable transaction backup before accepting new writes. The sync and async transaction helpers, `performTransaction`, and import restoration report `BlazeTransactionRecoveryError` when both the operation and rollback fail, retaining both underlying errors. A successful rollback preserves the original operation error.
 
