@@ -812,12 +812,46 @@ public final class PageStore: @unchecked Sendable {
         #endif
         try queue.sync(flags: .barrier) {
             try ensureOpenLocked()
-            // Invalidate cache on delete
+            // Drop cached images first. Checkpoint copies uncheckpointed WAL images
+            // back onto the main file after applying the log, so leaving the deleted
+            // page staged would resurrect it.
             pageCache.remove(index)
-            
+            stagedPageImages.removeValue(forKey: index)
+            stagedPlaintext.removeValue(forKey: index)
+            uncheckpointedPageImages.removeValue(forKey: index)
+            uncheckpointedPlaintext.removeValue(forKey: index)
+            pendingUnifiedBufferedWrites.removeAll { $0.index == index }
+
+            let zeroed = Data(repeating: 0, count: pageSize)
+            if let wal = wal {
+                // Replay is last-write-wins. A committed image from insert/update is
+                // still in the log until checkpoint; record a zero page after it or
+                // the next open restores the deleted record.
+                try wal.appendDeferred(pageIndex: index, data: zeroed)
+                try wal.commitPendingGroup()
+                try wal.sync()
+            } else if let dm = durabilityManager {
+                let txID: UUID
+                if let existing = pendingUnifiedAutoTransactionID {
+                    txID = existing
+                } else {
+                    let created = UUID()
+                    try dm.appendBegin(transactionID: created)
+                    txID = created
+                }
+                guard index >= 0, index <= Int(UInt32.max) else {
+                    throw NSError(domain: "PageStore", code: -1, userInfo: [
+                        NSLocalizedDescriptionKey: "Page index \(index) out of UInt32 range for WAL entry"
+                    ])
+                }
+                try dm.appendDelete(transactionID: txID, pageIndex: UInt32(index))
+                try dm.appendCommit(transactionID: txID)
+                pendingUnifiedAutoTransactionID = nil
+                try _flushPendingUnifiedBufferedWritesLocked()
+            }
+
             let offset = off_t(index * pageSize)
             BlazeLogger.trace("Deleting page at index \(index), zeroing bytes at offset \(offset)")
-            let zeroed = Data(repeating: 0, count: pageSize)
             try atomicWrite(offset: offset, data: zeroed)
             try fileHandle.compatSynchronize()
             BlazeLogger.trace("Page \(index) deleted (zeroed)")

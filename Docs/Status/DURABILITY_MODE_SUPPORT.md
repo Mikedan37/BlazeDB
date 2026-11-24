@@ -20,6 +20,7 @@ For the default `BlazeDBClient` path, durability is provided by the **legacy bin
 - High-level transactions (`beginTransaction` / `commitTransaction`) already checkpoint after `persist()` so backup snapshots see a full main file.
 - **Crash recovery**
 - On open, `PageStore` replays any remaining WAL entries and reapplies the corresponding page images to the main file.
+- `PageStore.deletePage` records a committed tombstone before it zeros the main-file page: a full zero page image in legacy WAL mode, or a `.delete` record in unified WAL mode. Replay applies that tombstone after any earlier image of the same page, so a crash after `delete()` does not restore the deleted payload. The catalog is unchanged by the tombstone itself. Existing database files do not need a migration.
 - WAL replay is idempotent for committed streams: reapplying the same committed WAL sequence converges to a single final state.
 - Truncated or corrupt tail entries are detected (magic/length/CRC) and replay stops at the last valid entry.
 - **Metadata and visibility**
