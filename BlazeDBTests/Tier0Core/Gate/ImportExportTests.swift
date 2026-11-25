@@ -114,6 +114,46 @@ final class ImportExportTests: XCTestCase {
         try? FileManager.default.removeItem(at: targetDBURL)
     }
     
+    func testImportReplaceKeepsExistingRowsWhenARecordIsRejected() async throws {
+        let db = try BlazeDBClient(name: "replace-rollback", fileURL: tempDBURL, password: password)
+        let keeperID = try await db.insert(BlazeDataRecord(["name": .string("keeper")]))
+        db.addCheckConstraint(CheckConstraint(name: "reject-bad-name", field: "name") { record in
+            record.storage["name"]?.stringValue != "bad"
+        })
+
+        let payload = try JSONEncoder().encode([
+            BlazeDataRecord(["name": .string("ok")]),
+            BlazeDataRecord(["name": .string("bad")])
+        ])
+
+        do {
+            _ = try await db.import(from: payload, format: .json, mode: .replace)
+            XCTFail("replace import should reject the record that fails the check constraint")
+        } catch {
+            // The rejected row must not commit, and the pre-import database must remain.
+        }
+
+        let keeper = try await db.fetch(id: keeperID)
+        let total = try await db.count()
+        XCTAssertEqual(keeper?.storage["name"]?.stringValue, "keeper")
+        XCTAssertEqual(total, 1)
+    }
+
+    func testImportReplaceCommitsWhenEveryRecordIsAccepted() async throws {
+        let db = try BlazeDBClient(name: "replace-commit", fileURL: tempDBURL, password: password)
+        _ = try await db.insert(BlazeDataRecord(["name": .string("old")]))
+
+        let payload = try JSONEncoder().encode([
+            BlazeDataRecord(["name": .string("new")])
+        ])
+        let stats = try await db.import(from: payload, format: .json, mode: .replace)
+
+        XCTAssertEqual(stats.recordsImported, 1)
+        let records = try await db.fetchAll()
+        XCTAssertEqual(records.count, 1)
+        XCTAssertEqual(records.first?.storage["name"]?.stringValue, "new")
+    }
+
     func testImport_RefusesNonEmptyDatabase() throws {
         // Create database with data
         let db = try BlazeDBClient(name: "nonempty-test", fileURL: tempDBURL, password: password)

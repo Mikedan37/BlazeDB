@@ -419,6 +419,7 @@ extension BlazeDBClient {
         
         return try await withCheckedThrowingContinuation { continuation in
             DispatchQueue.global(qos: .utility).async {
+                var replaceTransactionOpen = false
                 do {
                     // Decode records
                     let records: [BlazeDataRecord]
@@ -440,7 +441,9 @@ extension BlazeDBClient {
                     
                     // Handle import mode
                     if mode == .replace {
-                        // Delete all existing records
+                        // Hold the pre-delete snapshot until every imported row is accepted.
+                        try self.beginTransaction()
+                        replaceTransactionOpen = true
                         let existingCount = try self.count()
                         _ = try self.deleteMany(where: { _ in true })
                         BlazeLogger.debug("Deleted \(existingCount) existing records for replace mode")
@@ -477,6 +480,11 @@ extension BlazeDBClient {
                         }
                     }
                     
+                    if replaceTransactionOpen {
+                        try self.commitTransaction()
+                        replaceTransactionOpen = false
+                    }
+
                     let duration = Date().timeIntervalSince(startTime)
                     
                     let stats = ImportStats(
@@ -490,6 +498,13 @@ extension BlazeDBClient {
                     continuation.resume(returning: stats)
                     
                 } catch {
+                    if replaceTransactionOpen {
+                        do {
+                            try self.rollbackTransaction()
+                        } catch {
+                            BlazeLogger.error("❌ Import replace rollback failed: \(error)")
+                        }
+                    }
                     BlazeLogger.error("❌ Import failed: \(error)")
                     continuation.resume(throwing: error)
                 }
