@@ -452,9 +452,9 @@ public enum BlazeBinaryDecoder {
             vector.reserveCapacity(vecCount)
             
             for _ in 0..<vecCount {
+                // readUInt32 already turned the big-endian bytes into the Float bit pattern.
                 let bits = try readUInt32(from: data, at: currentOffset)
-                let float = Float(bitPattern: UInt32(bigEndian: bits))
-                vector.append(Double(float))  // Convert Float to Double for BlazeDocumentField.vector([Double])
+                vector.append(Double(Float(bitPattern: bits)))
                 currentOffset += 4
             }
             

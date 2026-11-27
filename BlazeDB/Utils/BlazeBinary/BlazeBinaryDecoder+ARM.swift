@@ -560,7 +560,7 @@ extension BlazeBinaryDecoder {
                 for i in 0..<4 {
                     floatBits = (floatBits << 8) | UInt32(floatBytes[i])
                 }
-                let floatVal = Float32(bitPattern: floatBits.bigEndian)
+                let floatVal = Float32(bitPattern: floatBits)
                 vector.append(Double(floatVal))
                 currentOffset += 4
             }

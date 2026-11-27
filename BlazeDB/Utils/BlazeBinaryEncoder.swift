@@ -261,10 +261,15 @@ public enum BlazeBinaryEncoder {
             data.append(TypeTag.vector.rawValue)
             var vecCount = UInt32(vec.count).bigEndian
             data.append(Data(bytes: &vecCount, count: 4))
-            // Encode each Float as 4 bytes (big-endian)
-            for float in vec {
-                var bits = float.bitPattern.bigEndian
-                data.append(Data(bytes: &bits, count: 4))
+            // On-disk components are IEEE-754 binary32, big-endian. `vec` is
+            // [Double]; slicing `Double.bitPattern` (UInt64) keeps the wrong
+            // four bytes and does not produce a Float.
+            for value in vec {
+                let bits = Float(value).bitPattern
+                data.append(UInt8((bits >> 24) & 0xFF))
+                data.append(UInt8((bits >> 16) & 0xFF))
+                data.append(UInt8((bits >> 8) & 0xFF))
+                data.append(UInt8(bits & 0xFF))
             }
             
         case .null:

@@ -428,12 +428,18 @@ extension BlazeBinaryEncoder {
                 }
             }
             writeOffset += 4
-            for floatVal in v {
+            for value in v {
                 guard writeOffset + 4 <= capacity else {
                     throw BlazeBinaryError.invalidFormat("Buffer overflow: cannot write vector element")
                 }
-                var bits = floatVal.bitPattern.bigEndian
-                withUnsafeBytes(of: &bits) { bytes in
+                let bits = Float(value).bitPattern
+                let floatBytes: [UInt8] = [
+                    UInt8((bits >> 24) & 0xFF),
+                    UInt8((bits >> 16) & 0xFF),
+                    UInt8((bits >> 8) & 0xFF),
+                    UInt8(bits & 0xFF)
+                ]
+                floatBytes.withUnsafeBufferPointer { bytes in
                     if let baseAddress = bytes.baseAddress {
                         memcpy(buffer.advanced(by: writeOffset), baseAddress, 4)
                     }
